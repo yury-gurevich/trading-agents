@@ -49,8 +49,6 @@ class AgentContract:
     consumes: tuple[Capability, ...] = ()
     # Message/topic names this agent publishes unprompted (notifications).
     emits: tuple[str, ...] = ()
-    # Relational tables owned EXCLUSIVELY by this agent. No other agent writes them.
-    owns_tables: tuple[str, ...] = ()
     # Neo4j node/edge labels this agent writes into the provenance graph.
     owns_graph: tuple[str, ...] = ()
     # External systems ONLY this agent may touch (broker, data APIs, LLM provider).

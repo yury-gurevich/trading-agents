@@ -62,7 +62,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("orders_decided",),
-    owns_tables=("portfolios", "order_intents", "pm_configs", "approval_queue"),
     owns_graph=("PMRun", "OrderIntent"),
     external_io=(),
     depends_on=("analyst", "provider", "forecaster"),

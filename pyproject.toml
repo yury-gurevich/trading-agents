@@ -14,8 +14,6 @@ runtime = [
     "celery>=5.4",
     "redis>=5.0",
     "neo4j>=5.20",
-    "sqlalchemy>=2.0",
-    "alembic>=1.13",
 ]
 mcp = ["mcp>=1.0"]
 
@@ -29,9 +27,8 @@ dev = [
     "ruff>=0.6",
     "pip-audit>=2.7",
     "detect-secrets>=1.5",
+    "neo4j>=5.20",
     "pre-commit>=3.7",
-    "sqlalchemy>=2.0.50",
-    "alembic>=1.18.4",
 ]
 
 [tool.uv]
@@ -43,7 +40,7 @@ package = false
 target-version = "py313"
 line-length = 88
 src = ["kernel", "contracts", "agents", "orchestration", "surfaces", "tests"]
-extend-exclude = ["alembic/versions"]
+extend-exclude = []
 
 [tool.ruff.lint]
 select = [
@@ -97,7 +94,6 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = [
     "celery", "celery.*", "redis", "redis.*", "neo4j", "neo4j.*", "mcp", "mcp.*",
-    "alembic", "alembic.*",
 ]
 follow_imports = "skip"
 ignore_missing_imports = true
@@ -119,7 +115,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     # Regression-ratchet floor: the real measured floor. Climb; never lower.
-    "--cov-fail-under=99.17",
+    "--cov-fail-under=99.5",
     "--no-header",
 ]
 markers = [
@@ -148,4 +144,4 @@ exclude_lines = [
 ]
 show_missing = true
 precision = 1
-fail_under = 99.17
+fail_under = 99.5

@@ -51,7 +51,7 @@ class FaultSink(Protocol):
 
     def submit(self, fault: AgentFault) -> None:
         """Accept a fault into the central channel."""
-        ...
+        ...  # pragma: no cover - protocol declaration only.
 
 
 class CollectingFaultSink:

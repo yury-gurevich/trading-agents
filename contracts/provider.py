@@ -100,7 +100,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("market_data_degraded",),
-    owns_tables=("price_cache", "provider_snapshots", "data_quality_log"),
     owns_graph=("MarketSnapshot", "Regime", "Ticker"),
     external_io=("stooq", "finnhub", "fred", "edgar", "finbert", "sp500_listing"),
     depends_on=(),

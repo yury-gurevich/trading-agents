@@ -3,7 +3,7 @@
 Agent: kernel
 Role: expose the contract descriptors, message envelope, in-process bus,
       AgentBase, the justified-tunable config primitive, and the central fault
-      channel. Persistence, graph, distributed bus, and MCP adapters join later.
+      channel. Distributed bus, observability, and MCP adapters join later.
 External I/O: none
 """
 
@@ -20,7 +20,8 @@ from kernel.errors import (
     fault_boundary,
     fault_from_exception,
 )
-from kernel.persistence import Base, Database, PersistenceSettings
+from kernel.graph import Edge, GraphStore, InMemoryGraphStore, Node
+from kernel.graph_neo4j import GraphSettings, Neo4jGraphStore
 
 __all__ = [
     "AgentBase",
@@ -28,16 +29,19 @@ __all__ = [
     "AgentFault",
     "AgentMessage",
     "AgentSettings",
-    "Base",
     "Capability",
     "CollectingFaultSink",
-    "Database",
+    "Edge",
     "FaultCapture",
     "FaultSink",
+    "GraphSettings",
+    "GraphStore",
+    "InMemoryGraphStore",
     "InProcessBus",
     "MessageBus",
     "MessageType",
-    "PersistenceSettings",
+    "Neo4jGraphStore",
+    "Node",
     "TunableDoc",
     "describe",
     "fault_boundary",

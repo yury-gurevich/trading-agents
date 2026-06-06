@@ -62,7 +62,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("report_ready",),
-    owns_tables=("performance_snapshots", "trade_narratives"),
     owns_graph=("Snapshot", "TradeNarrative"),
     external_io=(),
     depends_on=(

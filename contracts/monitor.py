@@ -59,7 +59,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("exits_decided",),
-    owns_tables=("positions", "position_lifecycle_events", "monitor_configs"),
     owns_graph=("PositionCheck", "CloseDecision", "Position"),
     external_io=(),
     depends_on=("forecaster", "execution"),

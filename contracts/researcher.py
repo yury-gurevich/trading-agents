@@ -61,11 +61,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("proposal_queued",),
-    owns_tables=(
-        "improvement_experiments",
-        "parameter_change_queue",
-        "researcher_configs",
-    ),
     owns_graph=("Experiment", "ParamChange"),
     external_io=(),
     depends_on=("reporter",),

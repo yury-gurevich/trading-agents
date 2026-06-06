@@ -82,13 +82,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("human_flag_raised", "message_dead_lettered", "fault_received"),
-    owns_tables=(
-        "a2a_messages",
-        "capability_matrix",
-        "human_review_flags",
-        "master_agent_reports",
-        "agent_faults",
-    ),
     owns_graph=("Message", "Agent", "Flag", "Fault"),
     external_io=(),
     depends_on=(

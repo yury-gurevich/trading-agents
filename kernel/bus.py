@@ -23,11 +23,11 @@ class MessageBus(Protocol):
         self, recipient: str, capability: str, handler: MessageHandler
     ) -> None:
         """Register a handler for one recipient capability."""
-        ...
+        ...  # pragma: no cover - protocol declaration only.
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Send one request message and return a response or error message."""
-        ...
+        ...  # pragma: no cover - protocol declaration only.
 
 
 class InProcessBus:

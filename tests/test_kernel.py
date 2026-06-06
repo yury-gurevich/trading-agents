@@ -77,7 +77,7 @@ def test_contract_capability_lookup():
         mission="m",
         consumes=(Capability("do", "does", request=_Req, response=_Resp),),
         never=("nothing",),
-        owns_tables=("x_table",),
+        owns_graph=("XNode",),
     )
     assert contract.capability("do").response is _Resp
     with pytest.raises(KeyError):

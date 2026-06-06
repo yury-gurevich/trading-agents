@@ -78,7 +78,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("intent_parsed", "command_refused"),
-    owns_tables=("command_audits", "command_confirmation_tokens", "llm_call_ledger"),
     owns_graph=("CommandAudit", "Intent"),
     external_io=("llm_provider",),
     depends_on=("supervisor",),

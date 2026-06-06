@@ -64,7 +64,7 @@ jobs:
       - name: detect-secrets
         run: uv run pre-commit run detect-secrets --all-files
 
-  # ── Dormant until the persistence layer lands (build-plan P1) ──────
-  # migration:    relational schema migrate + drift check (needs a test DB secret)
+  # ── No migration job: ADR-0001 makes Neo4j the single schema-flexible store ─
+  # A future Neo4j service lane may exercise integration tests with NEO4J_TEST_URI.
   # ── Dormant until execution stage gates land (build-plan P8) ───────
   # promotion_check: trust-to-stage gate preview

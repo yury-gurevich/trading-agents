@@ -64,7 +64,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("analysis_completed",),
-    owns_tables=("recommendations", "analyst_diagnostics", "analyst_configs"),
     owns_graph=("AnalystRun", "Recommendation"),
     external_io=(),
     depends_on=("scanner", "provider"),

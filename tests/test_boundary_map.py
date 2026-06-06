@@ -1,8 +1,8 @@
 """The boundary map is self-enforcing.
 
 These checks fail CI the moment the agent contracts drift back toward the
-conveyor belt: two agents sharing a table, two agents touching the same external
-system, a dangling dependency, or an untyped capability.
+conveyor belt: two agents sharing a graph label, two agents touching the same
+external system, a dangling dependency, or an untyped capability.
 """
 
 from __future__ import annotations
@@ -46,12 +46,6 @@ def test_external_io_is_exclusive():
     assert not shared, f"external systems touched by >1 agent: {shared}"
 
 
-def test_each_table_has_one_writer():
-    owners = Counter(t for c in REG.values() for t in c.owns_tables)
-    shared = {t: n for t, n in owners.items() if n > 1}
-    assert not shared, f"tables owned by >1 agent (shared schema): {shared}"
-
-
 def test_each_graph_label_has_one_writer():
     owners = Counter(g for c in REG.values() for g in c.owns_graph)
     shared = {g: n for g, n in owners.items() if n > 1}
@@ -63,4 +57,4 @@ def test_every_agent_states_its_boundaries(name):
     c = REG[name]
     assert c.mission.strip(), f"{name} has no mission"
     assert c.never, f"{name} declares no hard boundaries (never[])"
-    assert c.owns_tables or c.owns_graph, f"{name} owns no data"
+    assert c.owns_graph, f"{name} owns no graph labels"

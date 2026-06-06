@@ -63,7 +63,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("scan_completed",),
-    owns_tables=("scan_results", "scanner_diagnostics", "scanner_configs"),
     owns_graph=("ScanRun", "Candidate"),
     external_io=(),
     depends_on=("provider",),

@@ -69,7 +69,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("scorecard_refreshed",),
-    owns_tables=("shadow_predictions", "shadow_proof_cycles", "model_scorecards"),
     owns_graph=("ShadowPrediction", "Model"),
     external_io=(),
     depends_on=("provider",),

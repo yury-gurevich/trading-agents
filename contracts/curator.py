@@ -64,7 +64,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("dataset_published",),
-    owns_tables=("dataset_manifests", "dataset_versions", "training_examples"),
     owns_graph=("Dataset", "TrainingExample"),
     external_io=("dataset_store",),
     depends_on=("reporter", "supervisor"),

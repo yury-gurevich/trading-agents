@@ -94,12 +94,6 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("fill_recorded", "stage_transitioned"),
-    owns_tables=(
-        "fills",
-        "execution_events",
-        "reconciliation_outcomes",
-        "execution_stage_audits",
-    ),
     owns_graph=("Fill", "Reconciliation"),
     external_io=("alpaca_broker",),
     depends_on=("portfolio_manager", "monitor"),

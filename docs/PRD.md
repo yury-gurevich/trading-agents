@@ -124,17 +124,25 @@ Because the contract is transport-agnostic, the same boundary is bound to the
 in-process bus, the distributed bus, and the operator's tool interface without
 duplicating definitions.
 
-### 4.3 Two databases, two jobs
+### 4.3 One store, three jobs (Neo4j)
 
-- **Relational store — transactional truth.** Orders, positions, approvals, and
-  audits live in a relational database with ACID guarantees and append-only
-  semantics. Each agent owns its own tables; there is no shared schema that every
-  agent writes.
-- **Graph store — provenance and analysis.** Every artifact and every message is a
-  node in a provenance graph; edges record derivation
-  (candidate → recommendation → order → fill → outcome) and message lineage. This
-  is the data-collection-and-analysis layer and the substrate for explanation,
-  audit, and research.
+A single graph store (Neo4j), reached through the kernel's `GraphStore` adapter,
+does three jobs — see `docs/decisions/0001-neo4j-primary-store.md`.
+
+- **Transactional truth.** Orders, positions, approvals, and audits are nodes with
+  ACID guarantees and append-only semantics. Each agent owns its own node/edge
+  labels; there is no shared label every agent writes. Money is stored as integer
+  minor units (Neo4j has no decimal type); append-only is held by convention,
+  `schema_version` on every node, and uniqueness constraints — not by migrations or
+  triggers.
+- **Provenance and analysis.** Every artifact and every message is a node; edges
+  record derivation (candidate → recommendation → order → fill → outcome) and
+  message lineage. This is the data-collection-and-analysis layer and the substrate
+  for explanation, audit, and research.
+- **Retrieval (RAG).** Embeddings live as node properties with a native vector
+  index, so evidence retrieval and provenance traversal hit the same graph.
+
+The store is schema-flexible: there is no relational schema and no migration step.
 
 ### 4.4 Tool interface
 
@@ -157,15 +165,15 @@ Errors are never merely logged where they occur. Every exception is captured as 
 fault carrying its origin — which agent and module produced it — redirected to one
 central channel, and acted upon by the supervisor (the central agent for faults),
 which opens incidents, flags for human review, or retries. Faults are append-only
-in the relational store and the provenance graph. Details: `docs/error-handling.md`.
+in the provenance graph. Details: `docs/error-handling.md`.
 
 ### 4.7 Observability and historical data
 
 The system is loud inward, quiet outward. Live metrics and traces flow through a
 kernel adapter to Prometheus and are visualized in Grafana (system health, agent
 throughput and latency, fault rates, trust indicators). The durable record of what
-the system did and why lives in the provenance graph (Neo4j) and the append-only
-relational store, queryable and exportable for any date range. Grafana is an
+the system did and why lives in the provenance graph (Neo4j), queryable and
+exportable for any date range. Grafana is an
 internal forensic surface beside — not replacing — the product dashboard. Details:
 `docs/observability.md`.
 
@@ -199,7 +207,7 @@ boundary in `contracts/<name>.py`.
 
 Two invariants hold across the roster and are enforced as tests:
 
-- **single writer per table** — no shared schema; every table has one owning agent;
+- **single writer per label** — no shared schema; every node/edge label has one owning agent;
 - **exclusive external I/O** — exactly one agent holds the credentials and code path
   to each external system (data APIs → provider, broker → execution, model → operator).
 
@@ -312,7 +320,7 @@ user-facing voice is reassuring and explanatory, framing disruptions as technica
 incidents outside the operator's control, with safety-critical reassurance copy
 hard-coded rather than model-generated, and always offering dismissal. Live system health is exposed
 through an internal Prometheus + Grafana stack, while the durable decision history
-lives in the provenance graph and the relational store, queryable and exportable
+lives in the provenance graph, queryable and exportable
 for any date range (see `docs/observability.md`).
 
 ### 8.4 Self-management

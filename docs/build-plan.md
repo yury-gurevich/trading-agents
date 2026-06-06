@@ -35,14 +35,16 @@ toolchain (including the module-size and coding-agent-header guards).
 ### P1 — Kernel runtime
 
 Implement the bus (`InProcessBus` + a distributed backend), the `AgentBase`
-lifecycle, the relational persistence adapter and the graph adapter, observability
-emission, and the tool-interface binding generated from a contract. Introduce the
-schema-migration tool here.
+lifecycle, the **Neo4j `GraphStore` adapter** (nodes/edges + the vector index for
+RAG), observability emission, and the tool-interface binding generated from a
+contract. There is no relational store or migration tool — the graph is
+schema-flexible (`docs/decisions/0001-neo4j-primary-store.md`).
 **Tests:** kernel unit tests; an in-process round-trip (request → handler →
-response) for a trivial echo agent; persistence adapter tests against a local
-database; a graph-write smoke test.
-**Exit:** an echo agent answers a typed request over both bus backends; coverage
-ratchet raised to the new measured floor. **Effort: M.**
+response) for a trivial echo agent; `GraphStore` adapter tests against a Neo4j test
+service; a node/edge write smoke test.
+**Exit:** an echo agent answers a typed request over both bus backends; the
+`GraphStore` adapter round-trips nodes/edges; coverage ratchet raised to the new
+measured floor. **Effort: M.**
 
 ### P2 — First vertical slice (`provider → scanner → analyst`)
 
@@ -97,7 +99,7 @@ unsafe bypasses. **Effort: M.**
 
 ### P6 — Surfaces
 
-Dashboard read-models over the relational + graph stores (pipeline status,
+Dashboard read-models over the graph store (pipeline status,
 recommendation evidence, approval queue, position lifecycle, scorecards, control-
 plane state, incidents, active-incidents pane) and a CLI. Surfaces read; they never
 drive an agent except through the operator's bounded commands.
@@ -152,11 +154,12 @@ Some capabilities are not single phases but threads woven through many. Naming t
 here keeps each a tracked deliverable rather than an implicit assumption; the phase
 column says where each is built.
 
-- **Provenance graph.** Typed nodes for every artifact and message, edges for
-  derivation and routing (candidate → recommendation → order → fill → outcome). The
-  substrate for explanation, audit, and dataset export. *Built: graph adapter (P1);
-  mirror-writes begin with the first artifacts (P2) and extend every phase after;
-  traversal + export consumed by the curator (P10).*
+- **Provenance graph (Neo4j, the single store).** Typed nodes for every artifact and
+  message, edges for derivation and routing (candidate → recommendation → order →
+  fill → outcome); the same store also holds transactional records and RAG vectors
+  (ADR-0001). The substrate for explanation, audit, retrieval, and dataset export.
+  *Built: `GraphStore` adapter (P1); mirror-writes begin with the first artifacts
+  (P2) and extend every phase after; traversal + export consumed by the curator (P10).*
 - **Decision evidence & calibration.** Every recommendation carries confidence, a
   horizon, and the regime at decision time; realized outcomes are captured and scored
   into per-confidence-bucket calibration curves; drift becomes a parameter-change
@@ -222,17 +225,17 @@ The toolchain:
   verdicts match.
 
 CI jobs: `quality` (lint, format, types, import-linter,
-module size), `test` (pytest + coverage floor), `security` (pip-audit,
-detect-secrets). The database-backed `migration` job and the staged
-`promotion_check` job are introduced with the persistence layer in P1 and the stage
-gates in P8 respectively.
+module size), `test` (pytest + coverage floor, with a Neo4j service), `security`
+(pip-audit, detect-secrets). There is no `migration` job — the graph store is
+schema-flexible (ADR-0001). The staged `promotion_check` job is introduced with the
+stage gates in P8.
 
 ## Status
 
 | Phase | State |
 | --- | --- |
 | P0 Boundary map | **complete** |
-| P1 Kernel runtime | **active** (S01 bus+AgentBase, S02 persistence shipped) |
+| P1 Kernel runtime | **active** (S01 bus+AgentBase shipped; S02 relational store superseded → Neo4j, ADR-0001) |
 | P2 First vertical slice | planned |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |

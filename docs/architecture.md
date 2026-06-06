@@ -36,7 +36,7 @@ agents/<name>/
   __init__.py    Package marker. Imports only kernel + contracts.
   agent.py       The handler: consume a typed request, produce a typed response.
   domain/        The agent's private logic (indicators, sizing, exit rules, ...).
-  store.py       The agent's OWNED data: its relational tables + its graph writes.
+  store.py       The agent's OWNED data: its graph nodes/edges (and RAG vectors).
   mcp.py         Optional: bind this agent's capabilities as tools (from the contract).
   config.py      Agent-local configuration.
   tests/
@@ -76,18 +76,23 @@ carrying a serialized typed payload. The bus has two interchangeable backends:
 The contract is transport-agnostic, so the same boundary binds to the in-process
 bus, the distributed bus, and the tool interface without redefinition.
 
-## Data: two stores, two jobs
+## Data: one store, three jobs (Neo4j)
 
-| Store | Role | Holds | Ownership |
-| --- | --- | --- | --- |
-| Relational (transactional truth) | ACID, append-only | orders, positions, approvals, audits, config | each agent owns its own tables — no shared schema |
-| Graph (provenance + analysis) | derivation + lineage | every artifact and message as a node; edges for derivation and routing | written by the owning agent; read widely |
+A single graph store (Neo4j), reached through the kernel `GraphStore` adapter, does
+three jobs — see `docs/decisions/0001-neo4j-primary-store.md`.
+
+| Job | Holds | Ownership |
+| --- | --- | --- |
+| Transactional truth (ACID, append-only) | orders, positions, approvals, audits, config — as nodes | each agent owns its own node/edge labels — no shared label |
+| Provenance + analysis | every artifact and message as a node; edges for derivation and routing | written by the owning agent; read widely |
+| Retrieval (RAG) | embeddings as node properties, native vector index | the producing agent writes; read widely |
 
 The provenance graph is the data-collection-and-analysis layer. A trade's full
 story — `Candidate → Recommendation → OrderIntent → Fill → CloseDecision →
 Outcome`, plus the message lineage that produced each step — is a graph query, not
-a log scrape. Schema migrations for the relational store are managed with a
-migration tool and validated in CI.
+a log scrape. The store is schema-flexible: there is no relational schema and no
+migration step. Money is stored as integer minor units; append-only is held by
+convention, `schema_version` on every node, and uniqueness constraints.
 
 ## Validated dependency graph (the process flow)
 
@@ -112,8 +117,7 @@ supervisor → all                               (router + capability gate + fau
 
 - every capability is a typed request → typed response;
 - every declared dependency names a real agent;
-- **single writer per table** — no two agents own the same table;
-- **single writer per graph label**;
+- **single writer per node/edge label** — no two agents own the same label;
 - **exclusive external I/O** — no external system is touched by two agents;
 - every agent states a mission, hard boundaries, and the data it owns.
 
@@ -126,7 +130,7 @@ supervisor → all                               (router + capability gate + fau
   (`kernel.errors`) redirected to the supervisor's central channel and acted upon.
   See `docs/error-handling.md`.
 - **Observability** — a kernel metrics adapter feeds Prometheus + Grafana for live
-  health; the provenance graph and relational store hold the durable, exportable
+  health; the provenance graph holds the durable, exportable
   decision history. See `docs/observability.md`.
 
 ## Conventions

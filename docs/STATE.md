@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-06 — Sprint 02 (relational persistence) merged to `main`.
+**Last updated:** 2026-06-07 — graph-tech decided: Neo4j as the single store
+(ADR-0001); Sprint 02 relational adapter superseded.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,23 +10,29 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 02](sprints/sprint-02-persistence.md) shipped the kernel's
-domain-pure relational persistence adapter (SQLAlchemy 2.0 `Base`, `PersistenceSettings`,
-and a fault-wrapped `Database.session()`) plus an Alembic migration harness, proven on
-local SQLite with no external infra (fast-forward `ad53a5d`). No agent tables yet — it's
-the substrate each agent's future `store.py` will stand on. Also fixed `.env.example`
-tracking (`.gitignore` `.env.*` had silently excluded the template).
+**Decision recorded — Neo4j as the single primary store**
+([ADR-0001](decisions/0001-neo4j-primary-store.md)): one schema-flexible graph store
+for transactional records, provenance, and RAG — no relational DB and no migrations.
+This **supersedes [Sprint 02](sprints/sprint-02-persistence.md)'s relational
+persistence adapter**: the next storage sprint retires `kernel/persistence.py` +
+`alembic/`, drops SQLAlchemy/Alembic, and builds the kernel `GraphStore` (Neo4j)
+adapter (nodes/edges + a vector index for RAG) behind a protocol.
 
-P1 (kernel runtime) continues — the next sprint is being scoped (see Next).
+P1 (kernel runtime) continues — see Next. The PRD, architecture, and build-plan are
+updated to the single-store model; the long-tail propagation (observability,
+error-handling, README) and all code changes are tracked in the ADR.
 
-Quality gate (green on `main`): ruff, format, mypy (37 files), import-linter
-(4/4 — "Kernel is pure plumbing" KEPT), size + header guards,
-**64 tests at 99.17% coverage** (floor raised 99.1 → 99.17).
+Quality gate (last green on `main`, pre-pivot): ruff, format, mypy, import-linter
+(4/4), size + header guards, 64 tests at 99.17% — the relational-adapter tests retire
+with the pivot.
 
 ## Next
 
-- Finish P1 after persistence: the Neo4j graph adapter, the distributed (Celery)
-  bus, the observability/metrics adapter, and the contract→tool-interface binding.
+- **Storage pivot (next sprint):** retire the relational adapter + Alembic; build the
+  Neo4j `GraphStore` adapter (nodes/edges + vector index for RAG) behind a protocol;
+  add a Neo4j test service; rename the single-writer invariant to per-label.
+- Then the rest of P1: distributed (Celery) bus, observability/metrics adapter,
+  contract→tool-interface binding.
 - Then **P2 — first vertical slice** (`provider → scanner → analyst`).
 
 ## Workflow
@@ -40,11 +47,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
-- **Sprint 02 — Relational persistence adapter** (P1, partial). Domain-pure
-  SQLAlchemy 2.0 `Base` + `PersistenceSettings` + a fault-wrapped
-  `Database.session()`, plus an Alembic harness with an empty baseline, proven on
-  SQLite (round-trip, commit, rollback+fault, migration smoke). 64 tests, floor
-  raised to 99.17; `.env.example` now tracked.
+- **Sprint 02 — Relational persistence adapter** (P1, partial; **superseded by
+  [ADR-0001](decisions/0001-neo4j-primary-store.md)** — relational store dropped for
+  Neo4j). Domain-pure SQLAlchemy 2.0 `Base` + `PersistenceSettings` + a fault-wrapped
+  `Database.session()`, plus an Alembic harness; 64 tests; `.env.example` now tracked.
 - **Sprint 01 — Kernel runtime spine** (P1, partial). In-process bus + contract-
   bound `AgentBase` with inbound/outbound payload validation and the fault
   channel wired end-to-end; four behaviours covered (round-trip, inbound

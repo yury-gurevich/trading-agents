@@ -30,16 +30,17 @@ Grafana is an *internal* operator/forensic surface. It does not replace the prod
 dashboard (which renders decisions, approvals, and narrative); it sits beside it
 for time-series health.
 
-## 2. Decision & event history — Neo4j + the relational store
+## 2. Decision & event history — Neo4j
 
 The durable record of *what the system did and why* is not in the metrics stack:
 
-- **Neo4j (provenance graph)** is the historical decision record —
+- **Neo4j (the single store)** is the historical decision record —
   `Candidate → Recommendation → OrderIntent → Fill → Outcome` plus message lineage
   and faults — queryable for any past state, and the source the curator agent draws
   on for training datasets.
-- **The relational store** holds append-only transactional history (orders,
-  positions, approvals, audits, the fault table) for ACID, exportable evidence.
+- It also holds the append-only **transactional history** (orders, positions,
+  approvals, audits, faults) as nodes with ACID guarantees — exportable evidence
+  without a separate relational store (`docs/decisions/0001-neo4j-primary-store.md`).
 
 ## 3. Logs
 
@@ -50,7 +51,7 @@ Aggregation (e.g. Loki) is optional and additive.
 ## Retention & history
 
 - Metrics: short/medium retention in Prometheus for trend dashboards.
-- Decisions & audits: long-lived and append-only in Neo4j + the relational store;
+- Decisions & audits: long-lived and append-only in Neo4j;
   retention windows, if any, are declared in configuration and audited when they
   trim (no silent deletion).
 - Everything is exportable as a machine-parseable bundle for any date range.
@@ -59,5 +60,4 @@ Aggregation (e.g. Loki) is optional and additive.
 
 The metrics adapter ships with the kernel runtime; Prometheus + Grafana
 provisioning and the dashboard set land in the observability phase of
-`docs/build-plan.md`. The historical stores (Neo4j + relational) land with the
-persistence layer.
+`docs/build-plan.md`. The Neo4j store lands with the kernel runtime.

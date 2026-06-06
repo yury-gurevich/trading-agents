@@ -9,7 +9,7 @@ messages over a bus. Everything else is plumbing.
 ```text
 kernel/        Plumbing only. NO trading knowledge. Message envelope, bus
                interface (in-process for tests, Celery for runtime), contract
-               descriptors, persistence + graph adapters, observability, MCP binding.
+               descriptors, the Neo4j GraphStore adapter, observability, MCP binding.
 
 contracts/     The shared vocabulary — the boundary map. Typed message payloads
                and one AgentContract per agent. Agents import message types from
@@ -28,12 +28,16 @@ orchestration sit on top. `.importlinter` enforces all of this in CI.
 
 ## Data architecture
 
-- **Postgres = transactional truth** (orders, positions, approvals, audits —
-  ACID, append-only). Each agent owns *its own* tables. No shared god-schema.
-- **Neo4j = analysis & provenance overlay.** Every artifact and every A2A
-  message is a node; edges encode derivation
-  (`Candidate → Recommendation → OrderIntent → Fill → Outcome`) and message
-  lineage. This is the data-collection-and-analysis layer.
+One store: **Neo4j** (see `docs/decisions/0001-neo4j-primary-store.md`). It is
+schema-flexible — no relational DB, no migrations.
+
+- **Transactional truth** (orders, positions, approvals, audits) — nodes with ACID
+  guarantees, append-only; each agent owns *its own* node/edge labels, no shared
+  god-schema. Money as integer minor units.
+- **Provenance & analysis** — every artifact and every A2A message is a node; edges
+  encode derivation (`Candidate → Recommendation → OrderIntent → Fill → Outcome`) and
+  message lineage. The data-collection-and-analysis layer.
+- **Retrieval (RAG)** — embeddings as node properties with a native vector index.
 
 ## The 12 agents
 

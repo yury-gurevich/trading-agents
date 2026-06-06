@@ -164,7 +164,7 @@ gates in P8 respectively.
 | Phase | State |
 | --- | --- |
 | P0 Boundary map | **complete** |
-| P1 Kernel runtime | **active** (Sprint 01 shipped: bus + AgentBase) |
+| P1 Kernel runtime | **active** (S01 bus+AgentBase shipped; S02 persistence active) |
 | P2 First vertical slice | planned |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-06 — Sprint 01 (kernel runtime spine) merged to `main`.
+**Last updated:** 2026-06-06 — Sprint 01 merged; Sprint 02 (persistence) opened.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,15 +9,16 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 01](sprints/sprint-01-kernel-runtime.md) shipped the
-runtime spine to `main` (fast-forward `97c9db7`): the in-process bus
-(`kernel/bus.py`), the contract-bound `AgentBase` (`kernel/agent.py`), and a
-`FaultCapture` so a non-reraising `fault_boundary` can report what it caught. No
-real agent or contract changed; `kernel/` stays domain-pure.
+**Sprint 02 active:** [Persistence](sprints/sprint-02-persistence.md) — the kernel's
+domain-pure relational adapter (SQLAlchemy 2.0 `Base` + fault-wrapped session) and
+an Alembic migration harness, proven on local SQLite with no external infra. No
+agent tables yet; it's the substrate each agent's future `store.py` will stand on.
+Handover written; awaiting the coding agent on branch `sprint-02-persistence`.
 
-P1 (kernel runtime) continues — the next sprint is being scoped. Remaining P1
-layers: persistence + graph adapters, the distributed (Celery) bus, the
-observability/metrics adapter, and the contract→tool-interface binding.
+Already on `main`: [Sprint 01](sprints/sprint-01-kernel-runtime.md) shipped the
+runtime spine (fast-forward `97c9db7`) — the in-process bus (`kernel/bus.py`), the
+contract-bound `AgentBase` (`kernel/agent.py`), and a `FaultCapture` so a
+non-reraising `fault_boundary` can report what it caught. `kernel/` stays domain-pure.
 
 Quality gate (green on `main`): ruff, format, mypy (36 files), import-linter
 (4/4 — "Kernel is pure plumbing" KEPT), size + header guards,
@@ -25,8 +26,8 @@ Quality gate (green on `main`): ruff, format, mypy (36 files), import-linter
 
 ## Next
 
-- Finish P1 across the next sprints: persistence + Neo4j adapters, distributed
-  (Celery) bus, observability/metrics adapter, MCP binding.
+- Finish P1 after persistence: the Neo4j graph adapter, the distributed (Celery)
+  bus, the observability/metrics adapter, and the contract→tool-interface binding.
 - Then **P2 — first vertical slice** (`provider → scanner → analyst`).
 
 ## Workflow

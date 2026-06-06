@@ -18,7 +18,6 @@ htmlcov/
 # Local data stores
 *.sqlite
 *.db
-*.db
 /neo4j-data/
 /data/
 
@@ -26,3 +25,6 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# Claude Code — transient agent worktrees
+.claude/worktrees/

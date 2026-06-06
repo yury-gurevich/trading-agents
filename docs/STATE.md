@@ -10,28 +10,24 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Decision recorded — Neo4j as the single primary store**
-([ADR-0001](decisions/0001-neo4j-primary-store.md)): one schema-flexible graph store
-for transactional records, provenance, and RAG — no relational DB and no migrations.
-This **supersedes [Sprint 02](sprints/sprint-02-persistence.md)'s relational
-persistence adapter**: the next storage sprint retires `kernel/persistence.py` +
-`alembic/`, drops SQLAlchemy/Alembic, and builds the kernel `GraphStore` (Neo4j)
-adapter (nodes/edges + a vector index for RAG) behind a protocol.
+**Sprint 03 active:** [Neo4j GraphStore](sprints/sprint-03-neo4j-store.md) — implements
+[ADR-0001](decisions/0001-neo4j-primary-store.md): retire the relational adapter +
+Alembic, stand up a `GraphStore` protocol with an in-memory backend (deterministic,
+infra-free unit gate) and a `Neo4jGraphStore` (real, under an `integration` marker), and
+reconcile the boundary map to single-writer-per-label. Handover written; awaiting the
+coding agent on branch `sprint-03-neo4j-store`. The RAG vector index is a fast-follow.
 
-P1 (kernel runtime) continues — see Next. The PRD, architecture, and build-plan are
-updated to the single-store model; the long-tail propagation (observability,
-error-handling, README) and all code changes are tracked in the ADR.
+Already settled (ADR-0001): one schema-flexible Neo4j store for transactional records,
+provenance, and RAG — no relational DB, no migrations. The PRD, architecture, build-plan,
+observability, and README are updated to the single-store model.
 
-Quality gate (last green on `main`, pre-pivot): ruff, format, mypy, import-linter
-(4/4), size + header guards, 64 tests at 99.17% — the relational-adapter tests retire
-with the pivot.
+Quality gate (last green on `main`, pre-pivot): ruff, format, mypy, import-linter (4/4),
+size + header guards, 64 tests at 99.17% — the relational-adapter tests retire with the pivot.
 
 ## Next
 
-- **Storage pivot (next sprint):** retire the relational adapter + Alembic; build the
-  Neo4j `GraphStore` adapter (nodes/edges + vector index for RAG) behind a protocol;
-  add a Neo4j test service; rename the single-writer invariant to per-label.
-- Then the rest of P1: distributed (Celery) bus, observability/metrics adapter,
+- The RAG vector index + `vector_search` on the `GraphStore` (fast-follow after Sprint 03).
+- The rest of P1: distributed (Celery) bus, observability/metrics adapter,
   contract→tool-interface binding.
 - Then **P2 — first vertical slice** (`provider → scanner → analyst`).
 

@@ -70,9 +70,11 @@ the system's existing philosophy, not a regression.
   moment — only P0–P1 done.
 - **Dependencies:** drop `sqlalchemy` + `alembic`; promote `neo4j` to a default
   dependency. Drop the `migration` CI job.
-- **Test/CI shifts (not shrinks):** no SQLite-equivalent embedded Neo4j → the test
-  gate gains a **Neo4j service** (testcontainers / Docker), losing today's
-  no-external-infra property. Net: drop `migration`, add a Neo4j service to `test`.
+- **Test/CI:** the `GraphStore` protocol gets an **in-memory backend** (like the bus's
+  `InProcessBus`), so the **unit gate stays deterministic and infra-free**; the real
+  `Neo4jGraphStore` is covered by an `integration`-marked test that runs against a Neo4j
+  service in CI and skips locally when none is configured. Net: drop the `migration` job;
+  add a Neo4j-backed integration lane (the default unit run keeps the no-infra property).
 - **Invariant rename:** "single writer per **table**" → "single writer per **node/edge
   label**" in the boundary meta-test and contracts (the graph-label concept already
   exists on `AgentContract`).
@@ -88,8 +90,8 @@ the system's existing philosophy, not a regression.
 - Code (storage-adapter sprint, a coding agent): retire `kernel/persistence.py` +
   `alembic/` + `alembic.ini`; add `kernel/graph.py` (`GraphStore` protocol +
   `Neo4jGraphStore`); drop `sqlalchemy`/`alembic` and promote `neo4j` in
-  `pyproject.toml` + mypy overrides; swap `DATABASE_URL` → `NEO4J_*` in `.env.example`
-  + `PersistenceSettings`; change the boundary meta-test from single-writer-per-table
+  `pyproject.toml` + mypy overrides; swap `DATABASE_URL` → `NEO4J_*` in `.env.example` and
+  `PersistenceSettings`; change the boundary meta-test from single-writer-per-table
   to single-writer-per-label. (The "Neo4j" references already in `kernel/contract.py`
   and the curator are correct and need no change.)
 

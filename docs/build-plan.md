@@ -22,6 +22,7 @@ works." Refresh the status column at every closeout.
 ## Phases
 
 ### P0 — Boundary map · **complete**
+
 Kernel contract descriptors and message envelope; the justified-tunable config
 primitive and the central fault channel; the shared `contracts/` vocabulary; all
 12 agent contracts and missions; the self-enforcing boundary meta-test; the CI/test
@@ -29,6 +30,7 @@ toolchain (including the module-size and coding-agent-header guards).
 **Exit:** boundary meta-test green; CI quality gate green. *(met)*
 
 ### P1 — Kernel runtime
+
 Implement the bus (`InProcessBus` + a distributed backend), the `AgentBase`
 lifecycle, the relational persistence adapter and the graph adapter, observability
 emission, and the tool-interface binding generated from a contract. Introduce the
@@ -40,6 +42,7 @@ database; a graph-write smoke test.
 ratchet raised to the new measured floor. **Effort: M.**
 
 ### P2 — First vertical slice (`provider → scanner → analyst`)
+
 Implement these three agents end-to-end over the in-process bus, porting the
 settled domain logic. Each gets `agent.py`, `domain/`, `store.py`, and tests. The
 provider becomes the sole holder of data-API credentials; scanner and analyst
@@ -50,6 +53,7 @@ graph-provenance assertions (candidate → recommendation lineage).
 no agent importing another. **Effort: L.**
 
 ### P3 — Decision loop (`portfolio_manager → execution → monitor → reporter`)
+
 Complete the daily loop in **paper** stage. Portfolio manager sizes and risk-checks;
 execution submits idempotently to a paper broker and records fills; monitor opens
 positions from fill events and decides exits; reporter stitches the run snapshot and
@@ -61,6 +65,7 @@ test (scan → exit).
 single-writer data ownership intact. **Effort: L.**
 
 ### P4 — Orchestration
+
 Replace any temporary in-test sequencing with the dispatcher and the distributed
 bus. A scheduler issues run triggers; agents idle until messaged. Dead-letter and
 retry handling lands in the supervisor.
@@ -70,6 +75,7 @@ end-to-end run on the distributed backend.
 supervisor recording message lineage. **Effort: M.**
 
 ### P5 — Operator command layer + supervisor safety
+
 Implement the operator agent (intent grammar, typed schemas, command audit, model-
 call ledger, evidence-grounded explanations, confirmation semantics) and the
 supervisor's capability matrix and hard-NO surface. Expose the tool interface from
@@ -81,6 +87,7 @@ ledger append-only tests; policy-parity tests (command path == dashboard path).
 unsafe bypasses. **Effort: M.**
 
 ### P6 — Surfaces
+
 Dashboard read-models over the relational + graph stores (pipeline status,
 recommendation evidence, approval queue, position lifecycle, scorecards, control-
 plane state, incidents, active-incidents pane) and a CLI. Surfaces read; they never
@@ -90,6 +97,7 @@ drive an agent except through the operator's bounded commands.
 dashboard. **Effort: M–L.**
 
 ### P7 — Self-management
+
 The researcher proposes bounded, measurable parameter changes into a human-review
 queue; nothing is applied without operator approval through the control plane.
 **Tests:** evidence-window enforcement; forbidden-combination rejection; proposal
@@ -98,6 +106,7 @@ audit; "proposes but never applies" boundary test.
 with full provenance. **Effort: M.**
 
 ### P8 — Hardening + expansion readiness
+
 Stage promotion/demotion gates (paper → broker-shadow → live-manual →
 live-autopilot) made evidence-based and reversible; the market-pack and exchange-
 calendar abstractions; a per-pack readiness checklist.
@@ -105,6 +114,7 @@ calendar abstractions; a per-pack readiness checklist.
 **Effort: L.**
 
 ### P9 — Observability stack
+
 Provision Prometheus scraping and Grafana dashboards over the kernel metrics
 adapter: system health, per-agent throughput and latency, fault rate by source
 module, and the trust indicators over time. Wire the central fault channel into
@@ -114,6 +124,7 @@ the fault-rate panels and incidents.
 the product dashboard. **Effort: M.** See `docs/observability.md`.
 
 ### P10 — Curator (out-of-band data engineering)
+
 Implement the curator: read the provenance graph, assemble clean, labelled,
 versioned training datasets with train/validation/test splits, and publish
 manifests — strictly out of band, never gating a trading decision.
@@ -153,7 +164,7 @@ gates in P8 respectively.
 | Phase | State |
 |---|---|
 | P0 Boundary map | **complete** |
-| P1 Kernel runtime | **active: Sprint 01** |
+| P1 Kernel runtime | **active** (Sprint 01 shipped: bus + AgentBase) |
 | P2 First vertical slice | planned |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |

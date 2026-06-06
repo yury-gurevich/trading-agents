@@ -89,7 +89,7 @@ Outcome`, plus the message lineage that produced each step — is a graph query,
 a log scrape. Schema migrations for the relational store are managed with a
 migration tool and validated in CI.
 
-## Validated dependency graph (the process fltextow)
+## Validated dependency graph (the process flow)
 
 ```text
 provider → (root; external data + regime)

@@ -48,7 +48,7 @@ forbidden_modules =
     orchestration
 
 [importlinter:contract:contracts-are-pure-vocabulary]
-name = Contracts declare schemas only — never import agents or kernel internals
+name = Contracts declare schemas only — never import agents or runtime layers
 type = forbidden
 source_modules =
     contracts

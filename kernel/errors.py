@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import traceback as _tb
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
@@ -69,6 +70,13 @@ class CollectingFaultSink:
         self.faults.append(fault)
 
 
+@dataclass
+class FaultCapture:
+    """A fault captured by a boundary that does not reraise."""
+
+    fault: AgentFault | None = None
+
+
 def fault_from_exception(
     exc: BaseException,
     *,
@@ -101,18 +109,20 @@ def fault_boundary(
     module: str,
     capability: str | None = None,
     reraise: bool = True,
-) -> Iterator[None]:
+) -> Iterator[FaultCapture]:
     """Redirect any exception raised inside the block to the central sink.
 
     The fault is recorded centrally AND (by default) re-raised, so failures are
     surfaced to the caller rather than swallowed. Set ``reraise=False`` only where
     a degraded-but-continue path is the intended, documented behavior.
     """
+    capture = FaultCapture()
     try:
-        yield
+        yield capture
     except Exception as exc:
-        sink.submit(
-            fault_from_exception(exc, agent=agent, module=module, capability=capability)
+        capture.fault = fault_from_exception(
+            exc, agent=agent, module=module, capability=capability
         )
+        sink.submit(capture.fault)
         if reraise:
             raise

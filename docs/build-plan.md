@@ -153,7 +153,7 @@ gates in P8 respectively.
 | Phase | State |
 |---|---|
 | P0 Boundary map | **complete** |
-| P1 Kernel runtime | next |
+| P1 Kernel runtime | **active: Sprint 01** |
 | P2 First vertical slice | planned |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |

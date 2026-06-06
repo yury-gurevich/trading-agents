@@ -57,5 +57,6 @@ machine-readable boundary.
 
 ## Status
 
-Bootstrapping — **contracts first**. The boundary map (`contracts/` + every
-`mission.md`) is being locked before any runtime is wired.
+P0 is complete: the boundary map (`contracts/` + every `mission.md`) and kernel
+foundations are locked by tests and import rules. Sprint 01 is active: wire the
+in-process bus and `AgentBase` runtime spine without adding real agents yet.

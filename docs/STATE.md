@@ -10,8 +10,12 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-Foundational. The boundary map and the cross-cutting foundations are in place and
-self-enforcing:
+**Sprint 01 active:** [Kernel runtime](sprints/sprint-01-kernel-runtime.md) is
+being implemented on branch `sprint-01-kernel-runtime`: in-process bus +
+`AgentBase`, with no real agent or contract additions.
+
+P0 is complete. The boundary map and the cross-cutting foundations are in place
+and self-enforcing:
 
 - `kernel/` — contract descriptors, A2A message envelope, the justified-tunable
   config primitive (`config.py`), and the central fault channel (`errors.py`).
@@ -27,12 +31,8 @@ both guards, **54 tests at ~99% coverage**. At **P0 complete** (`docs/build-plan
 
 ## Next
 
-- **Active handover → [Sprint 01](sprints/sprint-01-kernel-runtime.md)** — in-process
-  bus + `AgentBase`, assigned to a coding agent on branch `sprint-01-kernel-runtime`.
-  Implementation is handed off; the planning agent owns the PRD, build plan, sprint
-  plans, and this file. See [docs/sprints/](sprints/README.md).
-- After it: persistence + Neo4j adapters, distributed (Celery) bus, observability/
-  metrics adapter, MCP binding, then **P2 — first vertical slice**
+- After Sprint 01: persistence + Neo4j adapters, distributed (Celery) bus,
+  observability/metrics adapter, MCP binding, then **P2 — first vertical slice**
   (`provider → scanner → analyst`).
 
 ## Workflow

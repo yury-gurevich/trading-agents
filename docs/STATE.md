@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-06 — Sprint 01 merged; Sprint 02 (persistence) opened.
+**Last updated:** 2026-06-06 — Sprint 02 (relational persistence) merged to `main`.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,20 +9,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 02 active:** [Persistence](sprints/sprint-02-persistence.md) — the kernel's
-domain-pure relational adapter (SQLAlchemy 2.0 `Base` + fault-wrapped session) and
-an Alembic migration harness, proven on local SQLite with no external infra. No
-agent tables yet; it's the substrate each agent's future `store.py` will stand on.
-Handover written; awaiting the coding agent on branch `sprint-02-persistence`.
+**Between sprints.** [Sprint 02](sprints/sprint-02-persistence.md) shipped the kernel's
+domain-pure relational persistence adapter (SQLAlchemy 2.0 `Base`, `PersistenceSettings`,
+and a fault-wrapped `Database.session()`) plus an Alembic migration harness, proven on
+local SQLite with no external infra (fast-forward `ad53a5d`). No agent tables yet — it's
+the substrate each agent's future `store.py` will stand on. Also fixed `.env.example`
+tracking (`.gitignore` `.env.*` had silently excluded the template).
 
-Already on `main`: [Sprint 01](sprints/sprint-01-kernel-runtime.md) shipped the
-runtime spine (fast-forward `97c9db7`) — the in-process bus (`kernel/bus.py`), the
-contract-bound `AgentBase` (`kernel/agent.py`), and a `FaultCapture` so a
-non-reraising `fault_boundary` can report what it caught. `kernel/` stays domain-pure.
+P1 (kernel runtime) continues — the next sprint is being scoped (see Next).
 
-Quality gate (green on `main`): ruff, format, mypy (36 files), import-linter
+Quality gate (green on `main`): ruff, format, mypy (37 files), import-linter
 (4/4 — "Kernel is pure plumbing" KEPT), size + header guards,
-**58 tests at 99.12% coverage** (floor raised 95 → 99.1).
+**64 tests at 99.17% coverage** (floor raised 99.1 → 99.17).
 
 ## Next
 
@@ -42,6 +40,11 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 02 — Relational persistence adapter** (P1, partial). Domain-pure
+  SQLAlchemy 2.0 `Base` + `PersistenceSettings` + a fault-wrapped
+  `Database.session()`, plus an Alembic harness with an empty baseline, proven on
+  SQLite (round-trip, commit, rollback+fault, migration smoke). 64 tests, floor
+  raised to 99.17; `.env.example` now tracked.
 - **Sprint 01 — Kernel runtime spine** (P1, partial). In-process bus + contract-
   bound `AgentBase` with inbound/outbound payload validation and the fault
   channel wired end-to-end; four behaviours covered (round-trip, inbound

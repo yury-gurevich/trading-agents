@@ -12,9 +12,12 @@ htmlcov/
 .venv/
 .env
 .env.*
+# ...but the template (no secrets) is tracked.
+!.env.example
 
 # Local data stores
 *.sqlite
+*.db
 *.db
 /neo4j-data/
 /data/

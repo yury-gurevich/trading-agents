@@ -1,6 +1,6 @@
 # Sprint 02 — Relational persistence adapter + migration harness
 
-**Status:** active · **Branch:** `sprint-02-persistence` · **Build phase:** P1 (second slice)
+**Status:** shipped (merged to `main` @ `ad53a5d`) · **Branch:** `sprint-02-persistence` · **Build phase:** P1 (second slice)
 
 ## Goal
 

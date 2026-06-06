@@ -30,6 +30,8 @@ dev = [
     "pip-audit>=2.7",
     "detect-secrets>=1.5",
     "pre-commit>=3.7",
+    "sqlalchemy>=2.0.50",
+    "alembic>=1.18.4",
 ]
 
 [tool.uv]
@@ -117,7 +119,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     # Regression-ratchet floor: the real measured floor. Climb; never lower.
-    "--cov-fail-under=99.1",
+    "--cov-fail-under=99.17",
     "--no-header",
 ]
 markers = [
@@ -146,4 +148,4 @@ exclude_lines = [
 ]
 show_missing = true
 precision = 1
-fail_under = 99.1
+fail_under = 99.17

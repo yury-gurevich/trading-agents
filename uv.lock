@@ -1753,6 +1753,7 @@ runtime = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "alembic" },
     { name = "detect-secrets" },
     { name = "import-linter" },
     { name = "mypy" },
@@ -1762,6 +1763,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
@@ -1779,6 +1781,7 @@ provides-extras = ["runtime", "mcp"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "alembic", specifier = ">=1.18.4" },
     { name = "detect-secrets", specifier = ">=1.5" },
     { name = "import-linter", specifier = ">=2.0" },
     { name = "mypy", specifier = ">=1.10" },
@@ -1788,6 +1791,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.23" },
     { name = "pytest-cov", specifier = ">=5" },
     { name = "ruff", specifier = ">=0.6" },
+    { name = "sqlalchemy", specifier = ">=2.0.50" },
 ]
 
 [[package]]

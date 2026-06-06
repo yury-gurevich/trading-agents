@@ -27,10 +27,19 @@ both guards, **54 tests at ~99% coverage**. At **P0 complete** (`docs/build-plan
 
 ## Next
 
-- **P1 — Kernel runtime:** bus (in-process + distributed), `AgentBase`, relational
-  + Neo4j persistence adapters, observability/metrics adapter, tool-interface
-  binding, migration tool. Then **P2 — first vertical slice**
+- **Active handover → [Sprint 01](sprints/sprint-01-kernel-runtime.md)** — in-process
+  bus + `AgentBase`, assigned to a coding agent on branch `sprint-01-kernel-runtime`.
+  Implementation is handed off; the planning agent owns the PRD, build plan, sprint
+  plans, and this file. See [docs/sprints/](sprints/README.md).
+- After it: persistence + Neo4j adapters, distributed (Celery) bus, observability/
+  metrics adapter, MCP binding, then **P2 — first vertical slice**
   (`provider → scanner → analyst`).
+
+## Workflow
+
+The planning agent (expensive) writes sprint handovers and maintains documentation
+and progress; a coding agent (cheap) implements one active sprint at a time on its
+own branch and hands back. See `docs/sprints/README.md`.
 
 ## Parked
 

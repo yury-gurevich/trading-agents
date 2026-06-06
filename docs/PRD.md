@@ -369,7 +369,7 @@ S&P 500 pack → broader US-equity pack → additional exchange packs.
 ## 11. Maturity and progress framework
 
 | Level | Meaning |
-|---|---|
+| --- | --- |
 | 0 | Not started |
 | 1 | Foundations exist in code |
 | 2 | Observable and testable |

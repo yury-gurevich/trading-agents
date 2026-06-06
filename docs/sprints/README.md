@@ -1,0 +1,58 @@
+# Sprints — handover to the coding agent
+
+This folder holds **self-contained sprint plans**. Each is a handover a cold-start
+coding agent can execute end to end without further context.
+
+## Roles
+
+- **Planning agent (owner of this folder, the PRD, the build plan, and STATE).**
+  Decides *what* to build next and *why*, writes the sprint handover, reviews the
+  result, and updates `docs/STATE.md` + `docs/build-plan.md` progress. Does not
+  write production code.
+- **Coding agent.** Executes exactly one active sprint plan: writes the code and
+  tests, keeps the quality gate green, and hands back a short report. Stays within
+  the sprint's scope; anything out of scope goes back to the planning agent.
+
+## How a sprint runs
+
+1. Planning agent writes `sprint-NN-<slug>.md` here and marks it active in STATE.
+2. Coding agent branches `sprint-NN-<slug>`, implements the steps, gets the gate
+   green, pushes, and reports back (files changed, coverage %, decisions/notes).
+3. Planning agent reviews, merges to `main`, and updates STATE + build-plan status.
+
+## Non-negotiable guardrails (every sprint)
+
+These hold regardless of the sprint's specifics:
+
+- **The one rule.** No agent imports another agent. The kernel imports nothing from
+  `contracts`/`agents`. Agents talk only via typed messages. `import-linter` enforces.
+- **Small files.** Every module < 200 lines (warn at 150). Split, don't grow.
+- **Coding-agent header.** Every module's docstring declares `Agent:` and `Role:`
+  (and `External I/O:` where relevant). Enforced by `scripts/check_module_header.py`.
+- **No magic numbers.** Any value influencing processing or a forecast is declared
+  with `kernel.tunable(..., why="...")` — justified and bounded — never a bare literal.
+- **Faults, not silent failure.** Wrap fallible work in `kernel.fault_boundary`;
+  errors are redirected with provenance, never swallowed.
+- **Green before handback.** `make ci` must pass (ruff, format, mypy, import-linter,
+  size + header guards, pytest at/above the coverage floor). Never lower the floor;
+  raise it if measured coverage climbs.
+- **Stay in scope.** Build only what the active sprint plan lists. Flag anything else.
+
+## Validation (the gate)
+
+```bash
+make ci          # full local gate, mirrors GitHub CI
+# or individually:
+uv run ruff check . && uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents scripts
+uv run pytest
+```
+
+## Index
+
+| Sprint | Goal | Status |
+|---|---|---|
+| [sprint-01](sprint-01-kernel-runtime.md) | Kernel runtime: in-process bus + AgentBase | **active** |

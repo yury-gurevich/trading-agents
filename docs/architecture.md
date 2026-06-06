@@ -11,7 +11,7 @@ message types. Everything else exists to make that rule safe and cheap to keep.
 
 ## Layers and dependency direction
 
-```
+```text
 kernel/        Plumbing only. NO trading knowledge.
 contracts/     Shared vocabulary: typed payloads + one AgentContract per agent.
 agents/        The trading system. One package per agent, fully self-contained.
@@ -30,7 +30,7 @@ contracts that make four guarantees:
 
 ## Anatomy of an agent
 
-```
+```text
 agents/<name>/
   mission.md     Human charter: mission, owns, boundary, data, external I/O, never.
   __init__.py    Package marker. Imports only kernel + contracts.
@@ -79,7 +79,7 @@ bus, the distributed bus, and the tool interface without redefinition.
 ## Data: two stores, two jobs
 
 | Store | Role | Holds | Ownership |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Relational (transactional truth) | ACID, append-only | orders, positions, approvals, audits, config | each agent owns its own tables — no shared schema |
 | Graph (provenance + analysis) | derivation + lineage | every artifact and message as a node; edges for derivation and routing | written by the owning agent; read widely |
 
@@ -89,9 +89,9 @@ Outcome`, plus the message lineage that produced each step — is a graph query,
 a log scrape. Schema migrations for the relational store are managed with a
 migration tool and validated in CI.
 
-## Validated dependency graph (the process flow)
+## Validated dependency graph (the process fltextow)
 
-```
+```text
 provider → (root; external data + regime)
 scanner → provider
 analyst → scanner, provider
@@ -143,7 +143,7 @@ supervisor → all                               (router + capability gate + fau
 ## Testing model
 
 | Scope | Lives in | Runs when |
-|---|---|---|
+| --- | --- | --- |
 | Agent private logic | `agents/<name>/tests/test_unit.py` | that agent's internals change |
 | Agent contract conformance | `agents/<name>/tests/test_contract.py` | that agent's contract or handler changes |
 | Cross-agent flow | `tests/integration/` (in-process bus) | a cross-agent interaction changes |

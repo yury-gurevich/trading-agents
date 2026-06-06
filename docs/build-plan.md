@@ -2,7 +2,10 @@
 
 The sequenced engineering plan. Product intent is in `docs/PRD.md`; structure is in
 `docs/architecture.md`. This document owns "what we build next and how we know it
-works." Refresh the status column at every closeout.
+works." Phases are the spine; capabilities that thread through several phases are
+named under **Cross-cutting workstreams**, and the product roadmap (`docs/PRD.md`
+§12, Phases A–D) is mapped to these phases under **Product roadmap alignment**.
+Refresh the status column at every closeout.
 
 ## Principles for building
 
@@ -45,10 +48,15 @@ ratchet raised to the new measured floor. **Effort: M.**
 
 Implement these three agents end-to-end over the in-process bus, porting the
 settled domain logic. Each gets `agent.py`, `domain/`, `store.py`, and tests. The
-provider becomes the sole holder of data-API credentials; scanner and analyst
-request data rather than fetching it. Provenance is written for each artifact.
+provider becomes the sole holder of data-API credentials and applies the
+**data-integrity gates** (ingest anomaly checks, source lineage) before any agent
+sees a fact; scanner and analyst request data rather than fetching it. The analyst
+stamps each recommendation with its confidence, horizon, and the regime at decision
+time — the seed of the calibration substrate. Provenance nodes and edges are written
+as each artifact is created: the provenance graph starts here.
 **Tests:** per-agent unit + contract tests; one integration test driving the slice;
-graph-provenance assertions (candidate → recommendation lineage).
+data-integrity gate tests; graph-provenance assertions (candidate → recommendation
+lineage).
 **Exit:** a request produces explained recommendations with full provenance, with
 no agent importing another. **Effort: L.**
 
@@ -57,7 +65,8 @@ no agent importing another. **Effort: L.**
 Complete the daily loop in **paper** stage. Portfolio manager sizes and risk-checks;
 execution submits idempotently to a paper broker and records fills; monitor opens
 positions from fill events and decides exits; reporter stitches the run snapshot and
-per-trade narrative.
+per-trade narrative. Closed positions and elapsed horizons emit the append-only
+**realized-outcome** records the calibration workstream later scores.
 **Tests:** sizing and risk-check unit tests; idempotency tests for execution; exit-
 rule unit tests; an integration test for a full paper run; narrative-completeness
 test (scan → exit).
@@ -125,17 +134,76 @@ the product dashboard. **Effort: M.** See `docs/observability.md`.
 
 ### P10 — Curator (out-of-band data engineering)
 
-Implement the curator: read the provenance graph, assemble clean, labelled,
-versioned training datasets with train/validation/test splits, and publish
-manifests — strictly out of band, never gating a trading decision.
+Implement the curator and the training plumbing: a signal catalogue and
+producer↔training contract; dataset assembly by **provenance-graph traversal**
+(clean, labelled, versioned, with train/validation/test splits); a training trigger
+that selects data and runs a chosen target; and a **predictor registry** that gates
+advisory → load-bearing promotion with frozen evidence. Strictly out of band — never
+gating a trading decision.
 **Tests:** dataset assembly + split tests; "never influences a decision" boundary
-test; manifest/versioning tests.
+test; manifest/versioning tests; predictor-registry promotion-audit test.
 **Exit:** a versioned dataset can be built from collected data and described to the
-operator, with full provenance. **Effort: M.**
+operator with full provenance; a target can be trained on command and a predictor
+promoted through the registry. **Effort: M–L.**
+
+## Cross-cutting workstreams
+
+Some capabilities are not single phases but threads woven through many. Naming them
+here keeps each a tracked deliverable rather than an implicit assumption; the phase
+column says where each is built.
+
+- **Provenance graph.** Typed nodes for every artifact and message, edges for
+  derivation and routing (candidate → recommendation → order → fill → outcome). The
+  substrate for explanation, audit, and dataset export. *Built: graph adapter (P1);
+  mirror-writes begin with the first artifacts (P2) and extend every phase after;
+  traversal + export consumed by the curator (P10).*
+- **Decision evidence & calibration.** Every recommendation carries confidence, a
+  horizon, and the regime at decision time; realized outcomes are captured and scored
+  into per-confidence-bucket calibration curves; drift becomes a parameter-change
+  signal and a stage-promotion gate. *Built: horizon/regime tagging (P2); outcome
+  capture (P3); curves + scorecards (P7, P9); gates live stages (P8).*
+- **Model-call ledger & command audit.** Every model call and every accepted operator
+  command is an append-only, replayable record (prompt/response + model+version,
+  parsed intent, validation, outcome). *Built: operator (P5); surfaced (P6); the
+  ledger is a curation corpus (P10).*
+- **Fault & failure catalog.** Every exception is a provenance-carrying fault on the
+  central channel; durable incidents with reproducer linkage form a regression
+  corpus. *Built: channel (P0, done); supervisor handling (P4–P5); fault-rate panels
+  (P9).*
+- **Data integrity.** Ingest anomaly gates, source lineage, and a survivorship-aware
+  universe so downstream evidence is never built on bad data. *Built: provider (P2);
+  cross-provider canary + lineage panels (P9).*
+- **Training-data curation.** A signal catalogue + producer↔training contract, dataset
+  assembly by graph traversal, a training trigger, and a predictor registry gating
+  advisory → load-bearing promotion. *Built: curator (P10), on the provenance, ledger,
+  and calibration substrates.*
+- **Configuration & constants governance.** Every processing/forecast constant is a
+  justified, bounded tunable in a central, operator-visible catalogue. *Built:
+  primitive (P0, done); each agent registers its tunables as it lands; catalogue
+  surfaced (P5–P6).*
+
+## Product roadmap alignment
+
+The product roadmap in `docs/PRD.md` §12 (Phases A–D) and the engineering phases
+here are two lenses on one delivery:
+
+| Product phase (PRD §12)   | Built by       |
+| ------------------------- | -------------- |
+| A — Trust foundation      | P2, P3, P4, P9 |
+| B — Quiet command layer   | P5             |
+| C — Phone-first control   | P6             |
+| D — Market-pack expansion | P8             |
+
+Phase A is the broadest: it spans the vertical slice and its why-no-action surfaces
+(P2), the decision loop with trade narrative and broker idempotency (P3), the
+fail-loud scheduler (P4), and the observability stack (P9). The remaining build
+phases are foundational or cross-cutting rather than product phases: P0–P1 (boundary
+map, kernel runtime) are what every phase stands on, P7 is self-management
+(PRD §8.4), and P10 is out-of-band data engineering (PRD §4.8).
 
 ## Testing & CI parameters
 
-The toolchain mirrors the conventions of the reference project:
+The toolchain:
 
 - **Python 3.13**, dependency + lock management via `uv`.
 - **Lint/format:** `ruff` (same rule set and 88-col format), no auto-fix in hooks.
@@ -153,7 +221,7 @@ The toolchain mirrors the conventions of the reference project:
 - **Pre-commit** runs the same uv-locked binaries and flags as CI, so local and CI
   verdicts match.
 
-CI jobs mirror the reference layout: `quality` (lint, format, types, import-linter,
+CI jobs: `quality` (lint, format, types, import-linter,
 module size), `test` (pytest + coverage floor), `security` (pip-audit,
 detect-secrets). The database-backed `migration` job and the staged
 `promotion_check` job are introduced with the persistence layer in P1 and the stage

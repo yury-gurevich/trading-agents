@@ -20,6 +20,7 @@ from kernel.errors import (
     fault_boundary,
     fault_from_exception,
 )
+from kernel.persistence import Base, Database, PersistenceSettings
 
 __all__ = [
     "AgentBase",
@@ -27,13 +28,16 @@ __all__ = [
     "AgentFault",
     "AgentMessage",
     "AgentSettings",
+    "Base",
     "Capability",
     "CollectingFaultSink",
+    "Database",
     "FaultCapture",
     "FaultSink",
     "InProcessBus",
     "MessageBus",
     "MessageType",
+    "PersistenceSettings",
     "TunableDoc",
     "describe",
     "fault_boundary",

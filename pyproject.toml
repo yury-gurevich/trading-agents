@@ -1,0 +1,149 @@
+[project]
+name = "trading-agents"
+version = "0.1.0"
+description = "An operator-controlled, single-user, agent-based trading system. Domain logic lives only in agents; the kernel is plumbing; contracts are the shared boundary."
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+# Runtime substrate — only the orchestration layer and live agents pull these in.
+runtime = [
+    "celery>=5.4",
+    "redis>=5.0",
+    "neo4j>=5.20",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+]
+mcp = ["mcp>=1.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "pytest-asyncio>=0.23",
+    "import-linter>=2.0",
+    "mypy>=1.10",
+    "ruff>=0.6",
+    "pip-audit>=2.7",
+    "detect-secrets>=1.5",
+    "pre-commit>=3.7",
+]
+
+[tool.uv]
+# Multi-package workspace resolved on PYTHONPATH; do not build/install the root.
+package = false
+
+# ── Ruff: same rule set and format as the reference project ───────────────────
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["kernel", "contracts", "agents", "orchestration", "surfaces", "tests"]
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "SIM", "S", "A", "C4", "DTZ", "T20",
+    "PT", "RUF", "ANN", "D", "TCH", "PIE", "RET", "ARG", "ERA",
+]
+# A005: agents are intentionally named after domain roles (e.g. `operator`); they
+# are always imported as qualified submodules, never as the top-level stdlib name.
+ignore = ["D100", "D104", "D203", "D213", "S101", "A005"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN", "D", "ARG", "T20"]
+"agents/**/__init__.py" = ["D"]
+# contracts/ are typed DTOs: the fields, capability summaries, and mission docs
+# are the documentation. Class/nested-class docstrings are not required here.
+"contracts/**" = ["D101", "D106"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-type-checking]
+# Pydantic evaluates annotations at runtime, so imports used only in model fields
+# must stay at module scope (not moved into a TYPE_CHECKING block).
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "contracts.common._Frozen"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kernel", "contracts", "agents", "orchestration", "surfaces"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ── Mypy: strict, same as the reference project ───────────────────────────────
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unreachable = true
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "celery", "celery.*", "redis", "redis.*", "neo4j", "neo4j.*", "mcp", "mcp.*",
+    "alembic", "alembic.*",
+]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+# ── Pytest + coverage ratchet, same shape as the reference project ────────────
+[tool.pytest.ini_options]
+testpaths = ["tests", "agents"]
+pythonpath = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+    "--tb=short",
+    "--cov=kernel",
+    "--cov=contracts",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    # Regression-ratchet floor: the real measured floor. Climb; never lower.
+    "--cov-fail-under=95",
+    "--no-header",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests that touch a database or external systems",
+    "live: marks tests that require live local services or external systems",
+    "llm_qualification: live model API probe - requires provider API keys",
+]
+asyncio_mode = "auto"
+filterwarnings = [
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
+
+[tool.coverage.run]
+source = ["kernel", "contracts"]
+branch = true
+omit = ["*/migrations/*", "*/__main__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+    "@overload",
+    "raise NotImplementedError",
+]
+show_missing = true
+precision = 1
+fail_under = 95

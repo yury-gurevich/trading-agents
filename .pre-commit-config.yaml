@@ -1,0 +1,79 @@
+# All hooks run on: git commit
+# CI is the source of truth — local hooks run the same uv-locked binaries and
+# flags as GitHub Actions. No auto-fix; fix manually then re-commit.
+# To install: uv run pre-commit install
+# To run manually: uv run pre-commit run --all-files
+
+repos:
+  # ── Ruff: lint + format (uv-locked, no auto-fix — matches CI exactly) ──
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        language: system
+        entry: uv run ruff check .
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: ruff-format-check
+        name: Ruff format
+        language: system
+        entry: uv run ruff format --check .
+        pass_filenames: false
+        types_or: [python, pyi]
+
+  # ── Mypy: type checking (uv-locked — matches CI exactly) ──
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        language: system
+        entry: uv run mypy kernel contracts agents orchestration surfaces
+        pass_filenames: false
+        types_or: [python, pyi]
+
+  # ── General file hygiene ──
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
+
+  # ── Security: detect secrets ──
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+
+  # ── Module size guard + agent boundary enforcement ──
+  - repo: local
+    hooks:
+      - id: check-module-size
+        name: module size (warn 150 / hard block 200)
+        language: python
+        entry: python scripts/check_module_size.py
+        types: [python]
+        files: ^(kernel|contracts|agents|orchestration|surfaces|tests)/
+        exclude: (/__init__\.py$|alembic/versions/)
+
+      - id: check-module-header
+        name: coding-agent module header (Agent:/Role:)
+        language: python
+        entry: python scripts/check_module_header.py
+        types: [python]
+        files: ^(kernel|contracts|agents|scripts)/
+        exclude: (/__init__\.py$|alembic/versions/)
+
+      - id: import-linter
+        name: import-linter (agents are islands)
+        language: system
+        entry: uv run lint-imports
+        pass_filenames: false
+        files: ^(kernel|contracts|agents|orchestration|surfaces)/.*\.py$

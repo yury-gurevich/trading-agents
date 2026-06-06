@@ -1,0 +1,58 @@
+# Boundary enforcement. CI runs `lint-imports`. These contracts make the
+# architecture's one rule mechanical: agents are islands, joined only by the
+# shared `contracts` vocabulary and the plumbing `kernel`.
+
+[importlinter]
+root_packages =
+    kernel
+    contracts
+    agents
+    orchestration
+    surfaces
+
+[importlinter:contract:agents-are-islands]
+name = Agents may not import one another (talk only via messages)
+type = independence
+modules =
+    agents.provider
+    agents.scanner
+    agents.analyst
+    agents.forecaster
+    agents.portfolio_manager
+    agents.execution
+    agents.monitor
+    agents.reporter
+    agents.researcher
+    agents.curator
+    agents.operator
+    agents.supervisor
+
+[importlinter:contract:agents-import-only-kernel-and-contracts]
+name = Agents may not reach into surfaces or orchestration
+type = forbidden
+source_modules =
+    agents
+forbidden_modules =
+    surfaces
+    orchestration
+
+[importlinter:contract:kernel-has-no-domain-knowledge]
+name = Kernel is pure plumbing — no domain, no contracts, no agents
+type = forbidden
+source_modules =
+    kernel
+forbidden_modules =
+    agents
+    contracts
+    surfaces
+    orchestration
+
+[importlinter:contract:contracts-are-pure-vocabulary]
+name = Contracts declare schemas only — never import agents or kernel internals
+type = forbidden
+source_modules =
+    contracts
+forbidden_modules =
+    agents
+    orchestration
+    surfaces

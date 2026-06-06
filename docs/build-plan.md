@@ -162,7 +162,7 @@ gates in P8 respectively.
 ## Status
 
 | Phase | State |
-|---|---|
+| --- | --- |
 | P0 Boundary map | **complete** |
 | P1 Kernel runtime | **active** (Sprint 01 shipped: bus + AgentBase) |
 | P2 First vertical slice | planned |

@@ -53,6 +53,6 @@ uv run pytest
 
 ## Index
 
-| Sprint | Goal | Status |
-|---|---|---|
+| Sprint                                  | Goal                                      | Status      |
+| --------------------------------------- | ----------------------------------------- | ----------- |
 | [sprint-01](sprint-01-kernel-runtime.md) | Kernel runtime: in-process bus + AgentBase | **shipped** |

@@ -19,7 +19,8 @@ job remains.
   `MessageBus` Protocol with `InProcessBus` for tests. The graph store mirrors it exactly:
   a `GraphStore` Protocol with an in-memory backend for tests and `Neo4jGraphStore` for
   runtime.
-- Read first: `docs/decisions/0001-neo4j-primary-store.md`; `kernel/bus.py` (the
+- Read first: `docs/sprints/README.md` (the non-negotiable guardrails + the exact
+  quality-gate commands); `docs/decisions/0001-neo4j-primary-store.md`; `kernel/bus.py` (the
   Protocol + backend pattern to copy, incl. `fault_boundary` usage); `kernel/persistence.py`
   (what you are deleting); `kernel/config.py` (`AgentSettings` + `tunable`); `kernel/contract.py`
   (`owns_tables` / `owns_graph`); `tests/test_boundary_map.py`; `tests/test_persistence.py`
@@ -70,16 +71,24 @@ job remains.
      use `# pragma: no cover` (with a one-line reason) only on lines that genuinely require a
      live DB and cannot be covered by the integration test.
 
-3. **`kernel/__init__.py`** — remove `Base`, `Database`, `PersistenceSettings`; export
-   `GraphStore`, `InMemoryGraphStore`, `Neo4jGraphStore`, `GraphSettings`, `Node`, `Edge`.
+3. **`kernel/__init__.py`** — remove `Base`, `Database`, `PersistenceSettings` (and any
+   persistence mention in the module docstring); export `GraphStore`, `InMemoryGraphStore`,
+   `Neo4jGraphStore`, `GraphSettings`, `Node`, `Edge`.
 
 4. **Retire the relational layer** — delete `kernel/persistence.py`, `alembic/`,
    `alembic.ini`, and `tests/test_persistence.py` (replaced by `tests/test_graph.py`).
 
-5. **Dependencies (`pyproject.toml`)** — remove `sqlalchemy` + `alembic` from the `dev`
-   group; ensure `neo4j>=5.20` is installed for the gate (move it from the `runtime` extra
-   into `dev`, or add to `dev`). Drop `alembic` from `[[tool.mypy.overrides]]` (keep `neo4j`
-   there only if mypy needs it). Remove the `migration` job from the CI description.
+5. **Dependencies & CI config:**
+   - `pyproject.toml`: remove `sqlalchemy` + `alembic` from **both** the `runtime` extra
+     (≈ lines 17–18) **and** the `dev` group (≈ lines 33–34); add `neo4j>=5.20` to the
+     `dev` group so `uv sync` installs it for the gate (it stays in the `runtime` extra
+     too); drop `alembic` / `alembic.*` from `[[tool.mypy.overrides]]` (keep `neo4j`).
+     `celery`/`redis` stay in the `runtime` extra for the later distributed bus.
+   - `.github/workflows/ci.yml`: the `migration` job is only a **dormant comment** —
+     remove/reword it; there is no active job to delete. No other CI change is needed (the
+     `test` job already runs `integration` tests, and the Neo4j integration test skips
+     without `NEO4J_TEST_URI`, so CI stays green). Wiring a real Neo4j service into the
+     `test` job to actually exercise the integration test is an optional later follow-up.
 
 6. **`.env.example`** — remove the `DATABASE_URL` block; document `NEO4J_URI` /
    `NEO4J_USER` / `NEO4J_PASSWORD` (already stubbed) plus `NEO4J_TEST_URI` for the

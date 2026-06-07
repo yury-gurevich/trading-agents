@@ -1,7 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-07 — graph-tech decided: Neo4j as the single store
-(ADR-0001); Sprint 02 relational adapter superseded.
+**Last updated:** 2026-06-07 — Sprint 03 (Neo4j GraphStore) merged to `main`;
+relational layer retired.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -10,23 +10,22 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 03 active:** [Neo4j GraphStore](sprints/sprint-03-neo4j-store.md) — implements
-[ADR-0001](decisions/0001-neo4j-primary-store.md): retire the relational adapter +
-Alembic, stand up a `GraphStore` protocol with an in-memory backend (deterministic,
-infra-free unit gate) and a `Neo4jGraphStore` (real, under an `integration` marker), and
-reconcile the boundary map to single-writer-per-label. Handover written; awaiting the
-coding agent on branch `sprint-03-neo4j-store`. The RAG vector index is a fast-follow.
+**Between sprints.** [Sprint 03](sprints/sprint-03-neo4j-store.md) shipped the storage
+pivot (fast-forward `ba2f42c`): a kernel `GraphStore` protocol with an `InMemoryGraphStore`
+(deterministic, infra-free unit gate) and a `Neo4jGraphStore` (Cypher-injection-guarded,
+unit-tested via a fake driver), append-only by construction, with the relational adapter +
+Alembic fully retired and the boundary map reconciled to single-writer-per-label
+([ADR-0001](decisions/0001-neo4j-primary-store.md)).
 
-Already settled (ADR-0001): one schema-flexible Neo4j store for transactional records,
-provenance, and RAG — no relational DB, no migrations. The PRD, architecture, build-plan,
-observability, and README are updated to the single-store model.
+P1 continues — the next sprint is being scoped (see Next).
 
-Quality gate (last green on `main`, pre-pivot): ruff, format, mypy, import-linter (4/4),
-size + header guards, 64 tests at 99.17% — the relational-adapter tests retire with the pivot.
+Quality gate (green on `main`): ruff, format, mypy (40 files), import-linter (4/4 —
+"Kernel is pure plumbing" KEPT), size + header guards, **67 tests (+1 skipped live-Neo4j)
+at 99.52% coverage** (floor raised to 99.5). No external infra needed.
 
 ## Next
 
-- The RAG vector index + `vector_search` on the `GraphStore` (fast-follow after Sprint 03).
+- The RAG vector index + `vector_search` on the `GraphStore` (fast-follow).
 - The rest of P1: distributed (Celery) bus, observability/metrics adapter,
   contract→tool-interface binding.
 - Then **P2 — first vertical slice** (`provider → scanner → analyst`).
@@ -43,6 +42,11 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 03 — Neo4j GraphStore** (P1, partial). Kernel `GraphStore` protocol +
+  `InMemoryGraphStore` + `Neo4jGraphStore` (fake-driver unit tests; live test skips without
+  `NEO4J_TEST_URI`); append-only enforced (no prop overwrite), Cypher-injection guarded.
+  Retired the relational adapter + Alembic; boundary map → single-writer-per-label. 67
+  tests, floor raised to 99.5.
 - **Sprint 02 — Relational persistence adapter** (P1, partial; **superseded by
   [ADR-0001](decisions/0001-neo4j-primary-store.md)** — relational store dropped for
   Neo4j). Domain-pure SQLAlchemy 2.0 `Base` + `PersistenceSettings` + a fault-wrapped

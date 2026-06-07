@@ -10,21 +10,22 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 04 active:** [Provider agent](sprints/sprint-04-provider-agent.md) — the first
-real agent and the start of **P2**. Sole holder of market-data credentials; answers
-`get_market_data` + `get_regime` over the in-process bus with validated data, honest
-quality accounting, and provenance written to the Neo4j `GraphStore`. Establishes the
-agent patterns every later agent copies (graph/source/settings injection, `domain/`,
-data-integrity gates, provenance writes). Gate stays infra-free via a fake data source +
-the in-memory graph. Handover written; awaiting the coding agent on branch
-`sprint-04-provider-agent`.
+**Between sprints.** [Sprint 04](sprints/sprint-04-provider-agent.md) shipped the **first
+real agent** (fast-forward `fd1df0c`) — `provider`, the start of **P2**: sole holder of
+market-data credentials, answering `get_market_data` + `get_regime` over the in-process
+bus with a DI-1 integrity gate, deterministic regime classification, honest quality
+accounting, and append-only provenance written to the `GraphStore`. It establishes the
+agent-composition pattern every later agent copies (graph/source/settings injection,
+`domain/`, `store.py` graph writes); secrets are `repr=False`; `agents` is now in the
+coverage source. Gate is infra-free (fake data source + in-memory graph).
 
-The kernel runtime spine is in place (bus + `AgentBase` + Neo4j `GraphStore`); the
+The kernel runtime spine (bus + `AgentBase` + Neo4j `GraphStore`) supports the slice; the
 remaining P1 infra (distributed bus, observability, tool-binding, RAG vector) is
-build-when-needed and does not block this in-process slice.
+build-when-needed. Next P2 agents: **scanner**, then **analyst**.
 
-Quality gate (green on `main`): ruff, format, mypy (40 files), import-linter (4/4),
-size + header guards, **67 tests at 99.52%** (floor 99.5).
+Quality gate (green on `main`): ruff, format, mypy (50 files), import-linter (4/4 —
+agent isolation KEPT), size + header guards, **79 tests (+2 skipped live) at 99.62%
+coverage** (floor raised to 99.6).
 
 ## Next
 
@@ -45,6 +46,11 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 04 — Provider agent** (P2, first agent). `provider` over the in-process bus:
+  `get_market_data` + `get_regime`, `DataSource` port (`FakeDataSource` for the gate,
+  keyless `StooqDataSource` network-gated), DI-1 integrity gate + VIX regime classifier
+  (justified tunables), append-only provenance to the `GraphStore`, secrets `repr=False`.
+  Established the agent-composition pattern; `agents` added to coverage. 79 tests, floor 99.6.
 - **Sprint 03 — Neo4j GraphStore** (P1, partial). Kernel `GraphStore` protocol +
   `InMemoryGraphStore` + `Neo4jGraphStore` (fake-driver unit tests; live test skips without
   `NEO4J_TEST_URI`); append-only enforced (no prop overwrite), Cypher-injection guarded.

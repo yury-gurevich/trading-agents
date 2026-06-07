@@ -1,6 +1,6 @@
 # Sprint 04 — Provider agent (first vertical-slice agent, P2 start)
 
-**Status:** active · **Branch:** `sprint-04-provider-agent` · **Build phase:** P2 (first vertical slice)
+**Status:** shipped (merged to `main` @ `fd1df0c`) · **Branch:** `sprint-04-provider-agent` · **Build phase:** P2 (first vertical slice)
 
 ## Goal
 

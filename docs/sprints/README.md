@@ -58,4 +58,4 @@ uv run pytest
 | [sprint-01](sprint-01-kernel-runtime.md)  | Kernel runtime: in-process bus + AgentBase | **shipped** |
 | [sprint-02](sprint-02-persistence.md)     | Relational persistence adapter + migrations | **shipped** (superseded by ADR-0001) |
 | [sprint-03](sprint-03-neo4j-store.md)     | Neo4j GraphStore: retire relational adapter, graph spine | **shipped** |
-| [sprint-04](sprint-04-provider-agent.md)  | Provider agent: first real agent (data boundary + provenance) | **active** |
+| [sprint-04](sprint-04-provider-agent.md)  | Provider agent: first real agent (data boundary + provenance) | **shipped** |

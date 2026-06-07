@@ -10,18 +10,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 03](sprints/sprint-03-neo4j-store.md) shipped the storage
-pivot (fast-forward `ba2f42c`): a kernel `GraphStore` protocol with an `InMemoryGraphStore`
-(deterministic, infra-free unit gate) and a `Neo4jGraphStore` (Cypher-injection-guarded,
-unit-tested via a fake driver), append-only by construction, with the relational adapter +
-Alembic fully retired and the boundary map reconciled to single-writer-per-label
-([ADR-0001](decisions/0001-neo4j-primary-store.md)).
+**Sprint 04 active:** [Provider agent](sprints/sprint-04-provider-agent.md) — the first
+real agent and the start of **P2**. Sole holder of market-data credentials; answers
+`get_market_data` + `get_regime` over the in-process bus with validated data, honest
+quality accounting, and provenance written to the Neo4j `GraphStore`. Establishes the
+agent patterns every later agent copies (graph/source/settings injection, `domain/`,
+data-integrity gates, provenance writes). Gate stays infra-free via a fake data source +
+the in-memory graph. Handover written; awaiting the coding agent on branch
+`sprint-04-provider-agent`.
 
-P1 continues — the next sprint is being scoped (see Next).
+The kernel runtime spine is in place (bus + `AgentBase` + Neo4j `GraphStore`); the
+remaining P1 infra (distributed bus, observability, tool-binding, RAG vector) is
+build-when-needed and does not block this in-process slice.
 
-Quality gate (green on `main`): ruff, format, mypy (40 files), import-linter (4/4 —
-"Kernel is pure plumbing" KEPT), size + header guards, **67 tests (+1 skipped live-Neo4j)
-at 99.52% coverage** (floor raised to 99.5). No external infra needed.
+Quality gate (green on `main`): ruff, format, mypy (40 files), import-linter (4/4),
+size + header guards, **67 tests at 99.52%** (floor 99.5).
 
 ## Next
 

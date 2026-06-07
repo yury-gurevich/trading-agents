@@ -1,5 +1,10 @@
-"""Provider agent. Charter: mission.md. Boundary: contracts/provider.py.
+"""Provider agent package.
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
+Agent: provider
+Role: expose the provider boundary agent.
+External I/O: none.
 """
+
+from agents.provider.agent import ProviderAgent
+
+__all__ = ["ProviderAgent"]

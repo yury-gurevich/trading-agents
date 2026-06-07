@@ -17,8 +17,8 @@ facts and the current regime — so no other agent ever calls an external data A
 - **Depends on:** nothing (it is the root of the data graph).
 
 ## Data ownership
-- **Postgres:** `price_cache`, `provider_snapshots`, `data_quality_log`.
-- **Graph:** `MarketSnapshot`, `Regime`, `Ticker`.
+- **Graph:** `MarketSnapshot`, `Regime`, `Ticker` nodes; provider data is written
+  through the kernel `GraphStore` per ADR-0001, not through agent-owned tables.
 
 ## External I/O (exclusive)
 - stooq, finnhub, fred, edgar, finbert, S&P 500 listing. **No other agent may

@@ -18,9 +18,8 @@ with a confidence and a rationale — or explain clearly why none qualify.
 
 ## Data ownership
 
-- **Postgres:** `recommendations`, `analyst_diagnostics`, `analyst_configs`.
-- **Graph:** `AnalystRun`, `Recommendation`
-  (`Recommendation -[:DERIVED_FROM]-> Candidate`).
+- **Graph:** `AnalystRun`, `Recommendation` nodes;
+  `Recommendation -[:DERIVED_FROM]-> Candidate` lineage edges.
 
 ## External I/O
 

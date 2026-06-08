@@ -117,7 +117,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     # Regression-ratchet floor: the real measured floor. Climb; never lower.
-    "--cov-fail-under=99.67",
+    "--cov-fail-under=99.72",
     "--no-header",
 ]
 markers = [
@@ -145,5 +145,5 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 show_missing = true
-precision = 1
-fail_under = 99.67
+precision = 2
+fail_under = 99.72

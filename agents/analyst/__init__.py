@@ -1,5 +1,10 @@
-"""Analyst agent. Charter: mission.md. Boundary: contracts/analyst.py.
+"""Analyst agent package.
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
+Agent: analyst
+Role: expose the analyst boundary agent.
+External I/O: none.
 """
+
+from agents.analyst.agent import AnalystAgent
+
+__all__ = ["AnalystAgent"]

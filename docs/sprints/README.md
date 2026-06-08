@@ -53,9 +53,10 @@ uv run pytest
 
 ## Index
 
-| Sprint                                    | Goal                                       | Status      |
-| ----------------------------------------- | ------------------------------------------ | ----------- |
-| [sprint-01](sprint-01-kernel-runtime.md)  | Kernel runtime: in-process bus + AgentBase | **shipped** |
-| [sprint-02](sprint-02-persistence.md)     | Relational persistence adapter + migrations | **shipped** (superseded by ADR-0001) |
-| [sprint-03](sprint-03-neo4j-store.md)     | Neo4j GraphStore: retire relational adapter, graph spine | **shipped** |
-| [sprint-04](sprint-04-provider-agent.md)  | Provider agent: first real agent (data boundary + provenance) | **shipped** |
+| Sprint                                   | Goal                                                          | Status                               |
+| ---------------------------------------- | ------------------------------------------------------------- | ------------------------------------ |
+| [sprint-01](sprint-01-kernel-runtime.md) | Kernel runtime: in-process bus + AgentBase                    | **shipped**                          |
+| [sprint-02](sprint-02-persistence.md)    | Relational persistence adapter + migrations                   | **shipped** (superseded by ADR-0001) |
+| [sprint-03](sprint-03-neo4j-store.md)    | Neo4j GraphStore: retire relational adapter, graph spine      | **shipped**                          |
+| [sprint-04](sprint-04-provider-agent.md) | Provider agent: first real agent (data boundary + provenance) | **shipped**                          |
+| [sprint-05](sprint-05-scanner-agent.md) | Scanner agent: first agent-to-agent call (universe → ranked candidates) | **active** |

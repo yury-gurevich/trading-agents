@@ -1,7 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-07 — Sprint 03 (Neo4j GraphStore) merged to `main`;
-relational layer retired.
+**Last updated:** 2026-06-08 — Sprint 05 (scanner) opened; Sprint 04 (provider) shipped.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -10,18 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 04](sprints/sprint-04-provider-agent.md) shipped the **first
-real agent** (fast-forward `fd1df0c`) — `provider`, the start of **P2**: sole holder of
-market-data credentials, answering `get_market_data` + `get_regime` over the in-process
-bus with a DI-1 integrity gate, deterministic regime classification, honest quality
-accounting, and append-only provenance written to the `GraphStore`. It establishes the
-agent-composition pattern every later agent copies (graph/source/settings injection,
-`domain/`, `store.py` graph writes); secrets are `repr=False`; `agents` is now in the
-coverage source. Gate is infra-free (fake data source + in-memory graph).
+**Sprint 05 active:** [Scanner agent](sprints/sprint-05-scanner-agent.md) — the second P2
+agent and the **first agent-to-agent call**: scanner reduces a named universe to a ranked,
+explained `CandidateSet` by requesting `get_market_data` from `provider` over the bus (never
+importing it), and writes cross-agent provenance (`Candidate → ScanRun → MarketSnapshot`).
+Establishes the inter-agent request pattern every later agent copies. Handover written;
+awaiting the coding agent on branch `sprint-05-scanner-agent`. Gate stays infra-free
+(in-process bus + a real provider on a fake data source + in-memory graph).
 
-The kernel runtime spine (bus + `AgentBase` + Neo4j `GraphStore`) supports the slice; the
-remaining P1 infra (distributed bus, observability, tool-binding, RAG vector) is
-build-when-needed. Next P2 agents: **scanner**, then **analyst**.
+Shipped: `provider` (Sprint 04) — sole data-API holder, `get_market_data` + `get_regime`,
+DI-1 integrity gate + regime classifier, append-only provenance; established the
+agent-composition pattern and added `agents` to the coverage source.
 
 Quality gate (green on `main`): ruff, format, mypy (50 files), import-linter (4/4 —
 agent isolation KEPT), size + header guards, **79 tests (+2 skipped live) at 99.62%

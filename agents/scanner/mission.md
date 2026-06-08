@@ -18,8 +18,8 @@ candidates worth deeper analysis, and explain why each survived or was filtered.
 
 ## Data ownership
 
-- **Postgres:** `scan_results`, `scanner_diagnostics`, `scanner_configs`.
-- **Graph:** `ScanRun`, `Candidate` (`Candidate -[:SURVIVED]-> ScanRun`).
+- **Graph:** `ScanRun`, `Candidate` nodes; `Candidate -[:SURVIVED]-> ScanRun`
+  and `ScanRun -[:DERIVED_FROM]-> MarketSnapshot` lineage edges.
 
 ## External I/O
 

@@ -1,5 +1,10 @@
-"""Scanner agent. Charter: mission.md. Boundary: contracts/scanner.py.
+"""Scanner agent package.
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
+Agent: scanner
+Role: expose the scanner boundary agent.
+External I/O: none.
 """
+
+from agents.scanner.agent import ScannerAgent
+
+__all__ = ["ScannerAgent"]

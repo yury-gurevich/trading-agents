@@ -9,6 +9,7 @@ External I/O: none
 
 from kernel.agent import AgentBase
 from kernel.bus import InProcessBus, MessageBus
+from kernel.bus_celery import CeleryBus, CeleryBusSettings
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
 from kernel.envelope import AgentMessage, MessageType
@@ -30,6 +31,8 @@ __all__ = [
     "AgentMessage",
     "AgentSettings",
     "Capability",
+    "CeleryBus",
+    "CeleryBusSettings",
     "CollectingFaultSink",
     "Edge",
     "FaultCapture",

@@ -1,6 +1,6 @@
 # Sprint 06 — Analyst agent (closes the P2 vertical slice)
 
-**Status:** active · **Branch:** `sprint-06-analyst-agent` · **Build phase:** P2 (first vertical slice — exit)
+**Status:** shipped (merged to `main` @ `d44f8f2`; **P2 exit met**) · **Branch:** `sprint-06-analyst-agent` · **Build phase:** P2 (first vertical slice — exit)
 
 ## Goal
 

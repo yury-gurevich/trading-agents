@@ -60,7 +60,7 @@ as each artifact is created: the provenance graph starts here.
 data-integrity gate tests; graph-provenance assertions (candidate → recommendation
 lineage).
 **Exit:** a request produces explained recommendations with full provenance, with
-no agent importing another. **Effort: L.**
+no agent importing another. *(met — Sprint 06; full-slice provenance test green.)* **Effort: L.**
 
 ### P3 — Decision loop (`portfolio_manager → execution → monitor → reporter`)
 
@@ -236,7 +236,7 @@ stage gates in P8.
 | --- | --- |
 | P0 Boundary map | **complete** |
 | P1 Kernel runtime | **active** (S01 bus+AgentBase, S03 Neo4j GraphStore shipped; S02 relational store superseded by ADR-0001) |
-| P2 First vertical slice | **active** (S04 provider, S05 scanner shipped; S06 analyst active — P2 exit) |
+| P2 First vertical slice | **complete** (S04 provider, S05 scanner, S06 analyst; exit met) |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |
 | P5 Operator + supervisor | planned |

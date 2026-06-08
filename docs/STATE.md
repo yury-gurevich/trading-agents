@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-08 — Sprint 06 (analyst) opened; P2 slice closing.
+**Last updated:** 2026-06-08 — Sprint 06 (analyst) merged; **P2 first vertical slice complete.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,23 +9,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 06 active:** [Analyst agent](sprints/sprint-06-analyst-agent.md) — the last P2
-agent, **closing the `provider → scanner → analyst` slice**. It scores a scanner
-`CandidateSet` into `Recommendation`s by calling `provider` for market data + regime over
-the bus (first agent to depend on two), gates confidence by `base_min_confidence`, and
-writes `Recommendation -DERIVED_FROM-> Candidate`. Its full-slice integration test asserts
-the `Recommendation → Candidate → ScanRun → MarketSnapshot` chain — the **P2 exit
-criterion**. Handover written; awaiting the coding agent on branch `sprint-06-analyst-agent`.
+**P2 — first vertical slice — COMPLETE.** [Sprint 06](sprints/sprint-06-analyst-agent.md)
+shipped the **analyst** (fast-forward `d44f8f2`), closing `provider → scanner → analyst`.
+The analyst scores a scanner `CandidateSet` into `Recommendation`s by calling `provider`
+(market data + regime) over the bus, gates confidence by `base_min_confidence`, gives
+explainable rejections, and writes `Recommendation -DERIVED_FROM-> Candidate`. The **P2 exit
+is met**: a full-slice integration test (all three agents on one bus) proves the provenance
+chain `Recommendation → Candidate → ScanRun → MarketSnapshot`, with no agent importing another.
 
-Shipped so far in P2: `provider` → `scanner`. Gate stays infra-free throughout.
+Three real agents (`provider`, `scanner`, `analyst`) now run end-to-end on the in-process
+bus, gate infra-free. **P3 (the decision loop)** is the next phase — see Next.
 
-Quality gate (green on `main`): ruff, format, mypy (60 files), import-linter (4/4 — agent
-isolation KEPT), size + header guards, **87 tests (+2 skipped live) at 99.68%** (floor 99.67).
+Quality gate (green on `main`): ruff, format, mypy (74 files), import-linter (4/4 — agent
+isolation KEPT), size + header guards, **101 tests (+2 skipped live) at 99.73%** (floor 99.72).
 
 ## Next
 
-- **`analyst`** — the last P2 agent: turn candidates into scored, evidence-backed
-  recommendations, closing the `provider → scanner → analyst` slice.
+- **P3 — the decision loop** (`portfolio_manager → execution → monitor → reporter`): size +
+  risk-check recommendations, submit idempotently to a paper broker, open/close positions,
+  stitch the run narrative. *(Or finish the deferred P1 infra first — operator's call.)*
 - Deferred P1 infra (build-when-needed): the distributed (Celery) bus, the
   observability/metrics adapter, the contract→tool-interface binding, the RAG vector index.
 
@@ -41,6 +43,11 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 06 — Analyst agent** (P2 — **slice complete**). `analyze` +
+  `explain_recommendation`; two provider bus calls (market data + regime), technical scoring,
+  confidence gating by `base_min_confidence`, explainable rejections, and `Recommendation
+  -DERIVED_FROM-> Candidate` lineage. The full-slice integration test proves the P2-exit
+  chain `Recommendation → Candidate → ScanRun → MarketSnapshot`. 101 tests, floor 99.72.
 - **Sprint 05 — Scanner agent** (P2). First agent-to-agent call: `run_scan` +
   `explain_filter` request `get_market_data` from `provider` over the bus (no import),
   deterministic filters/ranking with justified tunables, honest degraded handling, and

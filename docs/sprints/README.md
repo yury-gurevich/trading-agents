@@ -60,4 +60,4 @@ uv run pytest
 | [sprint-03](sprint-03-neo4j-store.md)     | Neo4j GraphStore: retire relational adapter, graph spine                | **shipped**                          |
 | [sprint-04](sprint-04-provider-agent.md)  | Provider agent: first real agent (data boundary + provenance)           | **shipped**                          |
 | [sprint-05](sprint-05-scanner-agent.md)   | Scanner agent: first agent-to-agent call (universe → ranked candidates) | **shipped**                          |
-| [sprint-06](sprint-06-analyst-agent.md)   | Analyst agent: scored recommendations (closes the P2 slice)             | **active**                           |
+| [sprint-06](sprint-06-analyst-agent.md)   | Analyst agent: scored recommendations (closes the P2 slice)             | **shipped**                          |

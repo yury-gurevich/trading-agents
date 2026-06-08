@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-08 — Sprint 06 (analyst) merged; **P2 first vertical slice complete.**
+**Last updated:** 2026-06-08 — Sprint 07 (distributed bus) opened; P2 complete.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,27 +9,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P2 — first vertical slice — COMPLETE.** [Sprint 06](sprints/sprint-06-analyst-agent.md)
-shipped the **analyst** (fast-forward `d44f8f2`), closing `provider → scanner → analyst`.
-The analyst scores a scanner `CandidateSet` into `Recommendation`s by calling `provider`
-(market data + regime) over the bus, gates confidence by `base_min_confidence`, gives
-explainable rejections, and writes `Recommendation -DERIVED_FROM-> Candidate`. The **P2 exit
-is met**: a full-slice integration test (all three agents on one bus) proves the provenance
-chain `Recommendation → Candidate → ScanRun → MarketSnapshot`, with no agent importing another.
+**Sprint 07 active:** [Distributed (Celery) bus](sprints/sprint-07-distributed-bus.md) —
+finishing P1's bus: a `CeleryBus` implementing the same `MessageBus` protocol as
+`InProcessBus`, so the same agent contract binds to either transport unchanged. Proves the
+**P1 exit** ("an echo agent answers over both backends") with Celery in **eager mode** (no
+broker); a real-broker round-trip is integration-marked. Handover written; awaiting the
+coding agent on branch `sprint-07-distributed-bus`.
 
-Three real agents (`provider`, `scanner`, `analyst`) now run end-to-end on the in-process
-bus, gate infra-free. **P3 (the decision loop)** is the next phase — see Next.
+P2 is complete: `provider → scanner → analyst` run end-to-end with full provenance. This
+sprint changes deployment, not logic — the orchestration that *uses* the distributed bus is P4.
 
 Quality gate (green on `main`): ruff, format, mypy (74 files), import-linter (4/4 — agent
 isolation KEPT), size + header guards, **101 tests (+2 skipped live) at 99.73%** (floor 99.72).
 
 ## Next
 
-- **P3 — the decision loop** (`portfolio_manager → execution → monitor → reporter`): size +
-  risk-check recommendations, submit idempotently to a paper broker, open/close positions,
-  stitch the run narrative. *(Or finish the deferred P1 infra first — operator's call.)*
-- Deferred P1 infra (build-when-needed): the distributed (Celery) bus, the
-  observability/metrics adapter, the contract→tool-interface binding, the RAG vector index.
+- Remaining P1 infra after the bus (build-when-needed): the observability/metrics adapter,
+  the contract→tool-interface (MCP) binding, the RAG vector index.
+- **P3 — the decision loop** (`portfolio_manager → execution → monitor → reporter`): sizing +
+  risk-checks, a paper broker, position lifecycle, and the stitched run narrative.
 
 ## Workflow
 

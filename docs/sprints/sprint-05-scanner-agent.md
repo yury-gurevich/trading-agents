@@ -1,6 +1,6 @@
 # Sprint 05 — Scanner agent (first agent-to-agent call, P2)
 
-**Status:** active · **Branch:** `sprint-05-scanner-agent` · **Build phase:** P2 (first vertical slice)
+**Status:** shipped (merged to `main` @ `0898be1`) · **Branch:** `sprint-05-scanner-agent` · **Build phase:** P2 (first vertical slice)
 
 ## Goal
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-08 — Sprint 05 (scanner) opened; Sprint 04 (provider) shipped.
+**Last updated:** 2026-06-08 — Sprint 05 (scanner) merged to `main`.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,28 +9,26 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 05 active:** [Scanner agent](sprints/sprint-05-scanner-agent.md) — the second P2
-agent and the **first agent-to-agent call**: scanner reduces a named universe to a ranked,
-explained `CandidateSet` by requesting `get_market_data` from `provider` over the bus (never
-importing it), and writes cross-agent provenance (`Candidate → ScanRun → MarketSnapshot`).
-Establishes the inter-agent request pattern every later agent copies. Handover written;
-awaiting the coding agent on branch `sprint-05-scanner-agent`. Gate stays infra-free
-(in-process bus + a real provider on a fake data source + in-memory graph).
+**Between sprints.** [Sprint 05](sprints/sprint-05-scanner-agent.md) shipped the **scanner**
+(fast-forward `0898be1`) — the second P2 agent and the **first agent-to-agent call**: it
+reduces a configured universe to a ranked, explained `CandidateSet` by requesting
+`get_market_data` from `provider` over the bus (no import), with deterministic filters +
+ranking and honest degraded handling, and writes cross-agent provenance
+(`Candidate -SURVIVED-> ScanRun -DERIVED_FROM-> MarketSnapshot`). Two real agents now run
+end-to-end on one bus.
 
-Shipped: `provider` (Sprint 04) — sole data-API holder, `get_market_data` + `get_regime`,
-DI-1 integrity gate + regime classifier, append-only provenance; established the
-agent-composition pattern and added `agents` to the coverage source.
+P2 slice: `provider` → `scanner` shipped; **`analyst`** is the last agent (turn candidates
+into scored, evidence-backed recommendations).
 
-Quality gate (green on `main`): ruff, format, mypy (50 files), import-linter (4/4 —
-agent isolation KEPT), size + header guards, **79 tests (+2 skipped live) at 99.62%
-coverage** (floor raised to 99.6).
+Quality gate (green on `main`): ruff, format, mypy (60 files), import-linter (4/4 — agent
+isolation KEPT), size + header guards, **87 tests (+2 skipped live) at 99.68%** (floor 99.67).
 
 ## Next
 
-- The RAG vector index + `vector_search` on the `GraphStore` (fast-follow).
-- The rest of P1: distributed (Celery) bus, observability/metrics adapter,
-  contract→tool-interface binding.
-- Then **P2 — first vertical slice** (`provider → scanner → analyst`).
+- **`analyst`** — the last P2 agent: turn candidates into scored, evidence-backed
+  recommendations, closing the `provider → scanner → analyst` slice.
+- Deferred P1 infra (build-when-needed): the distributed (Celery) bus, the
+  observability/metrics adapter, the contract→tool-interface binding, the RAG vector index.
 
 ## Workflow
 
@@ -44,6 +42,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 05 — Scanner agent** (P2). First agent-to-agent call: `run_scan` +
+  `explain_filter` request `get_market_data` from `provider` over the bus (no import),
+  deterministic filters/ranking with justified tunables, honest degraded handling, and
+  cross-agent provenance (`Candidate → ScanRun → MarketSnapshot`). 87 tests, floor 99.67.
 - **Sprint 04 — Provider agent** (P2, first agent). `provider` over the in-process bus:
   `get_market_data` + `get_regime`, `DataSource` port (`FakeDataSource` for the gate,
   keyless `StooqDataSource` network-gated), DI-1 integrity gate + VIX regime classifier

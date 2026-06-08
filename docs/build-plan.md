@@ -236,7 +236,7 @@ stage gates in P8.
 | --- | --- |
 | P0 Boundary map | **complete** |
 | P1 Kernel runtime | **active** (S01 bus+AgentBase, S03 Neo4j GraphStore shipped; S02 relational store superseded by ADR-0001) |
-| P2 First vertical slice | **active** (S04 provider shipped; S05 scanner active; analyst next) |
+| P2 First vertical slice | **active** (S04 provider, S05 scanner shipped; analyst next) |
 | P3 Decision loop | planned |
 | P4 Orchestration | planned |
 | P5 Operator + supervisor | planned |

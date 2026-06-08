@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-08 — Sprint 05 (scanner) merged to `main`.
+**Last updated:** 2026-06-08 — Sprint 06 (analyst) opened; P2 slice closing.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,16 +9,15 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 05](sprints/sprint-05-scanner-agent.md) shipped the **scanner**
-(fast-forward `0898be1`) — the second P2 agent and the **first agent-to-agent call**: it
-reduces a configured universe to a ranked, explained `CandidateSet` by requesting
-`get_market_data` from `provider` over the bus (no import), with deterministic filters +
-ranking and honest degraded handling, and writes cross-agent provenance
-(`Candidate -SURVIVED-> ScanRun -DERIVED_FROM-> MarketSnapshot`). Two real agents now run
-end-to-end on one bus.
+**Sprint 06 active:** [Analyst agent](sprints/sprint-06-analyst-agent.md) — the last P2
+agent, **closing the `provider → scanner → analyst` slice**. It scores a scanner
+`CandidateSet` into `Recommendation`s by calling `provider` for market data + regime over
+the bus (first agent to depend on two), gates confidence by `base_min_confidence`, and
+writes `Recommendation -DERIVED_FROM-> Candidate`. Its full-slice integration test asserts
+the `Recommendation → Candidate → ScanRun → MarketSnapshot` chain — the **P2 exit
+criterion**. Handover written; awaiting the coding agent on branch `sprint-06-analyst-agent`.
 
-P2 slice: `provider` → `scanner` shipped; **`analyst`** is the last agent (turn candidates
-into scored, evidence-backed recommendations).
+Shipped so far in P2: `provider` → `scanner`. Gate stays infra-free throughout.
 
 Quality gate (green on `main`): ruff, format, mypy (60 files), import-linter (4/4 — agent
 isolation KEPT), size + header guards, **87 tests (+2 skipped live) at 99.68%** (floor 99.67).

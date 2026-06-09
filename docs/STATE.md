@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 07 (distributed bus) merged; both bus backends done.
+**Last updated:** 2026-06-09 — Sprint 08 (observability adapter) opened.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,16 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 07](sprints/sprint-07-distributed-bus.md) shipped the
-**distributed (Celery) bus** (fast-forward `4f4f0f2`) — a `CeleryBus` implementing the same
-`MessageBus` protocol as `InProcessBus`, with identical semantics, tested in Celery **eager
-mode** (no broker). The **P1 bus exit is met**: the same `EchoAgent` answers identically over
-both backends (parity test); a real-broker round-trip is integration-marked.
+**Sprint 08 active:** [Observability adapter](sprints/sprint-08-observability-adapter.md) —
+the kernel **metrics adapter** every agent emits through: per-agent/capability throughput +
+latency + outcome (instrumented at the bus) and fault-rate by source (from the central fault
+channel), behind a vendor-neutral `Metrics` protocol with a no-op default and a Prometheus
+backend (in-memory-testable — no server). The Prometheus server + Grafana dashboards are P9.
+Handover written; awaiting the coding agent on branch `sprint-08-observability-adapter`.
 
 State of the system: kernel runtime (both bus backends + `AgentBase` + Neo4j `GraphStore`)
-and the P2 slice (`provider → scanner → analyst`, full provenance) are done. P1's remaining
-infra — the observability/metrics adapter, the MCP tool-binding, the RAG vector index — is
-build-when-needed. P3 (the decision loop) is the other open front.
+and the P2 slice (`provider → scanner → analyst`, full provenance) are done. After this, P1's
+remaining infra is the MCP tool-binding + the RAG vector index; P3 (the decision loop) is the
+other open front.
 
 Quality gate (green on `main`): ruff, format, mypy (75 files), import-linter (4/4 — kernel
 pure + agent isolation KEPT), size + header guards, **108 tests (+3 skipped live/broker) at

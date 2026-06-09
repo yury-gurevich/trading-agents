@@ -23,6 +23,8 @@ from kernel.errors import (
 )
 from kernel.graph import Edge, GraphStore, InMemoryGraphStore, Node
 from kernel.graph_neo4j import GraphSettings, Neo4jGraphStore
+from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
+from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
 
 __all__ = [
     "AgentBase",
@@ -43,8 +45,13 @@ __all__ = [
     "InProcessBus",
     "MessageBus",
     "MessageType",
+    "MeteredFaultSink",
+    "Metrics",
+    "MetricsSettings",
     "Neo4jGraphStore",
     "Node",
+    "NullMetrics",
+    "PrometheusMetrics",
     "TunableDoc",
     "describe",
     "fault_boundary",

@@ -14,6 +14,7 @@ from celery import Celery
 from kernel.config import AgentSettings, tunable
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
+from kernel.metrics import Metrics, NullMetrics, request_metric
 
 if TYPE_CHECKING:
     from kernel.bus import MessageHandler
@@ -69,10 +70,12 @@ class CeleryBus:
         *,
         settings: CeleryBusSettings | None = None,
         app: Celery | None = None,
+        metrics: Metrics | None = None,
     ) -> None:
-        """Create a Celery bus with optional settings, sink, and app."""
+        """Create a Celery bus with optional settings, sink, app, and metrics."""
         self._settings = settings if settings is not None else CeleryBusSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
+        self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
         self._app = app if app is not None else self._build_app()
         self._dispatch_task = self._register_dispatch_task()
@@ -85,28 +88,32 @@ class CeleryBus:
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Dispatch a request through Celery and return a response or error."""
-        if (message.recipient, message.capability) not in self._handlers:
-            return self._error_message(
-                message,
-                error_type="UnknownCapability",
-                text=(
-                    "No handler registered for "
-                    f"{message.recipient}.{message.capability}"
-                ),
+        with request_metric(
+            self.metrics, message.recipient, message.capability
+        ) as metric:
+            if (message.recipient, message.capability) not in self._handlers:
+                return self._error_message(
+                    message,
+                    error_type="UnknownCapability",
+                    text=(
+                        "No handler registered for "
+                        f"{message.recipient}.{message.capability}"
+                    ),
+                )
+            result = self._dispatch(message)
+            if error := result.get("error"):
+                return self._error_message(
+                    message, error_type=error["error_type"], text=error["message"]
+                )
+            metric.ok = True
+            return AgentMessage(
+                sender=message.recipient,
+                recipient=message.sender,
+                message_type="response",
+                capability=message.capability,
+                payload=result.get("ok", {}),
+                correlation_id=message.id,
             )
-        result = self._dispatch(message)
-        if error := result.get("error"):
-            return self._error_message(
-                message, error_type=error["error_type"], text=error["message"]
-            )
-        return AgentMessage(
-            sender=message.recipient,
-            recipient=message.sender,
-            message_type="response",
-            capability=message.capability,
-            payload=result.get("ok", {}),
-            correlation_id=message.id,
-        )
 
     def _build_app(self) -> Celery:
         app = Celery(

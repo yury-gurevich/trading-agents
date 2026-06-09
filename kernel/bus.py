@@ -12,6 +12,7 @@ from typing import Any, Protocol
 
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
+from kernel.metrics import Metrics, NullMetrics, request_metric
 
 MessageHandler = Callable[[dict[str, Any]], dict[str, Any]]
 
@@ -33,9 +34,12 @@ class MessageBus(Protocol):
 class InProcessBus:
     """Synchronous bus backend used by tests and local runtime probes."""
 
-    def __init__(self, sink: FaultSink | None = None) -> None:
-        """Create an empty bus with an optional central fault sink."""
+    def __init__(
+        self, sink: FaultSink | None = None, metrics: Metrics | None = None
+    ) -> None:
+        """Create an empty bus with optional central fault and metrics sinks."""
         self.sink = sink if sink is not None else CollectingFaultSink()
+        self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
 
     def register(
@@ -46,41 +50,45 @@ class InProcessBus:
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Dispatch a request and return a response, never raising handler faults."""
-        handler = self._handlers.get((message.recipient, message.capability))
-        if handler is None:
-            return self._error_message(
-                message,
-                error_type="UnknownCapability",
-                text=(
-                    "No handler registered for "
-                    f"{message.recipient}.{message.capability}"
-                ),
-            )
+        with request_metric(
+            self.metrics, message.recipient, message.capability
+        ) as metric:
+            handler = self._handlers.get((message.recipient, message.capability))
+            if handler is None:
+                return self._error_message(
+                    message,
+                    error_type="UnknownCapability",
+                    text=(
+                        "No handler registered for "
+                        f"{message.recipient}.{message.capability}"
+                    ),
+                )
 
-        payload: dict[str, Any] = {}
-        with fault_boundary(
-            self.sink,
-            agent=message.recipient,
-            module="kernel.bus",
-            capability=message.capability,
-            reraise=False,
-        ) as capture:
-            payload = handler(message.payload)
+            payload: dict[str, Any] = {}
+            with fault_boundary(
+                self.sink,
+                agent=message.recipient,
+                module="kernel.bus",
+                capability=message.capability,
+                reraise=False,
+            ) as capture:
+                payload = handler(message.payload)
 
-        if capture.fault is not None:
-            return self._error_message(
-                message,
-                error_type=capture.fault.error_type,
-                text=capture.fault.message,
+            if capture.fault is not None:
+                return self._error_message(
+                    message,
+                    error_type=capture.fault.error_type,
+                    text=capture.fault.message,
+                )
+            metric.ok = True
+            return AgentMessage(
+                sender=message.recipient,
+                recipient=message.sender,
+                message_type="response",
+                capability=message.capability,
+                payload=payload,
+                correlation_id=message.id,
             )
-        return AgentMessage(
-            sender=message.recipient,
-            recipient=message.sender,
-            message_type="response",
-            capability=message.capability,
-            payload=payload,
-            correlation_id=message.id,
-        )
 
     @staticmethod
     def _error_message(

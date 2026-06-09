@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-08 — Sprint 07 (distributed bus) opened; P2 complete.
+**Last updated:** 2026-06-09 — Sprint 07 (distributed bus) merged; both bus backends done.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,18 +9,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 07 active:** [Distributed (Celery) bus](sprints/sprint-07-distributed-bus.md) —
-finishing P1's bus: a `CeleryBus` implementing the same `MessageBus` protocol as
-`InProcessBus`, so the same agent contract binds to either transport unchanged. Proves the
-**P1 exit** ("an echo agent answers over both backends") with Celery in **eager mode** (no
-broker); a real-broker round-trip is integration-marked. Handover written; awaiting the
-coding agent on branch `sprint-07-distributed-bus`.
+**Between sprints.** [Sprint 07](sprints/sprint-07-distributed-bus.md) shipped the
+**distributed (Celery) bus** (fast-forward `4f4f0f2`) — a `CeleryBus` implementing the same
+`MessageBus` protocol as `InProcessBus`, with identical semantics, tested in Celery **eager
+mode** (no broker). The **P1 bus exit is met**: the same `EchoAgent` answers identically over
+both backends (parity test); a real-broker round-trip is integration-marked.
 
-P2 is complete: `provider → scanner → analyst` run end-to-end with full provenance. This
-sprint changes deployment, not logic — the orchestration that *uses* the distributed bus is P4.
+State of the system: kernel runtime (both bus backends + `AgentBase` + Neo4j `GraphStore`)
+and the P2 slice (`provider → scanner → analyst`, full provenance) are done. P1's remaining
+infra — the observability/metrics adapter, the MCP tool-binding, the RAG vector index — is
+build-when-needed. P3 (the decision loop) is the other open front.
 
-Quality gate (green on `main`): ruff, format, mypy (74 files), import-linter (4/4 — agent
-isolation KEPT), size + header guards, **101 tests (+2 skipped live) at 99.73%** (floor 99.72).
+Quality gate (green on `main`): ruff, format, mypy (75 files), import-linter (4/4 — kernel
+pure + agent isolation KEPT), size + header guards, **108 tests (+3 skipped live/broker) at
+99.74%** (floor 99.74).
 
 ## Next
 
@@ -41,6 +43,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 07 — Distributed (Celery) bus** (P1). `CeleryBus` implementing `MessageBus` with
+  `InProcessBus`-identical semantics (the four behaviours), tested in eager mode; a
+  both-backends parity test proves the P1 bus exit; real-broker round-trip integration-marked.
+  108 tests, floor 99.74.
 - **Sprint 06 — Analyst agent** (P2 — **slice complete**). `analyze` +
   `explain_recommendation`; two provider bus calls (market data + regime), technical scoring,
   confidence gating by `base_min_confidence`, explainable rejections, and `Recommendation

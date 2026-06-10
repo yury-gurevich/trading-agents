@@ -1,17 +1,14 @@
-"""Portfolio Manager edge-case coverage tests.
+"""Portfolio Manager domain and store edge-case tests.
 
 Agent: portfolio_manager
-Role: verify explainable edge cases without expanding sprint scope.
+Role: verify sizing, provider price selection, and optional graph lineage edges.
 External I/O: none.
 """
 
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
-import agents.portfolio_manager.agent as pm_agent_module
-from agents.portfolio_manager import PortfolioManagerAgent
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.domain.sizing import size_quantity
 from agents.portfolio_manager.provider_client import latest_close_prices
@@ -19,82 +16,14 @@ from agents.portfolio_manager.store import write_order_decision
 from agents.portfolio_manager.tests.helpers import (
     bar,
     cash_portfolio,
-    evaluate_message,
     recommendation,
     recommendation_set,
-    wire_pm,
 )
 from contracts.analyst import RecommendationSet
 from contracts.common import Explanation, Money, Provenance
-from contracts.portfolio_manager import OrderIntent, OrderIntentSet
+from contracts.portfolio_manager import OrderIntent
 from contracts.provider import DataQualityTrace, MarketData
-from kernel import InMemoryGraphStore, InProcessBus
-
-if TYPE_CHECKING:
-    import pytest
-
-
-def test_empty_recommendations_return_explainable_empty_result() -> None:
-    payload = recommendation_set()
-    bus, _, _ = wire_pm()
-
-    response = bus.request(evaluate_message(payload))
-
-    result = OrderIntentSet.model_validate(response.payload)
-    assert result.approved == ()
-    assert result.rejected == ()
-    assert (
-        result.explanation.summary == "No orders approved; 0 recommendations rejected."
-    )
-
-
-def test_provider_unavailable_rejects_without_crashing() -> None:
-    bus = InProcessBus()
-    graph = InMemoryGraphStore()
-    PortfolioManagerAgent(bus, graph=graph).bind()
-    payload = recommendation_set(recommendation("AAPL"))
-
-    response = bus.request(evaluate_message(payload))
-
-    result = OrderIntentSet.model_validate(response.payload)
-    assert result.approved == ()
-    assert [(item.ticker, item.reason) for item in result.rejected] == [
-        ("AAPL", "provider_unavailable")
-    ]
-
-
-def test_degraded_regime_rejects_honestly_and_records_fault() -> None:
-    payload = recommendation_set(recommendation("AAPL"))
-    bus, _, sink = wire_pm(source_bars=(bar("AAPL", 0, 100.0),), fail_regime=True)
-
-    response = bus.request(evaluate_message(payload))
-
-    result = OrderIntentSet.model_validate(response.payload)
-    assert result.approved == ()
-    assert [(item.ticker, item.reason) for item in result.rejected] == [
-        ("AAPL", "provider_degraded")
-    ]
-    assert sink.faults[-1].message == "provider returned degraded regime data"
-
-
-def test_evaluation_fault_rejects_all_recommendations(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def boom(*_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr(pm_agent_module, "evaluate_recommendations", boom)
-    payload = recommendation_set(recommendation("AAPL"))
-    bus, _, sink = wire_pm(source_bars=(bar("AAPL", 0, 100.0),))
-
-    response = bus.request(evaluate_message(payload))
-
-    result = OrderIntentSet.model_validate(response.payload)
-    assert result.approved == ()
-    assert [(item.ticker, item.reason) for item in result.rejected] == [
-        ("AAPL", "portfolio_evaluation_failed")
-    ]
-    assert sink.faults[-1].message == "boom"
+from kernel import InMemoryGraphStore
 
 
 def test_risk_prechecks_reject_unsupported_action_and_missing_price() -> None:

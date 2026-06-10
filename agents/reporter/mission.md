@@ -16,8 +16,10 @@ and metrics — the truth surface the dashboard and operator read.
   portfolio_manager, execution, monitor, provider.
 
 ## Data ownership
-- **Postgres:** `performance_snapshots`, `trade_narratives`.
-- **Graph:** `Snapshot`, `TradeNarrative` (reads all; writes only these).
+- **Graph:** `Snapshot`, `TradeNarrative` (reads all upstream provenance; writes
+  only these reporter-owned labels).
+- **Storage model:** append-only graph per ADR-0001; no reporter-owned Postgres
+  tables in P3.
 
 ## External I/O
 - None.

@@ -9,7 +9,7 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints — P3 one step from exit.** [Sprint 13 reporter](sprints/README.md) is next.
+**Between sprints — P3 one step from exit.** [Sprint 13 reporter](sprints/sprint-13-reporter.md) handover written; awaiting coding agent on branch `sprint-13-reporter`.
 
 State of the system: `provider → scanner → analyst → portfolio_manager → execution → monitor`
 fully wired. The complete P3 provenance chain is proven:

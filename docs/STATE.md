@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 09 (portfolio manager) merged; hardening next (audit truth).
+**Last updated:** 2026-06-09 — Sprint 10 (hardening) opened, before execution.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,30 +9,26 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints — hardening next.** [Sprint 09](sprints/sprint-09-portfolio-manager.md) shipped
-the **portfolio manager** (fast-forward `6a36a3a`), starting P3: it sizes + risk-checks the
-analyst's recommendations into `OrderIntent`s, calling `provider` over the bus, and writes
-`OrderIntent -[:APPROVES]-> Recommendation` — the 4-agent pipeline lineage (`OrderIntent →
-Recommendation → Candidate → ScanRun → MarketSnapshot`) is proven. First money handling (integer
-cents in the graph) + portfolio state.
+**Sprint 10 active — hardening (before execution).** [Sprint 10](sprints/sprint-10-hardening.md)
+closes the audit-truth + rigor backlog from the Sprint 09 review before `execution` lands:
+**persist PM rejection evidence** in the graph (the PM's mission), add **contract value
+validators**, fix the stop/target bug, **deep-freeze** graph props + make the two `GraphStore`
+backends' edge behaviour **match**, install **Neo4j uniqueness constraints**, and split the
+near-200-line modules. Handover written; awaiting the coding agent on branch `sprint-10-hardening`.
+(Also de-pins the 100% coverage ceiling to a sustainable floor.)
 
-The coding agent's self-review surfaced a real backlog — chiefly **audit truth**: PM rejection
-reasons are explained in the response but not yet persisted in the graph (the PM's own mission),
-and the contracts lack value validators (negative money / invalid confidence). **The next sprint
-is hardening, not execution** — execution would amplify any ambiguity here.
+State of the system: kernel runtime (both bus backends, `AgentBase`, Neo4j `GraphStore` + Aura,
+metrics adapter), the P2 slice, and the portfolio manager (P3 begun) are done — the 4-agent
+pipeline (`provider → scanner → analyst → portfolio_manager`) runs with full provenance.
 
 Quality gate (green on `main`): ruff, format, mypy (91 files), import-linter (4/4 — kernel pure +
 agent isolation KEPT), size + header guards, **130 tests (+3 skipped live/broker) at 100%** (floor
-100 — aggressive; revisit during hardening). Several kernel modules sit near the 200-line limit.
+to be de-pinned during hardening).
 
 ## Next
 
-- **Sprint 10 — hardening (before execution):** persist PM rejection evidence in the graph; add
-  contract value validators; fix the stop/target truthiness bug + bounds; deep-freeze graph props
-  and make InMemory/Neo4j edge-update behaviour match; install Neo4j uniqueness constraints; split
-  the near-200-line modules; Stooq missing-volume → clean skip.
-- Then P3 continues: **execution → monitor → reporter** (paper broker, position lifecycle, run
-  narrative).
+- **P3 resumes after hardening: `execution`** (idempotent paper-broker submit + fills), then
+  `monitor` (positions, exits), then `reporter` (run narrative + per-trade stitch).
 - Build-when-needed: the MCP tool-binding, the RAG vector index; a non-eager Celery worker
   round-trip belongs with P4 orchestration.
 

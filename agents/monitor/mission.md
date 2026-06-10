@@ -16,9 +16,11 @@ targets, time, regime), hand exits to execution, and explain every close and hol
   `execution` (consumes its `fill_recorded` notifications to open positions).
 
 ## Data ownership
-- **Postgres:** `positions`, `position_lifecycle_events`, `monitor_configs`.
-- **Graph:** `PositionCheck`, `CloseDecision`, `Position`
-  (`CloseDecision -[:CLOSES]-> Position`).
+- **Graph:** `MonitorRun`, `Position`, `PositionCheck`, `CloseDecision`;
+  `Fill -[:OPENS]-> Position`, `PositionCheck -[:CHECKS]-> Position`, and
+  `CloseDecision -[:CLOSES]-> Position`.
+- **Position lifecycle:** open positions are reconstructed from execution fills in
+  the graph; broker submission remains execution's boundary.
 
 ## External I/O
 - None.

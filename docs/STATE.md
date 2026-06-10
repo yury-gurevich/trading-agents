@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 08 (observability adapter) opened.
+**Last updated:** 2026-06-09 — Sprint 08 (observability adapter) merged; Neo4j Aura configured.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,21 +9,23 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 08 active:** [Observability adapter](sprints/sprint-08-observability-adapter.md) —
-the kernel **metrics adapter** every agent emits through: per-agent/capability throughput +
-latency + outcome (instrumented at the bus) and fault-rate by source (from the central fault
-channel), behind a vendor-neutral `Metrics` protocol with a no-op default and a Prometheus
-backend (in-memory-testable — no server). The Prometheus server + Grafana dashboards are P9.
-Handover written; awaiting the coding agent on branch `sprint-08-observability-adapter`.
+**Between sprints.** [Sprint 08](sprints/sprint-08-observability-adapter.md) shipped the kernel
+**metrics adapter** (fast-forward `515a713`) — a vendor-neutral `Metrics` protocol
+(`NullMetrics` default; `PrometheusMetrics` backend with a private in-memory registry, no
+server). Both buses are instrumented at the request choke point (throughput + latency +
+outcome), and a `MeteredFaultSink` records fault-rate by source from the central fault channel;
+agents are untouched. Metrics: `trading_agents_kernel_{requests_total,request_latency_seconds,
+faults_total}`.
 
-State of the system: kernel runtime (both bus backends + `AgentBase` + Neo4j `GraphStore`)
-and the P2 slice (`provider → scanner → analyst`, full provenance) are done. After this, P1's
-remaining infra is the MCP tool-binding + the RAG vector index; P3 (the decision loop) is the
-other open front.
+State of the system: the kernel runtime is now well-rounded — both bus backends, `AgentBase`,
+Neo4j `GraphStore` (a real **Aura** instance is configured in `.env` and verified live), and the
+metrics adapter — and the P2 slice (`provider → scanner → analyst`) runs end-to-end with full
+provenance. P1's remaining infra is the MCP tool-binding + the RAG vector index; **P3 (the
+decision loop)** is the other open front.
 
-Quality gate (green on `main`): ruff, format, mypy (75 files), import-linter (4/4 — kernel
-pure + agent isolation KEPT), size + header guards, **108 tests (+3 skipped live/broker) at
-99.74%** (floor 99.74).
+Quality gate (green on `main`): ruff, format, mypy (77 files), import-linter (4/4 — kernel
+pure + agent isolation KEPT), size + header guards, **112 tests (+3 skipped live/broker) at
+99.75%** (floor 99.75).
 
 ## Next
 
@@ -44,6 +46,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 08 — Observability metrics adapter** (P1). Vendor-neutral `Metrics` protocol
+  (`NullMetrics` default + `PrometheusMetrics` private-registry backend, no server); both buses
+  instrumented for throughput/latency/outcome; `MeteredFaultSink` for fault-rate by source.
+  112 tests, floor 99.75.
 - **Sprint 07 — Distributed (Celery) bus** (P1). `CeleryBus` implementing `MessageBus` with
   `InProcessBus`-identical semantics (the four behaviours), tested in eager mode; a
   both-backends parity test proves the P1 bus exit; real-broker round-trip integration-marked.

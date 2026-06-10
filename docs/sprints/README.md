@@ -53,13 +53,13 @@ uv run pytest
 
 ## Index
 
-| Sprint                                    | Goal                                                                    | Status                               |
-| ----------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------ |
-| [sprint-01](sprint-01-kernel-runtime.md)  | Kernel runtime: in-process bus + AgentBase                              | **shipped**                          |
-| [sprint-02](sprint-02-persistence.md)     | Relational persistence adapter + migrations                             | **shipped** (superseded by ADR-0001) |
-| [sprint-03](sprint-03-neo4j-store.md)     | Neo4j GraphStore: retire relational adapter, graph spine                | **shipped**                          |
-| [sprint-04](sprint-04-provider-agent.md)  | Provider agent: first real agent (data boundary + provenance)           | **shipped**                          |
-| [sprint-05](sprint-05-scanner-agent.md)   | Scanner agent: first agent-to-agent call (universe → ranked candidates) | **shipped**                          |
-| [sprint-06](sprint-06-analyst-agent.md)   | Analyst agent: scored recommendations (closes the P2 slice)             | **shipped**                          |
-| [sprint-07](sprint-07-distributed-bus.md) | Distributed (Celery) bus: second MessageBus backend (P1 exit)           | **shipped**                          |
-| [sprint-08](sprint-08-observability-adapter.md) | Observability: kernel metrics adapter (throughput/latency/fault-rate) | **active** |
+| Sprint | Goal | Status |
+| --- | --- | --- |
+| [sprint-01](sprint-01-kernel-runtime.md) | Kernel runtime: in-process bus + AgentBase | **shipped** |
+| [sprint-02](sprint-02-persistence.md) | Relational persistence adapter + migrations | **shipped** (superseded by ADR-0001) |
+| [sprint-03](sprint-03-neo4j-store.md) | Neo4j GraphStore: retire relational adapter, graph spine | **shipped** |
+| [sprint-04](sprint-04-provider-agent.md) | Provider agent: first real agent (data boundary + provenance) | **shipped** |
+| [sprint-05](sprint-05-scanner-agent.md) | Scanner agent: first agent-to-agent call (universe → ranked candidates) | **shipped** |
+| [sprint-06](sprint-06-analyst-agent.md) | Analyst agent: scored recommendations (closes the P2 slice) | **shipped** |
+| [sprint-07](sprint-07-distributed-bus.md) | Distributed (Celery) bus: second MessageBus backend (P1 exit) | **shipped** |
+| [sprint-08](sprint-08-observability-adapter.md) | Observability: kernel metrics adapter (throughput/latency/fault-rate) | **shipped** |

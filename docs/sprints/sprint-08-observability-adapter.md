@@ -1,6 +1,6 @@
 # Sprint 08 — Observability: the kernel metrics adapter
 
-**Status:** active · **Branch:** `sprint-08-observability-adapter` · **Build phase:** P1 (kernel runtime — observability emission)
+**Status:** shipped (merged to `main` @ `515a713`) · **Branch:** `sprint-08-observability-adapter` · **Build phase:** P1 (kernel runtime — observability emission)
 
 ## Goal
 

@@ -17,6 +17,12 @@ class _SampleSettings(AgentSettings):
     )
 
 
+class _UnboundedSettings(AgentSettings):
+    model_config = SettingsConfigDict(env_prefix="UNBOUNDED_", frozen=True)
+
+    label: str = tunable("paper", why="names the current local test profile")
+
+
 def test_default_is_used_when_no_env():
     assert _SampleSettings().min_confidence == 0.6
 
@@ -41,3 +47,12 @@ def test_describe_catalogues_the_tunable():
     assert row.justification
     assert row.minimum == 0.0
     assert row.maximum == 1.0
+
+
+def test_describe_catalogues_unbounded_tunable():
+    rows = describe(_UnboundedSettings)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.env_var == "UNBOUNDED_LABEL"
+    assert row.minimum is None
+    assert row.maximum is None

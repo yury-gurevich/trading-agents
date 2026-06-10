@@ -1,5 +1,5 @@
-"""Portfolio Manager agent. See mission.md and contracts/portfolio_manager.py.
+"""Portfolio Manager agent package."""
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
-"""
+from agents.portfolio_manager.agent import PortfolioManagerAgent
+
+__all__ = ["PortfolioManagerAgent"]

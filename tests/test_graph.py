@@ -72,6 +72,24 @@ def test_in_memory_traversal_depth_and_filter_misses() -> None:
     assert list(store.ancestors(child, max_depth=1, edge_types={"OTHER"})) == []
 
 
+def test_in_memory_traversal_deduplicates_converging_paths() -> None:
+    store = InMemoryGraphStore()
+    root = store.merge_node("Artifact", "root", {})
+    left = store.merge_node("Artifact", "left", {})
+    right = store.merge_node("Artifact", "right", {})
+    leaf = store.merge_node("Artifact", "leaf", {})
+    store.add_edge(root, left, "DERIVED")
+    store.add_edge(root, right, "DERIVED")
+    store.add_edge(left, leaf, "DERIVED")
+    store.add_edge(right, leaf, "DERIVED")
+
+    assert [node.key for node in store.descendants(root, max_depth=2)] == [
+        "left",
+        "right",
+        "leaf",
+    ]
+
+
 def test_in_memory_failures_record_one_fault_and_reraise() -> None:
     sink = CollectingFaultSink()
     store = InMemoryGraphStore(sink)

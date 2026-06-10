@@ -97,10 +97,12 @@ def test_neo4j_store_uses_driver_shape_with_fake_backend(
     store, fake_driver = _store(monkeypatch)
 
     parent = store.merge_node("Artifact", "parent", {"status": "new"})
+    replayed = store.merge_node("Artifact", "parent", {"status": "new"})
     updated = store.merge_node("Artifact", "parent", {"status": "new", "score": 2})
     child = store.merge_node("Artifact", "child", {})
     store.add_edge(updated, child, "DERIVED", {"run": "unit"})
 
+    assert replayed == parent
     assert dict(updated.props) == {"status": "new", "score": 2}
     assert store.get_node("Artifact", "parent") == updated
     assert [node.key for node in store.ancestors(child, max_depth=1)] == ["parent"]

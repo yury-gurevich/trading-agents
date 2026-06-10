@@ -46,9 +46,9 @@ and policy — whether to:
 - dead-letter and retry the originating message,
 - or escalate via the notification budget.
 
-Every fault is also written to the provenance graph (`Fault` node, owned by the
-supervisor) and the `agent_faults` table, so the failure history is queryable and
-exportable alongside every decision.
+Every fault is also written to the provenance graph as a `Fault` node (owned by the
+supervisor), so the failure history is queryable and exportable alongside every
+decision (ADR-0001 — Neo4j is the single store; there is no relational `faults` table).
 
 ## Why this shape
 

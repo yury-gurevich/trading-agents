@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 09 (portfolio manager) opened; P3 begins.
+**Last updated:** 2026-06-09 — Sprint 09 (portfolio manager) merged; hardening next (audit truth).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,28 +9,32 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 09 active — P3 begins.** [Portfolio manager](sprints/sprint-09-portfolio-manager.md) —
-the first agent of the decision loop: it turns the analyst's `RecommendationSet` into sized,
-risk-checked `OrderIntent`s, calling `provider` over the bus for est. price + regime, and writes
-`OrderIntent -[:APPROVES]-> Recommendation` (extending the chain to `OrderIntent → Recommendation
-→ Candidate → ScanRun → MarketSnapshot`). First agent to handle **money** (integer minor units
-per ADR-0001) and portfolio state. Handover written; awaiting the coding agent on branch
-`sprint-09-portfolio-manager`.
+**Between sprints — hardening next.** [Sprint 09](sprints/sprint-09-portfolio-manager.md) shipped
+the **portfolio manager** (fast-forward `6a36a3a`), starting P3: it sizes + risk-checks the
+analyst's recommendations into `OrderIntent`s, calling `provider` over the bus, and writes
+`OrderIntent -[:APPROVES]-> Recommendation` — the 4-agent pipeline lineage (`OrderIntent →
+Recommendation → Candidate → ScanRun → MarketSnapshot`) is proven. First money handling (integer
+cents in the graph) + portfolio state.
 
-State of the system: kernel runtime (both bus backends, `AgentBase`, Neo4j `GraphStore` +
-verified Aura, metrics adapter) and the P2 slice (`provider → scanner → analyst`, full
-provenance) are done. P1's remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
+The coding agent's self-review surfaced a real backlog — chiefly **audit truth**: PM rejection
+reasons are explained in the response but not yet persisted in the graph (the PM's own mission),
+and the contracts lack value validators (negative money / invalid confidence). **The next sprint
+is hardening, not execution** — execution would amplify any ambiguity here.
 
-Quality gate (green on `main`): ruff, format, mypy (77 files), import-linter (4/4 — kernel
-pure + agent isolation KEPT), size + header guards, **112 tests (+3 skipped live/broker) at
-99.75%** (floor 99.75).
+Quality gate (green on `main`): ruff, format, mypy (91 files), import-linter (4/4 — kernel pure +
+agent isolation KEPT), size + header guards, **130 tests (+3 skipped live/broker) at 100%** (floor
+100 — aggressive; revisit during hardening). Several kernel modules sit near the 200-line limit.
 
 ## Next
 
-- Remaining P1 infra after the bus (build-when-needed): the observability/metrics adapter,
-  the contract→tool-interface (MCP) binding, the RAG vector index.
-- **P3 — the decision loop** (`portfolio_manager → execution → monitor → reporter`): sizing +
-  risk-checks, a paper broker, position lifecycle, and the stitched run narrative.
+- **Sprint 10 — hardening (before execution):** persist PM rejection evidence in the graph; add
+  contract value validators; fix the stop/target truthiness bug + bounds; deep-freeze graph props
+  and make InMemory/Neo4j edge-update behaviour match; install Neo4j uniqueness constraints; split
+  the near-200-line modules; Stooq missing-volume → clean skip.
+- Then P3 continues: **execution → monitor → reporter** (paper broker, position lifecycle, run
+  narrative).
+- Build-when-needed: the MCP tool-binding, the RAG vector index; a non-eager Celery worker
+  round-trip belongs with P4 orchestration.
 
 ## Workflow
 
@@ -44,6 +48,11 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 09 — Portfolio manager** (P3 begun). Sizes + risk-checks recommendations into
+  `OrderIntent`s (two provider bus calls, deterministic sizing, explainable rejections, money as
+  integer cents); `OrderIntent -[:APPROVES]-> Recommendation` lineage; 4-agent pipeline test green.
+  130 tests, floor 100. *Audit-truth follow-ups (persist rejections, contract validators) go to
+  the hardening sprint.*
 - **Sprint 08 — Observability metrics adapter** (P1). Vendor-neutral `Metrics` protocol
   (`NullMetrics` default + `PrometheusMetrics` private-registry backend, no server); both buses
   instrumented for throughput/latency/outcome; `MeteredFaultSink` for fault-rate by source.

@@ -61,6 +61,7 @@ machine-readable boundary.
 
 ## Status
 
-P0 is complete: the boundary map (`contracts/` + every `mission.md`) and kernel
-foundations are locked by tests and import rules. Sprint 01 is active: wire the
-in-process bus and `AgentBase` runtime spine without adding real agents yet.
+The kernel runtime (both bus backends, `AgentBase`, the Neo4j `GraphStore`, the
+metrics adapter) is in place, and the first pipeline runs end-to-end —
+`provider → scanner → analyst → portfolio_manager` — each agent an island talking only
+through typed messages, with provenance spanning them. Live status: `docs/STATE.md`.

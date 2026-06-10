@@ -1,6 +1,6 @@
 # Sprint 09 — Portfolio manager (starts P3, the decision loop)
 
-**Status:** active · **Branch:** `sprint-09-portfolio-manager` · **Build phase:** P3 (decision loop)
+**Status:** shipped (merged to `main` @ `6a36a3a`; audit-truth follow-ups → hardening sprint) · **Branch:** `sprint-09-portfolio-manager` · **Build phase:** P3 (decision loop)
 
 ## Goal
 

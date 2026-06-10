@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from pydantic import Field
+
 from contracts.analyst import RecommendationSet
 from contracts.common import Action, Explanation, Money, Provenance, Ticker, _Frozen
 from kernel.contract import AgentContract, Capability
@@ -16,10 +18,10 @@ from kernel.contract import AgentContract, Capability
 class OrderIntent(_Frozen):
     ticker: Ticker
     action: Action
-    quantity: int
+    quantity: int = Field(ge=1)
     est_price: Money
-    stop_pct: float | None = None
-    target_pct: float | None = None
+    stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
+    target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     rationale: Explanation
 
 
@@ -62,7 +64,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("orders_decided",),
-    owns_graph=("PMRun", "OrderIntent"),
+    owns_graph=("PMRun", "OrderIntent", "Rejection"),
     external_io=(),
     depends_on=("analyst", "provider", "forecaster"),
     mcp_tools=("evaluate_orders", "explain_decision"),

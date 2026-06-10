@@ -9,7 +9,8 @@ External I/O: none
 
 from kernel.agent import AgentBase
 from kernel.bus import InProcessBus, MessageBus
-from kernel.bus_celery import CeleryBus, CeleryBusSettings
+from kernel.bus_celery import CeleryBus
+from kernel.bus_celery_config import CeleryBusSettings
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
 from kernel.envelope import AgentMessage, MessageType
@@ -21,8 +22,10 @@ from kernel.errors import (
     fault_boundary,
     fault_from_exception,
 )
-from kernel.graph import Edge, GraphStore, InMemoryGraphStore, Node
-from kernel.graph_neo4j import GraphSettings, Neo4jGraphStore
+from kernel.graph import Edge, GraphStore, Node
+from kernel.graph_memory import InMemoryGraphStore
+from kernel.graph_neo4j import Neo4jGraphStore
+from kernel.graph_neo4j_config import GraphSettings
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
 from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
 

@@ -36,6 +36,24 @@ def test_in_memory_merge_rejects_invalid_schema_changes() -> None:
         store.merge_node("Run", "r1", {}, schema_version=2)
 
 
+def test_node_props_are_deeply_immutable() -> None:
+    store = InMemoryGraphStore()
+
+    node = store.merge_node(
+        "Run",
+        "r1",
+        {"tickers": ["AAPL"], "nested": {"scores": [1, 2]}, "tags": {"core"}},
+    )
+
+    assert node.props["tickers"] == ("AAPL",)
+    assert node.props["nested"]["scores"] == (1, 2)
+    assert node.props["tags"] == frozenset({"core"})
+    with pytest.raises(TypeError):
+        node.props["nested"]["new"] = "blocked"
+    with pytest.raises(TypeError):
+        node.props["nested"]["scores"][0] = 99
+
+
 def test_in_memory_edges_and_traversal_depth() -> None:
     store = InMemoryGraphStore()
     root = store.merge_node("Artifact", "root", {})
@@ -60,6 +78,18 @@ def test_in_memory_edges_and_traversal_depth() -> None:
         "mid",
         "leaf",
     ]
+
+
+def test_in_memory_edge_identity_ignores_replayed_props() -> None:
+    store = InMemoryGraphStore()
+    parent = store.merge_node("Artifact", "parent", {})
+    child = store.merge_node("Artifact", "child", {})
+
+    store.add_edge(parent, child, "DERIVED", {"run": "first"})
+    store.add_edge(parent, child, "DERIVED", {"run": "second"})
+
+    assert len(store._edges) == 1
+    assert dict(store._edges[0].props) == {"run": "first"}
 
 
 def test_in_memory_traversal_depth_and_filter_misses() -> None:

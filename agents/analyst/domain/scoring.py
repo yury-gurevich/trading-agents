@@ -79,6 +79,8 @@ def _weighted_score(components: dict[str, float], settings: AnalystSettings) -> 
 
 
 def _trend_component(rows: list[OHLCVBar], settings: AnalystSettings) -> float:
+    if len(rows) < settings.long_ma_bars:
+        return 0.5
     short_rows = rows[-settings.short_ma_bars :]
     long_rows = rows[-settings.long_ma_bars :]
     short_ma = mean(bar.close for bar in short_rows)

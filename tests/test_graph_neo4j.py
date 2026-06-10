@@ -6,95 +6,15 @@ import os
 import uuid
 
 import pytest
+from tests.graph_neo4j_fakes import store as fake_store
 
 from kernel import GraphSettings, Neo4jGraphStore, Node
-
-
-class _FakeNeo4jDriver:
-    def __init__(self) -> None:
-        self.nodes: dict[str, tuple[str, dict[str, object]]] = {}
-        self.edges: list[tuple[str, str, str, dict[str, object]]] = []
-        self.closed = False
-
-    def execute_query(
-        self, query: str, **params: object
-    ) -> tuple[list[dict[str, object]], None, None]:
-        key = str(params.get("key", ""))
-        if query.startswith("MATCH (n:") and "SET n +=" not in query:
-            return self._node_record(key), None, None
-        if query.startswith("MATCH (n:") and "SET n +=" in query:
-            self.nodes[key][1].update(dict(params["props"]))  # type: ignore[arg-type]
-            return self._node_record(key), None, None
-        if query.startswith("MERGE (n:"):
-            label = query.split("MERGE (n:`", 1)[1].split("`", 1)[0]
-            self.nodes[key] = (label, dict(params["props"]))  # type: ignore[arg-type]
-            return self._node_record(key), None, None
-        if "MERGE (p)-" in query:
-            return self._edge_record(params)
-        if "RETURN DISTINCT labels(n)" in query:
-            return self._traversal_records(query, key)
-        msg = f"unexpected query: {query}"
-        raise AssertionError(msg)
-
-    def close(self) -> None:
-        self.closed = True
-
-    def _node_record(self, key: str) -> list[dict[str, object]]:
-        if key not in self.nodes:
-            return []
-        return [{"props": self.nodes[key][1]}]
-
-    def _edge_record(
-        self, params: dict[str, object]
-    ) -> tuple[list[dict[str, object]], None, None]:
-        parent_key = str(params["parent_key"])
-        child_key = str(params["child_key"])
-        if parent_key not in self.nodes or child_key not in self.nodes:
-            return [], None, None
-        props = dict(params["props"])  # type: ignore[arg-type]
-        self.edges.append((parent_key, child_key, "DERIVED", props))
-        return [{"props": props}], None, None
-
-    def _traversal_records(
-        self, query: str, key: str
-    ) -> tuple[list[dict[str, object]], None, None]:
-        upstream = "<-" in query
-        out: list[dict[str, object]] = []
-        for parent_key, child_key, _edge_type, _props in self.edges:
-            if upstream:
-                if child_key != key:
-                    continue
-                wanted = parent_key
-            else:
-                if parent_key != key:
-                    continue
-                wanted = child_key
-            label, props = self.nodes[wanted]
-            out.append({"labels": [label], "key": wanted, "props": props})
-        return out, None, None
-
-
-def _store(monkeypatch: pytest.MonkeyPatch) -> tuple[Neo4jGraphStore, _FakeNeo4jDriver]:
-    import kernel.graph_neo4j as graph_neo4j
-
-    fake_driver = _FakeNeo4jDriver()
-    monkeypatch.setattr(
-        graph_neo4j.GraphDatabase, "driver", lambda *_args, **_kwargs: fake_driver
-    )
-    store = Neo4jGraphStore(
-        GraphSettings(
-            neo4j_uri="bolt://fake:7687",
-            neo4j_user="neo4j",
-            neo4j_password="",
-        )
-    )
-    return store, fake_driver
 
 
 def test_neo4j_store_uses_driver_shape_with_fake_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    store, fake_driver = _store(monkeypatch)
+    store, fake_driver = fake_store(monkeypatch)
 
     parent = store.merge_node("Artifact", "parent", {"status": "new"})
     replayed = store.merge_node("Artifact", "parent", {"status": "new"})
@@ -121,7 +41,7 @@ def test_neo4j_store_uses_driver_shape_with_fake_backend(
 def test_neo4j_store_records_faults_from_driver_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    store, _fake_driver = _store(monkeypatch)
+    store, _fake_driver = fake_store(monkeypatch)
     parent = store.merge_node("Artifact", "parent", {})
 
     with pytest.raises(KeyError):
@@ -133,7 +53,7 @@ def test_neo4j_store_records_faults_from_driver_path(
 def test_neo4j_store_raises_when_expected_record_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    store, _fake_driver = _store(monkeypatch)
+    store, _fake_driver = fake_store(monkeypatch)
 
     with pytest.raises(LookupError, match="no records"):
         store._one("MATCH (n:`Artifact` {key: $key}) RETURN properties(n) AS props")
@@ -142,7 +62,7 @@ def test_neo4j_store_raises_when_expected_record_is_missing(
 def test_neo4j_store_rejects_unsafe_dynamic_identifiers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    store, _fake_driver = _store(monkeypatch)
+    store, _fake_driver = fake_store(monkeypatch)
 
     with pytest.raises(ValueError, match="unsafe graph identifier"):
         store.merge_node("Bad Label", "x", {})

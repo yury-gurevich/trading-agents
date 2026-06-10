@@ -57,3 +57,33 @@ def test_zero_weight_scoring_returns_zero_confidence() -> None:
 
     assert score.technical_score == 0.0
     assert score.confidence == 0.0
+
+
+def test_long_ma_component_is_neutral_without_long_history() -> None:
+    settings = AnalystSettings(long_ma_bars=5)
+
+    score = score_candidate(
+        candidate(),
+        (bar("AAPL", 2, 100.0), bar("AAPL", 0, 120.0)),
+        settings,
+    )
+
+    assert score.metrics["trend_component"] == 0.5
+
+
+def test_long_ma_component_uses_long_history_when_available() -> None:
+    settings = AnalystSettings(long_ma_bars=5, short_ma_bars=2)
+
+    score = score_candidate(
+        candidate(),
+        (
+            bar("AAPL", 4, 100.0),
+            bar("AAPL", 3, 102.0),
+            bar("AAPL", 2, 104.0),
+            bar("AAPL", 1, 106.0),
+            bar("AAPL", 0, 108.0),
+        ),
+        settings,
+    )
+
+    assert score.metrics["trend_component"] > 0.5

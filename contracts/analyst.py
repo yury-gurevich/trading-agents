@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from pydantic import Field
+
 from contracts.common import Action, Explanation, Provenance, Ticker, _Frozen
 from contracts.scanner import CandidateSet
 from kernel.contract import AgentContract, Capability
@@ -16,13 +18,13 @@ from kernel.contract import AgentContract, Capability
 class Recommendation(_Frozen):
     ticker: Ticker
     action: Action
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)
     """0..1. Must clear the regime's base_min_confidence to be actionable."""
     technical_score: float
     sentiment_score: float | None = None
     fundamental_score: float | None = None
-    suggested_stop_pct: float | None = None
-    suggested_target_pct: float | None = None
+    suggested_stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
+    suggested_target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     rationale: Explanation
 
 

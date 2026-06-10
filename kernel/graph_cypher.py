@@ -30,6 +30,54 @@ def _relationship_pattern(edge_types: set[str] | None, max_depth: int) -> str:
     return f"[:{rel_types}*1..{max_depth}]"
 
 
+def _constraint_query(label_id: str, constraint_id: str) -> str:
+    return (
+        f"CREATE CONSTRAINT {constraint_id} IF NOT EXISTS "
+        f"FOR (n:{label_id}) REQUIRE n.key IS UNIQUE"
+    )
+
+
+def _constraint_name(label: str) -> str:
+    return _identifier(f"{label}_key_unique")
+
+
+def _match_node_query(label_id: str) -> str:
+    return f"MATCH (n:{label_id} {{key: $key}}) RETURN properties(n) AS props"
+
+
+def _set_node_props_query(label_id: str) -> str:
+    return (
+        f"MATCH (n:{label_id} {{key: $key}}) "
+        "SET n += $props RETURN properties(n) AS props"
+    )
+
+
+def _merge_node_query(label_id: str) -> str:
+    return (
+        f"MERGE (n:{label_id} {{key: $key}}) "
+        "ON CREATE SET n += $props "
+        "RETURN properties(n) AS props"
+    )
+
+
+def _add_edge_query(parent_label: str, child_label: str, rel_type: str) -> str:
+    return (
+        f"MATCH (p:{parent_label} {{key: $parent_key}}), "
+        f"(c:{child_label} {{key: $child_key}}) "
+        f"MERGE (p)-[r:{rel_type}]->(c) "
+        "ON CREATE SET r += $props "
+        "RETURN properties(r) AS props"
+    )
+
+
+def _traverse_query(label_id: str, rel: str, *, upstream: bool) -> str:
+    direction = f"<-{rel}-" if upstream else f"-{rel}->"
+    return (
+        f"MATCH (start:{label_id} {{key: $key}}){direction}(n) "
+        "RETURN DISTINCT labels(n) AS labels, n.key AS key, properties(n) AS props"
+    )
+
+
 def _stored_props(props: Mapping[str, Any]) -> dict[str, Any]:
     out = dict(props)
     out.pop("key", None)

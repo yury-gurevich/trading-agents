@@ -134,4 +134,6 @@ def _parse_stooq_rows(ticker: str, raw_csv: str) -> tuple[OHLCVBar, ...]:
 
 
 def _has_ohlcv(row: Mapping[str, str]) -> bool:
-    return all(row.get(name) for name in ("Date", "Open", "High", "Low", "Close"))
+    return all(
+        row.get(name) for name in ("Date", "Open", "High", "Low", "Close", "Volume")
+    )

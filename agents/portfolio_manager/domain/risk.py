@@ -121,8 +121,16 @@ def _order_intent(
         action=item.action,
         quantity=quantity,
         est_price=price,
-        stop_pct=item.suggested_stop_pct or default_stop_pct,
-        target_pct=item.suggested_target_pct or default_target_pct,
+        stop_pct=(
+            item.suggested_stop_pct
+            if item.suggested_stop_pct is not None
+            else default_stop_pct
+        ),
+        target_pct=(
+            item.suggested_target_pct
+            if item.suggested_target_pct is not None
+            else default_target_pct
+        ),
         rationale=Explanation(
             summary=f"Approved {item.ticker}: sized {quantity} shares from PM policy.",
             evidence_refs=("portfolio_manager.sizing", "provider.regime"),

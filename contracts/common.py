@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Ticker = str
 RegimeLabel = Literal[
@@ -60,9 +60,16 @@ class Window(_Frozen):
     start: date
     end: date
 
+    @model_validator(mode="after")
+    def _start_not_after_end(self) -> Self:
+        """Reject impossible date windows at the contract boundary."""
+        if self.start > self.end:
+            raise ValueError("window start must be on or before end")
+        return self
+
 
 class Money(_Frozen):
-    amount: Decimal
+    amount: Decimal = Field(ge=Decimal("0"))
     currency: str = "USD"
 
 

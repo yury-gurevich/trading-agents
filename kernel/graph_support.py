@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import Any, Protocol
 
 type NodeKey = tuple[str, str]
+type EdgeKey = tuple[NodeKey, NodeKey, str]
 type Props = Mapping[str, Any]
 
 
@@ -25,23 +26,48 @@ class _GraphNode(Protocol):
 
 class _GraphEdge(Protocol):
     @property
+    def parent(self) -> NodeKey: ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def child(self) -> NodeKey: ...  # pragma: no cover - protocol declaration only.
+
+    @property
     def edge_type(self) -> str: ...  # pragma: no cover - protocol declaration only.
 
 
 def _frozen_props(props: Props | None) -> Props:
-    return MappingProxyType(dict(props or {}))
+    return MappingProxyType(
+        {key: _frozen_value(value) for key, value in dict(props or {}).items()}
+    )
+
+
+def _frozen_value(value: Any) -> Any:  # noqa: ANN401 - graph props are JSON-like.
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {key: _frozen_value(nested) for key, nested in value.items()}
+        )
+    if isinstance(value, list | tuple):
+        return tuple(_frozen_value(item) for item in value)
+    if isinstance(value, set | frozenset):
+        return frozenset(_frozen_value(item) for item in value)
+    return value
 
 
 def _node_key(node: _GraphNode) -> NodeKey:
     return (node.label, node.key)
 
 
+def _edge_key(edge: _GraphEdge) -> EdgeKey:
+    return (edge.parent, edge.child, edge.edge_type)
+
+
 def _append_props(existing: Props, new_props: Props) -> dict[str, Any]:
     merged = dict(existing)
     for name, value in new_props.items():
-        if name in merged and merged[name] != value:
+        frozen = _frozen_value(value)
+        if name in merged and merged[name] != frozen:
             raise ValueError(f"property {name!r} cannot be overwritten")
-        merged[name] = value
+        merged[name] = frozen
     return merged
 
 

@@ -37,18 +37,18 @@ class RegimeRequest(_Frozen):
 class OHLCVBar(_Frozen):
     ticker: Ticker
     bar_date: date
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: int
+    open: float = Field(gt=0.0)
+    high: float = Field(gt=0.0)
+    low: float = Field(gt=0.0)
+    close: float = Field(gt=0.0)
+    volume: int = Field(ge=0)
 
 
 class DataQualityTrace(_Frozen):
     """Honest record of how clean this data is — degraded sources are first-class."""
 
-    requested: int
-    returned: int
+    requested: int = Field(ge=0)
+    returned: int = Field(ge=0)
     used_fallback: bool = False
     stale_tickers: tuple[Ticker, ...] = ()
     notes: tuple[str, ...] = ()
@@ -66,12 +66,12 @@ class RegimeContext(_Frozen):
     """Market regime + the policy inputs every downstream agent reads."""
 
     label: RegimeLabel
-    vix: float | None
+    vix: float | None = Field(default=None, ge=0.0)
     as_of: datetime
-    base_min_confidence: float
-    base_stop_loss_pct: float
-    base_take_profit_pct: float
-    base_max_holding_days: int
+    base_min_confidence: float = Field(ge=0.0, le=1.0)
+    base_stop_loss_pct: float = Field(ge=0.0, le=1.0)
+    base_take_profit_pct: float = Field(ge=0.0, le=1.0)
+    base_max_holding_days: int = Field(ge=1)
     provenance: Provenance
 
 

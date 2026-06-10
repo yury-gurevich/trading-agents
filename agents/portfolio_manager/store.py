@@ -1,7 +1,7 @@
 """Portfolio Manager graph write path.
 
 Agent: portfolio_manager
-Role: write PM runs, order intents, and recommendation approval lineage.
+Role: write PM runs, order intents, rejection evidence, and recommendation lineage.
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -58,7 +58,15 @@ def write_order_decision(
             },
         )
         graph.add_edge(node, run, "EMITTED_BY")
-        _link_recommendation(graph, node, analyst_key, order.ticker)
+        _link_recommendation(graph, node, analyst_key, order.ticker, "APPROVES")
+    for rejection in rejected:
+        node = graph.merge_node(
+            "Rejection",
+            f"{run_id}:{rejection.ticker}",
+            {"ticker": rejection.ticker, "reason": rejection.reason},
+        )
+        graph.add_edge(node, run, "REJECTED_IN")
+        _link_recommendation(graph, node, analyst_key, rejection.ticker, "REJECTS")
     return Provenance(
         run_id=run_id,
         source_agent="portfolio_manager",
@@ -82,10 +90,14 @@ def _analyst_key(recommendation_set: RecommendationSet) -> str | None:
 
 
 def _link_recommendation(
-    graph: GraphStore, node: Node, analyst_key: str | None, ticker: str
+    graph: GraphStore,
+    node: Node,
+    analyst_key: str | None,
+    ticker: str,
+    edge_type: str,
 ) -> None:
     if analyst_key is None:
         return
     recommendation = graph.get_node("Recommendation", f"{analyst_key}:{ticker}")
     if recommendation is not None:
-        graph.add_edge(node, recommendation, "APPROVES")
+        graph.add_edge(node, recommendation, edge_type)

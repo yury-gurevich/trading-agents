@@ -16,7 +16,7 @@ from kernel.contract import AgentContract, Capability
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class Candidate(_Frozen):
     ticker: Ticker
-    rank: int
+    rank: int = Field(ge=1)
     score: float
     survived_filters: tuple[str, ...]
     metrics: dict[str, float] = Field(default_factory=dict)
@@ -26,8 +26,8 @@ class Candidate(_Frozen):
 class FilterTrace(_Frozen):
     """Why the universe shrank — every drop is attributable."""
 
-    universe_size: int
-    evaluated: int
+    universe_size: int = Field(ge=0)
+    evaluated: int = Field(ge=0)
     dropped_by_filter: dict[str, int] = Field(default_factory=dict)
 
 

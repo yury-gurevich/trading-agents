@@ -22,11 +22,10 @@ def rank_survivors(
     ordered = sorted(
         survivors,
         key=lambda item: (
-            item.metrics["relative_strength"],
-            item.metrics["average_volume"],
+            -item.metrics["relative_strength"],
+            -item.metrics["average_volume"],
             item.ticker,
         ),
-        reverse=True,
     )
     return tuple(
         Candidate(

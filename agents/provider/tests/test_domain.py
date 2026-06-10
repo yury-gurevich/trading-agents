@@ -37,6 +37,24 @@ def _bar(
     )
 
 
+def _raw_bar(
+    *,
+    close: float = 101.0,
+    high: float = 102.0,
+    low: float = 99.0,
+    volume: int = 1000,
+) -> OHLCVBar:
+    return OHLCVBar.model_construct(
+        ticker="AAPL",
+        bar_date=date(2026, 1, 1),
+        open=100.0,
+        high=high,
+        low=low,
+        close=close,
+        volume=volume,
+    )
+
+
 def test_integrity_rejects_invalid_bars_and_reports_stale_tickers() -> None:
     window = Window(start=date(2026, 1, 1), end=date(2026, 1, 10))
     settings = ProviderSettings(max_staleness_days=2)
@@ -44,8 +62,8 @@ def test_integrity_rejects_invalid_bars_and_reports_stale_tickers() -> None:
     bars, quality = validate_bars(
         ("AAPL", "MSFT"),
         (
-            _bar(close=float("nan")),
-            _bar(close=101.0, volume=-1),
+            _raw_bar(close=float("nan")),
+            _raw_bar(close=101.0, volume=-1),
             _bar(close=101.0, high=100.5),
             _bar(close=101.0),
         ),

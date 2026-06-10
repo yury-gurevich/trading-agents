@@ -238,7 +238,7 @@ stage gates in P8.
 | P1 Kernel runtime | **active** (S01/S07 both bus backends, S03 Neo4j GraphStore, S08 observability shipped; MCP binding + RAG remain; S02 superseded by ADR-0001) |
 | P2 First vertical slice | **complete** (S04 provider, S05 scanner, S06 analyst; exit met) |
 | P3 Decision loop | **complete** (S09 PM, S10 hardening, S11 execution, S12 monitor, S13 reporter — exit criterion met) |
-| P4 Orchestration | planned |
+| P4 Orchestration | **active** (S14 dispatcher planned) |
 | P5 Operator + supervisor | planned |
 | P6 Surfaces | planned |
 | P7 Self-management | planned |

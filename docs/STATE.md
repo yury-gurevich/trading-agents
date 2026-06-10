@@ -9,25 +9,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P3 complete.** The full paper trading loop runs end-to-end:
-`provider → scanner → analyst → portfolio_manager → execution → monitor → reporter`.
+**Sprint 14 — Dispatcher (P4 begins).** Implement `orchestration/Dispatcher` — replaces manual
+in-test sequencing with `execute_run(trigger)` driving all 7 agents via the bus in order.
+P4 exit contribution: `test_p4_celery_parity` proves the daily loop on `CeleryBus` (eager mode).
 
-The 7-agent P3 exit test proves the complete provenance chain and produces a `RunSnapshot` +
-`TradeNarrative` with no agent importing another. **P3 exit criterion met.**
+Branch: `sprint-14-dispatcher` · Plan: `docs/sprints/sprint-14-dispatcher.md`
 
-State of the system: all 6 domain agents implemented; kernel (bus × 2, Neo4j GraphStore,
-observability) done; P1 remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
-
-Quality gate (green on `sprint-13-reporter`): ruff, format, mypy, import-linter (4/4 — kernel
-pure + agent isolation KEPT), size + header guards, **185 tests (+3 skipped) at 100%** (floor 100.00).
+Quality gate baseline (from `sprint-13-reporter`): 185 tests (+3 skipped) at 100% (floor 100.00).
 
 Near-limit: `agents/monitor/agent.py` (197), `agents/monitor/tests/test_monitor_agent.py` (198) — split on next monitor touch.
 
 ## Next
 
-- **P4 — Orchestration**: dispatcher + distributed bus, event-driven daily loop, supervisor.
-- Build-when-needed: MCP tool-binding, RAG vector index; non-eager Celery worker round-trip
-  is the natural P4 opener.
+- **Sprint 15 — Scheduler + supervisor message lineage** (P4 continuation): wall-clock trigger,
+  minimal supervisor (`report_fault` + `Message` node lineage), full P4 exit criterion met.
+- Build-when-needed: MCP tool-binding, RAG vector index.
 
 ## Workflow
 

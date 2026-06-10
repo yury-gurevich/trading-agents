@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-10 — Sprint 12 (monitor) shipped; Sprint 13 (reporter) next.
+**Last updated:** 2026-06-10 — Sprint 13 (reporter) shipped. **P3 exit criterion met.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,25 +9,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints — P3 one step from exit.** [Sprint 13 reporter](sprints/sprint-13-reporter.md) handover written; awaiting coding agent on branch `sprint-13-reporter`.
+**P3 complete.** The full paper trading loop runs end-to-end:
+`provider → scanner → analyst → portfolio_manager → execution → monitor → reporter`.
 
-State of the system: `provider → scanner → analyst → portfolio_manager → execution → monitor`
-fully wired. The complete P3 provenance chain is proven:
-`CloseDecision -[:CLOSES]-> Position -[:OPENS (fill)]-> Fill -[:EXECUTES]-> OrderIntent
--[:APPROVES]-> Recommendation -[:DERIVED_FROM]-> Candidate -[:SURVIVED]-> ScanRun
--[:DERIVED_FROM]-> MarketSnapshot`. P1's remaining infra (MCP tool-binding, RAG vector) is
-build-when-needed.
+The 7-agent P3 exit test proves the complete provenance chain and produces a `RunSnapshot` +
+`TradeNarrative` with no agent importing another. **P3 exit criterion met.**
 
-Quality gate (green on `sprint-12-monitor`): ruff, format, mypy, import-linter (4/4 — kernel
-pure + agent isolation KEPT), size + header guards, **171 tests (+3 skipped) at 100%** (floor 100.00).
+State of the system: all 6 domain agents implemented; kernel (bus × 2, Neo4j GraphStore,
+observability) done; P1 remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
 
-Near-limit modules to split on next touch: `agents/monitor/agent.py` (197), `agents/monitor/tests/test_monitor_agent.py` (198).
+Quality gate (green on `sprint-13-reporter`): ruff, format, mypy, import-linter (4/4 — kernel
+pure + agent isolation KEPT), size + header guards, **185 tests (+3 skipped) at 100%** (floor 100.00).
+
+Near-limit: `agents/monitor/agent.py` (197), `agents/monitor/tests/test_monitor_agent.py` (198) — split on next monitor touch.
 
 ## Next
 
-- **Sprint 13 — `reporter`**: stitch the run snapshot and per-trade narrative; P3 exit criterion.
+- **P4 — Orchestration**: dispatcher + distributed bus, event-driven daily loop, supervisor.
 - Build-when-needed: MCP tool-binding, RAG vector index; non-eager Celery worker round-trip
-  belongs with P4 orchestration.
+  is the natural P4 opener.
 
 ## Workflow
 
@@ -41,6 +41,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 13 — Reporter agent** (P3 — **exit criterion met**). Read-only graph traversal
+  produces `RunSnapshot` (portfolio/signal metrics, headline) and `TradeNarrative` (scan-to-exit
+  story per position). `Snapshot -[:SUMMARISES]-> PMRun` and `TradeNarrative -[:NARRATES]->
+  Position` written. `agent.py` 88 lines. 185 tests, floor 100.
 - **Sprint 12 — Monitor agent** (P3). Opens positions from fills (`PMRun → OrderIntent → Fill`
   traversal), evaluates stop/target/time exit rules (integer PCT_SCALE arithmetic), drives
   `execution.execute_close` on the bus, writes `CloseDecision -[:CLOSES]-> Position` and

@@ -1,6 +1,6 @@
 # Sprint 13 — Reporter agent (run snapshot + per-trade narrative)
 
-**Status:** planned · **Branch:** `sprint-13-reporter` · **Build phase:** P3 (decision loop) · **Effort: M**
+**Status:** shipped (merged to `main` @ `ab328a5`) · **Branch:** `sprint-13-reporter` · **Build phase:** P3 (decision loop) · **Effort: M**
 
 ## Goal
 
@@ -134,11 +134,13 @@ produced with coherent content and no agent imports another.
    - **P3 exit test** (the headline) — `test_p3_reporter_slice.py`: wire all 7 agents
      (`provider + scanner + analyst + portfolio_manager + execution + monitor + reporter`) on one
      bus with `FakeDataSource` + `PaperBroker`; drive:
+
      ```text
      run_scan → analyze → evaluate_orders → submit
      → (rebind provider with lower price) → check_positions
      → report(pm_run_id) → narrative(f"{pm_run_id}:AAPL")
      ```
+
      Assert:
      - `RunSnapshot.portfolio_metrics["positions_opened"] >= 1`
      - `RunSnapshot.portfolio_metrics["positions_closed"] >= 1`

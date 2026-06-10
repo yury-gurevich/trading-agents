@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 10 (hardening) opened, before execution.
+**Last updated:** 2026-06-09 — Sprint 10 (hardening) merged; audit truth complete. Next: execution.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,21 +9,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 10 active — hardening (before execution).** [Sprint 10](sprints/sprint-10-hardening.md)
-closes the audit-truth + rigor backlog from the Sprint 09 review before `execution` lands:
-**persist PM rejection evidence** in the graph (the PM's mission), add **contract value
-validators**, fix the stop/target bug, **deep-freeze** graph props + make the two `GraphStore`
-backends' edge behaviour **match**, install **Neo4j uniqueness constraints**, and split the
-near-200-line modules. Handover written; awaiting the coding agent on branch `sprint-10-hardening`.
-(Also de-pins the 100% coverage ceiling to a sustainable floor.)
+**Between sprints.** [Sprint 10](sprints/sprint-10-hardening.md) shipped the audit-truth + rigor
+hardening (fast-forward `3bd1c25`): PM **rejection evidence is now durable** (`Rejection` nodes +
+`REJECTED_IN`/`REJECTS` lineage), the **contracts validate values** (no negative money, confidence
+∈ [0,1], `start ≤ end`, quantity ≥ 1), graph props are **deeply immutable**, the two `GraphStore`
+backends agree on **edge identity** (with a parity test), the Neo4j store **installs uniqueness
+constraints**, and the near-200-line kernel modules were split (`graph.py` 74, `graph_memory` 138,
+…). The 100% coverage ceiling is de-pinned to a 99.5 floor.
 
-State of the system: kernel runtime (both bus backends, `AgentBase`, Neo4j `GraphStore` + Aura,
-metrics adapter), the P2 slice, and the portfolio manager (P3 begun) are done — the 4-agent
-pipeline (`provider → scanner → analyst → portfolio_manager`) runs with full provenance.
+State of the system: the foundation is hardened — kernel runtime (both bus backends, `AgentBase`,
+Neo4j `GraphStore` + Aura, metrics), and the 4-agent pipeline (`provider → scanner → analyst →
+portfolio_manager`) runs with full, queryable provenance (approvals **and** rejections). **P3 now
+resumes with `execution`.**
 
-Quality gate (green on `main`): ruff, format, mypy (91 files), import-linter (4/4 — kernel pure +
-agent isolation KEPT), size + header guards, **130 tests (+3 skipped live/broker) at 100%** (floor
-to be de-pinned during hardening).
+Quality gate (green on `main`): ruff, format, mypy (97 files), import-linter (4/4 — kernel pure +
+agent isolation KEPT), size + header guards, **144 tests (+3 skipped live/broker) at 100%** (floor 99.5).
 
 ## Next
 
@@ -44,6 +44,10 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 10 — Audit-truth & rigor hardening** (P3). Durable PM rejection evidence (`Rejection`
+  nodes + lineage); contract value validators; deep-frozen graph props; matched InMemory/Neo4j
+  edge identity (parity test); lazily-installed Neo4j uniqueness constraints; split the tight
+  kernel modules; Stooq/MA/tie-break fixes. 144 tests; floor de-pinned 100 → 99.5.
 - **Sprint 09 — Portfolio manager** (P3 begun). Sizes + risk-checks recommendations into
   `OrderIntent`s (two provider bus calls, deterministic sizing, explainable rejections, money as
   integer cents); `OrderIntent -[:APPROVES]-> Recommendation` lineage; 4-agent pipeline test green.

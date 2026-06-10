@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 11 (execution) opened; P3 continues.
+**Last updated:** 2026-06-10 — Sprint 11 (execution) shipped; Sprint 12 (monitor) planned.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,27 +9,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 11 active — P3 continues.** [Execution agent](sprints/sprint-11-execution.md) — the single
-**idempotent broker boundary** and the first agent that *acts*: it submits the PM's approved
-`OrderIntent`s to a deterministic **paper broker** under an idempotency key (double-submit → one
-order/`Fill`), records `Fill`s, and writes `Fill -[:EXECUTES]-> OrderIntent` — extending the chain
-to `Fill → OrderIntent → Recommendation → Candidate → ScanRun → MarketSnapshot`. Paper stage only;
-live stages + gated promotion are P8. Handover written; awaiting the coding agent on branch
-`sprint-11-execution`.
+**Between sprints — P3 continues.** [Sprint 12 monitor](sprints/sprint-12-monitor.md) handover
+written; awaiting coding agent on branch `sprint-12-monitor`.
 
-State of the system: the hardened foundation + the decision pipeline (`provider → scanner → analyst
-→ portfolio_manager`, full audit-truth provenance for approvals **and** rejections) are done. P1's
-remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
+State of the system: `provider → scanner → analyst → portfolio_manager → execution` fully wired
+with audit-truth provenance. `Fill -[:EXECUTES]-> OrderIntent` extends the chain to
+`Fill → OrderIntent → Recommendation → Candidate → ScanRun → MarketSnapshot`. P1's remaining infra
+(MCP tool-binding, RAG vector) is build-when-needed.
 
-Quality gate (green on `main`): ruff, format, mypy (97 files), import-linter (4/4 — kernel pure +
-agent isolation KEPT), size + header guards, **144 tests (+3 skipped live/broker) at 100%** (floor 99.5).
+Quality gate (green on `sprint-11-execution`): ruff, format, mypy, import-linter (4/4 — kernel
+pure + agent isolation KEPT), size + header guards, **coverage 100%** (floor 100.00).
 
 ## Next
 
-- **P3 resumes after hardening: `execution`** (idempotent paper-broker submit + fills), then
-  `monitor` (positions, exits), then `reporter` (run narrative + per-trade stitch).
-- Build-when-needed: the MCP tool-binding, the RAG vector index; a non-eager Celery worker
-  round-trip belongs with P4 orchestration.
+- **Sprint 12 — `monitor`**: open positions from fills, evaluate stop/target/time exit rules,
+  drive `execution.execute_close`, write `CloseDecision -[:CLOSES]-> Position` lineage;
+  6-agent pipeline test.
+- **Sprint 13 — `reporter`**: stitch the run snapshot and per-trade narrative; P3 exit criterion.
+- Build-when-needed: MCP tool-binding, RAG vector index; non-eager Celery worker round-trip
+  belongs with P4 orchestration.
 
 ## Workflow
 

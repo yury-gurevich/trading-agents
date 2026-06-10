@@ -1,6 +1,6 @@
 # Sprint 11 — Execution agent (the idempotent broker boundary, paper stage)
 
-**Status:** active · **Branch:** `sprint-11-execution` · **Build phase:** P3 (decision loop) · **Effort: L**
+**Status:** shipped (merged to `main` @ `50e1911`) · **Branch:** `sprint-11-execution` · **Build phase:** P3 (decision loop) · **Effort: L**
 
 ## Goal
 

@@ -19,9 +19,11 @@ orders, record fills, reconcile, and enforce stage gates
   `monitor` (close decisions).
 
 ## Data ownership
-- **Postgres:** `fills`, `execution_events`, `reconciliation_outcomes`,
-  `execution_stage_audits`.
-- **Graph:** `Fill`, `Reconciliation` (`Fill -[:EXECUTES]-> OrderIntent`).
+- **Graph:** `Fill`, `Reconciliation`; `Fill -[:EXECUTES]-> OrderIntent`
+  extends the audit chain from broker outcome back to the PM decision and upstream
+  scan evidence.
+- **Broker state:** idempotency-keyed paper submissions now; real broker clients
+  and stage-transition audits land with the live-stage work.
 
 ## External I/O (exclusive)
 - alpaca broker. **No other agent may submit broker actions.**

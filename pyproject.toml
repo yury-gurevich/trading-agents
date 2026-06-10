@@ -120,9 +120,8 @@ addopts = [
     "--cov=agents",
     "--cov-report=term-missing",
     "--cov-report=html",
-    # Regression-ratchet floor: sustainable floor; current measured coverage is
-    # still allowed to sit above this without forcing defensive-code contortions.
-    "--cov-fail-under=99.50",
+    # Regression-ratchet floor: the current measured floor. Climb; never lower.
+    "--cov-fail-under=100.00",
     "--no-header",
 ]
 markers = [
@@ -151,4 +150,4 @@ exclude_lines = [
 ]
 show_missing = true
 precision = 2
-fail_under = 99.50
+fail_under = 100.00

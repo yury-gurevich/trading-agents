@@ -1,5 +1,10 @@
-"""Execution agent. Charter: mission.md. Boundary: contracts/execution.py.
+"""Execution agent package.
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
+Agent: execution
+Role: expose the execution boundary agent.
+External I/O: injected Broker and GraphStore backends.
 """
+
+from agents.execution.agent import ExecutionAgent
+
+__all__ = ["ExecutionAgent"]

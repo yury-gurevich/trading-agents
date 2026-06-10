@@ -237,7 +237,7 @@ stage gates in P8.
 | P0 Boundary map | **complete** |
 | P1 Kernel runtime | **active** (S01/S07 both bus backends, S03 Neo4j GraphStore, S08 observability shipped; MCP binding + RAG remain; S02 superseded by ADR-0001) |
 | P2 First vertical slice | **complete** (S04 provider, S05 scanner, S06 analyst; exit met) |
-| P3 Decision loop | **active** (S09 PM, S10 hardening, S11 execution shipped; S12 monitor planned; reporter next) |
+| P3 Decision loop | **active** (S09 PM, S10 hardening, S11 execution, S12 monitor shipped; S13 reporter next — P3 exit) |
 | P4 Orchestration | planned |
 | P5 Operator + supervisor | planned |
 | P6 Surfaces | planned |

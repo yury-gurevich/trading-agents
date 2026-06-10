@@ -1,6 +1,6 @@
 # Sprint 12 — Monitor agent (positions, exit decisions)
 
-**Status:** planned · **Branch:** `sprint-12-monitor` · **Build phase:** P3 (decision loop) · **Effort: L**
+**Status:** shipped (merged to `main` @ `f0a2e60`) · **Branch:** `sprint-12-monitor` · **Build phase:** P3 (decision loop) · **Effort: L**
 
 ## Goal
 

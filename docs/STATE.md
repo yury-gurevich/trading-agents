@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-10 — Sprint 11 (execution) shipped; Sprint 12 (monitor) planned.
+**Last updated:** 2026-06-10 — Sprint 12 (monitor) shipped; Sprint 13 (reporter) next.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,22 +9,22 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints — P3 continues.** [Sprint 12 monitor](sprints/sprint-12-monitor.md) handover
-written; awaiting coding agent on branch `sprint-12-monitor`.
+**Between sprints — P3 one step from exit.** [Sprint 13 reporter](sprints/README.md) is next.
 
-State of the system: `provider → scanner → analyst → portfolio_manager → execution` fully wired
-with audit-truth provenance. `Fill -[:EXECUTES]-> OrderIntent` extends the chain to
-`Fill → OrderIntent → Recommendation → Candidate → ScanRun → MarketSnapshot`. P1's remaining infra
-(MCP tool-binding, RAG vector) is build-when-needed.
+State of the system: `provider → scanner → analyst → portfolio_manager → execution → monitor`
+fully wired. The complete P3 provenance chain is proven:
+`CloseDecision -[:CLOSES]-> Position -[:OPENS (fill)]-> Fill -[:EXECUTES]-> OrderIntent
+-[:APPROVES]-> Recommendation -[:DERIVED_FROM]-> Candidate -[:SURVIVED]-> ScanRun
+-[:DERIVED_FROM]-> MarketSnapshot`. P1's remaining infra (MCP tool-binding, RAG vector) is
+build-when-needed.
 
-Quality gate (green on `sprint-11-execution`): ruff, format, mypy, import-linter (4/4 — kernel
-pure + agent isolation KEPT), size + header guards, **coverage 100%** (floor 100.00).
+Quality gate (green on `sprint-12-monitor`): ruff, format, mypy, import-linter (4/4 — kernel
+pure + agent isolation KEPT), size + header guards, **171 tests (+3 skipped) at 100%** (floor 100.00).
+
+Near-limit modules to split on next touch: `agents/monitor/agent.py` (197), `agents/monitor/tests/test_monitor_agent.py` (198).
 
 ## Next
 
-- **Sprint 12 — `monitor`**: open positions from fills, evaluate stop/target/time exit rules,
-  drive `execution.execute_close`, write `CloseDecision -[:CLOSES]-> Position` lineage;
-  6-agent pipeline test.
 - **Sprint 13 — `reporter`**: stitch the run snapshot and per-trade narrative; P3 exit criterion.
 - Build-when-needed: MCP tool-binding, RAG vector index; non-eager Celery worker round-trip
   belongs with P4 orchestration.
@@ -41,6 +41,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 12 — Monitor agent** (P3). Opens positions from fills (`PMRun → OrderIntent → Fill`
+  traversal), evaluates stop/target/time exit rules (integer PCT_SCALE arithmetic), drives
+  `execution.execute_close` on the bus, writes `CloseDecision -[:CLOSES]-> Position` and
+  `Fill -[:OPENS]-> Position` lineage. 6-agent pipeline test proves the complete P3 provenance
+  chain. `MonitorRun` added to `contracts/monitor.py` `owns_graph`. 171 tests, floor 100.
+- **Sprint 11 — Execution agent** (P3). Idempotent `PaperBroker` (dedupes by
+  `f"{run_id}:{ticker}:{side}"`), four capabilities, `Fill -[:EXECUTES]-> OrderIntent` lineage.
+  No `ExecRun` parent — fills keyed directly by idempotency key. 100% coverage.
 - **Sprint 10 — Audit-truth & rigor hardening** (P3). Durable PM rejection evidence (`Rejection`
   nodes + lineage); contract value validators; deep-frozen graph props; matched InMemory/Neo4j
   edge identity (parity test); lazily-installed Neo4j uniqueness constraints; split the tight

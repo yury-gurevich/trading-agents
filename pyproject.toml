@@ -57,6 +57,7 @@ ignore = ["D100", "D104", "D203", "D213", "S101", "A005"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "ANN", "D", "ARG", "T20"]
 "agents/**/tests/**/*.py" = ["S101", "ANN", "D", "ARG", "T20"]
+"orchestration/tests/**/*.py" = ["S101", "ANN", "D", "ARG", "T20"]
 "agents/**/__init__.py" = ["D"]
 # contracts/ are typed DTOs: the fields, capability summaries, and mission docs
 # are the documentation. Class/nested-class docstrings are not required here.
@@ -105,7 +106,7 @@ ignore_missing_imports = true
 
 # ── Pytest + coverage ratchet, same shape as the reference project ────────────
 [tool.pytest.ini_options]
-testpaths = ["tests", "agents"]
+testpaths = ["tests", "agents", "orchestration"]
 pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -118,6 +119,7 @@ addopts = [
     "--cov=kernel",
     "--cov=contracts",
     "--cov=agents",
+    "--cov=orchestration",
     "--cov-report=term-missing",
     "--cov-report=html",
     # Regression-ratchet floor: the current measured floor. Climb; never lower.
@@ -136,7 +138,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["kernel", "contracts", "agents"]
+source = ["kernel", "contracts", "agents", "orchestration"]
 branch = true
 omit = ["*/migrations/*", "*/__main__.py", "*/tests/*"]
 

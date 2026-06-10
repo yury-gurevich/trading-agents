@@ -32,7 +32,7 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run mypy $(PKGS)
 	uv run lint-imports
 	uv run python scripts/check_module_size.py $(PKGS) tests
-	uv run python scripts/check_module_header.py kernel contracts agents scripts
+	uv run python scripts/check_module_header.py $(PKGS) scripts
 	uv run pytest
 	-uv run pip-audit
 	uv run pre-commit run detect-secrets --all-files

@@ -131,7 +131,10 @@ class CeleryBus:
         )
         return cast(
             "TaskResult",
-            async_result.get(timeout=self._settings.celery_request_timeout_seconds),
+            async_result.get(
+                timeout=self._settings.celery_request_timeout_seconds,
+                disable_sync_subtasks=not self._settings.celery_task_always_eager,
+            ),
         )
 
     @staticmethod

@@ -22,7 +22,14 @@ import sys
 from pathlib import Path
 
 REQUIRED_FIELDS = ("Agent:", "Role:")
-_SCOPED_PREFIXES = ("kernel/", "contracts/", "agents/", "scripts/")
+_SCOPED_PREFIXES = (
+    "kernel/",
+    "contracts/",
+    "agents/",
+    "orchestration/",
+    "surfaces/",
+    "scripts/",
+)
 
 
 def _is_checked_path(path: Path) -> bool:

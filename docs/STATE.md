@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 08 (observability adapter) merged; Neo4j Aura configured.
+**Last updated:** 2026-06-09 — Sprint 09 (portfolio manager) opened; P3 begins.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,19 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 08](sprints/sprint-08-observability-adapter.md) shipped the kernel
-**metrics adapter** (fast-forward `515a713`) — a vendor-neutral `Metrics` protocol
-(`NullMetrics` default; `PrometheusMetrics` backend with a private in-memory registry, no
-server). Both buses are instrumented at the request choke point (throughput + latency +
-outcome), and a `MeteredFaultSink` records fault-rate by source from the central fault channel;
-agents are untouched. Metrics: `trading_agents_kernel_{requests_total,request_latency_seconds,
-faults_total}`.
+**Sprint 09 active — P3 begins.** [Portfolio manager](sprints/sprint-09-portfolio-manager.md) —
+the first agent of the decision loop: it turns the analyst's `RecommendationSet` into sized,
+risk-checked `OrderIntent`s, calling `provider` over the bus for est. price + regime, and writes
+`OrderIntent -[:APPROVES]-> Recommendation` (extending the chain to `OrderIntent → Recommendation
+→ Candidate → ScanRun → MarketSnapshot`). First agent to handle **money** (integer minor units
+per ADR-0001) and portfolio state. Handover written; awaiting the coding agent on branch
+`sprint-09-portfolio-manager`.
 
-State of the system: the kernel runtime is now well-rounded — both bus backends, `AgentBase`,
-Neo4j `GraphStore` (a real **Aura** instance is configured in `.env` and verified live), and the
-metrics adapter — and the P2 slice (`provider → scanner → analyst`) runs end-to-end with full
-provenance. P1's remaining infra is the MCP tool-binding + the RAG vector index; **P3 (the
-decision loop)** is the other open front.
+State of the system: kernel runtime (both bus backends, `AgentBase`, Neo4j `GraphStore` +
+verified Aura, metrics adapter) and the P2 slice (`provider → scanner → analyst`, full
+provenance) are done. P1's remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
 
 Quality gate (green on `main`): ruff, format, mypy (77 files), import-linter (4/4 — kernel
 pure + agent isolation KEPT), size + header guards, **112 tests (+3 skipped live/broker) at

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-09 — Sprint 10 (hardening) merged; audit truth complete. Next: execution.
+**Last updated:** 2026-06-09 — Sprint 11 (execution) opened; P3 continues.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,18 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between sprints.** [Sprint 10](sprints/sprint-10-hardening.md) shipped the audit-truth + rigor
-hardening (fast-forward `3bd1c25`): PM **rejection evidence is now durable** (`Rejection` nodes +
-`REJECTED_IN`/`REJECTS` lineage), the **contracts validate values** (no negative money, confidence
-∈ [0,1], `start ≤ end`, quantity ≥ 1), graph props are **deeply immutable**, the two `GraphStore`
-backends agree on **edge identity** (with a parity test), the Neo4j store **installs uniqueness
-constraints**, and the near-200-line kernel modules were split (`graph.py` 74, `graph_memory` 138,
-…). The 100% coverage ceiling is de-pinned to a 99.5 floor.
+**Sprint 11 active — P3 continues.** [Execution agent](sprints/sprint-11-execution.md) — the single
+**idempotent broker boundary** and the first agent that *acts*: it submits the PM's approved
+`OrderIntent`s to a deterministic **paper broker** under an idempotency key (double-submit → one
+order/`Fill`), records `Fill`s, and writes `Fill -[:EXECUTES]-> OrderIntent` — extending the chain
+to `Fill → OrderIntent → Recommendation → Candidate → ScanRun → MarketSnapshot`. Paper stage only;
+live stages + gated promotion are P8. Handover written; awaiting the coding agent on branch
+`sprint-11-execution`.
 
-State of the system: the foundation is hardened — kernel runtime (both bus backends, `AgentBase`,
-Neo4j `GraphStore` + Aura, metrics), and the 4-agent pipeline (`provider → scanner → analyst →
-portfolio_manager`) runs with full, queryable provenance (approvals **and** rejections). **P3 now
-resumes with `execution`.**
+State of the system: the hardened foundation + the decision pipeline (`provider → scanner → analyst
+→ portfolio_manager`, full audit-truth provenance for approvals **and** rejections) are done. P1's
+remaining infra (MCP tool-binding, RAG vector) is build-when-needed.
 
 Quality gate (green on `main`): ruff, format, mypy (97 files), import-linter (4/4 — kernel pure +
 agent isolation KEPT), size + header guards, **144 tests (+3 skipped live/broker) at 100%** (floor 99.5).

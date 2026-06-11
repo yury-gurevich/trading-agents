@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 22 planned (MCP tool-binding). **P6 complete. P1 active.**
+**Last updated:** 2026-06-12 — Sprint 22 shipped (MCP tool-binding; P1 complete). **P7 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,17 +9,15 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 22 — MCP tool-binding (P1 closes).** MCP server exposing five tools:
-`command` (operator.interpret → supervisor.dispatch_intent), `status`, `runs`, `incidents`,
-`explain`. Uses `asyncio.to_thread` bridge (MCP server is async; bus is sync). Tests call
-synchronous `dispatch_tool` directly — no async test infrastructure. `mcp>=1.0` moves from
-optional extra to dev dependency group. `render.py` untouched (MCP returns JSON, not text).
+Planning Sprint 23 — **P7 kickoff (self-management)**. Researcher agent proposes bounded,
+measurable parameter changes into a human-review queue; nothing applied without operator
+approval. P7 exit: a measured proposal can be reviewed and approved through the operator
+with full provenance.
 
 ## Next
 
-- **Sprint 23 — P7 kickoff**: researcher agent proposes bounded parameter changes into a
-  human-review queue (proposes-but-never-applies boundary).
-- Build-when-needed: RAG vector index (P1 remainder — last item after MCP closes).
+- **Sprint 23 — P7 kickoff**: `researcher` agent + `ProposalQueue` contract + `cli proposals`.
+- Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
 
@@ -33,6 +31,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 22 — MCP tool-binding** (**P1 complete**). `surfaces/mcp_server.py` (121L) +
+  `surfaces/mcp_tools.py` (146L). Five tools: `command` (operator.interpret →
+  supervisor.dispatch_intent; no auto-confirm — AI assistant calls twice explicitly),
+  `status`, `runs`, `incidents`, `explain`. Async/sync bridge via `asyncio.to_thread`;
+  `_amain`/`main` marked `# pragma: no cover`. `mcp>=1.0` in dev dep group; mypy per-file
+  decorator ignores only. `trading-agents-mcp` script entry in pyproject.toml.
+  `uv run python -m surfaces.mcp_server` exits cleanly on stdin close. 277 tests, floor 100.00.
+  **P1 exit: both bus backends + Neo4j GraphStore + observability + MCP binding all shipped.**
 - **Sprint 21 — Incident view + explain on demand** (**P6 exit**). `FaultView` +
   `open_faults(graph)` (all Fault nodes, newest first); `cli incidents`; `cli explain <pos_id>`
   calls `reporter.narrative` on demand and renders `TradeNarrative.story.summary`. A0 refactor:

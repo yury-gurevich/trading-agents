@@ -54,6 +54,43 @@ def write_fault(
     return graph.merge_node("Fault", key, props)
 
 
+def write_flag(
+    graph: GraphStore,
+    *,
+    subject_ref: str,
+    severity: str,
+    reason: str,
+    status: str = "pending",
+) -> Node:
+    """Write one idempotent human-review flag node."""
+    key = _flag_key(subject_ref, severity)
+    current = graph.get_node("Flag", key)
+    if current is not None:
+        return current
+    return graph.merge_node(
+        "Flag",
+        key,
+        {
+            "subject_ref": subject_ref,
+            "severity": severity,
+            "reason": reason,
+            "status": status,
+            "created_at": datetime.now(tz=UTC).isoformat(),
+        },
+    )
+
+
+def resolve_flag(graph: GraphStore, subject_ref: str, severity: str) -> Node | None:
+    """Mark an existing Flag node resolved when the backend supports replacement."""
+    node = graph.get_node("Flag", _flag_key(subject_ref, severity))
+    if node is None:
+        return None
+    props = dict(node.props)
+    props["status"] = "resolved"
+    props["resolved_at"] = datetime.now(tz=UTC).isoformat()
+    return _replace_node(graph, node, props)
+
+
 def write_dispatch_run(
     graph: GraphStore,
     *,
@@ -89,3 +126,16 @@ def _fault_key(fault: AgentFault, run_id: str | None, message: str) -> str:
         f"{scope}:{fault.source_agent}:{fault.source_module}:"
         f"{capability}:{fault.error_type}:{digest}"
     )
+
+
+def _flag_key(subject_ref: str, severity: str) -> str:
+    return f"flag:{subject_ref}:{severity}"
+
+
+def _replace_node(graph: GraphStore, node: Node, props: dict[str, object]) -> Node:
+    nodes = getattr(graph, "_nodes", None)
+    if isinstance(nodes, dict):
+        updated = type(node)(node.label, node.key, props, node.schema_version)
+        nodes[(node.label, node.key)] = updated
+        return updated
+    raise RuntimeError("graph backend cannot resolve mutable Flag status yet")

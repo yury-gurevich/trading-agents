@@ -32,14 +32,14 @@ def test_anthropic_client_requires_installed_package(
 
     monkeypatch.setattr(importlib, "import_module", missing)
     with pytest.raises(ConfigurationError, match="not installed"):
-        AnthropicLLMClient(api_key="key")
+        AnthropicLLMClient(api_key="key")  # pragma: allowlist secret
 
 
 def test_anthropic_complete_extracts_tool_input(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(importlib, "import_module", lambda _name: _FakeAnthropicModule)
-    client = AnthropicLLMClient(api_key="key")
+    client = AnthropicLLMClient(api_key="key")  # pragma: allowlist secret
     raw = client.complete(system="s", user="u", tool_schema={"type": "object"})
     assert "status" in raw
 

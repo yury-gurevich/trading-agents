@@ -9,13 +9,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.supervisor.domain.gate import dispatch_intent
+from agents.supervisor.domain.health import compute_health
+from agents.supervisor.result import failed_health, master_report, provenance, rejected
 from agents.supervisor.settings import SupervisorSettings
-from agents.supervisor.store import write_dispatch_run, write_fault
+from agents.supervisor.store import (
+    write_dispatch_run,
+    write_fault,
+    write_flag,
+)
 from contracts.common import Provenance
+from contracts.operator import TypedIntent
 from contracts.supervisor import (
     CONTRACT,
     DispatchResult,
     DispatchRunRecord,
+    FlagRequest,
+    MasterReport,
+    StatusRequest,
 )
 from kernel import AgentBase, AgentFault, CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
@@ -27,7 +38,7 @@ if TYPE_CHECKING:
 
 
 class SupervisorAgent(AgentBase):
-    """Minimal P4 supervisor boundary agent."""
+    """Supervisor boundary agent."""
 
     def __init__(
         self,
@@ -43,12 +54,15 @@ class SupervisorAgent(AgentBase):
         self._settings = settings or SupervisorSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.handlers = {
+            "dispatch_intent": self._dispatch_intent,
+            "system_status": self._system_status,
+            "flag_for_human": self._flag_for_human,
             "record_dispatch_run": self._record_dispatch_run,
             "report_fault": self._report_fault,
         }
 
     def bind(self) -> None:
-        """Register only P4 capabilities; P5 contract entries remain unhandled."""
+        """Register implemented supervisor capabilities."""
         for name, handler in self.handlers.items():
             capability = self.contract.capability(name)
             self.bus.register(
@@ -74,9 +88,64 @@ class SupervisorAgent(AgentBase):
                 max_fault_message_chars=self._settings.max_fault_message_chars,
             )
         if capture.fault is not None:
-            return _rejected(record.run_id, "supervisor could not record dispatch run")
+            return rejected(record.run_id, "supervisor could not record dispatch run")
         assert provenance is not None
         return DispatchResult(accepted=True, provenance=provenance)
+
+    # P5 additions below.
+    def _dispatch_intent(self, request: BaseModel) -> DispatchResult:
+        intent = TypedIntent.model_validate(request)
+        result = rejected(intent.provenance.run_id, "supervisor dispatch failed")
+        with fault_boundary(
+            self.sink,
+            agent="supervisor",
+            module="agents.supervisor.agent",
+            capability="dispatch_intent",
+            reraise=False,
+        ) as capture:
+            result = dispatch_intent(self._graph, intent)
+        if capture.fault is not None:
+            return rejected(intent.provenance.run_id, "supervisor dispatch failed")
+        return result
+
+    def _system_status(self, request: BaseModel) -> MasterReport:
+        status_request = StatusRequest.model_validate(request)
+        health = failed_health()
+        with fault_boundary(
+            self.sink,
+            agent="supervisor",
+            module="agents.supervisor.agent",
+            capability="system_status",
+            reraise=False,
+        ) as capture:
+            health = compute_health(self._graph, status_request.run_id)
+        if capture.fault is not None:
+            health = failed_health()
+        return master_report(status_request.run_id or "system-status", health)
+
+    def _flag_for_human(self, request: BaseModel) -> DispatchResult:
+        flag_request = FlagRequest.model_validate(request)
+        result = rejected(flag_request.subject_ref, "supervisor could not flag")
+        with fault_boundary(
+            self.sink,
+            agent="supervisor",
+            module="agents.supervisor.agent",
+            capability="flag_for_human",
+            reraise=False,
+        ) as capture:
+            node = write_flag(
+                self._graph,
+                subject_ref=flag_request.subject_ref,
+                severity=flag_request.severity,
+                reason=flag_request.reason,
+            )
+            result = DispatchResult(
+                accepted=True,
+                provenance=provenance(flag_request.subject_ref, "Flag", node.key),
+            )
+        if capture.fault is not None:
+            return rejected(flag_request.subject_ref, "supervisor could not flag")
+        return result
 
     def _report_fault(self, request: BaseModel) -> DispatchResult:
         fault = AgentFault.model_validate(request)
@@ -99,14 +168,6 @@ class SupervisorAgent(AgentBase):
                 graph_node_id=f"{node.label}:{node.key}",
             )
         if capture.fault is not None:
-            return _rejected("fault", "supervisor could not record fault")
+            return rejected("fault", "supervisor could not record fault")
         assert provenance is not None
         return DispatchResult(accepted=True, provenance=provenance)
-
-
-def _rejected(run_id: str, reason: str) -> DispatchResult:
-    return DispatchResult(
-        accepted=False,
-        rejection=reason,
-        provenance=Provenance(run_id=run_id, source_agent="supervisor"),
-    )

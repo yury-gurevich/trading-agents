@@ -91,7 +91,7 @@ def test_report_fault_is_idempotent_for_same_fault() -> None:
     assert _node_count(graph, "Fault") == 1
 
 
-def test_unknown_p5_capability_returns_error_response() -> None:
+def test_unknown_capability_returns_error_response() -> None:
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     response = bus.request(
@@ -99,7 +99,7 @@ def test_unknown_p5_capability_returns_error_response() -> None:
             sender="operator",
             recipient="supervisor",
             message_type="request",
-            capability="system_status",
+            capability="not_real",
             payload={},
         )
     )

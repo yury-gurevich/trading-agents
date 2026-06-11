@@ -9,20 +9,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from contracts.operator import CommandResult, HumanCommand, TypedIntent
-from contracts.reporter import RunSnapshot
+from contracts.operator import CommandResult, HumanCommand
+from contracts.reporter import NarrativeRequest, RunSnapshot, TradeNarrative
 from contracts.supervisor import DispatchResult, MasterReport, StatusRequest
 from kernel import AgentMessage
+from surfaces.queries.faults import open_faults
 from surfaces.queries.flags import pending_flags
-from surfaces.queries.lifecycle import narratives_for_run, position_lifecycle
+from surfaces.queries.lifecycle import position_lifecycle
 from surfaces.queries.positions import open_positions
 from surfaces.queries.runs import recent_runs, run_detail
 from surfaces.render import (
-    render_approve,
     render_command,
+    render_explain,
     render_flags,
+    render_incidents,
     render_lifecycle,
-    render_narratives,
     render_positions,
     render_run_detail,
     render_runs,
@@ -78,10 +79,28 @@ def cmd_flags(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     return render_flags(pending_flags(ctx.graph))
 
 
-def cmd_narrative(args: argparse.Namespace, ctx: SurfaceContext) -> str:
-    """Render trade narratives for one dispatcher run."""
-    run_id = str(args.run_id)
-    return render_narratives(narratives_for_run(ctx.graph, run_id), run_id)
+def cmd_incidents(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Render open incidents."""
+    del args
+    return render_incidents(open_faults(ctx.graph))
+
+
+def cmd_explain(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Render an on-demand trade narrative for one position."""
+    pos_id = str(args.pos_id)
+    response = ctx.bus.request(
+        AgentMessage(
+            sender="cli",
+            recipient="reporter",
+            message_type="request",
+            capability="narrative",
+            payload=NarrativeRequest(position_id=pos_id).model_dump(mode="json"),
+        )
+    )
+    if response.message_type == "error":
+        return f"explain failed for position: {pos_id}"
+    narrative = TradeNarrative.model_validate(response.payload)
+    return render_explain(narrative)
 
 
 def cmd_command(args: argparse.Namespace, ctx: SurfaceContext) -> str:
@@ -89,24 +108,6 @@ def cmd_command(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     result = _interpret(ctx, str(args.text))
     dispatch = None if result.intent is None else _supervise(ctx, result)
     return render_command(result, dispatch)
-
-
-def cmd_approve(args: argparse.Namespace, ctx: SurfaceContext) -> str:
-    """Approve one pending human-review flag by subject reference."""
-    subject = str(args.subject)
-    result = _interpret(ctx, f"approve {subject}")
-    if result.intent is None or result.intent.family != "approve":
-        return f"could not interpret approve command for: {subject}"
-    intent = result.intent.model_copy(
-        update={
-            "parameters": {
-                **result.intent.parameters,
-                "confirmed": "true",
-                "subject": subject,
-            }
-        }
-    )
-    return render_approve(_dispatch_intent(ctx, intent), subject)
 
 
 def _status(ctx: SurfaceContext) -> MasterReport:
@@ -156,17 +157,13 @@ def _interpret(ctx: SurfaceContext, text: str) -> CommandResult:
 
 def _supervise(ctx: SurfaceContext, result: CommandResult) -> DispatchResult:
     assert result.intent is not None
-    return _dispatch_intent(ctx, result.intent)
-
-
-def _dispatch_intent(ctx: SurfaceContext, intent: TypedIntent) -> DispatchResult:
     response = ctx.bus.request(
         AgentMessage(
             sender="cli",
             recipient="supervisor",
             message_type="request",
             capability="dispatch_intent",
-            payload=intent.model_dump(mode="json"),
+            payload=result.intent.model_dump(mode="json"),
         )
     )
     return DispatchResult.model_validate(response.payload)

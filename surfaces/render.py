@@ -11,8 +11,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from contracts.operator import CommandResult
-    from contracts.reporter import RunSnapshot
+    from contracts.reporter import RunSnapshot, TradeNarrative
     from contracts.supervisor import DispatchResult, MasterReport
+    from surfaces.queries.faults import FaultView
     from surfaces.queries.flags import FlagView
     from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
     from surfaces.queries.positions import PositionView
@@ -108,6 +109,23 @@ def render_flags(flags: tuple[FlagView, ...]) -> str:
     return "\n".join(lines)
 
 
+def render_incidents(faults: tuple[FaultView, ...]) -> str:
+    """Render open incidents."""
+    if not faults:
+        return "no open incidents"
+    lines = [f"Open incidents: {len(faults)}"]
+    for fault in faults:
+        lines.extend(
+            (
+                f"\n  [{fault.fault_id}] {fault.source_agent} - {fault.capability}",
+                f"  severity: {fault.severity}",
+                f"  {fault.message}",
+                f"  {fault.occurred_at}",
+            )
+        )
+    return "\n".join(lines)
+
+
 def render_narratives(narratives: tuple[RunNarrative, ...], run_id: str) -> str:
     """Render trade narratives for one dispatcher run."""
     if not narratives:
@@ -148,6 +166,16 @@ def render_approve(result: DispatchResult, subject: str) -> str:
     lines = [f"approved: {subject}"]
     if result.routed_to:
         lines.append(f"  routed_to: {result.routed_to}")
+    return "\n".join(lines)
+
+
+def render_explain(narrative: TradeNarrative) -> str:
+    """Render one on-demand trade narrative."""
+    lines = [
+        f"Narrative - position {narrative.position_id}",
+        f"  {narrative.story.summary}",
+    ]
+    lines.extend(f"    ref: {ref}" for ref in narrative.story.evidence_refs)
     return "\n".join(lines)
 
 

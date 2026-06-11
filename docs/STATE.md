@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 24 shipped (stage gate; P8 active). **P8 Part 2 next.**
+**Last updated:** 2026-06-12 — Sprint 24 shipped (stage gate; P8 active). Sprint 25 planned (stage command wiring + MarketPack + P8 exit).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -20,8 +20,9 @@ any new execution capability goes in a domain module).
 
 ## Next
 
-- **Sprint 25 — P8 Part 2**: operator grammar for `stage_promote` + `MarketPack` abstraction
-  and P8 exit test (G6: new pack without core changes).
+- **Sprint 25 — P8 Part 2**: `cli stage promote` wired through supervisor gate; `MarketPack`
+  protocol + `MarketPackRegistry` in kernel; `USEquitiesSP500Pack` default; `cli packs` surface;
+  `test_p8_exit.py` proves G6. (`sprint-25-p8-market-pack.md` written.)
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow

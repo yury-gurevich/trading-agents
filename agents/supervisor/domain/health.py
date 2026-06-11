@@ -25,10 +25,10 @@ class HealthFields(TypedDict):
 def compute_health(graph: GraphStore, run_id: str | None) -> HealthFields:
     """Return raw health fields for a MasterReport."""
     del run_id
-    faults = _nodes(graph, "Fault")
-    flags = _nodes(graph, "Flag")
-    resolutions = _nodes(graph, "FlagResolution")
-    snapshots = _nodes(graph, "Snapshot")
+    faults = graph.list_nodes("Fault")
+    flags = graph.list_nodes("Flag")
+    resolutions = graph.list_nodes("FlagResolution")
+    snapshots = graph.list_nodes("Snapshot")
     open_incidents = sum(1 for node in faults if node.props.get("status") != "resolved")
     resolved_keys = {_resolution_key(node) for node in resolutions}
     critical_flags = sum(
@@ -44,13 +44,6 @@ def compute_health(graph: GraphStore, run_id: str | None) -> HealthFields:
         "pending_human_flags": critical_flags,
         "last_successful_run": None if latest is None else latest.key,
     }
-
-
-def _nodes(graph: GraphStore, label: str) -> tuple[Node, ...]:
-    nodes = getattr(graph, "_nodes", {})
-    if not isinstance(nodes, dict):
-        return ()
-    return tuple(node for node in nodes.values() if node.label == label)
 
 
 def _latest_snapshot(snapshots: tuple[Node, ...]) -> Node | None:

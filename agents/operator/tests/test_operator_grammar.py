@@ -94,8 +94,10 @@ def test_gather_evidence_returns_trade_and_status_nodes() -> None:
     assert gather_evidence(graph, "system status", 5)[0]["label"] == "Snapshot"
     assert gather_evidence(graph, "why MSFT", 5) == []
     assert gather_evidence(object(), "status", 5) == []  # type: ignore[arg-type]
-    assert gather_evidence(_OddGraph(), "status", 5) == []  # type: ignore[arg-type]
+    assert gather_evidence(_EmptyGraph(), "status", 5) == []  # type: ignore[arg-type]
 
 
-class _OddGraph:
-    _nodes: tuple[object, ...] = ()
+class _EmptyGraph:
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        del label
+        return ()

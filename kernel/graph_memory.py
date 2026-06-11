@@ -62,6 +62,13 @@ class InMemoryGraphStore:
         ):
             return self._nodes.get((label, key))
 
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        """Return all nodes with the given label."""
+        with fault_boundary(
+            self.sink, agent="kernel", module="kernel.graph", reraise=True
+        ):
+            return tuple(node for node in self._nodes.values() if node.label == label)
+
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
     ) -> Iterator[Node]:

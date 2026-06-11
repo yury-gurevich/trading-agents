@@ -107,6 +107,13 @@ class Neo4jGraphStore(GraphStore, Neo4jGraphQueries):
             record = self._match_node(_identifier(label), key)
             return None if record is None else _node_from_props(label, key, record)
 
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        """Return all nodes with the given label."""
+        with fault_boundary(
+            self.sink, agent="kernel", module="kernel.graph", reraise=True
+        ):
+            return self._list_nodes(label, _identifier(label))
+
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
     ) -> Iterator[Node]:

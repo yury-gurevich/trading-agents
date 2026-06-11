@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from contracts.operator import CommandResult
     from contracts.reporter import RunSnapshot
     from contracts.supervisor import DispatchResult, MasterReport
+    from surfaces.queries.flags import FlagView
+    from surfaces.queries.lifecycle import PositionLifecycle
     from surfaces.queries.positions import PositionView
     from surfaces.queries.runs import RunSummary
 
@@ -78,6 +80,34 @@ def render_positions(positions: tuple[PositionView, ...]) -> str:
     return "\n".join(lines)
 
 
+def render_lifecycle(lifecycle: PositionLifecycle) -> str:
+    """Render one position lifecycle."""
+    return "\n".join(
+        (
+            f"{'position_id'.ljust(16)}{lifecycle.position_id}",
+            f"{'ticker'.ljust(16)}{lifecycle.ticker}",
+            f"{'quantity'.ljust(16)}{lifecycle.quantity}",
+            f"{'opened_cents'.ljust(16)}{lifecycle.opened_price_cents}",
+            f"{'status'.ljust(16)}{lifecycle.status}",
+            f"{'close_trigger'.ljust(16)}{lifecycle.close_trigger or 'none'}",
+            f"{'run_id'.ljust(16)}{lifecycle.run_id or 'none'}",
+            f"{'confidence'.ljust(16)}{_optional(lifecycle.recommendation_confidence)}",
+            f"{'narrative'.ljust(16)}{lifecycle.narrative_text or 'none'}",
+        )
+    )
+
+
+def render_flags(flags: tuple[FlagView, ...]) -> str:
+    """Render pending human-review flags."""
+    if not flags:
+        return "no pending flags"
+    lines = [_row(("subject_ref", "severity", "created_at"))]
+    for flag in flags:
+        lines.append(_row((flag.subject_ref, flag.severity, flag.created_at)))
+    lines.append('Hint: cli command "approve <subject>" to resolve.')
+    return "\n".join(lines)
+
+
 def render_command(result: CommandResult, dispatch: DispatchResult | None) -> str:
     """Render operator interpretation and supervisor routing."""
     lines = (
@@ -98,3 +128,7 @@ def render_command(result: CommandResult, dispatch: DispatchResult | None) -> st
 
 def _row(values: tuple[str, ...]) -> str:
     return "  ".join(value.ljust(18) for value in values)
+
+
+def _optional(value: object | None) -> object:
+    return "none" if value is None else value

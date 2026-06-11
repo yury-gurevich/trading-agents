@@ -140,9 +140,7 @@ def _assert_lineage(graph: InMemoryGraphStore, close: Node) -> None:
 
 
 def _only_close(graph: InMemoryGraphStore) -> Node:
-    rows = [
-        node for (label, _key), node in graph._nodes.items() if label == "CloseDecision"
-    ]
+    rows = graph.list_nodes("CloseDecision")
     assert len(rows) == 1
     return rows[0]
 

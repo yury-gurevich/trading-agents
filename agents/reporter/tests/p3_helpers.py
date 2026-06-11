@@ -179,9 +179,7 @@ def assert_complete_chain(graph: InMemoryGraphStore) -> None:
 
 
 def _only_label(graph: InMemoryGraphStore, label: str) -> Node:
-    rows = [
-        node for (node_label, _key), node in graph._nodes.items() if node_label == label
-    ]
+    rows = graph.list_nodes(label)
     assert len(rows) == 1
     return rows[0]
 

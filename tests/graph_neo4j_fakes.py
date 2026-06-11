@@ -29,6 +29,8 @@ class FakeNeo4jDriver:
         if query.startswith("CREATE CONSTRAINT"):
             self.constraints.append(query)
             return [], None, None
+        if "RETURN n.key AS key" in query:
+            return self._list_records(query), None, None
         if query.startswith("MATCH (n:") and "SET n +=" not in query:
             return self._node_record(key), None, None
         if query.startswith("MATCH (n:") and "SET n +=" in query:
@@ -52,6 +54,14 @@ class FakeNeo4jDriver:
         if key not in self.nodes:
             return []
         return [{"props": self.nodes[key][1]}]
+
+    def _list_records(self, query: str) -> list[dict[str, object]]:
+        label = query.split("MATCH (n:`", 1)[1].split("`", 1)[0]
+        return [
+            {"key": key, "props": props}
+            for key, (node_label, props) in sorted(self.nodes.items())
+            if node_label == label
+        ]
 
     def _edge_record(
         self, query: str, params: dict[str, object]

@@ -101,8 +101,7 @@ def test_store_resolution_fallbacks() -> None:
     second = resolve_flag(graph, "subject", "warn")
     assert first == second
     assert list(graph.ancestors(flag, max_depth=1, edge_types={"RESOLVES"}))
-    assert compute_health(object(), None)["healthy"] is True  # type: ignore[arg-type]
-    assert compute_health(_OddGraph(), None)["healthy"] is True  # type: ignore[arg-type]
+    assert compute_health(_EmptyGraph(), None)["healthy"] is True  # type: ignore[arg-type]
 
 
 def _bound_bus(graph: InMemoryGraphStore) -> InProcessBus:
@@ -147,7 +146,7 @@ def _intent(family: str) -> TypedIntent:
 
 
 def _node_count(graph: InMemoryGraphStore, label: str) -> int:
-    return sum(1 for node_label, _key in graph._nodes if node_label == label)
+    return len(graph.list_nodes(label))
 
 
 def _raise_health(graph: GraphStore, run_id: str | None) -> dict[str, object]:
@@ -157,6 +156,9 @@ def _raise_health(graph: GraphStore, run_id: str | None) -> dict[str, object]:
 class _BrokenGraph:
     def get_node(self, label: str, key: str) -> Node | None:
         return None
+
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        return ()
 
     def merge_node(
         self,
@@ -169,5 +171,7 @@ class _BrokenGraph:
         raise RuntimeError("graph write failed")
 
 
-class _OddGraph:
-    _nodes: tuple[object, ...] = ()
+class _EmptyGraph:
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        del label
+        return ()

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from kernel.graph_cypher import (
     _identifier,
+    _list_nodes_query,
     _match_node_query,
     _node_from_props,
     _relationship_pattern,
@@ -31,6 +32,13 @@ class Neo4jGraphQueries:
     def _match_node(self, label_id: str, key: str) -> Mapping[str, Any] | None:
         record = self._one_or_none(_match_node_query(label_id), key=key)
         return None if record is None else record["props"]
+
+    def _list_nodes(self, label: str, label_id: str) -> tuple[Node, ...]:
+        records = self._run(_list_nodes_query(label_id))
+        return tuple(
+            _node_from_props(label, str(record["key"]), record["props"])
+            for record in records
+        )
 
     def _set_node_props(
         self, label_id: str, key: str, props: Mapping[str, Any]

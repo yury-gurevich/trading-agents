@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, cast
 
 from kernel import GraphStore, InMemoryGraphStore
 from surfaces.queries import (
@@ -46,8 +46,7 @@ def test_recent_runs_handles_empty_and_non_local_graphs() -> None:
     graph = InMemoryGraphStore()
     assert recent_runs(graph) == ()
     assert run_detail(graph, "missing") is None
-    assert nodes_by_label(cast("GraphStore", _OddGraph()), "Message") == ()
-    assert nodes_by_label(cast("GraphStore", _ObjectNodeGraph()), "Message") == ()
+    assert nodes_by_label(cast("GraphStore", _ListOnlyGraph()), "Message") == ()
 
 
 def test_system_health_counts_faults_flags_and_last_run() -> None:
@@ -152,9 +151,7 @@ _STEPS = (
 )
 
 
-class _OddGraph:
-    _nodes = object()
-
-
-class _ObjectNodeGraph:
-    _nodes: ClassVar[dict[str, object]] = {"bad": object()}
+class _ListOnlyGraph:
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        del label
+        return ()

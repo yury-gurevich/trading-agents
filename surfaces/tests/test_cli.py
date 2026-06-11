@@ -81,6 +81,37 @@ def test_cli_positions_renders_empty_and_open_position() -> None:
     assert "run-a:AAPL" in output.getvalue()
 
 
+def test_cli_position_renders_lifecycle_or_missing_message() -> None:
+    graph = InMemoryGraphStore()
+    _seed_position(graph)
+    output = StringIO()
+    missing = StringIO()
+
+    main(["position", "run-a:AAPL"], context=build_context(graph=graph), stdout=output)
+    main(["position", "missing"], context=build_context(graph=graph), stdout=missing)
+
+    assert "ticker          AAPL" in output.getvalue()
+    assert "position not found: missing" in missing.getvalue()
+
+
+def test_cli_flags_renders_pending_flags_or_empty_message() -> None:
+    graph = InMemoryGraphStore()
+    graph.merge_node(
+        "Flag",
+        "flag:approval:warn",
+        {"subject_ref": "approval", "severity": "warn", "created_at": "now"},
+    )
+    output = StringIO()
+    empty = StringIO()
+
+    main(["flags"], context=build_context(graph=graph), stdout=output)
+    main(["flags"], context=build_context(), stdout=empty)
+
+    assert "approval" in output.getvalue()
+    assert "approve <subject>" in output.getvalue()
+    assert "no pending flags" in empty.getvalue()
+
+
 def test_cli_command_reaches_supervisor_dispatch() -> None:
     llm = FakeLLMClient(
         {
@@ -125,5 +156,19 @@ def _seed_message(graph: InMemoryGraphStore, run_id: str, step: str) -> None:
             "step": step,
             "status": "attempted",
             "created_at": "2026-06-11T00:00:00+00:00",
+        },
+    )
+
+
+def _seed_position(graph: InMemoryGraphStore) -> None:
+    graph.merge_node(
+        "Position",
+        "run-a:AAPL",
+        {
+            "run_id": "run-a",
+            "ticker": "AAPL",
+            "quantity": 4,
+            "opened_price_cents": 10000,
+            "status": "open",
         },
     )

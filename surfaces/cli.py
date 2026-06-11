@@ -11,20 +11,8 @@ import argparse
 import sys
 from typing import TYPE_CHECKING
 
-from contracts.operator import CommandResult, HumanCommand
-from contracts.reporter import RunSnapshot
-from contracts.supervisor import DispatchResult, MasterReport, StatusRequest
-from kernel import AgentMessage
+from surfaces import cli_commands
 from surfaces.context import SurfaceContext, paper_context
-from surfaces.queries.positions import open_positions
-from surfaces.queries.runs import recent_runs, run_detail
-from surfaces.render import (
-    render_command,
-    render_positions,
-    render_run_detail,
-    render_runs,
-    render_status,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -55,6 +43,9 @@ def _parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run")
     run.add_argument("run_id")
     sub.add_parser("positions")
+    position = sub.add_parser("position")
+    position.add_argument("pos_id")
+    sub.add_parser("flags")
     command = sub.add_parser("command")
     command.add_argument("text")
     return parser
@@ -62,88 +53,18 @@ def _parser() -> argparse.ArgumentParser:
 
 def _dispatch(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     if args.command == "status":
-        return render_status(_status(ctx))
+        return cli_commands.cmd_status(args, ctx)
     if args.command == "runs":
-        return render_runs(recent_runs(ctx.graph, limit=args.limit))
+        return cli_commands.cmd_runs(args, ctx)
     if args.command == "run":
-        return _run(ctx, str(args.run_id))
+        return cli_commands.cmd_run(args, ctx)
     if args.command == "positions":
-        return render_positions(open_positions(ctx.graph))
-    return _command(ctx, str(args.text))
-
-
-def _status(ctx: SurfaceContext) -> MasterReport:
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="supervisor",
-            message_type="request",
-            capability="system_status",
-            payload=StatusRequest().model_dump(mode="json"),
-        )
-    )
-    return MasterReport.model_validate(response.payload)
-
-
-def _run(ctx: SurfaceContext, run_id: str) -> str:
-    run = run_detail(ctx.graph, run_id)
-    if run is None:
-        return f"run {run_id} not found"
-    snapshot = ctx.graph.get_node("Snapshot", f"snapshot:{run_id}")
-    report = None if snapshot is not None else _report(ctx, run_id)
-    return render_run_detail(run, report)
-
-
-def _report(ctx: SurfaceContext, run_id: str) -> RunSnapshot | None:
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="reporter",
-            message_type="request",
-            capability="report",
-            payload={"run_id": run_id},
-        )
-    )
-    if response.message_type == "error":
-        return None
-    return RunSnapshot.model_validate(response.payload)
-
-
-def _command(ctx: SurfaceContext, text: str) -> str:
-    result = _interpret(ctx, text)
-    dispatch = None if result.intent is None else _supervise(ctx, result)
-    return render_command(result, dispatch)
-
-
-def _interpret(ctx: SurfaceContext, text: str) -> CommandResult:
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="operator",
-            message_type="request",
-            capability="interpret",
-            payload=HumanCommand(
-                text=text,
-                actor="cli",
-                channel="dashboard",
-            ).model_dump(mode="json"),
-        )
-    )
-    return CommandResult.model_validate(response.payload)
-
-
-def _supervise(ctx: SurfaceContext, result: CommandResult) -> DispatchResult:
-    assert result.intent is not None
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="supervisor",
-            message_type="request",
-            capability="dispatch_intent",
-            payload=result.intent.model_dump(mode="json"),
-        )
-    )
-    return DispatchResult.model_validate(response.payload)
+        return cli_commands.cmd_positions(args, ctx)
+    if args.command == "position":
+        return cli_commands.cmd_position(args, ctx)
+    if args.command == "flags":
+        return cli_commands.cmd_flags(args, ctx)
+    return cli_commands.cmd_command(args, ctx)
 
 
 if __name__ == "__main__":  # pragma: no cover

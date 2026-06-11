@@ -147,7 +147,7 @@ def _raw(outcome: str, *, family: str = "status", reason: str = "") -> str:
 
 
 def _node_count(graph: InMemoryGraphStore, label: str) -> int:
-    return sum(1 for node_label, _key in graph._nodes if node_label == label)
+    return len(graph.list_nodes(label))
 
 
 _FAMILIES = (

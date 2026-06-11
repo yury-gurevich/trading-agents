@@ -45,6 +45,13 @@ def _match_node_query(label_id: str) -> str:
     return f"MATCH (n:{label_id} {{key: $key}}) RETURN properties(n) AS props"
 
 
+def _list_nodes_query(label_id: str) -> str:
+    return (
+        f"MATCH (n:{label_id}) "
+        "RETURN n.key AS key, properties(n) AS props ORDER BY n.key"
+    )
+
+
 def _set_node_props_query(label_id: str) -> str:
     return (
         f"MATCH (n:{label_id} {{key: $key}}) "

@@ -109,7 +109,7 @@ def source() -> ReboundingDataSource:
 
 def node_count(graph: InMemoryGraphStore, label: str) -> int:
     """Return graph node count for one label."""
-    return sum(1 for node_label, _key in graph._nodes if node_label == label)
+    return len(graph.list_nodes(label))
 
 
 def patch_success_until(monkeypatch: pytest.MonkeyPatch, stop: str) -> None:

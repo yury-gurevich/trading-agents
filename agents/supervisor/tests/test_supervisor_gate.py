@@ -99,4 +99,4 @@ def _intent(family: str, params: dict[str, str] | None = None) -> TypedIntent:
 
 
 def _node_count(graph: InMemoryGraphStore, label: str) -> int:
-    return sum(1 for node_label, _key in graph._nodes if node_label == label)
+    return len(graph.list_nodes(label))

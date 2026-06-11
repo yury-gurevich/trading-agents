@@ -106,4 +106,4 @@ def stage_status_message() -> AgentMessage:
 
 
 def fill_node_count(graph: InMemoryGraphStore) -> int:
-    return sum(1 for label, _key in graph._nodes if label == "Fill")
+    return len(graph.list_nodes("Fill"))

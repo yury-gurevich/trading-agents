@@ -61,6 +61,10 @@ class GraphStore(Protocol):
         """Return a node by ``(label, key)`` if present."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        """Return all nodes with the given label."""
+        ...  # pragma: no cover - protocol declaration only.
+
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None
     ) -> Iterator[Node]:

@@ -39,4 +39,6 @@ def test_dispatcher_construction_leaves_agents_idle_until_messaged() -> None:
         broker=PaperBroker(),
         universe_source=fixture_universe(),
     )
-    assert graph._nodes == {}
+    assert graph.list_nodes("Message") == ()
+    assert graph.list_nodes("PMRun") == ()
+    assert graph.list_nodes("Snapshot") == ()

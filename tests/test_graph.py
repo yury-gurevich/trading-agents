@@ -26,6 +26,17 @@ def test_in_memory_merge_node_is_idempotent_and_append_only() -> None:
         store.merge_node("Run", "r1", {"status": "changed"})
 
 
+def test_in_memory_list_nodes_by_label() -> None:
+    store = InMemoryGraphStore()
+    assert store.list_nodes("Foo") == ()
+
+    foo = store.merge_node("Foo", "one", {"status": "new"})
+    store.merge_node("Bar", "two", {"status": "new"})
+
+    assert store.list_nodes("Foo") == (foo,)
+    assert [node.key for node in store.list_nodes("Bar")] == ["two"]
+
+
 def test_in_memory_merge_rejects_invalid_schema_changes() -> None:
     store = InMemoryGraphStore()
 

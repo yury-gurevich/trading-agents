@@ -68,7 +68,7 @@ def test_record_dispatch_run_writes_fault_nodes() -> None:
             ),
         )
     )
-    fault = next(node for node in graph._nodes.values() if node.label == "Fault")
+    fault = graph.list_nodes("Fault")[0]
     assert _node_count(graph, "Fault") == 1
     assert len(str(fault.props["message"])) == 80
 
@@ -163,7 +163,7 @@ def _fault(message: str) -> AgentFault:
 
 
 def _node_count(graph: InMemoryGraphStore, label: str) -> int:
-    return sum(1 for node_label, _key in graph._nodes if node_label == label)
+    return len(graph.list_nodes(label))
 
 
 class _BrokenGraph:
@@ -179,6 +179,9 @@ class _BrokenGraph:
 
     def get_node(self, label: str, key: str) -> Node | None:
         return None
+
+    def list_nodes(self, label: str) -> tuple[Node, ...]:
+        return ()
 
     def ancestors(
         self, node: Node, *, max_depth: int, edge_types: set[str] | None = None

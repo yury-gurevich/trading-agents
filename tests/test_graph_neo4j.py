@@ -25,6 +25,7 @@ def test_neo4j_store_uses_driver_shape_with_fake_backend(
     assert replayed == parent
     assert dict(updated.props) == {"status": "new", "score": 2}
     assert store.get_node("Artifact", "parent") == updated
+    assert store.list_nodes("Artifact") == (child, updated)
     assert [node.key for node in store.ancestors(child, max_depth=1)] == ["parent"]
     assert [node.key for node in store.descendants(parent, max_depth=1)] == ["child"]
     assert [
@@ -95,6 +96,7 @@ def test_neo4j_graph_store_round_trip_when_configured() -> None:
         store.add_edge(parent, child, "DERIVED", {"run": suffix})
 
         assert store.get_node("GraphStoreTest", parent_key) == parent
+        assert parent in store.list_nodes("GraphStoreTest")
         assert [node.key for node in store.ancestors(child, max_depth=1)] == [
             parent_key
         ]

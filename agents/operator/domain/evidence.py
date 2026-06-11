@@ -38,10 +38,13 @@ def gather_evidence(
 
 
 def _all_nodes(graph: GraphStore) -> tuple[Node, ...]:
-    nodes = getattr(graph, "_nodes", {})
-    if isinstance(nodes, dict):
-        return tuple(nodes.values())
-    return ()
+    nodes: list[Node] = []
+    for label in sorted(TRADE_LABELS | STATUS_LABELS):
+        try:
+            nodes.extend(graph.list_nodes(label))
+        except AttributeError:
+            return ()
+    return tuple(nodes)
 
 
 def _matches(node: Node, subject_upper: str, wants_status: bool) -> bool:

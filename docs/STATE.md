@@ -9,21 +9,24 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P4 complete.** The daily loop runs on the distributed bus, event-driven, with the supervisor
-recording message lineage. 208 tests at 100% (floor 100.00).
+**P5 complete.** Operator intent parsing and supervisor capability gate both shipped. 237 tests
+at 100% (floor 100.00).
 
-State: all 7 domain agents + `SupervisorAgent` implemented; full `orchestration/` layer (Dispatcher,
-RunScheduler, steps, bindings, lineage helpers); both bus backends proven with `Message >= 7` nodes.
+State: full agent roster through supervisor implemented; `LLMClient` kernel protocol + `FakeLLMClient`;
+`OperatorAgent` (`interpret` + `explain`, `CommandAudit`/`Intent`/`LLMCall` ledger); `SupervisorAgent`
+complete (`dispatch_intent` hard-NO → confirmation → matrix; `system_status`; `flag_for_human`).
+P5 exit test proves `operator.interpret → supervisor.dispatch_intent` end-to-end with full audit trail.
+
+Known limitation: `resolve_flag` in `supervisor/store.py` uses `InMemoryGraphStore._nodes` directly
+(append-only workaround). Raises `RuntimeError` against Neo4j. Fix deferred to P6 when graph
+mutation needs are clearer (options: `replace_node` protocol method, or `FlagResolution` append node).
 
 ## Next
 
-- **Sprint 16 — Operator agent** (P5 begins): kernel `LLMClient` protocol + `FakeLLMClient`;
-  `OperatorAgent` (`interpret` + `explain`); 10-family intent grammar with hardcoded confirmation
-  policy; `CommandAudit`/`Intent`/`LLMCall` ledger in graph. Plan: `docs/sprints/sprint-16-operator.md`.
-- **Sprint 17 — Supervisor gate** (P5 exit): `dispatch_intent` + capability matrix + hard-NO
-  surface + confirmation gate + `system_status` + `flag_for_human` + policy-parity test.
-  Plan: `docs/sprints/sprint-17-supervisor-gate.md`.
-- Build-when-needed: MCP tool-binding, RAG vector index.
+- **P6 — Surfaces**: dashboard read-models over the graph (pipeline status, recommendation evidence,
+  approval queue, position lifecycle, scorecards, control-plane state, incidents pane) and a CLI.
+  Surfaces read; they never drive an agent except through the operator's bounded commands.
+- Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow
 
@@ -37,6 +40,17 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 17 — Supervisor capability gate** (P5 — **exit criterion met**). `dispatch_intent`
+  enforces hard-NO → confirmation gate → capability matrix in order; confirmation writes/resolves
+  `Flag` nodes; `system_status` queries live graph health; `flag_for_human` writes `Flag` nodes
+  idempotently. `gate.py` (58L) holds the routing logic cleanly separate from agent.py (173L).
+  P5 exit test: `operator.interpret → supervisor.dispatch_intent` with `CommandAudit` + `Message`
+  nodes confirmed; policy-parity test (dashboard == MCP) green.
+- **Sprint 16 — Operator agent** (P5 begun). `LLMClient` protocol + `FakeLLMClient` in kernel;
+  `AnthropicLLMClient` in `agents/operator/`; `OperatorAgent` with `interpret` (all 10 families,
+  confirmation policy hardcoded in grammar) and `explain` (graph evidence + LLM narration);
+  `CommandAudit -[:PRODUCED_BY]-> LLMCall` + `CommandAudit -[:RESULTED_IN]-> Intent` provenance;
+  `domain/result.py` extracted to hold parsing helpers. `agent.py` 148L. 237 tests, floor 100.
 - **Sprint 15 — Scheduler + supervisor message lineage** (P4 — **exit criterion met**).
   `step_check_positions` all-hold fix; `SupervisorAgent` (`record_dispatch_run` writes one
   `Message` node per step, `report_fault` writes `Fault` nodes); `RunScheduler` factory;

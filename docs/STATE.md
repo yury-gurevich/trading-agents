@@ -21,7 +21,8 @@ RunScheduler, steps, bindings, lineage helpers); both bus backends proven with `
   `OperatorAgent` (`interpret` + `explain`); 10-family intent grammar with hardcoded confirmation
   policy; `CommandAudit`/`Intent`/`LLMCall` ledger in graph. Plan: `docs/sprints/sprint-16-operator.md`.
 - **Sprint 17 — Supervisor gate** (P5 exit): `dispatch_intent` + capability matrix + hard-NO
-  surface + policy-parity test.
+  surface + confirmation gate + `system_status` + `flag_for_human` + policy-parity test.
+  Plan: `docs/sprints/sprint-17-supervisor-gate.md`.
 - Build-when-needed: MCP tool-binding, RAG vector index.
 
 ## Workflow

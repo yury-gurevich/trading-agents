@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-import pytest
-
 from agents.supervisor import SupervisorAgent
 from agents.supervisor.domain.health import compute_health
 from agents.supervisor.store import resolve_flag
@@ -25,6 +23,8 @@ from contracts.supervisor import (
 from kernel import AgentMessage, InMemoryGraphStore, InProcessBus, Node
 
 if TYPE_CHECKING:
+    import pytest
+
     from kernel import GraphStore
 
 
@@ -53,6 +53,14 @@ def test_system_status_ignores_resolved_faults_and_warn_flags() -> None:
     graph = InMemoryGraphStore()
     graph.merge_node("Fault", "fault:resolved", {"status": "resolved"})
     graph.merge_node("Flag", "flag:warn", {"status": "pending", "severity": "warn"})
+    graph.merge_node(
+        "Flag", "flag:resolved", {"subject_ref": "resolved", "severity": "critical"}
+    )
+    graph.merge_node(
+        "FlagResolution",
+        "resolution:flag:resolved:critical",
+        {"subject_ref": "resolved", "severity": "critical"},
+    )
     assert _status(_bound_bus(graph)).healthy is True
 
 
@@ -88,8 +96,11 @@ def test_failure_paths_return_degraded_responses(
 def test_store_resolution_fallbacks() -> None:
     graph = InMemoryGraphStore()
     assert resolve_flag(graph, "missing", "warn") is None
-    with pytest.raises(RuntimeError, match="cannot resolve"):
-        resolve_flag(cast("GraphStore", _ReadOnlyFlagGraph()), "subject", "warn")
+    flag = graph.merge_node("Flag", "flag:subject:warn", {"subject_ref": "subject"})
+    first = resolve_flag(graph, "subject", "warn")
+    second = resolve_flag(graph, "subject", "warn")
+    assert first == second
+    assert list(graph.ancestors(flag, max_depth=1, edge_types={"RESOLVES"}))
     assert compute_health(object(), None)["healthy"] is True  # type: ignore[arg-type]
     assert compute_health(_OddGraph(), None)["healthy"] is True  # type: ignore[arg-type]
 
@@ -156,11 +167,6 @@ class _BrokenGraph:
         schema_version: int = 1,
     ) -> Node:
         raise RuntimeError("graph write failed")
-
-
-class _ReadOnlyFlagGraph:
-    def get_node(self, label: str, key: str) -> Node | None:
-        return Node("Flag", "flag:subject:warn", {"status": "pending"})
 
 
 class _OddGraph:

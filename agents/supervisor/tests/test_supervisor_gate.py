@@ -56,10 +56,10 @@ def test_confirmation_gate_writes_and_resolves_flag() -> None:
     assert flag is not None
     assert flag.props["status"] == "pending"
     confirmed = _dispatch(bus, _intent("run", {"confirmed": "true"}))
-    resolved = graph.get_node("Flag", "flag:intent-run:warn")
+    resolved = graph.get_node("FlagResolution", "resolution:flag:intent-run:warn")
     assert confirmed.accepted is True
     assert resolved is not None
-    assert resolved.props["status"] == "resolved"
+    assert _node_count(graph, "FlagResolution") == 1
 
 
 def test_read_only_status_does_not_write_confirmation_flag() -> None:

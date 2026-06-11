@@ -96,7 +96,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("human_flag_raised", "message_dead_lettered", "fault_received"),
-    owns_graph=("Message", "Agent", "Flag", "Fault"),
+    owns_graph=("Message", "Agent", "Flag", "Fault", "FlagResolution"),
     external_io=(),
     depends_on=(
         "provider",

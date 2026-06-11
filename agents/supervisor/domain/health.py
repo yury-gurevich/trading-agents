@@ -27,12 +27,14 @@ def compute_health(graph: GraphStore, run_id: str | None) -> HealthFields:
     del run_id
     faults = _nodes(graph, "Fault")
     flags = _nodes(graph, "Flag")
+    resolutions = _nodes(graph, "FlagResolution")
     snapshots = _nodes(graph, "Snapshot")
     open_incidents = sum(1 for node in faults if node.props.get("status") != "resolved")
+    resolved_keys = {_resolution_key(node) for node in resolutions}
     critical_flags = sum(
         1
         for node in flags
-        if node.props.get("status") == "pending"
+        if _resolution_key(node) not in resolved_keys
         and node.props.get("severity") == "critical"
     )
     latest = _latest_snapshot(snapshots)
@@ -58,3 +60,7 @@ def _latest_snapshot(snapshots: tuple[Node, ...]) -> Node | None:
         snapshots,
         key=lambda node: str(node.props.get("created_at", node.key)),
     )
+
+
+def _resolution_key(node: Node) -> tuple[str, str]:
+    return (str(node.props.get("subject_ref")), str(node.props.get("severity")))

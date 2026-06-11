@@ -240,6 +240,6 @@ stage gates in P8.
 | P3 Decision loop | **complete** (S09 PM, S10 hardening, S11 execution, S12 monitor, S13 reporter — exit criterion met) |
 | P4 Orchestration | **complete** (S14 dispatcher, S15 supervisor lineage + scheduler — exit criterion met) |
 | P5 Operator + supervisor | **complete** (S16 operator + LLM ledger, S17 supervisor gate + hard-NO — exit criterion met) |
-| P6 Surfaces | **active** (S18 foundation + CLI shipped; S19 list_nodes + position lifecycle + narrative next) |
+| P6 Surfaces | **active** (S18 foundation + CLI shipped; S19 list_nodes + position lifecycle shipped; S20 narrative + approval queue next) |
 | P7 Self-management | planned |
 | P8 Hardening + expansion | planned |

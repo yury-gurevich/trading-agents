@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-11 — Sprint 18 (surfaces foundation + CLI) shipped. **P6 active.**
+**Last updated:** 2026-06-12 — Sprint 19 (list_nodes + position lifecycle) shipped. **P6 active.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,28 +9,23 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P6 active. Sprint 18 shipped.** Surfaces foundation + CLI landed: `resolve_flag` append-only
-fix (FlagResolution node), graph query projections (`runs`, `positions`, `health`), and a working
-CLI (`status`, `runs`, `run <id>`, `positions`, `command`). 251 tests at 100% (floor 100.00).
+**P6 active. Sprint 19 shipped.** `GraphStore.list_nodes(label)` added to protocol and both
+backends; no `._nodes` access outside `kernel/graph_memory.py`; surface queries are now
+Neo4j-compatible. CLI extracted into `surfaces/cli_commands.py` (142L); `cli.py` collapsed
+to 58L. `PositionLifecycle` + `FlagView` projections + `cli position` + `cli flags` commands
+landed. 258 tests at 100% (floor 100.00).
 
-State: full agent roster implemented; surfaces layer wired (`surfaces/queries/`, `surfaces/cli.py`,
-`surfaces/context.py`); `FlagResolution` append-node pattern; `test_context` / `paper_context`
-factories. CLI tests are infra-free (InMemoryGraphStore + FakeLLMClient).
-
-Known gap: `surfaces/queries/_graph.py::nodes_by_label` uses `getattr(graph, "_nodes", None)` —
-returns empty tuples silently against the Neo4j backend. The `GraphStore` protocol has no
-`list_nodes(label)` method. Surface queries work perfectly in CI (InMemoryGraphStore) but show no
-data in production with Neo4j. **Must fix in Sprint 19 (Part A) before P6 closes.**
+State: kernel module split — `graph_memory.py` (InMemoryGraphStore) + `graph_cypher.py` +
+`graph_neo4j_queries.py` alongside existing `graph_neo4j.py`; all `list_nodes` callers use
+the protocol method; surfaces layer fully Neo4j-compatible.
 
 ## Next
 
-- **Sprint 19 — GraphStore `list_nodes` + position lifecycle** (P6 continues):
-  Part A: add `list_nodes(label: str) → tuple[Node, ...]` to `GraphStore` protocol + both backends;
-  remove `._nodes` access from `surfaces/queries/_graph.py` and `health.py`. Part B: extract
-  `cli_commands.py` from `cli.py` (at hard cap 150L); `surfaces/queries/lifecycle.py`
-  (`PositionLifecycle`, `position_lifecycle`, `all_position_lifecycles`); `surfaces/queries/flags.py`
-  (`FlagView`, `pending_flags`); `cli position <pos_id>` + `cli flags` commands.
-  Plan: `docs/sprints/sprint-19-list-nodes-lifecycle.md`.
+- **Sprint 20 — trade narrative display + approval queue flow** (P6 continues):
+  `cli narrative <run_id>` renders per-trade `TradeNarrative` nodes for a completed run;
+  approval queue shows pending flags with a `cli approve <subject>` command that routes
+  through `operator.interpret → supervisor.dispatch_intent`; `surfaces/queries/runs.py`
+  enriched with narrative availability flag. Plan: `docs/sprints/sprint-20-*.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow
@@ -45,6 +40,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 19 — GraphStore `list_nodes` + position lifecycle** (P6). `list_nodes(label)` added
+  to `GraphStore` Protocol, `InMemoryGraphStore` (extracted to `graph_memory.py`), and
+  `Neo4jGraphStore` (helpers split into `graph_cypher.py` + `graph_neo4j_queries.py`). All
+  `._nodes` internal access removed from surfaces and supervisor health. `surfaces/cli.py`
+  extracted to `cli_commands.py` (cli.py 58L; commands 142L). `surfaces/queries/lifecycle.py`
+  (`PositionLifecycle`, `position_lifecycle`, `all_position_lifecycles`);
+  `surfaces/queries/flags.py` (`FlagView`, `pending_flags`). `cli position` + `cli flags`.
+  258 tests, floor 100.00.
 - **Sprint 18 — Surfaces foundation + CLI** (P6 begins). `resolve_flag` append-only fix:
   `_replace_node` deleted; `FlagResolution` node appended with `RESOLVES` edge; `health.py` counts
   open flags by `FlagResolution` absence. `surfaces/queries/` projections (`runs.py` 111L,

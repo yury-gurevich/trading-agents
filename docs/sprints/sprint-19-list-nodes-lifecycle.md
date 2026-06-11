@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 19 — GraphStore `list_nodes` + position lifecycle (P6 continues)
 
-**Status:** planned · **Branch:** `sprint-19-list-nodes-lifecycle` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** shipped · **Branch:** `sprint-19-list-nodes-lifecycle` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 
@@ -227,10 +227,12 @@ def pending_flags(graph: GraphStore) -> tuple[FlagView, ...]:
 Add two new command handlers to the extracted module:
 
 **`cmd_lifecycle(args, ctx, out)`** — for `cli position <pos_id>`:
+
 - Call `position_lifecycle(ctx.graph, args.pos_id)`; if `None`, print `"position not found: {pos_id}"`.
 - Render with a new `render.render_lifecycle` helper.
 
 **`cmd_flags(args, ctx, out)`** — for `cli flags`:
+
 - Call `pending_flags(ctx.graph)`.
 - If empty, print `"no pending flags"`.
 - Render each flag: `subject_ref`, `severity`, `created_at`.
@@ -238,7 +240,7 @@ Add two new command handlers to the extracted module:
 
 Update `cli.py` / `_parser()` with two new subparsers:
 
-```
+```text
 position <pos_id>   Show full lifecycle for one position (entry → exit → narrative)
 flags               List pending human-review flags (approval queue stub)
 ```

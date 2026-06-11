@@ -19,17 +19,19 @@ from surfaces.queries.lifecycle import position_lifecycle
 from surfaces.queries.positions import open_positions
 from surfaces.queries.proposals import all_proposals
 from surfaces.queries.runs import recent_runs, run_detail
+from surfaces.queries.stage import current_stage, stage_history
 from surfaces.render import (
     render_command,
     render_flags,
     render_lifecycle,
     render_positions,
-    render_proposals,
     render_run_detail,
     render_runs,
+    render_stage,
     render_status,
 )
 from surfaces.render_extras import render_explain, render_incidents
+from surfaces.render_review import render_proposals
 
 if TYPE_CHECKING:
     import argparse
@@ -90,6 +92,12 @@ def cmd_proposals(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     """Render researcher proposals."""
     del args
     return render_proposals(all_proposals(ctx.graph))
+
+
+def cmd_stage(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Render execution stage status and history."""
+    del args
+    return render_stage(current_stage(ctx.graph), stage_history(ctx.graph))
 
 
 def cmd_explain(args: argparse.Namespace, ctx: SurfaceContext) -> str:

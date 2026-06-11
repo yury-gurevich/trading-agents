@@ -16,10 +16,17 @@ from contracts.common import Money, Provenance
 
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill
+    from contracts.execution import ExecutionStage
     from contracts.portfolio_manager import OrderIntentSet
     from kernel import GraphStore, Node
 
 CENTS_PER_DOLLAR = Decimal("100")
+STAGES: tuple[ExecutionStage, ...] = (
+    "paper",
+    "broker_shadow",
+    "live_manual",
+    "live_autopilot",
+)
 
 
 def write_fills(
@@ -79,6 +86,41 @@ def write_reconciliation(
         source_agent="execution",
         graph_node_id=f"{node.label}:{node.key}",
     )
+
+
+def write_stage_transition(
+    graph: GraphStore,
+    *,
+    from_stage: str,
+    to_stage: str,
+    reason: str,
+) -> Node:
+    """Append one immutable StageTransition node."""
+    transitioned_at = datetime.now(tz=UTC).isoformat()
+    return graph.merge_node(
+        "StageTransition",
+        f"stage:{to_stage}:{transitioned_at}",
+        {
+            "from_stage": from_stage,
+            "to_stage": to_stage,
+            "reason": reason,
+            "transitioned_at": transitioned_at,
+        },
+    )
+
+
+def current_stage_from_graph(
+    graph: GraphStore, default: ExecutionStage
+) -> ExecutionStage:
+    """Return the latest graph-authored stage, or the configured fallback."""
+    transitions = graph.list_nodes("StageTransition")
+    if not transitions:
+        return default
+    latest = max(
+        transitions, key=lambda node: str(node.props.get("transitioned_at", ""))
+    )
+    value = str(latest.props.get("to_stage", default))
+    return value if value in STAGES else default
 
 
 def _money_to_cents(money: Money) -> int:

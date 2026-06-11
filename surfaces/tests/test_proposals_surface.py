@@ -13,7 +13,7 @@ from kernel import InMemoryGraphStore
 from surfaces.cli import main
 from surfaces.context import test_context as build_context
 from surfaces.queries import all_proposals
-from surfaces.render import render_proposals
+from surfaces.render_review import render_proposals
 
 
 def test_all_proposals_projects_pending_and_approved_status() -> None:

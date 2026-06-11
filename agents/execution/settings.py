@@ -54,5 +54,18 @@ class ExecutionSettings(AgentSettings):
         le=1000000.0,
         unit="USD",
     )
+    min_promotion_runs: int = tunable(
+        10,
+        why="Require ten completed runs before stage promotion.",
+        ge=3,
+        le=200,
+        unit="runs",
+    )
+    min_approval_rate: float = tunable(
+        0.70,
+        why="Minimum approval-rate evidence before stage promotion.",
+        ge=0.0,
+        le=1.0,
+    )
     alpaca_api_key: str | None = Field(default=None, repr=False)
     alpaca_secret_key: str | None = Field(default=None, repr=False)

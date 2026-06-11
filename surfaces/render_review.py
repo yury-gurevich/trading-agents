@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from contracts.supervisor import DispatchResult
+    from surfaces.queries.proposals import ProposalView
 
 
 def render_approve(result: DispatchResult, subject: str) -> str:
@@ -23,4 +24,22 @@ def render_approve(result: DispatchResult, subject: str) -> str:
     lines = [f"approved: {subject}"]
     if result.routed_to:
         lines.append(f"  routed_to: {result.routed_to}")
+    return "\n".join(lines)
+
+
+def render_proposals(proposals: tuple[ProposalView, ...]) -> str:
+    """Render researcher proposals and approval status."""
+    if not proposals:
+        return "no proposals pending review"
+    lines = [f"Proposals: {len(proposals)}"]
+    for proposal in proposals:
+        status = "approved" if proposal.approved else "pending"
+        lines.extend(
+            (
+                f"\n  [{proposal.proposal_id}] {status} - "
+                f"{proposal.change_count} change(s)",
+                f"  {proposal.rationale}",
+                f"  created: {proposal.created_at}",
+            )
+        )
     return "\n".join(lines)

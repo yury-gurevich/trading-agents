@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from agents.execution import ExecutionAgent
 from agents.execution.broker import PaperBroker
+from agents.execution.tests.stage_helpers import flag_handler
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
@@ -27,6 +28,7 @@ def wire(
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     paper = broker or PaperBroker()
+    bus.register("supervisor", "flag_for_human", flag_handler(graph))
     ExecutionAgent(bus, graph=graph, broker=paper, sink=sink).bind()
     return bus, graph, paper, sink
 

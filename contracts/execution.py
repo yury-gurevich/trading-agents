@@ -26,6 +26,12 @@ class StageStatusRequest(_Frozen):
     pass
 
 
+class PromoteStageRequest(_Frozen):
+    target_stage: ExecutionStage
+    reason: str
+    confirmed: bool = False
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class Fill(_Frozen):
     ticker: Ticker
@@ -55,6 +61,14 @@ class StageStatus(_Frozen):
     stage: ExecutionStage
     idempotent: bool
     reason: str | None = None
+
+
+class PromoteStageResult(_Frozen):
+    accepted: bool
+    previous_stage: ExecutionStage
+    current_stage: ExecutionStage
+    reason: str
+    provenance: Provenance
 
 
 CONTRACT = AgentContract(
@@ -92,11 +106,17 @@ CONTRACT = AgentContract(
             response=StageStatus,
             mcp=True,
         ),
+        Capability(
+            "promote_stage",
+            "Request evidence-based promotion to the next execution stage.",
+            request=PromoteStageRequest,
+            response=PromoteStageResult,
+        ),
     ),
     emits=("fill_recorded", "stage_transitioned"),
-    owns_graph=("Fill", "Reconciliation"),
+    owns_graph=("Fill", "Reconciliation", "StageTransition"),
     external_io=("alpaca_broker",),
-    depends_on=("portfolio_manager", "monitor"),
+    depends_on=("portfolio_manager", "monitor", "supervisor"),
     mcp_tools=("submit", "reconcile", "stage_status"),
     never=(
         "decide what to trade (only executes approved intents and close decisions)",

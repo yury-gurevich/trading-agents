@@ -9,23 +9,28 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.execution.broker import BrokerRejectedError, PaperBroker
+from agents.execution.broker import PaperBroker
 from agents.execution.domain.orders import (
-    BrokerOrder,
     execution_run_id,
-    fill_from_broker,
     order_from_close,
     order_from_intent,
-    rejected_broker_fill,
 )
 from agents.execution.domain.reconcile import reconcile_fills
+from agents.execution.domain.result import execution_result
+from agents.execution.domain.submit import remember, submit_order
+from agents.execution.live_gate import live_gate_rejected
 from agents.execution.settings import ExecutionSettings
-from agents.execution.store import write_fills, write_reconciliation
+from agents.execution.stage_flow import promote_stage
+from agents.execution.store import (
+    current_stage_from_graph,
+    write_fills,
+    write_reconciliation,
+)
 from contracts.execution import (
     CONTRACT,
     ExecutionResult,
-    ExecutionStage,
-    Fill,
+    PromoteStageRequest,
+    PromoteStageResult,
     ReconcileRequest,
     ReconcileResult,
     StageStatus,
@@ -34,13 +39,11 @@ from contracts.execution import (
 from contracts.monitor import CloseDecisionSet
 from contracts.portfolio_manager import OrderIntentSet
 from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
-from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
     from agents.execution.broker import Broker, BrokerFill
-    from contracts.common import Provenance
     from kernel import MessageBus
 
 
@@ -68,23 +71,36 @@ class ExecutionAgent(AgentBase):
             "execute_close": self._execute_close,
             "reconcile": self._reconcile,
             "stage_status": self._stage_status,
+            "promote_stage": self._promote_stage,
         }
 
     def _submit(self, request: BaseModel) -> ExecutionResult:
         order_set = OrderIntentSet.model_validate(request)
-        fills = tuple(
-            self._submit_order(order_from_intent(order_set, intent), "submit")
-            for intent in order_set.approved
+        stage = current_stage_from_graph(self._graph, self._settings.stage)
+        orders = tuple(
+            order_from_intent(order_set, intent) for intent in order_set.approved
         )
-        self._remember(fills)
+        if stage not in ("paper", "broker_shadow"):
+            return live_gate_rejected(self._graph, order_set, orders, stage)
+        fills = tuple(
+            submit_order(
+                self._broker,
+                self.sink,
+                order,
+                "submit",
+            )
+            for order in orders
+        )
+        remember(self._recorded, fills)
         run_id = execution_run_id("submit", order_set.run_id)
         provenance = write_fills(
             self._graph, run_id=run_id, fills=fills, order_set=order_set
         )
-        return _execution_result(run_id, self._settings.stage, fills, provenance)
+        return execution_result(run_id, stage, fills, provenance)
 
     def _execute_close(self, request: BaseModel) -> ExecutionResult:
         close_set = CloseDecisionSet.model_validate(request)
+        stage = current_stage_from_graph(self._graph, self._settings.stage)
         orders = tuple(
             order_from_close(
                 close_set,
@@ -95,11 +111,14 @@ class ExecutionAgent(AgentBase):
             for decision in close_set.decisions
             if decision.decision == "close"
         )
-        fills = tuple(self._submit_order(order, "execute_close") for order in orders)
-        self._remember(fills)
+        fills = tuple(
+            submit_order(self._broker, self.sink, order, "execute_close")
+            for order in orders
+        )
+        remember(self._recorded, fills)
         run_id = execution_run_id("close", close_set.run_id)
         provenance = write_fills(self._graph, run_id=run_id, fills=fills)
-        return _execution_result(run_id, self._settings.stage, fills, provenance)
+        return execution_result(run_id, stage, fills, provenance)
 
     def _reconcile(self, request: BaseModel) -> ReconcileResult:
         ReconcileRequest.model_validate(request)
@@ -118,49 +137,11 @@ class ExecutionAgent(AgentBase):
     def _stage_status(self, request: BaseModel) -> StageStatus:
         StageStatusRequest.model_validate(request)
         return StageStatus(
-            stage=self._settings.stage,
+            stage=current_stage_from_graph(self._graph, self._settings.stage),
             idempotent=True,
-            reason="paper broker submissions are keyed by stable idempotency keys",
+            reason="stage is graph-authoritative; submissions keep stable keys",
         )
 
-    def _submit_order(self, order: BrokerOrder, capability: str) -> BrokerFill:
-        try:
-            with fault_boundary(
-                self.sink,
-                agent="execution",
-                module="agents.execution.agent",
-                capability=capability,
-                reraise=True,
-            ):
-                return self._broker.submit(
-                    order.idempotency_key,
-                    order.ticker,
-                    order.side,
-                    order.quantity,
-                    order.limit_price,
-                )
-        except BrokerRejectedError as exc:
-            return exc.fill
-        except Exception as exc:
-            return rejected_broker_fill(order, str(exc))
-
-    def _remember(self, fills: tuple[BrokerFill, ...]) -> None:
-        for fill in fills:
-            self._recorded[fill.idempotency_key] = fill
-
-
-def _execution_result(
-    run_id: str,
-    stage: ExecutionStage,
-    fills: tuple[BrokerFill, ...],
-    provenance: Provenance,
-) -> ExecutionResult:
-    public_fills: tuple[Fill, ...] = tuple(fill_from_broker(fill) for fill in fills)
-    return ExecutionResult(
-        run_id=run_id,
-        stage=stage,
-        fills=public_fills,
-        submitted=sum(fill.status != "rejected" for fill in fills),
-        rejected=sum(fill.status == "rejected" for fill in fills),
-        provenance=provenance,
-    )
+    def _promote_stage(self, request: BaseModel) -> PromoteStageResult:
+        stage_request = PromoteStageRequest.model_validate(request)
+        return promote_stage(self._graph, self.bus, self._settings, stage_request)

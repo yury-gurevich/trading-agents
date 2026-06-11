@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from surfaces.queries.flags import FlagView
     from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
     from surfaces.queries.positions import PositionView
-    from surfaces.queries.proposals import ProposalView
     from surfaces.queries.runs import RunSummary
+    from surfaces.queries.stage import StageView
 
 
 def render_status(report: MasterReport) -> str:
@@ -139,21 +139,16 @@ def render_command(result: CommandResult, dispatch: DispatchResult | None) -> st
     )
 
 
-def render_proposals(proposals: tuple[ProposalView, ...]) -> str:
-    """Render researcher proposals and approval status."""
-    if not proposals:
-        return "no proposals pending review"
-    lines = [f"Proposals: {len(proposals)}"]
-    for proposal in proposals:
-        status = "approved" if proposal.approved else "pending"
-        lines.extend(
-            (
-                f"\n  [{proposal.proposal_id}] {status} - "
-                f"{proposal.change_count} change(s)",
-                f"  {proposal.rationale}",
-                f"  created: {proposal.created_at}",
-            )
+def render_stage(stage: str, history: tuple[StageView, ...]) -> str:
+    """Render execution stage status and recent transition history."""
+    lines = [f"Execution stage: {stage}"]
+    if history:
+        lines.append(f"  ({len(history)} transition(s) in history)")
+    for item in history[-3:]:
+        lines.append(
+            f"  {item.from_stage} -> {item.to_stage}  {item.transitioned_at[:10]}"
         )
+        lines.append(f"    {item.reason}")
     return "\n".join(lines)
 
 

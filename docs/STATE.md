@@ -17,8 +17,11 @@ RunScheduler, steps, bindings, lineage helpers); both bus backends proven with `
 
 ## Next
 
-- **P5 — Operator command layer + supervisor safety**: operator agent (intent grammar, typed
-  schemas, command audit, model-call ledger), full supervisor capability gate + hard-NO surface.
+- **Sprint 16 — Operator agent** (P5 begins): kernel `LLMClient` protocol + `FakeLLMClient`;
+  `OperatorAgent` (`interpret` + `explain`); 10-family intent grammar with hardcoded confirmation
+  policy; `CommandAudit`/`Intent`/`LLMCall` ledger in graph. Plan: `docs/sprints/sprint-16-operator.md`.
+- **Sprint 17 — Supervisor gate** (P5 exit): `dispatch_intent` + capability matrix + hard-NO
+  surface + policy-parity test.
 - Build-when-needed: MCP tool-binding, RAG vector index.
 
 ## Workflow

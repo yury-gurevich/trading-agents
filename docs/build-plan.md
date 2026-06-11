@@ -239,7 +239,7 @@ stage gates in P8.
 | P2 First vertical slice | **complete** (S04 provider, S05 scanner, S06 analyst; exit met) |
 | P3 Decision loop | **complete** (S09 PM, S10 hardening, S11 execution, S12 monitor, S13 reporter — exit criterion met) |
 | P4 Orchestration | **complete** (S14 dispatcher, S15 supervisor lineage + scheduler — exit criterion met) |
-| P5 Operator + supervisor | planned |
+| P5 Operator + supervisor | **active** (S16 operator intent parsing planned) |
 | P6 Surfaces | planned |
 | P7 Self-management | planned |
 | P8 Hardening + expansion | planned |

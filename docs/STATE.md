@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 23 shipped (researcher agent; P7 complete). **P8 next.**
+**Last updated:** 2026-06-12 — Sprint 24 shipped (stage gate; P8 active). **P8 Part 2 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,11 +9,14 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 24 — P8 stage gate (planned).** Evidence-based stage promotion gate;
-`StageTransition` graph nodes; `execution.promote_stage` capability; confirmation pattern
-(evidence → Flag → approve → write transition); graph-authoritative `stage_status`;
-`cli stage` read-only surface. A0 required: extract submission helpers from
-`execution/agent.py` (166L) to `domain/submit.py`.
+**P8 active.** Sprint 24 shipped: evidence-based stage promotion gate; `StageTransition`
+graph nodes; `execution.promote_stage` (two-call: evidence → Flag → approve → transition);
+graph-authoritative `stage_status`; `_submit` rejects live-adjacent stages; `cli stage`
+read-only surface. Coding agent split promotion logic into `stage_flow.py` (116L) and live
+gate into `live_gate.py` (36L). 309 tests at 100% (floor 100.00).
+
+State: `execution/agent.py` 147L (**3L from 150L warn** — do not add to agent.py in S25;
+any new execution capability goes in a domain module).
 
 ## Next
 
@@ -33,6 +36,13 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 24 — Stage gate machinery** (P8 Part 1). `execution.promote_stage` capability;
+  `StageTransition` graph node (execution-owned); evidence gate (min runs, approval_rate,
+  critical fault block); two-call confirmation pattern (Flag then FlagResolution);
+  immediate demotion; graph-authoritative `stage_status`; `_submit` live-adjacent rejection.
+  New modules: `stage_flow.py` (116L), `live_gate.py` (36L), `domain/submit.py` (52L),
+  `domain/stage_gate.py` (80L), `domain/stage_metrics.py` (33L), `domain/result.py` (36L).
+  FlagResolution key: `resolution:flag:stage_promote:<target>:info`. 309 tests, floor 100.00.
 - **Sprint 23 — Researcher agent** (**P7 complete**). `agents/researcher/` full implementation:
   `settings.py` (70L), `domain/evidence.py` (61L), `domain/proposal.py` (80L), `store.py` (43L),
   `agent.py` (132L). Heuristic: `avg_confidence < 0.40` → raise `confidence_floor`; `> 0.70` →

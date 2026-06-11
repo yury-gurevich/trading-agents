@@ -38,12 +38,33 @@ def test_capability_matrix_routes_available_and_refuses_unavailable() -> None:
     run = _dispatch(bus, _intent("run", {"confirmed": "true"}))
     assert run.accepted is True
     assert run.routed_to == "orchestration.execute_run"
-    approve = _dispatch(bus, _intent("approve", {"confirmed": "true"}))
+    approve = _dispatch(
+        bus, _intent("approve", {"confirmed": "true", "subject": "missing"})
+    )
     stage = _dispatch(bus, _intent("stage", {"confirmed": "true"}))
-    assert approve.accepted is False
-    assert "P7" in str(approve.rejection)
+    assert approve.accepted is True
+    assert approve.routed_to == "supervisor.resolve_flag"
     assert "P8" in str(stage.rejection)
-    assert CAPABILITY_MATRIX["approve"].routed_to is None
+    assert CAPABILITY_MATRIX["approve"].routed_to == "supervisor.resolve_flag"
+    assert CAPABILITY_MATRIX["stage"].routed_to is None
+
+
+def test_approve_intent_resolves_matching_flag() -> None:
+    graph = InMemoryGraphStore()
+    bus = _bound_bus(graph)
+    graph.merge_node(
+        "Flag",
+        "flag:risk:critical",
+        {"subject_ref": "risk", "severity": "critical", "status": "pending"},
+    )
+
+    result = _dispatch(
+        bus, _intent("approve", {"confirmed": "true", "subject": "risk"})
+    )
+
+    assert result.accepted is True
+    assert result.routed_to == "supervisor.resolve_flag"
+    assert graph.get_node("FlagResolution", "resolution:flag:risk:critical")
 
 
 def test_confirmation_gate_writes_and_resolves_flag() -> None:

@@ -102,6 +102,21 @@ def resolve_flag(graph: GraphStore, subject_ref: str, severity: str) -> Node | N
     return resolution
 
 
+def resolve_flag_by_subject(graph: GraphStore, subject_ref: str) -> bool:
+    """Resolve the first unresolved Flag matching ``subject_ref``."""
+    if not subject_ref:
+        return False
+    for flag_node in graph.list_nodes("Flag"):
+        if flag_node.props.get("subject_ref") != subject_ref:
+            continue
+        severity = str(flag_node.props.get("severity", "critical"))
+        key = _resolution_key(subject_ref, severity)
+        if graph.get_node("FlagResolution", key) is not None:
+            continue
+        return resolve_flag(graph, subject_ref, severity) is not None
+    return False
+
+
 def write_dispatch_run(
     graph: GraphStore,
     *,

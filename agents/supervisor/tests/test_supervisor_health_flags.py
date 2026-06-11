@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, cast
 
 from agents.supervisor import SupervisorAgent
 from agents.supervisor.domain.health import compute_health
-from agents.supervisor.store import resolve_flag
+from agents.supervisor.store import resolve_flag, resolve_flag_by_subject
 from contracts.common import Provenance
 from contracts.operator import TypedIntent
 from contracts.supervisor import (
@@ -102,6 +102,21 @@ def test_store_resolution_fallbacks() -> None:
     assert first == second
     assert list(graph.ancestors(flag, max_depth=1, edge_types={"RESOLVES"}))
     assert compute_health(_EmptyGraph(), None)["healthy"] is True  # type: ignore[arg-type]
+
+
+def test_resolve_flag_by_subject_matches_only_unresolved_flags() -> None:
+    graph = InMemoryGraphStore()
+    graph.merge_node(
+        "Flag",
+        "flag:risk:critical",
+        {"subject_ref": "risk", "severity": "critical"},
+    )
+
+    assert resolve_flag_by_subject(graph, "") is False
+    assert resolve_flag_by_subject(graph, "missing") is False
+    assert resolve_flag_by_subject(graph, "risk") is True
+    assert graph.get_node("FlagResolution", "resolution:flag:risk:critical")
+    assert resolve_flag_by_subject(graph, "risk") is False
 
 
 def _bound_bus(graph: InMemoryGraphStore) -> InProcessBus:

@@ -12,6 +12,7 @@ from typing import cast
 from kernel import InMemoryGraphStore, Node
 from surfaces.queries import (
     all_position_lifecycles,
+    narratives_for_run,
     pending_flags,
     position_lifecycle,
 )
@@ -74,6 +75,56 @@ def test_all_position_lifecycles_returns_present_positions_only() -> None:
         "pm-run:MSFT",
     ]
     assert all_position_lifecycles(missing) == ()
+
+
+def test_narratives_for_run_returns_linked_tickers_sorted_by_position() -> None:
+    graph = InMemoryGraphStore()
+    aapl = graph.merge_node("Position", "run-20:AAPL", {"ticker": "AAPL"})
+    msft = graph.merge_node("Position", "run-20:MSFT", {"ticker": "MSFT"})
+    msft_story = graph.merge_node(
+        "TradeNarrative",
+        "narrative:run-20:MSFT",
+        {"run_id": "run-20", "position_id": "run-20:MSFT", "summary": "MSFT story."},
+    )
+    aapl_story = graph.merge_node(
+        "TradeNarrative",
+        "narrative:run-20:AAPL",
+        {"run_id": "run-20", "position_id": "run-20:AAPL", "summary": "AAPL story."},
+    )
+    graph.merge_node(
+        "TradeNarrative",
+        "narrative:other:NVDA",
+        {"run_id": "other", "position_id": "other:NVDA", "summary": "Other story."},
+    )
+    graph.add_edge(msft_story, msft, "NARRATES")
+    graph.add_edge(aapl_story, aapl, "NARRATES")
+
+    narratives = narratives_for_run(graph, "run-20")
+
+    assert [item.position_id for item in narratives] == ["run-20:AAPL", "run-20:MSFT"]
+    assert [item.ticker for item in narratives] == ["AAPL", "MSFT"]
+    assert [item.summary for item in narratives] == ["AAPL story.", "MSFT story."]
+
+
+def test_narratives_for_run_handles_empty_and_missing_position() -> None:
+    graph = InMemoryGraphStore()
+    graph.merge_node(
+        "TradeNarrative",
+        "narrative:orphan",
+        {"run_id": "run-20", "position_id": "orphan", "summary": "No position."},
+    )
+    graph.merge_node(
+        "TradeNarrative",
+        "narrative:other",
+        {"run_id": "other", "position_id": "other", "summary": "Other."},
+    )
+
+    narratives = narratives_for_run(graph, "run-20")
+
+    assert len(narratives) == 1
+    assert narratives[0].ticker == ""
+    assert narratives[0].summary == "No position."
+    assert narratives_for_run(InMemoryGraphStore(), "run-20") == ()
 
 
 def test_pending_flags_omits_resolved_flags() -> None:

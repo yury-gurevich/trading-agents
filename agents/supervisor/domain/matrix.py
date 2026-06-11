@@ -30,7 +30,7 @@ CAPABILITY_MATRIX: dict[str, RouteSpec] = {
     "status": RouteSpec("reporter", "report", True),
     "explain": RouteSpec("reporter", "narrative", True),
     "run": RouteSpec("orchestration", "execute_run", True),
-    "approve": RouteSpec(None, None, False),
+    "approve": RouteSpec("supervisor", "resolve_flag", True),
     "reject": RouteSpec(None, None, False),
     "modify": RouteSpec(None, None, False),
     "mode": RouteSpec(None, None, False),
@@ -40,7 +40,6 @@ CAPABILITY_MATRIX: dict[str, RouteSpec] = {
 }
 
 BUILD_PHASES = {
-    "approve": "P7",
     "reject": "P7",
     "modify": "P7",
     "mode": "P8",

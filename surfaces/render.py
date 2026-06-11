@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from contracts.reporter import RunSnapshot
     from contracts.supervisor import DispatchResult, MasterReport
     from surfaces.queries.flags import FlagView
-    from surfaces.queries.lifecycle import PositionLifecycle
+    from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
     from surfaces.queries.positions import PositionView
     from surfaces.queries.runs import RunSummary
 
@@ -108,6 +108,18 @@ def render_flags(flags: tuple[FlagView, ...]) -> str:
     return "\n".join(lines)
 
 
+def render_narratives(narratives: tuple[RunNarrative, ...], run_id: str) -> str:
+    """Render trade narratives for one dispatcher run."""
+    if not narratives:
+        return f"no narratives for run {run_id}"
+    lines = [f"Trade narratives - {run_id} ({len(narratives)} position(s))"]
+    for narrative in narratives:
+        ticker = narrative.ticker or "unknown"
+        lines.append(f"\n  {ticker}  [{narrative.position_id}]")
+        lines.extend(f"    {line}" for line in narrative.summary.splitlines())
+    return "\n".join(lines)
+
+
 def render_command(result: CommandResult, dispatch: DispatchResult | None) -> str:
     """Render operator interpretation and supervisor routing."""
     lines = (
@@ -124,6 +136,19 @@ def render_command(result: CommandResult, dispatch: DispatchResult | None) -> st
             f"{'rejection'.ljust(16)}{dispatch.rejection or 'none'}",
         )
     )
+
+
+def render_approve(result: DispatchResult, subject: str) -> str:
+    """Render a single approve command result."""
+    if not result.accepted:
+        lines = [f"approve refused: {subject}"]
+        if result.rejection:
+            lines.append(f"  reason: {result.rejection}")
+        return "\n".join(lines)
+    lines = [f"approved: {subject}"]
+    if result.routed_to:
+        lines.append(f"  routed_to: {result.routed_to}")
+    return "\n".join(lines)
 
 
 def _row(values: tuple[str, ...]) -> str:

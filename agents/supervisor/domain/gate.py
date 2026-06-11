@@ -12,7 +12,12 @@ from typing import TYPE_CHECKING
 from agents.supervisor.domain.hard_no import is_hard_no
 from agents.supervisor.domain.matrix import CAPABILITY_MATRIX, not_available_reason
 from agents.supervisor.result import provenance, rejected
-from agents.supervisor.store import resolve_flag, write_flag, write_message
+from agents.supervisor.store import (
+    resolve_flag,
+    resolve_flag_by_subject,
+    write_flag,
+    write_message,
+)
 from contracts.supervisor import DispatchResult
 
 if TYPE_CHECKING:
@@ -41,6 +46,11 @@ def dispatch_intent(graph: GraphStore, intent: TypedIntent) -> DispatchResult:
     spec = CAPABILITY_MATRIX[intent.family]
     if not spec.available:
         return rejected(intent.provenance.run_id, not_available_reason(intent.family))
+    if intent.family == "approve":
+        subject_ref = intent.parameters.get("subject") or intent.parameters.get(
+            "target", ""
+        )
+        resolve_flag_by_subject(graph, subject_ref)
     node = write_message(
         graph,
         run_id=intent.provenance.run_id,

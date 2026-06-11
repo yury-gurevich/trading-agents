@@ -9,7 +9,9 @@ from surfaces.queries.flags import FlagView, pending_flags
 from surfaces.queries.health import HealthSummary, system_health
 from surfaces.queries.lifecycle import (
     PositionLifecycle,
+    RunNarrative,
     all_position_lifecycles,
+    narratives_for_run,
     position_lifecycle,
 )
 from surfaces.queries.positions import (
@@ -24,9 +26,11 @@ __all__ = [
     "HealthSummary",
     "PositionLifecycle",
     "PositionView",
+    "RunNarrative",
     "RunSummary",
     "StepRecord",
     "all_position_lifecycles",
+    "narratives_for_run",
     "open_positions",
     "pending_flags",
     "position_lifecycle",

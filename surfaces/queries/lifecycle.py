@@ -31,6 +31,15 @@ class PositionLifecycle:
     narrative_text: str | None
 
 
+@dataclass(frozen=True)
+class RunNarrative:
+    """One trade narrative attached to a dispatcher run."""
+
+    position_id: str
+    ticker: str
+    summary: str
+
+
 def position_lifecycle(graph: GraphStore, position_id: str) -> PositionLifecycle | None:
     """Traverse the full entry-to-exit chain for one position."""
     position = graph.get_node("Position", position_id)
@@ -63,6 +72,27 @@ def all_position_lifecycles(graph: GraphStore) -> tuple[PositionLifecycle, ...]:
         if lifecycle is not None:
             lifecycles.append(lifecycle)
     return tuple(lifecycles)
+
+
+def narratives_for_run(graph: GraphStore, run_id: str) -> tuple[RunNarrative, ...]:
+    """Return all trade narratives for a dispatcher run, sorted by position id."""
+    narratives: list[RunNarrative] = []
+    for node in graph.list_nodes("TradeNarrative"):
+        if str(node.props.get("run_id", "")) != run_id:
+            continue
+        position_id = str(node.props.get("position_id", ""))
+        position = _linked(graph, node, "NARRATES", "Position")
+        if position is None and position_id:
+            position = graph.get_node("Position", position_id)
+        ticker = "" if position is None else str(position.props.get("ticker", ""))
+        narratives.append(
+            RunNarrative(
+                position_id=position_id,
+                ticker=ticker,
+                summary=str(node.props.get("summary", "")),
+            )
+        )
+    return tuple(sorted(narratives, key=lambda item: item.position_id))
 
 
 def _linked(

@@ -9,23 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P4 active — dispatcher shipped.** `Dispatcher.execute_run(trigger)` drives the full 7-agent
-paper loop from a single call; both bus backends proven (InProcessBus + CeleryBus eager mode).
-195 tests at 100% (floor 100.00).
+**P4 complete.** The daily loop runs on the distributed bus, event-driven, with the supervisor
+recording message lineage. 208 tests at 100% (floor 100.00).
+
+State: all 7 domain agents + `SupervisorAgent` implemented; full `orchestration/` layer (Dispatcher,
+RunScheduler, steps, bindings, lineage helpers); both bus backends proven with `Message >= 7` nodes.
 
 ## Next
 
-- **Sprint 15 — Scheduler + supervisor message lineage** (P4 exit): one-line all-hold fix,
-  `RunScheduler`, `SupervisorAgent` (`report_fault` + `record_dispatch_run` → `Message`/`Fault`
-  nodes), updated P4 parity tests asserting `Message` node count. Plan: `docs/sprints/sprint-15-supervisor.md`.
+- **P5 — Operator command layer + supervisor safety**: operator agent (intent grammar, typed
+  schemas, command audit, model-call ledger), full supervisor capability gate + hard-NO surface.
 - Build-when-needed: MCP tool-binding, RAG vector index.
-
-## Known edge case (flag for Sprint 15)
-
-`step_check_positions` in `orchestration/steps.py` treats an empty `CloseDecisionSet.decisions`
-as a stop condition (same as fault/empty). In production, an all-hold run (positions held, no
-stops/targets hit) would return `completed=False`. Test fixture always trips a stop so CI passes.
-Fix: change the guard to check only for `None` (fault), not empty decisions.
 
 ## Workflow
 
@@ -39,6 +33,13 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 15 — Scheduler + supervisor message lineage** (P4 — **exit criterion met**).
+  `step_check_positions` all-hold fix; `SupervisorAgent` (`record_dispatch_run` writes one
+  `Message` node per step, `report_fault` writes `Fault` nodes); `RunScheduler` factory;
+  dispatcher tracks steps locally and calls `_finish()` before every return; idle proof test.
+  Dispatcher refactored: `run_outcome.py` (stop-reason constants), `lineage.py` (position
+  traversal), `narratives.py` (fan-out) extracted to stay ≤ 150 lines. 208 tests, floor 100.
+  **P4 exit: daily loop on distributed bus, event-driven, supervisor recording message lineage.**
 - **Sprint 14 — Dispatcher** (P4 begun). `Dispatcher` in `orchestration/` binds all 7 agents
   and drives `execute_run(trigger)` through scan→analyze→evaluate→submit→check_positions→report
   in order; graceful stop on fault/empty at each step. `orchestration/bindings.py` separates

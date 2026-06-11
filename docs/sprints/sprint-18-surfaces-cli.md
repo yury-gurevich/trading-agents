@@ -206,6 +206,7 @@ at this stage; aesthetics are secondary to correctness.
 ### B4. Tests — `surfaces/tests/`
 
 **`test_queries.py`**:
+
 - `recent_runs` on a graph with two completed run records → returns 2 `RunSummary` items,
   newest first; `completed=True`; `steps` contains all step names.
 - `recent_runs` on empty graph → returns empty tuple, no crash.
@@ -214,6 +215,7 @@ at this stage; aesthetics are secondary to correctness.
 - `system_health` on graph with one `Fault` node → `open_faults=1`, `healthy=False`.
 
 **`test_cli.py`** (use `test_context` + `capsys` or capture prints):
+
 - `cli status` renders a line containing `"healthy"`.
 - `cli runs` renders the run_id of a run that was seeded in the test graph.
 - `cli positions` renders "no open positions" when graph is empty.

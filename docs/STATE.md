@@ -23,11 +23,12 @@ P6 operator checklist: run ✓ — inspect ✓ — approve ✓ — **recover** (
 
 ## Next
 
-- **Sprint 21 — incident recovery + P6 exit** (P6 final candidate): surface `Fault` nodes in
-  the CLI (`cli incidents` lists open faults; `cli resolve-incident <fault_id>` acknowledges);
-  `surfaces/queries/faults.py` projection; assess whether P6 exit criterion is met after this
-  sprint ("operator can run, inspect, approve, and recover from the dashboard").
-  Plan: `docs/sprints/sprint-21-*.md`.
+- **Sprint 21 — incident view + explain on demand + P6 exit** (P6 closes):
+  Part A0: extract Sprint 20 CLI additions to `cli_commands_extra.py` (headroom refactor).
+  Part A: `surfaces/queries/faults.py` (`FaultView`, `open_faults`); `cli incidents`.
+  Part B: `cli explain <pos_id>` (bus call to `reporter.narrative` on demand).
+  Part C: `test_p6_exit.py` proving run/inspect/approve/recover/explain end-to-end.
+  P6 closes if exit test passes. Plan: `docs/sprints/sprint-21-incidents-explain-p6-exit.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow

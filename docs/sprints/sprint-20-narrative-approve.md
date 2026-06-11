@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 20 — Trade narrative display + approve command (P6 continues)
 
-**Status:** planned · **Branch:** `sprint-20-narrative-approve` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** shipped · **Branch:** `sprint-20-narrative-approve` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 
@@ -227,7 +227,7 @@ def render_approve(result: DispatchResult, subject: str, out) -> None:
 
 The existing test that asserts `dispatch_intent(approve_intent).accepted == False` must change:
 
-- With a pending `Flag` in the graph and an `approve` intent (`confirmed=true`): 
+- With a pending `Flag` in the graph and an `approve` intent (`confirmed=true`):
   `dispatch_intent` returns `accepted=True`, `routed_to="supervisor.resolve_flag"`, and a
   `FlagResolution` node exists in the graph.
 - Without a matching `Flag` in the graph: returns `accepted=True` (gate does not refuse

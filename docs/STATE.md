@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 19 (list_nodes + position lifecycle) shipped. **P6 active.**
+**Last updated:** 2026-06-12 — Sprint 20 (narrative + approve) shipped. **P6 active.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,23 +9,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P6 active. Sprint 19 shipped.** `GraphStore.list_nodes(label)` added to protocol and both
-backends; no `._nodes` access outside `kernel/graph_memory.py`; surface queries are now
-Neo4j-compatible. CLI extracted into `surfaces/cli_commands.py` (142L); `cli.py` collapsed
-to 58L. `PositionLifecycle` + `FlagView` projections + `cli position` + `cli flags` commands
-landed. 258 tests at 100% (floor 100.00).
+**P6 active. Sprint 20 shipped.** `cli narrative <run_id>` renders per-trade `TradeNarrative`
+nodes. `cli approve <subject>` auto-confirms, routes through operator+supervisor, and appends
+`FlagResolution`. `approve` now available in the capability matrix (`supervisor.resolve_flag`);
+`gate.dispatch_intent` calls `resolve_flag_by_subject` inline. 266 tests at 100% (floor 100.00).
 
-State: kernel module split — `graph_memory.py` (InMemoryGraphStore) + `graph_cypher.py` +
-`graph_neo4j_queries.py` alongside existing `graph_neo4j.py`; all `list_nodes` callers use
-the protocol method; surfaces layer fully Neo4j-compatible.
+State: `cli_commands.py` 172L, `render.py` 159L (both in warning band, under hard cap);
+new test file `test_cli_narrative_approve.py` (120L) split off to keep `test_cli.py` at 174L.
+`RunNarrative` + `narratives_for_run` added to `lifecycle.py`. `TypedIntent.model_copy` with
+updated parameters worked cleanly.
+
+P6 operator checklist: run ✓ — inspect ✓ — approve ✓ — **recover** (incident view) pending.
 
 ## Next
 
-- **Sprint 20 — trade narrative display + approve command** (P6 continues):
-  `cli narrative <run_id>` renders `TradeNarrative` nodes for a run; `cli approve <subject>`
-  routes through operator+supervisor with auto-confirm, resolves matching human-review flag
-  via new `resolve_flag_by_subject` store helper and inline gate resolution; approve flipped
-  to available in capability matrix. Plan: `docs/sprints/sprint-20-narrative-approve.md`.
+- **Sprint 21 — incident recovery + P6 exit** (P6 final candidate): surface `Fault` nodes in
+  the CLI (`cli incidents` lists open faults; `cli resolve-incident <fault_id>` acknowledges);
+  `surfaces/queries/faults.py` projection; assess whether P6 exit criterion is met after this
+  sprint ("operator can run, inspect, approve, and recover from the dashboard").
+  Plan: `docs/sprints/sprint-21-*.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow
@@ -40,6 +42,12 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 20 — Trade narrative display + approve command** (P6). `narratives_for_run` query
+  reads `TradeNarrative` nodes by `run_id` prop; `RunNarrative(position_id, ticker, summary)`.
+  `approve` flipped to available in capability matrix; `resolve_flag_by_subject` store helper;
+  `gate.dispatch_intent` resolves matching human-review flag inline for approve family.
+  `cli narrative` + `cli approve` commands. `TypedIntent.model_copy` for auto-confirm.
+  Tests split into `test_cli_narrative_approve.py`. 266 tests, floor 100.00.
 - **Sprint 19 — GraphStore `list_nodes` + position lifecycle** (P6). `list_nodes(label)` added
   to `GraphStore` Protocol, `InMemoryGraphStore` (extracted to `graph_memory.py`), and
   `Neo4jGraphStore` (helpers split into `graph_cypher.py` + `graph_neo4j_queries.py`). All

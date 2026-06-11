@@ -15,8 +15,9 @@ paper loop from a single call; both bus backends proven (InProcessBus + CeleryBu
 
 ## Next
 
-- **Sprint 15 — Scheduler + supervisor message lineage** (P4 continuation): wall-clock trigger,
-  minimal supervisor (`report_fault` + `Message` node lineage), full P4 exit criterion met.
+- **Sprint 15 — Scheduler + supervisor message lineage** (P4 exit): one-line all-hold fix,
+  `RunScheduler`, `SupervisorAgent` (`report_fault` + `record_dispatch_run` → `Message`/`Fault`
+  nodes), updated P4 parity tests asserting `Message` node count. Plan: `docs/sprints/sprint-15-supervisor.md`.
 - Build-when-needed: MCP tool-binding, RAG vector index.
 
 ## Known edge case (flag for Sprint 15)

@@ -1,6 +1,6 @@
 # Sprint 18 — Surfaces foundation + CLI (P6 begins)
 
-**Status:** planned · **Branch:** `sprint-18-surfaces-cli` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** shipped · **Branch:** `sprint-18-surfaces-cli` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 

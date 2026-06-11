@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-10 — Sprint 13 (reporter) shipped. **P3 exit criterion met.**
+**Last updated:** 2026-06-11 — Sprint 18 (surfaces foundation + CLI) shipped. **P6 active.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,23 +9,27 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P5 complete.** Operator intent parsing and supervisor capability gate both shipped. 237 tests
-at 100% (floor 100.00).
+**P6 active. Sprint 18 shipped.** Surfaces foundation + CLI landed: `resolve_flag` append-only
+fix (FlagResolution node), graph query projections (`runs`, `positions`, `health`), and a working
+CLI (`status`, `runs`, `run <id>`, `positions`, `command`). 251 tests at 100% (floor 100.00).
 
-State: full agent roster through supervisor implemented; `LLMClient` kernel protocol + `FakeLLMClient`;
-`OperatorAgent` (`interpret` + `explain`, `CommandAudit`/`Intent`/`LLMCall` ledger); `SupervisorAgent`
-complete (`dispatch_intent` hard-NO → confirmation → matrix; `system_status`; `flag_for_human`).
-P5 exit test proves `operator.interpret → supervisor.dispatch_intent` end-to-end with full audit trail.
+State: full agent roster implemented; surfaces layer wired (`surfaces/queries/`, `surfaces/cli.py`,
+`surfaces/context.py`); `FlagResolution` append-node pattern; `test_context` / `paper_context`
+factories. CLI tests are infra-free (InMemoryGraphStore + FakeLLMClient).
 
-Known limitation: `resolve_flag` in `supervisor/store.py` uses `InMemoryGraphStore._nodes` directly
-(append-only workaround). Raises `RuntimeError` against Neo4j. Fix deferred to P6 when graph
-mutation needs are clearer (options: `replace_node` protocol method, or `FlagResolution` append node).
+Known gap: `surfaces/queries/_graph.py::nodes_by_label` uses `getattr(graph, "_nodes", None)` —
+returns empty tuples silently against the Neo4j backend. The `GraphStore` protocol has no
+`list_nodes(label)` method. Surface queries work perfectly in CI (InMemoryGraphStore) but show no
+data in production with Neo4j. **Must fix in Sprint 19 (Part A) before P6 closes.**
 
 ## Next
 
-- **Sprint 18 — Surfaces foundation + CLI** (P6 begins): fix `resolve_flag` append-only
-  violation (`FlagResolution` node); `surfaces/queries/` projections (runs, positions, health);
-  CLI (`status`, `runs`, `positions`, `command`). Plan: `docs/sprints/sprint-18-surfaces-cli.md`.
+- **Sprint 19 — GraphStore `list_nodes` + position lifecycle + trade narrative** (P6 continues):
+  Part A: add `list_nodes(label: str) → tuple[Node, ...]` to the `GraphStore` protocol + both
+  backends + update `surfaces/queries/_graph.py` and `health.py` to use it (removes `._nodes`
+  access everywhere). Part B: position lifecycle view (entry/exit timeline per position), trade
+  narrative display in CLI (`cli narrative <pos_id>`), approval queue stub (list pending flags,
+  resolve one). Plan: `docs/sprints/sprint-19-*.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow
@@ -40,6 +44,12 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 18 — Surfaces foundation + CLI** (P6 begins). `resolve_flag` append-only fix:
+  `_replace_node` deleted; `FlagResolution` node appended with `RESOLVES` edge; `health.py` counts
+  open flags by `FlagResolution` absence. `surfaces/queries/` projections (`runs.py` 111L,
+  `positions.py` 79L, `health.py` 72L); `surfaces/cli.py` 125L; `surfaces/context.py` 110L;
+  `surfaces/render.py` 100L. CLI tests infra-free (InMemoryGraphStore + FakeLLMClient). 251 tests,
+  floor 100.00. Known gap: `nodes_by_label` uses `._nodes` — silently empty for Neo4j; fix in S19.
 - **Sprint 17 — Supervisor capability gate** (P5 — **exit criterion met**). `dispatch_intent`
   enforces hard-NO → confirmation gate → capability matrix in order; confirmation writes/resolves
   `Flag` nodes; `system_status` queries live graph health; `flag_for_human` writes `Flag` nodes

@@ -93,6 +93,7 @@ in the contract exactly as-is — the supervisor agent just won't handle them ye
 ### 3. Supervisor agent — `agents/supervisor/`
 
 **`agents/supervisor/store.py`**:
+
 - `write_message(graph, run_id, step_name, status) -> Node`:
   `merge_node("Message", f"{run_id}:{step_name}", {"run_id": run_id, "step": step_name, "status": status, "created_at": ...})`
 - `write_fault(graph, fault) -> Node`:
@@ -100,6 +101,7 @@ in the contract exactly as-is — the supervisor agent just won't handle them ye
 
 **`agents/supervisor/agent.py`** — `SupervisorAgent(AgentBase)` (inject `graph`, `settings`,
 `sink`), ≤ 150 lines:
+
 - `record_dispatch_run(DispatchRunRecord) -> DispatchResult`: iterate `steps_attempted`,
   call `write_message` for each; call `write_fault` for each fault in `record.faults`;
   return `DispatchResult(accepted=True, provenance=...)`.
@@ -180,6 +182,7 @@ Add to `orchestration/__init__.py` exports: `RunScheduler`.
 ### 7. Tests
 
 **`agents/supervisor/tests/test_supervisor_agent.py`** — infra-free:
+
 - `record_dispatch_run` with 3 steps writes 3 `Message` nodes in graph.
 - `record_dispatch_run` with faults writes `Fault` nodes.
 - `report_fault` writes one `Fault` node.
@@ -188,12 +191,14 @@ Add to `orchestration/__init__.py` exports: `RunScheduler`.
   exactly one agent.
 
 **`orchestration/tests/test_p4_scheduler.py`**:
+
 - `RunScheduler.make_trigger` returns a `RunTrigger` with `universe` from settings and
   `as_of` defaulting to today.
 - **Idle behavior test:** construct a `Dispatcher`; do NOT call `execute_run`; assert graph
   is empty — proves agents are idle until messaged.
 
 **Update `orchestration/tests/test_p4_daily_loop.py` and `test_p4_celery_parity.py`**:
+
 - Add assertion: `node_count(graph, "Message") >= 7` after a completed run (one per step
   attempted). This is the P4 exit assertion for supervisor message lineage.
 

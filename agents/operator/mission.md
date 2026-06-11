@@ -6,7 +6,7 @@ escalate anything ambiguous or unsafe.
 
 ## Owns
 - The allowed intent grammar and typed command schemas.
-- Command audit trail and confirmation tokens.
+- Command audit trail and typed intent provenance.
 - The LLM call ledger (every call recorded with prompt/response hashes).
 - Evidence-grounded explanation/narration.
 
@@ -17,11 +17,13 @@ escalate anything ambiguous or unsafe.
 - **Depends on (messages only):** `supervisor` (to dispatch validated intents).
 
 ## Data ownership
-- **Postgres:** `command_audits`, `command_confirmation_tokens`, `llm_call_ledger`.
-- **Graph:** `CommandAudit`, `Intent` (`CommandAudit -[:RESULTED_IN]-> Intent`).
+- **Graph:** `CommandAudit`, `Intent`, `LLMCall`
+  (`CommandAudit -[:RESULTED_IN]-> Intent`,
+  `CommandAudit -[:PRODUCED_BY]-> LLMCall`).
 
 ## External I/O (exclusive)
-- LLM provider (OpenAI default, Ollama local) via the kernel client + ledger.
+- LLM provider via the kernel `LLMClient` protocol. Production uses the
+  Anthropic backend; tests use `FakeLLMClient`.
 
 ## MCP surface
 - `interpret`, `explain`. **Also the MCP host** — the bounded bridge that lets an

@@ -78,7 +78,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("intent_parsed", "command_refused"),
-    owns_graph=("CommandAudit", "Intent"),
+    owns_graph=("CommandAudit", "Intent", "LLMCall"),
     external_io=("llm_provider",),
     depends_on=("supervisor",),
     mcp_tools=("interpret", "explain"),

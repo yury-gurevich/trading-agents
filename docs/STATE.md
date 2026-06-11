@@ -21,11 +21,11 @@ the protocol method; surfaces layer fully Neo4j-compatible.
 
 ## Next
 
-- **Sprint 20 — trade narrative display + approval queue flow** (P6 continues):
-  `cli narrative <run_id>` renders per-trade `TradeNarrative` nodes for a completed run;
-  approval queue shows pending flags with a `cli approve <subject>` command that routes
-  through `operator.interpret → supervisor.dispatch_intent`; `surfaces/queries/runs.py`
-  enriched with narrative availability flag. Plan: `docs/sprints/sprint-20-*.md`.
+- **Sprint 20 — trade narrative display + approve command** (P6 continues):
+  `cli narrative <run_id>` renders `TradeNarrative` nodes for a run; `cli approve <subject>`
+  routes through operator+supervisor with auto-confirm, resolves matching human-review flag
+  via new `resolve_flag_by_subject` store helper and inline gate resolution; approve flipped
+  to available in capability matrix. Plan: `docs/sprints/sprint-20-narrative-approve.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow

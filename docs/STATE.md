@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 22 shipped (MCP tool-binding; P1 complete). **P7 next.**
+**Last updated:** 2026-06-12 — Sprint 23 shipped (researcher agent; P7 complete). **P8 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,15 +9,23 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Sprint 23 — P7 researcher (planned).** Researcher agent (`propose` + `evidence`);
-`Experiment` + `ParamChange` graph nodes; calls `supervisor.flag_for_human` via bus to queue
-proposals; `cli proposals` surface; `test_p7_exit.py`. A0 prerequisite: extract
-`render_incidents` + `render_explain` to `render_extras.py` (render.py at 187L, 13L from
-hard cap). P7 exit: `test_p7_boundary.py` proves researcher never applies a change.
+**P7 complete.** Sprint 23 shipped: researcher agent (`propose` + `evidence`); `Experiment` +
+`ParamChange` graph nodes; `supervisor.flag_for_human` bus call queues proposals for review;
+`cli proposals` surface; `test_p7_exit.py` + `test_p7_boundary.py` prove the never-applies
+invariant. A0 extracted `render_incidents` + `render_explain` to `render_extras.py`; coding
+agent also created `render_review.py` (26L) for additional headroom. Researcher bound in
+`orchestration/bindings.py` → available in all contexts. 296 tests at 100% (floor 100.00).
+
+**P7 exit criterion met** (`test_p7_boundary.py` green):
+propose ✓ · evidence ✓ · flag queued ✓ · cli proposals ✓ · approve ✓ · never applies ✓
+
+State: `render.py` 165L · `render_extras.py` 41L · `render_review.py` 26L ·
+`researcher/agent.py` 132L (approaching 150L warn — watch on P8 if researcher grows).
 
 ## Next
 
-- **Sprint 24 — P8 hardening**: stage-promotion gates + market-pack readiness checklist.
+- **Sprint 24 — P8 hardening**: stage-promotion gates, market-pack readiness checklist,
+  proposal range-validation in the supervisor gate.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -32,6 +40,15 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 23 — Researcher agent** (**P7 complete**). `agents/researcher/` full implementation:
+  `settings.py` (70L), `domain/evidence.py` (61L), `domain/proposal.py` (80L), `store.py` (43L),
+  `agent.py` (132L). Heuristic: `avg_confidence < 0.40` → raise `confidence_floor`; `> 0.70` →
+  lower; else zero-change proposal. `Experiment -[:PROPOSES]-> ParamChange` provenance.
+  `supervisor.flag_for_human` bus call with `subject_ref="proposal:<id>"`. `cli proposals`
+  surface (`surfaces/queries/proposals.py` 53L). A0 render extraction: `render_extras.py` (41L)
+  and `render_review.py` (26L); `render.py` → 165L. FlagResolution approval key:
+  `resolution:flag:proposal:<id>:info`. Researcher bound in `orchestration/bindings.py`.
+  296 tests, floor 100.00. **P7 exit: never-applies invariant proven.**
 - **Sprint 22 — MCP tool-binding** (**P1 complete**). `surfaces/mcp_server.py` (121L) +
   `surfaces/mcp_tools.py` (146L). Five tools: `command` (operator.interpret →
   supervisor.dispatch_intent; no auto-confirm — AI assistant calls twice explicitly),

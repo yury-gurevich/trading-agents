@@ -5,6 +5,7 @@ contracts, and kernel in the dependency graph.
 """
 
 from orchestration.dispatcher import Dispatcher
+from orchestration.scheduler import RunScheduler
 from orchestration.trigger import RunResult, RunTrigger
 
-__all__ = ["Dispatcher", "RunResult", "RunTrigger"]
+__all__ = ["Dispatcher", "RunResult", "RunScheduler", "RunTrigger"]

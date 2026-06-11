@@ -22,6 +22,7 @@ from contracts.reporter import (
     TradeNarrative,
 )
 from contracts.scanner import CandidateSet
+from contracts.supervisor import DispatchResult, DispatchRunRecord
 from kernel import AgentMessage, CollectingFaultSink
 from kernel.errors import fault_boundary
 
@@ -89,13 +90,12 @@ def step_check_positions(
     bus: MessageBus, pm_run_id: str, sink: FaultSink | None = None
 ) -> CloseDecisionSet | None:
     """Run monitor over opened positions and return decisions, or None."""
-    result = _request(
+    return _request(
         bus,
         _message("monitor", "check_positions", MonitorRequest(run_id=pm_run_id)),
         CloseDecisionSet,
         sink,
     )
-    return result if result is not None and result.decisions else None
 
 
 def step_report(
@@ -124,6 +124,18 @@ def step_narrative(
         bus,
         _message("reporter", "narrative", NarrativeRequest(position_id=position_id)),
         TradeNarrative,
+        sink,
+    )
+
+
+def step_record_dispatch_run(
+    bus: MessageBus, record: DispatchRunRecord, sink: FaultSink | None = None
+) -> DispatchResult | None:
+    """Send supervisor one complete dispatcher run record."""
+    return _request(
+        bus,
+        _message("supervisor", "record_dispatch_run", record),
+        DispatchResult,
         sink,
     )
 

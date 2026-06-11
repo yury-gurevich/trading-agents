@@ -33,3 +33,4 @@ def test_p4_daily_loop_on_in_process_bus() -> None:
     assert result.snapshot.portfolio_metrics["positions_closed"] >= 1
     assert node_count(graph, "Snapshot") == 1
     assert node_count(graph, "TradeNarrative") == 1
+    assert node_count(graph, "Message") >= 7

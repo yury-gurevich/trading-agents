@@ -13,11 +13,12 @@ from agents.execution.broker import PaperBroker
 from agents.provider.sources import FakeDataSource
 from contracts.analyst import RecommendationSet
 from contracts.common import Explanation, Provenance
+from contracts.monitor import CloseDecisionSet
 from contracts.scanner import Candidate, CandidateSet, FilterTrace
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
 from orchestration import Dispatcher
-from orchestration.dispatcher import _position_ids_for_run
-from orchestration.steps import step_analyze
+from orchestration.lineage import position_ids_for_run
+from orchestration.steps import step_analyze, step_check_positions
 from orchestration.tests.helpers import fixture_universe, patch_success_until, trigger
 
 if TYPE_CHECKING:
@@ -101,7 +102,7 @@ def test_dispatcher_stop_branches(monkeypatch: pytest.MonkeyPatch) -> None:
         dispatcher.execute_run(trigger()).reason
         == "reporter produced no trade narratives"
     )
-    assert _position_ids_for_run(graph, "missing") == ()
+    assert position_ids_for_run(graph, "missing") == ()
 
 
 def test_dispatcher_uses_default_universe_for_blank_trigger() -> None:
@@ -116,6 +117,15 @@ def test_dispatcher_uses_default_universe_for_blank_trigger() -> None:
     assert result.reason == "scan produced no candidates"
 
 
+def test_step_check_positions_all_hold_empty_decisions_returns_result() -> None:
+    bus = InProcessBus()
+    bus.register("monitor", "check_positions", _empty_monitor)
+    result = step_check_positions(bus, "pm-run")
+    assert result is not None
+    assert result.decisions == ()
+    assert result.positions_checked == 0
+
+
 def _empty_analysis(_payload: dict[str, object]) -> dict[str, object]:
     return RecommendationSet(
         run_id="analysis-empty",
@@ -123,6 +133,16 @@ def _empty_analysis(_payload: dict[str, object]) -> dict[str, object]:
         rejections=(),
         explanation=Explanation(summary="empty"),
         provenance=Provenance(run_id="analysis-empty", source_agent="analyst"),
+    ).model_dump(mode="json")
+
+
+def _empty_monitor(_payload: dict[str, object]) -> dict[str, object]:
+    return CloseDecisionSet(
+        run_id="monitor-empty",
+        decisions=(),
+        positions_checked=0,
+        explanation=Explanation(summary="nothing to close"),
+        provenance=Provenance(run_id="monitor-empty", source_agent="monitor"),
     ).model_dump(mode="json")
 
 

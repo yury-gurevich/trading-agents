@@ -1,14 +1,16 @@
 # Supervisor Agent
 
-**Mission.** Route messages between agents, enforce the capability matrix and
-hard-NO safety surface, flag anomalies for human review, and produce the master
-health/decision report.
+**Mission.** Record message lineage and central faults for dispatcher runs now;
+grow into routing, capability gating, human review, and the master health report
+in P5.
 
 ## Owns
 
-- The A2A router and the message store (append-only message lineage).
-- The capability matrix and the hard-NO safety surface.
-- Human-review flagging and dead-letter handling.
+- P4: dispatcher message lineage.
+- P4: central fault records.
+- P5: the A2A router and the message store (append-only message lineage).
+- P5: the capability matrix and the hard-NO safety surface.
+- P5: human-review flagging and dead-letter handling.
 - **The central fault channel** — every agent's errors are redirected here with
   provenance (which module produced them) and acted upon (flag, incident, retry).
 - The master agent report.
@@ -18,6 +20,7 @@ health/decision report.
 - **Consumes:** `dispatch_intent(TypedIntent) -> DispatchResult`,
   `system_status(StatusRequest) -> MasterReport`,
   `flag_for_human(FlagRequest) -> DispatchResult`,
+  `record_dispatch_run(DispatchRunRecord) -> DispatchResult`,
   `report_fault(AgentFault) -> DispatchResult`.
 - **Emits:** `human_flag_raised`, `message_dead_lettered`.
 - **Depends on:** every agent (it routes to and reports across all of them).
@@ -26,7 +29,7 @@ health/decision report.
 
 - **Postgres:** `a2a_messages`, `capability_matrix`, `human_review_flags`,
   `master_agent_reports`, `agent_faults`.
-- **Graph:** `Message`, `Agent`, `Flag`, `Fault` (`Message -[:SENT_TO]-> Agent`).
+- **Graph:** `Message`, `Fault` in P4; `Agent`, `Flag` in P5.
 
 ## External I/O
 

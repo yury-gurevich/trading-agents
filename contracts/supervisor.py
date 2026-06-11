@@ -27,6 +27,14 @@ class FlagRequest(_Frozen):
     reason: str
 
 
+class DispatchRunRecord(_Frozen):
+    run_id: str
+    steps_attempted: tuple[str, ...]
+    completed: bool
+    reason: str | None = None
+    faults: tuple[AgentFault, ...] = ()
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class DispatchResult(_Frozen):
     accepted: bool
@@ -73,6 +81,12 @@ CONTRACT = AgentContract(
             request=FlagRequest,
             response=DispatchResult,
             mcp=True,
+        ),
+        Capability(
+            "record_dispatch_run",
+            "Record per-step message lineage and any faults for one dispatcher run.",
+            request=DispatchRunRecord,
+            response=DispatchResult,
         ),
         Capability(
             "report_fault",

@@ -136,14 +136,9 @@ def patch_success_until(monkeypatch: pytest.MonkeyPatch, stop: str) -> None:
         lambda *_args: None if stop == "report" else _snapshot(),
     )
     monkeypatch.setattr(
-        "orchestration.dispatcher.step_narrative",
-        lambda *_args: None if stop == "narrative" else object(),
+        "orchestration.dispatcher.write_narratives",
+        lambda *_args: stop != "narrative",
     )
-    if stop == "narrative":
-        monkeypatch.setattr(
-            "orchestration.dispatcher._position_ids_for_run",
-            lambda *_args: ("pm-run:AAPL",),
-        )
 
 
 class _OrderFixture:

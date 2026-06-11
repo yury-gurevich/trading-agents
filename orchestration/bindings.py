@@ -1,7 +1,7 @@
 """Dispatcher agent binding helpers.
 
 Agent: orchestration
-Role: bind the seven paper-loop agents onto an injected message bus.
+Role: bind the paper-loop agents onto an injected message bus.
 External I/O: optional provider source and broker ports injected by caller.
 """
 
@@ -21,6 +21,7 @@ from agents.provider.sources import StooqDataSource
 from agents.reporter import ReporterAgent
 from agents.scanner import ScannerAgent
 from agents.scanner.universe import StaticUniverse
+from agents.supervisor import SupervisorAgent
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
@@ -40,7 +41,7 @@ def bind_paper_loop_agents(
     universe_source: UniverseSource | None,
     sink: FaultSink,
 ) -> None:
-    """Bind provider through reporter to the injected bus."""
+    """Bind provider through supervisor to the injected bus."""
     ProviderAgent(
         bus,
         graph=graph,
@@ -70,3 +71,4 @@ def bind_paper_loop_agents(
     ).bind()
     MonitorAgent(bus, graph=graph, sink=sink).bind()
     ReporterAgent(bus, graph=graph, sink=sink).bind()
+    SupervisorAgent(bus, graph=graph, sink=sink).bind()

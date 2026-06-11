@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 20 (narrative + approve) shipped. **P6 active.**
+**Last updated:** 2026-06-12 — Sprint 21 (incidents + explain + P6 exit). **P6 complete. P7 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,27 +9,24 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P6 active. Sprint 20 shipped.** `cli narrative <run_id>` renders per-trade `TradeNarrative`
-nodes. `cli approve <subject>` auto-confirms, routes through operator+supervisor, and appends
-`FlagResolution`. `approve` now available in the capability matrix (`supervisor.resolve_flag`);
-`gate.dispatch_intent` calls `resolve_flag_by_subject` inline. 266 tests at 100% (floor 100.00).
+**P6 complete.** Sprint 21 shipped: `FaultView` + `open_faults` + `cli incidents`; `cli explain
+<pos_id>` via `reporter.narrative` on demand; `test_p6_exit.py` proves the full operator
+checklist. `cmd_narrative` + `cmd_approve` extracted to `cli_commands_extra.py` (A0 headroom
+refactor). 272 tests at 100% (floor 100.00).
 
-State: `cli_commands.py` 172L, `render.py` 159L (both in warning band, under hard cap);
-new test file `test_cli_narrative_approve.py` (120L) split off to keep `test_cli.py` at 174L.
-`RunNarrative` + `narratives_for_run` added to `lifecycle.py`. `TypedIntent.model_copy` with
-updated parameters worked cleanly.
+**P6 exit criterion met** (`test_p6_exit.py` green):
+run ✓ · inspect ✓ · approve ✓ · recover ✓ · explain on demand ✓
 
-P6 operator checklist: run ✓ — inspect ✓ — approve ✓ — **recover** (incident view) pending.
+State: `cli_commands.py` 169L, `cli_commands_extra.py` 75L, `render.py` **187L** (13L from
+hard cap — next sprint must extract render helpers before adding more).
 
 ## Next
 
-- **Sprint 21 — incident view + explain on demand + P6 exit** (P6 closes):
-  Part A0: extract Sprint 20 CLI additions to `cli_commands_extra.py` (headroom refactor).
-  Part A: `surfaces/queries/faults.py` (`FaultView`, `open_faults`); `cli incidents`.
-  Part B: `cli explain <pos_id>` (bus call to `reporter.narrative` on demand).
-  Part C: `test_p6_exit.py` proving run/inspect/approve/recover/explain end-to-end.
-  P6 closes if exit test passes. Plan: `docs/sprints/sprint-21-incidents-explain-p6-exit.md`.
-- Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
+- **Sprint 22 — P7 kickoff or MCP tool-binding** (TBD): either begin P7 (researcher agent
+  proposes bounded parameter changes into a human-review queue) or ship MCP tool-binding
+  (expose `operator.interpret` + `supervisor.dispatch_intent` as MCP tools, completing P1's
+  remaining item and enabling AI-assistant–driven control). Decide before planning.
+- Build-when-needed: RAG vector index (P1 remainder).
 
 ## Workflow
 
@@ -43,6 +40,12 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 21 — Incident view + explain on demand** (**P6 exit**). `FaultView` +
+  `open_faults(graph)` (all Fault nodes, newest first); `cli incidents`; `cli explain <pos_id>`
+  calls `reporter.narrative` on demand and renders `TradeNarrative.story.summary`. A0 refactor:
+  `cmd_narrative` + `cmd_approve` extracted to `cli_commands_extra.py` (75L). `test_p6_exit.py`
+  (117L) proves run/inspect/approve/recover/explain. 272 tests, floor 100.00.
+  **P6 exit criterion met.** `render.py` at 187L — extract helpers before next render addition.
 - **Sprint 20 — Trade narrative display + approve command** (P6). `narratives_for_run` query
   reads `TradeNarrative` nodes by `run_id` prop; `RunNarrative(position_id, ticker, summary)`.
   `approve` flipped to available in capability matrix; `resolve_flag_by_subject` store helper;

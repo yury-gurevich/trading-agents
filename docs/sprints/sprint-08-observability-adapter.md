@@ -40,7 +40,7 @@ registry — no server). The Prometheus *server* + Grafana dashboards are **P9**
   to the mypy overrides) but **nothing from `contracts`/`agents`**. `import-linter` "Kernel is
   pure plumbing" KEPT.
 - **Instrument at the choke points, not in agents.** The **bus** records per-request throughput
-  + latency + outcome (`ok` vs `error`); the **fault channel** records fault-rate by source via
+  - latency + outcome (`ok` vs `error`); the **fault channel** records fault-rate by source via
   a metered `FaultSink`. Agents are not modified.
 - **Infra-free gate.** `PrometheusMetrics` uses its **own `CollectorRegistry`** (not the global
   default — avoids cross-test collisions) so tests assert counter/histogram sample values

@@ -54,6 +54,7 @@ nodes + reasons exist after a run that rejects.
 
 **A2 — Contract value validators.** Add Pydantic constraints + validators to the payloads so an
 invalid caller is rejected at the boundary (not by luck downstream). At minimum:
+
 - `contracts/common.py`: `Money.amount` `ge=0`; `Window` — a `model_validator(mode="after")`
   requiring `start <= end`.
 - `contracts/provider.py`: `OHLCVBar` open/high/low/close `gt=0`, `volume` `ge=0`;
@@ -90,7 +91,7 @@ identical edge results.
 
 **B3 — Install Neo4j uniqueness constraints.** ADR-0001 assumes one node per `(label, key)`, but
 `Neo4jGraphStore` relies on `MERGE` alone — not concurrency-safe without a constraint. Have the
-store **lazily ensure** `CREATE CONSTRAINT IF NOT EXISTS FOR (n:`<label>`) REQUIRE n.key IS UNIQUE`
+store **lazily ensure** `CREATE CONSTRAINT IF NOT EXISTS FOR (n:\`{label}\`) REQUIRE n.key IS UNIQUE`
 once per label (cache the set; `_identifier`-quote the label). Test via the fake driver (the
 `CREATE CONSTRAINT` is issued once per new label). Aura Free supports node uniqueness constraints,
 so the live test (B-optional) can assert it against `NEO4J_TEST_URI`.

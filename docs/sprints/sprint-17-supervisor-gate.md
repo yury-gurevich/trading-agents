@@ -151,6 +151,7 @@ Keep ≤ 80 lines. Graceful on empty graph — return zeros and `healthy=True` w
 Extend `SupervisorAgent` with:
 
 **`_dispatch_intent` handler:**
+
 1. Validate `TypedIntent` from request.
 2. `is_hard_no(intent)` → if True: return `DispatchResult(accepted=False, rejection=reason)`.
 3. Look up `CAPABILITY_MATRIX[intent.family]`.
@@ -163,12 +164,14 @@ Extend `SupervisorAgent` with:
 9. Wrap in `fault_boundary(reraise=False)`.
 
 **`_system_status` handler:**
+
 1. Validate `StatusRequest`.
 2. Call `compute_health(graph, request.run_id)`.
 3. Compose `MasterReport(healthy=..., open_incidents=..., pending_human_flags=..., last_successful_run=..., summary=Explanation(...), provenance=...)`.
 4. Wrap in `fault_boundary(reraise=False)`.
 
 **`_flag_for_human` handler:**
+
 1. Validate `FlagRequest`.
 2. Call `write_flag(graph, subject_ref=..., severity=..., reason=...)`.
 3. Return `DispatchResult(accepted=True, provenance=...)`.
@@ -185,18 +188,21 @@ Add a comment `# P5 additions below` to mark the boundary for future splitting.
 Infra-free, `InProcessBus` + `InMemoryGraphStore`:
 
 **Hard-NO tests:**
+
 - `dispatch_intent` with `family="run", parameters={"stage": "live"}` → `accepted=False`,
   rejection contains "live-stage".
 - `dispatch_intent` with `parameters={"bypass_gate": "true"}` → `accepted=False`,
   rejection contains "bypassing the capability gate".
 
 **Capability matrix tests:**
+
 - `family="status"` → `accepted=True`, `routed_to="reporter.report"`.
 - `family="run"`, confirmed → `accepted=True`, `routed_to="orchestration.execute_run"`.
 - `family="approve"` (not available) → `accepted=False`, rejection contains "P7".
 - `family="stage"` (not available) → `accepted=False`, rejection contains "P8".
 
 **Confirmation gate tests:**
+
 - `family="run"`, `requires_confirmation=True`, no `"confirmed"` param → `accepted=False`,
   rejection contains "confirmation required"; `Flag` node written to graph.
 - Same intent re-sent with `parameters={"confirmed": "true"}` → `accepted=True`; `Flag` node
@@ -204,12 +210,14 @@ Infra-free, `InProcessBus` + `InMemoryGraphStore`:
 - `family="status"`, `requires_confirmation=False` → proceeds without Flag, no confirmation needed.
 
 **System status tests:**
+
 - Empty graph → `MasterReport(healthy=True, open_incidents=0, pending_human_flags=0)`.
 - Graph with one `Fault` node → `open_incidents=1`, `healthy=False`.
 - Graph with one `Flag(status="pending", severity="critical")` → `pending_human_flags=1`, `healthy=False`.
 - Graph with one `Snapshot` node → `last_successful_run` is its key.
 
 **Flag tests:**
+
 - `flag_for_human` writes a `Flag` node with `status="pending"`.
 - Calling `flag_for_human` twice with same `subject_ref` and `severity` → idempotent (one node).
 

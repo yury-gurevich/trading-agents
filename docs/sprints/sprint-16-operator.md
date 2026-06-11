@@ -108,6 +108,7 @@ class AnthropicLLMClient:
 ### 2. Operator settings — `agents/operator/settings.py`
 
 `OperatorSettings(AgentSettings)`, `env_prefix="OPERATOR_"`. Justified tunables:
+
 - `model` (default `"claude-sonnet-4-6"`, why: production default for intent parsing)
 - `max_tokens` (default 512, ge=64, le=4096, why: intent parsing needs only a short
   structured response; cap prevents runaway cost)
@@ -117,6 +118,7 @@ class AnthropicLLMClient:
 ### 3. Operator domain — `agents/operator/domain/`
 
 **`agents/operator/domain/grammar.py`** — the 10-family intent grammar:
+
 - `INTENT_FAMILIES: dict[IntentFamily, FamilySpec]` where `FamilySpec` has
   `description`, `params: tuple[str, ...]`, and `requires_confirmation: bool`.
   Populate from the confirmation policy table above.
@@ -124,11 +126,13 @@ class AnthropicLLMClient:
   returns the intent with `requires_confirmation` set by policy, ignoring the LLM's value.
 
 **`agents/operator/domain/prompts.py`** — prompt builders:
+
 - `build_interpret_system() -> str`: system prompt describing the trading system and the
   10 intent families with their parameters.
 - `build_interpret_user(command: HumanCommand) -> str`: `f"Command: {command.text}\nActor: {command.actor}\nChannel: {command.channel}"`
 - `INTENT_TOOL_SCHEMA: dict` — the JSON schema for the `parse_intent` tool, conforming to
   what Anthropic's API expects:
+
   ```python
   INTENT_TOOL_SCHEMA = {
       "type": "object",
@@ -141,11 +145,13 @@ class AnthropicLLMClient:
       "required": ["outcome"],
   }
   ```
+
 - `build_explain_system() -> str`: explain-mode system prompt.
 - `build_explain_user(subject: str, evidence: list[dict]) -> str`: includes serialized
   graph evidence nodes.
 
 **`agents/operator/domain/evidence.py`** — graph evidence retrieval for `explain`:
+
 - `gather_evidence(graph, subject: str, max_nodes: int) -> list[dict]`:
   Heuristic search: if subject mentions a ticker, look for recent `Recommendation`,
   `OrderIntent`, `Fill`, `Position`, `CloseDecision` nodes for that ticker.
@@ -192,6 +198,7 @@ Used inside `agent.py` to wrap every `llm.complete(...)` call.
 `OperatorAgent(AgentBase)`, inject `graph`, `llm`, `settings`, `sink`. ≤ 150 lines.
 
 **`interpret` handler:**
+
 1. Validate `HumanCommand`.
 2. Build prompts from `domain/prompts.py`.
 3. Inside `record_llm_call(...)`, call `self._llm.complete(...)`.
@@ -201,6 +208,7 @@ Used inside `agent.py` to wrap every `llm.complete(...)` call.
 7. Return `CommandResult`.
 
 **`explain` handler:**
+
 1. Validate `ExplainRequest`.
 2. Gather evidence via `domain/evidence.gather_evidence(...)`.
 3. Build explain prompt.
@@ -215,6 +223,7 @@ produces an intent and records it; Sprint 17 wires operator → supervisor for a
 ### 7. Operator `__init__.py`
 
 Export `OperatorAgent`. Update `agents/operator/mission.md`:
+
 - Remove stale Postgres references (`command_audits`, `command_confirmation_tokens`,
   `llm_call_ledger` tables).
 - Update graph section: `CommandAudit`, `Intent`, `LLMCall` nodes.
@@ -243,6 +252,7 @@ Build a `FakeLLMClient` fixture that returns canned intent JSON for these inputs
 | "mode" | `mode` | `True` |
 
 **`test_operator_agent.py`**:
+
 - `interpret` maps each of the 10 families correctly (confirmation policy applied regardless of
   LLM output).
 - `interpret` on malformed LLM JSON → `CommandResult(outcome="refused")`, no crash.
@@ -256,6 +266,7 @@ Build a `FakeLLMClient` fixture that returns canned intent JSON for these inputs
 - Boundary meta-test: `CommandAudit`, `Intent`, `LLMCall` claimed by exactly one agent.
 
 **`test_operator_grammar.py`** — pure domain tests, no bus:
+
 - All 10 families are in `INTENT_FAMILIES`.
 - `apply_confirmation_policy` overrides LLM-supplied value with the declared policy for each family.
 - `build_interpret_system()` mentions all 10 family names.

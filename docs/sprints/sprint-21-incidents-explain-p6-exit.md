@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 21 — Incident view + explain on demand + P6 exit (P6 closes)
 
-**Status:** planned · **Branch:** `sprint-21-incidents-explain-p6-exit` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** shipped · **Branch:** `sprint-21-incidents-explain-p6-exit` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 

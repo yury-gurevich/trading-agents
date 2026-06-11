@@ -8,6 +8,9 @@ dependencies = [
     "pydantic-settings>=2.2",
 ]
 
+[project.scripts]
+trading-agents-mcp = "surfaces.mcp_server:main"
+
 [project.optional-dependencies]
 # Runtime substrate — only the orchestration layer and live agents pull these in.
 runtime = [
@@ -16,6 +19,7 @@ runtime = [
     "neo4j>=5.20",
     "prometheus-client>=0.20",
 ]
+# Also pinned in the dev group so CI type-checks the MCP surface.
 mcp = ["mcp>=1.0"]
 
 [dependency-groups]
@@ -26,6 +30,7 @@ dev = [
     "celery>=5.4",
     "import-linter>=2.0",
     "mypy>=1.10",
+    "mcp>=1.0",
     "ruff>=0.6",
     "pip-audit>=2.7",
     "detect-secrets>=1.5",
@@ -99,7 +104,7 @@ warn_required_dynamic_aliases = true
 
 [[tool.mypy.overrides]]
 module = [
-    "celery", "celery.*", "redis", "redis.*", "neo4j", "neo4j.*", "mcp", "mcp.*",
+    "celery", "celery.*", "redis", "redis.*", "neo4j", "neo4j.*",
     "prometheus_client",
 ]
 follow_imports = "skip"

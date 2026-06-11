@@ -9,20 +9,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-Planning Sprint 23 — **P7 kickoff (self-management)**. Researcher agent proposes bounded,
-measurable parameter changes into a human-review queue; nothing applied without operator
-approval. P7 exit: a measured proposal can be reviewed and approved through the operator
-with full provenance.
+**Sprint 23 — P7 researcher (planned).** Researcher agent (`propose` + `evidence`);
+`Experiment` + `ParamChange` graph nodes; calls `supervisor.flag_for_human` via bus to queue
+proposals; `cli proposals` surface; `test_p7_exit.py`. A0 prerequisite: extract
+`render_incidents` + `render_explain` to `render_extras.py` (render.py at 187L, 13L from
+hard cap). P7 exit: `test_p7_boundary.py` proves researcher never applies a change.
 
 ## Next
 
-- **Sprint 23 — P7 kickoff**: `researcher` agent + `ProposalQueue` contract + `cli proposals`.
+- **Sprint 24 — P8 hardening**: stage-promotion gates + market-pack readiness checklist.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
 
-The planning agent (expensive) writes sprint handovers and maintains documentation
-and progress; a coding agent (cheap) implements one active sprint at a time on its
+The planning agent writes sprint handovers and maintains documentation
+and progress; a coding agent implements one active sprint at a time on its
 own branch and hands back. See `docs/sprints/README.md`.
 
 ## Parked

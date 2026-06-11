@@ -17,18 +17,19 @@ from surfaces.queries.faults import open_faults
 from surfaces.queries.flags import pending_flags
 from surfaces.queries.lifecycle import position_lifecycle
 from surfaces.queries.positions import open_positions
+from surfaces.queries.proposals import all_proposals
 from surfaces.queries.runs import recent_runs, run_detail
 from surfaces.render import (
     render_command,
-    render_explain,
     render_flags,
-    render_incidents,
     render_lifecycle,
     render_positions,
+    render_proposals,
     render_run_detail,
     render_runs,
     render_status,
 )
+from surfaces.render_extras import render_explain, render_incidents
 
 if TYPE_CHECKING:
     import argparse
@@ -83,6 +84,12 @@ def cmd_incidents(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     """Render open incidents."""
     del args
     return render_incidents(open_faults(ctx.graph))
+
+
+def cmd_proposals(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Render researcher proposals."""
+    del args
+    return render_proposals(all_proposals(ctx.graph))
 
 
 def cmd_explain(args: argparse.Namespace, ctx: SurfaceContext) -> str:

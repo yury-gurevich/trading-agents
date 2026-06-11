@@ -13,7 +13,8 @@ from contracts.operator import CommandResult, HumanCommand, TypedIntent
 from contracts.supervisor import DispatchResult
 from kernel import AgentMessage
 from surfaces.queries.lifecycle import narratives_for_run
-from surfaces.render import render_approve, render_narratives
+from surfaces.render import render_narratives
+from surfaces.render_review import render_approve
 
 if TYPE_CHECKING:
     import argparse

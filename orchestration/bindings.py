@@ -19,6 +19,7 @@ from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import StooqDataSource
 from agents.reporter import ReporterAgent
+from agents.researcher import ResearcherAgent
 from agents.scanner import ScannerAgent
 from agents.scanner.universe import StaticUniverse
 from agents.supervisor import SupervisorAgent
@@ -72,3 +73,4 @@ def bind_paper_loop_agents(
     MonitorAgent(bus, graph=graph, sink=sink).bind()
     ReporterAgent(bus, graph=graph, sink=sink).bind()
     SupervisorAgent(bus, graph=graph, sink=sink).bind()
+    ResearcherAgent(bus, graph=graph, sink=sink).bind()

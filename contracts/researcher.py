@@ -63,7 +63,7 @@ CONTRACT = AgentContract(
     emits=("proposal_queued",),
     owns_graph=("Experiment", "ParamChange"),
     external_io=(),
-    depends_on=("reporter",),
+    depends_on=("reporter", "supervisor"),
     mcp_tools=("propose", "evidence"),
     never=(
         "apply a parameter change (proposes into the review queue only)",

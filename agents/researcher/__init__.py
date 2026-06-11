@@ -1,5 +1,5 @@
-"""Researcher agent. Charter: mission.md. Boundary: contracts/researcher.py.
+"""Researcher agent. Charter: mission.md. Boundary: contracts/researcher.py."""
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
-"""
+from agents.researcher.agent import ResearcherAgent
+
+__all__ = ["ResearcherAgent"]

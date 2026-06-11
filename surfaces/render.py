@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from contracts.operator import CommandResult
-    from contracts.reporter import RunSnapshot, TradeNarrative
+    from contracts.reporter import RunSnapshot
     from contracts.supervisor import DispatchResult, MasterReport
-    from surfaces.queries.faults import FaultView
     from surfaces.queries.flags import FlagView
     from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
     from surfaces.queries.positions import PositionView
+    from surfaces.queries.proposals import ProposalView
     from surfaces.queries.runs import RunSummary
 
 
@@ -109,23 +109,6 @@ def render_flags(flags: tuple[FlagView, ...]) -> str:
     return "\n".join(lines)
 
 
-def render_incidents(faults: tuple[FaultView, ...]) -> str:
-    """Render open incidents."""
-    if not faults:
-        return "no open incidents"
-    lines = [f"Open incidents: {len(faults)}"]
-    for fault in faults:
-        lines.extend(
-            (
-                f"\n  [{fault.fault_id}] {fault.source_agent} - {fault.capability}",
-                f"  severity: {fault.severity}",
-                f"  {fault.message}",
-                f"  {fault.occurred_at}",
-            )
-        )
-    return "\n".join(lines)
-
-
 def render_narratives(narratives: tuple[RunNarrative, ...], run_id: str) -> str:
     """Render trade narratives for one dispatcher run."""
     if not narratives:
@@ -156,26 +139,21 @@ def render_command(result: CommandResult, dispatch: DispatchResult | None) -> st
     )
 
 
-def render_approve(result: DispatchResult, subject: str) -> str:
-    """Render a single approve command result."""
-    if not result.accepted:
-        lines = [f"approve refused: {subject}"]
-        if result.rejection:
-            lines.append(f"  reason: {result.rejection}")
-        return "\n".join(lines)
-    lines = [f"approved: {subject}"]
-    if result.routed_to:
-        lines.append(f"  routed_to: {result.routed_to}")
-    return "\n".join(lines)
-
-
-def render_explain(narrative: TradeNarrative) -> str:
-    """Render one on-demand trade narrative."""
-    lines = [
-        f"Narrative - position {narrative.position_id}",
-        f"  {narrative.story.summary}",
-    ]
-    lines.extend(f"    ref: {ref}" for ref in narrative.story.evidence_refs)
+def render_proposals(proposals: tuple[ProposalView, ...]) -> str:
+    """Render researcher proposals and approval status."""
+    if not proposals:
+        return "no proposals pending review"
+    lines = [f"Proposals: {len(proposals)}"]
+    for proposal in proposals:
+        status = "approved" if proposal.approved else "pending"
+        lines.extend(
+            (
+                f"\n  [{proposal.proposal_id}] {status} - "
+                f"{proposal.change_count} change(s)",
+                f"  {proposal.rationale}",
+                f"  created: {proposal.created_at}",
+            )
+        )
     return "\n".join(lines)
 
 

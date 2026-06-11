@@ -15,7 +15,7 @@ from contracts.supervisor import DispatchResult
 from kernel import FakeLLMClient, InMemoryGraphStore
 from surfaces.cli import main
 from surfaces.context import test_context as build_context
-from surfaces.render import render_approve
+from surfaces.render_review import render_approve
 
 
 def test_cli_narrative_renders_run_stories_or_missing_message() -> None:

@@ -20,6 +20,7 @@ from surfaces.queries.positions import (
     open_positions,
     positions_for_run,
 )
+from surfaces.queries.proposals import ProposalView, all_proposals
 from surfaces.queries.runs import RunSummary, StepRecord, recent_runs, run_detail
 
 __all__ = [
@@ -28,10 +29,12 @@ __all__ = [
     "HealthSummary",
     "PositionLifecycle",
     "PositionView",
+    "ProposalView",
     "RunNarrative",
     "RunSummary",
     "StepRecord",
     "all_position_lifecycles",
+    "all_proposals",
     "narratives_for_run",
     "open_faults",
     "open_positions",

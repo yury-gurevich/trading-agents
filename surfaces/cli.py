@@ -47,6 +47,7 @@ def _parser() -> argparse.ArgumentParser:
     position.add_argument("pos_id")
     sub.add_parser("flags")
     sub.add_parser("incidents")
+    sub.add_parser("proposals")
     explain = sub.add_parser("explain")
     explain.add_argument("pos_id")
     narrative = sub.add_parser("narrative")
@@ -73,6 +74,8 @@ def _dispatch(args: argparse.Namespace, ctx: SurfaceContext) -> str:
         return cli_commands.cmd_flags(args, ctx)
     if args.command == "incidents":
         return cli_commands.cmd_incidents(args, ctx)
+    if args.command == "proposals":
+        return cli_commands.cmd_proposals(args, ctx)
     if args.command == "explain":
         return cli_commands.cmd_explain(args, ctx)
     if args.command == "narrative":

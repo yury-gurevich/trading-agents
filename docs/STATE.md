@@ -23,9 +23,9 @@ mutation needs are clearer (options: `replace_node` protocol method, or `FlagRes
 
 ## Next
 
-- **P6 — Surfaces**: dashboard read-models over the graph (pipeline status, recommendation evidence,
-  approval queue, position lifecycle, scorecards, control-plane state, incidents pane) and a CLI.
-  Surfaces read; they never drive an agent except through the operator's bounded commands.
+- **Sprint 18 — Surfaces foundation + CLI** (P6 begins): fix `resolve_flag` append-only
+  violation (`FlagResolution` node); `surfaces/queries/` projections (runs, positions, health);
+  CLI (`status`, `runs`, `positions`, `command`). Plan: `docs/sprints/sprint-18-surfaces-cli.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow

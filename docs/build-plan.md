@@ -242,4 +242,4 @@ stage gates in P8.
 | P5 Operator + supervisor | **complete** (S16 operator + LLM ledger, S17 supervisor gate + hard-NO — exit criterion met) |
 | P6 Surfaces | **complete** (S18–S21 shipped; exit criterion met — test_p6_exit.py green) |
 | P7 Self-management | **complete** (S23 researcher agent shipped; propose+evidence+cli proposals; exit criterion met — test_p7_boundary green) |
-| P8 Hardening + expansion | planned |
+| P8 Hardening + expansion | **active** (S24 stage gate in progress; S25 market pack + P8 exit planned) |

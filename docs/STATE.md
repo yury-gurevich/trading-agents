@@ -9,23 +9,16 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P7 complete.** Sprint 23 shipped: researcher agent (`propose` + `evidence`); `Experiment` +
-`ParamChange` graph nodes; `supervisor.flag_for_human` bus call queues proposals for review;
-`cli proposals` surface; `test_p7_exit.py` + `test_p7_boundary.py` prove the never-applies
-invariant. A0 extracted `render_incidents` + `render_explain` to `render_extras.py`; coding
-agent also created `render_review.py` (26L) for additional headroom. Researcher bound in
-`orchestration/bindings.py` → available in all contexts. 296 tests at 100% (floor 100.00).
-
-**P7 exit criterion met** (`test_p7_boundary.py` green):
-propose ✓ · evidence ✓ · flag queued ✓ · cli proposals ✓ · approve ✓ · never applies ✓
-
-State: `render.py` 165L · `render_extras.py` 41L · `render_review.py` 26L ·
-`researcher/agent.py` 132L (approaching 150L warn — watch on P8 if researcher grows).
+**Sprint 24 — P8 stage gate (planned).** Evidence-based stage promotion gate;
+`StageTransition` graph nodes; `execution.promote_stage` capability; confirmation pattern
+(evidence → Flag → approve → write transition); graph-authoritative `stage_status`;
+`cli stage` read-only surface. A0 required: extract submission helpers from
+`execution/agent.py` (166L) to `domain/submit.py`.
 
 ## Next
 
-- **Sprint 24 — P8 hardening**: stage-promotion gates, market-pack readiness checklist,
-  proposal range-validation in the supervisor gate.
+- **Sprint 25 — P8 Part 2**: operator grammar for `stage_promote` + `MarketPack` abstraction
+  and P8 exit test (G6: new pack without core changes).
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow

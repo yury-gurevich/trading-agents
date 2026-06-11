@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 21 (incidents + explain + P6 exit). **P6 complete. P7 next.**
+**Last updated:** 2026-06-12 — Sprint 22 planned (MCP tool-binding). **P6 complete. P1 active.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,24 +9,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P6 complete.** Sprint 21 shipped: `FaultView` + `open_faults` + `cli incidents`; `cli explain
-<pos_id>` via `reporter.narrative` on demand; `test_p6_exit.py` proves the full operator
-checklist. `cmd_narrative` + `cmd_approve` extracted to `cli_commands_extra.py` (A0 headroom
-refactor). 272 tests at 100% (floor 100.00).
-
-**P6 exit criterion met** (`test_p6_exit.py` green):
-run ✓ · inspect ✓ · approve ✓ · recover ✓ · explain on demand ✓
-
-State: `cli_commands.py` 169L, `cli_commands_extra.py` 75L, `render.py` **187L** (13L from
-hard cap — next sprint must extract render helpers before adding more).
+**Sprint 22 — MCP tool-binding (P1 closes).** MCP server exposing five tools:
+`command` (operator.interpret → supervisor.dispatch_intent), `status`, `runs`, `incidents`,
+`explain`. Uses `asyncio.to_thread` bridge (MCP server is async; bus is sync). Tests call
+synchronous `dispatch_tool` directly — no async test infrastructure. `mcp>=1.0` moves from
+optional extra to dev dependency group. `render.py` untouched (MCP returns JSON, not text).
 
 ## Next
 
-- **Sprint 22 — P7 kickoff or MCP tool-binding** (TBD): either begin P7 (researcher agent
-  proposes bounded parameter changes into a human-review queue) or ship MCP tool-binding
-  (expose `operator.interpret` + `supervisor.dispatch_intent` as MCP tools, completing P1's
-  remaining item and enabling AI-assistant–driven control). Decide before planning.
-- Build-when-needed: RAG vector index (P1 remainder).
+- **Sprint 23 — P7 kickoff**: researcher agent proposes bounded parameter changes into a
+  human-review queue (proposes-but-never-applies boundary).
+- Build-when-needed: RAG vector index (P1 remainder — last item after MCP closes).
 
 ## Workflow
 

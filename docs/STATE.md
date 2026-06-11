@@ -24,12 +24,13 @@ data in production with Neo4j. **Must fix in Sprint 19 (Part A) before P6 closes
 
 ## Next
 
-- **Sprint 19 — GraphStore `list_nodes` + position lifecycle + trade narrative** (P6 continues):
-  Part A: add `list_nodes(label: str) → tuple[Node, ...]` to the `GraphStore` protocol + both
-  backends + update `surfaces/queries/_graph.py` and `health.py` to use it (removes `._nodes`
-  access everywhere). Part B: position lifecycle view (entry/exit timeline per position), trade
-  narrative display in CLI (`cli narrative <pos_id>`), approval queue stub (list pending flags,
-  resolve one). Plan: `docs/sprints/sprint-19-*.md`.
+- **Sprint 19 — GraphStore `list_nodes` + position lifecycle** (P6 continues):
+  Part A: add `list_nodes(label: str) → tuple[Node, ...]` to `GraphStore` protocol + both backends;
+  remove `._nodes` access from `surfaces/queries/_graph.py` and `health.py`. Part B: extract
+  `cli_commands.py` from `cli.py` (at hard cap 150L); `surfaces/queries/lifecycle.py`
+  (`PositionLifecycle`, `position_lifecycle`, `all_position_lifecycles`); `surfaces/queries/flags.py`
+  (`FlagView`, `pending_flags`); `cli position <pos_id>` + `cli flags` commands.
+  Plan: `docs/sprints/sprint-19-list-nodes-lifecycle.md`.
 - Build-when-needed: MCP tool-binding (`interpret` + `dispatch_intent`), RAG vector index.
 
 ## Workflow

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 25 shipped (stage command wiring + MarketPack). **P8 closed. P9 next.**
+**Last updated:** 2026-06-12 — Sprint 25 observability wiring shipped (entrypoint + metrics server + paper_context). Sprint 26 handover written. **P9 active.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,20 +9,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P8 closed.** Sprint 25 shipped: `cli stage promote` wired end-to-end through supervisor
-gate → `execution.promote_stage`; `MarketPack` Protocol + `MarketPackRegistry` in kernel;
-`USEquitiesSP500Pack` default pack; `cli packs` surface; A0 extraction brought
-`cli_commands.py` to 150L; `cli_commands_queries.py` (60L) holds read-only query handlers.
-`test_p8_exit.py` proves G6: `EuropeStocksTestPack` defined in test scope, registered
-without touching any core file. 320 tests at 100.00% (floor 100.00).
+**P9 active — Sprint 26.** Infrastructure landed in Sprint 25 session: Azure Monitor
+Workspace + Managed Grafana live; `surfaces/entrypoint.py` boots `PrometheusMetrics` and
+starts `/metrics` thread before delegating to CLI; `paper_context(metrics=)` wires `Metrics`
+into `InProcessBus`; `docker-compose.yml` pairs app + Prometheus sidecar. 324 tests at
+100.00% (floor 100.00).
 
-**P8 exit criterion met:** a new market pack can be added without core control-plane changes.
+**Sprint 26 task:** wire `MeteredFaultSink` in `paper_context` so fault-rate metrics flow
+to Prometheus, write `test_p9_exit.py` (exit proof), update `docs/observability.md`.
+See `docs/sprints/sprint-26-p9-observability.md`.
 
 ## Next
 
-- **Sprint 26 — P9: Observability stack**: Prometheus scraping + Grafana dashboards over
-  the existing `PrometheusMetrics` kernel adapter; system health, per-agent throughput and
-  latency, fault rate by source, trust indicators over time. See `docs/build-plan.md` P9.
+- **P10 — Curator**: signal catalogue + dataset assembly by provenance-graph traversal;
+  training trigger + predictor registry. See `docs/build-plan.md` P10.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow

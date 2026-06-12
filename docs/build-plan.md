@@ -243,3 +243,4 @@ stage gates in P8.
 | P6 Surfaces | **complete** (S18–S21 shipped; exit criterion met — test_p6_exit.py green) |
 | P7 Self-management | **complete** (S23 researcher agent shipped; propose+evidence+cli proposals; exit criterion met — test_p7_boundary green) |
 | P8 Hardening + expansion | **complete** (S24 stage gate + S25 market pack; G6 exit criterion met — test_p8_exit.py green) |
+| P9 Observability stack | **active** (infra deployed: Azure Monitor Workspace + Managed Grafana; entrypoint + metrics_server + paper_context wiring shipped; S26 in progress — MeteredFaultSink wiring + exit test remain) |

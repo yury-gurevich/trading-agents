@@ -1,0 +1,35 @@
+# Start the full local observability stack:
+#   docker compose up
+#
+# Prerequisites:
+#   - .env file (see .env.example) — copy and fill NEO4J_* vars
+#   - infra/prometheus/prometheus.local.yml — generate with:
+#       .\infra\setup-prometheus-auth.ps1
+#
+# Access points once running:
+#   App /metrics:   http://localhost:8000/metrics
+#   Prometheus UI:  http://localhost:9090
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"   # /metrics endpoint scraped by prometheus
+      - "9090:9090"   # prometheus UI (shared via sidecar network namespace)
+    env_file:
+      - path: .env
+        required: false
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    # Sidecar pattern: shares app's network namespace so localhost:8000 reaches the
+    # app's /metrics endpoint — mirrors the Azure Container Apps deployment model.
+    network_mode: "service:app"
+    volumes:
+      - ./infra/prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=2d
+    depends_on:
+      - app
+    restart: on-failure

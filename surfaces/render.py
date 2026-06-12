@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from contracts.supervisor import DispatchResult, MasterReport
     from surfaces.queries.flags import FlagView
     from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
+    from surfaces.queries.packs import PackView
     from surfaces.queries.positions import PositionView
     from surfaces.queries.runs import RunSummary
     from surfaces.queries.stage import StageView
@@ -149,6 +150,20 @@ def render_stage(stage: str, history: tuple[StageView, ...]) -> str:
             f"  {item.from_stage} -> {item.to_stage}  {item.transitioned_at[:10]}"
         )
         lines.append(f"    {item.reason}")
+    return "\n".join(lines)
+
+
+def render_packs(packs: tuple[PackView, ...]) -> str:
+    """Render registered market packs."""
+    if not packs:
+        return "no market packs registered"
+    lines = [f"Market packs: {len(packs)}"]
+    for pack in packs:
+        status = "ready" if pack.ready else f"not ready: {pack.ready_reason}"
+        lines.append(
+            f"\n  {pack.name}  ({pack.exchange})  stage-ceiling: {pack.max_stage}"
+        )
+        lines.append(f"  universe: {pack.universe_name}  status: {status}")
     return "\n".join(lines)
 
 

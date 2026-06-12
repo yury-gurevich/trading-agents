@@ -18,18 +18,28 @@ from agents.supervisor.store import (
     write_flag,
     write_message,
 )
+from contracts.execution import PromoteStageRequest, PromoteStageResult
 from contracts.supervisor import DispatchResult
+from kernel import AgentMessage
 
 if TYPE_CHECKING:
     from contracts.operator import TypedIntent
-    from kernel import GraphStore
+    from kernel import GraphStore, MessageBus
 
 
-def dispatch_intent(graph: GraphStore, intent: TypedIntent) -> DispatchResult:
+VALID_STAGES = {"paper", "broker_shadow", "live_manual", "live_autopilot"}
+
+
+def dispatch_intent(
+    graph: GraphStore, intent: TypedIntent, *, bus: MessageBus | None = None
+) -> DispatchResult:
     """Gate one intent and return a routing hint without executing it."""
     blocked, reason = is_hard_no(intent)
     if blocked:
         return rejected(intent.provenance.run_id, reason)
+    spec = CAPABILITY_MATRIX[intent.family]
+    if intent.family == "stage":
+        return _dispatch_stage(intent, bus)
     if _needs_confirmation(intent):
         write_flag(
             graph,
@@ -43,7 +53,6 @@ def dispatch_intent(graph: GraphStore, intent: TypedIntent) -> DispatchResult:
         )
     if intent.parameters.get("confirmed") == "true":
         resolve_flag(graph, intent.provenance.run_id, "warn")
-    spec = CAPABILITY_MATRIX[intent.family]
     if not spec.available:
         return rejected(intent.provenance.run_id, not_available_reason(intent.family))
     if intent.family == "approve":
@@ -66,3 +75,37 @@ def dispatch_intent(graph: GraphStore, intent: TypedIntent) -> DispatchResult:
 
 def _needs_confirmation(intent: TypedIntent) -> bool:
     return intent.requires_confirmation and intent.parameters.get("confirmed") != "true"
+
+
+def _dispatch_stage(intent: TypedIntent, bus: MessageBus | None) -> DispatchResult:
+    if bus is None:
+        return rejected(intent.provenance.run_id, "stage dispatch requires bus context")
+    target = intent.parameters.get("stage") or intent.parameters.get("target", "")
+    if target not in VALID_STAGES:
+        return rejected(intent.provenance.run_id, f"invalid stage target: {target}")
+    response = bus.request(
+        AgentMessage(
+            sender="supervisor",
+            recipient="execution",
+            message_type="request",
+            capability="promote_stage",
+            payload=PromoteStageRequest(
+                target_stage=target,  # type: ignore[arg-type]
+                reason=(f"operator stage request via {intent.provenance.source_agent}"),
+                confirmed=intent.parameters.get("confirmed") == "true",
+            ).model_dump(mode="json"),
+        )
+    )
+    if response.message_type == "error":
+        return rejected(
+            intent.provenance.run_id,
+            str(response.payload.get("message", "stage failed")),
+        )
+    result = PromoteStageResult.model_validate(response.payload)
+    if not result.accepted:
+        return rejected(intent.provenance.run_id, result.reason)
+    return DispatchResult(
+        accepted=True,
+        routed_to="execution.promote_stage",
+        provenance=result.provenance,
+    )

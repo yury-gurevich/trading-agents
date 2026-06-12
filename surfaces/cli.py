@@ -11,7 +11,7 @@ import argparse
 import sys
 from typing import TYPE_CHECKING
 
-from surfaces import cli_commands, cli_commands_extra
+from surfaces import cli_commands, cli_commands_extra, cli_commands_queries
 from surfaces.context import SurfaceContext, paper_context
 
 if TYPE_CHECKING:
@@ -48,7 +48,12 @@ def _parser() -> argparse.ArgumentParser:
     sub.add_parser("flags")
     sub.add_parser("incidents")
     sub.add_parser("proposals")
-    sub.add_parser("stage")
+    sub.add_parser("packs")
+    stage = sub.add_parser("stage")
+    stage_sub = stage.add_subparsers(dest="stage_command")
+    promote = stage_sub.add_parser("promote")
+    promote.add_argument("target")
+    promote.add_argument("--confirmed", action="store_true")
     explain = sub.add_parser("explain")
     explain.add_argument("pos_id")
     narrative = sub.add_parser("narrative")
@@ -76,11 +81,15 @@ def _dispatch(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     if args.command == "incidents":
         return cli_commands.cmd_incidents(args, ctx)
     if args.command == "proposals":
-        return cli_commands.cmd_proposals(args, ctx)
+        return cli_commands_queries.cmd_proposals(args, ctx)
+    if args.command == "packs":
+        return cli_commands_queries.cmd_packs(args, ctx)
+    if args.command == "stage" and args.stage_command == "promote":
+        return cli_commands_extra.cmd_stage_promote(args, ctx)
     if args.command == "stage":
-        return cli_commands.cmd_stage(args, ctx)
+        return cli_commands_queries.cmd_stage(args, ctx)
     if args.command == "explain":
-        return cli_commands.cmd_explain(args, ctx)
+        return cli_commands_queries.cmd_explain(args, ctx)
     if args.command == "narrative":
         return cli_commands_extra.cmd_narrative(args, ctx)
     if args.command == "approve":

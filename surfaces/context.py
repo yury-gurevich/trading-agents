@@ -7,7 +7,7 @@ External I/O: optional Neo4j graph construction in paper_context.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from agents.execution.broker import PaperBroker
@@ -19,9 +19,11 @@ from kernel import (
     FakeLLMClient,
     InMemoryGraphStore,
     InProcessBus,
+    MarketPackRegistry,
     Neo4jGraphStore,
 )
 from orchestration.bindings import bind_paper_loop_agents
+from orchestration.packs import USEquitiesSP500Pack
 from orchestration.settings import OrchestratorSettings
 
 if TYPE_CHECKING:
@@ -37,6 +39,7 @@ class SurfaceContext:
 
     graph: GraphStore
     bus: MessageBus
+    pack_registry: MarketPackRegistry = field(default_factory=MarketPackRegistry)
 
 
 def paper_context(
@@ -44,6 +47,7 @@ def paper_context(
     broker: Broker | None = None,
     graph: GraphStore | None = None,
     llm: LLMClient | None = None,
+    pack_registry: MarketPackRegistry | None = None,
 ) -> SurfaceContext:
     """Build a production-ready context with Neo4j, bus, and all agents bound."""
     active_graph = graph if graph is not None else Neo4jGraphStore()
@@ -53,6 +57,7 @@ def paper_context(
         broker=broker,
         universe_source=None,
         llm=llm,
+        pack_registry=pack_registry,
     )
 
 
@@ -61,6 +66,7 @@ def build_test_context(
     source: DataSource | None = None,
     broker: Broker | None = None,
     llm: LLMClient | None = None,
+    pack_registry: MarketPackRegistry | None = None,
 ) -> SurfaceContext:
     """Build an infra-free context with in-memory graph, bus, and all agents bound."""
     active_graph = graph if graph is not None else InMemoryGraphStore()
@@ -70,6 +76,7 @@ def build_test_context(
         broker=broker or PaperBroker(),
         universe_source=FakeUniverse({"sp500": ("AAPL",)}),
         llm=llm or FakeLLMClient({}),
+        pack_registry=pack_registry,
     )
 
 
@@ -83,12 +90,17 @@ def _context(
     broker: Broker | None,
     universe_source: UniverseSource | None,
     llm: LLMClient | None,
+    pack_registry: MarketPackRegistry | None,
 ) -> SurfaceContext:
     sink = CollectingFaultSink()
     bus = InProcessBus(sink=sink)
     _bind_pipeline(bus, graph, source, broker, universe_source, sink)
     OperatorAgent(bus, graph=graph, llm=llm, sink=sink).bind()
-    return SurfaceContext(graph=graph, bus=bus)
+    return SurfaceContext(
+        graph=graph,
+        bus=bus,
+        pack_registry=pack_registry or _default_pack_registry(),
+    )
 
 
 def _bind_pipeline(
@@ -108,3 +120,9 @@ def _bind_pipeline(
         universe_source=universe_source,
         sink=sink,
     )
+
+
+def _default_pack_registry() -> MarketPackRegistry:
+    registry = MarketPackRegistry()
+    registry.register(USEquitiesSP500Pack())
+    return registry

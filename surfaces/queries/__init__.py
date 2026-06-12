@@ -15,6 +15,7 @@ from surfaces.queries.lifecycle import (
     narratives_for_run,
     position_lifecycle,
 )
+from surfaces.queries.packs import PackView, all_packs
 from surfaces.queries.positions import (
     PositionView,
     open_positions,
@@ -30,12 +31,14 @@ __all__ = [
     "HealthSummary",
     "PositionLifecycle",
     "PositionView",
+    "PackView",
     "ProposalView",
     "RunNarrative",
     "RunSummary",
     "StageView",
     "StepRecord",
     "all_position_lifecycles",
+    "all_packs",
     "all_proposals",
     "current_stage",
     "narratives_for_run",

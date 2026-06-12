@@ -12,14 +12,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P10 active — between sprints.** Sprint 27 (dataset assembly) shipped. No active sprint
-branch; Sprint 28 (P10 exit) is queued, not started.
+**P10 active — Sprint 28 (handed off).** Curator training trigger: `train_predictor` selects a
+curator dataset, fits a deterministic majority-class baseline, and writes an **advisory**
+`Predictor` node with frozen evidence (accuracy on the held-out test split) + a `TRAINED_ON`
+edge. Always advisory, never promoted, never read by a decision agent. `cli predictors`
+(read-only). Extends the P10 boundary invariant to training. Does **not** add a registry or
+promotion — that is Sprint 29 (P10 exit). See `docs/sprints/sprint-28-p10-training-trigger.md`.
 
 ## Next
 
-- **Sprint 28 — P10 exit**: training trigger (select data + run a chosen target) + predictor
-  registry gating advisory → load-bearing promotion with frozen evidence; promotion-audit
-  test. Closes P10. Planned after Sprint 27 merges.
+- **Sprint 29 — P10 exit**: predictor registry + promotion gate (advisory → load-bearing) +
+  promotion-audit test; reuses the supervisor approve flow for operator sign-off. Closes P10.
+  Decides registry ownership (curator vs forecaster) at planning time. Planned after Sprint 28.
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

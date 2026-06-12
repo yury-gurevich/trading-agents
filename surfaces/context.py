@@ -20,6 +20,7 @@ from kernel import (
     InMemoryGraphStore,
     InProcessBus,
     MarketPackRegistry,
+    NullMetrics,
     Neo4jGraphStore,
 )
 from orchestration.bindings import bind_paper_loop_agents
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from agents.execution.broker import Broker
     from agents.provider.sources import DataSource
     from agents.scanner.universe import UniverseSource
-    from kernel import FaultSink, GraphStore, LLMClient, MessageBus
+    from kernel import FaultSink, GraphStore, LLMClient, MessageBus, Metrics
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,7 @@ def paper_context(
     graph: GraphStore | None = None,
     llm: LLMClient | None = None,
     pack_registry: MarketPackRegistry | None = None,
+    metrics: Metrics | None = None,
 ) -> SurfaceContext:
     """Build a production-ready context with Neo4j, bus, and all agents bound."""
     active_graph = graph if graph is not None else Neo4jGraphStore()
@@ -58,6 +60,7 @@ def paper_context(
         universe_source=None,
         llm=llm,
         pack_registry=pack_registry,
+        metrics=metrics,
     )
 
 
@@ -91,9 +94,10 @@ def _context(
     universe_source: UniverseSource | None,
     llm: LLMClient | None,
     pack_registry: MarketPackRegistry | None,
+    metrics: Metrics | None = None,
 ) -> SurfaceContext:
     sink = CollectingFaultSink()
-    bus = InProcessBus(sink=sink)
+    bus = InProcessBus(sink=sink, metrics=metrics or NullMetrics())
     _bind_pipeline(bus, graph, source, broker, universe_source, sink)
     OperatorAgent(bus, graph=graph, llm=llm, sink=sink).bind()
     return SurfaceContext(

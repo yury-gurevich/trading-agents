@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from agents.execution.broker import PaperBroker
 from agents.provider.sources import FakeDataSource
-from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore, MarketPackRegistry
+from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore, MarketPackRegistry, PrometheusMetrics
 from surfaces.context import paper_context
 from surfaces.context import test_context as build_context
 
@@ -61,6 +61,30 @@ def test_paper_context_accepts_injected_graph() -> None:
         llm=FakeLLMClient({}),
     )
     assert ctx.graph is graph
+
+
+def test_paper_context_passes_metrics_to_bus() -> None:
+    metrics = PrometheusMetrics()
+    graph = InMemoryGraphStore()
+    ctx = paper_context(
+        source=FakeDataSource(),
+        broker=PaperBroker(),
+        graph=graph,
+        llm=FakeLLMClient({}),
+        metrics=metrics,
+    )
+    # Drive one bus request so the metered bus records it
+    ctx.bus.request(
+        AgentMessage(
+            sender="test",
+            recipient="supervisor",
+            message_type="request",
+            capability="system_status",
+            payload={},
+        )
+    )
+    text = metrics.exposition().decode("utf-8")
+    assert "trading_agents_kernel_requests_total" in text
 
 
 def test_paper_context_builds_default_graph_without_real_neo4j(

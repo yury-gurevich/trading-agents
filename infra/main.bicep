@@ -132,7 +132,7 @@ resource tradingApp 'Microsoft.App/containerApps@2024-03-01' = {
         {
           server: acr.properties.loginServer
           username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
+          passwordSecretRef: 'acr-password' // pragma: allowlist secret
         }
       ]
       secrets: [
@@ -162,7 +162,7 @@ resource tradingApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
           env: [
             { name: 'METRICS_PORT', value: '8000' }
-            { name: 'NEO4J_PASSWORD', secretRef: 'neo4j-password' }
+            { name: 'NEO4J_PASSWORD', secretRef: 'neo4j-password' } // pragma: allowlist secret
           ]
         }
         {

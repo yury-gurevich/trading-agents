@@ -8,10 +8,15 @@ External I/O: HTTP server on 0.0.0.0:PORT.
 from __future__ import annotations
 
 import threading
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from prometheus_client import CollectorRegistry
 
 
-def make_metrics_app(registry: Any) -> Callable[..., Any]:
+def make_metrics_app(registry: CollectorRegistry) -> Callable[..., Any]:
     """Return a WSGI app that serves the registry in Prometheus text format."""
     from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -27,12 +32,14 @@ def make_metrics_app(registry: Any) -> Callable[..., Any]:
 
 
 def start_metrics_server(
-    registry: Any, port: int = 8000
+    registry: CollectorRegistry, port: int = 8000
 ) -> threading.Thread:  # pragma: no cover
     """Start a daemon thread serving /metrics on PORT. Returns the thread."""
     from wsgiref.simple_server import make_server
 
     server = make_server("", port, make_metrics_app(registry))
-    t = threading.Thread(target=server.serve_forever, daemon=True, name="metrics-server")
+    t = threading.Thread(
+        target=server.serve_forever, daemon=True, name="metrics-server"
+    )
     t.start()
     return t

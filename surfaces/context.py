@@ -20,8 +20,9 @@ from kernel import (
     InMemoryGraphStore,
     InProcessBus,
     MarketPackRegistry,
-    NullMetrics,
+    MeteredFaultSink,
     Neo4jGraphStore,
+    NullMetrics,
 )
 from orchestration.bindings import bind_paper_loop_agents
 from orchestration.packs import USEquitiesSP500Pack
@@ -97,7 +98,8 @@ def _context(
     metrics: Metrics | None = None,
 ) -> SurfaceContext:
     sink = CollectingFaultSink()
-    bus = InProcessBus(sink=sink, metrics=metrics or NullMetrics())
+    active_sink: FaultSink = MeteredFaultSink(metrics, sink) if metrics else sink
+    bus = InProcessBus(sink=active_sink, metrics=metrics or NullMetrics())
     _bind_pipeline(bus, graph, source, broker, universe_source, sink)
     OperatorAgent(bus, graph=graph, llm=llm, sink=sink).bind()
     return SurfaceContext(

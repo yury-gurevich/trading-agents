@@ -56,8 +56,42 @@ Aggregation (e.g. Loki) is optional and additive.
   trim (no silent deletion).
 - Everything is exportable as a machine-parseable bundle for any date range.
 
-## Build phase
+## Deployed stack
 
-The metrics adapter ships with the kernel runtime; Prometheus + Grafana
-provisioning and the dashboard set land in the observability phase of
-`docs/build-plan.md`. The Neo4j store lands with the kernel runtime.
+| Component | Where |
+| --- | --- |
+| Prometheus metrics adapter | `kernel/metrics_prometheus.py` |
+| /metrics HTTP server | `surfaces/metrics_server.py` (WSGI, port 8000) |
+| Container entrypoint | `surfaces/entrypoint.py` |
+| Azure Monitor Workspace | `trading-agents-monitor`, Australia East |
+| Azure Managed Grafana | `https://trading-agents-grafana-hecpbea2b9cqckf2.eau.grafana.azure.com` |
+| Dashboard | "Trading Agents — System Health" (uid: `trading-agents-main`) |
+| Prometheus config template | `infra/prometheus/prometheus.yml` |
+| Auth setup script | `infra/setup-prometheus-auth.ps1` |
+
+### Running locally
+
+```bash
+docker compose up
+```
+
+Requires:
+
+- `.env` file with `NEO4J_*` vars (copy from `.env.example`)
+- `infra/prometheus/prometheus.local.yml` — generate with `.\infra\setup-prometheus-auth.ps1`
+
+Access:
+
+- `/metrics` endpoint: `http://localhost:8000/metrics`
+- Prometheus UI: `http://localhost:9090`
+- Grafana: see URL in table above
+
+### Dashboard panels
+
+1. Request rate (req/s) — `trading_agents_kernel_requests_total`
+2. Error rate (%) — ratio of failed to total requests
+3. P99 latency (s) — `trading_agents_kernel_request_latency_seconds`
+4. P50 latency (s)
+5. Faults by severity — `trading_agents_kernel_faults_total{severity="..."}`
+6. Faults by agent — same metric broken out by `agent` label
+7–10. (additional panels for throughput and agent breakdown)

@@ -11,7 +11,13 @@ from typing import TYPE_CHECKING
 
 from agents.execution.broker import PaperBroker
 from agents.provider.sources import FakeDataSource
-from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore, MarketPackRegistry, PrometheusMetrics
+from kernel import (
+    AgentMessage,
+    FakeLLMClient,
+    InMemoryGraphStore,
+    MarketPackRegistry,
+    PrometheusMetrics,
+)
 from surfaces.context import paper_context
 from surfaces.context import test_context as build_context
 

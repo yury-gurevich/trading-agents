@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from contracts.common import Provenance
 from contracts.operator import CommandResult, HumanCommand, TypedIntent
 from contracts.supervisor import DispatchResult
 from kernel import AgentMessage
@@ -44,6 +45,24 @@ def cmd_approve(args: argparse.Namespace, ctx: SurfaceContext) -> str:
         }
     )
     return render_approve(_dispatch_intent(ctx, intent), subject)
+
+
+def cmd_stage_promote(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Request execution-stage promotion through the supervisor gate."""
+    target = str(args.target)
+    intent = TypedIntent(
+        family="stage",
+        parameters={
+            "stage": target,
+            "confirmed": "true" if args.confirmed else "",
+        },
+        requires_confirmation=True,
+        provenance=Provenance(run_id=f"stage:{target}", source_agent="cli"),
+    )
+    result = _dispatch_intent(ctx, intent)
+    if result.accepted:
+        return f"stage promotion dispatched to {result.routed_to}"
+    return f"refused: {result.rejection}"
 
 
 def _interpret(ctx: SurfaceContext, text: str) -> CommandResult:

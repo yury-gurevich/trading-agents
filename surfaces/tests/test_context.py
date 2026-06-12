@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from agents.execution.broker import PaperBroker
 from agents.provider.sources import FakeDataSource
-from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore
+from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore, MarketPackRegistry
 from surfaces.context import paper_context
 from surfaces.context import test_context as build_context
 
@@ -41,6 +41,15 @@ def test_test_context_binds_operator_and_supervisor() -> None:
     )
     assert status.payload["healthy"] is True
     assert command.payload["outcome"] == "intent"
+    assert ctx.pack_registry.get("us_equities_sp500") is not None
+
+
+def test_context_accepts_custom_pack_registry() -> None:
+    registry = MarketPackRegistry()
+    ctx = build_context(pack_registry=registry)
+
+    assert ctx.pack_registry is registry
+    assert ctx.pack_registry.get("us_equities_sp500") is None
 
 
 def test_paper_context_accepts_injected_graph() -> None:

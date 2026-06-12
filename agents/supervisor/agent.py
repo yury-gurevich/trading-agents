@@ -103,7 +103,7 @@ class SupervisorAgent(AgentBase):
             capability="dispatch_intent",
             reraise=False,
         ) as capture:
-            result = dispatch_intent(self._graph, intent)
+            result = dispatch_intent(self._graph, intent, bus=self.bus)
         if capture.fault is not None:
             return rejected(intent.provenance.run_id, "supervisor dispatch failed")
         return result

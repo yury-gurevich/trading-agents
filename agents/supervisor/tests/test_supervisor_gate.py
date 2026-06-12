@@ -44,9 +44,13 @@ def test_capability_matrix_routes_available_and_refuses_unavailable() -> None:
     stage = _dispatch(bus, _intent("stage", {"confirmed": "true"}))
     assert approve.accepted is True
     assert approve.routed_to == "supervisor.resolve_flag"
-    assert "P8" in str(stage.rejection)
+    assert "invalid stage target" in str(stage.rejection)
+    unavail = _dispatch(bus, _intent("pause"))
+    assert unavail.accepted is False
+    assert "not available" in str(unavail.rejection)
+    assert CAPABILITY_MATRIX["pause"].routed_to is None
     assert CAPABILITY_MATRIX["approve"].routed_to == "supervisor.resolve_flag"
-    assert CAPABILITY_MATRIX["stage"].routed_to is None
+    assert CAPABILITY_MATRIX["stage"].routed_to == "execution.promote_stage"
 
 
 def test_approve_intent_resolves_matching_flag() -> None:

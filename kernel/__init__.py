@@ -27,6 +27,7 @@ from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_neo4j import Neo4jGraphStore
 from kernel.graph_neo4j_config import GraphSettings
 from kernel.llm import FakeLLMClient, LLMClient
+from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
 from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
 
@@ -49,6 +50,8 @@ __all__ = [
     "InMemoryGraphStore",
     "InProcessBus",
     "LLMClient",
+    "MarketPack",
+    "MarketPackRegistry",
     "MessageBus",
     "MessageType",
     "MeteredFaultSink",

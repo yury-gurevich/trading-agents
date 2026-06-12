@@ -10,16 +10,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from contracts.operator import CommandResult, HumanCommand
-from contracts.reporter import NarrativeRequest, RunSnapshot, TradeNarrative
+from contracts.reporter import RunSnapshot
 from contracts.supervisor import DispatchResult, MasterReport, StatusRequest
 from kernel import AgentMessage
 from surfaces.queries.faults import open_faults
 from surfaces.queries.flags import pending_flags
 from surfaces.queries.lifecycle import position_lifecycle
 from surfaces.queries.positions import open_positions
-from surfaces.queries.proposals import all_proposals
 from surfaces.queries.runs import recent_runs, run_detail
-from surfaces.queries.stage import current_stage, stage_history
 from surfaces.render import (
     render_command,
     render_flags,
@@ -27,11 +25,9 @@ from surfaces.render import (
     render_positions,
     render_run_detail,
     render_runs,
-    render_stage,
     render_status,
 )
-from surfaces.render_extras import render_explain, render_incidents
-from surfaces.render_review import render_proposals
+from surfaces.render_extras import render_incidents
 
 if TYPE_CHECKING:
     import argparse
@@ -86,36 +82,6 @@ def cmd_incidents(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     """Render open incidents."""
     del args
     return render_incidents(open_faults(ctx.graph))
-
-
-def cmd_proposals(args: argparse.Namespace, ctx: SurfaceContext) -> str:
-    """Render researcher proposals."""
-    del args
-    return render_proposals(all_proposals(ctx.graph))
-
-
-def cmd_stage(args: argparse.Namespace, ctx: SurfaceContext) -> str:
-    """Render execution stage status and history."""
-    del args
-    return render_stage(current_stage(ctx.graph), stage_history(ctx.graph))
-
-
-def cmd_explain(args: argparse.Namespace, ctx: SurfaceContext) -> str:
-    """Render an on-demand trade narrative for one position."""
-    pos_id = str(args.pos_id)
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="reporter",
-            message_type="request",
-            capability="narrative",
-            payload=NarrativeRequest(position_id=pos_id).model_dump(mode="json"),
-        )
-    )
-    if response.message_type == "error":
-        return f"explain failed for position: {pos_id}"
-    narrative = TradeNarrative.model_validate(response.payload)
-    return render_explain(narrative)
 
 
 def cmd_command(args: argparse.Namespace, ctx: SurfaceContext) -> str:

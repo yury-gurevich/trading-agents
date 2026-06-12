@@ -34,7 +34,7 @@ CAPABILITY_MATRIX: dict[str, RouteSpec] = {
     "reject": RouteSpec(None, None, False),
     "modify": RouteSpec(None, None, False),
     "mode": RouteSpec(None, None, False),
-    "stage": RouteSpec(None, None, False),
+    "stage": RouteSpec("execution", "promote_stage", True),
     "pause": RouteSpec(None, None, False),
     "resume": RouteSpec(None, None, False),
 }
@@ -43,7 +43,6 @@ BUILD_PHASES = {
     "reject": "P7",
     "modify": "P7",
     "mode": "P8",
-    "stage": "P8",
     "pause": "P8",
     "resume": "P8",
 }

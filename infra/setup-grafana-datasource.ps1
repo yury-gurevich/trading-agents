@@ -40,54 +40,63 @@ az role assignment create `
   --scope      $WORKSPACE_ID `
   --output     none 2>&1 | Where-Object { $_ -notmatch "already exists" }
 
-# ── 3. Create Prometheus data source with a fixed UID ─────────────────────────
+# ── 3. Create Prometheus data source — write JSON to temp file to avoid PS quoting ──
 
 Write-Host "→ Creating Prometheus data source (uid: $DS_UID)" -ForegroundColor Cyan
 
-$DS_DEF = [ordered]@{
+$dsJson = @{
   name     = "Azure Monitor Prometheus"
   type     = "prometheus"
   uid      = $DS_UID
   url      = $QUERY_ENDPOINT
   access   = "proxy"
-  jsonData = [ordered]@{
+  jsonData = @{
     httpMethod       = "POST"
     azureCredentials = @{ authType = "msi" }
   }
-} | ConvertTo-Json -Depth 5 -Compress
+} | ConvertTo-Json -Depth 5
+
+$dsTmp = [System.IO.Path]::GetTempFileName() + ".json"
+$dsJson | Set-Content -Path $dsTmp -Encoding UTF8
 
 az grafana data-source create `
   --name           $GRAFANA_NAME `
   --resource-group $RESOURCE_GROUP `
-  --definition     $DS_DEF `
+  --definition     $dsTmp `
   --output         none
+
+Remove-Item $dsTmp
 
 # ── 4. Patch the imported dashboard to use the real data source UID ───────────
 
 Write-Host "→ Patching dashboard data source references" -ForegroundColor Cyan
 
-# Read the current dashboard from Grafana, replace ${DS_PROMETHEUS} with the real UID
-$current = az grafana dashboard show `
+# az grafana dashboard show returns { "dashboard": {...}, "meta": {...} }
+# We need only the inner dashboard model for the update payload.
+$response = az grafana dashboard show `
   --name           $GRAFANA_NAME `
   --resource-group $RESOURCE_GROUP `
   --dashboard      "trading-agents-main" `
   --output         json | ConvertFrom-Json
 
-$dashJson = $current | ConvertTo-Json -Depth 20 -Compress
-$dashJson = $dashJson -replace [regex]::Escape('${DS_PROMETHEUS}'), $DS_UID
+$dashModel = if ($response.PSObject.Properties["dashboard"]) { $response.dashboard } else { $response }
 
-# az grafana dashboard update expects the dashboard model wrapped in {"dashboard": ...}
-$wrapped = "{`"dashboard`":$dashJson,`"overwrite`":true}"
-$tmpFile = [System.IO.Path]::GetTempFileName() + ".json"
-$wrapped | Set-Content -Path $tmpFile
+# Replace unresolved ${DS_PROMETHEUS} with the real UID and convert back to JSON
+$dashJson = ($dashModel | ConvertTo-Json -Depth 30 -Compress) `
+  -replace [regex]::Escape('${DS_PROMETHEUS}'), $DS_UID
+
+# Grafana update API expects: { "dashboard": <model>, "overwrite": true }
+$updatePayload = "{`"dashboard`":$dashJson,`"overwrite`":true}"
+$dashTmp = [System.IO.Path]::GetTempFileName() + ".json"
+$updatePayload | Set-Content -Path $dashTmp -Encoding UTF8
 
 az grafana dashboard update `
   --name           $GRAFANA_NAME `
   --resource-group $RESOURCE_GROUP `
-  --definition     $tmpFile `
+  --definition     $dashTmp `
   --output         none
 
-Remove-Item $tmpFile
+Remove-Item $dashTmp
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 

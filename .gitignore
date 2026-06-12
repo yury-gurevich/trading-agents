@@ -32,3 +32,4 @@ htmlcov/
 # Azure deploy outputs (endpoint URLs, not secrets — but no need to track)
 infra/.azure-outputs
 infra/prometheus/prometheus.generated.yml
+infra/prometheus/prometheus.local.yml

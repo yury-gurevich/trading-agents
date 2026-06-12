@@ -148,6 +148,29 @@ test; manifest/versioning tests; predictor-registry promotion-audit test.
 operator with full provenance; a target can be trained on command and a predictor
 promoted through the registry. **Effort: M–L.**
 
+### P11 — Decision-logic depth (extension)
+
+An extension of the original plan. The vertical slice (P2) and decision loop (P3) proved
+the agent boundaries, provenance chain, and end-to-end flow with **deliberately shallow**
+deterministic scoring. This phase deepens that decision logic to production quality without
+changing any boundary or contract — each item lands inside an existing agent's `domain/`:
+
+- **Analyst** — the full technical-indicator suite (RSI, MACD, Bollinger, ATR, stochastic,
+  Williams %R, choppiness, OBV, golden cross, calendar/mean-reversion signals, kernel
+  smoother, geometric patterns), fundamental scoring (P/E, ROE, margins, leverage, growth),
+  sentiment scoring, and signal-diversity selection; composite weighting with bounded,
+  justified tunables.
+- **Portfolio manager** — reward/risk-ratio gate and sector-concentration cap; explicit
+  portfolio-value computation.
+- **Scanner** — beta computation + beta-cap filter; earnings-window exclusion.
+- **Reporter** — profit-factor and expectancy metrics.
+
+Each addition is a deterministic function with unit tests, registered tunables, and modules
+kept ≤ 200 lines. The detailed, sequenced sprint breakdown is held by the planning agent.
+**Tests:** per-function unit tests with known-value fixtures; rejection-path tests for the
+new gates. **Exit:** the analyst emits a multi-pillar score with explainable contributions;
+the new PM gates reject correctly; CI quality gate stays green. **Effort: L.**
+
 ## Cross-cutting workstreams
 
 Some capabilities are not single phases but threads woven through many. Naming them
@@ -243,4 +266,5 @@ stage gates in P8.
 | P6 Surfaces | **complete** (S18–S21 shipped; exit criterion met — test_p6_exit.py green) |
 | P7 Self-management | **complete** (S23 researcher agent shipped; propose+evidence+cli proposals; exit criterion met — test_p7_boundary green) |
 | P8 Hardening + expansion | **complete** (S24 stage gate + S25 market pack; G6 exit criterion met — test_p8_exit.py green) |
-| P9 Observability stack | **active** (infra deployed: Azure Monitor Workspace + Managed Grafana; entrypoint + metrics_server + paper_context wiring shipped; S26 in progress — MeteredFaultSink wiring + exit test remain) |
+| P9 Observability stack | **complete** (infra deployed: Azure Monitor Workspace + Managed Grafana; S25 entrypoint + metrics_server + paper_context wiring, S26 MeteredFaultSink through bus + every agent sink; exit criterion met — test_p9_exit.py green) |
+| P11 Decision-logic depth | **planned** (extension; deepens deterministic analyst/PM/scanner/reporter logic — see P11) |

@@ -1,6 +1,8 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 25 observability wiring shipped (entrypoint + metrics server + paper_context). Sprint 26 handover written. **P9 active.**
+**Last updated:** 2026-06-13 — Sprint 26 shipped; **P9 complete**. MeteredFaultSink wired
+through the bus *and* every agent's sink; agent-internal faults now metered; P9 exit proof
+green. 326 tests at 100.00% (floor 100.00). P10 next.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,20 +11,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P9 active — Sprint 26.** Infrastructure landed in Sprint 25 session: Azure Monitor
-Workspace + Managed Grafana live; `surfaces/entrypoint.py` boots `PrometheusMetrics` and
-starts `/metrics` thread before delegating to CLI; `paper_context(metrics=)` wires `Metrics`
-into `InProcessBus`; `docker-compose.yml` pairs app + Prometheus sidecar. 324 tests at
-100.00% (floor 100.00).
-
-**Sprint 26 task:** wire `MeteredFaultSink` in `paper_context` so fault-rate metrics flow
-to Prometheus, write `test_p9_exit.py` (exit proof), update `docs/observability.md`.
-See `docs/sprints/sprint-26-p9-observability.md`.
+**Between phases.** P9 closed; P10 not yet started. No active sprint branch.
 
 ## Next
 
 - **P10 — Curator**: signal catalogue + dataset assembly by provenance-graph traversal;
   training trigger + predictor registry. See `docs/build-plan.md` P10.
+- **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
+  decision logic the vertical slice stubbed — analyst technical-indicator suite +
+  fundamental + sentiment scoring + signal-diversity selection; portfolio-manager
+  reward/risk and sector-concentration gates; scanner beta + earnings-exclusion filters;
+  reporter profit-factor + expectancy. See `docs/build-plan.md` P11. Sequenced spec held
+  by the planning agent. **Do not lose this — it is committed scope, not optional.**
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -37,6 +37,15 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 26 — Observability fault metering** (**P9 complete**). `MeteredFaultSink` wired in
+  `surfaces/context.py::_context()` through the bus *and* every bound agent's sink (`active_sink`
+  passed to `_bind_pipeline` + `OperatorAgent`), so agent-internal faults — caught by each agent's
+  own `fault_boundary(reraise=False)` — now reach `faults_total` instead of bypassing the meter.
+  `surfaces/tests/test_p9_exit.py` (81L): one test proves request + fault metric families flow to
+  the registry; a second drives a real `analyze` with `fail_ohlcv=True` and asserts
+  `faults_total{source_agent="analyst"}` (genuine regression guard — fails on the raw-sink bug).
+  `docs/observability.md` "Deployed stack" section added. Also repaired four Sprint 25 commits that
+  shipped CI-red (ruff/mypy/detect-secrets, mechanical). 326 tests, floor 100.00. **P9 exit met.**
 - **Sprint 25 — Stage command wiring + MarketPack** (**P8 complete**). `cli stage promote`
   wired through operator grammar → supervisor gate → `execution.promote_stage`; `MarketPack`
   Protocol + `MarketPackRegistry` in kernel; `USEquitiesSP500Pack` in `orchestration/packs/`;

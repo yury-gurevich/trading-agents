@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-12 — Sprint 24 shipped (stage gate; P8 active). Sprint 25 planned (stage command wiring + MarketPack + P8 exit).
+**Last updated:** 2026-06-12 — Sprint 25 shipped (stage command wiring + MarketPack). **P8 closed. P9 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -9,20 +9,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P8 active.** Sprint 24 shipped: evidence-based stage promotion gate; `StageTransition`
-graph nodes; `execution.promote_stage` (two-call: evidence → Flag → approve → transition);
-graph-authoritative `stage_status`; `_submit` rejects live-adjacent stages; `cli stage`
-read-only surface. Coding agent split promotion logic into `stage_flow.py` (116L) and live
-gate into `live_gate.py` (36L). 309 tests at 100% (floor 100.00).
+**P8 closed.** Sprint 25 shipped: `cli stage promote` wired end-to-end through supervisor
+gate → `execution.promote_stage`; `MarketPack` Protocol + `MarketPackRegistry` in kernel;
+`USEquitiesSP500Pack` default pack; `cli packs` surface; A0 extraction brought
+`cli_commands.py` to 150L; `cli_commands_queries.py` (60L) holds read-only query handlers.
+`test_p8_exit.py` proves G6: `EuropeStocksTestPack` defined in test scope, registered
+without touching any core file. 320 tests at 100.00% (floor 100.00).
 
-State: `execution/agent.py` 147L (**3L from 150L warn** — do not add to agent.py in S25;
-any new execution capability goes in a domain module).
+**P8 exit criterion met:** a new market pack can be added without core control-plane changes.
 
 ## Next
 
-- **Sprint 25 — P8 Part 2**: `cli stage promote` wired through supervisor gate; `MarketPack`
-  protocol + `MarketPackRegistry` in kernel; `USEquitiesSP500Pack` default; `cli packs` surface;
-  `test_p8_exit.py` proves G6. (`sprint-25-p8-market-pack.md` written.)
+- **Sprint 26 — P9: Observability stack**: Prometheus scraping + Grafana dashboards over
+  the existing `PrometheusMetrics` kernel adapter; system health, per-agent throughput and
+  latency, fault rate by source, trust indicators over time. See `docs/build-plan.md` P9.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -37,6 +37,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 25 — Stage command wiring + MarketPack** (**P8 complete**). `cli stage promote`
+  wired through operator grammar → supervisor gate → `execution.promote_stage`; `MarketPack`
+  Protocol + `MarketPackRegistry` in kernel; `USEquitiesSP500Pack` in `orchestration/packs/`;
+  `SurfaceContext` gains `pack_registry` field; `cli packs` surface; `surfaces/queries/packs.py`
+  (42L); A0 extraction: `cli_commands_queries.py` (60L), `cli_commands.py` → 150L.
+  Stage dispatch tests: `test_stage_dispatch.py` (94L), `test_stage_promote_cli.py` (83L).
+  G6 proof: `test_p8_exit.py` (103L) registers `EuropeStocksTestPack` entirely in test scope.
+  320 tests, floor 100.00. **P8 exit criterion met.**
 - **Sprint 24 — Stage gate machinery** (P8 Part 1). `execution.promote_stage` capability;
   `StageTransition` graph node (execution-owned); evidence gate (min runs, approval_rate,
   critical fault block); two-call confirmation pattern (Flag then FlagResolution);

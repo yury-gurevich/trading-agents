@@ -1,8 +1,8 @@
 # Project State
 
-**Last updated:** 2026-06-13 — Sprint 26 shipped; **P9 complete**. MeteredFaultSink wired
-through the bus *and* every agent's sink; agent-internal faults now metered; P9 exit proof
-green. 326 tests at 100.00% (floor 100.00). P10 next.
+**Last updated:** 2026-06-13 — P9 complete; **P10 begun**. Sprint 27 handover written and
+active (curator agent: dataset assembly by provenance traversal). 326 tests at 100.00%
+(floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -11,12 +11,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between phases.** P9 closed; P10 not yet started. No active sprint branch.
+**P10 active — Sprint 27 (handed off).** Curator agent's first slice: `build_dataset` +
+`describe_corpus`, dataset assembly by read-only provenance-graph traversal (from reporter's
+`TradeNarrative` nodes), train/val/test split, per-purpose versioning, `Dataset` +
+`TrainingExample` nodes, a `DatasetStore` boundary, and `cli datasets`. Proves P10's core
+invariant — the curator never mutates a trading-decision node (`test_p10_boundary.py`).
+Begins P10; does not close it. See `docs/sprints/sprint-27-p10-curator-datasets.md`.
 
 ## Next
 
-- **P10 — Curator**: signal catalogue + dataset assembly by provenance-graph traversal;
-  training trigger + predictor registry. See `docs/build-plan.md` P10.
+- **Sprint 28 — P10 exit**: training trigger (select data + run a chosen target) + predictor
+  registry gating advisory → load-bearing promotion with frozen evidence; promotion-audit
+  test. Closes P10. Planned after Sprint 27 merges.
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from contracts.reporter import TradeNarrative
+    from surfaces.queries.datasets import DatasetView
     from surfaces.queries.faults import FaultView
 
 
@@ -38,4 +39,17 @@ def render_explain(narrative: TradeNarrative) -> str:
         f"  {narrative.story.summary}",
     ]
     lines.extend(f"    ref: {ref}" for ref in narrative.story.evidence_refs)
+    return "\n".join(lines)
+
+
+def render_datasets(views: tuple[DatasetView, ...]) -> str:
+    """Render curated datasets, newest first."""
+    if not views:
+        return "no datasets built"
+    lines = [f"Datasets: {len(views)}"]
+    for view in views:
+        lines.append(
+            f"  [{view.dataset_id}] {view.example_count} examples "
+            f"({view.train_count}/{view.validation_count}/{view.test_count})"
+        )
     return "\n".join(lines)

@@ -49,6 +49,7 @@ def _parser() -> argparse.ArgumentParser:
     sub.add_parser("incidents")
     sub.add_parser("proposals")
     sub.add_parser("packs")
+    sub.add_parser("datasets")
     stage = sub.add_parser("stage")
     stage_sub = stage.add_subparsers(dest="stage_command")
     promote = stage_sub.add_parser("promote")
@@ -84,6 +85,8 @@ def _dispatch(args: argparse.Namespace, ctx: SurfaceContext) -> str:
         return cli_commands_queries.cmd_proposals(args, ctx)
     if args.command == "packs":
         return cli_commands_queries.cmd_packs(args, ctx)
+    if args.command == "datasets":
+        return cli_commands_queries.cmd_datasets(args, ctx)
     if args.command == "stage" and args.stage_command == "promote":
         return cli_commands_extra.cmd_stage_promote(args, ctx)
     if args.command == "stage":

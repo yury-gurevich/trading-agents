@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.analyst import AnalystAgent
+from agents.curator import CuratorAgent
 from agents.execution import ExecutionAgent
 from agents.execution.broker import PaperBroker
 from agents.monitor import MonitorAgent
@@ -74,3 +75,4 @@ def bind_paper_loop_agents(
     ReporterAgent(bus, graph=graph, sink=sink).bind()
     SupervisorAgent(bus, graph=graph, sink=sink).bind()
     ResearcherAgent(bus, graph=graph, sink=sink).bind()
+    CuratorAgent(bus, graph=graph, sink=sink).bind()

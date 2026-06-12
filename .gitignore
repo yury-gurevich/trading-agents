@@ -28,3 +28,7 @@ htmlcov/
 
 # Claude Code — transient agent worktrees
 .claude/worktrees/
+
+# Azure deploy outputs (endpoint URLs, not secrets — but no need to track)
+infra/.azure-outputs
+infra/prometheus/prometheus.generated.yml

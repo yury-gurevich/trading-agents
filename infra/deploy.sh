@@ -101,14 +101,14 @@ docker push "${ACR_LOGIN_SERVER}/${PREFIX}:${IMAGE_TAG}"
 # ── 7. Build and push Prometheus sidecar image ────────────────────────────────
 
 echo "→ Building prometheus-trading:${IMAGE_TAG}"
-cp "${SCRIPT_DIR}/prometheus/prometheus.generated.yml" \
-   "${SCRIPT_DIR}/prometheus/prometheus.yml.build"
+# Build from a temp context so the generated config is named prometheus.yml
+PROM_BUILD_DIR=$(mktemp -d)
+cp "${SCRIPT_DIR}/prometheus/Dockerfile" "${PROM_BUILD_DIR}/"
+cp "${SCRIPT_DIR}/prometheus/prometheus.generated.yml" "${PROM_BUILD_DIR}/prometheus.yml"
 docker build \
   --tag "${ACR_LOGIN_SERVER}/prometheus-trading:${IMAGE_TAG}" \
-  --file "${SCRIPT_DIR}/prometheus/Dockerfile" \
-  --build-arg PROMETHEUS_CONFIG=prometheus.yml.build \
-  "${SCRIPT_DIR}/prometheus"
-rm -f "${SCRIPT_DIR}/prometheus/prometheus.yml.build"
+  "${PROM_BUILD_DIR}"
+rm -rf "${PROM_BUILD_DIR}"
 
 echo "→ Pushing prometheus-trading:${IMAGE_TAG}"
 docker push "${ACR_LOGIN_SERVER}/prometheus-trading:${IMAGE_TAG}"

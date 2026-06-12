@@ -1,8 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-13 — P9 complete; **P10 begun**. Sprint 27 handover written and
-active (curator agent: dataset assembly by provenance traversal). 326 tests at 100.00%
-(floor 100.00).
+**Last updated:** 2026-06-13 — Sprint 27 shipped; **P10 begun** (dataset half). Curator
+`build_dataset`/`describe_corpus` live; assembly by provenance traversal, versioned splits,
+`Dataset`/`TrainingExample` nodes, `cli datasets`, P10 boundary invariant proven. 350 tests
+at 100.00% (floor 100.00). Sprint 28 (training trigger + predictor registry) closes P10.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -11,12 +12,8 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P10 active — Sprint 27 (handed off).** Curator agent's first slice: `build_dataset` +
-`describe_corpus`, dataset assembly by read-only provenance-graph traversal (from reporter's
-`TradeNarrative` nodes), train/val/test split, per-purpose versioning, `Dataset` +
-`TrainingExample` nodes, a `DatasetStore` boundary, and `cli datasets`. Proves P10's core
-invariant — the curator never mutates a trading-decision node (`test_p10_boundary.py`).
-Begins P10; does not close it. See `docs/sprints/sprint-27-p10-curator-datasets.md`.
+**P10 active — between sprints.** Sprint 27 (dataset assembly) shipped. No active sprint
+branch; Sprint 28 (P10 exit) is queued, not started.
 
 ## Next
 
@@ -43,6 +40,20 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 27 — Curator: dataset assembly** (**P10 begins**). `agents/curator/` full
+  implementation: `settings.py`, `dataset_store.py` (`DatasetStore` port + `FakeDatasetStore`),
+  `domain/assembly.py` (read-only traversal: `TradeNarrative -[:NARRATES]-> Position`, then
+  `CloseDecision -[:CLOSES]-> Position` ancestor for the exit-trigger label), `domain/split.py`
+  (deterministic index split over stable key order), `domain/manifest.py` (per-purpose version =
+  count of existing `Dataset` nodes + 1), `store.py` (`Dataset -[:CONTAINS]-> TrainingExample`,
+  `TrainingExample -[:DERIVED_FROM]-> TradeNarrative`), `agent.py` (`build_dataset` +
+  `describe_corpus`, degraded manifest below `min_examples_for_split`, never raises).
+  `surfaces/queries/datasets.py` + `cli datasets`; `render_datasets` in `render_extras.py`
+  (render.py left at 175L). Curator bound in `bind_paper_loop_agents` (handlers only — out of
+  the dispatcher loop). `emits=("dataset_published",)` stays declarative (no runtime event bus).
+  `depends_on` left untouched (boundary meta-test requires declared deps to resolve, not be
+  exercised). **P10 invariant proven:** `test_p10_boundary.py` — every non-curator node identical
+  before/after `build_dataset`. 350 tests, floor 100.00. **P10 begun; not closed (Sprint 28).**
 - **Sprint 26 — Observability fault metering** (**P9 complete**). `MeteredFaultSink` wired in
   `surfaces/context.py::_context()` through the bus *and* every bound agent's sink (`active_sink`
   passed to `_bind_pipeline` + `OperatorAgent`), so agent-internal faults — caught by each agent's

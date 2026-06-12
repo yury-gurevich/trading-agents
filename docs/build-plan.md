@@ -267,4 +267,5 @@ stage gates in P8.
 | P7 Self-management | **complete** (S23 researcher agent shipped; propose+evidence+cli proposals; exit criterion met — test_p7_boundary green) |
 | P8 Hardening + expansion | **complete** (S24 stage gate + S25 market pack; G6 exit criterion met — test_p8_exit.py green) |
 | P9 Observability stack | **complete** (infra deployed: Azure Monitor Workspace + Managed Grafana; S25 entrypoint + metrics_server + paper_context wiring, S26 MeteredFaultSink through bus + every agent sink; exit criterion met — test_p9_exit.py green) |
+| P10 Curator | **active** (S27 dataset assembly shipped — build_dataset/describe_corpus, versioned splits, Dataset/TrainingExample nodes, never-influences-decision invariant proven; S28 training trigger + predictor registry closes it) |
 | P11 Decision-logic depth | **planned** (extension; deepens deterministic analyst/PM/scanner/reporter logic — see P11) |

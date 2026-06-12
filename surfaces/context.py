@@ -100,8 +100,8 @@ def _context(
     sink = CollectingFaultSink()
     active_sink: FaultSink = MeteredFaultSink(metrics, sink) if metrics else sink
     bus = InProcessBus(sink=active_sink, metrics=metrics or NullMetrics())
-    _bind_pipeline(bus, graph, source, broker, universe_source, sink)
-    OperatorAgent(bus, graph=graph, llm=llm, sink=sink).bind()
+    _bind_pipeline(bus, graph, source, broker, universe_source, active_sink)
+    OperatorAgent(bus, graph=graph, llm=llm, sink=active_sink).bind()
     return SurfaceContext(
         graph=graph,
         bus=bus,

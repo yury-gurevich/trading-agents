@@ -1,6 +1,8 @@
-.PHONY: install lint format type test boundaries check ci clean
+.PHONY: install lint format type test boundaries check ci clean \
+        docker-build stack-up stack-down stack-deploy stack-rm
 
 PKGS = kernel contracts agents orchestration surfaces
+STACK = trading-agents
 
 install:        ## Install all dependencies (incl. dev group)
 	uv sync
@@ -39,3 +41,21 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 
 clean:          ## Remove build artifacts
 	rm -rf .venv htmlcov .mypy_cache .pytest_cache .ruff_cache
+
+# ── Docker / stack ────────────────────────────────────────────────────────────
+
+docker-build:   ## Build the app container image
+	docker build -t trading-agents:local .
+
+stack-up:       ## Start app + Prometheus locally (docker compose)
+	docker compose up
+
+stack-down:     ## Stop the local compose stack
+	docker compose down
+
+stack-deploy:   ## Deploy as a Docker Swarm stack (build first)
+	docker build -t trading-agents:local .
+	docker stack deploy -c docker-compose.yml $(STACK)
+
+stack-rm:       ## Remove the deployed Swarm stack
+	docker stack rm $(STACK)

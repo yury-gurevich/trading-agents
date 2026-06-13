@@ -13,15 +13,19 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P10 active — between sprints.** Datasets (S27) + advisory training trigger (S28) shipped. No
-active sprint branch; Sprint 29 (predictor registry + promotion gate + audit — P10 exit) is
-queued, not started.
+**P10 active — Sprint 29 (handed off).** Predictor registry + promotion gate (closes P10):
+`promote_predictor` gates advisory → load-bearing on frozen evidence (accuracy/sample-size) +
+operator approval via the existing supervisor flag/`cli approve` flow; append-only
+`PredictorPromotion` audit; graph-authoritative `promotion_status`. Mirrors the Sprint 24 stage
+gate. A load-bearing predictor stays a registry record — no decision agent reads it, so the P10
+"never influences a decision" invariant holds. See `docs/sprints/sprint-29-p10-predictor-registry.md`.
 
 ## Next
 
-- **Sprint 29 — P10 exit**: predictor registry + promotion gate (advisory → load-bearing) +
-  promotion-audit test; reuses the supervisor approve flow for operator sign-off. Closes P10.
-  Decides registry ownership (curator vs forecaster) at planning time. Planned after Sprint 28.
+- **P11 — Decision-logic depth** (extension; first up after P10 closes): deepen the
+  deterministic analyst/PM/scanner/reporter logic the vertical slice stubbed. Analyst port is
+  the highest-priority first sprint. See `docs/build-plan.md` P11; sequenced spec held by the
+  planning agent. **Committed scope, not optional.**
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

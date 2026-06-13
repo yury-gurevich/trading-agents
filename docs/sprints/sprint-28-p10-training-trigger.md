@@ -190,7 +190,7 @@ Keep modules ≤ 150L; split a new `predictor_manifest.py` if `manifest.py` woul
   1. `model = TrainRequest.model_validate(request)`.
   2. `dataset = select_dataset(graph, model.purpose, model.version)`.
      If `None` → return a **degraded** `PredictorManifest` (empty metrics, `sample_size=0`,
-     advisory, explanation "no dataset found for <purpose>"). Do not write a Predictor node
+     advisory, explanation "no dataset found for {purpose}"). Do not write a Predictor node
      when there is no dataset.
   3. `result = train_baseline(graph, dataset)`. If `None` (empty train split) → degraded
      manifest explaining the train split was too small; still no Predictor node written.

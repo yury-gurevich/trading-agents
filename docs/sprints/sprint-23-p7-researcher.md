@@ -92,10 +92,13 @@ Move `render_incidents` and `render_explain` (and any imports used only by them)
 ### A0.2 Update callers
 
 In `surfaces/cli_commands.py`, update:
+
 ```python
 from surfaces.render import render_incidents, render_explain
 ```
+
 to:
+
 ```python
 from surfaces.render_extras import render_incidents, render_explain
 ```
@@ -215,6 +218,7 @@ def build_proposal(
 ```
 
 Rules:
+
 - `evidence_window_days = len(snapshots)` — if `< settings.min_evidence_window_days`,
   return a zero-change proposal explaining the gap.
 - Determine direction: avg_confidence < low_water → UP; > high_water → DOWN; else → NEUTRAL.
@@ -274,11 +278,13 @@ External I/O: MessageBus calls to supervisor.flag_for_human.
 Bind `propose` and `evidence` capabilities.
 
 `_propose(request: ResearchRequest) → ParameterChangeProposal`:
+
 1. `evidence = collect_evidence(self._graph, self._settings.min_sample_runs)`
 2. If evidence is None: return a zero-change proposal with rationale "insufficient data".
 3. `proposal = build_proposal(evidence, self._settings, proposal_id=_new_id())`
 4. `write_proposal(self._graph, proposal)`
 5. If `proposal.changes`:  call `supervisor.flag_for_human` via bus:
+
    ```python
    self._bus.request(AgentMessage(
        sender="researcher",
@@ -292,9 +298,11 @@ Bind `propose` and `evidence` capabilities.
        ).model_dump(mode="json"),
    ))
    ```
+
 6. Return `proposal`.
 
 `_evidence(request: ResearchRequest) → Explanation`:
+
 - `collect_evidence(...)` → format as Explanation with available metric values.
 - If no evidence: Explanation(summary="insufficient data for evidence window", ...).
 
@@ -376,6 +384,7 @@ Add `sub.add_parser("proposals")` and dispatch to `cmd_proposals`.
   avg_confidence≈0.35, ...)`.
 
 Seed Snapshot nodes with:
+
 ```python
 graph.merge_node("Snapshot", f"snapshot:run-{i}", {
     "run_id": f"run-{i}",

@@ -17,20 +17,24 @@ Container deployment for the trading-agents app and its Prometheus observability
 ## Prerequisites
 
 1. **`.env` file** — copy `.env.example` and fill in `NEO4J_*` vars:
-   ```
+
+   ```bash
    cp .env.example .env
    # edit .env
    ```
 
 2. **Prometheus config** — the committed `prometheus.compose.yml` scrapes metrics locally with no Azure creds. To enable remote_write to Azure Monitor, generate `prometheus.local.yml` first:
+
    ```powershell
    .\infra\setup-prometheus-auth.ps1
    ```
+
    Then point `configs.prometheus_config.file` in `docker-compose.yml` at `prometheus.local.yml`.
 
 ## Local dev
 
 Start both services and tail logs:
+
 ```bash
 make stack-up
 # or
@@ -39,10 +43,11 @@ docker compose up
 
 | Endpoint | URL |
 | --- | --- |
-| App `/metrics` | http://localhost:8000/metrics |
-| Prometheus UI | http://localhost:9090 |
+| App `/metrics` | <http://localhost:8000/metrics> |
+| Prometheus UI | <http://localhost:9090> |
 
 Stop:
+
 ```bash
 make stack-down
 # or
@@ -62,6 +67,7 @@ docker stack deploy -c docker-compose.yml trading-agents
 ```
 
 Remove the stack:
+
 ```bash
 make stack-rm
 # or
@@ -73,11 +79,13 @@ docker stack rm trading-agents
 The Swarm stack uses Docker `configs:` to inject the Prometheus config. To switch to the generated config with Azure credentials:
 
 1. Generate `infra/prometheus/prometheus.local.yml`:
+
    ```powershell
    .\infra\setup-prometheus-auth.ps1
    ```
 
 2. Update `docker-compose.yml` — change the last two lines under `configs:`:
+
    ```yaml
    configs:
      prometheus_config:
@@ -85,6 +93,7 @@ The Swarm stack uses Docker `configs:` to inject the Prometheus config. To switc
    ```
 
 3. Re-deploy:
+
    ```bash
    docker stack deploy -c docker-compose.yml trading-agents
    ```
@@ -100,6 +109,7 @@ The Swarm stack uses Docker `configs:` to inject the Prometheus config. To switc
 | Prometheus auth | Service principal `trading-agents-prometheus`; credentials in `.env` (gitignored) |
 
 Provision from scratch:
+
 ```powershell
 .\infra\setup-azure.ps1               # Azure Monitor Workspace + Grafana
 .\infra\setup-prometheus-auth.ps1     # SP auth + prometheus.local.yml
@@ -108,7 +118,7 @@ Provision from scratch:
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────┐
 │  Docker stack: trading-agents│
 │                              │

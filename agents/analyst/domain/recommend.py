@@ -60,10 +60,11 @@ def decide(
             rationale=Explanation(
                 summary=(
                     f"{candidate.ticker} cleared the {regime.label} confidence "
-                    "gate using scanner strength, momentum, and trend."
+                    "gate on its composite technical score (RSI, MACD, Bollinger, "
+                    "SMA-200 distance, and EMA crossover)."
                 ),
                 evidence_refs=(
-                    "scanner.candidate",
+                    "analyst.technical_score",
                     "provider.market_data",
                     "provider.regime",
                 ),

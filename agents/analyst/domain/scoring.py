@@ -8,8 +8,9 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from statistics import mean
 from typing import TYPE_CHECKING
+
+from agents.analyst.domain.technical_rules import score_technical
 
 if TYPE_CHECKING:
     from agents.analyst.settings import AnalystSettings
@@ -28,11 +29,12 @@ class ScoreBreakdown:
 
 
 def score_candidate(
-    candidate: Candidate,
+    candidate: Candidate,  # noqa: ARG001 - kept for call-site stability; the
+    # analyst now scores on its own technical evidence, not the scanner prior.
     bars: tuple[OHLCVBar, ...],
     settings: AnalystSettings,
 ) -> ScoreBreakdown:
-    """Score one candidate using scanner prior, momentum, and MA trend."""
+    """Score one candidate from its close-price history via the technical engine."""
     rows = sorted(bars, key=lambda bar: bar.bar_date)
     if len(rows) < settings.min_history_bars:
         return ScoreBreakdown(
@@ -42,51 +44,21 @@ def score_candidate(
             rejection_reason="insufficient_market_history",
         )
 
-    momentum = (rows[-1].close - rows[0].close) / rows[0].close
-    components = {
-        "candidate_component": _bounded(candidate.score / settings.score_scale),
-        "momentum_component": _bounded(momentum / settings.score_scale),
-        "trend_component": _trend_component(rows, settings),
-    }
-    technical = _weighted_score(components, settings)
+    closes = [bar.close for bar in rows]
+    raw, tmetrics = score_technical(closes, settings)
+    technical = _bounded(raw / 100.0)
     confidence = _bounded(
         settings.confidence_floor + technical * settings.confidence_span
     )
     metrics = {
         "history_bars": float(len(rows)),
-        "momentum": momentum,
         "technical_score": technical,
         "confidence": confidence,
-        **components,
+        **tmetrics,
     }
     return ScoreBreakdown(
         technical_score=technical, confidence=confidence, metrics=metrics
     )
-
-
-def _weighted_score(components: dict[str, float], settings: AnalystSettings) -> float:
-    weights = {
-        "candidate_component": settings.candidate_score_weight,
-        "momentum_component": settings.momentum_weight,
-        "trend_component": settings.trend_weight,
-    }
-    denominator = sum(weights.values())
-    if denominator == 0:
-        return 0.0
-    return _bounded(
-        sum(components[name] * weight for name, weight in weights.items()) / denominator
-    )
-
-
-def _trend_component(rows: list[OHLCVBar], settings: AnalystSettings) -> float:
-    if len(rows) < settings.long_ma_bars:
-        return 0.5
-    short_rows = rows[-settings.short_ma_bars :]
-    long_rows = rows[-settings.long_ma_bars :]
-    short_ma = mean(bar.close for bar in short_rows)
-    long_ma = mean(bar.close for bar in long_rows)
-    trend = (short_ma - long_ma) / long_ma
-    return _bounded(0.5 + trend / settings.trend_scale)
 
 
 def _bounded(value: float) -> float:

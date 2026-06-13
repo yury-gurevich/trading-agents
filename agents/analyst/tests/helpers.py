@@ -53,6 +53,18 @@ def bars() -> tuple[OHLCVBar, ...]:
     )
 
 
+def overbought_bars(ticker: str, count: int = 60) -> tuple[OHLCVBar, ...]:
+    """Return a long, steadily rising (overbought) series for one ticker.
+
+    The technical engine treats a sustained climb as overbought (low RSI/Bollinger
+    sub-scores), so the composite confidence lands below the regime floor — a
+    deterministic rejection driven by indicators rather than the old scanner prior.
+    """
+    return tuple(
+        bar(ticker, count - 1 - offset, 100.0 + offset) for offset in range(count)
+    )
+
+
 def candidate_set(*candidates: Candidate) -> CandidateSet:
     return CandidateSet(
         run_id="scanner-run-fixture",

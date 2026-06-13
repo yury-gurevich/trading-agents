@@ -108,9 +108,10 @@ class AnalystAgent(AgentBase):
         candidate_set = CandidateSet.model_validate(request)
         return Explanation(
             summary=(
-                "Analyst confidence blends scanner strength, price momentum, and "
-                f"moving-average trend for {len(candidate_set.candidates)} candidates, "
-                "then gates each result against provider regime confidence."
+                "Analyst confidence blends a composite of RSI, MACD, Bollinger "
+                "position, SMA-200 distance, and EMA crossover for "
+                f"{len(candidate_set.candidates)} candidates, then gates each "
+                "result against provider regime confidence."
             ),
             evidence_refs=("analyst.technical_score", "provider.regime"),
         )

@@ -1,20 +1,22 @@
 """Analyst domain scoring and recommendation tests.
 
 Agent: analyst
-Role: verify deterministic scoring and decision edge cases.
+Role: verify the technical engine drives scores, confidence, and decisions.
 External I/O: none.
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
+
+import pytest
 
 from agents.analyst.domain.recommend import decide
 from agents.analyst.domain.scoring import score_candidate
 from agents.analyst.settings import AnalystSettings
-from agents.analyst.tests.helpers import bar, candidate
+from agents.analyst.tests.helpers import candidate
 from contracts.common import Provenance
-from contracts.provider import RegimeContext
+from contracts.provider import OHLCVBar, RegimeContext
 
 
 def _regime(floor: float = 0.6) -> RegimeContext:
@@ -30,8 +32,27 @@ def _regime(floor: float = 0.6) -> RegimeContext:
     )
 
 
+def _rising_bars(count: int) -> tuple[OHLCVBar, ...]:
+    base = date(2025, 1, 1)
+    bars = []
+    for offset in range(count):
+        close = 100.0 + offset
+        bars.append(
+            OHLCVBar(
+                ticker="AAPL",
+                bar_date=base + timedelta(days=offset),
+                open=close * 0.99,
+                high=close + 1.0,
+                low=close - 1.0,
+                close=close,
+                volume=1_000_000,
+            )
+        )
+    return tuple(bars)
+
+
 def test_score_candidate_reports_insufficient_history() -> None:
-    score = score_candidate(candidate(), (bar("AAPL", 0, 100.0),), AnalystSettings())
+    score = score_candidate(candidate(), _rising_bars(1), AnalystSettings())
 
     decision = decide(candidate(), score, _regime())
 
@@ -41,49 +62,27 @@ def test_score_candidate_reports_insufficient_history() -> None:
     assert decision.rejection.reason == "insufficient_market_history"
 
 
-def test_zero_weight_scoring_returns_zero_confidence() -> None:
-    settings = AnalystSettings(
-        candidate_score_weight=0.0,
-        momentum_weight=0.0,
-        trend_weight=0.0,
-        confidence_floor=0.0,
-    )
+def test_sufficient_history_scores_from_technical_composite() -> None:
+    score = score_candidate(candidate(), _rising_bars(40), AnalystSettings())
 
-    score = score_candidate(
-        candidate(),
-        (bar("AAPL", 2, 100.0), bar("AAPL", 0, 120.0)),
-        settings,
-    )
+    # 40 rising bars -> RSI 25, MACD 45, Bollinger 30 available -> mean 100/3;
+    # technical = (100/3)/100; confidence = 0.30 + technical * 0.60 = 0.50.
+    assert score.metrics["indicators_available"] == 3.0
+    assert score.technical_score == pytest.approx(1 / 3, abs=1e-9)
+    assert score.confidence == pytest.approx(0.5, abs=1e-9)
 
-    assert score.technical_score == 0.0
+
+def test_thin_history_is_neutral_technical_score() -> None:
+    score = score_candidate(candidate(), _rising_bars(5), AnalystSettings())
+
+    assert score.metrics["indicators_available"] == 0.0
+    assert score.technical_score == pytest.approx(0.5, abs=1e-9)
+    assert score.confidence == pytest.approx(0.6, abs=1e-9)
+
+
+def test_zero_confidence_span_floors_confidence() -> None:
+    settings = AnalystSettings(confidence_floor=0.0, confidence_span=0.0)
+
+    score = score_candidate(candidate(), _rising_bars(40), settings)
+
     assert score.confidence == 0.0
-
-
-def test_long_ma_component_is_neutral_without_long_history() -> None:
-    settings = AnalystSettings(long_ma_bars=5)
-
-    score = score_candidate(
-        candidate(),
-        (bar("AAPL", 2, 100.0), bar("AAPL", 0, 120.0)),
-        settings,
-    )
-
-    assert score.metrics["trend_component"] == 0.5
-
-
-def test_long_ma_component_uses_long_history_when_available() -> None:
-    settings = AnalystSettings(long_ma_bars=5, short_ma_bars=2)
-
-    score = score_candidate(
-        candidate(),
-        (
-            bar("AAPL", 4, 100.0),
-            bar("AAPL", 3, 102.0),
-            bar("AAPL", 2, 104.0),
-            bar("AAPL", 1, 106.0),
-            bar("AAPL", 0, 108.0),
-        ),
-        settings,
-    )
-
-    assert score.metrics["trend_component"] > 0.5

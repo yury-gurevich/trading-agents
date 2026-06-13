@@ -1,9 +1,10 @@
 # Project State
 
-**Last updated:** 2026-06-13 — Sprint 27 shipped; **P10 begun** (dataset half). Curator
-`build_dataset`/`describe_corpus` live; assembly by provenance traversal, versioned splits,
-`Dataset`/`TrainingExample` nodes, `cli datasets`, P10 boundary invariant proven. 350 tests
-at 100.00% (floor 100.00). Sprint 28 (training trigger + predictor registry) closes P10.
+**Last updated:** 2026-06-13 — Sprint 28 shipped; **P10 active** (datasets + advisory training
+done). Curator `train_predictor` live: deterministic majority-class baseline → advisory
+`Predictor` node with frozen evidence + `TRAINED_ON` edge; `cli predictors`; training boundary
+invariant proven. 366 tests at 100.00% (floor 100.00). Sprint 29 (predictor registry +
+promotion gate) closes P10.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,12 +13,9 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P10 active — Sprint 28 (handed off).** Curator training trigger: `train_predictor` selects a
-curator dataset, fits a deterministic majority-class baseline, and writes an **advisory**
-`Predictor` node with frozen evidence (accuracy on the held-out test split) + a `TRAINED_ON`
-edge. Always advisory, never promoted, never read by a decision agent. `cli predictors`
-(read-only). Extends the P10 boundary invariant to training. Does **not** add a registry or
-promotion — that is Sprint 29 (P10 exit). See `docs/sprints/sprint-28-p10-training-trigger.md`.
+**P10 active — between sprints.** Datasets (S27) + advisory training trigger (S28) shipped. No
+active sprint branch; Sprint 29 (predictor registry + promotion gate + audit — P10 exit) is
+queued, not started.
 
 ## Next
 
@@ -44,6 +42,16 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 28 — Curator: training trigger** (P10, advisory). `train_predictor` capability:
+  `select_dataset` (latest or pinned version) → `train_baseline` (deterministic majority-class
+  on the train split, alphabetical tie-break, accuracy on the held-out test split) → advisory
+  `Predictor` node (frozen metrics in props, `advisory=True`/`promotion_eligible=False`) with a
+  `Predictor -[:TRAINED_ON]-> Dataset` edge. Degraded (no dataset / empty train split) → no
+  Predictor written, never raises. Orchestration in `agents/curator/predictor.py` (kept
+  `agent.py` at 180L); `surfaces/queries/predictors.py` + `cli predictors`. Contract bumped
+  0.1.0 → 0.2.0 (`owns_graph += Predictor`); single-writer meta-test green. `test_p10_training_
+  boundary.py` proves training mutates no prior node. 366 tests, floor 100.00. Registry +
+  promotion deferred to Sprint 29.
 - **Sprint 27 — Curator: dataset assembly** (**P10 begins**). `agents/curator/` full
   implementation: `settings.py`, `dataset_store.py` (`DatasetStore` port + `FakeDatasetStore`),
   `domain/assembly.py` (read-only traversal: `TradeNarrative -[:NARRATES]-> Position`, then

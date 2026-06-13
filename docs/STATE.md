@@ -1,9 +1,8 @@
 # Project State
 
-**Last updated:** 2026-06-13 — Sprint 29 shipped; **P10 complete**. Curator predictor registry
-live: `promote_predictor` gates advisory → load-bearing on frozen evidence + operator approval;
-append-only `PredictorPromotion` audit; P10 exit proof green (full provenance chain + no
-decision-node mutation). 386 tests at 100.00% (floor 100.00). **P11 next.**
+**Last updated:** 2026-06-13 — P10 complete; **P11 begun**. Sprint 30 handover written and active
+(analyst technical scoring core — RSI/MACD/Bollinger/SMA/EMA, pure-Python, replaces the
+placeholder heuristic). 386 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,16 +11,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Between phases.** P10 closed (curator: datasets + advisory training + registry/promotion, all
-out-of-band, never gating a decision). No active sprint branch; P11 (Decision-logic depth) is
-next, not started.
+**P11 active — Sprint 30 (handed off).** Analyst technical scoring core: five pure-Python
+indicators (RSI, MACD, Bollinger position, SMA-distance, EMA crossover) on 0–100 band rules,
+averaged into a composite `technical_score`, per-indicator graceful degradation; `lookback_days`
+bumped 7 → 260; the placeholder scanner-prior/momentum/MA heuristic removed. No contract change
+(`Recommendation.technical_score` already exists). See
+`docs/sprints/sprint-30-p11-analyst-technical-core.md`.
 
 ## Next
 
-- **P11 — Decision-logic depth** (extension; first up after P10 closes): deepen the
-  deterministic analyst/PM/scanner/reporter logic the vertical slice stubbed. Analyst port is
-  the highest-priority first sprint. See `docs/build-plan.md` P11; sequenced spec held by the
-  planning agent. **Committed scope, not optional.**
+- **P11 cont. — analyst oscillators + volatility** (ATR, Stochastic, Williams %R, Choppiness),
+  then volume/event + patterns. **Blocked dependency surfaced:** fundamental + sentiment scoring
+  need a provider data feed (the provider supplies OHLCV + VIX only) — a provider extension
+  sprint must precede them. Then PM (reward/risk + sector caps), scanner (beta + earnings),
+  reporter (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

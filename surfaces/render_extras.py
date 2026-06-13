@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from contracts.reporter import TradeNarrative
     from surfaces.queries.datasets import DatasetView
     from surfaces.queries.faults import FaultView
+    from surfaces.queries.predictors import PredictorView
 
 
 def render_incidents(faults: tuple[FaultView, ...]) -> str:
@@ -51,5 +52,18 @@ def render_datasets(views: tuple[DatasetView, ...]) -> str:
         lines.append(
             f"  [{view.dataset_id}] {view.example_count} examples "
             f"({view.train_count}/{view.validation_count}/{view.test_count})"
+        )
+    return "\n".join(lines)
+
+
+def render_predictors(views: tuple[PredictorView, ...]) -> str:
+    """Render advisory predictors, newest first."""
+    if not views:
+        return "no predictors trained"
+    lines = [f"Predictors: {len(views)}"]
+    for view in views:
+        lines.append(
+            f"  [{view.predictor_id}] {view.strategy} acc={view.accuracy:.2f} "
+            f"n={view.sample_size} (advisory)"
         )
     return "\n".join(lines)

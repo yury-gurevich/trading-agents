@@ -32,3 +32,12 @@ class CuratorSettings(AgentSettings):
         unit="examples",
     )
     schema_ref: str = "curator.training_example.v1"
+    min_train_examples: int = tunable(
+        2,
+        why="Below this the train split cannot establish a majority class; "
+        "training degrades.",
+        ge=1,
+        le=10_000,
+        unit="examples",
+    )
+    predictor_strategy: str = "majority_class"  # identity, not a knob

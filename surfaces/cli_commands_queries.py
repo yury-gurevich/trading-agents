@@ -13,10 +13,11 @@ from contracts.reporter import NarrativeRequest, TradeNarrative
 from kernel import AgentMessage
 from surfaces.queries.datasets import all_datasets
 from surfaces.queries.packs import all_packs
+from surfaces.queries.predictors import all_predictors
 from surfaces.queries.proposals import all_proposals
 from surfaces.queries.stage import current_stage, stage_history
 from surfaces.render import render_packs, render_stage
-from surfaces.render_extras import render_datasets, render_explain
+from surfaces.render_extras import render_datasets, render_explain, render_predictors
 from surfaces.render_review import render_proposals
 
 if TYPE_CHECKING:
@@ -47,6 +48,12 @@ def cmd_datasets(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     """Render curated datasets."""
     del args
     return render_datasets(all_datasets(ctx.graph))
+
+
+def cmd_predictors(args: argparse.Namespace, ctx: SurfaceContext) -> str:
+    """Render advisory predictors."""
+    del args
+    return render_predictors(all_predictors(ctx.graph))
 
 
 def cmd_explain(args: argparse.Namespace, ctx: SurfaceContext) -> str:

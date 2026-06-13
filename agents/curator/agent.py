@@ -11,12 +11,23 @@ from typing import TYPE_CHECKING
 
 from agents.curator.dataset_store import FakeDatasetStore
 from agents.curator.domain.assembly import assemble_examples
-from agents.curator.domain.manifest import build_manifest, next_version
+from agents.curator.domain.manifest import (
+    build_manifest,
+    degraded_predictor_manifest,
+    next_version,
+)
 from agents.curator.domain.split import SplitAssignment, split_examples
+from agents.curator.predictor import run_training
 from agents.curator.settings import CuratorSettings
 from agents.curator.store import write_dataset
 from contracts.common import Explanation
-from contracts.curator import CONTRACT, DatasetManifest, DatasetRequest
+from contracts.curator import (
+    CONTRACT,
+    DatasetManifest,
+    DatasetRequest,
+    PredictorManifest,
+    TrainRequest,
+)
 from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
@@ -48,6 +59,7 @@ class CuratorAgent(AgentBase):
         self.handlers = {
             "build_dataset": self._build_dataset,
             "describe_corpus": self._describe_corpus,
+            "train_predictor": self._train_predictor,
         }
 
     def _build_dataset(self, request: BaseModel) -> DatasetManifest:
@@ -115,6 +127,29 @@ class CuratorAgent(AgentBase):
                 f"run snapshots available; {len(existing)} prior {model.purpose} "
                 f"dataset(s)."
             )
+        )
+
+    def _train_predictor(self, request: BaseModel) -> PredictorManifest:
+        model = TrainRequest.model_validate(request)
+        result = self._faulted_predictor(model)
+        with fault_boundary(
+            self.sink,
+            agent="curator",
+            module="agents.curator.agent",
+            capability="train_predictor",
+            reraise=False,
+        ) as capture:
+            result = run_training(self._graph, model, settings=self._settings)
+        if capture.fault is not None:
+            return self._faulted_predictor(model)
+        return result
+
+    def _faulted_predictor(self, model: TrainRequest) -> PredictorManifest:
+        return degraded_predictor_manifest(
+            purpose=model.purpose,
+            target=model.target,
+            strategy=self._settings.predictor_strategy,
+            reason=f"training faulted for {model.purpose}",
         )
 
 

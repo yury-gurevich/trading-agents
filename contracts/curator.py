@@ -22,10 +22,30 @@ class DatasetRequest(_Frozen):
     train_val_test: tuple[float, float, float] = (0.8, 0.1, 0.1)
 
 
+class TrainRequest(_Frozen):
+    purpose: str
+    version: int | None = None  # None → latest dataset version for this purpose
+    target: str = "exit_trigger"  # the label column to predict
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class DatasetSplit(_Frozen):
     name: Literal["train", "validation", "test"]
     example_count: int
+
+
+class PredictorManifest(_Frozen):
+    predictor_id: str
+    dataset_id: str
+    purpose: str
+    target: str
+    strategy: str  # e.g. "majority_class"
+    metrics: dict[str, float]  # frozen evidence: accuracy, train_size, test_size
+    sample_size: int  # test-split size the metrics were measured on
+    advisory: bool = True  # ALWAYS True this sprint — never load-bearing
+    promotion_eligible: bool = False  # ALWAYS False this sprint — promotion is S29
+    explanation: Explanation
+    provenance: Provenance
 
 
 class DatasetManifest(_Frozen):
@@ -41,7 +61,7 @@ class DatasetManifest(_Frozen):
 
 CONTRACT = AgentContract(
     name="curator",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Curate the collected provenance graph into clean, labelled, versioned "
         "datasets ready for later LLM training — running out of band, alongside "
@@ -62,9 +82,17 @@ CONTRACT = AgentContract(
             response=Explanation,
             mcp=True,
         ),
+        Capability(
+            "train_predictor",
+            "Train an advisory baseline predictor from a curated dataset and "
+            "freeze its evidence.",
+            request=TrainRequest,
+            response=PredictorManifest,
+            mcp=True,
+        ),
     ),
     emits=("dataset_published",),
-    owns_graph=("Dataset", "TrainingExample"),
+    owns_graph=("Dataset", "TrainingExample", "Predictor"),
     external_io=("dataset_store",),
     depends_on=("reporter", "supervisor"),
     mcp_tools=("build_dataset", "describe_corpus"),

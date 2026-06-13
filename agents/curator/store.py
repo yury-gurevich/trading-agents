@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agents.curator.domain.assembly import ExampleRecord
     from agents.curator.domain.split import SplitAssignment
-    from contracts.curator import DatasetManifest
+    from contracts.curator import DatasetManifest, PredictorManifest
     from kernel import GraphStore, Node
 
 _NARRATIVE_PREFIX = "TradeNarrative:"
@@ -75,3 +75,27 @@ def _source_node(graph: GraphStore, source_ref: str) -> Node | None:
     if not source_ref.startswith(_NARRATIVE_PREFIX):
         return None
     return graph.get_node("TradeNarrative", source_ref[len(_NARRATIVE_PREFIX) :])
+
+
+def write_predictor(
+    graph: GraphStore, *, manifest: PredictorManifest, dataset: Node
+) -> None:
+    """Write the Predictor node (frozen evidence) and link it to its Dataset."""
+    predictor = graph.merge_node(
+        "Predictor",
+        manifest.predictor_id,
+        {
+            "purpose": manifest.purpose,
+            "target": manifest.target,
+            "strategy": manifest.strategy,
+            "accuracy": manifest.metrics["accuracy"],
+            "train_size": manifest.metrics["train_size"],
+            "test_size": manifest.metrics["test_size"],
+            "sample_size": manifest.sample_size,
+            "advisory": manifest.advisory,
+            "promotion_eligible": manifest.promotion_eligible,
+            "dataset_id": manifest.dataset_id,
+            "trained_at": datetime.now(tz=UTC).isoformat(),
+        },
+    )
+    graph.add_edge(predictor, dataset, "TRAINED_ON")

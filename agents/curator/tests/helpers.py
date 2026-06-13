@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from contracts.curator import DatasetRequest
+from contracts.curator import DatasetRequest, TrainRequest
 from kernel import AgentMessage, InMemoryGraphStore
 
 
@@ -49,6 +49,24 @@ def build_dataset_message(purpose: str = "exit-timing") -> AgentMessage:
 def describe_corpus_message(purpose: str = "exit-timing") -> AgentMessage:
     """Build a describe_corpus request message for the curator."""
     return _message("describe_corpus", purpose)
+
+
+def train_predictor_message(
+    purpose: str = "exit-timing",
+    *,
+    version: int | None = None,
+    target: str = "exit_trigger",
+) -> AgentMessage:
+    """Build a train_predictor request message for the curator."""
+    return AgentMessage(
+        sender="test",
+        recipient="curator",
+        message_type="request",
+        capability="train_predictor",
+        payload=TrainRequest(
+            purpose=purpose, version=version, target=target
+        ).model_dump(mode="json"),
+    )
 
 
 def _message(capability: str, purpose: str) -> AgentMessage:

@@ -1,10 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-13 — Sprint 28 shipped; **P10 active** (datasets + advisory training
-done). Curator `train_predictor` live: deterministic majority-class baseline → advisory
-`Predictor` node with frozen evidence + `TRAINED_ON` edge; `cli predictors`; training boundary
-invariant proven. 366 tests at 100.00% (floor 100.00). Sprint 29 (predictor registry +
-promotion gate) closes P10.
+**Last updated:** 2026-06-13 — Sprint 29 shipped; **P10 complete**. Curator predictor registry
+live: `promote_predictor` gates advisory → load-bearing on frozen evidence + operator approval;
+append-only `PredictorPromotion` audit; P10 exit proof green (full provenance chain + no
+decision-node mutation). 386 tests at 100.00% (floor 100.00). **P11 next.**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -13,12 +12,9 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P10 active — Sprint 29 (handed off).** Predictor registry + promotion gate (closes P10):
-`promote_predictor` gates advisory → load-bearing on frozen evidence (accuracy/sample-size) +
-operator approval via the existing supervisor flag/`cli approve` flow; append-only
-`PredictorPromotion` audit; graph-authoritative `promotion_status`. Mirrors the Sprint 24 stage
-gate. A load-bearing predictor stays a registry record — no decision agent reads it, so the P10
-"never influences a decision" invariant holds. See `docs/sprints/sprint-29-p10-predictor-registry.md`.
+**Between phases.** P10 closed (curator: datasets + advisory training + registry/promotion, all
+out-of-band, never gating a decision). No active sprint branch; P11 (Decision-logic depth) is
+next, not started.
 
 ## Next
 
@@ -46,6 +42,18 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 29 — Curator: predictor registry + promotion gate** (**P10 complete**).
+  `promote_predictor` capability: evidence gate (`check_promotion_evidence` — frozen accuracy ≥
+  `min_promotion_accuracy`, sample_size ≥ min) → operator approval via `supervisor.flag_for_human`
+  bus call (subject `predictor:<id>`) + existing `cli approve` → append-only `PredictorPromotion`
+  audit node (`PROMOTES → Predictor`, frozen accuracy/sample-size, approval_ref). Idempotent,
+  approval-state-driven (not_found/rejected/pending_approval/promoted/already_promoted);
+  graph-authoritative `promotion_status` (advisory/pending_approval/load_bearing) on
+  `cli predictors`. Orchestration in `promotion.py` (137L); helpers spilled to `agent_support.py`
+  to keep `agent.py` at 191L. Contract 0.2.0 → 0.3.0 (`owns_graph += PredictorPromotion`).
+  `test_p10_exit.py`: full chain `PredictorPromotion → Predictor → Dataset → TrainingExample →
+  TradeNarrative` **and** no decision-node mutation. Real `cli approve predictor:<id>` proven in
+  `surfaces/tests/test_registry_surface.py`. 386 tests, floor 100.00. **P10 exit criterion met.**
 - **Sprint 28 — Curator: training trigger** (P10, advisory). `train_predictor` capability:
   `select_dataset` (latest or pinned version) → `train_baseline` (deterministic majority-class
   on the train split, alphabetical tie-break, accuracy on the held-out test split) → advisory

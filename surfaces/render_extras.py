@@ -64,6 +64,6 @@ def render_predictors(views: tuple[PredictorView, ...]) -> str:
     for view in views:
         lines.append(
             f"  [{view.predictor_id}] {view.strategy} acc={view.accuracy:.2f} "
-            f"n={view.sample_size} (advisory)"
+            f"n={view.sample_size} [{view.promotion_status}]"
         )
     return "\n".join(lines)

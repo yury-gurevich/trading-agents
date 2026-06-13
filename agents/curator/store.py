@@ -99,3 +99,22 @@ def write_predictor(
         },
     )
     graph.add_edge(predictor, dataset, "TRAINED_ON")
+
+
+def write_promotion(graph: GraphStore, *, predictor: Node, approval_ref: str) -> Node:
+    """Append the PredictorPromotion audit node and link it to its Predictor."""
+    promotion = graph.merge_node(
+        "PredictorPromotion",
+        f"promotion:{predictor.key}",
+        {
+            "predictor_id": predictor.key,
+            "from_state": "advisory",
+            "to_state": "load_bearing",
+            "accuracy": predictor.props.get("accuracy"),
+            "sample_size": predictor.props.get("sample_size"),
+            "approval_ref": approval_ref,
+            "promoted_at": datetime.now(tz=UTC).isoformat(),
+        },
+    )
+    graph.add_edge(promotion, predictor, "PROMOTES")
+    return promotion

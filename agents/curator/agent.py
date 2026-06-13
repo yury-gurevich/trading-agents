@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.curator.agent_support import dataset_payload, degraded_manifest
 from agents.curator.dataset_store import FakeDatasetStore
 from agents.curator.domain.assembly import assemble_examples
 from agents.curator.domain.manifest import (
@@ -18,14 +19,17 @@ from agents.curator.domain.manifest import (
 )
 from agents.curator.domain.split import SplitAssignment, split_examples
 from agents.curator.predictor import run_training
+from agents.curator.promotion import run_promotion
 from agents.curator.settings import CuratorSettings
 from agents.curator.store import write_dataset
-from contracts.common import Explanation
+from contracts.common import Explanation, Provenance
 from contracts.curator import (
     CONTRACT,
     DatasetManifest,
     DatasetRequest,
     PredictorManifest,
+    PromoteRequest,
+    PromotionResult,
     TrainRequest,
 )
 from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
@@ -60,11 +64,12 @@ class CuratorAgent(AgentBase):
             "build_dataset": self._build_dataset,
             "describe_corpus": self._describe_corpus,
             "train_predictor": self._train_predictor,
+            "promote_predictor": self._promote_predictor,
         }
 
     def _build_dataset(self, request: BaseModel) -> DatasetManifest:
         model = DatasetRequest.model_validate(request)
-        result = _degraded_manifest(model.purpose, f"dataset:{model.purpose}:v1", 1)
+        result = degraded_manifest(model.purpose, f"dataset:{model.purpose}:v1", 1)
         with fault_boundary(
             self.sink,
             agent="curator",
@@ -74,7 +79,7 @@ class CuratorAgent(AgentBase):
         ) as capture:
             result = self._assemble(model)
         if capture.fault is not None:
-            return _degraded_manifest(model.purpose, f"dataset:{model.purpose}:v1", 1)
+            return degraded_manifest(model.purpose, f"dataset:{model.purpose}:v1", 1)
         return result
 
     def _assemble(self, request: DatasetRequest) -> DatasetManifest:
@@ -108,7 +113,7 @@ class CuratorAgent(AgentBase):
             capability="build_dataset.store",
             reraise=False,
         ):
-            self._store.write(dataset_id, _payload(split))
+            self._store.write(dataset_id, dataset_payload(split))
 
     def _describe_corpus(self, request: BaseModel) -> Explanation:
         model = DatasetRequest.model_validate(request)
@@ -152,29 +157,35 @@ class CuratorAgent(AgentBase):
             reason=f"training faulted for {model.purpose}",
         )
 
+    def _promote_predictor(self, request: BaseModel) -> PromotionResult:
+        model = PromoteRequest.model_validate(request)
+        result = _promotion_fault(model.predictor_id)
+        with fault_boundary(
+            self.sink,
+            agent="curator",
+            module="agents.curator.agent",
+            capability="promote_predictor",
+            reraise=False,
+        ) as capture:
+            result = run_promotion(
+                graph=self._graph,
+                bus=self.bus,
+                settings=self._settings,
+                predictor_id=model.predictor_id,
+            )
+        if capture.fault is not None:
+            return _promotion_fault(model.predictor_id)
+        return result
 
-def _degraded_manifest(purpose: str, dataset_id: str, version: int) -> DatasetManifest:
-    return build_manifest(
-        purpose=purpose,
-        schema_ref=CuratorSettings().schema_ref,
-        split=SplitAssignment((), (), ()),
-        dataset_id=dataset_id,
-        version=version,
+
+def _promotion_fault(predictor_id: str) -> PromotionResult:
+    return PromotionResult(
+        predictor_id=predictor_id,
+        status="rejected",
+        state="advisory",
+        reason="promotion fault",
+        explanation=Explanation(summary="promotion faulted"),
+        provenance=Provenance(
+            run_id=f"promotion:{predictor_id}", source_agent="curator"
+        ),
     )
-
-
-def _payload(split: SplitAssignment) -> dict[str, dict[str, str]]:
-    return {
-        record.example_id: {
-            "content": record.content,
-            "label": record.label,
-            "split": name,
-            "source_ref": record.source_ref,
-        }
-        for name, records in (
-            ("train", split.train),
-            ("validation", split.validation),
-            ("test", split.test),
-        )
-        for record in records
-    }

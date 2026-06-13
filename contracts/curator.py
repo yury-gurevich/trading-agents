@@ -28,7 +28,25 @@ class TrainRequest(_Frozen):
     target: str = "exit_trigger"  # the label column to predict
 
 
+class PromoteRequest(_Frozen):
+    predictor_id: str
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
+PromotionStatus = Literal[
+    "promoted", "pending_approval", "rejected", "already_promoted", "not_found"
+]
+
+
+class PromotionResult(_Frozen):
+    predictor_id: str
+    status: PromotionStatus
+    state: Literal["advisory", "load_bearing"]  # registry state AFTER this call
+    reason: str
+    explanation: Explanation
+    provenance: Provenance
+
+
 class DatasetSplit(_Frozen):
     name: Literal["train", "validation", "test"]
     example_count: int
@@ -61,7 +79,7 @@ class DatasetManifest(_Frozen):
 
 CONTRACT = AgentContract(
     name="curator",
-    version="0.2.0",
+    version="0.3.0",
     mission=(
         "Curate the collected provenance graph into clean, labelled, versioned "
         "datasets ready for later LLM training — running out of band, alongside "
@@ -90,9 +108,17 @@ CONTRACT = AgentContract(
             response=PredictorManifest,
             mcp=True,
         ),
+        Capability(
+            "promote_predictor",
+            "Gate an advisory predictor to load-bearing on frozen evidence + "
+            "operator approval.",
+            request=PromoteRequest,
+            response=PromotionResult,
+            mcp=True,
+        ),
     ),
     emits=("dataset_published",),
-    owns_graph=("Dataset", "TrainingExample", "Predictor"),
+    owns_graph=("Dataset", "TrainingExample", "Predictor", "PredictorPromotion"),
     external_io=("dataset_store",),
     depends_on=("reporter", "supervisor"),
     mcp_tools=("build_dataset", "describe_corpus"),

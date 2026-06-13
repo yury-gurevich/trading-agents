@@ -41,3 +41,16 @@ class CuratorSettings(AgentSettings):
         unit="examples",
     )
     predictor_strategy: str = "majority_class"  # identity, not a knob
+    min_promotion_accuracy: float = tunable(
+        0.55,
+        why="Frozen-evidence floor: a predictor below this accuracy is not promotable.",
+        ge=0.0,
+        le=1.0,
+    )
+    min_promotion_sample_size: int = tunable(
+        5,
+        why="Minimum test-split size behind the accuracy figure to trust it.",
+        ge=1,
+        le=100_000,
+        unit="examples",
+    )

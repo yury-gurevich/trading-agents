@@ -1,8 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-13 — P10 complete; **P11 begun**. Sprint 30 handover written and active
-(analyst technical scoring core — RSI/MACD/Bollinger/SMA/EMA, pure-Python, replaces the
-placeholder heuristic). 386 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-14 — Sprint 30 shipped; **P11 active** (analyst technical core done).
+Five pure-Python indicators (RSI/MACD/Bollinger/SMA/EMA) on 0–100 band rules → composite
+`technical_score`, per-indicator graceful degradation; `lookback_days` 7 → 260; placeholder
+heuristic removed; no contract change. 427 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -11,12 +12,8 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 30 (handed off).** Analyst technical scoring core: five pure-Python
-indicators (RSI, MACD, Bollinger position, SMA-distance, EMA crossover) on 0–100 band rules,
-averaged into a composite `technical_score`, per-indicator graceful degradation; `lookback_days`
-bumped 7 → 260; the placeholder scanner-prior/momentum/MA heuristic removed. No contract change
-(`Recommendation.technical_score` already exists). See
-`docs/sprints/sprint-30-p11-analyst-technical-core.md`.
+**P11 active — between sprints.** Analyst technical core (S30) shipped. No active sprint branch;
+next P11 slice (analyst oscillators + volatility) is queued, not started.
 
 ## Next
 
@@ -45,6 +42,17 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 30 — Analyst: technical scoring core** (P11 begins). Pure-Python (no pandas)
+  indicator engine: `domain/indicators.py` (RSI, MACD, Bollinger position, SMA-distance, EMA
+  crossover — each returns `None` on short history, never raises), `domain/technical_rules.py`
+  (0–100 band rules + `score_technical` averaging only available sub-scores, neutral 50 when
+  none). `score_candidate` rewired to the composite (`technical_score = mean_subscore/100`);
+  `ScoreBreakdown`/`decide` interface unchanged (no contract change). `lookback_days` 7 → 260;
+  old heuristic tunables (momentum/MA/score-scale) removed; indicator periods are justified
+  tunables with a `macd_fast<slow`/`ema_short<long` validator. Strict-`<` band boundaries.
+  Downstream pipeline tests unaffected (thin ~4-bar fixtures → neutral 0.5 → confidence 0.60,
+  still clears the strict-`<` floor). 427 tests, floor 100.00. Oscillators/patterns/fundamental/
+  sentiment are later P11 slices (fundamental + sentiment blocked on a provider data feed).
 - **Sprint 29 — Curator: predictor registry + promotion gate** (**P10 complete**).
   `promote_predictor` capability: evidence gate (`check_promotion_evidence` — frozen accuracy ≥
   `min_promotion_accuracy`, sample_size ≥ min) → operator approval via `supervisor.flag_for_human`

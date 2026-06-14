@@ -12,16 +12,19 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical core (S30) shipped. No active sprint branch;
-next P11 slice (analyst oscillators + volatility) is queued, not started.
+**P11 active — Sprint 31 (handed off).** Analyst oscillators + volatility: four range-based
+indicators (ATR, Stochastic, Williams %R, Choppiness) on 0–100 bands, folded into the same
+composite `technical_score`. Needs only high/low/close (no provider change). New `indicators_range.py`
++ `technical_rules_range.py`; `score_technical` switches from closes to sorted bars. No contract
+change. See `docs/sprints/sprint-31-p11-analyst-oscillators.md`.
 
 ## Next
 
-- **P11 cont. — analyst oscillators + volatility** (ATR, Stochastic, Williams %R, Choppiness),
-  then volume/event + patterns. **Blocked dependency surfaced:** fundamental + sentiment scoring
-  need a provider data feed (the provider supplies OHLCV + VIX only) — a provider extension
-  sprint must precede them. Then PM (reward/risk + sector caps), scanner (beta + earnings),
-  reporter (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
+- **P11 cont. — analyst volume/event + patterns** (OBV, golden cross, Nadaraya-Watson kernel,
+  geometric patterns), then a **provider data-feed extension** (prerequisite), then fundamental +
+  sentiment scoring + relative strength + signal-diversity selection. Then PM (reward/risk +
+  sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy). Sequenced
+  spec: memory `v1-deterministic-port-gaps.md`.
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

@@ -3,7 +3,8 @@
 **Last updated:** 2026-06-14 — Sprint 32 shipped; **P11 active** (analyst technical engine now 12
 indicators). Added OBV / golden cross / RSI-2 (volume/event) to the composite `technical_score`;
 no contract change; pipeline fixtures reshaped (2-bar → full degradation) to keep wiring intent.
-479 tests at 100.00% (floor 100.00).
+479 tests at 100.00% (floor 100.00). **Sprint 33 handed off** (analyst patterns/smoothing/calendar
+— NW kernel + geometric patterns + turnaround → 15 indicators; includes a settings split).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,17 +13,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31) +
-volume/event (S32) shipped — twelve indicators in the composite. No active sprint branch; next P11
-slice (analyst patterns: Nadaraya-Watson kernel + geometric chart patterns) is queued, not started.
+**P11 active — Sprint 33 handed off, not started.** Analyst technical core (S30) +
+oscillators/volatility (S31) + volume/event (S32) shipped — twelve indicators in the composite.
+**Sprint 33** (`sprint-33-p11-analyst-patterns.md`) is written and ready for the coding agent:
+Nadaraya-Watson kernel + geometric chart patterns + the calendar turnaround signal → composite up
+to 15 indicators, plus a required analyst settings split (file at the 200-line cap). Calendar
+signal decided: **always-emit** (reference parity — turnaround contributes on every day at ≥3 bars,
+neutral 50 off-signal), which widens the test re-pin across all ≥3-bar fixtures.
 
 ## Next
 
-- **P11 cont. — analyst patterns** (Nadaraya-Watson kernel smoother, geometric chart patterns,
-  the calendar "turnaround" signal), then a **provider data-feed extension** (prerequisite), then
-  fundamental + sentiment scoring + relative strength + signal-diversity selection. Then PM
-  (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy).
-  Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.**
+- **P11 cont. — provider data-feed extension** (prerequisite for the rest): fundamentals + news
+  feeds. Then fundamental + sentiment scoring + relative strength + signal-diversity selection.
+  Then PM (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor +
+  expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed scope, not
+  optional.** (Analyst patterns slice → Sprint 33, handed off; see *Now*.)
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow

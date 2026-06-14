@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-15 — Sprint 34 shipped; **P11 active**. Provider now populates the
-previously-always-empty `MarketData.fundamentals` via a new Finnhub `/stock/metric` source
-(`FinnhubDataSource` + `CompositeDataSource`); field-gated, degrades cleanly. No contract change
-(still 0.1.0), no new dependency. Unblocks analyst fundamental scoring. 527 tests at 100.00%
+**Last updated:** 2026-06-15 — Sprint 35 shipped; **P11 active**. Analyst now has a **fundamental
+pillar** (8-metric band table over `MarketData.fundamentals`) blended with the technical score
+(weights 0.50/0.30, renormalised) into the confidence gate. Absent fundamentals skip the pillar
+(composite == technical) → no existing-test re-pin. No contract change. 573 tests at 100.00%
 (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
@@ -13,14 +13,12 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 35 handed off, not started.** Analyst technical engine complete (15
-indicators, S30–S33); provider serves fundamentals (S34). **Sprint 35**
-(`sprint-35-analyst-fundamental-scoring.md`) is written and ready for the coding agent: port
-`score_fundamental` (8-metric band table) as a second analyst pillar over `MarketData.fundamentals`,
-blended with the technical score (weights 0.50/0.30, renormalised) into the confidence gate. No
-contract change (`Recommendation.fundamental_score` already exists). **Decision flagged:** absent
-fundamentals are *skipped* (composite == technical → no existing-test re-pin), a deliberate
-deviation from v1's blend-neutral-50; veto in the doc if strict parity is wanted.
+**P11 active — between sprints.** Analyst technical engine complete (15 indicators, S30–S33);
+provider serves fundamentals (S34); analyst now blends a fundamental pillar into the gate (S35). No
+active sprint branch. Next slice: **news + sentiment** — a provider news feed + a FinBERT/keyword
+sentiment scorer adding the third composite pillar (`sentiment_weight` 0.20, the reserved weight).
+Then relative strength (analyst-side; only needs benchmark OHLCV) and signal-diversity selection.
+Spec source: memory `v1-deterministic-port-gaps.md`.
 
 ## Next
 
@@ -44,6 +42,20 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 35 — Analyst: fundamental scoring** (P11 cont.). New `domain/fundamental_rules.py`
+  (`score_fundamental` — an 8-metric named rule table: P/E, ROE, net margin, current ratio, P/B,
+  debt/equity, EPS growth, revenue growth; first-present fallback keys, `require_positive` skips
+  ≤ 0, missing keys skipped, average of present sub-scores, `(None, {})` when none usable; ported
+  verbatim from the reference bands). `score_candidate` gained a `fundamentals` arg and blends: the
+  composite is the technical score alone when no pillar, else the weight-renormalised
+  `(0.50·tech + 0.30·fund)/0.80`, and confidence is `floor + composite·span`. New
+  `technical_weight`/`fundamental_weight` tunables on `AnalystSettings`. `provider_client` now
+  requests the `fundamentals` field; `agent._score` passes per-ticker fundamentals; `recommend`
+  populates `Recommendation.fundamental_score` and extends the rationale
+  only when present. **No contract change** (0.1.0; `fundamental_score` already existed). **Decision:
+  absent fundamentals are skipped, not blended as neutral 50** — composite == technical so every
+  existing pinned value was re-used (only a mechanical `fundamentals={}` arg added to call sites).
+  Line counts: fundamental_rules 127, scoring 90, recommend 77, settings 76. 573 tests, floor 100.00.
 - **Sprint 34 — Provider: fundamentals feed** (P11 cont.). The provider now populates the
   previously-always-empty `MarketData.fundamentals`. New `agents/provider/fundamentals.py`
   (`FinnhubDataSource` — stdlib urllib+json against `/stock/metric?metric=all`; pure `_parse_metrics`

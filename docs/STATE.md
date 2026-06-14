@@ -1,9 +1,10 @@
 # Project State
 
-**Last updated:** 2026-06-14 — Sprint 33 shipped; **P11 active** (analyst technical engine now 15
-indicators). Added the Nadaraya-Watson kernel deviation, geometric chart patterns, and the
-always-emit Monday turnaround to the composite `technical_score`; no contract/scoring change; the
-analyst settings split into a `_IndicatorSettings` base. 516 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-15 — Sprint 34 shipped; **P11 active**. Provider now populates the
+previously-always-empty `MarketData.fundamentals` via a new Finnhub `/stock/metric` source
+(`FinnhubDataSource` + `CompositeDataSource`); field-gated, degrades cleanly. No contract change
+(still 0.1.0), no new dependency. Unblocks analyst fundamental scoring. 527 tests at 100.00%
+(floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,22 +13,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 34 handed off, not started.** Analyst technical core (S30) +
-oscillators/volatility (S31) + volume/event (S32) + patterns/smoothing/calendar (S33) shipped —
-**fifteen indicators** in the composite; the deterministic technical engine is complete.
-**Sprint 34** (`sprint-34-provider-fundamentals.md`) is written and ready for the coding agent: a
-provider **fundamentals feed** (Finnhub `/stock/metric` → the existing-but-empty
-`MarketData.fundamentals` field; new `FinnhubDataSource` + `CompositeDataSource`; no contract
-change, no new dependency). It unblocks the analyst fundamental-scoring sprint that follows. Scoped
-fundamentals-only — news/sentiment (FinBERT) and earnings calendar are separate later slices.
+**P11 active — between sprints.** Analyst technical engine complete (15 indicators, S30–S33) and
+the provider now serves fundamentals (S34). No active sprint branch; the next slice is the
+**analyst fundamental-scoring** port — add `score_fundamental` (8 metrics, threshold bands,
+`data_incomplete` handling) as a new analyst pillar consuming `MarketData.fundamentals`. Spec
+source: memory `v1-deterministic-port-gaps.md`.
 
 ## Next
 
-- **P11 cont. — provider data-feed extension** (prerequisite for the rest): fundamentals + news
-  feeds. Then fundamental + sentiment scoring + relative strength + signal-diversity selection.
-  Then PM (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor +
-  expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed scope, not
-  optional.**
+- **P11 cont. — analyst fundamental scoring** (next): port `score_fundamental` as a new pillar over
+  `MarketData.fundamentals` (now served by S34). Then news + sentiment (FinBERT) + the provider
+  news feed, relative strength (analyst-side; only needs benchmark OHLCV), signal-diversity
+  selection. Then PM (reward/risk + sector caps), scanner (beta + earnings), reporter
+  (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
+  **Committed scope, not optional.**
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -42,6 +41,19 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 34 — Provider: fundamentals feed** (P11 cont.). The provider now populates the
+  previously-always-empty `MarketData.fundamentals`. New `agents/provider/fundamentals.py`
+  (`FinnhubDataSource` — stdlib urllib+json against `/stock/metric?metric=all`; pure `_parse_metrics`
+  extracts the 11-key union the analyst reads, coerces float, drops None/bool/non-numeric/missing;
+  `_download` pragma-no-cover; fundamentals-only, ohlcv→()) + `agents/provider/composite.py`
+  (`CompositeDataSource` routes price/regime → Stooq, fundamentals → Finnhub). `DataSource` port
+  gained `fetch_fundamentals`; `FakeDataSource` (fixture + `fail_fundamentals`) / `StooqDataSource`
+  (→{}) implement it. `_get_market_data` field-gated on `"fundamentals" in fields`, fetched in a
+  separate fault boundary; on fault → empty + `fundamentals_degraded` note + `used_fallback`, OHLCV
+  path unaffected. **No contract change** (CONTRACT 0.1.0, owns_graph/external_io untouched), **no
+  new dependency**. Existing OHLCV-only callers see `fundamentals == {}` → no re-pin. Line counts:
+  fundamentals 96, composite 44, sources 171, agent 138, settings 95 — all < 200. 527 tests, floor
+  100.00. Next: analyst fundamental scoring consuming this feed.
 - **Sprint 33 — Analyst: patterns, smoothing & calendar** (P11 cont.). Three pure-Python signals
   closing the deterministic technical engine: `domain/indicators_kernel.py` (Nadaraya-Watson
   Gaussian deviation; always-emit Monday `turnaround_signal` — `None` only below 3 bars) +

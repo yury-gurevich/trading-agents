@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-14 — Sprint 30 shipped; **P11 active** (analyst technical core done).
-Five pure-Python indicators (RSI/MACD/Bollinger/SMA/EMA) on 0–100 band rules → composite
-`technical_score`, per-indicator graceful degradation; `lookback_days` 7 → 260; placeholder
-heuristic removed; no contract change. 427 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-14 — Sprint 31 shipped; **P11 active** (analyst technical engine now 9
+indicators). Added ATR/Stochastic/Williams %R/Choppiness (range-based) to the composite
+`technical_score`; `score_technical` now takes sorted bars; no contract change. 461 tests at
+100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,11 +12,9 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 31 (handed off).** Analyst oscillators + volatility: four range-based
-indicators (ATR, Stochastic, Williams %R, Choppiness) on 0–100 bands, folded into the same
-composite `technical_score`. Needs only high/low/close (no provider change). New `indicators_range.py`
-+ `technical_rules_range.py`; `score_technical` switches from closes to sorted bars. No contract
-change. See `docs/sprints/sprint-31-p11-analyst-oscillators.md`.
+**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31)
+shipped — nine indicators in the composite. No active sprint branch; next P11 slice (analyst
+volume/event + patterns) is queued, not started.
 
 ## Next
 
@@ -45,6 +43,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 31 — Analyst: oscillators + volatility** (P11 cont.). Four pure-Python range-based
+  indicators in `domain/indicators_range.py` (ATR, Stochastic %K/%D, Williams %R, Choppiness
+  Index — each `None` on short/degenerate history, never raises) + `domain/technical_rules_range.py`
+  (0–100 bands; ATR%, Stochastic 5-branch, Williams, Choppiness 38.2/61.8). `score_technical` now
+  takes sorted bars (derives closes/highs/lows once) and concatenates range sub-scores with the
+  momentum group → up to 9 indicators averaged. No contract change. Re-pinned composites: 220-bar
+  → 9 available, 40-bar → 7. `settings.py` at 157L (sanctioned warn band). Downstream pipeline
+  fixtures still neutral-degrade unchanged. 461 tests, floor 100.00.
 - **Sprint 30 — Analyst: technical scoring core** (P11 begins). Pure-Python (no pandas)
   indicator engine: `domain/indicators.py` (RSI, MACD, Bollinger position, SMA-distance, EMA
   crossover — each returns `None` on short history, never raises), `domain/technical_rules.py`

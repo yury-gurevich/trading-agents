@@ -87,12 +87,13 @@ def test_full_p3_slice_produces_order_intent_with_complete_lineage() -> None:
 
 
 def _pipeline_bars() -> tuple[OHLCVBar, ...]:
+    # Two bars per ticker: below every indicator window (RSI-2 needs three closes), so
+    # the analyst degrades to neutral -> confidence 0.60, clearing the regime floor;
+    # AAPL's wider rise keeps it the top scanner candidate by relative strength.
     return (
-        bar("AAPL", 6, 100.0),
-        bar("AAPL", 4, 104.0),
-        bar("AAPL", 2, 108.0),
+        bar("AAPL", 4, 100.0),
         bar("AAPL", 0, 116.0),
-        bar("MSFT", 6, 100.0),
+        bar("MSFT", 4, 100.0),
         bar("MSFT", 0, 110.0),
     )
 

@@ -39,16 +39,16 @@ def bar(ticker: str, days_ago: int, close: float, volume: int = 1_000_000) -> OH
 
 
 def bars() -> tuple[OHLCVBar, ...]:
+    # Two bars per ticker: below every indicator window (RSI-2 needs three closes), so
+    # the analyst composite fully degrades to neutral -> confidence 0.60, which clears
+    # the strict-``<`` regime floor and yields a clean happy-path AAPL recommendation.
+    # AAPL's wider rise keeps it the top scanner candidate by relative strength.
     return (
-        bar("AAPL", 6, 100.0),
-        bar("AAPL", 4, 104.0),
-        bar("AAPL", 2, 108.0),
+        bar("AAPL", 4, 100.0),
         bar("AAPL", 0, 116.0),
-        bar("LOW", 6, 100.0),
-        bar("LOW", 4, 100.5),
-        bar("LOW", 2, 100.8),
+        bar("LOW", 4, 100.0),
         bar("LOW", 0, 101.0),
-        bar("MSFT", 6, 100.0),
+        bar("MSFT", 4, 100.0),
         bar("MSFT", 0, 110.0),
     )
 

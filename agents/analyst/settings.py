@@ -134,6 +134,27 @@ class AnalystSettings(AgentSettings):
         le=100,
         unit="bars",
     )
+    obv_signal_period: int = tunable(
+        20,
+        why="Smoothing window for the OBV signal line the rule compares against.",
+        ge=2,
+        le=100,
+        unit="bars",
+    )
+    golden_cross_short_period: int = tunable(
+        50,
+        why="Fast SMA leg of the 50/200 golden cross; the long leg reuses sma_long.",
+        ge=2,
+        le=200,
+        unit="bars",
+    )
+    rsi2_period: int = tunable(
+        2,
+        why="Connors' short RSI lookback for the mean-reversion oversold signal.",
+        ge=2,
+        le=10,
+        unit="bars",
+    )
     confidence_floor: float = tunable(
         0.30,
         why="Keep weak but valid technical evidence below the provider regime gate.",

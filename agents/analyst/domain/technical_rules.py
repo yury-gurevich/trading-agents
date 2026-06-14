@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.analyst.domain import indicators
+from agents.analyst.domain.technical_rules_event import event_indicator_scores
 from agents.analyst.domain.technical_rules_range import range_indicator_scores
 
 if TYPE_CHECKING:
@@ -91,16 +92,19 @@ def score_technical(
     """Average the available indicator sub-scores; neutral 50 when none compute.
 
     ``bars`` must be sorted ascending by ``bar_date`` (the caller guarantees this).
-    Momentum/trend sub-scores (over closes) and range sub-scores (over high/low/
-    close) are pooled before averaging.
+    Momentum/trend sub-scores (over closes), range sub-scores (over high/low/close),
+    and volume/event sub-scores (over close + volume) are pooled before averaging.
     """
     closes = [bar.close for bar in bars]
     highs = [bar.high for bar in bars]
     lows = [bar.low for bar in bars]
+    volumes = [float(bar.volume) for bar in bars]
     metrics: dict[str, float] = {}
     sub_scores: list[float] = []
-    triples = _momentum_scores(closes, settings) + range_indicator_scores(
-        highs, lows, closes, settings
+    triples = (
+        _momentum_scores(closes, settings)
+        + range_indicator_scores(highs, lows, closes, settings)
+        + event_indicator_scores(closes, volumes, settings)
     )
     for name, value, score in triples:
         metrics[name], metrics[f"{name}_score"] = value, score

@@ -80,13 +80,16 @@ def bind_provider(
 
 
 def entry_bars() -> tuple[OHLCVBar, ...]:
-    """Return scan/analyze/PM bars that approve one AAPL order."""
+    """Return scan/analyze/PM bars that approve one AAPL order.
+
+    Two bars per ticker stays below every indicator window (RSI-2 needs three closes),
+    so the analyst composite degrades to neutral -> confidence 0.60, clearing the
+    strict-``<`` regime floor; AAPL's wider rise keeps it the top scanner candidate.
+    """
     return (
-        bar("AAPL", 6, 100.0),
-        bar("AAPL", 4, 104.0),
-        bar("AAPL", 2, 108.0),
+        bar("AAPL", 4, 100.0),
         bar("AAPL", 0, 116.0),
-        bar("MSFT", 6, 100.0),
+        bar("MSFT", 4, 100.0),
         bar("MSFT", 0, 110.0),
     )
 

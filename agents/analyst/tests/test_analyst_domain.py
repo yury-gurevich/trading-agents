@@ -33,19 +33,21 @@ def _regime(floor: float = 0.6) -> RegimeContext:
 
 
 def _rising_bars(count: int) -> tuple[OHLCVBar, ...]:
+    # A rising trend that dips every 5th bar with cycling volume, so the volume/event
+    # indicators (OBV in particular) see genuine up *and* down steps, not a monotone.
     base = date(2025, 1, 1)
     bars = []
     for offset in range(count):
-        close = 100.0 + offset
+        close = 100.0 + offset - (2.0 if (offset % 5 == 0 and offset > 0) else 0.0)
         bars.append(
             OHLCVBar(
                 ticker="AAPL",
                 bar_date=base + timedelta(days=offset),
-                open=close * 0.99,
-                high=close + 1.0,
-                low=close - 1.0,
+                open=close,
+                high=close + 2.0,
+                low=close - 2.0,
                 close=close,
-                volume=1_000_000,
+                volume=1_000_000 + (offset % 3) * 250_000,
             )
         )
     return tuple(bars)
@@ -65,17 +67,19 @@ def test_score_candidate_reports_insufficient_history() -> None:
 def test_sufficient_history_scores_from_technical_composite() -> None:
     score = score_candidate(candidate(), _rising_bars(40), AnalystSettings())
 
-    # 40 rising bars -> RSI 25, MACD 45, Bollinger 30 | ATR 70, Stochastic 20,
-    # Williams 25, Choppiness 75 available (SMA-200/EMA-50 not) -> sum 290 / 7.
-    # technical = (290/7)/100; confidence = 0.30 + technical * 0.60.
-    technical = (290.0 / 7.0) / 100.0
-    assert score.metrics["indicators_available"] == 7.0
+    # 40 dipping-ramp bars -> RSI 25, MACD 75, Bollinger 30 | ATR 55, Stochastic 20,
+    # Williams 25, Choppiness 50 | OBV 70, RSI-2 20 available (SMA-200, EMA-50 and the
+    # golden cross not) -> sum 370 / 9. technical = (370/9)/100; conf = 0.30 + t*0.60.
+    technical = (370.0 / 9.0) / 100.0
+    assert score.metrics["indicators_available"] == 9.0
     assert score.technical_score == pytest.approx(technical, abs=1e-9)
     assert score.confidence == pytest.approx(0.30 + technical * 0.60, abs=1e-9)
 
 
 def test_thin_history_is_neutral_technical_score() -> None:
-    score = score_candidate(candidate(), _rising_bars(5), AnalystSettings())
+    # Two bars is below every indicator window (RSI-2 alone needs three closes), so the
+    # composite fully degrades to neutral 0.5 -> confidence 0.60 (clears the floor).
+    score = score_candidate(candidate(), _rising_bars(2), AnalystSettings())
 
     assert score.metrics["indicators_available"] == 0.0
     assert score.technical_score == pytest.approx(0.5, abs=1e-9)

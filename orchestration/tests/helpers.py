@@ -72,11 +72,15 @@ def bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
 
 
 def entry_bars() -> tuple[OHLCVBar, ...]:
-    """Return scan/analyze/PM bars that approve one AAPL order."""
+    """Return scan/analyze/PM bars that approve one AAPL order.
+
+    AAPL gets two in-window bars (older bar inside the scanner's 5-day lookback): below
+    every indicator window (RSI-2 needs three closes), so the analyst degrades to
+    neutral -> confidence 0.60, clearing the strict-``<`` regime floor. MSFT's older bar
+    sits outside the scan window, so only AAPL survives as a candidate (one position).
+    """
     return (
-        bar("AAPL", 6, 100.0),
-        bar("AAPL", 4, 104.0),
-        bar("AAPL", 2, 108.0),
+        bar("AAPL", 4, 100.0),
         bar("AAPL", 0, 116.0),
         bar("MSFT", 6, 100.0),
         bar("MSFT", 0, 110.0),

@@ -12,12 +12,14 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31) +
-volume/event (S32) + patterns/smoothing/calendar (S33) shipped — **fifteen indicators** in the
-composite. No active sprint branch; the next P11 slice (a **provider data-feed extension**:
-fundamentals + news) is queued, not started. With the deterministic technical engine now complete,
-the remaining analyst work (fundamental + sentiment scoring, relative strength) is blocked on that
-provider feed.
+**P11 active — Sprint 34 handed off, not started.** Analyst technical core (S30) +
+oscillators/volatility (S31) + volume/event (S32) + patterns/smoothing/calendar (S33) shipped —
+**fifteen indicators** in the composite; the deterministic technical engine is complete.
+**Sprint 34** (`sprint-34-provider-fundamentals.md`) is written and ready for the coding agent: a
+provider **fundamentals feed** (Finnhub `/stock/metric` → the existing-but-empty
+`MarketData.fundamentals` field; new `FinnhubDataSource` + `CompositeDataSource`; no contract
+change, no new dependency). It unblocks the analyst fundamental-scoring sprint that follows. Scoped
+fundamentals-only — news/sentiment (FinBERT) and earnings calendar are separate later slices.
 
 ## Next
 

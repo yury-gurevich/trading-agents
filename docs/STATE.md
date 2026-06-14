@@ -12,17 +12,19 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31)
-shipped — nine indicators in the composite. No active sprint branch; next P11 slice (analyst
-volume/event + patterns) is queued, not started.
+**P11 active — Sprint 32 (handed off).** Analyst volume/event signals: OBV (vs signal line),
+golden cross (SMA-50/200), RSI-2 mean reversion — three indicators on 0–100 bands folded into the
+composite (engine 9 → 12). Close + volume only (no provider change). New `indicators_event.py` +
+`technical_rules_event.py`. No contract change. Patterns (Nadaraya-Watson + geometric) and the
+calendar signal deferred to the next slice. See `docs/sprints/sprint-32-p11-analyst-volume-event.md`.
 
 ## Next
 
-- **P11 cont. — analyst volume/event + patterns** (OBV, golden cross, Nadaraya-Watson kernel,
-  geometric patterns), then a **provider data-feed extension** (prerequisite), then fundamental +
-  sentiment scoring + relative strength + signal-diversity selection. Then PM (reward/risk +
-  sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy). Sequenced
-  spec: memory `v1-deterministic-port-gaps.md`.
+- **P11 cont. — analyst patterns** (Nadaraya-Watson kernel smoother, geometric chart patterns,
+  the calendar "turnaround" signal), then a **provider data-feed extension** (prerequisite), then
+  fundamental + sentiment scoring + relative strength + signal-diversity selection. Then PM
+  (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy).
+  Sequenced spec: memory `v1-deterministic-port-gaps.md`.
 - **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
   decision logic the vertical slice stubbed — analyst technical-indicator suite +
   fundamental + sentiment scoring + signal-diversity selection; portfolio-manager

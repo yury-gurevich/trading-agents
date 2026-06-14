@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-14 — Sprint 31 shipped; **P11 active** (analyst technical engine now 9
-indicators). Added ATR/Stochastic/Williams %R/Choppiness (range-based) to the composite
-`technical_score`; `score_technical` now takes sorted bars; no contract change. 461 tests at
-100.00% (floor 100.00).
+**Last updated:** 2026-06-14 — Sprint 32 shipped; **P11 active** (analyst technical engine now 12
+indicators). Added OBV / golden cross / RSI-2 (volume/event) to the composite `technical_score`;
+no contract change; pipeline fixtures reshaped (2-bar → full degradation) to keep wiring intent.
+479 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,11 +12,9 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 32 (handed off).** Analyst volume/event signals: OBV (vs signal line),
-golden cross (SMA-50/200), RSI-2 mean reversion — three indicators on 0–100 bands folded into the
-composite (engine 9 → 12). Close + volume only (no provider change). New `indicators_event.py` +
-`technical_rules_event.py`. No contract change. Patterns (Nadaraya-Watson + geometric) and the
-calendar signal deferred to the next slice. See `docs/sprints/sprint-32-p11-analyst-volume-event.md`.
+**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31) +
+volume/event (S32) shipped — twelve indicators in the composite. No active sprint branch; next P11
+slice (analyst patterns: Nadaraya-Watson kernel + geometric chart patterns) is queued, not started.
 
 ## Next
 
@@ -24,13 +22,7 @@ calendar signal deferred to the next slice. See `docs/sprints/sprint-32-p11-anal
   the calendar "turnaround" signal), then a **provider data-feed extension** (prerequisite), then
   fundamental + sentiment scoring + relative strength + signal-diversity selection. Then PM
   (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy).
-  Sequenced spec: memory `v1-deterministic-port-gaps.md`.
-- **P11 — Decision-logic depth** (extension of the original plan): deepen the deterministic
-  decision logic the vertical slice stubbed — analyst technical-indicator suite +
-  fundamental + sentiment scoring + signal-diversity selection; portfolio-manager
-  reward/risk and sector-concentration gates; scanner beta + earnings-exclusion filters;
-  reporter profit-factor + expectancy. See `docs/build-plan.md` P11. Sequenced spec held
-  by the planning agent. **Do not lose this — it is committed scope, not optional.**
+  Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.**
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -45,6 +37,16 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 32 — Analyst: volume + event signals** (P11 cont.). `domain/indicators_event.py`
+  (OBV vs its SMA signal line; golden cross SMA-50/200; each `None` on short history) +
+  `domain/technical_rules_event.py` (OBV 70/35, golden 75/25, RSI-2 80/20/50 — RSI-2 reuses
+  `indicators.rsi` at period 2). `score_technical` now also extracts `volumes` and concatenates
+  the event group → composite up to 12 indicators. No contract change. Re-pinned composites:
+  220-bar → 12 available, 40-bar → 9. **Spec-error caught by coding agent:** the ~4-bar pipeline
+  fixtures did NOT fully degrade (RSI-2 needs only 3 closes) → shared thin fixtures trimmed to
+  2 bars (full degradation → neutral 0.60, wiring intent preserved); changes confined to analyst
+  + test fixtures, no other production code. `settings.py` at 178L (warn band). 479 tests, floor
+  100.00.
 - **Sprint 31 — Analyst: oscillators + volatility** (P11 cont.). Four pure-Python range-based
   indicators in `domain/indicators_range.py` (ATR, Stochastic %K/%D, Williams %R, Choppiness
   Index — each `None` on short/degenerate history, never raises) + `domain/technical_rules_range.py`

@@ -10,9 +10,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.analyst.domain import indicators
+from agents.analyst.domain.technical_rules_range import range_indicator_scores
 
 if TYPE_CHECKING:
     from agents.analyst.settings import AnalystSettings
+    from contracts.provider import OHLCVBar
 
 # Fixed scoring rule from the sprint spec: band cut-points and the 0-100 sub-score
 # each band emits. These define the rule itself (not operator-tunable policy), so
@@ -84,12 +86,23 @@ def score_ema_crossover(spread_pct: float) -> float:
 
 
 def score_technical(
-    closes: list[float], settings: AnalystSettings
+    bars: list[OHLCVBar], settings: AnalystSettings
 ) -> tuple[float, dict[str, float]]:
-    """Average the available indicator sub-scores; neutral 50 when none compute."""
+    """Average the available indicator sub-scores; neutral 50 when none compute.
+
+    ``bars`` must be sorted ascending by ``bar_date`` (the caller guarantees this).
+    Momentum/trend sub-scores (over closes) and range sub-scores (over high/low/
+    close) are pooled before averaging.
+    """
+    closes = [bar.close for bar in bars]
+    highs = [bar.high for bar in bars]
+    lows = [bar.low for bar in bars]
     metrics: dict[str, float] = {}
     sub_scores: list[float] = []
-    for name, value, score in _indicator_scores(closes, settings):
+    triples = _momentum_scores(closes, settings) + range_indicator_scores(
+        highs, lows, closes, settings
+    )
+    for name, value, score in triples:
         metrics[name], metrics[f"{name}_score"] = value, score
         sub_scores.append(score)
     if not sub_scores:
@@ -98,10 +111,10 @@ def score_technical(
     return sum(sub_scores) / len(sub_scores), metrics
 
 
-def _indicator_scores(
+def _momentum_scores(
     closes: list[float], settings: AnalystSettings
 ) -> list[tuple[str, float, float]]:
-    """Compute and score every indicator with enough history; skip the rest."""
+    """Compute and score every momentum/trend indicator with enough history."""
     rsi = indicators.rsi(closes, settings.rsi_period)
     bb = indicators.bollinger_position(
         closes, settings.bollinger_window, settings.bollinger_sigma

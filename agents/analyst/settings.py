@@ -99,6 +99,41 @@ class AnalystSettings(AgentSettings):
         le=400,
         unit="bars",
     )
+    atr_period: int = tunable(
+        14,
+        why="Wilder's canonical Average True Range lookback (volatility).",
+        ge=2,
+        le=100,
+        unit="bars",
+    )
+    stoch_k_period: int = tunable(
+        14,
+        why="Standard stochastic %K lookback window.",
+        ge=2,
+        le=100,
+        unit="bars",
+    )
+    stoch_d_period: int = tunable(
+        3,
+        why="Standard stochastic %D smoothing over the %K series.",
+        ge=1,
+        le=20,
+        unit="bars",
+    )
+    williams_period: int = tunable(
+        14,
+        why="Standard Williams %R lookback window.",
+        ge=2,
+        le=100,
+        unit="bars",
+    )
+    choppiness_period: int = tunable(
+        14,
+        why="Standard Choppiness Index lookback window.",
+        ge=2,
+        le=100,
+        unit="bars",
+    )
     confidence_floor: float = tunable(
         0.30,
         why="Keep weak but valid technical evidence below the provider regime gate.",

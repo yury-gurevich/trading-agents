@@ -65,11 +65,13 @@ def test_score_candidate_reports_insufficient_history() -> None:
 def test_sufficient_history_scores_from_technical_composite() -> None:
     score = score_candidate(candidate(), _rising_bars(40), AnalystSettings())
 
-    # 40 rising bars -> RSI 25, MACD 45, Bollinger 30 available -> mean 100/3;
-    # technical = (100/3)/100; confidence = 0.30 + technical * 0.60 = 0.50.
-    assert score.metrics["indicators_available"] == 3.0
-    assert score.technical_score == pytest.approx(1 / 3, abs=1e-9)
-    assert score.confidence == pytest.approx(0.5, abs=1e-9)
+    # 40 rising bars -> RSI 25, MACD 45, Bollinger 30 | ATR 70, Stochastic 20,
+    # Williams 25, Choppiness 75 available (SMA-200/EMA-50 not) -> sum 290 / 7.
+    # technical = (290/7)/100; confidence = 0.30 + technical * 0.60.
+    technical = (290.0 / 7.0) / 100.0
+    assert score.metrics["indicators_available"] == 7.0
+    assert score.technical_score == pytest.approx(technical, abs=1e-9)
+    assert score.confidence == pytest.approx(0.30 + technical * 0.60, abs=1e-9)
 
 
 def test_thin_history_is_neutral_technical_score() -> None:

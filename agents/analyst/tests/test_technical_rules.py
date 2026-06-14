@@ -7,14 +7,33 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pytest
 
 from agents.analyst.domain import technical_rules as rules
 from agents.analyst.settings import AnalystSettings
+from contracts.provider import OHLCVBar
 
 
-def _ramp(length: int) -> list[float]:
-    return [100.0 + i for i in range(length)]
+def _ramp_bars(length: int) -> list[OHLCVBar]:
+    """Strictly rising bars with a constant +/-1 high/low spread (TR == 2)."""
+    base = date(2025, 1, 1)
+    rows = []
+    for i in range(length):
+        close = 100.0 + i
+        rows.append(
+            OHLCVBar(
+                ticker="AAPL",
+                bar_date=base + timedelta(days=i),
+                open=close * 0.99,
+                high=close + 1.0,
+                low=close - 1.0,
+                close=close,
+                volume=1_000_000,
+            )
+        )
+    return rows
 
 
 @pytest.mark.parametrize(
@@ -57,22 +76,24 @@ def test_score_ema_crossover_bands(value: float, expected: float) -> None:
     assert rules.score_ema_crossover(value) == expected
 
 
-def test_score_technical_all_five_available_matches_mean() -> None:
-    raw, metrics = rules.score_technical(_ramp(220), AnalystSettings())
-    # rising ramp -> RSI 25, MACD 45, Bollinger 30, SMA 75, EMA 75 -> mean 50.0
-    assert metrics["indicators_available"] == 5.0
-    assert raw == pytest.approx(50.0, abs=1e-9)
+def test_score_technical_all_nine_available_matches_mean() -> None:
+    raw, metrics = rules.score_technical(_ramp_bars(220), AnalystSettings())
+    # rising ramp, 5 momentum + 4 range -> RSI 25, MACD 45, Bollinger 30, SMA 75,
+    # EMA 75 | ATR 70, Stochastic 20, Williams 25, Choppiness 75 -> sum 440 / 9.
+    assert metrics["indicators_available"] == 9.0
+    assert raw == pytest.approx(440.0 / 9.0, abs=1e-9)
 
 
 def test_score_technical_partial_history_averages_available_only() -> None:
-    raw, metrics = rules.score_technical(_ramp(40), AnalystSettings())
-    # 40 bars -> RSI(15) + MACD(35) + Bollinger(20); SMA/EMA unavailable
-    assert metrics["indicators_available"] == 3.0
-    assert raw == pytest.approx((25.0 + 45.0 + 30.0) / 3, abs=1e-9)
+    raw, metrics = rules.score_technical(_ramp_bars(40), AnalystSettings())
+    # 40 bars -> RSI 25, MACD 45, Bollinger 30 | ATR 70, Stochastic 20, Williams 25,
+    # Choppiness 75 available; SMA-200 and EMA-50 unavailable -> sum 290 / 7.
+    assert metrics["indicators_available"] == 7.0
+    assert raw == pytest.approx(290.0 / 7.0, abs=1e-9)
 
 
 def test_score_technical_neutral_when_no_indicator_available() -> None:
-    assert rules.score_technical(_ramp(3), AnalystSettings()) == (
+    assert rules.score_technical(_ramp_bars(3), AnalystSettings()) == (
         50.0,
         {"indicators_available": 0.0},
     )

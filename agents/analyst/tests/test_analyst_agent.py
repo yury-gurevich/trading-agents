@@ -45,8 +45,9 @@ def test_analyze_returns_recommendation_with_rationale_and_provenance() -> None:
 
 
 def test_low_confidence_candidate_becomes_rejection() -> None:
-    # A sustained climb reads as overbought: the technical composite (0.4375) maps
-    # to confidence 0.5625, below the 0.60 regime floor -> a deterministic rejection.
+    # A sustained, wide-ranging climb reads as overbought and choppy: the technical
+    # composite (0.35625, 8 indicators) maps to confidence 0.51375, below the 0.60
+    # regime floor -> a deterministic rejection driven by the indicators.
     scan = candidate_set(candidate("LOW", score=0.01))
     bus, _graph, sink = wire_analyst(source_bars=overbought_bars("LOW"))
 
@@ -56,7 +57,7 @@ def test_low_confidence_candidate_becomes_rejection() -> None:
     assert response.payload["recommendations"] == []
     assert response.payload["rejections"][0]["ticker"] == "LOW"
     assert "below regime floor" in response.payload["rejections"][0]["reason"]
-    assert "0.562" in response.payload["rejections"][0]["reason"]
+    assert "0.514" in response.payload["rejections"][0]["reason"]
     assert "No candidates cleared" in response.payload["explanation"]["summary"]
     assert sink.faults == []
 

@@ -44,8 +44,7 @@ def score_candidate(
             rejection_reason="insufficient_market_history",
         )
 
-    closes = [bar.close for bar in rows]
-    raw, tmetrics = score_technical(closes, settings)
+    raw, tmetrics = score_technical(rows, settings)
     technical = _bounded(raw / 100.0)
     confidence = _bounded(
         settings.confidence_floor + technical * settings.confidence_span

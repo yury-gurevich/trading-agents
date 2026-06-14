@@ -13,11 +13,14 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical engine complete (15 indicators, S30–S33) and
-the provider now serves fundamentals (S34). No active sprint branch; the next slice is the
-**analyst fundamental-scoring** port — add `score_fundamental` (8 metrics, threshold bands,
-`data_incomplete` handling) as a new analyst pillar consuming `MarketData.fundamentals`. Spec
-source: memory `v1-deterministic-port-gaps.md`.
+**P11 active — Sprint 35 handed off, not started.** Analyst technical engine complete (15
+indicators, S30–S33); provider serves fundamentals (S34). **Sprint 35**
+(`sprint-35-analyst-fundamental-scoring.md`) is written and ready for the coding agent: port
+`score_fundamental` (8-metric band table) as a second analyst pillar over `MarketData.fundamentals`,
+blended with the technical score (weights 0.50/0.30, renormalised) into the confidence gate. No
+contract change (`Recommendation.fundamental_score` already exists). **Decision flagged:** absent
+fundamentals are *skipped* (composite == technical → no existing-test re-pin), a deliberate
+deviation from v1's blend-neutral-50; veto in the doc if strict parity is wanted.
 
 ## Next
 

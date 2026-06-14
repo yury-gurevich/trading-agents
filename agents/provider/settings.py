@@ -82,5 +82,14 @@ class ProviderSettings(AgentSettings):
         le=150.0,
     )
 
+    finnhub_timeout: int = tunable(
+        10,
+        why="Bound the Finnhub fundamentals HTTPS call so a slow feed cannot hang.",
+        ge=1,
+        le=60,
+        unit="seconds",
+    )
+
+    finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
     finnhub_api_key: str = Field(default="", repr=False)
     fred_api_key: str = Field(default="", repr=False)

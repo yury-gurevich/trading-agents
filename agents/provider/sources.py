@@ -43,6 +43,12 @@ class DataSource(Protocol):
         """Fetch raw inputs used to classify the market regime."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def fetch_fundamentals(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, dict[str, float]]:
+        """Fetch per-ticker fundamental metrics; empty dict per ticker on no data."""
+        ...  # pragma: no cover - protocol declaration only.
+
 
 class FakeDataSource:
     """Deterministic source used by the unit gate."""
@@ -52,14 +58,18 @@ class FakeDataSource:
         *,
         bars: tuple[OHLCVBar, ...] = (),
         vix: float | None = None,
+        fundamentals: dict[str, dict[str, float]] | None = None,
         fail_ohlcv: bool = False,
         fail_regime: bool = False,
+        fail_fundamentals: bool = False,
     ) -> None:
         """Create a deterministic fixture source."""
         self._bars = bars
         self._vix = vix
+        self._fundamentals = fundamentals or {}
         self._fail_ohlcv = fail_ohlcv
         self._fail_regime = fail_regime
+        self._fail_fundamentals = fail_fundamentals
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -80,6 +90,20 @@ class FakeDataSource:
             raise RuntimeError("regime source unavailable")
         return RegimeInputs(as_of=as_of, vix=self._vix)
 
+    def fetch_fundamentals(
+        self,
+        tickers: tuple[str, ...],
+        window: Window,  # noqa: ARG002 - port signature; metrics are point-in-time.
+    ) -> dict[str, dict[str, float]]:
+        """Return the fixture metric subset for requested tickers, or raise."""
+        if self._fail_fundamentals:
+            raise RuntimeError("fundamentals source unavailable")
+        return {
+            ticker: self._fundamentals[ticker]
+            for ticker in tickers
+            if ticker in self._fundamentals
+        }
+
 
 class StooqDataSource:
     """Keyless Stooq CSV source for daily OHLCV bars."""
@@ -98,6 +122,14 @@ class StooqDataSource:
     def fetch_regime_inputs(self, as_of: date) -> RegimeInputs:
         """Return empty regime inputs; keyed macro/VIX sources land later."""
         return RegimeInputs(as_of=as_of, vix=None)
+
+    def fetch_fundamentals(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; Stooq has none.
+        window: Window,  # noqa: ARG002 - port signature; Stooq has none.
+    ) -> dict[str, dict[str, float]]:
+        """Return no fundamentals; Stooq serves OHLCV only."""
+        return {}
 
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(

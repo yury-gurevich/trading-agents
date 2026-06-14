@@ -55,6 +55,12 @@ class ReboundingDataSource:
         """Return deterministic regime inputs."""
         return RegimeInputs(as_of=as_of, vix=self.vix)
 
+    def fetch_fundamentals(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, dict[str, float]]:
+        """Return no fundamentals; this fixture exercises the OHLCV path only."""
+        return {}
+
 
 def bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
     """Build one deterministic OHLCV bar."""

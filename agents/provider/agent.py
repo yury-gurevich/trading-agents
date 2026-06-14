@@ -72,6 +72,26 @@ class ProviderAgent(AgentBase):
             )
         else:
             quality = degraded_quality(data_request.tickers, note="source_unavailable")
+        fundamentals: dict[str, dict[str, float]] = {}
+        if "fundamentals" in data_request.fields:
+            with fault_boundary(
+                self.sink,
+                agent="provider",
+                module="agents.provider.agent",
+                capability="get_market_data",
+                reraise=False,
+            ) as fcapture:
+                fundamentals = self._source.fetch_fundamentals(
+                    data_request.tickers, data_request.window
+                )
+            if fcapture.fault is not None:
+                fundamentals = {}
+                quality = quality.model_copy(
+                    update={
+                        "notes": (*quality.notes, "fundamentals_degraded"),
+                        "used_fallback": True,
+                    }
+                )
         provenance = write_market_snapshot(
             self._graph,
             tickers=data_request.tickers,
@@ -80,6 +100,7 @@ class ProviderAgent(AgentBase):
         )
         return MarketData(
             bars=bars,
+            fundamentals=fundamentals,
             quality=quality,
             provenance=provenance,
         )

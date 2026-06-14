@@ -81,22 +81,25 @@ def test_score_ema_crossover_bands(value: float, expected: float) -> None:
     assert rules.score_ema_crossover(value) == expected
 
 
-def test_score_technical_all_twelve_available_matches_mean() -> None:
+def test_score_technical_all_fourteen_available_matches_mean() -> None:
     raw, metrics = rules.score_technical(_ramp_bars(220), AnalystSettings())
-    # 220 dipping-ramp bars -> 5 momentum + 4 range + 3 event all available:
-    # RSI 25, MACD 75, Bollinger 30, SMA 75, EMA 75 | ATR 70, Stochastic 20,
-    # Williams 25, Choppiness 50 | OBV 70, golden cross 75, RSI-2 20 -> sum 610 / 12.
-    assert metrics["indicators_available"] == 12.0
-    assert raw == pytest.approx(610.0 / 12.0, abs=1e-9)
+    # 220 dipping-ramp bars -> 5 momentum + 4 range + 3 event + 2 pattern available
+    # (the smooth ramp forms no geometric pattern, so only NW + turnaround of the
+    # pattern group emit): RSI 25, MACD 75, Bollinger 30, SMA 75, EMA 75 | ATR 70,
+    # Stochastic 20, Williams 25, Choppiness 50 | OBV 70, golden cross 75, RSI-2 20 |
+    # NW +2.05% -> 30, turnaround (last bar Fri, not Mon) -> 50. Prior 610 + 80 = 690.
+    assert metrics["indicators_available"] == 14.0
+    assert raw == pytest.approx(690.0 / 14.0, abs=1e-9)
 
 
 def test_score_technical_partial_history_averages_available_only() -> None:
     raw, metrics = rules.score_technical(_ramp_bars(40), AnalystSettings())
     # 40 bars -> RSI 25, MACD 75, Bollinger 30 | ATR 55, Stochastic 20, Williams 25,
-    # Choppiness 50 | OBV 70 (needs 21), RSI-2 20 (needs 3) available; SMA-200, EMA-50
-    # and the golden cross (needs 200) unavailable -> sum 370 / 9.
-    assert metrics["indicators_available"] == 9.0
-    assert raw == pytest.approx(370.0 / 9.0, abs=1e-9)
+    # Choppiness 50 | OBV 70 (needs 21), RSI-2 20 (needs 3) | NW +4.82% -> 30 (needs
+    # 10), turnaround (last bar Sun) -> 50 (needs 3); SMA-200, EMA-50, golden cross
+    # (needs 200) and any geometric pattern unavailable -> prior 370 + 80 = 450 / 11.
+    assert metrics["indicators_available"] == 11.0
+    assert raw == pytest.approx(450.0 / 11.0, abs=1e-9)
 
 
 def test_score_technical_neutral_when_no_indicator_available() -> None:

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from agents.analyst.domain import indicators
 from agents.analyst.domain.technical_rules_event import event_indicator_scores
+from agents.analyst.domain.technical_rules_pattern import pattern_indicator_scores
 from agents.analyst.domain.technical_rules_range import range_indicator_scores
 
 if TYPE_CHECKING:
@@ -99,12 +100,14 @@ def score_technical(
     highs = [bar.high for bar in bars]
     lows = [bar.low for bar in bars]
     volumes = [float(bar.volume) for bar in bars]
+    dates = [bar.bar_date for bar in bars]
     metrics: dict[str, float] = {}
     sub_scores: list[float] = []
     triples = (
         _momentum_scores(closes, settings)
         + range_indicator_scores(highs, lows, closes, settings)
         + event_indicator_scores(closes, volumes, settings)
+        + pattern_indicator_scores(closes, highs, lows, dates, settings)
     )
     for name, value, score in triples:
         metrics[name], metrics[f"{name}_score"] = value, score

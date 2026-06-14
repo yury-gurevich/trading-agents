@@ -68,10 +68,11 @@ def test_sufficient_history_scores_from_technical_composite() -> None:
     score = score_candidate(candidate(), _rising_bars(40), AnalystSettings())
 
     # 40 dipping-ramp bars -> RSI 25, MACD 75, Bollinger 30 | ATR 55, Stochastic 20,
-    # Williams 25, Choppiness 50 | OBV 70, RSI-2 20 available (SMA-200, EMA-50 and the
-    # golden cross not) -> sum 370 / 9. technical = (370/9)/100; conf = 0.30 + t*0.60.
-    technical = (370.0 / 9.0) / 100.0
-    assert score.metrics["indicators_available"] == 9.0
+    # Williams 25, Choppiness 50 | OBV 70, RSI-2 20 | NW +4.82% -> 30, turnaround (last
+    # bar Sun) -> 50 available (SMA-200, EMA-50, golden cross and any pattern not) ->
+    # sum 450 / 11. technical = (450/11)/100; conf = 0.30 + t*0.60.
+    technical = (450.0 / 11.0) / 100.0
+    assert score.metrics["indicators_available"] == 11.0
     assert score.technical_score == pytest.approx(technical, abs=1e-9)
     assert score.confidence == pytest.approx(0.30 + technical * 0.60, abs=1e-9)
 

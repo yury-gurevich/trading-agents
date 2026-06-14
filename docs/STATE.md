@@ -1,10 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-14 — Sprint 32 shipped; **P11 active** (analyst technical engine now 12
-indicators). Added OBV / golden cross / RSI-2 (volume/event) to the composite `technical_score`;
-no contract change; pipeline fixtures reshaped (2-bar → full degradation) to keep wiring intent.
-479 tests at 100.00% (floor 100.00). **Sprint 33 handed off** (analyst patterns/smoothing/calendar
-— NW kernel + geometric patterns + turnaround → 15 indicators; includes a settings split).
+**Last updated:** 2026-06-14 — Sprint 33 shipped; **P11 active** (analyst technical engine now 15
+indicators). Added the Nadaraya-Watson kernel deviation, geometric chart patterns, and the
+always-emit Monday turnaround to the composite `technical_score`; no contract/scoring change; the
+analyst settings split into a `_IndicatorSettings` base. 516 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -13,13 +12,12 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 33 handed off, not started.** Analyst technical core (S30) +
-oscillators/volatility (S31) + volume/event (S32) shipped — twelve indicators in the composite.
-**Sprint 33** (`sprint-33-p11-analyst-patterns.md`) is written and ready for the coding agent:
-Nadaraya-Watson kernel + geometric chart patterns + the calendar turnaround signal → composite up
-to 15 indicators, plus a required analyst settings split (file at the 200-line cap). Calendar
-signal decided: **always-emit** (reference parity — turnaround contributes on every day at ≥3 bars,
-neutral 50 off-signal), which widens the test re-pin across all ≥3-bar fixtures.
+**P11 active — between sprints.** Analyst technical core (S30) + oscillators/volatility (S31) +
+volume/event (S32) + patterns/smoothing/calendar (S33) shipped — **fifteen indicators** in the
+composite. No active sprint branch; the next P11 slice (a **provider data-feed extension**:
+fundamentals + news) is queued, not started. With the deterministic technical engine now complete,
+the remaining analyst work (fundamental + sentiment scoring, relative strength) is blocked on that
+provider feed.
 
 ## Next
 
@@ -27,7 +25,7 @@ neutral 50 off-signal), which widens the test re-pin across all ≥3-bar fixture
   feeds. Then fundamental + sentiment scoring + relative strength + signal-diversity selection.
   Then PM (reward/risk + sector caps), scanner (beta + earnings), reporter (profit-factor +
   expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed scope, not
-  optional.** (Analyst patterns slice → Sprint 33, handed off; see *Now*.)
+  optional.**
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -42,6 +40,19 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 33 — Analyst: patterns, smoothing & calendar** (P11 cont.). Three pure-Python signals
+  closing the deterministic technical engine: `domain/indicators_kernel.py` (Nadaraya-Watson
+  Gaussian deviation; always-emit Monday `turnaround_signal` — `None` only below 3 bars) +
+  `domain/indicators_pattern.py` (swing points → double top/bottom, (inverse) head-and-shoulders,
+  ascending/descending triangles) + `domain/technical_rules_pattern.py` (NW ±1.0 → 70/30/50;
+  pattern 50 ± conf·30; turnaround 75/50). `score_technical` now also extracts `dates` and
+  concatenates the pattern group → composite up to **15** indicators. **No contract/scoring
+  change.** `settings.py` (was at the 200L cap) split: indicator periods + the 4 new pattern
+  tunables moved to a `_IndicatorSettings(AgentSettings)` base in `settings_indicators.py` (159L);
+  `AnalystSettings` inherits it (no caller change). Re-pinned composites: 220-bar → 14 available
+  (12 + NW + turnaround; no pattern on the smooth fixture), 40-bar → 11; turnaround a deterministic
+  50 in every existing fixture (none ends on a Monday-below-Friday). Final line counts: kernel 54,
+  pattern 129, rules_pattern 78, technical_rules 147 — all < 200. 516 tests, floor 100.00.
 - **Sprint 32 — Analyst: volume + event signals** (P11 cont.). `domain/indicators_event.py`
   (OBV vs its SMA signal line; golden cross SMA-50/200; each `None` on short history) +
   `domain/technical_rules_event.py` (OBV 70/35, golden 75/25, RSI-2 80/20/50 — RSI-2 reuses
@@ -50,7 +61,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   220-bar → 12 available, 40-bar → 9. **Spec-error caught by coding agent:** the ~4-bar pipeline
   fixtures did NOT fully degrade (RSI-2 needs only 3 closes) → shared thin fixtures trimmed to
   2 bars (full degradation → neutral 0.60, wiring intent preserved); changes confined to analyst
-  + test fixtures, no other production code. `settings.py` at 178L (warn band). 479 tests, floor
+  and test fixtures, no other production code. `settings.py` at 178L (warn band). 479 tests, floor
   100.00.
 - **Sprint 31 — Analyst: oscillators + volatility** (P11 cont.). Four pure-Python range-based
   indicators in `domain/indicators_range.py` (ATR, Stochastic %K/%D, Williams %R, Choppiness

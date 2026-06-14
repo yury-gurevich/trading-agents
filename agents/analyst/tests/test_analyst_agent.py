@@ -44,6 +44,23 @@ def test_analyze_returns_recommendation_with_rationale_and_provenance() -> None:
     assert sink.faults == []
 
 
+def test_recommendation_carries_fundamental_score_when_present() -> None:
+    scan = candidate_set(candidate())
+    bus, _graph, sink = wire_analyst(
+        source_bars=bars(),
+        fundamentals={"AAPL": {"peTTM": 8.0, "roeTTM": 20.0}},
+    )
+
+    response = bus.request(analyze_message(scan))
+
+    rec = response.payload["recommendations"][0]
+    assert rec["ticker"] == "AAPL"
+    # peTTM 8 -> 80, roeTTM 20 -> 80; mean 80 -> fundamental 0.80.
+    assert rec["fundamental_score"] == 0.80
+    assert "fundamental score of" in rec["rationale"]["summary"]
+    assert sink.faults == []
+
+
 def test_low_confidence_candidate_becomes_rejection() -> None:
     # A sustained, wide-ranging climb reads as overbought and choppy: the technical
     # composite (0.379 over 12 indicators -- the 60-bar series clears OBV, RSI-2, NW

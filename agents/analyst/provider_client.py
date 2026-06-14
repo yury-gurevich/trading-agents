@@ -46,6 +46,7 @@ def request_market_data(
                         candidate.ticker for candidate in candidate_set.candidates
                     ),
                     window=window,
+                    fields=("ohlcv", "fundamentals"),
                 ).model_dump(mode="json"),
             )
         )

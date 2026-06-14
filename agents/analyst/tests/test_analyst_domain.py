@@ -54,7 +54,7 @@ def _rising_bars(count: int) -> tuple[OHLCVBar, ...]:
 
 
 def test_score_candidate_reports_insufficient_history() -> None:
-    score = score_candidate(candidate(), _rising_bars(1), AnalystSettings())
+    score = score_candidate(candidate(), _rising_bars(1), {}, AnalystSettings())
 
     decision = decide(candidate(), score, _regime())
 
@@ -65,7 +65,7 @@ def test_score_candidate_reports_insufficient_history() -> None:
 
 
 def test_sufficient_history_scores_from_technical_composite() -> None:
-    score = score_candidate(candidate(), _rising_bars(40), AnalystSettings())
+    score = score_candidate(candidate(), _rising_bars(40), {}, AnalystSettings())
 
     # 40 dipping-ramp bars -> RSI 25, MACD 75, Bollinger 30 | ATR 55, Stochastic 20,
     # Williams 25, Choppiness 50 | OBV 70, RSI-2 20 | NW +4.82% -> 30, turnaround (last
@@ -80,16 +80,45 @@ def test_sufficient_history_scores_from_technical_composite() -> None:
 def test_thin_history_is_neutral_technical_score() -> None:
     # Two bars is below every indicator window (RSI-2 alone needs three closes), so the
     # composite fully degrades to neutral 0.5 -> confidence 0.60 (clears the floor).
-    score = score_candidate(candidate(), _rising_bars(2), AnalystSettings())
+    score = score_candidate(candidate(), _rising_bars(2), {}, AnalystSettings())
 
     assert score.metrics["indicators_available"] == 0.0
     assert score.technical_score == pytest.approx(0.5, abs=1e-9)
     assert score.confidence == pytest.approx(0.6, abs=1e-9)
 
 
+def test_fundamentals_blend_into_confidence_and_recommendation() -> None:
+    # Same 40-bar technical (450/11/100). Two fundamentals: peTTM 8 -> <10 -> 80,
+    # roeTTM 20 -> >15 -> 80; mean 80 -> fundamental 0.80. composite renormalises over
+    # the 0.50/0.30 weights; confidence = floor + composite*span.
+    settings = AnalystSettings()
+    fundamentals = {"peTTM": 8.0, "roeTTM": 20.0}
+    technical = (450.0 / 11.0) / 100.0
+    fundamental = 0.80
+    composite = (
+        settings.technical_weight * technical
+        + settings.fundamental_weight * fundamental
+    ) / (settings.technical_weight + settings.fundamental_weight)
+    expected = settings.confidence_floor + composite * settings.confidence_span
+
+    score = score_candidate(candidate(), _rising_bars(40), fundamentals, settings)
+    decision = decide(candidate(), score, _regime(floor=0.3))
+
+    assert score.technical_score == pytest.approx(technical, abs=1e-9)
+    assert score.fundamental_score == pytest.approx(fundamental, abs=1e-9)
+    assert score.metrics["composite_score"] == pytest.approx(composite, abs=1e-9)
+    assert score.metrics["fundamentals_available"] == 2.0
+    assert score.confidence == pytest.approx(expected, abs=1e-9)
+    assert decision.recommendation is not None
+    rec = decision.recommendation
+    assert rec.fundamental_score == pytest.approx(fundamental, abs=1e-9)
+    assert "fundamental score of" in rec.rationale.summary
+    assert "analyst.fundamental_score" in rec.rationale.evidence_refs
+
+
 def test_zero_confidence_span_floors_confidence() -> None:
     settings = AnalystSettings(confidence_floor=0.0, confidence_span=0.0)
 
-    score = score_candidate(candidate(), _rising_bars(40), settings)
+    score = score_candidate(candidate(), _rising_bars(40), {}, settings)
 
     assert score.confidence == 0.0

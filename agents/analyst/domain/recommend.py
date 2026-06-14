@@ -49,26 +49,29 @@ def decide(
                 ),
             ),
         )
+    summary = (
+        f"{candidate.ticker} cleared the {regime.label} confidence "
+        "gate on its composite technical score (RSI, MACD, Bollinger, "
+        "SMA-200 distance, and EMA crossover)."
+    )
+    evidence_refs: tuple[str, ...] = (
+        "analyst.technical_score",
+        "provider.market_data",
+        "provider.regime",
+    )
+    if score.fundamental_score is not None:
+        summary += f" and a fundamental score of {score.fundamental_score:.3f}"
+        evidence_refs += ("analyst.fundamental_score",)
     return AnalysisDecision(
         recommendation=Recommendation(
             ticker=candidate.ticker,
             action="buy",
             confidence=score.confidence,
             technical_score=score.technical_score,
+            fundamental_score=score.fundamental_score,
             suggested_stop_pct=regime.base_stop_loss_pct,
             suggested_target_pct=regime.base_take_profit_pct,
-            rationale=Explanation(
-                summary=(
-                    f"{candidate.ticker} cleared the {regime.label} confidence "
-                    "gate on its composite technical score (RSI, MACD, Bollinger, "
-                    "SMA-200 distance, and EMA crossover)."
-                ),
-                evidence_refs=(
-                    "analyst.technical_score",
-                    "provider.market_data",
-                    "provider.regime",
-                ),
-            ),
+            rationale=Explanation(summary=summary, evidence_refs=evidence_refs),
         ),
         rejection=None,
     )

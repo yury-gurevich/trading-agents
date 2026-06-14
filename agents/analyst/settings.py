@@ -50,6 +50,21 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    technical_weight: float = tunable(
+        0.50,
+        why="Reference composite weight for the technical pillar.",
+        ge=0.0,
+        le=1.0,
+    )
+    fundamental_weight: float = tunable(
+        0.30,
+        why=(
+            "Reference composite weight for the fundamental pillar; renormalised "
+            "over present pillars."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
 
     @model_validator(mode="after")
     def _spans_are_ordered(self) -> Self:

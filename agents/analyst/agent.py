@@ -135,7 +135,10 @@ class AnalystAgent(AgentBase):
                 decide(
                     candidate,
                     score_candidate(
-                        candidate, bars.get(candidate.ticker, ()), self._settings
+                        candidate,
+                        bars.get(candidate.ticker, ()),
+                        market.fundamentals.get(candidate.ticker, {}),
+                        self._settings,
                     ),
                     regime,
                 )

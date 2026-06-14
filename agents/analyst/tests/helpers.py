@@ -124,6 +124,7 @@ def explain_message(payload: CandidateSet) -> AgentMessage:
 def wire_analyst(
     *,
     source_bars: tuple[OHLCVBar, ...] = (),
+    fundamentals: dict[str, dict[str, float]] | None = None,
     register_provider: bool = True,
     fail_ohlcv: bool = False,
     fail_regime: bool = False,
@@ -139,6 +140,7 @@ def wire_analyst(
             source=FakeDataSource(
                 bars=source_bars,
                 vix=12.0,
+                fundamentals=fundamentals,
                 fail_ohlcv=fail_ohlcv,
                 fail_regime=fail_regime,
             ),

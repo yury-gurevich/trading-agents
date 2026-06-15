@@ -93,3 +93,22 @@ class ProviderSettings(AgentSettings):
     finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
     finnhub_api_key: str = Field(default="", repr=False)
     fred_api_key: str = Field(default="", repr=False)
+    finnhub_news_lookback_days: int = tunable(
+        7,
+        why=(
+            "Trailing window of company news to fetch; recent headlines only,"
+            " not the full OHLCV lookback."
+        ),
+        ge=1,
+        le=90,
+        unit="days",
+    )
+    max_news_per_ticker: int = tunable(
+        20,
+        why=(
+            "Cap headlines per ticker so a noisy feed cannot dominate"
+            " the downstream sentiment pillar."
+        ),
+        ge=1,
+        le=100,
+    )

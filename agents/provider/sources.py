@@ -49,6 +49,12 @@ class DataSource(Protocol):
         """Fetch per-ticker fundamental metrics; empty dict per ticker on no data."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def fetch_news(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, tuple[str, ...]]:
+        """Fetch per-ticker recent headlines; skip tickers with no usable headline."""
+        ...  # pragma: no cover - protocol declaration only.
+
 
 class FakeDataSource:
     """Deterministic source used by the unit gate."""
@@ -59,17 +65,21 @@ class FakeDataSource:
         bars: tuple[OHLCVBar, ...] = (),
         vix: float | None = None,
         fundamentals: dict[str, dict[str, float]] | None = None,
+        news: dict[str, tuple[str, ...]] | None = None,
         fail_ohlcv: bool = False,
         fail_regime: bool = False,
         fail_fundamentals: bool = False,
+        fail_news: bool = False,
     ) -> None:
         """Create a deterministic fixture source."""
         self._bars = bars
         self._vix = vix
         self._fundamentals = fundamentals or {}
+        self._news = news or {}
         self._fail_ohlcv = fail_ohlcv
         self._fail_regime = fail_regime
         self._fail_fundamentals = fail_fundamentals
+        self._fail_news = fail_news
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -104,6 +114,18 @@ class FakeDataSource:
             if ticker in self._fundamentals
         }
 
+    def fetch_news(
+        self,
+        tickers: tuple[str, ...],
+        window: Window,  # noqa: ARG002 - port signature; fixture is window-independent.
+    ) -> dict[str, tuple[str, ...]]:
+        """Return the fixture headline subset for requested tickers, or raise."""
+        if self._fail_news:
+            raise RuntimeError("news source unavailable")
+        return {
+            ticker: self._news[ticker] for ticker in tickers if ticker in self._news
+        }
+
 
 class StooqDataSource:
     """Keyless Stooq CSV source for daily OHLCV bars."""
@@ -129,6 +151,14 @@ class StooqDataSource:
         window: Window,  # noqa: ARG002 - port signature; Stooq has none.
     ) -> dict[str, dict[str, float]]:
         """Return no fundamentals; Stooq serves OHLCV only."""
+        return {}
+
+    def fetch_news(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; Stooq has none.
+        window: Window,  # noqa: ARG002 - port signature; Stooq has none.
+    ) -> dict[str, tuple[str, ...]]:
+        """Return no news; Stooq serves OHLCV only."""
         return {}
 
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
@@ -166,6 +196,4 @@ def _parse_stooq_rows(ticker: str, raw_csv: str) -> tuple[OHLCVBar, ...]:
 
 
 def _has_ohlcv(row: Mapping[str, str]) -> bool:
-    return all(
-        row.get(name) for name in ("Date", "Open", "High", "Low", "Close", "Volume")
-    )
+    return all(row.get(n) for n in ("Date", "Open", "High", "Low", "Close", "Volume"))

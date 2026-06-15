@@ -42,3 +42,9 @@ class CompositeDataSource:
     ) -> dict[str, dict[str, float]]:
         """Delegate fundamentals fetches to the fundamentals source."""
         return self._fundamentals_source.fetch_fundamentals(tickers, window)
+
+    def fetch_news(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, tuple[str, ...]]:
+        """Delegate news fetches to the fundamentals (Finnhub) source."""
+        return self._fundamentals_source.fetch_news(tickers, window)

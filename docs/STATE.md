@@ -26,9 +26,11 @@ only through the P10 registry gate. **Sprint 36 — provider news feed** (headli
 Loughran–McDonald lexicon champion, a twin of S35's fundamental pillar, folded into the renormalised
 blend; no contract change) are both handed off as P12's first two sprints — S36 then S37. Shipping
 S37 starts live news accrual (real headlines scored onto persisted `Recommendation.sentiment_score`).
-P11's remaining analyst work is now **relative strength** + signal-diversity (sentiment removed). Spec sources:
-`docs/decisions/0002-sentiment-champion-challenger.md`, memory `v1-deterministic-port-gaps.md` and
-`sentiment-champion-challenger`.
+**Sprint 39 — signal-diversity selection — is shipped** (implemented directly: surfaces the top
+pillar-diverse signals in each recommendation's `evidence_refs`; explanatory, no score change, no
+re-pin; 581 tests, floor 100.00). P11's remaining analyst work is now just **relative strength**
+(S38, handed off). Spec sources: `docs/decisions/0002-sentiment-champion-challenger.md`, memory
+`v1-deterministic-port-gaps.md` and `sentiment-champion-challenger`.
 
 ## Next
 
@@ -43,10 +45,11 @@ P11's remaining analyst work is now **relative strength** + signal-diversity (se
   news-accrual runway (S36 feed scored forward), not a backfill.
 - **P11 remaining** (parallel, analyst-side deterministic): **S38 relative strength** (handed off —
   benchmark-relative momentum blended into the technical pillar 0.8/0.2; appends benchmark ticker to
-  the OHLCV request; no contract change), then signal-diversity selection; then PM (reward/risk +
+  the OHLCV request; no contract change) — signal-diversity **done (S39)**. Then PM (reward/risk +
   sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy). Sequenced spec:
-  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note: S37 and S38 both
-  add a param to `score_candidate` — whichever lands second rebases (mechanical, no logic conflict).
+  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note: S37, S38 and S39
+  each add to `score_candidate`; S39 is merged, so S37/S38 rebase onto it (mechanical, no logic
+  conflict — and S37 should add `"sentiment"` to the S39 weights map when it lands).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -63,6 +66,16 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 39 — Analyst: signal-diversity selection** (P11; implemented directly on request). New pure
+  `domain/signal_selection.py` (`Signal`, `technical_signals`/`fundamental_signals` extractors,
+  `select_top_signals` — ranks by `|score−50|·pillar_weight`, then prefers a not-yet-used pillar within
+  a `slack`, capped at `max_top_signals`; unknown pillars weight to zero; no `"Data Limited"` padding).
+  `score_candidate` builds the signal list from the technical+fundamental sub-scores it already computes
+  and stores names on `ScoreBreakdown.top_signals`; `decide` **appends** `analyst.signal.<name>` to the
+  recommendation `evidence_refs` (additive → no rationale re-pin). Two tunables
+  (`signal_diversity_slack` 5.0, `max_top_signals` 5). **Explanatory only — no score/confidence change,
+  no contract change** (analyst 0.1.0). 581 tests (8 new), floor 100.00. Follow-up: add `"sentiment"` to
+  the weights map when S37 lands.
 - **Sprint 35 — Analyst: fundamental scoring** (P11 cont.). New `domain/fundamental_rules.py`
   (`score_fundamental` — an 8-metric named rule table: P/E, ROE, net margin, current ratio, P/B,
   debt/equity, EPS growth, revenue growth; first-present fallback keys, `require_positive` skips

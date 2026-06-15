@@ -93,3 +93,4 @@ uv run pytest
 | [sprint-36](sprint-36-provider-news-feed.md) | Provider news feed: Finnhub /company-news → MarketData.news per-ticker headlines (feeds the analyst sentiment pillar) (P12) | **planned** |
 | [sprint-37](sprint-37-analyst-sentiment-pillar.md) | Analyst sentiment pillar: deterministic Loughran–McDonald lexicon as the binding third pillar in the renormalised blend (P12 champion) | **planned** |
 | [sprint-38](sprint-38-analyst-relative-strength.md) | Analyst relative strength: benchmark-relative momentum blended into the technical pillar (0.8/0.2); appends the benchmark ticker to the OHLCV request (P11) | **planned** |
+| [sprint-39](sprint-39-analyst-signal-diversity.md) | Analyst signal-diversity selection: surface the top pillar-diverse signals in the recommendation rationale (explanatory, no score change) (P11) | **shipped** |

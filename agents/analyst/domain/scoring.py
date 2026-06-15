@@ -11,6 +11,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from agents.analyst.domain.fundamental_rules import score_fundamental
+from agents.analyst.domain.signal_selection import (
+    fundamental_signals,
+    select_top_signals,
+    technical_signals,
+)
 from agents.analyst.domain.technical_rules import score_technical
 
 if TYPE_CHECKING:
@@ -27,6 +32,7 @@ class ScoreBreakdown:
     confidence: float
     metrics: dict[str, float]
     fundamental_score: float | None = None
+    top_signals: tuple[str, ...] = ()
     rejection_reason: str | None = None
 
 
@@ -65,11 +71,22 @@ def score_candidate(
     }
     if fundamental is not None:
         metrics["fundamental_score"] = fundamental
+    signals = technical_signals(tmetrics) + fundamental_signals(fmetrics)
+    selected = select_top_signals(
+        signals,
+        {
+            "technical": settings.technical_weight,
+            "fundamental": settings.fundamental_weight,
+        },
+        slack=settings.signal_diversity_slack,
+        max_signals=settings.max_top_signals,
+    )
     return ScoreBreakdown(
         technical_score=technical,
         confidence=confidence,
         metrics=metrics,
         fundamental_score=fundamental,
+        top_signals=tuple(signal.name for signal in selected),
     )
 
 

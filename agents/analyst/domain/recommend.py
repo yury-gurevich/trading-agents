@@ -62,6 +62,7 @@ def decide(
     if score.fundamental_score is not None:
         summary += f" and a fundamental score of {score.fundamental_score:.3f}"
         evidence_refs += ("analyst.fundamental_score",)
+    evidence_refs += tuple(f"analyst.signal.{name}" for name in score.top_signals)
     return AnalysisDecision(
         recommendation=Recommendation(
             ticker=candidate.ticker,

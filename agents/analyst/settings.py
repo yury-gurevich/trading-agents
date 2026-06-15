@@ -65,6 +65,21 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    signal_diversity_slack: float = tunable(
+        5.0,
+        why=(
+            "Contribution slack letting a lower-scoring signal from an unused pillar "
+            "be surfaced ahead of another from a pillar already represented."
+        ),
+        ge=0.0,
+        le=50.0,
+    )
+    max_top_signals: int = tunable(
+        5,
+        why="Maximum explanatory signals surfaced per recommendation rationale.",
+        ge=1,
+        le=20,
+    )
 
     @model_validator(mode="after")
     def _spans_are_ordered(self) -> Self:

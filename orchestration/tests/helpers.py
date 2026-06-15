@@ -41,10 +41,12 @@ class ReboundingDataSource:
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
     ) -> tuple[OHLCVBar, ...]:
-        """Return matching bars from the current fixture phase."""
-        self.calls += 1
-        rows = self.rebound if self.calls > self.rebound_after_calls else self.entry
+        """Return phase bars; benchmark-only probes don't advance the phase."""
         ticker_set = set(tickers)
+        served = {bar.ticker for bar in (*self.entry, *self.rebound)}
+        if ticker_set & served:
+            self.calls += 1
+        rows = self.rebound if self.calls > self.rebound_after_calls else self.entry
         return tuple(
             bar
             for bar in rows

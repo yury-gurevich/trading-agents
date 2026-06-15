@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from datetime import date
 
     from contracts.common import Window
+    from contracts.provider import OHLCVBar
     from contracts.scanner import CandidateSet
 
 
@@ -55,6 +56,42 @@ def request_market_data(
             raise RuntimeError(message)
         market = MarketData.model_validate(response.payload)
     return None if capture.fault is not None else market
+
+
+def request_benchmark_bars(
+    bus: MessageBus,
+    sink: FaultSink,
+    benchmark_ticker: str,
+    window: Window,
+) -> tuple[OHLCVBar, ...]:
+    """Request benchmark OHLCV in isolation; return ``()`` on any fault (RS then skips).
+
+    Kept separate from the candidate request so a missing/degraded benchmark never
+    degrades candidate data quality — it only forgoes the relative-strength signal.
+    """
+    bars: tuple[OHLCVBar, ...] = ()
+    with fault_boundary(
+        sink,
+        agent="analyst",
+        module="agents.analyst.provider_client",
+        capability="analyze",
+        reraise=False,
+    ) as capture:
+        response = bus.request(
+            AgentMessage(
+                sender="analyst",
+                recipient="provider",
+                message_type="request",
+                capability="get_market_data",
+                payload=DataRequest(
+                    tickers=(benchmark_ticker,),
+                    window=window,
+                    fields=("ohlcv",),
+                ).model_dump(mode="json"),
+            )
+        )
+        bars = MarketData.model_validate(response.payload).bars
+    return () if capture.fault is not None else bars
 
 
 def request_regime(

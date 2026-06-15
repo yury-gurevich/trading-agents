@@ -65,6 +65,26 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    benchmark_ticker: str = tunable(
+        "SPY",
+        why="Relative-strength benchmark; SPY tracks the scanner's S&P 500 universe.",
+    )
+    rs_window: int = tunable(
+        20,
+        why="Reference relative-strength lookback (~one trading month).",
+        ge=2,
+        le=120,
+        unit="bars",
+    )
+    relative_strength_weight: float = tunable(
+        0.20,
+        why=(
+            "Reference weight of relative strength within the technical pillar "
+            "(0.8 technical / 0.2 relative strength)."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
     signal_diversity_slack: float = tunable(
         5.0,
         why=(

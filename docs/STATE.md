@@ -1,7 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-15 — **Sprint 39 shipped** (analyst signal-diversity selection); **P11
-active, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
+**Last updated:** 2026-06-15 — **Sprints 39 + 38 shipped** (signal-diversity selection, then relative
+strength); **P11 analyst scoring complete, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
 **P12** (+ P13 cross-asset/macro), recorded in ADR-0002; the transport/telemetry planes settled in
 ADR-0003 (Azure log plane) + ADR-0004 (RabbitMQ command broker). Sprints **S36** (provider news
 feed), **S37** (analyst lexicon pillar), **S38** (relative strength) handed off; **S39**
@@ -27,11 +27,13 @@ only through the P10 registry gate. **Sprint 36 — provider news feed** (headli
 Loughran–McDonald lexicon champion, a twin of S35's fundamental pillar, folded into the renormalised
 blend; no contract change) are both handed off as P12's first two sprints — S36 then S37. Shipping
 S37 starts live news accrual (real headlines scored onto persisted `Recommendation.sentiment_score`).
-**Sprint 39 — signal-diversity selection — is shipped** (implemented directly: surfaces the top
-pillar-diverse signals in each recommendation's `evidence_refs`; explanatory, no score change, no
-re-pin; 581 tests, floor 100.00). P11's remaining analyst work is now just **relative strength**
-(S38, handed off). Spec sources: `docs/decisions/0002-sentiment-champion-challenger.md`, memory
-`v1-deterministic-port-gaps.md` and `sentiment-champion-challenger`.
+**Sprints 39 and 38 are shipped** (both implemented directly): S39 signal-diversity selection
+(surfaces top pillar-diverse signals in `evidence_refs`) and S38 relative strength (benchmark-relative
+momentum blended into the technical pillar 0.8/0.2, via a separate fault-tolerant benchmark fetch).
+**P11's analyst-side scoring is now complete** — technical (15 indicators) + fundamental + sentiment-
+diversity + relative strength. P11's remaining gaps are non-analyst: PM (reward/risk + sector caps),
+scanner (beta + earnings), reporter (profit-factor + expectancy). 592 tests, floor 100.00. Spec
+sources: memory `v1-deterministic-port-gaps.md`, `docs/decisions/0002-sentiment-champion-challenger.md`.
 
 ## Next
 
@@ -44,13 +46,12 @@ re-pin; 581 tests, floor 100.00). P11's remaining analyst work is now just **rel
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-- **P11 remaining** (parallel, analyst-side deterministic): **S38 relative strength** (handed off —
-  benchmark-relative momentum blended into the technical pillar 0.8/0.2; appends benchmark ticker to
-  the OHLCV request; no contract change) — signal-diversity **done (S39)**. Then PM (reward/risk +
-  sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy). Sequenced spec:
-  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note: S37, S38 and S39
-  each add to `score_candidate`; S39 is merged, so S37/S38 rebase onto it (mechanical, no logic
-  conflict — and S37 should add `"sentiment"` to the S39 weights map when it lands).
+- **P11 remaining** (non-analyst deterministic gaps): PM (reward/risk + sector caps), scanner
+  (beta + earnings), reporter (profit-factor + expectancy). The analyst-side scoring (technical,
+  fundamental, relative strength, signal-diversity) is **complete**. Sequenced spec: memory
+  `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note for P12 S37: when the
+  sentiment pillar lands it adds a `score_candidate` param **and** should add `"sentiment"` to the S39
+  signal-selection weights map (mechanical, no logic conflict with the merged S38/S39).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -67,6 +68,17 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 38 — Analyst: relative strength** (P11; implemented directly). New pure
+  `domain/relative_strength.py` (`compute_relative_strength` — candidate minus benchmark trailing
+  return over `rs_window`; `score_relative_strength` — bands `>5→80 / >0→60 / >−5→40 / else→20`).
+  `score_candidate` gained a `benchmark_bars` arg and `_apply_relative_strength` blends RS **into the
+  technical pillar** at `0.8·technical + 0.2·rs` (v1's design — not a 4th composite pillar); absent/
+  short benchmark history skips it → technical unchanged → **no re-pin**. New
+  `provider_client.request_benchmark_bars` fetches the benchmark (`benchmark_ticker`, default `SPY`) in
+  a **separate, fault-tolerant** request so a missing benchmark forgoes RS instead of degrading
+  candidate data; analyst `_score` threads the bars through. Tunables: `benchmark_ticker`, `rs_window`
+  (20), `relative_strength_weight` (0.20). Fixed the stateful `ReboundingDataSource` test fixture to
+  ignore benchmark-only probes. **No contract change** (analyst 0.1.0). 592 tests, floor 100.00.
 - **Sprint 39 — Analyst: signal-diversity selection** (P11; implemented directly on request). New pure
   `domain/signal_selection.py` (`Signal`, `technical_signals`/`fundamental_signals` extractors,
   `select_top_signals` — ranks by `|score−50|·pillar_weight`, then prefers a not-yet-used pillar within

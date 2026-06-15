@@ -12,7 +12,11 @@ from typing import TYPE_CHECKING
 
 from agents.analyst.domain.recommend import AnalysisDecision, decide
 from agents.analyst.domain.scoring import score_candidate
-from agents.analyst.provider_client import request_market_data, request_regime
+from agents.analyst.provider_client import (
+    request_benchmark_bars,
+    request_market_data,
+    request_regime,
+)
 from agents.analyst.result import (
     build_empty_result,
     incident_refs,
@@ -83,7 +87,10 @@ class AnalystAgent(AgentBase):
                 self._graph, candidate_set, "provider regime data degraded", refs
             )
 
-        decisions = self._score(candidate_set, market, regime)
+        benchmark_bars = request_benchmark_bars(
+            self.bus, self.sink, self._settings.benchmark_ticker, self._window()
+        )
+        decisions = self._score(candidate_set, market, regime, benchmark_bars)
         if decisions is None:
             return build_empty_result(
                 self._graph, candidate_set, "analyst scoring failed"
@@ -121,6 +128,7 @@ class AnalystAgent(AgentBase):
         candidate_set: CandidateSet,
         market: MarketData,
         regime: RegimeContext,
+        benchmark_bars: tuple[OHLCVBar, ...],
     ) -> tuple[AnalysisDecision, ...] | None:
         decisions: tuple[AnalysisDecision, ...] = ()
         with fault_boundary(
@@ -138,6 +146,7 @@ class AnalystAgent(AgentBase):
                         candidate,
                         bars.get(candidate.ticker, ()),
                         market.fundamentals.get(candidate.ticker, {}),
+                        benchmark_bars,
                         self._settings,
                     ),
                     regime,

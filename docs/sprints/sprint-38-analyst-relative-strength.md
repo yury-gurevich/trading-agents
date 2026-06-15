@@ -1,7 +1,18 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 38 — Analyst relative strength (benchmark-relative momentum, blended into the technical pillar)
 
-**Status:** planned · **Branch:** `sprint-38-analyst-relative-strength` · **Build phase:** P11 · **Effort: S–M**
+**Status:** shipped · **Branch:** `sprint-38-analyst-relative-strength` · **Build phase:** P11 · **Effort: S–M**
+
+> Implemented directly by the planning agent ("plan next sprint and when happy code it"). Green at the
+> full gate; 592 tests, floor 100.00. **One design change from the plan below:** the benchmark is
+> fetched in a **separate** provider request (`request_benchmark_bars`), **not** appended to the
+> candidate request. Appending it tripped the provider's stale-/missing-ticker gate (the benchmark is
+> absent from unit fixtures) → `used_fallback` → the analyst rejected every candidate. A separate,
+> fault-tolerant fetch (returns `()` on any fault/absence → RS simply skips) is also the more robust
+> design: a missing benchmark forgoes the RS signal instead of halting all analysis. It writes its own
+> `MarketSnapshot`, but the lineage assertions traverse *scan* lineage, so they were unaffected. Also
+> fixed one stateful test fixture (`ReboundingDataSource`) that counted provider OHLCV calls to time a
+> phase switch — it now ignores benchmark-only probes so the extra call doesn't perturb the count.
 
 ## Goal
 

@@ -33,9 +33,10 @@ now **relative strength** + signal-diversity (sentiment removed). Spec sources:
   analyst **lexicon** pillar (binding; `sentiment_weight` 0.20) + parallel-reading storage →
   **provider-sentiment** challenger (Finnhub `/news-sentiment`, shadow) → **forecaster/FinBERT**
   agent (advisory, dep isolated, `ShadowPrediction` + `model_version`) → **relationship/scorecard
-  harness** (align A/B/F + forward returns; promote via P10 gate). Spec: ADR-0002. The harness sprint
-  is gated on a news+returns data runway (reference Postgres or accrued live) — **verify Postgres
-  before planning it.**
+  harness** (align A/B/F + forward returns; promote via P10 gate). Spec: ADR-0002. **Postgres checked
+  2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
+  OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
+  news-accrual runway (S36 feed scored forward), not a backfill.
 - **P11 remaining** (parallel, analyst-side deterministic): relative strength (needs benchmark
   OHLCV), signal-diversity selection; then PM (reward/risk + sector caps), scanner (beta + earnings),
   reporter (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.

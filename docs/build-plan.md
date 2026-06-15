@@ -192,8 +192,10 @@ full rationale in `docs/decisions/0002-sentiment-champion-challenger.md`.
 - **Relationship & scorecard harness** — align `(provider, lexicon, FinBERT)` readings + forward
   returns; correlations, regression + residual, incremental information coefficient; promotion (if any)
   through the **predictor registry (P10)** gate; optional deterministic distillation. **Data
-  precondition:** aligned historical news + forward returns (reference Postgres or accrued live) — gates
-  this harness sprint only.
+  precondition (this harness sprint only):** forward returns are in hand — the deprecated v1 Postgres
+  (test-only, never a runtime dependency) has 5 yr of S&P-500 daily OHLCV usable as a fixture — but
+  **news history is empty**, so the three-scorer comparison needs a **live news-accrual runway** (the
+  S36 feed, scored + stored forward) before it can run. See ADR-0002.
 
 The binding decision path stays deterministic throughout (only the lexicon gates); the model is
 advisory until a scorecard earns it (the "advisory before binding" principle).

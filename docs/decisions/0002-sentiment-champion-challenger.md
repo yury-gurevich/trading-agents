@@ -96,9 +96,15 @@ exclusive external I/O.
   contract's `external_io` may need a narrow entry for model-artifact provisioning (decide in the
   forecaster sprint; a vendored/local model keeps the live path call-free).
 - **Data precondition (gates the scorecard sprint only).** The relationship harness needs *aligned
-  historical news + forward returns*. Source from the reference Postgres if it holds timestamped news
-  + prices, else accrue live from the provider feed. The feed/lexicon/provider/forecaster sprints do
-  **not** depend on it.
+  historical news + forward returns*. The feed/lexicon/provider/forecaster sprints do **not** depend
+  on it. **Verified 2026-06-15** against the deprecated reference Postgres (a v1 store — **test/
+  validation only, never a runtime dependency; the product accrues data live into Neo4j**): it holds
+  **5 years of daily OHLCV** (`price_cache`: 629,823 rows, 507 tickers, 2021-04 → 2026-05,
+  adjustment-tracked) — a usable fixture for the **forward-return** side — but **no news history**
+  (`news_embedding_cache` and `news_impact_shadow_log` both empty; v1 scaffolded the shadow-sentiment
+  schema and never fed it). Therefore: the return side is seedable now; the **news side needs a live
+  accrual runway** — turn on the S36 feed, score + store headlines going forward, then run the
+  scorecard against `price_cache` returns. A paid news backfill would only shortcut the wait.
 
 ## Alternatives considered
 

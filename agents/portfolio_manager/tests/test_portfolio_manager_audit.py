@@ -43,13 +43,14 @@ def test_store_writes_queryable_rejection_evidence() -> None:
     ]
 
 
-def test_order_intent_preserves_deliberate_zero_stop_and_target() -> None:
-    zero_policy = recommendation("AAPL").model_copy(
-        update={"suggested_stop_pct": 0.0, "suggested_target_pct": 0.0}
+def test_order_intent_preserves_deliberate_stop_and_target() -> None:
+    # Explicit non-default policy (ratio 3.0) is preserved, not overridden by defaults.
+    explicit_policy = recommendation("AAPL").model_copy(
+        update={"suggested_stop_pct": 0.04, "suggested_target_pct": 0.12}
     )
 
     approved, rejected = evaluate_recommendations(
-        (zero_policy,),
+        (explicit_policy,),
         {"AAPL": Money(amount=Decimal("100.00"))},
         cash_portfolio("10000.00"),
         max_position_pct=Decimal("0.10"),
@@ -58,8 +59,9 @@ def test_order_intent_preserves_deliberate_zero_stop_and_target() -> None:
         min_order_quantity=1,
         default_stop_pct=0.05,
         default_target_pct=0.10,
+        min_reward_risk_ratio=1.5,
     )
 
     assert rejected == ()
-    assert approved[0].stop_pct == 0.0
-    assert approved[0].target_pct == 0.0
+    assert approved[0].stop_pct == 0.04
+    assert approved[0].target_pct == 0.12

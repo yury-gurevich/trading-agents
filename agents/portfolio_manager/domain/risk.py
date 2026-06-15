@@ -30,6 +30,7 @@ def evaluate_recommendations(
     min_order_quantity: int,
     default_stop_pct: float,
     default_target_pct: float,
+    min_reward_risk_ratio: float,
 ) -> tuple[tuple[OrderIntent, ...], tuple[RejectedOrder, ...]]:
     """Apply sizing and risk checks in deterministic recommendation order."""
     approved: list[OrderIntent] = []
@@ -62,9 +63,16 @@ def evaluate_recommendations(
         if rejection is not None:
             rejected.append(rejection)
             continue
-        approved.append(
-            _order_intent(item, quantity, price, default_stop_pct, default_target_pct)
+        stop_pct, target_pct = _effective_pcts(
+            item, default_stop_pct, default_target_pct
         )
+        rejection = _reward_risk_rejection(
+            item, stop_pct, target_pct, min_reward_risk_ratio
+        )
+        if rejection is not None:
+            rejected.append(rejection)
+            continue
+        approved.append(_order_intent(item, quantity, price, stop_pct, target_pct))
         reserved_cash += Decimal(quantity) * price.amount
         open_tickers.add(item.ticker)
     return tuple(approved), tuple(rejected)
@@ -109,28 +117,53 @@ def _risk_rejection(
     return None
 
 
+def _effective_pcts(
+    item: Recommendation,
+    default_stop_pct: float,
+    default_target_pct: float,
+) -> tuple[float, float]:
+    """Stop/target percentages for this order: the recommendation's or the defaults."""
+    stop_pct = (
+        item.suggested_stop_pct
+        if item.suggested_stop_pct is not None
+        else default_stop_pct
+    )
+    target_pct = (
+        item.suggested_target_pct
+        if item.suggested_target_pct is not None
+        else default_target_pct
+    )
+    return stop_pct, target_pct
+
+
+def _reward_risk_rejection(
+    item: Recommendation,
+    stop_pct: float,
+    target_pct: float,
+    min_ratio: float,
+) -> RejectedOrder | None:
+    """Reject when reward/risk (target_pct / stop_pct) is undefined or too low."""
+    if stop_pct <= 0.0:
+        return RejectedOrder(ticker=item.ticker, reason="invalid_stop_loss")
+    if target_pct / stop_pct < min_ratio:
+        return RejectedOrder(ticker=item.ticker, reason="reward_risk_below_min")
+    return None
+
+
 def _order_intent(
     item: Recommendation,
     quantity: int,
     price: Money,
-    default_stop_pct: float,
-    default_target_pct: float,
+    stop_pct: float,
+    target_pct: float,
 ) -> OrderIntent:
     return OrderIntent(
         ticker=item.ticker,
         action=item.action,
         quantity=quantity,
         est_price=price,
-        stop_pct=(
-            item.suggested_stop_pct
-            if item.suggested_stop_pct is not None
-            else default_stop_pct
-        ),
-        target_pct=(
-            item.suggested_target_pct
-            if item.suggested_target_pct is not None
-            else default_target_pct
-        ),
+        stop_pct=stop_pct,
+        target_pct=target_pct,
         rationale=Explanation(
             summary=f"Approved {item.ticker}: sized {quantity} shares from PM policy.",
             evidence_refs=("portfolio_manager.sizing", "provider.regime"),

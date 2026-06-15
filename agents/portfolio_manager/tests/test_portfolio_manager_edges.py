@@ -40,6 +40,7 @@ def test_risk_prechecks_reject_unsupported_action_and_missing_price() -> None:
         min_order_quantity=1,
         default_stop_pct=0.05,
         default_target_pct=0.10,
+        min_reward_risk_ratio=1.5,
     )
 
     assert approved == ()

@@ -100,6 +100,7 @@ class PortfolioManagerAgent(AgentBase):
                 min_order_quantity=self._settings.min_order_quantity,
                 default_stop_pct=regime.base_stop_loss_pct,
                 default_target_pct=regime.base_take_profit_pct,
+                min_reward_risk_ratio=self._settings.min_reward_risk_ratio,
             )
         if capture.fault is not None:
             return reject_all(

@@ -1,7 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-15 — **Sprints 39 + 38 shipped** (signal-diversity selection, then relative
-strength); **P11 analyst scoring complete, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
+**Last updated:** 2026-06-15 — **Sprints 39, 38, 40 shipped** (signal-diversity, relative strength,
+PM reward/risk gate); **P11 analyst scoring complete, PM gates begun, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
 **P12** (+ P13 cross-asset/macro), recorded in ADR-0002; the transport/telemetry planes settled in
 ADR-0003 (Azure log plane) + ADR-0004 (RabbitMQ command broker). Sprints **S36** (provider news
 feed), **S37** (analyst lexicon pillar), **S38** (relative strength) handed off; **S39**
@@ -46,12 +46,13 @@ sources: memory `v1-deterministic-port-gaps.md`, `docs/decisions/0002-sentiment-
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-- **P11 remaining** (non-analyst deterministic gaps): PM (reward/risk + sector caps), scanner
-  (beta + earnings), reporter (profit-factor + expectancy). The analyst-side scoring (technical,
-  fundamental, relative strength, signal-diversity) is **complete**. Sequenced spec: memory
-  `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note for P12 S37: when the
-  sentiment pillar lands it adds a `score_candidate` param **and** should add `"sentiment"` to the S39
-  signal-selection weights map (mechanical, no logic conflict with the merged S38/S39).
+- **P11 remaining** (non-analyst deterministic gaps): PM **sector-concentration cap** (needs a
+  `sector` field on positions/recommendations — larger, has contract/provider plumbing), scanner
+  (beta + earnings), reporter (profit-factor + expectancy). **Done:** analyst scoring (technical,
+  fundamental, relative strength, signal-diversity) + **PM reward/risk gate (S40)**. Sequenced spec:
+  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note for P12 S37: the
+  sentiment pillar adds a `score_candidate` param **and** should add `"sentiment"` to the S39
+  signal-selection weights map (mechanical, no logic conflict).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -68,6 +69,15 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 40 — Portfolio manager: reward/risk gate** (P11; implemented directly). New PM tunable
+  `min_reward_risk_ratio` (1.5) and a gate in `domain/risk.py`: because v2 carries percentages, the
+  reward/risk ratio reduces to `target_pct / stop_pct` (entry cancels). Extracted `_effective_pcts`
+  (recommendation's suggested stop/target, else regime defaults) shared by the gate and the order
+  intent; `_reward_risk_rejection` rejects `invalid_stop_loss` (stop_pct ≤ 0) and `reward_risk_below_min`
+  (ratio < min). `evaluate_recommendations` runs it after sizing/cash/position checks. Default 1.5 passes
+  the regime default 2.0, so no existing approval re-pinned **except** the deliberate-zero-stop audit
+  test (a 0 % stop is now correctly rejected → retargeted to a valid explicit policy). **No contract
+  change.** 595 tests, floor 100.00. Sector cap deferred (needs sector plumbing).
 - **Sprint 38 — Analyst: relative strength** (P11; implemented directly). New pure
   `domain/relative_strength.py` (`compute_relative_strength` — candidate minus benchmark trailing
   return over `rs_window`; `score_relative_strength` — bands `>5→80 / >0→60 / >−5→40 / else→20`).

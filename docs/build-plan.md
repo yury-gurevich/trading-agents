@@ -158,8 +158,9 @@ changing any boundary or contract — each item lands inside an existing agent's
 - **Analyst** — the full technical-indicator suite (RSI, MACD, Bollinger, ATR, stochastic,
   Williams %R, choppiness, OBV, golden cross, calendar/mean-reversion signals, kernel
   smoother, geometric patterns), fundamental scoring (P/E, ROE, margins, leverage, growth),
-  sentiment scoring, and signal-diversity selection; composite weighting with bounded,
-  justified tunables.
+  relative strength, and signal-diversity selection; composite weighting with bounded,
+  justified tunables. *(Sentiment scoring moved to its own phase — P12 — once it grew into a
+  multi-agent champion–challenger design; see `docs/decisions/0002-sentiment-champion-challenger.md`.)*
 - **Portfolio manager** — reward/risk-ratio gate and sector-concentration cap; explicit
   portfolio-value computation.
 - **Scanner** — beta computation + beta-cap filter; earnings-window exclusion.
@@ -170,6 +171,53 @@ kept ≤ 200 lines. The detailed, sequenced sprint breakdown is held by the plan
 **Tests:** per-function unit tests with known-value fixtures; rejection-path tests for the
 new gates. **Exit:** the analyst emits a multi-pillar score with explainable contributions;
 the new PM gates reject correctly; CI quality gate stays green. **Effort: L.**
+
+### P12 — Sentiment scoring (champion–challenger)
+
+The analyst's reserved third (sentiment) pillar, built as a **champion–challenger** bake-off rather
+than a single scorer. One `SentimentScorer` interface, three implementations, compared on evidence;
+full rationale in `docs/decisions/0002-sentiment-champion-challenger.md`.
+
+- **Provider news feed** — Finnhub `/company-news` populates `MarketData.news` (per-ticker headlines);
+  field-gated, no contract change. *(Sprint 36, planned.)*
+- **Lexicon pillar (champion)** — a deterministic Loughran–McDonald scorer in the analyst's `domain/`
+  becomes the **binding** third pillar (`sentiment_weight` 0.20); each per-ticker reading is written
+  to the graph so challengers can be aligned to it.
+- **Provider-sentiment challenger** — Finnhub `/news-sentiment` as an advisory number, written aligned;
+  shadow only.
+- **Forecaster agent (FinBERT, advisory)** — the first implementation of the reserved `forecaster`
+  contract. FinBERT behind the agent boundary (heavy `torch`/`transformers` dependency isolated as an
+  optional group + integration-marked tests), emitting `ShadowPrediction`s with a `model_version`;
+  **never gates** a decision.
+- **Relationship & scorecard harness** — align `(provider, lexicon, FinBERT)` readings + forward
+  returns; correlations, regression + residual, incremental information coefficient; promotion (if any)
+  through the **predictor registry (P10)** gate; optional deterministic distillation. **Data
+  precondition:** aligned historical news + forward returns (reference Postgres or accrued live) — gates
+  this harness sprint only.
+
+The binding decision path stays deterministic throughout (only the lexicon gates); the model is
+advisory until a scorecard earns it (the "advisory before binding" principle).
+**Tests:** per-scorer known-value tests; aligned-reading + scorecard tests; a "FinBERT never gates"
+boundary test (the forecaster's never-clause). **Exit:** the analyst emits a deterministic sentiment
+pillar; provider + FinBERT challengers run in shadow with a scorecard comparing all three on forward
+returns. **Effort: L.**
+
+### P13 — Cross-asset & macro signal graph
+
+Move beyond per-ticker scoring to **relationships**: sector contagion (a peer/sector signal, not just
+the single name) and **macro events** (tariffs, sanctions) whose effect is *relationship-dependent and
+signed* — the same event helps a shielded domestic competitor and hurts a foreign exporter and a
+supply-exposed name. Modeled as Neo4j nodes/edges (`Sector`, `PEER_OF`, `IN_SECTOR`,
+`EXPOSED_TO {role, weight}`, `Event -[:AFFECTS {sign, magnitude}]->`) with **deterministic signed
+propagation** over the graph; per-document scores (P12) are the inputs that propagate. Turning a
+macro headline into a typed `Event` (target + direction) is LLM **extraction** (operator/forecaster),
+written append-only. Sector/peer edges are cheap (Finnhub); supplier/exposure edges are the hard,
+premium data — start with sector + peers + country exposure and grow.
+**Tests:** propagation-math unit tests (cap-weighted sector aggregate; signed event flow);
+event-extraction provenance tests. **Exit:** a sector/peer sentiment signal and at least one signed
+macro-event signal are computed deterministically over the graph and surfaced with explainable
+contributions; never binding until scorecarded. **Effort: L–XL.** *(Contingent on P12 + the data
+runway; the highest-ambition phase.)*
 
 ## Cross-cutting workstreams
 
@@ -268,4 +316,6 @@ stage gates in P8.
 | P8 Hardening + expansion | **complete** (S24 stage gate + S25 market pack; G6 exit criterion met — test_p8_exit.py green) |
 | P9 Observability stack | **complete** (infra deployed: Azure Monitor Workspace + Managed Grafana; S25 entrypoint + metrics_server + paper_context wiring, S26 MeteredFaultSink through bus + every agent sink; exit criterion met — test_p9_exit.py green) |
 | P10 Curator | **complete** (S27 dataset assembly + S28 advisory training trigger + S29 predictor registry/promotion gate — build_dataset/describe_corpus, versioned splits, train_predictor + frozen evidence, promote_predictor evidence-gate + operator approval + PredictorPromotion audit; exit criterion met — test_p10_exit.py green; never-influences-decision invariant proven throughout) |
-| P11 Decision-logic depth | **active** (extension; S30–S33 technical engine complete — 15 indicators; S34 provider fundamentals feed + S35 analyst fundamental pillar shipped; news/sentiment + relative strength, PM/scanner/reporter gaps to follow) |
+| P11 Decision-logic depth | **active** (extension; S30–S33 technical engine complete — 15 indicators; S34 provider fundamentals feed + S35 analyst fundamental pillar shipped; relative strength + signal-diversity, PM/scanner/reporter gaps to follow; sentiment split out to P12) |
+| P12 Sentiment (champion–challenger) | **planned** (S36 provider news feed handed off; then lexicon pillar / provider + FinBERT challengers / scorecard harness — implements the reserved forecaster agent; ADR-0002) |
+| P13 Cross-asset & macro signal graph | **planned** (sector contagion + signed tariff/sanction event propagation over Neo4j; contingent on P12 + a news+returns data runway; ADR-0002) |

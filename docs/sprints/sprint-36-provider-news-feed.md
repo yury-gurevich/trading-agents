@@ -38,7 +38,7 @@ implementation behind the field. This sprint is deliberately the structural twin
   - `agents/provider/agent.py` — `_get_market_data` (line ~58). Add a `news` block that mirrors the
     `fundamentals` block verbatim: field-gated on `"news" in data_request.fields`, fetched inside its
     **own** `fault_boundary(reraise=False)`; on fault → empty `{}` + a `"news_degraded"` quality note
-    + `used_fallback=True`. Populate `MarketData(news=...)`.
+    - `used_fallback=True`. Populate `MarketData(news=...)`.
   - `agents/provider/settings.py` — Finnhub config already present (`finnhub_base_url`,
     `finnhub_api_key`, `finnhub_timeout`). Add the two news tunables in Part A. Keep < 200L (file is
     at 96L — plenty of room).
@@ -202,21 +202,21 @@ Hand-built Finnhub `/company-news` JSON fixtures (pure `_parse_news`, no network
 - Existing callers (OHLCV-only, fundamentals) see `MarketData.news == {}` → **no test re-pin**.
 - `make ci` green at/above floor 100.00; import-linter kept; every touched/new module < 200L.
 
-## Out of scope (next sprint — the scoring slice)
+## Out of scope (the rest of phase P12 — see ADR-0002)
 
-- **Analyst sentiment scoring** — the third composite pillar (`sentiment_weight` 0.20, the weight
-  reserved in S35). That sprint adds `sentiment_weight` to `AnalystSettings`, a
-  `score_sentiment(headlines)` rule module, folds it into the renormalised blend
-  `(w_t·tech + w_f·fund + w_s·sent)/Σ present`, sets `Recommendation.sentiment_score`, and makes the
-  analyst request the `"news"` field.
-  - **Open decision for that sprint (planning owner's call):** the scorer engine. STATE names
-    "FinBERT/keyword". **Recommendation: a deterministic lexicon/keyword scorer**, not FinBERT — it
-    fits the repo's pure-Python, dependency-light, 100%-coverage idiom (every prior pillar is stdlib
-    and exactly reproducible), needs no model download or GPU, and is trivially test-pinned. FinBERT
-    (torch + transformers, ~GB weights, version-sensitive outputs) is a poor fit for the determinism
-    and coverage gate; defer it unless the planning owner explicitly wants the heavier path. This
-    does not affect the present feed sprint — the contract fixes `news` as headline **strings**, which
-    either engine consumes.
+This feed is **step 1 of P12 (sentiment, champion–challenger)**; the architecture is settled in
+`docs/decisions/0002-sentiment-champion-challenger.md`. Later sprints, not this one:
+
+- **Analyst lexicon pillar (champion)** — a deterministic Loughran–McDonald `score_sentiment(headlines)`
+  becomes the *binding* third pillar (`sentiment_weight` 0.20), folded into the renormalised blend
+  `(w_t·tech + w_f·fund + w_s·sent)/Σ present`, setting `Recommendation.sentiment_score`; the analyst
+  then requests the `"news"` field and writes each per-ticker reading to the graph for alignment.
+- **Provider-sentiment challenger** (Finnhub `/news-sentiment`, advisory/shadow) and the
+  **forecaster/FinBERT agent** (advisory, heavy dep isolated behind the agent boundary) — neither
+  gates; both write readings aligned to the lexicon's.
+- **Relationship/scorecard harness** — compares the three scorers on forward returns and promotes via
+  the P10 registry gate. (The lexicon-vs-FinBERT question is **resolved** by ADR-0002: lexicon is the
+  binding champion, FinBERT an advisory challenger — not an either/or.)
 - Persisting news to the graph; relative strength; signal-diversity selection; PM/scanner/reporter
   gaps. Any change outside the provider package + its tests.
 
@@ -231,5 +231,5 @@ Hand-built Finnhub `/company-news` JSON fixtures (pure `_parse_news`, no network
 - Final line counts for every touched/new provider module; new coverage % and floor; total test
   count.
 
-The planning agent reviews, merges to `main`, and plans the analyst sentiment-scoring sprint (the
-third composite pillar) — at which point the FinBERT-vs-lexicon decision above is settled.
+The planning agent reviews, merges to `main`, and plans P12's next sprint — the analyst lexicon
+sentiment pillar (the binding champion) — per ADR-0002.

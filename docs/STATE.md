@@ -13,25 +13,35 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — Sprint 36 handed off (planned, not started).** Analyst technical engine complete
+**P11 active; sentiment promoted to its own phase (P12).** Analyst technical engine complete
 (15 indicators, S30–S33); provider serves fundamentals (S34); analyst blends a fundamental pillar
-into the gate (S35). **Sprint 36 — provider news feed** is written and awaiting the coding agent: a
-structural twin of S34 that populates the (always-empty) `MarketData.news` with per-ticker Finnhub
-headlines, field-gated, no contract change. It is the **feed** half of the news + sentiment slice;
-the **scoring** half (analyst's third pillar, `sentiment_weight` 0.20 — the weight reserved in S35)
-follows as the next sprint. Open decision deferred to that scoring sprint: lexicon vs FinBERT —
-S36's handover recommends a deterministic lexicon scorer (repo idiom + coverage gate). After the
-pillar: relative strength (analyst-side; only needs benchmark OHLCV) and signal-diversity selection.
-Spec source: memory `v1-deterministic-port-gaps.md`.
+into the gate (S35). The news + sentiment slice grew — on the product owner's direction — into a
+**champion–challenger** design and now owns **phase P12** (+ a P13 cross-asset/macro graph layer);
+decision recorded in `docs/decisions/0002-sentiment-champion-challenger.md`. Shape: one
+`SentimentScorer` interface, three implementations — a deterministic **lexicon** (the analyst's
+*binding* pillar), a **provider-sentiment** number, and **FinBERT** behind the reserved **forecaster**
+agent (advisory/shadow, heavy dep isolated) — compared on forward returns via a scorecard, promoted
+only through the P10 registry gate. **Sprint 36 — provider news feed** (headlines into
+`MarketData.news`, twin of S34) is handed off as P12's first sprint. P11's remaining analyst work is
+now **relative strength** + signal-diversity (sentiment removed). Spec sources:
+`docs/decisions/0002-sentiment-champion-challenger.md`, memory `v1-deterministic-port-gaps.md` and
+`sentiment-champion-challenger`.
 
 ## Next
 
-- **P11 cont. — analyst fundamental scoring** (next): port `score_fundamental` as a new pillar over
-  `MarketData.fundamentals` (now served by S34). Then news + sentiment (FinBERT) + the provider
-  news feed, relative strength (analyst-side; only needs benchmark OHLCV), signal-diversity
-  selection. Then PM (reward/risk + sector caps), scanner (beta + earnings), reporter
-  (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
+- **P12 — Sentiment (champion–challenger)**, in order: **S36 provider news feed** (handed off) →
+  analyst **lexicon** pillar (binding; `sentiment_weight` 0.20) + parallel-reading storage →
+  **provider-sentiment** challenger (Finnhub `/news-sentiment`, shadow) → **forecaster/FinBERT**
+  agent (advisory, dep isolated, `ShadowPrediction` + `model_version`) → **relationship/scorecard
+  harness** (align A/B/F + forward returns; promote via P10 gate). Spec: ADR-0002. The harness sprint
+  is gated on a news+returns data runway (reference Postgres or accrued live) — **verify Postgres
+  before planning it.**
+- **P11 remaining** (parallel, analyst-side deterministic): relative strength (needs benchmark
+  OHLCV), signal-diversity selection; then PM (reward/risk + sector caps), scanner (beta + earnings),
+  reporter (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
   **Committed scope, not optional.**
+- **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
+  propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow

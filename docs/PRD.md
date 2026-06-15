@@ -211,6 +211,13 @@ Two invariants hold across the roster and are enforced as tests:
 - **exclusive external I/O** — exactly one agent holds the credentials and code path
   to each external system (data APIs → provider, broker → execution, model → operator).
 
+The **forecaster** is first activated by the sentiment work: the analyst's binding sentiment pillar
+is a deterministic lexicon scorer, while a vendor-sentiment number and a transformer model (FinBERT,
+its heavy dependency isolated behind the forecaster boundary) run as **advisory shadow signals**,
+compared to the champion on forward-return evidence and promoted only through the predictor-registry
+gate. See `docs/decisions/0002-sentiment-champion-challenger.md`. Sector-contagion and signed
+macro-event (tariff/sanction) signals are a later, graph-native extension of the same substrate.
+
 ### 5.1 Capability safety surface
 
 The supervisor enforces a capability matrix: which agents may invoke which

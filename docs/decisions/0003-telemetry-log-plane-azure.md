@@ -23,17 +23,21 @@ The open question was whether to self-host Kafka or use Azure-native services.
 Build the log plane **Azure-native**, behind a new kernel **`LogSink`** protocol (stdout backend for
 tests, Azure backend for prod — the same two-backend discipline as the bus and graph):
 
-```
+```text
 agents → LogSink → Azure Event Hubs (Kafka endpoint) → Event Hubs-triggered Azure Function
-       → Azure Cache for Redis (10-day key TTL) → dashboard (debug/tuning)
+       → Azure Cache for Redis (tunable-TTL cache) → dashboard (debug/tuning)
 ```
 
 - **Transport: Azure Event Hubs via its Kafka 1.0+ wire-protocol endpoint** — the managed
   Kafka-as-a-service. Agents use a **Kafka client** (not the proprietary Azure SDK) so the transport
   stays Kafka-portable. Partitions + consumer groups give parallel producers and multiple readers.
-- **The 10-day window lives as a Redis TTL** on the dashboard cache — *not* in Event Hubs (Standard
-  caps retention at 7 days; this keeps us off Premium and puts the settable window where the dashboard
-  reads it).
+- **Retention is a tunable window, not a fixed period** (the "10 days" earlier was illustrative). It
+  lives as a **Redis key TTL** on the dashboard cache — *not* in Event Hubs (Standard caps at 7 days;
+  this keeps us off Premium and puts the settable window where the dashboard reads it). The window —
+  and **log verbosity** — are justified `tunable`s, dialled **up** while a capability is unproven and
+  **down once it earns confidence** (coupling to the PRD §11 maturity framework). Logs are kept as long
+  as useful, **never forever**; searchability past a horizon is meaningless, so there is **no long-term
+  forensic store** — durable audit lives in Neo4j.
 - **Correlation: emit W3C Trace Context ids** (an open standard) on every log event, seeded from the
   existing provenance `run_id` + a per-step span — so parallel producers' streams stitch into one
   logical step. Application Insights is the *viewer*; the correlation *data* stays portable.
@@ -46,7 +50,7 @@ agents → LogSink → Azure Event Hubs (Kafka endpoint) → Event Hubs-triggere
 | Plane | Job | Backend | Lifetime |
 | --- | --- | --- | --- |
 | **Command** | agent-to-agent request/response (IPC) | `MessageBus` → Celery on RabbitMQ | transient, ack-and-delete |
-| **Log/telemetry** | operational logs for debug/tuning | `LogSink` → Event Hubs → Redis | retention window (~10 d) |
+| **Log/telemetry** | operational logs for debug/tuning | `LogSink` → Event Hubs → Redis | tunable retention window |
 | **System of record** | audit, provenance, business events | Neo4j (ADR-0001) | durable, never deleted |
 | **Metrics** | throughput, latency, fault-rate | Prometheus / Grafana (P9) | aggregated/rolled up |
 
@@ -93,9 +97,10 @@ replace any KQL. Bounded, because the authoritative store was never on Azure-pro
   agents log through it, never a cloud client directly.
 - **Correlation-id schema is a now-decision** (cheap now, expensive to retrofit): `run_id` + per-step
   span on every log event. Settle it before the plane lands.
-- **Defer the Log Analytics + KQL forensic tier** — it is the **deepest** lock-in and Neo4j already
-  holds durable audit. Start with Event Hubs (Kafka-portable) + Redis (standard) + thin Function only.
-  Add a LAW searchable tier later *only if* a forensic need beyond the 10-day Redis cache appears.
+- **No Log Analytics + KQL forensic tier** (owner-confirmed) — it is the **deepest** lock-in, and
+  durable audit already lives in Neo4j. The plane is Event Hubs (Kafka-portable) + Redis (standard) +
+  a thin Function only; long-term searchable logs are explicitly out of scope (searchability past a
+  horizon is meaningless; logs are kept only as long as useful).
 - **Provision when parallelism lands**, not before — build behind `LogSink` now; stand up Event Hubs +
   Redis + the Function when the parallel agents actually arrive ("in-process before distributed").
 - Tracked as a **cross-cutting workstream** in `docs/build-plan.md`; a propagation pass updates
@@ -114,11 +119,9 @@ replace any KQL. Bounded, because the authoritative store was never on Azure-pro
 - **Do nothing (stdout → Azure Monitor agent).** Lowest effort, but no replayable stream and no
   correlation backbone for the parallel-agent future.
 
-## Open items (do not block the decision)
+## Resolved (2026-06-15)
 
-- **Forensic tier:** is a 30–90-day searchable Log Analytics + KQL tier wanted *in addition to* the
-  10-day Redis cache, or is the 10-day window the whole story? Default per this ADR: **no** (minimise
-  lock-in; Neo4j covers durable audit).
-- **Command-plane broker:** confirm RabbitMQ (the natural Celery pairing; reliability + dead-letter)
-  replaces the current Redis-broker assumption in `.env.example` — related, but separable from this
-  ADR's telemetry decision.
+- **Forensic tier:** **No** long-term searchable Log Analytics/KQL tier. Retention is a tunable window
+  kept "as long as useful, not forever", dialled with earned confidence; durable audit is Neo4j's job.
+- **Command-plane broker:** **RabbitMQ confirmed** — formalised in
+  `docs/decisions/0004-rabbitmq-command-broker.md`.

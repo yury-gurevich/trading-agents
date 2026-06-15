@@ -257,15 +257,17 @@ column says where each is built.
   justified, bounded tunable in a central, operator-visible catalogue. *Built:
   primitive (P0, done); each agent registers its tunables as it lands; catalogue
   surfaced (P5–P6).*
-- **Transport & telemetry planes.** Four separated planes (command bus / log plane /
-  Neo4j system-of-record / metrics) so operational logs never ride the trade-message
-  bus. The log plane is Azure-native behind a kernel `LogSink` protocol: Event Hubs
-  (Kafka endpoint) → Function → Azure Cache for Redis (~10-day TTL) → dashboard, with
-  W3C-trace correlation (seeded from `run_id`) for parallel multi-producer steps; audit
-  stays in Neo4j. *Decision: `docs/decisions/0003-telemetry-log-plane-azure.md`. Built:
-  `LogSink` abstraction + correlation-id schema first; Event Hubs/Redis provisioned when
-  parallel-agent operation lands; the Log Analytics/KQL forensic tier deferred to bound
-  lock-in.*
+- **Transport & telemetry planes.** Four separated planes so operational logs never ride
+  the trade-message bus: **command bus** (Celery on **RabbitMQ**, vendor-neutral, ADR-0004)
+  / **log plane** (Azure-native, ADR-0003) / **Neo4j** system-of-record / **metrics**
+  (Prometheus/Grafana). The log plane sits behind a kernel `LogSink` protocol: Event Hubs
+  (Kafka endpoint) → Function → Azure Cache for Redis (**tunable retention window**, dialled
+  with earned confidence) → dashboard, with W3C-trace correlation (seeded from `run_id`) for
+  parallel multi-producer steps; durable audit stays in Neo4j. *Decisions:
+  `docs/decisions/0003-telemetry-log-plane-azure.md`, `docs/decisions/0004-rabbitmq-command-broker.md`.
+  Built: `LogSink` abstraction + correlation-id schema first; Event Hubs/Redis provisioned
+  when parallel-agent operation lands; no Log Analytics/KQL forensic tier (lock-in bound to
+  the ephemeral plane).*
 
 ## Product roadmap alignment
 

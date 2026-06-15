@@ -13,11 +13,15 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active — between sprints.** Analyst technical engine complete (15 indicators, S30–S33);
-provider serves fundamentals (S34); analyst now blends a fundamental pillar into the gate (S35). No
-active sprint branch. Next slice: **news + sentiment** — a provider news feed + a FinBERT/keyword
-sentiment scorer adding the third composite pillar (`sentiment_weight` 0.20, the reserved weight).
-Then relative strength (analyst-side; only needs benchmark OHLCV) and signal-diversity selection.
+**P11 active — Sprint 36 handed off (planned, not started).** Analyst technical engine complete
+(15 indicators, S30–S33); provider serves fundamentals (S34); analyst blends a fundamental pillar
+into the gate (S35). **Sprint 36 — provider news feed** is written and awaiting the coding agent: a
+structural twin of S34 that populates the (always-empty) `MarketData.news` with per-ticker Finnhub
+headlines, field-gated, no contract change. It is the **feed** half of the news + sentiment slice;
+the **scoring** half (analyst's third pillar, `sentiment_weight` 0.20 — the weight reserved in S35)
+follows as the next sprint. Open decision deferred to that scoring sprint: lexicon vs FinBERT —
+S36's handover recommends a deterministic lexicon scorer (repo idiom + coverage gate). After the
+pillar: relative strength (analyst-side; only needs benchmark OHLCV) and signal-diversity selection.
 Spec source: memory `v1-deterministic-port-gaps.md`.
 
 ## Next

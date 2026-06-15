@@ -41,10 +41,12 @@ P11's remaining analyst work is now **relative strength** + signal-diversity (se
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-- **P11 remaining** (parallel, analyst-side deterministic): relative strength (needs benchmark
-  OHLCV), signal-diversity selection; then PM (reward/risk + sector caps), scanner (beta + earnings),
-  reporter (profit-factor + expectancy). Sequenced spec: memory `v1-deterministic-port-gaps.md`.
-  **Committed scope, not optional.**
+- **P11 remaining** (parallel, analyst-side deterministic): **S38 relative strength** (handed off —
+  benchmark-relative momentum blended into the technical pillar 0.8/0.2; appends benchmark ticker to
+  the OHLCV request; no contract change), then signal-diversity selection; then PM (reward/risk +
+  sector caps), scanner (beta + earnings), reporter (profit-factor + expectancy). Sequenced spec:
+  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note: S37 and S38 both
+  add a param to `score_candidate` — whichever lands second rebases (mechanical, no logic conflict).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).

@@ -63,6 +63,14 @@ class ReboundingDataSource:
         """Return no fundamentals; this fixture exercises the OHLCV path only."""
         return {}
 
+    def fetch_news(
+        self,
+        tickers: tuple[str, ...],
+        window: Window,
+    ) -> dict[str, tuple[str, ...]]:
+        """Return no news; this fixture exercises the OHLCV path only."""
+        return {}
+
 
 def bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
     """Build one deterministic OHLCV bar."""

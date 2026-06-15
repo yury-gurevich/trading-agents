@@ -92,6 +92,26 @@ class ProviderAgent(AgentBase):
                         "used_fallback": True,
                     }
                 )
+        news: dict[str, tuple[str, ...]] = {}
+        if "news" in data_request.fields:
+            with fault_boundary(
+                self.sink,
+                agent="provider",
+                module="agents.provider.agent",
+                capability="get_market_data",
+                reraise=False,
+            ) as ncapture:
+                news = self._source.fetch_news(
+                    data_request.tickers, data_request.window
+                )
+            if ncapture.fault is not None:
+                news = {}
+                quality = quality.model_copy(
+                    update={
+                        "notes": (*quality.notes, "news_degraded"),
+                        "used_fallback": True,
+                    }
+                )
         provenance = write_market_snapshot(
             self._graph,
             tickers=data_request.tickers,
@@ -101,6 +121,7 @@ class ProviderAgent(AgentBase):
         return MarketData(
             bars=bars,
             fundamentals=fundamentals,
+            news=news,
             quality=quality,
             provenance=provenance,
         )

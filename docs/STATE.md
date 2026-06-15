@@ -1,10 +1,11 @@
 # Project State
 
-**Last updated:** 2026-06-15 — Sprint 35 shipped; **P11 active**. Analyst now has a **fundamental
-pillar** (8-metric band table over `MarketData.fundamentals`) blended with the technical score
-(weights 0.50/0.30, renormalised) into the confidence gate. Absent fundamentals skip the pillar
-(composite == technical) → no existing-test re-pin. No contract change. 573 tests at 100.00%
-(floor 100.00).
+**Last updated:** 2026-06-15 — **Sprint 39 shipped** (analyst signal-diversity selection); **P11
+active, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
+**P12** (+ P13 cross-asset/macro), recorded in ADR-0002; the transport/telemetry planes settled in
+ADR-0003 (Azure log plane) + ADR-0004 (RabbitMQ command broker). Sprints **S36** (provider news
+feed), **S37** (analyst lexicon pillar), **S38** (relative strength) handed off; **S39**
+(signal-diversity) implemented directly and merged. 581 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.

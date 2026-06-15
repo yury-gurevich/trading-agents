@@ -95,3 +95,4 @@ uv run pytest
 | [sprint-38](sprint-38-analyst-relative-strength.md) | Analyst relative strength: benchmark-relative momentum blended into the technical pillar (0.8/0.2); separate fault-tolerant benchmark fetch (P11) | **shipped** |
 | [sprint-39](sprint-39-analyst-signal-diversity.md) | Analyst signal-diversity selection: surface the top pillar-diverse signals in the recommendation rationale (explanatory, no score change) (P11) | **shipped** |
 | [sprint-40](sprint-40-pm-reward-risk.md) | Portfolio manager reward/risk gate: reject orders whose target_pct/stop_pct is below min_reward_risk_ratio (P11) | **shipped** |
+| [sprint-41](sprint-41-reporter-trade-outcomes.md) | Reporter: profit-factor and expectancy over stop/target-closed positions; new `domain/trade_outcomes.py` (P11) | **planned** |

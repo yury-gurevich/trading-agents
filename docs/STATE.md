@@ -22,15 +22,19 @@ decision recorded in `docs/decisions/0002-sentiment-champion-challenger.md`. Sha
 *binding* pillar), a **provider-sentiment** number, and **FinBERT** behind the reserved **forecaster**
 agent (advisory/shadow, heavy dep isolated) — compared on forward returns via a scorecard, promoted
 only through the P10 registry gate. **Sprint 36 — provider news feed** (headlines into
-`MarketData.news`, twin of S34) is handed off as P12's first sprint. P11's remaining analyst work is
-now **relative strength** + signal-diversity (sentiment removed). Spec sources:
+`MarketData.news`, twin of S34) and **Sprint 37 — analyst sentiment pillar** (the deterministic
+Loughran–McDonald lexicon champion, a twin of S35's fundamental pillar, folded into the renormalised
+blend; no contract change) are both handed off as P12's first two sprints — S36 then S37. Shipping
+S37 starts live news accrual (real headlines scored onto persisted `Recommendation.sentiment_score`).
+P11's remaining analyst work is now **relative strength** + signal-diversity (sentiment removed). Spec sources:
 `docs/decisions/0002-sentiment-champion-challenger.md`, memory `v1-deterministic-port-gaps.md` and
 `sentiment-champion-challenger`.
 
 ## Next
 
 - **P12 — Sentiment (champion–challenger)**, in order: **S36 provider news feed** (handed off) →
-  analyst **lexicon** pillar (binding; `sentiment_weight` 0.20) + parallel-reading storage →
+  **S37 analyst lexicon pillar** (handed off; binding, `sentiment_weight` 0.20; reading rides on
+  `Recommendation.sentiment_score`, no new node/contract change) →
   **provider-sentiment** challenger (Finnhub `/news-sentiment`, shadow) → **forecaster/FinBERT**
   agent (advisory, dep isolated, `ShadowPrediction` + `model_version`) → **relationship/scorecard
   harness** (align A/B/F + forward returns; promote via P10 gate). Spec: ADR-0002. **Postgres checked

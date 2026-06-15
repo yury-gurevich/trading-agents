@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 36 — Provider news feed (per-ticker headlines into MarketData.news)
 
-**Status:** planned · **Branch:** `sprint-36-provider-news-feed` · **Build phase:** P11 · **Effort: M**
+**Status:** shipped · **Branch:** `sprint-36-provider-news-feed` · **Build phase:** P11 · **Effort: M**
 
 ## Goal
 

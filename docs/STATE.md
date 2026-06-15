@@ -1,11 +1,8 @@
 # Project State
 
-**Last updated:** 2026-06-15 — **Sprints 39, 38, 40 shipped** (signal-diversity, relative strength,
-PM reward/risk gate); **P11 analyst scoring complete, PM gates begun, P12 planned**. This session: sentiment grew into a **champion–challenger** design owning
-**P12** (+ P13 cross-asset/macro), recorded in ADR-0002; the transport/telemetry planes settled in
-ADR-0003 (Azure log plane) + ADR-0004 (RabbitMQ command broker). Sprints **S36** (provider news
-feed), **S37** (analyst lexicon pillar), **S38** (relative strength) handed off; **S39**
-(signal-diversity) implemented directly and merged. 581 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-15 — **Sprint 36 shipped** (provider news feed: Finnhub /company-news →
+`MarketData.news`); **S41 planned** (reporter profit-factor + expectancy). P12 first feed live;
+S37 (analyst sentiment pillar) is next. 611 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -14,31 +11,22 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P11 active; sentiment promoted to its own phase (P12).** Analyst technical engine complete
-(15 indicators, S30–S33); provider serves fundamentals (S34); analyst blends a fundamental pillar
-into the gate (S35). The news + sentiment slice grew — on the product owner's direction — into a
-**champion–challenger** design and now owns **phase P12** (+ a P13 cross-asset/macro graph layer);
-decision recorded in `docs/decisions/0002-sentiment-champion-challenger.md`. Shape: one
-`SentimentScorer` interface, three implementations — a deterministic **lexicon** (the analyst's
-*binding* pillar), a **provider-sentiment** number, and **FinBERT** behind the reserved **forecaster**
-agent (advisory/shadow, heavy dep isolated) — compared on forward returns via a scorecard, promoted
-only through the P10 registry gate. **Sprint 36 — provider news feed** (headlines into
-`MarketData.news`, twin of S34) and **Sprint 37 — analyst sentiment pillar** (the deterministic
-Loughran–McDonald lexicon champion, a twin of S35's fundamental pillar, folded into the renormalised
-blend; no contract change) are both handed off as P12's first two sprints — S36 then S37. Shipping
-S37 starts live news accrual (real headlines scored onto persisted `Recommendation.sentiment_score`).
-**Sprints 39 and 38 are shipped** (both implemented directly): S39 signal-diversity selection
-(surfaces top pillar-diverse signals in `evidence_refs`) and S38 relative strength (benchmark-relative
-momentum blended into the technical pillar 0.8/0.2, via a separate fault-tolerant benchmark fetch).
-**P11's analyst-side scoring is now complete** — technical (15 indicators) + fundamental + sentiment-
-diversity + relative strength. P11's remaining gaps are non-analyst: PM (reward/risk + sector caps),
-scanner (beta + earnings), reporter (profit-factor + expectancy). 592 tests, floor 100.00. Spec
-sources: memory `v1-deterministic-port-gaps.md`, `docs/decisions/0002-sentiment-champion-challenger.md`.
+**P12 active: news feed live (S36 shipped), lexicon pillar next (S37).** S36 shipped:
+`fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated
+with per-ticker Finnhub `/company-news` headlines, field-gated with the same fault boundary and
+`news_degraded` quality note. **Sprint 37 — analyst lexicon pillar** (the deterministic
+Loughran–McDonald lexicon champion, `sentiment_weight` 0.20, folded into the renormalised
+three-pillar blend; `Recommendation.sentiment_score` set; no contract change) is the next coding
+sprint. Shipping S37 starts live news accrual (real headlines scored onto persisted
+`Recommendation.sentiment_score`). **P11 analyst-side complete** (S30–S35 + S38–S39); **P11 PM
+gate done** (S40 reward/risk). P11 remaining: reporter profit-factor + expectancy (S41, planned),
+scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sources:
+`docs/decisions/0002-sentiment-champion-challenger.md`, memory `v1-deterministic-port-gaps.md`.
 
 ## Next
 
-- **P12 — Sentiment (champion–challenger)**, in order: **S36 provider news feed** (handed off) →
-  **S37 analyst lexicon pillar** (handed off; binding, `sentiment_weight` 0.20; reading rides on
+- **P12 — Sentiment (champion–challenger)**, in order: **S36 provider news feed** (**shipped**) →
+  **S37 analyst lexicon pillar** (planned; binding, `sentiment_weight` 0.20; reading rides on
   `Recommendation.sentiment_score`, no new node/contract change) →
   **provider-sentiment** challenger (Finnhub `/news-sentiment`, shadow) → **forecaster/FinBERT**
   agent (advisory, dep isolated, `ShadowPrediction` + `model_version`) → **relationship/scorecard
@@ -46,13 +34,14 @@ sources: memory `v1-deterministic-port-gaps.md`, `docs/decisions/0002-sentiment-
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-- **P11 remaining** (non-analyst deterministic gaps): PM **sector-concentration cap** (needs a
-  `sector` field on positions/recommendations — larger, has contract/provider plumbing), scanner
-  (beta + earnings), reporter (profit-factor + expectancy). **Done:** analyst scoring (technical,
-  fundamental, relative strength, signal-diversity) + **PM reward/risk gate (S40)**. Sequenced spec:
-  memory `v1-deterministic-port-gaps.md`. **Committed scope, not optional.** Note for P12 S37: the
-  sentiment pillar adds a `score_candidate` param **and** should add `"sentiment"` to the S39
-  signal-selection weights map (mechanical, no logic conflict).
+- **P11 remaining** (non-analyst deterministic gaps): **S41 — reporter profit-factor + expectancy**
+  (planned; `domain/trade_outcomes.py`, no contract change) → scanner (beta + earnings, S42) → PM
+  **sector-concentration cap** (needs a `sector` field — larger, has contract/provider plumbing).
+  **Done:** analyst scoring (technical, fundamental, relative strength, signal-diversity) + **PM
+  reward/risk gate (S40)**. Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed
+  scope, not optional.** Note for P12 S37: the sentiment pillar adds a `score_candidate` param
+  **and** should add `"sentiment"` to the S39 signal-selection weights map (mechanical, no logic
+  conflict).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -69,6 +58,16 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
+- **Sprint 36 — Provider: news feed** (P12; first P12 sprint). New `fetch_news` on
+  `FinnhubDataSource` (`fundamentals.py`, extended in-place at 166L) + `_download_news` /
+  `_parse_news` (pure parser: strips non-string/empty/missing headlines, caps at
+  `max_news_per_ticker`, never raises). Two new tunables (`finnhub_news_lookback_days` 7,
+  `max_news_per_ticker` 20). `DataSource` Protocol gains `fetch_news`; `FakeDataSource` adds
+  `news` fixture + `fail_news`; `StooqDataSource` stubs it. `CompositeDataSource` delegates news
+  to the Finnhub source. `get_market_data` field-gates `"news"` with its own `fault_boundary` →
+  `{}` + `"news_degraded"` quality note on fault. **No contract change** (CONTRACT 0.1.0,
+  `owns_graph`/`external_io` untouched); **no new dependency** (stdlib urllib/json only). OHLCV
+  and fundamentals callers untouched — no re-pin. 611 tests, floor 100.00.
 - **Sprint 40 — Portfolio manager: reward/risk gate** (P11; implemented directly). New PM tunable
   `min_reward_risk_ratio` (1.5) and a gate in `domain/risk.py`: because v2 carries percentages, the
   reward/risk ratio reduces to `target_pct / stop_pct` (entry cancels). Extracted `_effective_pcts`

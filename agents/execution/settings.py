@@ -10,7 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import SettingsConfigDict
 
 from kernel import AgentSettings, tunable
@@ -21,7 +21,9 @@ ExecutionStageValue = Literal["paper", "broker_shadow", "live_manual", "live_aut
 class ExecutionSettings(AgentSettings):
     """Settings for the paper-stage execution agent."""
 
-    model_config = SettingsConfigDict(env_prefix="EXECUTION_", frozen=True)
+    model_config = SettingsConfigDict(
+        env_prefix="EXECUTION_", frozen=True, populate_by_name=True
+    )
 
     stage: ExecutionStageValue = "paper"
     slippage_bps: int = tunable(
@@ -67,5 +69,27 @@ class ExecutionSettings(AgentSettings):
         ge=0.0,
         le=1.0,
     )
-    alpaca_api_key: str | None = Field(default=None, repr=False)
-    alpaca_secret_key: str | None = Field(default=None, repr=False)
+    # Alpaca paper broker (ADR-0006). Aliases bridge the unprefixed .env names.
+    alpaca_api_key: str | None = Field(
+        default=None,
+        repr=False,
+        validation_alias=AliasChoices("EXECUTION_ALPACA_API_KEY", "ALPACA_API_KEY"),
+    )
+    alpaca_secret_key: str | None = Field(
+        default=None,
+        repr=False,
+        validation_alias=AliasChoices(
+            "EXECUTION_ALPACA_SECRET_KEY", "ALPACA_API_SECRET"
+        ),
+    )
+    alpaca_base_url: str = Field(
+        default="https://paper-api.alpaca.markets",
+        validation_alias=AliasChoices("EXECUTION_ALPACA_BASE_URL", "ALPACA_BASE_URL"),
+    )
+    alpaca_timeout: int = tunable(
+        15,
+        why="Bound the Alpaca REST call so a slow broker cannot hang the run.",
+        ge=1,
+        le=60,
+        unit="seconds",
+    )

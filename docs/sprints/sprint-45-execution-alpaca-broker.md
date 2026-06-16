@@ -106,8 +106,8 @@ alpaca_timeout: int = tunable(
 
 (Confirm `populate_by_name`/alias behaviour with the existing `AgentSettings` base — if aliases fight
 the `EXECUTION_` prefix, prefer `AliasChoices` so both the prefixed and `.env` names resolve. The
-`.env` already carries `ALPACA_API_KEY`/`ALPACA_API_SECRET`/`ALPACA_ENDPOINT`; note in the handback if
-`ALPACA_ENDPOINT` (which includes `/v2`) needs reconciling — this adapter wants the host root.)
+`.env` already carries the unprefixed Alpaca credential names plus an endpoint var; note in the handback
+if the endpoint value (which includes `/v2`) needs reconciling — this adapter wants the host root.)
 
 ## Part B — Alpaca broker
 

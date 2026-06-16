@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING
 from agents.analyst import AnalystAgent
 from agents.curator import CuratorAgent
 from agents.execution import ExecutionAgent
-from agents.execution.broker import PaperBroker
+from agents.execution.broker_factory import broker_from_settings
+from agents.execution.settings import ExecutionSettings
 from agents.monitor import MonitorAgent
 from agents.portfolio_manager import PortfolioManagerAgent
 from agents.portfolio_manager.settings import PortfolioManagerSettings
@@ -66,10 +67,12 @@ def bind_paper_loop_agents(
         settings=PortfolioManagerSettings(starting_cash=settings.pm_starting_cash),
         sink=sink,
     ).bind()
+    execution_settings = ExecutionSettings()
     ExecutionAgent(
         bus,
         graph=graph,
-        broker=broker or PaperBroker(),
+        broker=broker or broker_from_settings(execution_settings),
+        settings=execution_settings,
         sink=sink,
     ).bind()
     MonitorAgent(bus, graph=graph, sink=sink).bind()

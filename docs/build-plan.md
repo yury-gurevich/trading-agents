@@ -221,6 +221,41 @@ macro-event signal are computed deterministically over the graph and surfaced wi
 contributions; never binding until scorecarded. **Effort: L–XL.** *(Contingent on P12 + the data
 runway; the highest-ambition phase.)*
 
+### P14 — Inter-agent comms re-architecture (event-driven pub/sub)
+
+Required by `docs/decisions/0005-inter-agent-communication.md`: replace synchronous request→response
+RPC hand-offs with **event-driven publish/subscribe + claim-check** — data + audit in Neo4j, small
+`ready:<graph-ref>` events on the bus, consumers read the store by reference — over **Azure Service
+Bus** in deployment. **In-process before distributed:** sprints 1–7 prove the model on the in-process
+bus (unit gate stays infra-free); sprint 8 adds the Azure backend behind the same protocol. This phase
+**gates the agent-level law tests** (the provider's `TRG`/`OUT` laws are already pub/sub, law v0.3).
+Each sprint keeps the 100 % coverage floor and reconciles the touched agent's laws as it migrates.
+
+1. **Kernel pub/sub primitive** — `MessageBus` gains `publish(topic, event)` / `subscribe(topic,
+   handler)`; an in-process backend with fan-out. Request/response is retained for the operator/human
+   sync path. **Exit:** an echo publish→subscribe round-trip over the in-process bus; both-mode bus
+   green. **Effort: M.**
+2. **Claim-check helper** — a kernel helper to write an artifact to the `GraphStore` and publish a
+   `ready:<ref>` event, and to resolve a ref → read the artifact back. **Exit:** produce→ref→consume
+   round-trip on `InMemoryGraphStore`; payload never on the bus. **Effort: S–M.**
+3. **Event-binding pattern + provider** — establish the agent pattern (subscribe input topic → process
+   → store → publish `ready:<ref>`); migrate the **provider** (the data boundary, pattern stress-test);
+   finalize its `TRG`/`OUT` law reconciliation. **Exit:** the provider answers a data-request event via
+   claim-check, no RPC. **Effort: M.**
+4. **Scanner + analyst** migrated to event-driven claim-check. **Exit:** scan→analyze flows on the
+   pub/sub bus. **Effort: M.**
+5. **Portfolio manager + execution** migrated. **Exit:** recommend→size→submit→fill flows on the bus.
+   **Effort: M.**
+6. **Monitor + reporter** migrated. **Exit:** exit/report flows on the bus; the **whole pipeline is
+   event-driven in-process.** **Effort: M.**
+7. **Dispatcher → trigger-emitter + watchdog** — replace step sequencing with a kickoff trigger;
+   choreography drives the loop; dead-letter/retry surfaced via the supervisor. **Exit:** the P4 daily
+   loop runs event-driven end-to-end on the in-process bus. **Effort: M.**
+8. **Azure Service Bus backend** — implement the pub/sub protocol over Service Bus topics/subscriptions
+   (claim-check keeps every message < 256 KB); integration-marked, skips without creds; supersedes the
+   Celery/RabbitMQ assumption (ADR-0004→0005). **Exit:** a both-backends parity test (in-process ==
+   Service Bus). **Effort: M–L.**
+
 ## Cross-cutting workstreams
 
 Some capabilities are not single phases but threads woven through many. Naming them
@@ -332,3 +367,4 @@ stage gates in P8.
 | P11 Decision-logic depth | **active** (extension; analyst scoring complete — S30–S33 technical (15 indicators), S35 fundamental, S38 relative strength, S39 signal-diversity; S40 PM reward/risk gate; remaining: PM sector cap, scanner beta+earnings, reporter profit-factor+expectancy; sentiment split out to P12) |
 | P12 Sentiment (champion–challenger) | **planned** (S36 provider news feed handed off; then lexicon pillar / provider + FinBERT challengers / scorecard harness — implements the reserved forecaster agent; ADR-0002) |
 | P13 Cross-asset & macro signal graph | **planned** (sector contagion + signed tariff/sanction event propagation over Neo4j; contingent on P12 + a news+returns data runway; ADR-0002) |
+| P14 Inter-agent comms re-architecture | **planned** (ADR-0005: event-driven pub/sub + claim-check over Azure Service Bus; 8 sprints, in-process first then the Azure backend; gates the agent-level law tests) |

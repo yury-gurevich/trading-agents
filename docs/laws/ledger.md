@@ -14,7 +14,7 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 | DEP-CLOCK | 1 | ⬜ |
 | DEP-NEO4J | 3 | 🟨 **2/3 real** — 01 reachable + 02 write/read proven on Aura (`02812797`); 03 append-only/uniqueness pending |
 | DEP-BUS | 3 | ⬜ |
-| DEP-FEED | 3 | ⛔ **live Stooq RED** (anti-bot proof-of-work blocks the HTTP client → 404); **Postgres price_cache fallback 🟩** (1285 AAPL bars to 2026-05) |
+| DEP-FEED | 3 | 🟨 **keyed Finnhub fundamentals 🟩** (live, 11 AAPL metrics via the real FinnhubDataSource); **OHLCV: Stooq RED** (anti-bot PoW → 404), **Finnhub candles premium-only**, **Postgres price_cache fallback 🟩** (raw OHLCV, 1285 AAPL bars to 2026-05). Live-OHLCV feed = open gap (DRIFT-009). |
 | DEP-BROKER | 2 | ⬜ |
 | DEP-LLM | 2 | ⬜ |
 | DEP-TELE | 2 | ⬜ |

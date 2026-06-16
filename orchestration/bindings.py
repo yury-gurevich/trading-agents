@@ -17,8 +17,8 @@ from agents.monitor import MonitorAgent
 from agents.portfolio_manager import PortfolioManagerAgent
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from agents.provider import ProviderAgent
+from agents.provider.composite import market_source_from_settings
 from agents.provider.settings import ProviderSettings
-from agents.provider.sources import StooqDataSource
 from agents.reporter import ReporterAgent
 from agents.researcher import ResearcherAgent
 from agents.scanner import ScannerAgent
@@ -44,13 +44,14 @@ def bind_paper_loop_agents(
     sink: FaultSink,
 ) -> None:
     """Bind provider through supervisor to the injected bus."""
+    provider_settings = ProviderSettings(
+        max_staleness_days=settings.provider_max_staleness_days
+    )
     ProviderAgent(
         bus,
         graph=graph,
-        source=source or StooqDataSource(),
-        settings=ProviderSettings(
-            max_staleness_days=settings.provider_max_staleness_days
-        ),
+        source=source or market_source_from_settings(provider_settings),
+        settings=provider_settings,
         sink=sink,
     ).bind()
     ScannerAgent(

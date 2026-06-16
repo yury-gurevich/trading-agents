@@ -1,7 +1,7 @@
 """Composite DataSource that routes OHLCV/regime and fundamentals to different feeds.
 
 Agent: provider
-Role: combine a price/regime source (Stooq) with a fundamentals source (Finnhub).
+Role: combine a price/regime source (Tiingo) with a fundamentals source (Finnhub).
 External I/O: none directly (delegates to the wrapped sources).
 """
 
@@ -52,15 +52,15 @@ class CompositeDataSource:
 
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
-    """Compose the live feeds from settings: FMP OHLCV + Finnhub fundamentals/news."""
-    from agents.provider.fmp import FMPDataSource
+    """Compose the live feeds: Tiingo OHLCV + Finnhub fundamentals/news."""
     from agents.provider.fundamentals import FinnhubDataSource
+    from agents.provider.tiingo import TiingoDataSource
 
     return CompositeDataSource(
-        price_source=FMPDataSource(
-            api_key=settings.fmp_api_key,
-            base_url=settings.fmp_base_url,
-            timeout=settings.fmp_timeout,
+        price_source=TiingoDataSource(
+            api_key=settings.tiingo_api_key,
+            base_url=settings.tiingo_base_url,
+            timeout=settings.tiingo_timeout,
         ),
         fundamentals_source=FinnhubDataSource(
             api_key=settings.finnhub_api_key,

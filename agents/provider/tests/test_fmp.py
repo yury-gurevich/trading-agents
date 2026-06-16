@@ -1,7 +1,8 @@
 """FMP OHLCV source tests.
 
 Agent: provider
-Role: verify FMP EOD parsing, window/malformed filtering, and the settings builder.
+Role: verify FMP EOD parsing and window/malformed filtering (FMP is the
+validation sub-universe / failover feed; routing is covered in test_tiingo).
 External I/O: none.
 """
 
@@ -10,9 +11,7 @@ from __future__ import annotations
 from datetime import date
 from types import MethodType
 
-from agents.provider.composite import CompositeDataSource, market_source_from_settings
 from agents.provider.fmp import FMPDataSource
-from agents.provider.settings import ProviderSettings
 from contracts.common import Window
 
 _WINDOW = Window(start=date(2026, 1, 1), end=date(2026, 1, 31))
@@ -66,9 +65,3 @@ def test_fmp_serves_ohlcv_only() -> None:
     assert source.fetch_fundamentals(("AAPL",), _WINDOW) == {}
     assert source.fetch_news(("AAPL",), _WINDOW) == {}
     assert source.fetch_regime_inputs(date(2026, 1, 2)).vix is None
-
-
-def test_market_source_from_settings_routes_ohlcv_to_fmp() -> None:
-    composite = market_source_from_settings(ProviderSettings())
-    assert isinstance(composite, CompositeDataSource)
-    assert isinstance(composite._price_source, FMPDataSource)

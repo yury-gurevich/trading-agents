@@ -9,7 +9,7 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 ## Layer 0 — Dependencies (must go green first)
 
 Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
-(`probes/`, real systems, functional channels). Latest run: **7 green · 1 warn · 0 red · 2 skip**.
+(`probes/`, real systems, functional channels). Latest run: **8 green · 1 warn · 0 red · 2 skip** (incl. FMP live OHLCV).
 
 | Component | Clauses | Status |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Re-run the live harness any time: **`uv run --extra runtime --extra probes pytho
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
 | DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
-| DEP-FEED | 3 | 🟨 **Finnhub fundamentals 🟩** (live, 11 AAPL metrics); **OHLCV: Stooq WARN** (anti-bot PoW; fallback covers), **Finnhub candles premium-only**, **Postgres price_cache fallback 🟩** (raw, 1285 AAPL bars). Live-OHLCV feed = open gap (DRIFT-009). |
+| DEP-FEED | 3 | 🟩 **OHLCV: FMP live 🟩** (FinancialModelingPrep `/stable/historical-price-eod`, free, 1254 AAPL EOD bars) — solves DRIFT-009; **Finnhub fundamentals 🟩** (11 AAPL metrics); Stooq WARN (anti-bot, retired), Postgres raw fallback 🟩. Follow-up: build the provider `FMPDataSource`. |
 | DEP-BROKER | 2 | ⬜ in-process PaperBroker; covered by the unit gate |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
 | DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |

@@ -161,11 +161,38 @@ def probe_feed_ohlcv(creds: dict[str, str]) -> list[Result]:
                 "DEP-FEED-01",
                 "OHLCV: Stooq live",
                 WARN,
-                f"down ({type(exc).__name__}); fallback covers",
+                f"down ({type(exc).__name__}); FMP/fallback covers",
             )
         )
+    out.append(_fmp_ohlcv(creds))
     out.append(_postgres_ohlcv(creds))
     return out
+
+
+def _fmp_ohlcv(creds: dict[str, str]) -> Result:
+    """FinancialModelingPrep stable EOD — the live OHLCV source (free tier)."""
+    key = creds.get("FNP_API_KEY")
+    if not key:
+        return Result("DEP-FEED-01", "OHLCV: FMP live", SKIP, "no FNP_API_KEY")
+    import json
+    import urllib.request
+
+    url = (
+        "https://financialmodelingprep.com/stable/historical-price-eod/light"
+        f"?symbol=AAPL&apikey={key}"
+    )
+    try:
+        with urllib.request.urlopen(url, timeout=20) as resp:  # noqa: S310 - declared FMP endpoint
+            data = json.loads(resp.read())
+        count = len(data) if isinstance(data, list) else 0
+        return Result(
+            "DEP-FEED-01",
+            "OHLCV: FMP live",
+            GREEN if count else RED,
+            f"{count} AAPL EOD bars",
+        )
+    except Exception as exc:
+        return Result("DEP-FEED-01", "OHLCV: FMP live", RED, f"{type(exc).__name__}")
 
 
 def _postgres_ohlcv(creds: dict[str, str]) -> Result:

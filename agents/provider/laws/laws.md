@@ -41,7 +41,7 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Triggers (`TRG`)
 
-- `PROV-TRG-01` — **Purely reactive**: it acts only on an inbound request (request/response). 
+- `PROV-TRG-01` — **Purely reactive**: it acts only on an inbound request (request/response).
 - `PROV-TRG-02` — It **never self-triggers** — no polling, no scheduled fetches, no speculative
   prefetch absent a request.
 - `PROV-TRG-03` — Precondition to fetch is a **valid** request; otherwise it rejects and does not
@@ -201,3 +201,6 @@ status:
   (`STA-01..04`, `IDN-03`); sentiment **downstream** (`NEV-08`); FRED/EDGAR **in-law, deferred**
   (`IN-06`); regime **policy inputs** (`OUT-02`) and **degraded event** (`OUT-06`) adopted. Still
   **DRAFT (in cycle, not locked)** — locks after the full test cycle (conventions §11).
+- v0.2 — inter-agent comms model settled (ADR-0005, DRIFT-008): **synchronous RPC** confirmed, so
+  `PROV-TRG-01`/`PROV-OUT-01` (reactive request→response) stand; the durable store (`STA-01..04`) is
+  the later/independent-pickup substrate, not the next-step hand-off. No clause change.

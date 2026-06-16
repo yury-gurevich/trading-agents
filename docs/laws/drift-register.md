@@ -20,6 +20,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | DRIFT-006 | PROV-OUT-01 | Benchmark is just another **requested field** of a market-data request. | Code (S38) fetches the benchmark via a **separate** request to dodge a degraded-quality trip. | code-drift | OPEN — reconcile code to law at test time |
 | DRIFT-007 | PROV-SEC-07 | Only capability-matrix-authorised callers may invoke the provider. | Unverified that the matrix actually gates data requests. | code-drift (verify) | OPEN — confirm at reconciliation |
 
+## System-level
+
+| ID | Question | Decision | Status |
+| --- | --- | --- | --- |
+| DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Synchronous RPC** retained; Neo4j is the durable record + audit for later/independent pickup. Claim-check deferred to parallel-scale. | **RESOLVED** — `docs/decisions/0005-inter-agent-communication.md`; `PROV-TRG-01`/`OUT-01` confirmed (not a drift). |
+
 ## Other agents
 
-_Populated as each agent is authored and reconciled._
+*Populated as each agent is authored and reconciled.*

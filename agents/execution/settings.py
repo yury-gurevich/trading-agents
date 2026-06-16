@@ -69,17 +69,22 @@ class ExecutionSettings(AgentSettings):
         ge=0.0,
         le=1.0,
     )
-    # Alpaca paper broker (ADR-0006). Aliases bridge the unprefixed .env names.
+    # Alpaca paper broker (ADR-0006). Aliases bridge the unprefixed .env names;
+    # the paper-specific key wins so live keys are never picked up by accident.
     alpaca_api_key: str | None = Field(
         default=None,
         repr=False,
-        validation_alias=AliasChoices("EXECUTION_ALPACA_API_KEY", "ALPACA_API_KEY"),
+        validation_alias=AliasChoices(
+            "EXECUTION_ALPACA_API_KEY", "ALPACA_PAPER_API_KEY", "ALPACA_API_KEY"
+        ),
     )
     alpaca_secret_key: str | None = Field(
         default=None,
         repr=False,
         validation_alias=AliasChoices(
-            "EXECUTION_ALPACA_SECRET_KEY", "ALPACA_API_SECRET"
+            "EXECUTION_ALPACA_SECRET_KEY",
+            "ALPACA_PAPER_API_SECRET",
+            "ALPACA_API_SECRET",
         ),
     )
     alpaca_base_url: str = Field(

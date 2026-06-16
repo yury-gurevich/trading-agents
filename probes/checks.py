@@ -3,7 +3,7 @@
 Agent: probes
 Role: prove each shared dependency is healthy against the real system, through the
 provider's functional channels (not mocks).
-External I/O: Neo4j, market-data feeds (Stooq/Finnhub/FMP), Postgres (raw OHLCV
+External I/O: Neo4j, market-data feeds (Tiingo/FMP/Finnhub), Postgres (raw OHLCV
 fallback), and the Alpaca paper broker.
 """
 
@@ -139,35 +139,33 @@ def _neo4j_uniqueness(session: object) -> Result:
 
 
 def probe_feed_ohlcv(creds: dict[str, str]) -> list[Result]:
-    """DEP-FEED-01 — OHLCV reachable (live Stooq, or the raw Postgres fallback)."""
-    from agents.provider.sources import StooqDataSource
+    """DEP-FEED-01 — OHLCV reachable: Tiingo (default) + FMP + raw Postgres."""
+    return [_tiingo_ohlcv(creds), _fmp_ohlcv(creds), _postgres_ohlcv(creds)]
+
+
+def _tiingo_ohlcv(creds: dict[str, str]) -> Result:
+    """Tiingo daily EOD — the runtime-default live OHLCV feed (S44, ADR-0006)."""
+    key = creds.get("TIINGO_API_KEY") or creds.get("PROVIDER_TIINGO_API_KEY")
+    if not key:
+        return Result("DEP-FEED-01", "OHLCV: Tiingo live", SKIP, "no TIINGO_API_KEY")
+    from agents.provider.tiingo import TiingoDataSource
     from contracts.common import Window
 
     end = datetime.now(tz=UTC).date()
     window = Window(start=end - timedelta(days=12), end=end)
-    out: list[Result] = []
     try:
-        bars = StooqDataSource().fetch_ohlcv(("AAPL",), window)
-        out.append(
-            Result(
-                "DEP-FEED-01",
-                "OHLCV: Stooq live",
-                GREEN if bars else WARN,
-                f"{len(bars)} bars",
-            )
+        source = TiingoDataSource(
+            api_key=key, base_url="https://api.tiingo.com", timeout=20
+        )
+        bars = source.fetch_ohlcv(("AAPL",), window)
+        return Result(
+            "DEP-FEED-01",
+            "OHLCV: Tiingo live",
+            GREEN if bars else RED,
+            f"{len(bars)} AAPL EOD bars",
         )
     except Exception as exc:
-        out.append(
-            Result(
-                "DEP-FEED-01",
-                "OHLCV: Stooq live",
-                WARN,
-                f"down ({type(exc).__name__}); FMP/fallback covers",
-            )
-        )
-    out.append(_fmp_ohlcv(creds))
-    out.append(_postgres_ohlcv(creds))
-    return out
+        return Result("DEP-FEED-01", "OHLCV: Tiingo live", RED, f"{type(exc).__name__}")
 
 
 def _fmp_ohlcv(creds: dict[str, str]) -> Result:
@@ -275,15 +273,15 @@ def probe_feed_fundamentals(creds: dict[str, str]) -> list[Result]:
 
 def probe_broker(creds: dict[str, str]) -> list[Result]:
     """DEP-BROKER-01/02 — Alpaca paper broker accepts an order and is idempotent."""
-    key_id = creds.get("ALPACA_API_KEY")
-    secret = creds.get("ALPACA_API_SECRET")
+    key_id = creds.get("ALPACA_PAPER_API_KEY") or creds.get("ALPACA_API_KEY")
+    secret = creds.get("ALPACA_PAPER_API_SECRET") or creds.get("ALPACA_API_SECRET")
     if not key_id or not secret:
         return [
             Result(
                 "DEP-BROKER-01",
                 "broker: Alpaca paper",
                 SKIP,
-                "no ALPACA_API_KEY / ALPACA_API_SECRET",
+                "no ALPACA_PAPER_API_KEY / secret",
             )
         ]
     from decimal import Decimal

@@ -27,9 +27,10 @@ unprefixed `.env` Alpaca names via `AliasChoices`+`populate_by_name`. No contrac
 Alpaca paper P/L + "fake purchases" harness (memory `alpaca-paper-broker`). **DEP-BROKER proven 🟩**
 (2026-06-16): `probe_broker` hit live Alpaca paper — real submit → idempotent replay → cancel, account
 left flat (`probes/checks.py`, real order `7327477f-b5a`). Bill of health: 11 green · 1 warn · 0 red ·
-2 skip. **Remaining follow-ups:** pending→filled reconciliation across sessions; data-side
-`FailoverDataSource` + `AlpacaDataSource`; the feed probe still tests retired Stooq (WARN) — point it at
-Tiingo. **Next coding sprint:** P12 S37 (analyst lexicon pillar) resumes — *unless* the owner reprioritises.
+2 skip. The feed probe now proves **Tiingo OHLCV live** (9 AAPL bars) and the broker prefers the
+`ALPACA_PAPER_API_KEY`; bill of health is **12 green · 0 warn · 0 red · 2 skip** (all live deps green).
+**Remaining follow-ups:** pending→filled reconciliation across sessions; data-side `FailoverDataSource`
++ `AlpacaDataSource`. **Next coding sprint:** P12 S37 (analyst lexicon pillar) resumes.
 
 **P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated

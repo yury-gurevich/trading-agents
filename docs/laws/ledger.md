@@ -9,7 +9,7 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 ## Layer 0 — Dependencies (must go green first)
 
 Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
-(`probes/`, real systems, functional channels). Latest run (2026-06-16): **11 green · 1 warn · 0 red · 2 skip** — incl. **live Alpaca paper broker** (submit→idempotent→cancel) and FMP live OHLCV.
+(`probes/`, real systems, functional channels). Latest run (2026-06-16): **12 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (runtime default), FMP, Postgres, Finnhub, Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel).
 
 | Component | Clauses | Status |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Re-run the live harness any time: **`uv run --extra runtime --extra probes pytho
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
 | DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
-| DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo** is the runtime default (S44, full S&P 500, free 500 sym/mo) — closes DRIFT-009; **FMP** retained as validation/failover (~87 sym); **Finnhub fundamentals 🟩** (11 AAPL metrics); Stooq retired (anti-bot), Postgres raw fallback 🟩. |
+| DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); Postgres raw fallback 🟩 (1285 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (dropped from the probe). |
 | DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
 | DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |

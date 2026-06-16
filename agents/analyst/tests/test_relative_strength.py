@@ -69,8 +69,8 @@ def test_relative_strength_blends_into_technical_score() -> None:
     cand_bars = _series("AAPL", [100.0 + offset for offset in range(40)])
     benchmark = _series("SPY", [100.0] * window + [101.0])  # mild +1% benchmark
 
-    without = score_candidate(candidate(), cand_bars, {}, (), settings)
-    with_rs = score_candidate(candidate(), cand_bars, {}, benchmark, settings)
+    without = score_candidate(candidate(), cand_bars, {}, (), (), settings)
+    with_rs = score_candidate(candidate(), cand_bars, {}, benchmark, (), settings)
 
     spread = compute_relative_strength(cand_bars, benchmark, window)
     assert spread is not None

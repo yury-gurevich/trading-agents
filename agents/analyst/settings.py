@@ -65,6 +65,15 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    sentiment_weight: float = tunable(
+        0.20,
+        why=(
+            "Reference composite weight for the sentiment pillar; renormalised "
+            "over present pillars."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
     benchmark_ticker: str = tunable(
         "SPY",
         why="Relative-strength benchmark; SPY tracks the scanner's S&P 500 universe.",

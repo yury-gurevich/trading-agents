@@ -62,6 +62,9 @@ def decide(
     if score.fundamental_score is not None:
         summary += f" and a fundamental score of {score.fundamental_score:.3f}"
         evidence_refs += ("analyst.fundamental_score",)
+    if score.sentiment_score is not None:
+        summary += f" and a news-sentiment score of {score.sentiment_score:.3f}"
+        evidence_refs += ("analyst.sentiment_score",)
     evidence_refs += tuple(f"analyst.signal.{name}" for name in score.top_signals)
     return AnalysisDecision(
         recommendation=Recommendation(
@@ -70,6 +73,7 @@ def decide(
             confidence=score.confidence,
             technical_score=score.technical_score,
             fundamental_score=score.fundamental_score,
+            sentiment_score=score.sentiment_score,
             suggested_stop_pct=regime.base_stop_loss_pct,
             suggested_target_pct=regime.base_take_profit_pct,
             rationale=Explanation(summary=summary, evidence_refs=evidence_refs),

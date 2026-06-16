@@ -147,6 +147,7 @@ class AnalystAgent(AgentBase):
                         bars.get(candidate.ticker, ()),
                         market.fundamentals.get(candidate.ticker, {}),
                         benchmark_bars,
+                        market.news.get(candidate.ticker, ()),
                         self._settings,
                     ),
                     regime,

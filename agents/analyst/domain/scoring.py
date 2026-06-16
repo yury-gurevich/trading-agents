@@ -15,7 +15,9 @@ from agents.analyst.domain.relative_strength import (
     compute_relative_strength,
     score_relative_strength,
 )
+from agents.analyst.domain.sentiment_rules import score_sentiment
 from agents.analyst.domain.signal_selection import (
+    Signal,
     fundamental_signals,
     select_top_signals,
     technical_signals,
@@ -36,6 +38,7 @@ class ScoreBreakdown:
     confidence: float
     metrics: dict[str, float]
     fundamental_score: float | None = None
+    sentiment_score: float | None = None
     top_signals: tuple[str, ...] = ()
     rejection_reason: str | None = None
 
@@ -46,9 +49,10 @@ def score_candidate(
     bars: tuple[OHLCVBar, ...],
     fundamentals: dict[str, float],
     benchmark_bars: tuple[OHLCVBar, ...],
+    news: tuple[str, ...],
     settings: AnalystSettings,
 ) -> ScoreBreakdown:
-    """Score one candidate from its price history and fundamentals, then blend."""
+    """Score one candidate from price history, fundamentals, and news; then blend."""
     rows = sorted(bars, key=lambda bar: bar.bar_date)
     if len(rows) < settings.min_history_bars:
         return ScoreBreakdown(
@@ -64,7 +68,9 @@ def score_candidate(
     )
     raw_fund, fmetrics = score_fundamental(fundamentals)
     fundamental = None if raw_fund is None else _bounded(raw_fund / 100.0)
-    composite = _composite(technical, fundamental, settings)
+    raw_sent, smetrics = score_sentiment(news)
+    sentiment = None if raw_sent is None else _bounded(raw_sent / 100.0)
+    composite = _composite(technical, fundamental, sentiment, settings)
     confidence = _bounded(
         settings.confidence_floor + composite * settings.confidence_span
     )
@@ -76,15 +82,26 @@ def score_candidate(
         **tmetrics,
         **fmetrics,
         **rs_metrics,
+        **smetrics,
     }
     if fundamental is not None:
         metrics["fundamental_score"] = fundamental
-    signals = technical_signals(tmetrics) + fundamental_signals(fmetrics)
+    if sentiment is not None:
+        metrics["sentiment_score"] = sentiment
+    sentiment_signals = (
+        [Signal(name="sentiment", pillar="sentiment", score=raw_sent)]
+        if raw_sent is not None
+        else []
+    )
+    signals = (
+        technical_signals(tmetrics) + fundamental_signals(fmetrics) + sentiment_signals
+    )
     selected = select_top_signals(
         signals,
         {
             "technical": settings.technical_weight,
             "fundamental": settings.fundamental_weight,
+            "sentiment": settings.sentiment_weight,
         },
         slack=settings.signal_diversity_slack,
         max_signals=settings.max_top_signals,
@@ -94,6 +111,7 @@ def score_candidate(
         confidence=confidence,
         metrics=metrics,
         fundamental_score=fundamental,
+        sentiment_score=sentiment,
         top_signals=tuple(signal.name for signal in selected),
     )
 
@@ -119,16 +137,28 @@ def _apply_relative_strength(
 
 
 def _composite(
-    technical: float, fundamental: float | None, settings: AnalystSettings
+    technical: float,
+    fundamental: float | None,
+    sentiment: float | None,
+    settings: AnalystSettings,
 ) -> float:
     """Blend the present pillars, renormalised over their weights.
 
-    Returns the technical score alone when no fundamental pillar is available.
+    Returns the technical score alone when neither optional pillar is present;
+    otherwise sums each present pillar's weighted value over the present weights
+    (so a two-pillar result is exactly today's technical+fundamental blend).
     """
-    if fundamental is None:
+    if fundamental is None and sentiment is None:
         return technical
-    weight_t, weight_f = settings.technical_weight, settings.fundamental_weight
-    return (weight_t * technical + weight_f * fundamental) / (weight_t + weight_f)
+    weighted = settings.technical_weight * technical
+    weight_sum = settings.technical_weight
+    if fundamental is not None:
+        weighted += settings.fundamental_weight * fundamental
+        weight_sum += settings.fundamental_weight
+    if sentiment is not None:
+        weighted += settings.sentiment_weight * sentiment
+        weight_sum += settings.sentiment_weight
+    return weighted / weight_sum
 
 
 def _bounded(value: float) -> float:

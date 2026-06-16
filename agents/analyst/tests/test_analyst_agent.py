@@ -61,6 +61,22 @@ def test_recommendation_carries_fundamental_score_when_present() -> None:
     assert sink.faults == []
 
 
+def test_recommendation_carries_sentiment_score_when_present() -> None:
+    scan = candidate_set(candidate())
+    bus, _graph, sink = wire_analyst(
+        source_bars=bars(),
+        news={"AAPL": ("Profit surges to record as sales beat",)},
+    )
+
+    response = bus.request(analyze_message(scan))
+
+    rec = response.payload["recommendations"][0]
+    assert rec["ticker"] == "AAPL"
+    assert rec["sentiment_score"] == 1.0  # all-positive headline -> 100 -> 1.0
+    assert "news-sentiment score of" in rec["rationale"]["summary"]
+    assert sink.faults == []
+
+
 def test_low_confidence_candidate_becomes_rejection() -> None:
     # A sustained, wide-ranging climb reads as overbought and choppy: the technical
     # composite (0.379 over 12 indicators -- the 60-bar series clears OBV, RSI-2, NW

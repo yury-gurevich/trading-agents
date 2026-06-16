@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-16 — **Sprint 45 shipped** (execution Alpaca paper broker: `AlpacaBroker`
-behind the `Broker` port, `client_order_id` idempotency, `broker_from_settings` default swap — DEP-BROKER,
-ADR-0006); **Sprint 44 shipped** (provider Tiingo live OHLCV feed — closes DRIFT-009); **S41 planned**
-(reporter profit-factor + expectancy); S37 (analyst sentiment pillar) queued. 628 tests at 100.00%.
+**Last updated:** 2026-06-16 — **Sprint 37 shipped** (analyst sentiment pillar: Loughran–McDonald
+lexicon champion, binding third pillar in the renormalised confidence gate — P12); **S45/S44 shipped**
+(Alpaca paper broker + Tiingo live feed; live bill of health 12 green · 0 warn). **S41 planned**
+(reporter profit-factor + expectancy). 638 tests at 100.00%.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,7 +12,17 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S44 shipped — provider Tiingo live OHLCV feed (ADR-0006, DRIFT-009 CORRECTED).** The runtime default
+**S37 shipped — analyst sentiment pillar (P12 champion).** `agents/analyst/domain/sentiment_rules.py`
+scores Loughran–McDonald net tone over the provider's headlines into a 0–100 pillar; it is the **binding
+third pillar**, renormalised into the confidence gate with technical + fundamental (weights 0.50/0.30/0.20).
+`score_candidate` gained a `news` arg and `_composite` generalised to three pillars — the two-/one-pillar
+identities are preserved exactly, so **no existing value re-pinned**. Absent sentiment is *skipped*, not
+neutral-50. Analyst now requests the `news` field; rationale gains a sentiment clause; sentiment enters
+signal selection. No contract change. Shipping this **starts live sentiment accrual** (real headlines →
+persisted `Recommendation.sentiment_score`). **P12 next (ADR-0002):** provider-sentiment challenger
+(Finnhub `/news-sentiment`, shadow) → forecaster/FinBERT (advisory) → scorecard harness.
+
+**S44/S45 shipped — live data + broker (ADR-0006).** The runtime default
 source was broken (`StooqDataSource` anti-bot-blocked) and FMP free covers only ~87 symbols; S44 added
 `agents/provider/tiingo.py` `TiingoDataSource` (full S&P 500, free 500 sym/mo; Z-suffixed ISO date
 sliced to `YYYY-MM-DD`), routed `market_source_from_settings` OHLCV → Tiingo, and re-pointed the
@@ -30,9 +40,9 @@ left flat (`probes/checks.py`, real order `7327477f-b5a`). Bill of health: 11 gr
 2 skip. The feed probe now proves **Tiingo OHLCV live** (9 AAPL bars) and the broker prefers the
 `ALPACA_PAPER_API_KEY`; bill of health is **12 green · 0 warn · 0 red · 2 skip** (all live deps green).
 **Remaining follow-ups:** pending→filled reconciliation across sessions; data-side `FailoverDataSource`
-+ `AlpacaDataSource`. **Next coding sprint:** P12 S37 (analyst lexicon pillar) resumes.
++ `AlpacaDataSource`.
 
-**P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
+**P12 status: news feed live (S36 shipped), lexicon champion shipped (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated
 with per-ticker Finnhub `/company-news` headlines, field-gated with the same fault boundary and
 `news_degraded` quality note. **Sprint 37 — analyst lexicon pillar** (the deterministic

@@ -96,3 +96,4 @@ uv run pytest
 | [sprint-39](sprint-39-analyst-signal-diversity.md) | Analyst signal-diversity selection: surface the top pillar-diverse signals in the recommendation rationale (explanatory, no score change) (P11) | **shipped** |
 | [sprint-40](sprint-40-pm-reward-risk.md) | Portfolio manager reward/risk gate: reject orders whose target_pct/stop_pct is below min_reward_risk_ratio (P11) | **shipped** |
 | [sprint-41](sprint-41-reporter-trade-outcomes.md) | Reporter: profit-factor and expectancy over stop/target-closed positions; new `domain/trade_outcomes.py` (P11) | **planned** |
+| [sprint-43](sprint-43-monitor-realized-pnl.md) | Monitor realized PnL on close (`pnl_cents` on CloseDecision) — accuracy upgrade so the reporter can use real $ PnL across all triggers (P11) | **queued** (after S41) |

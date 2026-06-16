@@ -35,13 +35,15 @@ scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sour
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
 - **P11 remaining** (non-analyst deterministic gaps): **S41 — reporter profit-factor + expectancy**
-  (planned; `domain/trade_outcomes.py`, no contract change) → scanner (beta + earnings, S42) → PM
-  **sector-concentration cap** (needs a `sector` field — larger, has contract/provider plumbing).
-  **Done:** analyst scoring (technical, fundamental, relative strength, signal-diversity) + **PM
-  reward/risk gate (S40)**. Sequenced spec: memory `v1-deterministic-port-gaps.md`. **Committed
-  scope, not optional.** Note for P12 S37: the sentiment pillar adds a `score_candidate` param
-  **and** should add `"sentiment"` to the S39 signal-selection weights map (mechanical, no logic
-  conflict).
+  (planned; `domain/trade_outcomes.py`, %-based from trigger, time-exits excluded, no contract change)
+  → **S43 — monitor realized PnL** (**queued, blocked until S41 merges**; `pnl_cents` on `CloseDecision`,
+  contract 0.2.0) → **reporter re-point** to real $ PnL across all triggers (replaces S41's
+  approximation) → scanner (beta + earnings, S42) → PM **sector-concentration cap** (needs a `sector`
+  field — larger plumbing). **Decision 2026-06-16** (parallel-agent collision): the external coding
+  agent planned S41 (reporter, %-based); we ship that now and add real PnL after — see memory
+  `realized-pnl-sequencing`. **Done:** analyst scoring + **PM reward/risk gate (S40)**. Sequenced spec:
+  memory `v1-deterministic-port-gaps.md`. Note for P12 S37: the sentiment pillar adds a `score_candidate`
+  param **and** should add `"sentiment"` to the S39 signal-selection weights map (mechanical).
 - **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 - Build-when-needed: RAG vector index (deferred; no sprint planned).

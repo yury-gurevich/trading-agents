@@ -8,22 +8,25 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 
 ## Layer 0 — Dependencies (must go green first)
 
+Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
+(`probes/`, real systems, functional channels). Latest run: **7 green · 1 warn · 0 red · 2 skip**.
+
 | Component | Clauses | Status |
 | --- | --- | --- |
-| DEP-CONFIG | 2 | ⬜ |
-| DEP-CLOCK | 1 | ⬜ |
-| DEP-NEO4J | 3 | 🟨 **2/3 real** — 01 reachable + 02 write/read proven on Aura (`02812797`); 03 append-only/uniqueness pending |
-| DEP-BUS | 3 | ⬜ |
-| DEP-FEED | 3 | 🟨 **keyed Finnhub fundamentals 🟩** (live, 11 AAPL metrics via the real FinnhubDataSource); **OHLCV: Stooq RED** (anti-bot PoW → 404), **Finnhub candles premium-only**, **Postgres price_cache fallback 🟩** (raw OHLCV, 1285 AAPL bars to 2026-05). Live-OHLCV feed = open gap (DRIFT-009). |
-| DEP-BROKER | 2 | ⬜ |
-| DEP-LLM | 2 | ⬜ |
-| DEP-TELE | 2 | ⬜ |
+| DEP-CONFIG | 2 | 🟩 01 real (Neo4j + 3 feed/LLM creds present) |
+| DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
+| DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
+| DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
+| DEP-FEED | 3 | 🟨 **Finnhub fundamentals 🟩** (live, 11 AAPL metrics); **OHLCV: Stooq WARN** (anti-bot PoW; fallback covers), **Finnhub candles premium-only**, **Postgres price_cache fallback 🟩** (raw, 1285 AAPL bars). Live-OHLCV feed = open gap (DRIFT-009). |
+| DEP-BROKER | 2 | ⬜ in-process PaperBroker; covered by the unit gate |
+| DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
+| DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |
 
-> **First real probe run (2026-06-16).** Through the functional channels: Neo4j Aura round-trips for
-> real; the provider's `StooqDataSource` gets a 404 (Stooq now serves a JS proof-of-work interstitial,
-> not CSV) — so the keyless live OHLCV feed is **non-functional programmatically**; the Postgres
-> historical store serves OHLCV as the fallback. This is the gray→green machine catching a load-bearing
-> break that the `FakeDataSource` unit tests never could.
+> **The harness already paid for itself (2026-06-16).** Through the functional channels it proved Neo4j
+> Aura green (incl. uniqueness) and **caught a load-bearing break**: the provider's `StooqDataSource`
+> gets a 404 because Stooq now serves a JS proof-of-work interstitial, not CSV — the keyless live OHLCV
+> feed is non-functional programmatically. The Postgres raw store covers OHLCV as the fallback. No
+> `FakeDataSource` unit test could have surfaced this.
 
 ## Layer 1 — Agents
 

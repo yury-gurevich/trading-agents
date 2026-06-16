@@ -58,3 +58,13 @@ A real run's pre-flight runs the probes for the dependencies its flow needs, in 
 **stops loud** on the first red: `DEP-CONFIG → DEP-CLOCK → DEP-NEO4J → DEP-BUS → DEP-FEED →
 DEP-BROKER → (DEP-LLM) → DEP-TELE`. Green pre-flight is the precondition for trusting any agent-level
 result.
+
+**The probes are real and runnable** — the `probes/` package hits the actual systems through the
+provider's functional channels (no mocks), reading creds from `.env` (v1 `.env` fallback):
+
+```bash
+uv run --extra runtime --extra probes python -m probes   # prints the bill of health; exits non-zero on RED
+```
+
+It is **not** part of the unit gate (`probes/` is outside `testpaths` and coverage `source`) — it is an
+on-demand pre-flight against live infrastructure. Status lives in [`ledger.md`](ledger.md).

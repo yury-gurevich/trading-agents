@@ -41,7 +41,8 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Triggers (`TRG`)
 
-- `PROV-TRG-01` — **Purely reactive**: it acts only on an inbound request (request/response).
+- `PROV-TRG-01` — **Event-driven**: it acts only on a **data-request event** consumed from its
+  subscribed topic (pub/sub, ADR-0005) — never a point-to-point call, never self-initiated.
 - `PROV-TRG-02` — It **never self-triggers** — no polling, no scheduled fetches, no speculative
   prefetch absent a request.
 - `PROV-TRG-03` — Precondition to fetch is a **valid** request; otherwise it rejects and does not
@@ -49,9 +50,10 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Outputs (`OUT`)
 
-- `PROV-OUT-01` — For a market-data request → a **market-data response** carrying the validated facts
-  for the requested fields, **plus an honest data-quality record** (requested vs. returned, stale or
-  missing items, whether a fallback was used) **plus provenance**.
+- `PROV-OUT-01` — For a data-request event → it **writes the validated facts to the store** (Neo4j),
+  **with an honest data-quality record** (requested vs. returned, stale/missing, fallback used) and
+  **provenance**, then **publishes a `ready: <graph-ref>` event** (claim-check, ADR-0005). The
+  consumer reads the facts from the store by reference; the message itself stays small.
 - `PROV-OUT-02` — For a regime request → a **regime context**: the classification, the inputs behind
   it, **and the regime-derived policy defaults** (stop / target / holding baselines) that downstream
   agents read, plus provenance. *(DRIFT-004 — PRD strong-guide, adopted.)*
@@ -201,6 +203,10 @@ status:
   (`STA-01..04`, `IDN-03`); sentiment **downstream** (`NEV-08`); FRED/EDGAR **in-law, deferred**
   (`IN-06`); regime **policy inputs** (`OUT-02`) and **degraded event** (`OUT-06`) adopted. Still
   **DRAFT (in cycle, not locked)** — locks after the full test cycle (conventions §11).
-- v0.2 — inter-agent comms model settled (ADR-0005, DRIFT-008): **synchronous RPC** confirmed, so
-  `PROV-TRG-01`/`PROV-OUT-01` (reactive request→response) stand; the durable store (`STA-01..04`) is
-  the later/independent-pickup substrate, not the next-step hand-off. No clause change.
+- v0.2 — inter-agent comms model settled (ADR-0005, DRIFT-008): **synchronous RPC** confirmed.
+  *(Reversed in v0.3.)*
+- v0.3 — comms **re-decided after owner review** (ADR-0005 rewritten): **event-driven pub/sub over
+  Azure Service Bus, claim-check**. `PROV-TRG-01` (consume a data-request event) and `PROV-OUT-01`
+  (write to store → publish `ready: <ref>`) updated; the durable store (`STA-01..04`) is now also the
+  **hand-off** medium (consumer reads it by ref), not only later-pickup. Remaining `OUT`/`IDM` clauses
+  still phrased around a "response" — reconciled fully when the provider cycle resumes.

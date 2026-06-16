@@ -1,6 +1,12 @@
 # ADR 0004 — RabbitMQ as the Celery command-bus broker
 
-**Status:** Accepted · **Date:** 2026-06-15 · **Decider:** Yury Gurevich (product owner)
+**Status:** **SUPERSEDED by [ADR-0005](0005-inter-agent-communication.md)** (2026-06-16) · originally
+Accepted 2026-06-15 · **Decider:** Yury Gurevich (product owner)
+
+> Superseded: inter-agent communication moved from synchronous RPC (over a Celery/RabbitMQ broker) to
+> **event-driven pub/sub over Azure Service Bus** (ADR-0005), aligning with the Azure commitment
+> (ADR-0003). The reliability/dead-letter needs below are now met by Service Bus. The reasoning is
+> retained for history.
 
 ## Context
 

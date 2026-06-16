@@ -24,7 +24,7 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 
 | ID | Question | Decision | Status |
 | --- | --- | --- | --- |
-| DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Synchronous RPC** retained; Neo4j is the durable record + audit for later/independent pickup. Claim-check deferred to parallel-scale. | **RESOLVED** — `docs/decisions/0005-inter-agent-communication.md`; `PROV-TRG-01`/`OUT-01` confirmed (not a drift). |
+| DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Event-driven pub/sub over Azure Service Bus, claim-check** (data in Neo4j, `ready: <ref>` events on the bus; logs on Event Hubs). Reversed an initial RPC choice on owner review; Azure-native per the lock-in commitment. | **RESOLVED** — ADR-0005 (supersedes ADR-0004); `PROV-TRG-01`/`OUT-01` updated (law v0.3). Kernel `MessageBus` → publish/subscribe is the system-wide consequence. |
 
 ## Other agents
 

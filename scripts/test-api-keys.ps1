@@ -56,8 +56,8 @@ Test-Endpoint 'Finnhub — AAPL quote' `
 Test-Endpoint 'FRED — GDP series' `
     "https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=$env:PROVIDER_FRED_API_KEY&file_type=json"
 
-Test-Endpoint 'FMP — AAPL profile' `
-    "https://financialmodelingprep.com/api/v3/profile/AAPL?apikey=$env:FNP_API_KEY"
+Test-Endpoint 'FMP — AAPL symbol search' `
+    "https://financialmodelingprep.com/stable/search-symbol?query=AAPL&apikey=$env:FNP_API_KEY"
 
 # https://console.massiveapi.com — verify base URL if endpoint changes
 Test-Endpoint 'Massive — account' `

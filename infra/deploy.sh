@@ -4,6 +4,8 @@
 # Prerequisites:
 #   az CLI >= 2.60    (brew install azure-cli  OR  winget install Microsoft.AzureCLI)
 #   docker            (Docker Desktop or Rancher Desktop)
+#   Container Apps Environment already created:
+#     pwsh infra/setup-container-apps.ps1   ← run once before first deploy
 #
 # Usage:
 #   chmod +x infra/deploy.sh
@@ -17,9 +19,9 @@ set -euo pipefail
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 SUBSCRIPTION="5ef50a27-50a4-4d90-9695-da61b2309cf3"
-RESOURCE_GROUP="trading-agents-prod"
+RESOURCE_GROUP="trading-agents"
 LOCATION="australiaeast"
-PREFIX="trading-agents"
+PREFIX=""
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,6 +36,18 @@ fi
 
 echo "→ Setting subscription ${SUBSCRIPTION}"
 az account set --subscription "${SUBSCRIPTION}"
+
+# ── 1a. Prerequisite: Container Apps Environment must exist ───────────────────
+
+if ! az containerapp env show \
+       --name "${PREFIX}-env" \
+       --resource-group "${RESOURCE_GROUP}" \
+       --output none 2>/dev/null; then
+  echo ""
+  echo "✗ Container Apps Environment '${PREFIX}-env' not found."
+  echo "  Run first:  pwsh infra/setup-container-apps.ps1"
+  exit 1
+fi
 
 # ── 2. Resource group ─────────────────────────────────────────────────────────
 

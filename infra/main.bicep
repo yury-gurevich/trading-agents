@@ -103,11 +103,10 @@ resource metricsPublisher 'Microsoft.Authorization/roleAssignments@2022-04-01' =
 }
 
 // ── Container Apps Environment ────────────────────────────────────────────────
+// Created by infra/container-apps.bicep (run setup-container-apps.ps1 first).
 
-resource caEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource caEnv 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: '${prefix}-env'
-  location: location
-  properties: {}
 }
 
 // ── Container App: trading-agents + prometheus sidecar ───────────────────────
@@ -198,6 +197,12 @@ output prometheusQueryEndpoint string = monitorWorkspace.properties.metrics.prom
 
 @description('Remote-write endpoint for Prometheus → Azure Monitor.')
 output remoteWriteUrl string = '${monitorWorkspace.properties.metrics.prometheusQueryEndpoint}/api/v1/write'
+
+@description('ACR login server — used by deploy.sh to tag and push images.')
+output acrLoginServer string = acr.properties.loginServer
+
+@description('Prometheus managed identity client ID — used by the Prometheus sidecar container.')
+output managedIdentityClientId string = prometheusIdentity.properties.clientId
 
 @description('ACR login server for docker push.')
 output acrLoginServer string = acr.properties.loginServer

@@ -10,7 +10,8 @@ $envPath = Join-Path $PSScriptRoot '..' '.env'
 if (Test-Path $envPath) {
     foreach ($line in Get-Content $envPath) {
         if ($line -match '^\s*([^#=][^=]*)=(.*)$') {
-            [System.Environment]::SetEnvironmentVariable($Matches[1].Trim(), $Matches[2].Trim())
+            $val = $Matches[2].Trim() -replace '\s+#.*$', ''
+            [System.Environment]::SetEnvironmentVariable($Matches[1].Trim(), $val)
         }
     }
 } else {
@@ -59,6 +60,10 @@ Test-Endpoint 'FRED — GDP series' `
 Test-Endpoint 'FMP — AAPL symbol search' `
     "https://financialmodelingprep.com/stable/search-symbol?query=AAPL&apikey=$env:FNP_API_KEY"
 
+Test-Endpoint 'Tiingo — API test' `
+    'https://api.tiingo.com/api/test' `
+    @{ 'Authorization' = "Token $env:TIINGO_API_KEY" }
+
 # https://console.massiveapi.com — verify base URL if endpoint changes
 Test-Endpoint 'Massive — account' `
     'https://api.massiveapi.com/v1/account' `
@@ -90,5 +95,11 @@ if ($env:DATABASE_URL) {
 # a 200 on the base URL confirms network reachability.
 Test-Endpoint 'Azure ingestion endpoint' `
     $env:AZURE_LOGS_INGESTION_ENDPOINT
+
+# ── Alpaca (broker) ───────────────────────────────────────────────────────────
+$alpacaEndpoint = if ($env:ALPACA_ENDPOINT) { $env:ALPACA_ENDPOINT } else { 'https://paper-api.alpaca.markets/v2' }
+Test-Endpoint 'Alpaca — account' `
+    "$alpacaEndpoint/account" `
+    @{ 'APCA-API-KEY-ID' = $env:ALPACA_API_KEY; 'APCA-API-SECRET-KEY' = $env:ALPACA_API_SECRET }
 
 Write-Host ''

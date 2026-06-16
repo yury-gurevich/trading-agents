@@ -9,7 +9,7 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 ## Layer 0 — Dependencies (must go green first)
 
 Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
-(`probes/`, real systems, functional channels). Latest run: **8 green · 1 warn · 0 red · 2 skip** (incl. FMP live OHLCV).
+(`probes/`, real systems, functional channels). Latest run (2026-06-16): **11 green · 1 warn · 0 red · 2 skip** — incl. **live Alpaca paper broker** (submit→idempotent→cancel) and FMP live OHLCV.
 
 | Component | Clauses | Status |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ Re-run the live harness any time: **`uv run --extra runtime --extra probes pytho
 | DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
 | DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo** is the runtime default (S44, full S&P 500, free 500 sym/mo) — closes DRIFT-009; **FMP** retained as validation/failover (~87 sym); **Finnhub fundamentals 🟩** (11 AAPL metrics); Stooq retired (anti-bot), Postgres raw fallback 🟩. |
-| DEP-BROKER | 2 | 🟨 `AlpacaBroker` **built** (S45) — real Alpaca paper broker behind the `Broker` port (client_order_id idempotency); `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). **Not yet live-probed** — a real DEP-BROKER probe (submit→fill→cancel) is the follow-up. |
+| DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
 | DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |
 

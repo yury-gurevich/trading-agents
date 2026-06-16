@@ -3,7 +3,8 @@
 Agent: probes
 Role: prove each shared dependency is healthy against the real system, through the
 provider's functional channels (not mocks).
-External I/O: Neo4j, market-data feeds (Stooq/Finnhub), Postgres (raw OHLCV fallback).
+External I/O: Neo4j, market-data feeds (Stooq/Finnhub/FMP), Postgres (raw OHLCV
+fallback), and the Alpaca paper broker.
 """
 
 from __future__ import annotations
@@ -272,6 +273,103 @@ def probe_feed_fundamentals(creds: dict[str, str]) -> list[Result]:
         ]
 
 
+def probe_broker(creds: dict[str, str]) -> list[Result]:
+    """DEP-BROKER-01/02 — Alpaca paper broker accepts an order and is idempotent."""
+    key_id = creds.get("ALPACA_API_KEY")
+    secret = creds.get("ALPACA_API_SECRET")
+    if not key_id or not secret:
+        return [
+            Result(
+                "DEP-BROKER-01",
+                "broker: Alpaca paper",
+                SKIP,
+                "no ALPACA_API_KEY / ALPACA_API_SECRET",
+            )
+        ]
+    from decimal import Decimal
+
+    from agents.execution.alpaca import AlpacaBroker
+    from contracts.common import Money
+
+    broker = AlpacaBroker(
+        api_key=key_id,
+        secret_key=secret,
+        base_url="https://paper-api.alpaca.markets",  # paper only — never live
+        timeout=20,
+    )
+    try:
+        broker.fills()  # read-only: proves reachable + authenticated
+    except Exception as exc:
+        return [
+            Result(
+                "DEP-BROKER-01",
+                "broker: Alpaca paper",
+                RED,
+                f"unreachable/auth ({type(exc).__name__})",
+            )
+        ]
+    out: list[Result] = []
+    client_id = "dep-broker-probe-" + uuid.uuid4().hex[:16]
+    ref = Money(amount=Decimal("0.01"))
+    try:
+        fill = broker.submit(client_id, "AAPL", "buy", 1, ref)
+    except Exception as exc:
+        detail = f"rejected ({type(exc).__name__})"
+        return [Result("DEP-BROKER-01", "broker: submit", RED, detail)]
+    accepted = bool(fill.broker_order_id) and fill.status in (
+        "filled",
+        "partial",
+        "pending",
+    )
+    out.append(
+        Result(
+            "DEP-BROKER-01",
+            "broker: submit -> fill record",
+            GREEN if accepted else RED,
+            f"{fill.status} ({fill.broker_order_id[:12]})",
+        )
+    )
+    out.append(_broker_idempotent(broker, fill, client_id, ref))
+    out.append(_broker_cleanup(broker, fill, ref))
+    return out
+
+
+def _broker_idempotent(
+    broker: object, fill: object, client_id: str, ref: object
+) -> Result:
+    """DEP-BROKER-02 — the same client_order_id replays to one order."""
+    try:
+        qty = fill.quantity or 1
+        replay = broker.submit(client_id, fill.ticker, fill.side, qty, ref)
+        same = replay.broker_order_id == fill.broker_order_id
+    except Exception as exc:
+        detail = f"replay raised ({type(exc).__name__})"
+        return Result("DEP-BROKER-02", "broker: idempotent", RED, detail)
+    return Result(
+        "DEP-BROKER-02",
+        "broker: idempotent (client_order_id)",
+        GREEN if same else RED,
+        "same order on replay" if same else "replay created a new order",
+    )
+
+
+def _broker_cleanup(broker: object, fill: object, ref: object) -> Result:
+    """Leave the paper account flat: cancel a resting order, or sell a fill."""
+    try:
+        if fill.status == "pending":
+            broker.cancel(fill.broker_order_id)
+            return Result("DEP-BROKER-01", "broker: cleanup", GREEN, "order canceled")
+        broker.submit(f"{fill.idempotency_key}-close", fill.ticker, "sell", 1, ref)
+        return Result("DEP-BROKER-01", "broker: cleanup", GREEN, "flattened (sell 1)")
+    except Exception as exc:
+        return Result(
+            "DEP-BROKER-01",
+            "broker: cleanup",
+            WARN,
+            f"manual cleanup may be needed ({type(exc).__name__})",
+        )
+
+
 def probe_llm(creds: dict[str, str]) -> list[Result]:
     """DEP-LLM-01 — the model provider is configured (live ping gated for cost)."""
     if not creds.get("ANTHROPIC_API_KEY"):
@@ -300,6 +398,7 @@ PROBES = (
     probe_neo4j,
     probe_feed_ohlcv,
     probe_feed_fundamentals,
+    probe_broker,
     probe_llm,
     probe_tele,
 )

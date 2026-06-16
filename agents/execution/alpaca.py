@@ -67,6 +67,20 @@ class AlpacaBroker:
             if isinstance(order, dict) and order.get("client_order_id")
         )
 
+    def cancel(self, broker_order_id: str) -> None:  # pragma: no cover - real HTTPS
+        """Cancel one open order by its broker id (lifecycle/cleanup; ignores body)."""
+        request = urllib.request.Request(  # noqa: S310 - hardcoded HTTPS Alpaca endpoint
+            f"{self._base_url}{_ORDERS_PATH}/{broker_order_id}",
+            headers={
+                "APCA-API-KEY-ID": self._api_key,
+                "APCA-API-SECRET-KEY": self._secret_key,
+            },
+            method="DELETE",
+        )
+        urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Alpaca endpoint
+            request, timeout=self._timeout
+        ).close()
+
     def _submit_or_get(  # pragma: no cover - real HTTPS
         self, body: dict[str, object]
     ) -> object:

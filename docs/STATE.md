@@ -24,10 +24,12 @@ Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`.
 duplicate→fetch replay, real fills/positions); `broker_from_settings` builder; `bindings.py` default
 swap (Alpaca paper when keyed, else `PaperBroker` — unit gate stays network-free). Settings read the
 unprefixed `.env` Alpaca names via `AliasChoices`+`populate_by_name`. No contract change. Unlocks the
-Alpaca paper P/L + "fake purchases" harness (memory `alpaca-paper-broker`). **Follow-ups:** real
-DEP-BROKER probe (submit→fill→cancel); pending→filled reconciliation across sessions; data-side
-`FailoverDataSource` + `AlpacaDataSource`. **Next coding sprint:** P12 S37 (analyst lexicon pillar)
-resumes — *unless* the owner prioritises a follow-up above.
+Alpaca paper P/L + "fake purchases" harness (memory `alpaca-paper-broker`). **DEP-BROKER proven 🟩**
+(2026-06-16): `probe_broker` hit live Alpaca paper — real submit → idempotent replay → cancel, account
+left flat (`probes/checks.py`, real order `7327477f-b5a`). Bill of health: 11 green · 1 warn · 0 red ·
+2 skip. **Remaining follow-ups:** pending→filled reconciliation across sessions; data-side
+`FailoverDataSource` + `AlpacaDataSource`; the feed probe still tests retired Stooq (WARN) — point it at
+Tiingo. **Next coding sprint:** P12 S37 (analyst lexicon pillar) resumes — *unless* the owner reprioritises.
 
 **P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated

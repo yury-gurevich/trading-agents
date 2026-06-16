@@ -18,7 +18,7 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   agents consume facts, not feeds.
 - `PROV-IDN-02` — It is the **single data boundary**: no other agent may touch a market-data API.
 - `PROV-IDN-03` — It **exclusively owns** the market-fact and regime graph artifacts it appends
-  (single writer for those labels).
+  (single writer for those labels), **including the durable historical price/fact store** (`PROV-STA-01`).
 
 ## Inputs (`IN`)
 
@@ -34,6 +34,10 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-IN-05` — Input is identified by **type and a provenance role** ("a data need from the
   pipeline"); the provider is indifferent to which agent sent it, only that it is well-formed and
   authorized.
+- `PROV-IN-06` — The supported field set is **price history, fundamentals, news (raw), benchmark
+  series, regime** and — *stated intent, not yet built (deferred, per DRIFT-003)* — **macro (FRED)**
+  and **filings (EDGAR)**. A deferred field is *lawful to request* but answered as
+  DEGRADED/unavailable until built; the test-plan marks those rows deferred (gray, non-blocking).
 
 ## Triggers (`TRG`)
 
@@ -48,8 +52,9 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-OUT-01` — For a market-data request → a **market-data response** carrying the validated facts
   for the requested fields, **plus an honest data-quality record** (requested vs. returned, stale or
   missing items, whether a fallback was used) **plus provenance**.
-- `PROV-OUT-02` — For a regime request → a **regime context** (the classification and the inputs
-  behind it) plus provenance.
+- `PROV-OUT-02` — For a regime request → a **regime context**: the classification, the inputs behind
+  it, **and the regime-derived policy defaults** (stop / target / holding baselines) that downstream
+  agents read, plus provenance. *(DRIFT-004 — PRD strong-guide, adopted.)*
 - `PROV-OUT-03` — The output space is **total**: **SUCCESS** (clean), **DEGRADED** (partial/stale/
   missing — a *valid* response with the shortfall flagged, never silently empty), **FAULT** (the
   boundary itself failed → a typed error, recorded). Exactly one of these, always one of these.
@@ -57,6 +62,9 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   downstream output is reconstructable.
 - `PROV-OUT-05` — Graph effects are **append-only**: a new market-fact/regime record per request; it
   never overwrites or mutates a prior record.
+- `PROV-OUT-06` — On degradation, **in addition to** the quality record on the response (pull), the
+  provider **emits a `market_data_degraded` event** (push) for observers/supervisor. The two are
+  always consistent. *(DRIFT-005 — adopted.)*
 
 ## Prohibitions (`NEV`)
 
@@ -67,14 +75,27 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-NEV-05` — Never **import or call another agent**; never write outside its owned labels.
 - `PROV-NEV-06` — Never **mutate** a prior record (append-only; corrections are new records).
 - `PROV-NEV-07` — Never **fabricate** a value to fill a gap (a gap is reported, not invented).
+- `PROV-NEV-08` — Never **score, classify, or interpret** — no sentiment scoring, no fundamental
+  judgement. It serves *raw* facts (including **raw** news headlines); all interpretation is downstream
+  (analyst lexicon, forecaster FinBERT) per ADR-0002. *(DRIFT-002 decision D2; corrects the stale
+  `mission.md` "finbert" claim.)*
 
 ## State & effects (`STA`)
 
-- `PROV-STA-01` — **No carried decision state** between requests. Any cache is a transparent
-  performance optimisation that **must not change** the validated result versus a fresh fetch, and
-  every cache entry carries its own freshness + provenance.
-- `PROV-STA-02` — Side effects are limited to: appending a market-fact/regime record to the graph, and
-  emitting metrics/faults. Nothing else.
+- `PROV-STA-01` — The provider maintains a **durable, append-only historical price/fact store**
+  (graph-resident, ADR-0001). This store is **load-bearing** (DRIFT-001 decision D1): downstream agents
+  and backtests read deep history from it. It is a first-class owned responsibility — **not** a
+  transparent side-cache.
+- `PROV-STA-02` — Side effects are limited to: appending fact/regime records to the store, emitting
+  the `market_data_degraded` event on degradation, and emitting metrics/faults. **Nothing else.**
+- `PROV-STA-03` — It serves requested history **from the store**, hitting the external feed only to
+  **fill or extend** missing ranges. A stored datum must equal what a fresh fetch would yield for the
+  same as-of (the store never diverges from source-of-truth).
+- `PROV-STA-04` — **Freshness law:** every stored datum carries its as-of / fetch-time; the provider
+  **never serves a stale datum as fresh** — a stale or missing range is flagged in the quality record
+  (`PROV-OUT-03`), never hidden, never fabricated.
+- `PROV-STA-05` — **No carried decision state** between requests (the store holds *facts*, never
+  decisions).
 
 ## Determinism & idempotency (`IDM`)
 
@@ -162,13 +183,21 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Divergence register
 
-| ID | Law says | PRD / mission / code may say | Decision needed |
-| --- | --- | --- | --- |
-| PROV-STA-01 | Cache is optional perf; must not change the result; not core. | PRD §4.3 frames caching/RAG as a first-class store feature. | Confirm cache is non-load-bearing for the provider's *correctness* law. |
-| PROV-OUT-01 | Benchmark series is **just another requested field** of a market-data request. | Code (S38) fetched the benchmark via a *separate* request to dodge a degraded-quality trip. | Confirm the **law** (benchmark is a field); the separate-request is an implementation tactic to reconcile to it later. |
-| PROV-IN-01 | Provider serves **only the fields requested**. | Reconcile whether all callers pass an explicit field set. | Confirm; flag any caller relying on implicit defaults. |
-| PROV-SEC-07 | Only capability-matrix-authorized callers may invoke it. | Verify the matrix actually gates data requests (vs. open to any pipeline agent). | Confirm enforcement point at reconciliation. |
+The master worklist is [`docs/laws/drift-register.md`](../../../docs/laws/drift-register.md). Provider
+status:
+
+- **DECIDED & applied** — DRIFT-001 (cache is load-bearing → `PROV-STA-01..04`), DRIFT-002 (sentiment
+  is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
+  `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
+  `PROV-OUT-06`).
+- **OPEN — code-reconcile at test time** — DRIFT-006 (`PROV-OUT-01`: benchmark is a *field*; code S38
+  fetches it separately — reconcile code to law), DRIFT-007 (`PROV-SEC-07`: verify the capability
+  matrix actually gates data requests).
 
 ## Changelog
 
-- v0 — drafted in ideal-design mode as the template stress-test. **Not yet locked.**
+- v0 — drafted in ideal-design mode (template stress-test).
+- v0.1 — reconciled with PRD/mission via forced decisions D1–D3: cache **load-bearing**
+  (`STA-01..04`, `IDN-03`); sentiment **downstream** (`NEV-08`); FRED/EDGAR **in-law, deferred**
+  (`IN-06`); regime **policy inputs** (`OUT-02`) and **degraded event** (`OUT-06`) adopted. Still
+  **DRAFT (in cycle, not locked)** — locks after the full test cycle (conventions §11).

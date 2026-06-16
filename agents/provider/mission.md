@@ -5,7 +5,8 @@ feeds (prices, fundamentals, news, macro) into clean, validated, cached market
 facts and the current regime — so no other agent ever calls an external data API.
 
 ## Owns
-- Provider clients (stooq, finnhub, fred, edgar, finbert, S&P 500 listing).
+- Provider clients (stooq, finnhub, fred, edgar, S&P 500 listing). News is served **raw**;
+  sentiment scoring is downstream (analyst lexicon + forecaster FinBERT, ADR-0002 / DRIFT-002).
 - The price cache and provider snapshots.
 - Market-regime classification and the policy inputs every downstream agent reads.
 - Honest data-quality accounting (fallbacks, staleness) as a first-class output.
@@ -21,7 +22,7 @@ facts and the current regime — so no other agent ever calls an external data A
   through the kernel `GraphStore` per ADR-0001, not through agent-owned tables.
 
 ## External I/O (exclusive)
-- stooq, finnhub, fred, edgar, finbert, S&P 500 listing. **No other agent may
+- stooq, finnhub, fred, edgar, S&P 500 listing. **No other agent may
   hold these credentials or call these APIs.**
 
 ## MCP surface

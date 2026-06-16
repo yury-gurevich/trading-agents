@@ -88,6 +88,18 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PROV-OBS-03 | Degradation is queryable from the graph, not buried. | degraded | _tbd_ | ⬜ |
 | PROV-PERF-01 | A hanging source is cut off at the timeout, not waited on indefinitely. | timeout | _tbd_ | ⬜ |
 
+## Historical store & PRD-reconciled clauses (added v0.1)
+
+| Law | What the test must prove | Scenario | Test | Status |
+| --- | --- | --- | --- | --- |
+| PROV-STA-01 | The store durably retains deep history; a later request reads it back without re-fetching. | store | _tbd_ | ⬜ |
+| PROV-STA-03 | History is served from the store; the feed is hit only to fill/extend a missing range; stored == fresh for the same as-of. | store | _tbd_ | ⬜ |
+| PROV-STA-04 | A stale/missing range is flagged in the quality record; a stale datum is never served as fresh. | freshness | _tbd_ | ⬜ |
+| PROV-IN-06 | A deferred field (FRED/EDGAR) is lawful to request but answered DEGRADED/unavailable until built. | deferred | _tbd_ | ⬜ (deferred, non-blocking) |
+| PROV-OUT-02 | A regime response carries the regime-derived policy defaults (stop/target/holding). | happy | _tbd_ | ⬜ |
+| PROV-OUT-06 | A degraded fetch emits `market_data_degraded` consistently with the response's quality record. | degraded | _tbd_ | ⬜ |
+| PROV-NEV-08 | The provider returns raw news headlines and performs no sentiment/score/classification. | boundary | _tbd_ | ⬜ |
+
 > Rows are intentionally implementation-agnostic. At **reconciliation**, each `_tbd_` becomes a real
 > `agents/provider/tests/…::test_name`; if the code can't satisfy a row, that is a drift finding —
 > fix the code, or (if the law is genuinely lacking) amend `laws.md` with a version bump.

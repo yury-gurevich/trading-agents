@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from datetime import date
 
+    from agents.provider.settings import ProviderSettings
     from agents.provider.sources import DataSource, RegimeInputs
     from contracts.common import Window
     from contracts.provider import OHLCVBar
@@ -48,3 +49,22 @@ class CompositeDataSource:
     ) -> dict[str, tuple[str, ...]]:
         """Delegate news fetches to the fundamentals (Finnhub) source."""
         return self._fundamentals_source.fetch_news(tickers, window)
+
+
+def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
+    """Compose the live feeds from settings: FMP OHLCV + Finnhub fundamentals/news."""
+    from agents.provider.fmp import FMPDataSource
+    from agents.provider.fundamentals import FinnhubDataSource
+
+    return CompositeDataSource(
+        price_source=FMPDataSource(
+            api_key=settings.fmp_api_key,
+            base_url=settings.fmp_base_url,
+            timeout=settings.fmp_timeout,
+        ),
+        fundamentals_source=FinnhubDataSource(
+            api_key=settings.finnhub_api_key,
+            base_url=settings.finnhub_base_url,
+            timeout=settings.finnhub_timeout,
+        ),
+    )

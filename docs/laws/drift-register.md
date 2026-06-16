@@ -26,13 +26,15 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- |
 | DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Event-driven pub/sub over Azure Service Bus, claim-check** (data in Neo4j, `ready: <ref>` events on the bus; logs on Event Hubs). Reversed an initial RPC choice on owner review; Azure-native per the lock-in commitment. | **RESOLVED** — ADR-0005 (supersedes ADR-0004); `PROV-TRG-01`/`OUT-01` updated (law v0.3). Kernel `MessageBus` → publish/subscribe is the system-wide consequence. |
 
-| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403). **Live fix found:** FinancialModelingPrep `/stable/historical-price-eod` is **free and works** (1254 AAPL EOD bars). | dep-health / code-drift (real-probe finding) | **RESOLVING** — FMP is the live OHLCV source (probe green); build a provider **`FMPDataSource`** and route OHLCV → FMP, retiring Stooq (follow-up task). Postgres stays the raw fallback. |
+| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403). **Live fix found:** FinancialModelingPrep `/stable/historical-price-eod` is **free and works** (1254 AAPL EOD bars). | dep-health / code-drift (real-probe finding) | **RESOLVED (source built)** — `agents/provider/fmp.py` `FMPDataSource` + `composite.market_source_from_settings` (OHLCV→FMP, fundamentals/news→Finnhub). Remaining: make it the **runtime default source** (tied to the run-entrypoint). Stooq retired; Postgres raw fallback. |
 
-> **Live OHLCV — solved (2026-06-16).** FMP `/stable/historical-price-eod/full` (free tier, `FNP_API_KEY`)
-> serves real O/H/L/C/V. **Follow-up implementation:** add `agents/provider/` `FMPDataSource` (mirror
-> `FinnhubDataSource`/`StooqDataSource`), point the composite's OHLCV route at it, retire Stooq. The
-> probe harness already proves FMP live; Postgres `price_cache` remains the raw historical fallback.
-> Confirms decision **D1** (load-bearing store) and the owner's Postgres-as-fallback guidance.
+> **Live OHLCV — solved + built (2026-06-16).** FMP `/stable/historical-price-eod/full` (free tier,
+> `PROVIDER_FMP_API_KEY` / probe `FNP_API_KEY`) serves real O/H/L/C/V. **Shipped:** `FMPDataSource`
+> (mirrors `FinnhubDataSource`/`StooqDataSource`; OHLCV only, other methods empty) + the
+> `market_source_from_settings` builder that composes FMP (OHLCV) with Finnhub (fundamentals/news);
+> FMP settings on `ProviderSettings`; full unit tests. **Remaining deploy step:** point the runtime
+> default source at `market_source_from_settings` (currently `StooqDataSource`, broken) — lands with
+> the run-entrypoint. Postgres `price_cache` stays the raw historical fallback. Confirms decision **D1**.
 
 ## Other agents
 

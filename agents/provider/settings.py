@@ -93,6 +93,17 @@ class ProviderSettings(AgentSettings):
     finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
     finnhub_api_key: str = Field(default="", repr=False)
     fred_api_key: str = Field(default="", repr=False)
+
+    # FinancialModelingPrep — live OHLCV feed (Stooq anti-bot-blocked, DRIFT-009).
+    fmp_base_url: str = Field(default="https://financialmodelingprep.com")
+    fmp_api_key: str = Field(default="", repr=False)
+    fmp_timeout: int = tunable(
+        15,
+        why="Bound the FMP EOD HTTPS call so a slow feed cannot hang the run.",
+        ge=1,
+        le=60,
+        unit="seconds",
+    )
     finnhub_news_lookback_days: int = tunable(
         7,
         why=(

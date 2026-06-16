@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-16 — **Sprint 44 shipped** (provider Tiingo live OHLCV feed: full-S&P-500
-default via `TiingoDataSource`, `bindings.py` re-pointed off broken Stooq — closes DRIFT-009, ADR-0006);
-**S41 planned** (reporter profit-factor + expectancy); S37 (analyst sentiment pillar) queued.
-620 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-16 — **Sprint 45 shipped** (execution Alpaca paper broker: `AlpacaBroker`
+behind the `Broker` port, `client_order_id` idempotency, `broker_from_settings` default swap — DEP-BROKER,
+ADR-0006); **Sprint 44 shipped** (provider Tiingo live OHLCV feed — closes DRIFT-009); **S41 planned**
+(reporter profit-factor + expectancy); S37 (analyst sentiment pillar) queued. 628 tests at 100.00%.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -19,14 +19,15 @@ sliced to `YYYY-MM-DD`), routed `market_source_from_settings` OHLCV → Tiingo, 
 `orchestration/bindings.py` default off Stooq. No contract change; FMP retained as validation/failover.
 Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`.
 
-**Active hand-over: S45 — execution Alpaca paper broker (DEP-BROKER, ADR-0006).** Builds `AlpacaBroker`
-behind the existing `Broker` port (market order, `client_order_id` idempotency, real fills/positions),
-a `broker_from_settings` builder, and a `bindings.py` default swap (Alpaca paper when keyed, else
-`PaperBroker` — unit gate stays network-free). No contract change (`Fill.status` already has `pending`;
-contract already declares `external_io=("alpaca_broker",)`). Unlocks the Alpaca paper P/L + "fake
-purchases" harness (memory `alpaca-paper-broker`). **Follow-ups after S45:** real DEP-BROKER probe;
-pending→filled reconciliation across sessions; data-side `FailoverDataSource` + `AlpacaDataSource`.
-Then P12 S37 (analyst lexicon pillar) resumes.
+**S45 shipped — execution Alpaca paper broker (DEP-BROKER, ADR-0006).** `agents/execution/alpaca.py`
+`AlpacaBroker` behind the existing `Broker` port (market order, `client_order_id` idempotency with
+duplicate→fetch replay, real fills/positions); `broker_from_settings` builder; `bindings.py` default
+swap (Alpaca paper when keyed, else `PaperBroker` — unit gate stays network-free). Settings read the
+unprefixed `.env` Alpaca names via `AliasChoices`+`populate_by_name`. No contract change. Unlocks the
+Alpaca paper P/L + "fake purchases" harness (memory `alpaca-paper-broker`). **Follow-ups:** real
+DEP-BROKER probe (submit→fill→cancel); pending→filled reconciliation across sessions; data-side
+`FailoverDataSource` + `AlpacaDataSource`. **Next coding sprint:** P12 S37 (analyst lexicon pillar)
+resumes — *unless* the owner prioritises a follow-up above.
 
 **P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated

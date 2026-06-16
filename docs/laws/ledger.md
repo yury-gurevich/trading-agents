@@ -17,8 +17,8 @@ Re-run the live harness any time: **`uv run --extra runtime --extra probes pytho
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
 | DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
-| DEP-FEED | 3 | 🟩 **OHLCV: FMP live 🟩** (FinancialModelingPrep `/stable/historical-price-eod`, free, 1254 AAPL EOD bars) — solves DRIFT-009; **Finnhub fundamentals 🟩** (11 AAPL metrics); Stooq WARN (anti-bot, retired), Postgres raw fallback 🟩. Follow-up: build the provider `FMPDataSource`. |
-| DEP-BROKER | 2 | ⬜ in-process PaperBroker; covered by the unit gate |
+| DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo** is the runtime default (S44, full S&P 500, free 500 sym/mo) — closes DRIFT-009; **FMP** retained as validation/failover (~87 sym); **Finnhub fundamentals 🟩** (11 AAPL metrics); Stooq retired (anti-bot), Postgres raw fallback 🟩. |
+| DEP-BROKER | 2 | 🟨 `AlpacaBroker` **built** (S45) — real Alpaca paper broker behind the `Broker` port (client_order_id idempotency); `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). **Not yet live-probed** — a real DEP-BROKER probe (submit→fill→cancel) is the follow-up. |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
 | DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |
 

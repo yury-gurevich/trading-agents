@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-16 — **Sprint 36 shipped** (provider news feed: Finnhub /company-news →
-`MarketData.news`); **S44 planned & active hand-over** (provider Tiingo live OHLCV feed, ADR-0006 —
-closes DRIFT-009); **S41 planned** (reporter profit-factor + expectancy). P12 first feed live;
-S37 (analyst sentiment pillar) queued behind S44. 611 tests at 100.00% (floor 100.00).
+**Last updated:** 2026-06-16 — **Sprint 44 shipped** (provider Tiingo live OHLCV feed: full-S&P-500
+default via `TiingoDataSource`, `bindings.py` re-pointed off broken Stooq — closes DRIFT-009, ADR-0006);
+**S41 planned** (reporter profit-factor + expectancy); S37 (analyst sentiment pillar) queued.
+620 tests at 100.00% (floor 100.00).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -12,13 +12,14 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Active hand-over: S44 — provider Tiingo live OHLCV feed (ADR-0006, closes DRIFT-009).** The runtime
-default source is broken (`StooqDataSource` anti-bot-blocked) and FMP free covers only ~87 symbols;
-S44 adds `TiingoDataSource` (full S&P 500, free 500 sym/mo), routes `market_source_from_settings` OHLCV
-→ Tiingo, and re-points the `orchestration/bindings.py:50` default off Stooq. Structural twin of
-`FMPDataSource`; no contract change. Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`
-(Tiingo primary, Alpaca broker+failover, FMP-87 validation). After S44: failover wrapper +
-`AlpacaDataSource`/broker follow-ups; then P12 S37 (analyst lexicon pillar) resumes.
+**S44 shipped — provider Tiingo live OHLCV feed (ADR-0006, DRIFT-009 CORRECTED).** The runtime default
+source was broken (`StooqDataSource` anti-bot-blocked) and FMP free covers only ~87 symbols; S44 added
+`agents/provider/tiingo.py` `TiingoDataSource` (full S&P 500, free 500 sym/mo; Z-suffixed ISO date
+sliced to `YYYY-MM-DD`), routed `market_source_from_settings` OHLCV → Tiingo, and re-pointed the
+`orchestration/bindings.py` default off Stooq. No contract change; FMP retained as validation/failover.
+Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`. **Next data-feed follow-ups:**
+a `FailoverDataSource` wrapper (Tiingo→FMP→Alpaca) + `AlpacaDataSource`/broker adapter (Alpaca paper P/L,
+"fake purchases"). Then P12 S37 (analyst lexicon pillar) resumes.
 
 **P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated

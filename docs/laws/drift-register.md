@@ -26,20 +26,22 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- |
 | DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Event-driven pub/sub over Azure Service Bus, claim-check** (data in Neo4j, `ready: <ref>` events on the bus; logs on Event Hubs). Reversed an initial RPC choice on owner review; Azure-native per the lock-in commitment. | **RESOLVED** — ADR-0005 (supersedes ADR-0004); `PROV-TRG-01`/`OUT-01` updated (law v0.3). Kernel `MessageBus` → publish/subscribe is the system-wide consequence. |
 
-| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403); **FMP free is only ~87 curated symbols** (PG/HD → 402), not the full S&P 500. **Full-universe live fix:** **Tiingo free** (500 symbols/month, 30+ yrs, real-time IEX) covers the S&P 500; **Alpaca free** = full-US data **+ broker**. | dep-health / code-drift (real-probe finding) | **RESOLVED (strategy set)** — ADR-0006: Tiingo primary OHLCV, Alpaca broker + failover feed, FMP/Finnhub supplemental, Postgres raw backtest. `FMPDataSource` built; Tiingo/Alpaca sources + runtime-default re-point pending the run-entrypoint. |
+| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403); **FMP free is only ~87 curated symbols** (PG/HD → 402), not the full S&P 500. **Full-universe live fix:** **Tiingo free** (500 symbols/month, 30+ yrs, real-time IEX) covers the S&P 500; **Alpaca free** = full-US data **+ broker**. | dep-health / code-drift (real-probe finding) | **CORRECTED** — ADR-0006 + **S44 shipped**: `TiingoDataSource` is the live full-S&P-500 default (`market_source_from_settings` OHLCV→Tiingo; `orchestration/bindings.py` re-pointed off broken Stooq). FMP retained as validation/failover; Alpaca broker + a failover wrapper are the remaining follow-ups. |
 
-> **Live OHLCV — strategy set 2026-06-16 (ADR-0006); build pending.** No keyless feed serves the full
+> **Live OHLCV — CORRECTED 2026-06-16 (ADR-0006; S44 shipped).** No keyless feed serves the full
 > S&P 500 live: Stooq is anti-bot-blocked, Finnhub `/candle` is premium, and **FMP free is a curated
 > ~87-symbol subset** (empirically PG, HD → `402`). **Two free keyed tiers do, and both keys are now
 > live (in `.env`):** **Tiingo** (`TIINGO_API_KEY`; free = 500 unique symbols/month — covers the
 > S&P 500 — 30+ yrs history, real-time IEX) is the **primary full-universe OHLCV feed**; **Alpaca**
 > (`ALPACA_API_KEY/SECRET`; free full-US data **and** the broker) is the **broker boundary + secondary/
 > failover feed** (one vendor for DEP-FEED + DEP-BROKER). **Built:** `agents/provider/fmp.py`
-> `FMPDataSource` (OHLCV only; ~87 symbols) + `market_source_from_settings` (OHLCV→FMP,
-> fundamentals/news→Finnhub) + FMP settings + unit tests — now demoted to a **validation sub-universe**.
-> **Remaining:** add `TiingoDataSource` (+ later `AlpacaDataSource`), re-point the runtime default
-> from FMP → Tiingo with Alpaca/FMP failover (tied to the run-entrypoint). Postgres `price_cache` stays
-> the raw historical backtest fallback. Confirms decision **D1**; Stooq retired; no scraping.
+> **Shipped (S44):** `agents/provider/tiingo.py` `TiingoDataSource` (OHLCV only; Z-suffixed ISO date
+> sliced to `YYYY-MM-DD`); `market_source_from_settings` routes OHLCV→Tiingo, fundamentals/news→Finnhub;
+> `orchestration/bindings.py` default re-pointed off broken Stooq; `tiingo_*` settings; unit tests (620
+> passed, 100.00%). `FMPDataSource` retained as the **validation sub-universe / failover**. **Remaining
+> follow-ups:** a `FailoverDataSource` wrapper (Tiingo→FMP→Alpaca) and `AlpacaDataSource` + the Alpaca
+> broker adapter. Postgres `price_cache` stays the raw historical backtest fallback. Confirms decision
+> **D1**; Stooq retired as default; no scraping.
 
 ## Other agents
 

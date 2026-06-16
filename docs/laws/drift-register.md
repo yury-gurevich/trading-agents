@@ -26,6 +26,14 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- |
 | DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Event-driven pub/sub over Azure Service Bus, claim-check** (data in Neo4j, `ready: <ref>` events on the bus; logs on Event Hubs). Reversed an initial RPC choice on owner review; Azure-native per the lock-in commitment. | **RESOLVED** — ADR-0005 (supersedes ADR-0004); `PROV-TRG-01`/`OUT-01` updated (law v0.3). Kernel `MessageBus` → publish/subscribe is the system-wide consequence. |
 
+| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq now serves a JS proof-of-work anti-bot interstitial**, not CSV; the provider's `urllib` client gets a 404. Finnhub daily candles are premium-only. **Only working OHLCV source is the Postgres `price_cache` fallback** (historical, to 2026-05). | dep-health / code-drift (real-probe finding) | OPEN — provider live-feed strategy needs a decision (see below) |
+
+> **Live-feed strategy (open):** for the **test cycle**, seed the provider's durable store from Postgres
+> `price_cache` (real OHLCV, satisfies `PROV-STA`/the store laws). For **production live data**, Stooq is
+> out and Finnhub free has no daily candles — a working feed must be chosen (headless-browser Stooq is
+> fragile; candidates: a paid feed, or another free source). Reinforces decision **D1** (load-bearing
+> store) and the owner's "Postgres-as-fallback" guidance.
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

@@ -12,12 +12,18 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 | --- | --- | --- |
 | DEP-CONFIG | 2 | ⬜ |
 | DEP-CLOCK | 1 | ⬜ |
-| DEP-NEO4J | 3 | ⬜ |
+| DEP-NEO4J | 3 | 🟨 **2/3 real** — 01 reachable + 02 write/read proven on Aura (`02812797`); 03 append-only/uniqueness pending |
 | DEP-BUS | 3 | ⬜ |
-| DEP-FEED | 3 | ⬜ |
+| DEP-FEED | 3 | ⛔ **live Stooq RED** (anti-bot proof-of-work blocks the HTTP client → 404); **Postgres price_cache fallback 🟩** (1285 AAPL bars to 2026-05) |
 | DEP-BROKER | 2 | ⬜ |
 | DEP-LLM | 2 | ⬜ |
 | DEP-TELE | 2 | ⬜ |
+
+> **First real probe run (2026-06-16).** Through the functional channels: Neo4j Aura round-trips for
+> real; the provider's `StooqDataSource` gets a 404 (Stooq now serves a JS proof-of-work interstitial,
+> not CSV) — so the keyless live OHLCV feed is **non-functional programmatically**; the Postgres
+> historical store serves OHLCV as the fallback. This is the gray→green machine catching a load-bearing
+> break that the `FakeDataSource` unit tests never could.
 
 ## Layer 1 — Agents
 

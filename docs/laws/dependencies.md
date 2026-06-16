@@ -23,12 +23,20 @@ contract — runnable in isolation and as the pre-flight of any real run.
 
 ## DEP-FEED — external market-data feed(s)
 
+Feed strategy is **ADR-0006**: **Tiingo** (free, 500 symbols/month) is the primary full-universe live
+OHLCV feed; **Alpaca** (free) is the failover feed; **FMP** (free, ~87 symbols) is a validation
+sub-universe; **Finnhub** (free) serves fundamentals + news; **Postgres `price_cache`** is the raw
+historical backtest fallback. No anti-bot scraping (Stooq retired). Paid feeds deferred to Phase D.
+
 - `DEP-FEED-01` — the price feed is reachable and returns parseable data for a known symbol.
 - `DEP-FEED-02` — the keyed feed (fundamentals/news) authenticates and respects rate limits.
 - `DEP-FEED-03` — an unreachable/garbled feed is detectable as such (so the provider can degrade
   honestly, not fabricate).
 
 ## DEP-BROKER — broker boundary (paper now; real later)
+
+Broker is **Alpaca** (ADR-0006): paper trading now (`ALPACA_ENDPOINT=paper-api…`) → live later; the
+same Alpaca credential also backs DEP-FEED failover (one vendor, data + execution).
 
 - `DEP-BROKER-01` — accepts an order and returns a fill record.
 - `DEP-BROKER-02` — is idempotent: the same order key submitted twice fills once.

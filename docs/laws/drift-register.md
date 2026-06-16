@@ -26,15 +26,20 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- |
 | DRIFT-008 | Inter-agent hand-off: DB-mediated vs RabbitMQ-payload vs claim-check vs synchronous RPC. | **Event-driven pub/sub over Azure Service Bus, claim-check** (data in Neo4j, `ready: <ref>` events on the bus; logs on Event Hubs). Reversed an initial RPC choice on owner review; Azure-native per the lock-in commitment. | **RESOLVED** — ADR-0005 (supersedes ADR-0004); `PROV-TRG-01`/`OUT-01` updated (law v0.3). Kernel `MessageBus` → publish/subscribe is the system-wide consequence. |
 
-| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403). **Live fix found:** FinancialModelingPrep `/stable/historical-price-eod` is **free and works** (1254 AAPL EOD bars). | dep-health / code-drift (real-probe finding) | **RESOLVED (source built)** — `agents/provider/fmp.py` `FMPDataSource` + `composite.market_source_from_settings` (OHLCV→FMP, fundamentals/news→Finnhub). Remaining: make it the **runtime default source** (tied to the run-entrypoint). Stooq retired; Postgres raw fallback. |
+| DRIFT-009 | DEP-FEED-01 / PROV-DEP-01 | The provider's keyless OHLCV feed (Stooq) is reachable and parseable. | **Stooq is anti-bot-blocked** (PoW interstitial → 404); **Finnhub `/candle` is premium** (403); **FMP free is only ~87 curated symbols** (PG/HD → 402), not the full S&P 500. **Full-universe live fix:** **Tiingo free** (500 symbols/month, 30+ yrs, real-time IEX) covers the S&P 500; **Alpaca free** = full-US data **+ broker**. | dep-health / code-drift (real-probe finding) | **RESOLVED (strategy set)** — ADR-0006: Tiingo primary OHLCV, Alpaca broker + failover feed, FMP/Finnhub supplemental, Postgres raw backtest. `FMPDataSource` built; Tiingo/Alpaca sources + runtime-default re-point pending the run-entrypoint. |
 
-> **Live OHLCV — solved + built (2026-06-16).** FMP `/stable/historical-price-eod/full` (free tier,
-> `PROVIDER_FMP_API_KEY` / probe `FNP_API_KEY`) serves real O/H/L/C/V. **Shipped:** `FMPDataSource`
-> (mirrors `FinnhubDataSource`/`StooqDataSource`; OHLCV only, other methods empty) + the
-> `market_source_from_settings` builder that composes FMP (OHLCV) with Finnhub (fundamentals/news);
-> FMP settings on `ProviderSettings`; full unit tests. **Remaining deploy step:** point the runtime
-> default source at `market_source_from_settings` (currently `StooqDataSource`, broken) — lands with
-> the run-entrypoint. Postgres `price_cache` stays the raw historical fallback. Confirms decision **D1**.
+> **Live OHLCV — strategy set 2026-06-16 (ADR-0006); build pending.** No keyless feed serves the full
+> S&P 500 live: Stooq is anti-bot-blocked, Finnhub `/candle` is premium, and **FMP free is a curated
+> ~87-symbol subset** (empirically PG, HD → `402`). **Two free keyed tiers do, and both keys are now
+> live (in `.env`):** **Tiingo** (`TIINGO_API_KEY`; free = 500 unique symbols/month — covers the
+> S&P 500 — 30+ yrs history, real-time IEX) is the **primary full-universe OHLCV feed**; **Alpaca**
+> (`ALPACA_API_KEY/SECRET`; free full-US data **and** the broker) is the **broker boundary + secondary/
+> failover feed** (one vendor for DEP-FEED + DEP-BROKER). **Built:** `agents/provider/fmp.py`
+> `FMPDataSource` (OHLCV only; ~87 symbols) + `market_source_from_settings` (OHLCV→FMP,
+> fundamentals/news→Finnhub) + FMP settings + unit tests — now demoted to a **validation sub-universe**.
+> **Remaining:** add `TiingoDataSource` (+ later `AlpacaDataSource`), re-point the runtime default
+> from FMP → Tiingo with Alpaca/FMP failover (tied to the run-entrypoint). Postgres `price_cache` stays
+> the raw historical backtest fallback. Confirms decision **D1**; Stooq retired; no scraping.
 
 ## Other agents
 

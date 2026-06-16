@@ -98,3 +98,4 @@ uv run pytest
 | [sprint-41](sprint-41-reporter-trade-outcomes.md) | Reporter: profit-factor and expectancy over stop/target-closed positions; new `domain/trade_outcomes.py` (P11) | **planned** |
 | [sprint-43](sprint-43-monitor-realized-pnl.md) | Monitor realized PnL on close (`pnl_cents` on CloseDecision) — accuracy upgrade so the reporter can use real $ PnL across all triggers (P11) | **queued** (after S41) |
 | [sprint-44](sprint-44-provider-tiingo-feed.md) | Provider Tiingo OHLCV feed: `TiingoDataSource` (full-S&P-500 live, ADR-0006) → re-point `market_source_from_settings` + `bindings.py` default off broken Stooq (closes DRIFT-009) | **shipped** |
+| [sprint-45](sprint-45-execution-alpaca-broker.md) | Execution Alpaca paper broker: `AlpacaBroker` behind the `Broker` port (real fills, client_order_id idempotency) + `broker_from_settings` default swap (ADR-0006, DEP-BROKER) | **planned** |

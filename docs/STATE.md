@@ -17,9 +17,16 @@ source was broken (`StooqDataSource` anti-bot-blocked) and FMP free covers only 
 `agents/provider/tiingo.py` `TiingoDataSource` (full S&P 500, free 500 sym/mo; Z-suffixed ISO date
 sliced to `YYYY-MM-DD`), routed `market_source_from_settings` OHLCV → Tiingo, and re-pointed the
 `orchestration/bindings.py` default off Stooq. No contract change; FMP retained as validation/failover.
-Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`. **Next data-feed follow-ups:**
-a `FailoverDataSource` wrapper (Tiingo→FMP→Alpaca) + `AlpacaDataSource`/broker adapter (Alpaca paper P/L,
-"fake purchases"). Then P12 S37 (analyst lexicon pillar) resumes.
+Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`.
+
+**Active hand-over: S45 — execution Alpaca paper broker (DEP-BROKER, ADR-0006).** Builds `AlpacaBroker`
+behind the existing `Broker` port (market order, `client_order_id` idempotency, real fills/positions),
+a `broker_from_settings` builder, and a `bindings.py` default swap (Alpaca paper when keyed, else
+`PaperBroker` — unit gate stays network-free). No contract change (`Fill.status` already has `pending`;
+contract already declares `external_io=("alpaca_broker",)`). Unlocks the Alpaca paper P/L + "fake
+purchases" harness (memory `alpaca-paper-broker`). **Follow-ups after S45:** real DEP-BROKER probe;
+pending→filled reconciliation across sessions; data-side `FailoverDataSource` + `AlpacaDataSource`.
+Then P12 S37 (analyst lexicon pillar) resumes.
 
 **P12 status: news feed live (S36 shipped), lexicon pillar queued (S37).** S36 shipped:
 `fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated

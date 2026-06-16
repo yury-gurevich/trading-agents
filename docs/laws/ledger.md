@@ -11,13 +11,13 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 | Component | Clauses | Status |
 | --- | --- | --- |
 | DEP-CONFIG | 2 | ⬜ |
-| DEP-CLOCK  | 1 | ⬜ |
-| DEP-NEO4J  | 3 | ⬜ |
-| DEP-BUS    | 3 | ⬜ |
-| DEP-FEED   | 3 | ⬜ |
+| DEP-CLOCK | 1 | ⬜ |
+| DEP-NEO4J | 3 | ⬜ |
+| DEP-BUS | 3 | ⬜ |
+| DEP-FEED | 3 | ⬜ |
 | DEP-BROKER | 2 | ⬜ |
-| DEP-LLM    | 2 | ⬜ |
-| DEP-TELE   | 2 | ⬜ |
+| DEP-LLM | 2 | ⬜ |
+| DEP-TELE | 2 | ⬜ |
 
 ## Layer 1 — Agents
 

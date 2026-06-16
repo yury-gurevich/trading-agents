@@ -39,7 +39,7 @@ Agent prefixes:
 | `SCAN` | scanner | `REPT` | reporter |
 | `ANLY` | analyst | `RSCH` | researcher |
 | `FCST` | forecaster | `CURA` | curator |
-| `PM`   | portfolio_manager | `OPER` | operator |
+| `PM` | portfolio_manager | `OPER` | operator |
 | `EXEC` | execution | `SUPV` | supervisor |
 
 ## 2. ID stability (the most important rule)
@@ -90,3 +90,47 @@ Every functional test names the law-ID(s) it proves in its docstring, e.g.
 `"""PROV-FAIL-02: partial feed outage degrades per-field, never crashes."""`. Discovering a needed
 test that has no law → **add the law to `laws.md` first** (new ID), then write the test. The plan is
 the master; tests are the proof.
+
+## 8. The PRD relationship
+
+The PRD (`docs/PRD.md`) is a **"wish-to-have"** document — recognise it as such. But it is also what
+**holds wishes and reality together**, so it is used deliberately, not ignored:
+
+- **Where the PRD states functionality *explicitly*, it is a STRONG guide** — treat it as
+  near-authoritative; the law adopts it unless there is a compelling reason not to.
+- **Where the PRD is wishful/aspirational/silent**, ideal-design intent leads.
+- **Desired functionality is derived by *combining* ideal-design + PRD** — never one in isolation.
+- **Every divergence is resolved by a FORCED decision *before* tests are designed.** The planning
+  agent must surface each fork, **offer a recommended resolution and the alternative**, and make the
+  owner choose — "PRD-first here, ideal-first there." You cannot write a test against undecided
+  functionality.
+- The PRD is re-scoped to **product vision**; the **law book is the operational source of truth.** The
+  PRD remains the integrator of wish + reality and a strong guide where explicit.
+
+## 9. Drift register (central)
+
+Every functional drift — a place where the law (intent) and reality (PRD, mission, or code) disagree —
+is recorded **once, centrally**, in [`drift-register.md`](drift-register.md) with a stable `DRIFT-NN`
+ID. Per-agent **Divergence Registers** (in each `laws.md`) are the *local source*; the central
+register is the **aggregated correction worklist** we use later to set drifts back on course. A drift
+is `OPEN` (needs a forced decision), `DECIDED` (resolution chosen, not yet applied), or `CORRECTED`.
+
+## 10. Tests are local to the agent
+
+An agent's **entire** test surface lives with the agent (`agents/<name>/tests/`, indexed by its
+`laws/test-plan.md`) — both the **functional** tests and the **directional boundary** tests, with the
+other side always **synthetic** (the agent is proven in isolation):
+
+- **Up** (callers/triggers) — accepts lawful inputs, rejects unlawful (`IN`, `TRG`).
+- **Down** (consumers) — emits lawful, type-aligned outputs (`OUT`, `TYP`).
+- **Left/Right** (dependencies & concurrency) — correct when each dependency is healthy *and* red, and
+  under concurrent/duplicate/late messages (`DEP`, `FAIL`, `ORD`).
+
+No shared/central suite owns an agent's behaviour. Cross-agent choreography (Layer 2) is proven
+separately, but **every edge of every agent is proven locally** against its contract.
+
+## 11. Lock only after a full cycle
+
+The `_TEMPLATE` is **not** locked on authoring. One agent (the **provider**) runs the *entire* cycle
+first — author → forced PRD reconciliation → tests designed → tests run & reconciled → green — so the
+template is proven end-to-end. **Only then** is it locked and copied to the other eleven.

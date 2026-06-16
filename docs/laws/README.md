@@ -19,6 +19,8 @@ things and only two things:
     only here.**
   - [`dependencies.md`](dependencies.md) — Layer-0 dependency charter; the "green bill of health" that
     must pass before any agent can be green.
+  - [`drift-register.md`](drift-register.md) — the central worklist of every law-vs-reality drift, to
+    set back on course later.
   - [`ledger.md`](ledger.md) — the gray→green rollup. "The landscape."
 - **Per-agent shard (`agents/<name>/laws/`)** — sealed, travels with the agent:
   - `laws.md` — the **locked constitution**, every clause ID'd.

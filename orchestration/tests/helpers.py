@@ -75,6 +75,10 @@ class ReboundingDataSource:
         """Return no sentiment; this fixture exercises the OHLCV path only."""
         return {}
 
+    def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
+        """Return no sectors; this fixture exercises the OHLCV path only."""
+        return {}
+
 
 def bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
     """Build one deterministic OHLCV bar."""

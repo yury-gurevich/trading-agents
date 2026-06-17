@@ -54,6 +54,10 @@ class DataSource(Protocol):
         """Fetch per-ticker vendor sentiment (0-1); empty when none available."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
+        """Fetch per-ticker sector/industry label; empty when none available."""
+        ...  # pragma: no cover - protocol declaration only.
+
 
 class FakeDataSource:
     """Deterministic source used by the unit gate."""
@@ -66,11 +70,13 @@ class FakeDataSource:
         fundamentals: dict[str, dict[str, float]] | None = None,
         news: dict[str, tuple[str, ...]] | None = None,
         sentiment: dict[str, float] | None = None,
+        sectors: dict[str, str] | None = None,
         fail_ohlcv: bool = False,
         fail_regime: bool = False,
         fail_fundamentals: bool = False,
         fail_news: bool = False,
         fail_sentiment: bool = False,
+        fail_sectors: bool = False,
     ) -> None:
         """Create a deterministic fixture source."""
         self._bars = bars
@@ -78,11 +84,13 @@ class FakeDataSource:
         self._fundamentals = fundamentals or {}
         self._news = news or {}
         self._sentiment = sentiment or {}
+        self._sectors = sectors or {}
         self._fail_ohlcv = fail_ohlcv
         self._fail_regime = fail_regime
         self._fail_fundamentals = fail_fundamentals
         self._fail_news = fail_news
         self._fail_sentiment = fail_sentiment
+        self._fail_sectors = fail_sectors
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -137,4 +145,14 @@ class FakeDataSource:
             ticker: self._sentiment[ticker]
             for ticker in tickers
             if ticker in self._sentiment
+        }
+
+    def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
+        """Return the fixture sector subset for requested tickers, or raise."""
+        if self._fail_sectors:
+            raise RuntimeError("sectors source unavailable")
+        return {
+            ticker: self._sectors[ticker]
+            for ticker in tickers
+            if ticker in self._sectors
         }

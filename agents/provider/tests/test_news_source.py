@@ -14,7 +14,8 @@ from types import MethodType
 import pytest
 
 from agents.provider.composite import CompositeDataSource
-from agents.provider.fundamentals import FinnhubDataSource, _parse_news
+from agents.provider.fundamentals import FinnhubDataSource
+from agents.provider.fundamentals_parse import _parse_news
 from agents.provider.sources import FakeDataSource
 from agents.provider.stooq import StooqDataSource
 from contracts.common import Window

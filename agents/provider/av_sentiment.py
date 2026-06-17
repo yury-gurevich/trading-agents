@@ -69,6 +69,13 @@ class AlphaVantageSentimentSource:
         """Return no news; Alpha Vantage serves sentiment only here."""
         return {}
 
+    def fetch_sectors(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; AV serves sentiment.
+    ) -> dict[str, str]:
+        """Return no sectors; Alpha Vantage serves sentiment only here."""
+        return {}
+
     def _download(self, tickers: tuple[str, ...]) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

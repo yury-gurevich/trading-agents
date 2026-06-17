@@ -15,11 +15,8 @@ from types import MethodType
 import pytest
 
 from agents.provider.composite import CompositeDataSource
-from agents.provider.fundamentals import (
-    _FUNDAMENTAL_KEYS,
-    FinnhubDataSource,
-    _parse_metrics,
-)
+from agents.provider.fundamentals import FinnhubDataSource
+from agents.provider.fundamentals_parse import _FUNDAMENTAL_KEYS, _parse_metrics
 from agents.provider.sources import FakeDataSource
 from contracts.common import Window
 

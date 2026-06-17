@@ -66,6 +66,13 @@ class TiingoDataSource:
         """Return no sentiment; Tiingo serves OHLCV only here."""
         return {}
 
+    def fetch_sectors(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; Tiingo serves OHLCV.
+    ) -> dict[str, str]:
+        """Return no sectors; Tiingo serves OHLCV only here."""
+        return {}
+
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

@@ -68,6 +68,13 @@ class FMPDataSource:
         """Return no sentiment; FMP serves OHLCV only here."""
         return {}
 
+    def fetch_sectors(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; FMP serves OHLCV.
+    ) -> dict[str, str]:
+        """Return no sectors; FMP serves OHLCV only here."""
+        return {}
+
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

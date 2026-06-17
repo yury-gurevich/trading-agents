@@ -7,12 +7,16 @@ External I/O: optional HTTPS calls to finnhub.io.
 
 from __future__ import annotations
 
-import json
 import urllib.parse
 import urllib.request
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+from agents.provider.fundamentals_parse import (
+    _parse_metrics,
+    _parse_news,
+    _parse_sector,
+)
 from agents.provider.sources import RegimeInputs
 
 if TYPE_CHECKING:
@@ -20,22 +24,6 @@ if TYPE_CHECKING:
 
     from contracts.common import Window
     from contracts.provider import OHLCVBar
-
-# Fixed Finnhub /stock/metric field names (the union of primary + fallback keys the
-# analyst reads). These are API field identifiers, not tunable policy.
-_FUNDAMENTAL_KEYS: tuple[str, ...] = (
-    "peBasicExclExtraTTM",
-    "peTTM",
-    "roeTTM",
-    "netProfitMarginTTM",
-    "currentRatioQuarterly",
-    "pbQuarterly",
-    "pbAnnual",
-    "totalDebt/totalEquityQuarterly",
-    "totalDebt/totalEquityAnnual",
-    "epsGrowthTTMYoy",
-    "revenueGrowthTTMYoy",
-)
 
 
 class FinnhubDataSource:
@@ -107,6 +95,15 @@ class FinnhubDataSource:
         """Return no sentiment; Finnhub serves fundamentals/news only here."""
         return {}
 
+    def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
+        """Fetch each ticker's sector/industry from Finnhub; skip when unknown."""
+        out: dict[str, str] = {}
+        for ticker in tickers:
+            sector = _parse_sector(self._download_profile(ticker))
+            if sector is not None:
+                out[ticker] = sector
+        return out
+
     def _download(self, ticker: str) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {"symbol": ticker.upper(), "metric": "all", "token": self._api_key}
@@ -132,42 +129,11 @@ class FinnhubDataSource:
         ) as resp:
             return str(resp.read().decode("utf-8"))
 
-
-def _parse_metrics(raw_json: str) -> dict[str, float]:
-    """Extract float-coercible target keys from a Finnhub metric response."""
-    payload = json.loads(raw_json)
-    metric = payload.get("metric") if isinstance(payload, dict) else None
-    if not isinstance(metric, dict):
-        return {}
-    out: dict[str, float] = {}
-    for key in _FUNDAMENTAL_KEYS:
-        value = metric.get(key)
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            continue
-        out[key] = float(value)
-    return out
-
-
-def _parse_news(raw_json: str, cap: int) -> tuple[str, ...]:
-    """Extract headline strings from a Finnhub /company-news response array.
-
-    Never raises; returns an empty tuple for any malformed or empty payload.
-    Newest-first order is preserved (Finnhub returns articles newest-first).
-    """
-    try:
-        payload = json.loads(raw_json)
-    except (json.JSONDecodeError, ValueError):
-        return ()
-    if not isinstance(payload, list):
-        return ()
-    headlines: list[str] = []
-    for item in payload:
-        if not isinstance(item, dict):
-            continue
-        headline = item.get("headline")
-        if not isinstance(headline, str) or not headline:
-            continue
-        headlines.append(str(headline))
-        if len(headlines) >= cap:
-            break
-    return tuple(headlines)
+    def _download_profile(self, ticker: str) -> str:  # pragma: no cover
+        query = urllib.parse.urlencode(
+            {"symbol": ticker.upper(), "token": self._api_key}
+        )
+        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
+            f"{self._base_url}/stock/profile2?{query}", timeout=self._timeout
+        ) as resp:
+            return str(resp.read().decode("utf-8"))

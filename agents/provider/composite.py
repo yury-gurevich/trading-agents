@@ -59,6 +59,10 @@ class CompositeDataSource:
         """Delegate vendor-sentiment fetches to the sentiment (Alpha Vantage) source."""
         return self._sentiment_source.fetch_sentiment(tickers)
 
+    def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
+        """Delegate sector fetches to the fundamentals (Finnhub) source."""
+        return self._fundamentals_source.fetch_sectors(tickers)
+
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
     """Compose live feeds: Tiingo OHLCV + Finnhub fundamentals/news + AV sentiment."""

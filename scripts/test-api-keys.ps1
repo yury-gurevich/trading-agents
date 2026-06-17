@@ -11,6 +11,7 @@ if (Test-Path $envPath) {
     foreach ($line in Get-Content $envPath) {
         if ($line -match '^\s*([^#=][^=]*)=(.*)$') {
             $val = $Matches[2].Trim() -replace '\s+#.*$', ''
+            if ($val -match '^#') { $val = '' }
             [System.Environment]::SetEnvironmentVariable($Matches[1].Trim(), $val)
         }
     }
@@ -19,7 +20,16 @@ if (Test-Path $envPath) {
     exit 1
 }
 
-# ── Helper ────────────────────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
+function Test-Secret {
+    param([string]$Label, [string]$Value)
+    if ($Value) {
+        Write-Host ("  OK  {0,-36} present" -f $Label) -ForegroundColor Green
+    } else {
+        Write-Host ("  --  {0,-36} not set" -f $Label) -ForegroundColor Yellow
+    }
+}
+
 function Test-Endpoint {
     param(
         [string]   $Label,
@@ -69,6 +79,9 @@ Test-Endpoint 'Massive — account' `
     'https://api.massiveapi.com/v1/account' `
     @{ 'Authorization' = "Bearer $env:MASSIVE_API_KEY" }
 
+Test-Endpoint 'Alpha Vantage — news sentiment' `
+    "https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=AAPL&limit=1&apikey=$env:ALPHAVANTAGE_API_KEY"
+
 # ── ML / training ─────────────────────────────────────────────────────────────
 Test-Endpoint 'HuggingFace — whoami' `
     'https://huggingface.co/api/whoami-v2' `
@@ -83,18 +96,46 @@ Test-Endpoint 'Neo4j Aura — discovery' `
     "https://$neo4jHost" `
     @{ 'Authorization' = "Basic $neo4jCred" }
 
-# ── PostgreSQL — no HTTP endpoint, just validate string is present ────────────
-if ($env:DATABASE_URL) {
-    Write-Host ("  OK  {0,-36} connection string present" -f 'PostgreSQL') -ForegroundColor Green
-} else {
-    Write-Host ("  --  {0,-36} DATABASE_URL not set" -f 'PostgreSQL') -ForegroundColor Yellow
+if ($env:NEO4J_TEST_URI) {
+    $neo4jTestHost = $env:NEO4J_TEST_URI -replace '^neo4j\+s?://', ''
+    Test-Endpoint 'Neo4j test URI — discovery' `
+        "https://$neo4jTestHost" `
+        @{ 'Authorization' = "Basic $neo4jCred" }
 }
 
+# ── PostgreSQL — no HTTP endpoint, just validate string is present ────────────
+Test-Secret 'PostgreSQL — DATABASE_URL' $env:DATABASE_URL
+
 # ── Azure observability ───────────────────────────────────────────────────────
-# The ingestion endpoint requires a bearer token via client-credentials flow;
-# a 200 on the base URL confirms network reachability.
-Test-Endpoint 'Azure ingestion endpoint' `
-    $env:AZURE_LOGS_INGESTION_ENDPOINT
+# Secrets validated for presence; ingestion endpoint tested for network reachability
+# (full auth requires a client-credentials token exchange).
+if ($env:AZURE_TENANT_ID -or ($env:AZURE_OBSERVABILITY_ENABLED -eq 'true')) {
+    Test-Secret 'Azure — AZURE_CLIENT_ID'                $env:AZURE_CLIENT_ID
+    Test-Secret 'Azure — AZURE_CLIENT_SECRET'            $env:AZURE_CLIENT_SECRET
+    Test-Secret 'Azure — AZURE_MONITOR_CONNECTION_STRING' $env:AZURE_MONITOR_CONNECTION_STRING
+    if ($env:AZURE_LOGS_INGESTION_ENDPOINT) {
+        Test-Endpoint 'Azure ingestion endpoint' `
+            $env:AZURE_LOGS_INGESTION_ENDPOINT
+    } else {
+        Write-Host ("  --  {0,-36} not set" -f 'Azure — AZURE_LOGS_INGESTION_ENDPOINT') -ForegroundColor Yellow
+    }
+    Test-Secret 'Azure — AZURE_LOGS_DCR_IMMUTABLE_ID'   $env:AZURE_LOGS_DCR_IMMUTABLE_ID
+}
+
+# ── Azure Prometheus ──────────────────────────────────────────────────────────
+if ($env:PROMETHEUS_REMOTE_WRITE_URL) {
+    Test-Secret 'Azure Prometheus — AZURE_SP_CLIENT_ID'     $env:AZURE_SP_CLIENT_ID
+    Test-Secret 'Azure Prometheus — AZURE_SP_CLIENT_SECRET' $env:AZURE_SP_CLIENT_SECRET
+    Test-Secret 'Azure Prometheus — AZURE_SP_TENANT_ID'     $env:AZURE_SP_TENANT_ID
+}
+
+# ── Optional future connection strings ────────────────────────────────────────
+if ($env:SERVICEBUS_CONNECTION_STRING) {
+    Test-Secret 'ServiceBus — connection string' $env:SERVICEBUS_CONNECTION_STRING
+}
+if ($env:EVENTHUBS_CONNECTION_STRING) {
+    Test-Secret 'EventHubs — connection string' $env:EVENTHUBS_CONNECTION_STRING
+}
 
 # ── Alpaca (broker) ───────────────────────────────────────────────────────────
 $alpacaEndpoint = if ($env:ALPACA_ENDPOINT) { $env:ALPACA_ENDPOINT } else { 'https://paper-api.alpaca.markets/v2' }

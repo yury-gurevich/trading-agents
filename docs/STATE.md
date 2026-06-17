@@ -1,9 +1,12 @@
 # Project State
 
-**Last updated:** 2026-06-16 — **Sprint 37 shipped** (analyst sentiment pillar: Loughran–McDonald
-lexicon champion, binding third pillar in the renormalised confidence gate — P12); **S45/S44 shipped**
-(Alpaca paper broker + Tiingo live feed; live bill of health 12 green · 0 warn). **S41 planned**
-(reporter profit-factor + expectancy). 638 tests at 100.00%.
+**Last updated:** 2026-06-16 — **Sprint 46 shipped** (persisted `SentimentReading` node — champion
+lexicon reading per scored ticker incl. rejected, scorecard alignment substrate; P12 item 2); **S37
+shipped** (analyst lexicon sentiment pillar); **S45/S44 shipped** (Alpaca paper broker + Tiingo live
+feed; bill of health 12 green · 0 warn). **S41 planned** (reporter profit-factor). 642 tests at 100.00%.
+**Forced decision pending:** the provider-sentiment challenger's source (Finnhub `/news-sentiment`) is
+**403 on the free tier** — owner must choose an alternative source, pay, or drop that challenger (the
+trinity is LOCKED, so I did not swap it unilaterally).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.

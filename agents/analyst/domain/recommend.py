@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
 from contracts.analyst import Recommendation, Rejection
 from contracts.common import Explanation
 
@@ -21,10 +22,11 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class AnalysisDecision:
-    """Recommendation or rejection for one candidate."""
+    """Recommendation or rejection for one candidate, with its sentiment reading."""
 
     recommendation: Recommendation | None
     rejection: Rejection | None
+    sentiment_reading: SentimentReading | None = None
 
 
 def decide(
@@ -33,10 +35,12 @@ def decide(
     regime: RegimeContext,
 ) -> AnalysisDecision:
     """Turn one score into an actionable recommendation or a rejection."""
+    reading = lexicon_reading(candidate.ticker, score)
     if score.rejection_reason is not None:
         return AnalysisDecision(
             recommendation=None,
             rejection=Rejection(ticker=candidate.ticker, reason=score.rejection_reason),
+            sentiment_reading=reading,
         )
     if score.confidence < regime.base_min_confidence:
         return AnalysisDecision(
@@ -48,6 +52,7 @@ def decide(
                     f"{regime.base_min_confidence:.3f}"
                 ),
             ),
+            sentiment_reading=reading,
         )
     summary = (
         f"{candidate.ticker} cleared the {regime.label} confidence "
@@ -79,4 +84,5 @@ def decide(
             rationale=Explanation(summary=summary, evidence_refs=evidence_refs),
         ),
         rejection=None,
+        sentiment_reading=reading,
     )

@@ -44,7 +44,7 @@ class RecommendationSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="analyst",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Turn candidates into scored, evidence-backed trade recommendations with a "
         "confidence and a rationale — or explain clearly why none qualify."
@@ -66,7 +66,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("analysis_completed",),
-    owns_graph=("AnalystRun", "Recommendation"),
+    owns_graph=("AnalystRun", "Recommendation", "SentimentReading"),
     external_io=(),
     depends_on=("scanner", "provider"),
     mcp_tools=("analyze", "explain_recommendation"),

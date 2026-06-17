@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from contracts.common import Provenance
 
 if TYPE_CHECKING:
+    from agents.analyst.domain.sentiment_reading import SentimentReading
     from contracts.analyst import Recommendation, Rejection
     from contracts.scanner import CandidateSet
     from kernel import GraphStore, Node
@@ -25,9 +26,10 @@ def write_analysis(
     candidate_set: CandidateSet,
     recommendations: tuple[Recommendation, ...],
     rejections: tuple[Rejection, ...],
+    sentiment_readings: tuple[SentimentReading, ...] = (),
     incident_refs: tuple[str, ...] = (),
 ) -> Provenance:
-    """Write an analyst run, recommendations, and candidate lineage."""
+    """Write an analyst run, recommendations, sentiment readings, and lineage."""
     run_id = f"analyst-run-{uuid.uuid4().hex}"
     run = graph.merge_node(
         "AnalystRun",
@@ -52,12 +54,37 @@ def write_analysis(
             },
         )
         _link_candidate(graph, node, scan_key, recommendation.ticker)
+    _write_readings(graph, run, run_id, sentiment_readings)
     return Provenance(
         run_id=run_id,
         source_agent="analyst",
         graph_node_id=f"{run.label}:{run.key}",
         incident_refs=incident_refs,
     )
+
+
+def _write_readings(
+    graph: GraphStore,
+    run: Node,
+    run_id: str,
+    readings: tuple[SentimentReading, ...],
+) -> None:
+    """Persist each scorer's sentiment reading, linked to the run that produced it."""
+    for reading in readings:
+        node = graph.merge_node(
+            "SentimentReading",
+            f"{run_id}:{reading.scorer}:{reading.ticker}",
+            {
+                "ticker": reading.ticker,
+                "scorer": reading.scorer,
+                "score": reading.score,
+                "articles": float(reading.articles),
+                "positive": float(reading.positive),
+                "negative": float(reading.negative),
+                "source_run_id": run_id,
+            },
+        )
+        graph.add_edge(run, node, "PRODUCED")
 
 
 def _scan_key(candidate_set: CandidateSet) -> str | None:

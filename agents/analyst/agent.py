@@ -96,11 +96,17 @@ class AnalystAgent(AgentBase):
                 self._graph, candidate_set, "analyst scoring failed"
             )
         recommendations, rejections = split_decisions(decisions)
+        readings = tuple(
+            decision.sentiment_reading
+            for decision in decisions
+            if decision.sentiment_reading is not None
+        )
         provenance = write_analysis(
             self._graph,
             candidate_set=candidate_set,
             recommendations=recommendations,
             rejections=rejections,
+            sentiment_readings=readings,
             incident_refs=refs,
         )
         return RecommendationSet(

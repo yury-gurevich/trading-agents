@@ -1,7 +1,20 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 49 — Forecaster agent first runtime: FinBERT sentiment shadow scorer (P12)
 
-**Status:** in progress · **Branch:** `sprint-49-forecaster-finbert-runtime` · **Build phase:** P12 (the FinBERT challenger — the reserved forecaster agent's first runtime) · **Effort: L**
+**Status:** shipped (2026-06-17, commit `82ecb31`) · **Branch:** `sprint-49-forecaster-finbert-runtime` · **Build phase:** P12 (the FinBERT challenger — the reserved forecaster agent's first runtime) · **Effort: L**
+
+> **Handback (shipped).** Built as scoped — the forecaster agent's first runtime, 9 modules under
+> `agents/forecaster/` (agent 119L, store 76L, domain/sentiment 52L, provider_client 47L, settings 37L,
+> model 40L, finbert 36L). **No contract change** (forecaster `0.1.0`); **no boundary-map change** (it was
+> already the 12th registered agent). The model is isolated behind `SentimentModel` (Protocol) +
+> `FakeSentimentModel`; `FinBERTModel` lazy-imports `transformers` via `importlib` (mirrors
+> `AnthropicLLMClient`) and is fully covered by a fake-module monkeypatch — `import agents.forecaster.agent`
+> pulls in **neither torch nor transformers** (verified). torch/transformers are an optional `forecaster`
+> group (locked, never installed by CI). Every `forecast` is `shadow=True`; `scorecard.promotion_eligible`
+> is always `False` (never self-promotes). `make ci` green: **681 passed, 4 skipped, 100.00% coverage**;
+> every module < 200L. One design note worth recording: the `Model` node is keyed by the stable `model_id`,
+> so its props must be immutable across runs (the graph rejects prop overwrites) — `created_at` was dropped
+> from it. **P12 leg 3 (FinBERT) complete; only the scorecard harness remains (+ the LM master dictionary).**
 
 ## Goal
 

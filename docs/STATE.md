@@ -1,16 +1,20 @@
 # Project State
 
-**Last updated:** 2026-06-17 20:03 AEST — **Sprint 48 shipped** (analyst persists the provider-sentiment
-shadow reading: requests `"sentiment"`, writes a 2nd `SentimentReading` `scorer="provider"`, aligned to
-the lexicon, **never gates** — P12 provider-sentiment challenger **complete**); **S47 shipped** (provider
-serves Alpha Vantage vendor sentiment into `MarketData.sentiment` via `DataSource.fetch_sentiment`;
-provider CONTRACT 0.2.0); **S46 shipped** (persisted `SentimentReading` node); **S37 shipped** (analyst
-lexicon pillar); **S44/S45 shipped** (Tiingo live feed + Alpaca broker). AV sentiment source + probe
-shipped (bill of health 13 green · 0 warn). **S41 planned** (reporter profit-factor). 655 tests at 100.00%.
-**Provider-sentiment (P12) — DONE:** source = **Alpha Vantage `NEWS_SENTIMENT`** (free, live-verified;
-Finnhub `/news-sentiment` is dead 403; ADR-0002). Feed (S47) + analyst shadow-reading (S48) both shipped;
-every run now records champion (lexicon) + challenger (provider) readings side by side. **P12 next:**
-forecaster/FinBERT (advisory) → scorecard harness; the full Loughran–McDonald master dictionary stays owed.
+**Last updated:** 2026-06-17 20:28 AEST — **Sprint 49 shipped** (forecaster agent's **first runtime** —
+FinBERT sentiment shadow scorer: requests a ticker's news from provider, scores via a model behind a
+Protocol, persists a `ShadowPrediction` `shadow=True` 0-1 value aligned to the lexicon/provider readings +
+its `Model` node; `scorecard` reports samples but is **never promotion-eligible**; torch/transformers are
+an optional, lazily-imported group the gate never loads — the **3rd trinity leg**); **S48 shipped**
+(analyst persists the provider-sentiment shadow reading — P12 provider-sentiment challenger complete);
+**S47 shipped** (provider serves Alpha Vantage vendor sentiment, CONTRACT 0.2.0); **S46/S37 shipped**
+(SentimentReading node / lexicon pillar); **S44/S45 shipped** (Tiingo live feed + Alpaca broker). AV
+sentiment source + probe shipped (bill of health 13 green · 0 warn). **S41 planned** (reporter
+profit-factor). 681 tests at 100.00%.
+**Sentiment trinity (P12) — all 3 scorers live:** lexicon champion (binding, S37) + provider challenger
+(shadow, S47/S48) + FinBERT forecaster (shadow, S49); source = **Alpha Vantage `NEWS_SENTIMENT`** (free,
+live-verified; Finnhub `/news-sentiment` is dead 403; ADR-0002). **P12 remaining:** the **scorecard
+harness** (compare the 3 readings vs forward returns; blocked on a live news-accrual runway) + the still-owed
+**full Loughran–McDonald master dictionary** (champion upgrade).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.

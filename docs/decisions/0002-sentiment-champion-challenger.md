@@ -2,6 +2,14 @@
 
 **Status:** Accepted · **Date:** 2026-06-15 · **Decider:** Yury Gurevich (product owner)
 
+> **Amendment 2026-06-16 (provider-sentiment source).** Finnhub `/news-sentiment` (Decision §1) is
+> **dead for us** — `403 "You don't have access"` on the free tier (verified). The trinity shape is
+> unchanged (LOCKED); only the *vendor* of the provider-sentiment challenger moves. Owner chose
+> **"alternative free vendor"** → **Alpha Vantage `NEWS_SENTIMENT`** (free key; returns
+> `feed[].ticker_sentiment[].ticker_sentiment_score`). Pending a real-key live verification (the
+> Finnhub lesson); **Marketaux** (free 100/day entity sentiment) is the documented fallback if AV's
+> endpoint proves premium. Read `ticker_sentiment_score` ∈ [-1, 1] → `50 + 50·score` to align 0–100.
+
 ## Context
 
 The analyst's composite score reserves a third **sentiment** pillar (weight 0.20) alongside the
@@ -39,7 +47,8 @@ exclusive external I/O.
    score. Three implementations behind that interface:
    - **Lexicon (Loughran–McDonald finance word lists)** — deterministic, explainable, pinnable. The
      analyst's **binding** sentiment pillar.
-   - **Provider sentiment number** — Finnhub `/news-sentiment`, an **advisory** challenger.
+   - **Provider sentiment number** — a vendor's per-ticker sentiment, an **advisory** challenger
+     (Alpha Vantage `NEWS_SENTIMENT` per the 2026-06-16 amendment; Finnhub `/news-sentiment` is dead).
    - **FinBERT** — a transformer (`p_pos/p_neu/p_neg → 50 + 50·(p_pos − p_neg)`), an **advisory**
      challenger, isolated behind the forecaster.
 

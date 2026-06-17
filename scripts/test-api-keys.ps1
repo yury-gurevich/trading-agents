@@ -11,6 +11,7 @@ if (Test-Path $envPath) {
     foreach ($line in Get-Content $envPath) {
         if ($line -match '^\s*([^#=][^=]*)=(.*)$') {
             $val = $Matches[2].Trim() -replace '\s+#.*$', ''
+            if ($val -match '^#') { $val = '' }
             [System.Environment]::SetEnvironmentVariable($Matches[1].Trim(), $val)
         }
     }

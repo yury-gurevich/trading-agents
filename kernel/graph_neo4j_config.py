@@ -22,6 +22,11 @@ class GraphSettings(AgentSettings):
     neo4j_password: str = tunable(
         "", why="Provided out-of-band; empty supports unauthenticated tests."
     )
+    neo4j_database: str = tunable(
+        "neo4j",
+        why="Target database name. Aura/Community expose only 'neo4j'; a local "
+        "Desktop/Enterprise instance may use a named db (e.g. trading-agent).",
+    )
     neo4j_connection_timeout_seconds: float = tunable(
         30.0,
         why="Fail a broken graph connection promptly while allowing local startup lag.",

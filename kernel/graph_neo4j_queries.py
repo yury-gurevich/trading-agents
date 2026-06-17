@@ -28,6 +28,7 @@ class Neo4jGraphQueries:
     """Small query-runner mixin for ``Neo4jGraphStore``."""
 
     _driver: Any
+    _database: str
 
     def _match_node(self, label_id: str, key: str) -> Mapping[str, Any] | None:
         record = self._one_or_none(_match_node_query(label_id), key=key)
@@ -78,5 +79,7 @@ class Neo4jGraphQueries:
         return records[0] if records else None
 
     def _run(self, query: str, **params: object) -> list[Any]:
-        records, _, _ = self._driver.execute_query(query, **params)
+        records, _, _ = self._driver.execute_query(
+            query, database_=self._database, **params
+        )
         return list(records)

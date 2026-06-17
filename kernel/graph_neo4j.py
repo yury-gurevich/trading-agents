@@ -41,6 +41,7 @@ class Neo4jGraphStore(GraphStore, Neo4jGraphQueries):
         self._settings = settings if settings is not None else GraphSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
         self._constraint_labels: set[str] = set()
+        self._database = self._settings.neo4j_database
         auth = (self._settings.neo4j_user, self._settings.neo4j_password)
         self._driver: Any = GraphDatabase.driver(
             self._settings.neo4j_uri,

@@ -9,7 +9,7 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 ## Layer 0 — Dependencies (must go green first)
 
 Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
-(`probes/`, real systems, functional channels). Latest run (2026-06-16): **12 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (runtime default), FMP, Postgres, Finnhub, Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel).
+(`probes/`, real systems, functional channels). Latest run (2026-06-17): **13 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (default), FMP, Postgres, Finnhub fundamentals, **Alpha Vantage vendor sentiment** (provider-sentiment challenger), Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel).
 
 | Component | Clauses | Status |
 | --- | --- | --- |

@@ -115,6 +115,17 @@ class ProviderSettings(AgentSettings):
         le=60,
         unit="seconds",
     )
+
+    # Alpha Vantage — vendor news sentiment (provider-sentiment challenger, ADR-0002).
+    alphavantage_base_url: str = Field(default="https://www.alphavantage.co")
+    alphavantage_api_key: str = Field(default="", repr=False)
+    alphavantage_timeout: int = tunable(
+        25,
+        why="Bound the Alpha Vantage sentiment call so a slow feed cannot hang.",
+        ge=1,
+        le=60,
+        unit="seconds",
+    )
     finnhub_news_lookback_days: int = tunable(
         7,
         why=(

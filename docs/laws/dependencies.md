@@ -29,7 +29,8 @@ sub-universe; **Finnhub** (free) serves fundamentals + news; **Postgres `price_c
 historical backtest fallback. No anti-bot scraping (Stooq retired). Paid feeds deferred to Phase D.
 
 - `DEP-FEED-01` — the price feed is reachable and returns parseable data for a known symbol.
-- `DEP-FEED-02` — the keyed feed (fundamentals/news) authenticates and respects rate limits.
+- `DEP-FEED-02` — the keyed feed (Finnhub fundamentals/news; Alpha Vantage vendor sentiment)
+  authenticates and respects rate limits.
 - `DEP-FEED-03` — an unreachable/garbled feed is detectable as such (so the provider can degrade
   honestly, not fabricate).
 

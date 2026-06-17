@@ -271,6 +271,36 @@ def probe_feed_fundamentals(creds: dict[str, str]) -> list[Result]:
         ]
 
 
+def probe_sentiment(creds: dict[str, str]) -> list[Result]:
+    """DEP-FEED-02 — Alpha Vantage vendor news sentiment authenticates and returns."""
+    key = creds.get("ALPHAVANTAGE_API_KEY")
+    if not key:
+        return [
+            Result(
+                "DEP-FEED-02",
+                "sentiment: Alpha Vantage",
+                SKIP,
+                "no ALPHAVANTAGE_API_KEY",
+            )
+        ]
+    from agents.provider.av_sentiment import AlphaVantageSentimentSource
+
+    source = AlphaVantageSentimentSource(
+        api_key=key, base_url="https://www.alphavantage.co", timeout=25
+    )
+    try:
+        scores = source.fetch_sentiment(("AAPL",))
+    except Exception as exc:
+        detail = f"down ({type(exc).__name__})"
+        return [Result("DEP-FEED-02", "sentiment: Alpha Vantage live", RED, detail)]
+    if "AAPL" in scores:
+        detail = f"AAPL vendor sentiment {scores['AAPL']:.2f} (0-1 aligned)"
+        return [Result("DEP-FEED-02", "sentiment: Alpha Vantage live", GREEN, detail)]
+    return [
+        Result("DEP-FEED-02", "sentiment: Alpha Vantage live", WARN, "no AAPL reading")
+    ]
+
+
 def probe_broker(creds: dict[str, str]) -> list[Result]:
     """DEP-BROKER-01/02 — Alpaca paper broker accepts an order and is idempotent."""
     key_id = creds.get("ALPACA_PAPER_API_KEY") or creds.get("ALPACA_API_KEY")
@@ -396,6 +426,7 @@ PROBES = (
     probe_neo4j,
     probe_feed_ohlcv,
     probe_feed_fundamentals,
+    probe_sentiment,
     probe_broker,
     probe_llm,
     probe_tele,

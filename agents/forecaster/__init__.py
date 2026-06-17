@@ -1,5 +1,10 @@
-"""Forecaster agent. Charter: mission.md. Boundary: contracts/forecaster.py.
+"""Forecaster agent package. Charter: mission.md. Boundary: contracts/forecaster.py.
 
-Runtime (agent.py, domain/, store.py, mcp.py, tests/) lands during implementation.
-Imports only `kernel` and `contracts` — never another agent.
+Agent: forecaster
+Role: expose the advisory shadow-ML forecaster boundary agent.
+External I/O: none. Imports only `kernel` and `contracts` — never another agent.
 """
+
+from agents.forecaster.agent import ForecasterAgent
+
+__all__ = ["ForecasterAgent"]

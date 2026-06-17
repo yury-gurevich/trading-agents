@@ -50,3 +50,17 @@ class ScannerSettings(AgentSettings):
         ge=1,
         le=50,
     )
+    benchmark_ticker: str = "SPY"
+    max_beta: float = tunable(
+        2.5,
+        why="Exclude names whose systematic risk (beta vs the benchmark) is too high.",
+        ge=0.0,
+        le=10.0,
+    )
+    beta_min_observations: int = tunable(
+        3,
+        why="Minimum aligned daily returns before the beta-cap is trusted to gate.",
+        ge=2,
+        le=252,
+        unit="observations",
+    )

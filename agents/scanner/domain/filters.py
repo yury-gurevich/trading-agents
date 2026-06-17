@@ -11,6 +11,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from agents.scanner.domain.beta import compute_beta
 from contracts.scanner import FilterTrace
 
 if TYPE_CHECKING:
@@ -30,9 +31,10 @@ class Survivor:
 def apply_filters(
     tickers: tuple[str, ...],
     bars: tuple[OHLCVBar, ...],
+    benchmark_bars: tuple[OHLCVBar, ...],
     settings: ScannerSettings,
 ) -> tuple[tuple[Survivor, ...], FilterTrace]:
-    """Apply the scanner's deterministic filter chain."""
+    """Apply the scanner's deterministic filter chain (price, liquidity, RS, beta)."""
     grouped = _group_bars(bars)
     drops: Counter[str] = Counter()
     survivors: list[Survivor] = []
@@ -53,20 +55,14 @@ def apply_filters(
         if total_return < settings.min_relative_strength:
             drops["min_relative_strength"] += 1
             continue
+        beta = compute_beta(
+            tuple(ticker_bars), benchmark_bars, settings.beta_min_observations
+        )
+        if beta is not None and beta > settings.max_beta:
+            drops["max_beta"] += 1
+            continue
         survivors.append(
-            Survivor(
-                ticker=ticker,
-                survived_filters=(
-                    "min_price",
-                    "min_average_volume",
-                    "min_relative_strength",
-                ),
-                metrics={
-                    "latest_close": latest.close,
-                    "average_volume": avg_volume,
-                    "relative_strength": total_return,
-                },
-            )
+            _survivor(ticker, latest.close, avg_volume, total_return, beta)
         )
     trace = FilterTrace(
         universe_size=len(tickers),
@@ -74,6 +70,26 @@ def apply_filters(
         dropped_by_filter=dict(drops),
     )
     return tuple(survivors), trace
+
+
+def _survivor(
+    ticker: str,
+    latest_close: float,
+    avg_volume: float,
+    total_return: float,
+    beta: float | None,
+) -> Survivor:
+    """Build a survivor, recording beta + its gate only when beta was computable."""
+    survived = ["min_price", "min_average_volume", "min_relative_strength"]
+    metrics = {
+        "latest_close": latest_close,
+        "average_volume": avg_volume,
+        "relative_strength": total_return,
+    }
+    if beta is not None:
+        metrics["beta"] = beta
+        survived.append("max_beta")
+    return Survivor(ticker=ticker, survived_filters=tuple(survived), metrics=metrics)
 
 
 def _group_bars(bars: tuple[OHLCVBar, ...]) -> dict[str, tuple[OHLCVBar, ...]]:

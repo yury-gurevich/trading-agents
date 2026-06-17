@@ -12,19 +12,20 @@ from typing import TYPE_CHECKING
 
 from agents.scanner.domain.filters import apply_filters
 from agents.scanner.domain.ranking import rank_survivors
+from agents.scanner.provider_client import request_benchmark_bars, request_market_data
 from agents.scanner.settings import ScannerSettings
 from agents.scanner.store import write_scan
 from agents.scanner.universe import StaticUniverse
 from contracts.common import Explanation, ScanRequest, Window
-from contracts.provider import DataRequest, MarketData
 from contracts.scanner import CONTRACT, Candidate, CandidateSet, FilterTrace
-from kernel import AgentBase, AgentMessage, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
     from agents.scanner.universe import UniverseSource
+    from contracts.provider import MarketData
     from kernel import MessageBus
 
 
@@ -54,12 +55,17 @@ class ScannerAgent(AgentBase):
     def _run_scan(self, request: BaseModel) -> CandidateSet:
         scan_request = ScanRequest.model_validate(request)
         tickers = self._universe.members(scan_request.universe)
-        market = self._request_market_data(tickers)
+        market = request_market_data(self.bus, self.sink, tickers, self._window())
         if market is None or market.quality.used_fallback:
             if market is not None:
                 self._record_provider_degraded()
             return self._empty_result(scan_request, tickers, market)
-        survivors, trace = apply_filters(tickers, market.bars, self._settings)
+        benchmark_bars = request_benchmark_bars(
+            self.bus, self.sink, self._settings.benchmark_ticker, self._window()
+        )
+        survivors, trace = apply_filters(
+            tickers, market.bars, benchmark_bars, self._settings
+        )
         candidates = rank_survivors(survivors, cap=self._settings.candidate_cap)
         provenance = write_scan(
             self._graph,
@@ -82,41 +88,13 @@ class ScannerAgent(AgentBase):
         return Explanation(
             summary=(
                 f"Scanner applies price >= {self._settings.min_price}, average "
-                f"volume >= {self._settings.min_average_volume:.0f}, and "
-                f"relative strength >= {self._settings.min_relative_strength:.3f} "
-                f"to {len(tickers)} configured {scan_request.universe} members."
+                f"volume >= {self._settings.min_average_volume:.0f}, relative "
+                f"strength >= {self._settings.min_relative_strength:.3f}, and "
+                f"beta <= {self._settings.max_beta:.2f} to {len(tickers)} configured "
+                f"{scan_request.universe} members."
             ),
             evidence_refs=("scanner.filters.core",),
         )
-
-    def _request_market_data(self, tickers: tuple[str, ...]) -> MarketData | None:
-        market: MarketData | None = None
-        with fault_boundary(
-            self.sink,
-            agent="scanner",
-            module="agents.scanner.agent",
-            capability="run_scan",
-            reraise=False,
-        ) as capture:
-            response = self.bus.request(
-                AgentMessage(
-                    sender="scanner",
-                    recipient="provider",
-                    message_type="request",
-                    capability="get_market_data",
-                    payload=DataRequest(
-                        tickers=tickers,
-                        window=self._window(),
-                    ).model_dump(mode="json"),
-                )
-            )
-            if response.message_type == "error":
-                message = str(response.payload.get("message", "provider error"))
-                raise RuntimeError(message)
-            market = MarketData.model_validate(response.payload)
-        if capture.fault is not None:
-            return None
-        return market
 
     def _record_provider_degraded(self) -> None:
         with fault_boundary(
@@ -178,7 +156,7 @@ def _scan_explanation(
     return Explanation(
         summary=(
             f"{len(candidates)} candidates survived from {trace.evaluated} evaluated "
-            "tickers using price, liquidity, and relative-strength filters."
+            "tickers using price, liquidity, relative-strength, and beta filters."
         ),
         evidence_refs=("scanner.filters.core",),
     )

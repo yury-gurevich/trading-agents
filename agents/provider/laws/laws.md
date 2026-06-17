@@ -183,6 +183,116 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-PERF-02` — A request over *N* tickers completes within a stated budget; latency is dominated
   by the external feed and is surfaced in metrics.
 
+## Capability declaration (`CAP`)
+
+*What this agent needs from the runtime to perform its function. Describes interfaces, not products.
+This section is the design-time source of truth; the EHLO payload sent to the master agent at
+startup is derived from it. See `docs/decisions/0007-container-per-agent-master-bootstrap.md`.*
+
+```json
+{
+  "messaging": {
+    "subscribe": {
+      "topics": ["market_data_requests", "regime_requests"],
+      "operations": ["consume"],
+      "delivery": "at_least_once"
+    },
+    "publish": {
+      "topics": ["market_data_ready", "market_data_degraded"],
+      "operations": ["produce"],
+      "delivery": "at_least_once"
+    },
+    "schema_version": "1.0"
+  },
+  "graph_store": {
+    "operations": ["read", "append"],
+    "owns_labels": ["MarketSnapshot", "Regime", "Ticker"],
+    "access": "exclusive_write_own_labels"
+  },
+  "external_http": {
+    "sources": 4,
+    "protocol": "HTTPS_only",
+    "operations": ["GET"],
+    "auth": "api_key_per_source"
+  },
+  "secrets": {
+    "keys": ["api_key_per_data_source"],
+    "access": "read_at_startup",
+    "min_privilege": true
+  }
+}
+```
+
+- **messaging** — consumes market-data and regime request events; publishes `market_data_ready`
+  (claim-check graph ref, ADR-0005) and `market_data_degraded` (observer push).
+- **graph_store** — append-write to its three owned labels; read to check historical coverage and
+  staleness before deciding whether to fetch.
+- **external_http** — four read-only HTTPS sources (primary OHLCV, validation/failover,
+  fundamentals + news + benchmark, vendor sentiment). One API key per source. Provider is the
+  **only** agent that may hold or use data-feed credentials (`PROV-SEC-01`, `PROV-SEC-02`).
+- **secrets** — one API key injected per source at startup by the master agent; never stored
+  beyond the process lifetime, never returned in any response or log.
+
+## Parameters (`PARAM`)
+
+*Every constant used in agent code — both env-overridable tunables and hard-coded values —
+documented with schema, rationale, and `tunable`/`non-tunable` classification.
+See `docs/decisions/0007-container-per-agent-master-bootstrap.md`.*
+
+All tunable parameters are env-overridable via the `PROVIDER_` prefix and carry a `why=` rationale
+in `settings.py`. **Tunable** = safe to adjust for operational experiments without altering
+semantic contract. **Non-tunable** = structural; changing the value changes what the agent *means*.
+
+**Regime policy defaults** (published to downstream as `Regime.defaults`):
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `base_min_confidence` | `0.60` | `float [0.0, 1.0]` | YES | Default downstream confidence floor from the reference policy. |
+| `base_stop_loss_pct` | `0.05` | `float [0.0, 0.08]` | YES | Reference protective stop; bounded below the PRD maximum risk cap. |
+| `base_take_profit_pct` | `0.10` | `float [0.01, 1.0]` | YES | Reference reward target paired with the default stop-loss policy. |
+| `base_max_holding_days` | `10` | `int days [1, 60]` | YES | Short tactical holding window used until agent scorecards tune it. |
+
+**Data validation thresholds:**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `max_daily_move_sigma` | `4.0` | `float sigma [0.1, 20.0]` | YES | Flag daily returns that are extreme relative to the requested window. |
+| `max_staleness_days` | `3` | `int days [0, 30]` | YES | Market data older than three sessions flagged as stale. |
+
+**VIX regime thresholds:**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `vix_risk_on_threshold` | `15.0` | `float [0.0, 100.0]` | YES | Low-volatility VIX level where risk-on regime applies. |
+| `vix_risk_off_threshold` | `20.0` | `float [0.0, 100.0]` | YES | Elevated VIX level where new-risk posture should tighten. |
+| `vix_high_threshold` | `25.0` | `float [0.0, 100.0]` | YES | High-volatility VIX level from the reference regime gate. |
+| `vix_extreme_threshold` | `35.0` | `float [0.0, 150.0]` | YES | Extreme-volatility VIX level from the reference regime gate. |
+
+**Request limits:**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `finnhub_news_lookback_days` | `7` | `int days [1, 90]` | YES | Trailing window of company news to fetch; recent headlines only, not the full OHLCV lookback. |
+| `max_news_per_ticker` | `20` | `int [1, 100]` | YES | Cap headlines per ticker so a noisy feed cannot dominate the downstream sentiment pillar. |
+
+**Network timeouts:**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `finnhub_timeout` | `10` | `int seconds [1, 60]` | YES | Bound the Finnhub fundamentals HTTPS call so a slow feed cannot hang the run. |
+| `fmp_timeout` | `15` | `int seconds [1, 60]` | YES | Bound the FMP EOD HTTPS call so a slow feed cannot hang the run. |
+| `tiingo_timeout` | `15` | `int seconds [1, 60]` | YES | Bound the Tiingo EOD HTTPS call so a slow feed cannot hang the run. |
+| `alphavantage_timeout` | `25` | `int seconds [1, 60]` | YES | Bound the Alpha Vantage sentiment call; AV is slower than other feeds at peak hours. |
+
+**Service base URLs (non-tunable — changing routes to a different service entirely):**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `finnhub_base_url` | `https://finnhub.io/api/v1` | `str` | NO | Finnhub REST API v1 root; structural — changing connects to a different service. |
+| `fmp_base_url` | `https://financialmodelingprep.com` | `str` | NO | FMP REST API root; structural — changing connects to a different service. |
+| `tiingo_base_url` | `https://api.tiingo.com` | `str` | NO | Tiingo REST API root; structural — changing connects to a different service. |
+| `alphavantage_base_url` | `https://www.alphavantage.co` | `str` | NO | Alpha Vantage REST API root; structural — changing connects to a different service. |
+
 ## Divergence register
 
 The master worklist is [`docs/laws/drift-register.md`](../../../docs/laws/drift-register.md). Provider
@@ -210,3 +320,6 @@ status:
   (write to store → publish `ready: <ref>`) updated; the durable store (`STA-01..04`) is now also the
   **hand-off** medium (consumer reads it by ref), not only later-pickup. Remaining `OUT`/`IDM` clauses
   still phrased around a "response" — reconciled fully when the provider cycle resumes.
+- v0.4 — `CAP` and `PARAM` sections added (ADR-0007, S53): runtime capability declaration (4
+  interface categories: messaging, graph_store, external_http, secrets) and full parameter table
+  (20 entries — 16 tunable, 4 non-tunable base URLs).

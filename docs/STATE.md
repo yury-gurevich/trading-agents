@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-18 04:15 AEST — **ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
+**Last updated:** 2026-06-18 21:30 AEST — **S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration + 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining agent backfills; ADR-0007 docs committed).
+**ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
 **Graph store: Aura→local migration prepped** (kernel commit
 `f96ea93` adds configurable `NEO4J_DATABASE`; stay on **Neo4j Aura until it expires 2026-06-28**, then move
 to **local Neo4j Desktop** db `trading-agent` — Aura's min paid tier ~$260/mo; Aura verified **empty** so
@@ -116,6 +117,14 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 53 — Provider laws: CAP + PARAM sections** (ADR-0007 backfill; S53). Two new law
+  sections added to `agents/provider/laws/laws.md`: `CAPABILITY DECLARATION (CAP)` — a JSON
+  schema describing the provider's four runtime interface needs (messaging subscribe/publish, graph
+  append-write, external HTTPS read, secrets) in interface-first terms; `PARAMETERS (PARAM)` — a
+  full 20-entry table covering 16 tunable constants (regime defaults, validation thresholds, VIX
+  levels, request limits, network timeouts) and 4 non-tunable base URLs. Laws.md bumped to v0.4.
+  **Establishes the template for all 11 remaining agent law backfills** (required before P14 master
+  sprint). No code change; no contract change; no test count change.
 + **Sprint 36 — Provider: news feed** (P12; first P12 sprint). New `fetch_news` on
   `FinnhubDataSource` (`fundamentals.py`, extended in-place at 166L) + `_download_news` /
   `_parse_news` (pure parser: strips non-string/empty/missing headlines, caps at

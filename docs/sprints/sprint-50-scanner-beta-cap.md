@@ -1,7 +1,17 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 50 — Scanner beta computation + beta-cap filter (P11)
 
-**Status:** in progress · **Branch:** `sprint-50-scanner-beta-cap` · **Build phase:** P11 (decision-logic depth — scanner side) · **Effort: M**
+**Status:** shipped (2026-06-17, commit `51ee2b6`) · **Branch:** `sprint-50-scanner-beta-cap` · **Build phase:** P11 (decision-logic depth — scanner side) · **Effort: M**
+
+> **Handback (shipped).** Built as scoped. New: `domain/beta.py` (55L, pure `compute_beta` via
+> `statistics.variance`/`covariance` over aligned daily returns), `provider_client.py` (79L — extracted
+> `request_market_data` out of `agent.py` + added the isolated `request_benchmark_bars`). `agent.py`
+> dropped 184→**162L**; `filters.py` 84→99L. **No contract change** (Candidate already carries `metrics`);
+> **no boundary-map change**. The beta-cap is the chain's last gate and **purely additive + dormant on thin
+> history** — every existing scanner + orchestration test passed untouched (2-bar fixtures → beta `None` →
+> no `max_beta` drops). `make ci` green: **688 passed, 4 skipped, 100.00% coverage**; every module < 200L.
+> Design note: beta uses the **scan window** (a separate longer beta window is a future tunable/refinement,
+> not a second fetch), and only gates when there are ≥ `beta_min_observations` aligned returns.
 
 ## Goal
 

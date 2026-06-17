@@ -1,5 +1,11 @@
 # Deployment
 
+> **Status: interim.** The current setup deploys all agents in a **single monolithic container**.
+> This is a temporary shortcut. The accepted architecture (ADR-0007) is **one Docker image per
+> agent**, orchestrated by a **master bootstrap agent**, running on Azure Container Apps. The
+> per-agent split is tracked under the P14 milestone. The documentation below describes the
+> current monolith deployment; it will be superseded when P14 ships.
+
 Container deployment for the trading-agents app and its Prometheus observability sidecar.
 
 ## Files

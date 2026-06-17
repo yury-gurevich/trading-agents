@@ -8,6 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.reporter import ReporterAgent
+from agents.reporter.result import build_snapshot, degraded_snapshot
 from agents.reporter.settings import ReporterSettings
 from agents.reporter.tests.helpers import (
     POSITION_ID,
@@ -92,6 +93,53 @@ def test_reporter_trims_long_narratives_at_configured_limit() -> None:
     ).bind()
     story = TradeNarrative.model_validate(bus.request(narrative_message()).payload)
     assert len(story.story.summary) == 200
+
+
+def test_snapshot_reports_profit_factor_and_expectancy() -> None:
+    graph = InMemoryGraphStore()
+    _seed_two_closed_trades(graph)
+    snapshot = build_snapshot(graph, RUN_ID)
+    metrics = snapshot.portfolio_metrics
+    # AAPL target win 0.10, MSFT stop loss 0.05 -> PF 2.0, expectancy 0.025.
+    assert metrics["profit_factor"] == 2.0
+    assert metrics["expectancy_pct"] == (0.10 - 0.05) / 2
+    assert metrics["closed_trades_with_pnl"] == 2.0
+
+
+def test_degraded_snapshot_carries_zero_outcome_keys() -> None:
+    graph = InMemoryGraphStore()
+    snapshot = degraded_snapshot(graph, "missing-run", "no data")
+    metrics = snapshot.portfolio_metrics
+    assert metrics["profit_factor"] == 0.0
+    assert metrics["expectancy_pct"] == 0.0
+    assert metrics["closed_trades_with_pnl"] == 0.0
+
+
+def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
+    pm_run = graph.merge_node(
+        "PMRun", RUN_ID, {"approved_count": 2, "rejected_count": 0}
+    )
+    for ticker, trigger in (("AAPL", "target"), ("MSFT", "stop")):
+        pos_id = f"{RUN_ID}:{ticker}"
+        props = {"stop_pct": 0.05, "target_pct": 0.10}
+        order = graph.merge_node(
+            "OrderIntent", pos_id, {"ticker": ticker, "action": "buy", **props}
+        )
+        fill = graph.merge_node(
+            "Fill", f"{pos_id}:buy", {"ticker": ticker, "status": "filled"}
+        )
+        position = graph.merge_node(
+            "Position", pos_id, {"run_id": RUN_ID, "ticker": ticker, **props}
+        )
+        close = graph.merge_node(
+            "CloseDecision",
+            f"close:{pos_id}",
+            {"ticker": ticker, "position_id": pos_id, "trigger": trigger},
+        )
+        graph.add_edge(order, pm_run, "EMITTED_BY")
+        graph.add_edge(fill, order, "EXECUTES")
+        graph.add_edge(fill, position, "OPENS")
+        graph.add_edge(close, position, "CLOSES")
 
 
 class FaultOnceGraph(InMemoryGraphStore):

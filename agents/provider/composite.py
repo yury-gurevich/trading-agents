@@ -63,6 +63,12 @@ class CompositeDataSource:
         """Delegate sector fetches to the fundamentals (Finnhub) source."""
         return self._fundamentals_source.fetch_sectors(tickers)
 
+    def fetch_earnings(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, date]:
+        """Delegate earnings fetches to the fundamentals (Finnhub) source."""
+        return self._fundamentals_source.fetch_earnings(tickers, window)
+
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
     """Compose live feeds: Tiingo OHLCV + Finnhub fundamentals/news + AV sentiment."""
@@ -80,6 +86,7 @@ def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSour
             api_key=settings.finnhub_api_key,
             base_url=settings.finnhub_base_url,
             timeout=settings.finnhub_timeout,
+            earnings_lookahead_days=settings.finnhub_earnings_lookahead_days,
         ),
         sentiment_source=AlphaVantageSentimentSource(
             api_key=settings.alphavantage_api_key,

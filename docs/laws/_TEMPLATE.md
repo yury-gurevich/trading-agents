@@ -85,6 +85,42 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - Timeouts on external calls. Expected latency/throughput budget.
 
+## Capability declaration (`CAP`)
+
+*What this agent needs from the runtime to perform its function. Describes interfaces, not products.
+This section is the design-time source of truth; the EHLO payload sent to the master agent at
+startup is derived from it. See `docs/decisions/0007-container-per-agent-master-bootstrap.md`.*
+
+```json
+{
+  "messaging": {
+    "operations": ["publish", "subscribe"],
+    "delivery": "at_least_once",
+    "schema_version": "1.0"
+  }
+}
+```
+
+- List every interface the agent needs (messaging, graph, data API, broker, …).
+- For each: required operations, minimum access level, schema/protocol version.
+- Never name a product ("Azure Service Bus") — describe the functional contract.
+
+## Parameters (`PARAM`)
+
+*Every constant used in agent code — both env-overridable tunables and hard-coded values — must be
+documented here with schema, rationale, and tunable/non-tunable classification.
+See `docs/decisions/0007-container-per-agent-master-bootstrap.md`.*
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `EXAMPLE_CONSTANT` | `42` | `int ≥ 1` | YES | Replace with real name, value, and rationale |
+
+- **Tunable** — can be changed for operational experiments without altering the agent's semantic
+  contract; candidate for master to expose at runtime.
+- **Non-tunable** — structural constant; changing the value changes what the agent *means*.
+- Every `tunable()` in `settings.py` has a `why=` kwarg; non-tunable constants must be documented
+  here with equal rigour.
+
 ## Divergence register
 
 | ID | Law says | PRD / mission / code says | Decision needed |

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from agents.provider.domain.integrity import degraded_quality, validate_bars
 from agents.provider.domain.regime import classify_regime
+from agents.provider.market_fields import collect_optional_fields
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import RegimeInputs
 from agents.provider.store import write_market_snapshot, write_regime
@@ -72,95 +73,28 @@ class ProviderAgent(AgentBase):
             )
         else:
             quality = degraded_quality(data_request.tickers, note="source_unavailable")
-        fundamentals: dict[str, dict[str, float]] = {}
-        if "fundamentals" in data_request.fields:
-            with fault_boundary(
-                self.sink,
-                agent="provider",
-                module="agents.provider.agent",
-                capability="get_market_data",
-                reraise=False,
-            ) as fcapture:
-                fundamentals = self._source.fetch_fundamentals(
-                    data_request.tickers, data_request.window
-                )
-            if fcapture.fault is not None:
-                fundamentals = {}
-                quality = quality.model_copy(
-                    update={
-                        "notes": (*quality.notes, "fundamentals_degraded"),
-                        "used_fallback": True,
-                    }
-                )
-        news: dict[str, tuple[str, ...]] = {}
-        if "news" in data_request.fields:
-            with fault_boundary(
-                self.sink,
-                agent="provider",
-                module="agents.provider.agent",
-                capability="get_market_data",
-                reraise=False,
-            ) as ncapture:
-                news = self._source.fetch_news(
-                    data_request.tickers, data_request.window
-                )
-            if ncapture.fault is not None:
-                news = {}
-                quality = quality.model_copy(
-                    update={
-                        "notes": (*quality.notes, "news_degraded"),
-                        "used_fallback": True,
-                    }
-                )
-        sentiment: dict[str, float] = {}
-        if "sentiment" in data_request.fields:
-            with fault_boundary(
-                self.sink,
-                agent="provider",
-                module="agents.provider.agent",
-                capability="get_market_data",
-                reraise=False,
-            ) as scapture:
-                sentiment = self._source.fetch_sentiment(data_request.tickers)
-            if scapture.fault is not None:
-                sentiment = {}
-                quality = quality.model_copy(
-                    update={
-                        "notes": (*quality.notes, "sentiment_degraded"),
-                        "used_fallback": True,
-                    }
-                )
-        sectors: dict[str, str] = {}
-        if "sectors" in data_request.fields:
-            with fault_boundary(
-                self.sink,
-                agent="provider",
-                module="agents.provider.agent",
-                capability="get_market_data",
-                reraise=False,
-            ) as sccapture:
-                sectors = self._source.fetch_sectors(data_request.tickers)
-            if sccapture.fault is not None:
-                sectors = {}
-                quality = quality.model_copy(
-                    update={
-                        "notes": (*quality.notes, "sectors_degraded"),
-                        "used_fallback": True,
-                    }
-                )
+        optional = collect_optional_fields(
+            self._source,
+            fields=data_request.fields,
+            tickers=data_request.tickers,
+            window=data_request.window,
+            sink=self.sink,
+            quality=quality,
+        )
         provenance = write_market_snapshot(
             self._graph,
             tickers=data_request.tickers,
             bars=bars,
-            quality=quality,
+            quality=optional.quality,
         )
         return MarketData(
             bars=bars,
-            fundamentals=fundamentals,
-            news=news,
-            sentiment=sentiment,
-            sectors=sectors,
-            quality=quality,
+            fundamentals=optional.fundamentals,
+            news=optional.news,
+            sentiment=optional.sentiment,
+            sectors=optional.sectors,
+            earnings=optional.earnings,
+            quality=optional.quality,
             provenance=provenance,
         )
 

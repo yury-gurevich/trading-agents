@@ -1,13 +1,14 @@
 """Finnhub response parsers — pure, never-raising JSON extractors.
 
 Agent: provider
-Role: extract metrics, sector, and headlines from Finnhub JSON payloads.
+Role: extract metrics, sector, headlines, and next-earnings date from Finnhub JSON.
 External I/O: none.
 """
 
 from __future__ import annotations
 
 import json
+from datetime import date
 
 # Fixed Finnhub /stock/metric field names (the union of primary + fallback keys the
 # analyst reads). These are API field identifiers, not tunable policy.
@@ -56,6 +57,39 @@ def _parse_sector(raw_json: str) -> str | None:
     if not isinstance(industry, str) or not industry:
         return None
     return industry
+
+
+def _parse_next_earnings(raw_json: str, on_or_after: date) -> date | None:
+    """Return the earliest earnings date on/after ``on_or_after``, or None.
+
+    Parses a Finnhub ``/calendar/earnings`` response. Never raises; returns None for
+    any malformed/empty payload or when no upcoming date is present.
+    """
+    try:
+        payload = json.loads(raw_json)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    calendar = payload.get("earningsCalendar") if isinstance(payload, dict) else None
+    if not isinstance(calendar, list):
+        return None
+    upcoming: list[date] = []
+    for item in calendar:
+        if not isinstance(item, dict):
+            continue
+        parsed = _parse_iso_date(item.get("date"))
+        if parsed is not None and parsed >= on_or_after:
+            upcoming.append(parsed)
+    return min(upcoming) if upcoming else None
+
+
+def _parse_iso_date(value: object) -> date | None:
+    """Coerce an ISO ``YYYY-MM-DD`` string to a date; None on anything else."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 def _parse_news(raw_json: str, cap: int) -> tuple[str, ...]:

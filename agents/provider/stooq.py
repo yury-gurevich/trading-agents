@@ -71,6 +71,14 @@ class StooqDataSource:
         """Return no sectors; Stooq serves OHLCV only."""
         return {}
 
+    def fetch_earnings(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; Stooq has none.
+        window: Window,  # noqa: ARG002 - port signature; Stooq has none.
+    ) -> dict[str, date]:
+        """Return no earnings; Stooq serves OHLCV only."""
+        return {}
+
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

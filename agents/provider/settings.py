@@ -145,3 +145,13 @@ class ProviderSettings(AgentSettings):
         ge=1,
         le=100,
     )
+    finnhub_earnings_lookahead_days: int = tunable(
+        30,
+        why=(
+            "Forward window scanned for each ticker's next earnings date;"
+            " comfortably covers any scanner earnings-exclusion threshold."
+        ),
+        ge=1,
+        le=180,
+        unit="days",
+    )

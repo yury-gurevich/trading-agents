@@ -29,7 +29,7 @@ claim-check pattern.**
 - **Topics, not recipients.** Each agent **publishes** its outputs to a Service Bus **topic** and
   **subscribes** to the topics it consumes (from its contract's `emits`/`consumes`). **No agent names
   another** — the broker routes by topic. The dispatcher thins from a sequencer to a **trigger-emitter
-  + watchdog**.
+  - watchdog**.
 - **Claim-check for data.** The **data + audit live in Neo4j** (ADR-0001, the source of truth); the
   Service Bus message carries only a small **`ready: <graph-ref>`** event; the consumer **reads the
   artifact from Neo4j** by reference. *Required*, not merely preferred: Service Bus caps a message at

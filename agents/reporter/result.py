@@ -21,6 +21,7 @@ from agents.reporter.domain.metrics import (
     collect_signal_metrics,
 )
 from agents.reporter.domain.narrative import compose_story
+from agents.reporter.domain.trade_outcomes import collect_trade_outcomes
 from agents.reporter.store import write_snapshot, write_trade_narrative
 from contracts.common import Explanation
 from contracts.reporter import RunSnapshot, TradeNarrative
@@ -38,6 +39,8 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
     portfolio = collect_portfolio_metrics(
         pm_run, lineage.positions, lineage.close_decisions
     )
+    outcomes = collect_trade_outcomes(lineage.positions, lineage.close_decisions)
+    portfolio = {**portfolio, **outcomes}
     signal = collect_signal_metrics(
         lineage.recommendations, rejection_count=len(lineage.rejections)
     )
@@ -84,6 +87,7 @@ def build_trade_narrative(
 def degraded_snapshot(graph: GraphStore, run_id: str, message: str) -> RunSnapshot:
     """Build and persist a non-crashing degraded snapshot."""
     portfolio = collect_portfolio_metrics(None, (), ())
+    portfolio = {**portfolio, **collect_trade_outcomes((), ())}
     signal = collect_signal_metrics(())
     headline = Explanation(summary=message, evidence_refs=("reporter.graph",))
     provenance = write_snapshot(

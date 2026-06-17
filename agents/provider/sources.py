@@ -58,6 +58,12 @@ class DataSource(Protocol):
         """Fetch per-ticker sector/industry label; empty when none available."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def fetch_earnings(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, date]:
+        """Fetch per-ticker next earnings date; skip tickers with none upcoming."""
+        ...  # pragma: no cover - protocol declaration only.
+
 
 class FakeDataSource:
     """Deterministic source used by the unit gate."""
@@ -71,12 +77,14 @@ class FakeDataSource:
         news: dict[str, tuple[str, ...]] | None = None,
         sentiment: dict[str, float] | None = None,
         sectors: dict[str, str] | None = None,
+        earnings: dict[str, date] | None = None,
         fail_ohlcv: bool = False,
         fail_regime: bool = False,
         fail_fundamentals: bool = False,
         fail_news: bool = False,
         fail_sentiment: bool = False,
         fail_sectors: bool = False,
+        fail_earnings: bool = False,
     ) -> None:
         """Create a deterministic fixture source."""
         self._bars = bars
@@ -85,12 +93,14 @@ class FakeDataSource:
         self._news = news or {}
         self._sentiment = sentiment or {}
         self._sectors = sectors or {}
+        self._earnings = earnings or {}
         self._fail_ohlcv = fail_ohlcv
         self._fail_regime = fail_regime
         self._fail_fundamentals = fail_fundamentals
         self._fail_news = fail_news
         self._fail_sentiment = fail_sentiment
         self._fail_sectors = fail_sectors
+        self._fail_earnings = fail_earnings
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -155,4 +165,18 @@ class FakeDataSource:
             ticker: self._sectors[ticker]
             for ticker in tickers
             if ticker in self._sectors
+        }
+
+    def fetch_earnings(
+        self,
+        tickers: tuple[str, ...],
+        window: Window,  # noqa: ARG002 - port signature; fixture is window-independent.
+    ) -> dict[str, date]:
+        """Return the fixture earnings subset for requested tickers, or raise."""
+        if self._fail_earnings:
+            raise RuntimeError("earnings source unavailable")
+        return {
+            ticker: self._earnings[ticker]
+            for ticker in tickers
+            if ticker in self._earnings
         }

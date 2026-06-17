@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from agents.provider.fundamentals_parse import (
     _parse_metrics,
     _parse_news,
+    _parse_next_earnings,
     _parse_sector,
 )
 from agents.provider.sources import RegimeInputs
@@ -37,6 +38,7 @@ class FinnhubDataSource:
         timeout: int,
         news_lookback_days: int = 7,
         max_news_per_ticker: int = 20,
+        earnings_lookahead_days: int = 30,
     ) -> None:
         """Create a Finnhub source from injected settings."""
         self._api_key = api_key
@@ -44,6 +46,7 @@ class FinnhubDataSource:
         self._timeout = timeout
         self._news_lookback_days = news_lookback_days
         self._max_news_per_ticker = max_news_per_ticker
+        self._earnings_lookahead_days = earnings_lookahead_days
 
     def fetch_ohlcv(
         self,
@@ -104,6 +107,21 @@ class FinnhubDataSource:
                 out[ticker] = sector
         return out
 
+    def fetch_earnings(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> dict[str, date]:
+        """Fetch each ticker's next earnings date; skip when none upcoming."""
+        from_date = window.end
+        to_date = from_date + timedelta(days=self._earnings_lookahead_days)
+        out: dict[str, date] = {}
+        for ticker in tickers:
+            next_date = _parse_next_earnings(
+                self._download_earnings(ticker, from_date, to_date), from_date
+            )
+            if next_date is not None:
+                out[ticker] = next_date
+        return out
+
     def _download(self, ticker: str) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {"symbol": ticker.upper(), "metric": "all", "token": self._api_key}
@@ -135,5 +153,21 @@ class FinnhubDataSource:
         )
         with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
             f"{self._base_url}/stock/profile2?{query}", timeout=self._timeout
+        ) as resp:
+            return str(resp.read().decode("utf-8"))
+
+    def _download_earnings(  # pragma: no cover
+        self, ticker: str, from_date: date, to_date: date
+    ) -> str:
+        query = urllib.parse.urlencode(
+            {
+                "symbol": ticker.upper(),
+                "from": from_date.isoformat(),
+                "to": to_date.isoformat(),
+                "token": self._api_key,
+            }
+        )
+        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
+            f"{self._base_url}/calendar/earnings?{query}", timeout=self._timeout
         ) as resp:
             return str(resp.read().decode("utf-8"))

@@ -24,7 +24,7 @@ mcp = ["mcp>=1.0"]
 # Dependency probes only — the Postgres raw-OHLCV fallback (v1 store, test-data).
 probes = ["psycopg2-binary>=2.9"]
 # Forecaster FinBERT model — heavy ML, lazily imported; the unit gate never loads it.
-forecaster = ["torch>=2", "transformers>=4"]
+forecaster = ["torch>=2.12.1", "transformers>=4"]
 
 [dependency-groups]
 dev = [

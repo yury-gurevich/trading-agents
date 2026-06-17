@@ -100,6 +100,13 @@ class FinnhubDataSource:
                 out[ticker] = headlines
         return out
 
+    def fetch_sentiment(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - Finnhub serves fundamentals/news.
+    ) -> dict[str, float]:
+        """Return no sentiment; Finnhub serves fundamentals/news only here."""
+        return {}
+
     def _download(self, ticker: str) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {"symbol": ticker.upper(), "metric": "all", "token": self._api_key}

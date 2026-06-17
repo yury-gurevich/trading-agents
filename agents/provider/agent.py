@@ -112,6 +112,24 @@ class ProviderAgent(AgentBase):
                         "used_fallback": True,
                     }
                 )
+        sentiment: dict[str, float] = {}
+        if "sentiment" in data_request.fields:
+            with fault_boundary(
+                self.sink,
+                agent="provider",
+                module="agents.provider.agent",
+                capability="get_market_data",
+                reraise=False,
+            ) as scapture:
+                sentiment = self._source.fetch_sentiment(data_request.tickers)
+            if scapture.fault is not None:
+                sentiment = {}
+                quality = quality.model_copy(
+                    update={
+                        "notes": (*quality.notes, "sentiment_degraded"),
+                        "used_fallback": True,
+                    }
+                )
         provenance = write_market_snapshot(
             self._graph,
             tickers=data_request.tickers,
@@ -122,6 +140,7 @@ class ProviderAgent(AgentBase):
             bars=bars,
             fundamentals=fundamentals,
             news=news,
+            sentiment=sentiment,
             quality=quality,
             provenance=provenance,
         )

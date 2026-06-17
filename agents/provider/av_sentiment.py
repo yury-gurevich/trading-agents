@@ -13,6 +13,15 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
+from typing import TYPE_CHECKING
+
+from agents.provider.sources import RegimeInputs
+
+if TYPE_CHECKING:
+    from datetime import date
+
+    from contracts.common import Window
+    from contracts.provider import OHLCVBar
 
 _PATH = "/query"
 
@@ -31,6 +40,34 @@ class AlphaVantageSentimentSource:
         if not tickers:
             return {}
         return _parse_sentiment(tickers, self._download(tickers))
+
+    def fetch_ohlcv(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; AV serves sentiment.
+        window: Window,  # noqa: ARG002 - port signature; AV serves sentiment.
+    ) -> tuple[OHLCVBar, ...]:
+        """Return no bars; Alpha Vantage serves sentiment only here."""
+        return ()
+
+    def fetch_regime_inputs(self, as_of: date) -> RegimeInputs:
+        """Return empty regime inputs; Alpha Vantage serves sentiment only here."""
+        return RegimeInputs(as_of=as_of, vix=None)
+
+    def fetch_fundamentals(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; AV serves sentiment.
+        window: Window,  # noqa: ARG002 - port signature; AV serves sentiment.
+    ) -> dict[str, dict[str, float]]:
+        """Return no fundamentals; Alpha Vantage serves sentiment only here."""
+        return {}
+
+    def fetch_news(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; AV serves sentiment.
+        window: Window,  # noqa: ARG002 - port signature; AV serves sentiment.
+    ) -> dict[str, tuple[str, ...]]:
+        """Return no news; Alpha Vantage serves sentiment only here."""
+        return {}
 
     def _download(self, tickers: tuple[str, ...]) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(

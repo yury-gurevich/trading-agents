@@ -26,7 +26,7 @@ class DataRequest(_Frozen):
     tickers: tuple[Ticker, ...]
     window: Window
     fields: tuple[str, ...] = ("ohlcv",)
-    """Subset of: ohlcv, fundamentals, news, earnings_calendar."""
+    """Subset of: ohlcv, fundamentals, news, sentiment, earnings_calendar."""
 
 
 class RegimeRequest(_Frozen):
@@ -58,6 +58,8 @@ class MarketData(_Frozen):
     bars: tuple[OHLCVBar, ...]
     fundamentals: dict[Ticker, dict[str, float]] = Field(default_factory=dict)
     news: dict[Ticker, tuple[str, ...]] = Field(default_factory=dict)
+    sentiment: dict[Ticker, float] = Field(default_factory=dict)
+    """Advisory vendor sentiment per ticker (0-1), the provider-sentiment challenger."""
     quality: DataQualityTrace
     provenance: Provenance
 
@@ -77,7 +79,7 @@ class RegimeContext(_Frozen):
 
 CONTRACT = AgentContract(
     name="provider",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Be the single boundary to the outside market world. Turn raw external "
         "feeds into clean, validated, cached market facts and the current regime, "
@@ -101,7 +103,15 @@ CONTRACT = AgentContract(
     ),
     emits=("market_data_degraded",),
     owns_graph=("MarketSnapshot", "Regime", "Ticker"),
-    external_io=("stooq", "finnhub", "fred", "edgar", "finbert", "sp500_listing"),
+    external_io=(
+        "stooq",
+        "finnhub",
+        "fred",
+        "edgar",
+        "finbert",
+        "sp500_listing",
+        "alphavantage",
+    ),
     depends_on=(),
     mcp_tools=("get_market_data", "get_regime"),
     never=(

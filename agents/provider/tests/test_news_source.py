@@ -15,7 +15,8 @@ import pytest
 
 from agents.provider.composite import CompositeDataSource
 from agents.provider.fundamentals import FinnhubDataSource, _parse_news
-from agents.provider.sources import FakeDataSource, StooqDataSource
+from agents.provider.sources import FakeDataSource
+from agents.provider.stooq import StooqDataSource
 from contracts.common import Window
 
 _WINDOW = Window(start=date(2024, 1, 2), end=date(2024, 1, 3))
@@ -125,5 +126,6 @@ def test_finnhub_source_fetches_news_and_skips_empty_without_network() -> None:
 def test_composite_routes_news_to_fundamentals_source() -> None:
     price = FakeDataSource(news={"AAPL": ("price-side",)})
     funda = FakeDataSource(news={"AAPL": ("funda-side",)})
-    result = CompositeDataSource(price, funda).fetch_news(("AAPL",), _WINDOW)
+    senti = FakeDataSource()
+    result = CompositeDataSource(price, funda, senti).fetch_news(("AAPL",), _WINDOW)
     assert result == {"AAPL": ("funda-side",)}

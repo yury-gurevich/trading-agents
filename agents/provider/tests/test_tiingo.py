@@ -66,6 +66,7 @@ def test_tiingo_serves_ohlcv_only() -> None:
     source = TiingoDataSource(api_key="k", base_url="https://tiingo.test", timeout=10)
     assert source.fetch_fundamentals(("AAPL",), _WINDOW) == {}
     assert source.fetch_news(("AAPL",), _WINDOW) == {}
+    assert source.fetch_sentiment(("AAPL",)) == {}
     assert source.fetch_regime_inputs(date(2026, 1, 2)).vix is None
 
 

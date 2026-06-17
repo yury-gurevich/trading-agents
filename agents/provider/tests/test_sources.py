@@ -20,69 +20,19 @@ from agents.provider.fundamentals import (
     FinnhubDataSource,
     _parse_metrics,
 )
-from agents.provider.sources import FakeDataSource, StooqDataSource
+from agents.provider.sources import FakeDataSource
 from contracts.common import Window
 
 _WINDOW = Window(start=date(2024, 1, 2), end=date(2024, 1, 3))
 
 
-def test_stooq_source_parses_csv_without_network() -> None:
-    source = StooqDataSource()
+def test_fake_source_fetches_and_fails_sentiment() -> None:
+    source = FakeDataSource(sentiment={"AAPL": 0.6, "MSFT": 0.3})
+    assert source.fetch_sentiment(("AAPL",)) == {"AAPL": 0.6}
 
-    def fake_download(_self: StooqDataSource, _ticker: str, _window: Window) -> str:
-        return (
-            "Date,Open,High,Low,Close,Volume\n,,,,,\n2024-01-02,100,105,99,104,12345\n"
-        )
-
-    source._download = MethodType(fake_download, source)  # type: ignore[method-assign]
-
-    bars = source.fetch_ohlcv(
-        ("AAPL",), Window(start=date(2024, 1, 2), end=date(2024, 1, 3))
-    )
-
-    assert len(bars) == 1
-    assert bars[0].ticker == "AAPL"
-    assert bars[0].close == 104.0
-
-
-def test_stooq_source_skips_rows_missing_volume() -> None:
-    source = StooqDataSource()
-
-    def fake_download(_self: StooqDataSource, _ticker: str, _window: Window) -> str:
-        return "Date,Open,High,Low,Close,Volume\n2024-01-02,100,105,99,104,\n"
-
-    source._download = MethodType(fake_download, source)  # type: ignore[method-assign]
-
-    assert (
-        source.fetch_ohlcv(
-            ("AAPL",), Window(start=date(2024, 1, 2), end=date(2024, 1, 3))
-        )
-        == ()
-    )
-
-
-def test_stooq_source_returns_empty_regime_inputs() -> None:
-    inputs = StooqDataSource().fetch_regime_inputs(date(2024, 1, 2))
-
-    assert inputs.as_of == date(2024, 1, 2)
-    assert inputs.vix is None
-
-
-@pytest.mark.integration
-def test_stooq_source_fetches_real_ohlcv_when_network_enabled() -> None:
-    if os.getenv("STOOQ_TEST_NETWORK") != "1":
-        pytest.skip("STOOQ_TEST_NETWORK=1 is not set")
-
-    bars = StooqDataSource().fetch_ohlcv(
-        ("AAPL",), Window(start=date(2024, 1, 2), end=date(2024, 1, 5))
-    )
-
-    assert bars
-    assert bars[0].ticker == "AAPL"
-
-
-def test_stooq_source_returns_empty_fundamentals() -> None:
-    assert StooqDataSource().fetch_fundamentals(("AAPL",), _WINDOW) == {}
+    failing = FakeDataSource(fail_sentiment=True)
+    with pytest.raises(RuntimeError, match="sentiment source unavailable"):
+        failing.fetch_sentiment(("AAPL",))
 
 
 def test_parse_metrics_extracts_target_keys_and_drops_the_rest() -> None:
@@ -154,11 +104,13 @@ def test_fake_source_raises_when_fundamentals_fail() -> None:
 def test_composite_routes_each_call_to_the_right_source() -> None:
     price = FakeDataSource(vix=12.0, fundamentals={"AAPL": {"peTTM": 1.0}})
     funda = FakeDataSource(vix=99.0, fundamentals={"AAPL": {"roeTTM": 0.4}})
-    composite = CompositeDataSource(price, funda)
+    senti = FakeDataSource(sentiment={"AAPL": 0.7})
+    composite = CompositeDataSource(price, funda, senti)
 
     assert composite.fetch_regime_inputs(date(2024, 1, 2)).vix == 12.0
     assert composite.fetch_ohlcv(("AAPL",), _WINDOW) == ()
     assert composite.fetch_fundamentals(("AAPL",), _WINDOW) == {"AAPL": {"roeTTM": 0.4}}
+    assert composite.fetch_sentiment(("AAPL",)) == {"AAPL": 0.7}
 
 
 def test_finnhub_source_parses_metrics_and_skips_empty_without_network() -> None:
@@ -173,6 +125,7 @@ def test_finnhub_source_parses_metrics_and_skips_empty_without_network() -> None
 
     assert source.fetch_ohlcv(("AAPL",), _WINDOW) == ()
     assert source.fetch_regime_inputs(date(2024, 1, 2)).vix is None
+    assert source.fetch_sentiment(("AAPL",)) == {}
     assert source.fetch_fundamentals(("AAPL", "MSFT"), _WINDOW) == {
         "AAPL": {"peTTM": 30.0}
     }

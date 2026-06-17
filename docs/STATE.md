@@ -1,13 +1,14 @@
 # Project State
 
-**Last updated:** 2026-06-16 — **Sprint 46 shipped** (persisted `SentimentReading` node — champion
-lexicon reading per scored ticker incl. rejected, scorecard alignment substrate; P12 item 2); **S37
-shipped** (analyst lexicon sentiment pillar); **S45/S44 shipped** (Alpaca paper broker + Tiingo live
-feed; bill of health 12 green · 0 warn). **S41 planned** (reporter profit-factor). 642 tests at 100.00%.
-**Provider-sentiment source — decided 2026-06-16:** Finnhub `/news-sentiment` is dead (403 free); owner
-chose an **alternative free vendor → Alpha Vantage `NEWS_SENTIMENT`** (ADR-0002 amended; `.env.example`
-carries `ALPHAVANTAGE_API_KEY`). **Next:** user claims the free AV key → I build the provider-sentiment
-challenger feed + analyst provider-scorer reading (shadow), live-verified. Marketaux is the fallback.
+**Last updated:** 2026-06-17 16:14 AEST — **Sprint 47 shipped** (provider serves Alpha Vantage vendor
+sentiment into `MarketData.sentiment` via `DataSource.fetch_sentiment`; provider CONTRACT 0.2.0 — P12);
+**S46 shipped** (persisted `SentimentReading` node); **S37 shipped** (analyst lexicon pillar); **S44/S45
+shipped** (Tiingo live feed + Alpaca broker). AV sentiment source + probe shipped (bill of health 13
+green · 0 warn). **S41 planned** (reporter profit-factor). 651 tests at 100.00%.
+**Provider-sentiment (P12):** source = **Alpha Vantage `NEWS_SENTIMENT`** (free, live-verified; Finnhub
+`/news-sentiment` is dead 403; ADR-0002). **Feed shipped (S47);** **next slice:** the analyst requests
+`"sentiment"` and writes a 2nd `SentimentReading` (`scorer="provider"`, shadow, aligned to lexicon) —
+the S46 node already supports it. Then forecaster/FinBERT + scorecard harness.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -394,6 +395,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   self-enforcing guards, CI parity. First private push to GitHub.
 
 ---
+I modifeid .env again. Pretify it and add an entry into the .env.exapmle in the style adopted by this project
 
 ## Pointers
 

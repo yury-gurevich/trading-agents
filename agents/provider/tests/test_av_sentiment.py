@@ -9,11 +9,15 @@ External I/O: none.
 from __future__ import annotations
 
 import json
+from datetime import date
 from types import MethodType
 
 import pytest
 
 from agents.provider.av_sentiment import AlphaVantageSentimentSource
+from contracts.common import Window
+
+_WINDOW = Window(start=date(2026, 1, 1), end=date(2026, 1, 31))
 
 
 def _stub(payload: str) -> AlphaVantageSentimentSource:
@@ -83,3 +87,13 @@ def test_non_dict_payload_or_no_feed_yields_empty() -> None:
 
 def test_empty_tickers_short_circuits() -> None:
     assert _stub("{}").fetch_sentiment(()) == {}
+
+
+def test_av_source_serves_sentiment_only() -> None:
+    source = AlphaVantageSentimentSource(
+        api_key="k", base_url="https://av.test", timeout=10
+    )
+    assert source.fetch_ohlcv(("AAPL",), _WINDOW) == ()
+    assert source.fetch_fundamentals(("AAPL",), _WINDOW) == {}
+    assert source.fetch_news(("AAPL",), _WINDOW) == {}
+    assert source.fetch_regime_inputs(date(2026, 1, 2)).vix is None

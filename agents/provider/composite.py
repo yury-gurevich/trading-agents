@@ -1,7 +1,8 @@
-"""Composite DataSource that routes OHLCV/regime and fundamentals to different feeds.
+"""Composite DataSource routing OHLCV/regime, fundamentals/news, and sentiment.
 
 Agent: provider
-Role: combine a price/regime source (Tiingo) with a fundamentals source (Finnhub).
+Role: combine a price/regime source (Tiingo), a fundamentals/news source (Finnhub),
+and a sentiment source (Alpha Vantage).
 External I/O: none directly (delegates to the wrapped sources).
 """
 
@@ -22,11 +23,15 @@ class CompositeDataSource:
     """Route price/regime to one source and fundamentals to another."""
 
     def __init__(
-        self, price_source: DataSource, fundamentals_source: DataSource
+        self,
+        price_source: DataSource,
+        fundamentals_source: DataSource,
+        sentiment_source: DataSource,
     ) -> None:
-        """Wrap a price/regime source and a fundamentals source."""
+        """Wrap a price/regime, a fundamentals/news, and a sentiment source."""
         self._price_source = price_source
         self._fundamentals_source = fundamentals_source
+        self._sentiment_source = sentiment_source
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -50,9 +55,14 @@ class CompositeDataSource:
         """Delegate news fetches to the fundamentals (Finnhub) source."""
         return self._fundamentals_source.fetch_news(tickers, window)
 
+    def fetch_sentiment(self, tickers: tuple[str, ...]) -> dict[str, float]:
+        """Delegate vendor-sentiment fetches to the sentiment (Alpha Vantage) source."""
+        return self._sentiment_source.fetch_sentiment(tickers)
+
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
-    """Compose the live feeds: Tiingo OHLCV + Finnhub fundamentals/news."""
+    """Compose live feeds: Tiingo OHLCV + Finnhub fundamentals/news + AV sentiment."""
+    from agents.provider.av_sentiment import AlphaVantageSentimentSource
     from agents.provider.fundamentals import FinnhubDataSource
     from agents.provider.tiingo import TiingoDataSource
 
@@ -66,5 +76,10 @@ def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSour
             api_key=settings.finnhub_api_key,
             base_url=settings.finnhub_base_url,
             timeout=settings.finnhub_timeout,
+        ),
+        sentiment_source=AlphaVantageSentimentSource(
+            api_key=settings.alphavantage_api_key,
+            base_url=settings.alphavantage_base_url,
+            timeout=settings.alphavantage_timeout,
         ),
     )

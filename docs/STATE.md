@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-18 02:58 AEST — **Graph store: Aura→local migration prepped** (kernel commit
+**Last updated:** 2026-06-18 04:15 AEST — **ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
+**Graph store: Aura→local migration prepped** (kernel commit
 `f96ea93` adds configurable `NEO4J_DATABASE`; stay on **Neo4j Aura until it expires 2026-06-28**, then move
 to **local Neo4j Desktop** db `trading-agent` — Aura's min paid tier ~$260/mo; Aura verified **empty** so
 the cutover is a clean config swap; details + checklist in memory `neo4j-aura-to-local-migration`).
@@ -413,7 +414,6 @@ own branch and hands back. See `docs/sprints/README.md`.
   self-enforcing guards, CI parity. First private push to GitHub.
 
 ---
-I modifeid .env again. Pretify it and add an entry into the .env.exapmle in the style adopted by this project
 
 ## Pointers
 

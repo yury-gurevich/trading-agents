@@ -46,6 +46,29 @@ flowchart LR
   RSCH[researcher] -. parameter-change proposals .-> SUP
 ```
 
+## Runtime lifecycle (below the trading spine)
+
+> Managed by the **master agent** (ADR-0007). This layer is not part of the trading choreography;
+> it controls which containers exist and what they are allowed to do.
+
+```mermaid
+flowchart TD
+  MASTER[master] -->|reads AgentDefinition nodes| GRAPH[(Neo4j registry)]
+  MASTER -->|fetches secrets| KV[(Azure Key Vault)]
+  MASTER -->|ACTIVATE signed message| AGENT[any agent container]
+  AGENT -->|EHLO + capability declaration| MASTER
+  MASTER -. starts / drains / scales .-> AGENT
+  AGENT -. health: PRE_FLIGHT / ACTIVE / INERT .-> MASTER
+  GRAPH -. Session / MessageRecord / AgentInstance .-> MASTER
+```
+
+- **master** is the first container to start and the sole Key Vault accessor.
+- Agents transition: `PRE_FLIGHT → ACTIVE` (on valid signed ACTIVATE) or `→ INERT` (on timeout).
+- Pending messages for crashed instances survive in Neo4j `MessageRecord` nodes and are re-routed
+  on restart by type matching.
+- This layer is **orthogonal** to the trading spine above; `orchestration/dispatcher.py` and the
+  `supervisor` agent are unaffected.
+
 ## Reading notes
 
 - **Solid edges** = the binding trading path (a typed request/response or hand-off).

@@ -121,6 +121,25 @@ supervisor → all                               (router + capability gate + fau
 - **exclusive external I/O** — no external system is touched by two agents;
 - every agent states a mission, hard boundaries, and the data it owns.
 
+## Deployment architecture (container-per-agent)
+
+Each agent ships as its own Docker image with a tailored dependency group. Images are pushed to
+DockerHub and run on **Azure Container Apps** (scale-to-zero per container). A **master agent**
+bootstraps the fleet: it is the first container to start, the sole Azure Key Vault accessor, and the
+only agent that assigns identities and distributes minimum-necessary secrets to other agents.
+
+Agents start in a `PRE_FLIGHT` state — no identity, no capabilities, no secrets — and transition to
+`ACTIVE` only after receiving a cryptographically signed `ACTIVATE` message from master. This
+enforces least-privilege at the process level: a compromised container has access only to what it
+was explicitly granted.
+
+The fleet registry (live instances, session recovery state, queued messages) lives in Neo4j alongside
+the provenance graph. See `docs/decisions/0007-container-per-agent-master-bootstrap.md` for the full
+design, risk assessment, and mitigations.
+
+> **Note:** The current `Dockerfile` and `docker-compose.yml` deploy a single monolithic container.
+> That is an interim shortcut, superseded by ADR-0007. The per-agent split is tracked under P14.
+
 ## Configuration, faults, and observability
 
 - **Configuration** — every processing/forecast constant is a justified,

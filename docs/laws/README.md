@@ -26,6 +26,18 @@ things and only two things:
   - `laws.md` — the **locked constitution**, every clause ID'd.
   - `test-plan.md` — the **living** plan + status; each line cites a law-ID and maps to a test.
 
+> **ADR-0007 additions (2026-06-18).** Every `laws.md` must include two new sections:
+>
+> - **`CAPABILITY DECLARATION (CAP)`** — a JSON schema of what the agent needs at runtime
+>   (message queue, graph, data API, broker). Interface-first; no product names. This becomes the
+>   EHLO payload sent to the master agent at startup.
+> - **`PARAMETERS (PARAM)`** — every constant in agent code documented with schema, rationale,
+>   and marked `tunable` or `non-tunable`. Tunable = can be adjusted for experiments; non-tunable =
+>   structural constant whose change would alter the agent's semantic contract.
+>
+> See `_TEMPLATE.md` for stub sections and `docs/decisions/0007-container-per-agent-master-bootstrap.md`
+> for the rationale.
+
 ## The one rule that keeps agents independent
 
 > An agent's `laws.md` describes **only itself** and the **message types** it accepts/emits — never

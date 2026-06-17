@@ -73,6 +73,14 @@ class TiingoDataSource:
         """Return no sectors; Tiingo serves OHLCV only here."""
         return {}
 
+    def fetch_earnings(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; Tiingo serves OHLCV.
+        window: Window,  # noqa: ARG002 - port signature; Tiingo serves OHLCV.
+    ) -> dict[str, date]:
+        """Return no earnings; Tiingo serves OHLCV only here."""
+        return {}
+
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

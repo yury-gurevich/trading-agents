@@ -75,6 +75,14 @@ class FMPDataSource:
         """Return no sectors; FMP serves OHLCV only here."""
         return {}
 
+    def fetch_earnings(
+        self,
+        tickers: tuple[str, ...],  # noqa: ARG002 - port signature; FMP serves OHLCV.
+        window: Window,  # noqa: ARG002 - port signature; FMP serves OHLCV.
+    ) -> dict[str, date]:
+        """Return no earnings; FMP serves OHLCV only here."""
+        return {}
+
     def _download(self, ticker: str, window: Window) -> str:  # pragma: no cover
         query = urllib.parse.urlencode(
             {

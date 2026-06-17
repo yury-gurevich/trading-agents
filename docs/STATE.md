@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-18 23:10 AEST — **S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep; **714 tests**, floor 100.00. Implemented directly — no coding agent this cycle). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
+**Last updated:** 2026-06-19 00:20 AEST — **S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub `/calendar/earnings`, pure `_parse_next_earnings` → earliest upcoming date, field-gated into `MarketData.earnings`; CONTRACT 0.3.0→**0.4.0**, `external_io` unchanged; the five optional field-gates extracted to a new `market_fields.py` dropping provider `agent.py` 197→131L; additive + dormant — no other agent changed; **726 tests**, floor 100.00. The substrate the scanner earnings-window exclusion consumes next. Implemented directly — no coding agent this cycle).
+**S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
 **S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration + 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining agent backfills; ADR-0007 docs committed).
 **ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
 **Graph store: Aura→local migration prepped** (kernel commit
@@ -92,15 +93,15 @@ scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sour
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-+ **P11 remaining** (non-analyst deterministic gaps): **S41 — reporter profit-factor + expectancy**
-  (**shipped 2026-06-18**, %-based from trigger, time-exits excluded, no contract change) →
-  **S43 — monitor realized PnL** (**queued, now unblocked — S41 shipped**; `pnl_cents` on `CloseDecision`,
++ **P11 remaining** (non-analyst deterministic gaps): **scanner earnings-window exclusion** — the
+  **consumer half** of the two-sprint pair: **S42 provider earnings feed shipped**, so next the
+  scanner requests `"earnings_calendar"` and drops candidates whose next earnings is within
+  `earnings_exclusion_days` of the scan as-of (scanner-only, no contract change) →
+  **S43 — monitor realized PnL** (**queued, unblocked — S41 shipped**; `pnl_cents` on `CloseDecision`,
   contract 0.2.0) → **reporter re-point** to real $ PnL across all triggers (replaces S41's
-  approximation) → **S42 scanner earnings-window exclusion** (beta cap already shipped S50) → PM
-  sector cap (**done S52**). **Decision 2026-06-16** (parallel-agent collision): ship the reporter
-  %-approximation first, add real PnL after — see memory `realized-pnl-sequencing`. **Done:** analyst
-  scoring, **PM reward/risk (S40)**, **PM sector cap (S52)**, **scanner beta (S50)**, **reporter
-  profit-factor (S41)**. Sequenced spec: memory `v1-deterministic-port-gaps.md`.
+  approximation). **Done:** analyst scoring, **PM reward/risk (S40)**, **PM sector cap (S52)**,
+  **scanner beta (S50)**, **reporter profit-factor (S41)**, **provider earnings feed (S42)**.
+  Sequenced spec: memory `v1-deterministic-port-gaps.md`.
 + **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -117,6 +118,23 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 42 — Provider: earnings-calendar feed** (P11; implemented directly — no coding agent this
+  cycle; unblocks the scanner earnings-window exclusion). New
+  `DataSource.fetch_earnings(tickers, window) -> dict[Ticker, date]` across the Protocol +
+  `FakeDataSource` (fixture + `fail_earnings`); the **real** `FinnhubDataSource.fetch_earnings`
+  (`/calendar/earnings`, `_download_earnings` `# pragma: no cover`, `earnings_lookahead_days` init
+  param) via a pure `_parse_next_earnings(raw, on_or_after)` — earliest ISO date ≥ as-of, never raises
+  — plus `_parse_iso_date`, both in `fundamentals_parse.py`; stubs on tiingo/stooq/fmp/av_sentiment +
+  the orchestration double; composite delegates to Finnhub and threads
+  `finnhub_earnings_lookahead_days` (tunable, 30). Agent field-gates `"earnings_calendar"` →
+  `MarketData.earnings` with the same degrade-to-empty + `"earnings_degraded"` note + `used_fallback`
+  semantics as news/sectors. **Refactor:** the five optional field-gates were extracted from
+  `agent.py` into a new focused `market_fields.py` (`collect_optional_fields` + a PEP-695-generic
+  `_fetch_optional`) — behaviour-preserving (existing field-gate tests untouched), dropping provider
+  `agent.py` **197 → 131L**. CONTRACT `0.3.0 → 0.4.0`; `external_io` unchanged; boundary meta-test
+  green; **no other agent changed** (every existing caller requests neither field → `earnings == {}`,
+  no re-pin). 726 tests (was 714; +12), floor 100.00; every module < 200L. Next: the **scanner**
+  earnings-window exclusion consumes `MarketData.earnings`.
 + **Sprint 41 — Reporter: profit-factor + expectancy** (P11; implemented directly — no coding agent
   this cycle). New pure `agents/reporter/domain/trade_outcomes.py` (70L): `collect_trade_outcomes`
   pairs each `Position` to its `CloseDecision` by `position_id`, buckets by trigger

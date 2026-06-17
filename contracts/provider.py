@@ -62,6 +62,9 @@ class MarketData(_Frozen):
     """Advisory vendor sentiment per ticker (0-1), the provider-sentiment challenger."""
     sectors: dict[Ticker, str] = Field(default_factory=dict)
     """Per-ticker sector/industry label; the substrate for the PM sector cap (P11)."""
+    earnings: dict[Ticker, date] = Field(default_factory=dict)
+    """Per-ticker next scheduled earnings date; the substrate for the scanner
+    earnings-window exclusion (P11)."""
     quality: DataQualityTrace
     provenance: Provenance
 
@@ -81,7 +84,7 @@ class RegimeContext(_Frozen):
 
 CONTRACT = AgentContract(
     name="provider",
-    version="0.3.0",
+    version="0.4.0",
     mission=(
         "Be the single boundary to the outside market world. Turn raw external "
         "feeds into clean, validated, cached market facts and the current regime, "

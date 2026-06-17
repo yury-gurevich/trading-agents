@@ -31,11 +31,15 @@ def evaluate_recommendations(
     default_stop_pct: float,
     default_target_pct: float,
     min_reward_risk_ratio: float,
+    sectors: dict[str, str] | None = None,
+    max_sector_pct: Decimal = Decimal("1"),
 ) -> tuple[tuple[OrderIntent, ...], tuple[RejectedOrder, ...]]:
     """Apply sizing and risk checks in deterministic recommendation order."""
+    sectors_map = sectors or {}
     approved: list[OrderIntent] = []
     rejected: list[RejectedOrder] = []
     reserved_cash = Decimal("0")
+    sector_deployed: dict[str, Decimal] = {}
     open_tickers = set(portfolio.positions)
     for item in _ordered(recommendations):
         price = prices.get(item.ticker)
@@ -72,9 +76,19 @@ def evaluate_recommendations(
         if rejection is not None:
             rejected.append(rejection)
             continue
+        cost = Decimal(quantity) * price.amount
+        sector = sectors_map.get(item.ticker)
+        sector_total = sector_deployed.get(sector or "", Decimal("0")) + cost
+        if sector is not None and sector_total > max_sector_pct * portfolio.value:
+            rejected.append(
+                RejectedOrder(ticker=item.ticker, reason="sector_concentration")
+            )
+            continue
         approved.append(_order_intent(item, quantity, price, stop_pct, target_pct))
-        reserved_cash += Decimal(quantity) * price.amount
+        reserved_cash += cost
         open_tickers.add(item.ticker)
+        if sector is not None:
+            sector_deployed[sector] = sector_total
     return tuple(approved), tuple(rejected)
 
 

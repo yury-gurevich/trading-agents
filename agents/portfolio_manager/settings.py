@@ -70,3 +70,12 @@ class PortfolioManagerSettings(AgentSettings):
         ge=0.0,
         le=10.0,
     )
+    max_sector_pct: Decimal = tunable(
+        Decimal("0.30"),
+        why=(
+            "Cap total deployment into any one sector as a fraction of portfolio value "
+            "to bound concentration risk; 1.0 disables the gate."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

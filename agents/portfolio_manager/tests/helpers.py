@@ -98,6 +98,7 @@ def explain_message(payload: RecommendationSet) -> AgentMessage:
 def wire_pm(
     *,
     source_bars: tuple[OHLCVBar, ...] = (),
+    sectors: dict[str, str] | None = None,
     settings: PortfolioManagerSettings | None = None,
     portfolio: PortfolioState | None = None,
     fail_ohlcv: bool = False,
@@ -112,6 +113,7 @@ def wire_pm(
         source=FakeDataSource(
             bars=source_bars,
             vix=12.0,
+            sectors=sectors,
             fail_ohlcv=fail_ohlcv,
             fail_regime=fail_regime,
         ),

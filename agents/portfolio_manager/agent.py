@@ -101,6 +101,8 @@ class PortfolioManagerAgent(AgentBase):
                 default_stop_pct=regime.base_stop_loss_pct,
                 default_target_pct=regime.base_take_profit_pct,
                 min_reward_risk_ratio=self._settings.min_reward_risk_ratio,
+                sectors=market.sectors,
+                max_sector_pct=self._settings.max_sector_pct,
             )
         if capture.fault is not None:
             return reject_all(
@@ -123,7 +125,8 @@ class PortfolioManagerAgent(AgentBase):
             summary=(
                 "Portfolio manager requests latest price and regime policy from "
                 "provider, sizes buy recommendations from portfolio value, then "
-                f"checks cash buffer, max positions, and minimum quantity for "
+                "checks cash buffer, max positions, minimum quantity, reward/risk, "
+                "and sector concentration for "
                 f"{len(recommendation_set.recommendations)} recommendations."
             ),
             evidence_refs=("provider.get_market_data", "provider.get_regime"),

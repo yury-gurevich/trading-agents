@@ -54,6 +54,7 @@ def request_market_data(
                         item.ticker for item in recommendation_set.recommendations
                     ),
                     window=window,
+                    fields=("ohlcv", "sectors"),
                 ).model_dump(mode="json"),
             )
         )

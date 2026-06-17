@@ -466,5 +466,6 @@ own branch and hands back. See `docs/sprints/README.md`.
 + Configuration governance: `docs/configuration.md`
 + Error handling: `docs/error-handling.md`
 + Observability & historical data: `docs/observability.md`
++ Hardening backlog (deferred security/quality, with unblock triggers): `docs/hardening-backlog.md`
 + Per-agent charters: `agents/<name>/mission.md`
 + Machine boundaries: `contracts/<name>.py`

@@ -1,7 +1,18 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 52 — Portfolio-manager sector-concentration cap (P11)
 
-**Status:** in progress · **Branch:** `sprint-52-pm-sector-cap` · **Build phase:** P11 (decision-logic depth — the PM's second risk gate, twin of S40) · **Effort: M**
+**Status:** shipped (2026-06-17, commit `6f23ff1`) · **Branch:** `sprint-52-pm-sector-cap` · **Build phase:** P11 (decision-logic depth — the PM's second risk gate, twin of S40) · **Effort: M**
+
+> **Handback (shipped).** Built as scoped. `evaluate_recommendations` gained **defaulted** `sectors` /
+> `max_sector_pct` kwargs — the 3 existing direct-caller tests were untouched. The cap tracks
+> `sector_deployed` and rejects over-cap orders; the check was **inlined** into the loop (reusing
+> `sector_total` for the deployment update) so `domain/risk.py` stayed < 200L (185L). Agent passes
+> `market.sectors` + `max_sector_pct`; provider_client requests `("ohlcv", "sectors")`; `wire_pm(sectors=)`
+> added; explain text extended (existing substring + evidence_refs preserved). **No contract/boundary
+> change** (`RejectedOrder.reason` is free text; PM `0.1.0`). Dormant on unknown sectors → existing PM +
+> pipeline tests green. `make ci`: **703 passed, 4 skipped, 100.00% coverage**; every module < 200L.
+> **P11 PM risk gates complete (reward/risk + sector cap).** Noted extension: fold existing open-position
+> sector value into the cap once live position state lands.
 
 ## Goal
 

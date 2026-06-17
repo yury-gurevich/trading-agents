@@ -1,16 +1,20 @@
 # Project State
 
-**Last updated:** 2026-06-17 21:02 AEST — **Sprint 50 shipped** (scanner **beta computation + beta-cap
-filter** — fault-tolerant benchmark fetch, pure `compute_beta` (cov/var of aligned daily returns), drops
-candidates with `beta > max_beta`; additive + dormant on thin history so every existing scanner + pipeline
-test stayed green; extracted `scanner/provider_client.py` — P11); **S49 shipped** (forecaster agent's
+**Last updated:** 2026-06-17 21:32 AEST — **Sprint 51 shipped** (provider **sector feed** —
+`DataSource.fetch_sectors` via Finnhub `/stock/profile2` `finnhubIndustry`, field-gated into
+`MarketData.sectors`; CONTRACT 0.2.0→**0.3.0**, `external_io` unchanged; pure parsers extracted to
+`fundamentals_parse.py`; the substrate the **PM sector-concentration cap** consumes next — P11); **S50
+shipped** (scanner **beta computation + beta-cap filter** — fault-tolerant benchmark fetch, pure
+`compute_beta` (cov/var of aligned daily returns), drops candidates with `beta > max_beta`; additive +
+dormant on thin history so every existing scanner + pipeline test stayed green; extracted
+`scanner/provider_client.py` — P11); **S49 shipped** (forecaster agent's
 **first runtime** — FinBERT sentiment shadow scorer behind a model Protocol; `ShadowPrediction` `shadow=True`
 0-1 aligned + `Model` node; `scorecard` never promotion-eligible; torch/transformers optional + lazily
 imported — the **3rd trinity leg**); **S48 shipped** (analyst persists the provider-sentiment shadow
 reading — provider challenger complete); **S47 shipped** (provider serves Alpha Vantage vendor sentiment,
 CONTRACT 0.2.0); **S46/S37 shipped** (SentimentReading node / lexicon pillar); **S44/S45 shipped** (Tiingo
 live feed + Alpaca broker). AV sentiment source + probe shipped (bill of health 13 green · 0 warn). **S41
-planned** (reporter profit-factor). 688 tests at 100.00%.
+planned** (reporter profit-factor). 698 tests at 100.00%.
 **Sentiment trinity (P12) — all 3 scorers live:** lexicon champion (binding, S37) + provider challenger
 (shadow, S47/S48) + FinBERT forecaster (shadow, S49); source = **Alpha Vantage `NEWS_SENTIMENT`** (free,
 live-verified; Finnhub `/news-sentiment` is dead 403; ADR-0002). **P12 remaining:** the **scorecard

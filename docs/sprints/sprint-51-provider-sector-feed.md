@@ -1,7 +1,19 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 51 — Provider sector feed (P11, unblocks the PM sector cap)
 
-**Status:** in progress · **Branch:** `sprint-51-provider-sector-feed` · **Build phase:** P11 (decision-logic depth — the data substrate for the PM sector-concentration cap) · **Effort: M**
+**Status:** shipped (2026-06-17, commit `3951e42`) · **Branch:** `sprint-51-provider-sector-feed` · **Build phase:** P11 (decision-logic depth — the data substrate for the PM sector-concentration cap) · **Effort: M**
+
+> **Handback (shipped).** Built as scoped, provider-only. `DataSource.fetch_sectors` added to the Protocol
+> + `FakeDataSource` (fixture + `fail_sectors`); real `FinnhubDataSource.fetch_sectors`
+> (`/stock/profile2`, `_download_profile` `# pragma: no cover`) via a pure `_parse_sector`; stubs on
+> tiingo/stooq/fmp/av_sentiment; composite delegates to Finnhub; orchestration double stubbed; agent
+> field-gates `"sectors"` (degrade-to-empty + `"sectors_degraded"` note + `used_fallback`, twin of news).
+> CONTRACT `0.2.0 → 0.3.0`; `external_io` unchanged; **boundary meta-test green; no other agent changed**.
+> To stay < 200L, the three pure Finnhub parsers were extracted to `fundamentals_parse.py` (139L) and the
+> two existing parser tests re-pointed there (mypy strict forbids implicit re-export). All new
+> `fetch_sectors` covered in `test_sector_source.py`. `make ci` green: **698 passed, 4 skipped, 100.00%
+> coverage**; every module < 200L (provider `agent.py` 197L). **Next: the PM sector-concentration cap
+> consumes `MarketData.sectors`.**
 
 ## Goal
 

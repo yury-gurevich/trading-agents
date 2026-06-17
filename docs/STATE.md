@@ -1,6 +1,10 @@
 # Project State
 
-**Last updated:** 2026-06-17 21:53 AEST — **Sprint 52 shipped** (PM **sector-concentration cap** — rejects
+**Last updated:** 2026-06-18 02:58 AEST — **Graph store: Aura→local migration prepped** (kernel commit
+`f96ea93` adds configurable `NEO4J_DATABASE`; stay on **Neo4j Aura until it expires 2026-06-28**, then move
+to **local Neo4j Desktop** db `trading-agent` — Aura's min paid tier ~$260/mo; Aura verified **empty** so
+the cutover is a clean config swap; details + checklist in memory `neo4j-aura-to-local-migration`).
+**Sprint 52 shipped** (PM **sector-concentration cap** — rejects
 orders that would push their sector over `max_sector_pct` of portfolio value (`sector_concentration`),
 tracking per-sector deployed value; consumes S51 `MarketData.sectors`, additive + dormant on unknown
 sectors; **the PM risk-gate pair (reward/risk + sector) is now complete** — P11); **S51 shipped** (provider

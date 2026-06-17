@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from agents.analyst.domain.scoring import ScoreBreakdown
 
 LEXICON_SCORER = "lexicon"
+PROVIDER_SCORER = "provider"
 
 
 @dataclass(frozen=True)
@@ -41,4 +42,16 @@ def lexicon_reading(ticker: str, score: ScoreBreakdown) -> SentimentReading | No
         articles=int(metrics.get("sentiment_articles", 0.0)),
         positive=int(metrics.get("sentiment_positive", 0.0)),
         negative=int(metrics.get("sentiment_negative", 0.0)),
+    )
+
+
+def provider_reading(ticker: str, score: float) -> SentimentReading:
+    """Build the advisory provider (vendor) reading; counts are N/A for this scorer."""
+    return SentimentReading(
+        ticker=ticker,
+        scorer=PROVIDER_SCORER,
+        score=score,
+        articles=0,
+        positive=0,
+        negative=0,
     )

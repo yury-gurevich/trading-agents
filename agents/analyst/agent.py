@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from agents.analyst.domain.recommend import AnalysisDecision, decide
 from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.sentiment_reading import provider_reading
 from agents.analyst.provider_client import (
     request_benchmark_bars,
     request_market_data,
@@ -96,17 +97,22 @@ class AnalystAgent(AgentBase):
                 self._graph, candidate_set, "analyst scoring failed"
             )
         recommendations, rejections = split_decisions(decisions)
-        readings = tuple(
+        lexicon_readings = tuple(
             decision.sentiment_reading
             for decision in decisions
             if decision.sentiment_reading is not None
+        )
+        provider_readings = tuple(
+            provider_reading(candidate.ticker, market.sentiment[candidate.ticker])
+            for candidate in candidate_set.candidates
+            if candidate.ticker in market.sentiment
         )
         provenance = write_analysis(
             self._graph,
             candidate_set=candidate_set,
             recommendations=recommendations,
             rejections=rejections,
-            sentiment_readings=readings,
+            sentiment_readings=lexicon_readings + provider_readings,
             incident_refs=refs,
         )
         return RecommendationSet(

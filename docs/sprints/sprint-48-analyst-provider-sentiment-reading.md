@@ -1,7 +1,15 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 48 — Analyst persists the provider-sentiment shadow reading (P12)
 
-**Status:** planned · **Branch:** `sprint-48-analyst-provider-sentiment-reading` · **Build phase:** P12 (provider-sentiment challenger — completes it) · **Effort: S–M**
+**Status:** shipped (2026-06-17, commit `9c24a57`) · **Branch:** `sprint-48-analyst-provider-sentiment-reading` · **Build phase:** P12 (provider-sentiment challenger — completes it) · **Effort: S–M**
+
+> **Handback (shipped).** Implemented exactly as scoped: Part A `PROVIDER_SCORER` + `provider_reading`;
+> Part B `_analyze` concatenates `lexicon_readings + provider_readings` built from `market.sentiment`;
+> Part C requests `"sentiment"`; Part D `wire_analyst(sentiment=...)`. **No contract change** (analyst
+> stays `0.2.0`), **no re-pin**. Shadow-invariant test confirms confidence is unchanged with vs without
+> vendor sentiment. `make ci` green: **655 passed, 4 skipped, 100.00% coverage**; `agent.py` 190L,
+> `sentiment_reading.py` 57L, `test_sentiment_reading.py` 148L — all < 200. **P12 provider-sentiment
+> challenger is complete; next is forecaster/FinBERT then the scorecard harness.**
 
 ## Goal
 

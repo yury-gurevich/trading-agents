@@ -1,15 +1,16 @@
 # Project State
 
-**Last updated:** 2026-06-17 16:59 AEST — **Sprint 47 shipped** (provider serves Alpha Vantage vendor
-sentiment into `MarketData.sentiment` via `DataSource.fetch_sentiment`; provider CONTRACT 0.2.0 — P12);
-**S46 shipped** (persisted `SentimentReading` node); **S37 shipped** (analyst lexicon pillar); **S44/S45
-shipped** (Tiingo live feed + Alpaca broker). AV sentiment source + probe shipped (bill of health 13
-green · 0 warn). **S41 planned** (reporter profit-factor). 651 tests at 100.00%.
-**Provider-sentiment (P12):** source = **Alpha Vantage `NEWS_SENTIMENT`** (free, live-verified; Finnhub
-`/news-sentiment` is dead 403; ADR-0002). **Feed shipped (S47); analyst shadow-reading planned (S48,
-`docs/sprints/sprint-48-analyst-provider-sentiment-reading.md`)** — the analyst requests `"sentiment"`
-and writes a 2nd `SentimentReading` (`scorer="provider"`, shadow, aligned to lexicon; the S46 node
-supports it). Then forecaster/FinBERT + scorecard harness.
+**Last updated:** 2026-06-17 20:03 AEST — **Sprint 48 shipped** (analyst persists the provider-sentiment
+shadow reading: requests `"sentiment"`, writes a 2nd `SentimentReading` `scorer="provider"`, aligned to
+the lexicon, **never gates** — P12 provider-sentiment challenger **complete**); **S47 shipped** (provider
+serves Alpha Vantage vendor sentiment into `MarketData.sentiment` via `DataSource.fetch_sentiment`;
+provider CONTRACT 0.2.0); **S46 shipped** (persisted `SentimentReading` node); **S37 shipped** (analyst
+lexicon pillar); **S44/S45 shipped** (Tiingo live feed + Alpaca broker). AV sentiment source + probe
+shipped (bill of health 13 green · 0 warn). **S41 planned** (reporter profit-factor). 655 tests at 100.00%.
+**Provider-sentiment (P12) — DONE:** source = **Alpha Vantage `NEWS_SENTIMENT`** (free, live-verified;
+Finnhub `/news-sentiment` is dead 403; ADR-0002). Feed (S47) + analyst shadow-reading (S48) both shipped;
+every run now records champion (lexicon) + challenger (provider) readings side by side. **P12 next:**
+forecaster/FinBERT (advisory) → scorecard harness; the full Loughran–McDonald master dictionary stays owed.
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.

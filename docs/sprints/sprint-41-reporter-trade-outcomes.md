@@ -1,7 +1,21 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 41 — Reporter: profit-factor and expectancy (P11)
 
-**Status:** planned · **Branch:** `sprint-41-reporter-trade-outcomes` · **Build phase:** P11 · **Effort: S**
+**Status:** ✅ shipped (2026-06-18, on `main` — no coding agent this cycle) · **Build phase:** P11 · **Effort: S**
+
+> **Handback (2026-06-18).** Implemented as specified. New `agents/reporter/domain/trade_outcomes.py`
+> (70L): `collect_trade_outcomes` pairs positions to close decisions by `position_id`, buckets by
+> trigger (`target` → win `+target_pct`, `stop` → loss `−stop_pct`), excludes time exits, returns
+> `profit_factor` / `expectancy_pct` / `closed_trades_with_pnl` with the 0.0 zero-denominator guard;
+> never raises. Wired into `result.py` (`build_snapshot` + `degraded_snapshot`, both merge the three
+> keys → no KeyError on either path). **No contract change** (reporter CONTRACT 0.1.0, `owns_graph`
+> untouched); **no new dependency**. Worked example (C1 + C2): two target wins at 0.10 + one stop loss
+> at 0.05 → `profit_factor = 0.20/0.05 = 4.0`, `expectancy = (0.10+0.10−0.05)/3`; the C2 snapshot case
+> (one target + one stop) → `profit_factor 2.0`, `expectancy 0.025`. Line counts: `trade_outcomes.py`
+> 70, `result.py` 147 (+3), `metrics.py` 84 (unchanged). **714 tests** (was 703; +11), floor 100.00,
+> no existing value re-pinned (shared `seed_full_graph` Position left without pct props on purpose →
+> existing snapshot test unaffected). Follow-up unchanged: S43 monitor `pnl_cents`, then reporter
+> re-point to real $ PnL across all triggers (incl. time) — see memory `realized-pnl-sequencing`.
 
 ## Goal
 
@@ -64,7 +78,7 @@ is `"time"`.
 
 ### Formulas
 
-```
+```test
 wins  = [pnl_pct for each trade whose trigger == "target"]
 losses = [abs(pnl_pct) for each trade whose trigger == "stop"]
 

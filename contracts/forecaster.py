@@ -25,6 +25,16 @@ class ScorecardRequest(_Frozen):
     model_id: str
 
 
+class SentimentScorecardRequest(_Frozen):
+    model_id: str
+    forward_returns: dict[str, float]
+    """Realized forward returns keyed by '{analyst_run_id}:{ticker}'.
+
+    Injected (offline harness): forward returns are never a runtime dependency, so
+    the caller supplies the realized returns for the observations it wants scored.
+    """
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class ShadowPrediction(_Frozen):
     model_id: str
@@ -46,7 +56,7 @@ class Scorecard(_Frozen):
 
 CONTRACT = AgentContract(
     name="forecaster",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Provide advisory ML forecasts (exit timing, news impact, ...) as clearly "
         "labelled shadow signals that never gate a decision until scorecards prove "
@@ -66,6 +76,13 @@ CONTRACT = AgentContract(
             request=ScorecardRequest,
             response=Scorecard,
             mcp=True,
+        ),
+        Capability(
+            "sentiment_scorecard",
+            "Compare the lexicon/provider/finbert sentiment scorers against "
+            "injected forward returns; advisory, never promotion-eligible.",
+            request=SentimentScorecardRequest,
+            response=Scorecard,
         ),
     ),
     emits=("scorecard_refreshed",),

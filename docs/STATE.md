@@ -1,6 +1,16 @@
 # Project State
 
-**Last updated:** 2026-06-19 03:30 AEST
+**Last updated:** 2026-06-18 19:35 AEST
+
+**S56 shipped: analyst champion upgraded to the full Loughran-McDonald master dictionary (P12).** The
+binding sentiment pillar (`sentiment_rules.py`) now loads the genuine LM master dictionary (Positive
+354, Negative 2355; vendored under `agents/analyst/domain/data/`, counts match the published
+dictionary) **unioned** with the prior curated headline terms - LM omits headline verbs (beat, surge,
+plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop), kept via the union; the two
+sources are polarity-disjoint (asserted). `score_sentiment` interface + behaviour unchanged (the union
+is additive for the fixtures, so no pinned score re-pinned). `feat` -> **project version 0.4.0 ->
+0.5.0** (MINOR, HARD RULE); **739 tests** (+4), floor 100.00. **P12 remaining is now just the
+scorecard harness** (data-runway-gated); the full-LM-dictionary champion upgrade is done.
 
 **S55 shipped: reporter re-point to real $ PnL — P11 COMPLETE** (the reporter's trade-outcome metrics
 now read the monitor's realized pnl_cents (S43) off each CloseDecision instead of S41's trigger-derived
@@ -80,67 +90,45 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S37 shipped — analyst sentiment pillar (P12 champion).** `agents/analyst/domain/sentiment_rules.py`
-scores Loughran–McDonald net tone over the provider's headlines into a 0–100 pillar; it is the **binding
-third pillar**, renormalised into the confidence gate with technical + fundamental (weights 0.50/0.30/0.20).
-`score_candidate` gained a `news` arg and `_composite` generalised to three pillars — the two-/one-pillar
-identities are preserved exactly, so **no existing value re-pinned**. Absent sentiment is *skipped*, not
-neutral-50. Analyst now requests the `news` field; rationale gains a sentiment clause; sentiment enters
-signal selection. No contract change. Shipping this **starts live sentiment accrual** (real headlines →
-persisted `Recommendation.sentiment_score`). **P12 next (ADR-0002):** provider-sentiment challenger
-(Finnhub `/news-sentiment`, shadow) → forecaster/FinBERT (advisory) → scorecard harness.
+**S56 shipped - analyst champion upgraded to the full Loughran-McDonald master dictionary (P12).**
+The binding sentiment pillar's lexicon (`agents/analyst/domain/sentiment_rules.py`) now loads the
+genuine LM master dictionary - **Positive 354, Negative 2355**, vendored as
+`agents/analyst/domain/data/lm_positive.txt` and `lm_negative.txt` (counts match the published
+master dictionary exactly; provenance + citation in `data/README.md`) - **unioned** with the prior
+curated headline terms. LM was built for 10-K filings, so high-signal headline verbs (beat, surge,
+plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop) are **absent** from it and
+are kept via the union; the two sources are **polarity-disjoint** (verified empirically and asserted
+by test, so the union needs no conflict resolution). `score_sentiment`'s interface and behaviour are
+unchanged - the union is purely additive for the existing fixtures, so **no pinned score re-pinned**.
+`feat` -> **project version 0.4.0 -> 0.5.0** (MINOR, HARD RULE); **739 tests** (+4), floor 100.00;
+every module < 200L.
 
-**S44/S45 shipped — live data + broker (ADR-0006).** The runtime default
-source was broken (`StooqDataSource` anti-bot-blocked) and FMP free covers only ~87 symbols; S44 added
-`agents/provider/tiingo.py` `TiingoDataSource` (full S&P 500, free 500 sym/mo; Z-suffixed ISO date
-sliced to `YYYY-MM-DD`), routed `market_source_from_settings` OHLCV → Tiingo, and re-pointed the
-`orchestration/bindings.py` default off Stooq. No contract change; FMP retained as validation/failover.
-Feeds/broker strategy: `docs/decisions/0006-market-data-feed-strategy.md`.
-
-**S45 shipped — execution Alpaca paper broker (DEP-BROKER, ADR-0006).** `agents/execution/alpaca.py`
-`AlpacaBroker` behind the existing `Broker` port (market order, `client_order_id` idempotency with
-duplicate→fetch replay, real fills/positions); `broker_from_settings` builder; `bindings.py` default
-swap (Alpaca paper when keyed, else `PaperBroker` — unit gate stays network-free). Settings read the
-unprefixed `.env` Alpaca names via `AliasChoices`+`populate_by_name`. No contract change. Unlocks the
-Alpaca paper P/L + "fake purchases" harness (memory `alpaca-paper-broker`). **DEP-BROKER proven 🟩**
-(2026-06-16): `probe_broker` hit live Alpaca paper — real submit → idempotent replay → cancel, account
-left flat (`probes/checks.py`, real order `7327477f-b5a`). Bill of health: 11 green · 1 warn · 0 red ·
-2 skip. The feed probe now proves **Tiingo OHLCV live** (9 AAPL bars) and the broker prefers the
-`ALPACA_PAPER_API_KEY`; bill of health is **12 green · 0 warn · 0 red · 2 skip** (all live deps green).
-**Remaining follow-ups:** pending→filled reconciliation across sessions; data-side `FailoverDataSource`
-
-+ `AlpacaDataSource`.
-
-**P12 status: news feed live (S36 shipped), lexicon champion shipped (S37).** S36 shipped:
-`fetch_news` on `FinnhubDataSource` (twin of S34 fundamentals) — `MarketData.news` now populated
-with per-ticker Finnhub `/company-news` headlines, field-gated with the same fault boundary and
-`news_degraded` quality note. **Sprint 37 — analyst lexicon pillar** (the deterministic
-Loughran–McDonald lexicon champion, `sentiment_weight` 0.20, folded into the renormalised
-three-pillar blend; `Recommendation.sentiment_score` set; no contract change) is the next coding
-sprint. Shipping S37 starts live news accrual (real headlines scored onto persisted
-`Recommendation.sentiment_score`). **P11 analyst-side complete** (S30–S35 + S38–S39); **P11 PM
-gate done** (S40 reward/risk). P11 remaining: reporter profit-factor + expectancy (S41, planned),
-scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sources:
-`docs/decisions/0002-sentiment-champion-challenger.md`, memory `v1-deterministic-port-gaps.md`.
+**P12 sentiment trinity - all 3 scorers live** (unchanged): lexicon champion (binding, S37, now on
+the full LM dictionary) + provider challenger (shadow, S47/S48) + FinBERT forecaster (shadow, S49);
+news source = Alpha Vantage `NEWS_SENTIMENT`. **P12 remaining is now just the scorecard harness**
+(compare the 3 readings vs forward returns) - and that is **data-runway-gated, not code-gated**: the
+deprecated v1 Postgres has OHLCV forward returns but empty news history, so live headlines must
+accrue forward first. The full-LM-dictionary champion upgrade (previously owed) is **done**.
 
 ## Next
 
-+ **P12 — Sentiment (champion–challenger)**, in order: **S36 provider news feed** (**shipped**) →
-  **S37 analyst lexicon pillar** (planned; binding, `sentiment_weight` 0.20; reading rides on
-  `Recommendation.sentiment_score`, no new node/contract change) →
-  **provider-sentiment** challenger (Finnhub `/news-sentiment`, shadow) → **forecaster/FinBERT**
-  agent (advisory, dep isolated, `ShadowPrediction` + `model_version`) → **relationship/scorecard
-  harness** (align A/B/F + forward returns; promote via P10 gate). Spec: ADR-0002. **Postgres checked
-  2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
-  OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
-  news-accrual runway (S36 feed scored forward), not a backfill.
-+ **P11 — deterministic-logic depth: ✅ COMPLETE** (S55 closed it). The full v1 deterministic engine is
-  ported: analyst technical/fundamental/sentiment scoring + RS + signal selection; **PM reward/risk
-  (S40) + sector cap (S52)**; **scanner beta (S50) + earnings (S54)**; **reporter profit-factor/
-  expectancy (S41 → re-pointed to real $ PnL, S55)**; **monitor realized PnL (S43)**. Nothing left in
-  this phase. Spec: memory `v1-deterministic-port-gaps.md`, `realized-pnl-sequencing`.
-+ **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
++ **P12 - Sentiment (champion-challenger): the scorecard harness is the only remaining piece.** All
+  three scorers are live (lexicon champion S37 on the full LM dictionary; provider challenger
+  S47/S48; FinBERT forecaster S49). The harness aligns the three `SentimentReading`s + forward
+  returns, computes correlation / incremental IC, and promotes (if any) via the **P10
+  predictor-registry gate**. **Data-runway-gated, not code-gated:** the deprecated v1 Postgres
+  (test-only) has 5 yr S&P-500 daily OHLCV (`price_cache`, forward-return fixture) but **empty news
+  tables**, so it needs a live news-accrual runway (the S36 feed scored forward), not a backfill. The
+  machinery can be built against fixtures now (next slice, per the agreed order: harness -> P14).
+  Spec: ADR-0002.
++ **P11 - deterministic-logic depth: COMPLETE** (S55 closed it). Full v1 engine ported: analyst
+  technical/fundamental/sentiment + RS + signal selection; PM reward/risk (S40) + sector cap (S52);
+  scanner beta (S50) + earnings (S54); reporter $-PnL (S41 -> S55); monitor realized PnL (S43).
++ **P13 - Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
++ **P14 - Inter-agent comms re-architecture** (planned, after the harness): event-driven pub/sub +
+  claim-check over Azure Service Bus; 8 sprints, in-process first. Spec: ADR-0005; the law CAP+PARAM
+  backfills (ADR-0007, S53 set the pattern) precede the master sprint.
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -155,6 +143,25 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 56 - Analyst: full Loughran-McDonald master dictionary** (P12 champion deepened;
+  implemented directly - no coding agent this cycle). The binding lexicon in
+  `agents/analyst/domain/sentiment_rules.py` now loads the genuine LM master dictionary - **Positive
+  354, Negative 2355** - vendored as `agents/analyst/domain/data/lm_positive.txt` and
+  `lm_negative.txt` (lowercased, sorted, one word per line; counts match the published 2014 master
+  dictionary exactly; provenance + citation in `data/README.md`) via a tiny `_load_lexicon` reader,
+  **unioned** with the prior curated headline terms (renamed `_HEADLINE_POSITIVE` /
+  `_HEADLINE_NEGATIVE`). LM was built for 10-K filings, so high-signal headline verbs (beat, surge,
+  plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop - 42 pos + 41 neg) are
+  **absent** and are kept via the union; the two sources are **polarity-disjoint** (no curated word
+  clashes with LM's opposite polarity - verified empirically and asserted by
+  `test_positive_and_negative_lexicons_are_disjoint`), so the union needs no conflict resolution.
+  `score_sentiment`'s interface and behaviour are unchanged - the union is purely additive for the
+  existing fixtures (every prior "neutral" headline still has zero LM hits), so **no pinned score was
+  re-pinned**. **No contract change** (analyst 0.1.0); the `.txt` assets are exempt from the
+  size/header guards (Python-only) and well under the 500 KB added-file limit. `feat` -> **project
+  version `0.4.0 -> 0.5.0`** (MINOR, HARD RULE). 739 tests (was 735; +4 - LM-only pos/neg scoring,
+  dictionary-loaded sanity, disjointness invariant), floor 100.00; every module < 200L. **P12
+  remaining: the scorecard harness only** (data-runway-gated).
 + **Sprint 55 — Reporter: re-point to real $ PnL** (**P11 COMPLETE**; implemented directly — no coding
   agent this cycle). `agents/reporter/domain/trade_outcomes.py` rewritten: `collect_trade_outcomes`
   now takes **only** `close_decisions` and reads the monitor's realized `pnl_cents` (S43) off each

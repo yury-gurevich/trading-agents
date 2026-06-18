@@ -1,0 +1,29 @@
+name: Dependabot auto-merge
+
+# Keeps routine dependency PRs out of the human loop. For non-major Dependabot
+# updates, this approves the PR and enables GitHub auto-merge, so the PR merges
+# itself once the required CI checks (quality, test, security) pass. MAJOR updates
+# are deliberately left open for a human to look at — they can change behaviour.
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
+
+      - name: Approve and enable auto-merge for non-major updates
+        if: ${{ steps.meta.outputs.update-type != 'version-update:semver-major' }}
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -67,3 +67,8 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
+    ignore:
+      # The codebase targets Python 3.13 (requires-python, ruff/mypy py313). A major
+      # Python bump is a deliberate runtime migration, not an auto-merge — pin to 3.13.x.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major"]

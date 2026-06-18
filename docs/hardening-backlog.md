@@ -12,13 +12,17 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   2026-06-18 (`chore/dependabot-and-hygiene`).
 - **B — GitHub Actions pinned to commit SHAs** (Dependabot `github-actions` ecosystem keeps them
   fresh). Shipped 2026-06-18.
-- **C — CodeQL SAST** (`.github/workflows/codeql.yml`, weekly + on PR to main). Shipped 2026-06-18.
 - **Weekly Dependabot** (uv / github-actions / docker). Shipped 2026-06-18.
+- **Dependabot auto-merge** (`.github/workflows/dependabot-auto-merge.yml`): non-major dependency PRs
+  auto-approve + auto-merge once the required CI checks pass; branch protection on `main` requires
+  `quality` + `test` + `security`. Majors stay open for review; docker `python` majors are ignored
+  (codebase targets 3.13). Shipped 2026-06-18 (`chore/dependabot-automerge`).
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
+| **C** | CodeQL SAST (was shipped, then **reverted**) | Code-level static analysis beyond `pip-audit` (deps only) | **Blocked:** the repo is **private** and code scanning needs **GitHub Advanced Security** (paid) — the `analyze` step fails with "Code scanning is not enabled." Re-add `codeql.yml` when the repo goes **public** or GHAS is enabled |
 | **D** | `dependency-review-action` on PRs | Blocks a PR that introduces a vulnerable/denied dependency at review time (Dependabot only reacts after merge) | Next hardening pass, or first time a bad dep slips through — small, can land any time |
 | **E** | Container image scanning (Trivy/Grype) | Scans the built image for **OS-level** CVEs in the `python:3.13-slim` base + apt layers — which `pip-audit` (Python deps only) never sees | **When F lands** — there must be a built image to scan |
 | **F** | Build + push **deploy pipeline** (`deploy.yml`) | The real "merge-to-main = deploy" trigger: build per-agent images → push to DockerHub (ADR-0007). Until it exists, merge-to-main only runs CI, not a deploy | **P14 container-per-agent split** (its own sprint) — see `docs/decisions/0007` |

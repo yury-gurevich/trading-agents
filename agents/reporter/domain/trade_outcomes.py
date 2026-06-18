@@ -1,14 +1,14 @@
 """Reporter trade-outcome metrics (profit-factor and expectancy).
 
 Agent: reporter
-Role: compute profit-factor and expectancy from paired Position and CloseDecision nodes.
+Role: compute dollar-based profit-factor and expectancy from realized close PnL.
 External I/O: none.
 
-Note: time-triggered exits are excluded because their implied pnl requires the exit
-price from PositionCheck (a separate graph node not in scope here); only stop- and
-target-triggered closes contribute to these metrics. The paper broker exits at the
-trigger price, so a stop close implies pnl_pct == -stop_pct and a target close implies
-pnl_pct == +target_pct, both read directly off the Position node.
+Reads the realized ``pnl_cents`` the monitor records on each CloseDecision (gross,
+integer cents, for every trigger — stop, target, AND time). A close with no
+``pnl_cents`` (a legacy node, or a hold, which writes no CloseDecision) is skipped.
+This replaces the earlier trigger-derived percentage approximation, which had to
+exclude time exits and assume exit-at-threshold.
 """
 
 from __future__ import annotations
@@ -21,50 +21,21 @@ if TYPE_CHECKING:
 ZERO = 0.0
 
 
-def collect_trade_outcomes(
-    positions: tuple[Node, ...], close_decisions: tuple[Node, ...]
-) -> dict[str, float]:
-    """Collect profit-factor and expectancy from paired position + close nodes."""
-    by_position = {
-        cd.props["position_id"]: cd
-        for cd in close_decisions
-        if "position_id" in cd.props
-    }
-    wins: list[float] = []
-    losses: list[float] = []
-    for position in positions:
-        close = by_position.get(position.key)
-        if close is None:
-            continue
-        pnl = _implied_pnl_pct(position, close)
-        if pnl is None:
-            continue
-        bucket = wins if close.props.get("trigger") == "target" else losses
-        bucket.append(pnl)
-    return _summarise(wins, losses)
-
-
-def _summarise(wins: list[float], losses: list[float]) -> dict[str, float]:
-    loss_sum = -sum(losses)  # losses are signed negative; gross loss is positive
-    pnls = wins + losses
+def collect_trade_outcomes(close_decisions: tuple[Node, ...]) -> dict[str, float]:
+    """Collect dollar-based profit-factor and expectancy from realized close PnL."""
+    pnls = [cents for cd in close_decisions if (cents := _pnl_cents(cd)) is not None]
+    wins = sum(pnl for pnl in pnls if pnl > 0)
+    losses = -sum(pnl for pnl in pnls if pnl < 0)  # positive gross loss magnitude
     return {
-        "profit_factor": (sum(wins) / loss_sum) if loss_sum > ZERO else ZERO,
-        "expectancy_pct": (sum(pnls) / len(pnls)) if pnls else ZERO,
+        "profit_factor": (wins / losses) if losses > 0 else ZERO,
+        "expectancy_cents": (sum(pnls) / len(pnls)) if pnls else ZERO,
         "closed_trades_with_pnl": float(len(pnls)),
     }
 
 
-def _implied_pnl_pct(position: Node, close_decision: Node) -> float | None:
-    trigger = close_decision.props.get("trigger")
-    if trigger == "stop":
-        return -_pct(position, "stop_pct")
-    if trigger == "target":
-        return _pct(position, "target_pct")
-    return None
-
-
-def _pct(node: Node, prop: str) -> float:
-    try:
-        return float(node.props.get(prop, ZERO))
-    except (TypeError, ValueError):
-        return ZERO
+def _pnl_cents(close_decision: Node) -> int | None:
+    """Read the realized integer-cents PnL off a close decision; None when absent."""
+    value = close_decision.props.get("pnl_cents")
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value

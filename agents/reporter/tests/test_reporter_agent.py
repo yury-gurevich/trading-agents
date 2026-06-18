@@ -100,9 +100,9 @@ def test_snapshot_reports_profit_factor_and_expectancy() -> None:
     _seed_two_closed_trades(graph)
     snapshot = build_snapshot(graph, RUN_ID)
     metrics = snapshot.portfolio_metrics
-    # AAPL target win 0.10, MSFT stop loss 0.05 -> PF 2.0, expectancy 0.025.
+    # AAPL +1000c win, MSFT -500c loss -> PF 2.0, expectancy (1000-500)/2 = 250c.
     assert metrics["profit_factor"] == 2.0
-    assert metrics["expectancy_pct"] == (0.10 - 0.05) / 2
+    assert metrics["expectancy_cents"] == 250.0
     assert metrics["closed_trades_with_pnl"] == 2.0
 
 
@@ -111,7 +111,7 @@ def test_degraded_snapshot_carries_zero_outcome_keys() -> None:
     snapshot = degraded_snapshot(graph, "missing-run", "no data")
     metrics = snapshot.portfolio_metrics
     assert metrics["profit_factor"] == 0.0
-    assert metrics["expectancy_pct"] == 0.0
+    assert metrics["expectancy_cents"] == 0.0
     assert metrics["closed_trades_with_pnl"] == 0.0
 
 
@@ -119,22 +119,27 @@ def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
     pm_run = graph.merge_node(
         "PMRun", RUN_ID, {"approved_count": 2, "rejected_count": 0}
     )
-    for ticker, trigger in (("AAPL", "target"), ("MSFT", "stop")):
+    trades = (("AAPL", "target", 1000), ("MSFT", "stop", -500))
+    for ticker, trigger, pnl_cents in trades:
         pos_id = f"{RUN_ID}:{ticker}"
-        props = {"stop_pct": 0.05, "target_pct": 0.10}
         order = graph.merge_node(
-            "OrderIntent", pos_id, {"ticker": ticker, "action": "buy", **props}
+            "OrderIntent", pos_id, {"ticker": ticker, "action": "buy"}
         )
         fill = graph.merge_node(
             "Fill", f"{pos_id}:buy", {"ticker": ticker, "status": "filled"}
         )
         position = graph.merge_node(
-            "Position", pos_id, {"run_id": RUN_ID, "ticker": ticker, **props}
+            "Position", pos_id, {"run_id": RUN_ID, "ticker": ticker}
         )
         close = graph.merge_node(
             "CloseDecision",
             f"close:{pos_id}",
-            {"ticker": ticker, "position_id": pos_id, "trigger": trigger},
+            {
+                "ticker": ticker,
+                "position_id": pos_id,
+                "trigger": trigger,
+                "pnl_cents": pnl_cents,
+            },
         )
         graph.add_edge(order, pm_run, "EMITTED_BY")
         graph.add_edge(fill, order, "EXECUTES")

@@ -33,11 +33,26 @@
    only as an optional ad-hoc GUI/browser that can point at the container's Bolt endpoint.
 2. **One instance, not a cluster.** A single Neo4j DBMS process serves all agents. See the analysis
    below for why this is sufficient (and why clustering is premature).
-3. **Community edition** is the default — it satisfies every guarantee the system relies on (ADR-0001
-   was written *for* Community: ACID, unique-property constraints, vector index). It exposes only the
-   default **`neo4j`** database, so `NEO4J_DATABASE=neo4j`. **Enterprise (free dev/eval license)** is a
-   documented one-flag upgrade (`NEO4J_ACCEPT_LICENSE_AGREEMENT=yes`) *iff* we later want named
-   databases, hot backup, or clustering/Fabric for read-scale experiments — see "Parallelism" below.
+3. **Enterprise edition during development** (free dev/eval license,
+   `NEO4J_ACCEPT_LICENSE_AGREEMENT=eval`), **with the application kept Community-portable on purpose.**
+   *Revised 2026-06-18* from an initial Community lean, after weighting the goal of **automated backup +
+   point-in-time restore + hands-free recovery** — which only Enterprise provides (online/differential
+   backup + restore-to-time; Community has offline dumps only). Production Enterprise is unaffordable
+   (~$250K/yr), so the permanent edition is **deliberately deferred**: Enterprise-in-dev buys the
+   features *and the information* to decide later, while a **Community-portability discipline** keeps the
+   cheap exit open:
+   - **App logic must not depend on an Enterprise-only feature** (no RBAC-as-auth, no CDC-driven logic,
+     no Fabric/cross-db queries in agent code).
+   - **Enterprise *ops* features (online backup, PITR) are allowed** — ops layer only, each with a
+     documented Community fallback (offline dump).
+   - The named **`trading-agent`** db is a *soft* dependency (Enterprise→Community = a 2-command
+     `dump`/`load`-rename).
+   - **Enforcement:** the integration suite must stay runnable against a throwaway Community container —
+     the checkable invariant, not a hope.
+   - `// TODO` **permanent edition + hosting placement** (which box, RAM/cores; prod = pay vs managed
+     Aura vs Community+gap-code) — decided *after* we know which features we use.
+   Image size is a non-issue: Enterprise `2025.08` = **778 MB** vs Community **634 MB**; the real lever
+   is runtime heap/page-cache (tunable, edition-agnostic).
 4. **Persistence + lifecycle:** the graph store lives on a **named Docker volume** (survives container
    recreation), `restart: unless-stopped`, a healthcheck on Bolt, published ports `7474` (HTTP/Browser)
    and `7687` (Bolt). Credentials come from a **gitignored** `infra/neo4j/.env` (never committed).

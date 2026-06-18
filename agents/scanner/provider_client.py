@@ -36,9 +36,11 @@ def request_market_data(
                 recipient="provider",
                 message_type="request",
                 capability="get_market_data",
-                payload=DataRequest(tickers=tickers, window=window).model_dump(
-                    mode="json"
-                ),
+                payload=DataRequest(
+                    tickers=tickers,
+                    window=window,
+                    fields=("ohlcv", "earnings_calendar"),
+                ).model_dump(mode="json"),
             )
         )
         if response.message_type == "error":

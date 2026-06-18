@@ -55,16 +55,22 @@ class ScannerAgent(AgentBase):
     def _run_scan(self, request: BaseModel) -> CandidateSet:
         scan_request = ScanRequest.model_validate(request)
         tickers = self._universe.members(scan_request.universe)
-        market = request_market_data(self.bus, self.sink, tickers, self._window())
+        window = self._window()
+        market = request_market_data(self.bus, self.sink, tickers, window)
         if market is None or market.quality.used_fallback:
             if market is not None:
                 self._record_provider_degraded()
             return self._empty_result(scan_request, tickers, market)
         benchmark_bars = request_benchmark_bars(
-            self.bus, self.sink, self._settings.benchmark_ticker, self._window()
+            self.bus, self.sink, self._settings.benchmark_ticker, window
         )
         survivors, trace = apply_filters(
-            tickers, market.bars, benchmark_bars, self._settings
+            tickers,
+            market.bars,
+            benchmark_bars,
+            market.earnings,
+            window.end,
+            self._settings,
         )
         candidates = rank_survivors(survivors, cap=self._settings.candidate_cap)
         provenance = write_scan(
@@ -89,9 +95,10 @@ class ScannerAgent(AgentBase):
             summary=(
                 f"Scanner applies price >= {self._settings.min_price}, average "
                 f"volume >= {self._settings.min_average_volume:.0f}, relative "
-                f"strength >= {self._settings.min_relative_strength:.3f}, and "
-                f"beta <= {self._settings.max_beta:.2f} to {len(tickers)} configured "
-                f"{scan_request.universe} members."
+                f"strength >= {self._settings.min_relative_strength:.3f}, "
+                f"beta <= {self._settings.max_beta:.2f}, and excludes names with "
+                f"earnings within {self._settings.earnings_exclusion_days} days, to "
+                f"{len(tickers)} configured {scan_request.universe} members."
             ),
             evidence_refs=("scanner.filters.core",),
         )
@@ -156,7 +163,8 @@ def _scan_explanation(
     return Explanation(
         summary=(
             f"{len(candidates)} candidates survived from {trace.evaluated} evaluated "
-            "tickers using price, liquidity, relative-strength, and beta filters."
+            "tickers using price, liquidity, relative-strength, beta, and "
+            "earnings-window filters."
         ),
         evidence_refs=("scanner.filters.core",),
     )

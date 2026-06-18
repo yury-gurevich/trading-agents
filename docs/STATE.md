@@ -1,12 +1,47 @@
 # Project State
 
-**Last updated:** 2026-06-19 03:30 AEST — **S55 shipped: reporter re-point to real $ PnL — P11 COMPLETE** (the reporter's trade-outcome metrics now read the monitor's realized `pnl_cents` (S43) off each `CloseDecision` instead of S41's trigger-derived %; `collect_trade_outcomes(close_decisions)` → dollar `profit_factor` + **`expectancy_cents`** + `closed_trades_with_pnl` across **all** triggers incl. **time** (the % approx dropped time exits); `expectancy_pct → expectancy_cents` rename, no contract change; the `_implied_pnl_pct` derivation + position pairing removed. `feat` → **project version 0.3.0→0.4.0** (MINOR, HARD RULE); **735 tests**, floor 100.00. **P11 (deterministic-logic depth) is complete** — analyst engine, PM gates, scanner (beta+earnings), reporter metrics, monitor realized PnL all ported). **PR automation live:** Dependabot non-major PRs auto-merge once CI passes (branch protection: quality/test/security; majors stay open). **CodeQL restored:** `codeql.yml` re-added; CI `security` lane now includes conditional CodeQL steps gated by `jobs.security.env.GHAS_ENABLED` (private repo still requires GHAS/code scanning enablement).
-**S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents=(exit−entry)×qty` integer cents; `CloseDecision.pnl_cents`; decision logic extracted to `decide.py`; **CONTRACT 0.1.0→0.2.0**; version 0.2.0→0.3.0).
-**S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; drops candidates with earnings within `earnings_exclusion_days` (5) of the scan as-of; additive + dormant; the scanner earnings pair (S42→S54) complete; version 0.1.0→0.2.0).
-**S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub `/calendar/earnings`, pure `_parse_next_earnings` → earliest upcoming date, field-gated into `MarketData.earnings`; CONTRACT 0.3.0→**0.4.0**; the five optional field-gates extracted to `market_fields.py` dropping provider `agent.py` 197→131L; additive + dormant).
-**S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
-**S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration + 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining agent backfills; ADR-0007 docs committed).
-**ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
+**Last updated:** 2026-06-19 03:30 AEST
+
+**S55 shipped: reporter re-point to real $ PnL — P11 COMPLETE** (the reporter's trade-outcome metrics
+now read the monitor's realized pnl_cents (S43) off each CloseDecision instead of S41's trigger-derived
+%; collect_trade_outcomes(close_decisions) → dollar profit_factor + expectancy_cents +
+closed_trades_with_pnl across all triggers incl. time (the % approx dropped time exits);
+expectancy_pct → expectancy_cents rename, no contract change; the_implied_pnl_pct derivation +
+position pairing removed. feat → **project version 0.3.0→0.4.0** (MINOR, HARD RULE); **735 tests**,
+floor 100.00. **P11 (deterministic-logic depth) is complete** — analyst engine, PM gates, scanner
+(beta+earnings), reporter metrics, monitor realized PnL all ported). **PR automation live:** Dependabot
+non-major PRs auto-merge once CI passes (branch protection: quality/test/security; majors stay open).
+**CodeQL restored:** codeql.yml re-added; CI security lane now includes conditional CodeQL steps gated
+by jobs.security.env.GHAS_ENABLED (private repo still requires GHAS/code scanning enablement).
+
+**S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents=(exit-entry)xqty` integer cents;
+`CloseDecision.pnl_cents`; decision logic extracted to `decide.py`; **CONTRACT 0.1.0 to 0.2.0**;
+version 0.2.0 to 0.3.0).
+
+**S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; drops
+candidates with earnings within `earnings_exclusion_days` (5) of the scan as-of; additive + dormant;
+the scanner earnings pair (S42->S54) complete; version 0.1.0 to 0.2.0).
+
+**S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub
+`/calendar/earnings`, pure `_parse_next_earnings` -> earliest upcoming date, field-gated into
+`MarketData.earnings`; CONTRACT 0.3.0 to **0.4.0**; the five optional field-gates extracted to
+`market_fields.py` dropping provider `agent.py` 197->131L; additive + dormant).
+
+**S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py`
+pairs Position<->CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from
+`stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both
+the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents`
+-> reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
+
+**S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration
+
++ 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining
+agent backfills; ADR-0007 docs committed).
+
+**ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub →
+Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via
+signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections;
+full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
 **Graph store: Aura→local cutover DONE (2026-06-18, early).** Now on **local Neo4j Desktop 2**
 (Enterprise 2025.08.0) at `neo4j://127.0.0.1:7687`, db **`trading-agent`**; `.env` repointed (Aura kept as
 commented fallback + `.env.bak`). The local `neo4j` password was unknown/Desktop-encrypted → reset to a

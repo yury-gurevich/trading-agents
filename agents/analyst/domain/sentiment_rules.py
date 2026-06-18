@@ -2,19 +2,20 @@
 
 Agent: analyst
 Role: score Loughran-McDonald net tone over news headlines into a 0-100 pillar.
-External I/O: none.
+External I/O: none (reads the vendored LM word lists bundled under domain/data).
 """
 
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
-# Fixed reference rule (the rule itself, not tunable policy): a compact, curated
-# finance-news lexicon drawn from the Loughran-McDonald positive/negative master
-# categories (https://sraf.nd.edu/loughranmcdonald-master-dictionary/). High-signal
-# headline terms only — the baseline champion; expanding to the full LM dictionary
-# later is a sanctioned upgrade that does not change this interface.
-_POSITIVE: frozenset[str] = frozenset(
+# Curated finance-news headline terms the Loughran-McDonald master dictionary
+# omits: LM was built for 10-K filings, so headline verbs (beat, surge, plunge,
+# rally, jump, tumble, profit, record, upgrade, rise, fell, drop, ...) are
+# absent. These are unioned with the full LM Positive/Negative lists below; the
+# two sources are polarity-disjoint (asserted in tests). See data/README.md.
+_HEADLINE_POSITIVE: frozenset[str] = frozenset(
     (  # noqa: SIM905 - compact word list, keeps the module < 200 lines
         "beat beats beating exceed exceeds exceeded surge surges surged soar "
         "soars soared rally rallies rallied gain gains gained profit profits "
@@ -25,7 +26,7 @@ _POSITIVE: frozenset[str] = frozenset(
         "breakthrough approval approved rose higher"
     ).split()
 )
-_NEGATIVE: frozenset[str] = frozenset(
+_HEADLINE_NEGATIVE: frozenset[str] = frozenset(
     (  # noqa: SIM905 - compact word list, keeps the module < 200 lines
         "miss misses missed plunge plunges plunged slump slumps slumped fall "
         "falls fell drop drops dropped decline declines declined loss losses "
@@ -40,6 +41,20 @@ _NEGATIVE: frozenset[str] = frozenset(
         "resign resigns resigned bearish pessimistic lower weighed woes"
     ).split()
 )
+
+_DATA_DIR = Path(__file__).parent / "data"
+
+
+def _load_lexicon(name: str) -> frozenset[str]:
+    """Load a vendored LM word list: one lowercased word per line."""
+    return frozenset((_DATA_DIR / name).read_text(encoding="utf-8").split())
+
+
+# The binding sentiment lexicon: the full Loughran-McDonald master dictionary
+# (Positive 354, Negative 2355) unioned with the curated headline terms. The two
+# sources are polarity-disjoint, so the union needs no conflict resolution.
+_POSITIVE: frozenset[str] = _load_lexicon("lm_positive.txt") | _HEADLINE_POSITIVE
+_NEGATIVE: frozenset[str] = _load_lexicon("lm_negative.txt") | _HEADLINE_NEGATIVE
 
 
 def _tokens(headline: str) -> list[str]:

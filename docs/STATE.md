@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-19 02:30 AEST — **S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents(exit, entry, qty) = (exit−entry)×qty` integer cents; per-position decision extracted to `agents/monitor/decide.py::evaluate_one` (drops `agent.py` 198→171L) computing PnL on a close; `CloseDecision` gains `pnl_cents: int | None` (contract field **and** node prop), holds carry `None`. **Monitor CONTRACT 0.1.0→0.2.0** (`owns_graph` unchanged, boundary green); `feat` → **project version 0.2.0→0.3.0** (MINOR, HARD RULE); **738 tests**, floor 100.00. The real realized-outcome substrate — **next: reporter re-point** to $-based metrics across all triggers, replacing the S41 %-approximation). **PR automation live:** Dependabot non-major PRs auto-merge once CI passes (branch protection requires quality/test/security; majors stay open); CodeQL removed (private repo needs GHAS — see `docs/hardening-backlog.md`).
+**Last updated:** 2026-06-19 03:30 AEST — **S55 shipped: reporter re-point to real $ PnL — P11 COMPLETE** (the reporter's trade-outcome metrics now read the monitor's realized `pnl_cents` (S43) off each `CloseDecision` instead of S41's trigger-derived %; `collect_trade_outcomes(close_decisions)` → dollar `profit_factor` + **`expectancy_cents`** + `closed_trades_with_pnl` across **all** triggers incl. **time** (the % approx dropped time exits); `expectancy_pct → expectancy_cents` rename, no contract change; the `_implied_pnl_pct` derivation + position pairing removed. `feat` → **project version 0.3.0→0.4.0** (MINOR, HARD RULE); **735 tests**, floor 100.00. **P11 (deterministic-logic depth) is complete** — analyst engine, PM gates, scanner (beta+earnings), reporter metrics, monitor realized PnL all ported). **PR automation live:** Dependabot non-major PRs auto-merge once CI passes (branch protection: quality/test/security; majors stay open); CodeQL removed (private repo needs GHAS — `docs/hardening-backlog.md`).
+**S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents=(exit−entry)×qty` integer cents; `CloseDecision.pnl_cents`; decision logic extracted to `decide.py`; **CONTRACT 0.1.0→0.2.0**; version 0.2.0→0.3.0).
 **S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; drops candidates with earnings within `earnings_exclusion_days` (5) of the scan as-of; additive + dormant; the scanner earnings pair (S42→S54) complete; version 0.1.0→0.2.0).
 **S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub `/calendar/earnings`, pure `_parse_next_earnings` → earliest upcoming date, field-gated into `MarketData.earnings`; CONTRACT 0.3.0→**0.4.0**; the five optional field-gates extracted to `market_fields.py` dropping provider `agent.py` 197→131L; additive + dormant).
 **S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
@@ -95,14 +96,11 @@ scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sour
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-+ **P11 remaining** — only the **reporter re-point** is left: update `domain/trade_outcomes.py`
-  (from S41) to read the **real** `pnl_cents` off close-decision nodes (shipped S43) → $-based
-  profit-factor/expectancy across **all** triggers incl. **time**, replacing S41's `%` approximation
-  and its time-exit exclusion (a `None` pnl is skipped). **Done:** analyst scoring,
-  **PM reward/risk (S40)**, **PM sector cap (S52)**, **scanner beta (S50)**, **scanner earnings (S54)**,
-  **reporter profit-factor (S41)**, **provider earnings feed (S42)**, **monitor realized PnL (S43)**.
-  After the reporter re-point, **P11 (deterministic-logic depth) is complete.** Spec: memory
-  `v1-deterministic-port-gaps.md`, `realized-pnl-sequencing`.
++ **P11 — deterministic-logic depth: ✅ COMPLETE** (S55 closed it). The full v1 deterministic engine is
+  ported: analyst technical/fundamental/sentiment scoring + RS + signal selection; **PM reward/risk
+  (S40) + sector cap (S52)**; **scanner beta (S50) + earnings (S54)**; **reporter profit-factor/
+  expectancy (S41 → re-pointed to real $ PnL, S55)**; **monitor realized PnL (S43)**. Nothing left in
+  this phase. Spec: memory `v1-deterministic-port-gaps.md`, `realized-pnl-sequencing`.
 + **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -119,6 +117,18 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 55 — Reporter: re-point to real $ PnL** (**P11 COMPLETE**; implemented directly — no coding
+  agent this cycle). `agents/reporter/domain/trade_outcomes.py` rewritten: `collect_trade_outcomes`
+  now takes **only** `close_decisions` and reads the monitor's realized `pnl_cents` (S43) off each
+  `CloseDecision` (pure `_pnl_cents` guards non-int/None), bucketing by **sign** into dollar-based
+  `profit_factor` (gross wins ÷ gross losses), **`expectancy_cents`** (mean realized PnL), and
+  `closed_trades_with_pnl` — across **all** triggers **including time exits**, which S41's
+  trigger-derived `%` approximation had to drop. The `_implied_pnl_pct`/`_pct` derivation and the
+  Position↔CloseDecision pairing are gone (PnL lives on the close node). `result.py` call sites
+  updated (one arg). **`expectancy_pct → expectancy_cents`** rename (unit changed; `portfolio_metrics`
+  is a free-form dict → **no contract change**). `test_trade_outcomes.py` rewritten (incl. a time-exit
+  and a break-even case); the reporter-agent fixture seeds `pnl_cents`. `feat` → **project version
+  `0.3.0 → 0.4.0`** (MINOR, HARD RULE). 735 tests, floor 100.00; every module < 200L. **Closes P11.**
 + **Sprint 43 — Monitor: realized PnL on close** (P11; implemented directly — no coding agent this
   cycle; the real realized-outcome substrate). New pure
   `realized_pnl_cents(exit_price_cents, entry_price_cents, quantity) = (exit − entry) × quantity` in

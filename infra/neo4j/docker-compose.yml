@@ -1,0 +1,41 @@
+# Local Neo4j graph store — single container, the system's primary store (ADR-0001),
+# hosted in Docker per ADR-0008. Deploy as a Portainer stack or: `docker compose up -d`
+# from this directory. Credentials are interpolated from a gitignored `infra/neo4j/.env`
+# (copy `.env.example`) — no secret is committed here.
+#
+# Community edition: exposes only the default `neo4j` database (set NEO4J_DATABASE=neo4j
+# in the project-root .env). To use named databases / clustering / hot-backup, switch to
+# Enterprise: change the image tag to `...-enterprise` and add
+# `NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"` (free dev/eval license) — see ADR-0008.
+services:
+  neo4j:
+    image: neo4j:2025.08-community # pin to a digest once verified (docker pull)
+    container_name: trading-agents-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474" # HTTP / Neo4j Browser
+      - "7687:7687" # Bolt (the app connects here)
+    environment:
+      # neo4j/<password>; NEO4J_LOCAL_PASSWORD comes from infra/neo4j/.env (gitignored).
+      NEO4J_AUTH: "neo4j/${NEO4J_LOCAL_PASSWORD:?set NEO4J_LOCAL_PASSWORD in infra/neo4j/.env}"
+      # Modest footprint for a dev box; tune as the graph grows.
+      NEO4J_server_memory_pagecache_size: "512m"
+      NEO4J_server_memory_heap_initial__size: "512m"
+      NEO4J_server_memory_heap_max__size: "1G"
+    volumes:
+      - neo4j-data:/data # the graph store — survives container recreation
+      - neo4j-logs:/logs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -u neo4j -p \"$${NEO4J_LOCAL_PASSWORD}\" 'RETURN 1' >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  neo4j-data:
+  neo4j-logs:

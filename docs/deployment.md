@@ -22,6 +22,10 @@ Container deployment for the trading-agents app and its Prometheus observability
 
 ## Prerequisites
 
+0. **Neo4j graph store** — the system's primary store runs as a **local Docker container**
+   ([ADR-0008](decisions/0008-neo4j-hosting-local-docker.md)); see [`infra/neo4j/`](../infra/neo4j/)
+   to start it (or deploy it as a Portainer stack). Point the app's `.env` `NEO4J_*` vars at it.
+
 1. **`.env` file** — copy `.env.example` and fill in `NEO4J_*` vars:
 
    ```bash

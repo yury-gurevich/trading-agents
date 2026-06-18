@@ -2,6 +2,10 @@
 
 **Status:** Accepted · **Date:** 2026-06-06 · **Decider:** Yury Gurevich (product owner)
 
+> **Hosting** (where Neo4j runs) is decided separately in
+> [ADR-0008](0008-neo4j-hosting-local-docker.md): a single **local Docker container**, Community
+> edition. This ADR is unchanged by that — it is about *what* Neo4j is for, not *where* it runs.
+
 ## Context
 
 The system needs a durable store for three things at once: **relationships**

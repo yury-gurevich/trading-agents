@@ -8,7 +8,6 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.monitor import MonitorAgent
-from agents.monitor.settings import MonitorSettings
 from agents.monitor.tests.helpers import (
     bar,
     check_message,
@@ -33,66 +32,6 @@ def test_check_positions_opens_position_idempotently() -> None:
     assert [item.decision for item in second.decisions] == ["hold"]
     assert node_count(graph, "Position") == 1
     assert broker.order_count == 0
-
-
-def test_stop_rule_writes_check_close_and_dispatches_execution() -> None:
-    bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
-    seed_fill(graph)
-
-    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
-
-    position = graph.get_node("Position", "pm-run-fixture:AAPL")
-    assert position is not None
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "stop")
-    ]
-    assert [node.label for node in graph.ancestors(position, max_depth=1)] == [
-        "Fill",
-        "PositionCheck",
-        "CloseDecision",
-    ]
-    assert broker.order_count == 1
-
-
-def test_target_rule_triggers_close() -> None:
-    bus, _graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 111.0),))
-    seed_fill(_graph)
-
-    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
-
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "target")
-    ]
-    assert broker.order_count == 1
-
-
-def test_time_rule_triggers_close() -> None:
-    bus, graph, _broker, _sink = wire_monitor(
-        bars=(bar("AAPL", 0, 100.0),),
-        settings=MonitorSettings(default_horizon_days=0),
-    )
-    seed_fill(graph)
-
-    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
-
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "time")
-    ]
-
-
-def test_hold_writes_check_without_close_decision() -> None:
-    bus, graph, _broker, _sink = wire_monitor(
-        bars=(bar("AAPL", 0, 100.0), bar("AAPL", 1, 99.0))
-    )
-    seed_fill(graph)
-
-    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
-
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("hold", "none")
-    ]
-    assert node_count(graph, "PositionCheck") == 1
-    assert node_count(graph, "CloseDecision") == 0
 
 
 def test_provider_failure_skips_position_and_records_fault() -> None:

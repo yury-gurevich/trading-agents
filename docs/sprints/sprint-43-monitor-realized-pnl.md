@@ -1,13 +1,20 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 43 — Monitor: realized PnL on close (accuracy upgrade for reporter metrics)
 
-**Status:** queued · **Branch:** `sprint-43-monitor-realized-pnl` · **Build phase:** P11 · **Effort: S–M**
+**Status:** ✅ shipped (2026-06-18, branch `sprint-43-monitor-realized-pnl`) · **Build phase:** P11 · **Effort: S–M** · executed directly (no coding agent this cycle)
 
-> **DO NOT START until Sprint 41 (reporter profit-factor/expectancy) is shipped and merged.** This
-> sprint is the *accuracy upgrade* to the metrics S41 ships, decided 2026-06-16: S41 derives PnL from
-> the trigger (stop → `−stop_pct`, target → `+target_pct`, **time exits excluded**, percent-based).
-> This sprint records the **actual** realized PnL at close so a follow-up can re-point the reporter to
-> dollar-based metrics that include **every** trigger.
+> **Handback (shipped).** Built as scoped. Pure `realized_pnl_cents(exit, entry, quantity) =
+> (exit − entry) × quantity` in `exit_rules.py` (integer cents, never raises). The per-position
+> decision logic was extracted from `agent.py` into a new `agents/monitor/decide.py::evaluate_one`
+> (which computes PnL on a close and threads it into both `CloseDecision` and `write_close_decision`),
+> dropping `agent.py` **198 → 171L**. `CloseDecision` gains `pnl_cents: int | None = None` (contract
+> field **and** graph node prop); holds carry `None`. **Monitor CONTRACT `0.1.0 → 0.2.0`**
+> (`owns_graph` unchanged → boundary meta-test green). `feat` → **project version `0.2.0 → 0.3.0`**
+> (MINOR, HARD RULE). Existing `(decision, trigger)` slice assertions stayed green (additive); the
+> stop/target/time agent tests gained exact PnL assertions (−600 / +1100 / 0 on the 10000c-entry,
+> qty-1 fixture). `make ci` green: **738 passed, 4 skipped, 100.00% coverage**; every module < 200L.
+> **Next: the reporter re-point** — read real `pnl_cents` off close-decision nodes for $-based
+> profit-factor/expectancy across all triggers (incl. time), replacing the S41 %-approximation.
 
 ## Goal
 

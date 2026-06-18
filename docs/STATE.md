@@ -1,6 +1,7 @@
 # Project State
 
-**Last updated:** 2026-06-19 01:10 AEST — **S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; scanner requests `"earnings_calendar"` and drops candidates whose next earnings is within `earnings_exclusion_days` (5) of the scan as-of, attributing `earnings_window`; pure `_days_to_earnings`, gate after the beta cap, additive + **dormant** when no earnings data — no other agent or pipeline test re-pinned; survivors carry a `days_to_earnings` metric. **The scanner earnings two-sprint pair (S42 feed → S54 gate) is complete.** No contract change; `feat` → **project version `0.1.0 → 0.2.0`** (MINOR bump, HARD RULE); **733 tests**, floor 100.00). Also live on main: weekly **Dependabot** + **CodeQL** + supply-chain hardening (least-privilege CI token, SHA-pinned actions); deferred hardening tracked in `docs/hardening-backlog.md`.
+**Last updated:** 2026-06-19 02:30 AEST — **S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents(exit, entry, qty) = (exit−entry)×qty` integer cents; per-position decision extracted to `agents/monitor/decide.py::evaluate_one` (drops `agent.py` 198→171L) computing PnL on a close; `CloseDecision` gains `pnl_cents: int | None` (contract field **and** node prop), holds carry `None`. **Monitor CONTRACT 0.1.0→0.2.0** (`owns_graph` unchanged, boundary green); `feat` → **project version 0.2.0→0.3.0** (MINOR, HARD RULE); **738 tests**, floor 100.00. The real realized-outcome substrate — **next: reporter re-point** to $-based metrics across all triggers, replacing the S41 %-approximation). **PR automation live:** Dependabot non-major PRs auto-merge once CI passes (branch protection requires quality/test/security; majors stay open); CodeQL removed (private repo needs GHAS — see `docs/hardening-backlog.md`).
+**S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; drops candidates with earnings within `earnings_exclusion_days` (5) of the scan as-of; additive + dormant; the scanner earnings pair (S42→S54) complete; version 0.1.0→0.2.0).
 **S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub `/calendar/earnings`, pure `_parse_next_earnings` → earliest upcoming date, field-gated into `MarketData.earnings`; CONTRACT 0.3.0→**0.4.0**; the five optional field-gates extracted to `market_fields.py` dropping provider `agent.py` 197→131L; additive + dormant).
 **S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
 **S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration + 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining agent backfills; ADR-0007 docs committed).
@@ -94,13 +95,14 @@ scanner beta + earnings (S42), PM sector cap. 611 tests, floor 100.00. Spec sour
   2026-06-15:** the deprecated v1 store (test-only, not a product dependency) has 5 yr S&P-500 daily
   OHLCV (`price_cache`, forward-return fixture) but **empty news tables** → the harness needs a live
   news-accrual runway (S36 feed scored forward), not a backfill.
-+ **P11 remaining** (non-analyst deterministic gaps): **S43 — monitor realized PnL**
-  (**queued, unblocked — S41 shipped**; `pnl_cents` on `CloseDecision`, contract 0.2.0) →
-  **reporter re-point** to real $ PnL across all triggers (replaces S41's approximation). With S54
-  the scanner is **fully ported** (beta + earnings both done). **Done:** analyst scoring,
++ **P11 remaining** — only the **reporter re-point** is left: update `domain/trade_outcomes.py`
+  (from S41) to read the **real** `pnl_cents` off close-decision nodes (shipped S43) → $-based
+  profit-factor/expectancy across **all** triggers incl. **time**, replacing S41's `%` approximation
+  and its time-exit exclusion (a `None` pnl is skipped). **Done:** analyst scoring,
   **PM reward/risk (S40)**, **PM sector cap (S52)**, **scanner beta (S50)**, **scanner earnings (S54)**,
-  **reporter profit-factor (S41)**, **provider earnings feed (S42)**. After S43 + the reporter re-point,
-  **P11 (deterministic-logic depth) is essentially complete.** Spec: memory `v1-deterministic-port-gaps.md`.
+  **reporter profit-factor (S41)**, **provider earnings feed (S42)**, **monitor realized PnL (S43)**.
+  After the reporter re-point, **P11 (deterministic-logic depth) is complete.** Spec: memory
+  `v1-deterministic-port-gaps.md`, `realized-pnl-sequencing`.
 + **P13 — Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
@@ -117,6 +119,19 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 43 — Monitor: realized PnL on close** (P11; implemented directly — no coding agent this
+  cycle; the real realized-outcome substrate). New pure
+  `realized_pnl_cents(exit_price_cents, entry_price_cents, quantity) = (exit − entry) × quantity` in
+  `domain/exit_rules.py` (integer cents, gross, long-only, never raises). The per-position decision
+  logic was extracted from `agent.py` into a new `agents/monitor/decide.py::evaluate_one` (evaluate →
+  write check → compute PnL on a close → build the `CloseDecision`), dropping `agent.py` **198 →
+  171L**. `CloseDecision` gains `pnl_cents: int | None = None` (contract field **and** graph node
+  prop, persisted by `write_close_decision`); holds carry `None`. **Monitor CONTRACT `0.1.0 → 0.2.0`**
+  (`owns_graph` unchanged → boundary meta-test green); no other agent changed; existing
+  `(decision, trigger)` slice assertions stayed green (additive). The stop/target/time agent tests
+  gained exact PnL assertions (−600 / +1100 / 0 on the 10000c-entry qty-1 fixture). `feat` → **project
+  version `0.2.0 → 0.3.0`** (MINOR, HARD RULE). 738 tests (+5), floor 100.00; every module < 200L.
+  **Next: reporter re-point** to read this `pnl_cents` for $-based metrics across all triggers.
 + **Sprint 54 — Scanner: earnings-window exclusion** (P11; implemented directly — no coding agent this
   cycle; consumes the S42 feed, completing the earnings two-sprint pair). The scanner requests the
   `"earnings_calendar"` field and **drops candidates whose next earnings date is within

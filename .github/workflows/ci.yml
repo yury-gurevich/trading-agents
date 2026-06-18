@@ -57,6 +57,12 @@ jobs:
   # ── Security audit ────────────────────────────────────────────────
   security:
     runs-on: ubuntu-latest
+    env:
+      GHAS_ENABLED: "true"
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
@@ -68,6 +74,23 @@ jobs:
         run: uv run pip-audit
       - name: detect-secrets
         run: uv run pre-commit run detect-secrets --all-files
+      - name: Initialize CodeQL
+        if: env.GHAS_ENABLED == 'true'
+        uses: github/codeql-action/init@b0c4fd77f6c559021d78430ec4d0d169ae74a4eb # v3
+        with:
+          languages: python
+          build-mode: none
+          queries: security-and-quality
+      - name: Perform CodeQL analysis
+        if: env.GHAS_ENABLED == 'true'
+        uses: github/codeql-action/analyze@b0c4fd77f6c559021d78430ec4d0d169ae74a4eb # v3
+        with:
+          category: "/language:python"
+      - name: CodeQL status note
+        if: env.GHAS_ENABLED != 'true'
+        run: |
+          echo "CodeQL skipped in CI security job."
+          echo "Set jobs.security.env.GHAS_ENABLED=true after GHAS/code scanning is enabled."
 
   # ── No migration job: ADR-0001 makes Neo4j the single schema-flexible store ─
   # A future Neo4j service lane may exercise integration tests with NEO4J_TEST_URI.

@@ -11,6 +11,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from agents.forecaster.comparison import build_observations
+from agents.forecaster.domain.scorecard import comparison_metrics
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
 from agents.forecaster.model import FakeSentimentModel
 from agents.forecaster.provider_client import request_news
@@ -22,6 +24,7 @@ from contracts.forecaster import (
     ForecastRequest,
     Scorecard,
     ScorecardRequest,
+    SentimentScorecardRequest,
     ShadowPrediction,
 )
 from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
@@ -52,7 +55,11 @@ class ForecasterAgent(AgentBase):
         self._model = model if model is not None else FakeSentimentModel()
         self._settings = settings or ForecasterSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
-        self.handlers = {"forecast": self._forecast, "scorecard": self._scorecard}
+        self.handlers = {
+            "forecast": self._forecast,
+            "scorecard": self._scorecard,
+            "sentiment_scorecard": self._sentiment_scorecard,
+        }
 
     def _forecast(self, request: BaseModel) -> ShadowPrediction:
         forecast = ForecastRequest.model_validate(request)
@@ -80,6 +87,19 @@ class ForecasterAgent(AgentBase):
             model_id=scorecard.model_id,
             metrics=_scorecard_metrics(predictions),
             sample_size=len(predictions),
+            fresh_as_of=datetime.now(tz=UTC),
+            promotion_eligible=False,
+        )
+
+    def _sentiment_scorecard(self, request: BaseModel) -> Scorecard:
+        req = SentimentScorecardRequest.model_validate(request)
+        observations = build_observations(
+            self._graph, req.model_id, req.forward_returns
+        )
+        return Scorecard(
+            model_id=req.model_id,
+            metrics=comparison_metrics(observations),
+            sample_size=len(observations),
             fresh_as_of=datetime.now(tz=UTC),
             promotion_eligible=False,
         )

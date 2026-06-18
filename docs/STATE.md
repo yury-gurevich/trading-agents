@@ -1,6 +1,23 @@
 # Project State
 
-**Last updated:** 2026-06-18 19:35 AEST
+**Last updated:** 2026-06-18 20:20 AEST
+
+**CodeQL AST helper shipped:** the proven local AST workflow is now scripted via `scripts/run_codeql_ast.ps1`
+and exposed as `make codeql-ast FILE=kernel/agent.py`; it ensures the Python pack lock file exists,
+uses the correct Windows source-archive selector, and writes `printAst.bqrs` plus decoded CSV graph
+artifacts under `.codeql-db/ast/<file>/`. Verified locally on `kernel/agent.py`: **194 nodes / 386
+edges**.
+
+**S57 shipped: forecaster sentiment scorecard harness (P12).** New `sentiment_scorecard` capability on
+the forecaster compares the three scorers (lexicon + provider `SentimentReading`, FinBERT
+`ShadowPrediction`) vs injected forward returns: pure-Python Pearson + 2-regressor OLS
+(`domain/statistics.py`), `comparison_metrics` (`domain/scorecard.py`) for pairwise correlations,
+per-scorer IC, FinBERT-on-the-other-two regression + residual std + **incremental IC**; `comparison.py`
+inner-joins readings by `{analyst_run}:{ticker}`. Forward returns are injected (never a runtime
+dependency). Advisory only (`promotion_eligible` always False). forecaster CONTRACT 0.1.0 -> 0.2.0
+(reads only, owns_graph unchanged); `feat` -> project version 0.5.0 -> 0.6.0. **756 tests** (+17), floor
+100.00. **P12 is code-complete** - remaining work is operational (live news runway), then run the
+harness and decide promotion via P10.
 
 **S56 shipped: analyst champion upgraded to the full Loughran-McDonald master dictionary (P12).** The
 binding sentiment pillar (`sentiment_rules.py`) now loads the genuine LM master dictionary (Positive
@@ -90,45 +107,38 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S56 shipped - analyst champion upgraded to the full Loughran-McDonald master dictionary (P12).**
-The binding sentiment pillar's lexicon (`agents/analyst/domain/sentiment_rules.py`) now loads the
-genuine LM master dictionary - **Positive 354, Negative 2355**, vendored as
-`agents/analyst/domain/data/lm_positive.txt` and `lm_negative.txt` (counts match the published
-master dictionary exactly; provenance + citation in `data/README.md`) - **unioned** with the prior
-curated headline terms. LM was built for 10-K filings, so high-signal headline verbs (beat, surge,
-plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop) are **absent** from it and
-are kept via the union; the two sources are **polarity-disjoint** (verified empirically and asserted
-by test, so the union needs no conflict resolution). `score_sentiment`'s interface and behaviour are
-unchanged - the union is purely additive for the existing fixtures, so **no pinned score re-pinned**.
-`feat` -> **project version 0.4.0 -> 0.5.0** (MINOR, HARD RULE); **739 tests** (+4), floor 100.00;
-every module < 200L.
+**S57 shipped - forecaster sentiment scorecard harness (P12).** The forecaster's new
+`sentiment_scorecard` capability compares the three scorers - lexicon champion + provider challenger
+(both `SentimentReading`, analyst-owned) and FinBERT (`ShadowPrediction`, forecaster-owned) - against
+injected forward returns. A pure stats domain (`domain/statistics.py` Pearson + 2-regressor OLS;
+`domain/scorecard.py` `comparison_metrics`) computes pairwise correlations, each scorer's information
+coefficient on returns, the OLS of FinBERT on the other two, its residual std, and FinBERT's
+**incremental IC** (the residual's IC - the part of FinBERT not reproducible from the other two that
+still predicts returns; ADR-0002 item 4). `comparison.py` reads + inner-joins the readings by
+`{analyst_run}:{ticker}`; forward returns are **injected** (never a runtime dependency - the offline
+harness supplies them). Stays advisory: `promotion_eligible` is always False; metrics are omitted when
+undefined. forecaster CONTRACT 0.1.0 -> 0.2.0 (new capability; owns_graph unchanged - reads only);
+`feat` -> project version 0.5.0 -> 0.6.0. **756 tests** (+17), floor 100.00; every module < 200L.
 
-**P12 sentiment trinity - all 3 scorers live** (unchanged): lexicon champion (binding, S37, now on
-the full LM dictionary) + provider challenger (shadow, S47/S48) + FinBERT forecaster (shadow, S49);
-news source = Alpha Vantage `NEWS_SENTIMENT`. **P12 remaining is now just the scorecard harness**
-(compare the 3 readings vs forward returns) - and that is **data-runway-gated, not code-gated**: the
-deprecated v1 Postgres has OHLCV forward returns but empty news history, so live headlines must
-accrue forward first. The full-LM-dictionary champion upgrade (previously owed) is **done**.
+**P12 is now code-complete.** All three scorers live + the scorecard harness shipped. The only
+remaining work is **operational, not code**: accrue real headlines live (the S36 feed scored forward),
+then run `sentiment_scorecard` against `price_cache` forward returns to produce the actual verdict and
+decide FinBERT/provider promotion via the curator's P10 predictor-registry gate. Per the agreed order,
+**P14 (inter-agent comms re-architecture) is next.**
 
 ## Next
 
-+ **P12 - Sentiment (champion-challenger): the scorecard harness is the only remaining piece.** All
-  three scorers are live (lexicon champion S37 on the full LM dictionary; provider challenger
-  S47/S48; FinBERT forecaster S49). The harness aligns the three `SentimentReading`s + forward
-  returns, computes correlation / incremental IC, and promotes (if any) via the **P10
-  predictor-registry gate**. **Data-runway-gated, not code-gated:** the deprecated v1 Postgres
-  (test-only) has 5 yr S&P-500 daily OHLCV (`price_cache`, forward-return fixture) but **empty news
-  tables**, so it needs a live news-accrual runway (the S36 feed scored forward), not a backfill. The
-  machinery can be built against fixtures now (next slice, per the agreed order: harness -> P14).
-  Spec: ADR-0002.
-+ **P11 - deterministic-logic depth: COMPLETE** (S55 closed it). Full v1 engine ported: analyst
-  technical/fundamental/sentiment + RS + signal selection; PM reward/risk (S40) + sector cap (S52);
-  scanner beta (S50) + earnings (S54); reporter $-PnL (S41 -> S55); monitor realized PnL (S43).
++ **P14 - Inter-agent comms re-architecture** (next, per the agreed order; ADR-0005): event-driven
+  pub/sub + claim-check, in-process first then Azure Service Bus (8 sprints). The law CAP+PARAM
+  backfills (ADR-0007, S53 set the pattern) precede the master sprint.
++ **P12 - Sentiment (champion-challenger): code-complete; awaiting a live news-accrual runway.** All
+  three scorers (lexicon S37 on the full LM dictionary; provider S47/S48; FinBERT S49) + the
+  `sentiment_scorecard` harness (S57) are shipped. Remaining is operational: score real headlines
+  forward, then run the harness on `price_cache` forward returns and decide promotion via the P10
+  predictor-registry gate. Spec: ADR-0002.
++ **P11 - deterministic-logic depth: COMPLETE** (S55). Full v1 engine ported.
 + **P13 - Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
   propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
-+ **P14 - Inter-agent comms re-architecture** (planned, after the harness): event-driven pub/sub +
-  claim-check over Azure Service Bus; 8 sprints, in-process first. Spec: ADR-0005; the law CAP+PARAM
-  backfills (ADR-0007, S53 set the pattern) precede the master sprint.
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -143,6 +153,24 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 57 - Forecaster: sentiment scorecard harness** (P12; implemented directly - no coding agent
+  this cycle). New `sentiment_scorecard` capability comparing the three champion-challenger scorers vs
+  injected forward returns. Pure stats domain: `agents/forecaster/domain/statistics.py` (`pearson`
+  with undefined->None on <2 points or a constant series; population `std`; `ols2` closed-form
+  2-regressor OLS, None on <3 points or collinear regressors) and
+  `agents/forecaster/domain/scorecard.py` (`Observation` + `comparison_metrics` -> `complete_cases`,
+  pairwise `corr_*`, per-scorer `ic_*`, the OLS `finbert_alpha/beta_provider/beta_lexicon/residual_std`,
+  and `incremental_ic_finbert` = the IC of FinBERT's residual after regressing out provider+lexicon;
+  each metric **omitted when undefined**, so a present key is always meaningful).
+  `agents/forecaster/comparison.py` reads SentimentReading (analyst) + ShadowPrediction (own) from the
+  graph and **inner-joins** complete cases by `{analyst_run}:{ticker}`; forward returns are **injected**
+  via the request (never a runtime dependency). The handler emits the existing `Scorecard` (free-form
+  `metrics` dict -> no response change) with `promotion_eligible=False` - never gates; promotion stays
+  the curator's P10 registry. New inbound `SentimentScorecardRequest`; **forecaster CONTRACT 0.1.0 ->
+  0.2.0** (new capability; `owns_graph` unchanged - reads the analyst's label only, no single-writer
+  change). `feat` -> **project version 0.5.0 -> 0.6.0**. 756 tests (was 739; +17 - statistics
+  known-values + None edges, comparison_metrics branches, agent alignment/skip + never-promotes), floor
+  100.00; every module < 200L.
 + **Sprint 56 - Analyst: full Loughran-McDonald master dictionary** (P12 champion deepened;
   implemented directly - no coding agent this cycle). The binding lexicon in
   `agents/analyst/domain/sentiment_rules.py` now loads the genuine LM master dictionary - **Positive

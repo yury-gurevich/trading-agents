@@ -36,9 +36,7 @@ def probe_config(creds: dict[str, str]) -> list[Result]:
             Result("DEP-CONFIG-01", "config: required keys", RED, f"missing {missing}")
         ]
     extra = [
-        k
-        for k in ("PROVIDER_FINNHUB_API_KEY", "ANTHROPIC_API_KEY")
-        if creds.get(k)
+        k for k in ("PROVIDER_FINNHUB_API_KEY", "ANTHROPIC_API_KEY") if creds.get(k)
     ]
     return [
         Result(
@@ -192,7 +190,6 @@ def _fmp_ohlcv(creds: dict[str, str]) -> Result:
         )
     except Exception as exc:
         return Result("DEP-FEED-01", "OHLCV: FMP live", RED, f"{type(exc).__name__}")
-
 
 
 def probe_feed_fundamentals(creds: dict[str, str]) -> list[Result]:

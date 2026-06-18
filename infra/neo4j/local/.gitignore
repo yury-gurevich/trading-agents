@@ -1,0 +1,7 @@
+# Bind-mounted Neo4j runtime state — never commit.
+data/
+conf/
+logs/
+plugins/
+import/
+backups/

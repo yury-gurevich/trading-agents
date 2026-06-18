@@ -1,0 +1,6 @@
+---
+lockVersion: 1.0.0
+dependencies:
+  codeql/yaml:
+    version: 1.0.51
+compiled: false

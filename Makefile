@@ -1,5 +1,5 @@
-.PHONY: install lint format type test boundaries check ci clean \
-        docker-build stack-up stack-down stack-deploy stack-rm
+.PHONY: install lint format type test boundaries check ci codeql-ast clean \
+	docker-build stack-up stack-down stack-deploy stack-rm
 
 PKGS = kernel contracts agents orchestration surfaces
 STACK = trading-agents
@@ -38,6 +38,12 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run pytest
 	-uv run pip-audit
 	uv run pre-commit run detect-secrets --all-files
+
+codeql-ast:     ## Generate CodeQL AST artifacts for FILE=path/to/file.py
+ifndef FILE
+	$(error Usage: make codeql-ast FILE=kernel/agent.py)
+endif
+	powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile "$(FILE)"
 
 clean:          ## Remove build artifacts
 	rm -rf .venv htmlcov .mypy_cache .pytest_cache .ruff_cache

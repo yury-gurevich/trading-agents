@@ -7,10 +7,13 @@
 **S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py` pairs Position↔CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from `stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents` → reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
 **S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration + 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining agent backfills; ADR-0007 docs committed).
 **ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub → Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections; full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
-**Graph store: Aura→local migration prepped** (kernel commit
-`f96ea93` adds configurable `NEO4J_DATABASE`; stay on **Neo4j Aura until it expires 2026-06-28**, then move
-to **local Neo4j Desktop** db `trading-agent` — Aura's min paid tier ~$260/mo; Aura verified **empty** so
-the cutover is a clean config swap; details + checklist in memory `neo4j-aura-to-local-migration`).
+**Graph store: Aura→local cutover DONE (2026-06-18, early).** Now on **local Neo4j Desktop 2**
+(Enterprise 2025.08.0) at `neo4j://127.0.0.1:7687`, db **`trading-agent`**; `.env` repointed (Aura kept as
+commented fallback + `.env.bak`). The local `neo4j` password was unknown/Desktop-encrypted → reset to a
+known value via the auth-disable method (graph data untouched). **DEP-NEO4J 01/02/03 all GREEN** against
+local. Aura (`f96ea93` added configurable `NEO4J_DATABASE`) was verified **empty** → clean swap; it still
+**bills/expires 2026-06-28** so delete the Aura instance before then. Details + recovery steps: memory
+`neo4j-aura-to-local-migration`.
 **Sprint 52 shipped** (PM **sector-concentration cap** — rejects
 orders that would push their sector over `max_sector_pct` of portfolio value (`sector_concentration`),
 tracking per-sector deployed value; consumes S51 `MarketData.sectors`, additive + dormant on unknown

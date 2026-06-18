@@ -78,7 +78,12 @@ def _beta_settings() -> ScannerSettings:
 def test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history() -> None:
     bars = (*_ONE_X, *_TWO_X, *_series("THIN", [100.0, 110.0]))
     survivors, trace = apply_filters(
-        ("LOWB", "HIGHB", "THIN"), bars, _BENCH, _beta_settings()
+        ("LOWB", "HIGHB", "THIN"),
+        bars,
+        _BENCH,
+        {},
+        datetime.now(tz=UTC).date(),
+        _beta_settings(),
     )
 
     by_ticker = {survivor.ticker: survivor for survivor in survivors}

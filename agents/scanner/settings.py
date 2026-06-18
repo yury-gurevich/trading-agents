@@ -64,3 +64,11 @@ class ScannerSettings(AgentSettings):
         le=252,
         unit="observations",
     )
+    earnings_exclusion_days: int = tunable(
+        5,
+        why="Exclude names whose next earnings report lands within this many days of "
+        "the scan, avoiding event-driven gap risk before the analyst sees them.",
+        ge=0,
+        le=60,
+        unit="days",
+    )

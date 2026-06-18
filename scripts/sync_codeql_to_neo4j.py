@@ -310,8 +310,7 @@ def _build_parser() -> argparse.ArgumentParser:
     """Create CLI argument parser for the SARIF sync script."""
     parser = argparse.ArgumentParser(
         description=(
-            "Sync CodeQL SARIF findings into Neo4j using the kernel graph "
-            "adapter."
+            "Sync CodeQL SARIF findings into Neo4j using the kernel graph adapter."
         )
     )
     parser.add_argument(

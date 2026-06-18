@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "Where do logs and metrics go? Is the log plane the same channel as the command bus?"
+tags: [azure, telemetry, logs, metrics, event-hubs]
+---
+
 # ADR 0003 — Telemetry/log plane on Azure; separate from the command bus
 
 **Status:** Accepted · **Date:** 2026-06-15 · **Decider:** Yury Gurevich (product owner)

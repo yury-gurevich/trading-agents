@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "How do we deploy each agent? Who manages secrets? How do agents get their identity at startup?"
+tags: [docker, azure, container-apps, master, key-vault, p14]
+---
+
 # ADR 0007 — Container-per-agent deployment + Master bootstrap agent
 
 **Status:** Accepted · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)

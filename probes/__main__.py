@@ -2,7 +2,7 @@
 
 Agent: probes
 Role: execute all DEP-* probes in dependency order; exit non-zero on any RED.
-External I/O: via the probe functions (Neo4j, feeds, Postgres).
+External I/O: via the probe functions (Neo4j, feeds, Alpaca broker).
 """
 
 from __future__ import annotations

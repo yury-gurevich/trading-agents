@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "How do agents communicate asynchronously? Sync RPC or async pub/sub? What replaces Celery?"
+tags: [azure, service-bus, bus, celery, p14]
+---
+
 # ADR 0005 — Inter-agent communication: event-driven pub/sub over Azure Service Bus (claim-check)
 
 **Status:** Accepted · **Date:** 2026-06-16 · **Decider:** Yury Gurevich (product owner)

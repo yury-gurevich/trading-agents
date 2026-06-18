@@ -1,3 +1,11 @@
+---
+type: Architecture Decision
+status: superseded
+superseded_by: "0005-inter-agent-communication.md"
+closes: "What broker does Celery use? (superseded — Celery itself is transitional per ADR-0005)"
+tags: [celery, rabbitmq]
+---
+
 # ADR 0004 — RabbitMQ as the Celery command-bus broker
 
 **Status:** **SUPERSEDED by [ADR-0005](0005-inter-agent-communication.md)** (2026-06-16) · originally

@@ -4,32 +4,41 @@ The system's primary store (graph + provenance + RAG, [ADR-0001](../../docs/deci
 runs as a single local Docker container per
 [ADR-0008](../../docs/decisions/0008-neo4j-hosting-local-docker.md).
 
+**Single source of truth:** [`local/docker-compose.yml`](local/docker-compose.yml) — Neo4j
+**Enterprise** (dev/eval) with the **APOC** + **Graph Data Science** plugins, all state
+bind-mounted under `local/` so you can browse/edit it straight from the filesystem.
+
+> The earlier named-volume compose (`infra/neo4j/docker-compose.yml`) plus its `.env` /
+> `.env.example` were **retired 2026-06-18** and moved to the sibling `trading-agent-del/`
+> staging folder. Rationale + restore steps: [`docs/repo-hygiene.md`](../../docs/repo-hygiene.md).
+
 ## Start
 
 ```bash
-cp infra/neo4j/.env.example infra/neo4j/.env   # set NEO4J_LOCAL_PASSWORD (match root .env)
-cd infra/neo4j && docker compose up -d          # or deploy as a Portainer stack
+cd infra/neo4j/local && docker compose up -d
 ```
 
-- Browser: <http://localhost:7474>  ·  Bolt: `neo4j://127.0.0.1:7687`  ·  user `neo4j`
-- The graph persists on the `neo4j-data` named volume across container recreation.
+- Browser: <http://localhost:7474>  ·  Bolt: `bolt://localhost:7687`  ·  user `neo4j`
+- Default database: **`traiding-agents`** (Enterprise named db; the `neo4j` db is never created).
+- State persists as bind mounts under `local/`: `data/ conf/ logs/ plugins/ import/ backups/`.
 
 ## Point the app at it
 
-In the **project-root** `.env`:
+The project-root `.env` is already set:
 
-```
-NEO4J_URI=neo4j://127.0.0.1:7687       # neo4j://host.docker.internal:7687 if the app is itself in a container
+```env
+NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=<same as NEO4J_LOCAL_PASSWORD>
-NEO4J_DATABASE=neo4j                    # Community exposes only the default db
+NEO4J_PASSWORD=<see project-root .env — gitignored>
+NEO4J_DATABASE=traiding-agents
 ```
 
-Verify: `uv run --extra runtime --extra probes python -c "from probes.creds import load_creds; from probes.checks import probe_neo4j; [print(r.status, r.dep, r.detail) for r in probe_neo4j(load_creds())]"`
+Verify: `uv run --extra runtime python -c "from probes.creds import load_creds; from probes.checks import probe_neo4j; [print(r.status, r.dep, r.detail) for r in probe_neo4j(load_creds())]"`
 
 ## Edition
 
-Community (default) covers everything the system needs. For **named databases / clustering /
-Fabric / hot-backup**, switch the image to `neo4j:<ver>-enterprise` and add
-`NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"` (free dev/eval license). Rationale + the parallelism
-analysis: ADR-0008.
+**Enterprise** (dev/eval) is required here for the **named default database** (`traiding-agents`)
+and the **GDS** plugin. The eval license is free for development/testing, **not production**.
+To drop to Community later: image `neo4j:<ver>-community`, remove the license env, and use
+`NEO4J_DATABASE=neo4j` (Community exposes only the default db) — at the cost of the named db and
+Enterprise GDS. Rationale + parallelism analysis: ADR-0008.

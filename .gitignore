@@ -20,6 +20,8 @@ htmlcov/
 *.db
 /neo4j-data/
 /data/
+.codeql-db/
+.tools/
 
 # OS / editor
 .DS_Store

@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "Where does Neo4j run in dev/staging? Aura cloud vs Desktop vs Docker? Single instance or cluster?"
+tags: [neo4j, docker, hosting, aura]
+---
+
 # ADR 0008 — Neo4j hosting: local, in Docker, single instance
 
 **Status:** Accepted · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)

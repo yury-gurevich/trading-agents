@@ -8,19 +8,19 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 
 ## Layer 0 — Dependencies (must go green first)
 
-Re-run the live harness any time: **`uv run --extra runtime --extra probes python -m probes`**
-(`probes/`, real systems, functional channels). Latest run (2026-06-17): **13 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (default), FMP, Postgres, Finnhub fundamentals, **Alpha Vantage vendor sentiment** (provider-sentiment challenger), Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel).
+Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
+(`probes/`, real systems, functional channels). Latest run (2026-06-17): **13 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (default), FMP, Finnhub fundamentals, **Alpha Vantage vendor sentiment** (provider-sentiment challenger), Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel). Postgres probe retired 2026-06-19.
 
 | Component | Clauses | Status |
 | --- | --- | --- |
 | DEP-CONFIG | 2 | 🟩 01 real (Neo4j + 3 feed/LLM creds present) |
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
-| DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced** on Aura (`02812797`) |
+| DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced**; local Enterprise Docker (`traiding-agents` db, `bolt://localhost:7687`); Aura instance deleted 2026-06-19 |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
-| DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); Postgres raw fallback 🟩 (1285 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (dropped from the probe). |
+| DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (anti-bot). Postgres raw fallback retired 2026-06-19 (Tiingo + Alpaca cover the need). |
 | DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
-| DEP-TELE | 2 | ⬜ Prometheus URL present; Event Hubs not provisioned |
+| DEP-TELE | 2 | ⬜ Azure Monitor live (`AZURE_OBSERVABILITY_ENABLED=true`); Azure Managed Prometheus remote-write URL present; `prometheus-client` → Azure path not yet formally proven in live harness; Event Hubs not provisioned (ADR-0003) |
 
 > **The harness already paid for itself (2026-06-16).** Through the functional channels it proved Neo4j
 > Aura green (incl. uniqueness) and **caught a load-bearing break**: the provider's `StooqDataSource`

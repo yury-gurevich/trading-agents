@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "What feeds do we use for OHLCV, fundamentals, news, and sentiment? What happens when one goes down?"
+tags: [tiingo, alpaca, finnhub, feeds, provider]
+---
+
 # ADR 0006 — Market-data feed strategy: tiered free feeds behind the DataSource boundary
 
 **Status:** Accepted · **Date:** 2026-06-16 · **Decider:** Yury Gurevich (product owner)

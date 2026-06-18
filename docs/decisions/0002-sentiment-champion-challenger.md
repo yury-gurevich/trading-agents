@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "How do we evaluate and promote ML sentiment models without breaking the deterministic gate?"
+tags: [sentiment, finbert, analyst, forecaster, p12]
+---
+
 # ADR 0002 — Sentiment as champion–challenger; the forecaster hosts advisory ML
 
 **Status:** Accepted · **Date:** 2026-06-15 · **Decider:** Yury Gurevich (product owner)

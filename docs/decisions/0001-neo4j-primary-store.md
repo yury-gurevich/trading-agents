@@ -1,3 +1,10 @@
+---
+type: Architecture Decision
+status: accepted
+closes: "What database do we use for the graph, provenance, and RAG store?"
+tags: [neo4j, storage]
+---
+
 # ADR 0001 — Neo4j as the single primary store
 
 **Status:** Accepted · **Date:** 2026-06-06 · **Decider:** Yury Gurevich (product owner)

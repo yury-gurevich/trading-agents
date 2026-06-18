@@ -87,13 +87,12 @@ Test-Endpoint 'HuggingFace — whoami' `
     'https://huggingface.co/api/whoami-v2' `
     @{ 'Authorization' = "Bearer $env:HF_TOKEN" }
 
-# ── Neo4j Aura ────────────────────────────────────────────────────────────────
-$neo4jHost = $env:NEO4J_URI -replace '^neo4j\+s?://', ''
+# ── Neo4j local Docker ────────────────────────────────────────────────────────
 $neo4jCred = [Convert]::ToBase64String(
     [Text.Encoding]::ASCII.GetBytes("$($env:NEO4J_USER):$($env:NEO4J_PASSWORD)")
 )
-Test-Endpoint 'Neo4j Aura — discovery' `
-    "https://$neo4jHost" `
+Test-Endpoint 'Neo4j local Docker — browser' `
+    'http://localhost:7474' `
     @{ 'Authorization' = "Basic $neo4jCred" }
 
 if ($env:NEO4J_TEST_URI) {

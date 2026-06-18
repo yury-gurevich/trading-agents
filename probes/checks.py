@@ -3,8 +3,8 @@
 Agent: probes
 Role: prove each shared dependency is healthy against the real system, through the
 provider's functional channels (not mocks).
-External I/O: Neo4j, market-data feeds (Tiingo/FMP/Finnhub), Postgres (raw OHLCV
-fallback), and the Alpaca paper broker.
+External I/O: Neo4j, market-data feeds (Tiingo/FMP/Finnhub), and the Alpaca paper
+broker.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def probe_config(creds: dict[str, str]) -> list[Result]:
         ]
     extra = [
         k
-        for k in ("PROVIDER_FINNHUB_API_KEY", "DATABASE_URL", "ANTHROPIC_API_KEY")
+        for k in ("PROVIDER_FINNHUB_API_KEY", "ANTHROPIC_API_KEY")
         if creds.get(k)
     ]
     return [
@@ -139,8 +139,8 @@ def _neo4j_uniqueness(session: object) -> Result:
 
 
 def probe_feed_ohlcv(creds: dict[str, str]) -> list[Result]:
-    """DEP-FEED-01 — OHLCV reachable: Tiingo (default) + FMP + raw Postgres."""
-    return [_tiingo_ohlcv(creds), _fmp_ohlcv(creds), _postgres_ohlcv(creds)]
+    """DEP-FEED-01 — OHLCV reachable: Tiingo (primary) + FMP (validation)."""
+    return [_tiingo_ohlcv(creds), _fmp_ohlcv(creds)]
 
 
 def _tiingo_ohlcv(creds: dict[str, str]) -> Result:
@@ -193,41 +193,6 @@ def _fmp_ohlcv(creds: dict[str, str]) -> Result:
     except Exception as exc:
         return Result("DEP-FEED-01", "OHLCV: FMP live", RED, f"{type(exc).__name__}")
 
-
-def _postgres_ohlcv(creds: dict[str, str]) -> Result:
-    dsn = creds.get("DATABASE_URL")
-    if not dsn:
-        return Result(
-            "DEP-FEED-01", "OHLCV: Postgres fallback (raw)", SKIP, "no DATABASE_URL"
-        )
-    try:
-        import psycopg2
-    except ImportError:
-        return Result(
-            "DEP-FEED-01",
-            "OHLCV: Postgres fallback (raw)",
-            SKIP,
-            "psycopg2 missing (--extra probes)",
-        )
-    try:
-        conn = psycopg2.connect(dsn, connect_timeout=15)
-        cur = conn.cursor()
-        cur.execute("SELECT count(*) FROM price_cache WHERE ticker = 'AAPL'")
-        count = cur.fetchone()[0]
-        conn.close()
-        return Result(
-            "DEP-FEED-01",
-            "OHLCV: Postgres fallback (raw)",
-            GREEN if count else RED,
-            f"{count} AAPL bars",
-        )
-    except Exception as exc:
-        return Result(
-            "DEP-FEED-01",
-            "OHLCV: Postgres fallback (raw)",
-            RED,
-            f"{type(exc).__name__}",
-        )
 
 
 def probe_feed_fundamentals(creds: dict[str, str]) -> list[Result]:
@@ -411,11 +376,14 @@ def probe_llm(creds: dict[str, str]) -> list[Result]:
 
 def probe_tele(creds: dict[str, str]) -> list[Result]:
     """DEP-TELE-01 — the telemetry plane (deferred provisioning)."""
-    note = (
-        "Prometheus URL present; Event Hubs not provisioned"
-        if creds.get("PROMETHEUS_REMOTE_WRITE_URL")
-        else "not provisioned"
-    )
+    monitor = bool(creds.get("AZURE_MONITOR_CONNECTION_STRING"))
+    prom = bool(creds.get("PROMETHEUS_REMOTE_WRITE_URL"))
+    if monitor and prom:
+        note = "Azure Monitor live; Prometheus URL present; harness unproven"
+    elif monitor:
+        note = "Azure Monitor live; Prometheus remote-write URL missing"
+    else:
+        note = "not provisioned"
     return [Result("DEP-TELE-01", "telemetry: Azure", SKIP, note)]
 
 

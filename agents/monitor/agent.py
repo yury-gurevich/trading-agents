@@ -11,19 +11,17 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from agents.monitor.domain.exit_rules import evaluate_position
-from agents.monitor.domain.positions import exit_position, position_from_fill
+from agents.monitor.decide import evaluate_one
+from agents.monitor.domain.positions import position_from_fill
 from agents.monitor.execution_client import dispatch_closes
 from agents.monitor.provider_client import latest_close_cents
-from agents.monitor.result import decision_rationale, run_explanation
+from agents.monitor.result import run_explanation
 from agents.monitor.settings import MonitorSettings
 from agents.monitor.store import (
     fills_for_run,
     is_open_position,
     open_position,
     open_positions,
-    write_check,
-    write_close_decision,
     write_monitor_run,
 )
 from contracts.common import Explanation
@@ -155,35 +153,11 @@ class MonitorAgent(AgentBase):
                     f"provider returned no current price for {ticker}"
                 )
                 continue
-            decision, trigger = evaluate_position(
-                exit_position(position), current_price_cents, today
-            )
-            rationale = decision_rationale(ticker, decision, trigger)
-            write_check(
-                self._graph,
-                monitor_run_id=monitor_run_id,
-                position=position,
-                decision=decision,
-                trigger=trigger,
-                current_price_cents=current_price_cents,
-            )
-            close = CloseDecision(
-                ticker=ticker,
-                position_id=position.key,
-                decision=decision,
-                trigger=trigger,
-                rationale=rationale,
-            )
-            if decision == "close":
-                write_close_decision(
-                    self._graph,
-                    monitor_run_id=monitor_run_id,
-                    position=position,
-                    decision=decision,
-                    trigger=trigger,
-                    rationale=rationale,
+            decisions.append(
+                evaluate_one(
+                    self._graph, monitor_run_id, position, current_price_cents, today
                 )
-            decisions.append(close)
+            )
         return tuple(decisions)
 
     def _record_degraded(self, message: str) -> None:

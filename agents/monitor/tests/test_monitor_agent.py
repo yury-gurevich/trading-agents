@@ -46,6 +46,14 @@ def test_stop_rule_writes_check_close_and_dispatches_execution() -> None:
     assert [(item.decision, item.trigger) for item in result.decisions] == [
         ("close", "stop")
     ]
+    # entry 10000c, stop exit 9400c, quantity 1 -> realized -600c.
+    assert result.decisions[0].pnl_cents == -600
+    close_node = next(
+        node
+        for node in graph.ancestors(position, max_depth=1)
+        if node.label == "CloseDecision"
+    )
+    assert close_node.props["pnl_cents"] == -600
     assert [node.label for node in graph.ancestors(position, max_depth=1)] == [
         "Fill",
         "PositionCheck",
@@ -63,6 +71,8 @@ def test_target_rule_triggers_close() -> None:
     assert [(item.decision, item.trigger) for item in result.decisions] == [
         ("close", "target")
     ]
+    # entry 10000c, target exit 11100c, quantity 1 -> realized +1100c.
+    assert result.decisions[0].pnl_cents == 1100
     assert broker.order_count == 1
 
 
@@ -78,6 +88,8 @@ def test_time_rule_triggers_close() -> None:
     assert [(item.decision, item.trigger) for item in result.decisions] == [
         ("close", "time")
     ]
+    # entry 10000c, time exit at the current 10000c price -> realized 0c (break-even).
+    assert result.decisions[0].pnl_cents == 0
 
 
 def test_hold_writes_check_without_close_decision() -> None:
@@ -91,6 +103,7 @@ def test_hold_writes_check_without_close_decision() -> None:
     assert [(item.decision, item.trigger) for item in result.decisions] == [
         ("hold", "none")
     ]
+    assert result.decisions[0].pnl_cents is None  # holds carry no realized PnL
     assert node_count(graph, "PositionCheck") == 1
     assert node_count(graph, "CloseDecision") == 0
 

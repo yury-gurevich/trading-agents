@@ -25,6 +25,8 @@ class CloseDecision(_Frozen):
     decision: Literal["close", "hold"]
     trigger: Literal["stop", "target", "time", "regime", "manual", "none"]
     rationale: Explanation
+    pnl_cents: int | None = None
+    """Realized PnL in integer cents on a close (gross, long-only); None on a hold."""
 
 
 class CloseDecisionSet(_Frozen):
@@ -37,7 +39,7 @@ class CloseDecisionSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="monitor",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Watch open positions and decide when to exit under policy (stops, targets, "
         "time, regime), hand exits to execution, and explain every close and hold."

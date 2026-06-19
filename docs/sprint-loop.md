@@ -65,7 +65,7 @@ After the version bump, rerun the full branch quality gate.
 
 ## Multi-Step Progress Reports
 
-Keep local progress reports for active multi-step work under `docs/local/progress/`.
+Keep local progress reports for active multi-step work under `docs/sprints/`.
 
 - Use one Markdown file per active effort.
 - Update it when scope, decisions, blockers, or next steps change materially.
@@ -91,8 +91,6 @@ Keep local progress reports for active multi-step work under `docs/local/progres
    - the current active work branch
    - at most one temporary backup branch
 5. Audit unmerged remote branches before deleting them. Never auto-delete them.
-6. Empty `docs/local/temp/` — scratch, one-off reviews, and research notes
-   from the shipped effort should not persist into the next sprint.
 
 ## Backup Retention
 

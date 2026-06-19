@@ -15,6 +15,11 @@ htmlcov/
 # ...but the template (no secrets) is tracked.
 !.env.example
 
+# Trained model artifacts (produced offline; not committed)
+/models/*.txt
+/models/*.bin
+/models/*.lgb
+
 # Local data stores
 *.sqlite
 *.db

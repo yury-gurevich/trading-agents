@@ -12,6 +12,10 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from agents.forecaster.comparison import build_observations
+from agents.forecaster.domain.return_scorecard import (
+    build_return_observations,
+    return_scorecard_metrics,
+)
 from agents.forecaster.domain.scorecard import comparison_metrics
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
 from agents.forecaster.model import FakeSentimentModel
@@ -24,6 +28,7 @@ from contracts.common import Window
 from contracts.forecaster import (
     CONTRACT,
     ForecastRequest,
+    ReturnScorecardRequest,
     Scorecard,
     ScorecardRequest,
     SentimentScorecardRequest,
@@ -67,6 +72,7 @@ class ForecasterAgent(AgentBase):
             "forecast_return": self._forecast_return,
             "scorecard": self._scorecard,
             "sentiment_scorecard": self._sentiment_scorecard,
+            "return_scorecard": self._return_scorecard,
         }
 
     def _forecast(self, request: BaseModel) -> ShadowPrediction:
@@ -136,6 +142,19 @@ class ForecasterAgent(AgentBase):
             value=reading.value,
             confidence=reading.confidence,
             provenance=provenance,
+        )
+
+    def _return_scorecard(self, request: BaseModel) -> Scorecard:
+        req = ReturnScorecardRequest.model_validate(request)
+        observations = build_return_observations(
+            self._graph, req.model_id, req.forward_returns
+        )
+        return Scorecard(
+            model_id=req.model_id,
+            metrics=return_scorecard_metrics(observations),
+            sample_size=len(observations),
+            fresh_as_of=datetime.now(tz=UTC),
+            promotion_eligible=False,
         )
 
     def _read_sentiment(self, ticker: str) -> ModelReading:

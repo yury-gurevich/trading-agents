@@ -56,7 +56,7 @@ class Scorecard(_Frozen):
 
 CONTRACT = AgentContract(
     name="forecaster",
-    version="0.2.0",
+    version="0.3.0",
     mission=(
         "Provide advisory ML forecasts (exit timing, news impact, ...) as clearly "
         "labelled shadow signals that never gate a decision until scorecards prove "
@@ -83,6 +83,12 @@ CONTRACT = AgentContract(
             "injected forward returns; advisory, never promotion-eligible.",
             request=SentimentScorecardRequest,
             response=Scorecard,
+        ),
+        Capability(
+            "forecast_return",
+            "Produce an advisory shadow price/return prediction for a subject.",
+            request=ForecastRequest,
+            response=ShadowPrediction,
         ),
     ),
     emits=("scorecard_refreshed",),

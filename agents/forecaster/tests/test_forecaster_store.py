@@ -85,3 +85,19 @@ def test_read_predictions_filters_by_model_id() -> None:
     predictions = read_predictions(graph, "a")
     assert len(predictions) == 1
     assert predictions[0].props["model_id"] == "a"
+
+
+def test_write_forecast_records_a_custom_model_kind() -> None:
+    graph = InMemoryGraphStore()
+    write_forecast(
+        graph,
+        model_id="lgbm-return-v1",
+        model_ref="lightgbm-gbdt",
+        subject_kind="recommendation",
+        subject_ref="AAPL",
+        reading=ModelReading(value=0.7, confidence=0.5),
+        model_kind="return",
+    )
+    model = graph.get_node("Model", "lgbm-return-v1")
+    assert model is not None
+    assert model.props["kind"] == "return"

@@ -15,6 +15,7 @@ from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from contracts.common import Window
+    from contracts.provider import OHLCVBar
 
 
 def request_news(
@@ -45,3 +46,39 @@ def request_news(
             raise RuntimeError(message)
         news = dict(MarketData.model_validate(response.payload).news)
     return {} if capture.fault is not None else news
+
+
+def request_prices(
+    bus: MessageBus, sink: FaultSink, ticker: str, window: Window
+) -> tuple[OHLCVBar, ...]:
+    """Request a ticker's recent OHLCV bars from provider; ``()`` on any fault."""
+    bars: tuple[OHLCVBar, ...] = ()
+    with fault_boundary(
+        sink,
+        agent="forecaster",
+        module="agents.forecaster.provider_client",
+        capability="forecast_return",
+        reraise=False,
+    ) as capture:
+        response = bus.request(
+            AgentMessage(
+                sender="forecaster",
+                recipient="provider",
+                message_type="request",
+                capability="get_market_data",
+                payload=DataRequest(
+                    tickers=(ticker,), window=window, fields=("ohlcv",)
+                ).model_dump(mode="json"),
+            )
+        )
+        if response.message_type == "error":
+            message = str(response.payload.get("message", "provider error"))
+            raise RuntimeError(message)
+        market = MarketData.model_validate(response.payload)
+        bars = tuple(
+            sorted(
+                (bar for bar in market.bars if bar.ticker == ticker),
+                key=lambda bar: bar.bar_date,
+            )
+        )
+    return () if capture.fault is not None else bars

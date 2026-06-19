@@ -119,12 +119,28 @@ undefined. forecaster CONTRACT 0.1.0 -> 0.2.0 (new capability; owns_graph unchan
 **P12 is now code-complete.** All three scorers live + the scorecard harness shipped. The only
 remaining work is **operational, not code**: accrue real headlines live (the S36 feed scored forward),
 then run `sentiment_scorecard` against `price_cache` forward returns to produce the actual verdict and
-decide FinBERT/provider promotion via the curator's P10 predictor-registry gate. Per the agreed order,
-**P14 (inter-agent comms re-architecture) is next.**
+decide FinBERT/provider promotion via the curator's P10 predictor-registry gate.
+
+**S58 active — forecaster LightGBM price/return shadow signal (qlib Phase Q1).** Research
+[R001](research/qlib-integration.md) found **`pyqlib` is uninstallable on this workspace's Python
+3.13** (its wheels cap at cp312 — confirmed via `uv pip install --dry-run`), so Q1 depends on the
+standalone **`lightgbm`** package directly, behind a new `ReturnModel` port mirroring the FinBERT
+adapter — no `pyqlib` import. S58 stands up the *runtime* (port + lazy adapter + pure feature builder
+
++ provider OHLCV request + `ShadowPrediction`/`Model` persistence; never gates); **S59** trains the
+booster on `price_cache` + builds the price-return IC scorecard (**not** news-runway blocked, unlike
+P12). Sequencing (operator-confirmed 2026-06-19): **S58 → S59 → P14**. Handover:
+`docs/sprints/sprint-58-forecaster-lightgbm-shadow.md`.
 
 ## Next
 
-+ **P14 - Inter-agent comms re-architecture** (next, per the agreed order; ADR-0005): event-driven
++ **Qlib integration (research [R001](research/qlib-integration.md)) — Phase Q1 ACTIVE (S58 → S59).**
+  S58: forecaster **LightGBM price/return shadow runtime** (`lightgbm`-direct; pyqlib is
+  3.13-incompatible), behind a `ReturnModel` port, never gates. S59: train the booster on
+  `price_cache` + a **price-return IC scorecard** (not news-runway blocked). Later: Q2 analyst
+  Alpha158 pillar, Q3 researcher backtest evidence, Q4 PM covariance optimizer (all `lightgbm`/pure;
+  Q3/Q4 re-scoped for the 3.13 wall when reached).
++ **P14 - Inter-agent comms re-architecture** (after S58/S59; ADR-0005): event-driven
   pub/sub + claim-check, in-process first then Azure Service Bus (8 sprints). The law CAP+PARAM
   backfills (ADR-0007, S53 set the pattern) precede the master sprint.
 + **P12 - Sentiment (champion-challenger): code-complete; awaiting a live news-accrual runway.** All

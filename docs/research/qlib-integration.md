@@ -4,6 +4,16 @@
 **Audience:** Product owner, planning agents, coding agents
 **Source:** [github.com/microsoft/qlib](https://github.com/microsoft/qlib)
 
+> **Update (2026-06-19) — Python-3.13 constraint resolved for Phase Q1.** `pyqlib` is **not
+> installable on this workspace**: it ships wheels only for `cp38…cp312`, and the repo pins
+> `requires-python = ">=3.13"` (verified via `uv pip install --dry-run pyqlib` → unsatisfiable).
+> **Phase Q1 therefore depends on the standalone `lightgbm` package directly** (resolves clean on
+> 3.13), behind the forecaster's model port — no `pyqlib` import. Qlib's `LGBModel` is only a thin
+> wrapper over `lightgbm`, so Q1 loses nothing; this is also cleaner than the "vendor qlib source"
+> fallback in the risk register. Supersedes the `pip install pyqlib` instruction below **for Q1**.
+> Handover: [sprint-58](../sprints/sprint-58-forecaster-lightgbm-shadow.md). Phases Q3/Q4 (qlib's own
+> backtest + strategy engines) still hit this wall and must be re-scoped when reached.
+
 ---
 
 ## TL;DR
@@ -27,7 +37,7 @@ risk; immediate signal-quality uplift if it earns its scorecard.
 Qlib is a Python library (not a framework or service) organized as importable modules:
 
 | Module | What it provides |
-|---|---|
+| --- | --- |
 | `qlib.data` | Point-in-time dataset builder; Alpha158/Alpha360 factor pipelines |
 | `qlib.model` | 25+ ML model implementations: LightGBM, XGBoost, LSTM, Transformer, HIST, TRA, etc. |
 | `qlib.backtest` | Backtesting engine with fill-simulation and no-lookahead guarantees |
@@ -35,8 +45,10 @@ Qlib is a Python library (not a framework or service) organized as importable mo
 | `qlib.contrib.rl` | RL-based order execution: PPO, OPDS, TWAP optimization |
 | `qlib.workflow` | Experiment management (MLflow-style) for model training runs |
 
-Install: `pip install pyqlib`. Python 3.8–3.12 (compatible with the project's 3.13+ if minor
-version pins allow — verify on integration). License: MIT.
+Install (the library as a whole): `pip install pyqlib` — **Python 3.8–3.12 only**; there is **no
+cp313 wheel**, so it does **not** install on this project's pinned 3.13 (confirmed 2026-06-19; see the
+update note above). Components that are thin wrappers over standalone packages (e.g. `LGBModel` over
+`lightgbm`) are therefore consumed via those packages directly. License: MIT.
 
 ---
 
@@ -47,7 +59,7 @@ messages** — is fully preserved. Qlib is a **library**, not an agent. It is im
 a single agent's `domain/` directory, behind that agent's boundary. The bus, contract
 system, and boundary meta-test are untouched.
 
-```
+```text
 agents/
   forecaster/domain/   ← qlib.model lives here only
   analyst/domain/      ← qlib.data alpha factors live here only
@@ -74,7 +86,7 @@ FinBERT: they work on price/volume/factor features, not text.
 **Specific candidates:**
 
 | Model | Why it fits |
-|---|---|
+| --- | --- |
 | `LightGBM` (`qlib.model.gbdt`) | Fast, interpretable, state-of-the-art on tabular data; low inference cost |
 | `HIST` (`qlib.contrib.model.pytorch_hist`) | Explicitly models stock-relationship graphs — pairs naturally with Neo4j edges |
 | `TRA` (`qlib.contrib.model.pytorch_tra`) | Temporal Routing Adaptor; handles market regime shifts without retraining |
@@ -120,6 +132,7 @@ fundamental scoring, and lexicon-based sentiment. Deterministic, binding.
 
 **What qlib adds:** Alpha158 and Alpha360 — libraries of 158 and 360 engineered features
 respectively, covering:
+
 - Price/volume momentum and mean-reversion at multiple horizons
 - Volatility-adjusted returns, turnover ratios, drawdown features
 - Cross-sectional z-scores (a stock relative to its market at a point in time)
@@ -164,6 +177,7 @@ are unchanged.
 minimum quantity), no covariance-based portfolio optimization.
 
 **What qlib adds:** `qlib.strategy` includes portfolio optimizers that:
+
 - Construct a covariance matrix from historical returns
 - Apply mean-variance or risk-parity optimization
 - Compute factor risk exposure (market beta, sector concentration)
@@ -212,6 +226,7 @@ evidence from the provenance graph. Has no ability to run controlled experiments
 proposing.
 
 **What qlib adds:** `qlib.backtest` provides a point-in-time backtester with:
+
 - Fill simulation (slippage, market impact)
 - No lookahead bias guarantees (uses historical data as it would have been available)
 - IC (information coefficient), Sharpe, max drawdown, and turnover metrics
@@ -260,7 +275,7 @@ actions.
 ## What NOT to Use from Qlib
 
 | Qlib component | Why it does not apply |
-|---|---|
+| --- | --- |
 | `qlib.data` storage layer | The project uses Neo4j + provider agent. No reason to replace a working, governed data layer with qlib's proprietary format. |
 | `qlib.workflow` experiment tracker | Duplicates the P10 predictor-registry pattern already designed for this project. One experiment tracking system per project. |
 | RD-Agent (LLM factor mining) | The project's deliberate policy: LLM drives operator narration and intent parsing, never trading decisions. RD-Agent blurs this boundary. |
@@ -276,15 +291,19 @@ a promoted model becomes binding — at which point an ADR closes the governance
 that model.
 
 ### Phase Q1 — Forecaster LightGBM shadow signal
+
 **Prerequisite:** P12 (sentiment champion-challenger infra) complete.
-**Work:** Add `pyqlib` to `agents/forecaster/requirements.txt`. Implement
-`QlibShadowSignal` wrapping `LGBModel`. Wire it into the forecaster's shadow-prediction
-loop alongside FinBERT. Register it in the P10 predictor-registry.
+**Work:** Add `lightgbm` to the forecaster optional dependency group (pyqlib is uninstallable on
+3.13 — see the update note). Implement a `ReturnModel` port + a lazy `LightGBMModel` adapter wrapping
+`lightgbm.Booster`. Wire it into the forecaster's shadow-prediction loop alongside FinBERT. Register
+it in the P10 predictor-registry. Detailed handover:
+[sprint-58](../sprints/sprint-58-forecaster-lightgbm-shadow.md).
 **Exit:** `ShadowPrediction` nodes appear in the graph with `model_version = "lgbm-qlib-v1"`;
 scorecard harness tracks IC against forward returns.
 **Effort:** S (2–3 days). No architecture change.
 
 ### Phase Q2 — Analyst Alpha158 pillar
+
 **Prerequisite:** Phase Q1 validated (proves pyqlib works cleanly behind an agent boundary).
 **Work:** Add `Alpha158` as an optional fifth pillar inside `agents/analyst/domain/`. Gate
 behind a tunable weight `ALPHA158_PILLAR_WEIGHT` (default 0.00 — off). Enable by operator
@@ -294,6 +313,7 @@ whether it adds information beyond the existing technical pillar.
 **Effort:** M (3–5 days). Tunable governance entry required.
 
 ### Phase Q3 — Researcher backtest evidence
+
 **Prerequisite:** P7 (researcher agent) fully implemented.
 **Work:** Add `qlib.backtest` wrapper inside `agents/researcher/domain/`. Extend
 `ParameterChangeProposal` contract to carry an optional `BacktestEvidence` field. Generate
@@ -303,6 +323,7 @@ every proposal.
 **Effort:** M (4–6 days). Contract change requires boundary map update.
 
 ### Phase Q4 — Portfolio covariance optimizer (shadow)
+
 **Prerequisite:** 60+ days of live portfolio data in Neo4j; Phase Q3 researcher backtest
 validates optimizer proposals first.
 **Work:** Implement `CovarianceAwareSizer` inside `agents/portfolio_manager/domain/`.
@@ -317,8 +338,8 @@ scorecard and decides whether to promote.
 ## Risk Register
 
 | Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| `pyqlib` requires Python ≤ 3.12 | Medium | High (project targets 3.13+) | Test on install; if blocked, vendor only the relevant qlib source files (MIT license allows) |
+| --- | --- | --- | --- |
+| `pyqlib` requires Python ≤ 3.12 | **Confirmed** | High (project targets 3.13+) | **Resolved for Q1:** depend on standalone `lightgbm` directly (no pyqlib import). Q3/Q4 need qlib's own engine — re-scope when reached (vendor MIT source, or a 3.13-capable alternative) |
 | LightGBM signal adds no IC | Medium | Low | Governed by the scorecard gate; dropped on evidence, not opinion |
 | Alpha158 correlates fully with existing technical pillar | Medium | Low | Measured at Phase Q2 exit; if IC increment ≈ 0, pillar is not enabled |
 | Covariance matrix degenerate on small universe | High | Medium | Use Ledoit-Wolf shrinkage; enforce minimum 50-ticker universe in the optimizer's precondition check |
@@ -369,7 +390,7 @@ meta-test or coverage ratchet.
 Qlib accelerates two moonshots without requiring their full scope:
 
 | Moonshot | Qlib contribution |
-|---|---|
+| --- | --- |
 | **#1 — Probability distributions** | Qlib's ensemble of models (LightGBM + Transformer + HIST) can produce calibrated return distributions via conformal prediction or bootstrap ensembles, feeding the `P(profit > 0)` / `E[drawdown]` vision without needing ABIDES simulation first. |
 | **#3 — Self-evolving signal loop** | Qlib's backtest engine is the validation harness the researcher loop needs. Moonshot #3 proposes new indicators; qlib's backtester scores them on historical data before they go to shadow. The loop becomes: researcher proposes → qlib validates → operator approves → shadow → scorecard → promote. |
 
@@ -380,7 +401,7 @@ Moonshot #4 (causal DAG) is independent of qlib (DoWhy/EconML) and is unaffected
 ## Summary Decision Matrix
 
 | Integration | Agent | Effort | Architecture risk | Priority |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | LightGBM shadow signal | forecaster | S | None | **High — do first** |
 | Alpha158 pillar | analyst | M | None | Medium |
 | Backtest evidence for proposals | researcher | M | Minor (contract field) | Medium |

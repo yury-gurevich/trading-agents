@@ -28,12 +28,13 @@ def write_forecast(
     subject_kind: str,
     subject_ref: str,
     reading: ModelReading,
+    model_kind: str = "sentiment",
 ) -> Provenance:
     """Persist a Model + its ShadowPrediction, linked to the subject when present."""
     run_id = f"forecaster-run-{uuid.uuid4().hex}"
     # Model is keyed by the stable model_id, so it is merged idempotently across
     # runs — its props must not change (the graph rejects prop overwrites).
-    model = graph.merge_node("Model", model_id, {"ref": model_ref, "kind": "sentiment"})
+    model = graph.merge_node("Model", model_id, {"ref": model_ref, "kind": model_kind})
     prediction = graph.merge_node(
         "ShadowPrediction",
         f"{model_id}:{subject_ref}:{run_id}",

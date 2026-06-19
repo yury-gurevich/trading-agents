@@ -15,7 +15,9 @@ from agents.forecaster.comparison import build_observations
 from agents.forecaster.domain.scorecard import comparison_metrics
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
 from agents.forecaster.model import FakeSentimentModel
+from agents.forecaster.price_signal import read_return
 from agents.forecaster.provider_client import request_news
+from agents.forecaster.return_model import FakeReturnModel
 from agents.forecaster.settings import ForecasterSettings
 from agents.forecaster.store import read_predictions, write_forecast
 from contracts.common import Window
@@ -34,6 +36,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
     from agents.forecaster.model import SentimentModel
+    from agents.forecaster.return_model import ReturnModel
     from kernel import MessageBus, Node
 
 
@@ -46,17 +49,22 @@ class ForecasterAgent(AgentBase):
         *,
         graph: GraphStore,
         model: SentimentModel | None = None,
+        return_model: ReturnModel | None = None,
         settings: ForecasterSettings | None = None,
         sink: FaultSink | None = None,
     ) -> None:
-        """Create the forecaster with injected bus, graph, model, settings, sink."""
+        """Create the forecaster with injected bus, graph, models, settings, sink."""
         super().__init__(CONTRACT, bus)
         self._graph = graph
         self._model = model if model is not None else FakeSentimentModel()
+        self._return_model = (
+            return_model if return_model is not None else FakeReturnModel()
+        )
         self._settings = settings or ForecasterSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.handlers = {
             "forecast": self._forecast,
+            "forecast_return": self._forecast_return,
             "scorecard": self._scorecard,
             "sentiment_scorecard": self._sentiment_scorecard,
         }
@@ -102,6 +110,32 @@ class ForecasterAgent(AgentBase):
             sample_size=len(observations),
             fresh_as_of=datetime.now(tz=UTC),
             promotion_eligible=False,
+        )
+
+    def _forecast_return(self, request: BaseModel) -> ShadowPrediction:
+        forecast = ForecastRequest.model_validate(request)
+        reading = read_return(
+            self.bus,
+            self.sink,
+            self._return_model,
+            self._settings,
+            forecast.subject_ref,
+        )
+        provenance = write_forecast(
+            self._graph,
+            model_id=self._settings.return_model_id,
+            model_ref=self._settings.return_model_ref,
+            subject_kind=forecast.subject_kind,
+            subject_ref=forecast.subject_ref,
+            reading=reading,
+            model_kind="return",
+        )
+        return ShadowPrediction(
+            model_id=self._settings.return_model_id,
+            subject_ref=forecast.subject_ref,
+            value=reading.value,
+            confidence=reading.confidence,
+            provenance=provenance,
         )
 
     def _read_sentiment(self, ticker: str) -> ModelReading:

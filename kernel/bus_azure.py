@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
+from kernel.bus import caller_authorized
 from kernel.bus_azure_config import AzureServiceBusSettings
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
@@ -35,13 +36,19 @@ class AzureServiceBusBus:
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
+        self._allowed: dict[tuple[str, str], tuple[str, ...]] = {}
         self._subscribers: dict[str, list[EventHandler]] = {}
 
     def register(
-        self, recipient: str, capability: str, handler: MessageHandler
+        self,
+        recipient: str,
+        capability: str,
+        handler: MessageHandler,
+        allowed_callers: tuple[str, ...] = (),
     ) -> None:
-        """Register a synchronous RPC handler (in-process shim)."""
+        """Register a synchronous RPC handler (in-process shim) and its caller gate."""
         self._handlers[(recipient, capability)] = handler
+        self._allowed[(recipient, capability)] = allowed_callers
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Route a synchronous RPC request through the in-process handler shim."""
@@ -56,6 +63,16 @@ class AzureServiceBusBus:
                     text=(
                         f"No handler registered for"
                         f" {message.recipient}.{message.capability}"
+                    ),
+                )
+            allowed = self._allowed.get((message.recipient, message.capability), ())
+            if not caller_authorized(allowed, message.sender):
+                return self._error_message(
+                    message,
+                    error_type="Unauthorized",
+                    text=(
+                        f"{message.sender} is not an authorized caller of "
+                        f"{message.recipient}.{message.capability}"
                     ),
                 )
             payload: dict[str, Any] = {}

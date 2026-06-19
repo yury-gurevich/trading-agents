@@ -26,7 +26,11 @@ class DataRequest(_Frozen):
     tickers: tuple[Ticker, ...]
     window: Window
     fields: tuple[str, ...] = ("ohlcv",)
-    """Subset of: ohlcv, fundamentals, news, sentiment, sectors, earnings_calendar."""
+    """Subset of: ohlcv, fundamentals, news, sentiment, sectors, earnings_calendar,
+    benchmark."""
+    benchmark_ticker: Ticker | None = None
+    """Names the benchmark series to fetch when ``benchmark`` is in ``fields``; its
+    OHLCV is returned in ``MarketData.benchmark`` and never taints candidate quality."""
 
 
 class RegimeRequest(_Frozen):
@@ -56,6 +60,9 @@ class DataQualityTrace(_Frozen):
 
 class MarketData(_Frozen):
     bars: tuple[OHLCVBar, ...]
+    benchmark: tuple[OHLCVBar, ...] = ()
+    """Benchmark-ticker OHLCV when ``benchmark`` was requested; the substrate for the
+    analyst relative-strength signal. Degraded independently of candidate quality."""
     fundamentals: dict[Ticker, dict[str, float]] = Field(default_factory=dict)
     news: dict[Ticker, tuple[str, ...]] = Field(default_factory=dict)
     sentiment: dict[Ticker, float] = Field(default_factory=dict)
@@ -84,7 +91,7 @@ class RegimeContext(_Frozen):
 
 CONTRACT = AgentContract(
     name="provider",
-    version="0.4.0",
+    version="0.5.0",
     mission=(
         "Be the single boundary to the outside market world. Turn raw external "
         "feeds into clean, validated, cached market facts and the current regime, "
@@ -97,6 +104,13 @@ CONTRACT = AgentContract(
             request=DataRequest,
             response=MarketData,
             mcp=True,
+            allowed_callers=(
+                "scanner",
+                "analyst",
+                "portfolio_manager",
+                "monitor",
+                "forecaster",
+            ),
         ),
         Capability(
             "get_regime",
@@ -104,6 +118,7 @@ CONTRACT = AgentContract(
             request=RegimeRequest,
             response=RegimeContext,
             mcp=True,
+            allowed_callers=("analyst", "portfolio_manager"),
         ),
     ),
     emits=("market_data_degraded",),

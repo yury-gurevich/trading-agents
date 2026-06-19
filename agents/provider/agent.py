@@ -108,6 +108,7 @@ class ProviderAgent(AgentBase):
             window=data_request.window,
             sink=self.sink,
             quality=quality,
+            benchmark_ticker=data_request.benchmark_ticker,
         )
         provenance = write_market_snapshot(
             self._graph,
@@ -117,6 +118,7 @@ class ProviderAgent(AgentBase):
         )
         return MarketData(
             bars=bars,
+            benchmark=optional.benchmark,
             fundamentals=optional.fundamentals,
             news=optional.news,
             sentiment=optional.sentiment,

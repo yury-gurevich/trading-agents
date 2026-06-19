@@ -91,7 +91,7 @@ def test_composite_routes_sectors_to_fundamentals_source() -> None:
 
 def _sectors_request() -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",

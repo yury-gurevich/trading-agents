@@ -117,3 +117,31 @@ def test_unknown_capability_returns_error_without_exception():
         "error_type": "UnknownCapability",
         "message": "No handler registered for echo_agent.missing",
     }
+
+
+def test_unauthorized_caller_is_rejected_and_allowed_caller_passes():
+    bus = InProcessBus()
+    bus.register("echo_agent", "echo", lambda payload: payload, ("trusted",))
+
+    blocked = bus.request(
+        AgentMessage(
+            sender="intruder",
+            recipient="echo_agent",
+            message_type="request",
+            capability="echo",
+            payload={"text": "hi"},
+        )
+    )
+    assert blocked.message_type == "error"
+    assert blocked.payload["error_type"] == "Unauthorized"
+
+    allowed = bus.request(
+        AgentMessage(
+            sender="trusted",
+            recipient="echo_agent",
+            message_type="request",
+            capability="echo",
+            payload={"text": "hi"},
+        )
+    )
+    assert allowed.message_type == "response"

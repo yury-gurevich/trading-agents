@@ -29,7 +29,7 @@ def _bar(ticker: str, day: int) -> OHLCVBar:
 
 def _message(payload: dict[str, object]) -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",

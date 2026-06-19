@@ -121,7 +121,7 @@ def test_existing_rpc_still_works_after_dual_mode_bind() -> None:
 
     bus, _ = _wire(bars=(_bar("AAPL", 1),))
     msg = AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",

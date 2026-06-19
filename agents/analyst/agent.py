@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 from agents.analyst.domain.analyze import score_candidates
 from agents.analyst.domain.sentiment_reading import provider_reading
 from agents.analyst.provider_client import (
-    request_benchmark_bars,
     request_market_data,
     request_regime,
 )
@@ -94,7 +93,13 @@ class AnalystAgent(AgentBase):
                 self._graph, candidate_set, "scanner produced no candidates"
             )
 
-        market = request_market_data(self.bus, self.sink, candidate_set, self._window())
+        market = request_market_data(
+            self.bus,
+            self.sink,
+            candidate_set,
+            self._window(),
+            self._settings.benchmark_ticker,
+        )
         regime = request_regime(self.bus, self.sink, self._window().end)
         refs = incident_refs(market, regime)
         if market is None or regime is None:
@@ -115,11 +120,8 @@ class AnalystAgent(AgentBase):
                 self._graph, candidate_set, "provider regime data degraded", refs
             )
 
-        benchmark_bars = request_benchmark_bars(
-            self.bus, self.sink, self._settings.benchmark_ticker, self._window()
-        )
         decisions = score_candidates(
-            candidate_set, market, regime, benchmark_bars, self._settings, self.sink
+            candidate_set, market, regime, market.benchmark, self._settings, self.sink
         )
         if decisions is None:
             return build_empty_result(

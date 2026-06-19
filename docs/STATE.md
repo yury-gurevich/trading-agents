@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-19 23:30 AEST
+**Last updated:** 2026-06-20 11:30 AEST
 
 **S68 shipped: analyst Alpha158 feature pillar (qlib Phase Q2).** `AlphaFeatureRow` dataclass
 (22 fields: ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons) + `compute_alpha_features()` (returns None
@@ -104,20 +104,26 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**`main` is clean and up-to-date.** All work for S58, S59, and P14 (S60–S67) is merged to
-`main` (7 commits, fast-forward). `checkpoint-20260619-p14-pubsub-azure` tag + backup branch
-pushed. Feature branch deleted. CI fix committed (ruff violations from S59+P14 files — 863
-tests, 100% coverage). **Immediate next action: start S68 (Analyst Alpha158 pillar).**
+**S69 — Provider law cycle (lock the template).** On branch `sprint-69-provider-law-cycle`.
+Reading `docs/laws/conventions.md` §11 + `docs/laws/README.md` surfaced the bootstrapping rule:
+the law book must lock the **provider** template — via its full *author → reconcile → test →
+green* cycle — **before** copying it to the other eleven agents. But the provider law is still
+`DRAFT v0` with **zero** law-citing tests and two OPEN drifts (DRIFT-006/007). So S69 was
+**redirected** from "copy CAP+PARAM into 11 agents" to **completing the provider cycle**: bind
+each `PROV-*` clause to a functional test (cite the law-ID in the docstring per §7), resolve
+DRIFT-006/007, flip the test-plan green, and lock `agents/provider/laws/laws.md` (DRAFT → LOCKED
+v1). The per-agent law files (the original S69 idea) move to S70+ once the template is locked.
+
+main is clean: S68 Alpha158 pillar shipped (v0.10.0); housekeeping landed (CodeQL local-analysis
+config + `docs/local/` → `docs/`/`docs/sprints/` reference cleanup).
 
 ## Next
 
-+ **S68 — Qlib Phase Q2: Analyst Alpha158 pillar** (planned; see [sprint doc](sprints/sprint-68-analyst-alpha158-pillar.md)).
-  Branch: `sprint-68-analyst-alpha158-pillar`. 20 time-series features (ROC/STD/MAX/MIN/IMAX/IMIN
-  at 4 horizons) → cross-sectional z-score → 0–100 fifth pillar; `alpha158_pillar_weight=0.00` off
-  by default; pyqlib-free. **Effort: M (3–5 days).**
-+ **S69 — Law CAP+PARAM backfills** for remaining 11 agents (ADR-0007; S53 set the template;
-  precedes any law-test integration sprint): scanner, analyst, pm, execution, monitor, reporter,
-  operator, supervisor, researcher, curator, forecaster.
++ **S70+ — Per-agent law files (full template), batched.** Once the provider template locks (S69),
+  copy it to the eleven remaining agents at full 18-section depth, ~3–4 agents per sprint, starting
+  with the core trading loop (scanner, analyst, pm, execution). Each is authored in ideal-design
+  mode from that agent's contract/settings, then driven through its own test cycle (ADR-0007 CAP +
+  PARAM included). This was the original S69; it is gated on the locked template per conventions §11.
 + **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
   (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
   shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),

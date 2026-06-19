@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from agents.provider.sources import DataSource
     from contracts.common import Window
-    from contracts.provider import DataQualityTrace
+    from contracts.provider import DataQualityTrace, OHLCVBar
     from kernel import FaultSink
 
 
@@ -32,6 +32,7 @@ class OptionalFields:
     sentiment: dict[str, float]
     sectors: dict[str, str]
     earnings: dict[str, date]
+    benchmark: tuple[OHLCVBar, ...]
     quality: DataQualityTrace
 
 
@@ -43,6 +44,7 @@ def collect_optional_fields(
     window: Window,
     sink: FaultSink,
     quality: DataQualityTrace,
+    benchmark_ticker: str | None = None,
 ) -> OptionalFields:
     """Fetch every requested optional field; skip unrequested, degrade on fault."""
     empty_funda: dict[str, dict[str, float]] = {}
@@ -50,6 +52,7 @@ def collect_optional_fields(
     empty_floats: dict[str, float] = {}
     empty_strs: dict[str, str] = {}
     empty_dates: dict[str, date] = {}
+    empty_bars: tuple[OHLCVBar, ...] = ()
     fundamentals, quality = _fetch_optional(
         sink,
         requested="fundamentals" in fields,
@@ -90,12 +93,25 @@ def collect_optional_fields(
         note="earnings_degraded",
         quality=quality,
     )
+    benchmark = empty_bars
+    if "benchmark" in fields and benchmark_ticker is not None:
+        bench = benchmark_ticker
+        benchmark, quality = _fetch_optional(
+            sink,
+            requested=True,
+            fetch=lambda: source.fetch_ohlcv((bench,), window),
+            empty=empty_bars,
+            note="benchmark_degraded",
+            quality=quality,
+            taint=False,
+        )
     return OptionalFields(
         fundamentals=fundamentals,
         news=news,
         sentiment=sentiment,
         sectors=sectors,
         earnings=earnings,
+        benchmark=benchmark,
         quality=quality,
     )
 
@@ -108,12 +124,15 @@ def _fetch_optional[T](
     empty: T,
     note: str,
     quality: DataQualityTrace,
+    taint: bool = True,
 ) -> tuple[T, DataQualityTrace]:
     """Fetch one optional field behind its own fault boundary.
 
     Returns the fetched value with unchanged quality on success; the empty value with
-    a degraded quality (note + ``used_fallback``) on fault; the empty value with
-    unchanged quality when the field was not requested.
+    a degraded quality on fault; the empty value with unchanged quality when the field
+    was not requested. ``taint`` controls whether a fault sets ``used_fallback`` on the
+    shared candidate-quality trace: candidate fields taint it, the benchmark does not
+    (a degraded benchmark forgoes relative strength, never the whole analysis).
     """
     if not requested:
         return empty, quality
@@ -127,7 +146,8 @@ def _fetch_optional[T](
     ) as capture:
         value = fetch()
     if capture.fault is not None:
-        return empty, quality.model_copy(
-            update={"notes": (*quality.notes, note), "used_fallback": True}
-        )
+        update: dict[str, object] = {"notes": (*quality.notes, note)}
+        if taint:
+            update["used_fallback"] = True
+        return empty, quality.model_copy(update=update)
     return value, quality

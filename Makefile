@@ -1,4 +1,4 @@
-.PHONY: install lint format type test boundaries check ci codeql-ast clean \
+.PHONY: install lint format type test boundaries check ci codeql-ast codeql-errors clean \
 	docker-build stack-up stack-down stack-deploy stack-rm
 
 PKGS = kernel contracts agents orchestration surfaces
@@ -44,6 +44,9 @@ ifndef FILE
 	$(error Usage: make codeql-ast FILE=kernel/agent.py)
 endif
 	powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile "$(FILE)"
+
+codeql-errors:  ## List error-level CodeQL findings (the ones that fail CI)
+	python scripts/codeql_errors.py
 
 clean:          ## Remove build artifacts
 	rm -rf .venv htmlcov .mypy_cache .pytest_cache .ruff_cache

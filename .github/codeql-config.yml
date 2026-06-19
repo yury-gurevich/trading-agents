@@ -1,0 +1,17 @@
+name: trading-agents CodeQL config
+
+# Suppress known false-positive rules that fire on intentional codebase patterns.
+#
+# py/ineffectual-statement: Protocol method bodies use `...` (Ellipsis) as the
+#   standard Python idiom for abstract/interface declarations.  CodeQL treats any
+#   expression-statement with no side-effect as suspicious, but `...` in a Protocol
+#   is semantically required and correct.
+#
+# py/multiple-definition: The fault-boundary pattern initialises a variable to a
+#   safe fallback value, then overwrites it inside `with fault_boundary(...) as cap:`
+#   This double-assignment is intentional and guards against propagating exceptions.
+query-filters:
+  - exclude:
+      id: py/ineffectual-statement
+  - exclude:
+      id: py/multiple-definition

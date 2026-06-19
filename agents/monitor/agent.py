@@ -1,7 +1,8 @@
 """Monitor agent implementation.
 
 Agent: monitor
-Role: open filled positions, evaluate exits, and hand closes to execution.
+Role: open filled positions, evaluate exits, and hand closes to execution; publish
+      monitor.decisions.ready claim-check events on execution.fills.ready (P14 dual-mode).
 External I/O: none; provider and execution are reached only over the message bus.
 """
 
@@ -9,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agents.monitor.decide import evaluate_one
 from agents.monitor.domain.positions import position_from_fill
@@ -25,13 +26,14 @@ from agents.monitor.store import (
     write_monitor_run,
 )
 from contracts.common import Explanation
+from contracts.execution import ExecutionResult
 from contracts.monitor import (
     CONTRACT,
     CloseDecision,
     CloseDecisionSet,
     MonitorRequest,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -60,6 +62,27 @@ class MonitorAgent(AgentBase):
             "check_positions": self._check_positions,
             "explain_hold": self._explain_hold,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to execution.fills.ready."""
+        super().bind()
+        self.bus.subscribe("execution.fills.ready", self._on_fills_ready)
+
+    def _on_fills_ready(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        node = claim_check_read(self._graph, event)
+        exec_result = ExecutionResult.model_validate(node.props["result"])
+        # pm_run_id threaded from execution so we find the PMRun node for positions.
+        pm_run_id = str(node.props.get("pm_run_id") or exec_result.run_id)
+        decisions = self._check_positions(MonitorRequest(run_id=pm_run_id))
+        claim_check_write(
+            self.bus, self._graph,
+            topic="monitor.decisions.ready",
+            label="MonitorDecisionResult",
+            ref=f"monitor:{run_id or uuid.uuid4().hex}",
+            props={"decisions": decisions.model_dump(mode="json"), "pm_run_id": pm_run_id},
+            run_id=run_id,
+        )
 
     def _check_positions(self, request: BaseModel) -> CloseDecisionSet:
         monitor_request = MonitorRequest.model_validate(request)

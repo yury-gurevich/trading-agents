@@ -64,7 +64,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("orders_decided",),
-    owns_graph=("PMRun", "OrderIntent", "Rejection"),
+    owns_graph=("PMRun", "OrderIntent", "Rejection", "OrderIntentResult"),
     external_io=(),
     depends_on=("analyst", "provider", "forecaster"),
     mcp_tools=("evaluate_orders", "explain_decision"),

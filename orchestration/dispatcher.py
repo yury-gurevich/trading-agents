@@ -1,29 +1,25 @@
-"""Daily-loop dispatcher.
+"""Daily-loop dispatcher — P14 trigger-emitter.
 
 Agent: orchestration
-Role: bind the paper-loop agents and route one run through the bus.
+Role: fire run.trigger, collect report.snapshot.ready via claim-check, write narratives,
+      and record the run to the supervisor. The per-agent pipeline is entirely event-driven;
+      the dispatcher does not sequence individual agent steps.
 External I/O: optional provider source and broker ports injected at construction.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from contracts.reporter import RunSnapshot
 from contracts.supervisor import DispatchRunRecord
-from kernel import AgentFault, CollectingFaultSink
+from kernel import AgentFault, CollectingFaultSink, claim_check_read
+from kernel.errors import fault_boundary
 from orchestration import run_outcome as outcome
 from orchestration.bindings import bind_paper_loop_agents
 from orchestration.narratives import write_narratives
 from orchestration.settings import OrchestratorSettings
-from orchestration.steps import (
-    step_analyze,
-    step_check_positions,
-    step_evaluate,
-    step_record_dispatch_run,
-    step_report,
-    step_scan,
-    step_submit,
-)
+from orchestration.steps import step_record_dispatch_run
 from orchestration.trigger import RunResult, RunTrigger
 
 if TYPE_CHECKING:
@@ -34,7 +30,7 @@ if TYPE_CHECKING:
 
 
 class Dispatcher:
-    """P4 dispatcher for one paper trading loop."""
+    """P14 trigger-emitter dispatcher for one paper trading loop."""
 
     def __init__(
         self,
@@ -63,70 +59,44 @@ class Dispatcher:
         )
 
     def execute_run(self, trigger: RunTrigger) -> RunResult:
-        """Execute the daily paper loop and stop gracefully on the first empty step."""
+        """Publish run.trigger and wait for report.snapshot.ready to close the loop."""
         active = outcome.active_trigger(trigger, self.settings.universe)
-        steps: list[str] = []
-        candidates = step_scan(self.bus, active, self.sink)
-        steps.append("scan")
-        if candidates is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 0, outcome.REASON_SCAN_EMPTY), steps
-            )
-        recommendations = step_analyze(self.bus, candidates, self.sink)
-        steps.append("analyze")
-        if recommendations is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 1, outcome.REASON_ANALYSIS_EMPTY), steps
-            )
-        orders = step_evaluate(self.bus, recommendations, self.sink)
-        steps.append("evaluate")
-        if orders is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 2, outcome.REASON_NO_ORDERS), steps
-            )
-        execution = step_submit(self.bus, orders, self.sink)
-        steps.append("submit")
-        if execution is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 3, outcome.REASON_NO_FILLS), steps
-            )
-        decisions = step_check_positions(self.bus, orders.run_id, self.sink)
-        steps.append("check_positions")
-        if decisions is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 4, outcome.REASON_NO_MONITOR), steps
-            )
-        snapshot = step_report(self.bus, orders.run_id, self.sink)
-        steps.append("report")
-        if snapshot is None:
-            return self._finish(
-                outcome.stopped(active.run_id, 5, outcome.REASON_NO_REPORT), steps
-            )
-        if not write_narratives(self.bus, self.graph, orders.run_id, self.sink):
-            steps.append("narrative")
-            return self._finish(
-                RunResult(
-                    run_id=active.run_id,
-                    completed=False,
-                    snapshot=snapshot,
-                    steps_completed=6,
-                    reason=outcome.REASON_NO_NARRATIVE,
-                ),
-                steps,
-            )
-        steps.append("narrative")
-        return self._finish(
-            RunResult(
-                run_id=active.run_id,
-                completed=True,
-                snapshot=snapshot,
-                steps_completed=7,
-            ),
-            steps,
-        )
+        snapshot_received: list[dict[str, Any]] = []
+        self.bus.subscribe("report.snapshot.ready", snapshot_received.append)
 
-    def _finish(self, result: RunResult, steps: list[str]) -> RunResult:
-        self._record_run(result, tuple(steps))
+        with fault_boundary(
+            self.sink,
+            agent="orchestration",
+            module="orchestration.dispatcher",
+            capability="execute_run",
+            reraise=False,
+        ) as capture:
+            self.bus.publish(
+                "run.trigger",
+                {"run_id": active.run_id, "universe": active.universe},
+            )
+
+        if capture.fault is not None or not snapshot_received:
+            result = RunResult(
+                run_id=active.run_id,
+                completed=False,
+                snapshot=None,
+                steps_completed=0,
+                reason="run produced no final snapshot",
+            )
+            self._record_run(result, ("run.trigger",))
+            return result
+
+        node = claim_check_read(self.graph, snapshot_received[0])
+        snapshot = RunSnapshot.model_validate(node.props["snapshot"])
+        write_narratives(self.bus, self.graph, snapshot.run_id, self.sink)
+        result = RunResult(
+            run_id=active.run_id,
+            completed=True,
+            snapshot=snapshot,
+            steps_completed=6,
+        )
+        self._record_run(result, ("run.trigger",))
         return result
 
     def _record_run(self, result: RunResult, steps: tuple[str, ...]) -> None:

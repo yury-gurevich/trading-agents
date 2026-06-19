@@ -1,14 +1,16 @@
 """Provider agent implementation.
 
 Agent: provider
-Role: answer provider contract capabilities over the in-process message bus.
+Role: answer provider contract capabilities over the in-process message bus and
+      publish claim-check ready events on the pub/sub plane (P14 dual-mode).
 External I/O: injected DataSource and GraphStore backends.
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agents.provider.domain.integrity import degraded_quality, validate_bars
 from agents.provider.domain.regime import classify_regime
@@ -24,7 +26,7 @@ from contracts.provider import (
     RegimeContext,
     RegimeRequest,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, MessageBus
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, MessageBus, claim_check_write
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -55,6 +57,24 @@ class ProviderAgent(AgentBase):
             "get_market_data": self._get_market_data,
             "get_regime": self._get_regime,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to pub/sub data-request topic."""
+        super().bind()
+        self.bus.subscribe("data.request.market", self._on_market_data_request)
+
+    def _on_market_data_request(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        req = DataRequest.model_validate(event)
+        market_data = self._get_market_data(req)
+        claim_check_write(
+            self.bus, self._graph,
+            topic="data.ready.market",
+            label="MarketDataEvent",
+            ref=f"market-data:{run_id or uuid.uuid4().hex}",
+            props={"snapshot": market_data.model_dump(mode="json")},
+            run_id=run_id,
+        )
 
     def _get_market_data(self, request: BaseModel) -> MarketData:
         data_request = DataRequest.model_validate(request)

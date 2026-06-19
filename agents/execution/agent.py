@@ -1,13 +1,15 @@
 """Execution agent implementation.
 
 Agent: execution
-Role: submit approved intents and close decisions through the idempotent broker port.
+Role: submit approved intents and close decisions through the idempotent broker port;
+      publish execution.fills.ready claim-check events on portfolio.orders.ready (P14 dual-mode).
 External I/O: injected Broker and GraphStore backends.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import uuid
+from typing import TYPE_CHECKING, Any
 
 from agents.execution.broker import PaperBroker
 from agents.execution.domain.orders import (
@@ -38,7 +40,7 @@ from contracts.execution import (
 )
 from contracts.monitor import CloseDecisionSet
 from contracts.portfolio_manager import OrderIntentSet
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -73,6 +75,27 @@ class ExecutionAgent(AgentBase):
             "stage_status": self._stage_status,
             "promote_stage": self._promote_stage,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to portfolio.orders.ready."""
+        super().bind()
+        self.bus.subscribe("portfolio.orders.ready", self._on_orders_ready)
+
+    def _on_orders_ready(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        node = claim_check_read(self._graph, event)
+        orders = OrderIntentSet.model_validate(node.props["orders"])
+        result = self._submit(orders)
+        claim_check_write(
+            self.bus, self._graph,
+            topic="execution.fills.ready",
+            label="ExecutionResultEvent",
+            ref=f"execution:{run_id or uuid.uuid4().hex}",
+            # pm_run_id is orders.run_id — threaded downstream so monitor/reporter
+            # can find the PMRun node without an extra graph lookup.
+            props={"result": result.model_dump(mode="json"), "pm_run_id": orders.run_id},
+            run_id=run_id,
+        )
 
     def _submit(self, request: BaseModel) -> ExecutionResult:
         order_set = OrderIntentSet.model_validate(request)

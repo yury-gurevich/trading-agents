@@ -1,7 +1,8 @@
 """In-process message bus for deterministic agent-to-agent requests.
 
 Agent: kernel
-Role: route validated message payloads to registered in-process handlers.
+Role: route validated message payloads to registered in-process handlers; fan-out
+      fire-and-forget pub/sub events to topic subscribers.
 External I/O: none.
 """
 
@@ -15,10 +16,11 @@ from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
 from kernel.metrics import Metrics, NullMetrics, request_metric
 
 MessageHandler = Callable[[dict[str, Any]], dict[str, Any]]
+EventHandler = Callable[[dict[str, Any]], None]
 
 
 class MessageBus(Protocol):
-    """Transport-neutral request bus interface."""
+    """Transport-neutral bus interface: synchronous RPC + fire-and-forget pub/sub."""
 
     def register(
         self, recipient: str, capability: str, handler: MessageHandler
@@ -28,6 +30,14 @@ class MessageBus(Protocol):
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Send one request message and return a response or error message."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    def subscribe(self, topic: str, handler: EventHandler) -> None:
+        """Register a handler to receive all events published to ``topic``."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    def publish(self, topic: str, event: dict[str, Any]) -> None:
+        """Deliver ``event`` synchronously to every subscriber on ``topic``."""
         ...  # pragma: no cover - protocol declaration only.
 
 
@@ -41,6 +51,7 @@ class InProcessBus:
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
+        self._subscribers: dict[str, list[EventHandler]] = {}
 
     def register(
         self, recipient: str, capability: str, handler: MessageHandler
@@ -89,6 +100,15 @@ class InProcessBus:
                 payload=payload,
                 correlation_id=message.id,
             )
+
+    def subscribe(self, topic: str, handler: EventHandler) -> None:
+        """Append ``handler`` to the subscriber list for ``topic``."""
+        self._subscribers.setdefault(topic, []).append(handler)
+
+    def publish(self, topic: str, event: dict[str, Any]) -> None:
+        """Call every registered subscriber for ``topic`` with ``event``."""
+        for handler in self._subscribers.get(topic, []):
+            handler(event)
 
     @staticmethod
     def _error_message(

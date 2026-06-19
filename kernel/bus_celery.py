@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from celery import Celery
 
+from kernel.bus import EventHandler
 from kernel.bus_celery_config import CeleryBusSettings, TaskResult
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
@@ -36,6 +37,7 @@ class CeleryBus:
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
+        self._subscribers: dict[str, list[EventHandler]] = {}
         self._app = app if app is not None else self._build_app()
         self._dispatch_task = self._register_dispatch_task()
 
@@ -73,6 +75,15 @@ class CeleryBus:
                 payload=result.get("ok", {}),
                 correlation_id=message.id,
             )
+
+    def subscribe(self, topic: str, handler: EventHandler) -> None:
+        """Append ``handler`` to the in-process subscriber list for ``topic``."""
+        self._subscribers.setdefault(topic, []).append(handler)
+
+    def publish(self, topic: str, event: dict[str, Any]) -> None:
+        """Call every registered subscriber for ``topic`` with ``event``."""
+        for handler in self._subscribers.get(topic, []):
+            handler(event)
 
     def _build_app(self) -> Celery:
         app = Celery(

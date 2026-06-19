@@ -1,14 +1,16 @@
 """Portfolio Manager agent implementation.
 
 Agent: portfolio_manager
-Role: size and risk-check analyst recommendations into order intents.
+Role: size and risk-check analyst recommendations into order intents via RPC, and publish
+      portfolio.orders.ready claim-check events on analysis.recommendations.ready (P14 dual-mode).
 External I/O: none.
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.portfolio import PortfolioState, default_portfolio
@@ -27,7 +29,7 @@ from contracts.portfolio_manager import (
     OrderIntentSet,
     RejectedOrder,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -59,6 +61,25 @@ class PortfolioManagerAgent(AgentBase):
             "evaluate_orders": self._evaluate_orders,
             "explain_decision": self._explain_decision,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to analysis.recommendations.ready."""
+        super().bind()
+        self.bus.subscribe("analysis.recommendations.ready", self._on_recommendations_ready)
+
+    def _on_recommendations_ready(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        node = claim_check_read(self._graph, event)
+        recs = RecommendationSet.model_validate(node.props["recommendations"])
+        orders = self._evaluate_orders(recs)
+        claim_check_write(
+            self.bus, self._graph,
+            topic="portfolio.orders.ready",
+            label="OrderIntentResult",
+            ref=f"orders:{run_id or uuid.uuid4().hex}",
+            props={"orders": orders.model_dump(mode="json")},
+            run_id=run_id,
+        )
 
     def _evaluate_orders(self, request: BaseModel) -> OrderIntentSet:
         recommendation_set = RecommendationSet.model_validate(request)

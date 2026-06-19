@@ -1,14 +1,16 @@
 """Scanner agent implementation.
 
 Agent: scanner
-Role: request provider market data over the bus and return ranked candidates.
+Role: request provider market data over the bus, return ranked candidates via RPC,
+      and publish scan.candidates.ready claim-check events on run.trigger (P14 dual-mode).
 External I/O: none.
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agents.scanner.domain.filters import apply_filters
 from agents.scanner.domain.ranking import rank_survivors
@@ -18,7 +20,7 @@ from agents.scanner.store import write_scan
 from agents.scanner.universe import StaticUniverse
 from contracts.common import Explanation, ScanRequest, Window
 from contracts.scanner import CONTRACT, Candidate, CandidateSet, FilterTrace
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_write
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -51,6 +53,27 @@ class ScannerAgent(AgentBase):
             "run_scan": self._run_scan,
             "explain_filter": self._explain_filter,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to run.trigger for pub/sub mode."""
+        super().bind()
+        self.bus.subscribe("run.trigger", self._on_run_trigger)
+
+    def _on_run_trigger(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        req = ScanRequest(
+            run_id=str(run_id) if run_id else uuid.uuid4().hex,
+            universe=str(event.get("universe", "sp500")),
+        )
+        candidates = self._run_scan(req)
+        claim_check_write(
+            self.bus, self._graph,
+            topic="scan.candidates.ready",
+            label="ScanResult",
+            ref=f"scan:{req.run_id}",
+            props={"candidates": candidates.model_dump(mode="json")},
+            run_id=run_id,
+        )
 
     def _run_scan(self, request: BaseModel) -> CandidateSet:
         scan_request = ScanRequest.model_validate(request)

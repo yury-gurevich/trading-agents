@@ -1,14 +1,16 @@
 """Analyst agent implementation.
 
 Agent: analyst
-Role: request provider facts over the bus and score scanner candidates.
+Role: request provider facts over the bus, score scanner candidates via RPC, and publish
+      analysis.recommendations.ready claim-check events on scan.candidates.ready (P14 dual-mode).
 External I/O: none.
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agents.analyst.domain.recommend import AnalysisDecision, decide
 from agents.analyst.domain.scoring import score_candidate
@@ -29,7 +31,7 @@ from agents.analyst.store import write_analysis
 from contracts.analyst import CONTRACT, RecommendationSet
 from contracts.common import Explanation, Window
 from contracts.scanner import CandidateSet
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore
+from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -59,6 +61,25 @@ class AnalystAgent(AgentBase):
             "analyze": self._analyze,
             "explain_recommendation": self._explain_recommendation,
         }
+
+    def bind(self) -> None:
+        """Register RPC handlers and subscribe to scan.candidates.ready."""
+        super().bind()
+        self.bus.subscribe("scan.candidates.ready", self._on_candidates_ready)
+
+    def _on_candidates_ready(self, event: dict[str, Any]) -> None:
+        run_id: str | None = event.get("run_id")
+        node = claim_check_read(self._graph, event)
+        candidates = CandidateSet.model_validate(node.props["candidates"])
+        recs = self._analyze(candidates)
+        claim_check_write(
+            self.bus, self._graph,
+            topic="analysis.recommendations.ready",
+            label="RecommendationResult",
+            ref=f"analysis:{run_id or uuid.uuid4().hex}",
+            props={"recommendations": recs.model_dump(mode="json")},
+            run_id=run_id,
+        )
 
     def _analyze(self, request: BaseModel) -> RecommendationSet:
         candidate_set = CandidateSet.model_validate(request)

@@ -1,7 +1,9 @@
-"""Dispatcher pipeline steps.
+"""Dispatcher RPC step helpers — P14 residual.
 
 Agent: orchestration
-Role: send one typed bus request per pipeline stage and return typed outputs.
+Role: thin RPC wrappers for steps still called from orchestration (narrative, supervisor).
+      The per-agent pipeline steps (scan, analyze, evaluate, submit, monitor, report) are
+      now handled by agent pub/sub handlers and are no longer called from the dispatcher.
 External I/O: none; uses the injected message bus.
 """
 
@@ -11,109 +13,13 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from contracts.analyst import RecommendationSet
-from contracts.common import ScanRequest
-from contracts.execution import ExecutionResult
-from contracts.monitor import CloseDecisionSet, MonitorRequest
-from contracts.portfolio_manager import OrderIntentSet
-from contracts.reporter import (
-    NarrativeRequest,
-    RunSnapshot,
-    TradeNarrative,
-)
-from contracts.scanner import CandidateSet
+from contracts.reporter import NarrativeRequest, TradeNarrative
 from contracts.supervisor import DispatchResult, DispatchRunRecord
 from kernel import AgentMessage, CollectingFaultSink
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from kernel import FaultSink, MessageBus
-    from orchestration.trigger import RunTrigger
-
-
-def step_scan(
-    bus: MessageBus, trigger: RunTrigger, sink: FaultSink | None = None
-) -> CandidateSet | None:
-    """Run scanner and return candidates, or None when no candidates survive."""
-    result = _request(
-        bus,
-        _message(
-            "scanner",
-            "run_scan",
-            ScanRequest(run_id=trigger.run_id, universe=trigger.universe),
-        ),
-        CandidateSet,
-        sink,
-    )
-    return result if result is not None and result.candidates else None
-
-
-def step_analyze(
-    bus: MessageBus, candidates: CandidateSet, sink: FaultSink | None = None
-) -> RecommendationSet | None:
-    """Run analyst and return actionable recommendations, or None."""
-    if not candidates.candidates:
-        return None
-    result = _request(
-        bus,
-        _message("analyst", "analyze", candidates),
-        RecommendationSet,
-        sink,
-    )
-    return result if result is not None and result.recommendations else None
-
-
-def step_evaluate(
-    bus: MessageBus, recommendations: RecommendationSet, sink: FaultSink | None = None
-) -> OrderIntentSet | None:
-    """Run portfolio manager and return approved orders, or None."""
-    result = _request(
-        bus,
-        _message("portfolio_manager", "evaluate_orders", recommendations),
-        OrderIntentSet,
-        sink,
-    )
-    return result if result is not None and result.approved else None
-
-
-def step_submit(
-    bus: MessageBus, orders: OrderIntentSet, sink: FaultSink | None = None
-) -> ExecutionResult | None:
-    """Submit approved orders and return fills, or None."""
-    result = _request(
-        bus, _message("execution", "submit", orders), ExecutionResult, sink
-    )
-    return result if result is not None and result.submitted > 0 else None
-
-
-def step_check_positions(
-    bus: MessageBus, pm_run_id: str, sink: FaultSink | None = None
-) -> CloseDecisionSet | None:
-    """Run monitor over opened positions and return decisions, or None."""
-    return _request(
-        bus,
-        _message("monitor", "check_positions", MonitorRequest(run_id=pm_run_id)),
-        CloseDecisionSet,
-        sink,
-    )
-
-
-def step_report(
-    bus: MessageBus, pm_run_id: str, sink: FaultSink | None = None
-) -> RunSnapshot | None:
-    """Run reporter snapshot generation."""
-    return _request(
-        bus,
-        AgentMessage(
-            sender="dispatcher",
-            recipient="reporter",
-            message_type="request",
-            capability="report",
-            payload={"run_id": pm_run_id},
-        ),
-        RunSnapshot,
-        sink,
-    )
 
 
 def step_narrative(

@@ -13,14 +13,10 @@ from typing import TYPE_CHECKING
 
 from agents.provider.sources import RegimeInputs
 from agents.scanner.universe import FakeUniverse
-from contracts.common import Explanation, Provenance
 from contracts.provider import OHLCVBar
-from contracts.reporter import RunSnapshot
 from orchestration.trigger import RunTrigger
 
 if TYPE_CHECKING:
-    import pytest
-
     from contracts.common import Window
     from kernel import InMemoryGraphStore
 
@@ -144,47 +140,3 @@ def source() -> ReboundingDataSource:
 def node_count(graph: InMemoryGraphStore, label: str) -> int:
     """Return graph node count for one label."""
     return len(graph.list_nodes(label))
-
-
-def patch_success_until(monkeypatch: pytest.MonkeyPatch, stop: str) -> None:
-    """Patch dispatcher step functions to stop at one named stage."""
-    monkeypatch.setattr("orchestration.dispatcher.step_scan", lambda *_args: object())
-    monkeypatch.setattr(
-        "orchestration.dispatcher.step_analyze",
-        lambda *_args: None if stop == "analysis" else object(),
-    )
-    monkeypatch.setattr(
-        "orchestration.dispatcher.step_evaluate",
-        lambda *_args: None if stop == "orders" else _OrderFixture(),
-    )
-    monkeypatch.setattr(
-        "orchestration.dispatcher.step_submit",
-        lambda *_args: None if stop == "execution" else object(),
-    )
-    monkeypatch.setattr(
-        "orchestration.dispatcher.step_check_positions",
-        lambda *_args: None if stop == "monitor" else object(),
-    )
-    monkeypatch.setattr(
-        "orchestration.dispatcher.step_report",
-        lambda *_args: None if stop == "report" else _snapshot(),
-    )
-    monkeypatch.setattr(
-        "orchestration.dispatcher.write_narratives",
-        lambda *_args: stop != "narrative",
-    )
-
-
-class _OrderFixture:
-    run_id = "pm-run"
-
-
-def _snapshot() -> RunSnapshot:
-    return RunSnapshot(
-        run_id="pm-run",
-        portfolio_metrics={},
-        signal_metrics={},
-        regime_attribution={},
-        headline=Explanation(summary="ok"),
-        provenance=Provenance(run_id="snapshot", source_agent="reporter"),
-    )

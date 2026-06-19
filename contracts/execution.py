@@ -114,7 +114,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("fill_recorded", "stage_transitioned"),
-    owns_graph=("Fill", "Reconciliation", "StageTransition"),
+    owns_graph=("Fill", "Reconciliation", "StageTransition", "ExecutionResultEvent"),
     external_io=("alpaca_broker",),
     depends_on=("portfolio_manager", "monitor", "supervisor"),
     mcp_tools=("submit", "reconcile", "stage_status"),

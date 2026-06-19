@@ -8,8 +8,11 @@ External I/O: none
 """
 
 from kernel.agent import AgentBase
-from kernel.bus import InProcessBus, MessageBus
+from kernel.bus import EventHandler, InProcessBus, MessageBus
 from kernel.bus_celery import CeleryBus
+from kernel.bus_azure import AzureServiceBusBus
+from kernel.bus_azure_config import AzureServiceBusSettings
+from kernel.claim_check import ReadyEvent, claim_check_read, claim_check_write
 from kernel.bus_celery_config import CeleryBusSettings
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
@@ -37,11 +40,17 @@ __all__ = [
     "AgentFault",
     "AgentMessage",
     "AgentSettings",
+    "AzureServiceBusBus",
+    "AzureServiceBusSettings",
     "Capability",
     "CeleryBus",
     "CeleryBusSettings",
     "CollectingFaultSink",
     "Edge",
+    "EventHandler",
+    "ReadyEvent",
+    "claim_check_read",
+    "claim_check_write",
     "FakeLLMClient",
     "FaultCapture",
     "FaultSink",

@@ -107,7 +107,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("market_data_degraded",),
-    owns_graph=("MarketSnapshot", "Regime", "Ticker"),
+    owns_graph=("MarketSnapshot", "Regime", "Ticker", "MarketDataEvent"),
     external_io=(
         "stooq",
         "finnhub",

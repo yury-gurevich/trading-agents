@@ -8,6 +8,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from agents.portfolio_manager.tests.helpers import (
     bar,
     recommendation,
@@ -17,8 +19,11 @@ from agents.portfolio_manager.tests.helpers import (
 from contracts.portfolio_manager import OrderIntentSet
 from kernel import InMemoryGraphStore, InProcessBus, ReadyEvent, claim_check_read
 
+if TYPE_CHECKING:
+    from contracts.provider import OHLCVBar
 
-def _bars() -> tuple:
+
+def _bars() -> tuple[OHLCVBar, ...]:
     return (bar("AAPL", 2, close=150.0), bar("AAPL", 0, close=155.0))
 
 

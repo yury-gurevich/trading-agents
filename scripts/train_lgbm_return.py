@@ -1,5 +1,8 @@
 """Offline LightGBM return-model training script.
 
+Agent: tooling
+Role: train and serialize a LightGBM return model from a price_cache CSV export.
+
 Reads a price_cache CSV export, builds feature/label pairs with a walk-forward
 split, trains a LightGBM booster, and saves the artifact.
 

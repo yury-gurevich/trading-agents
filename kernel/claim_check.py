@@ -15,7 +15,8 @@ from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from kernel.bus import MessageBus
-    from kernel.graph import GraphStore, Node, Props
+    from kernel.graph import GraphStore, Node
+    from kernel.graph_support import Props
 
 
 class ReadyEvent(BaseModel):

@@ -99,13 +99,13 @@ class AzureServiceBusBus:
         self, topic: str, event: dict[str, Any]
     ) -> None:
         """Send one claim-check event to an Azure Service Bus topic."""
-        from azure.servicebus import (  # type: ignore[import-not-found]
+        from azure.servicebus import (
             ServiceBusClient,
             ServiceBusMessage,
         )
 
         client = ServiceBusClient.from_connection_string(
-            self._settings.connection_string,  # type: ignore[arg-type]
+            self._settings.connection_string,
         )
         with client, client.get_topic_sender(topic_name=topic) as sender:
             sender.send_messages(

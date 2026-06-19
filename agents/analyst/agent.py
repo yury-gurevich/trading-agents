@@ -12,8 +12,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from agents.analyst.domain.recommend import AnalysisDecision, decide
-from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.analyze import score_candidates
 from agents.analyst.domain.sentiment_reading import provider_reading
 from agents.analyst.provider_client import (
     request_benchmark_bars,
@@ -44,7 +43,6 @@ from kernel.errors import fault_boundary
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
-    from contracts.provider import MarketData, OHLCVBar, RegimeContext
     from kernel import MessageBus
 
 
@@ -120,7 +118,9 @@ class AnalystAgent(AgentBase):
         benchmark_bars = request_benchmark_bars(
             self.bus, self.sink, self._settings.benchmark_ticker, self._window()
         )
-        decisions = self._score(candidate_set, market, regime, benchmark_bars)
+        decisions = score_candidates(
+            candidate_set, market, regime, benchmark_bars, self._settings, self.sink
+        )
         if decisions is None:
             return build_empty_result(
                 self._graph, candidate_set, "analyst scoring failed"
@@ -164,39 +164,6 @@ class AnalystAgent(AgentBase):
             evidence_refs=("analyst.technical_score", "provider.regime"),
         )
 
-    def _score(
-        self,
-        candidate_set: CandidateSet,
-        market: MarketData,
-        regime: RegimeContext,
-        benchmark_bars: tuple[OHLCVBar, ...],
-    ) -> tuple[AnalysisDecision, ...] | None:
-        decisions: tuple[AnalysisDecision, ...] = ()
-        with fault_boundary(
-            self.sink,
-            agent="analyst",
-            module="agents.analyst.agent",
-            capability="analyze",
-            reraise=False,
-        ) as capture:
-            bars = _bars_by_ticker(market.bars)
-            decisions = tuple(
-                decide(
-                    candidate,
-                    score_candidate(
-                        candidate,
-                        bars.get(candidate.ticker, ()),
-                        market.fundamentals.get(candidate.ticker, {}),
-                        benchmark_bars,
-                        market.news.get(candidate.ticker, ()),
-                        self._settings,
-                    ),
-                    regime,
-                )
-                for candidate in candidate_set.candidates
-            )
-        return None if capture.fault is not None else decisions
-
     def _record_fault(self, message: str) -> None:
         with fault_boundary(
             self.sink,
@@ -210,10 +177,3 @@ class AnalystAgent(AgentBase):
     def _window(self) -> Window:
         end = datetime.now(tz=UTC).date()
         return Window(start=end - timedelta(days=self._settings.lookback_days), end=end)
-
-
-def _bars_by_ticker(bars: tuple[OHLCVBar, ...]) -> dict[str, tuple[OHLCVBar, ...]]:
-    grouped: dict[str, list[OHLCVBar]] = {}
-    for bar in bars:
-        grouped.setdefault(bar.ticker, []).append(bar)
-    return {ticker: tuple(rows) for ticker, rows in grouped.items()}

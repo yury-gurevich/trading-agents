@@ -161,7 +161,7 @@ def test_scoring_failure_returns_explained_rejection(
     def fail_score(*args: object) -> object:
         raise RuntimeError("score failed")
 
-    monkeypatch.setattr("agents.analyst.agent.score_candidate", fail_score)
+    monkeypatch.setattr("agents.analyst.domain.analyze.score_candidate", fail_score)
     scan = candidate_set(candidate())
     bus, _graph, sink = wire_analyst(source_bars=bars())
 

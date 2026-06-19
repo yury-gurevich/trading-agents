@@ -91,6 +91,14 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel", "contracts.common._Froze
 [tool.ruff.lint.isort]
 known-first-party = ["kernel", "contracts", "agents", "orchestration", "surfaces"]
 
+# ── Standalone isort fallback (matches ruff's I-rule settings above) ──────────
+# isort is not a project dependency and the ms-python.isort VS Code extension
+# is disabled. This section exists solely so that any accidental invocation of
+# standalone isort produces output compatible with what ruff expects.
+[tool.isort]
+profile = "black"
+known_first_party = ["kernel", "contracts", "agents", "orchestration", "surfaces"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

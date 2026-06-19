@@ -57,16 +57,16 @@ repos:
     hooks:
       - id: check-module-size
         name: module size (warn 150 / hard block 200)
-        language: python
-        entry: python scripts/check_module_size.py
+        language: system
+        entry: uv run python scripts/check_module_size.py
         types: [python]
         files: ^(kernel|contracts|agents|orchestration|surfaces|tests)/
         exclude: (/__init__\.py$|alembic/versions/)
 
       - id: check-module-header
         name: coding-agent module header (Agent:/Role:)
-        language: python
-        entry: python scripts/check_module_header.py
+        language: system
+        entry: uv run python scripts/check_module_header.py
         types: [python]
         files: ^(kernel|contracts|agents|scripts)/
         exclude: (/__init__\.py$|alembic/versions/)

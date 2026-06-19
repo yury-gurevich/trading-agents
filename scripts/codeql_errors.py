@@ -1,5 +1,8 @@
 """List error-level CodeQL findings from the local SARIF.
 
+Agent: tooling
+Role: list error-level CodeQL SARIF findings and exit non-zero when any exist.
+
 These are the findings that would fail CI when fail-on: error is set.
 Prints nothing and exits 0 when the codebase is clean.
 Prints a table and exits 1 when error-level findings exist.

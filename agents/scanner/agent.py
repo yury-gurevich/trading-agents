@@ -15,11 +15,12 @@ from typing import TYPE_CHECKING, Any
 from agents.scanner.domain.filters import apply_filters
 from agents.scanner.domain.ranking import rank_survivors
 from agents.scanner.provider_client import request_benchmark_bars, request_market_data
+from agents.scanner.results import scan_explanation
 from agents.scanner.settings import ScannerSettings
 from agents.scanner.store import write_scan
 from agents.scanner.universe import StaticUniverse
 from contracts.common import Explanation, ScanRequest, Window
-from contracts.scanner import CONTRACT, Candidate, CandidateSet, FilterTrace
+from contracts.scanner import CONTRACT, CandidateSet, FilterTrace
 from kernel import (
     AgentBase,
     CollectingFaultSink,
@@ -114,7 +115,7 @@ class ScannerAgent(AgentBase):
             run_id=provenance.run_id,
             candidates=candidates,
             filter_trace=trace,
-            explanation=_scan_explanation(candidates, trace),
+            explanation=scan_explanation(candidates, trace),
             provenance=provenance,
         )
 
@@ -180,21 +181,3 @@ class ScannerAgent(AgentBase):
         end = datetime.now(tz=UTC).date()
         start = end - timedelta(days=self._settings.lookback_days)
         return Window(start=start, end=end)
-
-
-def _scan_explanation(
-    candidates: tuple[Candidate, ...], trace: FilterTrace
-) -> Explanation:
-    if not candidates:
-        return Explanation(
-            summary="No candidates survived the scanner filters.",
-            evidence_refs=("scanner.filters.core",),
-        )
-    return Explanation(
-        summary=(
-            f"{len(candidates)} candidates survived from {trace.evaluated} evaluated "
-            "tickers using price, liquidity, relative-strength, beta, and "
-            "earnings-window filters."
-        ),
-        evidence_refs=("scanner.filters.core",),
-    )

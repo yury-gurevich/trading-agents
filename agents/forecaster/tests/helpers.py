@@ -16,7 +16,6 @@ from agents.provider.settings import ProviderSettings
 from agents.provider.sources import FakeDataSource
 from contracts.forecaster import (
     ForecastRequest,
-    ReturnScorecardRequest,
     ScorecardRequest,
     SentimentScorecardRequest,
 )
@@ -170,36 +169,4 @@ def make_bars(
             volume=volume,
         )
         for index, close in enumerate(closes)
-    )
-
-
-def return_scorecard_message(
-    model_id: str, forward_returns: dict[str, float]
-) -> AgentMessage:
-    return AgentMessage(
-        sender="tester",
-        recipient="forecaster",
-        message_type="request",
-        capability="return_scorecard",
-        payload=ReturnScorecardRequest(
-            model_id=model_id, forward_returns=forward_returns
-        ).model_dump(mode="json"),
-    )
-
-
-def forecast_return_message(
-    subject_ref: str,
-    *,
-    subject_kind: Literal["recommendation", "position"] = "recommendation",
-) -> AgentMessage:
-    return AgentMessage(
-        sender="tester",
-        recipient="forecaster",
-        message_type="request",
-        capability="forecast_return",
-        payload=ForecastRequest(
-            subject_kind=subject_kind,
-            subject_ref=subject_ref,
-            features={},
-        ).model_dump(mode="json"),
     )

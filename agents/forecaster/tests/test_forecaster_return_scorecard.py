@@ -10,11 +10,10 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.forecaster.return_model import FakeReturnModel
-from agents.forecaster.tests.helpers import (
+from agents.forecaster.tests.helpers import make_bars, wire_forecaster
+from agents.forecaster.tests.return_helpers import (
     forecast_return_message,
-    make_bars,
     return_scorecard_message,
-    wire_forecaster,
 )
 from contracts.forecaster import Scorecard
 

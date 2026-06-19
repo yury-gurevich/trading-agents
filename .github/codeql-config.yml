@@ -1,10 +1,12 @@
 name: trading-agents CodeQL config
 
-# Paths that CodeQL should never analyse — its own database artifacts and
-# configuration queries are not project source code.
+# Paths that CodeQL should never analyse — its own database artifacts,
+# CLI binaries/extractor scripts, and non-project directories.
 paths-ignore:
-  - ".codeql-db/**"
-  - "codeql/**"
+  - ".codeql-db/**"   # local CodeQL database
+  - ".tools/**"       # CodeQL CLI + language packs (contains index.py, python_tracer.py, etc.)
+  - ".venv/**"        # Python virtual environment (uv-managed)
+  - "codeql/**"       # YAML diagnostic configs, not Python source
 
 # Suppress known false-positive rules that fire on intentional codebase patterns.
 #

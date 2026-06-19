@@ -73,7 +73,8 @@ class ScannerAgent(AgentBase):
         )
         candidates = self._run_scan(req)
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="scan.candidates.ready",
             label="ScanResult",
             ref=f"scan:{req.run_id}",

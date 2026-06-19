@@ -27,8 +27,7 @@ def main() -> int:
         type=Path,
         default=DEFAULT_SARIF,
         help=(
-            "SARIF file to scan"
-            " (default: .codeql-db/python-security-and-quality.sarif)"
+            "SARIF file to scan (default: .codeql-db/python-security-and-quality.sarif)"
         ),
     )
     args = parser.parse_args()
@@ -83,10 +82,7 @@ def main() -> int:
         errors,
         key=lambda x: (str(x["sec_sev"]), str(x["rule"]), str(x["file"])),
     ):
-        print(
-            f"{str(e['rule']):<40} {str(e['sec_sev']):<5}  "
-            f"{e['file']}:{e['line']}"
-        )
+        print(f"{str(e['rule']):<40} {str(e['sec_sev']):<5}  {e['file']}:{e['line']}")
         print(f"  {e['message']}")
     print(f"\n{len(errors)} error-level finding(s) — CI would FAIL.")
     return 1

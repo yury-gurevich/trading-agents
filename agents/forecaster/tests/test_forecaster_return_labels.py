@@ -18,12 +18,7 @@ _MOM = 3
 def _simple_bars(
     ticker: str, closes: tuple[float, ...], *, vol: float = 1.0
 ) -> dict[str, list[tuple[str, float, float]]]:
-    return {
-        ticker: [
-            (f"2024-01-{i + 1:02d}", c, vol)
-            for i, c in enumerate(closes)
-        ]
-    }
+    return {ticker: [(f"2024-01-{i + 1:02d}", c, vol) for i, c in enumerate(closes)]}
 
 
 def test_build_label_rows_produces_correct_forward_return() -> None:
@@ -103,5 +98,13 @@ def test_build_label_rows_label_row_fields_are_set() -> None:
 
 
 def test_build_label_rows_empty_input() -> None:
-    assert build_label_rows({}, forward_days=1, horizons=_HORIZONS,
-                             volatility_window=_VOL, momentum_window=_MOM) == []
+    assert (
+        build_label_rows(
+            {},
+            forward_days=1,
+            horizons=_HORIZONS,
+            volatility_window=_VOL,
+            momentum_window=_MOM,
+        )
+        == []
+    )

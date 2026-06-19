@@ -62,9 +62,7 @@ def read_return(
     )
 
 
-def _predict(
-    model: ReturnModel, sink: FaultSink, features: FeatureRow
-) -> float | None:
+def _predict(model: ReturnModel, sink: FaultSink, features: FeatureRow) -> float | None:
     raw: float | None = None
     with fault_boundary(
         sink,

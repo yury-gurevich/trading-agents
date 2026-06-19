@@ -80,7 +80,8 @@ class AnalystAgent(AgentBase):
         candidates = CandidateSet.model_validate(node.props["candidates"])
         recs = self._analyze(candidates)
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="analysis.recommendations.ready",
             label="RecommendationResult",
             ref=f"analysis:{run_id or uuid.uuid4().hex}",

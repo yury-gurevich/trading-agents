@@ -75,7 +75,8 @@ class ProviderAgent(AgentBase):
         req = DataRequest.model_validate(event)
         market_data = self._get_market_data(req)
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="data.ready.market",
             label="MarketDataEvent",
             ref=f"market-data:{run_id or uuid.uuid4().hex}",

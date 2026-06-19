@@ -31,7 +31,11 @@ def _wire() -> tuple[InProcessBus, InMemoryGraphStore]:
 def test_write_stores_node_in_graph() -> None:
     bus, graph = _wire()
     claim_check_write(
-        bus, graph, topic="data.ohlcv.ready", label="OHLCVData", ref="ohlcv:AAPL:r1",
+        bus,
+        graph,
+        topic="data.ohlcv.ready",
+        label="OHLCVData",
+        ref="ohlcv:AAPL:r1",
         props={"ticker": "AAPL", "bars": 10},
     )
     node = graph.get_node("OHLCVData", "ohlcv:AAPL:r1")
@@ -45,7 +49,11 @@ def test_write_publishes_ready_event_to_topic() -> None:
     bus.subscribe("data.ohlcv.ready", received.append)
 
     claim_check_write(
-        bus, graph, topic="data.ohlcv.ready", label="OHLCVData", ref="ohlcv:AAPL:r1",
+        bus,
+        graph,
+        topic="data.ohlcv.ready",
+        label="OHLCVData",
+        ref="ohlcv:AAPL:r1",
         props={"ticker": "AAPL"},
     )
 
@@ -61,7 +69,11 @@ def test_write_event_does_not_carry_raw_props() -> None:
     bus.subscribe("data.ohlcv.ready", received.append)
 
     claim_check_write(
-        bus, graph, topic="data.ohlcv.ready", label="OHLCVData", ref="ohlcv:AAPL:r1",
+        bus,
+        graph,
+        topic="data.ohlcv.ready",
+        label="OHLCVData",
+        ref="ohlcv:AAPL:r1",
         props={"ticker": "AAPL", "secret_data": [1, 2, 3]},
     )
 
@@ -77,7 +89,13 @@ def test_write_propagates_run_id_in_event() -> None:
     bus.subscribe("t", received.append)
 
     claim_check_write(
-        bus, graph, topic="t", label="L", ref="r", props={}, run_id="run-42",
+        bus,
+        graph,
+        topic="t",
+        label="L",
+        ref="r",
+        props={},
+        run_id="run-42",
     )
 
     assert received[0]["run_id"] == "run-42"
@@ -86,7 +104,12 @@ def test_write_propagates_run_id_in_event() -> None:
 def test_write_returns_ready_event() -> None:
     bus, graph = _wire()
     event = claim_check_write(
-        bus, graph, topic="t", label="L", ref="my-ref", props={"x": 1},
+        bus,
+        graph,
+        topic="t",
+        label="L",
+        ref="my-ref",
+        props={"x": 1},
     )
     assert isinstance(event, ReadyEvent)
     assert event.ref == "my-ref"
@@ -102,7 +125,11 @@ def test_read_resolves_event_to_graph_node() -> None:
     received: list[dict[str, object]] = []
     bus.subscribe("data.ohlcv.ready", received.append)
     claim_check_write(
-        bus, graph, topic="data.ohlcv.ready", label="OHLCVData", ref="ohlcv:AAPL:r1",
+        bus,
+        graph,
+        topic="data.ohlcv.ready",
+        label="OHLCVData",
+        ref="ohlcv:AAPL:r1",
         props={"ticker": "AAPL", "bars": 10},
     )
 
@@ -134,8 +161,13 @@ def test_produce_consume_round_trip() -> None:
     bus.subscribe("data.news.ready", on_ready)
 
     claim_check_write(
-        bus, graph, topic="data.news.ready", label="NewsData", ref="news:MSFT:r2",
-        props={"ticker": "MSFT", "articles": 5}, run_id="run-1",
+        bus,
+        graph,
+        topic="data.news.ready",
+        label="NewsData",
+        ref="news:MSFT:r2",
+        props={"ticker": "MSFT", "articles": 5},
+        run_id="run-1",
     )
 
     assert len(consumed_nodes) == 1

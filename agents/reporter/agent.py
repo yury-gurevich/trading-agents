@@ -73,7 +73,8 @@ class ReporterAgent(AgentBase):
         pm_run_id = str(node.props.get("pm_run_id") or decisions.run_id)
         snapshot = self._report(ReportRequest(run_id=pm_run_id))
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="report.snapshot.ready",
             label="ReportSnapshotResult",
             ref=f"snapshot:{run_id or uuid.uuid4().hex}",

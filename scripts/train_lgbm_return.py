@@ -99,7 +99,8 @@ def main() -> None:
 
     print(
         f"Done.  train={report.train_size}  test={report.test_size}"
-        f"  oos_ic={report.oos_ic:.4f}" if report.oos_ic is not None
+        f"  oos_ic={report.oos_ic:.4f}"
+        if report.oos_ic is not None
         else f"Done.  train={report.train_size}  test={report.test_size}  oos_ic=N/A"
     )
     print(f"Artifact saved to {args.output}")

@@ -83,7 +83,8 @@ class MonitorAgent(AgentBase):
         pm_run_id = str(node.props.get("pm_run_id") or exec_result.run_id)
         decisions = self._check_positions(MonitorRequest(run_id=pm_run_id))
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="monitor.decisions.ready",
             label="MonitorDecisionResult",
             ref=f"monitor:{run_id or uuid.uuid4().hex}",

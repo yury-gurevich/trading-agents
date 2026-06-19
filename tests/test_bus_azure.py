@@ -21,6 +21,7 @@ from kernel import (
 
 # ── Unit tests (no Azure required) ──────────────────────────────────────────
 
+
 def test_subscribe_and_publish_fan_out_in_process() -> None:
     bus = AzureServiceBusBus()
     received: list[dict[str, object]] = []
@@ -108,7 +109,10 @@ def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
 def test_settings_connection_string_read_from_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("AZURE_SERVICEBUS_CONNECTION_STRING", "Endpoint=sb://test.servicebus.windows.net/")
+    monkeypatch.setenv(
+        "AZURE_SERVICEBUS_CONNECTION_STRING",
+        "Endpoint=sb://test.servicebus.windows.net/",
+    )
     settings = AzureServiceBusSettings()
     assert settings.connection_string is not None
 
@@ -122,6 +126,7 @@ def test_settings_defaults_to_none_without_env(monkeypatch: pytest.MonkeyPatch) 
 
 
 # ── Integration tests (skipped without Azure creds) ────────────────────────
+
 
 @pytest.mark.integration
 @pytest.mark.skipif(

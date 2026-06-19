@@ -54,9 +54,9 @@ class AzureServiceBusBus:
                     message,
                     error_type="UnknownCapability",
                     text=(
-                    f"No handler registered for"
-                    f" {message.recipient}.{message.capability}"
-                ),
+                        f"No handler registered for"
+                        f" {message.recipient}.{message.capability}"
+                    ),
                 )
             payload: dict[str, Any] = {}
             with fault_boundary(

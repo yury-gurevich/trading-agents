@@ -59,7 +59,10 @@ def test_execute_run_publishes_run_trigger_event() -> None:
     events: list[dict[str, object]] = []
     bus.subscribe("run.trigger", events.append)
     Dispatcher(
-        bus, graph, source=FakeDataSource(), broker=PaperBroker(),
+        bus,
+        graph,
+        source=FakeDataSource(),
+        broker=PaperBroker(),
         universe_source=fixture_universe(),
     ).execute_run(trigger(universe="empty"))
     assert len(events) == 1
@@ -99,7 +102,10 @@ def test_execute_run_fault_in_trigger_returns_not_completed() -> None:
     # Subscribe BEFORE Dispatcher so our handler fires first, raising before agents run.
     bus.subscribe("run.trigger", _exploding_handler)
     dispatcher = Dispatcher(
-        bus, graph, source=FakeDataSource(), sink=sink,
+        bus,
+        graph,
+        source=FakeDataSource(),
+        sink=sink,
         universe_source=fixture_universe(),
     )
     t = RunTrigger(

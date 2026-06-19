@@ -94,7 +94,8 @@ class ExecutionAgent(AgentBase):
         orders = OrderIntentSet.model_validate(node.props["orders"])
         result = self._submit(orders)
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="execution.fills.ready",
             label="ExecutionResultEvent",
             ref=f"execution:{run_id or uuid.uuid4().hex}",

@@ -82,7 +82,8 @@ class PortfolioManagerAgent(AgentBase):
         recs = RecommendationSet.model_validate(node.props["recommendations"])
         orders = self._evaluate_orders(recs)
         claim_check_write(
-            self.bus, self._graph,
+            self.bus,
+            self._graph,
             topic="portfolio.orders.ready",
             label="OrderIntentResult",
             ref=f"orders:{run_id or uuid.uuid4().hex}",

@@ -62,7 +62,10 @@ CONTRACT = AgentContract(
     ),
     emits=("exits_decided",),
     owns_graph=(
-        "MonitorRun", "PositionCheck", "CloseDecision", "Position",
+        "MonitorRun",
+        "PositionCheck",
+        "CloseDecision",
+        "Position",
         "MonitorDecisionResult",
     ),
     external_io=(),

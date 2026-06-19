@@ -2,7 +2,7 @@
 
 Agent: kernel
 Role: verify AzureServiceBusBus subscribe/publish/request/register work in dev mode
-      (no Azure creds); integration tests skip without AZURE_SERVICEBUS_CONNECTION_STRING.
+      (no Azure creds); integration tests skip if creds are absent.
 External I/O: azure.servicebus SDK (integration path only, skipped without creds).
 """
 
@@ -12,8 +12,12 @@ import os
 
 import pytest
 
-from kernel import AgentMessage, AzureServiceBusBus, AzureServiceBusSettings, CollectingFaultSink
-
+from kernel import (
+    AgentMessage,
+    AzureServiceBusBus,
+    AzureServiceBusSettings,
+    CollectingFaultSink,
+)
 
 # ── Unit tests (no Azure required) ──────────────────────────────────────────
 
@@ -101,7 +105,9 @@ def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
     assert sink.faults
 
 
-def test_settings_connection_string_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_connection_string_read_from_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("AZURE_SERVICEBUS_CONNECTION_STRING", "Endpoint=sb://test.servicebus.windows.net/")
     settings = AzureServiceBusSettings()
     assert settings.connection_string is not None

@@ -61,7 +61,10 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("exits_decided",),
-    owns_graph=("MonitorRun", "PositionCheck", "CloseDecision", "Position", "MonitorDecisionResult"),
+    owns_graph=(
+        "MonitorRun", "PositionCheck", "CloseDecision", "Position",
+        "MonitorDecisionResult",
+    ),
     external_io=(),
     depends_on=("forecaster", "execution"),
     mcp_tools=("check_positions", "explain_hold"),

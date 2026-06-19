@@ -2,7 +2,7 @@
 
 Agent: orchestration
 Role: fire run.trigger, collect report.snapshot.ready via claim-check, write narratives,
-      and record the run to the supervisor. The per-agent pipeline is entirely event-driven;
+      and record the run to the supervisor. The pipeline is event-driven;
       the dispatcher does not sequence individual agent steps.
 External I/O: optional provider source and broker ports injected at construction.
 """

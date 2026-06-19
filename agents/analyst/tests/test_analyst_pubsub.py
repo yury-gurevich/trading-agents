@@ -8,10 +8,14 @@ External I/O: none.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from agents.analyst.tests.helpers import bars, candidate, candidate_set, wire_analyst
 from contracts.analyst import RecommendationSet
-from contracts.scanner import CandidateSet
 from kernel import InMemoryGraphStore, InProcessBus, ReadyEvent, claim_check_read
+
+if TYPE_CHECKING:
+    from contracts.scanner import CandidateSet
 
 
 def _seed_scan_result(

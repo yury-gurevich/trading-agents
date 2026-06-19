@@ -9,11 +9,11 @@ External I/O: none
 
 from kernel.agent import AgentBase
 from kernel.bus import EventHandler, InProcessBus, MessageBus
-from kernel.bus_celery import CeleryBus
 from kernel.bus_azure import AzureServiceBusBus
 from kernel.bus_azure_config import AzureServiceBusSettings
-from kernel.claim_check import ReadyEvent, claim_check_read, claim_check_write
+from kernel.bus_celery import CeleryBus
 from kernel.bus_celery_config import CeleryBusSettings
+from kernel.claim_check import ReadyEvent, claim_check_read, claim_check_write
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
 from kernel.envelope import AgentMessage, MessageType
@@ -48,9 +48,6 @@ __all__ = [
     "CollectingFaultSink",
     "Edge",
     "EventHandler",
-    "ReadyEvent",
-    "claim_check_read",
-    "claim_check_write",
     "FakeLLMClient",
     "FaultCapture",
     "FaultSink",
@@ -70,7 +67,10 @@ __all__ = [
     "Node",
     "NullMetrics",
     "PrometheusMetrics",
+    "ReadyEvent",
     "TunableDoc",
+    "claim_check_read",
+    "claim_check_write",
     "describe",
     "fault_boundary",
     "fault_from_exception",

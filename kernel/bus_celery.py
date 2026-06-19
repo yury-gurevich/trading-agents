@@ -11,14 +11,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 from celery import Celery
 
-from kernel.bus import EventHandler
 from kernel.bus_celery_config import CeleryBusSettings, TaskResult
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
 from kernel.metrics import Metrics, NullMetrics, request_metric
 
 if TYPE_CHECKING:
-    from kernel.bus import MessageHandler
+    from kernel.bus import EventHandler, MessageHandler
 
 
 class CeleryBus:

@@ -2,7 +2,7 @@
 
 Agent: analyst
 Role: request provider facts over the bus, score scanner candidates via RPC, and publish
-      analysis.recommendations.ready claim-check events on scan.candidates.ready (P14 dual-mode).
+      analysis.recommendations.ready claim-check events on scan.candidates.ready.
 External I/O: none.
 """
 
@@ -31,7 +31,14 @@ from agents.analyst.store import write_analysis
 from contracts.analyst import CONTRACT, RecommendationSet
 from contracts.common import Explanation, Window
 from contracts.scanner import CandidateSet
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_read,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:

@@ -2,7 +2,7 @@
 
 Agent: execution
 Role: submit approved intents and close decisions through the idempotent broker port;
-      publish execution.fills.ready claim-check events on portfolio.orders.ready (P14 dual-mode).
+      publish execution.fills.ready claim-check events on portfolio.orders.ready.
 External I/O: injected Broker and GraphStore backends.
 """
 
@@ -40,7 +40,14 @@ from contracts.execution import (
 )
 from contracts.monitor import CloseDecisionSet
 from contracts.portfolio_manager import OrderIntentSet
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_read,
+    claim_check_write,
+)
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -93,7 +100,10 @@ class ExecutionAgent(AgentBase):
             ref=f"execution:{run_id or uuid.uuid4().hex}",
             # pm_run_id is orders.run_id — threaded downstream so monitor/reporter
             # can find the PMRun node without an extra graph lookup.
-            props={"result": result.model_dump(mode="json"), "pm_run_id": orders.run_id},
+            props={
+                "result": result.model_dump(mode="json"),
+                "pm_run_id": orders.run_id,
+            },
             run_id=run_id,
         )
 

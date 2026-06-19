@@ -31,8 +31,8 @@ from pathlib import Path
 # Keep sys.path clean: run from the repo root so the package is importable.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agents.forecaster.domain.return_labels import build_label_rows  # noqa: E402
-from agents.forecaster.model_trainer import train_and_save  # noqa: E402
+from agents.forecaster.domain.return_labels import build_label_rows
+from agents.forecaster.model_trainer import train_and_save
 
 _DEFAULT_HORIZONS = (1, 5, 20)
 _DEFAULT_VOL_WINDOW = 20
@@ -77,7 +77,8 @@ def main() -> None:
 
     print(f"Loading bars from {args.input} …")
     ticker_bars = _load_csv(args.input)
-    print(f"  {sum(len(v) for v in ticker_bars.values())} bars across {len(ticker_bars)} tickers")
+    n_bars = sum(len(v) for v in ticker_bars.values())
+    print(f"  {n_bars} bars across {len(ticker_bars)} tickers")
 
     print(f"Building label rows (forward_days={args.forward_days}) …")
     rows = build_label_rows(

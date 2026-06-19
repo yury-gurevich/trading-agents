@@ -1,19 +1,36 @@
 # Project State
 
-**Last updated:** 2026-06-19 02:24 AEST
+**Last updated:** 2026-06-19 18:42 AEST
 
-**CodeQL AST helper shipped:** the proven local AST workflow is now scripted via `scripts/run_codeql_ast.ps1`
-and exposed as `make codeql-ast FILE=kernel/agent.py`; it ensures the Python pack lock file exists,
-uses the correct Windows source-archive selector, and writes `printAst.bqrs` plus decoded CSV graph
-artifacts under `.codeql-db/ast/<file>/`. Verified locally on `kernel/agent.py`: **194 nodes / 386
-edges**.
+**P14 complete — inter-agent comms re-architecture (S60–S67).** Replaced synchronous
+RPC hand-offs with event-driven publish/subscribe + claim-check (ADR-0005). All 7 agents
+migrated to dual-mode (RPC retained + pub/sub added via `bind()` override); kernel gains
+`claim_check_write/read` primitive and `ReadyEvent`; dispatcher rewritten as a
+trigger-emitter (publishes `run.trigger`, subscribes `report.snapshot.ready`, step
+sequencing removed); `AzureServiceBusBus` + `AzureServiceBusSettings` shipped as optional
+`azure` dep (in-process shim for RPC; Azure I/O path `# pragma: no cover`; parity test
+skips without creds). `pm_run_id` threaded through execution→monitor→reporter props so
+the PMRun node is found correctly by reporter. **863 tests**, 100 % coverage,
+**version 0.8.0→0.9.0** (feat/MINOR, HARD RULE). `build-plan.md` P14 → **complete**.
+
+**S59 shipped: forecaster LightGBM training pipeline + return IC scorecard (qlib Q1
+follow-on).** `build_label_rows` + walk-forward `split_rows` + `train_and_save` offline
+script; new `return_scorecard` capability (Pearson IC + hit_rate + directional quartile
+breakdown vs injected forward returns); CONTRACT 0.3.0→0.4.0; **version 0.7.0→0.8.0**.
+Not news-runway blocked — consumes `price_cache` OHLCV only.
+
+**S58 shipped: forecaster LightGBM price/return shadow signal (qlib Phase Q1).** `ReturnModel`
+Protocol + lazy `LightGBMReturnAdapter` + pure `_features.py` (5 price-derived features) +
+provider OHLCV request → `ShadowPrediction` (shadow, never gates) + `Model` node;
+`lightgbm`-direct (`pyqlib` is 3.13-incompatible — confirmed R001); CONTRACT 0.2.0→0.3.0;
+**version 0.6.0→0.7.0**.
 
 **S57 shipped: forecaster sentiment scorecard harness (P12).** New `sentiment_scorecard` capability on
 the forecaster compares the three scorers (lexicon + provider `SentimentReading`, FinBERT
 `ShadowPrediction`) vs injected forward returns: pure-Python Pearson + 2-regressor OLS
 (`domain/statistics.py`), `comparison_metrics` (`domain/scorecard.py`) for pairwise correlations,
 per-scorer IC, FinBERT-on-the-other-two regression + residual std + **incremental IC**; `comparison.py`
-inner-joins readings by `{analyst_run}:{ticker}`. Forward returns are injected (never a runtime
+inner-joins readings by `{analyst_run}:{ticker}`; forward returns are injected (never a runtime
 dependency). Advisory only (`promotion_eligible` always False). forecaster CONTRACT 0.1.0 -> 0.2.0
 (reads only, owns_graph unchanged); `feat` -> project version 0.5.0 -> 0.6.0. **756 tests** (+17), floor
 100.00. **P12 is code-complete** - remaining work is operational (live news runway), then run the
@@ -72,29 +89,6 @@ full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
 **Graph store: local Neo4j Enterprise Docker.** `infra/neo4j/local/docker-compose.yml`, db
 `traiding-agents`, `bolt://localhost:7687`. **DEP-NEO4J 01/02/03 all GREEN** against local. Aura instance
 `02812797` was empty at cutover → **deleted 2026-06-19**. Details: memory `neo4j-aura-to-local-migration`.
-**Sprint 52 shipped** (PM **sector-concentration cap** — rejects
-orders that would push their sector over `max_sector_pct` of portfolio value (`sector_concentration`),
-tracking per-sector deployed value; consumes S51 `MarketData.sectors`, additive + dormant on unknown
-sectors; **the PM risk-gate pair (reward/risk + sector) is now complete** — P11); **S51 shipped** (provider
-**sector feed** — `DataSource.fetch_sectors` via Finnhub `/stock/profile2` `finnhubIndustry`, field-gated
-into `MarketData.sectors`; CONTRACT 0.2.0→**0.3.0**, `external_io` unchanged; pure parsers extracted to
-`fundamentals_parse.py` — P11); **S50
-shipped** (scanner **beta computation + beta-cap filter** — fault-tolerant benchmark fetch, pure
-`compute_beta` (cov/var of aligned daily returns), drops candidates with `beta > max_beta`; additive +
-dormant on thin history so every existing scanner + pipeline test stayed green; extracted
-`scanner/provider_client.py` — P11); **S49 shipped** (forecaster agent's
-**first runtime** — FinBERT sentiment shadow scorer behind a model Protocol; `ShadowPrediction` `shadow=True`
-0-1 aligned + `Model` node; `scorecard` never promotion-eligible; torch/transformers optional + lazily
-imported — the **3rd trinity leg**); **S48 shipped** (analyst persists the provider-sentiment shadow
-reading — provider challenger complete); **S47 shipped** (provider serves Alpha Vantage vendor sentiment,
-CONTRACT 0.2.0); **S46/S37 shipped** (SentimentReading node / lexicon pillar); **S44/S45 shipped** (Tiingo
-live feed + Alpaca broker). AV sentiment source + probe shipped (bill of health 13 green · 0 warn). **S41
-planned** (reporter profit-factor). 703 tests at 100.00%.
-**Sentiment trinity (P12) — all 3 scorers live:** lexicon champion (binding, S37) + provider challenger
-(shadow, S47/S48) + FinBERT forecaster (shadow, S49); source = **Alpha Vantage `NEWS_SENTIMENT`** (free,
-live-verified; Finnhub `/news-sentiment` is dead 403; ADR-0002). **P12 remaining:** the **scorecard
-harness** (compare the 3 readings vs forward returns; blocked on a live news-accrual runway) + the still-owed
-**full Loughran–McDonald master dictionary** (champion upgrade).
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
 exists but inactive. *Shipped* = landed. Update at every transition.
@@ -103,54 +97,25 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S57 shipped - forecaster sentiment scorecard harness (P12).** The forecaster's new
-`sentiment_scorecard` capability compares the three scorers - lexicon champion + provider challenger
-(both `SentimentReading`, analyst-owned) and FinBERT (`ShadowPrediction`, forecaster-owned) - against
-injected forward returns. A pure stats domain (`domain/statistics.py` Pearson + 2-regressor OLS;
-`domain/scorecard.py` `comparison_metrics`) computes pairwise correlations, each scorer's information
-coefficient on returns, the OLS of FinBERT on the other two, its residual std, and FinBERT's
-**incremental IC** (the residual's IC - the part of FinBERT not reproducible from the other two that
-still predicts returns; ADR-0002 item 4). `comparison.py` reads + inner-joins the readings by
-`{analyst_run}:{ticker}`; forward returns are **injected** (never a runtime dependency - the offline
-harness supplies them). Stays advisory: `promotion_eligible` is always False; metrics are omitted when
-undefined. forecaster CONTRACT 0.1.0 -> 0.2.0 (new capability; owns_graph unchanged - reads only);
-`feat` -> project version 0.5.0 -> 0.6.0. **756 tests** (+17), floor 100.00; every module < 200L.
-
-**P12 is now code-complete.** All three scorers live + the scorecard harness shipped. The only
-remaining work is **operational, not code**: accrue real headlines live (the S36 feed scored forward),
-then run `sentiment_scorecard` against `price_cache` forward returns to produce the actual verdict and
-decide FinBERT/provider promotion via the curator's P10 predictor-registry gate.
-
-**S58 active — forecaster LightGBM price/return shadow signal (qlib Phase Q1).** Research
-[R001](research/qlib-integration.md) found **`pyqlib` is uninstallable on this workspace's Python
-3.13** (its wheels cap at cp312 — confirmed via `uv pip install --dry-run`), so Q1 depends on the
-standalone **`lightgbm`** package directly, behind a new `ReturnModel` port mirroring the FinBERT
-adapter — no `pyqlib` import. S58 stands up the *runtime* (port + lazy adapter + pure feature builder
-
-+ provider OHLCV request + `ShadowPrediction`/`Model` persistence; never gates); **S59** trains the
-booster on `price_cache` + builds the price-return IC scorecard (**not** news-runway blocked, unlike
-P12). Sequencing (operator-confirmed 2026-06-19): **S58 → S59 → P14**. Handover:
-`docs/sprints/sprint-58-forecaster-lightgbm-shadow.md`.
+**Branch `sprint-58-forecaster-lightgbm-shadow` is clean and ready to merge.** All work
+for S58, S59, and P14 (S60–S67) is committed on this branch (4 commits ahead of main).
+No uncommitted changes. **Immediate next action: merge to main, then select next sprint.**
 
 ## Next
 
-+ **Qlib integration (research [R001](research/qlib-integration.md)) — Phase Q1 ACTIVE (S58 → S59).**
-  S58: forecaster **LightGBM price/return shadow runtime** (`lightgbm`-direct; pyqlib is
-  3.13-incompatible), behind a `ReturnModel` port, never gates. S59: train the booster on
-  `price_cache` + a **price-return IC scorecard** (not news-runway blocked). Later: Q2 analyst
-  Alpha158 pillar, Q3 researcher backtest evidence, Q4 PM covariance optimizer (all `lightgbm`/pure;
-  Q3/Q4 re-scoped for the 3.13 wall when reached).
-+ **P14 - Inter-agent comms re-architecture** (after S58/S59; ADR-0005): event-driven
-  pub/sub + claim-check, in-process first then Azure Service Bus (8 sprints). The law CAP+PARAM
-  backfills (ADR-0007, S53 set the pattern) precede the master sprint.
-+ **P12 - Sentiment (champion-challenger): code-complete; awaiting a live news-accrual runway.** All
-  three scorers (lexicon S37 on the full LM dictionary; provider S47/S48; FinBERT S49) + the
-  `sentiment_scorecard` harness (S57) are shipped. Remaining is operational: score real headlines
-  forward, then run the harness on `price_cache` forward returns and decide promotion via the P10
-  predictor-registry gate. Spec: ADR-0002.
-+ **P11 - deterministic-logic depth: COMPLETE** (S55). Full v1 engine ported.
-+ **P13 - Cross-asset & macro signal graph** (later): sector contagion + signed tariff/sanction event
-  propagation over Neo4j; contingent on P12 + the data runway. Spec: ADR-0002.
++ **Merge `sprint-58-forecaster-lightgbm-shadow` to main** (immediate; clean, 4 commits
+  ahead; triggers rebuild + image upload per ADR-0007).
++ **Qlib Phase Q2 — analyst Alpha158 pillar** (next planned code sprint; `lightgbm`-direct
+  factor feature extraction in the analyst domain; re-scoped for Python 3.13 — no `pyqlib`).
++ **Law CAP+PARAM backfills** for the remaining 11 agents (ADR-0007; S53 set the template;
+  precedes any law-test integration sprint).
++ **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
+  (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
+  shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),
+  then run `sentiment_scorecard` on `price_cache` forward returns and decide promotion via the
+  P10 predictor-registry gate. Spec: ADR-0002.
++ **P13 — Cross-asset & macro signal graph** (later; sector contagion + signed tariff/sanction
+  event propagation over Neo4j; contingent on P12 + news+returns data runway; ADR-0002).
 + Build-when-needed: RAG vector index (deferred; no sprint planned).
 
 ## Workflow
@@ -165,6 +130,29 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **P14 complete — Inter-agent comms re-architecture (S60–S67)** (ADR-0005; implemented
+  directly — no coding agent this cycle). `InProcessBus.publish/subscribe` + fan-out (S60);
+  kernel `claim_check_write/read` + `ReadyEvent` (S61); provider (S62), scanner + analyst
+  (S63), PM + execution (S64), monitor + reporter (S65) migrated to pub/sub dual-mode;
+  dispatcher → trigger-emitter, step sequencing removed (S66); `AzureServiceBusBus` +
+  `AzureServiceBusSettings` + `azure-servicebus>=7.12` optional dep (S67). `pm_run_id`
+  threaded execution→monitor→reporter. 8 per-agent pubsub test files + `test_bus_azure` +
+  `test_bus_pubsub` + `test_claim_check` + `test_steps`; dispatcher unit + daily-loop tests
+  rewritten. `contracts/` `owns_graph` += `OrderIntentResult`, `ExecutionResultEvent`,
+  `MonitorDecisionResult`, `ReportSnapshotResult`. `feat` → **version 0.8.0→0.9.0**
+  (MINOR, HARD RULE). **863 tests**, floor 100.00. `build-plan.md` P14 → **complete**.
++ **Sprint 59 — Forecaster: LightGBM training pipeline + return IC scorecard** (qlib Q1
+  follow-on; implemented directly). `build_label_rows` (1-day forward return, no look-ahead)
+  + walk-forward `split_rows` + `train_and_save` offline script. New `return_scorecard`
+  capability: Pearson IC + hit_rate + directional quartile breakdown vs injected forward
+  returns. `promotion_eligible=False` throughout. CONTRACT 0.3.0→0.4.0; `feat` →
+  **version 0.7.0→0.8.0** (MINOR, HARD RULE).
++ **Sprint 58 — Forecaster: LightGBM price/return shadow signal** (qlib Phase Q1;
+  implemented directly). `ReturnModel` Protocol + lazy `LightGBMReturnAdapter` (pickled
+  booster, `# pragma: no cover` on I/O); pure `_features.py` (return_1d/5d/10d, vol_5d,
+  close_to_high); provider OHLCV request → `ShadowPrediction` (shadow=True, never gates)
+  + `Model` node. `lightgbm`-direct — `pyqlib` 3.13-incompatible (R001). CONTRACT
+  0.2.0→0.3.0; `feat` → **version 0.6.0→0.7.0** (MINOR, HARD RULE).
 + **Sprint 57 - Forecaster: sentiment scorecard harness** (P12; implemented directly - no coding agent
   this cycle). New `sentiment_scorecard` capability comparing the three champion-challenger scorers vs
   injected forward returns. Pure stats domain: `agents/forecaster/domain/statistics.py` (`pearson`

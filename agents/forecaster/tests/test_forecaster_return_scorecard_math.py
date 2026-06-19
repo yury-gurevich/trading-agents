@@ -1,8 +1,8 @@
 """Return scorecard math tests — IC, hit rate, directional breakdown.
 
 Agent: forecaster
-Role: verify return_scorecard_metrics over known observations + build_return_observations
-      alignment from a fake graph.
+Role: verify return_scorecard_metrics over known observations +
+      build_return_observations alignment from a fake graph.
 External I/O: none.
 """
 

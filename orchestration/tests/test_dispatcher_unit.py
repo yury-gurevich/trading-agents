@@ -84,8 +84,9 @@ def test_execute_run_uses_default_universe_for_blank_trigger() -> None:
 
 
 def test_execute_run_fault_in_trigger_returns_not_completed() -> None:
-    """A raised exception in a run.trigger handler → completed=False (covers fault path)."""
+    """Handler exception → completed=False and fault captured (fault-path test)."""
     from datetime import UTC, datetime
+
     from orchestration.trigger import RunTrigger
 
     bus = InProcessBus()
@@ -97,8 +98,13 @@ def test_execute_run_fault_in_trigger_returns_not_completed() -> None:
 
     # Subscribe BEFORE Dispatcher so our handler fires first, raising before agents run.
     bus.subscribe("run.trigger", _exploding_handler)
-    dispatcher = Dispatcher(bus, graph, source=FakeDataSource(), sink=sink, universe_source=fixture_universe())
-    t = RunTrigger(run_id="fault-test", universe="empty", as_of=datetime.now(tz=UTC).date())
+    dispatcher = Dispatcher(
+        bus, graph, source=FakeDataSource(), sink=sink,
+        universe_source=fixture_universe(),
+    )
+    t = RunTrigger(
+        run_id="fault-test", universe="empty", as_of=datetime.now(tz=UTC).date()
+    )
 
     result = dispatcher.execute_run(t)
 

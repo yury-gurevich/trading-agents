@@ -73,6 +73,9 @@ ignore = ["D100", "D104", "D203", "D213", "S101", "A005"]
 # probes/ are real-system health checks: they print a report, catch-all to report
 # RED (never raise), and share a uniform (creds) signature.
 "probes/**" = ["T20", "BLE001", "ARG001"]
+# scripts/ are CLI tools: they intentionally print to stdout and carry module-level
+# docstrings that double as --help text; RUF010 conversions add noise without value.
+"scripts/**/*.py" = ["T20", "D", "RUF010"]
 # contracts/ are typed DTOs: the fields, capability summaries, and mission docs
 # are the documentation. Class/nested-class docstrings are not required here.
 "contracts/**" = ["D101", "D106"]

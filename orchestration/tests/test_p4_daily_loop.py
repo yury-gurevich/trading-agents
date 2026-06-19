@@ -35,7 +35,7 @@ def test_p4_daily_loop_on_in_process_bus() -> None:
     assert node_count(graph, "Snapshot") == 1
     assert node_count(graph, "TradeNarrative") == 1
     assert node_count(graph, "Message") >= 1
-    # Verify write_narratives traversed positions (covers lineage.py:20 found-positions path)
+    # Verify write_narratives traversed positions (lineage.py:20 found-positions path)
     pm_run_id = result.snapshot.run_id
     assert position_ids_for_run(graph, pm_run_id) != ()
 

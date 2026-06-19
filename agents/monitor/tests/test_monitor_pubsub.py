@@ -9,7 +9,7 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.monitor.tests.helpers import bar, wire_monitor
-from contracts.common import Explanation, Provenance
+from contracts.common import Provenance
 from contracts.execution import ExecutionResult
 from contracts.monitor import CloseDecisionSet
 from kernel import InMemoryGraphStore, InProcessBus, ReadyEvent, claim_check_read

@@ -1,9 +1,8 @@
 """Dispatcher RPC step helpers — P14 residual.
 
 Agent: orchestration
-Role: thin RPC wrappers for steps still called from orchestration (narrative, supervisor).
-      The per-agent pipeline steps (scan, analyze, evaluate, submit, monitor, report) are
-      now handled by agent pub/sub handlers and are no longer called from the dispatcher.
+Role: thin RPC wrappers for narrative and supervisor steps. The per-agent pipeline
+      steps (scan→report) are now event-driven via agent pub/sub; not called here.
 External I/O: none; uses the injected message bus.
 """
 

@@ -2,7 +2,7 @@
 
 Agent: monitor
 Role: open filled positions, evaluate exits, and hand closes to execution; publish
-      monitor.decisions.ready claim-check events on execution.fills.ready (P14 dual-mode).
+      monitor.decisions.ready claim-check events on execution.fills.ready.
 External I/O: none; provider and execution are reached only over the message bus.
 """
 
@@ -33,7 +33,14 @@ from contracts.monitor import (
     CloseDecisionSet,
     MonitorRequest,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_read,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -80,7 +87,10 @@ class MonitorAgent(AgentBase):
             topic="monitor.decisions.ready",
             label="MonitorDecisionResult",
             ref=f"monitor:{run_id or uuid.uuid4().hex}",
-            props={"decisions": decisions.model_dump(mode="json"), "pm_run_id": pm_run_id},
+            props={
+                "decisions": decisions.model_dump(mode="json"),
+                "pm_run_id": pm_run_id,
+            },
             run_id=run_id,
         )
 

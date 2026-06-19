@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class LabelRow:
-    """One training example: features computed at as_of_date + realized forward return."""
+    """Training example: features at as_of_date + realized forward return."""
 
     ticker: str
     as_of_date: str  # ISO "YYYY-MM-DD"; walk-forward split sorts on this

@@ -2,7 +2,7 @@
 
 Agent: reporter
 Role: expose report and narrative capabilities over the message bus; publish
-      report.snapshot.ready claim-check events on monitor.decisions.ready (P14 dual-mode).
+      report.snapshot.ready claim-check events on monitor.decisions.ready.
 External I/O: none; graph backend is injected.
 """
 
@@ -26,7 +26,14 @@ from contracts.reporter import (
     RunSnapshot,
     TradeNarrative,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_read,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:

@@ -2,7 +2,7 @@
 
 Agent: scanner
 Role: request provider market data over the bus, return ranked candidates via RPC,
-      and publish scan.candidates.ready claim-check events on run.trigger (P14 dual-mode).
+      and publish scan.candidates.ready claim-check events on run.trigger.
 External I/O: none.
 """
 
@@ -20,7 +20,13 @@ from agents.scanner.store import write_scan
 from agents.scanner.universe import StaticUniverse
 from contracts.common import Explanation, ScanRequest, Window
 from contracts.scanner import CONTRACT, Candidate, CandidateSet, FilterTrace
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:

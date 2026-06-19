@@ -11,14 +11,13 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-from kernel.bus import EventHandler, MessageHandler
 from kernel.bus_azure_config import AzureServiceBusSettings
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
 from kernel.metrics import Metrics, NullMetrics, request_metric
 
 if TYPE_CHECKING:
-    pass
+    from kernel.bus import EventHandler, MessageHandler
 
 
 class AzureServiceBusBus:
@@ -38,19 +37,26 @@ class AzureServiceBusBus:
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
         self._subscribers: dict[str, list[EventHandler]] = {}
 
-    def register(self, recipient: str, capability: str, handler: MessageHandler) -> None:
+    def register(
+        self, recipient: str, capability: str, handler: MessageHandler
+    ) -> None:
         """Register a synchronous RPC handler (in-process shim)."""
         self._handlers[(recipient, capability)] = handler
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Route a synchronous RPC request through the in-process handler shim."""
-        with request_metric(self.metrics, message.recipient, message.capability) as metric:
+        with request_metric(
+            self.metrics, message.recipient, message.capability
+        ) as metric:
             handler = self._handlers.get((message.recipient, message.capability))
             if handler is None:
                 return self._error_message(
                     message,
                     error_type="UnknownCapability",
-                    text=f"No handler registered for {message.recipient}.{message.capability}",
+                    text=(
+                    f"No handler registered for"
+                    f" {message.recipient}.{message.capability}"
+                ),
                 )
             payload: dict[str, Any] = {}
             with fault_boundary(
@@ -60,8 +66,7 @@ class AzureServiceBusBus:
                 capability=message.capability,
                 reraise=False,
             ) as capture:
-                result = handler(message.payload)
-                payload = result if isinstance(result, dict) else result
+                payload = handler(message.payload)
             if capture.fault is not None:
                 return self._error_message(
                     message,
@@ -83,31 +88,37 @@ class AzureServiceBusBus:
         self._subscribers.setdefault(topic, []).append(handler)
 
     def publish(self, topic: str, event: dict[str, Any]) -> None:
-        """Deliver event; routes to Azure Service Bus when a connection string is set."""
+        """Deliver event to subscribers, or to Azure Service Bus if creds are set."""
         if self._settings.connection_string is not None:  # pragma: no cover
             self._azure_send(topic, event)
             return
         for handler in self._subscribers.get(topic, []):
             handler(event)
 
-    def _azure_send(self, topic: str, event: dict[str, Any]) -> None:  # pragma: no cover
+    def _azure_send(  # pragma: no cover
+        self, topic: str, event: dict[str, Any]
+    ) -> None:
         """Send one claim-check event to an Azure Service Bus topic."""
-        from azure.servicebus import ServiceBusClient, ServiceBusMessage  # type: ignore[import-not-found]
+        from azure.servicebus import (  # type: ignore[import-not-found]
+            ServiceBusClient,
+            ServiceBusMessage,
+        )
 
         client = ServiceBusClient.from_connection_string(
             self._settings.connection_string,  # type: ignore[arg-type]
         )
-        with client:
-            with client.get_topic_sender(topic_name=topic) as sender:
-                sender.send_messages(
-                    ServiceBusMessage(
-                        json.dumps(event),
-                        content_type="application/json",
-                    )
+        with client, client.get_topic_sender(topic_name=topic) as sender:
+            sender.send_messages(
+                ServiceBusMessage(
+                    json.dumps(event),
+                    content_type="application/json",
                 )
+            )
 
     @staticmethod
-    def _error_message(message: AgentMessage, *, error_type: str, text: str) -> AgentMessage:
+    def _error_message(
+        message: AgentMessage, *, error_type: str, text: str
+    ) -> AgentMessage:
         return AgentMessage(
             sender=message.recipient,
             recipient=message.sender,

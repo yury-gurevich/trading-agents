@@ -26,13 +26,19 @@ def main() -> int:
         "--sarif",
         type=Path,
         default=DEFAULT_SARIF,
-        help="SARIF file to scan (default: .codeql-db/python-security-and-quality.sarif)",
+        help=(
+            "SARIF file to scan"
+            " (default: .codeql-db/python-security-and-quality.sarif)"
+        ),
     )
     args = parser.parse_args()
 
     if not args.sarif.exists():
         print(f"SARIF not found: {args.sarif}", file=sys.stderr)
-        print("Run: powershell -ExecutionPolicy Bypass -File scripts/setup_codeql_local.ps1")
+        print(
+            "Run: powershell -ExecutionPolicy Bypass"
+            " -File scripts/setup_codeql_local.ps1"
+        )
         return 1
 
     data = json.loads(args.sarif.read_text(encoding="utf-8-sig"))
@@ -73,7 +79,10 @@ def main() -> int:
 
     print(f"\n{'RULE':<40} {'SEV':<5} {'FILE'}:{{'LINE'}}")
     print("-" * 100)
-    for e in sorted(errors, key=lambda x: (str(x["sec_sev"]), str(x["rule"]), str(x["file"]))):
+    for e in sorted(
+        errors,
+        key=lambda x: (str(x["sec_sev"]), str(x["rule"]), str(x["file"])),
+    ):
         print(
             f"{str(e['rule']):<40} {str(e['sec_sev']):<5}  "
             f"{e['file']}:{e['line']}"

@@ -1,13 +1,12 @@
 """Orchestration steps tests — P14 residual step helpers.
 
 Agent: orchestration
-Role: verify step_narrative and step_record_dispatch_run; including the error-envelope path.
+Role: verify step_narrative and step_record_dispatch_run.
 External I/O: none.
 """
 
 from __future__ import annotations
 
-from contracts.common import Explanation, Provenance
 from contracts.supervisor import DispatchRunRecord
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
 from orchestration.steps import step_narrative, step_record_dispatch_run
@@ -24,7 +23,7 @@ def _error_response(capability: str) -> dict[str, object]:
 
 
 def test_step_narrative_error_response_returns_none() -> None:
-    """Error envelope from reporter is captured → step returns None (covers steps.py:66)."""
+    """Error envelope → step returns None (covers steps.py:66)."""
     bus = InProcessBus()
     bus.register("reporter", "narrative", lambda _p: _error_response("narrative"))
     result = step_narrative(bus, "pos-id-1")

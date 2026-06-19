@@ -10,6 +10,7 @@ External I/O: none.
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from kernel import (
     InMemoryGraphStore,
@@ -147,5 +148,5 @@ def test_produce_consume_round_trip() -> None:
 
 def test_ready_event_is_frozen() -> None:
     event = ReadyEvent(topic="t", label="L", ref="r")
-    with pytest.raises(Exception):
+    with pytest.raises((ValidationError, TypeError)):
         event.ref = "changed"  # type: ignore[misc]

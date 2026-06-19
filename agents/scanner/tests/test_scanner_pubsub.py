@@ -20,7 +20,9 @@ from contracts.scanner import CandidateSet
 from kernel import InMemoryGraphStore, InProcessBus, claim_check_read
 
 
-def _bar(ticker: str, days_ago: int, close: float = 20.0, volume: int = 500_000) -> OHLCVBar:
+def _bar(
+    ticker: str, days_ago: int, close: float = 20.0, volume: int = 500_000
+) -> OHLCVBar:
     day = datetime.now(tz=UTC).date() - timedelta(days=days_ago)
     open_ = close * 0.95
     return OHLCVBar(

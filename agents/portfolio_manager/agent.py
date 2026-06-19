@@ -1,8 +1,8 @@
 """Portfolio Manager agent implementation.
 
 Agent: portfolio_manager
-Role: size and risk-check analyst recommendations into order intents via RPC, and publish
-      portfolio.orders.ready claim-check events on analysis.recommendations.ready (P14 dual-mode).
+Role: size and risk-check recommendations into order intents via RPC, and publish
+      portfolio.orders.ready claim-check events on analysis.recommendations.ready.
 External I/O: none.
 """
 
@@ -29,7 +29,14 @@ from contracts.portfolio_manager import (
     OrderIntentSet,
     RejectedOrder,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, claim_check_read, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    claim_check_read,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -65,7 +72,9 @@ class PortfolioManagerAgent(AgentBase):
     def bind(self) -> None:
         """Register RPC handlers and subscribe to analysis.recommendations.ready."""
         super().bind()
-        self.bus.subscribe("analysis.recommendations.ready", self._on_recommendations_ready)
+        self.bus.subscribe(
+            "analysis.recommendations.ready", self._on_recommendations_ready
+        )
 
     def _on_recommendations_ready(self, event: dict[str, Any]) -> None:
         run_id: str | None = event.get("run_id")

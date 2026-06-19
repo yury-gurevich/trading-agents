@@ -7,7 +7,10 @@ External I/O: none.
 
 from __future__ import annotations
 
-from orchestration.trigger import RunTrigger
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from orchestration.trigger import RunTrigger
 
 
 def active_trigger(trigger: RunTrigger, default_universe: str) -> RunTrigger:

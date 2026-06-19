@@ -26,7 +26,14 @@ from contracts.provider import (
     RegimeContext,
     RegimeRequest,
 )
-from kernel import AgentBase, CollectingFaultSink, FaultSink, GraphStore, MessageBus, claim_check_write
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FaultSink,
+    GraphStore,
+    MessageBus,
+    claim_check_write,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:

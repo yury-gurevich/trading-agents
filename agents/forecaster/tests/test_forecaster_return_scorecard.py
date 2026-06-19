@@ -23,7 +23,9 @@ _BARS = make_bars("AAPL", tuple(100.0 + i for i in range(30)))
 
 
 def test_return_scorecard_aligns_prediction_with_injected_return() -> None:
-    bus, _graph, sink = wire_forecaster(bars=_BARS, return_model=FakeReturnModel(raw=0.05))
+    bus, _graph, sink = wire_forecaster(
+        bars=_BARS, return_model=FakeReturnModel(raw=0.05)
+    )
     bus.request(forecast_return_message("AAPL"))
 
     card = Scorecard.model_validate(
@@ -65,9 +67,8 @@ def test_return_scorecard_unknown_model_id_is_empty() -> None:
     bus, _graph, _ = wire_forecaster(bars=_BARS, return_model=FakeReturnModel(raw=0.05))
     bus.request(forecast_return_message("AAPL"))
 
-    card = Scorecard.model_validate(
-        bus.request(return_scorecard_message("nonexistent-model", {"AAPL": 0.03})).payload
-    )
+    req = return_scorecard_message("nonexistent-model", {"AAPL": 0.03})
+    card = Scorecard.model_validate(bus.request(req).payload)
     assert card.sample_size == 0
     assert card.metrics == {}
 

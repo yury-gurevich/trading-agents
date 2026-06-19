@@ -146,7 +146,9 @@ def test_forecast_return_persists_and_returns_a_shadow_prediction() -> None:
 
 def test_forecast_return_with_too_few_bars_is_neutral() -> None:
     bars = make_bars("AAPL", (100.0, 101.0, 102.0))
-    bus, _graph, sink = wire_forecaster(bars=bars, return_model=FakeReturnModel(raw=0.9))
+    bus, _graph, sink = wire_forecaster(
+        bars=bars, return_model=FakeReturnModel(raw=0.9)
+    )
 
     prediction = ShadowPrediction.model_validate(
         bus.request(forecast_return_message("AAPL")).payload

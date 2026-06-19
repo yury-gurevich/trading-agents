@@ -1,6 +1,13 @@
 # Project State
 
-**Last updated:** 2026-06-19 22:45 AEST
+**Last updated:** 2026-06-19 23:30 AEST
+
+**S68 shipped: analyst Alpha158 feature pillar (qlib Phase Q2).** `AlphaFeatureRow` dataclass
+(22 fields: ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons) + `compute_alpha_features()` (returns None
+< 62 bars) + `score_alpha158()` (cross-sectional z-score → logistic 0–100); `ScoreBreakdown`
+gains `alpha158_score`; `_composite()` renormalised over present pillars; pillar off by default
+(`alpha158_pillar_weight=0.00`); operator enables after 20-day IC validation; pyqlib-free (3.13
+constraint). **890 tests**, 100 % coverage. **version 0.9.0→0.10.0** (feat/MINOR, HARD RULE).
 
 **P14 complete — inter-agent comms re-architecture (S60–S67).** Replaced synchronous
 RPC hand-offs with event-driven publish/subscribe + claim-check (ADR-0005). All 7 agents

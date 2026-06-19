@@ -109,6 +109,18 @@ class AnalystSettings(_IndicatorSettings):
         ge=1,
         le=20,
     )
+    alpha158_pillar_weight: float = tunable(
+        0.00,
+        why=(
+            "Fifth scoring pillar weight for the Alpha158 multi-horizon "
+            "momentum/volatility composite. Default 0.00 = off; operator enables "
+            "after 20-day shadow IC comparison against the existing technical pillar "
+            "shows non-trivial incremental information (target: ΔIC ≥ 0.02 on the "
+            "held-out window)."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
 
     @model_validator(mode="after")
     def _spans_are_ordered(self) -> Self:

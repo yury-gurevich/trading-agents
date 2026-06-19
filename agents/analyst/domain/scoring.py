@@ -39,6 +39,7 @@ class ScoreBreakdown:
     metrics: dict[str, float]
     fundamental_score: float | None = None
     sentiment_score: float | None = None
+    alpha158_score: float | None = None
     top_signals: tuple[str, ...] = ()
     rejection_reason: str | None = None
 
@@ -51,6 +52,8 @@ def score_candidate(
     benchmark_bars: tuple[OHLCVBar, ...],
     news: tuple[str, ...],
     settings: AnalystSettings,
+    *,
+    alpha_score: float | None = None,
 ) -> ScoreBreakdown:
     """Score one candidate from price history, fundamentals, and news; then blend."""
     rows = sorted(bars, key=lambda bar: bar.bar_date)
@@ -59,6 +62,7 @@ def score_candidate(
             technical_score=0.0,
             confidence=0.0,
             metrics={"history_bars": float(len(rows))},
+            alpha158_score=alpha_score,
             rejection_reason="insufficient_market_history",
         )
 
@@ -70,7 +74,8 @@ def score_candidate(
     fundamental = None if raw_fund is None else _bounded(raw_fund / 100.0)
     raw_sent, smetrics = score_sentiment(news)
     sentiment = None if raw_sent is None else _bounded(raw_sent / 100.0)
-    composite = _composite(technical, fundamental, sentiment, settings)
+    alpha = None if alpha_score is None else _bounded(alpha_score / 100.0)
+    composite = _composite(technical, fundamental, sentiment, alpha, settings)
     confidence = _bounded(
         settings.confidence_floor + composite * settings.confidence_span
     )
@@ -88,6 +93,8 @@ def score_candidate(
         metrics["fundamental_score"] = fundamental
     if sentiment is not None:
         metrics["sentiment_score"] = sentiment
+    if alpha_score is not None:
+        metrics["alpha158_score"] = alpha_score
     sentiment_signals = (
         [Signal(name="sentiment", pillar="sentiment", score=raw_sent)]
         if raw_sent is not None
@@ -112,6 +119,7 @@ def score_candidate(
         metrics=metrics,
         fundamental_score=fundamental,
         sentiment_score=sentiment,
+        alpha158_score=alpha_score,
         top_signals=tuple(signal.name for signal in selected),
     )
 
@@ -140,15 +148,16 @@ def _composite(
     technical: float,
     fundamental: float | None,
     sentiment: float | None,
+    alpha: float | None,
     settings: AnalystSettings,
 ) -> float:
     """Blend the present pillars, renormalised over their weights.
 
-    Returns the technical score alone when neither optional pillar is present;
+    Returns the technical score alone when all optional pillars are absent;
     otherwise sums each present pillar's weighted value over the present weights
     (so a two-pillar result is exactly today's technical+fundamental blend).
     """
-    if fundamental is None and sentiment is None:
+    if fundamental is None and sentiment is None and alpha is None:
         return technical
     weighted = settings.technical_weight * technical
     weight_sum = settings.technical_weight
@@ -158,6 +167,9 @@ def _composite(
     if sentiment is not None:
         weighted += settings.sentiment_weight * sentiment
         weight_sum += settings.sentiment_weight
+    if alpha is not None:
+        weighted += settings.alpha158_pillar_weight * alpha
+        weight_sum += settings.alpha158_pillar_weight
     return weighted / weight_sum
 
 

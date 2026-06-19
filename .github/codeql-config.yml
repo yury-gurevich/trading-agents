@@ -1,5 +1,11 @@
 name: trading-agents CodeQL config
 
+# Paths that CodeQL should never analyse — its own database artifacts and
+# configuration queries are not project source code.
+paths-ignore:
+  - ".codeql-db/**"
+  - "codeql/**"
+
 # Suppress known false-positive rules that fire on intentional codebase patterns.
 #
 # py/ineffectual-statement: Protocol method bodies use `...` (Ellipsis) as the

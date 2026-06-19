@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-19 18:42 AEST
+**Last updated:** 2026-06-19 22:45 AEST
 
 **P14 complete — inter-agent comms re-architecture (S60–S67).** Replaced synchronous
 RPC hand-offs with event-driven publish/subscribe + claim-check (ADR-0005). All 7 agents
@@ -97,18 +97,20 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**Branch `sprint-58-forecaster-lightgbm-shadow` is clean and ready to merge.** All work
-for S58, S59, and P14 (S60–S67) is committed on this branch (4 commits ahead of main).
-No uncommitted changes. **Immediate next action: merge to main, then select next sprint.**
+**`main` is clean and up-to-date.** All work for S58, S59, and P14 (S60–S67) is merged to
+`main` (7 commits, fast-forward). `checkpoint-20260619-p14-pubsub-azure` tag + backup branch
+pushed. Feature branch deleted. CI fix committed (ruff violations from S59+P14 files — 863
+tests, 100% coverage). **Immediate next action: start S68 (Analyst Alpha158 pillar).**
 
 ## Next
 
-+ **Merge `sprint-58-forecaster-lightgbm-shadow` to main** (immediate; clean, 4 commits
-  ahead; triggers rebuild + image upload per ADR-0007).
-+ **Qlib Phase Q2 — analyst Alpha158 pillar** (next planned code sprint; `lightgbm`-direct
-  factor feature extraction in the analyst domain; re-scoped for Python 3.13 — no `pyqlib`).
-+ **Law CAP+PARAM backfills** for the remaining 11 agents (ADR-0007; S53 set the template;
-  precedes any law-test integration sprint).
++ **S68 — Qlib Phase Q2: Analyst Alpha158 pillar** (planned; see [sprint doc](sprints/sprint-68-analyst-alpha158-pillar.md)).
+  Branch: `sprint-68-analyst-alpha158-pillar`. 20 time-series features (ROC/STD/MAX/MIN/IMAX/IMIN
+  at 4 horizons) → cross-sectional z-score → 0–100 fifth pillar; `alpha158_pillar_weight=0.00` off
+  by default; pyqlib-free. **Effort: M (3–5 days).**
++ **S69 — Law CAP+PARAM backfills** for remaining 11 agents (ADR-0007; S53 set the template;
+  precedes any law-test integration sprint): scanner, analyst, pm, execution, monitor, reporter,
+  operator, supervisor, researcher, curator, forecaster.
 + **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
   (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
   shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),

@@ -15,6 +15,7 @@ for the rationale instead of re-deriving it.
 | [0007](0007-container-per-agent-master-bootstrap.md) | Container-per-agent + master bootstrap | ✅ Accepted | How do we deploy each agent? Who manages secrets? How do agents get their identity? | `docker` `azure` `container-apps` `master` `key-vault` `p14` |
 | [0008](0008-neo4j-hosting-local-docker.md) | Neo4j hosting: local Docker | ✅ Accepted | Where does Neo4j run in dev/staging? Aura cloud vs Desktop vs Docker? | `neo4j` `docker` `hosting` `aura` |
 | [0009](0009-azure-native-tech-stack.md) | Azure-native infrastructure standard | ✅ Accepted | What is the approved infrastructure list? Can we add Prometheus, Celery, Postgres, Grafana? | `azure` `infrastructure` `stack` `prometheus` `celery` `postgres` |
+| [0010](0010-llm-interaction-quality-gate.md) | LLM interaction quality gate (eval-gated prompts, DSPy) | ✅ Accepted | How do we stop LLM output quality degrading across model/provider/fallback/functionality changes? DSPy, EvoPrompt, or both? | `llm` `prompts` `dspy` `evoprompt` `champion-challenger` `p10` |
 
 ## Status legend
 
@@ -24,7 +25,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0010`.
+1. Next number is `0011`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

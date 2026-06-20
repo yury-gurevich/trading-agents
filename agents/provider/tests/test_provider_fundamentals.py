@@ -29,7 +29,7 @@ def _bar(ticker: str, day: int) -> OHLCVBar:
 
 def _message(payload: dict[str, object]) -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",
@@ -48,6 +48,7 @@ def _payload(*, fundamentals: bool) -> dict[str, object]:
 
 
 def test_fundamentals_populated_when_field_requested() -> None:
+    """PROV-IN-01 / PROV-OUT-01: fundamentals field is served when requested."""
     bus = InProcessBus()
     ProviderAgent(
         bus,
@@ -65,6 +66,7 @@ def test_fundamentals_populated_when_field_requested() -> None:
 
 
 def test_fundamentals_empty_by_default() -> None:
+    """PROV-IN-01: fundamentals NOT in the field set → empty dict; no extras."""
     bus = InProcessBus()
     ProviderAgent(
         bus,
@@ -81,6 +83,8 @@ def test_fundamentals_empty_by_default() -> None:
 
 
 def test_fundamentals_failure_degrades_without_affecting_ohlcv() -> None:
+    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: fundamentals failure degrades only
+    that field; OHLCV is unaffected; fault is routed to the central channel."""
     bus = InProcessBus()
     sink = CollectingFaultSink()
     ProviderAgent(

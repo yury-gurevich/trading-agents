@@ -35,6 +35,7 @@ class AgentBase:
                 self.contract.name,
                 capability.name,
                 self._bus_handler(capability, self.handlers[capability.name]),
+                capability.allowed_callers,
             )
 
     @staticmethod

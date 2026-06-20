@@ -124,6 +124,24 @@ def test_celery_unknown_capability_returns_error_without_exception() -> None:
     }
 
 
+def test_celery_unauthorized_caller_is_rejected() -> None:
+    bus = CeleryBus()
+    bus.register("echo_agent", "echo", lambda payload: payload, ("trusted",))
+
+    response = bus.request(
+        AgentMessage(
+            sender="intruder",
+            recipient="echo_agent",
+            message_type="request",
+            capability="echo",
+            payload={"text": "hi"},
+        )
+    )
+
+    assert response.message_type == "error"
+    assert response.payload["error_type"] == "Unauthorized"
+
+
 def test_celery_worker_missing_handler_returns_task_error() -> None:
     bus = CeleryBus()
     EchoAgent(bus).bind()

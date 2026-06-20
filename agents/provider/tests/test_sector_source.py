@@ -32,33 +32,44 @@ _WINDOW = Window(start=date(2024, 1, 2), end=date(2024, 1, 3))
 
 
 def test_parse_sector_extracts_finnhub_industry() -> None:
+    """PROV-TYP-01: the sector parser extracts the expected field from Finnhub."""
     assert _parse_sector(json.dumps({"finnhubIndustry": "Technology"})) == "Technology"
 
 
 def test_parse_sector_missing_empty_or_non_string_yields_none() -> None:
+    """PROV-NEV-07: missing, empty, or non-string sector fields yield None — never
+    fabricated."""
     assert _parse_sector(json.dumps({"name": "AAPL"})) is None
     assert _parse_sector(json.dumps({"finnhubIndustry": ""})) is None
     assert _parse_sector(json.dumps({"finnhubIndustry": 42})) is None
 
 
 def test_parse_sector_non_dict_or_malformed_yields_none() -> None:
+    """PROV-NEV-07 / PROV-TYP-03: malformed or non-dict responses yield None — never
+    fabricated, never a crash."""
     assert _parse_sector(json.dumps([1, 2, 3])) is None
     assert _parse_sector("not json at all") is None
     assert _parse_sector("") is None
 
 
 def test_fake_source_returns_per_ticker_sector_subset() -> None:
+    """PROV-IN-01: the sector source serves only the requested tickers' data — exact
+    field-set, no extras."""
     source = FakeDataSource(sectors={"AAPL": "Technology", "XOM": "Energy"})
     assert source.fetch_sectors(("AAPL",)) == {"AAPL": "Technology"}
     assert source.fetch_sectors(("TSLA",)) == {}
 
 
 def test_fake_source_raises_when_sectors_fail() -> None:
+    """PROV-FAIL-01: a sector-source failure propagates as an exception to be contained
+    at the agent boundary."""
     with pytest.raises(RuntimeError, match="sectors source unavailable"):
         FakeDataSource(fail_sectors=True).fetch_sectors(("AAPL",))
 
 
 def test_ohlcv_and_sentiment_only_sources_return_no_sectors() -> None:
+    """PROV-IDN-02: OHLCV and sentiment-only sources return empty sectors — clean
+    boundary separation; only the fundamentals source holds sector data."""
     assert StooqDataSource().fetch_sectors(("AAPL",)) == {}
     tiingo = TiingoDataSource(api_key="k", base_url="https://x", timeout=10)
     assert tiingo.fetch_sectors(("AAPL",)) == {}
@@ -69,6 +80,8 @@ def test_ohlcv_and_sentiment_only_sources_return_no_sectors() -> None:
 
 
 def test_finnhub_source_fetches_sectors_and_skips_unknown_without_network() -> None:
+    """PROV-NEV-07: the Finnhub adapter skips tickers with no sector mapping — never
+    fabricates a value for an unknown ticker."""
     source = FinnhubDataSource(api_key="k", base_url="https://x", timeout=5)
 
     def fake_download_profile(_self: FinnhubDataSource, ticker: str) -> str:
@@ -82,6 +95,8 @@ def test_finnhub_source_fetches_sectors_and_skips_unknown_without_network() -> N
 
 
 def test_composite_routes_sectors_to_fundamentals_source() -> None:
+    """PROV-IDN-01: the composite source routes sector queries to the fundamentals
+    sub-source (Finnhub), not the price feed."""
     price = FakeDataSource(sectors={"AAPL": "price-side"})
     funda = FakeDataSource(sectors={"AAPL": "Technology"})
     senti = FakeDataSource()
@@ -91,7 +106,7 @@ def test_composite_routes_sectors_to_fundamentals_source() -> None:
 
 def _sectors_request() -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",
@@ -113,12 +128,16 @@ def _wire(source: FakeDataSource) -> InProcessBus:
 
 
 def test_provider_serves_sectors_when_requested() -> None:
+    """PROV-IN-01 / PROV-OUT-01: provider serves sectors field when requested;
+    response contains the sector mapping for the requested tickers."""
     bus = _wire(FakeDataSource(sectors={"AAPL": "Technology"}))
     market = MarketData.model_validate(bus.request(_sectors_request()).payload)
     assert market.sectors == {"AAPL": "Technology"}
 
 
 def test_provider_degrades_when_a_sector_fetch_faults() -> None:
+    """PROV-FAIL-02 / PROV-NEV-01: a sector-fetch fault degrades gracefully — flagged
+    in quality notes; other fields unaffected."""
     bus = _wire(FakeDataSource(fail_sectors=True))
     market = MarketData.model_validate(bus.request(_sectors_request()).payload)
     assert market.sectors == {}

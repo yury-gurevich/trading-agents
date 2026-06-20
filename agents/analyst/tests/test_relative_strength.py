@@ -17,9 +17,9 @@ from agents.analyst.domain.relative_strength import (
     score_relative_strength,
 )
 from agents.analyst.domain.scoring import score_candidate
-from agents.analyst.provider_client import request_benchmark_bars
+from agents.analyst.provider_client import request_market_data
 from agents.analyst.settings import AnalystSettings
-from agents.analyst.tests.helpers import bar, candidate
+from agents.analyst.tests.helpers import bar, candidate, candidate_set
 from contracts.common import Window
 from kernel import CollectingFaultSink, InProcessBus
 
@@ -83,11 +83,16 @@ def test_relative_strength_blends_into_technical_score() -> None:
     assert with_rs.metrics["rs_score"] == pytest.approx(score_relative_strength(spread))
 
 
-def test_benchmark_fetch_is_empty_when_provider_unavailable() -> None:
+def test_market_request_is_none_when_provider_unavailable() -> None:
+    # The benchmark now rides the market-data request as a dedicated field; with no
+    # provider bound the whole request faults and degrades to None (RS then skips).
     bus = InProcessBus()  # no provider bound — the request faults
     sink = CollectingFaultSink()
     end = datetime.now(tz=UTC).date()
     window = Window(start=end - timedelta(days=10), end=end)
 
-    assert request_benchmark_bars(bus, sink, "SPY", window) == ()
+    market = request_market_data(
+        bus, sink, candidate_set(candidate("AAA")), window, "SPY"
+    )
+    assert market is None
     assert sink.faults

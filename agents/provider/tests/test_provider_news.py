@@ -29,7 +29,7 @@ def _bar(ticker: str, day: int) -> OHLCVBar:
 
 def _message(payload: dict[str, object]) -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability="get_market_data",
@@ -48,6 +48,8 @@ def _payload(*, news: bool) -> dict[str, object]:
 
 
 def test_news_populated_when_field_requested() -> None:
+    """PROV-IN-01 / PROV-OUT-01 / PROV-NEV-08: raw headlines served when news is
+    requested; provider performs no sentiment scoring or classification."""
     bus = InProcessBus()
     ProviderAgent(
         bus,
@@ -65,6 +67,7 @@ def test_news_populated_when_field_requested() -> None:
 
 
 def test_news_empty_by_default() -> None:
+    """PROV-IN-01: news NOT in the field set → empty dict; field-gating enforced."""
     bus = InProcessBus()
     ProviderAgent(
         bus,
@@ -81,6 +84,8 @@ def test_news_empty_by_default() -> None:
 
 
 def test_news_failure_degrades_without_affecting_ohlcv() -> None:
+    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: news failure degrades only the news
+    field; OHLCV is unaffected; fault is routed to the central channel."""
     bus = InProcessBus()
     sink = CollectingFaultSink()
     ProviderAgent(

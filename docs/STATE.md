@@ -1,6 +1,17 @@
 # Project State
 
-**Last updated:** 2026-06-19 23:30 AEST
+**Last updated:** 2026-06-20 19:00 AEST
+
+**S69 shipped: provider law cycle — template locked (v0.10.0→0.11.0).** Two OPEN drifts
+corrected: DRIFT-006 (benchmark promoted to first-class `DataRequest.benchmark_ticker` field +
+`MarketData.benchmark`; `taint=False` so a degraded benchmark never sets `used_fallback` on
+candidate quality; analyst uses `market.benchmark` directly); DRIFT-007 (`caller_authorized`
+predicate + `allowed_callers` gate in all three buses — InProcess, Celery, Azure Service Bus;
+`AgentBase.bind()` threads it; provider capability matrix now enforced for `get_market_data`
+and `get_regime`). Law-ID citation pass across 7 provider test files; `test-plan.md` updated
+to 23/43 clauses 🟩. `agents/provider/laws/laws.md` LOCKED v1; `docs/laws/_TEMPLATE.md` lock
+comment added — safe to copy to the 11 remaining agents. **894 tests**, 100 % coverage.
+**version 0.10.0→0.11.0** (feat/MINOR, HARD RULE).
 
 **S68 shipped: analyst Alpha158 feature pillar (qlib Phase Q2).** `AlphaFeatureRow` dataclass
 (22 fields: ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons) + `compute_alpha_features()` (returns None
@@ -104,20 +115,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**`main` is clean and up-to-date.** All work for S58, S59, and P14 (S60–S67) is merged to
-`main` (7 commits, fast-forward). `checkpoint-20260619-p14-pubsub-azure` tag + backup branch
-pushed. Feature branch deleted. CI fix committed (ruff violations from S59+P14 files — 863
-tests, 100% coverage). **Immediate next action: start S68 (Analyst Alpha158 pillar).**
+**S70 — Per-agent law files (batched, scanner + analyst + PM + execution).** Provider law is
+LOCKED v1 (S69) — the template is safe to copy. S70 authors the law files for the core
+trading-loop agents at full 18-section depth (IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/
+DEP/OBS/PERF/CAP/PARAM + divergence register + changelog), drives each through its cite→test
+cycle, and locks each law file. ~3–4 agents per sprint.
+
+Also pending (small, separate chore): add `system_prompt` as a `tunable` to
+`agents/operator/settings.py` (operator, now) and pre-declare it on
+`agents/forecaster/settings.py` (ADR-0010 immediate consequence; chore-branch off main).
 
 ## Next
 
-+ **S68 — Qlib Phase Q2: Analyst Alpha158 pillar** (planned; see [sprint doc](sprints/sprint-68-analyst-alpha158-pillar.md)).
-  Branch: `sprint-68-analyst-alpha158-pillar`. 20 time-series features (ROC/STD/MAX/MIN/IMAX/IMIN
-  at 4 horizons) → cross-sectional z-score → 0–100 fifth pillar; `alpha158_pillar_weight=0.00` off
-  by default; pyqlib-free. **Effort: M (3–5 days).**
-+ **S69 — Law CAP+PARAM backfills** for remaining 11 agents (ADR-0007; S53 set the template;
-  precedes any law-test integration sprint): scanner, analyst, pm, execution, monitor, reporter,
-  operator, supervisor, researcher, curator, forecaster.
 + **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
   (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
   shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),

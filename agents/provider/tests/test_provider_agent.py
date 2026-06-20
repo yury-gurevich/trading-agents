@@ -36,7 +36,7 @@ def _bar(
 
 def _message(capability: str, payload: dict[str, object]) -> AgentMessage:
     return AgentMessage(
-        sender="tester",
+        sender="analyst",
         recipient="provider",
         message_type="request",
         capability=capability,
@@ -52,6 +52,8 @@ def _market_payload(tickers: tuple[str, ...] = ("AAPL",)) -> dict[str, object]:
 
 
 def test_get_market_data_round_trips_and_writes_provenance() -> None:
+    """PROV-OUT-01 / PROV-OUT-04 / PROV-STA-01: validated facts written to the store
+    with provenance; a clean request round-trips to a SUCCESS response."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ProviderAgent(
@@ -71,6 +73,8 @@ def test_get_market_data_round_trips_and_writes_provenance() -> None:
 
 
 def test_integrity_anomaly_is_reported_without_crashing() -> None:
+    """PROV-NEV-01 / PROV-OUT-03b: an integrity anomaly degrades the quality record
+    (flagged, never crashed, never silently clean)."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     settings = ProviderSettings(max_daily_move_sigma=0.5, max_staleness_days=10)
@@ -96,6 +100,8 @@ def test_integrity_anomaly_is_reported_without_crashing() -> None:
 
 
 def test_source_failure_records_fault_and_returns_degraded_data() -> None:
+    """PROV-FAIL-01 / PROV-OUT-03c / PROV-OBS-02: an unreachable source degrades to a
+    flagged record + routed fault, never a crash or bad-as-good data."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
@@ -123,6 +129,8 @@ def test_source_failure_records_fault_and_returns_degraded_data() -> None:
 
 
 def test_get_regime_maps_vix_to_policy_and_graph() -> None:
+    """PROV-OUT-02: a regime request returns the classification plus the regime-derived
+    policy defaults (stop/target/holding), with provenance to the graph."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ProviderAgent(
@@ -141,6 +149,7 @@ def test_get_regime_maps_vix_to_policy_and_graph() -> None:
 
 
 def test_provider_outputs_do_not_leak_credentials() -> None:
+    """PROV-NEV-04 / PROV-SEC-02: no credential appears in any served response."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     token = "super-secret-provider-token"  # noqa: S105 - fake leak sentinel.

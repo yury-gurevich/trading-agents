@@ -56,6 +56,8 @@ def _raw_bar(
 
 
 def test_integrity_rejects_invalid_bars_and_reports_stale_tickers() -> None:
+    """PROV-NEV-01 / PROV-OUT-03b / PROV-STA-04: bad bars and stale tickers rejected;
+    quality record is DEGRADED (flagged), never a silently-clean success."""
     window = Window(start=date(2026, 1, 1), end=date(2026, 1, 10))
     settings = ProviderSettings(max_staleness_days=2)
 
@@ -81,6 +83,7 @@ def test_integrity_rejects_invalid_bars_and_reports_stale_tickers() -> None:
 
 
 def test_integrity_clean_short_window_has_no_notes() -> None:
+    """PROV-OUT-03a: a clean, valid fetch produces SUCCESS quality with no notes."""
     window = Window(start=date(2026, 1, 1), end=date(2026, 1, 1))
 
     _bars, quality = validate_bars(
@@ -95,6 +98,8 @@ def test_integrity_clean_short_window_has_no_notes() -> None:
 
 
 def test_integrity_nonzero_sigma_without_anomaly_stays_clean() -> None:
+    """PROV-OUT-03a / PROV-NEV-01: non-zero price variance without a sigma breach
+    stays SUCCESS — no false-positive degradation."""
     window = Window(start=date(2026, 1, 1), end=date(2026, 1, 1))
 
     _bars, quality = validate_bars(
@@ -113,6 +118,8 @@ def test_integrity_nonzero_sigma_without_anomaly_stays_clean() -> None:
 
 
 def test_regime_classifier_covers_vix_bands() -> None:
+    """PROV-OUT-02: the regime classifier maps all VIX bands to the correct label
+    (risk_on/neutral/risk_off/high_volatility/extreme_volatility); None → neutral."""
     settings = ProviderSettings()
 
     assert classify_regime(RegimeInputs(date(2026, 1, 1), None), settings) == "neutral"
@@ -130,6 +137,8 @@ def test_regime_classifier_covers_vix_bands() -> None:
 
 
 def test_fake_source_can_fail_regime_inputs() -> None:
+    """PROV-FAIL-01: regime-source failure is contained at the boundary — propagates
+    as an exception rather than returning a fabricated neutral classification."""
     source = FakeDataSource(fail_regime=True)
 
     with pytest.raises(RuntimeError, match="regime source unavailable"):

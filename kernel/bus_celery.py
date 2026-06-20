@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from celery import Celery
 
+from kernel.bus import caller_authorized
 from kernel.bus_celery_config import CeleryBusSettings, TaskResult
 from kernel.envelope import AgentMessage
 from kernel.errors import CollectingFaultSink, FaultSink, fault_boundary
@@ -36,15 +37,21 @@ class CeleryBus:
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.metrics = metrics if metrics is not None else NullMetrics()
         self._handlers: dict[tuple[str, str], MessageHandler] = {}
+        self._allowed: dict[tuple[str, str], tuple[str, ...]] = {}
         self._subscribers: dict[str, list[EventHandler]] = {}
         self._app = app if app is not None else self._build_app()
         self._dispatch_task = self._register_dispatch_task()
 
     def register(
-        self, recipient: str, capability: str, handler: MessageHandler
+        self,
+        recipient: str,
+        capability: str,
+        handler: MessageHandler,
+        allowed_callers: tuple[str, ...] = (),
     ) -> None:
-        """Register a handler for one recipient capability."""
+        """Register a handler for one recipient capability and its caller gate."""
         self._handlers[(recipient, capability)] = handler
+        self._allowed[(recipient, capability)] = allowed_callers
 
     def request(self, message: AgentMessage) -> AgentMessage:
         """Dispatch a request through Celery and return a response or error."""
@@ -57,6 +64,16 @@ class CeleryBus:
                     error_type="UnknownCapability",
                     text=(
                         "No handler registered for "
+                        f"{message.recipient}.{message.capability}"
+                    ),
+                )
+            allowed = self._allowed.get((message.recipient, message.capability), ())
+            if not caller_authorized(allowed, message.sender):
+                return self._error_message(
+                    message,
+                    error_type="Unauthorized",
+                    text=(
+                        f"{message.sender} is not an authorized caller of "
                         f"{message.recipient}.{message.capability}"
                     ),
                 )

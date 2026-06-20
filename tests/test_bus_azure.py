@@ -68,6 +68,23 @@ def test_register_and_request_routes_in_process() -> None:
     assert response.payload["echoed"] == "hello"
 
 
+def test_request_from_unauthorized_caller_is_rejected() -> None:
+    bus = AzureServiceBusBus()
+    bus.register("agent", "echo", lambda p: {"echoed": p.get("val")}, ("trusted",))
+    msg = AgentMessage(
+        sender="intruder",
+        recipient="agent",
+        message_type="request",
+        capability="echo",
+        payload={"val": "hello"},
+    )
+
+    response = bus.request(msg)
+
+    assert response.message_type == "error"
+    assert response.payload["error_type"] == "Unauthorized"
+
+
 def test_request_unknown_capability_returns_error() -> None:
     bus = AzureServiceBusBus()
     msg = AgentMessage(

@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** DRAFT v0 (template stress-test) · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -302,9 +302,10 @@ status:
   is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
   `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
   `PROV-OUT-06`).
-- **OPEN — code-reconcile at test time** — DRIFT-006 (`PROV-OUT-01`: benchmark is a *field*; code S38
-  fetches it separately — reconcile code to law), DRIFT-007 (`PROV-SEC-07`: verify the capability
-  matrix actually gates data requests).
+- **CORRECTED (S69)** — DRIFT-006 (`PROV-OUT-01`: benchmark added as `DataRequest.benchmark_ticker` +
+  `MarketData.benchmark`; `taint=False` for clean candidate quality; analyst uses `market.benchmark`
+  directly), DRIFT-007 (`PROV-SEC-07`: `caller_authorized` gate in all three buses; provider
+  capability matrix enforced; `test_provider_reconcile.py` covers both).
 
 ## Changelog
 
@@ -323,3 +324,8 @@ status:
 - v0.4 — `CAP` and `PARAM` sections added (ADR-0007, S53): runtime capability declaration (4
   interface categories: messaging, graph_store, external_http, secrets) and full parameter table
   (20 entries — 16 tunable, 4 non-tunable base URLs).
+- **v1 — LOCKED (S69)**: full test cycle complete. DRIFT-006 corrected (benchmark as first-class
+  `DataRequest` field; `taint=False` isolation). DRIFT-007 corrected (`caller_authorized` gate in all
+  three buses + provider capability matrix). Citation pass complete across all provider test files;
+  `test-plan.md` bound with 23 green clauses / 43 total. **This law is now the authoritative
+  specification; copy template to other agents starting here.**

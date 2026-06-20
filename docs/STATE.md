@@ -13,7 +13,7 @@ is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existin
 `config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
 azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
 
-**Now:** — (S75 complete). Next: S76 — DockerHub image push + Container Apps deploy manifest.
+**Now:** — (S75 complete). Next: S76 — GHCR build pipeline + Container Apps deploy (ADR-0011: GHCR over DockerHub/ACR; GitHub Actions matrix build, Key Vault provisioning, deploy-agents workflow).
 
 ---
 

@@ -44,6 +44,7 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 | curator | ✅ v1 (LOCKED) | 20 / 48 | 🟨 partial — 20 clauses green (S71 citation pass); 28 gap-tests remain ⬜ |
 | operator | ✅ v1 (LOCKED) | 14 / 51 | 🟨 partial — 14 clauses green (S71 citation pass); 37 gap-tests remain ⬜ |
 | supervisor | ✅ v1 (LOCKED) | 21 / 49 | 🟨 partial — 21 clauses green (S71 citation pass); 28 gap-tests remain ⬜ |
+| master | ✅ v1 (LOCKED) | 10 / 18 | 🟨 partial — 10 clauses green (S73); 8 deferred (RSA signing + Key Vault + integration) |
 
 ## Layer 2 — Choreography
 

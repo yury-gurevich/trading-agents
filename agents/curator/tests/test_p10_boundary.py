@@ -15,7 +15,8 @@ _CURATOR_LABELS = {"Dataset", "TrainingExample"}
 
 
 def test_curator_build_dataset_mutates_no_decision_node() -> None:
-    """build_dataset writes only curator nodes; every pre-existing node is unchanged."""
+    """CUR-NEV-01 / CUR-NEV-03: build_dataset writes only curator nodes;
+    pre-existing nodes unchanged."""
     graph = InMemoryGraphStore()
     seed_narratives(graph, 6, trigger="time")
     bus = InProcessBus()

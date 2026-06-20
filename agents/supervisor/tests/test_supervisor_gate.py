@@ -16,6 +16,7 @@ from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 
 
 def test_hard_no_blocks_before_confirmation_or_matrix() -> None:
+    """SUP-NEV-02 / SUP-OUT-06: hard-NO blocked; no Message node written."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     live = _dispatch(
@@ -32,6 +33,8 @@ def test_hard_no_blocks_before_confirmation_or_matrix() -> None:
 
 
 def test_capability_matrix_routes_available_and_refuses_unavailable() -> None:
+    """SUP-IN-01 / SUP-OUT-01 / SUP-NEV-03 / SUP-SEC-02: matrix routes permitted;
+    refuses unavailable."""
     bus = _bound_bus(InMemoryGraphStore())
     assert _dispatch(bus, _intent("status")).routed_to == "reporter.report"
     assert _dispatch(bus, _intent("explain")).routed_to == "reporter.narrative"
@@ -54,6 +57,7 @@ def test_capability_matrix_routes_available_and_refuses_unavailable() -> None:
 
 
 def test_approve_intent_resolves_matching_flag() -> None:
+    """SUP-OUT-01 / SUP-IDN-02: approve writes FlagResolution."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     graph.merge_node(
@@ -72,6 +76,7 @@ def test_approve_intent_resolves_matching_flag() -> None:
 
 
 def test_confirmation_gate_writes_and_resolves_flag() -> None:
+    """SUP-STA-02 / SUP-OUT-01: confirmation gate writes Flag; second call resolves."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     first = _dispatch(bus, _intent("run"))
@@ -88,6 +93,7 @@ def test_confirmation_gate_writes_and_resolves_flag() -> None:
 
 
 def test_read_only_status_does_not_write_confirmation_flag() -> None:
+    """SUP-NEV-01: status (read-only) never writes a Flag; no trading decision made."""
     graph = InMemoryGraphStore()
     result = _dispatch(_bound_bus(graph), _intent("status"))
     assert result.accepted is True

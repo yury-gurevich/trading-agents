@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
 
 def test_propose_writes_graph_nodes_and_flag() -> None:
+    """RES-IN-01 / RES-TRG-01 / RES-OUT-01 / RES-OUT-02 / RES-OUT-04:
+    propose → proposal + nodes + Flag."""
     graph = InMemoryGraphStore()
     bus = bound_bus(graph)
     seed_snapshots(graph, confidence=0.35)
@@ -41,6 +43,7 @@ def test_propose_writes_graph_nodes_and_flag() -> None:
 
 
 def test_propose_insufficient_evidence_writes_no_flag() -> None:
+    """RES-NEV-02 / RES-OUT-05: insufficient data → zero changes; no Flag."""
     graph = InMemoryGraphStore()
     proposal = propose(bound_bus(graph))
 
@@ -49,6 +52,7 @@ def test_propose_insufficient_evidence_writes_no_flag() -> None:
 
 
 def test_propose_neutral_evidence_writes_experiment_without_flag() -> None:
+    """RES-OUT-04 / RES-OUT-05: neutral evidence → Experiment; no Flag."""
     graph = InMemoryGraphStore()
     bus = bound_bus(graph)
     seed_snapshots(graph, confidence=0.50)
@@ -62,6 +66,7 @@ def test_propose_neutral_evidence_writes_experiment_without_flag() -> None:
 
 
 def test_evidence_capability_reports_metrics_and_insufficient_data() -> None:
+    """RES-IN-02 / RES-TRG-02 / RES-OUT-03 / RES-IDM-03: evidence RPC → Explanation."""
     empty_bus = bound_bus(InMemoryGraphStore())
     full_graph = InMemoryGraphStore()
     full_bus = bound_bus(full_graph)
@@ -75,6 +80,8 @@ def test_evidence_capability_reports_metrics_and_insufficient_data() -> None:
 
 
 def test_researcher_degrades_on_graph_fault() -> None:
+    """RES-FAIL-01 / RES-FAIL-02 / RES-IN-03: graph fault → zero-change proposal +
+    Explanation; fault emitted."""
     bus = InProcessBus()
     sink = CollectingFaultSink()
     ResearcherAgent(bus, graph=cast("GraphStore", _BrokenGraph()), sink=sink).bind()

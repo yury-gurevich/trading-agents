@@ -15,6 +15,8 @@ from kernel import AgentMessage, FakeLLMClient, InMemoryGraphStore, InProcessBus
 
 
 def test_interpret_maps_all_ten_families_with_confirmation_policy() -> None:
+    """OPR-IN-01 / OPR-OUT-01 / OPR-OUT-06 / OPR-OUT-07: all families parsed;
+    audit+intent nodes written."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph, _family_llm())
     expected = {
@@ -41,6 +43,8 @@ def test_interpret_maps_all_ten_families_with_confirmation_policy() -> None:
 
 
 def test_interpret_malformed_refused_and_clarification_paths() -> None:
+    """OPR-NEV-05 / OPR-OUT-05 / OPR-OUT-06: malformed/refused/clarification paths;
+    no Intent node on refusal."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(
         graph,
@@ -60,6 +64,7 @@ def test_interpret_malformed_refused_and_clarification_paths() -> None:
 
 
 def test_interpret_invalid_intent_family_is_refused() -> None:
+    """OPR-NEV-01 / OPR-FAIL-02: unknown family → refused; no Intent node written."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(
         graph,
@@ -71,6 +76,8 @@ def test_interpret_invalid_intent_family_is_refused() -> None:
 
 
 def test_interpret_llm_exception_returns_refusal() -> None:
+    """OPR-FAIL-01 / OPR-IN-03: LLM exception → refused; fault captured;
+    never raises to bus."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph, _RaisingLLM({}))
     result = _interpret(bus, "run")
@@ -79,6 +86,8 @@ def test_interpret_llm_exception_returns_refusal() -> None:
 
 
 def test_explain_returns_text_and_writes_audit_and_llm_call() -> None:
+    """OPR-IN-02 / OPR-OUT-04 / OPR-OUT-06 / OPR-STA-03: explain → Explanation +
+    CommandAudit + LLMCall nodes."""
     graph = InMemoryGraphStore()
     graph.merge_node("Recommendation", "rec:aapl", {"ticker": "AAPL"})
     bus = _bound_bus(graph, FakeLLMClient({"AAPL": "AAPL was recommended."}))
@@ -97,6 +106,8 @@ def test_explain_returns_text_and_writes_audit_and_llm_call() -> None:
 
 
 def test_ledger_is_idempotent_for_same_command() -> None:
+    """OPR-IDM-03: same (actor, channel, text) → same correlation_id;
+    single node set."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph, _family_llm())
     _interpret(bus, "run please")
@@ -107,6 +118,8 @@ def test_ledger_is_idempotent_for_same_command() -> None:
 
 
 def test_operator_boundary_claims_graph_labels_once() -> None:
+    """OPR-IDN-02: operator exclusively owns CommandAudit, Intent, LLMCall
+    (single-writer rule)."""
     from contracts.operator import CONTRACT
 
     assert CONTRACT.owns_graph == ("CommandAudit", "Intent", "LLMCall")

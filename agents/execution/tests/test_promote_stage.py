@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 
 def test_promote_stage_blocked_without_evidence() -> None:
+    """EXEC-NEV-04 / EXEC-SEC-04: promotion blocked when evidence gate not satisfied."""
     bus, graph, _broker, _sink = wire()
 
     result = _promote(bus, "broker_shadow")
@@ -40,6 +41,8 @@ def test_promote_stage_blocked_without_evidence() -> None:
 
 
 def test_promote_stage_writes_flag_when_evidence_passes() -> None:
+    """EXEC-TRG-06 / EXEC-OUT-05: evidence passes → Flag written;
+    no StageTransition without confirmation."""
     bus, graph, _broker, _sink = wire()
     seed_stage_snapshots(graph, approval_rate=0.80)
 
@@ -63,6 +66,8 @@ def test_confirmed_without_resolution_still_requires_confirmation() -> None:
 
 
 def test_promote_stage_confirmed_writes_transition_and_status_reads_graph() -> None:
+    """EXEC-TRG-05 / EXEC-TRG-06 / EXEC-STA-02 / EXEC-STA-03 / EXEC-OUT-05: confirmed
+    promotion writes StageTransition; stage_status reads graph, not cache."""
     bus, graph, _broker, _sink = wire()
     seed_stage_snapshots(graph, approval_rate=0.80)
     resolve_stage_flag(graph, "broker_shadow")
@@ -92,6 +97,8 @@ def test_demotion_is_immediate_and_invalid_promotion_is_rejected() -> None:
 
 
 def test_submit_rejects_live_manual_without_broker_call() -> None:
+    """EXEC-OUT-03 / EXEC-SEC-04 / EXEC-NEV-04: live stage → submitted=0 + rejected=1;
+    no broker call; Fill(rejected) written to graph."""
     bus, graph, broker, _sink = wire()
     write_stage_transition(
         graph, from_stage="paper", to_stage="live_manual", reason="x"

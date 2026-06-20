@@ -35,17 +35,17 @@ Each agent's law files live at `agents/<name>/laws/`:
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
 | provider | ✅ LOCKED v1 (S69) | 23 / 43 | Template stress-test complete; pattern is now the reference copy |
-| analyst | ⬜ not yet authored | — | S70 |
-| scanner | ⬜ not yet authored | — | S70 |
-| portfolio_manager | ⬜ not yet authored | — | S70 |
-| execution | ⬜ not yet authored | — | S70 |
-| monitor | ⬜ not yet authored | — | S70 |
-| reporter | ⬜ not yet authored | — | S70 |
-| forecaster | ⬜ not yet authored | — | S70 |
-| operator | ⬜ not yet authored | — | S70 |
-| supervisor | ⬜ not yet authored | — | S70 |
-| curator | ⬜ not yet authored | — | S70 |
-| researcher | ⬜ not yet authored | — | S70 |
+| analyst | ✅ LOCKED v1 (S70) | 24 / 43 | |
+| scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
+| portfolio_manager | ✅ LOCKED v1 (S70) | 23 / 43 | |
+| execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
+| monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
+| reporter | ✅ LOCKED v1 (S71) | 17 / 40 | |
+| forecaster | ✅ LOCKED v1 (S71) | 15 / 46 | |
+| operator | ✅ LOCKED v1 (S71) | 14 / 51 | |
+| supervisor | ✅ LOCKED v1 (S71) | 21 / 49 | |
+| curator | ✅ LOCKED v1 (S71) | 20 / 48 | |
+| researcher | ✅ LOCKED v1 (S71) | 18 / 44 | |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

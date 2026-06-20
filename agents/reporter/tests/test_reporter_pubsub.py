@@ -63,6 +63,7 @@ def _wire_with_decisions(
 
 
 def test_decisions_ready_triggers_snapshot_ready() -> None:
+    """RPT-TRG-02 / RPT-IN-03 / RPT-OUT-05: event path; snapshot.ready published."""
     bus, _, event = _wire_with_decisions()
     received: list[dict[str, object]] = []
     bus.subscribe("report.snapshot.ready", received.append)
@@ -75,6 +76,7 @@ def test_decisions_ready_triggers_snapshot_ready() -> None:
 
 
 def test_report_snapshot_result_node_in_graph() -> None:
+    """RPT-STA-02 / RPT-OBS-01: ReportSnapshotResult node written to graph."""
     bus, graph, event = _wire_with_decisions(run_id="run-rep-2")
     received: list[dict[str, object]] = []
     bus.subscribe("report.snapshot.ready", received.append)
@@ -87,6 +89,7 @@ def test_report_snapshot_result_node_in_graph() -> None:
 
 
 def test_report_snapshot_is_deserializable() -> None:
+    """RPT-TYP-01: graph node deserialises to RunSnapshot per contract."""
     bus, graph, event = _wire_with_decisions(run_id="run-rep-3")
     received: list[dict[str, object]] = []
     bus.subscribe("report.snapshot.ready", received.append)
@@ -99,6 +102,7 @@ def test_report_snapshot_is_deserializable() -> None:
 
 
 def test_run_id_propagated_in_snapshot_ready_event() -> None:
+    """RPT-IDM-02: run_id threaded from decisions.ready into snapshot.ready event."""
     bus, _, event = _wire_with_decisions(run_id="rep-run-99")
     received: list[dict[str, object]] = []
     bus.subscribe("report.snapshot.ready", received.append)

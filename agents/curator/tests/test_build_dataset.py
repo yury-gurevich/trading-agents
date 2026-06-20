@@ -31,6 +31,8 @@ def _bind(graph: InMemoryGraphStore, store: FakeDatasetStore) -> InProcessBus:
 
 
 def test_build_dataset_writes_nodes_edges_and_payload() -> None:
+    """CUR-IN-01 / CUR-TRG-01 / CUR-OUT-01 / CUR-IDN-02: build_dataset → manifest +
+    Dataset/TrainingExample nodes."""
     graph = InMemoryGraphStore()
     store = FakeDatasetStore()
     bus = _bind(graph, store)
@@ -67,6 +69,7 @@ def test_build_dataset_links_examples_to_sources() -> None:
 
 
 def test_second_build_increments_version() -> None:
+    """CUR-IDM-02: re-running build_dataset increments version; not idempotent."""
     graph = InMemoryGraphStore()
     bus = _bind(graph, FakeDatasetStore())
     seed_narratives(graph, 6)
@@ -80,6 +83,8 @@ def test_second_build_increments_version() -> None:
 
 
 def test_empty_corpus_degrades_without_crash() -> None:
+    """CUR-FAIL-05 / CUR-NEV-04: empty corpus → manifest with 0 examples;
+    no crash; Dataset node written."""
     graph = InMemoryGraphStore()
     bus = _bind(graph, FakeDatasetStore())
 
@@ -92,6 +97,7 @@ def test_empty_corpus_degrades_without_crash() -> None:
 
 
 def test_describe_corpus_summarises_counts() -> None:
+    """CUR-IN-02 / CUR-OUT-02: describe_corpus returns Explanation; no graph write."""
     graph = InMemoryGraphStore()
     bus = _bind(graph, FakeDatasetStore())
     seed_narratives(graph, 6)

@@ -26,7 +26,8 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Law cycle** | S69 | Provider law cycle: DRIFT-006/007 corrected; 23/43 clauses green; laws LOCKED v1; template locked for agent backfill | **complete** |
 | **Q1** | S58–S59 | Qlib Phase Q1: LightGBM price/return shadow signal + training + IC scorecard | **complete** |
 | **Q2** | S68 | Qlib Phase Q2: Alpha158 22-field pillar (off by default, weight=0.00) | **complete** |
-| **S70 (next)** | S70 | Per-agent law backfill: copy LOCKED v1 template to 11 remaining agents | **planned** |
+| **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
+| **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **P12/P13** | tbd | DSPy `PromptOptimizer` port; `system_prompt` tunable on operator + forecaster | **queued** |
 | **P15** | tbd | Multi-agent container split: DockerHub images, Azure Container Apps deploy, master bootstrap | **queued** |
 
@@ -43,7 +44,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S70** (active), then S71, S72 …
+1. Next number: **S72**, then S73 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

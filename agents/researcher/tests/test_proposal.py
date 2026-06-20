@@ -13,6 +13,7 @@ from agents.researcher.settings import ResearcherSettings
 
 
 def test_low_confidence_raises_floor() -> None:
+    """RES-NEV-03 / RES-TYP-02: low confidence → bounded floor raise."""
     proposal = build_proposal(_evidence(0.35), ResearcherSettings(), "raise")
 
     assert len(proposal.changes) == 1
@@ -39,6 +40,7 @@ def test_high_confidence_lowers_floor() -> None:
 
 
 def test_bound_and_window_violations_return_zero_change() -> None:
+    """RES-NEV-03 / RES-NEV-02: at-bound or too-short window → zero change."""
     at_bound = ResearcherSettings(confidence_floor_reference=0.0)
     too_short = ResearcherSettings(lookback_days=30, min_evidence_window_days=31)
 

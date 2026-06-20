@@ -19,6 +19,8 @@ from contracts.monitor import CloseDecisionSet
 
 
 def test_stop_rule_writes_check_close_and_dispatches_execution() -> None:
+    """MON-OUT-02 / MON-OUT-03 / MON-NEV-01: stop rule → CloseDecision +
+    PositionCheck nodes; pnl_cents set."""
     bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
     seed_fill(graph)
 
@@ -46,6 +48,7 @@ def test_stop_rule_writes_check_close_and_dispatches_execution() -> None:
 
 
 def test_target_rule_triggers_close() -> None:
+    """MON-OUT-02 / MON-OUT-03: target rule → close decision with pnl_cents."""
     bus, _graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 111.0),))
     seed_fill(_graph)
 
@@ -60,6 +63,7 @@ def test_target_rule_triggers_close() -> None:
 
 
 def test_time_rule_triggers_close() -> None:
+    """MON-OUT-02 / MON-OUT-03: horizon=0 → time trigger; pnl_cents 0."""
     bus, graph, _broker, _sink = wire_monitor(
         bars=(bar("AAPL", 0, 100.0),),
         settings=MonitorSettings(default_horizon_days=0),
@@ -76,6 +80,8 @@ def test_time_rule_triggers_close() -> None:
 
 
 def test_hold_writes_check_without_close_decision() -> None:
+    """MON-OUT-02 / MON-OUT-05: hold → PositionCheck written;
+    no CloseDecision; pnl_cents None."""
     bus, graph, _broker, _sink = wire_monitor(
         bars=(bar("AAPL", 0, 100.0), bar("AAPL", 1, 99.0))
     )

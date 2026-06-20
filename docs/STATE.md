@@ -1,6 +1,25 @@
 # Project State
 
-**Last updated:** 2026-06-20 19:00 AEST
+**Last updated:** 2026-06-20 18:53 AEST
+
+**S71 shipped: per-agent law backfill (remaining 7 of 11) — monitor/reporter/forecaster/
+operator/supervisor/curator/researcher LOCKED v1.** Laws authored from first principles for all
+7 remaining agents (18 sections each: IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/
+CAP/PARAM + divergence register + changelog). Citation pass across 18 test files; 124 new green
+clauses (MON 19/40, RPT 17/40, FORE 15/46, OPR 14/51, SUP 21/49, CUR 20/48, RES 18/44). 7
+test-plan.md files created. All 7 laws.md LOCKED v1. No version bump (docs-only sprint).
+**All 11 non-provider agents now have LOCKED v1 laws.**
+
+**Now:** — (all agents locked; law cycle complete). Next: S72 — see `docs/sprints/INDEX.md`.
+
+---
+
+**S70 shipped: per-agent law backfill (4 of 11) — scanner/analyst/PM/execution LOCKED v1.**
+Laws authored from first principles for 4 core trading-loop agents (18 sections each: IDN/IN/TRG/
+OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/CAP/PARAM + divergence register + changelog).
+Citation pass across 12 test files; 95 new green clauses (SCAN 18/39, ANLZ 24/43, PM 23/43,
+EXEC 30/49). `test_scanner_explain.py` split out to stay under 200-line hard block. All 4
+laws.md LOCKED v1. **895 tests**, 100% coverage. No version bump (docs-only sprint).
 
 **S69 shipped: provider law cycle — template locked (v0.10.0→0.11.0).** Two OPEN drifts
 corrected: DRIFT-006 (benchmark promoted to first-class `DataRequest.benchmark_ticker` field +
@@ -115,15 +134,13 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S70 — Per-agent law files (batched, scanner + analyst + PM + execution).** Provider law is
-LOCKED v1 (S69) — the template is safe to copy. S70 authors the law files for the core
-trading-loop agents at full 18-section depth (IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/
-DEP/OBS/PERF/CAP/PARAM + divergence register + changelog), drives each through its cite→test
-cycle, and locks each law file. ~3–4 agents per sprint.
+**S71 — Per-agent law backfill cont. (remaining 7 agents).** S70 locked scanner/analyst/PM/
+execution. S71 authors laws for monitor, reporter, forecaster, operator, supervisor, curator,
+researcher — same 18-section depth, same cite→test→lock cycle.
 
 Also pending (small, separate chore): add `system_prompt` as a `tunable` to
-`agents/operator/settings.py` (operator, now) and pre-declare it on
-`agents/forecaster/settings.py` (ADR-0010 immediate consequence; chore-branch off main).
+`agents/operator/settings.py` and pre-declare it on `agents/forecaster/settings.py`
+(ADR-0010 immediate consequence; chore-branch off main).
 
 ## Next
 
@@ -148,6 +165,12 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Shipped
 
++ **Sprint 70 — Per-agent law backfill (4 of 11)** (implemented directly — no coding agent
+  this cycle). Laws authored from first principles for scanner (SCAN, 39 clauses), analyst
+  (ANLZ, 43), portfolio_manager (PM, 43), execution (EXEC, 49). Citation pass across 12 test
+  files; 95 green clauses (18+24+23+30). `test_scanner_explain.py` split to resolve 200-line
+  hard block. All four `laws.md` files LOCKED v1. No code change; no version bump (docs-only).
+  895 tests, 100% coverage.
 + **P14 complete — Inter-agent comms re-architecture (S60–S67)** (ADR-0005; implemented
   directly — no coding agent this cycle). `InProcessBus.publish/subscribe` + fan-out (S60);
   kernel `claim_check_write/read` + `ReadyEvent` (S61); provider (S62), scanner + analyst

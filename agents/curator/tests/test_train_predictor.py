@@ -35,6 +35,8 @@ def _build(bus: InProcessBus) -> DatasetManifest:
 
 
 def test_train_predictor_writes_advisory_predictor() -> None:
+    """CUR-IN-03 / CUR-OUT-03 / CUR-OUT-04: train writes advisory=True,
+    promotion_eligible=False Predictor."""
     graph = InMemoryGraphStore()
     bus = _bind(graph)
     seed_narratives(graph, 6)

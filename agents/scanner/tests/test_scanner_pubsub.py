@@ -58,6 +58,8 @@ def _wire() -> tuple[InProcessBus, InMemoryGraphStore]:
 
 
 def test_run_trigger_publishes_candidates_ready() -> None:
+    """SCAN-IN-02 / SCAN-TRG-02 / SCAN-OUT-04: run.trigger → scan.candidates.ready
+    claim-check event published; payload not inlined."""
     bus, _ = _wire()
     received: list[dict[str, object]] = []
     bus.subscribe("scan.candidates.ready", received.append)
@@ -70,6 +72,7 @@ def test_run_trigger_publishes_candidates_ready() -> None:
 
 
 def test_scan_result_node_written_to_graph() -> None:
+    """SCAN-STA-02 / SCAN-OBS-01: ScanRun node written to graph; reconstructable."""
     bus, graph = _wire()
     received: list[dict[str, object]] = []
     bus.subscribe("scan.candidates.ready", received.append)
@@ -82,6 +85,7 @@ def test_scan_result_node_written_to_graph() -> None:
 
 
 def test_scan_result_node_candidates_are_deserializable() -> None:
+    """SCAN-TYP-01: graph node deserialises to CandidateSet matching contract schema."""
     bus, graph = _wire()
     received: list[dict[str, object]] = []
     bus.subscribe("scan.candidates.ready", received.append)
@@ -94,6 +98,7 @@ def test_scan_result_node_candidates_are_deserializable() -> None:
 
 
 def test_run_id_propagated_in_ready_event() -> None:
+    """SCAN-IDM-02: run_id from trigger is threaded through to scan.candidates.ready."""
     bus, _ = _wire()
     received: list[dict[str, object]] = []
     bus.subscribe("scan.candidates.ready", received.append)

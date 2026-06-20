@@ -69,6 +69,7 @@ def _wire_with_fills(
 
 
 def test_fills_ready_triggers_decisions_ready() -> None:
+    """MON-TRG-02 / MON-IN-03 / MON-OUT-06: event path; decisions.ready published."""
     bus, _, event = _wire_with_fills()
     received: list[dict[str, object]] = []
     bus.subscribe("monitor.decisions.ready", received.append)
@@ -81,6 +82,7 @@ def test_fills_ready_triggers_decisions_ready() -> None:
 
 
 def test_monitor_decision_result_node_in_graph() -> None:
+    """MON-STA-02 / MON-OBS-01: MonitorDecisionResult node written to graph."""
     bus, graph, event = _wire_with_fills(run_id="run-mon-2")
     received: list[dict[str, object]] = []
     bus.subscribe("monitor.decisions.ready", received.append)
@@ -93,6 +95,7 @@ def test_monitor_decision_result_node_in_graph() -> None:
 
 
 def test_monitor_decision_result_is_deserializable() -> None:
+    """MON-TYP-02: graph node deserialises to CloseDecisionSet per contract."""
     bus, graph, event = _wire_with_fills(run_id="run-mon-3")
     received: list[dict[str, object]] = []
     bus.subscribe("monitor.decisions.ready", received.append)
@@ -105,6 +108,7 @@ def test_monitor_decision_result_is_deserializable() -> None:
 
 
 def test_run_id_propagated_in_decisions_ready_event() -> None:
+    """MON-IDM-03: run_id threaded from fills.ready into decisions.ready event."""
     bus, _, event = _wire_with_fills(run_id="mon-run-99")
     received: list[dict[str, object]] = []
     bus.subscribe("monitor.decisions.ready", received.append)

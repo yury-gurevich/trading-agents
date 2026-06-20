@@ -36,6 +36,7 @@ def _seed_predictor(graph: InMemoryGraphStore, *, accuracy: float, n: int) -> No
 
 
 def test_low_accuracy_rejected_without_flag() -> None:
+    """CUR-NEV-02 / CUR-FAIL-04: below evidence floor → rejected; no Flag."""
     graph = InMemoryGraphStore()
     bus = bind_curator_with_supervisor(graph)
     _seed_predictor(graph, accuracy=0.40, n=10)
@@ -49,6 +50,8 @@ def test_low_accuracy_rejected_without_flag() -> None:
 
 
 def test_passing_evidence_first_call_pends_with_flag() -> None:
+    """CUR-IN-04 / CUR-OUT-05 / CUR-SEC-03: evidence passes → pending_approval +
+    Flag; no PredictorPromotion."""
     graph = InMemoryGraphStore()
     bus = bind_curator_with_supervisor(graph)
     _seed_predictor(graph, accuracy=0.90, n=10)
@@ -64,6 +67,8 @@ def test_passing_evidence_first_call_pends_with_flag() -> None:
 
 
 def test_promote_after_approval_writes_audit() -> None:
+    """CUR-OUT-05 / CUR-OBS-02: post-approval promote → status=promoted;
+    PredictorPromotion written."""
     graph = InMemoryGraphStore()
     bus = bind_curator_with_supervisor(graph)
     _seed_predictor(graph, accuracy=0.90, n=10)

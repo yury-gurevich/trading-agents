@@ -23,6 +23,8 @@ from kernel import InMemoryGraphStore, InProcessBus, Node
 
 
 def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
+    """RPT-IN-01 / RPT-TRG-01 / RPT-OUT-01 / RPT-OUT-02: report+narrative RPC →
+    typed payloads + graph nodes."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     seed_full_graph(graph)
@@ -52,6 +54,7 @@ def test_report_and_narrative_return_payloads_and_write_graph_nodes() -> None:
 
 
 def test_reporter_handles_missing_nodes_without_crashing() -> None:
+    """RPT-OUT-04 / RPT-NEV-01: missing nodes → degraded response; no crash."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ReporterAgent(bus, graph=graph).bind()
@@ -67,6 +70,7 @@ def test_reporter_handles_missing_nodes_without_crashing() -> None:
 
 
 def test_reporter_fault_boundary_returns_degraded_payloads() -> None:
+    """RPT-FAIL-01 / RPT-OUT-04: graph fault → degraded snapshot; fault captured."""
     report_bus = InProcessBus()
     report_graph = FaultOnceGraph()
     ReporterAgent(report_bus, graph=report_graph).bind()
@@ -83,6 +87,7 @@ def test_reporter_fault_boundary_returns_degraded_payloads() -> None:
 
 
 def test_reporter_trims_long_narratives_at_configured_limit() -> None:
+    """RPT-PERF-01 / RPT-OUT-03: max_narrative_length_chars enforced."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     seed_full_graph(graph)
@@ -96,6 +101,7 @@ def test_reporter_trims_long_narratives_at_configured_limit() -> None:
 
 
 def test_snapshot_reports_profit_factor_and_expectancy() -> None:
+    """RPT-OUT-02 / RPT-NEV-03: profit_factor + expectancy_cents; mixed trades."""
     graph = InMemoryGraphStore()
     _seed_two_closed_trades(graph)
     snapshot = build_snapshot(graph, RUN_ID)
@@ -107,6 +113,7 @@ def test_snapshot_reports_profit_factor_and_expectancy() -> None:
 
 
 def test_degraded_snapshot_carries_zero_outcome_keys() -> None:
+    """RPT-OUT-06 / RPT-NEV-03: degraded snapshot zero sentinels; keys present."""
     graph = InMemoryGraphStore()
     snapshot = degraded_snapshot(graph, "missing-run", "no data")
     metrics = snapshot.portfolio_metrics

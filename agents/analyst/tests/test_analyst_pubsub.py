@@ -52,6 +52,8 @@ def _wire_with_candidate(
 
 
 def test_candidates_ready_triggers_recommendations_ready() -> None:
+    """ANLZ-IN-02 / ANLZ-TRG-02 / ANLZ-OUT-05: scan.candidates.ready → claim-check
+    resolved → analyze → analysis.recommendations.ready emitted."""
     bus, _, event = _wire_with_candidate()
     received: list[dict[str, object]] = []
     bus.subscribe("analysis.recommendations.ready", received.append)
@@ -64,6 +66,7 @@ def test_candidates_ready_triggers_recommendations_ready() -> None:
 
 
 def test_recommendation_result_node_in_graph() -> None:
+    """ANLZ-STA-02 / ANLZ-OBS-01: result node written to graph; append-only."""
     bus, graph, event = _wire_with_candidate(run_id="run-2")
     received: list[dict[str, object]] = []
     bus.subscribe("analysis.recommendations.ready", received.append)
@@ -76,6 +79,7 @@ def test_recommendation_result_node_in_graph() -> None:
 
 
 def test_recommendation_result_is_deserializable() -> None:
+    """ANLZ-TYP-01: graph node deserialises to RecommendationSet per contract."""
     bus, graph, event = _wire_with_candidate(run_id="run-3")
     received: list[dict[str, object]] = []
     bus.subscribe("analysis.recommendations.ready", received.append)
@@ -88,6 +92,7 @@ def test_recommendation_result_is_deserializable() -> None:
 
 
 def test_run_id_propagated_in_ready_event() -> None:
+    """ANLZ-IDM-02: run_id threaded from CandidateSet to recommendations.ready."""
     bus, _, event = _wire_with_candidate(run_id="my-run-99")
     received: list[dict[str, object]] = []
     bus.subscribe("analysis.recommendations.ready", received.append)

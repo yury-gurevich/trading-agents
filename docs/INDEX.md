@@ -1,0 +1,50 @@
+# Docs index — where to find everything
+
+**How to use:** before digging into any file, scan the "Answers" column. If your
+question is listed there, go straight to the linked file. Don't read everything.
+
+---
+
+## Operational state — start here
+
+| File | Answers |
+| --- | --- |
+| [STATE.md](STATE.md) | Where are we right now? What is the active sprint? What is next? |
+| [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
+
+---
+
+## Architecture + design
+
+| File | Answers |
+| --- | --- |
+| [architecture.md](architecture.md) | How do the agents fit together? What is the data flow? |
+| [PRD.md](PRD.md) | What is this product trying to do? (vision doc — see laws for ground truth) |
+| [technology-stack.md](technology-stack.md) | What technologies are adopted, considered, on the horizon, or rejected? What breaks if we swap X? |
+
+---
+
+## Decisions, laws, research, sprints
+
+| Folder | Answers |
+| --- | --- |
+| [decisions/](decisions/INDEX.md) | What architecture questions are already closed forever? (10 ADRs) |
+| [laws/](laws/INDEX.md) | What must each agent do / never do? What is the law book schema? |
+| [research/](research/INDEX.md) | What external tools have we evaluated? What is still in progress? |
+| [sprints/](sprints/INDEX.md) | Which sprints shipped? Which phase are we in? What is queued? |
+
+---
+
+## Process + guides
+
+| File | Answers |
+| --- | --- |
+| [sprint-loop.md](sprint-loop.md) | How does a sprint run end-to-end? Planning → coding → review → merge |
+| [configuration.md](configuration.md) | What settings exist per agent? Where are they declared? |
+| [deployment.md](deployment.md) | How do agents get built and deployed to Azure Container Apps? |
+| [observability.md](observability.md) | How do metrics, logs, and faults flow to Azure Monitor / Prometheus? |
+| [error-handling.md](error-handling.md) | How do agents handle faults without crashing? What is `fault_boundary`? |
+| [repo-hygiene.md](repo-hygiene.md) | What are the non-negotiable code quality rules? |
+| [hardening-backlog.md](hardening-backlog.md) | What security hardening items are queued? |
+| [codeql-local-tooling.md](codeql-local-tooling.md) | How to run CodeQL locally before pushing? |
+| [moonshots.md](moonshots.md) | What big ideas are parked for later? |

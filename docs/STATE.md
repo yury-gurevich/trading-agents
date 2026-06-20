@@ -13,7 +13,17 @@ is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existin
 `config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
 azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
 
-**Now:** — (S75 complete). Next: S76 — GHCR build pipeline + Container Apps deploy (ADR-0011: GHCR over DockerHub/ACR; GitHub Actions matrix build, Key Vault provisioning, deploy-agents workflow).
+**Now:** — S76 in progress (GHCR + Container Apps). **End-to-end Azure smoke test PASSED 2026-06-21:**
+`build-images.yml` matrix built all 13 agent images → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`).
+master + scanner deployed to Container Apps (`trading-agents` RG); master booted, connected to **Aura**
+(throwaway Professional trial `8cf6d231`, GCP Sydney; ADR-0011 registry = GHCR), scanner EHLO'd over
+internal ingress, master issued signed ACTIVATE and wrote the registry to Aura
+(Session 1 / AgentInstance scanner=active / CapabilityGrant 2 — verified by direct Cypher). Apps then
+scaled to min-0 + Aura paused to stop spend. **Done:** Part A (build pipeline). **Proven manually:**
+deploy. **Remaining S76:** codify `deploy-agents.ps1`/workflow (Part C), stable RSA keypair + signature
+verification on the deployed scanner, Key Vault provisioning (Part B). **Permanent graph store ≠ Aura**
+(user can't afford it) — target = self-host Neo4j on a small Azure VM, decide before trial lapses ~Jun 29.
+**Minor follow-up:** deployed `AgentInstance.instance_id` persisted as None in Aura — verify store write.
 
 ---
 

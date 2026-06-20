@@ -44,3 +44,5 @@ infra/prometheus/prometheus.local.yml
 infra/*.local.json
 infra/*.local.env
 desktop.ini
+
+infra/*.local.py

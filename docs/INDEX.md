@@ -42,6 +42,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [sprint-loop.md](sprint-loop.md) | How does a sprint run end-to-end? Planning → coding → review → merge |
 | [configuration.md](configuration.md) | What settings exist per agent? Where are they declared? |
 | [deployment.md](deployment.md) | How do agents get built and deployed to Azure Container Apps? |
+| [ci-cd-setup.md](ci-cd-setup.md) | One-time GHCR + Azure credential setup for the build/deploy pipeline (ADR-0011)? |
 | [observability.md](observability.md) | How do metrics, logs, and faults flow to Azure Monitor / Prometheus? |
 | [error-handling.md](error-handling.md) | How do agents handle faults without crashing? What is `fault_boundary`? |
 | [repo-hygiene.md](repo-hygiene.md) | What are the non-negotiable code quality rules? |

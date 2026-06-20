@@ -18,7 +18,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $SUBSCRIPTION   = "5ef50a27-50a4-4d90-9695-da61b2309cf3"
-$RESOURCE_GROUP = "traiding-agent"
+$RESOURCE_GROUP = "trading-agents"
 $LOCATION       = "australiaeast"
 $PREFIX         = "trading-agents"
 

@@ -50,6 +50,8 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      MASTER_KEY_VAULT_URL: ${MASTER_KEY_VAULT_URL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s

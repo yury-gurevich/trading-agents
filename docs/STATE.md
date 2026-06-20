@@ -1,6 +1,21 @@
 # Project State
 
-**Last updated:** 2026-06-20 22:10 AEST
+**Last updated:** 2026-06-20 23:45 AEST
+
+**S75 shipped: P15 Azure Key Vault secret distribution (version 0.12.0→0.13.0).**
+`agents/master/key_vault.py`: `SecretStore` Protocol + `NullSecretStore` (tests/default) +
+`EnvVarSecretStore` (local dev) + `AzureKeyVaultSecretStore` (prod, `# pragma: no cover`).
+`agents/master/secret_map.py`: `AGENT_SECRETS` entitlement table (provider/execution/operator only)
++ `resolve_config(agent_type, store)` → flat `UPPER_SNAKE` dict, empties skipped.
+`MasterAgent.activate()` now calls `resolve_config` and populates `ACTIVATE.config` with per-agent
+minimum-privilege secrets. `main()` selects `AzureKeyVaultSecretStore` when `MASTER_KEY_VAULT_URL`
+is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existing tests checking
+`config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
+azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
+
+**Now:** — (S75 complete). Next: S76 — DockerHub image push + Container Apps deploy manifest.
+
+---
 
 **S74 shipped: P15 RSA signing + agent entrypoints (version 0.11.0→0.12.0).**
 `kernel/crypto.py`: `generate_keypair()`, `sign_pss()`, `verify_pss()` — RSA-PSS 2048-bit

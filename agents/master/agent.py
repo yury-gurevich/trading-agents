@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.master.grants import DEFAULT_GRANTS
+from agents.master.key_vault import NullSecretStore
+from agents.master.secret_map import resolve_config
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
@@ -24,6 +26,7 @@ from kernel import CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from agents.master.key_vault import SecretStore
     from kernel.graph import Node
 
 
@@ -35,11 +38,13 @@ class MasterAgent:
         graph: GraphStore,
         settings: MasterSettings | None = None,
         sink: FaultSink | None = None,
+        secret_store: SecretStore | None = None,
     ) -> None:
-        """Create master with injected graph, settings, and fault sink."""
+        """Create master with injected graph, settings, fault sink, and secret store."""
         self._graph = graph
         self._settings = settings or MasterSettings()
         self.sink = sink or CollectingFaultSink()
+        self._secret_store: SecretStore = secret_store or NullSecretStore()
         self._session_id: str | None = None
         self._instance_counter: dict[str, int] = {}
 
@@ -83,8 +88,8 @@ class MasterAgent:
                 instance_id=instance_id,
                 agent_type=agent_type,
                 capability_grants=grants,
-                config={},  # Key Vault secrets wired in S74
-                signature="",  # RSA signature wired in S74
+                config=resolve_config(agent_type, self._secret_store),
+                signature="",  # RSA signature added by http_server.handle_ehlo()
             )
 
     def drain(self, instance_id: str, reason: str = "CLEAN") -> DRAINMessage:

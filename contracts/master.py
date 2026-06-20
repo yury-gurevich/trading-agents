@@ -52,7 +52,7 @@ class ACTIVATEMessage(_Frozen):
     """Minimum-necessary secrets and endpoints for the declared capabilities."""
 
     signature: str
-    """RSA signature of instance_id by master's private key. Stub '' until S74."""
+    """RSA-PSS signature of instance_id by master's private key."""
 
 
 class DRAINMessage(_Frozen):

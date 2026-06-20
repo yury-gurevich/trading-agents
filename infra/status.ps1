@@ -35,7 +35,7 @@ function Show-Board {
   if ($apps) {
     foreach ($a in $apps) {
       $reps = (az containerapp replica list --name $a.name --resource-group $RG --subscription $SUB --query "[].name" -o tsv 2>$null | Measure-Object).Count
-      Write-Host ("│   {0,-10} status={1,-9} replicas={2}" -f $a.name, $a.replicas, $reps)
+      Write-Host ("│   {0,-18} {1,-9} replicas={2}" -f $a.name, $a.replicas, $reps)
     }
   } else { Write-Host "│   (none deployed)" }
 
@@ -71,4 +71,5 @@ if ($Watch) {
   while ($true) { Show-Board; Start-Sleep -Seconds $IntervalSeconds }
 } else {
   Show-Board
+  Start-Sleep -Seconds 5   # hold so the board is readable before the prompt returns
 }

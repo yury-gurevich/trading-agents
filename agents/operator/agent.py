@@ -109,7 +109,7 @@ class OperatorAgent(AgentBase):
 
     def _interpret_command(self, command: HumanCommand) -> CommandResult:
         corr = correlation_id(command.actor, command.channel, command.text)
-        system = build_interpret_system()
+        system = self._settings.system_prompt or build_interpret_system()
         user = build_interpret_user(command)
         with record_llm_call(
             self._graph,

@@ -172,6 +172,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `model` | `"claude-sonnet-4-6"` | `str` | YES | Production default for structured intent parsing |
 | `max_tokens` | `512` | `int ≥ 64 ≤ 4096` | YES | Structured output needs short output; cap controls cost |
 | `explain_max_evidence_nodes` | `20` | `int ≥ 1 ≤ 100` | YES | Bound graph evidence included in explanation prompts |
+| `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled interpret prompt (ADR-0010); empty = dynamic construction |
 
 ## Divergence register
 
@@ -182,3 +183,4 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S72: added `system_prompt` tunable (ADR-0010 immediate consequence); wired into `_interpret_command`.

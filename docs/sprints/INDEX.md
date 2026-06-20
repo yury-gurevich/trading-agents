@@ -28,7 +28,8 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Q2** | S68 | Qlib Phase Q2: Alpha158 22-field pillar (off by default, weight=0.00) | **complete** |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
-| **P12/P13** | tbd | DSPy `PromptOptimizer` port; `system_prompt` tunable on operator + forecaster | **queued** |
+| **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
+| **P12/P13** | tbd | DSPy `PromptOptimizer` port + golden eval set + per-(task×model) compiled prompt artifact | **queued** |
 | **P15** | tbd | Multi-agent container split: DockerHub images, Azure Container Apps deploy, master bootstrap | **queued** |
 
 ---
@@ -44,7 +45,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S72**, then S73 …
+1. Next number: **S73**, then S74 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

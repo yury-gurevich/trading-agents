@@ -1,6 +1,16 @@
 # Project State
 
-**Last updated:** 2026-06-20 18:53 AEST
+**Last updated:** 2026-06-20 19:26 AEST
+
+**S72 shipped: ADR-0010 immediate close — `system_prompt` tunable on operator + forecaster.**
+`system_prompt: str = tunable("")` added to `OperatorSettings` (champion slot for DSPy-compiled
+interpret prompt; empty = dynamic `build_interpret_system()`, non-empty = DSPy-promoted static
+override) and wired into `_interpret_command`. Pre-declared on `ForecasterSettings` (unused until
+P13 LLM path ships). Both agent law PARAM sections updated. No version bump (no new capability).
+
+**Now:** — (S72 complete). Next: S73 — P15 container-per-agent split or P12/P13 DSPy harness.
+
+---
 
 **S71 shipped: per-agent law backfill (remaining 7 of 11) — monitor/reporter/forecaster/
 operator/supervisor/curator/researcher LOCKED v1.** Laws authored from first principles for all

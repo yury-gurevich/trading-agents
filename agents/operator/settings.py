@@ -33,5 +33,13 @@ class OperatorSettings(AgentSettings):
         le=100,
         unit="nodes",
     )
+    system_prompt: str = tunable(
+        "",
+        why=(
+            "Champion slot for the DSPy-compiled interpret system prompt "
+            "(ADR-0010). Empty = use the dynamic build_interpret_system() "
+            "construction; non-empty = DSPy-promoted static override."
+        ),
+    )
 
     model_config = SettingsConfigDict(env_prefix="OPERATOR_", frozen=True)

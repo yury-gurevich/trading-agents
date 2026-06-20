@@ -13,17 +13,28 @@ is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existin
 `config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
 azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
 
-**Now:** — S76 in progress (GHCR + Container Apps). **End-to-end Azure smoke test PASSED 2026-06-21:**
-`build-images.yml` matrix built all 13 agent images → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`).
-master + scanner deployed to Container Apps (`trading-agents` RG); master booted, connected to **Aura**
-(throwaway Professional trial `8cf6d231`, GCP Sydney; ADR-0011 registry = GHCR), scanner EHLO'd over
-internal ingress, master issued signed ACTIVATE and wrote the registry to Aura
-(Session 1 / AgentInstance scanner=active / CapabilityGrant 2 — verified by direct Cypher). Apps then
-scaled to min-0 + Aura paused to stop spend. **Done:** Part A (build pipeline). **Proven manually:**
-deploy. **Remaining S76:** codify `deploy-agents.ps1`/workflow (Part C), stable RSA keypair + signature
-verification on the deployed scanner, Key Vault provisioning (Part B). **Permanent graph store ≠ Aura**
-(user can't afford it) — target = self-host Neo4j on a small Azure VM, decide before trial lapses ~Jun 29.
-**Minor follow-up:** deployed `AgentInstance.instance_id` persisted as None in Aura — verify store write.
+**Now:** — S76 in progress (GHCR + Container Apps). **FULL 13-AGENT FLEET PROVEN ON AZURE 2026-06-21
+(then torn down to stop spend).** Run results:
+
++ `build-images.yml` matrix built **all 13 agent images** → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`),
+  ~1 min for 12 light images + the heavy forecaster (torch). ADR-0011 registry = GHCR.
++ Deployed master + all 12 trading agents to Container Apps (`trading-agents` RG). master booted, connected
+  to **Aura** (throwaway Professional trial `8cf6d231`, GCP Sydney), served handshakes on internal ingress.
++ Each agent EHLO'd → master issued signed ACTIVATE → persisted registry to Aura. Final state verified by
+  direct Cypher: **Session 1 / AgentInstance 12 (all agents active) / CapabilityGrant 27**. Cross-cloud
+  Azure→GCP graph write confirmed working.
++ **Torn down:** all 13 Container Apps deleted + Aura paused → spend back to ~zero.
++ **New ops tooling (committed):** `infra/aura.ps1` (Aura lifecycle — I manage it via API, no console),
+  `infra/status.ps1` (one-command fleet dashboard), `infra/fleet-graph.ps1` (interactive registry graph in
+  browser), `infra/setup-github-ci.ps1`. Azure deploy identity = OIDC (committed in `docs/ci-cd-setup.md`).
+
+**Done:** Part A (build pipeline) + full-fleet deploy **proven manually**. **Remaining S76:** codify the
+proven deploy into `infra/deploy-agents.ps1` + Part C workflow; stable RSA keypair + signature verification
+on deployed agents (smoke test skipped verification via no-pubkey path); Key Vault provisioning (Part B).
+**Permanent graph store ≠ Aura** (user can't afford it) — target = self-host Neo4j on a small Azure VM,
+decide before the Aura trial lapses **~2026-06-29**. **Minor follow-up:** deployed `AgentInstance.instance_id`
+persisted as None in Aura — verify the master's graph write. **Note:** agents currently boot→EHLO→idle;
+the continuous trading event loop is not wired yet (later phase).
 
 ---
 

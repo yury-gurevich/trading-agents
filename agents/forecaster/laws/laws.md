@@ -179,6 +179,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `momentum_window` | `20` | `int ≥ 2 ≤ 120` | YES | Window for price/SMA momentum and volume ratio |
 | `bars_for_full_confidence` | `60` | `int ≥ 1 ≤ 365` | YES | Bar count at which price reading reaches full confidence |
 | `return_squash_scale` | `0.05` | `float ≥ 0.001 ≤ 1.0` | YES | Logistic scale mapping predicted return onto [0, 1] |
+| `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled macro-event extraction prompt (ADR-0010); pre-declared; empty until P13 LLM path ships |
 
 ## Divergence register
 
@@ -189,3 +190,4 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S72: added `system_prompt` tunable (ADR-0010 immediate consequence); pre-declared for P13.

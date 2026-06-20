@@ -96,3 +96,12 @@ class ForecasterSettings(AgentSettings):
         le=1.0,
         unit="return",
     )
+
+    # ── LLM champion slot (ADR-0010) ─────────────────────────────────────────
+    system_prompt: str = tunable(
+        "",
+        why=(
+            "Champion slot for the DSPy-compiled macro-event extraction prompt "
+            "(ADR-0010). Pre-declared for P13; empty until the LLM path ships."
+        ),
+    )

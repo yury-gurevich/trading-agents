@@ -1,4 +1,4 @@
-# Multi-agent local dev runner for trading-agents (P15, S73).
+# Multi-agent local dev runner for trading-agents (P15, S74).
 #
 # Each agent runs in its own container — mirroring the Azure Container Apps
 # deployment (ADR-0007). master starts first; trading agents wait for ACTIVATE.
@@ -16,8 +16,27 @@
 #
 # Secrets: copy .env.example -> .env and fill in API keys before starting.
 # Neo4j: the local Neo4j instance must be running separately (see infra/neo4j/).
+# RSA keys: if MASTER_PRIVATE_KEY_PEM is unset, master generates a dev keypair
+#   and prints MASTER_PUBLIC_KEY_PEM to stdout. Copy that value into .env so
+#   all trading agents can verify ACTIVATE signatures.
 
 name: trading-agents
+
+x-agent-common: &agent-common
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    MASTER_URL: http://master:8000
+    MASTER_PUBLIC_KEY_PEM: ${MASTER_PUBLIC_KEY_PEM:-}
+  depends_on:
+    master:
+      condition: service_healthy
+  deploy:
+    replicas: 1
+    restart_policy:
+      condition: on-failure
+      max_attempts: 3
 
 services:
 
@@ -32,7 +51,7 @@ services:
       - path: .env
         required: false
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/metrics', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -48,115 +67,61 @@ services:
       context: .
       dockerfile: agents/provider/Dockerfile
     image: trading-agents-provider:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
+    <<: *agent-common
 
   scanner:
     build:
       context: .
       dockerfile: agents/scanner/Dockerfile
     image: trading-agents-scanner:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   analyst:
     build:
       context: .
       dockerfile: agents/analyst/Dockerfile
     image: trading-agents-analyst:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   portfolio_manager:
     build:
       context: .
       dockerfile: agents/portfolio_manager/Dockerfile
     image: trading-agents-portfolio-manager:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   execution:
     build:
       context: .
       dockerfile: agents/execution/Dockerfile
     image: trading-agents-execution:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   monitor:
     build:
       context: .
       dockerfile: agents/monitor/Dockerfile
     image: trading-agents-monitor:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   reporter:
     build:
       context: .
       dockerfile: agents/reporter/Dockerfile
     image: trading-agents-reporter:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   forecaster:
     build:
       context: .
       dockerfile: agents/forecaster/Dockerfile
     image: trading-agents-forecaster:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
+    <<: *agent-common
     deploy:
       replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
       resources:
         limits:
           memory: 4G
@@ -166,53 +131,25 @@ services:
       context: .
       dockerfile: agents/operator/Dockerfile
     image: trading-agents-operator:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   supervisor:
     build:
       context: .
       dockerfile: agents/supervisor/Dockerfile
     image: trading-agents-supervisor:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   curator:
     build:
       context: .
       dockerfile: agents/curator/Dockerfile
     image: trading-agents-curator:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common
 
   researcher:
     build:
       context: .
       dockerfile: agents/researcher/Dockerfile
     image: trading-agents-researcher:local
-    env_file:
-      - path: .env
-        required: false
-    depends_on:
-      master:
-        condition: service_healthy
-    deploy:
-      replicas: 1
+    <<: *agent-common

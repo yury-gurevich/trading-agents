@@ -46,6 +46,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | supervisor | ✅ LOCKED v1 (S71) | 21 / 49 | |
 | curator | ✅ LOCKED v1 (S71) | 20 / 48 | |
 | researcher | ✅ LOCKED v1 (S71) | 18 / 44 | |
+| master | ✅ LOCKED v1 (S73) | 10 / 18 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74 |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

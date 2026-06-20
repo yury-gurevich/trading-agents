@@ -1,14 +1,25 @@
 # Project State
 
-**Last updated:** 2026-06-20 19:26 AEST
+**Last updated:** 2026-06-20 19:47 AEST
+
+**S73 shipped: P15 foundation — master bootstrap agent + per-agent Dockerfiles.**
+`agents/master/` package: `MasterAgent` (`start/activate/drain`), `DEFAULT_GRANTS` privilege
+table (12 agent types), `MasterSettings` (3 handshake tunables), graph write helpers, 11 tests
+(100% coverage). `contracts/master.py`: `AgentState` (StrEnum), `EHLOMessage`, `ACTIVATEMessage`,
+`DRAINMessage`. `agents/master/laws/laws.md` LOCKED v1 (18 sections, prefix MST, 10 clauses 🟩).
+13 per-agent `Dockerfile`s (master + 12 trading agents). Multi-service `docker-compose.yml`.
+RSA signing + Key Vault deferred to S74 (DRIFT-001/002 in laws). No version bump (scaffolding).
+**906 tests**, 100% coverage.
+
+**Now:** — (S73 complete). Next: S74 — RSA signing + Key Vault wiring, or P12/P13 DSPy harness.
+
+---
 
 **S72 shipped: ADR-0010 immediate close — `system_prompt` tunable on operator + forecaster.**
 `system_prompt: str = tunable("")` added to `OperatorSettings` (champion slot for DSPy-compiled
 interpret prompt; empty = dynamic `build_interpret_system()`, non-empty = DSPy-promoted static
 override) and wired into `_interpret_command`. Pre-declared on `ForecasterSettings` (unused until
 P13 LLM path ships). Both agent law PARAM sections updated. No version bump (no new capability).
-
-**Now:** — (S72 complete). Next: S73 — P15 container-per-agent split or P12/P13 DSPy harness.
 
 ---
 
@@ -20,7 +31,7 @@ clauses (MON 19/40, RPT 17/40, FORE 15/46, OPR 14/51, SUP 21/49, CUR 20/48, RES 
 test-plan.md files created. All 7 laws.md LOCKED v1. No version bump (docs-only sprint).
 **All 11 non-provider agents now have LOCKED v1 laws.**
 
-**Now:** — (all agents locked; law cycle complete). Next: S72 — see `docs/sprints/INDEX.md`.
+**Now:** — (all agents locked; law cycle complete).
 
 ---
 
@@ -144,24 +155,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S71 — Per-agent law backfill cont. (remaining 7 agents).** S70 locked scanner/analyst/PM/
-execution. S71 authors laws for monitor, reporter, forecaster, operator, supervisor, curator,
-researcher — same 18-section depth, same cite→test→lock cycle.
-
-Also pending (small, separate chore): add `system_prompt` as a `tunable` to
-`agents/operator/settings.py` and pre-declare it on `agents/forecaster/settings.py`
-(ADR-0010 immediate consequence; chore-branch off main).
+**P15 in progress — S73 done; S74 next.** S73 shipped the master agent and per-agent
+Dockerfiles. S74 wires RSA signing on `ACTIVATEMessage` and Azure Key Vault credential
+distribution (`config={}` stub → real secrets). Then: DockerHub image push + Container Apps
+deploy manifest.
 
 ## Next
 
-+ **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
-  (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
-  shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),
-  then run `sentiment_scorecard` on `price_cache` forward returns and decide promotion via the
-  P10 predictor-registry gate. Spec: ADR-0002.
-+ **P13 — Cross-asset & macro signal graph** (later; sector contagion + signed tariff/sanction
-  event propagation over Neo4j; contingent on P12 + news+returns data runway; ADR-0002).
-+ Build-when-needed: RAG vector index (deferred; no sprint planned).
++ **S74 — P15: RSA signing + Key Vault** — master generates RSA keypair; public key baked into
+  each agent image at build time; `signature` field verified by agents; `config={}` populated
+  from Azure Key Vault per-agent minimum grants.
++ **P12/P13 DSPy harness** — `PromptOptimizer` port + golden eval set + per-(task×model)
+  compiled prompt artifact (operator interpret + forecaster macro-event extraction).
++ **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** Operational only —
+  accrue real headlines, run `sentiment_scorecard` on `price_cache` forward returns, decide
+  promotion via the P10 predictor-registry gate. Spec: ADR-0002.
 
 ## Workflow
 

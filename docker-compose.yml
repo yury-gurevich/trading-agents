@@ -1,44 +1,210 @@
-# Local dev runner for trading-agents.
+# Multi-agent local dev runner for trading-agents (P15, S73).
 #
-# The observability sidecar (Prometheus/Grafana) has been retired (ADR-0009, 2026-06-19).
-# Metrics are written by prometheus-client → Azure Managed Prometheus remote-write.
-# Deployed infra: Azure Container Apps — see infra/container-apps.bicep.
+# Each agent runs in its own container — mirroring the Azure Container Apps
+# deployment (ADR-0007). master starts first; trading agents wait for ACTIVATE.
 #
-# Local dev:
+# Usage:
 #   docker compose up
 #
-# Swarm stack deploy:
-#   docker build -t trading-agents:local .
-#   docker swarm init            # once, if not already a swarm node
-#   docker stack deploy -c docker-compose.yml trading-agents
+# Secrets: copy .env.example -> .env and fill in API keys before starting.
+# Neo4j: the local Neo4j instance must be running separately (see infra/neo4j/).
 
 name: trading-agents
 
 services:
 
-  app:
-    build: .
-    image: trading-agents:local
+  master:
+    build:
+      context: .
+      dockerfile: agents/master/Dockerfile
+    image: trading-agents-master:local
     ports:
       - "8000:8000"
     env_file:
       - path: .env
         required: false
     healthcheck:
-      test:
-        - CMD
-        - python
-        - -c
-        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/metrics', timeout=3)"
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/metrics', timeout=3)"]
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
         max_attempts: 3
+
+  provider:
+    build:
+      context: .
+      dockerfile: agents/provider/Dockerfile
+    image: trading-agents-provider:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  scanner:
+    build:
+      context: .
+      dockerfile: agents/scanner/Dockerfile
+    image: trading-agents-scanner:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  analyst:
+    build:
+      context: .
+      dockerfile: agents/analyst/Dockerfile
+    image: trading-agents-analyst:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  portfolio_manager:
+    build:
+      context: .
+      dockerfile: agents/portfolio_manager/Dockerfile
+    image: trading-agents-portfolio-manager:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  execution:
+    build:
+      context: .
+      dockerfile: agents/execution/Dockerfile
+    image: trading-agents-execution:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  monitor:
+    build:
+      context: .
+      dockerfile: agents/monitor/Dockerfile
+    image: trading-agents-monitor:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  reporter:
+    build:
+      context: .
+      dockerfile: agents/reporter/Dockerfile
+    image: trading-agents-reporter:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  forecaster:
+    build:
+      context: .
+      dockerfile: agents/forecaster/Dockerfile
+    image: trading-agents-forecaster:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
       resources:
         limits:
-          memory: 512M
+          memory: 4G
+
+  operator:
+    build:
+      context: .
+      dockerfile: agents/operator/Dockerfile
+    image: trading-agents-operator:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  supervisor:
+    build:
+      context: .
+      dockerfile: agents/supervisor/Dockerfile
+    image: trading-agents-supervisor:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  curator:
+    build:
+      context: .
+      dockerfile: agents/curator/Dockerfile
+    image: trading-agents-curator:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  researcher:
+    build:
+      context: .
+      dockerfile: agents/researcher/Dockerfile
+    image: trading-agents-researcher:local
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      master:
+        condition: service_healthy
+    deploy:
+      replicas: 1

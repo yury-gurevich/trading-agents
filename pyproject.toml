@@ -4,8 +4,9 @@ version = "0.11.0"
 description = "An operator-controlled, single-user, agent-based trading system. Domain logic lives only in agents; the kernel is plumbing; contracts are the shared boundary."
 requires-python = ">=3.13"
 dependencies = [
+    "msgpack>=1.2.1",
     "pydantic>=2.7",
-    "pydantic-settings>=2.2",
+    "pydantic-settings>=2.14.2",
 ]
 
 [project.scripts]

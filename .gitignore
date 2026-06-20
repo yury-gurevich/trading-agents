@@ -41,4 +41,6 @@ tools/
 infra/.azure-outputs
 infra/prometheus/prometheus.generated.yml
 infra/prometheus/prometheus.local.yml
+infra/*.local.json
+infra/*.local.env
 desktop.ini

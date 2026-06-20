@@ -60,7 +60,7 @@ Split modules before they hit the hard block. Do not use `# noqa` to bypass.
 
 ## Architecture boundaries — enforced by import-linter
 
-```
+```text
 kernel  ←  contracts  ←  agents  ←  orchestration / surfaces
 ```
 

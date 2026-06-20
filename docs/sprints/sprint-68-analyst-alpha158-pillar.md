@@ -14,6 +14,7 @@ constraint as Q1). Governed by a tunable weight defaulting to 0.00 (off); operat
 after 20-day IC comparison against the existing technical pillar.
 
 The invariants from [R001 §"For Coding Agents"](../research/qlib-integration.md) bind verbatim:
+
 - Alpha158 logic lives inside `agents/analyst/domain/` only; no symbol crosses the boundary.
 - No new contract type; `ScoreBreakdown` gains `alpha158_score: float | None = None`.
 - Default weight 0.00 — existing tests and coverage are unaffected when weight is 0.
@@ -111,6 +112,7 @@ def compute_alpha_features(bars: tuple[OHLCVBar, ...]) -> AlphaFeatureRow | None
 ```
 
 Tests: `agents/analyst/tests/test_analyst_alpha_features.py`
+
 - Known price sequence → verify every field numerically (ROC, STD, MAX, MIN, IMAX, IMIN).
 - `None` returned when fewer than 62 bars.
 - All 20 fields present and finite.
@@ -150,6 +152,7 @@ def score_alpha158(
 ```
 
 Tests: `agents/analyst/tests/test_analyst_alpha_pillar.py`
+
 - Single-element universe → score == 50.0 (z = 0 for every field).
 - Known two-element universe where one ticker dominates on all features → score > 60.
 - Features from a lower-performing ticker → score < 50.

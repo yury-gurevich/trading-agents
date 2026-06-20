@@ -1,6 +1,22 @@
 # Project State
 
-**Last updated:** 2026-06-20 19:47 AEST
+**Last updated:** 2026-06-20 22:10 AEST
+
+**S74 shipped: P15 RSA signing + agent entrypoints (version 0.11.0→0.12.0).**
+`kernel/crypto.py`: `generate_keypair()`, `sign_pss()`, `verify_pss()` — RSA-PSS 2048-bit
+SHA-256. `kernel/bootstrap.py`: `activate_agent()` with injectable `_send` (test-safe), scheme-
+guarded `_http_post()`, `idle_loop()` placeholder. `agents/master/http_server.py`:
+`handle_health()` + `handle_ehlo()` pure testable functions + `serve()` (pragma: no cover).
+`agents/master/entrypoint.py`: `build_app()` testable; `main()` loads PEM from env or generates
+dev keypair. 12 trading-agent entrypoints (`agents/{name}/entrypoint.py`): send EHLO to master,
+verify signed ACTIVATE, then idle. `MASTER_PUBLIC_KEY_PEM` env var wired into docker-compose.
+`x-agent-common` YAML anchor DRYs up compose. Key Vault deferred to S75 (DRIFT-002).
+**951 tests**, 100% coverage. **0.11.0→0.12.0** (feat/MINOR).
+
+**Now:** — (S74 complete). Next: S75 — Azure Key Vault integration (master resolves secrets,
+populates `config={}` in ACTIVATE) + DockerHub push + Container Apps deploy manifest.
+
+---
 
 **S73 shipped: P15 foundation — master bootstrap agent + per-agent Dockerfiles.**
 `agents/master/` package: `MasterAgent` (`start/activate/drain`), `DEFAULT_GRANTS` privilege
@@ -10,8 +26,6 @@ table (12 agent types), `MasterSettings` (3 handshake tunables), graph write hel
 13 per-agent `Dockerfile`s (master + 12 trading agents). Multi-service `docker-compose.yml`.
 RSA signing + Key Vault deferred to S74 (DRIFT-001/002 in laws). No version bump (scaffolding).
 **906 tests**, 100% coverage.
-
-**Now:** — (S73 complete). Next: S74 — RSA signing + Key Vault wiring, or P12/P13 DSPy harness.
 
 ---
 

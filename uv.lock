@@ -2301,9 +2301,10 @@ wheels = [
 
 [[package]]
 name = "trading-agents"
-version = "0.11.0"
+version = "0.12.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "msgpack" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -2349,6 +2350,7 @@ dev = [
 requires-dist = [
     { name = "azure-servicebus", marker = "extra == 'azure'", specifier = ">=7.12" },
     { name = "celery", marker = "extra == 'runtime'", specifier = ">=5.4" },
+    { name = "cryptography", specifier = ">=44.0" },
     { name = "lightgbm", marker = "extra == 'forecaster'", specifier = ">=4" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.28.0" },
     { name = "msgpack", specifier = ">=1.2.1" },

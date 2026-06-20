@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 
 def test_system_status_reports_empty_fault_flag_and_snapshot_states() -> None:
+    """SUP-IN-02 / SUP-OUT-02 / SUP-IDM-01: status derives health + incidents."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     empty = _status(bus)
@@ -65,6 +66,7 @@ def test_system_status_ignores_resolved_faults_and_warn_flags() -> None:
 
 
 def test_flag_for_human_writes_idempotent_pending_flag() -> None:
+    """SUP-IN-03 / SUP-OUT-03 / SUP-STA-02: flag_for_human writes Flag; idempotent."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     request = FlagRequest(subject_ref="risk", severity="critical", reason="check")
@@ -81,6 +83,7 @@ def test_flag_for_human_writes_idempotent_pending_flag() -> None:
 def test_failure_paths_return_degraded_responses(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """SUP-FAIL-01 / SUP-FAIL-02: graph faults → degraded responses; healthy=False."""
     agent = SupervisorAgent(InProcessBus(), graph=cast("GraphStore", _BrokenGraph()))
     assert agent._dispatch_intent(_intent("run")).accepted is False
     assert (

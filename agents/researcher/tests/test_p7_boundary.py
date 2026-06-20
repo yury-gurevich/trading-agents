@@ -13,6 +13,7 @@ from kernel import InMemoryGraphStore
 
 
 def test_researcher_never_applies_proposed_change() -> None:
+    """RES-NEV-01: researcher proposes, never applies; settings unchanged."""
     graph = InMemoryGraphStore()
     bus = bound_bus(graph)
     seed_snapshots(graph, confidence=0.35)

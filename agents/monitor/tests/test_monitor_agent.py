@@ -22,6 +22,8 @@ from kernel import CollectingFaultSink, InMemoryGraphStore, InProcessBus
 
 
 def test_check_positions_opens_position_idempotently() -> None:
+    """MON-IN-01 / MON-TRG-01 / MON-OUT-01 / MON-IDM-02: RPC path; hold;
+    Position opened once."""
     bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 100.0),))
     seed_fill(graph)
 
@@ -35,6 +37,7 @@ def test_check_positions_opens_position_idempotently() -> None:
 
 
 def test_provider_failure_skips_position_and_records_fault() -> None:
+    """MON-OUT-07 / MON-FAIL-01 / MON-NEV-03: provider degraded → empty + fault."""
     bus, graph, _broker, sink = wire_monitor(fail_ohlcv=True)
     seed_fill(graph)
 
@@ -47,6 +50,7 @@ def test_provider_failure_skips_position_and_records_fault() -> None:
 
 
 def test_missing_provider_handler_skips_position_and_records_fault() -> None:
+    """MON-FAIL-01 / MON-NEV-03: bus error → empty result; no direct API call."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
@@ -60,6 +64,7 @@ def test_missing_provider_handler_skips_position_and_records_fault() -> None:
 
 
 def test_missing_current_price_skips_position_and_records_fault() -> None:
+    """MON-NEV-04 / MON-FAIL-02: ticker missing from price → fault; position skipped."""
     bus, graph, _broker, sink = wire_monitor(bars=(bar("MSFT", 0, 100.0),))
     seed_fill(graph)
 
@@ -70,6 +75,7 @@ def test_missing_current_price_skips_position_and_records_fault() -> None:
 
 
 def test_missing_stop_target_uses_fallback_and_records_fault() -> None:
+    """MON-FAIL-03 / MON-STA-01: missing stop/target → fallback used; fault."""
     bus, graph, _broker, sink = wire_monitor(bars=(bar("AAPL", 0, 100.0),))
     seed_fill(graph, stop_pct=None, target_pct=None)
 
@@ -109,6 +115,7 @@ def test_execution_dispatch_error_records_fault_after_close_decision() -> None:
 
 
 def test_check_positions_without_fills_returns_empty_result() -> None:
+    """MON-IN-01 / MON-OUT-01: no fills → empty CloseDecisionSet; no faults."""
     bus, _graph, _broker, sink = wire_monitor()
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
@@ -118,6 +125,7 @@ def test_check_positions_without_fills_returns_empty_result() -> None:
 
 
 def test_explain_hold_returns_non_empty_explanation() -> None:
+    """MON-IN-02 / MON-TRG-03: explain_hold returns Explanation; no graph write."""
     bus, graph, _broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 100.0),))
     seed_fill(graph)
     bus.request(check_message())
@@ -129,6 +137,7 @@ def test_explain_hold_returns_non_empty_explanation() -> None:
 
 
 def test_explain_hold_without_position_returns_explanation() -> None:
+    """MON-IN-02 / MON-TRG-03: no positions → non-empty Explanation still returned."""
     bus, _graph, _broker, _sink = wire_monitor()
 
     explanation = Explanation.model_validate(bus.request(explain_message()).payload)

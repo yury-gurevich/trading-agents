@@ -1,6 +1,18 @@
 # Project State
 
-**Last updated:** 2026-06-20 18:16 AEST
+**Last updated:** 2026-06-20 18:53 AEST
+
+**S71 shipped: per-agent law backfill (remaining 7 of 11) — monitor/reporter/forecaster/
+operator/supervisor/curator/researcher LOCKED v1.** Laws authored from first principles for all
+7 remaining agents (18 sections each: IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/
+CAP/PARAM + divergence register + changelog). Citation pass across 18 test files; 124 new green
+clauses (MON 19/40, RPT 17/40, FORE 15/46, OPR 14/51, SUP 21/49, CUR 20/48, RES 18/44). 7
+test-plan.md files created. All 7 laws.md LOCKED v1. No version bump (docs-only sprint).
+**All 11 non-provider agents now have LOCKED v1 laws.**
+
+**Now:** — (all agents locked; law cycle complete). Next: S72 — see `docs/sprints/INDEX.md`.
+
+---
 
 **S70 shipped: per-agent law backfill (4 of 11) — scanner/analyst/PM/execution LOCKED v1.**
 Laws authored from first principles for 4 core trading-loop agents (18 sections each: IDN/IN/TRG/

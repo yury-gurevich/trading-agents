@@ -25,6 +25,8 @@ from contracts.portfolio_manager import OrderIntentSet
 
 
 def test_evaluate_orders_sizes_order_and_stores_money_as_cents() -> None:
+    """PM-IN-01 / PM-TRG-01 / PM-OUT-01 / PM-OUT-02 / PM-NEV-05 / PM-TYP-01 / PM-TYP-02:
+    sizing produces whole-share OrderIntent; est_price is Decimal stored as cents."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, graph, _ = wire_pm(
         source_bars=(bar("AAPL", 0, 100.0),),
@@ -51,6 +53,7 @@ def test_evaluate_orders_sizes_order_and_stores_money_as_cents() -> None:
 
 
 def test_risk_rejects_when_position_limit_binds() -> None:
+    """PM-NEV-04 / PM-STA-03 / PM-OUT-03: max_positions gate rejects excess."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, _ = wire_pm(
         source_bars=(bar("AAPL", 0, 100.0),),
@@ -68,6 +71,7 @@ def test_risk_rejects_when_position_limit_binds() -> None:
 
 
 def test_risk_rejects_when_cash_buffer_binds() -> None:
+    """PM-NEV-04 / PM-OUT-03: cash_buffer_pct gate rejects when insufficient."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, _ = wire_pm(
         source_bars=(bar("AAPL", 0, 100.0),),
@@ -88,6 +92,7 @@ def test_risk_rejects_when_cash_buffer_binds() -> None:
 
 
 def test_risk_rejects_when_order_is_below_minimum_quantity() -> None:
+    """PM-NEV-05 / PM-NEV-04 / PM-OUT-03: min_quantity gate; never fractional."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, _ = wire_pm(
         source_bars=(bar("AAPL", 0, 1000.0),),
@@ -108,6 +113,8 @@ def test_risk_rejects_when_order_is_below_minimum_quantity() -> None:
 
 
 def test_degraded_provider_rejects_honestly_and_records_fault() -> None:
+    """PM-NEV-02 / PM-OUT-04 / PM-FAIL-01 / PM-OBS-02: degraded provider → all rejected
+    with "provider_degraded"; fault recorded; NEV-02 via bus only."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, sink = wire_pm(fail_ohlcv=True)
 
@@ -123,6 +130,7 @@ def test_degraded_provider_rejects_honestly_and_records_fault() -> None:
 
 
 def test_explain_decision_returns_grounded_explanation() -> None:
+    """PM-IN-04 / PM-NEV-01: explain_decision returns Explanation; no broker call."""
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, _ = wire_pm()
 

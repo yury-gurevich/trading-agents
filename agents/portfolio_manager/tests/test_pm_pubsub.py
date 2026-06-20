@@ -56,6 +56,8 @@ def _wire_with_recs(
 
 
 def test_recommendations_ready_triggers_orders_ready() -> None:
+    """PM-IN-02 / PM-TRG-02 / PM-OUT-05: analysis.recommendations.ready → claim-check
+    resolved → evaluate_orders → portfolio.orders.ready emitted."""
     bus, _, event = _wire_with_recs()
     received: list[dict[str, object]] = []
     bus.subscribe("portfolio.orders.ready", received.append)
@@ -68,6 +70,7 @@ def test_recommendations_ready_triggers_orders_ready() -> None:
 
 
 def test_order_intent_result_node_in_graph() -> None:
+    """PM-STA-02 / PM-OBS-01: OrderIntentResult node written to graph; append-only."""
     bus, graph, event = _wire_with_recs(run_id="run-pm-2")
     received: list[dict[str, object]] = []
     bus.subscribe("portfolio.orders.ready", received.append)
@@ -80,6 +83,7 @@ def test_order_intent_result_node_in_graph() -> None:
 
 
 def test_order_intent_result_is_deserializable() -> None:
+    """PM-TYP-03: graph node deserialises to OrderIntentSet matching contract schema."""
     bus, graph, event = _wire_with_recs(run_id="run-pm-3")
     received: list[dict[str, object]] = []
     bus.subscribe("portfolio.orders.ready", received.append)
@@ -92,6 +96,7 @@ def test_order_intent_result_is_deserializable() -> None:
 
 
 def test_run_id_propagated_in_orders_ready_event() -> None:
+    """PM-IDM-02: run_id threaded from RecommendationSet to portfolio.orders.ready."""
     bus, _, event = _wire_with_recs(run_id="pm-run-99")
     received: list[dict[str, object]] = []
     bus.subscribe("portfolio.orders.ready", received.append)

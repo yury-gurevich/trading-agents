@@ -21,6 +21,8 @@ from kernel import InMemoryGraphStore
 
 
 def test_promotion_allowed_rejects_missing_runs_low_rate_and_faults() -> None:
+    """EXEC-NEV-04 / EXEC-SEC-04: evidence gate blocks promotion without sufficient
+    runs, approval rate, and zero critical faults."""
     settings = ExecutionSettings()
     assert check_promotion_allowed(StageEvidence(0, 0.0, 0), settings)[0] is False
     assert (
@@ -78,6 +80,7 @@ def test_collect_stage_evidence_treats_bad_metrics_as_zero() -> None:
 
 
 def test_current_stage_from_graph_falls_back_and_reads_latest_transition() -> None:
+    """EXEC-STA-02: stage is graph-authoritative; latest StageTransition wins."""
     graph = InMemoryGraphStore()
     assert current_stage_from_graph(graph, "paper") == "paper"
     write_stage_transition(

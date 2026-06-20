@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 
 def test_submit_is_idempotent_per_order_intent() -> None:
+    """EXEC-IDM-01 / EXEC-IDM-02 / EXEC-NEV-03: same OrderIntentSet replays identically;
+    broker called once per intent; client_order_id never omitted."""
     bus, graph, broker, _sink = wire()
     payload = order_set(order("AAPL"), order("MSFT"))
     seed_order_nodes(graph, payload)
@@ -48,6 +50,8 @@ def test_submit_is_idempotent_per_order_intent() -> None:
 
 
 def test_submit_records_fill_cents_and_executes_lineage() -> None:
+    """EXEC-IN-01 / EXEC-TRG-01 / EXEC-OUT-01 / EXEC-OUT-02 / EXEC-TYP-01:
+    EXEC-STA-03 / EXEC-OBS-01: fill Decimal cents; Fill→OrderIntent lineage."""
     bus, graph, _broker, _sink = wire()
     payload = order_set(order("AAPL", price="123.45"))
     seed_order_nodes(graph, payload)
@@ -66,6 +70,8 @@ def test_submit_records_fill_cents_and_executes_lineage() -> None:
 
 
 def test_broker_rejection_records_rejected_fill_and_fault() -> None:
+    """EXEC-FAIL-01 / EXEC-TYP-02 / EXEC-OBS-02: broker rejection → Fill(rejected) +
+    fault recorded; status ∈ allowed set; no exception to caller."""
     bus, graph, _broker, sink = wire(broker=PaperBroker(reject_tickers={"AAPL"}))
     payload = order_set(order("AAPL"))
     seed_order_nodes(graph, payload)
@@ -90,6 +96,7 @@ def test_broker_rejection_records_rejected_fill_and_fault() -> None:
 def test_broker_failure_records_rejected_fill_and_fault(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """EXEC-FAIL-02 / EXEC-NEV-01: total broker failure → all rejected + fault."""
     broker = PaperBroker()
     bus, graph, _broker, sink = wire(broker=broker)
     payload = order_set(order("AAPL"))
@@ -112,6 +119,8 @@ def test_broker_failure_records_rejected_fill_and_fault(
 
 
 def test_execute_close_stage_status_and_reconcile() -> None:
+    """EXEC-IN-02 / EXEC-TRG-03 / EXEC-TRG-05 / EXEC-OUT-04: execute_close,
+    stage_status, and reconcile return typed results."""
     bus, _graph, _broker, _sink = wire()
     close_set = CloseDecisionSet(
         run_id="monitor-run-1",
@@ -151,6 +160,7 @@ def test_execute_close_stage_status_and_reconcile() -> None:
 
 
 def test_reconcile_reports_unrecorded_broker_fill() -> None:
+    """EXEC-OUT-04 / EXEC-STA-01: unrecorded fill surfaces as reconcile discrepancy."""
     broker = PaperBroker()
     bus, _graph, _broker, _sink = wire(broker=broker)
     broker.submit(

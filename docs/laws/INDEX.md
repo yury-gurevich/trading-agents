@@ -35,10 +35,10 @@ Each agent's law files live at `agents/<name>/laws/`:
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
 | provider | ✅ LOCKED v1 (S69) | 23 / 43 | Template stress-test complete; pattern is now the reference copy |
-| analyst | ⬜ not yet authored | — | S70 |
-| scanner | ⬜ not yet authored | — | S70 |
-| portfolio_manager | ⬜ not yet authored | — | S70 |
-| execution | ⬜ not yet authored | — | S70 |
+| analyst | ✅ LOCKED v1 (S70) | 24 / 43 | |
+| scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
+| portfolio_manager | ✅ LOCKED v1 (S70) | 23 / 43 | |
+| execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
 | monitor | ⬜ not yet authored | — | S70 |
 | reporter | ⬜ not yet authored | — | S70 |
 | forecaster | ⬜ not yet authored | — | S70 |

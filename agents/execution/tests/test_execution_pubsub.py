@@ -42,6 +42,8 @@ def _wire_with_orders(
 
 
 def test_orders_ready_triggers_fills_ready() -> None:
+    """EXEC-IN-03 / EXEC-TRG-02 / EXEC-OUT-06: portfolio.orders.ready → claim-check
+    resolved → submit → execution.fills.ready emitted with ref."""
     bus, _, event = _wire_with_orders()
     received: list[dict[str, object]] = []
     bus.subscribe("execution.fills.ready", received.append)
@@ -54,6 +56,7 @@ def test_orders_ready_triggers_fills_ready() -> None:
 
 
 def test_execution_result_node_in_graph() -> None:
+    """EXEC-STA-03 / EXEC-OBS-01: ExecutionResultEvent node written to graph."""
     bus, graph, event = _wire_with_orders(run_id="run-ex-2")
     received: list[dict[str, object]] = []
     bus.subscribe("execution.fills.ready", received.append)
@@ -66,6 +69,7 @@ def test_execution_result_node_in_graph() -> None:
 
 
 def test_execution_result_is_deserializable() -> None:
+    """EXEC-TYP-03: graph node deserialises to ExecutionResult per contract."""
     bus, graph, event = _wire_with_orders(run_id="run-ex-3")
     received: list[dict[str, object]] = []
     bus.subscribe("execution.fills.ready", received.append)
@@ -78,6 +82,7 @@ def test_execution_result_is_deserializable() -> None:
 
 
 def test_run_id_propagated_in_fills_ready_event() -> None:
+    """EXEC-IDM-02 / EXEC-OUT-06: run_id threaded into fills.ready event envelope."""
     bus, _, event = _wire_with_orders(run_id="ex-run-99")
     received: list[dict[str, object]] = []
     bus.subscribe("execution.fills.ready", received.append)

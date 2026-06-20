@@ -21,6 +21,8 @@ from agents.analyst.tests.helpers import (
 
 
 def test_analyze_returns_recommendation_with_rationale_and_provenance() -> None:
+    """ANLZ-IN-01 / ANLZ-TRG-01 / ANLZ-OUT-01 / ANLZ-OUT-02 / ANLZ-NEV-02 / ANLZ-TYP-01:
+    analyze returns recommendation with confidence, rationale, and provenance."""
     scan = candidate_set(candidate())
     bus, graph, sink = wire_analyst(source_bars=bars())
     graph.merge_node("Candidate", "scan-fixture:AAPL", {"ticker": "AAPL"})
@@ -62,6 +64,7 @@ def test_recommendation_carries_fundamental_score_when_present() -> None:
 
 
 def test_recommendation_carries_sentiment_score_when_present() -> None:
+    """ANLZ-OUT-06 / ANLZ-TYP-03: SentimentReading persisted; scorer field present."""
     scan = candidate_set(candidate())
     bus, _graph, sink = wire_analyst(
         source_bars=bars(),
@@ -78,6 +81,7 @@ def test_recommendation_carries_sentiment_score_when_present() -> None:
 
 
 def test_low_confidence_candidate_becomes_rejection() -> None:
+    """ANLZ-OUT-03 / ANLZ-NEV-03: below regime floor → rejection with reason."""
     # A sustained, wide-ranging climb reads as overbought and choppy: the technical
     # composite (0.379 over 12 indicators -- the 60-bar series clears OBV, RSI-2, NW
     # (+3.97% -> 30) and turnaround (monotone climb -> 50) but not the 200-bar golden
@@ -98,6 +102,8 @@ def test_low_confidence_candidate_becomes_rejection() -> None:
 
 
 def test_degraded_market_data_returns_explained_rejection() -> None:
+    """ANLZ-FAIL-01 / ANLZ-FAIL-02 / ANLZ-OUT-04: degraded OHLCV → all rejected with
+    incident_refs; fault recorded; no exception."""
     scan = candidate_set(candidate())
     bus, _graph, sink = wire_analyst(source_bars=(), fail_ohlcv=True)
 
@@ -141,6 +147,7 @@ def test_provider_bus_error_returns_explained_rejection() -> None:
 
 
 def test_empty_candidate_set_returns_explainable_silence() -> None:
+    """ANLZ-IN-03 / ANLZ-NEV-01: empty input → empty set; no provider call."""
     scan = candidate_set()
     bus, _graph, sink = wire_analyst(register_provider=False)
 
@@ -158,6 +165,8 @@ def test_empty_candidate_set_returns_explainable_silence() -> None:
 def test_scoring_failure_returns_explained_rejection(
     monkeypatch: Any,
 ) -> None:
+    """ANLZ-FAIL-03: per-candidate scoring exception → rejected; others unaffected."""
+
     def fail_score(*args: object) -> object:
         raise RuntimeError("score failed")
 

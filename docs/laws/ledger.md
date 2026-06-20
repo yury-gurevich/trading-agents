@@ -33,11 +33,11 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 | Agent | Laws authored? | Clauses green / total | Status |
 | --- | --- | --- | --- |
 | provider | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S69 citation pass); 20 gap-tests remain ⬜ (written in later sprints); template now locked for copying to other agents |
-| scanner | — | — | ⬜ |
-| analyst | — | — | ⬜ |
+| scanner | ✅ v1 (LOCKED) | 18 / 39 | 🟨 partial — 18 clauses green (S70 citation pass); 21 gap-tests remain ⬜ |
+| analyst | ✅ v1 (LOCKED) | 24 / 43 | 🟨 partial — 24 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
 | forecaster | — | — | ⬜ |
-| portfolio_manager | — | — | ⬜ |
-| execution | — | — | ⬜ |
+| portfolio_manager | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S70 citation pass); 20 gap-tests remain ⬜ |
+| execution | ✅ v1 (LOCKED) | 30 / 49 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
 | monitor | — | — | ⬜ |
 | reporter | — | — | ⬜ |
 | researcher | — | — | ⬜ |

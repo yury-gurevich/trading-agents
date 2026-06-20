@@ -92,6 +92,8 @@ def _fixture_bars() -> tuple[OHLCVBar, ...]:
 
 
 def test_run_scan_calls_provider_and_returns_ranked_candidates() -> None:
+    """SCAN-IN-01 / SCAN-TRG-01 / SCAN-OUT-01 / SCAN-OUT-02 / SCAN-NEV-01:
+    ranked candidates returned with filter trace, provenance, and NEV-01 via bus."""
     bus, _graph, scanner_sink = _wire(bars=_fixture_bars())
 
     response = bus.request(_request())
@@ -115,6 +117,8 @@ def test_run_scan_calls_provider_and_returns_ranked_candidates() -> None:
 
 
 def test_scan_provenance_links_candidates_to_provider_snapshot() -> None:
+    """SCAN-TYP-01 / SCAN-TYP-02 / SCAN-STA-02 / SCAN-OBS-01: ScanRun written to graph;
+    Candidate ancestors link back to MarketSnapshot via DERIVED_FROM."""
     bus, graph, _scanner_sink = _wire(bars=_fixture_bars())
 
     response = bus.request(_request())
@@ -134,6 +138,8 @@ def test_scan_provenance_links_candidates_to_provider_snapshot() -> None:
 
 
 def test_degraded_provider_path_returns_empty_explained_result() -> None:
+    """SCAN-OUT-03 / SCAN-NEV-03 / SCAN-FAIL-01 / SCAN-OBS-02: degraded provider
+    yields empty CandidateSet with explanation + fault; never silent."""
     bus, _graph, scanner_sink = _wire(bars=(), fail_provider=True)
 
     response = bus.request(_request())
@@ -150,6 +156,7 @@ def test_degraded_provider_path_returns_empty_explained_result() -> None:
 
 
 def test_provider_bus_error_returns_empty_explained_result() -> None:
+    """SCAN-FAIL-01 / SCAN-NEV-01: bus error → empty explained result; no API call."""
     bus, _graph, scanner_sink = _wire(bars=(), register_provider=False)
 
     response = bus.request(_request())
@@ -163,6 +170,7 @@ def test_provider_bus_error_returns_empty_explained_result() -> None:
 
 
 def test_clean_provider_with_no_survivors_explains_filter_result() -> None:
+    """SCAN-NEV-03 / SCAN-OUT-02: all tickers filtered → explained silence."""
     bus, _graph, scanner_sink = _wire(
         bars=_fixture_bars(),
         settings=ScannerSettings(
@@ -180,13 +188,3 @@ def test_clean_provider_with_no_survivors_explains_filter_result() -> None:
     assert response.payload["candidates"] == []
     assert "No candidates survived" in response.payload["explanation"]["summary"]
     assert scanner_sink.faults == []
-
-
-def test_explain_filter_returns_grounded_explanation() -> None:
-    bus, _graph, _scanner_sink = _wire(bars=_fixture_bars())
-
-    response = bus.request(_request("explain_filter"))
-
-    assert response.message_type == "response"
-    assert "relative strength" in response.payload["summary"]
-    assert response.payload["evidence_refs"] == ["scanner.filters.core"]

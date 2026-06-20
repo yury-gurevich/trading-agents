@@ -59,6 +59,7 @@ def _two_tech_buys(
 
 
 def test_rejects_second_same_sector_order_over_cap() -> None:
+    """PM-NEV-04: max_sector_pct gate rejects second same-sector order over cap."""
     # Each order deploys $1,000; the 0.15 cap allows $1,500 of "Tech".
     approved, rejected = _two_tech_buys(
         {"AAPL": "Tech", "MSFT": "Tech"}, Decimal("0.15")
@@ -90,6 +91,7 @@ def test_max_sector_pct_of_one_disables_the_cap() -> None:
 
 
 def test_agent_applies_the_sector_cap_over_the_bus() -> None:
+    """PM-NEV-04: sector cap enforced end-to-end over the bus."""
     payload = recommendation_set(recommendation("AAPL"), recommendation("MSFT"))
     bus, _graph, sink = wire_pm(
         source_bars=(bar("AAPL", 0, 100.0), bar("MSFT", 0, 100.0)),

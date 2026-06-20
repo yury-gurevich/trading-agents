@@ -1,5 +1,7 @@
 <!-- Copy this file to agents/<name>/laws/laws.md and fill every section. -->
 <!-- Author in IDEAL-DESIGN mode (intent, not code). See docs/laws/conventions.md. -->
+<!-- TEMPLATE LOCKED v1 (S69, 2026-06-20): provider law completed its full cycle. -->
+<!-- Copy this version. Do not edit the template without a new provider cycle. -->
 
 # `<Agent>` — Laws
 

@@ -32,7 +32,7 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 
 | Agent | Laws authored? | Clauses green / total | Status |
 | --- | --- | --- | --- |
-| provider | ✅ v0 (draft) | 0 / — | ⬜ template stress-test |
+| provider | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S69 citation pass); 20 gap-tests remain ⬜ (written in later sprints); template now locked for copying to other agents |
 | scanner | — | — | ⬜ |
 | analyst | — | — | ⬜ |
 | forecaster | — | — | ⬜ |

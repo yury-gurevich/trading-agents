@@ -1,6 +1,17 @@
 # Project State
 
-**Last updated:** 2026-06-20 11:30 AEST
+**Last updated:** 2026-06-20 19:00 AEST
+
+**S69 shipped: provider law cycle — template locked (v0.10.0→0.11.0).** Two OPEN drifts
+corrected: DRIFT-006 (benchmark promoted to first-class `DataRequest.benchmark_ticker` field +
+`MarketData.benchmark`; `taint=False` so a degraded benchmark never sets `used_fallback` on
+candidate quality; analyst uses `market.benchmark` directly); DRIFT-007 (`caller_authorized`
+predicate + `allowed_callers` gate in all three buses — InProcess, Celery, Azure Service Bus;
+`AgentBase.bind()` threads it; provider capability matrix now enforced for `get_market_data`
+and `get_regime`). Law-ID citation pass across 7 provider test files; `test-plan.md` updated
+to 23/43 clauses 🟩. `agents/provider/laws/laws.md` LOCKED v1; `docs/laws/_TEMPLATE.md` lock
+comment added — safe to copy to the 11 remaining agents. **894 tests**, 100 % coverage.
+**version 0.10.0→0.11.0** (feat/MINOR, HARD RULE).
 
 **S68 shipped: analyst Alpha158 feature pillar (qlib Phase Q2).** `AlphaFeatureRow` dataclass
 (22 fields: ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons) + `compute_alpha_features()` (returns None
@@ -104,26 +115,18 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**S69 — Provider law cycle (lock the template).** On branch `sprint-69-provider-law-cycle`.
-Reading `docs/laws/conventions.md` §11 + `docs/laws/README.md` surfaced the bootstrapping rule:
-the law book must lock the **provider** template — via its full *author → reconcile → test →
-green* cycle — **before** copying it to the other eleven agents. But the provider law is still
-`DRAFT v0` with **zero** law-citing tests and two OPEN drifts (DRIFT-006/007). So S69 was
-**redirected** from "copy CAP+PARAM into 11 agents" to **completing the provider cycle**: bind
-each `PROV-*` clause to a functional test (cite the law-ID in the docstring per §7), resolve
-DRIFT-006/007, flip the test-plan green, and lock `agents/provider/laws/laws.md` (DRAFT → LOCKED
-v1). The per-agent law files (the original S69 idea) move to S70+ once the template is locked.
+**S70 — Per-agent law files (batched, scanner + analyst + PM + execution).** Provider law is
+LOCKED v1 (S69) — the template is safe to copy. S70 authors the law files for the core
+trading-loop agents at full 18-section depth (IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/
+DEP/OBS/PERF/CAP/PARAM + divergence register + changelog), drives each through its cite→test
+cycle, and locks each law file. ~3–4 agents per sprint.
 
-main is clean: S68 Alpha158 pillar shipped (v0.10.0); housekeeping landed (CodeQL local-analysis
-config + `docs/local/` → `docs/`/`docs/sprints/` reference cleanup).
+Also pending (small, separate chore): add `system_prompt` as a `tunable` to
+`agents/operator/settings.py` (operator, now) and pre-declare it on
+`agents/forecaster/settings.py` (ADR-0010 immediate consequence; chore-branch off main).
 
 ## Next
 
-+ **S70+ — Per-agent law files (full template), batched.** Once the provider template locks (S69),
-  copy it to the eleven remaining agents at full 18-section depth, ~3–4 agents per sprint, starting
-  with the core trading loop (scanner, analyst, pm, execution). Each is authored in ideal-design
-  mode from that agent's contract/settings, then driven through its own test cycle (ADR-0007 CAP +
-  PARAM included). This was the original S69; it is gated on the locked template per conventions §11.
 + **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** All three scorers
   (lexicon S37/S56, provider S47/S48, FinBERT S49) + `sentiment_scorecard` harness (S57)
   shipped. Remaining is operational: accrue real headlines live (the S36 feed scored forward),

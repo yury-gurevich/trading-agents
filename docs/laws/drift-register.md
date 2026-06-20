@@ -17,8 +17,8 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | DRIFT-003 | PROV-IN-06 | Fields = price, fundamentals, news, benchmark, regime. | `mission.md` also lists **FRED** (macro) and **EDGAR** (filings). | gap / scope | **DECIDED D3** — in-law, deferred; applied (`IN-06`) |
 | DRIFT-004 | PROV-OUT-02 | Regime response = classification + its inputs. | PRD/mission: provider emits the regime-derived **policy inputs** (stop/target/holding defaults). | gap (enrich) | **CORRECTED** — adopted; `OUT-02` sharpened |
 | DRIFT-005 | PROV-OUT-06 | Degradation = a quality record on the response (pull). | `mission.md`: provider also **emits** `market_data_degraded` (push). | gap (enrich) | **CORRECTED** — adopted; `OUT-06` added |
-| DRIFT-006 | PROV-OUT-01 | Benchmark is just another **requested field** of a market-data request. | Code (S38) fetches the benchmark via a **separate** request to dodge a degraded-quality trip. | code-drift | OPEN — reconcile code to law at test time |
-| DRIFT-007 | PROV-SEC-07 | Only capability-matrix-authorised callers may invoke the provider. | Unverified that the matrix actually gates data requests. | code-drift (verify) | OPEN — confirm at reconciliation |
+| DRIFT-006 | PROV-OUT-01 | Benchmark is just another **requested field** of a market-data request. | Code (S38) fetches the benchmark via a **separate** request to dodge a degraded-quality trip. | code-drift | **CORRECTED (S69)**: `DataRequest.benchmark_ticker` + `MarketData.benchmark` added; `taint=False` so degraded benchmark doesn't set `used_fallback` on the candidate quality; analyst uses `market.benchmark` directly. |
+| DRIFT-007 | PROV-SEC-07 | Only capability-matrix-authorised callers may invoke the provider. | Unverified that the matrix actually gates data requests. | code-drift (verify) | **CORRECTED (S69)**: `caller_authorized` predicate + `allowed_callers` param in all three buses (`InProcessBus`, `CeleryBus`, `AzureServiceBusBus`); `AgentBase.bind` passes `capability.allowed_callers`; provider contract gates `get_market_data` to 5 callers and `get_regime` to 2 callers. |
 
 ## System-level
 

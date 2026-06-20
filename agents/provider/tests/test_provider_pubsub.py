@@ -55,6 +55,8 @@ def _request_event(
 
 
 def test_market_data_request_event_triggers_ready_event() -> None:
+    """PROV-TRG-01 / PROV-OUT-01: a market-data request event on data.request.market
+    triggers a data.ready.market claim-check event — provider is event-driven."""
     bus, _ = _wire(bars=(_bar("AAPL", 1), _bar("AAPL", 2)))
     received: list[dict[str, object]] = []
     bus.subscribe("data.ready.market", received.append)
@@ -68,6 +70,8 @@ def test_market_data_request_event_triggers_ready_event() -> None:
 
 
 def test_market_data_claim_check_node_is_in_graph() -> None:
+    """PROV-OUT-01 / PROV-STA-01 / PROV-OUT-04: the claim-check ref resolves to a
+    MarketDataEvent node written to the graph with snapshot and provenance."""
     bus, graph = _wire(bars=(_bar("AAPL", 1),))
     received: list[dict[str, object]] = []
     bus.subscribe("data.ready.market", received.append)
@@ -80,6 +84,8 @@ def test_market_data_claim_check_node_is_in_graph() -> None:
 
 
 def test_market_data_bus_event_has_only_ref_not_bars() -> None:
+    """PROV-OUT-01: the pub/sub event carries only a claim-check ref, not the bars
+    payload — small envelopes, data in store (ADR-0005)."""
     bus, _ = _wire(bars=(_bar("AAPL", 1),))
     received: list[dict[str, object]] = []
     bus.subscribe("data.ready.market", received.append)
@@ -93,6 +99,8 @@ def test_market_data_bus_event_has_only_ref_not_bars() -> None:
 
 
 def test_market_data_node_snapshot_can_be_reconstructed() -> None:
+    """PROV-OUT-04 / PROV-STA-01: the graph node snapshot is fully reconstructable
+    into a MarketData response from the claim-check ref alone."""
     bus, graph = _wire(bars=(_bar("AAPL", 1), _bar("AAPL", 2)))
     received: list[dict[str, object]] = []
     bus.subscribe("data.ready.market", received.append)
@@ -106,6 +114,8 @@ def test_market_data_node_snapshot_can_be_reconstructed() -> None:
 
 
 def test_market_data_run_id_propagated_in_ready_event() -> None:
+    """PROV-OUT-04: run_id from the request event propagates into the ready event,
+    preserving the provenance chain."""
     bus, _ = _wire()
     received: list[dict[str, object]] = []
     bus.subscribe("data.ready.market", received.append)
@@ -116,6 +126,8 @@ def test_market_data_run_id_propagated_in_ready_event() -> None:
 
 
 def test_existing_rpc_still_works_after_dual_mode_bind() -> None:
+    """PROV-IN-01 / PROV-OUT-01: the dual-mode bind (pub/sub + RPC) does not break
+    the existing RPC capability — both paths serve valid market-data responses."""
     from contracts.provider import DataRequest
     from kernel import AgentMessage
 

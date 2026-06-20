@@ -1,6 +1,6 @@
 [project]
 name = "trading-agents"
-version = "0.12.0"
+version = "0.13.0"
 description = "An operator-controlled, single-user, agent-based trading system. Domain logic lives only in agents; the kernel is plumbing; contracts are the shared boundary."
 requires-python = ">=3.13"
 dependencies = [
@@ -27,7 +27,12 @@ mcp = ["mcp>=1.28.0"]
 # imported; the unit gate never loads them.
 forecaster = ["torch>=2.12.1", "transformers>=4", "lightgbm>=4"]
 # Azure Service Bus pub/sub backend (P14). Install to activate AzureServiceBusBus.
-azure = ["azure-servicebus>=7.12"]
+# azure-keyvault-secrets + azure-identity: master Key Vault accessor (P15 S75).
+azure = [
+    "azure-servicebus>=7.12",
+    "azure-keyvault-secrets>=4.8",
+    "azure-identity>=1.16",
+]
 
 [dependency-groups]
 dev = [
@@ -127,6 +132,7 @@ warn_required_dynamic_aliases = true
 module = [
     "celery", "celery.*", "redis", "redis.*", "neo4j", "neo4j.*",
     "prometheus_client", "azure.servicebus",
+    "azure.keyvault", "azure.keyvault.*", "azure.identity", "azure.identity.*",
 ]
 follow_imports = "skip"
 ignore_missing_imports = true

@@ -8,7 +8,8 @@ External I/O: none.
 from __future__ import annotations
 
 # Grants describe the functional interface, never a product name.
-# Key Vault secrets are resolved at runtime and injected separately in S74.
+# Secrets resolved from Key Vault (prod) or env vars (dev) are injected via
+# ACTIVATE config; see agents/master/secret_map.py for the per-agent mapping.
 DEFAULT_GRANTS: dict[str, dict[str, object]] = {
     "scanner": {
         "messaging": {"operations": ["subscribe", "publish"]},

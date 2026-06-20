@@ -164,9 +164,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| DRIFT-001 | MST-SEC-01: RSA signature required on ACTIVATE | `signature=""` stub in S73 | Accepted — RSA wiring deferred to S74; law captures the intent |
-| DRIFT-002 | MST-DEP-02: Key Vault resolves credentials in ACTIVATE | `config={}` in S73 | Accepted — Key Vault wiring deferred to S74 |
+| DRIFT-001 | MST-SEC-01: RSA signature required on ACTIVATE | `signature=""` stub in S73 | **RESOLVED S74** — `sign_pss()` in `http_server.handle_ehlo()`; `kernel/crypto.py` |
+| DRIFT-002 | MST-DEP-02: Key Vault resolves credentials in ACTIVATE | `config={}` in S73 | **RESOLVED S75** — `resolve_config()` in `agents/master/secret_map.py`; `SecretStore` protocol; KV + env-var impls |
 
 ## Changelog
 
 - v1 — authored S73 (P15 foundation) and locked immediately.
+- v1.1 — S74: DRIFT-001 resolved (RSA-PSS signing wired); S75: DRIFT-002 resolved (Key Vault wired).

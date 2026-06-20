@@ -256,6 +256,34 @@ Each sprint keeps the 100 % coverage floor and reconciles the touched agent's la
    Celery/RabbitMQ assumption (ADR-0004→0005). **Exit:** a both-backends parity test (in-process ==
    Service Bus). **Effort: M–L.**
 
+### P15 — Multi-agent container split · **in progress**
+
+Each agent runs in its own Docker image and Azure Container App (scale-to-zero). A
+**master** bootstrap agent starts first: it assigns each container a permanent instance
+identity, resolves minimum-privilege secrets from Azure Key Vault, and distributes them
+via a signed `ACTIVATE` message. Agents start braindead (no credentials, no bus topics)
+and become productive only after receiving `ACTIVATE`. The RSA-PSS signature lets agents
+verify they are talking to the genuine master without sharing the private key.
+
+1. **Master agent + per-agent Dockerfiles** — `MasterAgent` (start/activate/drain),
+   `DEFAULT_GRANTS` privilege table, `contracts/master.py` messages, 13 Dockerfiles,
+   multi-service `docker-compose.yml`. **Exit:** master activates a known agent type and
+   writes `AgentInstance` + `CapabilityGrant` nodes; master laws LOCKED v1. **S73.**
+2. **RSA signing + agent entrypoints** — `kernel/crypto.py` (RSA-PSS), `kernel/bootstrap.py`
+   (`activate_agent` with injectable `_send`), `agents/master/http_server.py` (pure
+   handlers), 12 trading-agent entrypoints (EHLO → signed ACTIVATE → idle). **Exit:** all
+   agent containers can boot and verify master identity; 100% coverage. **S74.**
+3. **Key Vault integration** — `agents/master/key_vault.py` (`SecretStore` protocol,
+   `NullSecretStore`, `EnvVarSecretStore`, `AzureKeyVaultSecretStore`),
+   `agents/master/secret_map.py` (per-agent secret entitlement map, `resolve_config`);
+   master populates `config={}` in ACTIVATE with resolved secrets. **Exit:** master
+   resolves provider/execution/operator API keys and distributes them via ACTIVATE; DRIFT-002
+   closed. **S75.**
+4. **DockerHub push + Container Apps manifest** — CI push to DockerHub on merge to main;
+   Azure Container Apps deploy manifest for all 13 services. **Exit:** `git push` rebuilds
+   and redeploys all agent images with zero downtime. **S76+.**
+**Effort: L.**
+
 ## Cross-cutting workstreams
 
 Some capabilities are not single phases but threads woven through many. Naming them
@@ -370,3 +398,7 @@ stage gates in P8.
 | P14 Inter-agent comms re-architecture | **complete** (ADR-0005: event-driven pub/sub + claim-check; `InProcessBus` pub/sub extended (S60), kernel `claim_check` primitive (S61), provider (S62), scanner+analyst (S63), PM+execution (S64), monitor+reporter (S65) migrated; dispatcher → trigger-emitter (S66); Azure Service Bus backend (S67) — 100% coverage throughout; version 0.8.0→0.9.0) |
 | **Qlib Phase Q2** Analyst Alpha158 pillar | **complete** (S68: 22-field time-series subset — ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons — computed per ticker, cross-sectional z-score → logistic 0-100 fifth pillar; `alpha158_pillar_weight=0.00` off by default; pyqlib-free (3.13 constraint); version 0.9.0→0.10.0) |
 | **Provider law cycle** (S69) | **complete** (DRIFT-006 corrected: benchmark as first-class `DataRequest` field + `taint=False`; DRIFT-007 corrected: caller-authz gate in all 3 buses + provider capability matrix; law-ID citation pass — 23/43 clauses 🟩; provider laws LOCKED v1; template locked for S70+ agent backfills; version 0.10.0→0.11.0) |
+| **Qlib Phase Q1** LightGBM price signal | **complete** (S58–S59: shadow LightGBM price/return model + training harness + per-model IC scorecard; advisory, never gates a decision; forecaster agent foundation) |
+| **Agent law backfill** (S70–S71) | **complete** (S70: scanner/analyst/PM/execution LOCKED v1; S71: monitor/reporter/forecaster/operator/supervisor/curator/researcher LOCKED v1; all 11 non-provider agents have LOCKED v1 laws; 219 green clauses across 12 agents) |
+| **ADR-0010 system_prompt tunable** (S72) | **complete** (`system_prompt` tunable wired into `OperatorSettings` + `_interpret_command`; pre-declared on `ForecasterSettings`; law PARAM sections updated) |
+| **P15** Multi-agent container split | **in progress** (S73: master agent + 13 Dockerfiles + compose; S74: RSA-PSS signing + 12 agent entrypoints; S75: Key Vault integration — DRIFT-001/002 both resolved; version 0.11.0→0.12.0→0.13.0; S76+ DockerHub + Container Apps pending) |

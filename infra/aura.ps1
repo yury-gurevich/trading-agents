@@ -48,8 +48,8 @@ switch ($Action) {
     Write-Host "NEO4J_DATABASE = neo4j   # Aura single-db is always 'neo4j'"
     Write-Host "NEO4J_PASSWORD = (see infra/aura-instance.local.json)"
   }
-  'pause' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/pause" -Headers $hdr).data | Format-List }
-  'resume' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/resume" -Headers $hdr).data | Format-List }
+  'pause' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/pause" -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
+  'resume' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/resume" -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
   'list' { (Invoke-RestMethod -Uri $base -Headers $hdr).data | Format-Table id, name, status }
   'delete' {
     Invoke-RestMethod -Method Delete -Uri "$base/$($c.instance_id)" -Headers $hdr | Out-Null

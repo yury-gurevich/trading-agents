@@ -3,7 +3,13 @@
 # Self-contained stack: data, config, logs, plugins and import all BIND-MOUNT into this
 # directory, so you can browse and edit them straight from the filesystem.
 #
-#   cd infra/neo4j/local && docker compose up -d
+# !! WSL2 RULE: this file MUST be run from the Ubuntu filesystem (e.g. ~/...).
+#    The ./data and ./logs bind mounts are I/O-intensive — Neo4j writes every
+#    transaction here. Running from /mnt/c/... crosses the 9P virtio-fs boundary
+#    and causes severe write latency. Clone the repo into WSL2's native filesystem
+#    (ext4) before starting this stack.
+#
+#   cd infra/neo4j/local && docker compose up -d   # <- run inside WSL2 Ubuntu
 #   Browser : http://localhost:7474
 #   Bolt    : bolt://localhost:7687
 #   Login   : neo4j / qR8mK#2pL!7nZx@4vT9b

@@ -3,7 +3,15 @@
 # Each agent runs in its own container — mirroring the Azure Container Apps
 # deployment (ADR-0007). master starts first; trading agents wait for ACTIVATE.
 #
-# Usage:
+# !! WSL2 RULE: run this file from the Ubuntu filesystem ONLY.
+#    All build contexts and volume mounts must stay on the Linux ext4 filesystem.
+#    NEVER run from a Windows path (/mnt/c/...) — Docker I/O across the
+#    9P virtio-fs boundary is an order of magnitude slower and can corrupt
+#    file-watch events. Clone the repo into ~/... inside WSL2 Ubuntu and
+#    run docker compose from there.
+#
+# Usage (from inside WSL2 Ubuntu shell):
+#   cd ~/path/to/trading-agents
 #   docker compose up
 #
 # Secrets: copy .env.example -> .env and fill in API keys before starting.

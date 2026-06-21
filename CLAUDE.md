@@ -92,3 +92,15 @@ Merge to `main` is the deploy trigger. Never commit sprint work directly to `mai
 
 When updating `docs/STATE.md`, stamp "Last updated" with Melbourne local time
 `HH:MM AEST` (GMT+10) or `HH:MM AEDT` (GMT+11, Oct–Apr). Not just the date.
+
+---
+
+## Capture decisions — the conversation is part of the work (LAW-06)
+
+When a discussion produces a **decision, trade-off, discovered constraint, or ruled-out
+option**, record it **in the same unit of work**, while fresh — chat logs are volatile.
+
+- In-flight / not-yet-final reasoning → `docs/design-log.md` (options, **ruled-out + why**, status).
+- A closed question (decided "forever" until reopened) → an ADR in `docs/decisions/` + INDEX row.
+- Capture the **road not taken**, not just the choice. A decision discussed but unrecorded is
+  treated as not-yet-made. Full law: `ops/laws/LAW-06-capture.md`.

@@ -130,18 +130,32 @@ on boot** (agents re-EHLO). $0, no infra, no laptop dependency. Persist later �
 registry; running agents then differ from the master's view). Tolerable at the test-rig stage; the
 trigger to move to a VM is "real graph data worth keeping."
 
-## DL-06 · Neo4j edition — Community is the baseline  ·  status: DECIDED (risk de-fanged)
+## DL-06 · Neo4j edition — Community baseline, but backup is a real deferred cost  ·  status: DECIDED (for now)
 
 **Risk.** The local Neo4j **Enterprise** eval expires at 30 days; a Neo4j **Developer license** was
 requested and may not be granted.
 
-**Decision.** **Community Edition is the assumed baseline** (free, forever). Enterprise — whether via
-a dev license *or* managed Aura — is a **documented optional upgrade, never a dependency.** Aligned
-with ADR-0001/0008 (invariants designed on Community) and the affordability posture: a platform must
-not hard-depend on a licensed feature.
+**Correction (operator caught this).** Enterprise was **not** a cosmetic choice — ADR-0008 chose it
+deliberately for **automated online/differential backup + point-in-time restore**, specifically to
+avoid hand-rolling backup management and to make **region moves** clean (a `scenarios.md` case). An
+earlier note here glibly said "Community loses nothing you use" — wrong.
 
-**Concrete fallback if no license.** `NEO4J_DATABASE=neo4j` (drop the named `traiding-agents` db);
-APOC Core + GDS still work; RBAC/clustering/multi-db are unused. Affects **local dev only** — the
-cloud fleet is in-memory (DL-05) and CI skips the Neo4j integration test. **Blocks nothing.**
+**What Community actually costs.** It loses **online/hot backup + PITR**. It does **not** force custom
+tooling: `neo4j-admin database dump`/`load` and APOC export (`apoc.export.cypher`) are built-in and
+cover region-move backups — but **with downtime and no restore-to-timestamp**. So: Enterprise =
+zero-downtime + fine-grained recovery; Community = coarse, downtime-y, but built-in. Early stage
+(small graph, brief downtime OK) → Community is adequate. The Enterprise advantage earns its keep at
+scale / for true DR.
+
+**Decision.** **Community is the assumed baseline** (free, forever); Enterprise (dev license *or*
+managed Aura) is a **documented optional ops upgrade, never an app dependency** — exactly ADR-0008's
+own rule ("app logic must not depend on an Enterprise-only feature; ops/backup layer may"). Also:
+`NEO4J_DATABASE=neo4j` if no license; APOC Core + GDS still work; affects **local dev only** (cloud is
+in-memory per DL-05, CI skips the Neo4j test).
+
+**Open, deferred to "trading has durable data + does region moves":** pick the backup strategy —
+Enterprise (license/self-host), managed Aura (backups included, ~$260/mo, currently unaffordable), or
+Community dump/load + APOC export on a schedule. Not urgent now (nothing persisted). Tied to the same
+horizon as the VM decision (DL-05).
 
 **Small follow-up (when WSL2 returns post-trial):** verify no code/test hard-depends on the named db.

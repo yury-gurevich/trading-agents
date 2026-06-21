@@ -8,7 +8,7 @@ how it works, update its charter in the same change (`maintenance/loop.md`).
 
 | File | Answers |
 | --- | --- |
-| [laws/INDEX.md](laws/INDEX.md) | The 5 cross-cutting laws — what every operation must obey |
+| [laws/INDEX.md](laws/INDEX.md) | The 6 cross-cutting laws — what every operation must obey |
 | [laws/LAW-01…](laws/LAW-01-continuous-improvement.md) | THE FIRST LAW: continuous improvement (everything is a tunable proposal) |
 
 ## Departments (the IT silos)
@@ -41,4 +41,4 @@ how it works, update its charter in the same change (`maintenance/loop.md`).
 1. Copy `_template/charter.md` → `departments/<name>/charter.md`; fill every section.
 2. Add its remit to `org-map.md`; list its Points of No Return.
 3. Wire its gates into `ta <dept> preflight`.
-4. Confirm it satisfies all 5 laws (stricter-or-equal, never looser).
+4. Confirm it satisfies all 6 laws (stricter-or-equal, never looser).

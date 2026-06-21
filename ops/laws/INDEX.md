@@ -11,12 +11,14 @@ must behave*. A charter may add stricter rules; it may never contradict a law.
 | [LAW-03](LAW-03-recovery.md) | getting back | every action is reversible (rollback) or a flagged Point of No Return |
 | [LAW-04](LAW-04-communication.md) | legibility | confirm before spend/PNR; show live progress; failures explain themselves |
 | [LAW-05](LAW-05-defendable-decision.md) | accountability | every choice has a recorded, evidence-linked "why" |
+| [LAW-06](LAW-06-capture.md) | memory | the conversation is part of the work — capture decisions + ruled-out options while fresh |
 
 ## Precedence
 
 1. **LAW-01 is supreme** — it grants the right to revise all others (with a recorded rationale).
-2. The other four are co-equal constraints every action must satisfy simultaneously:
-   *prove it worked (02), be able to undo it (03), say what you're doing (04), record why (05).*
+2. The other five are co-equal constraints every action must satisfy simultaneously:
+   *prove it worked (02), be able to undo it (03), say what you're doing (04), record why (05),
+   capture the reasoning incl. the road not taken (06).*
 3. A department charter is **subordinate**: stricter-or-equal, never looser.
 
 ## How a law changes

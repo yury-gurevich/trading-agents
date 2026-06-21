@@ -67,7 +67,23 @@ def activate_agent(
     )
     if public_key_pem:
         _verify_signature(payload, public_key_pem)
+    _apply_config(payload)
     return payload
+
+
+def _apply_config(payload: dict[str, object]) -> None:
+    """Apply the master-provided config (secrets/endpoints) to the process env.
+
+    The master resolves per-agent secrets and returns them in ACTIVATE.config;
+    this writes each string value into os.environ so the agent's settings pick
+    them up. (Config keys must match the settings' env-var names — see
+    docs/design-log.md DL-07.)
+    """
+    config = payload.get("config")
+    if isinstance(config, dict):
+        for key, value in config.items():
+            if isinstance(value, str):
+                os.environ[key] = value
 
 
 def _verify_signature(payload: dict[str, object], public_key_pem: str) -> None:

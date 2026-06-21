@@ -138,3 +138,42 @@ def test_master_key_helpers_read_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MASTER_PRIVATE_KEY_PEM", "priv-pem")
     assert master_public_key_from_env() == "pub-pem"
     assert master_private_key_from_env() == "priv-pem"
+
+
+# ── config -> env bridge ──────────────────────────────────────────────────────
+
+
+def test_activate_agent_applies_config_to_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The master-provided ACTIVATE.config lands in os.environ for settings."""
+    import os
+
+    monkeypatch.delenv("TA_TEST_INJECTED", raising=False)
+
+    def send(url: str, data: dict) -> dict:
+        return {
+            "instance_id": "x",
+            "agent_type": data["agent_type"],
+            "capability_grants": {},
+            "config": {"TA_TEST_INJECTED": "sekret", "TA_TEST_NONSTR": 7},
+            "signature": "",
+        }
+
+    activate_agent("http://master:8000", "operator", _send=send)
+    assert os.environ["TA_TEST_INJECTED"] == "sekret"
+    assert "TA_TEST_NONSTR" not in os.environ  # non-str values skipped
+    monkeypatch.delenv("TA_TEST_INJECTED", raising=False)
+
+
+def test_activate_agent_tolerates_missing_config() -> None:
+    """A payload with no config key is fine (nothing applied)."""
+
+    def send(url: str, data: dict) -> dict:
+        return {  # no "config" key at all
+            "instance_id": "scanner:ts:0",
+            "agent_type": data["agent_type"],
+            "capability_grants": {},
+            "signature": "",
+        }
+
+    result = activate_agent("http://master:8000", "scanner", _send=send)
+    assert result["instance_id"] == "scanner:ts:0"

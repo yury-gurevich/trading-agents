@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import uuid
 
@@ -77,6 +78,7 @@ def test_neo4j_graph_store_round_trip_when_configured() -> None:
         pytest.skip("NEO4J_TEST_URI is not set")
 
     from neo4j import GraphDatabase
+    from neo4j.exceptions import ServiceUnavailable
 
     user = os.getenv("NEO4J_TEST_USER", os.getenv("NEO4J_USER", "neo4j"))
     password = os.getenv("NEO4J_TEST_PASSWORD", os.getenv("NEO4J_PASSWORD", ""))
@@ -100,10 +102,13 @@ def test_neo4j_graph_store_round_trip_when_configured() -> None:
         assert [node.key for node in store.ancestors(child, max_depth=1)] == [
             parent_key
         ]
+    except ServiceUnavailable as exc:
+        pytest.skip(f"Neo4j not reachable (paused/offline): {exc}")
     finally:
-        driver.execute_query(
-            "MATCH (n:GraphStoreTest) WHERE n.key IN $keys DETACH DELETE n",
-            keys=[parent_key, child_key],
-        )
+        with contextlib.suppress(ServiceUnavailable):
+            driver.execute_query(
+                "MATCH (n:GraphStoreTest) WHERE n.key IN $keys DETACH DELETE n",
+                keys=[parent_key, child_key],
+            )
         driver.close()
         store.close()

@@ -13,22 +13,26 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agents.master.key_vault import SecretStore
 
-# Kebab-case Key Vault secret names per agent type.
+# (kv_secret_name, env_var_name) pairs per agent type.
+# kv_secret_name: kebab-case name as stored in Key Vault.
+# env_var_name: the exact os.environ key the agent's settings will read;
+#   must match field + env_prefix from each agent's Settings class.
 # Only agents with external API credentials appear; all others receive no secrets.
-AGENT_SECRETS: dict[str, list[str]] = {
+AGENT_SECRETS: dict[str, list[tuple[str, str]]] = {
     "provider": [
-        "tiingo-api-key",
-        "alpaca-key-id",
-        "alpaca-secret-key",
-        "finnhub-api-key",
-        "fmp-api-key",
+        ("tiingo-api-key", "PROVIDER_TIINGO_API_KEY"),
+        ("finnhub-api-key", "PROVIDER_FINNHUB_API_KEY"),
+        ("fmp-api-key", "PROVIDER_FMP_API_KEY"),
+        ("alpaca-key-id", "PROVIDER_ALPACA_API_KEY"),
+        ("alpaca-secret-key", "PROVIDER_ALPACA_SECRET_KEY"),
     ],
     "execution": [
-        "alpaca-key-id",
-        "alpaca-secret-key",
+        ("alpaca-key-id", "EXECUTION_ALPACA_API_KEY"),
+        ("alpaca-secret-key", "EXECUTION_ALPACA_SECRET_KEY"),
     ],
     "operator": [
-        "anthropic-api-key",
+        # Anthropic SDK reads ANTHROPIC_API_KEY directly — no prefix.
+        ("anthropic-api-key", "ANTHROPIC_API_KEY"),
     ],
 }
 
@@ -36,11 +40,12 @@ AGENT_SECRETS: dict[str, list[str]] = {
 def resolve_config(agent_type: str, store: SecretStore) -> dict[str, object]:
     """Fetch entitled secrets for *agent_type*; omit missing (empty-string) values.
 
-    Returns a flat dict keyed by UPPER_SNAKE env-var names, ready for ACTIVATE config.
+    Returns a flat dict keyed by the canonical env-var names agents' settings read,
+    ready to be written into os.environ by kernel.bootstrap._apply_config().
     """
     config: dict[str, object] = {}
-    for name in AGENT_SECRETS.get(agent_type, []):
-        value = store.get_secret(name)
+    for kv_name, env_name in AGENT_SECRETS.get(agent_type, []):
+        value = store.get_secret(kv_name)
         if value:
-            config[name.upper().replace("-", "_")] = value
+            config[env_name] = value
     return config

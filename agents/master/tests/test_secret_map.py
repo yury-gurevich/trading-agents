@@ -28,28 +28,67 @@ def test_resolve_config_unknown_agent_returns_empty(agent_type: str) -> None:
     assert resolve_config(agent_type, NullSecretStore()) == {}
 
 
-def test_resolve_config_with_env_var_store(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TIINGO_API_KEY", "tk123")
-    monkeypatch.setenv("ALPACA_KEY_ID", "ak456")
+def test_resolve_config_provider_uses_prefixed_env_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Output keys must match ProviderSettings env_prefix='PROVIDER_'."""
+    monkeypatch.setenv("TIINGO_API_KEY", "tk123")  # EnvVarStore reads this unprefixed
+    monkeypatch.setenv("FINNHUB_API_KEY", "fh456")
     config = resolve_config("provider", EnvVarSecretStore())
-    assert config["TIINGO_API_KEY"] == "tk123"  # pragma: allowlist secret
-    assert config["ALPACA_KEY_ID"] == "ak456"
+    assert config["PROVIDER_TIINGO_API_KEY"] == "tk123"  # pragma: allowlist secret
+    assert config["PROVIDER_FINNHUB_API_KEY"] == "fh456"  # pragma: allowlist secret
+
+
+def test_resolve_config_execution_uses_prefixed_env_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Output keys must match ExecutionSettings primary AliasChoices."""
+    monkeypatch.setenv("ALPACA_KEY_ID", "ak456")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "sk456")  # pragma: allowlist secret
+    config = resolve_config("execution", EnvVarSecretStore())
+    assert config["EXECUTION_ALPACA_API_KEY"] == "ak456"  # pragma: allowlist secret
+    assert config["EXECUTION_ALPACA_SECRET_KEY"] == "sk456"  # noqa: S105  # pragma: allowlist secret
+
+
+def test_resolve_config_operator_uses_bare_anthropic_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Anthropic SDK reads ANTHROPIC_API_KEY directly — no prefix applied."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    config = resolve_config("operator", EnvVarSecretStore())
+    assert config["ANTHROPIC_API_KEY"] == "sk-ant-test"  # pragma: allowlist secret
 
 
 def test_resolve_config_skips_empty_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
     """Secrets whose env var is unset are not included in config."""
-    monkeypatch.delenv("TIINGO_API_KEY", raising=False)
-    monkeypatch.setenv("ALPACA_KEY_ID", "ak789")
-    monkeypatch.setenv("ALPACA_SECRET_KEY", "sk789")
+    monkeypatch.delenv("ALPACA_KEY_ID", raising=False)
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "sk789")  # pragma: allowlist secret
     config = resolve_config("execution", EnvVarSecretStore())
-    assert "TIINGO_API_KEY" not in config
-    assert config["ALPACA_KEY_ID"] == "ak789"
+    assert "EXECUTION_ALPACA_API_KEY" not in config
+    assert config["EXECUTION_ALPACA_SECRET_KEY"] == "sk789"  # noqa: S105  # pragma: allowlist secret
 
 
 def test_agent_secrets_covers_external_credential_agents() -> None:
     assert "provider" in AGENT_SECRETS
     assert "execution" in AGENT_SECRETS
     assert "operator" in AGENT_SECRETS
+
+
+def test_agent_secrets_entries_are_kv_env_pairs() -> None:
+    """Each entry must be a (kv_name, env_name) tuple — no bare strings."""
+    for agent_type, entries in AGENT_SECRETS.items():
+        for entry in entries:
+            assert isinstance(entry, tuple), (
+                f"{agent_type}: expected tuple, got {entry!r}"
+            )
+            assert len(entry) == 2, f"{agent_type}: must have 2 items: {entry!r}"
+            kv_name, env_name = entry
+            assert "-" in kv_name, (
+                f"{agent_type}: KV name must be kebab-case: {kv_name!r}"
+            )
+            assert env_name == env_name.upper(), (
+                f"{agent_type}: env_name must be UPPER_SNAKE: {env_name!r}"
+            )
 
 
 # ── MasterAgent integration ───────────────────────────────────────────────────

@@ -12,15 +12,11 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from agents.execution.broker import PaperBroker
-from agents.execution.domain.orders import (
-    execution_run_id,
-    order_from_close,
-    order_from_intent,
-)
+from agents.execution.domain.orders import execution_run_id, order_from_close
 from agents.execution.domain.reconcile import reconcile_fills
 from agents.execution.domain.result import execution_result
 from agents.execution.domain.submit import remember, submit_order
-from agents.execution.live_gate import live_gate_rejected
+from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
 from agents.execution.stage_flow import promote_stage
 from agents.execution.store import (
@@ -110,27 +106,14 @@ class ExecutionAgent(AgentBase):
 
     def _submit(self, request: BaseModel) -> ExecutionResult:
         order_set = OrderIntentSet.model_validate(request)
-        stage = current_stage_from_graph(self._graph, self._settings.stage)
-        orders = tuple(
-            order_from_intent(order_set, intent) for intent in order_set.approved
+        return run_submit(
+            self._graph,
+            self._broker,
+            self.sink,
+            self._recorded,
+            order_set,
+            default_stage=self._settings.stage,
         )
-        if stage not in ("paper", "broker_shadow"):
-            return live_gate_rejected(self._graph, order_set, orders, stage)
-        fills = tuple(
-            submit_order(
-                self._broker,
-                self.sink,
-                order,
-                "submit",
-            )
-            for order in orders
-        )
-        remember(self._recorded, fills)
-        run_id = execution_run_id("submit", order_set.run_id)
-        provenance = write_fills(
-            self._graph, run_id=run_id, fills=fills, order_set=order_set
-        )
-        return execution_result(run_id, stage, fills, provenance)
 
     def _execute_close(self, request: BaseModel) -> ExecutionResult:
         close_set = CloseDecisionSet.model_validate(request)

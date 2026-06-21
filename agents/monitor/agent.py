@@ -8,28 +8,17 @@ External I/O: none; provider and execution are reached only over the message bus
 
 from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from agents.monitor.decide import evaluate_one
-from agents.monitor.domain.positions import position_from_fill
 from agents.monitor.execution_client import dispatch_closes
 from agents.monitor.provider_client import latest_close_cents
 from agents.monitor.pubsub import on_fills_ready
-from agents.monitor.result import run_explanation
+from agents.monitor.run import evaluate_and_write, open_run_positions
 from agents.monitor.settings import MonitorSettings
-from agents.monitor.store import (
-    fills_for_run,
-    is_open_position,
-    open_position,
-    open_positions,
-    write_monitor_run,
-)
+from agents.monitor.store import fills_for_run, is_open_position
 from contracts.common import Explanation
 from contracts.monitor import (
     CONTRACT,
-    CloseDecision,
     CloseDecisionSet,
     MonitorRequest,
 )
@@ -39,7 +28,6 @@ from kernel import (
     FaultSink,
     GraphStore,
 )
-from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -78,35 +66,21 @@ class MonitorAgent(AgentBase):
 
     def _check_positions(self, request: BaseModel) -> CloseDecisionSet:
         monitor_request = MonitorRequest.model_validate(request)
-        monitor_run_id = f"monitor-run-{uuid.uuid4().hex}"
-        positions = self._open_positions(monitor_request.run_id)
-        positions_to_check = open_positions(self._graph, positions)
+        positions = open_run_positions(
+            self._graph, self._settings, self.sink, source_run_id=monitor_request.run_id
+        )
         prices = latest_close_cents(
             self.bus,
             self.sink,
-            tickers=tuple(str(item.props["ticker"]) for item in positions_to_check),
+            tickers=tuple(str(item.props["ticker"]) for item in positions),
             lookback_days=self._settings.price_lookback_days,
         )
-        decisions = (
-            ()
-            if prices is None
-            else self._evaluate_positions(monitor_run_id, positions_to_check, prices)
-        )
-        closes = tuple(item for item in decisions if item.decision == "close")
-        provenance = write_monitor_run(
+        result = evaluate_and_write(
             self._graph,
-            monitor_run_id=monitor_run_id,
+            self.sink,
             source_run_id=monitor_request.run_id,
-            positions_checked=len(decisions),
-            closes=len(closes),
-            holds=len(decisions) - len(closes),
-        )
-        result = CloseDecisionSet(
-            run_id=monitor_run_id,
-            decisions=decisions,
-            positions_checked=len(decisions),
-            explanation=run_explanation(decisions),
-            provenance=provenance,
+            positions=positions,
+            prices=prices,
         )
         dispatch_closes(self.bus, self.sink, result)
         return result
@@ -131,22 +105,6 @@ class MonitorAgent(AgentBase):
             evidence_refs=("monitor.exit_rules",),
         )
 
-    def _open_positions(self, run_id: str) -> tuple[Node, ...]:
-        positions: list[Node] = []
-        for fill in fills_for_run(self._graph, run_id):
-            draft = position_from_fill(
-                self._graph,
-                run_id=run_id,
-                fill=fill,
-                default_stop_pct=self._settings.default_stop_pct,
-                default_target_pct=self._settings.default_target_pct,
-                default_horizon_days=self._settings.default_horizon_days,
-            )
-            if draft.degraded:
-                self._record_degraded("position opened with fallback stop/target")
-            positions.append(open_position(self._graph, draft, fill))
-        return tuple(positions)
-
     def _positions_for_run(self, run_id: str) -> tuple[Node, ...]:
         positions: list[Node] = []
         for fill in fills_for_run(self._graph, run_id):
@@ -154,33 +112,3 @@ class MonitorAgent(AgentBase):
                 self._graph.descendants(fill, max_depth=1, edge_types={"OPENS"})
             )
         return tuple(positions)
-
-    def _evaluate_positions(
-        self, monitor_run_id: str, positions: tuple[Node, ...], prices: dict[str, int]
-    ) -> tuple[CloseDecision, ...]:
-        decisions: list[CloseDecision] = []
-        today = datetime.now(tz=UTC).date()
-        for position in positions:
-            ticker = str(position.props["ticker"])
-            current_price_cents = prices.get(ticker)
-            if current_price_cents is None:
-                self._record_degraded(
-                    f"provider returned no current price for {ticker}"
-                )
-                continue
-            decisions.append(
-                evaluate_one(
-                    self._graph, monitor_run_id, position, current_price_cents, today
-                )
-            )
-        return tuple(decisions)
-
-    def _record_degraded(self, message: str) -> None:
-        with fault_boundary(
-            self.sink,
-            agent="monitor",
-            module="agents.monitor.agent",
-            capability="check_positions",
-            reraise=False,
-        ):
-            raise RuntimeError(message)

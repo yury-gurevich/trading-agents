@@ -67,7 +67,11 @@ def evaluate_analyst_node(
         portfolio=portfolio,
         sink=sink,
     )
-    pm_run = graph.merge_node("PMRun", result.run_id, {})
+    # Persist the full OrderIntentSet on the PMRun so execution can pull it from the
+    # graph (DL-08b) instead of receiving it as a bus payload.
+    pm_run = graph.merge_node(
+        "PMRun", result.run_id, {"order_intent_set": result.model_dump(mode="json")}
+    )
     graph.add_edge(node, pm_run, EVALUATED_EDGE)
 
 

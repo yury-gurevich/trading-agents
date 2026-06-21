@@ -226,8 +226,28 @@ reason S79/S80 each took one hop: smaller diff, each handoff's lineage gap surfa
 **Known limitation:** graph-pull PM builds a fresh `default_portfolio` each poll, not live
 position/cash state (that needs execution/monitor running graph-pull first).
 
-**Status.** DECIDED. S79 = provider→scanner; S80 = scanner→analyst; S81 = analyst→PM;
-execution/monitor/reporter → S82.
+**S82 (2026-06-22) — closed the chain: execution + monitor + reporter (all three).** PM now
+persists the full `OrderIntentSet` on its `PMRun`. Execution: submit core extracted to
+`agents/execution/run.py` (`run_submit`, shared by `_submit` and the new poll path); `poll.py`
+finds `PMRun` lacking `EXECUTED_BY`, submits via the injected broker, and writes a new
+**`ExecutionRun` anchor** (`PMRun ─[EXECUTED_BY]→ ExecutionRun`) — execution previously wrote only
+`Fill` nodes, leaving monitor nothing to poll. Monitor: dropped the live `latest_close_cents`
+provider bus RPC (the second cross-container call) and reads current prices from the same-cycle
+`MarketData` reached by walking the PM lineage (`EVALUATED_BY→ANALYZED_BY→DERIVED_FROM`); evaluate
+core extracted to `agents/monitor/run.py`; `poll.py` finds `ExecutionRun` lacking `MONITORED_BY`.
+Reporter: `build_snapshot` was already fully graph-native, so `poll.py` only adds the trigger
+(`MonitorRun` lacking `REPORTED_BY`) and links the edge to the existing `Snapshot` node (no new
+`ReporterRun` concept). **Scope decision (operator, 2026-06-22):** all three in one sprint (reporter
+trivial; Aura deadline favours finishing the pipeline). **Ruled out:** writing S82 against a real
+store first — operator chose code-first, store as a separate follow-on, accepting the Aura-lapse
+risk. **Known limitations:** monitor prices = the same ingest snapshot the position was sized from
+(fine for one daily cycle); PM portfolio state still fresh-`default_portfolio` per poll.
+
+**Status.** DECIDED + COMPLETE. The graph-pull pull model now spans
+provider→scanner→analyst→PM→execution→monitor→reporter end-to-end. S79 = provider→scanner;
+S80 = scanner→analyst; S81 = analyst→PM; S82 = execution+monitor+reporter. The remaining blocker is
+operational, not architectural: a permanent reachable graph store (see DL-05 / the permanent-store
+follow-on) before the Aura trial lapses ~2026-06-29.
 
 ---
 

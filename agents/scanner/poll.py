@@ -14,8 +14,10 @@ from typing import TYPE_CHECKING
 
 from agents.scanner.domain.filters import apply_filters
 from agents.scanner.domain.ranking import rank_survivors
+from agents.scanner.results import scan_explanation
 from agents.scanner.store import write_scan
 from contracts.provider import MARKET_DATA_LABEL, MarketData
+from contracts.scanner import CandidateSet
 
 if TYPE_CHECKING:
     from agents.scanner.settings import ScannerSettings
@@ -58,5 +60,18 @@ def scan_market_node(
         trace=trace,
         provider_graph_node_id=f"{node.label}:{node.key}",
     )
-    scan_run = graph.merge_node("ScanRun", provenance.run_id, {})
+    # Persist the full CandidateSet on the ScanRun so the analyst can pull it from
+    # the graph (DL-08b) instead of receiving it as a bus payload.
+    candidate_set = CandidateSet(
+        run_id=provenance.run_id,
+        candidates=candidates,
+        filter_trace=trace,
+        explanation=scan_explanation(candidates, trace),
+        provenance=provenance,
+    )
+    scan_run = graph.merge_node(
+        "ScanRun",
+        provenance.run_id,
+        {"candidate_set": candidate_set.model_dump(mode="json")},
+    )
     graph.add_edge(node, scan_run, SCANNED_EDGE)

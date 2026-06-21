@@ -13,11 +13,16 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from contracts.common import Window
-from contracts.provider import MARKET_DATA_LABEL, DataRequest, RegimeRequest
+from contracts.provider import (
+    MARKET_DATA_LABEL,
+    REGIME_CONTEXT_LABEL,
+    DataRequest,
+    RegimeRequest,
+)
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
-    from contracts.provider import MarketData
+    from contracts.provider import MarketData, RegimeContext
     from kernel import GraphStore
 
 _DEFAULT_LOOKBACK_DAYS = 60
@@ -62,13 +67,31 @@ def _write_market_data(
     )
 
 
+def _write_regime_context(
+    graph: GraphStore, regime: RegimeContext, window: Window
+) -> None:
+    """Persist the full regime payload so downstream agents read it from the graph.
+
+    Keyed by window-end date so the analyst can correlate it with the same-day
+    market data the scanner consumed (DL-08b).
+    """
+    graph.merge_node(
+        REGIME_CONTEXT_LABEL,
+        f"regime-context:{window.end.isoformat()}",
+        {
+            "snapshot": regime.model_dump(mode="json"),
+            "window_end": window.end.isoformat(),
+        },
+    )
+
+
 def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
     """Fetch all data fields for *universe* and write the results to the graph.
 
     Calls get_market_data (OHLCV + news + fundamentals + sectors + earnings) and
     get_regime so the graph reflects the current market state, and persists the
-    full market payload as a ``MarketData`` node for downstream graph-pull agents.
-    A no-op when *universe* is empty.
+    full ``MarketData`` + ``RegimeContext`` payloads for downstream graph-pull
+    agents. A no-op when *universe* is empty.
     """
     if not universe:
         return
@@ -80,8 +103,8 @@ def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
     )
     market = agent._get_market_data(market_request)
     _write_market_data(agent._graph, market, universe, window)
-    regime_request = RegimeRequest(as_of=window.end)
-    agent._get_regime(regime_request)
+    regime = agent._get_regime(RegimeRequest(as_of=window.end))
+    _write_regime_context(agent._graph, regime, window)
 
 
 def ingest_loop(  # pragma: no cover

@@ -52,11 +52,12 @@ def main() -> None:  # pragma: no cover
     import os
 
     from agents.master.key_vault import AzureKeyVaultSecretStore, EnvVarSecretStore
+    from kernel.bootstrap import master_private_key_from_env
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     log = logging.getLogger("master")
 
-    pem = os.environ.get("MASTER_PRIVATE_KEY_PEM") or ""
+    pem = master_private_key_from_env() or ""
     if not pem:
         pem, pub = generate_keypair()
         log.info("[master] no MASTER_PRIVATE_KEY_PEM — generated dev keypair")

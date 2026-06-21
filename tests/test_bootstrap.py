@@ -5,7 +5,13 @@ from __future__ import annotations
 import pytest
 from cryptography.exceptions import InvalidSignature
 
-from kernel.bootstrap import _verify_signature, activate_agent
+from kernel.bootstrap import (
+    _pem_from_env,
+    _verify_signature,
+    activate_agent,
+    master_private_key_from_env,
+    master_public_key_from_env,
+)
 from kernel.crypto import generate_keypair, sign_pss
 
 # ── fake HTTP sender ─────────────────────────────────────────────────────────
@@ -101,3 +107,34 @@ def test_verify_signature_raises_on_empty_signature() -> None:
     _, public = generate_keypair()
     with pytest.raises(ValueError, match="no signature"):
         _verify_signature({"instance_id": "x", "signature": ""}, public)
+
+
+# ── env PEM resolution (raw or base64) ────────────────────────────────────────
+
+
+def test_pem_from_env_prefers_raw(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RAW_K", "-----BEGIN PUBLIC KEY-----\nabc\n-----END")
+    monkeypatch.delenv("B64_K", raising=False)
+    assert _pem_from_env("RAW_K", "B64_K").startswith("-----BEGIN PUBLIC KEY-----")
+
+
+def test_pem_from_env_decodes_base64(monkeypatch: pytest.MonkeyPatch) -> None:
+    import base64
+
+    pem = "-----BEGIN PUBLIC KEY-----\nxyz\n-----END"
+    monkeypatch.delenv("RAW_K", raising=False)
+    monkeypatch.setenv("B64_K", base64.b64encode(pem.encode()).decode())
+    assert _pem_from_env("RAW_K", "B64_K") == pem
+
+
+def test_pem_from_env_none_when_neither(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("RAW_K", raising=False)
+    monkeypatch.delenv("B64_K", raising=False)
+    assert _pem_from_env("RAW_K", "B64_K") is None
+
+
+def test_master_key_helpers_read_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MASTER_PUBLIC_KEY_PEM", "pub-pem")
+    monkeypatch.setenv("MASTER_PRIVATE_KEY_PEM", "priv-pem")
+    assert master_public_key_from_env() == "pub-pem"
+    assert master_private_key_from_env() == "priv-pem"

@@ -1,7 +1,7 @@
-"""Supervisor agent entrypoint — PRE_FLIGHT bootstrap.
+"""Supervisor agent entrypoint -- PRE_FLIGHT bootstrap.
 
 Agent: supervisor
-Role: send EHLO to master, wait for ACTIVATE, then idle until event loop wired (S75+).
+Role: EHLO to master, verify the signed ACTIVATE, then idle.
 External I/O: master HTTP endpoint (POST /ehlo).
 """
 
@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import os
 
-from kernel.bootstrap import activate_agent, idle_loop
+from kernel.bootstrap import activate_agent, idle_loop, master_public_key_from_env
 
 
 def main() -> None:
-    """Send EHLO to master, receive ACTIVATE, then idle."""
+    """Send EHLO to master, receive signed ACTIVATE, verify it, then idle."""
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
-    public_key_pem = os.environ.get("MASTER_PUBLIC_KEY_PEM") or None
-    activate_agent(master_url, "supervisor", public_key_pem=public_key_pem)
+    pubkey = master_public_key_from_env()
+    activate_agent(master_url, "supervisor", public_key_pem=pubkey)
     idle_loop()
 
 

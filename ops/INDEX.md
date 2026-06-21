@@ -24,6 +24,12 @@ how it works, update its charter in the same change (`maintenance/loop.md`).
 | GRC (Governance/Risk/Compliance) | ⬜ stub | charter pending (residency, audit, ledger) |
 | Service Desk | ⬜ stub | charter pending (the `ta` CLI UX) |
 
+## Operator CLI
+
+`pwsh infra/ta.ps1` is the one entry point that drives all of this — run it with no args for the
+menu. `ta status` (dashboard), `ta doctor` (preflight gates), `ta deploy up|down`, `ta aura …`,
+`ta graph`. Policy lives here in `ops/`; `ta` is the driver.
+
 ## Framework files
 
 | File | Answers |

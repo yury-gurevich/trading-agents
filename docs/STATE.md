@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-06-21 22:10 AEST
 
+**Next big piece = "AGENTS DO WORK"** (the bridge from deployed+idle to operating; see design-log
+DL-07). Three coupled parts: **(a) config→env bridge — DONE (0.16.0):** `activate_agent` applies
+`ACTIVATE.config` to `os.environ` so settings pick up KV-resolved secrets (was unconsumed). **(b)
+canonical credential-naming scheme** — `secret_map` keys vs `PROVIDER_`-prefixed settings vs `.env`
+vs KV must align (system-wide, touches money). **(c) the agent work/event loop** — agents still
+`EHLO → idle_loop()`; nothing runs, so no data accrues. (b)+(c) deserve a deliberate sprint, not a
+tail-end patch. **This is what unblocks the remaining trading work** (P12/P13 news runway).
+
 **Track B COMPLETE — P15 fleet hardening, PROVEN on Azure 2026-06-21 (then torn down).**
 - **Signature verification (0.15.0):** agents verify the master's RSA-PSS signature on ACTIVATE.
   `kernel/bootstrap.py` `master_public_key_from_env`/`master_private_key_from_env` + `_pem_from_env`

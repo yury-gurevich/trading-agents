@@ -212,7 +212,22 @@ implementation. **Bug caught by the coverage gap:** the lineage edge is `(scan)-
 so market is the ScanRun's *descendant*, not ancestor — the first cut walked `ancestors` and would have
 returned empty results forever. **Still deferred to S81:** PM, execution, monitor, reporter.
 
-**Status.** DECIDED. S79 = provider→scanner; S80 = scanner→analyst; PM→reporter → S81.
+**S81 (2026-06-22) — extended the slice to analyst→PM, PM ONLY.** Analyst now persists the full
+`RecommendationSet` on its `AnalystRun` (S80 left it `{}`, counts only); PM reads it plus the
+`MarketData` (via the AnalystRun's `ANALYZED_BY` ancestor = ScanRun, then its `DERIVED_FROM`
+descendant) and the same-day `RegimeContext` (`agents/portfolio_manager/poll.py`). Sizing/risk core
+extracted to `agents/portfolio_manager/run.py` (`run_evaluation`), shared by the bus path
+(`_evaluate_orders`) and the graph path — the `_provider_rejection`/`_record_fault`/`_empty_result`
+helpers moved out of `agent.py`, so the degraded-fault `source_module` is now
+`agents.portfolio_manager.run` (one existing test assertion updated). **Scope decision (operator,
+2026-06-22):** keep the one-handoff-per-sprint discipline — PM only, execution/monitor/reporter →
+**S82**, rather than landing all four at once. **Ruled out:** doing all four in S81 (rejected — same
+reason S79/S80 each took one hop: smaller diff, each handoff's lineage gap surfaces in isolation).
+**Known limitation:** graph-pull PM builds a fresh `default_portfolio` each poll, not live
+position/cash state (that needs execution/monitor running graph-pull first).
+
+**Status.** DECIDED. S79 = provider→scanner; S80 = scanner→analyst; S81 = analyst→PM;
+execution/monitor/reporter → S82.
 
 ---
 

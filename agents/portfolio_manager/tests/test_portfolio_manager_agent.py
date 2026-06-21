@@ -126,7 +126,7 @@ def test_degraded_provider_rejects_honestly_and_records_fault() -> None:
         ("AAPL", "provider_degraded")
     ]
     assert len(sink.faults) == 1
-    assert sink.faults[0].source_module == "agents.portfolio_manager.agent"
+    assert sink.faults[0].source_module == "agents.portfolio_manager.run"
 
 
 def test_explain_decision_returns_grounded_explanation() -> None:

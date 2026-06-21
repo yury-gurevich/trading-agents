@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-22 04:32 AEST
+**Last updated:** 2026-06-22 08:43 AEST
 
 **S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
 Next: S81 — extend graph-pull to PM→reporter.**
@@ -281,21 +281,23 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 S81 next — PM, execution, monitor, reporter graph-pull.** S77–S80 shipped: credential
-naming, provider ingestor, scanner work loop, analyst work loop. Graph-pull model proven
-end-to-end (provider→scanner→analyst). Version 0.19.00. Next branch: `sprint-81-pm-graph-pull`.
+**P15 S82 next — execution, monitor, reporter graph-pull.** S77–S81 shipped: credential
+naming, provider ingestor, scanner/analyst/**PM** work loops. Graph-pull model proven
+provider→scanner→analyst→PM. Version 0.20.00. Next branch: `sprint-82-execution-graph-pull`.
 
 **Critical-path:** Aura trial lapses ~2026-06-29 (7 days). Permanent graph store decision
-(self-host Neo4j on small Azure VM, ~$15/mo) must land before then — PM/execution/monitor/
+(self-host Neo4j on small Azure VM, ~$15/mo) must land before then — execution/monitor/
 reporter need a reachable graph store to actually run in the fleet.
 
 ## Next
 
-- **S81 (0.20.00)** — PM, execution, monitor, reporter graph-pull: same `poll.py` + shared
-  core + `work_loop()` template as S79/S80. Closes DL-07c + DL-08 end-to-end. Blocked on
-  permanent graph store decision.
+- **S82 (0.21.00)** — execution, monitor, reporter graph-pull: same `poll.py` + shared
+  core + `work_loop()` template as S79/S80/S81. Execution needs the full `OrderIntentSet`
+  plus an `ExecutionRun` processed-edge anchor; monitor reads close prices from graph
+  `MarketData` bars; reporter is already graph-centric (just needs a `MonitorRun` trigger).
+  Closes DL-07c + DL-08 end-to-end. Blocked on permanent graph store decision.
 - **Permanent graph store** — self-host Neo4j Community on a small Azure VM (~$15/mo) before
-  Aura trial lapses 2026-06-29. Required for S81 agents to run against a real graph.
+  Aura trial lapses 2026-06-29. Required for S82 agents to run against a real graph.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow

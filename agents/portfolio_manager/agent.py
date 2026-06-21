@@ -11,36 +11,27 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.portfolio import PortfolioState, default_portfolio
 from agents.portfolio_manager.provider_client import (
-    latest_close_prices,
     request_market_data,
     request_regime,
 )
 from agents.portfolio_manager.pubsub import on_recommendations_ready
-from agents.portfolio_manager.result import build_order_set, incident_refs, reject_all
+from agents.portfolio_manager.run import run_evaluation
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from contracts.analyst import RecommendationSet
 from contracts.common import Explanation, Window
-from contracts.portfolio_manager import (
-    CONTRACT,
-    OrderIntent,
-    OrderIntentSet,
-    RejectedOrder,
-)
+from contracts.portfolio_manager import CONTRACT, OrderIntentSet
 from kernel import (
     AgentBase,
     CollectingFaultSink,
     FaultSink,
     GraphStore,
 )
-from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
-    from contracts.provider import MarketData, RegimeContext
     from kernel import MessageBus
 
 
@@ -79,61 +70,20 @@ class PortfolioManagerAgent(AgentBase):
 
     def _evaluate_orders(self, request: BaseModel) -> OrderIntentSet:
         recommendation_set = RecommendationSet.model_validate(request)
-        if not recommendation_set.recommendations:
-            return self._empty_result(recommendation_set, "no_recommendations")
-
-        market = request_market_data(
-            self.bus, self.sink, recommendation_set, self._window()
-        )
-        regime = request_regime(self.bus, self.sink, self._window().end)
-        refs = incident_refs(market, regime)
-        provider_rejection = self._provider_rejection(market, regime)
-        if provider_rejection is not None:
-            return reject_all(
-                self._graph,
-                recommendation_set=recommendation_set,
-                reason=provider_rejection,
-                incident_refs=refs,
+        market = regime = None
+        if recommendation_set.recommendations:
+            market = request_market_data(
+                self.bus, self.sink, recommendation_set, self._window()
             )
-
-        assert market is not None
-        assert regime is not None
-        approved: tuple[OrderIntent, ...] = ()
-        rejected: tuple[RejectedOrder, ...] = ()
-        with fault_boundary(
-            self.sink,
-            agent="portfolio_manager",
-            module="agents.portfolio_manager.agent",
-            capability="evaluate_orders",
-            reraise=False,
-        ) as capture:
-            approved, rejected = evaluate_recommendations(
-                recommendation_set.recommendations,
-                latest_close_prices(market),
-                self._portfolio,
-                max_position_pct=self._settings.max_position_pct,
-                max_positions=self._settings.max_positions,
-                cash_buffer_pct=self._settings.cash_buffer_pct,
-                min_order_quantity=self._settings.min_order_quantity,
-                default_stop_pct=regime.base_stop_loss_pct,
-                default_target_pct=regime.base_take_profit_pct,
-                min_reward_risk_ratio=self._settings.min_reward_risk_ratio,
-                sectors=market.sectors,
-                max_sector_pct=self._settings.max_sector_pct,
-            )
-        if capture.fault is not None:
-            return reject_all(
-                self._graph,
-                recommendation_set=recommendation_set,
-                reason="portfolio_evaluation_failed",
-                incident_refs=refs,
-            )
-        return build_order_set(
+            regime = request_regime(self.bus, self.sink, self._window().end)
+        return run_evaluation(
             self._graph,
             recommendation_set=recommendation_set,
-            approved=approved,
-            rejected=rejected,
-            incident_refs=refs,
+            market=market,
+            regime=regime,
+            settings=self._settings,
+            portfolio=self._portfolio,
+            sink=self.sink,
         )
 
     def _explain_decision(self, request: BaseModel) -> Explanation:
@@ -147,38 +97,6 @@ class PortfolioManagerAgent(AgentBase):
                 f"{len(recommendation_set.recommendations)} recommendations."
             ),
             evidence_refs=("provider.get_market_data", "provider.get_regime"),
-        )
-
-    def _provider_rejection(
-        self, market: MarketData | None, regime: RegimeContext | None
-    ) -> str | None:
-        if market is None or regime is None:
-            return "provider_unavailable"
-        if market.quality.used_fallback:
-            self._record_fault("provider returned degraded market data")
-            return "provider_degraded"
-        if regime.provenance.incident_refs:
-            self._record_fault("provider returned degraded regime data")
-            return "provider_degraded"
-        return None
-
-    def _record_fault(self, message: str) -> None:
-        with fault_boundary(
-            self.sink,
-            agent="portfolio_manager",
-            module="agents.portfolio_manager.agent",
-            capability="evaluate_orders",
-            reraise=False,
-        ):
-            raise RuntimeError(message)
-
-    def _empty_result(
-        self, recommendation_set: RecommendationSet, reason: str
-    ) -> OrderIntentSet:
-        return reject_all(
-            self._graph,
-            recommendation_set=recommendation_set,
-            reason=reason,
         )
 
     def _window(self) -> Window:

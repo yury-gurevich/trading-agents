@@ -1,16 +1,27 @@
 # Project State
 
-**Last updated:** 2026-06-21 22:10 AEST
+**Last updated:** 2026-06-21 23:45 AEST
 
-**Next big piece = "AGENTS DO WORK"** (the bridge from deployed+idle to operating; see design-log
-DL-07). Three coupled parts: **(a) config→env bridge — DONE (0.16.0):** `activate_agent` applies
-`ACTIVATE.config` to `os.environ` so settings pick up KV-resolved secrets (was unconsumed). **(b)
-canonical credential-naming scheme** — `secret_map` keys vs `PROVIDER_`-prefixed settings vs `.env`
-vs KV must align (system-wide, touches money). **(c) the agent work/event loop** — agents still
-`EHLO → idle_loop()`; nothing runs, so no data accrues. (b)+(c) deserve a deliberate sprint, not a
-tail-end patch. **This is what unblocks the remaining trading work** (P12/P13 news runway).
+**Next: S77–S79 — "Agents Actually Do Work" sequence (see DL-07/DL-08 in design-log).**
+Three planned sprints:
+
+- **S77 (0.16.1 PATCH):** Credential-naming reconciliation — `secret_map.py` emits
+  `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); fix `.env` `FNP_` typo; align all
+  three entitled agents' env-var names. (a) config→env bridge **DONE** (0.16.0). This closes (b).
+- **S78 (0.17.0 MINOR):** Provider standalone graph-ingestor — replace `idle_loop()` with a real
+  ingest loop; `build_graph_from_env()` kernel helper (reads `NEO4J_URI` from env); universe from
+  `PROVIDER_UNIVERSE` env var; "start one container → data in graph" proof. Closes DL-08 first leg.
+- **S79 (0.18.0 MINOR):** Agent work loops — `find_pending()` per agent (Cypher for unprocessed
+  work) + `work_loop()` kernel helper; scanner/analyst/PM/execution/monitor/reporter all replace
+  `idle_loop()`; "one container at a time" full-pipeline proof. Closes DL-07c + DL-08.
+
+**Architecture decision (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all
+data to Neo4j. Other agents poll the graph for unprocessed work — no Azure Service Bus needed for
+correctness. P14 pub/sub remains as optional fast-path notification. Enables independent per-agent
+start/test/debug. Decision recorded in design-log.md.
 
 **Track B COMPLETE — P15 fleet hardening, PROVEN on Azure 2026-06-21 (then torn down).**
+
 - **Signature verification (0.15.0):** agents verify the master's RSA-PSS signature on ACTIVATE.
   `kernel/bootstrap.py` `master_public_key_from_env`/`master_private_key_from_env` + `_pem_from_env`
   resolve keys from raw OR base64 env (base64 dodges multi-line-PEM in az CLI). 12 entrypoints
@@ -50,18 +61,18 @@ is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existin
 `config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
 azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
 
-**Now:** — S76 in progress (GHCR + Container Apps). **FULL 13-AGENT FLEET PROVEN ON AZURE 2026-06-21
-(then torn down to stop spend).** Run results:
+**S76 SHIPPED — FULL 13-AGENT FLEET PROVEN ON AZURE 2026-06-21 (then torn down to stop spend).**
+Run results:
 
-+ `build-images.yml` matrix built **all 13 agent images** → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`),
+- `build-images.yml` matrix built **all 13 agent images** → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`),
   ~1 min for 12 light images + the heavy forecaster (torch). ADR-0011 registry = GHCR.
-+ Deployed master + all 12 trading agents to Container Apps (`trading-agents` RG). master booted, connected
+- Deployed master + all 12 trading agents to Container Apps (`trading-agents` RG). master booted, connected
   to **Aura** (throwaway Professional trial `8cf6d231`, GCP Sydney), served handshakes on internal ingress.
-+ Each agent EHLO'd → master issued signed ACTIVATE → persisted registry to Aura. Final state verified by
+- Each agent EHLO'd → master issued signed ACTIVATE → persisted registry to Aura. Final state verified by
   direct Cypher: **Session 1 / AgentInstance 12 (all agents active) / CapabilityGrant 27**. Cross-cloud
   Azure→GCP graph write confirmed working.
-+ **Torn down:** all 13 Container Apps deleted + Aura paused → spend back to ~zero.
-+ **New ops tooling (committed):** `infra/aura.ps1` (Aura lifecycle — I manage it via API, no console),
+- **Torn down:** all 13 Container Apps deleted + Aura paused → spend back to ~zero.
+- **New ops tooling (committed):** `infra/aura.ps1` (Aura lifecycle — I manage it via API, no console),
   `infra/status.ps1` (one-command fleet dashboard), `infra/fleet-graph.ps1` (interactive registry graph in
   browser), `infra/setup-github-ci.ps1`. Azure deploy identity = OIDC (committed in `docs/ci-cd-setup.md`).
 
@@ -248,21 +259,19 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 in progress — S73 done; S74 next.** S73 shipped the master agent and per-agent
-Dockerfiles. S74 wires RSA signing on `ACTIVATEMessage` and Azure Key Vault credential
-distribution (`config={}` stub → real secrets). Then: DockerHub image push + Container Apps
-deploy manifest.
+**P15 S77 next — credential-naming reconciliation.** S73–S76 shipped: master bootstrap,
+RSA signing, Key Vault, GHCR build pipeline, full 13-agent fleet proven on Azure. Tree is
+clean. Version 0.16.0. Next branch: `sprint-77-credential-naming`.
 
 ## Next
 
-+ **S74 — P15: RSA signing + Key Vault** — master generates RSA keypair; public key baked into
-  each agent image at build time; `signature` field verified by agents; `config={}` populated
-  from Azure Key Vault per-agent minimum grants.
-+ **P12/P13 DSPy harness** — `PromptOptimizer` port + golden eval set + per-(task×model)
-  compiled prompt artifact (operator interpret + forecaster macro-event extraction).
-+ **P12 — Sentiment: code-complete; awaiting live news-accrual runway.** Operational only —
-  accrue real headlines, run `sentiment_scorecard` on `price_cache` forward returns, decide
-  promotion via the P10 predictor-registry gate. Spec: ADR-0002.
+- **S77 (0.16.1)** — Credential naming: `secret_map.py` emits `PROVIDER_`-prefixed keys; fix
+  `.env` `FNP_` typo. Prerequisite for agents consuming injected secrets.
+- **S78 (0.17.0)** — Provider standalone graph-ingestor: replace `idle_loop()`, write real data
+  to Neo4j. "One container → data in graph" proof. `build_graph_from_env()` kernel helper.
+- **S79 (0.18.0)** — Agent work loops: `find_pending()` per agent + `work_loop()` helper;
+  scanner/analyst/PM/execution/monitor/reporter all do real work. Full pipeline proof.
+- **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow
 

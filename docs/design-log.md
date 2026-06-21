@@ -103,6 +103,88 @@ data model is next touched.
 
 ---
 
+## DL-08 · Agent work loop — "graph as queue" pull model  ·  status: DECIDED (2026-06-21)
+
+**Question.** How do deployed agents get triggered to do their work? (DL-07c concrete design.)
+
+**Decision (operator, 2026-06-21).** **Graph-as-queue / DB-mediated pull model:**
+
+- **Provider** is the sole data-ingestor — one container, runs on its own cadence (market-close
+  cron or manual trigger), fetches OHLCV + news + fundamentals, writes everything to the graph,
+  then exits or sleeps until the next cycle. Other agents do not need provider alive to work.
+- **All other agents** poll the graph: "Is there data with my name on it that I haven't processed
+  yet?" If yes → process → write results → loop. If no → sleep(N) → loop.
+- **The graph IS the queue.** No Azure Service Bus dependency in the work loop. The P14 pub/sub
+  bus becomes an **optional fast-path notification** layer ("doorbell" — hint to wake up early
+  instead of waiting for the poll interval). The graph is the source of truth; the bus is additive.
+
+**Work-loop pattern per agent:**
+
+```python
+payload = activate_agent(...)          # EHLO → ACTIVATE → config injected to env
+graph   = build_graph_from_env()       # reads NEO4J_URI + creds from env (_apply_config set them)
+agent   = ScannerAgent(settings, graph=graph)
+while True:
+    pending = find_unprocessed_scan_windows(graph)   # Cypher: no ScanResult downstream
+    for window in pending:
+        agent.run(window)
+    time.sleep(POLL_INTERVAL)          # default 60s; tunable per SCAN_POLL_INTERVAL env var
+```
+
+**Why this model over pure pub/sub:**
+
+| Question | Graph-pull (this decision) | P14 pub/sub only |
+| --- | --- | --- |
+| Provider down → analyst broken? | No — analyst reads existing DB rows | Yes — event never arrives |
+| Test one agent in isolation? | Yes — feed DB, start agent | Hard — upstream must be publishing |
+| Azure Service Bus required? | No | Yes |
+| Debug state? | `ta graph` at every stage | Log correlation across agents |
+| Latency (EOD data) | ~poll interval (60s fine) | Sub-second (overkill) |
+
+**Ruled out.** Pure pub/sub-only work loop (too coupled; agent failure cascades upstream; bus
+is a hard runtime dependency for every run; hard to test agents in isolation).
+
+**Consequences:**
+
+- Provider entrypoint gets a `--ingest` mode (or always runs its ingest loop).
+- Each agent needs a `find_unprocessed_{agent}_work(graph)` graph-query function.
+- Neo4j credentials must reach every agent via ACTIVATE.config (not just master).
+  Means adding `neo4j-uri` / `neo4j-user` / `neo4j-password` to `AGENT_SECRETS` for all agents,
+  OR deploying them as plain env vars on the Container App (no KV, acceptable — they're connection
+  strings, not secrets in the same sense as API keys). **Decision needed (DL-08a, open).**
+- `idle_loop()` is replaced by the agent's work loop once this is wired.
+- P14 pub/sub bus remains in the codebase as the speed-path; agents can optionally subscribe
+  for faster wake-up. The bus subscription is additive, never required for correctness.
+
+**Status.** DECIDED. Graduate to an ADR ("graph-as-queue work loop") when the first agent
+(`provider → graph`) implementation lands.
+
+---
+
+## DL-08a · Neo4j credentials distribution — KV secret vs plain env var  ·  status: OPEN
+
+**Question.** Do non-master agents receive their Neo4j connection string + credentials via
+`ACTIVATE.config` (i.e., in `AGENT_SECRETS` / Key Vault), or as plain Container App env vars
+set at deploy time?
+
+- **Option A — KV-distributed (ACTIVATE.config path).** Add `neo4j-uri`, `neo4j-user`,
+  `neo4j-password` to `AGENT_SECRETS` for all 12 trading agents; master resolves from KV and
+  injects. ✅ Single source of truth; changing the URI requires only a KV update. ❌ Every
+  agent appears in `AGENT_SECRETS`; bootstrap failure blocks DB access.
+- **Option B — Plain env vars (deploy-time).** Set `NEO4J_URI`, `NEO4J_USER`,
+  `NEO4J_PASSWORD` as Container App env vars in `deploy-agents.ps1`. ✅ Simple, zero bootstrap
+  coupling; `NEO4J_PASSWORD` is a connection credential, not an API key — acceptable as a
+  deploy-time secret. ❌ Changing the URI requires redeploying all agents.
+
+**Recommendation.** Option B for now. Neo4j URI + user are non-sensitive config; password can
+be a Container Apps secret (stored in the app, not KV, which is the same security model as other
+Container App–managed secrets). KV path is for externally-issued API keys (Tiingo, Alpaca, etc.).
+Revisit if agent count or rotation frequency makes deploy-time updates burdensome.
+
+**Status.** OPEN — decide before implementing DL-08 work loop.
+
+---
+
 ## DL-07 · Key Vault secret-name + missing-secret reconciliation  ·  status: PARTLY OPEN
 
 Surfaced while wiring Key Vault (B). Two issues found and how they're handled:

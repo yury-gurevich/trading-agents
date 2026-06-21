@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-82-execution-monitor-reporter-graph-pull`
-**Status:** planned (targets 0.21.00)
+**Status:** shipped (0.21.00)
 
 ---
 
@@ -21,7 +21,7 @@ trigger, and the Aura trial (~2026-06-29) makes finishing the pipeline now worth
 
 ## The edge chain this sprint completes
 
-```
+```text
 PMRun ─[EXECUTED_BY]→ ExecutionRun ─[MONITORED_BY]→ MonitorRun ─[REPORTED_BY]→ ReporterRun
 ```
 
@@ -81,8 +81,13 @@ the same `SCANNED_BY` / `ANALYZED_BY` / `EVALUATED_BY` pattern from S79–S81.
 2. **`agents/reporter/poll.py`:**
    - `find_pending(graph)` — `MonitorRun` nodes with no `REPORTED_BY` descendant.
    - `report_monitor_node(node, …)` — read `pm_run_id` from the `MonitorRun` (`source_run_id`),
-     call `build_snapshot`, write a `ReporterRun` node, link `REPORTED_BY`.
+     call `build_snapshot`, link `MonitorRun ─[REPORTED_BY]→ Snapshot`.
 3. **Entrypoint** → `work_loop()`; remove reporter from the idle-loop list.
+
+> **As-built note:** `build_snapshot` already writes a `Snapshot` node (`snapshot:{pm_run_id}`),
+> so the `REPORTED_BY` edge targets that existing node rather than a new `ReporterRun` — one
+> less node concept, and `build_snapshot` returns a degraded snapshot (still a `Snapshot`
+> node) when the `PMRun` is missing, so the run is always marked reported and never re-polled.
 
 ---
 
@@ -115,11 +120,11 @@ proved an empty-forever traversal otherwise passes silently).
 
 ## Exit criteria
 
-- [ ] Starting only execution (with PM data in the graph) produces `Fill` + `ExecutionRun`
+- [x] Starting only execution (with PM data in the graph) produces `Fill` + `ExecutionRun`
   nodes within one poll; only monitor produces `MonitorRun`; only reporter produces a
-  `ReporterRun` snapshot — each proven by its own `poll.py` test.
-- [ ] `make ci` green; 100 % coverage; every new module ≤ 200 lines.
-- [ ] `idle_loop()` only called by the remaining work-loop-less entrypoints (forecaster,
+  `Snapshot` — each proven by its own `poll.py` test.
+- [x] `make ci` green; 100 % coverage; every new module ≤ 200 lines.
+- [x] `idle_loop()` only called by the remaining work-loop-less entrypoints (forecaster,
   operator, supervisor, curator, researcher).
 
 ---

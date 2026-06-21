@@ -5,9 +5,9 @@ Each entrypoint must:
   - call activate_agent with the correct agent_type when main() runs
   - call idle_loop() after activate
 
-Note: the provider entrypoint runs a real ingest loop and the scanner/analyst/PM run
-graph-pull work loops (not idle_loop); those are tested separately under their
-own agents/<name>/tests/ packages.
+Note: the provider entrypoint runs a real ingest loop and the scanner/analyst/PM/
+execution/monitor/reporter run graph-pull work loops (not idle_loop); those are tested
+separately under their own agents/<name>/tests/ packages.
 """
 
 from __future__ import annotations
@@ -17,9 +17,6 @@ import importlib
 import pytest
 
 _AGENTS = [
-    ("agents.execution.entrypoint", "execution"),
-    ("agents.monitor.entrypoint", "monitor"),
-    ("agents.reporter.entrypoint", "reporter"),
     ("agents.forecaster.entrypoint", "forecaster"),
     ("agents.operator.entrypoint", "operator"),
     ("agents.supervisor.entrypoint", "supervisor"),

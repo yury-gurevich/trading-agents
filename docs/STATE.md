@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-22 08:43 AEST
+**Last updated:** 2026-06-22 09:28 AEST
 
 **S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
 Next: S81 — extend graph-pull to PM→reporter.**
@@ -281,23 +281,24 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 S82 next — execution, monitor, reporter graph-pull.** S77–S81 shipped: credential
-naming, provider ingestor, scanner/analyst/**PM** work loops. Graph-pull model proven
-provider→scanner→analyst→PM. Version 0.20.00. Next branch: `sprint-82-execution-graph-pull`.
+**P15 — graph-pull pipeline COMPLETE (provider→…→reporter).** S77–S82 shipped: credential
+naming, provider ingestor, and graph-pull work loops for scanner/analyst/PM/**execution/
+monitor/reporter**. DL-08 closed end-to-end. Version 0.21.00.
 
-**Critical-path:** Aura trial lapses ~2026-06-29 (7 days). Permanent graph store decision
-(self-host Neo4j on small Azure VM, ~$15/mo) must land before then — execution/monitor/
-reporter need a reachable graph store to actually run in the fleet.
+**Critical-path now #1:** Aura trial lapses ~2026-06-29 (~7 days). Permanent graph store
+(self-host Neo4j on a small Azure VM, ~$15/mo; Enterprise if the dev licence lands) must be
+stood up before then — the whole graph-pull fleet has nowhere durable to run otherwise.
+Reminder set for 2026-06-24 (dev-licence check). Next code branch: `sprint-83-...` TBD.
 
 ## Next
 
-- **S82 (0.21.00)** — execution, monitor, reporter graph-pull: same `poll.py` + shared
-  core + `work_loop()` template as S79/S80/S81. Execution needs the full `OrderIntentSet`
-  plus an `ExecutionRun` processed-edge anchor; monitor reads close prices from graph
-  `MarketData` bars; reporter is already graph-centric (just needs a `MonitorRun` trigger).
-  Closes DL-07c + DL-08 end-to-end. Blocked on permanent graph store decision.
-- **Permanent graph store** — self-host Neo4j Community on a small Azure VM (~$15/mo) before
-  Aura trial lapses 2026-06-29. Required for S82 agents to run against a real graph.
+- **Permanent graph store** — THE blocker. Self-host Neo4j on a small Azure VM (~$15/mo)
+  before Aura lapses 2026-06-29. Enterprise (free) if the developer licence comes through,
+  else Community. WSL2/local Docker stays off until the trial expires.
+- **S83 (0.22.00)** — forecaster + control-plane agents (operator/supervisor/curator/
+  researcher) work loops; the last `idle_loop()` holders.
+- **Fleet run-through** — once the store is live, exercise provider→reporter end-to-end against
+  it (in-memory tests pass today; real-store run pending).
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow

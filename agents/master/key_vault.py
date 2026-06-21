@@ -53,6 +53,15 @@ class AzureKeyVaultSecretStore:  # pragma: no cover
         )
 
     def get_secret(self, name: str) -> str:
-        """Fetch *name* from Key Vault; return '' on miss or empty value."""
-        value = self._client.get_secret(name).value
+        """Fetch *name* from Key Vault; return '' on not-found or empty value.
+
+        Matches Null/EnvVar stores: a missing secret is skipped, not an error
+        (resolve_config omits empty values), so unseeded entitlements are fine.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        try:
+            value = self._client.get_secret(name).value
+        except ResourceNotFoundError:
+            return ""
         return value or ""

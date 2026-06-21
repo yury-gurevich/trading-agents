@@ -13,10 +13,12 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from contracts.common import Window
-from contracts.provider import DataRequest, RegimeRequest
+from contracts.provider import MARKET_DATA_LABEL, DataRequest, RegimeRequest
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
+    from contracts.provider import MarketData
+    from kernel import GraphStore
 
 _DEFAULT_LOOKBACK_DAYS = 60
 _DEFAULT_POLL_INTERVAL = 3600
@@ -38,11 +40,34 @@ def _today_window(lookback_days: int = _DEFAULT_LOOKBACK_DAYS) -> Window:
     return Window(start=today - timedelta(days=lookback_days), end=today)
 
 
+def _write_market_data(
+    graph: GraphStore,
+    market: MarketData,
+    universe: tuple[str, ...],
+    window: Window,
+) -> None:
+    """Persist the full market payload so downstream agents read it from the graph.
+
+    Keyed by window-end date so a re-run on the same day idempotently updates the
+    node and a new day creates fresh, pickable work (DL-08b).
+    """
+    graph.merge_node(
+        MARKET_DATA_LABEL,
+        f"market-data:{window.end.isoformat()}",
+        {
+            "snapshot": market.model_dump(mode="json"),
+            "tickers": list(universe),
+            "window_end": window.end.isoformat(),
+        },
+    )
+
+
 def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
     """Fetch all data fields for *universe* and write the results to the graph.
 
-    Calls both get_market_data (OHLCV + news + fundamentals + sectors +
-    earnings) and get_regime so the graph reflects the current market state.
+    Calls get_market_data (OHLCV + news + fundamentals + sectors + earnings) and
+    get_regime so the graph reflects the current market state, and persists the
+    full market payload as a ``MarketData`` node for downstream graph-pull agents.
     A no-op when *universe* is empty.
     """
     if not universe:
@@ -53,7 +78,8 @@ def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
         window=window,
         fields=("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar"),
     )
-    agent._get_market_data(market_request)
+    market = agent._get_market_data(market_request)
+    _write_market_data(agent._graph, market, universe, window)
     regime_request = RegimeRequest(as_of=window.end)
     agent._get_regime(regime_request)
 

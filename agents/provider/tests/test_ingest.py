@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from agents.provider import ProviderAgent
 from agents.provider.ingest import _today_window, ingest_once, universe_from_env
 from agents.provider.sources import FakeDataSource
+from contracts.provider import MARKET_DATA_LABEL
 from kernel import InMemoryGraphStore, InProcessBus
 
 if TYPE_CHECKING:
@@ -79,3 +80,13 @@ def test_ingest_once_writes_regime_to_graph() -> None:
     agent = _make_agent()
     ingest_once(agent, ("AAPL",))
     assert len(agent._graph.list_nodes("Regime")) == 1
+
+
+def test_ingest_once_writes_full_market_data_node() -> None:
+    agent = _make_agent()
+    ingest_once(agent, ("AAPL",))
+    nodes = agent._graph.list_nodes(MARKET_DATA_LABEL)
+    assert len(nodes) == 1
+    assert list(nodes[0].props["tickers"]) == ["AAPL"]
+    assert "snapshot" in nodes[0].props
+    assert "window_end" in nodes[0].props

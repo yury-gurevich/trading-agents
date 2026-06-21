@@ -76,6 +76,12 @@ class MarketData(_Frozen):
     provenance: Provenance
 
 
+# Graph-node label for the full market payload the provider persists and downstream
+# graph-pull agents (e.g. the scanner) read from (DL-08b). Shared here in contracts
+# so neither agent imports the other.
+MARKET_DATA_LABEL = "MarketData"
+
+
 class RegimeContext(_Frozen):
     """Market regime + the policy inputs every downstream agent reads."""
 

@@ -2,7 +2,25 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-79-agent-work-loops`
-**Status:** planned
+**Status:** shipped as a vertical slice (0.18.00) — provider→scanner only; analyst→reporter → S80
+
+> **Scope correction (DL-08b, 2026-06-22).** The original plan below assumed every agent
+> reads its inputs from the graph. The code did not: scanner/analyst fetch market data via
+> **live bus RPC to the provider**, and S78 wrote only a `MarketSnapshot` *summary* (no bars).
+> Implementing all six agents literally would pass CI but leave them failing at
+> `request_market_data` — green, not standalone. So S79 shipped as the smallest real proof:
+>
+> - **Provider** now persists the **full** `MarketData` payload to the graph (`ingest._write_market_data`).
+> - **Scanner** reads market data **from the graph** (`agents/scanner/poll.py` `find_pending` +
+>   `scan_market_node`) instead of bus RPC, and links a `SCANNED_BY` edge so processed nodes
+>   are not re-scanned.
+> - **`kernel/work_loop.py`** (`run_once` + `work_loop`) is the reusable poll loop; scanner
+>   entrypoint now uses it instead of `idle_loop()`.
+> - `MARKET_DATA_LABEL` lives in `contracts/provider.py` so neither agent imports the other.
+>
+> The graph-read pattern established here is the template analyst / PM / execution / monitor /
+> reporter reuse in **S80** (their data paths still need the same bus→graph move). The original
+> six-agent design is retained below as the S80 backlog.
 
 ---
 

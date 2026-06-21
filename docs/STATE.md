@@ -1,6 +1,27 @@
 # Project State
 
-**Last updated:** 2026-06-21 17:15 AEST
+**Last updated:** 2026-06-21 22:10 AEST
+
+**Track B COMPLETE — P15 fleet hardening, PROVEN on Azure 2026-06-21 (then torn down).**
+- **Signature verification (0.15.0):** agents verify the master's RSA-PSS signature on ACTIVATE.
+  `kernel/bootstrap.py` `master_public_key_from_env`/`master_private_key_from_env` + `_pem_from_env`
+  resolve keys from raw OR base64 env (base64 dodges multi-line-PEM in az CLI). 12 entrypoints
+  regenerated to resolve+pass the pubkey. `deploy-agents.ps1` generates a stable keypair (gitignored
+  `infra/master-keypair.local.json`), distributes private→master (secret), public→agents (env).
+- **Key Vault (0.15.1):** `trading-agents-kv` (RBAC) + user-assigned identity `trading-agents-master-id`
+  (Key Vault Secrets User) wired into the master deploy via `MASTER_KEY_VAULT_URL` + `AZURE_CLIENT_ID`.
+  Real secrets seeded (tiingo, anthropic; alpaca-paper deferred; finnhub/fmp under different .env names).
+  `AzureKeyVaultSecretStore.get_secret` now returns `''` on not-found (fix — matches Null/EnvVar stores).
+- **Verify-deploy:** full 13-agent fleet up; master read KV via managed identity (logs show vault calls,
+  no auth error); all agents registered (= signatures verified); master/operator/provider/scanner logs
+  clean (no InvalidSignature / Forbidden / CredentialUnavailable). Torn down + Aura paused → spend 0.
+- **Neo4j → Aura (operator request):** local `.env` repointed `NEO4J_URI`/`NEO4J_TEST_URI` →
+  `neo4j+s://8cf6d231…`, db `neo4j`; the live integration test now **passes against Aura** (was failing
+  on dead localhost). DL-05 posture: real Aura while trial lasts, smart-paused.
+- **Open (DL-07):** secret-name reconciliation — `.env` uses `PROVIDER_FINNHUB_API_KEY`/`FNP_API_KEY`/
+  `ALPACA_API_KEY` (paper); `secret_map.py` expects `FINNHUB_API_KEY`/`FMP_API_KEY`/`ALPACA_KEY_ID`.
+  Reconcile before the event loop consumes config. **Remaining trading work (D) is data-blocked**
+  (P12 news runway), so running the live fleet is what unblocks it.
 
 **Shipped: `MASTER_GRAPH=memory` toggle (0.13.0→0.14.0).** `agents/master/entrypoint.py`
 `select_graph_store()` picks the master's graph backend — `memory` (`InMemoryGraphStore`,

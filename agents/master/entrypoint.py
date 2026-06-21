@@ -19,6 +19,21 @@ if TYPE_CHECKING:
     from kernel import GraphStore
 
 
+def select_graph_store(graph_kind: str) -> GraphStore:
+    """Pick the master's graph store: 'memory' (no deps) else Neo4j (default).
+
+    'memory' runs the operational registry in-process (rebuilt on boot) — used when
+    no cloud graph is provisioned (see docs/design-log.md DL-05).
+    """
+    if graph_kind == "memory":
+        from kernel import InMemoryGraphStore
+
+        return InMemoryGraphStore()
+    from kernel.graph_neo4j import Neo4jGraphStore  # pragma: no cover
+
+    return Neo4jGraphStore()  # pragma: no cover
+
+
 def build_app(
     graph: GraphStore,
     private_key_pem: str,
@@ -37,7 +52,6 @@ def main() -> None:  # pragma: no cover
     import os
 
     from agents.master.key_vault import AzureKeyVaultSecretStore, EnvVarSecretStore
-    from kernel.graph_neo4j import Neo4jGraphStore
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     log = logging.getLogger("master")
@@ -56,7 +70,9 @@ def main() -> None:  # pragma: no cover
         secret_store = EnvVarSecretStore()
         log.info("[master] no MASTER_KEY_VAULT_URL — secrets from env vars")
 
-    graph = Neo4jGraphStore()
+    graph_kind = os.environ.get("MASTER_GRAPH", "neo4j")
+    graph = select_graph_store(graph_kind)
+    log.info("[master] graph store: %s", graph_kind)
     agent, key_pem = build_app(graph, pem, secret_store=secret_store)
     log.info("[master] session=%s — serving on :8000", agent.session_id)
     serve(8000, agent, key_pem)

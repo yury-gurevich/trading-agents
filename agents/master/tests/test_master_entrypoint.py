@@ -7,7 +7,7 @@ External I/O: none (InMemoryGraphStore).
 
 from __future__ import annotations
 
-from agents.master.entrypoint import build_app
+from agents.master.entrypoint import build_app, select_graph_store
 from agents.master.settings import MasterSettings
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair
@@ -30,3 +30,8 @@ def test_build_app_accepts_custom_settings() -> None:
     graph = InMemoryGraphStore()
     agent, _ = build_app(graph, private, settings=settings)
     assert agent._settings.handshake_max_retries == 3
+
+
+def test_select_graph_store_memory_returns_in_memory() -> None:
+    """MASTER_GRAPH=memory selects the in-process registry (DL-05, no cloud graph)."""
+    assert isinstance(select_graph_store("memory"), InMemoryGraphStore)

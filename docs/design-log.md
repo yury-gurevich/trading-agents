@@ -107,12 +107,26 @@ data model is next touched.
 
 Surfaced while wiring Key Vault (B). Two issues found and how they're handled:
 
-**1. Secret-name mismatch (OPEN — flag for when agents consume config).** `secret_map.py`
-`AGENT_SECRETS` expects kebab names that map to `ALPACA_KEY_ID` / `ALPACA_SECRET_KEY`, but `.env`
-uses `ALPACA_API_KEY` / `ALPACA_API_SECRET`, and the agent code references *both* conventions.
-`FINNHUB_API_KEY` / `FMP_API_KEY` aren't in `.env` at all. Not breaking yet (agents idle; don't
-consume config), but the names must be reconciled before the event loop reads them. Decide one
-canonical set; align `secret_map` + agent settings + `.env`.
+**1. The config-consumption bridge is MISSING (the real issue, discovered 2026-06-21).** Nothing
+reads `ACTIVATE.config` — a grep for consumers is empty. Agents read credentials via
+pydantic-settings with an `env_prefix` (e.g. `ProviderSettings` → `env_prefix="PROVIDER_"` →
+`PROVIDER_TIINGO_API_KEY`), **not** from the injected config. So the master→KV→`ACTIVATE.config`
+path (S75 + B, proven live) is **plumbing that works but is unconsumed**: no code applies the
+returned config to the agent's environment/settings. The injected secrets currently go nowhere.
+
+This couples three things into one piece of work:
+  (a) a **config→env bridge** — the agent applies `payload["config"]` to `os.environ` *before* its
+      settings/work loop reads them;
+  (b) a **canonical credential-naming scheme** — `secret_map` output keys must match the settings
+      env-var names (incl. the `PROVIDER_`/etc. prefixes), reconciled with `.env` + the KV secret
+      names. Current mismatch: `.env` uses provider-prefixed names (finnhub, fred) plus an `FNP_`
+      typo for fmp and *unprefixed* tiingo/alpaca, while `secret_map` emits unprefixed UPPER_SNAKE
+      keys with no `PROVIDER_` prefix and a different alpaca spelling. One scheme must align all four;
+  (c) the **event/work loop** — agents currently `EHLO → idle_loop()`; they don't run their jobs, so
+      nothing accrues data (the "live run for news" is inert until this is wired).
+All three are the same next piece: **"agents actually do work"** (the bridge from deployed+idle to
+operating). It touches the credential scheme system-wide and handles money — scope it as a
+deliberate sprint, not a tail-end patch.
 
 **2. Missing-secret behaviour (FIXED).** `AzureKeyVaultSecretStore.get_secret` *threw* on a
 not-found secret, but `Null`/`EnvVar` stores return `""` (and `resolve_config` skips empties). So an

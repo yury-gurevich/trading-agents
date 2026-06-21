@@ -72,6 +72,7 @@ Only the bottom two rows carry a jurisdiction. Everything that makes it a *tradi
 about stocks, not people.
 
 **Falls onto the 12 agents as three planes:**
+
 - **Signal plane** (scanner · analyst · forecaster · provider) — market signals about
   instruments → **global, shared, one instance, cheap.**
 - **Client plane** (portfolio_manager · execution · monitor · reporter) — applies signals to a
@@ -80,6 +81,7 @@ about stocks, not people.
   **central "home" region.**
 
 **Consequences / sub-points:**
+
 - "Spin up an EU zone" = the `ta` deploy framework run with `--region=eu` against an EU graph.
   The multi-region topology *is* the ops framework parameterised by zone.
 - **Compute follows data:** processing is itself a transfer (GDPR), so client-plane agents must
@@ -124,6 +126,7 @@ So the order of preference is: **real Aura (trial, smart-paused) → in-memory (
 durable data matters).** The in-memory toggle is the *fallback*, not the everyday default.
 
 **Ruled out.**
+
 - *Paid Aura* — cost (operator can't afford it).
 - *Aura Free* — auto-pauses after 3 days idle; operator said "no Aura".
 - *Tunnel to the operator's machine* — worst of both: needs the laptop always-on (= fleet

@@ -1,6 +1,14 @@
 # Project State
 
-**Last updated:** 2026-06-20 23:45 AEST
+**Last updated:** 2026-06-21 17:15 AEST
+
+**Shipped: `MASTER_GRAPH=memory` toggle (0.13.0→0.14.0).** `agents/master/entrypoint.py`
+`select_graph_store()` picks the master's graph backend — `memory` (`InMemoryGraphStore`,
+rebuilt on boot, zero deps) else Neo4j (default). Implements design-log **DL-05**: the cloud
+fleet runs **in-memory** (no Neo4j/Aura dependency) until trading needs durable persistence,
+then a small VM. The Aura trial can now lapse harmlessly. **972 tests**, 100% coverage;
+GitHub CI green. (Big-picture context for this stretch lives in `docs/design-log.md` +
+`ops/` + ADR-0012; this was the one concrete code change converting DL-05 into working code.)
 
 **S75 shipped: P15 Azure Key Vault secret distribution (version 0.12.0→0.13.0).**
 `agents/master/key_vault.py`: `SecretStore` Protocol + `NullSecretStore` (tests/default) +

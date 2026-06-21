@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-22 10:30 AEST
+**Last updated:** 2026-06-22 12:00 AEST
 
-**S77 SHIPPED (0.16.1), S78 SHIPPED (0.17.00), S79 SHIPPED as a vertical slice (0.18.00).
-Next: S80 — extend the graph-pull pattern to analyst→reporter.**
+**S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
+Next: S81 — extend graph-pull to PM→reporter.**
 
 - **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
   `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var
@@ -21,9 +21,19 @@ Next: S80 — extend the graph-pull pattern to analyst→reporter.**
   instead of bus RPC; **`kernel/work_loop.py`** (`run_once`+`work_loop`) reusable poll loop; scanner
   entrypoint drops `idle_loop()`. `MARKET_DATA_LABEL` in `contracts/provider.py` keeps the agents
   islands. 997 passed, 100% coverage.
-- **S80 (next) — extend graph-pull to analyst→reporter.** Same bus→graph data-path move for analyst,
-  PM, execution, monitor, reporter (each currently RPCs the provider/upstream). Reuse the
-  `poll.py` + `work_loop()` template from the scanner slice. Closes DL-07c + DL-08 end-to-end.
+- **S80 (0.19.00 MINOR) DONE — scanner→analyst slice (DL-08b).** Provider also persists the full
+  `RegimeContext` (`ingest._write_regime_context`); scanner persists the full `CandidateSet` on its
+  `ScanRun`; analyst reads all three from the graph (`agents/analyst/poll.py`: `find_pending` over
+  `ScanRun` without an `ANALYZED_BY` descendant + `analyze_scan_node`, market via `DERIVED_FROM`
+  descendant + same-day regime by date). Scoring core extracted to `agents/analyst/run.py`
+  (`run_analysis`) shared by the bus + graph paths. **Bug caught by the coverage floor:** lineage is
+  `(scan)-[:DERIVED_FROM]->(market)` so market is a *descendant* not ancestor — first cut walked
+  `ancestors` → silent empty results forever. 1005 passed, 100% coverage.
+- **S81 (next) — extend graph-pull to PM→reporter.** Same bus→graph data-path move for PM,
+  execution, monitor, reporter. Reuse the `poll.py` + shared-core + `work_loop()` template. Closes
+  DL-07c + DL-08 end-to-end. **Critical-path dependency:** these agents need a reachable graph store
+  to actually run — the **Aura trial lapses ~2026-06-29**, so the "permanent graph store ≠ Aura"
+  decision (self-host Neo4j on a small Azure VM) must land before then.
 
 **Architecture decision (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all
 data to Neo4j. Other agents poll the graph for unprocessed work — no Azure Service Bus needed for

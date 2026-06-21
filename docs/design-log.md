@@ -201,7 +201,18 @@ rather than the full six-agent rewrite.** Smallest surface that proves DL-08 is 
 **Pattern established for S80+.** The graph-backed market source built here is the template the
 analyst / PM / execution / monitor / reporter reuse when their data paths move graph-first.
 
-**Status.** DECIDED. S79 doc updated to the slice; analyst→reporter deferred to S80.
+**S80 (2026-06-22) — extended the slice to scanner→analyst.** Provider now also persists the full
+`RegimeContext` (`ingest._write_regime_context`, keyed by window-end date); scanner persists the
+full `CandidateSet` on its `ScanRun` node; analyst reads all three from the graph
+(`agents/analyst/poll.py`: `find_pending` over `ScanRun` lacking an `ANALYZED_BY` descendant +
+`analyze_scan_node`, which pulls the `CandidateSet` from props, the `MarketData` via the ScanRun's
+`DERIVED_FROM` descendant, and the same-day `RegimeContext` by date). The scoring core was extracted
+to `agents/analyst/run.py` (`run_analysis`) so the bus path (`_analyze`) and the graph path share one
+implementation. **Bug caught by the coverage gap:** the lineage edge is `(scan)-[:DERIVED_FROM]->(market)`,
+so market is the ScanRun's *descendant*, not ancestor — the first cut walked `ancestors` and would have
+returned empty results forever. **Still deferred to S81:** PM, execution, monitor, reporter.
+
+**Status.** DECIDED. S79 = provider→scanner; S80 = scanner→analyst; PM→reporter → S81.
 
 ---
 

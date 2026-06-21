@@ -12,20 +12,13 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from agents.analyst.domain.analyze import score_candidates
-from agents.analyst.domain.sentiment_reading import provider_reading
 from agents.analyst.provider_client import (
     request_market_data,
     request_regime,
 )
-from agents.analyst.result import (
-    build_empty_result,
-    incident_refs,
-    run_explanation,
-    split_decisions,
-)
+from agents.analyst.result import build_empty_result, incident_refs
+from agents.analyst.run import run_analysis
 from agents.analyst.settings import AnalystSettings
-from agents.analyst.store import write_analysis
 from contracts.analyst import CONTRACT, RecommendationSet
 from contracts.common import Explanation, Window
 from contracts.scanner import CandidateSet
@@ -37,7 +30,6 @@ from kernel import (
     claim_check_read,
     claim_check_write,
 )
-from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -106,52 +98,14 @@ class AnalystAgent(AgentBase):
             return build_empty_result(
                 self._graph, candidate_set, "provider data unavailable", refs
             )
-        if market.quality.used_fallback:
-            self._record_fault("provider returned degraded market data")
-            return build_empty_result(
-                self._graph,
-                candidate_set,
-                "provider market data degraded",
-                refs or ("market_data_degraded",),
-            )
-        if regime.provenance.incident_refs:
-            self._record_fault("provider regime data degraded")
-            return build_empty_result(
-                self._graph, candidate_set, "provider regime data degraded", refs
-            )
-
-        decisions = score_candidates(
-            candidate_set, market, regime, market.benchmark, self._settings, self.sink
-        )
-        if decisions is None:
-            return build_empty_result(
-                self._graph, candidate_set, "analyst scoring failed"
-            )
-        recommendations, rejections = split_decisions(decisions)
-        lexicon_readings = tuple(
-            decision.sentiment_reading
-            for decision in decisions
-            if decision.sentiment_reading is not None
-        )
-        provider_readings = tuple(
-            provider_reading(candidate.ticker, market.sentiment[candidate.ticker])
-            for candidate in candidate_set.candidates
-            if candidate.ticker in market.sentiment
-        )
-        provenance = write_analysis(
+        return run_analysis(
             self._graph,
-            candidate_set=candidate_set,
-            recommendations=recommendations,
-            rejections=rejections,
-            sentiment_readings=lexicon_readings + provider_readings,
+            candidate_set,
+            market,
+            regime,
+            self._settings,
+            self.sink,
             incident_refs=refs,
-        )
-        return RecommendationSet(
-            run_id=provenance.run_id,
-            recommendations=recommendations,
-            rejections=rejections,
-            explanation=run_explanation(recommendations, rejections, regime),
-            provenance=provenance,
         )
 
     def _explain_recommendation(self, request: BaseModel) -> Explanation:
@@ -165,16 +119,6 @@ class AnalystAgent(AgentBase):
             ),
             evidence_refs=("analyst.technical_score", "provider.regime"),
         )
-
-    def _record_fault(self, message: str) -> None:
-        with fault_boundary(
-            self.sink,
-            agent="analyst",
-            module="agents.analyst.agent",
-            capability="analyze",
-            reraise=False,
-        ):
-            raise RuntimeError(message)
 
     def _window(self) -> Window:
         end = datetime.now(tz=UTC).date()

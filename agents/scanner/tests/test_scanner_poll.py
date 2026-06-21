@@ -59,6 +59,15 @@ def test_scan_market_node_writes_scan_run() -> None:
     assert len(graph.list_nodes("ScanRun")) == 1
 
 
+def test_scan_market_node_persists_candidate_set_payload() -> None:
+    graph = InMemoryGraphStore()
+    node = _seed_market_node(graph)
+    scan_market_node(node, graph=graph, settings=ScannerSettings())
+    scan_run = graph.list_nodes("ScanRun")[0]
+    assert "candidate_set" in scan_run.props
+    assert "candidates" in scan_run.props["candidate_set"]
+
+
 def test_scan_market_node_marks_node_processed() -> None:
     graph = InMemoryGraphStore()
     node = _seed_market_node(graph)

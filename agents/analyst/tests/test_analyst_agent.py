@@ -116,7 +116,7 @@ def test_degraded_market_data_returns_explained_rejection() -> None:
     )
     assert response.payload["provenance"]["incident_refs"] == ["market_data_degraded"]
     assert len(sink.faults) == 1
-    assert sink.faults[0].source_module == "agents.analyst.agent"
+    assert sink.faults[0].source_module == "agents.analyst.run"
 
 
 def test_degraded_regime_returns_explained_rejection() -> None:

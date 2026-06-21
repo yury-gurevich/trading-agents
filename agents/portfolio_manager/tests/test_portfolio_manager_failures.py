@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import agents.portfolio_manager.agent as pm_agent_module
+import agents.portfolio_manager.run as pm_run_module
 from agents.portfolio_manager import PortfolioManagerAgent
 from agents.portfolio_manager.tests.helpers import (
     bar,
@@ -74,7 +74,7 @@ def test_evaluation_fault_rejects_all_recommendations(
     def boom(*_args: object, **_kwargs: object) -> None:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(pm_agent_module, "evaluate_recommendations", boom)
+    monkeypatch.setattr(pm_run_module, "evaluate_recommendations", boom)
     payload = recommendation_set(recommendation("AAPL"))
     bus, _, sink = wire_pm(source_bars=(bar("AAPL", 0, 100.0),))
 

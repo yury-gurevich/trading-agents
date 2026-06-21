@@ -54,7 +54,13 @@ def analyze_scan_node(
     result = _run_from_graph(
         node, candidate_set, graph=graph, settings=settings, sink=sink
     )
-    analyst_run = graph.merge_node("AnalystRun", result.run_id, {})
+    # Persist the full RecommendationSet on the AnalystRun so the PM can pull it from
+    # the graph (DL-08b) instead of receiving it as a bus payload.
+    analyst_run = graph.merge_node(
+        "AnalystRun",
+        result.run_id,
+        {"recommendation_set": result.model_dump(mode="json")},
+    )
     graph.add_edge(node, analyst_run, ANALYZED_EDGE)
 
 

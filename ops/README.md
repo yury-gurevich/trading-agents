@@ -26,27 +26,29 @@ product later. `ops/` closes that gap **before** the script count explodes.
 ```
 ops/
   README.md                 ← you are here: what the realm is
-  INDEX.md                  ← the map: every subsystem, its tier, its status
-  subsystem-map.md          ← helicopter view: boundaries, data-flow, the dependency DAG
-  _template/charter.md      ← the "law" schema every subsystem charter follows
-  subsystems/
-    identity-secrets/       ← tier-0 foundation (everything depends on it)
-      charter.md            ← the law: owns / gates / points-of-no-return / recovery / tuning
+  INDEX.md                  ← navigation: laws, departments, framework files
+  org-map.md                ← the system as an IT department: silos + dependency direction
+  scenarios.md              ← the situations we must be ready for (disaster, growth, cost…)
+  laws/                     ← the constitution — binds every department
+    LAW-01-continuous-improvement.md   ← THE FIRST LAW
+    LAW-02-successful-execution.md     ← what "done" means
+    LAW-03-recovery.md                 ← rollback or flagged point-of-no-return
+    LAW-04-communication.md            ← confirm/inform/record/alert
+    LAW-05-defendable-decision.md      ← every choice has a recorded "why"
+  _template/charter.md      ← the per-department "law" schema
+  departments/              ← the IT silos
+    security-iam/           ← identities, keys, secrets (worked example)
+      charter.md            ← owns / gates / points-of-no-return / recovery / tuning
       runbooks/             ← step-by-step procedures (deploy, rotate, migrate, restore)
-    registry/               ← GHCR build+push
-    graph-store/            ← Neo4j (Aura now → VM later)
-    fleet-compute/          ← Azure Container Apps
-    region-residency/       ← cross-cutting: where data is legally allowed to live
-    observability/          ← logs + metrics
-    operator-cli/           ← the `ta` CLI itself
+    release-eng/ platform/ data-storage/ networking/ sre/ grc/ service-desk/
   maintenance/
-    loop.md                 ← the maintenance + tuning loop (incl. the LLM-review process)
+    loop.md                 ← the maintenance + LLM tuning loop
     ledger.md               ← append-only trace of every operational action
     points-of-no-return.md  ← consolidated registry of every irreversible step
 ```
 
-A path like `ops/subsystems/graph-store/runbooks/migrate-region.md` reads top-to-bottom
-as *operations → a subsystem → the graph store → a procedure → migrate it to a new region.*
+A path like `ops/departments/data-storage/runbooks/migrate-region.md` reads top-to-bottom
+as *operations → a department → data & storage → a procedure → migrate it to a new region.*
 
 ---
 
@@ -80,8 +82,8 @@ the gate. See `maintenance/loop.md`.
 
 | Layer | Lives in | Role |
 | --- | --- | --- |
-| Policy (the law) | `ops/subsystems/*/charter.md` | boundaries, gates, recovery, tuning |
-| Procedure | `ops/subsystems/*/runbooks/*.md` | the steps, with rollback |
+| Policy (the law) | `ops/departments/*/charter.md` | boundaries, gates, recovery, tuning |
+| Procedure | `ops/departments/*/runbooks/*.md` | the steps, with rollback |
 | Mechanism | `infra/*.ps1` | the executable implementation |
 | Driver | `ta` CLI (`infra/`) | runs a charter's gates then its action |
 | Trace | `ops/maintenance/ledger.md` | append-only record of every run |

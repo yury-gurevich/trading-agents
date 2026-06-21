@@ -1,34 +1,44 @@
-# `ops/` index — every subsystem and its status
+# `ops/` index — laws, departments, and how to navigate
 
-**How to use:** find the subsystem you're about to touch, open its charter, run its gates
-*before* you act. If you're changing how a subsystem works, its charter is the file you
-must update in the same change (see `maintenance/loop.md`).
+**How to use:** before you touch anything operational — (1) the **laws** bind every action,
+(2) find the **department** that owns it and run its gates *before* acting, (3) if you change
+how it works, update its charter in the same change (`maintenance/loop.md`).
 
-| Subsystem | Tier | Charter | Status |
-| --- | --- | --- | --- |
-| [identity-secrets](subsystems/identity-secrets/charter.md) | 0 foundation | ✅ drafted | worked example |
-| registry | 1 supply | ⬜ stub | charter pending |
-| region-residency | 1 cross-cutting | ⬜ stub | charter pending (needs ADR) |
-| graph-store | 2 state | ⬜ stub | charter pending |
-| fleet-compute | 3 compute | ⬜ stub | charter pending |
-| observability | 4 signal | ⬜ stub | charter pending |
-| operator-cli (`ta`) | x | ⬜ stub | charter pending (build alongside the CLI) |
+## The constitution (binds everything)
+
+| File | Answers |
+| --- | --- |
+| [laws/INDEX.md](laws/INDEX.md) | The 5 cross-cutting laws — what every operation must obey |
+| [laws/LAW-01…](laws/LAW-01-continuous-improvement.md) | THE FIRST LAW: continuous improvement (everything is a tunable proposal) |
+
+## Departments (the IT silos)
+
+| Department | Charter | Status |
+| --- | --- | --- |
+| [Security & IAM](departments/security-iam/charter.md) | ✅ drafted | worked example |
+| Release Engineering (CI-CD) | ⬜ stub | charter pending |
+| Platform / Infrastructure | ⬜ stub | charter pending |
+| Data & Storage (DBA) | ⬜ stub | charter pending (Aura→VM lives here) |
+| Networking | ⬜ stub | charter pending (custom domains) |
+| SRE / Observability | ⬜ stub | charter pending |
+| GRC (Governance/Risk/Compliance) | ⬜ stub | charter pending (residency, audit, ledger) |
+| Service Desk | ⬜ stub | charter pending (the `ta` CLI UX) |
 
 ## Framework files
 
 | File | Answers |
 | --- | --- |
-| [README.md](README.md) | What is this realm, why does it exist, what are the principles? |
-| [subsystem-map.md](subsystem-map.md) | The big parts, tiers, data-flow, the dependency DAG |
-| [_template/charter.md](_template/charter.md) | The "law" schema every charter follows |
-| [maintenance/loop.md](maintenance/loop.md) | When/how does maintenance fire? The tuning + LLM-review loop |
-| [maintenance/ledger.md](maintenance/ledger.md) | Append-only trace of every operational action |
+| [README.md](README.md) | What is this realm, why it exists, the principles |
+| [org-map.md](org-map.md) | The departments, their remit, the dependency direction |
+| [scenarios.md](scenarios.md) | The situations we must be ready for (disaster, growth, cost, compliance…) |
+| [_template/charter.md](_template/charter.md) | The charter schema every department fills |
+| [maintenance/loop.md](maintenance/loop.md) | The maintenance + LLM tuning loop |
+| [maintenance/ledger.md](maintenance/ledger.md) | Append-only trace of every action |
 | [maintenance/points-of-no-return.md](maintenance/points-of-no-return.md) | Every irreversible step, system-wide |
 
-## Adding a subsystem charter
+## Adding a department charter
 
-1. Copy `_template/charter.md` to `subsystems/<name>/charter.md`.
-2. Fill every section (write "none", never delete a section).
-3. Add the row above; set tier from `subsystem-map.md`.
-4. List its Points of No Return in `maintenance/points-of-no-return.md`.
-5. Wire its gates into `ta <subsystem> preflight`.
+1. Copy `_template/charter.md` → `departments/<name>/charter.md`; fill every section.
+2. Add its remit to `org-map.md`; list its Points of No Return.
+3. Wire its gates into `ta <dept> preflight`.
+4. Confirm it satisfies all 5 laws (stricter-or-equal, never looser).

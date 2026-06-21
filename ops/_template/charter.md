@@ -1,5 +1,5 @@
 ---
-subsystem: <kebab-name>
+department: <kebab-name>
 tier: <0 foundation | 1 supply | 2 state | 3 compute | 4 signal | x cross-cutting>
 owner: <the maintaining loop, e.g. "operator + AI ops loop">
 status: draft | active | locked

@@ -1,5 +1,5 @@
 ---
-subsystem: identity-secrets
+department: security-iam
 tier: 0 foundation
 owner: operator + AI ops loop
 status: draft
@@ -7,7 +7,7 @@ version: 0.1
 implements_with: [infra/setup-github-ci.ps1, infra/aura.ps1, agents/master/key_vault.py]
 ---
 
-# Charter — Identity & Secrets
+# Charter — Security & IAM (identity & secrets)
 
 > Worked example. This is tier-0: every other subsystem depends on it, so it is drafted
 > first. Values reflect the real system as of 2026-06-21.

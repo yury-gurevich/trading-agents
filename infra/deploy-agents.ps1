@@ -174,10 +174,13 @@ function Up {
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):latest"
+    # NEO4J_* injected as plain env vars (DL-08a): each agent reads these to build
+    # its GraphStore via build_graph_from_env(); only the provider uses them for S78.
     $state = az containerapp create --name $name --resource-group $RG --environment $ENV_NAME --subscription $SUB `
       --image $img --registry-server $REGISTRY --registry-username $ghcr.username --registry-password $ghcr.pat `
       --min-replicas 1 --max-replicas 1 `
       --env-vars "MASTER_URL=$masterUrl" "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)" `
+                 "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=neo4j" "NEO4J_PASSWORD=$($auraInst.password)" `
       --query "properties.provisioningState" -o tsv 2>$null
     Check ($state -eq "Succeeded") $name
   }

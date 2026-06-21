@@ -1,19 +1,20 @@
 # Project State
 
-**Last updated:** 2026-06-22 00:30 AEST
+**Last updated:** 2026-06-22 09:00 AEST
 
-**Next: S77–S79 — "Agents Actually Do Work" sequence (see DL-07/DL-08 in design-log).**
-Three planned sprints:
+**S77 SHIPPED (0.16.1), S78 SHIPPED (0.17.00). Next: S79 — remaining agent work loops.**
 
-- **S77 (0.16.1 PATCH):** Credential-naming reconciliation — `secret_map.py` emits
-  `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); fix `.env` `FNP_` typo; align all
-  three entitled agents' env-var names. (a) config→env bridge **DONE** (0.16.0). This closes (b).
-- **S78 (0.17.0 MINOR):** Provider standalone graph-ingestor — replace `idle_loop()` with a real
-  ingest loop; `build_graph_from_env()` kernel helper (reads `NEO4J_URI` from env); universe from
-  `PROVIDER_UNIVERSE` env var; "start one container → data in graph" proof. Closes DL-08 first leg.
-- **S79 (0.18.0 MINOR):** Agent work loops — `find_pending()` per agent (Cypher for unprocessed
-  work) + `work_loop()` kernel helper; scanner/analyst/PM/execution/monitor/reporter all replace
-  `idle_loop()`; "one container at a time" full-pipeline proof. Closes DL-07c + DL-08.
+- **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
+  `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var
+  names. Neo4j integration test now skips gracefully when Aura is smart-paused.
+- **S78 (0.17.00 MINOR) DONE:** Provider standalone graph-ingestor — `kernel/graph_env.py`
+  `build_graph_from_env()` (reads `NEO4J_URI` from env, falls back to in-memory); `agents/provider/ingest.py`
+  `universe_from_env()` + `ingest_once()` + `ingest_loop()`; provider entrypoint replaces
+  `idle_loop()` with real ingest; `deploy-agents.ps1` passes `NEO4J_*` env vars to all agents;
+  991 passed, 100% coverage. "Start one container → data in graph" proof code-complete.
+- **S79 (0.18.0 MINOR) NEXT:** Agent work loops — `find_pending()` per agent (Cypher for
+  unprocessed work) + `work_loop()` kernel helper; scanner/analyst/PM/execution/monitor/reporter
+  all replace `idle_loop()`; "one container at a time" full-pipeline proof. Closes DL-07c + DL-08.
 
 **Architecture decision (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all
 data to Neo4j. Other agents poll the graph for unprocessed work — no Azure Service Bus needed for
@@ -46,15 +47,16 @@ start/test/debug. Decision recorded in design-log.md.
 `select_graph_store()` picks the master's graph backend — `memory` (`InMemoryGraphStore`,
 rebuilt on boot, zero deps) else Neo4j (default). Implements design-log **DL-05**: the cloud
 fleet runs **in-memory** (no Neo4j/Aura dependency) until trading needs durable persistence,
-then a small VM. The Aura trial can now lapse harmlessly. **972 tests**, 100% coverage;
+then a small VM. The Aura trial can now lapse harmlessly. **972 tests**, 100% coverage;V
 GitHub CI green. (Big-picture context for this stretch lives in `docs/design-log.md` +
 `ops/` + ADR-0012; this was the one concrete code change converting DL-05 into working code.)
 
 **S75 shipped: P15 Azure Key Vault secret distribution (version 0.12.0→0.13.0).**
-`agents/master/key_vault.py`: `SecretStore` Protocol + `NullSecretStore` (tests/default) +
+
+- `agents/master/key_vault.py`: `SecretStore` Protocol + `NullSecretStore` (tests/default) +
 `EnvVarSecretStore` (local dev) + `AzureKeyVaultSecretStore` (prod, `# pragma: no cover`).
 `agents/master/secret_map.py`: `AGENT_SECRETS` entitlement table (provider/execution/operator only)
-+ `resolve_config(agent_type, store)` → flat `UPPER_SNAKE` dict, empties skipped.
+`resolve_config(agent_type, store)` → flat `UPPER_SNAKE` dict, empties skipped.
 `MasterAgent.activate()` now calls `resolve_config` and populates `ACTIVATE.config` with per-agent
 minimum-privilege secrets. `main()` selects `AzureKeyVaultSecretStore` when `MASTER_KEY_VAULT_URL`
 is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existing tests checking
@@ -87,7 +89,7 @@ the continuous trading event loop is not wired yet (later phase).
 **Operator directive (2026-06-21): keep WSL2 OFF until the Aura trial expires** — local Docker/Neo4j stay
 dormant while Aura is the active graph store. **Deferred to post-trial cleanup:** the Ubuntu-22.04 WSL
 `ext4.vhdx` has grown to **128 GB** (C: only ~90 GB free); reclaim it then via `docker image prune -a`
-+ `docker builder prune` (preserve volumes → keep local Neo4j data) then `wsl --shutdown` + compact the
+- `docker builder prune` (preserve volumes → keep local Neo4j data) then `wsl --shutdown` + compact the
 vhdx. Do NOT start WSL2 before the trial ends.
 
 ---
@@ -241,7 +243,7 @@ the live and degraded paths; no contract change, no new dep). Follow-up unchange
 
 **S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration
 
-+ 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining
+- 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining
 agent backfills; ADR-0007 docs committed).
 
 **ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub →
@@ -281,17 +283,17 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Parked
 
-+ (none)
+- (none)
 
 ## Shipped
 
-+ **Sprint 70 — Per-agent law backfill (4 of 11)** (implemented directly — no coding agent
+- **Sprint 70 — Per-agent law backfill (4 of 11)** (implemented directly — no coding agent
   this cycle). Laws authored from first principles for scanner (SCAN, 39 clauses), analyst
   (ANLZ, 43), portfolio_manager (PM, 43), execution (EXEC, 49). Citation pass across 12 test
   files; 95 green clauses (18+24+23+30). `test_scanner_explain.py` split to resolve 200-line
   hard block. All four `laws.md` files LOCKED v1. No code change; no version bump (docs-only).
   895 tests, 100% coverage.
-+ **P14 complete — Inter-agent comms re-architecture (S60–S67)** (ADR-0005; implemented
+- **P14 complete — Inter-agent comms re-architecture (S60–S67)** (ADR-0005; implemented
   directly — no coding agent this cycle). `InProcessBus.publish/subscribe` + fan-out (S60);
   kernel `claim_check_write/read` + `ReadyEvent` (S61); provider (S62), scanner + analyst
   (S63), PM + execution (S64), monitor + reporter (S65) migrated to pub/sub dual-mode;
@@ -302,19 +304,19 @@ own branch and hands back. See `docs/sprints/README.md`.
   rewritten. `contracts/` `owns_graph` += `OrderIntentResult`, `ExecutionResultEvent`,
   `MonitorDecisionResult`, `ReportSnapshotResult`. `feat` → **version 0.8.0→0.9.0**
   (MINOR, HARD RULE). **863 tests**, floor 100.00. `build-plan.md` P14 → **complete**.
-+ **Sprint 59 — Forecaster: LightGBM training pipeline + return IC scorecard** (qlib Q1
+- **Sprint 59 — Forecaster: LightGBM training pipeline + return IC scorecard** (qlib Q1
   follow-on; implemented directly). `build_label_rows` (1-day forward return, no look-ahead)
-  + walk-forward `split_rows` + `train_and_save` offline script. New `return_scorecard`
+  - walk-forward `split_rows` + `train_and_save` offline script. New `return_scorecard`
   capability: Pearson IC + hit_rate + directional quartile breakdown vs injected forward
   returns. `promotion_eligible=False` throughout. CONTRACT 0.3.0→0.4.0; `feat` →
   **version 0.7.0→0.8.0** (MINOR, HARD RULE).
-+ **Sprint 58 — Forecaster: LightGBM price/return shadow signal** (qlib Phase Q1;
+- **Sprint 58 — Forecaster: LightGBM price/return shadow signal** (qlib Phase Q1;
   implemented directly). `ReturnModel` Protocol + lazy `LightGBMReturnAdapter` (pickled
   booster, `# pragma: no cover` on I/O); pure `_features.py` (return_1d/5d/10d, vol_5d,
   close_to_high); provider OHLCV request → `ShadowPrediction` (shadow=True, never gates)
-  + `Model` node. `lightgbm`-direct — `pyqlib` 3.13-incompatible (R001). CONTRACT
+  - `Model` node. `lightgbm`-direct — `pyqlib` 3.13-incompatible (R001). CONTRACT
   0.2.0→0.3.0; `feat` → **version 0.6.0→0.7.0** (MINOR, HARD RULE).
-+ **Sprint 57 - Forecaster: sentiment scorecard harness** (P12; implemented directly - no coding agent
+- **Sprint 57 - Forecaster: sentiment scorecard harness** (P12; implemented directly - no coding agent
   this cycle). New `sentiment_scorecard` capability comparing the three champion-challenger scorers vs
   injected forward returns. Pure stats domain: `agents/forecaster/domain/statistics.py` (`pearson`
   with undefined->None on <2 points or a constant series; population `std`; `ols2` closed-form
@@ -332,7 +334,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   change). `feat` -> **project version 0.5.0 -> 0.6.0**. 756 tests (was 739; +17 - statistics
   known-values + None edges, comparison_metrics branches, agent alignment/skip + never-promotes), floor
   100.00; every module < 200L.
-+ **Sprint 56 - Analyst: full Loughran-McDonald master dictionary** (P12 champion deepened;
+- **Sprint 56 - Analyst: full Loughran-McDonald master dictionary** (P12 champion deepened;
   implemented directly - no coding agent this cycle). The binding lexicon in
   `agents/analyst/domain/sentiment_rules.py` now loads the genuine LM master dictionary - **Positive
   354, Negative 2355** - vendored as `agents/analyst/domain/data/lm_positive.txt` and
@@ -351,7 +353,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   version `0.4.0 -> 0.5.0`** (MINOR, HARD RULE). 739 tests (was 735; +4 - LM-only pos/neg scoring,
   dictionary-loaded sanity, disjointness invariant), floor 100.00; every module < 200L. **P12
   remaining: the scorecard harness only** (data-runway-gated).
-+ **Sprint 55 — Reporter: re-point to real $ PnL** (**P11 COMPLETE**; implemented directly — no coding
+- **Sprint 55 — Reporter: re-point to real $ PnL** (**P11 COMPLETE**; implemented directly — no coding
   agent this cycle). `agents/reporter/domain/trade_outcomes.py` rewritten: `collect_trade_outcomes`
   now takes **only** `close_decisions` and reads the monitor's realized `pnl_cents` (S43) off each
   `CloseDecision` (pure `_pnl_cents` guards non-int/None), bucketing by **sign** into dollar-based
@@ -363,7 +365,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   is a free-form dict → **no contract change**). `test_trade_outcomes.py` rewritten (incl. a time-exit
   and a break-even case); the reporter-agent fixture seeds `pnl_cents`. `feat` → **project version
   `0.3.0 → 0.4.0`** (MINOR, HARD RULE). 735 tests, floor 100.00; every module < 200L. **Closes P11.**
-+ **Sprint 43 — Monitor: realized PnL on close** (P11; implemented directly — no coding agent this
+- **Sprint 43 — Monitor: realized PnL on close** (P11; implemented directly — no coding agent this
   cycle; the real realized-outcome substrate). New pure
   `realized_pnl_cents(exit_price_cents, entry_price_cents, quantity) = (exit − entry) × quantity` in
   `domain/exit_rules.py` (integer cents, gross, long-only, never raises). The per-position decision
@@ -376,7 +378,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   gained exact PnL assertions (−600 / +1100 / 0 on the 10000c-entry qty-1 fixture). `feat` → **project
   version `0.2.0 → 0.3.0`** (MINOR, HARD RULE). 738 tests (+5), floor 100.00; every module < 200L.
   **Next: reporter re-point** to read this `pnl_cents` for $-based metrics across all triggers.
-+ **Sprint 54 — Scanner: earnings-window exclusion** (P11; implemented directly — no coding agent this
+- **Sprint 54 — Scanner: earnings-window exclusion** (P11; implemented directly — no coding agent this
   cycle; consumes the S42 feed, completing the earnings two-sprint pair). The scanner requests the
   `"earnings_calendar"` field and **drops candidates whose next earnings date is within
   `earnings_exclusion_days` (5, tunable) of the scan as-of**, attributing `earnings_window` in the
@@ -391,7 +393,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   → **project version `0.1.0 → 0.2.0`** (MINOR bump — the HARD RULE's first application). 733 tests
   (was 726; +7 — 6 filter-branch + 1 agent end-to-end), floor 100.00; every module < 200L (filters
   127, agent 170). The scanner deterministic port (beta S50 + earnings S54) is now complete.
-+ **Sprint 42 — Provider: earnings-calendar feed** (P11; implemented directly — no coding agent this
+- **Sprint 42 — Provider: earnings-calendar feed** (P11; implemented directly — no coding agent this
   cycle; unblocks the scanner earnings-window exclusion). New
   `DataSource.fetch_earnings(tickers, window) -> dict[Ticker, date]` across the Protocol +
   `FakeDataSource` (fixture + `fail_earnings`); the **real** `FinnhubDataSource.fetch_earnings`
@@ -408,7 +410,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   green; **no other agent changed** (every existing caller requests neither field → `earnings == {}`,
   no re-pin). 726 tests (was 714; +12), floor 100.00; every module < 200L. Next: the **scanner**
   earnings-window exclusion consumes `MarketData.earnings`.
-+ **Sprint 41 — Reporter: profit-factor + expectancy** (P11; implemented directly — no coding agent
+- **Sprint 41 — Reporter: profit-factor + expectancy** (P11; implemented directly — no coding agent
   this cycle). New pure `agents/reporter/domain/trade_outcomes.py` (70L): `collect_trade_outcomes`
   pairs each `Position` to its `CloseDecision` by `position_id`, buckets by trigger
   (`target` → win `+target_pct`, `stop` → loss `−stop_pct`), and returns `profit_factor`,
@@ -424,7 +426,7 @@ own branch and hands back. See `docs/sprints/README.md`.
   snapshot test unaffected (**no value re-pinned**). 714 tests (was 703; +11 — 9 unit + 2 snapshot
   integration), floor 100.00. Next: S43 monitor `pnl_cents` (now unblocked) → reporter re-point to
   real $ PnL across all triggers (memory `realized-pnl-sequencing`).
-+ **Sprint 53 — Provider laws: CAP + PARAM sections** (ADR-0007 backfill; S53). Two new law
+- **Sprint 53 — Provider laws: CAP + PARAM sections** (ADR-0007 backfill; S53). Two new law
   sections added to `agents/provider/laws/laws.md`: `CAPABILITY DECLARATION (CAP)` — a JSON
   schema describing the provider's four runtime interface needs (messaging subscribe/publish, graph
   append-write, external HTTPS read, secrets) in interface-first terms; `PARAMETERS (PARAM)` — a
@@ -442,12 +444,12 @@ own branch and hands back. See `docs/sprints/README.md`.
 
 ## Pointers
 
-+ Product intent: `docs/PRD.md`
-+ Structure & rules: `docs/architecture.md`
-+ Sequenced plan: `docs/build-plan.md`
-+ Configuration governance: `docs/configuration.md`
-+ Error handling: `docs/error-handling.md`
-+ Observability & historical data: `docs/observability.md`
-+ Hardening backlog (deferred security/quality, with unblock triggers): `docs/hardening-backlog.md`
-+ Per-agent charters: `agents/<name>/mission.md`
-+ Machine boundaries: `contracts/<name>.py`
+- Product intent: `docs/PRD.md`
+- Structure & rules: `docs/architecture.md`
+- Sequenced plan: `docs/build-plan.md`
+- Configuration governance: `docs/configuration.md`
+- Error handling: `docs/error-handling.md`
+- Observability & historical data: `docs/observability.md`
+- Hardening backlog (deferred security/quality, with unblock triggers): `docs/hardening-backlog.md`
+- Per-agent charters: `agents/<name>/mission.md`
+- Machine boundaries: `contracts/<name>.py`

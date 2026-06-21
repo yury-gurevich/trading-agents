@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-78-provider-ingestor`
-**Status:** planned
+**Status:** shipped (0.17.00)
 
 ---
 

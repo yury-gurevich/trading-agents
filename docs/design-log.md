@@ -109,15 +109,19 @@ if I touch X?"). Seed from the markdown charters first; graduate to the graph wh
 
 ---
 
-## DL-05 · Cloud graph store hosting (post-Aura-trial)  ·  status: DECIDED — in-memory now
+## DL-05 · Cloud graph store hosting  ·  status: DECIDED (refined 2026-06-21)
 
-**Question.** Where does the graph live for the cloud fleet once the Aura trial lapses (~Jun 29),
-given we can't afford paid Aura?
+**Question.** Where does the graph live for the cloud fleet, given we can't afford paid Aura?
 
-**Decision.** **In-memory (`InMemoryGraphStore`) now.** The master runs with a `MASTER_GRAPH=memory`
-toggle; the registry (AgentInstance/Session/CapabilityGrant) is operational state that **rebuilds
-on boot** (agents re-EHLO). $0, no infra, no laptop dependency. Persist later — a small **Azure VM
-(~$15/mo)** earns its keep **when trading goes live and needs durable provenance**, not before.
+**Decision (refined — operator).** **While the Aura trial lasts: use the real Aura** and stay "as
+close to reality as possible" (real managed graph, real persistence/backups). **Pause smartly** —
+pause the instance whenever the fleet isn't actively being tested (`aura.ps1 pause`,
+`deploy-agents.ps1 down`) to stretch the trial credit and keep PAYG low. **When the trial ends:**
+fall back to **in-memory** (`MASTER_GRAPH=memory`, shipped v0.14.0 — registry rebuilds on boot, $0)
+until trading needs durable provenance, **then** a small **Azure VM (~$15/mo)**.
+
+So the order of preference is: **real Aura (trial, smart-paused) → in-memory (post-trial) → VM (when
+durable data matters).** The in-memory toggle is the *fallback*, not the everyday default.
 
 **Ruled out.**
 - *Paid Aura* — cost (operator can't afford it).

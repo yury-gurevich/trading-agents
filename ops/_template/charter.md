@@ -7,7 +7,7 @@ version: 0.1
 implements_with: [infra/<script>.ps1, …]   # the mechanism this policy drives
 ---
 
-# Charter — <Subsystem Name>
+# Charter — '\<'Subsystem Name'\>'
 
 > The operational "law" for this subsystem. Mirrors the agent `laws.md` schema, adapted
 > for infrastructure. Copy this file to `ops/subsystems/<name>/charter.md` and fill it in.

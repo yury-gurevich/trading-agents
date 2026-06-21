@@ -1,9 +1,12 @@
-"""Parametrized smoke tests for all 12 trading-agent entrypoints.
+"""Parametrized smoke tests for idle-loop trading-agent entrypoints.
 
 Each entrypoint must:
   - import without error
   - call activate_agent with the correct agent_type when main() runs
   - call idle_loop() after activate
+
+Note: the provider entrypoint runs a real ingest loop (not idle_loop) so it
+is tested separately in agents/provider/tests/test_provider_entrypoint.py.
 """
 
 from __future__ import annotations
@@ -24,7 +27,6 @@ _AGENTS = [
     ("agents.supervisor.entrypoint", "supervisor"),
     ("agents.curator.entrypoint", "curator"),
     ("agents.researcher.entrypoint", "researcher"),
-    ("agents.provider.entrypoint", "provider"),
 ]
 
 

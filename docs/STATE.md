@@ -36,6 +36,12 @@ decide before the Aura trial lapses **~2026-06-29**. **Minor follow-up:** deploy
 persisted as None in Aura — verify the master's graph write. **Note:** agents currently boot→EHLO→idle;
 the continuous trading event loop is not wired yet (later phase).
 
+**Operator directive (2026-06-21): keep WSL2 OFF until the Aura trial expires** — local Docker/Neo4j stay
+dormant while Aura is the active graph store. **Deferred to post-trial cleanup:** the Ubuntu-22.04 WSL
+`ext4.vhdx` has grown to **128 GB** (C: only ~90 GB free); reclaim it then via `docker image prune -a`
++ `docker builder prune` (preserve volumes → keep local Neo4j data) then `wsl --shutdown` + compact the
+vhdx. Do NOT start WSL2 before the trial ends.
+
 ---
 
 **S74 shipped: P15 RSA signing + agent entrypoints (version 0.11.0→0.12.0).**

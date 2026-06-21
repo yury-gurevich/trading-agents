@@ -36,14 +36,14 @@ azure = [
 
 [dependency-groups]
 dev = [
-    "pytest>=9.1.0",
+    "pytest>=9.1.1",
     "pytest-cov>=5",
     "pytest-asyncio>=0.23",
     "celery>=5.4",
     "import-linter>=2.0",
     "mypy>=1.10",
     "mcp>=1.28.0",
-    "ruff>=0.15.17",
+    "ruff>=0.15.18",
     "pip-audit>=2.10.1",
     "detect-secrets>=1.5",
     "neo4j>=5.20",

@@ -11,6 +11,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | --- | --- |
 | [STATE.md](STATE.md) | Where are we right now? What is the active sprint? What is next? |
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
+| [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
 
 ---
 

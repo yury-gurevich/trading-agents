@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-22 12:00 AEST
+**Last updated:** 2026-06-22 04:32 AEST
 
 **S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
 Next: S81 — extend graph-pull to PM→reporter.**
@@ -108,6 +108,7 @@ the continuous trading event loop is not wired yet (later phase).
 **Operator directive (2026-06-21): keep WSL2 OFF until the Aura trial expires** — local Docker/Neo4j stay
 dormant while Aura is the active graph store. **Deferred to post-trial cleanup:** the Ubuntu-22.04 WSL
 `ext4.vhdx` has grown to **128 GB** (C: only ~90 GB free); reclaim it then via `docker image prune -a`
+
 - `docker builder prune` (preserve volumes → keep local Neo4j data) then `wsl --shutdown` + compact the
 vhdx. Do NOT start WSL2 before the trial ends.
 
@@ -280,18 +281,21 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 S77 next — credential-naming reconciliation.** S73–S76 shipped: master bootstrap,
-RSA signing, Key Vault, GHCR build pipeline, full 13-agent fleet proven on Azure. Tree is
-clean. Version 0.16.0. Next branch: `sprint-77-credential-naming`.
+**P15 S81 next — PM, execution, monitor, reporter graph-pull.** S77–S80 shipped: credential
+naming, provider ingestor, scanner work loop, analyst work loop. Graph-pull model proven
+end-to-end (provider→scanner→analyst). Version 0.19.00. Next branch: `sprint-81-pm-graph-pull`.
+
+**Critical-path:** Aura trial lapses ~2026-06-29 (7 days). Permanent graph store decision
+(self-host Neo4j on small Azure VM, ~$15/mo) must land before then — PM/execution/monitor/
+reporter need a reachable graph store to actually run in the fleet.
 
 ## Next
 
-- **S77 (0.16.1)** — Credential naming: `secret_map.py` emits `PROVIDER_`-prefixed keys; fix
-  `.env` `FNP_` typo. Prerequisite for agents consuming injected secrets.
-- **S78 (0.17.0)** — Provider standalone graph-ingestor: replace `idle_loop()`, write real data
-  to Neo4j. "One container → data in graph" proof. `build_graph_from_env()` kernel helper.
-- **S79 (0.18.0)** — Agent work loops: `find_pending()` per agent + `work_loop()` helper;
-  scanner/analyst/PM/execution/monitor/reporter all do real work. Full pipeline proof.
+- **S81 (0.20.00)** — PM, execution, monitor, reporter graph-pull: same `poll.py` + shared
+  core + `work_loop()` template as S79/S80. Closes DL-07c + DL-08 end-to-end. Blocked on
+  permanent graph store decision.
+- **Permanent graph store** — self-host Neo4j Community on a small Azure VM (~$15/mo) before
+  Aura trial lapses 2026-06-29. Required for S81 agents to run against a real graph.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow

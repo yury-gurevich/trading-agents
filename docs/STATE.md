@@ -1,8 +1,9 @@
 # Project State
 
-**Last updated:** 2026-06-22 09:00 AEST
+**Last updated:** 2026-06-22 10:30 AEST
 
-**S77 SHIPPED (0.16.1), S78 SHIPPED (0.17.00). Next: S79 — remaining agent work loops.**
+**S77 SHIPPED (0.16.1), S78 SHIPPED (0.17.00), S79 SHIPPED as a vertical slice (0.18.00).
+Next: S80 — extend the graph-pull pattern to analyst→reporter.**
 
 - **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
   `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var
@@ -10,11 +11,19 @@
 - **S78 (0.17.00 MINOR) DONE:** Provider standalone graph-ingestor — `kernel/graph_env.py`
   `build_graph_from_env()` (reads `NEO4J_URI` from env, falls back to in-memory); `agents/provider/ingest.py`
   `universe_from_env()` + `ingest_once()` + `ingest_loop()`; provider entrypoint replaces
-  `idle_loop()` with real ingest; `deploy-agents.ps1` passes `NEO4J_*` env vars to all agents;
-  991 passed, 100% coverage. "Start one container → data in graph" proof code-complete.
-- **S79 (0.18.0 MINOR) NEXT:** Agent work loops — `find_pending()` per agent (Cypher for
-  unprocessed work) + `work_loop()` kernel helper; scanner/analyst/PM/execution/monitor/reporter
-  all replace `idle_loop()`; "one container at a time" full-pipeline proof. Closes DL-07c + DL-08.
+  `idle_loop()` with real ingest; `deploy-agents.ps1` passes `NEO4J_*` env vars to all agents.
+- **S79 (0.18.00 MINOR) DONE — vertical slice (DL-08b).** S79 as planned (rewire all 6 agents) had
+  a hole: scanner/analyst fetch market data via **live bus RPC to the provider**, and S78 wrote only
+  a `MarketSnapshot` summary (no bars) — so agents would poll graph triggers but die at
+  `request_market_data`. Shipped the smallest real proof instead: **provider persists the full
+  `MarketData` payload** to the graph (`ingest._write_market_data`); **scanner reads market data
+  from the graph** (`agents/scanner/poll.py` `find_pending` + `scan_market_node`, `SCANNED_BY` edge)
+  instead of bus RPC; **`kernel/work_loop.py`** (`run_once`+`work_loop`) reusable poll loop; scanner
+  entrypoint drops `idle_loop()`. `MARKET_DATA_LABEL` in `contracts/provider.py` keeps the agents
+  islands. 997 passed, 100% coverage.
+- **S80 (next) — extend graph-pull to analyst→reporter.** Same bus→graph data-path move for analyst,
+  PM, execution, monitor, reporter (each currently RPCs the provider/upstream). Reuse the
+  `poll.py` + `work_loop()` template from the scanner slice. Closes DL-07c + DL-08 end-to-end.
 
 **Architecture decision (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all
 data to Neo4j. Other agents poll the graph for unprocessed work — no Azure Service Bus needed for

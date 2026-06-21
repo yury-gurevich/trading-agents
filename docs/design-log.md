@@ -161,6 +161,50 @@ is a hard runtime dependency for every run; hard to test agents in isolation).
 
 ---
 
+## DL-08b · Agents fetch market data over the bus, not the graph — S79 scope correction  ·  status: DECIDED (2026-06-22)
+
+**Constraint discovered (S79 kickoff).** DL-08 assumes every agent reads its inputs from the
+graph. The code does not work that way yet:
+
+- **Scanner** (`_run_scan`) and **analyst** (`_analyze`) acquire OHLCV/regime via **live bus RPC
+  to the provider** — `request_market_data(self.bus, …)` → `bus.request(recipient="provider")`.
+  The graph claim-check only carries the *handoff artifact* (candidates, recommendations) between
+  adjacent agents — **not** the underlying market data.
+- **S78's ingest writes a summary, not data.** `write_market_snapshot` persists
+  `bar_count`/`requested`/`returned` — *not the bars themselves*. There is nothing in the graph
+  for a downstream agent to read market data **from**.
+- **Per-container `InProcessBus` can't do cross-container RPC.** Each agent container builds its
+  own local bus (as the S78 provider entrypoint does). A scanner's `bus.request(recipient=
+  "provider")` hits its *own* empty bus — the provider is in a different container. This coupling
+  is exactly what DL-08 chose graph-as-queue to eliminate.
+
+**Consequence.** S79 implemented literally (add `poll.py` + `work_loop()`, swap `idle_loop()`)
+would pass CI but the agents would still **fail at `request_market_data`** — green, but not
+actually standalone. The sprint's headline goal would be unmet.
+
+**Decision (operator + Claude, 2026-06-22).** **Reshape S79 to a vertical slice (provider→scanner)
+rather than the full six-agent rewrite.** Smallest surface that proves DL-08 is real:
+
+1. **Provider ingest persists the full market payload** to the graph (bars + earnings + …), not
+   just a summary node — so a downstream agent has something to read.
+2. **Scanner reads market data from the graph** (a graph-backed market source) instead of bus RPC,
+   ending the provider→scanner bus coupling for this handoff.
+3. **Ship the reusable `work_loop()` kernel helper** (find_pending → process → sleep).
+
+**Ruled out (this sprint):**
+
+- *Full six-agent rewrite* — multiplies the speculative-Cypher / schema-discovery risk per agent;
+  no shippable checkpoint if quota runs out mid-pipeline.
+- *Triggers-only (poll claim-check artifacts, keep market-data RPC)* — passes CI but agents still
+  die at `request_market_data`; buys the appearance of standalone agents without the substance.
+
+**Pattern established for S80+.** The graph-backed market source built here is the template the
+analyst / PM / execution / monitor / reporter reuse when their data paths move graph-first.
+
+**Status.** DECIDED. S79 doc updated to the slice; analyst→reporter deferred to S80.
+
+---
+
 ## DL-08a · Neo4j credentials distribution — KV secret vs plain env var  ·  status: OPEN
 
 **Question.** Do non-master agents receive their Neo4j connection string + credentials via

@@ -5,8 +5,9 @@ Each entrypoint must:
   - call activate_agent with the correct agent_type when main() runs
   - call idle_loop() after activate
 
-Note: the provider entrypoint runs a real ingest loop (not idle_loop) so it
-is tested separately in agents/provider/tests/test_provider_entrypoint.py.
+Note: the provider entrypoint runs a real ingest loop and the scanner runs a
+graph-pull work loop (not idle_loop); both are tested separately under their
+own agents/<name>/tests/ packages.
 """
 
 from __future__ import annotations
@@ -16,7 +17,6 @@ import importlib
 import pytest
 
 _AGENTS = [
-    ("agents.scanner.entrypoint", "scanner"),
     ("agents.analyst.entrypoint", "analyst"),
     ("agents.portfolio_manager.entrypoint", "portfolio_manager"),
     ("agents.execution.entrypoint", "execution"),

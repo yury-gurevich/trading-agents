@@ -142,13 +142,30 @@ function Up {
   $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"
-  az containerapp create --name master --resource-group $RG --environment $ENV_NAME --subscription $SUB `
-    --image "$REGISTRY/$OWNER/trading-agents-master:latest" --registry-server $REGISTRY `
-    --registry-username $ghcr.username --registry-password $ghcr.pat `
-    --target-port 8000 --ingress internal --min-replicas 1 --max-replicas 1 `
-    --secrets "neo4j-password=$($auraInst.password)" "master-key-b64=$($kp.priv_b64)" `
-    --env-vars "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=neo4j" "NEO4J_PASSWORD=secretref:neo4j-password" "NEO4J_DATABASE=neo4j" "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64" `
-    --query "properties.provisioningState" -o tsv 2>$null | Out-Null
+  $kv = Load-Json "key-vault.local.json"
+  $envv = @(
+    "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=neo4j",
+    "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=neo4j",
+    "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64"
+  )
+  $mArgs = @(
+    "containerapp", "create", "--name", "master", "--resource-group", $RG,
+    "--environment", $ENV_NAME, "--subscription", $SUB,
+    "--image", "$REGISTRY/$OWNER/trading-agents-master:latest",
+    "--registry-server", $REGISTRY, "--registry-username", $ghcr.username,
+    "--registry-password", $ghcr.pat, "--target-port", "8000", "--ingress", "internal",
+    "--min-replicas", "1", "--max-replicas", "1",
+    "--secrets", "neo4j-password=$($auraInst.password)", "master-key-b64=$($kp.priv_b64)",
+    "--query", "properties.provisioningState", "-o", "tsv"
+  )
+  if ($kv) {
+    $envv += @("MASTER_KEY_VAULT_URL=$($kv.vault_url)", "AZURE_CLIENT_ID=$($kv.client_id)")
+    $mArgs += @("--user-assigned", $kv.resource_id)
+    Line "Key Vault wired: $($kv.vault_url)"
+  }
+  else { Line "no Key Vault — master uses env-var secrets" }
+  $mArgs += @("--env-vars") + $envv
+  az @mArgs 2>$null | Out-Null
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   Check ([bool]$fqdn) "master @ https://$fqdn"
   Bot

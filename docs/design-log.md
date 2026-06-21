@@ -103,6 +103,29 @@ data model is next touched.
 
 ---
 
+## DL-07 · Key Vault secret-name + missing-secret reconciliation  ·  status: PARTLY OPEN
+
+Surfaced while wiring Key Vault (B). Two issues found and how they're handled:
+
+**1. Secret-name mismatch (OPEN — flag for when agents consume config).** `secret_map.py`
+`AGENT_SECRETS` expects kebab names that map to `ALPACA_KEY_ID` / `ALPACA_SECRET_KEY`, but `.env`
+uses `ALPACA_API_KEY` / `ALPACA_API_SECRET`, and the agent code references *both* conventions.
+`FINNHUB_API_KEY` / `FMP_API_KEY` aren't in `.env` at all. Not breaking yet (agents idle; don't
+consume config), but the names must be reconciled before the event loop reads them. Decide one
+canonical set; align `secret_map` + agent settings + `.env`.
+
+**2. Missing-secret behaviour (FIXED).** `AzureKeyVaultSecretStore.get_secret` *threw* on a
+not-found secret, but `Null`/`EnvVar` stores return `""` (and `resolve_config` skips empties). So an
+agent entitled to an unseeded secret would fail to activate. Fixed: catch `ResourceNotFoundError` →
+return `""`. Lets us seed only the secrets that exist (tiingo, anthropic) without breaking the rest.
+
+**3. Alpaca seeding deferred (safety).** `.env` has both live (`ALPACA_API_KEY`) and paper
+(`ALPACA_PAPER_API_KEY`). Seeding *live* trading creds into the pipeline is a money-risk; deferred
+until the operator makes the paper-vs-live call. KV currently holds only `tiingo-api-key` +
+`anthropic-api-key`.
+
+---
+
 ## DL-04 · Model `ops/` in Neo4j as a multi-view engine  ·  status: IDEA (later)
 
 Per DL-01: tag each operational atom once (`Subsystem`/`Gate`/`Runbook`, `DEPENDS_ON`/`AFFECTS`),

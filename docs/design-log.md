@@ -106,3 +106,42 @@ data model is next touched.
 Per DL-01: tag each operational atom once (`Subsystem`/`Gate`/`Runbook`, `DEPENDS_ON`/`AFFECTS`),
 then query any lens (departmental / datacentre / lifecycle) and run change-impact ("what breaks
 if I touch X?"). Seed from the markdown charters first; graduate to the graph when they stabilise.
+
+---
+
+## DL-05 · Cloud graph store hosting (post-Aura-trial)  ·  status: DECIDED — in-memory now
+
+**Question.** Where does the graph live for the cloud fleet once the Aura trial lapses (~Jun 29),
+given we can't afford paid Aura?
+
+**Decision.** **In-memory (`InMemoryGraphStore`) now.** The master runs with a `MASTER_GRAPH=memory`
+toggle; the registry (AgentInstance/Session/CapabilityGrant) is operational state that **rebuilds
+on boot** (agents re-EHLO). $0, no infra, no laptop dependency. Persist later — a small **Azure VM
+(~$15/mo)** earns its keep **when trading goes live and needs durable provenance**, not before.
+
+**Ruled out.**
+- *Paid Aura* — cost (operator can't afford it).
+- *Aura Free* — auto-pauses after 3 days idle; operator said "no Aura".
+- *Tunnel to the operator's machine* — worst of both: needs the laptop always-on (= fleet
+  availability) and a DB-over-tunnel security surface, with *none* of a VM's reliability, to solve
+  a persistence problem we don't have yet. Actively steered away from.
+
+**Trade-off accepted.** In-memory loses persistence across master *restarts* (a restart empties the
+registry; running agents then differ from the master's view). Tolerable at the test-rig stage; the
+trigger to move to a VM is "real graph data worth keeping."
+
+## DL-06 · Neo4j edition — Community is the baseline  ·  status: DECIDED (risk de-fanged)
+
+**Risk.** The local Neo4j **Enterprise** eval expires at 30 days; a Neo4j **Developer license** was
+requested and may not be granted.
+
+**Decision.** **Community Edition is the assumed baseline** (free, forever). Enterprise — whether via
+a dev license *or* managed Aura — is a **documented optional upgrade, never a dependency.** Aligned
+with ADR-0001/0008 (invariants designed on Community) and the affordability posture: a platform must
+not hard-depend on a licensed feature.
+
+**Concrete fallback if no license.** `NEO4J_DATABASE=neo4j` (drop the named `traiding-agents` db);
+APOC Core + GDS still work; RBAC/clustering/multi-db are unused. Affects **local dev only** — the
+cloud fleet is in-memory (DL-05) and CI skips the Neo4j integration test. **Blocks nothing.**
+
+**Small follow-up (when WSL2 returns post-trial):** verify no code/test hard-depends on the named db.

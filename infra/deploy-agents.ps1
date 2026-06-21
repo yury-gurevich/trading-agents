@@ -119,20 +119,35 @@ function Resume-Aura($api) {
   }
 }
 
+# ── Master keypair (stable, for ACTIVATE signature verification) ──────────────
+function Get-MasterKeypair {
+  $path = Join-Path $PSScriptRoot "master-keypair.local.json"
+  if (Test-Path $path) { return Get-Content $path -Raw | ConvertFrom-Json }
+  Line "generating stable master RSA keypair (first deploy)"
+  $py = "from kernel.crypto import generate_keypair; import base64; " +
+  "pr,pu=generate_keypair(); print(base64.b64encode(pr.encode()).decode()); " +
+  "print(base64.b64encode(pu.encode()).decode())"
+  $lines = (uv run python -c $py) -split "`n" | Where-Object { $_.Trim() }
+  $kp = [pscustomobject]@{ priv_b64 = $lines[0].Trim(); pub_b64 = $lines[1].Trim() }
+  $kp | ConvertTo-Json | Out-File $path -Encoding utf8
+  return $kp
+}
+
 # ── Deploy ────────────────────────────────────────────────────────────────────
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   $ghcr = Load-Json "ghcr.local.json"; $auraApi = Load-Json "aura-api.local.json"; $auraInst = Load-Json "aura-instance.local.json"
 
   Top "AURA"; Resume-Aura $auraApi; Bot
+  $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"
   az containerapp create --name master --resource-group $RG --environment $ENV_NAME --subscription $SUB `
     --image "$REGISTRY/$OWNER/trading-agents-master:latest" --registry-server $REGISTRY `
     --registry-username $ghcr.username --registry-password $ghcr.pat `
     --target-port 8000 --ingress internal --min-replicas 1 --max-replicas 1 `
-    --secrets "neo4j-password=$($auraInst.password)" `
-    --env-vars "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=neo4j" "NEO4J_PASSWORD=secretref:neo4j-password" "NEO4J_DATABASE=neo4j" `
+    --secrets "neo4j-password=$($auraInst.password)" "master-key-b64=$($kp.priv_b64)" `
+    --env-vars "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=neo4j" "NEO4J_PASSWORD=secretref:neo4j-password" "NEO4J_DATABASE=neo4j" "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64" `
     --query "properties.provisioningState" -o tsv 2>$null | Out-Null
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   Check ([bool]$fqdn) "master @ https://$fqdn"
@@ -144,12 +159,13 @@ function Up {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):latest"
     $state = az containerapp create --name $name --resource-group $RG --environment $ENV_NAME --subscription $SUB `
       --image $img --registry-server $REGISTRY --registry-username $ghcr.username --registry-password $ghcr.pat `
-      --min-replicas 1 --max-replicas 1 --env-vars "MASTER_URL=$masterUrl" `
+      --min-replicas 1 --max-replicas 1 `
+      --env-vars "MASTER_URL=$masterUrl" "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)" `
       --query "properties.provisioningState" -o tsv 2>$null
     Check ($state -eq "Succeeded") $name
   }
   Bot
-  Write-Host "`nFleet up. Watch it register:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
+  Write-Host "`nFleet up (signature verification ON). Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
 }
 
 function Down {

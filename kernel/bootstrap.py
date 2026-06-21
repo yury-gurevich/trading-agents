@@ -8,13 +8,40 @@ External I/O: master HTTP endpoint (POST /ehlo).
 
 from __future__ import annotations
 
+import base64
 import json
+import os
 import urllib.request
 import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+def _pem_from_env(raw_var: str, b64_var: str) -> str | None:
+    """PEM from *raw_var* (verbatim) or *b64_var* (base64-decoded); None if neither.
+
+    Base64 avoids the multi-line-PEM problem when passing keys as Container Apps
+    env vars / az CLI args.
+    """
+    raw = os.environ.get(raw_var)
+    if raw:
+        return raw
+    encoded = os.environ.get(b64_var)
+    if encoded:
+        return base64.b64decode(encoded).decode()
+    return None
+
+
+def master_public_key_from_env() -> str | None:
+    """Master public key PEM from env (raw or base64); None if absent (no verify)."""
+    return _pem_from_env("MASTER_PUBLIC_KEY_PEM", "MASTER_PUBLIC_KEY_PEM_B64")
+
+
+def master_private_key_from_env() -> str | None:
+    """Master private key PEM from env (raw or base64); None if absent (dev keypair)."""
+    return _pem_from_env("MASTER_PRIVATE_KEY_PEM", "MASTER_PRIVATE_KEY_PEM_B64")
 
 
 def activate_agent(

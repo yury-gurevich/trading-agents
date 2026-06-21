@@ -181,7 +181,11 @@ be a Container Apps secret (stored in the app, not KV, which is the same securit
 Container App–managed secrets). KV path is for externally-issued API keys (Tiingo, Alpaca, etc.).
 Revisit if agent count or rotation frequency makes deploy-time updates burdensome.
 
-**Status.** OPEN — decide before implementing DL-08 work loop.
+**Decision (operator, 2026-06-21).** **Option B — plain Container App env vars.** Neo4j URI +
+user are non-sensitive config; password is stored as a Container Apps secret (in-app, not KV).
+KV path reserved for externally-issued API keys (Tiingo, Alpaca, Anthropic, etc.).
+
+**Status.** CLOSED.
 
 ---
 

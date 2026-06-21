@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-21 23:45 AEST
+**Last updated:** 2026-06-22 00:30 AEST
 
 **Next: S77–S79 — "Agents Actually Do Work" sequence (see DL-07/DL-08 in design-log).**
 Three planned sprints:

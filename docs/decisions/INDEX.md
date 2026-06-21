@@ -17,6 +17,7 @@ for the rationale instead of re-deriving it.
 | [0009](0009-azure-native-tech-stack.md) | Azure-native infrastructure standard | ✅ Accepted | What is the approved infrastructure list? Can we add Prometheus, Celery, Postgres, Grafana? | `azure` `infrastructure` `stack` `prometheus` `celery` `postgres` |
 | [0010](0010-llm-interaction-quality-gate.md) | LLM interaction quality gate (eval-gated prompts, DSPy) | ✅ Accepted | How do we stop LLM output quality degrading across model/provider/fallback/functionality changes? DSPy, EvoPrompt, or both? | `llm` `prompts` `dspy` `evoprompt` `champion-challenger` `p10` |
 | [0011](0011-container-registry-ghcr.md) | Container registry: GitHub Container Registry (GHCR) | ✅ Accepted | Where do we store Docker container images? DockerHub, GHCR, or Azure Container Registry? | `docker` `ghcr` `github` `container-registry` `p15` `ci-cd` |
+| [0012](0012-platform-domain-separation.md) | Platform/domain separation: substrate vs trading pack | ✅ Accepted | Is this a trading app or a domain-agnostic platform? Where is the substrate↔pack wall, and is it enforced now or just declared? | `platform` `substrate` `decoupling` `boundaries` `text-defined-business` |
 
 ## Status legend
 
@@ -26,7 +27,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0012`.
+1. Next number is `0013`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

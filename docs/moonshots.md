@@ -221,6 +221,47 @@ how to watch for.
 
 ---
 
+## 7. The platform bootstraps its own proof (meta-moonshot)
+
+> **Status:** a dream — like everything here was at the start of its life (owner, 2026-06-21).
+> Qualitatively different from #1–#6: those make *trading* better; this is about the
+> **platform underneath trading.** Prerequisite: trading fully shipped + the substrate/pack
+> wall clean (ADR-0012). Until a second pack exists, this is not even meaningful to attempt.
+
+**The realization.** What we built is not a trading system — it is a **substrate for
+text-defined businesses** (master bootstrap, minimum-privilege capability grants, typed
+contracts on a bus, the laws framework, the ops constitution, the provenance graph). Trading
+is the *first pack* expressed on it. Nothing financial is load-bearing in the substrate;
+swap the pack and the same machine could run a shoe factory or a print shop — agents that
+drive machinery instead of a broker, governed by the same laws.
+
+**The experiment.** Have the platform *independently* execute the prompt **"create me a stock
+trading company"** — synthesising the agents, laws, contracts, capability grants and gates
+from intent — and then **compare its output against the hand-drafted system we built.**
+
+- The **hand-built trading pack is the golden reference.**
+- The **autonomously-generated pack is the candidate.**
+- The **delta** (missing agents, weaker laws, wrong boundaries, absent gates) is the metric.
+- **Continuous improvement (LAW-01)** drives the delta toward zero, run after run.
+
+**Why it is the whole thesis as an experiment.** This is champion–challenger (ADR-0010)
+lifted from *prompts* to *entire businesses* — the platform grading itself against the one
+business we *know* is correct. The day the delta closes, the substrate has demonstrated it
+can synthesise what a human architect synthesised. That is not a feature; it is the proof
+that "text-defined business" is real.
+
+**Why daring / why gated.** Same discipline as #3, one level up: the generator is
+**bounded, falsifiable, and gated** — it proposes a pack, the eval (delta vs golden) judges
+it, the operator promotes. It never auto-deploys a synthesised business. Deterministic core,
+LLM as the bounded synthesiser.
+
+**What it depends on.** Trading done (the reference must exist and be trusted); the
+substrate↔pack wall held clean from now (ADR-0012) so a pack can be *generated against* a
+domain-agnostic substrate; and at least one second pack to prove the abstraction before this
+is more than introspection.
+
+---
+
 ## Cross-cutting bet: privacy-first local execution
 
 If the target persona is the *suspicious, initially weary consumer*, the

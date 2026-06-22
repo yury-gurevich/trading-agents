@@ -539,3 +539,47 @@ trustworthy; the only constraint is that restore is a manual console operation, 
 
 **Status.** NOTED — operational finding, no open decision. Revisit `aura.ps1 restore` if Neo4j later
 exposes the restore endpoint to API keys.
+
+---
+
+## DL-12 · Platform/pack separation — master grant policy is the first leak  ·  status: IN PROGRESS (2026-06-22)
+
+**Frame (ADR-0012).** The master is **substrate** (fleet bootstrap mechanism); it must not encode
+trading-pack knowledge. `agents/master/grants.py::DEFAULT_GRANTS` violated this — it hardcoded all 12
+trading agent types and domain capabilities (`broker`, `data_feeds`, `ohlcv`, …) inside the substrate.
+First named leak to close in the platform/pack split.
+
+**Step 1 shipped (2026-06-22): the injection seam.** `MasterAgent.__init__` now takes
+`grant_policy: GrantPolicy | None` (`GrantPolicy = Mapping[str, dict[str, object]]`); `activate()`
+reads the injected policy, not the module global. Default still falls back to `DEFAULT_GRANTS` so
+behavior is unchanged and all callers keep working. Proven by a test that injects a custom policy: a
+`widget` type (absent from `DEFAULT_GRANTS`) activates while `scanner` (present in `DEFAULT_GRANTS`,
+absent from the injected policy) is rejected — i.e. the master genuinely consults the injected policy.
+This is the load-bearing seam; nothing else in the split can proceed without it.
+
+**The hard decision still open — WHERE the trading policy lives + HOW the master receives it.** The
+import boundary (`kernel ← contracts ← agents ← orchestration/surfaces`) blocks the obvious move:
+
+- The trading grant policy is pack config → it belongs in a pack module (e.g. `orchestration/packs/`).
+- But `agents/master/entrypoint.py` (the master's container bootstrap) is in the **agents** layer and
+  **cannot import** `orchestration/packs/` — agents may not import orchestration. So the production
+  composition point for the master cannot pull a orchestration-located policy by import.
+
+**Options (not yet decided):**
+
+- **(a) Policy as data the master loads from config** (a JSON/YAML grant-policy file, path via
+  `MasterSettings`; the trading pack ships the file). Substrate gains a generic "load a grant policy"
+  mechanism; the pack supplies content as *data*, never as a Python import → no boundary violation.
+  Matches the container-per-agent "agents start braindead, configured by data" model. Most correct.
+- **(b) A top-level `packs/` package importable by `agents`** — inverts the dependency (substrate
+  importing pack); contradicts ADR-0012. Rejected.
+- **(c) Leave `DEFAULT_GRANTS` in `agents/master` as the default, relocate only the *type knowledge*
+  later** — defers the real cut; the substrate still ships trading data. Stopgap only.
+
+**Ruled out.** Importing pack grants into the master entrypoint (option b's boundary inversion).
+
+**Status.** IN PROGRESS — seam shipped; placement deferred. Recommendation on record: **(a) grant
+policy as a pack-supplied data file loaded via MasterSettings**. Same pattern will apply to the second
+leak (`agents/master/secret_map.py`, which also enumerates trading agent types). Decide (a) vs revisit
+before relocating `DEFAULT_GRANTS` out of the substrate. Window-limited stopping point: the seam is in,
+green, and reversible; the data-vs-import placement is the next session's first call.

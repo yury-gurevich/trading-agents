@@ -7,6 +7,13 @@ External I/O: none.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
+# A grant policy maps an agent type to its capability grants. The master mechanism
+# treats this as opaque data injected at construction; the trading-specific content
+# below is a pack default, slated to move out of the substrate (ADR-0012, DL-12).
+type GrantPolicy = Mapping[str, dict[str, object]]
+
 # Grants describe the functional interface, never a product name.
 # Secrets resolved from Key Vault (prod) or env vars (dev) are injected via
 # ACTIVATE config; see agents/master/secret_map.py for the per-agent mapping.

@@ -11,15 +11,18 @@ from __future__ import annotations
 from pathlib import Path
 
 from agents.master.grants import GrantPolicy, load_grant_policy
+from agents.master.secret_map import SecretMap, load_secret_map
 
-TRADING_GRANTS_PATH = str(
-    Path(__file__).resolve().parents[3]
-    / "orchestration"
-    / "packs"
-    / "trading_grants.json"
-)
+_PACKS = Path(__file__).resolve().parents[3] / "orchestration" / "packs"
+TRADING_GRANTS_PATH = str(_PACKS / "trading_grants.json")
+TRADING_SECRETS_PATH = str(_PACKS / "trading_secrets.json")
 
 
 def trading_policy() -> GrantPolicy:
     """Load the real trading grant policy used by the deployed fleet."""
     return load_grant_policy(TRADING_GRANTS_PATH)
+
+
+def trading_secret_map() -> SecretMap:
+    """Load the real trading secret map used by the deployed fleet."""
+    return load_secret_map(TRADING_SECRETS_PATH)

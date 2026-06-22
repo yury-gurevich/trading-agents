@@ -1,495 +1,107 @@
 # Project State
 
-**Last updated:** 2026-06-22 16:33 AEST
+**Last updated:** 2026-06-22 22:14 AEST
 
-**S77–S83 SHIPPED + merged to main (0.23.00), GitHub CI green. Graph-pull pipeline complete
-end-to-end; this cycle added the batch-trace subsystem, live-Neo4j hardening (2 real bugs found
-+ fixed on the first Aura run), and the first platform/pack grant-policy injection seam (DL-12).
-Next: S84 — finish platform/pack separation (relocate the trading grant policy out of the
-substrate; DL-12 step 2).**
+**S77–S85 SHIPPED. S77–S83 (graph-pull pipeline) + batch-trace + live-Neo4j hardening merged to
+main (0.23.00). S84+S85 closed BOTH platform/pack leaks in the master (DL-12): the grant policy
+(S84, 0.23.01) and the secret map (S85, 0.23.02) now live in pack data files
+(`orchestration/packs/trading_*.json`), loaded by path and injected — the master substrate names
+zero trading concepts. S84 merged to main + GitHub CI green; S85 on its branch, green locally.
+Next: S86 — deploy wiring (ship the pack JSONs into the master image + set the two MASTER_*_PATH
+env vars), then DL-10 staleness fix / DL-09 filter source.**
 
-- **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
-  `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var
-  names. Neo4j integration test now skips gracefully when Aura is smart-paused.
-- **S78 (0.17.00 MINOR) DONE:** Provider standalone graph-ingestor — `kernel/graph_env.py`
-  `build_graph_from_env()` (reads `NEO4J_URI` from env, falls back to in-memory); `agents/provider/ingest.py`
-  `universe_from_env()` + `ingest_once()` + `ingest_loop()`; provider entrypoint replaces
-  `idle_loop()` with real ingest; `deploy-agents.ps1` passes `NEO4J_*` env vars to all agents.
-- **S79 (0.18.00 MINOR) DONE — vertical slice (DL-08b).** S79 as planned (rewire all 6 agents) had
-  a hole: scanner/analyst fetch market data via **live bus RPC to the provider**, and S78 wrote only
-  a `MarketSnapshot` summary (no bars) — so agents would poll graph triggers but die at
-  `request_market_data`. Shipped the smallest real proof instead: **provider persists the full
-  `MarketData` payload** to the graph (`ingest._write_market_data`); **scanner reads market data
-  from the graph** (`agents/scanner/poll.py` `find_pending` + `scan_market_node`, `SCANNED_BY` edge)
-  instead of bus RPC; **`kernel/work_loop.py`** (`run_once`+`work_loop`) reusable poll loop; scanner
-  entrypoint drops `idle_loop()`. `MARKET_DATA_LABEL` in `contracts/provider.py` keeps the agents
-  islands. 997 passed, 100% coverage.
-- **S80 (0.19.00 MINOR) DONE — scanner→analyst slice (DL-08b).** Provider also persists the full
-  `RegimeContext` (`ingest._write_regime_context`); scanner persists the full `CandidateSet` on its
-  `ScanRun`; analyst reads all three from the graph (`agents/analyst/poll.py`: `find_pending` over
-  `ScanRun` without an `ANALYZED_BY` descendant + `analyze_scan_node`, market via `DERIVED_FROM`
-  descendant + same-day regime by date). Scoring core extracted to `agents/analyst/run.py`
-  (`run_analysis`) shared by the bus + graph paths. **Bug caught by the coverage floor:** lineage is
-  `(scan)-[:DERIVED_FROM]->(market)` so market is a *descendant* not ancestor — first cut walked
-  `ancestors` → silent empty results forever. 1005 passed, 100% coverage.
-- **S81 (next) — extend graph-pull to PM→reporter.** Same bus→graph data-path move for PM,
-  execution, monitor, reporter. Reuse the `poll.py` + shared-core + `work_loop()` template. Closes
-  DL-07c + DL-08 end-to-end. **Critical-path dependency:** these agents need a reachable graph store
-  to actually run — the **Aura trial lapses ~2026-06-29**, so the "permanent graph store ≠ Aura"
-  decision (self-host Neo4j on a small Azure VM) must land before then.
-
-**Architecture decision (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all
-data to Neo4j. Other agents poll the graph for unprocessed work — no Azure Service Bus needed for
-correctness. P14 pub/sub remains as optional fast-path notification. Enables independent per-agent
-start/test/debug. Decision recorded in design-log.md.
-
-**Track B COMPLETE — P15 fleet hardening, PROVEN on Azure 2026-06-21 (then torn down).**
-
-- **Signature verification (0.15.0):** agents verify the master's RSA-PSS signature on ACTIVATE.
-  `kernel/bootstrap.py` `master_public_key_from_env`/`master_private_key_from_env` + `_pem_from_env`
-  resolve keys from raw OR base64 env (base64 dodges multi-line-PEM in az CLI). 12 entrypoints
-  regenerated to resolve+pass the pubkey. `deploy-agents.ps1` generates a stable keypair (gitignored
-  `infra/master-keypair.local.json`), distributes private→master (secret), public→agents (env).
-- **Key Vault (0.15.1):** `trading-agents-kv` (RBAC) + user-assigned identity `trading-agents-master-id`
-  (Key Vault Secrets User) wired into the master deploy via `MASTER_KEY_VAULT_URL` + `AZURE_CLIENT_ID`.
-  Real secrets seeded (tiingo, anthropic; alpaca-paper deferred; finnhub/fmp under different .env names).
-  `AzureKeyVaultSecretStore.get_secret` now returns `''` on not-found (fix — matches Null/EnvVar stores).
-- **Verify-deploy:** full 13-agent fleet up; master read KV via managed identity (logs show vault calls,
-  no auth error); all agents registered (= signatures verified); master/operator/provider/scanner logs
-  clean (no InvalidSignature / Forbidden / CredentialUnavailable). Torn down + Aura paused → spend 0.
-- **Neo4j → Aura (operator request):** local `.env` repointed `NEO4J_URI`/`NEO4J_TEST_URI` →
-  `neo4j+s://8cf6d231…`, db `neo4j`; the live integration test now **passes against Aura** (was failing
-  on dead localhost). DL-05 posture: real Aura while trial lasts, smart-paused.
-- **Open (DL-07):** secret-name reconciliation — `.env` uses `PROVIDER_FINNHUB_API_KEY`/`FNP_API_KEY`/
-  `ALPACA_API_KEY` (paper); `secret_map.py` expects `FINNHUB_API_KEY`/`FMP_API_KEY`/`ALPACA_KEY_ID`.
-  Reconcile before the event loop consumes config. **Remaining trading work (D) is data-blocked**
-  (P12 news runway), so running the live fleet is what unblocks it.
-
-**Shipped: `MASTER_GRAPH=memory` toggle (0.13.0→0.14.0).** `agents/master/entrypoint.py`
-`select_graph_store()` picks the master's graph backend — `memory` (`InMemoryGraphStore`,
-rebuilt on boot, zero deps) else Neo4j (default). Implements design-log **DL-05**: the cloud
-fleet runs **in-memory** (no Neo4j/Aura dependency) until trading needs durable persistence,
-then a small VM. The Aura trial can now lapse harmlessly. **972 tests**, 100% coverage;V
-GitHub CI green. (Big-picture context for this stretch lives in `docs/design-log.md` +
-`ops/` + ADR-0012; this was the one concrete code change converting DL-05 into working code.)
-
-**S75 shipped: P15 Azure Key Vault secret distribution (version 0.12.0→0.13.0).**
-
-- `agents/master/key_vault.py`: `SecretStore` Protocol + `NullSecretStore` (tests/default) +
-`EnvVarSecretStore` (local dev) + `AzureKeyVaultSecretStore` (prod, `# pragma: no cover`).
-`agents/master/secret_map.py`: `AGENT_SECRETS` entitlement table (provider/execution/operator only)
-`resolve_config(agent_type, store)` → flat `UPPER_SNAKE` dict, empties skipped.
-`MasterAgent.activate()` now calls `resolve_config` and populates `ACTIVATE.config` with per-agent
-minimum-privilege secrets. `main()` selects `AzureKeyVaultSecretStore` when `MASTER_KEY_VAULT_URL`
-is set, else `EnvVarSecretStore`. `NullSecretStore` backward-compat: all existing tests checking
-`config == {}` pass unchanged. DRIFT-002 in master laws RESOLVED S75. azure-keyvault-secrets +
-azure-identity added to azure extra. **971 tests**, 100% coverage. **0.12.0→0.13.0** (feat/MINOR).
-
-**S76 SHIPPED — FULL 13-AGENT FLEET PROVEN ON AZURE 2026-06-21 (then torn down to stop spend).**
-Run results:
-
-- `build-images.yml` matrix built **all 13 agent images** → GHCR (`ghcr.io/yury-gurevich/trading-agents-*`),
-  ~1 min for 12 light images + the heavy forecaster (torch). ADR-0011 registry = GHCR.
-- Deployed master + all 12 trading agents to Container Apps (`trading-agents` RG). master booted, connected
-  to **Aura** (throwaway Professional trial `8cf6d231`, GCP Sydney), served handshakes on internal ingress.
-- Each agent EHLO'd → master issued signed ACTIVATE → persisted registry to Aura. Final state verified by
-  direct Cypher: **Session 1 / AgentInstance 12 (all agents active) / CapabilityGrant 27**. Cross-cloud
-  Azure→GCP graph write confirmed working.
-- **Torn down:** all 13 Container Apps deleted + Aura paused → spend back to ~zero.
-- **New ops tooling (committed):** `infra/aura.ps1` (Aura lifecycle — I manage it via API, no console),
-  `infra/status.ps1` (one-command fleet dashboard), `infra/fleet-graph.ps1` (interactive registry graph in
-  browser), `infra/setup-github-ci.ps1`. Azure deploy identity = OIDC (committed in `docs/ci-cd-setup.md`).
-
-**Done:** Part A (build pipeline) + full-fleet deploy **proven manually**. **Remaining S76:** codify the
-proven deploy into `infra/deploy-agents.ps1` + Part C workflow; stable RSA keypair + signature verification
-on deployed agents (smoke test skipped verification via no-pubkey path); Key Vault provisioning (Part B).
-**Permanent graph store ≠ Aura** (user can't afford it) — target = self-host Neo4j on a small Azure VM,
-decide before the Aura trial lapses **~2026-06-29**. **Minor follow-up:** deployed `AgentInstance.instance_id`
-persisted as None in Aura — verify the master's graph write. **Note:** agents currently boot→EHLO→idle;
-the continuous trading event loop is not wired yet (later phase).
-
-**Operator directive (2026-06-21): keep WSL2 OFF until the Aura trial expires** — local Docker/Neo4j stay
-dormant while Aura is the active graph store. **Deferred to post-trial cleanup:** the Ubuntu-22.04 WSL
-`ext4.vhdx` has grown to **128 GB** (C: only ~90 GB free); reclaim it then via `docker image prune -a`
-
-- `docker builder prune` (preserve volumes → keep local Neo4j data) then `wsl --shutdown` + compact the
-vhdx. Do NOT start WSL2 before the trial ends.
+**How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* = exists but
+inactive. *Recent sprints* = the last ~8 shipped; older history is archived (see Archive). Update
+at every transition. Stamp "Last updated" with Melbourne local time.
 
 ---
 
-**S74 shipped: P15 RSA signing + agent entrypoints (version 0.11.0→0.12.0).**
-`kernel/crypto.py`: `generate_keypair()`, `sign_pss()`, `verify_pss()` — RSA-PSS 2048-bit
-SHA-256. `kernel/bootstrap.py`: `activate_agent()` with injectable `_send` (test-safe), scheme-
-guarded `_http_post()`, `idle_loop()` placeholder. `agents/master/http_server.py`:
-`handle_health()` + `handle_ehlo()` pure testable functions + `serve()` (pragma: no cover).
-`agents/master/entrypoint.py`: `build_app()` testable; `main()` loads PEM from env or generates
-dev keypair. 12 trading-agent entrypoints (`agents/{name}/entrypoint.py`): send EHLO to master,
-verify signed ACTIVATE, then idle. `MASTER_PUBLIC_KEY_PEM` env var wired into docker-compose.
-`x-agent-common` YAML anchor DRYs up compose. Key Vault deferred to S75 (DRIFT-002).
-**951 tests**, 100% coverage. **0.11.0→0.12.0** (feat/MINOR).
+## Recent sprints (most recent first)
 
-**Now:** — (S74 complete). Next: S75 — Azure Key Vault integration (master resolves secrets,
-populates `config={}` in ACTIVATE) + DockerHub push + Container Apps deploy manifest.
-
----
-
-**S73 shipped: P15 foundation — master bootstrap agent + per-agent Dockerfiles.**
-`agents/master/` package: `MasterAgent` (`start/activate/drain`), `DEFAULT_GRANTS` privilege
-table (12 agent types), `MasterSettings` (3 handshake tunables), graph write helpers, 11 tests
-(100% coverage). `contracts/master.py`: `AgentState` (StrEnum), `EHLOMessage`, `ACTIVATEMessage`,
-`DRAINMessage`. `agents/master/laws/laws.md` LOCKED v1 (18 sections, prefix MST, 10 clauses 🟩).
-13 per-agent `Dockerfile`s (master + 12 trading agents). Multi-service `docker-compose.yml`.
-RSA signing + Key Vault deferred to S74 (DRIFT-001/002 in laws). No version bump (scaffolding).
-**906 tests**, 100% coverage.
-
----
-
-**S72 shipped: ADR-0010 immediate close — `system_prompt` tunable on operator + forecaster.**
-`system_prompt: str = tunable("")` added to `OperatorSettings` (champion slot for DSPy-compiled
-interpret prompt; empty = dynamic `build_interpret_system()`, non-empty = DSPy-promoted static
-override) and wired into `_interpret_command`. Pre-declared on `ForecasterSettings` (unused until
-P13 LLM path ships). Both agent law PARAM sections updated. No version bump (no new capability).
-
----
-
-**S71 shipped: per-agent law backfill (remaining 7 of 11) — monitor/reporter/forecaster/
-operator/supervisor/curator/researcher LOCKED v1.** Laws authored from first principles for all
-7 remaining agents (18 sections each: IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/
-CAP/PARAM + divergence register + changelog). Citation pass across 18 test files; 124 new green
-clauses (MON 19/40, RPT 17/40, FORE 15/46, OPR 14/51, SUP 21/49, CUR 20/48, RES 18/44). 7
-test-plan.md files created. All 7 laws.md LOCKED v1. No version bump (docs-only sprint).
-**All 11 non-provider agents now have LOCKED v1 laws.**
-
-**Now:** — (all agents locked; law cycle complete).
-
----
-
-**S70 shipped: per-agent law backfill (4 of 11) — scanner/analyst/PM/execution LOCKED v1.**
-Laws authored from first principles for 4 core trading-loop agents (18 sections each: IDN/IN/TRG/
-OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/CAP/PARAM + divergence register + changelog).
-Citation pass across 12 test files; 95 new green clauses (SCAN 18/39, ANLZ 24/43, PM 23/43,
-EXEC 30/49). `test_scanner_explain.py` split out to stay under 200-line hard block. All 4
-laws.md LOCKED v1. **895 tests**, 100% coverage. No version bump (docs-only sprint).
-
-**S69 shipped: provider law cycle — template locked (v0.10.0→0.11.0).** Two OPEN drifts
-corrected: DRIFT-006 (benchmark promoted to first-class `DataRequest.benchmark_ticker` field +
-`MarketData.benchmark`; `taint=False` so a degraded benchmark never sets `used_fallback` on
-candidate quality; analyst uses `market.benchmark` directly); DRIFT-007 (`caller_authorized`
-predicate + `allowed_callers` gate in all three buses — InProcess, Celery, Azure Service Bus;
-`AgentBase.bind()` threads it; provider capability matrix now enforced for `get_market_data`
-and `get_regime`). Law-ID citation pass across 7 provider test files; `test-plan.md` updated
-to 23/43 clauses 🟩. `agents/provider/laws/laws.md` LOCKED v1; `docs/laws/_TEMPLATE.md` lock
-comment added — safe to copy to the 11 remaining agents. **894 tests**, 100 % coverage.
-**version 0.10.0→0.11.0** (feat/MINOR, HARD RULE).
-
-**S68 shipped: analyst Alpha158 feature pillar (qlib Phase Q2).** `AlphaFeatureRow` dataclass
-(22 fields: ROC/STD/MAX/MIN/IMAX/IMIN at 4 horizons) + `compute_alpha_features()` (returns None
-< 62 bars) + `score_alpha158()` (cross-sectional z-score → logistic 0–100); `ScoreBreakdown`
-gains `alpha158_score`; `_composite()` renormalised over present pillars; pillar off by default
-(`alpha158_pillar_weight=0.00`); operator enables after 20-day IC validation; pyqlib-free (3.13
-constraint). **890 tests**, 100 % coverage. **version 0.9.0→0.10.0** (feat/MINOR, HARD RULE).
-
-**P14 complete — inter-agent comms re-architecture (S60–S67).** Replaced synchronous
-RPC hand-offs with event-driven publish/subscribe + claim-check (ADR-0005). All 7 agents
-migrated to dual-mode (RPC retained + pub/sub added via `bind()` override); kernel gains
-`claim_check_write/read` primitive and `ReadyEvent`; dispatcher rewritten as a
-trigger-emitter (publishes `run.trigger`, subscribes `report.snapshot.ready`, step
-sequencing removed); `AzureServiceBusBus` + `AzureServiceBusSettings` shipped as optional
-`azure` dep (in-process shim for RPC; Azure I/O path `# pragma: no cover`; parity test
-skips without creds). `pm_run_id` threaded through execution→monitor→reporter props so
-the PMRun node is found correctly by reporter. **863 tests**, 100 % coverage,
-**version 0.8.0→0.9.0** (feat/MINOR, HARD RULE). `build-plan.md` P14 → **complete**.
-
-**S59 shipped: forecaster LightGBM training pipeline + return IC scorecard (qlib Q1
-follow-on).** `build_label_rows` + walk-forward `split_rows` + `train_and_save` offline
-script; new `return_scorecard` capability (Pearson IC + hit_rate + directional quartile
-breakdown vs injected forward returns); CONTRACT 0.3.0→0.4.0; **version 0.7.0→0.8.0**.
-Not news-runway blocked — consumes `price_cache` OHLCV only.
-
-**S58 shipped: forecaster LightGBM price/return shadow signal (qlib Phase Q1).** `ReturnModel`
-Protocol + lazy `LightGBMReturnAdapter` + pure `_features.py` (5 price-derived features) +
-provider OHLCV request → `ShadowPrediction` (shadow, never gates) + `Model` node;
-`lightgbm`-direct (`pyqlib` is 3.13-incompatible — confirmed R001); CONTRACT 0.2.0→0.3.0;
-**version 0.6.0→0.7.0**.
-
-**S57 shipped: forecaster sentiment scorecard harness (P12).** New `sentiment_scorecard` capability on
-the forecaster compares the three scorers (lexicon + provider `SentimentReading`, FinBERT
-`ShadowPrediction`) vs injected forward returns: pure-Python Pearson + 2-regressor OLS
-(`domain/statistics.py`), `comparison_metrics` (`domain/scorecard.py`) for pairwise correlations,
-per-scorer IC, FinBERT-on-the-other-two regression + residual std + **incremental IC**; `comparison.py`
-inner-joins readings by `{analyst_run}:{ticker}`; forward returns are injected (never a runtime
-dependency). Advisory only (`promotion_eligible` always False). forecaster CONTRACT 0.1.0 -> 0.2.0
-(reads only, owns_graph unchanged); `feat` -> project version 0.5.0 -> 0.6.0. **756 tests** (+17), floor
-100.00. **P12 is code-complete** - remaining work is operational (live news runway), then run the
-harness and decide promotion via P10.
-
-**S56 shipped: analyst champion upgraded to the full Loughran-McDonald master dictionary (P12).** The
-binding sentiment pillar (`sentiment_rules.py`) now loads the genuine LM master dictionary (Positive
-354, Negative 2355; vendored under `agents/analyst/domain/data/`, counts match the published
-dictionary) **unioned** with the prior curated headline terms - LM omits headline verbs (beat, surge,
-plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop), kept via the union; the two
-sources are polarity-disjoint (asserted). `score_sentiment` interface + behaviour unchanged (the union
-is additive for the fixtures, so no pinned score re-pinned). `feat` -> **project version 0.4.0 ->
-0.5.0** (MINOR, HARD RULE); **739 tests** (+4), floor 100.00. **P12 remaining is now just the
-scorecard harness** (data-runway-gated); the full-LM-dictionary champion upgrade is done.
-
-**S55 shipped: reporter re-point to real $ PnL — P11 COMPLETE** (the reporter's trade-outcome metrics
-now read the monitor's realized pnl_cents (S43) off each CloseDecision instead of S41's trigger-derived
-%; collect_trade_outcomes(close_decisions) → dollar profit_factor + expectancy_cents +
-closed_trades_with_pnl across all triggers incl. time (the % approx dropped time exits);
-expectancy_pct → expectancy_cents rename, no contract change; the_implied_pnl_pct derivation +
-position pairing removed. feat → **project version 0.3.0→0.4.0** (MINOR, HARD RULE); **735 tests**,
-floor 100.00. **P11 (deterministic-logic depth) is complete** — analyst engine, PM gates, scanner
-(beta+earnings), reporter metrics, monitor realized PnL all ported). **PR automation live:** Dependabot
-non-major PRs auto-merge once CI passes (branch protection: quality/test/security; majors stay open).
-**CodeQL restored:** codeql.yml re-added; CI security lane now includes conditional CodeQL steps gated
-by jobs.security.env.GHAS_ENABLED (private repo still requires GHAS/code scanning enablement).
-
-**S43 shipped: monitor realized PnL** (P11 — pure `realized_pnl_cents=(exit-entry)xqty` integer cents;
-`CloseDecision.pnl_cents`; decision logic extracted to `decide.py`; **CONTRACT 0.1.0 to 0.2.0**;
-version 0.2.0 to 0.3.0).
-
-**S54 shipped: scanner earnings-window exclusion** (P11 — consumes S42's `MarketData.earnings`; drops
-candidates with earnings within `earnings_exclusion_days` (5) of the scan as-of; additive + dormant;
-the scanner earnings pair (S42->S54) complete; version 0.1.0 to 0.2.0).
-
-**S42 shipped: provider earnings-calendar feed** (P11 — `DataSource.fetch_earnings` via Finnhub
-`/calendar/earnings`, pure `_parse_next_earnings` -> earliest upcoming date, field-gated into
-`MarketData.earnings`; CONTRACT 0.3.0 to **0.4.0**; the five optional field-gates extracted to
-`market_fields.py` dropping provider `agent.py` 197->131L; additive + dormant).
-
-**S41 shipped: reporter profit-factor + expectancy** (P11 — new `agents/reporter/domain/trade_outcomes.py`
-pairs Position<->CloseDecision, derives `profit_factor`/`expectancy_pct`/`closed_trades_with_pnl` from
-`stop_pct`/`target_pct` props; time exits excluded; merged into `RunSnapshot.portfolio_metrics` on both
-the live and degraded paths; no contract change, no new dep). Follow-up unchanged: S43 monitor `pnl_cents`
--> reporter re-point to real $ PnL (memory `realized-pnl-sequencing`).
-
-**S53 shipped: provider laws CAP + PARAM sections** (ADR-0007 backfill — runtime capability declaration
-
-- 20-entry parameter table for `agents/provider/laws/laws.md`; establishes pattern for all 11 remaining
-agent backfills; ADR-0007 docs committed).
-
-**ADR-0007 accepted: container-per-agent + master bootstrap** (one Docker image per agent → DockerHub →
-Azure Container Apps; master agent is sole Key Vault accessor; agents start braindead, activate via
-signed EHLO/ACTIVATE handshake; Neo4j is the operational registry; law files gain CAP + PARAM sections;
-full risk assessment + mitigations in `docs/decisions/0007`; P14 milestone).
-**Graph store: local Neo4j Enterprise Docker.** `infra/neo4j/local/docker-compose.yml`, db
-`traiding-agents`, `bolt://localhost:7687`. **DEP-NEO4J 01/02/03 all GREEN** against local. Aura instance
-`02812797` was empty at cutover → **deleted 2026-06-19**. Details: memory `neo4j-aura-to-local-migration`.
-
-**How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* =
-exists but inactive. *Shipped* = landed. Update at every transition.
+- **S85 — secret map out of the substrate (DL-12 leak #2; 0.23.01→0.23.02, PATCH).** `AGENT_SECRETS`
+  deleted from `agents/master`; the `(kv_name, env_name)` table moved to
+  `orchestration/packs/trading_secrets.json`, loaded via `MasterSettings.secret_map_path`
+  (`load_secret_map`) and injected; `resolve_config(agent_type, store, secret_map)` takes the map as a
+  param. The master substrate now names zero trading concepts. **1054 tests**, 100% coverage. On branch
+  `sprint-85-platform-pack-secret-map`, green locally (not yet merged).
+- **S84 — grant policy out of the substrate (DL-12 leak #1; 0.23.00→0.23.01, PATCH).** `DEFAULT_GRANTS`
+  deleted; the 12-agent grant table moved to `orchestration/packs/trading_grants.json`, loaded via
+  `MasterSettings.grant_policy_path` (`load_grant_policy`) and injected — read by path, never imported,
+  so the `agents↛orchestration` boundary holds. Merged to main, GitHub CI green.
+- **post-S83 (on the sprint-83 branch; 0.22.00→0.23.00) — batch-trace + live-Neo4j hardening.**
+  `orchestration/batch_trace.py` + `scripts/trace_run.py` + `run_local.py --real/--trace` walk the
+  provenance chain and print per-stage numbers (incl. the provider `quality` block and per-ticker analyst
+  REJECT reasons). First **live Aura run** found + fixed **2 real Neo4j bugs the in-memory store hid**:
+  nested-map node properties (JSON-encode at the store boundary, `kernel/graph_support.py`) and a
+  list/tuple idempotency mismatch in `_append_props`. Backup/restore proven via a sentinel node. Captured
+  DL-09 (filter training source), DL-10 (staleness gate counts calendar days but means trading sessions),
+  DL-11 (Aura ops). Merged to main.
+- **S83 — graph-pull orchestration trigger + e2e demonstrator (0.22.00).** Dispatcher writes one
+  `RunRequest`; the provider is now graph-pull on it; every downstream agent wakes off its prerequisite
+  gate. `orchestration/start.py` (`preflight` + `place_run_request`), `local_pipeline.cascade_once`,
+  `scripts/run_local.py`, `test_graph_pull_e2e.py`. Closes DL-08's explicit-start gap.
+- **S82 — execution+monitor+reporter graph-pull (0.21.00).** Final three agents move bus→graph data path;
+  **closes DL-08 end-to-end** (provider→…→reporter all graph-pull).
+- **S81 — analyst→PM graph-pull (0.20.00).** PM reads the `RecommendationSet` + market from the graph.
+- **S80 — scanner→analyst graph-pull (0.19.00).** Provider persists full `RegimeContext`; scanner persists
+  full `CandidateSet`; analyst reads all three from the graph. Scoring core extracted to
+  `agents/analyst/run.py` shared by the bus + graph paths.
+- **S79 — provider→scanner vertical slice + `work_loop` (0.18.00, DL-08b).** Provider persists the full
+  `MarketData` payload; scanner reads market data from the graph (`agents/scanner/poll.py`), not bus RPC;
+  reusable `kernel/work_loop.py`.
+- **S78 — provider standalone graph-ingestor (0.17.00).** `kernel/graph_env.build_graph_from_env`;
+  `agents/provider/ingest.py` (`universe_from_env`/`ingest_once`/`ingest_loop`); provider entrypoint
+  replaces `idle_loop` with real ingest.
+- **S77 — credential-naming reconciliation (0.16.1, PATCH).** `secret_map.py` emits
+  `PROVIDER_TIINGO_API_KEY` (not bare); aligned the three entitled agents' env-var names; Neo4j integration
+  test skips gracefully when Aura is smart-paused.
 
 ---
 
 ## Now
 
-**P15 — pipeline COMPLETE + orchestrated + run on real Neo4j. Version 0.23.00, merged to main.**
-S77–S83 shipped. DL-08 closed end-to-end (provider→…→reporter); S83 added the explicit start
-(dispatcher writes one `RunRequest`, every downstream agent wakes off its prerequisite gate).
-This cycle (on the sprint-83 branch, post-S83):
+Platform/pack separation: **both master leaks closed.** With S84+S85 the master substrate is
+domain-agnostic — grants and secrets are pack-supplied data loaded by path, not hardcoded. The
+graph-pull pipeline (S77–S83) runs end-to-end and has been exercised on real Aura. S85 is on its branch,
+green locally, awaiting a merge decision.
 
-- **Batch-trace subsystem** — `orchestration/batch_trace.py` + `scripts/trace_run.py` +
-  `run_local.py --real/--trace`: walks the provenance chain and prints per-stage numbers, now
-  including the provider `quality` block (DEGRADED/stale/notes) and per-ticker analyst REJECT
-  reasons. Turned an opaque "scored=0 rejected=2" into a 5-minute diagnosis.
-- **First live Aura run** of the graph-pull pipeline (3 tickers, real Tiingo/Finnhub) — found and
-  fixed **2 real Neo4j bugs the in-memory store hid**: nested-map node properties (JSON-encode at
-  the store boundary, `kernel/graph_support.py`) and a list/tuple idempotency mismatch in
-  `_append_props`. Backup/restore proven via a sentinel node (DL-11).
-- **DL-10** captured: the staleness gate counts calendar days but means trading sessions — a
-  holiday weekend (Juneteenth) made fresh Jun-18 data read as stale, killing the run. OPEN.
-- **DL-12 step 1**: `MasterAgent` now takes an injected `grant_policy` (default preserves
-  behavior) — the platform/pack separation seam. The leak (`DEFAULT_GRANTS` in the substrate) is
-  not yet relocated; that is S84.
-
-Proven by `test_graph_pull_e2e.py` + `scripts/run_local.py` and a live Aura run.
-
-**Critical-path now #1:** Aura trial lapses ~2026-06-29 (~7 days). Permanent graph store
-(self-host Neo4j on a small Azure VM, ~$15/mo; Enterprise if the dev licence lands) must be
-stood up before then — the whole graph-pull fleet has nowhere durable to run otherwise.
-Reminder set for 2026-06-24 (dev-licence check). Calendar event also set.
+**Architecture (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all data to Neo4j;
+other agents poll the graph for unprocessed work — no Service Bus needed for correctness. P14 pub/sub
+remains an optional fast-path notification. Full detail in `docs/design-log.md`.
 
 ## Next
 
-- **S84 (active) — finish platform/pack separation (DL-12 step 2).** Relocate the trading grant
-  policy out of the substrate: master loads a pack-supplied policy as **data** (file path via
-  `MasterSettings`, not a Python import — avoids the `agents↛orchestration` boundary), then the
-  `DEFAULT_GRANTS` default is removed from `agents/master`. Same pattern then applies to the
-  second leak, `agents/master/secret_map.py`. Recommendation + options on record in DL-12.
-- **Fleet run-through on real store** — the live Aura run now works (this cycle); next is the
-  full `provider→reporter` cascade against a *permanent* store, not the smart-paused trial.
-- **DL-10 staleness fix** — count trading sessions, not calendar days (market-calendar). OPEN.
+- **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
+  `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
+  `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master
+  Dockerfile. **Without this, a deployed master loads empty policies and rejects every agent** — must land
+  before the next fleet deploy.
+- **DL-10 staleness fix** — count trading sessions, not calendar days (market-calendar aware). OPEN.
 - **DL-09 filter training source** — per-ticker verdict + bypass + dual labels → curator dataset.
+- **Permanent graph store** — self-host Neo4j on a small Azure VM for the fleet to run durably (Enterprise
+  if the dev licence lands, else Community).
+- **Fleet run-through on real store** — full `provider→reporter` cascade against the permanent store.
 - **Dispatcher cron** — schedule the daily `RunRequest` so the fleet runs hands-off.
-- **Forecaster + control-plane agents** (operator/supervisor/curator/researcher) work loops;
-  the last `idle_loop()` holders.
+- **Forecaster + control-plane agents** (operator/supervisor/curator/researcher) work loops — the last
+  `idle_loop()` holders.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
+- **`contracts/` substrate/pack split** — the remaining ADR-0012 mix; deferred until a 2nd pack.
 
 ## Workflow
 
-The planning agent writes sprint handovers and maintains documentation
-and progress; a coding agent implements one active sprint at a time on its
-own branch and hands back. See `docs/sprints/README.md`.
+Each sprint/chore on its own branch (`sprint-NN-<slug>`); merge to `main` is the deploy trigger. This
+cycle the operator implements sprints end-to-end (code+tests+CI+commit). See `docs/sprints/README.md`.
 
 ## Parked
 
 - (none)
 
-## Shipped
+## Archive
 
-- **Sprint 70 — Per-agent law backfill (4 of 11)** (implemented directly — no coding agent
-  this cycle). Laws authored from first principles for scanner (SCAN, 39 clauses), analyst
-  (ANLZ, 43), portfolio_manager (PM, 43), execution (EXEC, 49). Citation pass across 12 test
-  files; 95 green clauses (18+24+23+30). `test_scanner_explain.py` split to resolve 200-line
-  hard block. All four `laws.md` files LOCKED v1. No code change; no version bump (docs-only).
-  895 tests, 100% coverage.
-- **P14 complete — Inter-agent comms re-architecture (S60–S67)** (ADR-0005; implemented
-  directly — no coding agent this cycle). `InProcessBus.publish/subscribe` + fan-out (S60);
-  kernel `claim_check_write/read` + `ReadyEvent` (S61); provider (S62), scanner + analyst
-  (S63), PM + execution (S64), monitor + reporter (S65) migrated to pub/sub dual-mode;
-  dispatcher → trigger-emitter, step sequencing removed (S66); `AzureServiceBusBus` +
-  `AzureServiceBusSettings` + `azure-servicebus>=7.12` optional dep (S67). `pm_run_id`
-  threaded execution→monitor→reporter. 8 per-agent pubsub test files + `test_bus_azure` +
-  `test_bus_pubsub` + `test_claim_check` + `test_steps`; dispatcher unit + daily-loop tests
-  rewritten. `contracts/` `owns_graph` += `OrderIntentResult`, `ExecutionResultEvent`,
-  `MonitorDecisionResult`, `ReportSnapshotResult`. `feat` → **version 0.8.0→0.9.0**
-  (MINOR, HARD RULE). **863 tests**, floor 100.00. `build-plan.md` P14 → **complete**.
-- **Sprint 59 — Forecaster: LightGBM training pipeline + return IC scorecard** (qlib Q1
-  follow-on; implemented directly). `build_label_rows` (1-day forward return, no look-ahead)
-  - walk-forward `split_rows` + `train_and_save` offline script. New `return_scorecard`
-  capability: Pearson IC + hit_rate + directional quartile breakdown vs injected forward
-  returns. `promotion_eligible=False` throughout. CONTRACT 0.3.0→0.4.0; `feat` →
-  **version 0.7.0→0.8.0** (MINOR, HARD RULE).
-- **Sprint 58 — Forecaster: LightGBM price/return shadow signal** (qlib Phase Q1;
-  implemented directly). `ReturnModel` Protocol + lazy `LightGBMReturnAdapter` (pickled
-  booster, `# pragma: no cover` on I/O); pure `_features.py` (return_1d/5d/10d, vol_5d,
-  close_to_high); provider OHLCV request → `ShadowPrediction` (shadow=True, never gates)
-  - `Model` node. `lightgbm`-direct — `pyqlib` 3.13-incompatible (R001). CONTRACT
-  0.2.0→0.3.0; `feat` → **version 0.6.0→0.7.0** (MINOR, HARD RULE).
-- **Sprint 57 - Forecaster: sentiment scorecard harness** (P12; implemented directly - no coding agent
-  this cycle). New `sentiment_scorecard` capability comparing the three champion-challenger scorers vs
-  injected forward returns. Pure stats domain: `agents/forecaster/domain/statistics.py` (`pearson`
-  with undefined->None on <2 points or a constant series; population `std`; `ols2` closed-form
-  2-regressor OLS, None on <3 points or collinear regressors) and
-  `agents/forecaster/domain/scorecard.py` (`Observation` + `comparison_metrics` -> `complete_cases`,
-  pairwise `corr_*`, per-scorer `ic_*`, the OLS `finbert_alpha/beta_provider/beta_lexicon/residual_std`,
-  and `incremental_ic_finbert` = the IC of FinBERT's residual after regressing out provider+lexicon;
-  each metric **omitted when undefined**, so a present key is always meaningful).
-  `agents/forecaster/comparison.py` reads SentimentReading (analyst) + ShadowPrediction (own) from the
-  graph and **inner-joins** complete cases by `{analyst_run}:{ticker}`; forward returns are **injected**
-  via the request (never a runtime dependency). The handler emits the existing `Scorecard` (free-form
-  `metrics` dict -> no response change) with `promotion_eligible=False` - never gates; promotion stays
-  the curator's P10 registry. New inbound `SentimentScorecardRequest`; **forecaster CONTRACT 0.1.0 ->
-  0.2.0** (new capability; `owns_graph` unchanged - reads the analyst's label only, no single-writer
-  change). `feat` -> **project version 0.5.0 -> 0.6.0**. 756 tests (was 739; +17 - statistics
-  known-values + None edges, comparison_metrics branches, agent alignment/skip + never-promotes), floor
-  100.00; every module < 200L.
-- **Sprint 56 - Analyst: full Loughran-McDonald master dictionary** (P12 champion deepened;
-  implemented directly - no coding agent this cycle). The binding lexicon in
-  `agents/analyst/domain/sentiment_rules.py` now loads the genuine LM master dictionary - **Positive
-  354, Negative 2355** - vendored as `agents/analyst/domain/data/lm_positive.txt` and
-  `lm_negative.txt` (lowercased, sorted, one word per line; counts match the published 2014 master
-  dictionary exactly; provenance + citation in `data/README.md`) via a tiny `_load_lexicon` reader,
-  **unioned** with the prior curated headline terms (renamed `_HEADLINE_POSITIVE` /
-  `_HEADLINE_NEGATIVE`). LM was built for 10-K filings, so high-signal headline verbs (beat, surge,
-  plunge, rally, jump, tumble, profit, record, upgrade, rise, fell, drop - 42 pos + 41 neg) are
-  **absent** and are kept via the union; the two sources are **polarity-disjoint** (no curated word
-  clashes with LM's opposite polarity - verified empirically and asserted by
-  `test_positive_and_negative_lexicons_are_disjoint`), so the union needs no conflict resolution.
-  `score_sentiment`'s interface and behaviour are unchanged - the union is purely additive for the
-  existing fixtures (every prior "neutral" headline still has zero LM hits), so **no pinned score was
-  re-pinned**. **No contract change** (analyst 0.1.0); the `.txt` assets are exempt from the
-  size/header guards (Python-only) and well under the 500 KB added-file limit. `feat` -> **project
-  version `0.4.0 -> 0.5.0`** (MINOR, HARD RULE). 739 tests (was 735; +4 - LM-only pos/neg scoring,
-  dictionary-loaded sanity, disjointness invariant), floor 100.00; every module < 200L. **P12
-  remaining: the scorecard harness only** (data-runway-gated).
-- **Sprint 55 — Reporter: re-point to real $ PnL** (**P11 COMPLETE**; implemented directly — no coding
-  agent this cycle). `agents/reporter/domain/trade_outcomes.py` rewritten: `collect_trade_outcomes`
-  now takes **only** `close_decisions` and reads the monitor's realized `pnl_cents` (S43) off each
-  `CloseDecision` (pure `_pnl_cents` guards non-int/None), bucketing by **sign** into dollar-based
-  `profit_factor` (gross wins ÷ gross losses), **`expectancy_cents`** (mean realized PnL), and
-  `closed_trades_with_pnl` — across **all** triggers **including time exits**, which S41's
-  trigger-derived `%` approximation had to drop. The `_implied_pnl_pct`/`_pct` derivation and the
-  Position↔CloseDecision pairing are gone (PnL lives on the close node). `result.py` call sites
-  updated (one arg). **`expectancy_pct → expectancy_cents`** rename (unit changed; `portfolio_metrics`
-  is a free-form dict → **no contract change**). `test_trade_outcomes.py` rewritten (incl. a time-exit
-  and a break-even case); the reporter-agent fixture seeds `pnl_cents`. `feat` → **project version
-  `0.3.0 → 0.4.0`** (MINOR, HARD RULE). 735 tests, floor 100.00; every module < 200L. **Closes P11.**
-- **Sprint 43 — Monitor: realized PnL on close** (P11; implemented directly — no coding agent this
-  cycle; the real realized-outcome substrate). New pure
-  `realized_pnl_cents(exit_price_cents, entry_price_cents, quantity) = (exit − entry) × quantity` in
-  `domain/exit_rules.py` (integer cents, gross, long-only, never raises). The per-position decision
-  logic was extracted from `agent.py` into a new `agents/monitor/decide.py::evaluate_one` (evaluate →
-  write check → compute PnL on a close → build the `CloseDecision`), dropping `agent.py` **198 →
-  171L**. `CloseDecision` gains `pnl_cents: int | None = None` (contract field **and** graph node
-  prop, persisted by `write_close_decision`); holds carry `None`. **Monitor CONTRACT `0.1.0 → 0.2.0`**
-  (`owns_graph` unchanged → boundary meta-test green); no other agent changed; existing
-  `(decision, trigger)` slice assertions stayed green (additive). The stop/target/time agent tests
-  gained exact PnL assertions (−600 / +1100 / 0 on the 10000c-entry qty-1 fixture). `feat` → **project
-  version `0.2.0 → 0.3.0`** (MINOR, HARD RULE). 738 tests (+5), floor 100.00; every module < 200L.
-  **Next: reporter re-point** to read this `pnl_cents` for $-based metrics across all triggers.
-- **Sprint 54 — Scanner: earnings-window exclusion** (P11; implemented directly — no coding agent this
-  cycle; consumes the S42 feed, completing the earnings two-sprint pair). The scanner requests the
-  `"earnings_calendar"` field and **drops candidates whose next earnings date is within
-  `earnings_exclusion_days` (5, tunable) of the scan as-of**, attributing `earnings_window` in the
-  filter trace. New pure `_days_to_earnings(ticker, earnings, as_of) -> int | None` (`None` when
-  unknown or already past); the gate runs **after** the beta cap in `apply_filters`; `_survivor`
-  records a `days_to_earnings` metric + an `earnings_window` survived-filter **only when earnings data
-  is present** — mirroring the beta cap so the gate is **additive + dormant** (no earnings data →
-  nothing changes → every existing scanner + pipeline test stayed green untouched).
-  `request_market_data` now requests `("ohlcv", "earnings_calendar")`; the agent computes the scan
-  window once and threads `market.earnings` + `window.end` through. **No contract change** (Candidate
-  already carries `metrics`); no boundary-map change; provider already serves the field (S42). `feat`
-  → **project version `0.1.0 → 0.2.0`** (MINOR bump — the HARD RULE's first application). 733 tests
-  (was 726; +7 — 6 filter-branch + 1 agent end-to-end), floor 100.00; every module < 200L (filters
-  127, agent 170). The scanner deterministic port (beta S50 + earnings S54) is now complete.
-- **Sprint 42 — Provider: earnings-calendar feed** (P11; implemented directly — no coding agent this
-  cycle; unblocks the scanner earnings-window exclusion). New
-  `DataSource.fetch_earnings(tickers, window) -> dict[Ticker, date]` across the Protocol +
-  `FakeDataSource` (fixture + `fail_earnings`); the **real** `FinnhubDataSource.fetch_earnings`
-  (`/calendar/earnings`, `_download_earnings` `# pragma: no cover`, `earnings_lookahead_days` init
-  param) via a pure `_parse_next_earnings(raw, on_or_after)` — earliest ISO date ≥ as-of, never raises
-  — plus `_parse_iso_date`, both in `fundamentals_parse.py`; stubs on tiingo/stooq/fmp/av_sentiment +
-  the orchestration double; composite delegates to Finnhub and threads
-  `finnhub_earnings_lookahead_days` (tunable, 30). Agent field-gates `"earnings_calendar"` →
-  `MarketData.earnings` with the same degrade-to-empty + `"earnings_degraded"` note + `used_fallback`
-  semantics as news/sectors. **Refactor:** the five optional field-gates were extracted from
-  `agent.py` into a new focused `market_fields.py` (`collect_optional_fields` + a PEP-695-generic
-  `_fetch_optional`) — behaviour-preserving (existing field-gate tests untouched), dropping provider
-  `agent.py` **197 → 131L**. CONTRACT `0.3.0 → 0.4.0`; `external_io` unchanged; boundary meta-test
-  green; **no other agent changed** (every existing caller requests neither field → `earnings == {}`,
-  no re-pin). 726 tests (was 714; +12), floor 100.00; every module < 200L. Next: the **scanner**
-  earnings-window exclusion consumes `MarketData.earnings`.
-- **Sprint 41 — Reporter: profit-factor + expectancy** (P11; implemented directly — no coding agent
-  this cycle). New pure `agents/reporter/domain/trade_outcomes.py` (70L): `collect_trade_outcomes`
-  pairs each `Position` to its `CloseDecision` by `position_id`, buckets by trigger
-  (`target` → win `+target_pct`, `stop` → loss `−stop_pct`), and returns `profit_factor`,
-  `expectancy_pct`, `closed_trades_with_pnl`. **Time exits are excluded by design** (their implied PnL
-  needs the `PositionCheck` exit price — out of scope; documented in the module header); the counter
-  tells callers whether the metrics are meaningful. `profit_factor` and `expectancy_pct` use the
-  `0.0` zero-denominator/empty sentinel (mirrors `approval_rate`); the function never raises. Wired
-  into `result.py` — `build_snapshot` **and** `degraded_snapshot` both merge the three keys into
-  `RunSnapshot.portfolio_metrics`, so callers never KeyError on either path. PnL is derived purely
-  from `stop_pct`/`target_pct` props already on `Position` (written by the monitor) — **no new graph
-  traversal, no new contract field** (reporter CONTRACT 0.1.0, `owns_graph` untouched), **no new
-  dependency**. Shared `seed_full_graph` Position deliberately left without pct props → existing
-  snapshot test unaffected (**no value re-pinned**). 714 tests (was 703; +11 — 9 unit + 2 snapshot
-  integration), floor 100.00. Next: S43 monitor `pnl_cents` (now unblocked) → reporter re-point to
-  real $ PnL across all triggers (memory `realized-pnl-sequencing`).
-- **Sprint 53 — Provider laws: CAP + PARAM sections** (ADR-0007 backfill; S53). Two new law
-  sections added to `agents/provider/laws/laws.md`: `CAPABILITY DECLARATION (CAP)` — a JSON
-  schema describing the provider's four runtime interface needs (messaging subscribe/publish, graph
-  append-write, external HTTPS read, secrets) in interface-first terms; `PARAMETERS (PARAM)` — a
-  full 20-entry table covering 16 tunable constants (regime defaults, validation thresholds, VIX
-  levels, request limits, network timeouts) and 4 non-tunable base URLs. Laws.md bumped to v0.4.
-  **Establishes the template for all 11 remaining agent law backfills** (required before P14 master
-  sprint). No code change; no contract change; no test count change.
-
-> **↓ Older shipped history archived.** The full sprint-by-sprint ledger for **Sprint 36 and
-> earlier (down to P0)**, plus the **retired-components log**, lives in
-> [STATE-01.md](STATE-01.md) — a continuation of this file. As this list grows, move older
-> entries there; keep only the most recent ~8 sprints here.
+> Older shipped history is split out to keep this file short:
+> **Sprints 37–76** (P11 → P15 master-bootstrap arc) → [STATE-02.md](STATE-02.md).
+> **Sprint 36 → P0** + retired-components log → [STATE-01.md](STATE-01.md).
+> Keep only the most recent ~8 sprints here; move older entries down as this list grows.
 
 ---
 

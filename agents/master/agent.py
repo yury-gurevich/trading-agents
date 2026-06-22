@@ -27,6 +27,7 @@ from kernel.errors import fault_boundary
 if TYPE_CHECKING:
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
+    from agents.master.secret_map import SecretMap
     from kernel.graph import Node
 
 
@@ -40,17 +41,19 @@ class MasterAgent:
         sink: FaultSink | None = None,
         secret_store: SecretStore | None = None,
         grant_policy: GrantPolicy | None = None,
+        secret_map: SecretMap | None = None,
     ) -> None:
-        """Create master with injected graph, settings, fault sink, and grant policy."""
+        """Create master with injected graph, settings, grant policy, and secret map."""
         self._graph = graph
         self._settings = settings or MasterSettings()
         self.sink = sink or CollectingFaultSink()
         self._secret_store: SecretStore = secret_store or NullSecretStore()
-        # No injected policy -> the substrate knows no agent types; a pack supplies one
-        # (entrypoint loads orchestration/packs/trading_grants.json).
+        # No injected policy/map -> the substrate knows no agent types or secrets; a
+        # pack supplies them (entrypoint loads orchestration/packs/trading_*.json).
         self._grant_policy: GrantPolicy = (
             grant_policy if grant_policy is not None else {}
         )
+        self._secret_map: SecretMap = secret_map if secret_map is not None else {}
         self._session_id: str | None = None
         self._instance_counter: dict[str, int] = {}
 
@@ -94,7 +97,7 @@ class MasterAgent:
                 instance_id=instance_id,
                 agent_type=agent_type,
                 capability_grants=grants,
-                config=resolve_config(agent_type, self._secret_store),
+                config=resolve_config(agent_type, self._secret_store, self._secret_map),
                 signature="",  # RSA signature added by http_server.handle_ehlo()
             )
 

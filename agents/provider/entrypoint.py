@@ -1,8 +1,9 @@
-"""Provider agent entrypoint — graph-ingestor bootstrap.
+"""Provider agent entrypoint — graph-pull work loop (DL-08).
 
 Agent: provider
 Role: EHLO to master, verify the signed ACTIVATE (creds injected into env),
-      build the composite data source and graph store, then run the ingest loop.
+      build the composite data source and graph store, then poll the graph for
+      unprocessed RunRequest nodes and ingest their universe.
 External I/O: master HTTP endpoint (POST /ehlo).
 """
 
@@ -34,10 +35,11 @@ def build_agent(settings: ProviderSettings, graph: GraphStore) -> ProviderAgent:
 
 
 def main() -> None:  # pragma: no cover
-    """EHLO → ACTIVATE (injects API keys into env) → build agent → ingest loop."""
+    """EHLO → ACTIVATE → poll the graph for RunRequest → ingest → repeat."""
     import os
 
-    from agents.provider.ingest import ingest_loop, universe_from_env
+    from agents.provider.poll import find_pending, ingest_run_node
+    from kernel.work_loop import work_loop
 
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
     pubkey = master_public_key_from_env()
@@ -46,7 +48,11 @@ def main() -> None:  # pragma: no cover
     graph = build_graph_from_env()
     settings = ProviderSettings()
     agent = build_agent(settings, graph)
-    ingest_loop(agent, universe_from_env())
+    work_loop(
+        lambda: find_pending(graph),
+        lambda node: ingest_run_node(node, agent=agent),
+        poll_interval=int(os.environ.get("PROVIDER_POLL_INTERVAL", "60")),
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -29,7 +29,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
-| **P15** | S73–S82 | Multi-agent container split: master bootstrap + Dockerfiles + RSA signing + Key Vault + GHCR build pipeline + credential naming + provider ingestor + graph-pull work loops (S79 provider→scanner; S80 scanner→analyst; S81 analyst→PM; S82 execution+monitor+reporter closes DL-08 end-to-end) | **in progress** |
+| **P15** | S73–S83 | Multi-agent container split: master bootstrap + Dockerfiles + RSA signing + Key Vault + GHCR build pipeline + credential naming + provider ingestor + graph-pull work loops (S79 provider→scanner; S80 scanner→analyst; S81 analyst→PM; S82 execution+monitor+reporter closes DL-08; S83 dispatcher RunRequest trigger makes provider graph-pull + end-to-end demonstrator) | **in progress** |
 | **P12/P13** | tbd | DSPy `PromptOptimizer` port + golden eval set + per-(task×model) compiled prompt artifact | **queued** |
 
 ---
@@ -45,7 +45,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S83**, then S84 …
+1. Next number: **S84**, then S85 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

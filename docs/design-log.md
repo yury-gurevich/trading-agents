@@ -249,6 +249,30 @@ S80 = scanner→analyst; S81 = analyst→PM; S82 = execution+monitor+reporter. T
 operational, not architectural: a permanent reachable graph store (see DL-05 / the permanent-store
 follow-on) before the Aura trial lapses ~2026-06-29.
 
+**S83 (2026-06-22) — the explicit start: dispatcher trigger + provider becomes graph-pull.**
+Before S83 nothing "started a run" in the graph-pull world: the provider self-triggered on a
+timer (`ingest_loop`, S78) and the only `Dispatcher` was the P14 **pub/sub** one, which can't
+drive containers (no shared in-process bus). **Operator model (2026-06-22):** the dispatcher
+places ONE "message on the queue" to trigger run #1; everything downstream is woken by
+"completing the prerequisite gate". **Decision:** realise the "message on the queue" as a
+`RunRequest` **graph node** (DL-08's graph-as-queue), and make the **provider graph-pull on it**
+(`agents/provider/poll.py`: `find_pending` over `RunRequest` lacking `INGESTED_BY` +
+`ingest_run_node`; entrypoint swaps `ingest_loop`→`work_loop`). So the dispatcher's RunRequest is
+the *single* trigger source and **every** agent (provider included) is uniform graph-pull.
+`orchestration/start.py` adds pre-flight checks + `place_run_request`; `orchestration/
+local_pipeline.py`'s `cascade_once` runs one poll pass per agent (the fleet does this
+continuously, one container each); `scripts/run_local.py` is the runnable demonstrator and
+`test_graph_pull_e2e.py` is the first end-to-end proof. **Ruled out:** (a) keeping the provider
+timer-self-triggering (rejected — no explicit "start", and two trigger sources); (b) reusing the
+pub/sub `Dispatcher` for the fleet (can't — needs one in-process bus across containers). The P14
+`Dispatcher` is left intact as the in-process dev path. **Deferred:** a **dispatcher cron** to
+place the daily RunRequest on a schedule (operator deferred) — today it's placed by hand / the
+demonstrator.
+
+**Status.** DECIDED + COMPLETE (orchestration trigger). The pipeline now has an explicit
+single-trigger start and a uniform graph-pull model end to end, proven in one process. Real-fleet
+run still gated on the permanent graph store.
+
 ---
 
 ## DL-08a · Neo4j credentials distribution — KV secret vs plain env var  ·  status: OPEN

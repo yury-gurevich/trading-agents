@@ -462,3 +462,51 @@ sprint. **Sequencing (operator, 2026-06-22): Neo4j testing track finishes first*
 **collection side** (per-ticker verdict + dual labels + bypass on the scanner, persisted to ScanRun),
 then the **measurement side** (curator filter-example assembler + per-filter confusion-matrix metric).
 Graduate to an ADR once the verdict schema and the bypass semantics are fixed in code.
+
+---
+
+## DL-10 · Staleness gate counts calendar days, not trading sessions  ·  status: OPEN (2026-06-22)
+
+**How it surfaced.** First live Aura run (3 tickers, 2026-06-22). The batch trace showed
+`analyst: scored=0 rejected=2`, both rejected `provider market data degraded` — i.e. the analyst
+bailed at `run.py:39` (`market.quality.used_fallback`) before scoring anything. Tracing upstream:
+`MarketData.quality` = `{used_fallback: True, stale_tickers: (AAPL, GOOGL, MSFT), notes:
+(stale_or_missing_tickers,)}`. The latest bar for every ticker was **2026-06-18, only 4 calendar
+days before the window-end** — fresh data, yet condemned as stale.
+
+**Root cause.** `agents/provider/domain/integrity.py::_stale_tickers` measures
+`(window.end - latest_bar).days > max_staleness_days` in **calendar days**, with the default
+`max_staleness_days = 3`. But the setting's own `why` says *"older than three **sessions**"* — the
+intent is **trading sessions**, the implementation is **calendar days**. They diverge across any
+market closure:
+
+- Thu Jun 18 = last real session · Fri Jun 19 = Juneteenth (NYSE closed) · Sat–Sun = weekend ·
+  Mon Jun 22 = run date. Jun 18's close is the **freshest data that can exist** — zero sessions stale
+  — but **4 calendar days** old → `4 > 3` → whole batch flagged degraded → entire pipeline produces
+  nothing. One ordinary holiday weekend silently kills every run.
+
+**Why it matters.** A calendar-day staleness gate conflates *"the data is genuinely old"* with
+*"the market was closed."* Every Monday after a holiday Friday (and any Tuesday after a Mon holiday)
+trips it. The trade side of the pipeline goes dark precisely when nothing is actually wrong. This is
+a correctness flaw in the degraded-data guard, not a tuning nit.
+
+**Options (not yet decided):**
+
+- **(a) Count trading sessions** between `latest_bar` and `window.end` using a market calendar
+  (exchange holiday + weekend aware). Correct, but introduces a calendar dependency/source.
+- **(b) Skip weekends + a static holiday set** in the day-count. Cheaper, no live dependency, but the
+  holiday list must be maintained and is exchange-specific.
+- **(c) Widen the default** (e.g. `max_staleness_days = 5`) as a stopgap. Trivial, but a band-aid: a
+  4-day holiday stretch (e.g. Thanksgiving, year-end) can still exceed any fixed calendar bound while
+  the data is current. Masks rather than fixes.
+
+**Ruled out.** Leaving it calendar-day with the default 3 — demonstrably breaks on a normal holiday
+weekend (this run). Also note the `--real` demo path used the default 3 while the in-memory demo
+passes `max_staleness_days=7`, so the in-memory tests **never exercised the degraded path** — the
+gap was invisible until live data hit it.
+
+**Status.** OPEN. Recommendation on record: **(a) trading-session count via a market calendar** — it
+matches the stated intent and is the only option that is correct across arbitrary closures. Decide
+before the staleness logic is next touched; until then a degraded batch is at least now **visible**
+in the trace (quality block + per-ticker reject reasons, shipped 2026-06-22). Tied to the broader
+"what does *stale* mean for this domain" question — a pack-level (trading) policy, not substrate.

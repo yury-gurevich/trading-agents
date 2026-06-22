@@ -74,6 +74,11 @@ def main() -> None:
         action="store_true",
         help="use live Neo4j (NEO4J_URI from .env) + real Tiingo market data",
     )
+    parser.add_argument(
+        "--trace",
+        action="store_true",
+        help="print per-stage batch metrics after the cascade",
+    )
     args = parser.parse_args()
 
     if args.real:
@@ -123,6 +128,11 @@ def main() -> None:
     print("\nGRAPH (provenance chain)")
     for label in _CHAIN:
         print(f"  {label:<14} {len(graph.list_nodes(label))}")
+
+    if args.trace:
+        from orchestration.batch_trace import print_trace
+
+        print_trace(graph, "local-1")
 
 
 if __name__ == "__main__":

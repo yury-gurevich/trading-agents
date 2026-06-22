@@ -11,6 +11,7 @@ import pytest
 
 from agents.master.agent import MasterAgent
 from agents.master.http_server import handle_ehlo, handle_health
+from agents.master.tests.helpers import trading_policy
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair, verify_pss
 
@@ -22,7 +23,7 @@ def keypair() -> tuple[str, str]:
 
 @pytest.fixture
 def master() -> MasterAgent:
-    agent = MasterAgent(graph=InMemoryGraphStore())
+    agent = MasterAgent(graph=InMemoryGraphStore(), grant_policy=trading_policy())
     agent.start()
     return agent
 

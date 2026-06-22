@@ -35,5 +35,12 @@ class MasterSettings(AgentSettings):
         le=600.0,
         unit="seconds",
     )
+    grant_policy_path: str = tunable(
+        "",
+        why=(
+            "Filesystem path to the pack's grant-policy JSON; empty = the substrate "
+            "ships no grants, so every agent type is unknown until a pack supplies one."
+        ),
+    )
 
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

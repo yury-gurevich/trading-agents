@@ -1,9 +1,12 @@
 # Project State
 
-**Last updated:** 2026-06-22 10:14 AEST
+**Last updated:** 2026-06-22 16:33 AEST
 
-**S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
-Next: S81 — extend graph-pull to PM→reporter.**
+**S77–S83 SHIPPED + merged to main (0.23.00), GitHub CI green. Graph-pull pipeline complete
+end-to-end; this cycle added the batch-trace subsystem, live-Neo4j hardening (2 real bugs found
++ fixed on the first Aura run), and the first platform/pack grant-policy injection seam (DL-12).
+Next: S84 — finish platform/pack separation (relocate the trading grant policy out of the
+substrate; DL-12 step 2).**
 
 - **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
   `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var
@@ -281,11 +284,26 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 — pipeline COMPLETE + orchestrated.** S77–S83 shipped. DL-08 closed end-to-end
-(provider→…→reporter), and S83 added the explicit start: the dispatcher writes one `RunRequest`
-node, the provider is now graph-pull on it, and every downstream agent wakes off its
-prerequisite gate. Proven by `test_graph_pull_e2e.py` + `scripts/run_local.py` (one process,
-no store). Version 0.22.00.
+**P15 — pipeline COMPLETE + orchestrated + run on real Neo4j. Version 0.23.00, merged to main.**
+S77–S83 shipped. DL-08 closed end-to-end (provider→…→reporter); S83 added the explicit start
+(dispatcher writes one `RunRequest`, every downstream agent wakes off its prerequisite gate).
+This cycle (on the sprint-83 branch, post-S83):
+
+- **Batch-trace subsystem** — `orchestration/batch_trace.py` + `scripts/trace_run.py` +
+  `run_local.py --real/--trace`: walks the provenance chain and prints per-stage numbers, now
+  including the provider `quality` block (DEGRADED/stale/notes) and per-ticker analyst REJECT
+  reasons. Turned an opaque "scored=0 rejected=2" into a 5-minute diagnosis.
+- **First live Aura run** of the graph-pull pipeline (3 tickers, real Tiingo/Finnhub) — found and
+  fixed **2 real Neo4j bugs the in-memory store hid**: nested-map node properties (JSON-encode at
+  the store boundary, `kernel/graph_support.py`) and a list/tuple idempotency mismatch in
+  `_append_props`. Backup/restore proven via a sentinel node (DL-11).
+- **DL-10** captured: the staleness gate counts calendar days but means trading sessions — a
+  holiday weekend (Juneteenth) made fresh Jun-18 data read as stale, killing the run. OPEN.
+- **DL-12 step 1**: `MasterAgent` now takes an injected `grant_policy` (default preserves
+  behavior) — the platform/pack separation seam. The leak (`DEFAULT_GRANTS` in the substrate) is
+  not yet relocated; that is S84.
+
+Proven by `test_graph_pull_e2e.py` + `scripts/run_local.py` and a live Aura run.
 
 **Critical-path now #1:** Aura trial lapses ~2026-06-29 (~7 days). Permanent graph store
 (self-host Neo4j on a small Azure VM, ~$15/mo; Enterprise if the dev licence lands) must be
@@ -294,14 +312,18 @@ Reminder set for 2026-06-24 (dev-licence check). Calendar event also set.
 
 ## Next
 
-- **Permanent graph store** — THE blocker. Self-host Neo4j on a small Azure VM (~$15/mo)
-  before Aura lapses 2026-06-29. Enterprise (free) if the developer licence comes through,
-  else Community. WSL2/local Docker stays off until the trial expires.
-- **Fleet run-through** — once the store is live, run `provider→reporter` against it for real
-  (in-memory cascade passes today; real-store run pending).
-- **Dispatcher cron (S84?)** — schedule the daily `RunRequest` so the fleet runs hands-off.
-- **S85? — forecaster + control-plane agents** (operator/supervisor/curator/researcher) work
-  loops; the last `idle_loop()` holders.
+- **S84 (active) — finish platform/pack separation (DL-12 step 2).** Relocate the trading grant
+  policy out of the substrate: master loads a pack-supplied policy as **data** (file path via
+  `MasterSettings`, not a Python import — avoids the `agents↛orchestration` boundary), then the
+  `DEFAULT_GRANTS` default is removed from `agents/master`. Same pattern then applies to the
+  second leak, `agents/master/secret_map.py`. Recommendation + options on record in DL-12.
+- **Fleet run-through on real store** — the live Aura run now works (this cycle); next is the
+  full `provider→reporter` cascade against a *permanent* store, not the smart-paused trial.
+- **DL-10 staleness fix** — count trading sessions, not calendar days (market-calendar). OPEN.
+- **DL-09 filter training source** — per-ticker verdict + bypass + dual labels → curator dataset.
+- **Dispatcher cron** — schedule the daily `RunRequest` so the fleet runs hands-off.
+- **Forecaster + control-plane agents** (operator/supervisor/curator/researcher) work loops;
+  the last `idle_loop()` holders.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow

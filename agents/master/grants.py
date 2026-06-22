@@ -1,72 +1,34 @@
-"""Default capability grants issued by master per agent type.
+"""Grant-policy type and loader for the master bootstrap agent.
 
 Agent: master
-Role: declare the minimum-privilege capability grants for each known agent type.
-External I/O: none.
+Role: define the grant-policy shape and load one from a pack-supplied JSON file.
+      The master mechanism is domain-agnostic — it never names an agent type; the
+      content (which types exist, what they may do) is pack data injected at boot.
+External I/O: reads the grant-policy JSON file when load_grant_policy is called.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
+from pathlib import Path
 
-# A grant policy maps an agent type to its capability grants. The master mechanism
-# treats this as opaque data injected at construction; the trading-specific content
-# below is a pack default, slated to move out of the substrate (ADR-0012, DL-12).
+# A grant policy maps an agent type to its capability grants. The master treats this
+# as opaque data; the trading content lives in a pack file (orchestration/packs/
+# trading_grants.json), loaded by path — never imported (ADR-0012, DL-12).
 type GrantPolicy = Mapping[str, dict[str, object]]
 
-# Grants describe the functional interface, never a product name.
-# Secrets resolved from Key Vault (prod) or env vars (dev) are injected via
-# ACTIVATE config; see agents/master/secret_map.py for the per-agent mapping.
-DEFAULT_GRANTS: dict[str, dict[str, object]] = {
-    "scanner": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-    },
-    "analyst": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-    },
-    "portfolio_manager": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-    },
-    "execution": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-        "broker": {"operations": ["submit", "cancel", "status"]},
-    },
-    "monitor": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write", "read"], "access": "own_and_read"},
-    },
-    "reporter": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["read", "append_write"], "access": "read_heavy"},
-    },
-    "forecaster": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-    },
-    "operator": {
-        "messaging": {"operations": ["request"]},
-        "graph": {"operations": ["append_write", "read"]},
-        "llm": {"operations": ["complete"]},
-    },
-    "supervisor": {
-        "messaging": {"operations": ["subscribe", "publish", "request"]},
-        "graph": {"operations": ["append_write", "read"]},
-    },
-    "curator": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write", "read"]},
-    },
-    "researcher": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write", "read"]},
-    },
-    "provider": {
-        "messaging": {"operations": ["subscribe", "publish"]},
-        "graph": {"operations": ["append_write"], "access": "own_labels_only"},
-        "data_feeds": {"operations": ["ohlcv", "fundamentals", "news", "sentiment"]},
-    },
-}
+
+def load_grant_policy(path: str) -> GrantPolicy:
+    """Load a grant policy from JSON: a map of agent_type -> capability grants."""
+    raw: object = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError(f"grant policy at {path!r} must be a JSON object")
+    policy: dict[str, dict[str, object]] = {}
+    for key, value in raw.items():
+        if not isinstance(value, dict):
+            raise ValueError(
+                f"grant policy entry {key!r} in {path!r} must be a JSON object"
+            )
+        policy[str(key)] = value
+    return policy

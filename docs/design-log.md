@@ -578,8 +578,12 @@ import boundary (`kernel ← contracts ← agents ← orchestration/surfaces`) b
 
 **Ruled out.** Importing pack grants into the master entrypoint (option b's boundary inversion).
 
-**Status.** IN PROGRESS — seam shipped; placement deferred. Recommendation on record: **(a) grant
-policy as a pack-supplied data file loaded via MasterSettings**. Same pattern will apply to the second
-leak (`agents/master/secret_map.py`, which also enumerates trading agent types). Decide (a) vs revisit
-before relocating `DEFAULT_GRANTS` out of the substrate. Window-limited stopping point: the seam is in,
-green, and reversible; the data-vs-import placement is the next session's first call.
+**Status.** GRANT LEAK CLOSED (S84, 2026-06-22) — **option (a) chosen and shipped.** The 12-agent
+grant table now lives in `orchestration/packs/trading_grants.json`, loaded by path via
+`MasterSettings.grant_policy_path` (`load_grant_policy` in `agents/master/grants.py`) and injected by
+the master entrypoint — never imported, so the `agents↛orchestration` boundary holds. `DEFAULT_GRANTS`
+is deleted; with no injected policy the substrate knows no agent types. Deployed behavior unchanged
+(loaded policy == old table, asserted). 0.23.01 (PATCH). **Remaining for DL-12:** the second leak,
+`agents/master/secret_map.py` (also enumerates trading agent types) — same data-file treatment, next
+sprint (S85). **Deploy follow-up (untested by CI):** ship `trading_grants.json` into the master image
+and set `MASTER_GRANT_POLICY_PATH` in `infra/deploy-agents.ps1` / the master Dockerfile.

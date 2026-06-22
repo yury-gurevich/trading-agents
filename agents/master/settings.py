@@ -49,5 +49,19 @@ class MasterSettings(AgentSettings):
             "entitles no agent type to any secret until a pack supplies the table."
         ),
     )
+    grant_policy_b64: str = tunable(
+        "",
+        why=(
+            "Base64-encoded grant-policy JSON injected at deploy time (cloud); takes "
+            "precedence over grant_policy_path. Keeps the master image pack-agnostic."
+        ),
+    )
+    secret_map_b64: str = tunable(
+        "",
+        why=(
+            "Base64-encoded secret-map JSON injected at deploy time (cloud); takes "
+            "precedence over secret_map_path. Keeps the master image pack-agnostic."
+        ),
+    )
 
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

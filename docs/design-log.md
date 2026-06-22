@@ -591,6 +591,15 @@ is deleted; with no injected policy the substrate knows no agent types. Deployed
 via `MasterSettings.secret_map_path` (`load_secret_map`) and injected into `MasterAgent`;
 `resolve_config(agent_type, store, secret_map)` now takes the map as a parameter. `AGENT_SECRETS`
 deleted. **The master substrate now names zero trading concepts** — grants and secrets are both
-pack-supplied data. **Deploy follow-up (untested by CI):** ship `trading_grants.json` +
-`trading_secrets.json` into the master image and set `MASTER_GRANT_POLICY_PATH` +
-`MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master Dockerfile.
+pack-supplied data.
+
+**DEPLOY WIRING DONE (S86, 2026-06-22, 0.23.03) — and the master *image* stays pack-agnostic.** Rather
+than bake the pack JSONs into the substrate image (which would re-couple them), the pack policy travels
+as **deploy-time config**: `_resolve_pack` in the entrypoint resolves each policy **base64 env content
+(cloud) → file path (local) → None**. `deploy-agents.ps1` base64-encodes the two pack JSONs into
+`MASTER_GRANT_POLICY_B64` / `MASTER_SECRET_MAP_B64` (like `MASTER_PRIVATE_KEY_PEM_B64`);
+`docker-compose.yml` mounts `orchestration/packs/` read-only and sets the `MASTER_*_PATH` vars. The
+master `Dockerfile` is **unchanged** — the same image runs any pack. `parse_grant_policy`/
+`parse_secret_map` (JSON-string core) added; `load_*` delegate. The b64-content path is unit-tested; the
+ps1/compose lines are inspection-verified (not CI-run). **DL-12 is now complete** for the master; the
+only remaining ADR-0012 item is the `contracts/` substrate/pack split, deferred to a 2nd pack.

@@ -7,20 +7,41 @@ External I/O: Neo4j (via GraphStore), Azure Key Vault (optional), TCP port 8000 
 
 from __future__ import annotations
 
+import base64
 from typing import TYPE_CHECKING
 
 from agents.master.agent import MasterAgent
-from agents.master.grants import load_grant_policy
+from agents.master.grants import load_grant_policy, parse_grant_policy
 from agents.master.http_server import serve
-from agents.master.secret_map import load_secret_map
+from agents.master.secret_map import load_secret_map, parse_secret_map
 from agents.master.settings import MasterSettings
 from kernel.crypto import generate_keypair
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
     from agents.master.secret_map import SecretMap
     from kernel import GraphStore
+
+
+def _resolve_pack[T](
+    b64: str,
+    path: str,
+    parse: Callable[[str], T],
+    load: Callable[[str], T],
+) -> T | None:
+    """Resolve pack data: base64 env content (cloud) -> file path (local) -> None.
+
+    b64 wins so the master image stays pack-agnostic — the pack is injected at
+    deploy time, never baked into the image.
+    """
+    if b64:
+        return parse(base64.b64decode(b64).decode("utf-8"))
+    if path:
+        return load(path)
+    return None
 
 
 def select_graph_store(graph_kind: str) -> GraphStore:
@@ -46,18 +67,22 @@ def build_app(
 ) -> tuple[MasterAgent, str]:
     """Create and start MasterAgent; return (agent, private_key_pem). Testable.
 
-    The trading grant policy and secret map are loaded from their pack JSON paths
-    (``settings.grant_policy_path`` / ``secret_map_path``) and injected — the
-    substrate itself ships no agent-type or secret knowledge.
+    The trading grant policy and secret map are injected from pack data — base64 env
+    content (cloud) or a file path (local) — so the substrate itself ships no
+    agent-type or secret knowledge.
     """
     settings = settings or MasterSettings()
-    grant_policy: GrantPolicy | None = (
-        load_grant_policy(settings.grant_policy_path)
-        if settings.grant_policy_path
-        else None
+    grant_policy: GrantPolicy | None = _resolve_pack(
+        settings.grant_policy_b64,
+        settings.grant_policy_path,
+        parse_grant_policy,
+        load_grant_policy,
     )
-    secret_map: SecretMap | None = (
-        load_secret_map(settings.secret_map_path) if settings.secret_map_path else None
+    secret_map: SecretMap | None = _resolve_pack(
+        settings.secret_map_b64,
+        settings.secret_map_path,
+        parse_secret_map,
+        load_secret_map,
     )
     agent = MasterAgent(
         graph=graph,

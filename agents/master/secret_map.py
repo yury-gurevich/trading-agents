@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 type SecretMap = Mapping[str, list[tuple[str, str]]]
 
 
-def load_secret_map(path: str) -> SecretMap:
-    """Load a secret map from JSON: agent_type -> list of [kv_name, env_name] pairs."""
-    raw: object = json.loads(Path(path).read_text(encoding="utf-8"))
+def parse_secret_map(text: str) -> SecretMap:
+    """Parse a secret map from a JSON string: agent_type -> [[kv, env], ...] pairs."""
+    raw: object = json.loads(text)
     if not isinstance(raw, dict):
-        raise ValueError(f"secret map at {path!r} must be a JSON object")
+        raise ValueError("secret map must be a JSON object")
     secret_map: dict[str, list[tuple[str, str]]] = {}
     for key, entries in raw.items():
         if not isinstance(entries, list) or not all(
@@ -41,6 +41,11 @@ def load_secret_map(path: str) -> SecretMap:
             )
         secret_map[str(key)] = [(str(p[0]), str(p[1])) for p in entries]
     return secret_map
+
+
+def load_secret_map(path: str) -> SecretMap:
+    """Load a secret map from a JSON file at *path*."""
+    return parse_secret_map(Path(path).read_text(encoding="utf-8"))
 
 
 def resolve_config(

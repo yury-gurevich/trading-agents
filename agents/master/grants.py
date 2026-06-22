@@ -19,16 +19,19 @@ from pathlib import Path
 type GrantPolicy = Mapping[str, dict[str, object]]
 
 
-def load_grant_policy(path: str) -> GrantPolicy:
-    """Load a grant policy from JSON: a map of agent_type -> capability grants."""
-    raw: object = json.loads(Path(path).read_text(encoding="utf-8"))
+def parse_grant_policy(text: str) -> GrantPolicy:
+    """Parse a grant policy from a JSON string: agent_type -> capability grants."""
+    raw: object = json.loads(text)
     if not isinstance(raw, dict):
-        raise ValueError(f"grant policy at {path!r} must be a JSON object")
+        raise ValueError("grant policy must be a JSON object")
     policy: dict[str, dict[str, object]] = {}
     for key, value in raw.items():
         if not isinstance(value, dict):
-            raise ValueError(
-                f"grant policy entry {key!r} in {path!r} must be a JSON object"
-            )
+            raise ValueError(f"grant policy entry {key!r} must be a JSON object")
         policy[str(key)] = value
     return policy
+
+
+def load_grant_policy(path: str) -> GrantPolicy:
+    """Load a grant policy from a JSON file at *path*."""
+    return parse_grant_policy(Path(path).read_text(encoding="utf-8"))

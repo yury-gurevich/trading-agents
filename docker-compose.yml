@@ -50,8 +50,14 @@ services:
     env_file:
       - path: .env
         required: false
+    # Pack policy + secret map mounted read-only (not baked into the substrate
+    # image — keeps the master image pack-agnostic; S86 / DL-12).
+    volumes:
+      - ./orchestration/packs:/app/packs:ro
     environment:
       MASTER_KEY_VAULT_URL: ${MASTER_KEY_VAULT_URL:-}
+      MASTER_GRANT_POLICY_PATH: /app/packs/trading_grants.json
+      MASTER_SECRET_MAP_PATH: /app/packs/trading_secrets.json
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s

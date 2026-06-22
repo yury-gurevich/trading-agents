@@ -510,3 +510,32 @@ matches the stated intent and is the only option that is correct across arbitrar
 before the staleness logic is next touched; until then a degraded batch is at least now **visible**
 in the trace (quality block + per-ticker reject reasons, shipped 2026-06-22). Tied to the broader
 "what does *stale* mean for this domain" question — a pack-level (trading) policy, not substrate.
+
+---
+
+## DL-11 · Aura backup/restore — API surface vs console-only ops  ·  status: NOTED (2026-06-22)
+
+**From the Neo4j testing track (2026-06-22), verified against the live Aura Professional instance:**
+
+- **Snapshot create + list work over the management API** (`POST`/`GET /v1/instances/{id}/snapshots`).
+  `infra/aura.ps1 snapshot|snapshots` drive them. Note the create response carries **only**
+  `snapshot_id` (not `status`/`timestamp`) — those appear in the list once the backup completes;
+  the script was fixed to stop dereferencing the absent fields.
+- **In-place restore is NOT available over the API.** `POST /v1/instances/{id}/restore` returns
+  **`403 {"error": "Requested endpoint is forbidden"}`** for this key/tier. Restore is a **console-only**
+  action (console.neo4j.io → instance → Snapshots → ↺). `infra/aura.ps1 restore` therefore cannot
+  drive it; kept for the day the endpoint is permitted, but treat restore as a manual console step.
+- **No byte-size in the API.** Snapshot objects expose `{snapshot_id, status, timestamp, profile,
+  exportable}` — no size. On-disk store size is observable only from inside the DB via Browser
+  `:sysinfo`; the serialized property payload of one batch run measured ~27.7 KB (MarketData node
+  dominates at ~24 KB).
+- **Console timestamps are local (AEST/+10); the API reports UTC** — a 05:30:11 UTC snapshot shows as
+  15:30:11 in the console. Worth remembering when matching a CLI-triggered snapshot to a console row.
+
+**Restore proven, end to end.** Planted a `RestoreProbe` sentinel node *after* a snapshot, restored
+from that snapshot via the console, and confirmed the sentinel's label no longer exists — the DB rolled
+back exactly to the snapshot point while all pre-snapshot pipeline data survived. Backup/restore is
+trustworthy; the only constraint is that restore is a manual console operation, not scriptable here.
+
+**Status.** NOTED — operational finding, no open decision. Revisit `aura.ps1 restore` if Neo4j later
+exposes the restore endpoint to API keys.

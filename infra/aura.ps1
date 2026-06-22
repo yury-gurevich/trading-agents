@@ -62,8 +62,10 @@ switch ($Action) {
   'snapshot' {
     $d = (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/snapshots" `
         -Headers $hdr -Body "{}" -ContentType "application/json").data
+    # The create response carries only snapshot_id; status/timestamp appear in the
+    # 'snapshots' list once the backup is taken.
     Write-Host "Snapshot triggered:" -ForegroundColor Green
-    [pscustomobject]@{ snapshot_id = $d.snapshot_id; status = $d.status; timestamp = $d.timestamp } | Format-List
+    [pscustomobject]@{ snapshot_id = $d.snapshot_id } | Format-List
     Write-Host "Poll with:  pwsh infra/aura.ps1 snapshots" -ForegroundColor Gray
   }
   'snapshots' {

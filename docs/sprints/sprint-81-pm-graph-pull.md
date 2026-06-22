@@ -46,7 +46,7 @@ S79 deferring analyst→reporter, S80 deferring PM→reporter).
 The PM starts from the pending `AnalystRun` and walks back to the market facts the analyst
 already consumed, so PM and analyst score the same correlated snapshot:
 
-```
+```text
 AnalystRun ──ancestors(ANALYZED_BY)──▶ ScanRun
 ScanRun    ──descendants(DERIVED_FROM)──▶ MarketData
 MarketData ──key regime-context:{window_end}──▶ RegimeContext
@@ -73,7 +73,7 @@ descendant — the same direction discipline that bit S80.
 ## Exit criteria
 
 - [x] Starting only the PM (with provider+scanner+analyst data in the graph) produces `PMRun`
-  + `OrderIntent` nodes within one poll interval — proven by `test_pm_poll.py`.
+  - `OrderIntent` nodes within one poll interval — proven by `test_pm_poll.py`.
 - [x] `make ci` green; 100 % coverage; every new module ≤ 200 lines.
 - [x] `idle_loop()` only called by entrypoints with no work loop yet (execution/monitor/
   reporter/forecaster/operator/supervisor/curator/researcher).

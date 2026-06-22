@@ -51,6 +51,7 @@ The provider law (`agents/provider/laws/laws.md`) already declares `PROV-TRG-01`
 ### Request event schema
 
 All `data.request.*` events carry:
+
 ```python
 {"ticker": str, "run_id": str | None, "fields": list[str]}
 ```

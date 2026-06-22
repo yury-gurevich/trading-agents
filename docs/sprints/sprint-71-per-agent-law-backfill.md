@@ -24,11 +24,12 @@ first-principles cycle: author → reconcile → citation pass → test-plan →
 | curator | CUR | 48 | 20 |
 | researcher | RES | 44 | 18 |
 
-**Total green clauses added: 124**
+Total green clauses added: **124**
 
 ### Files changed
 
 **New law files (7):**
+
 - `agents/monitor/laws/laws.md` — LOCKED v1 (40 clauses, prefix MON)
 - `agents/reporter/laws/laws.md` — LOCKED v1 (40 clauses, prefix RPT)
 - `agents/forecaster/laws/laws.md` — LOCKED v1 (46 clauses, prefix FORE)
@@ -38,6 +39,7 @@ first-principles cycle: author → reconcile → citation pass → test-plan →
 - `agents/researcher/laws/laws.md` — LOCKED v1 (44 clauses, prefix RES)
 
 **New test-plan files (7):**
+
 - `agents/monitor/laws/test-plan.md`
 - `agents/reporter/laws/test-plan.md`
 - `agents/forecaster/laws/test-plan.md`
@@ -47,6 +49,7 @@ first-principles cycle: author → reconcile → citation pass → test-plan →
 - `agents/researcher/laws/test-plan.md`
 
 **Test files with citation docstrings added:**
+
 - `agents/monitor/tests/test_monitor_agent.py`
 - `agents/monitor/tests/test_monitor_pubsub.py`
 - `agents/monitor/tests/test_monitor_exits.py`
@@ -67,6 +70,7 @@ first-principles cycle: author → reconcile → citation pass → test-plan →
 - `agents/researcher/tests/test_proposal.py`
 
 **Docs updated:**
+
 - `docs/laws/INDEX.md` — 7 agents updated to LOCKED v1 (S71)
 - `docs/laws/ledger.md` — 7 new rows with green clause counts
 - `docs/sprints/INDEX.md` — S71 complete; next number S72

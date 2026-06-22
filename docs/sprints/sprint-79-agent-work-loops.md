@@ -33,7 +33,7 @@ independently and will pick up from wherever the upstream agent left off in the 
 
 This is the "one container at a time" proof for the full trading pipeline:
 
-```
+```text
 provider → writes DataNode/NewsItem
 scanner  → reads DataNode, writes ScanResult
 analyst  → reads ScanResult, writes AnalystRun

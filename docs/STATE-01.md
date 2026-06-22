@@ -13,7 +13,7 @@ Components removed from the repo during the hygiene multipass. Files are **moved
 sibling `trading-agent-del/` staging folder (not hard-deleted); see `docs/repo-hygiene.md`.
 
 | Date | Component | What | Status |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 2026-06-18 | Neo4j Aura (02812797) | Cloud graph endpoint | Retired in `.env`; instance **deleted 2026-06-19** (was empty at cutover). |
 | 2026-06-18 | Neo4j Desktop (db `trading-agent`) | Prior local instance | Retired in `.env`; superseded by the Enterprise Docker stack (`infra/neo4j/local/`, db `traiding-agents`). |
 | 2026-06-18 | Neo4j named-volume compose | `infra/neo4j/docker-compose.yml` (+ `.env`/`.env.example`) | Moved to `trading-agent-del/`; replaced by `infra/neo4j/local/`. |

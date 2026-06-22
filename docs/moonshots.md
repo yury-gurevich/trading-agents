@@ -22,7 +22,7 @@ Code path references in the original text point at v1 (`src/trading_v2/`, `src/t
 
 ---
 
-# Original document (unmodified)
+## Original document (unmodified)
 
 Status: exploratory vision, not committed roadmap. Drafted 2026-04-18.
 

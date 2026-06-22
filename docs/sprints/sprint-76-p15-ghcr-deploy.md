@@ -79,6 +79,7 @@ jobs:
 ```
 
 **Notes:**
+
 - Matrix builds all 13 agents in parallel (no sequential dependency at image level).
 - `GITHUB_TOKEN` is sufficient for push — no `GHCR_PAT` needed for the build job.
 - `GHCR_PAT` (read:packages) is only needed by Azure Container Apps to pull.
@@ -89,6 +90,7 @@ The master agent needs a Key Vault to read from. Create
 `infra/key-vault.bicep` (deployed once, not on every CI run):
 
 Resources to create in `trading-agents` RG:
+
 - `Microsoft.KeyVault/vaults` — `trading-agents-kv` (soft-delete enabled, RBAC
   auth model, not access policies)
 - Role assignment: master's Container App managed identity →
@@ -100,7 +102,7 @@ Writes `MASTER_KEY_VAULT_URL=https://trading-agents-kv.vault.azure.net/` to `.en
 Populate initial secrets via `infra/seed-key-vault.ps1` (reads from `.env`, writes
 each API key to Key Vault under its kebab-case name):
 
-```
+```text
 tiingo-api-key, alpaca-key-id, alpaca-secret-key,
 finnhub-api-key, fmp-api-key, anthropic-api-key
 ```
@@ -119,6 +121,7 @@ Each app: `az containerapp create` (first deploy) or `az containerapp update` (s
 
 Create `infra/deploy-agents.ps1` — the imperative deploy script the workflow calls.
 Variables it needs (from repo secrets / env):
+
 - `GHCR_PAT` — pull credential
 - `MASTER_KEY_VAULT_URL` — passed to master
 - `AZURE_CA_ENV_ID` — which environment to deploy into

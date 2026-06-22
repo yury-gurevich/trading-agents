@@ -75,6 +75,7 @@ Falls back to in-memory if `NEO4J_URI` is absent (local dev / CI without Neo4j).
 ### 2 — Provider entrypoint: replace `idle_loop()` with `_ingest_loop()`
 
 Wire:
+
 - `ProviderSettings()` (reads injected creds from env)
 - `build_graph_from_env()`
 - `ProviderAgent(settings, graph=graph)`

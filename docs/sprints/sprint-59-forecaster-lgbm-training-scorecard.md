@@ -59,6 +59,7 @@ def build_label_rows(
 
 For each ticker, for each index `i` where `build_features` returns a row **and**
 `i + forward_days < len(bars)`:
+
 - `forward_return = closes[i + forward_days] / closes[i] - 1.0`
 - Append `LabelRow(ticker, date_at_i, features, forward_return)`.
 
@@ -82,8 +83,9 @@ def return_scorecard_metrics(observations) -> dict[str, float]
 with `forward_returns` by `subject_ref`. Skips refs present only on one side.
 
 `return_scorecard_metrics` emits (all omitted when undefined):
+
 | Key | Definition |
-|---|---|
+| --- | --- |
 | `complete_cases` | number of aligned observations |
 | `ic` | Pearson(predicted, forward_return); `None`→omitted when < 2 |
 | `hit_rate` | fraction where `sign(predicted − 0.5) × forward_return > 0` |
@@ -135,6 +137,7 @@ Reads CSV, constructs `{ticker: [(date, close, vol), ...]}`, calls
 `build_label_rows(...)`, then `train_and_save(...)`, prints `TrainingReport`.
 
 Getting the CSV from Postgres:
+
 ```sql
 COPY (SELECT date::text, ticker, close, volume FROM price_cache ORDER BY ticker, date)
   TO '/tmp/price_cache.csv' WITH CSV HEADER;
@@ -143,6 +146,7 @@ COPY (SELECT date::text, ticker, close, volume FROM price_cache ORDER BY ticker,
 ### E — `contracts/forecaster.py` (CONTRACT 0.3.0 → 0.4.0)
 
 Add:
+
 ```python
 class ReturnScorecardRequest(_Frozen):
     model_id: str
@@ -151,6 +155,7 @@ class ReturnScorecardRequest(_Frozen):
 ```
 
 Add capability:
+
 ```python
 Capability(
     "return_scorecard",
@@ -191,6 +196,7 @@ Add `models/*.txt` and `models/*.bin` to `.gitignore`.
 ### Part T — Tests (100% floor holds)
 
 **`test_forecaster_return_labels.py`** (new):
+
 - `build_label_rows` known forward_return (trivial closes sequence)
 - Returns `[]` when not enough bars for features + forward window
 - No-lookahead: feature at i uses only closes[:i+1]
@@ -198,12 +204,14 @@ Add `models/*.txt` and `models/*.bin` to `.gitignore`.
 - `LabelRow` fields are correct
 
 **`test_forecaster_model_trainer.py`** (new):
+
 - `split_rows` sorts by date and splits at correct fraction
 - `split_rows` with 0 rows → two empty lists
 - `split_rows` with 1 row → all in train (n_train = max(1, ...) = 1)
 - `TrainingReport` is a frozen dataclass
 
 **`test_forecaster_return_scorecard_math.py`** (new):
+
 - `return_scorecard_metrics` empty → `{}`
 - `return_scorecard_metrics` single case → `complete_cases=1`, `hit_rate`, no IC (n<2)
 - `return_scorecard_metrics` two cases correct IC + hit_rate + up/down breakdown
@@ -211,6 +219,7 @@ Add `models/*.txt` and `models/*.bin` to `.gitignore`.
 - `build_return_observations` skips refs absent from either side
 
 **`test_forecaster_return_scorecard.py`** (new — agent end-to-end):
+
 - Fire `forecast_return` for a ticker → persists ShadowPrediction
 - Fire `return_scorecard` with injected forward return for same ticker
 - Scorecard `sample_size=1`, `promotion_eligible=False`, `complete_cases=1`
@@ -218,6 +227,7 @@ Add `models/*.txt` and `models/*.bin` to `.gitignore`.
 - `return_scorecard` for unknown model_id → empty Scorecard
 
 **`agents/forecaster/tests/helpers.py`** (extend):
+
 - Add `ReturnScorecardRequest` import
 - Add `return_scorecard_message(model_id, forward_returns) -> AgentMessage`
 

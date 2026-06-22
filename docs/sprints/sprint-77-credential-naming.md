@@ -22,7 +22,7 @@ This sprint fixes the key names — no logic change, just naming.
 `resolve_config()` in `secret_map.py` currently converts kebab-case KV names to `UPPER_SNAKE`
 with no prefix:
 
-```
+```text
 tiingo-api-key  →  TIINGO_API_KEY
 finnhub-api-key →  FINNHUB_API_KEY
 anthropic-api-key → ANTHROPIC_API_KEY

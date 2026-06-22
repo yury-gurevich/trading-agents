@@ -29,7 +29,7 @@ law violation opened in S73 and filled in with `config={}` stub in S74.
 
 | File | Change |
 | --- | --- |
-| `agents/master/agent.py` | Added `secret_store: SecretStore | None = None` param; `activate()` calls `resolve_config(agent_type, self._secret_store)` to populate `config` |
+| `agents/master/agent.py` | Added `secret_store: SecretStore \| None = None` param; `activate()` calls `resolve_config(agent_type, self._secret_store)` to populate `config` |
 | `agents/master/entrypoint.py` | `build_app()` gains `secret_store` param; `main()` selects `AzureKeyVaultSecretStore` when `MASTER_KEY_VAULT_URL` is set, else `EnvVarSecretStore` |
 | `agents/master/grants.py` | Removed stale "S74" comment |
 | `agents/master/laws/laws.md` | DRIFT-001 → RESOLVED S74; DRIFT-002 → RESOLVED S75; changelog bumped to v1.1 |

@@ -11,12 +11,14 @@
 ## Goal
 
 Scanner subscribes to `run.trigger` and drives its own pipeline:
+
 - publishes `data.request.ohlcv` / `data.request.sectors` per ticker
 - collects `data.ready.*` events via claim-check
 - writes candidates to graph
 - publishes `scan.candidates.ready`
 
 Analyst subscribes to `scan.candidates.ready`:
+
 - publishes `data.request.*` per candidate ticker (news, fundamentals, etc.)
 - collects ready events
 - writes recommendations to graph
@@ -82,8 +84,9 @@ def collect_ready(
 
 In the in-process backend, `publish` fires subscribers synchronously so this is deterministic.
 
-### Tests (`agents/scanner/tests/test_scanner_pubsub.py`,
-         `agents/analyst/tests/test_analyst_pubsub.py`) — new files
+### Tests (`agents/scanner/tests/test_scanner_pubsub.py`
+
+`agents/analyst/tests/test_analyst_pubsub.py`) — new files
 
 Each file tests the pub/sub path end-to-end using `InProcessBus` + `InMemoryGraphStore`:
 

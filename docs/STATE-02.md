@@ -82,6 +82,7 @@ No version bump (docs-only). All 11 non-provider agents now have LOCKED v1 laws.
 
 **S69 — provider law cycle, template locked (0.10.0→0.11.0).** DRIFT-006 (benchmark promoted to
 `DataRequest.benchmark_ticker` + `MarketData.benchmark`, `taint=False`); DRIFT-007 (`caller_authorized`
+
 - `allowed_callers` gate across all three buses). Provider `laws.md` LOCKED v1; `_TEMPLATE.md` lock comment
 added. **894 tests**, 100% coverage.
 
@@ -117,6 +118,7 @@ CONTRACT 0.1.0→0.2.0. **756 tests**, 100% coverage. P12 code-complete (remaini
 **S56 — analyst champion = full Loughran-McDonald master dictionary (P12, 0.4.0→0.5.0).** Binding lexicon
 (`sentiment_rules.py`) loads the genuine LM master dictionary (Positive 354, Negative 2355; vendored under
 `agents/analyst/domain/data/`) unioned with curated headline verbs; polarity-disjoint (asserted). Interface
+
 - behaviour unchanged. **739 tests**, 100% coverage.
 
 ---

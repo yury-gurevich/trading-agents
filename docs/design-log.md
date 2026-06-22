@@ -651,3 +651,32 @@ consumer `model_validate`, both importing the *same* contract class.
 
 **Status.** NOTED — no action required; request/response is bilaterally enforced on both transports.
 Event-path validation is the only open hardening item, deferred.
+
+---
+
+## DL-14 · Operational path map — spine is live, the rest is aspirational or a gap  ·  status: NOTED (2026-06-22)
+
+**Trigger.** Same flow audit (DL-13) drew 13 source→sink edges, raising the concern that the agent
+chain has many concurrent live paths. **Verified: it does not.** The diagram conflates *contract
+capabilities* with *what is actually running*. Classified by operational status:
+
+- **Class A — the live spine (7 agents on `work_loop`).** RunRequest → provider → scanner → analyst →
+  PM → execution → monitor → reporter (audit edges 1-7, 9). This is the only concurrent live flow — a
+  linear graph-pull chain, one writer per stage, exactly what `scripts/run_local.py` /
+  `test_graph_pull_e2e.py` exercise.
+- **Class B — graph re-read, not a separate message** (edge 10). PM/monitor re-read the same
+  `MarketData` node by walking lineage; no new path.
+- **Class C — NOT wired (the 5 `idle_loop` agents).** forecaster, operator, supervisor, curator,
+  researcher are still braindead. So audit edges 11 (forecaster `ShadowPrediction` — advisory, never
+  gates even when wired), 12 (operator→supervisor), 13 (→supervisor faults) are aspirational, not running.
+- **Class D — contract capability, unwired in graph-pull (a real gap).** Audit edge 8 (monitor
+  `CloseDecisionSet` → execution `execute_close`): the monitor *decides* closes (writes `CloseDecision`
+  nodes with `pnl_cents`), but `agents/execution/poll.py` has no close-handler and `monitor_pm_node`
+  takes no broker — so **positions are opened (execution submits buys via the broker) but closes are
+  decided and never executed** against a broker in the current operational path. Acceptable for
+  paper/graph-tracked positions; an honest incompleteness vs the diagram. Wire the close-execution loop
+  before live broker trading.
+
+**Status.** NOTED. Reassurance: the live system is the linear spine (A), not a many-path tangle. Open
+items: activate the 5 control-plane/advisory agents (C) and wire the close-execution loop (D) — both
+out of scope until needed; flagged so they are not mistaken for already-working.

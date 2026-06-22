@@ -1,17 +1,22 @@
 """Local end-to-end demonstrator for the graph-pull pipeline.
 
 Agent: tooling
-Role: start the system in one process on an in-memory graph (no store, no Docker) —
-      pre-flight checks, the dispatcher places ONE RunRequest, then run each agent's
-      graph-pull poll once and print how every downstream agent wakes off its
-      prerequisite gate (provider→scanner→analyst→PM→execution→monitor→reporter).
-External I/O: stdout (prints the cascade report).
+Role: start the system in one process — pre-flight checks, the dispatcher places ONE
+      RunRequest, then run each agent's graph-pull poll once and print how every
+      downstream agent wakes off its prerequisite gate
+      (provider → scanner → analyst → PM → execution → monitor → reporter).
+      --real: loads .env, uses live Neo4j (NEO4J_URI) + real Tiingo OHLCV data.
+      Default: in-memory graph + FakeDataSource (no credentials needed).
+External I/O: stdout; network (Tiingo, Finnhub, Neo4j) when --real.
 
-Run it:  PYTHONPATH=. python scripts/run_local.py
+Run it:
+  PYTHONPATH=. python scripts/run_local.py           # in-memory demo
+  PYTHONPATH=. python scripts/run_local.py --real    # live Neo4j + real market data
 """
 
 from __future__ import annotations
 
+import argparse
 from datetime import UTC, datetime, timedelta
 
 from agents.execution.broker import PaperBroker
@@ -23,7 +28,8 @@ from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import all_passed, place_run_request, preflight
 
-_TICKERS = ("AAPL", "MSFT")
+_TICKERS_DEMO = ("AAPL", "MSFT")
+_TICKERS_REAL = ("AAPL", "MSFT", "GOOGL")
 _CHAIN = (
     "RunRequest",
     "MarketData",
@@ -50,7 +56,7 @@ def _bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
     )
 
 
-def _source() -> FakeDataSource:
+def _fake_source() -> FakeDataSource:
     bars = (
         _bar("AAPL", 4, 100.0),
         _bar("AAPL", 0, 116.0),
@@ -62,17 +68,42 @@ def _source() -> FakeDataSource:
 
 def main() -> None:
     """Start the system once and print the graph-pull cascade."""
-    graph = InMemoryGraphStore()
-    source = _source()
+    parser = argparse.ArgumentParser(description="graph-pull pipeline demonstrator")
+    parser.add_argument(
+        "--real",
+        action="store_true",
+        help="use live Neo4j (NEO4J_URI from .env) + real Tiingo market data",
+    )
+    args = parser.parse_args()
+
+    if args.real:
+        from dotenv import load_dotenv
+
+        from agents.provider.composite import market_source_from_settings
+        from kernel.graph_env import build_graph_from_env
+
+        load_dotenv()
+        graph = build_graph_from_env()
+        settings = ProviderSettings()
+        source = market_source_from_settings(settings)
+        tickers = _TICKERS_REAL
+        print("MODE: real  (Neo4j + Tiingo/Finnhub)")
+    else:
+        graph = InMemoryGraphStore()
+        settings = ProviderSettings(max_staleness_days=7)
+        source = _fake_source()
+        tickers = _TICKERS_DEMO
+        print("MODE: demo  (in-memory + fake data)")
+
     agent = ProviderAgent(
         InProcessBus(),
         graph=graph,
         source=source,
-        settings=ProviderSettings(max_staleness_days=7),
+        settings=settings,
     )
 
-    print("PRE-FLIGHT")
-    checks = preflight(graph, source=source, tickers=_TICKERS)
+    print("\nPRE-FLIGHT")
+    checks = preflight(graph, source=source, tickers=tickers)
     for check in checks:
         mark = "OK " if check.ok else "XX "
         print(f"  [{mark}] {check.name:<24} {check.detail}")
@@ -81,8 +112,8 @@ def main() -> None:
         return
 
     print("\nDISPATCHER")
-    place_run_request(graph, run_id="local-1", tickers=_TICKERS)
-    print(f"  placed RunRequest run-request:local-1 ({len(_TICKERS)} tickers)")
+    place_run_request(graph, run_id="local-1", tickers=tickers)
+    print(f"  placed RunRequest run-request:local-1 ({len(tickers)} tickers)")
 
     print("\nCASCADE (one graph-pull pass per agent)")
     for result in cascade_once(graph, provider_agent=agent, broker=PaperBroker()):

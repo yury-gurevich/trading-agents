@@ -12,6 +12,7 @@ from datetime import date
 from statistics import mean, pstdev
 from typing import TYPE_CHECKING
 
+from agents.provider.domain.market_calendar import trading_sessions_between
 from contracts.provider import DataQualityTrace, OHLCVBar
 
 if TYPE_CHECKING:
@@ -100,8 +101,11 @@ def _stale_tickers(
     latest: dict[str, date] = {}
     for bar in bars:
         latest[bar.ticker] = max(latest.get(bar.ticker, date.min), bar.bar_date)
+    # Staleness is measured in TRADING SESSIONS, not calendar days, so a weekend or
+    # market holiday does not flag current data as stale (DL-10).
     return {
         ticker
         for ticker in tickers
-        if ticker not in latest or (end - latest[ticker]).days > max_staleness_days
+        if ticker not in latest
+        or trading_sessions_between(latest[ticker], end) > max_staleness_days
     }

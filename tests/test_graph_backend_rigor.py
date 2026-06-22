@@ -12,6 +12,12 @@ from typing import TYPE_CHECKING
 from tests.graph_neo4j_fakes import store as fake_store
 
 from kernel import GraphStore, InMemoryGraphStore
+from kernel.graph_support import (
+    _decode_props,
+    _encode_props,
+    _neo4j_native,
+    _prim_kind,
+)
 
 if TYPE_CHECKING:
     import pytest
@@ -44,6 +50,46 @@ def test_neo4j_constraints_are_installed_once_per_label(
         "CREATE CONSTRAINT `OtherArtifact_key_unique` IF NOT EXISTS "
         "FOR (n:`OtherArtifact`) REQUIRE n.key IS UNIQUE",
     ]
+
+
+def test_prim_kind_classifies_neo4j_primitives() -> None:
+    assert _prim_kind(True) == "bool"
+    assert _prim_kind(3) == "int"
+    assert _prim_kind(1.5) == "float"
+    assert _prim_kind("x") == "str"
+    assert _prim_kind(None) is None
+
+
+def test_neo4j_native_rejects_nested_and_mixed_values() -> None:
+    assert _neo4j_native(["AAPL", "MSFT"]) is True  # homogeneous primitive array
+    assert _neo4j_native([]) is True
+    assert _neo4j_native([1, "a"]) is False  # mixed-type array
+    assert _neo4j_native([{"k": 1}]) is False  # list of maps
+    assert _neo4j_native({"k": 1}) is False  # nested map
+
+
+def test_encode_decode_round_trips_nested_props() -> None:
+    props = {
+        "ticker": "AAPL",
+        "tickers": ["AAPL", "MSFT"],
+        "snapshot": {"bars": [{"close": 1.0}], "news": {"AAPL": ["headline"]}},
+    }
+    encoded = _encode_props(props)
+    assert encoded["ticker"] == "AAPL"  # native string untouched
+    assert encoded["tickers"] == ["AAPL", "MSFT"]  # native array untouched
+    assert isinstance(encoded["snapshot"], str)  # nested map JSON-encoded
+    assert _decode_props(encoded) == props
+
+
+def test_nested_props_survive_the_neo4j_store_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A nested-map property round-trips through Neo4j just like in-memory."""
+    neo4j, _ = fake_store(monkeypatch)
+    payload = {"snapshot": {"fundamentals": {"AAPL": {"pe": 35.7}}}}
+    for graph in (InMemoryGraphStore(), neo4j):
+        node = graph.merge_node("MarketData", "md-1", payload)
+        assert node.props["snapshot"] == payload["snapshot"]
 
 
 def _edge_walk(graph: GraphStore) -> tuple[list[str], list[str]]:

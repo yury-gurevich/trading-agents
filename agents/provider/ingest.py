@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from kernel import GraphStore
 
 _DEFAULT_LOOKBACK_DAYS = 60
-_DEFAULT_POLL_INTERVAL = 3600
 
 
 def universe_from_env() -> tuple[str, ...]:
@@ -85,16 +84,17 @@ def _write_regime_context(
     )
 
 
-def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
-    """Fetch all data fields for *universe* and write the results to the graph.
+def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> str | None:
+    """Fetch all data fields for *universe*, write them to the graph, return the key.
 
     Calls get_market_data (OHLCV + news + fundamentals + sectors + earnings) and
     get_regime so the graph reflects the current market state, and persists the
     full ``MarketData`` + ``RegimeContext`` payloads for downstream graph-pull
-    agents. A no-op when *universe* is empty.
+    agents. Returns the ``MarketData`` node key written, or ``None`` (no-op) when
+    *universe* is empty.
     """
     if not universe:
-        return
+        return None
     window = _today_window()
     market_request = DataRequest(
         tickers=universe,
@@ -105,21 +105,4 @@ def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> None:
     _write_market_data(agent._graph, market, universe, window)
     regime = agent._get_regime(RegimeRequest(as_of=window.end))
     _write_regime_context(agent._graph, regime, window)
-
-
-def ingest_loop(  # pragma: no cover
-    agent: ProviderAgent,
-    universe: tuple[str, ...],
-) -> None:
-    """Proactively ingest on a schedule. Blocks forever.
-
-    Poll interval is read from PROVIDER_POLL_INTERVAL (seconds); default 3600.
-    """
-    import time
-
-    interval = int(
-        os.environ.get("PROVIDER_POLL_INTERVAL", str(_DEFAULT_POLL_INTERVAL))
-    )
-    while True:
-        ingest_once(agent, universe)
-        time.sleep(interval)
+    return f"market-data:{window.end.isoformat()}"

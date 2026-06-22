@@ -81,6 +81,10 @@ class MarketData(_Frozen):
 # imports the other.
 MARKET_DATA_LABEL = "MarketData"
 REGIME_CONTEXT_LABEL = "RegimeContext"
+# The dispatcher writes a RunRequest node to start one run ("the message on the
+# queue"); the provider polls it (DL-08) and ingests, so the provider is graph-pull
+# like every other agent and the dispatcher is the single trigger source.
+RUN_REQUEST_LABEL = "RunRequest"
 
 
 class RegimeContext(_Frozen):

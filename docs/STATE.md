@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-22 09:28 AEST
+**Last updated:** 2026-06-22 10:14 AEST
 
 **S77–S80 SHIPPED. Graph-pull pull-model now spans provider→scanner→analyst.
 Next: S81 — extend graph-pull to PM→reporter.**
@@ -281,24 +281,27 @@ exists but inactive. *Shipped* = landed. Update at every transition.
 
 ## Now
 
-**P15 — graph-pull pipeline COMPLETE (provider→…→reporter).** S77–S82 shipped: credential
-naming, provider ingestor, and graph-pull work loops for scanner/analyst/PM/**execution/
-monitor/reporter**. DL-08 closed end-to-end. Version 0.21.00.
+**P15 — pipeline COMPLETE + orchestrated.** S77–S83 shipped. DL-08 closed end-to-end
+(provider→…→reporter), and S83 added the explicit start: the dispatcher writes one `RunRequest`
+node, the provider is now graph-pull on it, and every downstream agent wakes off its
+prerequisite gate. Proven by `test_graph_pull_e2e.py` + `scripts/run_local.py` (one process,
+no store). Version 0.22.00.
 
 **Critical-path now #1:** Aura trial lapses ~2026-06-29 (~7 days). Permanent graph store
 (self-host Neo4j on a small Azure VM, ~$15/mo; Enterprise if the dev licence lands) must be
 stood up before then — the whole graph-pull fleet has nowhere durable to run otherwise.
-Reminder set for 2026-06-24 (dev-licence check). Next code branch: `sprint-83-...` TBD.
+Reminder set for 2026-06-24 (dev-licence check). Calendar event also set.
 
 ## Next
 
 - **Permanent graph store** — THE blocker. Self-host Neo4j on a small Azure VM (~$15/mo)
   before Aura lapses 2026-06-29. Enterprise (free) if the developer licence comes through,
   else Community. WSL2/local Docker stays off until the trial expires.
-- **S83 (0.22.00)** — forecaster + control-plane agents (operator/supervisor/curator/
-  researcher) work loops; the last `idle_loop()` holders.
-- **Fleet run-through** — once the store is live, exercise provider→reporter end-to-end against
-  it (in-memory tests pass today; real-store run pending).
+- **Fleet run-through** — once the store is live, run `provider→reporter` against it for real
+  (in-memory cascade passes today; real-store run pending).
+- **Dispatcher cron (S84?)** — schedule the daily `RunRequest` so the fleet runs hands-off.
+- **S85? — forecaster + control-plane agents** (operator/supervisor/curator/researcher) work
+  loops; the last `idle_loop()` holders.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 
 ## Workflow

@@ -249,6 +249,30 @@ S80 = scanner→analyst; S81 = analyst→PM; S82 = execution+monitor+reporter. T
 operational, not architectural: a permanent reachable graph store (see DL-05 / the permanent-store
 follow-on) before the Aura trial lapses ~2026-06-29.
 
+**S83 (2026-06-22) — the explicit start: dispatcher trigger + provider becomes graph-pull.**
+Before S83 nothing "started a run" in the graph-pull world: the provider self-triggered on a
+timer (`ingest_loop`, S78) and the only `Dispatcher` was the P14 **pub/sub** one, which can't
+drive containers (no shared in-process bus). **Operator model (2026-06-22):** the dispatcher
+places ONE "message on the queue" to trigger run #1; everything downstream is woken by
+"completing the prerequisite gate". **Decision:** realise the "message on the queue" as a
+`RunRequest` **graph node** (DL-08's graph-as-queue), and make the **provider graph-pull on it**
+(`agents/provider/poll.py`: `find_pending` over `RunRequest` lacking `INGESTED_BY` +
+`ingest_run_node`; entrypoint swaps `ingest_loop`→`work_loop`). So the dispatcher's RunRequest is
+the *single* trigger source and **every** agent (provider included) is uniform graph-pull.
+`orchestration/start.py` adds pre-flight checks + `place_run_request`; `orchestration/
+local_pipeline.py`'s `cascade_once` runs one poll pass per agent (the fleet does this
+continuously, one container each); `scripts/run_local.py` is the runnable demonstrator and
+`test_graph_pull_e2e.py` is the first end-to-end proof. **Ruled out:** (a) keeping the provider
+timer-self-triggering (rejected — no explicit "start", and two trigger sources); (b) reusing the
+pub/sub `Dispatcher` for the fleet (can't — needs one in-process bus across containers). The P14
+`Dispatcher` is left intact as the in-process dev path. **Deferred:** a **dispatcher cron** to
+place the daily RunRequest on a schedule (operator deferred) — today it's placed by hand / the
+demonstrator.
+
+**Status.** DECIDED + COMPLETE (orchestration trigger). The pipeline now has an explicit
+single-trigger start and a uniform graph-pull model end to end, proven in one process. Real-fleet
+run still gated on the permanent graph store.
+
 ---
 
 ## DL-08a · Neo4j credentials distribution — KV secret vs plain env var  ·  status: OPEN
@@ -379,3 +403,183 @@ Community dump/load + APOC export on a schedule. Not urgent now (nothing persist
 horizon as the VM decision (DL-05).
 
 **Small follow-up (when WSL2 returns post-trial):** verify no code/test hard-depends on the named db.
+
+---
+
+## DL-09 · Filter decisions as a labeled training source — measure to improve  ·  status: DRAFT (2026-06-22)
+
+**Question.** The scanner filters drop tickers (`min_price`, `min_average_volume`,
+`min_relative_strength`, `max_beta`, `earnings_window`). How do we *prove* a filter is right, and
+turn its decisions into labeled data for LLM/predictor training? "I need deterministic methods to
+prove the filter is right … We need to be able to measure it in order to improve it." This is to be
+**one source among several** feeding a training set.
+
+**The gap.** A dropped ticker vanishes — we never learn what it would have done, so there is no
+label and no way to score the filter. `FilterTrace.dropped_by_filter` only *counts* drops
+(`{min_relative_strength: 1}`); it carries neither the per-ticker features judged nor the outcome.
+
+**Direction (two mechanisms + a measurement):**
+
+1. **Per-ticker verdict record.** Persist a `FilterVerdict(ticker, decision, filter_fired, features)`
+   on each `ScanRun` — every evaluated ticker, survived or dropped, with the exact metrics the filter
+   judged (price, avg_volume, relative_strength, beta, days_to_earnings). This is the example's
+   *input*; today only aggregate counts survive.
+2. **Global `bypass_scanner_filter` flag (default off).** When on, all evaluated tickers become
+   survivors (tagged `bypassed=True`) but the verdict still records what the filter *would* have
+   decided. Dropped-but-bypassed tickers flow analyst→PM→execution→monitor, so their realized
+   outcome becomes the **label**. This is the only way to get the counterfactual — a ticker the
+   filter would have dropped, allowed to prove the drop right or wrong.
+3. **Confusion matrix per filter** (the evidence, computed deterministically from recorded verdicts +
+   realized returns): dropped×down = good drop, dropped×up = missed winner, kept×up = good keep,
+   kept×down = wrong keep. Yields per-filter precision and miss-rate → which filters earn their place
+   and which throw away winners. Reproducible from stored records, so it is provable, not anecdotal.
+
+**Label decision (operator, 2026-06-22): record BOTH labels side by side.** Each verdict carries
+(a) **raw forward return** over a fixed horizon from the bypassed bars — the filter measured *in
+isolation*, deterministic, independent of PM behavior; and (b) the **full-pipeline trade outcome**
+(close trigger after bypass runs PM→execution→monitor) — the filter *as actually traded*. Two
+columns let us separate "the filter dropped a name that rose" from "the filter dropped a name the PM
+would have rejected anyway" — i.e. attribute misses to the filter vs to downstream gates.
+
+**Plugs into existing machinery — not a parallel path.** The curator already turns
+`ExampleRecord(content, label, source_ref, metadata)` → `DatasetManifest` (train/val/test) →
+advisory `Predictor`; its sole source today is `TradeNarrative` lineage labeled by close trigger.
+Filter verdicts become a **second assembler** (`assemble_filter_examples`) feeding the same pipeline.
+
+**Platform/pack reading.** The collect→measure→improve *loop* (verdict record, bypass, outcome
+labeling, confusion matrix, curator dataset/predictor) is **substrate** — it is the "text-defined
+business" self-improvement mechanism. The specific filter *features* are **trading-pack**. So this is
+a pack-specific assembler feeding the substrate curator — a clean test case for the platform/pack wall
+work queued next.
+
+**Ruled out.** (a) Logging only the aggregate `dropped_by_filter` counts — no per-ticker features and
+no outcome, so unmeasurable. (b) Recording verdicts *without* bypass — gives the filter's decision but
+never the counterfactual label, so drops can never be scored, only keeps. (c) A bespoke training-data
+store outside the curator — duplicates the existing ExampleRecord/Manifest/Predictor loop.
+
+**Status.** DRAFT — direction agreed (operator, 2026-06-22); collection mechanics to be specced as a
+sprint. **Sequencing (operator, 2026-06-22): Neo4j testing track finishes first**, then build the
+**collection side** (per-ticker verdict + dual labels + bypass on the scanner, persisted to ScanRun),
+then the **measurement side** (curator filter-example assembler + per-filter confusion-matrix metric).
+Graduate to an ADR once the verdict schema and the bypass semantics are fixed in code.
+
+---
+
+## DL-10 · Staleness gate counts calendar days, not trading sessions  ·  status: OPEN (2026-06-22)
+
+**How it surfaced.** First live Aura run (3 tickers, 2026-06-22). The batch trace showed
+`analyst: scored=0 rejected=2`, both rejected `provider market data degraded` — i.e. the analyst
+bailed at `run.py:39` (`market.quality.used_fallback`) before scoring anything. Tracing upstream:
+`MarketData.quality` = `{used_fallback: True, stale_tickers: (AAPL, GOOGL, MSFT), notes:
+(stale_or_missing_tickers,)}`. The latest bar for every ticker was **2026-06-18, only 4 calendar
+days before the window-end** — fresh data, yet condemned as stale.
+
+**Root cause.** `agents/provider/domain/integrity.py::_stale_tickers` measures
+`(window.end - latest_bar).days > max_staleness_days` in **calendar days**, with the default
+`max_staleness_days = 3`. But the setting's own `why` says *"older than three **sessions**"* — the
+intent is **trading sessions**, the implementation is **calendar days**. They diverge across any
+market closure:
+
+- Thu Jun 18 = last real session · Fri Jun 19 = Juneteenth (NYSE closed) · Sat–Sun = weekend ·
+  Mon Jun 22 = run date. Jun 18's close is the **freshest data that can exist** — zero sessions stale
+  — but **4 calendar days** old → `4 > 3` → whole batch flagged degraded → entire pipeline produces
+  nothing. One ordinary holiday weekend silently kills every run.
+
+**Why it matters.** A calendar-day staleness gate conflates *"the data is genuinely old"* with
+*"the market was closed."* Every Monday after a holiday Friday (and any Tuesday after a Mon holiday)
+trips it. The trade side of the pipeline goes dark precisely when nothing is actually wrong. This is
+a correctness flaw in the degraded-data guard, not a tuning nit.
+
+**Options (not yet decided):**
+
+- **(a) Count trading sessions** between `latest_bar` and `window.end` using a market calendar
+  (exchange holiday + weekend aware). Correct, but introduces a calendar dependency/source.
+- **(b) Skip weekends + a static holiday set** in the day-count. Cheaper, no live dependency, but the
+  holiday list must be maintained and is exchange-specific.
+- **(c) Widen the default** (e.g. `max_staleness_days = 5`) as a stopgap. Trivial, but a band-aid: a
+  4-day holiday stretch (e.g. Thanksgiving, year-end) can still exceed any fixed calendar bound while
+  the data is current. Masks rather than fixes.
+
+**Ruled out.** Leaving it calendar-day with the default 3 — demonstrably breaks on a normal holiday
+weekend (this run). Also note the `--real` demo path used the default 3 while the in-memory demo
+passes `max_staleness_days=7`, so the in-memory tests **never exercised the degraded path** — the
+gap was invisible until live data hit it.
+
+**Status.** OPEN. Recommendation on record: **(a) trading-session count via a market calendar** — it
+matches the stated intent and is the only option that is correct across arbitrary closures. Decide
+before the staleness logic is next touched; until then a degraded batch is at least now **visible**
+in the trace (quality block + per-ticker reject reasons, shipped 2026-06-22). Tied to the broader
+"what does *stale* mean for this domain" question — a pack-level (trading) policy, not substrate.
+
+---
+
+## DL-11 · Aura backup/restore — API surface vs console-only ops  ·  status: NOTED (2026-06-22)
+
+**From the Neo4j testing track (2026-06-22), verified against the live Aura Professional instance:**
+
+- **Snapshot create + list work over the management API** (`POST`/`GET /v1/instances/{id}/snapshots`).
+  `infra/aura.ps1 snapshot|snapshots` drive them. Note the create response carries **only**
+  `snapshot_id` (not `status`/`timestamp`) — those appear in the list once the backup completes;
+  the script was fixed to stop dereferencing the absent fields.
+- **In-place restore is NOT available over the API.** `POST /v1/instances/{id}/restore` returns
+  **`403 {"error": "Requested endpoint is forbidden"}`** for this key/tier. Restore is a **console-only**
+  action (console.neo4j.io → instance → Snapshots → ↺). `infra/aura.ps1 restore` therefore cannot
+  drive it; kept for the day the endpoint is permitted, but treat restore as a manual console step.
+- **No byte-size in the API.** Snapshot objects expose `{snapshot_id, status, timestamp, profile,
+  exportable}` — no size. On-disk store size is observable only from inside the DB via Browser
+  `:sysinfo`; the serialized property payload of one batch run measured ~27.7 KB (MarketData node
+  dominates at ~24 KB).
+- **Console timestamps are local (AEST/+10); the API reports UTC** — a 05:30:11 UTC snapshot shows as
+  15:30:11 in the console. Worth remembering when matching a CLI-triggered snapshot to a console row.
+
+**Restore proven, end to end.** Planted a `RestoreProbe` sentinel node *after* a snapshot, restored
+from that snapshot via the console, and confirmed the sentinel's label no longer exists — the DB rolled
+back exactly to the snapshot point while all pre-snapshot pipeline data survived. Backup/restore is
+trustworthy; the only constraint is that restore is a manual console operation, not scriptable here.
+
+**Status.** NOTED — operational finding, no open decision. Revisit `aura.ps1 restore` if Neo4j later
+exposes the restore endpoint to API keys.
+
+---
+
+## DL-12 · Platform/pack separation — master grant policy is the first leak  ·  status: IN PROGRESS (2026-06-22)
+
+**Frame (ADR-0012).** The master is **substrate** (fleet bootstrap mechanism); it must not encode
+trading-pack knowledge. `agents/master/grants.py::DEFAULT_GRANTS` violated this — it hardcoded all 12
+trading agent types and domain capabilities (`broker`, `data_feeds`, `ohlcv`, …) inside the substrate.
+First named leak to close in the platform/pack split.
+
+**Step 1 shipped (2026-06-22): the injection seam.** `MasterAgent.__init__` now takes
+`grant_policy: GrantPolicy | None` (`GrantPolicy = Mapping[str, dict[str, object]]`); `activate()`
+reads the injected policy, not the module global. Default still falls back to `DEFAULT_GRANTS` so
+behavior is unchanged and all callers keep working. Proven by a test that injects a custom policy: a
+`widget` type (absent from `DEFAULT_GRANTS`) activates while `scanner` (present in `DEFAULT_GRANTS`,
+absent from the injected policy) is rejected — i.e. the master genuinely consults the injected policy.
+This is the load-bearing seam; nothing else in the split can proceed without it.
+
+**The hard decision still open — WHERE the trading policy lives + HOW the master receives it.** The
+import boundary (`kernel ← contracts ← agents ← orchestration/surfaces`) blocks the obvious move:
+
+- The trading grant policy is pack config → it belongs in a pack module (e.g. `orchestration/packs/`).
+- But `agents/master/entrypoint.py` (the master's container bootstrap) is in the **agents** layer and
+  **cannot import** `orchestration/packs/` — agents may not import orchestration. So the production
+  composition point for the master cannot pull a orchestration-located policy by import.
+
+**Options (not yet decided):**
+
+- **(a) Policy as data the master loads from config** (a JSON/YAML grant-policy file, path via
+  `MasterSettings`; the trading pack ships the file). Substrate gains a generic "load a grant policy"
+  mechanism; the pack supplies content as *data*, never as a Python import → no boundary violation.
+  Matches the container-per-agent "agents start braindead, configured by data" model. Most correct.
+- **(b) A top-level `packs/` package importable by `agents`** — inverts the dependency (substrate
+  importing pack); contradicts ADR-0012. Rejected.
+- **(c) Leave `DEFAULT_GRANTS` in `agents/master` as the default, relocate only the *type knowledge*
+  later** — defers the real cut; the substrate still ships trading data. Stopgap only.
+
+**Ruled out.** Importing pack grants into the master entrypoint (option b's boundary inversion).
+
+**Status.** IN PROGRESS — seam shipped; placement deferred. Recommendation on record: **(a) grant
+policy as a pack-supplied data file loaded via MasterSettings**. Same pattern will apply to the second
+leak (`agents/master/secret_map.py`, which also enumerates trading agent types). Decide (a) vs revisit
+before relocating `DEFAULT_GRANTS` out of the substrate. Window-limited stopping point: the seam is in,
+green, and reversible; the data-vs-import placement is the next session's first call.

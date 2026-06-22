@@ -120,6 +120,37 @@ def test_activate_unknown_agent_type_raises(master: MasterAgent) -> None:
     assert len(master._graph.list_nodes("AgentInstance")) == 0
 
 
+# ── injected grant policy ────────────────────────────────────────────────────
+
+
+def _ehlo(agent_type: str) -> EHLOMessage:
+    return EHLOMessage(
+        ephemeral_boot_id=f"boot:{agent_type}",
+        agent_type=agent_type,
+        capability_declaration={},
+    )
+
+
+def test_activate_uses_injected_grant_policy_not_default() -> None:
+    """Master activates types from the injected policy and rejects ones outside it.
+
+    Proves the grant policy is injected, not read from DEFAULT_GRANTS: a custom
+    'widget' type (absent from DEFAULT_GRANTS) activates, while 'scanner' (present
+    in DEFAULT_GRANTS but absent from this policy) is rejected.
+    """
+    policy: dict[str, dict[str, object]] = {
+        "widget": {"messaging": {"operations": ["publish"]}}
+    }
+    master = MasterAgent(graph=InMemoryGraphStore(), grant_policy=policy)
+    master.start()
+
+    activate = master.activate(_ehlo("widget"))
+    assert activate.capability_grants == policy["widget"]
+
+    with pytest.raises(ValueError, match="unknown agent_type"):
+        master.activate(_ehlo("scanner"))
+
+
 # ── drain ────────────────────────────────────────────────────────────────────
 
 

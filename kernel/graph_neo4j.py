@@ -26,7 +26,7 @@ from kernel.graph_cypher import (
 )
 from kernel.graph_neo4j_config import GraphSettings
 from kernel.graph_neo4j_queries import Neo4jGraphQueries
-from kernel.graph_support import Props  # noqa: TC001 - public store signatures.
+from kernel.graph_support import Props, _encode_props
 
 
 class Neo4jGraphStore(GraphStore, Neo4jGraphQueries):
@@ -60,6 +60,7 @@ class Neo4jGraphStore(GraphStore, Neo4jGraphQueries):
         with fault_boundary(
             self.sink, agent="kernel", module="kernel.graph", reraise=True
         ):
+            encoded = _encode_props(props)
             label_id = _identifier(label)
             self._ensure_constraint(label, label_id)
             current = self._match_node(label_id, key)
@@ -69,11 +70,11 @@ class Neo4jGraphStore(GraphStore, Neo4jGraphQueries):
                     raise ValueError(
                         "schema_version cannot change for an existing node"
                     )
-                new_props = _new_props(stored, props)
+                new_props = _new_props(stored, encoded)
                 if new_props:
                     current = self._set_node_props(label_id, key, new_props)
                 return _node_from_props(label, key, current)
-            stored_props = {"key": key, "schema_version": schema_version, **dict(props)}
+            stored_props = {"key": key, "schema_version": schema_version, **encoded}
             record = self._one(
                 _merge_node_query(label_id),
                 key=key,

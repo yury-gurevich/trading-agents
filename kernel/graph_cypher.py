@@ -12,7 +12,7 @@ from collections.abc import Mapping  # noqa: TC003 - helper annotations stay sim
 from typing import Any
 
 from kernel.graph import Node
-from kernel.graph_support import Props, _append_props
+from kernel.graph_support import Props, _append_props, _decode_props
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -101,4 +101,9 @@ def _node_from_props(label: str, key: str, props: Mapping[str, Any]) -> Node:
     stored = dict(props)
     schema_version = int(stored.pop("schema_version"))
     stored.pop("key", None)
-    return Node(label=label, key=key, props=stored, schema_version=schema_version)
+    return Node(
+        label=label,
+        key=key,
+        props=_decode_props(stored),
+        schema_version=schema_version,
+    )

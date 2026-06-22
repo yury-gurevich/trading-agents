@@ -74,6 +74,7 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
             if regime_node
             else None
         )
+        q = market.quality
         print("[provider]")
         print(f"  tickers   {len(tickers)}  ->  {' '.join(tickers)}")
         bars_str = "  ".join(f"{t}:{n}" for t, n in sorted(bars.items()))
@@ -84,6 +85,12 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
         if regime:  # pragma: no branch
             vix = f"  vix={regime.vix:.1f}" if regime.vix is not None else ""
             print(f"  regime    {regime.label}{vix}")
+        flag = "DEGRADED" if q.used_fallback else "ok"
+        print(f"  quality   {flag}  returned={q.returned}/{q.requested}")
+        if q.stale_tickers:
+            print(f"  stale     {' '.join(q.stale_tickers)}")
+        if q.notes:
+            print(f"  notes     {' '.join(q.notes)}")
         print()
 
     scan_node = nodes.get("ScanRun")
@@ -127,6 +134,8 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
                 f"  conf={r.confidence:.2f}  tech={r.technical_score:.1f}{senti}"
             )
             print(line)
+        for arej in rs.rejections:
+            print(f"  {arej.ticker:<6} REJECT  {arej.reason}")
         print()
 
     pm_node = nodes.get("PMRun")

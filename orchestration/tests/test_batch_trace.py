@@ -145,15 +145,17 @@ def test_print_trace_degraded_data_exposes_reasons(
 ) -> None:
     """print_trace surfaces the quality block and per-ticker analyst reject reasons.
 
-    Bars older than max_staleness_days mark the batch stale -> provider quality
-    DEGRADED -> analyst rejects every candidate with 'provider market data
-    degraded'. Covers the quality/stale/notes lines and the rejection loop.
+    Bars older than max_staleness_days (in trading sessions, DL-10) mark the batch
+    stale -> provider quality DEGRADED -> analyst rejects every candidate with
+    'provider market data degraded'. Covers the quality/stale/notes lines and the
+    rejection loop. ~24 calendar days back is well past 7 sessions even with the
+    holiday/weekend exclusion.
     """
     bars = (
-        bar("AAPL", 12, 100.0),
-        bar("AAPL", 8, 116.0),
-        bar("MSFT", 14, 100.0),
-        bar("MSFT", 8, 110.0),
+        bar("AAPL", 28, 100.0),
+        bar("AAPL", 24, 116.0),
+        bar("MSFT", 30, 100.0),
+        bar("MSFT", 24, 110.0),
     )
     graph = _cascade(FakeDataSource(bars=bars, vix=12.0), ("AAPL", "MSFT"), "deg")
     assert print_trace(graph, "deg") == 7

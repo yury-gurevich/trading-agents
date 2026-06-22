@@ -505,11 +505,15 @@ weekend (this run). Also note the `--real` demo path used the default 3 while th
 passes `max_staleness_days=7`, so the in-memory tests **never exercised the degraded path** — the
 gap was invisible until live data hit it.
 
-**Status.** OPEN. Recommendation on record: **(a) trading-session count via a market calendar** — it
-matches the stated intent and is the only option that is correct across arbitrary closures. Decide
-before the staleness logic is next touched; until then a degraded batch is at least now **visible**
-in the trace (quality block + per-ticker reject reasons, shipped 2026-06-22). Tied to the broader
-"what does *stale* mean for this domain" question — a pack-level (trading) policy, not substrate.
+**Status.** RESOLVED (S87, 2026-06-22, 0.23.04) — shipped **option (b): trading-session count via a
+static NYSE holiday set + weekend exclusion**, dependency-free, over option (a)'s market-calendar
+library. `agents/provider/domain/market_calendar.py::trading_sessions_between` counts NYSE sessions in
+`(latest_bar, window_end]`; `integrity._stale_tickers` flags `> max_staleness_days` sessions instead of
+calendar days. The Jun-18→Jun-22 case is now **1 session** (was 4 days), so fresh data across a holiday
+weekend no longer kills the batch; a genuinely old bar still flags. Holiday set covers 2024–2027 (a date
+past the window falls back to weekday counting); upgrade path = `exchange_calendars` /
+`pandas-market-calendars` when the window needs extending or per-exchange precision. This is a pack-level
+(trading) calendar living in the provider agent, not substrate.
 
 ---
 

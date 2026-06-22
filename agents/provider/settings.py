@@ -52,10 +52,13 @@ class ProviderSettings(AgentSettings):
     )
     max_staleness_days: int = tunable(
         3,
-        why="Market data older than three sessions should be called out as stale.",
+        why=(
+            "Market data older than three TRADING SESSIONS is called out as stale; "
+            "the count excludes weekends + NYSE holidays (DL-10), not calendar days."
+        ),
         ge=0,
         le=30,
-        unit="days",
+        unit="sessions",
     )
     vix_risk_on_threshold: float = tunable(
         15.0,

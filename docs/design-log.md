@@ -403,3 +403,62 @@ Community dump/load + APOC export on a schedule. Not urgent now (nothing persist
 horizon as the VM decision (DL-05).
 
 **Small follow-up (when WSL2 returns post-trial):** verify no code/test hard-depends on the named db.
+
+---
+
+## DL-09 · Filter decisions as a labeled training source — measure to improve  ·  status: DRAFT (2026-06-22)
+
+**Question.** The scanner filters drop tickers (`min_price`, `min_average_volume`,
+`min_relative_strength`, `max_beta`, `earnings_window`). How do we *prove* a filter is right, and
+turn its decisions into labeled data for LLM/predictor training? "I need deterministic methods to
+prove the filter is right … We need to be able to measure it in order to improve it." This is to be
+**one source among several** feeding a training set.
+
+**The gap.** A dropped ticker vanishes — we never learn what it would have done, so there is no
+label and no way to score the filter. `FilterTrace.dropped_by_filter` only *counts* drops
+(`{min_relative_strength: 1}`); it carries neither the per-ticker features judged nor the outcome.
+
+**Direction (two mechanisms + a measurement):**
+
+1. **Per-ticker verdict record.** Persist a `FilterVerdict(ticker, decision, filter_fired, features)`
+   on each `ScanRun` — every evaluated ticker, survived or dropped, with the exact metrics the filter
+   judged (price, avg_volume, relative_strength, beta, days_to_earnings). This is the example's
+   *input*; today only aggregate counts survive.
+2. **Global `bypass_scanner_filter` flag (default off).** When on, all evaluated tickers become
+   survivors (tagged `bypassed=True`) but the verdict still records what the filter *would* have
+   decided. Dropped-but-bypassed tickers flow analyst→PM→execution→monitor, so their realized
+   outcome becomes the **label**. This is the only way to get the counterfactual — a ticker the
+   filter would have dropped, allowed to prove the drop right or wrong.
+3. **Confusion matrix per filter** (the evidence, computed deterministically from recorded verdicts +
+   realized returns): dropped×down = good drop, dropped×up = missed winner, kept×up = good keep,
+   kept×down = wrong keep. Yields per-filter precision and miss-rate → which filters earn their place
+   and which throw away winners. Reproducible from stored records, so it is provable, not anecdotal.
+
+**Label decision (operator, 2026-06-22): record BOTH labels side by side.** Each verdict carries
+(a) **raw forward return** over a fixed horizon from the bypassed bars — the filter measured *in
+isolation*, deterministic, independent of PM behavior; and (b) the **full-pipeline trade outcome**
+(close trigger after bypass runs PM→execution→monitor) — the filter *as actually traded*. Two
+columns let us separate "the filter dropped a name that rose" from "the filter dropped a name the PM
+would have rejected anyway" — i.e. attribute misses to the filter vs to downstream gates.
+
+**Plugs into existing machinery — not a parallel path.** The curator already turns
+`ExampleRecord(content, label, source_ref, metadata)` → `DatasetManifest` (train/val/test) →
+advisory `Predictor`; its sole source today is `TradeNarrative` lineage labeled by close trigger.
+Filter verdicts become a **second assembler** (`assemble_filter_examples`) feeding the same pipeline.
+
+**Platform/pack reading.** The collect→measure→improve *loop* (verdict record, bypass, outcome
+labeling, confusion matrix, curator dataset/predictor) is **substrate** — it is the "text-defined
+business" self-improvement mechanism. The specific filter *features* are **trading-pack**. So this is
+a pack-specific assembler feeding the substrate curator — a clean test case for the platform/pack wall
+work queued next.
+
+**Ruled out.** (a) Logging only the aggregate `dropped_by_filter` counts — no per-ticker features and
+no outcome, so unmeasurable. (b) Recording verdicts *without* bypass — gives the filter's decision but
+never the counterfactual label, so drops can never be scored, only keeps. (c) A bespoke training-data
+store outside the curator — duplicates the existing ExampleRecord/Manifest/Predictor loop.
+
+**Status.** DRAFT — direction agreed (operator, 2026-06-22); collection mechanics to be specced as a
+sprint. **Sequencing (operator, 2026-06-22): Neo4j testing track finishes first**, then build the
+**collection side** (per-ticker verdict + dual labels + bypass on the scanner, persisted to ScanRun),
+then the **measurement side** (curator filter-example assembler + per-filter confusion-matrix metric).
+Graduate to an ADR once the verdict schema and the bypass semantics are fixed in code.

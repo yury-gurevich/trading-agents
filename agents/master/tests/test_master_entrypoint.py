@@ -7,6 +7,8 @@ External I/O: none (InMemoryGraphStore).
 
 from __future__ import annotations
 
+import base64
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from agents.master.entrypoint import build_app, select_graph_store
@@ -50,6 +52,30 @@ def test_build_app_loads_grant_policy_and_secret_map_from_paths(
         grant_policy_path=TRADING_GRANTS_PATH,
         secret_map_path=TRADING_SECRETS_PATH,
     )
+    agent, _ = build_app(
+        InMemoryGraphStore(),
+        private,
+        settings=settings,
+        secret_store=EnvVarSecretStore(),
+    )
+    ehlo = EHLOMessage(
+        ephemeral_boot_id="b", agent_type="provider", capability_declaration={}
+    )
+    activate = agent.activate(ehlo)
+    config = activate.config
+    assert "data_feeds" in activate.capability_grants
+    assert config["PROVIDER_TIINGO_API_KEY"] == "tk"  # pragma: allowlist secret
+
+
+def test_build_app_loads_pack_data_from_base64_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """build_app loads grants + secret map from base64 env content (cloud deploy)."""
+    grants_b64 = base64.b64encode(Path(TRADING_GRANTS_PATH).read_bytes()).decode()
+    secrets_b64 = base64.b64encode(Path(TRADING_SECRETS_PATH).read_bytes()).decode()
+    monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    private, _ = generate_keypair()
+    settings = MasterSettings(grant_policy_b64=grants_b64, secret_map_b64=secrets_b64)
     agent, _ = build_app(
         InMemoryGraphStore(),
         private,

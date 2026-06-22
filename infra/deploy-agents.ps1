@@ -143,10 +143,16 @@ function Up {
 
   Top "DEPLOY MASTER"
   $kv = Load-Json "key-vault.local.json"
+  # Inject the trading pack policy + secret map as base64 env content (not baked
+  # into the substrate image — keeps the master image pack-agnostic; S86 / DL-12).
+  $packs = Join-Path $PSScriptRoot "..\orchestration\packs"
+  $grantB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_grants.json")))
+  $secretB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_secrets.json")))
   $envv = @(
     "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=neo4j",
     "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=neo4j",
-    "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64"
+    "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
+    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
   )
   $mArgs = @(
     "containerapp", "create", "--name", "master", "--resource-group", $RG,

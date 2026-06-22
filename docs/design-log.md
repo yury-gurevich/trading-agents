@@ -607,3 +607,76 @@ master `Dockerfile` is **unchanged** — the same image runs any pack. `parse_gr
 `parse_secret_map` (JSON-string core) added; `load_*` delegate. The b64-content path is unit-tested; the
 ps1/compose lines are inspection-verified (not CI-run). **DL-12 is now complete** for the master; the
 only remaining ADR-0012 item is the `contracts/` substrate/pack split, deferred to a 2nd pack.
+
+---
+
+## DL-13 · Message-layer schema enforcement — bus IS bilaterally validated  ·  status: NOTED (2026-06-22)
+
+**Trigger.** A flow audit (2026-06-22) of the two message paths (P14 bus RPC vs DL-08 graph-pull)
+concluded the bus path was a schema gap: *"the bus does not validate the payload against
+`Capability.request`; the handler is expected to call `model_validate` itself."* **Verified against the
+code — that conclusion is wrong.** Recording the corrected reality so the audit's table is not trusted as-is.
+
+**What the code actually does.** Every capability handler is registered through
+`kernel/agent.py::AgentBase._bus_handler`, which wraps it:
+
+```python
+def wrapped(payload):
+    request_model  = capability.request.model_validate(payload)    # validates IN
+    result         = handler(request_model)                        # handler gets a MODEL, not a dict
+    response_model = capability.response.model_validate(result)     # validates OUT
+    return response_model.model_dump(mode="json")
+```
+
+`AgentBase.bind` (agent.py:37) and even the supervisor's hand-rolled `bind`
+(`agents/supervisor/agent.py:69`) both route through `_bus_handler`. So **request and response are
+schema-validated against the declared `Capability` types on every bus call**, by the framework, not by
+handler discretion. The raw `InProcessBus.request` is schema-agnostic (it routes dicts + enforces
+envelope + capability-exists + `caller_authorized`), but no agent registers a raw handler — they all go
+through `_bus_handler`. Handlers' own `XRequest.model_validate(request)` calls are redundant
+belt-and-suspenders. **The bus path is a typed, bilateral boundary, symmetric with graph-pull.**
+
+**The one genuine residual gap — pub/sub events.** The `subscribe()` path has **no** `_event_handler`
+wrapper analogous to `_bus_handler`; a topic carries no declared schema. Event subscribers validate by
+convention (e.g. `provider._on_market_data_request` calls `DataRequest.model_validate(event)`), but
+nothing in the framework enforces it. Events are fire-and-forget triggers, so the stakes are lower than
+request/response, but this is the real "by the handler's discretion" case. **Optional hardening
+(backlog, low priority):** an `_event_handler` wrapper + per-topic typing to make the event path
+framework-enforced too.
+
+**Accuracy nits in the audit.** (1) `model_dump(mode="json")` does not validate — it serializes an
+already-constructed (hence already-validated) model; the producer's guarantee is from model
+*construction*. (2) The graph-pull strength is real: producer constructs (validated) → `model_dump` →
+consumer `model_validate`, both importing the *same* contract class.
+
+**Status.** NOTED — no action required; request/response is bilaterally enforced on both transports.
+Event-path validation is the only open hardening item, deferred.
+
+---
+
+## DL-14 · Operational path map — spine is live, the rest is aspirational or a gap  ·  status: NOTED (2026-06-22)
+
+**Trigger.** Same flow audit (DL-13) drew 13 source→sink edges, raising the concern that the agent
+chain has many concurrent live paths. **Verified: it does not.** The diagram conflates *contract
+capabilities* with *what is actually running*. Classified by operational status:
+
+- **Class A — the live spine (7 agents on `work_loop`).** RunRequest → provider → scanner → analyst →
+  PM → execution → monitor → reporter (audit edges 1-7, 9). This is the only concurrent live flow — a
+  linear graph-pull chain, one writer per stage, exactly what `scripts/run_local.py` /
+  `test_graph_pull_e2e.py` exercise.
+- **Class B — graph re-read, not a separate message** (edge 10). PM/monitor re-read the same
+  `MarketData` node by walking lineage; no new path.
+- **Class C — NOT wired (the 5 `idle_loop` agents).** forecaster, operator, supervisor, curator,
+  researcher are still braindead. So audit edges 11 (forecaster `ShadowPrediction` — advisory, never
+  gates even when wired), 12 (operator→supervisor), 13 (→supervisor faults) are aspirational, not running.
+- **Class D — contract capability, unwired in graph-pull (a real gap).** Audit edge 8 (monitor
+  `CloseDecisionSet` → execution `execute_close`): the monitor *decides* closes (writes `CloseDecision`
+  nodes with `pnl_cents`), but `agents/execution/poll.py` has no close-handler and `monitor_pm_node`
+  takes no broker — so **positions are opened (execution submits buys via the broker) but closes are
+  decided and never executed** against a broker in the current operational path. Acceptable for
+  paper/graph-tracked positions; an honest incompleteness vs the diagram. Wire the close-execution loop
+  before live broker trading.
+
+**Status.** NOTED. Reassurance: the live system is the linear spine (A), not a many-path tangle. Open
+items: activate the 5 control-plane/advisory agents (C) and wire the close-execution loop (D) — both
+out of scope until needed; flagged so they are not mistaken for already-working.

@@ -10,15 +10,15 @@ from __future__ import annotations
 import pytest
 
 from agents.master.agent import MasterAgent
-from agents.master.grants import DEFAULT_GRANTS
 from agents.master.store import write_agent_definition
+from agents.master.tests.helpers import trading_policy
 from contracts.master import AgentState, EHLOMessage
 from kernel import InMemoryGraphStore
 
 
 @pytest.fixture
 def master() -> MasterAgent:
-    return MasterAgent(graph=InMemoryGraphStore())
+    return MasterAgent(graph=InMemoryGraphStore(), grant_policy=trading_policy())
 
 
 # ── start ────────────────────────────────────────────────────────────────────
@@ -46,15 +46,10 @@ def test_start_exposes_session_id(master: MasterAgent) -> None:
 def test_activate_returns_activate_message(master: MasterAgent) -> None:
     """MST-OUT-01: EHLO -> ACTIVATE with matching agent_type and instance_id."""
     master.start()
-    ehlo = EHLOMessage(
-        ephemeral_boot_id="boot:abc",
-        agent_type="scanner",
-        capability_declaration={},
-    )
-    activate = master.activate(ehlo)
+    activate = master.activate(_ehlo("scanner"))
     assert activate.agent_type == "scanner"
     assert activate.instance_id.startswith("scanner:")
-    assert activate.capability_grants == DEFAULT_GRANTS["scanner"]
+    assert activate.capability_grants == trading_policy()["scanner"]
 
 
 def test_activate_writes_agent_instance_node(master: MasterAgent) -> None:
@@ -86,7 +81,7 @@ def test_activate_writes_capability_grant_nodes(master: MasterAgent) -> None:
     instance_grants = [
         g for g in grants if str(g.props["instance_id"]) == activate.instance_id
     ]
-    expected_caps = set(DEFAULT_GRANTS["scanner"])
+    expected_caps = set(trading_policy()["scanner"])
     found_caps = {str(g.props["capability"]) for g in instance_grants}
     assert found_caps == expected_caps
 
@@ -131,13 +126,8 @@ def _ehlo(agent_type: str) -> EHLOMessage:
     )
 
 
-def test_activate_uses_injected_grant_policy_not_default() -> None:
-    """Master activates types from the injected policy and rejects ones outside it.
-
-    Proves the grant policy is injected, not read from DEFAULT_GRANTS: a custom
-    'widget' type (absent from DEFAULT_GRANTS) activates, while 'scanner' (present
-    in DEFAULT_GRANTS but absent from this policy) is rejected.
-    """
+def test_activate_uses_injected_grant_policy() -> None:
+    """Master activates only types in the injected policy; a custom 'widget' works."""
     policy: dict[str, dict[str, object]] = {
         "widget": {"messaging": {"operations": ["publish"]}}
     }
@@ -147,6 +137,14 @@ def test_activate_uses_injected_grant_policy_not_default() -> None:
     activate = master.activate(_ehlo("widget"))
     assert activate.capability_grants == policy["widget"]
 
+    with pytest.raises(ValueError, match="unknown agent_type"):
+        master.activate(_ehlo("scanner"))
+
+
+def test_substrate_default_knows_no_agent_types() -> None:
+    """With no injected policy the substrate knows nothing — every type is unknown."""
+    master = MasterAgent(graph=InMemoryGraphStore())
+    master.start()
     with pytest.raises(ValueError, match="unknown agent_type"):
         master.activate(_ehlo("scanner"))
 

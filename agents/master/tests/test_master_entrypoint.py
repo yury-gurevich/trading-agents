@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from agents.master.entrypoint import build_app, select_graph_store
 from agents.master.settings import MasterSettings
+from agents.master.tests.helpers import TRADING_GRANTS_PATH
+from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair
 
@@ -30,6 +32,18 @@ def test_build_app_accepts_custom_settings() -> None:
     graph = InMemoryGraphStore()
     agent, _ = build_app(graph, private, settings=settings)
     assert agent._settings.handshake_max_retries == 3
+
+
+def test_build_app_loads_grant_policy_from_path() -> None:
+    """build_app loads the pack grant policy from settings.grant_policy_path."""
+    private, _ = generate_keypair()
+    settings = MasterSettings(grant_policy_path=TRADING_GRANTS_PATH)
+    agent, _ = build_app(InMemoryGraphStore(), private, settings=settings)
+    ehlo = EHLOMessage(
+        ephemeral_boot_id="b", agent_type="provider", capability_declaration={}
+    )
+    activate = agent.activate(ehlo)
+    assert "data_feeds" in activate.capability_grants
 
 
 def test_select_graph_store_memory_returns_in_memory() -> None:

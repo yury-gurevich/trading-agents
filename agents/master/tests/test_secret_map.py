@@ -12,6 +12,7 @@ import pytest
 from agents.master.agent import MasterAgent
 from agents.master.key_vault import EnvVarSecretStore, NullSecretStore
 from agents.master.secret_map import AGENT_SECRETS, resolve_config
+from agents.master.tests.helpers import trading_policy
 from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
 
@@ -100,7 +101,9 @@ def test_master_agent_populates_config_from_store(
     """MST-DEP-02: master resolves secrets and injects them into ACTIVATE config."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-op")
     graph = InMemoryGraphStore()
-    agent = MasterAgent(graph=graph, secret_store=EnvVarSecretStore())
+    agent = MasterAgent(
+        graph=graph, secret_store=EnvVarSecretStore(), grant_policy=trading_policy()
+    )
     agent.start()
     ehlo = EHLOMessage(
         ephemeral_boot_id="b1", agent_type="operator", capability_declaration={}
@@ -112,7 +115,7 @@ def test_master_agent_populates_config_from_store(
 def test_master_agent_config_empty_when_null_store() -> None:
     """Backward-compat: NullSecretStore (the default) yields config={}."""
     graph = InMemoryGraphStore()
-    agent = MasterAgent(graph=graph)
+    agent = MasterAgent(graph=graph, grant_policy=trading_policy())
     agent.start()
     ehlo = EHLOMessage(
         ephemeral_boot_id="b2", agent_type="provider", capability_declaration={}

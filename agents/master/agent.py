@@ -12,7 +12,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from agents.master.grants import DEFAULT_GRANTS, GrantPolicy
 from agents.master.key_vault import NullSecretStore
 from agents.master.secret_map import resolve_config
 from agents.master.settings import MasterSettings
@@ -26,6 +25,7 @@ from kernel import CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
     from kernel.graph import Node
 
@@ -46,8 +46,10 @@ class MasterAgent:
         self._settings = settings or MasterSettings()
         self.sink = sink or CollectingFaultSink()
         self._secret_store: SecretStore = secret_store or NullSecretStore()
+        # No injected policy -> the substrate knows no agent types; a pack supplies one
+        # (entrypoint loads orchestration/packs/trading_grants.json).
         self._grant_policy: GrantPolicy = (
-            grant_policy if grant_policy is not None else DEFAULT_GRANTS
+            grant_policy if grant_policy is not None else {}
         )
         self._session_id: str | None = None
         self._instance_counter: dict[str, int] = {}

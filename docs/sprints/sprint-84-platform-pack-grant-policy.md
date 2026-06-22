@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split) → ADR-0012 platform/pack wall
 **Branch:** `sprint-84-platform-pack-grant-policy`
-**Status:** in progress
+**Status:** shipped (0.23.01)
 
 ---
 
@@ -65,11 +65,11 @@ A file **read by path** crosses no import boundary; the substrate gains a generi
 
 ## Exit criteria
 
-- [ ] `DEFAULT_GRANTS` no longer exists in `agents/master`; no substrate module names a trading type.
-- [ ] `load_grant_policy` reads `trading_grants.json`; a test asserts the 12 types + caps match the
+- [x] `DEFAULT_GRANTS` no longer exists in `agents/master`; no substrate module names a trading type.
+- [x] `load_grant_policy` reads `trading_grants.json`; a test asserts the 12 types + caps match the
       old table (no behavior change for the deployed fleet).
-- [ ] `MasterAgent` with no injected policy rejects every agent type (substrate knows nothing).
-- [ ] `make ci` green; 100 % coverage; every module ≤ 200 lines; import-linter unchanged.
+- [x] `MasterAgent` with no injected policy rejects every agent type (substrate knows nothing).
+- [x] `make ci` green; 100 % coverage; every module ≤ 200 lines; import-linter unchanged.
 
 ---
 

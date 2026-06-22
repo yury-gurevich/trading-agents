@@ -72,3 +72,9 @@ class ScannerSettings(AgentSettings):
         le=60,
         unit="days",
     )
+    bypass_scanner_filter: bool = tunable(
+        False,
+        why="When on, tickers the filters would drop still flow downstream (tagged "
+        "bypassed in the verdict) so their outcome can be observed — the DL-09 "
+        "counterfactual that lets a drop be scored against what actually happened.",
+    )

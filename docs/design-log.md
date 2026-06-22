@@ -457,11 +457,17 @@ no outcome, so unmeasurable. (b) Recording verdicts *without* bypass — gives t
 never the counterfactual label, so drops can never be scored, only keeps. (c) A bespoke training-data
 store outside the curator — duplicates the existing ExampleRecord/Manifest/Predictor loop.
 
-**Status.** DRAFT — direction agreed (operator, 2026-06-22); collection mechanics to be specced as a
-sprint. **Sequencing (operator, 2026-06-22): Neo4j testing track finishes first**, then build the
-**collection side** (per-ticker verdict + dual labels + bypass on the scanner, persisted to ScanRun),
-then the **measurement side** (curator filter-example assembler + per-filter confusion-matrix metric).
-Graduate to an ADR once the verdict schema and the bypass semantics are fixed in code.
+**Status.** COLLECTION SIDE SHIPPED (S88, 2026-06-22, 0.24.00). `contracts/scanner.py::FilterVerdict`
+`(ticker, decision, filter_fired, features, bypassed)` rides `FilterTrace.verdicts` (additive, scanner
+CONTRACT 0.1.0→0.2.0) and persists on `ScanRun` for free; `ScannerSettings.bypass_scanner_filter` (bool,
+default off) emits would-be-dropped tickers as survivors tagged `bypassed` so their downstream outcome
+can be observed, while the verdict records the real drop. `filters.apply_filters` reworked to emit a
+verdict per ticker (features + first-failing-filter); survivor output unchanged. **Verdict schema +
+bypass semantics are now fixed in code** — ready to graduate to an ADR.
+**REMAINING — measurement side (DL-09 part B):** (1) dual outcome labels (raw forward return + full-
+pipeline trade outcome) by walking the provenance graph from each verdict; (2) curator
+`assemble_filter_examples` → ExampleRecord/Manifest/Predictor; (3) per-filter confusion matrix
+(precision + miss-rate). Now unblocked by DL-10 (trades actually flow on live data).
 
 ---
 

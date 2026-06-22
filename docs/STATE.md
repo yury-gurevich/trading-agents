@@ -1,12 +1,14 @@
 # Project State
 
-**Last updated:** 2026-06-22 16:33 AEST
+**Last updated:** 2026-06-22 22:14 AEST
 
-**S77–S83 SHIPPED + merged to main (0.23.00), GitHub CI green. Graph-pull pipeline complete
-end-to-end; this cycle added the batch-trace subsystem, live-Neo4j hardening (2 real bugs found
-+ fixed on the first Aura run), and the first platform/pack grant-policy injection seam (DL-12).
-Next: S84 — finish platform/pack separation (relocate the trading grant policy out of the
-substrate; DL-12 step 2).**
+**S77–S85 SHIPPED. S77–S83 (graph-pull pipeline) + batch-trace + live-Neo4j hardening merged to
+main (0.23.00). S84+S85 closed BOTH platform/pack leaks in the master (DL-12): the grant policy
+(S84, 0.23.01) and the secret map (S85, 0.23.02) now live in pack data files
+(`orchestration/packs/trading_*.json`), loaded by path and injected — the master substrate names
+zero trading concepts. S84 merged to main + GitHub CI green; S85 on its branch, green locally.
+Next: S86 — deploy wiring (ship the pack JSONs into the master image + set the two MASTER_*_PATH
+env vars), then secret_map/grants deploy follow-ups; or DL-10 staleness fix / DL-09 filter source.**
 
 - **S77 (0.16.1 PATCH) DONE:** Credential-naming reconciliation — `secret_map.py` emits
   `PROVIDER_TIINGO_API_KEY` (not bare `TIINGO_API_KEY`); aligned all three entitled agents' env-var

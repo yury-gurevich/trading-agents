@@ -12,12 +12,14 @@ from typing import TYPE_CHECKING
 from agents.master.agent import MasterAgent
 from agents.master.grants import load_grant_policy
 from agents.master.http_server import serve
+from agents.master.secret_map import load_secret_map
 from agents.master.settings import MasterSettings
 from kernel.crypto import generate_keypair
 
 if TYPE_CHECKING:
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
+    from agents.master.secret_map import SecretMap
     from kernel import GraphStore
 
 
@@ -44,8 +46,9 @@ def build_app(
 ) -> tuple[MasterAgent, str]:
     """Create and start MasterAgent; return (agent, private_key_pem). Testable.
 
-    The trading grant policy is loaded from ``settings.grant_policy_path`` (a pack
-    JSON file) and injected — the substrate itself ships no agent-type knowledge.
+    The trading grant policy and secret map are loaded from their pack JSON paths
+    (``settings.grant_policy_path`` / ``secret_map_path``) and injected — the
+    substrate itself ships no agent-type or secret knowledge.
     """
     settings = settings or MasterSettings()
     grant_policy: GrantPolicy | None = (
@@ -53,11 +56,15 @@ def build_app(
         if settings.grant_policy_path
         else None
     )
+    secret_map: SecretMap | None = (
+        load_secret_map(settings.secret_map_path) if settings.secret_map_path else None
+    )
     agent = MasterAgent(
         graph=graph,
         settings=settings,
         secret_store=secret_store,
         grant_policy=grant_policy,
+        secret_map=secret_map,
     )
     agent.start()
     return agent, private_key_pem

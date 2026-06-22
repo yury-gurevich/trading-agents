@@ -583,7 +583,14 @@ grant table now lives in `orchestration/packs/trading_grants.json`, loaded by pa
 `MasterSettings.grant_policy_path` (`load_grant_policy` in `agents/master/grants.py`) and injected by
 the master entrypoint — never imported, so the `agents↛orchestration` boundary holds. `DEFAULT_GRANTS`
 is deleted; with no injected policy the substrate knows no agent types. Deployed behavior unchanged
-(loaded policy == old table, asserted). 0.23.01 (PATCH). **Remaining for DL-12:** the second leak,
-`agents/master/secret_map.py` (also enumerates trading agent types) — same data-file treatment, next
-sprint (S85). **Deploy follow-up (untested by CI):** ship `trading_grants.json` into the master image
-and set `MASTER_GRANT_POLICY_PATH` in `infra/deploy-agents.ps1` / the master Dockerfile.
+(loaded policy == old table, asserted). 0.23.01 (PATCH).
+
+**BOTH MASTER LEAKS CLOSED (S85, 2026-06-22, 0.23.02).** The second leak,
+`agents/master/secret_map.py::AGENT_SECRETS`, got the identical treatment: the per-agent
+`(kv_name, env_name)` entitlement table moved to `orchestration/packs/trading_secrets.json`, loaded
+via `MasterSettings.secret_map_path` (`load_secret_map`) and injected into `MasterAgent`;
+`resolve_config(agent_type, store, secret_map)` now takes the map as a parameter. `AGENT_SECRETS`
+deleted. **The master substrate now names zero trading concepts** — grants and secrets are both
+pack-supplied data. **Deploy follow-up (untested by CI):** ship `trading_grants.json` +
+`trading_secrets.json` into the master image and set `MASTER_GRANT_POLICY_PATH` +
+`MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master Dockerfile.

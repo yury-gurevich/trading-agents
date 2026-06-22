@@ -42,5 +42,12 @@ class MasterSettings(AgentSettings):
             "ships no grants, so every agent type is unknown until a pack supplies one."
         ),
     )
+    secret_map_path: str = tunable(
+        "",
+        why=(
+            "Filesystem path to the pack's secret-map JSON; empty = the substrate "
+            "entitles no agent type to any secret until a pack supplies the table."
+        ),
+    )
 
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

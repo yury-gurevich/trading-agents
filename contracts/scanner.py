@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 
 from contracts.common import Explanation, Provenance, ScanRequest, Ticker, _Frozen
@@ -23,12 +25,30 @@ class Candidate(_Frozen):
     """Filter inputs worth carrying forward (beta, relative_strength, returns...)."""
 
 
+class FilterVerdict(_Frozen):
+    """Per-ticker scan decision + the features it was judged on.
+
+    The labeled training record for DL-09: every evaluated ticker gets a verdict
+    (survived, or dropped by ``filter_fired``) with the ``features`` the filters
+    judged. ``bypassed`` is True when a would-be-dropped ticker was let through
+    anyway (``bypass_scanner_filter``) so its downstream outcome can be observed.
+    """
+
+    ticker: Ticker
+    decision: Literal["survived", "dropped"]
+    filter_fired: str | None = None
+    features: dict[str, float] = Field(default_factory=dict)
+    bypassed: bool = False
+
+
 class FilterTrace(_Frozen):
     """Why the universe shrank — every drop is attributable."""
 
     universe_size: int = Field(ge=0)
     evaluated: int = Field(ge=0)
     dropped_by_filter: dict[str, int] = Field(default_factory=dict)
+    verdicts: tuple[FilterVerdict, ...] = ()
+    """Per-ticker decisions + features — the DL-09 filter-quality training record."""
 
 
 class CandidateSet(_Frozen):
@@ -41,7 +61,7 @@ class CandidateSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="scanner",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Reduce the full tradable universe to a small, ranked set of candidates "
         "worth deeper analysis, and explain why each survived or was filtered out."

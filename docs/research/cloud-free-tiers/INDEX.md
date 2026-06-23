@@ -4,7 +4,7 @@
 cloud services across the three major providers. Reference material for infrastructure and
 data-store placement decisions — read these before assuming a component needs a paid tier.
 
-**Consuming decisions:** [R002 db-placement](../db-placement.md) and `docs/design-log.md`
+**Consuming decisions:** [R002 db-placement](../db-placement/db-placement.md) and `docs/design-log.md`
 **DL-15** (substrate registry should not use Neo4j → candidate: Azure Cosmos DB free) and
 **DL-16/DL-17** (data-feed + ingest pacing). Azure is the project's substrate (Container Apps
 fleet in `australiaeast`), so the Azure catalog is the primary one for placement choices.
@@ -18,7 +18,7 @@ fleet in `australiaeast`), so the Azure catalog is the primary one for placement
 ## Known discrepancy to verify
 
 The Azure catalog lists **Cosmos DB free = 1,000 RU/s + 5 GB storage**, while
-[R002 db-placement](../db-placement.md) cited **1,000 RU/s + 25 GB**. The 25 GB figure was the
+[R002 db-placement](../db-placement/db-placement.md) cited **1,000 RU/s + 25 GB**. The 25 GB figure was the
 historical lifetime-free allowance; Microsoft has revised free-tier storage over time. **Verify the
 live limit in the Azure portal before sizing the substrate registry against either number.**
 

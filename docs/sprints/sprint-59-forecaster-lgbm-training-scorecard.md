@@ -24,7 +24,7 @@ the OHLCV + forward-return side.
 
 - Pattern to follow: [Sprint 57](sprint-57-forecaster-sentiment-scorecard.md) (the
   sentiment scorecard) for the capability structure; all 7 invariants in
-  [R001](../research/qlib-integration.md) §"For Coding Agents" still bind verbatim.
+  [R001](../research/qlib-integration/qlib-integration.md) §"For Coding Agents" still bind verbatim.
 - The S58 `build_features` + `FeatureRow` are reused as-is; no changes to them.
 - `pyqlib` is still uninstallable on 3.13; lightgbm is accessed via `importlib` as
   in S58 `LightGBMModel`.

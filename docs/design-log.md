@@ -712,7 +712,7 @@ system because it is the requirement that came from trading demands."
    monitor → reporter lineage, graph-traversal-heavy. Cypher queries throughout `kernel/graph_cypher.py`.
    Grows ~55 nodes / ~60 rels per run. Neo4j is genuinely the right fit here.
 
-**Research complete — see [docs/research/db-placement.md](research/db-placement.md) for full
+**Research complete — see [docs/research/db-placement/db-placement.md](research/db-placement/db-placement.md) for full
 capability mapping against AuraDB Free, Azure free-tier options, and self-host alternatives.**
 
 **KEY FINDING (2026-06-23): the substrate registry writes are audit-only. Code inspection of

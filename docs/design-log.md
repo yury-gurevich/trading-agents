@@ -786,3 +786,42 @@ share Tiingo's per-symbol shape. Tiingo code is retained (still tested) and can 
 **Follow-ups (later).** (1) Optional Tiingo→Alpaca failover wrapper if Alpaca `iex` coverage proves
 thin for any name. (2) Decide `adjustment` policy (raw vs split/dividend-adjusted) for momentum
 inputs — currently raw. (3) Supersede note on ADR-0006's "Tiingo primary" line.
+
+## DL-17 · Chunked ingest — paced sub-batches reassembled into one batch  ·  status: DECIDED (2026-06-24)
+
+**Trigger.** With Alpaca solving OHLCV (DL-16), a 100-ticker run was still `DEGRADED`. Measured
+cause: `validate_bars` sets `used_fallback = bool(notes)`, and the **optional fields are all
+Finnhub, fetched one HTTPS call per ticker** — 100 tickers × 4 fields (fundamentals, news, sectors,
+earnings) = **~400 calls fired in a burst**, far over Finnhub free's ~60/min, so all four pillars
+fault and taint the batch. (Sentiment/AV is not requested by ingest, so its 25/day cap is moot.)
+
+**Operator framing.** "Put the batch back together: first 25 are asked for and downloaded, marked
+as batch B part one, and so on until the last ticker, then we put the batch together and send it off
+down the chain. From the point of view of model training the batch is the best breakdown of
+information — it needs regular intervals. Test it at various times of day, measure, re-run with other
+parameters until we improve." → **continuous improvement: guess, run, measure, re-run.**
+
+**Decision.** Add a chunked ingest path: split the universe into `ingest_chunk_size` sub-batches,
+fetch each through the provider's normal `_get_market_data` (its own fault boundary + a per-chunk
+`MarketSnapshot` "part"), `sleep(ingest_chunk_delay_seconds)` between chunks so the aggregate
+per-minute call rate stays under the free-tier ceiling, then **reassemble one `MarketData` batch over
+the full universe** (concatenated bars, merged field dicts, folded quality) and write it as the single
+downstream work item the scanner consumes. `ingest_once` dispatches to the chunked path when
+`ingest_chunk_size > 0`; default 0 preserves single-shot behaviour. New module
+`agents/provider/ingest_chunked.py`; tunables `ingest_chunk_size`, `ingest_chunk_delay_seconds`;
+`run_local.py --chunk-size/--chunk-delay`.
+
+**What it fixes vs not.** Chunking clears the **Finnhub rate-limit** degradation (the 4 optional
+pillars). It does **not** fix two independent OHLCV-side taints seen on the 100-run: BK returned only
+19 bars on Alpaca `iex` (thin coverage → `stale_or_missing_tickers`) and one name had a >4σ daily
+move (`daily_move_sigma_anomaly`). Those are separate follow-ups (drop/relax universe, or revisit
+`max_daily_move_sigma`), not rate-limit problems.
+
+**Educated first guess (to be tuned empirically).** `chunk_size=12` (48 Finnhub calls/chunk),
+`delay=65s` → ~48 calls/min, ~9 chunks ≈ 9 min for 100 names. The right values depend on the live
+per-minute cap and time-of-day latency — exactly the measure-then-tune loop the operator described.
+
+**Ruled out.** *Make the optional pillars non-tainting* (taint=False) — would let trades flow on
+price-only data, but silently drops the quality signal the analyst is meant to honour; a real policy
+question deferred. *Parallel fetch with backoff* — more throughput but harder to keep under a hard
+per-minute cap and to reason about deterministically.

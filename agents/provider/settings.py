@@ -93,6 +93,27 @@ class ProviderSettings(AgentSettings):
         unit="seconds",
     )
 
+    # Chunked ingest (DL-17) — pace per-ticker feeds (Finnhub) under free-tier limits.
+    ingest_chunk_size: int = tunable(
+        0,
+        why=(
+            "Universe sub-batch size for paced ingest; 0 disables chunking (one"
+            " single-shot batch). Tune against the per-ticker feed's per-minute cap."
+        ),
+        ge=0,
+        le=500,
+    )
+    ingest_chunk_delay_seconds: float = tunable(
+        60.0,
+        why=(
+            "Pause between ingest chunks so the aggregate per-minute API call rate"
+            " stays under the free-tier ceiling (Finnhub ~60/min, 4 calls/ticker)."
+        ),
+        ge=0.0,
+        le=600.0,
+        unit="seconds",
+    )
+
     finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
     finnhub_api_key: str = Field(default="", repr=False)
     fred_api_key: str = Field(default="", repr=False)

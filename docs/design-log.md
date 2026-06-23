@@ -825,3 +825,17 @@ per-minute cap and time-of-day latency — exactly the measure-then-tune loop th
 price-only data, but silently drops the quality signal the analyst is meant to honour; a real policy
 question deferred. *Parallel fetch with backoff* — more throughput but harder to keep under a hard
 per-minute cap and to reason about deterministically.
+
+**Measurement log (guess → run → measure → re-run).**
+
+| # | Params | Result | Read-off |
+| --- | --- | --- | --- |
+| 1 | single-shot (100 at once) | notes: `daily_move_sigma_anomaly`, `stale_or_missing_tickers`, **`fundamentals_/news_/sectors_/earnings_degraded`** | Finnhub 429s on the ~400-call burst → all 4 optional pillars fault |
+| 2 | `chunk_size=12`, `delay=60s` (~9 min, ~04:05–04:14 AEST) | notes: `daily_move_sigma_anomaly`, `stale_or_missing_tickers` only — **all 4 Finnhub pillars cleared**; news populated (1810 headlines) | ✅ pacing fixes the rate-limit degradation; the 2 remaining taints are OHLCV-side, not rate-limit |
+
+**Next iterations (open).** (a) The two residual taints both set `used_fallback` and still gate the
+analyst: **BK** returns only 19 bars on Alpaca `iex` (`stale_or_missing_tickers`) and one name trips
+`daily_move_sigma_anomaly`. Options: drop thin-coverage names from the universe, or revisit
+`max_daily_move_sigma`. (b) Sweep `chunk_size`/`delay` to find the fastest pacing that still clears
+Finnhub, and repeat at different times of day (latency/limits vary). (c) Only after a clean batch do
+trades actually flow — chunking was necessary but not sufficient.

@@ -693,3 +693,64 @@ capabilities* with *what is actually running*. Classified by operational status:
 **Status.** NOTED. Reassurance: the live system is the linear spine (A), not a many-path tangle. Open
 items: activate the 5 control-plane/advisory agents (C) and wire the close-execution loop (D) — both
 out of scope until needed; flagged so they are not mistaken for already-working.
+
+---
+
+## DL-15 · DB placement — substrate registry should not use Neo4j  ·  status: OPEN (2026-06-23)
+
+**Trigger.** ADR-0012 platform/pack wall + DL-12 (S84–S86) separated master grant/secret policy
+from the trading pack. The next step in the split: the substrate registry (AgentInstance, Session,
+CapabilityGrant, CapabilityRoute nodes currently stored via `GraphStore`) is backed by Neo4j —
+a choice inherited from the trading pack's provenance graph, not from a substrate need.
+**Operator direction:** "substrate (plumbing) should have its own DB. Neo4j belongs to the trading
+system because it is the requirement that came from trading demands."
+
+**Two distinct workloads, currently sharing one store:**
+
+1. **Substrate registry** — bounded (12 agents, ~200 nodes total ever), flat key-value lookups
+   ("is agent X registered?", "what capabilities does agent X have?"). No graph traversal needed.
+   A document or KV store is sufficient and appropriate.
+
+2. **Trading-pack provenance graph** — unbounded, append-only, graph-traversal-heavy
+   (RunRequest → provider → scanner → analyst → PM → execution → monitor → reporter lineage walk).
+   Cypher queries throughout `kernel/graph_cypher.py`. Grows ~55 nodes / ~60 rels per run.
+   Neo4j is genuinely the right fit here.
+
+**Research complete — see [docs/research/db-placement.md](research/db-placement.md) for full
+capability mapping against AuraDB Free, Azure free-tier options, and self-host alternatives.**
+
+**Direction (not yet decided):**
+
+- **(a) Substrate registry → Azure Cosmos DB NoSQL API (free tier).**
+  Already in the Azure estate (same subscription as Container Apps). 25 GB free, lifetime.
+  Document API is sufficient (no graph traversal). Vector search built-in for future use. Keeps
+  the substrate independent of any graph engine. Requires a `CosmosRegistryStore` implementing
+  the existing `GraphStore` protocol (or a lighter interface), loaded by the master. **Most correct.**
+
+- **(b) Substrate registry → stays on Neo4j; separate INSTANCES.**
+  AuraDB Free: one free instance total. Both layers would need separate accounts or a single
+  shared instance. Does not achieve separation; just relocates the coupling to infra config.
+  **Rejected on principle** (substrate still depends on a trading-pack DB choice).
+
+- **(c) Substrate registry → InMemoryGraphStore only (no persistence).**
+  Agents re-register on every startup; master never needs durable registry. Avoids introducing
+  any external store. Simplest if the fleet always starts from scratch and the operator is the
+  only durable source of configuration. **Acceptable short-term**; blocks audit log / recovery.
+
+**Trading pack stays on Neo4j regardless.** All Cypher queries and `kernel/graph_cypher.py` /
+`kernel/graph_support.py` / `kernel/graph_neo4j.py` are unchanged. AuraDB Free covers years of
+daily single-batch runs (~55 nodes/run → 200K node ceiling hit after ~3,600 runs). Self-hosting
+Neo4j Community Edition in the existing Azure Container Apps environment is the zero-cost escape
+hatch if Aura Free limits bind or the service becomes unavailable.
+
+**AuraDB Free limits — note inconsistency in official sources:** FAQ states 200K nodes / 400K rels;
+product page may show 50K / 175K. **Verify in console before planning against either number.**
+No automated backups on Free tier; restore is console-only (DL-11). Auto-pauses on inactivity.
+
+**Ruled out.** Cosmos DB Gremlin API for the trading pack — free and Azure-native but requires
+rewriting every Cypher query as Gremlin; high migration cost for a working system.
+
+**Status.** OPEN — research done; decision and sprint pending. Three questions to resolve before
+coding: (1) verify AuraDB Free actual node limit in console; (2) decide whether the substrate
+actually needs a durable registry (option a vs c above); (3) confirm Cosmos DB free tier is not
+already consumed by another account in the subscription.

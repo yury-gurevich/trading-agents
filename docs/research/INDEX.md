@@ -10,6 +10,12 @@ look in the "Outcome" column for the ADR or sprint it produced.
 | [R001](qlib-integration.md) | Microsoft Qlib — integration vision | 2026-06-19 | 🚧 In progress | Can this project benefit from qlib? Which agents, which components, in what order? | Phase Q1 active — **S58** forecaster `lightgbm`-direct shadow runtime (pyqlib is 3.13-incompatible) → **S59** booster training + price-return IC scorecard; Q2–Q4 later | `qlib` `forecaster` `analyst` `portfolio_manager` `researcher` `ml` `backtesting` |
 | [R002](db-placement.md) | DB placement — substrate registry vs trading-pack provenance | 2026-06-23 | 📋 Active | What DB does the substrate need? What does AuraDB Free cover? What Azure free-tier DB options exist? Which graph/vector alternatives? | ADR + sprint pending | `neo4j` `cosmos-db` `substrate` `trading-pack` `graph` `vector` `platform` |
 
+## Subfolders
+
+| Folder | What's in it |
+| --- | --- |
+| [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Imported always-free service catalogs for AWS, GCP, and Azure — reference for infra/DB placement (feeds R002 / DL-15). |
+
 ## Status legend
 
 - 📋 Active — research complete; integration phases defined but not yet started

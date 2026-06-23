@@ -753,3 +753,36 @@ Cypher query as Gremlin; high migration cost for a working system.
 **Status.** OPEN — analysis complete; decision and sprint pending. Recommended sprint: remove
 `graph` parameter from `MasterAgent.__init__` and `store.py` writes; master becomes graph-free.
 One remaining question: (1) verify AuraDB Free actual node limit in console (planning only).
+
+## DL-16 · Alpaca is the primary OHLCV feed; Tiingo retained but demoted  ·  status: DECIDED (2026-06-24)
+
+**Trigger.** A 100-ticker live populate run (`run_local.py --real --universe scripts/universe_sp100.txt`)
+returned `0/100` bars with quality `source_unavailable`. Direct probing showed **Tiingo returns
+HTTP 429 (Too Many Requests)** — its free tier (~50 req/hr) cannot serve a 100-symbol batch, because
+`TiingoDataSource.fetch_ohlcv` issues **one HTTPS call per ticker** (`/tiingo/daily/{ticker}/prices`).
+Even a 2-symbol fetch 429'd once throttled for the hour. ADR-0006 had made Tiingo the primary
+full-universe feed; that assumption does not survive a real S&P-100-sized run.
+
+**Decision (operator: "we can use Alpaca finance after all").** Make **Alpaca the primary OHLCV
+source.** Alpaca's market-data bars endpoint (`/v2/stocks/bars`) accepts **up to ~100 symbols in a
+single request**, so one call covers the whole universe and structurally avoids the per-symbol rate
+limit. Free `iex` feed returns complete daily bars for liquid large-caps (probe-verified). Existing
+`ALPACA_*` credentials already in `.env`; the `.env` header had long noted "Tiingo (primary) +
+Alpaca (failover) cover the OHLCV need" — this realises that failover intent, but promotes Alpaca to
+primary rather than fallback.
+
+**Build.** New `agents/provider/alpaca_data.py` (`AlpacaDataSource`) implements the price-source side
+of the `DataSource` port: batch `fetch_ohlcv` with internal `next_page_token` pagination (network in
+`_download*`, `# pragma: no cover`; parsing in `_parse_bars`/`_bar`, 100% covered). `ProviderSettings`
+gains `alpaca_data_base_url`, `alpaca_api_key`, `alpaca_api_secret`, `alpaca_data_feed` (default
+`iex`), `alpaca_data_timeout`. `market_source_from_settings` now wires Alpaca as `price_source`.
+
+**Ruled out.** *Tiingo→Alpaca failover wrapper* — more resilient and matches the original `.env` note,
+but needs a failover-source abstraction + error taxonomy; deferred (operator chose "Alpaca primary"
+for the simplest clean populate). *Configurable price source (setting-selected)* — flexible but adds a
+knob with no immediate consumer. *Stooq* — already in-repo and free, but single-symbol CSV fetches
+share Tiingo's per-symbol shape. Tiingo code is retained (still tested) and can become the failover.
+
+**Follow-ups (later).** (1) Optional Tiingo→Alpaca failover wrapper if Alpaca `iex` coverage proves
+thin for any name. (2) Decide `adjustment` policy (raw vs split/dividend-adjusted) for momentum
+inputs — currently raw. (3) Supersede note on ADR-0006's "Tiingo primary" line.

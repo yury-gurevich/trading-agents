@@ -108,12 +108,28 @@ class ProviderSettings(AgentSettings):
         unit="seconds",
     )
 
-    # Tiingo — primary full-universe live OHLCV feed (ADR-0006; closes DRIFT-009).
+    # Tiingo — full-universe live OHLCV feed (ADR-0006; closes DRIFT-009).
     tiingo_base_url: str = Field(default="https://api.tiingo.com")
     tiingo_api_key: str = Field(default="", repr=False)
     tiingo_timeout: int = tunable(
         15,
         why="Bound the Tiingo EOD HTTPS call so a slow feed cannot hang the run.",
+        ge=1,
+        le=60,
+        unit="seconds",
+    )
+
+    # Alpaca — primary batch OHLCV feed (DL-16). One request covers up to ~100
+    # symbols, sidestepping the per-symbol rate limit that 429s Tiingo on large runs.
+    alpaca_data_base_url: str = Field(default="https://data.alpaca.markets")
+    alpaca_api_key: str = Field(default="", repr=False)
+    alpaca_api_secret: str = Field(default="", repr=False)
+    alpaca_data_feed: str = Field(
+        default="iex",  # free feed; 'sip' requires a paid Alpaca market-data plan.
+    )
+    alpaca_data_timeout: int = tunable(
+        15,
+        why="Bound the Alpaca bars HTTPS call so a slow feed cannot hang the run.",
         ge=1,
         le=60,
         unit="seconds",

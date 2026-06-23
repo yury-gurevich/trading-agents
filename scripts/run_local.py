@@ -98,6 +98,12 @@ def main() -> None:
         metavar="FILE",
         help="newline-delimited ticker file; overrides the built-in universe",
     )
+    parser.add_argument(
+        "--run-id",
+        default="local-1",
+        metavar="ID",
+        help="RunRequest id (use a fresh id per run; the graph is append-only)",
+    )
     args = parser.parse_args()
 
     if args.real:
@@ -140,8 +146,8 @@ def main() -> None:
         return
 
     print("\nDISPATCHER")
-    place_run_request(graph, run_id="local-1", tickers=tickers)
-    print(f"  placed RunRequest run-request:local-1 ({len(tickers)} tickers)")
+    place_run_request(graph, run_id=args.run_id, tickers=tickers)
+    print(f"  placed RunRequest run-request:{args.run_id} ({len(tickers)} tickers)")
 
     print("\nCASCADE (one graph-pull pass per agent)")
     for result in cascade_once(graph, provider_agent=agent, broker=PaperBroker()):
@@ -155,7 +161,7 @@ def main() -> None:
     if args.trace:
         from orchestration.batch_trace import print_trace
 
-        print_trace(graph, "local-1")
+        print_trace(graph, args.run_id)
 
 
 if __name__ == "__main__":

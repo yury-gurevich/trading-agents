@@ -37,7 +37,10 @@ htmlcov/
 .claude/worktrees/
 
 # Azure deploy outputs (endpoint URLs, not secrets — but no need to track)
-tools/
+# tools/* excludes binaries/executables; tools/scripts/ is excepted below
+tools/*
+!tools/scripts/
+!tools/scripts/**
 infra/.azure-outputs
 infra/prometheus/prometheus.generated.yml
 infra/prometheus/prometheus.local.yml

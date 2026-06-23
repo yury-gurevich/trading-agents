@@ -3,7 +3,7 @@ department: experimentation
 tier: x cross-cutting
 owner: operator + AI tuning loop
 status: draft
-version: 0.1
+version: 0.2
 implements_with: [docs/decisions/0013-continuous-improvement-system.md, docs/sprints/sprint-90-ci1-parameter-catalogue.md, scripts/run_local.py]
 ---
 
@@ -25,18 +25,28 @@ compare → gate → promote or retire. It owns the **method**, not the paramete
 by each agent via `tunable()`) nor the meaning of a metric (each process defines its own). It
 exists so no dial moves on a hunch and every move is recorded (LAW-01 CI-04, LAW-05).
 
-### What is IN / OUT (the expectation boundary)
+### What is IN / OUT (the boundary — every clause is a testable predicate)
 
-**IN — eligible for the loop:**
-- Any value declared via `tunable()` with finite `ge/le` bounds and an owning process.
-- Any change with a **measurable target metric** and **at least one guardrail metric**.
-- Champion↔challenger comparison, sweeps within bounds, promotion of a winning `ParameterSet`.
+**IN — an experiment is admissible only when ALL of these hold:**
 
-**OUT — not an experiment:**
-- Structural/code change (new agent, graph schema, message contract) → a **sprint + ADR**, not a dial.
-- Unbounded or safety-critical constants (risk caps, capital limits, PNR guards) → changed **only by ADR**, never by the loop.
-- Anything with no metric or no guardrail — if you cannot show better/worse, it is not an experiment.
-- Blind auto-promotion — the operator is always the gate (LAW-01 CI-03; graduation to automation is *earned*, CI-05).
+1. the dial is declared via `tunable()` with **finite `ge` *and* `le`** and exactly **one owning process**;
+2. the challenger value is the dial's **declared type** and lies **within `[ge, le]`**;
+3. a **target metric** exists, is **computable from `RunMetrics`**, and has a **declared direction** (↑ or ↓ = better);
+4. **≥ 1 guardrail metric**, each with a **numeric `max_regression`**;
+5. it can run on a **controlled `as_of` that has data**, repeatably, for **N trials**;
+6. the change is **reversible** (demote restores the prior champion) **or** registered as a **PNR** with a snapshot.
+
+**OUT — refuse as an experiment if ANY of these holds (route it elsewhere):**
+
+1. no finite bounds, or the value is unbounded / free-text → not loop-tunable;
+2. it touches a **capital-at-risk amount, risk cap, PNR guard, or safety limit** → **ADR only**, never the loop;
+3. it changes **code, graph schema, or a message contract** → **sprint + ADR**;
+4. it has **no computable metric** or **no guardrail** → unmeasurable, so not an experiment;
+5. it **cannot be placed on a controlled `as_of`** → the result is not evidence.
+
+> The IN clauses are exactly the OPS-GATE checks (G-BND/MET/GRD/CTL); admissibility is *machine-decided*
+> at registration, not argued case-by-case. Blind auto-promotion is always OUT — the operator is the gate
+> (LAW-01 CI-03; automation is *earned*, CI-05).
 
 ## OPS-OWN · Owns (single-writer)
 
@@ -60,23 +70,44 @@ exists so no dial moves on a hunch and every move is recorded (LAW-01 CI-04, LAW
 
 ## OPS-GATE · Preflight gates (GO / NO-GO)
 
+**Validate-then-run.** Every gate below is checked **before any feed call or graph write**. The
+governing rule: *no runtime error for anything we can anticipate at runtime* — a foreseeable failure is
+a **red gate**, never a mid-run stack trace. The two groups are **admissibility** (is this a valid
+experiment?) and **readiness** (can it actually run cleanly right now?).
+
+**Admissibility gates** (these *are* the IN clauses — machine-decided at registration):
+
 | Gate ID | Check | Pass criteria | On fail |
 | --- | --- | --- | --- |
 | G-HYP | hypothesis recorded (dial, expected direction, why) | present | block |
 | G-MET | target metric named with direction (↑/↓) | present + computable from RunMetrics | block |
-| G-GRD | ≥1 guardrail metric, each with a max-regression | present | block |
-| G-BND | challenger overrides within each tunable's ge/le | all in-bounds (CI-1) | block |
+| G-GRD | ≥ 1 guardrail metric, each with a numeric max-regression | present | block |
+| G-BND | challenger overrides are the right **type** and within each tunable's `ge/le` | all valid (CI-1) | block |
 | G-CTL | champion + challenger run on the **same** `as_of` | equal as_of | block |
-| G-VAR | trials N ≥ required for variance-prone / rate-limited metrics | N met | warn |
+
+**Readiness gates** (anticipate the runtime failure; fail fast with a specific message):
+
+| Gate ID | Anticipated failure | Pass criteria | On fail |
+| --- | --- | --- | --- |
+| G-DEP | graph / the experiment's feed unreachable or uncredentialed | `DEP-NEO4J` + the needed `DEP-FEED` green | block (name the dep) |
+| G-DATA | the chosen `as_of` returns nothing for the universe | non-empty bars for the run window | block ("no data at as_of") |
+| G-REG | target / guardrail metric not registered or not computable | every named metric resolves in CI-2 | block (name the metric) |
+| G-CHMP | no current champion to compare against / roll back to | a champion ParameterSet exists | block (seed one first) |
+| G-BUDGET | N trials would exhaust an API rate/budget (the DL-17 429 lesson) | headroom ≥ N × per-run cost | warn + suggest pacing/N |
+
+**Fail-safe at run time.** If a fault still occurs after gates pass (network blip, partial feed), the
+trial **aborts cleanly**: its `RunMetrics` is marked `invalid` with the cause, no partial batch is
+written, and the experiment continues with the remaining trials (or reports `INCONCLUSIVE`). A fault is
+data, not a crash.
 
 ## OPS-ACT · Actions / Runbooks (the experiment lifecycle)
 
 | Action | Gates required | Idempotent | Dry-run | Postcondition (proof) | Rollback | Blast radius |
 | --- | --- | --- | --- | --- | --- | --- |
-| register experiment | G-HYP/MET/GRD | yes | n/a | `Experiment` node created | delete node | none |
-| run challenger | G-BND/CTL/VAR | yes (per run_id) | `--whatif` | `RunMetrics` written + linked | none (read-only on prod state) | reads feeds only |
-| compare | — | yes | n/a | comparison table; PASS/FAIL vs gate | none | none |
-| promote | gate PASS + operator confirm | no (see PNR) | preview | champion flipped; ACTIVATE delivers | demote prior champion (recorded) | the governed process |
+| register experiment | G-HYP/MET/GRD/BND/CTL | yes | n/a | `Experiment` node created (admissible) | delete node | none |
+| run trials | G-DEP/DATA/REG/CHMP/BUDGET | yes (per run_id) | `--whatif` | `RunMetrics` per trial, linked (or `invalid`) | none (read-only on prod state) | reads feeds only |
+| compare | — | yes | n/a | **the experiment report** (below) + PASS/FAIL vs gate | none | none |
+| promote | report PASS + operator confirm | no (see PNR) | preview | champion flipped; ACTIVATE delivers; report + ledger row written | demote prior champion (recorded) | the governed process |
 | retire | — | yes | n/a | set `status=retired` | restore status | none |
 
 **Lifecycle:** register → run champion+challenger (same `as_of`, N trials) → measure (`RunMetrics`)
@@ -101,9 +132,12 @@ Ingest/scanner/analyst-only promotions are reversible (demote restores the prior
 
 ## OPS-NEV · Never
 
-- Never promote without a **passing gate** *and* an **operator confirmation** (LAW-01 CI-03).
+- Never **start a run with an unmet gate** — validate-then-run; an anticipatable failure is a red gate,
+  never a mid-run error or a half-written batch (a real fault aborts the trial as `invalid`, recorded).
+- Never **promote without a `PROMOTE` report** (what changed / why / the gain / guardrails) *and* an
+  operator confirmation (LAW-01 CI-03). No silent dial moves.
 - Never compare champion vs challenger on **different `as_of`** (uncontrolled — invalid result).
-- Never move a value **outside its `tunable` bounds** (CI-1 rejects it).
+- Never move a value **outside its `tunable` bounds** or of the wrong type (G-BND rejects it).
 - Never run a capital/safety cap through the loop — those change by **ADR only**.
 - Never edit a past `ledger` row or `RunMetrics` node — append-only (LAW-06).
 
@@ -116,6 +150,24 @@ Ingest/scanner/analyst-only promotions are reversible (demote restores the prior
 - **Decisions (docs):** a **method** change (a new metric, a new guardrail policy, a new in/out rule)
   is an ADR or design-log entry — not an experiment. The charter records the standing process.
 - **Surfaces:** `experiment <id>` (compare table), `metrics --process <p>`, `paramset --active`.
+
+### The experiment report (mandatory output of every experiment)
+
+Every experiment ends in **one concise report** — the artifact the operator reads to turn (or refuse)
+the dial. It is generated from the graph and condensed into a single ledger row. Fixed fields:
+
+| Field | Content |
+| --- | --- |
+| **What changed** | the dial(s) and **champion → challenger** value(s); the two `ParameterSet` ids |
+| **Why** | the hypothesis — expected direction + rationale (G-HYP) |
+| **Did it deliver?** | target metric: **champion vs challenger**, the **absolute delta and % gain**, over **N trials** (mean ± spread), against the declared direction |
+| **Guardrails** | each guardrail: champion vs challenger value, within `max_regression`? (✓ / ✗) |
+| **Verdict** | `PROMOTE` / `REJECT` / `INCONCLUSIVE` (spread ≥ delta) + a one-line reason |
+| **Provenance** | experiment id, run ids, `as_of`, N, parameter_set ids, ledger row ref (LAW-05) |
+
+Rules: state the gain **in the metric's own units *and* as a %**; `INCONCLUSIVE` (variance swamps the
+delta — the DL-17 run-3 case) is a **first-class outcome**, not a failure; **no promotion without a
+`PROMOTE` report + operator confirm**. The report is the LAW-05 defendable-decision record for the dial.
 
 ## OPS-TUNE · Tuning (the loop assessing itself — LAW-01 applied to LAW-01)
 
@@ -143,3 +195,4 @@ CI-2 and name its direction (↑/↓ = better) here. Re-verify the OPS-DOWN neig
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — operationalizes LAW-01 for the trading pipeline; implements ADR-0013 |
+| 0.2 | 2026-06-24 | tightened IN/OUT to testable predicates; added readiness gates (validate-then-run, no anticipatable runtime error) + fail-safe abort; made the concise experiment report a mandatory output |

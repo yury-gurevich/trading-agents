@@ -31,6 +31,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
 | **P15** | S73–S83 | Multi-agent container split: master bootstrap + Dockerfiles + RSA signing + Key Vault + GHCR build pipeline + credential naming + provider ingestor + graph-pull work loops (S79 provider→scanner; S80 scanner→analyst; S81 analyst→PM; S82 execution+monitor+reporter closes DL-08; S83 dispatcher RunRequest trigger makes provider graph-pull + end-to-end demonstrator) | **in progress** |
 | **P12/P13** | tbd | DSPy `PromptOptimizer` port + golden eval set + per-(task×model) compiled prompt artifact | **queued** |
+| **P16** | S90–S95 | Continuous-improvement system (ADR-0013): CI-1 parameter catalogue · CI-2 RunMetrics on graph · CI-3 ParameterSet (configurable-not-settable) · CI-4 experiment+compare · CI-5 gate+promote (absorbs ADR-0010) · CI-6 optimiser (sweep; ingest target first) | **queued** |
 
 ---
 

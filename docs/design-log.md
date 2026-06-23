@@ -852,7 +852,10 @@ clean, not borderline. (c) Whether `max_daily_move_sigma=4.0`→`8.0` should be 
 (the check should catch corrupt ~30σ prints, not legit 6.6σ earnings moves). (d) Only after a clean
 batch do trades actually flow — chunking was necessary but not sufficient.
 
-## DL-18 · Continuous-improvement system — map, measure, tune, gate  ·  status: DESIGN (2026-06-24)
+## DL-18 · Continuous-improvement system — map, measure, tune, gate  ·  status: PROMOTED → ADR-0013 + S90–S95 (2026-06-24)
+
+> Promoted to **[ADR-0013](decisions/0013-continuous-improvement-system.md)** (storage: all on the
+> graph) with sprint specs **S90–S95** (phase P16). This entry is the originating map/design.
 
 **Trigger.** DL-17's pacing work was hand-tuned: guess → run → measure → re-run, with the operator
 reading flags off a trace and editing env vars. That loop must become a **system**. Operator

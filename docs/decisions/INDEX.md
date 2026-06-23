@@ -18,6 +18,7 @@ for the rationale instead of re-deriving it.
 | [0010](0010-llm-interaction-quality-gate.md) | LLM interaction quality gate (eval-gated prompts, DSPy) | ✅ Accepted | How do we stop LLM output quality degrading across model/provider/fallback/functionality changes? DSPy, EvoPrompt, or both? | `llm` `prompts` `dspy` `evoprompt` `champion-challenger` `p10` |
 | [0011](0011-container-registry-ghcr.md) | Container registry: GitHub Container Registry (GHCR) | ✅ Accepted | Where do we store Docker container images? DockerHub, GHCR, or Azure Container Registry? | `docker` `ghcr` `github` `container-registry` `p15` `ci-cd` |
 | [0012](0012-platform-domain-separation.md) | Platform/domain separation: substrate vs trading pack | ✅ Accepted | Is this a trading app or a domain-agnostic platform? Where is the substrate↔pack wall, and is it enforced now or just declared? | `platform` `substrate` `decoupling` `boundaries` `text-defined-business` |
+| [0013](0013-continuous-improvement-system.md) | Continuous-improvement system: configurable params, measured runs, gated promotion | ✅ Accepted | How do we stop hand-tuning parameters? How does every process get measured, every tunable optimised against a metric, and improvements promoted without regression — and where does that state live? | `continuous-improvement` `tunable` `parameter-set` `metrics` `champion-challenger` `quality-gate` `p16` |
 
 ## Status legend
 

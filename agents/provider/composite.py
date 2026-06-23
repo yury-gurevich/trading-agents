@@ -1,7 +1,7 @@
 """Composite DataSource routing OHLCV/regime, fundamentals/news, and sentiment.
 
 Agent: provider
-Role: combine a price/regime source (Tiingo), a fundamentals/news source (Finnhub),
+Role: combine a price/regime source (Alpaca), a fundamentals/news source (Finnhub),
 and a sentiment source (Alpha Vantage).
 External I/O: none directly (delegates to the wrapped sources).
 """
@@ -71,16 +71,18 @@ class CompositeDataSource:
 
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
-    """Compose live feeds: Tiingo OHLCV + Finnhub fundamentals/news + AV sentiment."""
+    """Compose live feeds: Alpaca OHLCV + Finnhub fundamentals/news + AV sentiment."""
+    from agents.provider.alpaca_data import AlpacaDataSource
     from agents.provider.av_sentiment import AlphaVantageSentimentSource
     from agents.provider.fundamentals import FinnhubDataSource
-    from agents.provider.tiingo import TiingoDataSource
 
     return CompositeDataSource(
-        price_source=TiingoDataSource(
-            api_key=settings.tiingo_api_key,
-            base_url=settings.tiingo_base_url,
-            timeout=settings.tiingo_timeout,
+        price_source=AlpacaDataSource(
+            api_key=settings.alpaca_api_key,
+            api_secret=settings.alpaca_api_secret,
+            base_url=settings.alpaca_data_base_url,
+            feed=settings.alpaca_data_feed,
+            timeout=settings.alpaca_data_timeout,
         ),
         fundamentals_source=FinnhubDataSource(
             api_key=settings.finnhub_api_key,

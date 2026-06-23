@@ -1,8 +1,9 @@
-# S&P 100 large-cap universe — 100 liquid US tickers for populate/load runs.
+# S&P 100 large-cap universe — liquid US tickers for populate/load runs.
 # Format: one ticker per line; blank lines and #-comments ignored.
 # Used by: scripts/run_local.py --real --universe scripts/universe_sp100.txt
-# Note: Tiingo free tier allows 500 unique symbols/month; one full run here
-#       sets the month's roster to ~100, after which these are re-runnable free.
+# Note (DL-17): BK dropped — Alpaca's free `iex` feed had no recent BK bars
+#       (latest 2026-05-20, ~5 weeks stale), which tainted the whole batch;
+#       the `sip` feed (fuller coverage) is 403 on the free plan. 99 tickers.
 AAPL
 ABBV
 ABT
@@ -16,7 +17,6 @@ AVGO
 AXP
 BA
 BAC
-BK
 BKNG
 BLK
 BMY

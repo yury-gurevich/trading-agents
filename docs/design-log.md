@@ -832,10 +832,22 @@ per-minute cap and to reason about deterministically.
 | --- | --- | --- | --- |
 | 1 | single-shot (100 at once) | notes: `daily_move_sigma_anomaly`, `stale_or_missing_tickers`, **`fundamentals_/news_/sectors_/earnings_degraded`** | Finnhub 429s on the ~400-call burst → all 4 optional pillars fault |
 | 2 | `chunk_size=12`, `delay=60s` (~9 min, ~04:05–04:14 AEST) | notes: `daily_move_sigma_anomaly`, `stale_or_missing_tickers` only — **all 4 Finnhub pillars cleared**; news populated (1810 headlines) | ✅ pacing fixes the rate-limit degradation; the 2 remaining taints are OHLCV-side, not rate-limit |
+| 3 | 99 tickers (BK dropped), `chunk_size=12`, `delay=60s`, `max_daily_move_sigma=8.0` (~14 min, 04:22–04:36 AEST) | notes: `daily_move_sigma_anomaly`, **`news_degraded`** | ✅ BK drop killed staleness; ✗ sigma still trips and ✗ news re-faulted — see read-offs below |
 
-**Next iterations (open).** (a) The two residual taints both set `used_fallback` and still gate the
-analyst: **BK** returns only 19 bars on Alpaca `iex` (`stale_or_missing_tickers`) and one name trips
-`daily_move_sigma_anomaly`. Options: drop thin-coverage names from the universe, or revisit
-`max_daily_move_sigma`. (b) Sweep `chunk_size`/`delay` to find the fastest pacing that still clears
-Finnhub, and repeat at different times of day (latency/limits vary). (c) Only after a clean batch do
-trades actually flow — chunking was necessary but not sufficient.
+**Diagnostics behind run 3.** BK on Alpaca `iex`: 18 bars, latest 2026-05-20 (~5 weeks stale);
+`sip` feed is 403 on the free plan → BK genuinely unservable, dropped. The sigma outlier is **INTC
++11.7 % intraday on 2026-05-08** (a real earnings move), global z = 6.6 across the 99-name pool.
+
+**Key architectural read-off (run 3).** `sigma=8.0 > 6.6` yet the anomaly *still* fired — because the
+chunked path calls `_get_market_data` **per chunk**, so `validate_bars` computes sigma over each
+12-ticker chunk, not the full universe. INTC's z *within its chunk* exceeds 8.0, and `_combine_quality`
+unions the per-chunk notes. **Per-chunk validation is the wrong altitude: quality must be assessed on
+the reassembled batch, once.** Separately, `news_degraded` reappeared (clean in run 2) — chunk=12/
+delay=60 is borderline for Finnhub; one chunk 429'd this run. Time-of-day variance, as predicted.
+
+**Next iterations (open).** (a) **Validate the reassembled batch once** (separate fetch from
+validate in the chunked path) so sigma/staleness see the full universe — then `sigma=8.0` clears
+INTC. (b) **More conservative pacing** (smaller chunk and/or longer delay) to make Finnhub reliably
+clean, not borderline. (c) Whether `max_daily_move_sigma=4.0`→`8.0` should be the committed default
+(the check should catch corrupt ~30σ prints, not legit 6.6σ earnings moves). (d) Only after a clean
+batch do trades actually flow — chunking was necessary but not sufficient.

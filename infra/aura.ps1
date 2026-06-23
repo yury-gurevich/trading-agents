@@ -1,4 +1,4 @@
-# aura.ps1 — Manage the trading-agents Neo4j Aura instance via the Aura API.
+# aura.ps1 — Manage Neo4j Aura instances via the Aura API.
 #
 # All Aura management is scripted here — no console clicks needed. API
 # credentials and the instance id live in infra/aura-api.local.json (gitignored);
@@ -14,12 +14,32 @@
 #   pwsh infra/aura.ps1 snapshot      # trigger an on-demand backup snapshot
 #   pwsh infra/aura.ps1 snapshots     # list all snapshots (id, status, timestamp)
 #   pwsh infra/aura.ps1 restore -SnapshotId <id>  # restore instance from snapshot
+#
+#   # ── multi-instance operations ───────────────────────────────────────────────
+#   pwsh infra/aura.ps1 create-free [-FreeName <name>]
+#       Create a new AuraDB Free instance (GCP us-central1).
+#       Saves connection details to infra/aura-free.local.json (gitignored).
+#       Prints the initial password — save it immediately, shown only once.
+#
+#   pwsh infra/aura.ps1 overwrite -DestInstanceId <id> [-SrcSnapshotId <id>]
+#       Attempt to overwrite DEST with the Professional source instance data.
+#       Uses latest snapshot if -SrcSnapshotId is omitted.
+#       NOTE: Neo4j blocks Professional → Free (size mismatch). This command
+#       documents that constraint. Expected result: 422 Unprocessable Entity.
+#
+#   pwsh infra/aura.ps1 export-url -SnapshotId <id>
+#       Get the download URL for an exportable snapshot (if supported by tier).
 
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('status', 'connection', 'pause', 'resume', 'list', 'delete', 'snapshot', 'snapshots', 'restore')]
+  [ValidateSet('status', 'connection', 'pause', 'resume', 'list', 'delete',
+               'snapshot', 'snapshots', 'restore',
+               'create-free', 'overwrite', 'export-url')]
   [string]$Action,
-  [string]$SnapshotId  # required for 'restore'
+  [string]$SnapshotId,       # restore / export-url
+  [string]$DestInstanceId,   # overwrite — destination (the free instance)
+  [string]$SrcSnapshotId,    # overwrite — snapshot from the source (optional; latest if omitted)
+  [string]$FreeName = "trading-agents-free"  # create-free — display name
 )
 
 Set-StrictMode -Version Latest
@@ -52,18 +72,16 @@ switch ($Action) {
     Write-Host "NEO4J_DATABASE = neo4j   # Aura single-db is always 'neo4j'"
     Write-Host "NEO4J_PASSWORD = (see infra/aura-instance.local.json)"
   }
-  'pause' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/pause" -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
-  'resume' { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/resume" -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
-  'list' { (Invoke-RestMethod -Uri $base -Headers $hdr).data | Format-Table id, name, status }
-  'delete' {
+  'pause'   { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/pause"  -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
+  'resume'  { (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/resume" -Headers $hdr -Body "{}" -ContentType "application/json").data | Format-List }
+  'list'    { (Invoke-RestMethod -Uri $base -Headers $hdr).data | Format-Table id, name, status, type, region }
+  'delete'  {
     Invoke-RestMethod -Method Delete -Uri "$base/$($c.instance_id)" -Headers $hdr | Out-Null
     Write-Host "Deleted instance $($c.instance_id)." -ForegroundColor Yellow
   }
   'snapshot' {
     $d = (Invoke-RestMethod -Method Post -Uri "$base/$($c.instance_id)/snapshots" `
         -Headers $hdr -Body "{}" -ContentType "application/json").data
-    # The create response carries only snapshot_id; status/timestamp appear in the
-    # 'snapshots' list once the backup is taken.
     Write-Host "Snapshot triggered:" -ForegroundColor Green
     [pscustomobject]@{ snapshot_id = $d.snapshot_id } | Format-List
     Write-Host "Poll with:  pwsh infra/aura.ps1 snapshots" -ForegroundColor Gray
@@ -83,5 +101,129 @@ switch ($Action) {
     Write-Host "Restore initiated from snapshot $SnapshotId" -ForegroundColor Yellow
     [pscustomobject]@{ status = $d.status; instance_id = $d.id } | Format-List
     Write-Host "Monitor progress with:  pwsh infra/aura.ps1 status" -ForegroundColor Gray
+  }
+
+  # ── multi-instance operations ──────────────────────────────────────────────
+
+  'create-free' {
+    # Free-db requires no tenant_id in the body; it ignores memory/cloud_provider.
+    # GCP us-central1 is the most widely available free region.
+    $body = @{
+      version        = "5"
+      name           = $FreeName
+      type           = "free-db"
+      region         = "us-central1"
+      cloud_provider = "gcp"
+      tenant_id      = $c.tenant_id
+    } | ConvertTo-Json
+
+    Write-Host "Creating free AuraDB instance '$FreeName' on GCP us-central1 ..." -ForegroundColor Cyan
+    $resp = Invoke-RestMethod -Method Post -Uri $base -Headers $hdr `
+        -Body $body -ContentType "application/json"
+    $d = $resp.data
+
+    Write-Host ""
+    Write-Host "=== FREE INSTANCE CREATED ===" -ForegroundColor Green
+    Write-Host "ID:           $($d.id)"
+    Write-Host "Name:         $($d.name)"
+    Write-Host "Status:       $($d.status)"
+    Write-Host "Connection:   $($d.connection_url)"
+    Write-Host "Username:     $($d.username)"
+    if ($d.password) {
+      Write-Host "Password:     $($d.password)   <-- SAVE THIS NOW (shown once)" -ForegroundColor Yellow
+    }
+
+    # Save to aura-free.local.json for subsequent commands.
+    $freeCreds = @{
+      instance_id    = $d.id
+      tenant_id      = $c.tenant_id
+      username       = $d.username
+      connection_url = $d.connection_url
+      api_client_id  = $c.api_client_id
+      api_client_secret = $c.api_client_secret
+    }
+    $freePath = Join-Path $PSScriptRoot "aura-free.local.json"
+    $freeCreds | ConvertTo-Json | Set-Content $freePath -Encoding UTF8
+    Write-Host ""
+    Write-Host "Credentials saved to infra/aura-free.local.json (gitignored)." -ForegroundColor Gray
+    Write-Host "NOTE: Password is NOT saved — store it in your vault." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Next step — try the cross-tier overwrite:" -ForegroundColor Cyan
+    Write-Host "  pwsh infra/aura.ps1 overwrite -DestInstanceId $($d.id)" -ForegroundColor Gray
+    Write-Host "(Expected: Neo4j may reject Professional→Free due to size mismatch.)" -ForegroundColor Gray
+  }
+
+  'overwrite' {
+    if (-not $DestInstanceId) { throw "Provide -DestInstanceId <id>  (the free instance id)" }
+
+    # Resolve the source snapshot: use -SrcSnapshotId if given, else latest completed.
+    $snapId = $SrcSnapshotId
+    if (-not $snapId) {
+      Write-Host "No -SrcSnapshotId provided — fetching latest completed snapshot from source ..." -ForegroundColor Cyan
+      $snaps = (Invoke-RestMethod -Uri "$base/$($c.instance_id)/snapshots" -Headers $hdr).data
+      $latest = $snaps | Where-Object { $_.status -eq "Completed" } |
+                Sort-Object timestamp -Descending | Select-Object -First 1
+      if (-not $latest) { throw "No completed snapshots found on source instance $($c.instance_id). Run: pwsh infra/aura.ps1 snapshot" }
+      $snapId = $latest.snapshot_id
+      Write-Host "Using snapshot: $snapId  ($($latest.timestamp))" -ForegroundColor Gray
+    }
+
+    $body = @{
+      source_instance_id  = $c.instance_id
+      source_snapshot_id  = $snapId
+    } | ConvertTo-Json
+
+    Write-Host ""
+    Write-Host "Attempting overwrite:" -ForegroundColor Cyan
+    Write-Host "  Source (Professional): $($c.instance_id)"
+    Write-Host "  Dest   (Free):         $DestInstanceId"
+    Write-Host "  Snapshot:              $snapId"
+    Write-Host ""
+    Write-Host "NOTE: Neo4j docs state 'cannot overwrite a Free instance with a Professional" -ForegroundColor Yellow
+    Write-Host "instance'. If this returns 422 Unprocessable Entity, that is the expected result." -ForegroundColor Yellow
+    Write-Host ""
+
+    try {
+      $resp = Invoke-RestMethod -Method Post -Uri "$base/$DestInstanceId/overwrite" `
+          -Headers $hdr -Body $body -ContentType "application/json"
+      Write-Host "OVERWRITE ACCEPTED:" -ForegroundColor Green
+      $resp.data | Format-List
+      Write-Host "Monitor with:  pwsh infra/aura.ps1 status" -ForegroundColor Gray
+    }
+    catch {
+      $statusCode = $_.Exception.Response.StatusCode.value__
+      Write-Host "OVERWRITE REJECTED (HTTP $statusCode):" -ForegroundColor Red
+      # Try to extract the error body
+      try {
+        $reader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+        $errBody = $reader.ReadToEnd()
+        Write-Host $errBody -ForegroundColor Red
+      }
+      catch { Write-Host $_.Exception.Message -ForegroundColor Red }
+      Write-Host ""
+      Write-Host "If 422: tier restriction confirmed — Professional cannot overwrite Free." -ForegroundColor Yellow
+      Write-Host "Next option: export snapshot as .dump, load local, upload via neo4j-admin." -ForegroundColor Yellow
+    }
+  }
+
+  'export-url' {
+    if (-not $SnapshotId) { throw "Provide -SnapshotId <id>  (run 'snapshots' to list them)" }
+    # Attempt to get a download URL for an exportable snapshot.
+    # Endpoint varies by Aura version; try the documented path.
+    try {
+      $resp = Invoke-RestMethod -Uri "$base/$($c.instance_id)/snapshots/$SnapshotId/download" `
+          -Headers $hdr
+      Write-Host "Export URL:" -ForegroundColor Green
+      $resp | Format-List
+    }
+    catch {
+      $statusCode = $_.Exception.Response.StatusCode.value__
+      Write-Host "Export URL failed (HTTP $statusCode) — may not be supported on this tier." -ForegroundColor Red
+      try {
+        $reader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+        Write-Host ($reader.ReadToEnd()) -ForegroundColor Red
+      }
+      catch {}
+    }
   }
 }

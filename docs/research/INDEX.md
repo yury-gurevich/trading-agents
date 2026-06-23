@@ -7,14 +7,29 @@ look in the "Outcome" column for the ADR or sprint it produced.
 
 | # | Title | Date | Status | Answers | Outcome | Tags |
 | --- | --- | --- | --- | --- | --- | --- |
-| [R001](qlib-integration.md) | Microsoft Qlib — integration vision | 2026-06-19 | 🚧 In progress | Can this project benefit from qlib? Which agents, which components, in what order? | Phase Q1 active — **S58** forecaster `lightgbm`-direct shadow runtime (pyqlib is 3.13-incompatible) → **S59** booster training + price-return IC scorecard; Q2–Q4 later | `qlib` `forecaster` `analyst` `portfolio_manager` `researcher` `ml` `backtesting` |
-| [R002](db-placement.md) | DB placement — substrate registry vs trading-pack provenance | 2026-06-23 | 📋 Active | What DB does the substrate need? What does AuraDB Free cover? What Azure free-tier DB options exist? Which graph/vector alternatives? | ADR + sprint pending | `neo4j` `cosmos-db` `substrate` `trading-pack` `graph` `vector` `platform` |
+| [R001](qlib-integration/) | Microsoft Qlib — integration vision | 2026-06-19 | 🚧 In progress | Can this project benefit from qlib? Which agents, which components, in what order? | Phase Q1 active — **S58** forecaster `lightgbm`-direct shadow runtime (pyqlib is 3.13-incompatible) → **S59** booster training + price-return IC scorecard; Q2–Q4 later | `qlib` `forecaster` `analyst` `portfolio_manager` `researcher` `ml` `backtesting` |
+| [R002](db-placement/) | DB placement — substrate registry vs trading-pack provenance | 2026-06-23 | 📋 Active | What DB does the substrate need? What does AuraDB Free cover? What Azure free-tier DB options exist? Which graph/vector alternatives? | ADR + sprint pending | `neo4j` `cosmos-db` `substrate` `trading-pack` `graph` `vector` `platform` |
 
-## Subfolders
+## Folder structure — read this before adding an entry
 
-| Folder | What's in it |
-| --- | --- |
-| [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Imported always-free service catalogs for AWS, GCP, and Azure — reference for infra/DB placement (feeds R002 / DL-15). |
+**Every research item is its own folder** under `docs/research/<slug>/`, containing:
+
+- an **`INDEX.md`** — the folder's landing page (one-paragraph summary, status, links to the
+  doc(s), what it answers, and the consuming decisions/outcome); and
+- the **research document(s)** and any companion assets (diagrams, data extracts, sub-analyses).
+
+A folder may hold a single doc (e.g. `db-placement/`, `qlib-integration/`) or a collection of
+related files (e.g. `cloud-free-tiers/` — three provider catalogs). It always has an `INDEX.md`,
+because the project rule is: *read a folder's `INDEX.md` before opening files inside it.*
+
+| Folder | Kind | What's in it |
+| --- | --- | --- |
+| [qlib-integration/](qlib-integration/INDEX.md) | R001 | Microsoft Qlib integration vision. |
+| [db-placement/](db-placement/INDEX.md) | R002 | Substrate vs trading-pack DB placement. |
+| [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
+
+R-numbered folders are formal research docs tracked in the table above; reference folders are
+imported/supporting material without an R-number.
 
 ## Status legend
 
@@ -25,8 +40,9 @@ look in the "Outcome" column for the ADR or sprint it produced.
 
 ## Adding a new research document
 
-1. Next number is `R002`.
-2. Create `<slug>.md` in this folder. Open with the standard header block:
+1. Next number is `R003`.
+2. Create a **folder** `docs/research/<slug>/` (not a loose file). Put the document at
+   `<slug>/<slug>.md`, opening with the standard header block:
 
    ```text
    # Research: <Tool/Topic> — <subtitle>
@@ -36,6 +52,9 @@ look in the "Outcome" column for the ADR or sprint it produced.
    **Source:** <URL or citation>
    ```
 
-3. Add a row to this table immediately — the "Answers" column is the most important field.
-4. If research leads to an ADR, update the status to ✅ Adopted and link the ADR in "Outcome."
-5. If research leads to a sprint, update "Outcome" with the sprint number and set status to 🚧 In progress.
+3. Add an **`<slug>/INDEX.md`** landing page: one-paragraph summary, status, link to the doc(s),
+   what it answers, and the consuming decision/outcome.
+4. Add a row to the table above (link to the folder) **and** a row to the Folder-structure table —
+   the "Answers" column is the most important field.
+5. If research leads to an ADR, set status ✅ Adopted and link the ADR in "Outcome."
+6. If research leads to a sprint, update "Outcome" with the sprint number and set status 🚧 In progress.

@@ -13,7 +13,7 @@ multi-horizon momentum, volatility, and range features over OHLCV history. The p
 constraint as Q1). Governed by a tunable weight defaulting to 0.00 (off); operator enables
 after 20-day IC comparison against the existing technical pillar.
 
-The invariants from [R001 §"For Coding Agents"](../research/qlib-integration.md) bind verbatim:
+The invariants from [R001 §"For Coding Agents"](../research/qlib-integration/qlib-integration.md) bind verbatim:
 
 - Alpha158 logic lives inside `agents/analyst/domain/` only; no symbol crosses the boundary.
 - No new contract type; `ScoreBreakdown` gains `alpha158_score: float | None = None`.

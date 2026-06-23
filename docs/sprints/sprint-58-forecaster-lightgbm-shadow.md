@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 58 — Forecaster: LightGBM price/return shadow signal (qlib Phase Q1)
 
-**Status:** active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow` · **Build phase:** qlib Phase Q1 (research [R001](../research/qlib-integration.md)) · **Effort: M**
+**Status:** active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow` · **Build phase:** qlib Phase Q1 (research [R001](../research/qlib-integration/qlib-integration.md)) · **Effort: M**
 
 ## The two decisions that shape this sprint (read first)
 
@@ -44,7 +44,7 @@ gates a decision**.
 
 ## Why (context)
 
-- Read first: [R001 qlib integration](../research/qlib-integration.md) §"forecaster — Primary target"
+- Read first: [R001 qlib integration](../research/qlib-integration/qlib-integration.md) §"forecaster — Primary target"
   - §"For Coding Agents" (the 7 invariants — all still bind verbatim; only the import source changed
   from `qlib.model.gbdt.LGBModel` to `lightgbm`); `docs/decisions/0002-sentiment-champion-challenger.md`
   (ADR-0002 explicitly anticipated **N** shadow challengers behind the forecaster boundary — this is

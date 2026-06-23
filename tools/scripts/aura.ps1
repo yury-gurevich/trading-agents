@@ -85,7 +85,8 @@
 #       Run 'snapshots' first to get a valid snapshot id.
 #
 #   create-free [-FreeName <name>]  ⚠
-#       Create a new AuraDB Free instance on GCP us-central1.
+#       Create a new AuraDB Free instance on GCP asia-southeast1 (Singapore —
+#       closest free-db region to Australia; australiaeast not available on Free).
 #       Saves full credentials INCLUDING PASSWORD to infra/aura-free.local.json
 #       (gitignored). The password is shown ONCE in the output — save it.
 #       Neo4j Free allows only one instance per account; this will fail if one
@@ -312,9 +313,10 @@ switch ($Action) {
       version        = "5"
       name           = $FreeName
       type           = "free-db"
-      region         = "us-central1"
+      region         = "asia-southeast1"   # Singapore — closest GCP free-db region to Australia
       cloud_provider = "gcp"
       tenant_id      = $c.tenant_id
+      memory         = "1GB"
     } | ConvertTo-Json
 
     if ($WhatIf) {
@@ -325,35 +327,49 @@ switch ($Action) {
       return
     }
 
-    Write-Host "Creating free AuraDB instance '$FreeName' on GCP us-central1 ..." -ForegroundColor Cyan
+    Write-Host "Creating free AuraDB instance '$FreeName' on GCP asia-southeast1 (Singapore) ..." -ForegroundColor Cyan
     $resp = Invoke-RestMethod -Method Post -Uri $base -Headers $hdr `
         -Body $body -ContentType "application/json"
     $d = $resp.data
 
-    Write-Host ""
-    Write-Host "=== FREE INSTANCE CREATED ===" -ForegroundColor Green
-    Write-Host "ID:           $($d.id)"
-    Write-Host "Name:         $($d.name)"
-    Write-Host "Status:       $($d.status)"
-    Write-Host "Connection:   $($d.connection_url)"
-    Write-Host "Username:     $($d.username)"
-    if ($d.password) {
-      Write-Host "Password:     $($d.password)" -ForegroundColor Yellow
+    # Safe field accessor — the create response omits some fields (e.g. status),
+    # and StrictMode throws on missing properties. Never let display crash before
+    # the password (returned ONLY in this response) is persisted to disk.
+    function Get-Field { param($obj, [string]$name, $default = $null)
+      if ($obj.PSObject.Properties.Match($name).Count -gt 0) { $obj.$name } else { $default }
     }
 
+    # ── SAVE FIRST — the password appears only here and cannot be retrieved later.
+    # NOTE: free-db uses the instance id as BOTH the username and the database
+    # name (Professional uses 'neo4j' for both). Persist them so switch-to-free
+    # can rewrite NEO4J_USER and NEO4J_DATABASE correctly.
+    $freeId = Get-Field $d 'id'
     $freeCreds = @{
-      instance_id       = $d.id
+      instance_id       = $freeId
       tenant_id         = $c.tenant_id
-      username          = if ($d.username) { $d.username } else { "neo4j" }
-      connection_url    = $d.connection_url
-      password          = if ($d.password) { $d.password } else { "" }
+      username          = Get-Field $d 'username' $freeId
+      database          = $freeId
+      connection_url    = Get-Field $d 'connection_url'
+      password          = Get-Field $d 'password' ''
       cloud_provider    = "gcp"
-      region            = "us-central1"
+      region            = "asia-southeast1"
       type              = "free-db"
       api_client_id     = $c.api_client_id
       api_client_secret = $c.api_client_secret
     }
     $freeCreds | ConvertTo-Json | Set-Content $freePath -Encoding UTF8
+
+    Write-Host ""
+    Write-Host "=== FREE INSTANCE CREATED ===" -ForegroundColor Green
+    Write-Host "ID:           $(Get-Field $d 'id')"
+    Write-Host "Name:         $(Get-Field $d 'name')"
+    Write-Host "Status:       $(Get-Field $d 'status' 'creating')"
+    Write-Host "Connection:   $(Get-Field $d 'connection_url' '(assigned once running)')"
+    Write-Host "Username:     $(Get-Field $d 'username' 'neo4j')"
+    $pw = Get-Field $d 'password'
+    if ($pw) {
+      Write-Host "Password:     $pw" -ForegroundColor Yellow
+    }
     Write-Host ""
     Write-Host "Credentials saved to $freePath (gitignored)." -ForegroundColor Gray
     Write-Host ""
@@ -435,15 +451,18 @@ switch ($Action) {
     if ($WhatIf) {
       if (Test-Path $freePath) {
         $freePreview = Get-Content $freePath -Raw | ConvertFrom-Json
+        $previewDb = if ($freePreview.PSObject.Properties.Match('database').Count) { $freePreview.database } else { $freePreview.instance_id }
         Write-WhatIf "Would update ${envPath}:"
         Write-WhatIf "  NEO4J_URI      = $($freePreview.connection_url)"
+        Write-WhatIf "  NEO4J_USER     = $($freePreview.username)"
         Write-WhatIf "  NEO4J_PASSWORD = <from aura-free.local.json>"
+        Write-WhatIf "  NEO4J_DATABASE = $previewDb"
         Write-WhatIf "  NEO4J_TEST_URI = $($freePreview.connection_url)"
         Write-WhatIf "Would update ${credPath}:"
         Write-WhatIf "  instance_id    = $($freePreview.instance_id)"
         Write-WhatIf "  connection_url = $($freePreview.connection_url)"
       } else {
-        Write-WhatIf "Would update ${envPath}  (NEO4J_URI / NEO4J_PASSWORD / NEO4J_TEST_URI)"
+        Write-WhatIf "Would update ${envPath}  (NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE / NEO4J_TEST_URI)"
         Write-WhatIf "Would update ${credPath}  (instance_id / connection_url)"
         Write-Host "  NOTE: $freePath not yet created. Run create-free first." -ForegroundColor Yellow
       }
@@ -462,12 +481,19 @@ switch ($Action) {
     if (-not $free.password)       { throw "aura-free.local.json has no password. Add it manually." }
 
     # ── 1. Update .env ──────────────────────────────────────────────────────
+    # NOTE: free-db uses the instance id as BOTH the username and the database
+    # name (NOT 'neo4j'), so NEO4J_USER and NEO4J_DATABASE must be rewritten too
+    # or auth/routing fails. Fall back to instance_id if a field is absent.
+    $freeUser = if ($free.PSObject.Properties.Match('username').Count) { $free.username } else { $free.instance_id }
+    $freeDb   = if ($free.PSObject.Properties.Match('database').Count)  { $free.database  } else { $free.instance_id }
     $envContent = Get-Content $envPath -Raw
     $envContent = $envContent -replace '(?m)^NEO4J_URI=.*$',      "NEO4J_URI=$($free.connection_url)"
+    $envContent = $envContent -replace '(?m)^NEO4J_USER=.*$',     "NEO4J_USER=$freeUser"
     $envContent = $envContent -replace '(?m)^NEO4J_PASSWORD=.*$', "NEO4J_PASSWORD=$($free.password)"
+    $envContent = $envContent -replace '(?m)^NEO4J_DATABASE=.*$', "NEO4J_DATABASE=$freeDb"
     $envContent = $envContent -replace '(?m)^NEO4J_TEST_URI=.*$', "NEO4J_TEST_URI=$($free.connection_url)"
     [System.IO.File]::WriteAllText($envPath, $envContent, [System.Text.UTF8Encoding]::new($false))
-    Write-Host "OK  .env updated (NEO4J_URI, NEO4J_PASSWORD, NEO4J_TEST_URI)" -ForegroundColor Green
+    Write-Host "OK  .env updated (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, NEO4J_DATABASE, NEO4J_TEST_URI)" -ForegroundColor Green
 
     # ── 2. Update aura-api.local.json to point at free instance ────────────
     $api = Get-Content $credPath -Raw | ConvertFrom-Json

@@ -8,7 +8,7 @@
  * @tags quality maintainability
  */
 
-import codeql.yaml.Yaml
+import semmle.python.Yaml
 
 from YamlParseError error
 select error, "YAML parse error: " + error.getMessage()

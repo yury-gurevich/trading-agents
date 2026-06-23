@@ -1,4 +1,9 @@
 name: local/yaml-diagnostics
 version: 0.0.1
 dependencies:
-  codeql/yaml: "*"
+  # The queries run on the Python database (its extractor also extracts YAML config
+  # files). python-all provides the dbscheme AND `semmle.python.Yaml`, the Python
+  # instantiation of the codeql/yaml functor — which is what exposes YamlParseError.
+  # codeql.yaml.Yaml itself is a parameterized module (Make<InputSig>) and cannot be
+  # imported directly; you import the language's instantiation. See the queries.
+  codeql/python-all: "*"

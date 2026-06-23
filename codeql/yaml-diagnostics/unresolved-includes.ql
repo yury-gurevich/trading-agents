@@ -8,7 +8,7 @@
  * @tags quality maintainability
  */
 
-import codeql.yaml.Yaml
+import semmle.python.Yaml
 
 from YamlInclude include
 where not exists(include.eval())

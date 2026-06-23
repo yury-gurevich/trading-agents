@@ -17,10 +17,11 @@ table is a *proposal*, not a fixture. Adjust the silos freely.
 | **SRE / Observability** | health, logs, metrics, incidents | Log Analytics, Monitor, `ta status` | Platform | the operator |
 | **GRC** (Governance/Risk/Compliance) | residency, audit, retention, the ledger | region-residency, `maintenance/ledger.md` | law/jurisdiction | every dept (constraint) |
 | **Service Desk** | operator-facing requests + comms | `ta` CLI UX, custom-domain requests | all depts | the operator |
+| **Experimentation & Tuning** (cross-cutting) | how a pipeline parameter is changed by evidence — register/run/measure/compare/gate/promote | ADR-0013 ParameterSet/RunMetrics/Experiment nodes, `run_local` | Data (graph), the owning agent's metric | every pipeline process (its dials) |
 
 ## Dependency direction (who waits on whom)
 
-```
+```text
 Security & IAM ─┬─▶ Release Eng ─▶ Platform ◀─ Data & Storage ◀─┐
                 ├──────────────────▶ Platform                    │
                 └──▶ Data & Storage ◀── Networking ──▶ Platform  │

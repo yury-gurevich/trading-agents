@@ -39,6 +39,12 @@ we measure; the LLM is the **challenger** proposing a better version; the **eval
 ledger** (did runs get faster / cheaper / less manual / less failure-prone); the **operator
 is the promotion gate**. Nothing is "tuned" blindly — every change is justified by the log.
 
+> **Two subjects, one loop.** Loop 2 here tunes the **infrastructure/ops process** (charters,
+> runbooks; eval = this ledger). The **trading pipeline** is tuned by the same loop on a different
+> subject and store — see the [Experimentation & Tuning charter](../departments/experimentation/charter.md)
+> (ADR-0013): predictor = a pipeline `tunable`, challenger = a `ParameterSet`, eval = `RunMetrics`
+> on the graph, gate = the operator. Both inherit LAW-01; neither auto-promotes.
+
 ### What "better" is measured on
 | Signal | Source | Better = |
 | --- | --- | --- |

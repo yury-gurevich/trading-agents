@@ -16,6 +16,7 @@ how it works, update its charter in the same change (`maintenance/loop.md`).
 | Department | Charter | Status |
 | --- | --- | --- |
 | [Security & IAM](departments/security-iam/charter.md) | ✅ drafted | worked example |
+| [Experimentation & Tuning](departments/experimentation/charter.md) | ✅ drafted | cross-cutting; governs trading-pipeline parameter tuning (ADR-0013, LAW-01) |
 | Release Engineering (CI-CD) | ⬜ stub | charter pending |
 | Platform / Infrastructure | ⬜ stub | charter pending |
 | Data & Storage (DBA) | ⬜ stub | charter pending (Aura→VM lives here) |

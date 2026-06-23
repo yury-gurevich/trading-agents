@@ -19,6 +19,7 @@ Run it:
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -104,7 +105,25 @@ def main() -> None:
         metavar="ID",
         help="RunRequest id (use a fresh id per run; the graph is append-only)",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=0,
+        metavar="N",
+        help="paced ingest sub-batch size (0 = single-shot); respects API rate limits",
+    )
+    parser.add_argument(
+        "--chunk-delay",
+        type=float,
+        default=60.0,
+        metavar="SECONDS",
+        help="pause between ingest chunks (with --chunk-size)",
+    )
     args = parser.parse_args()
+
+    if args.chunk_size:
+        os.environ["PROVIDER_INGEST_CHUNK_SIZE"] = str(args.chunk_size)
+        os.environ["PROVIDER_INGEST_CHUNK_DELAY_SECONDS"] = str(args.chunk_delay)
 
     if args.real:
         from dotenv import load_dotenv
@@ -128,6 +147,9 @@ def main() -> None:
     if args.universe:
         tickers = _load_universe(args.universe)
         print(f"UNIVERSE: {args.universe}  ({len(tickers)} tickers)")
+
+    if args.chunk_size:
+        print(f"INGEST: chunked  size={args.chunk_size}  delay={args.chunk_delay}s")
 
     agent = ProviderAgent(
         InProcessBus(),

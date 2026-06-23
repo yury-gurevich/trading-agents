@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from kernel import GraphStore
 
 _DEFAULT_LOOKBACK_DAYS = 60
+MARKET_FIELDS = ("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar")
 
 
 def universe_from_env() -> tuple[str, ...]:
@@ -95,11 +96,21 @@ def ingest_once(agent: ProviderAgent, universe: tuple[str, ...]) -> str | None:
     """
     if not universe:
         return None
+    chunk_size = getattr(agent._settings, "ingest_chunk_size", 0)
+    if chunk_size and chunk_size > 0 and len(universe) > chunk_size:
+        from agents.provider.ingest_chunked import ingest_chunked
+
+        return ingest_chunked(
+            agent,
+            universe,
+            chunk_size=chunk_size,
+            delay_seconds=agent._settings.ingest_chunk_delay_seconds,
+        )
     window = _today_window()
     market_request = DataRequest(
         tickers=universe,
         window=window,
-        fields=("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar"),
+        fields=MARKET_FIELDS,
     )
     market = agent._get_market_data(market_request)
     _write_market_data(agent._graph, market, universe, window)

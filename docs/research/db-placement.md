@@ -163,10 +163,12 @@ Cypher queries and graph schema work unchanged, and the Azure infra is already i
 
 1. **Verify AuraDB Free actual node/rel limits** — discrepancy between 200K and 50K. Log in to
    `console.neo4j.io` and check the instance limits panel for the free instance once created.
-2. **Does the substrate actually need a persistent store at all?** The master bootstraps the fleet;
-   if agents re-register on each startup, an in-memory registry (today's `InMemoryGraphStore`) plus a
-   lightweight durable config store (even a single JSON in Blob Storage) might be sufficient. Avoids
-   introducing Cosmos DB before it's truly needed.
+2. ~~Does the substrate actually need a persistent store?~~ **ANSWERED (2026-06-23): No.**
+   Code inspection of `agents/master/agent.py` + `agents/master/store.py` confirms the registry
+   writes (Session, AgentInstance, CapabilityGrant) are audit-only — nothing reads them back.
+   Grants are computed from the in-memory `_grant_policy` dict. The master already works identically
+   with `InMemoryGraphStore`. Recommended sprint: remove the `graph` parameter from `MasterAgent`
+   and delete `agents/master/store.py` entirely — substrate becomes Neo4j-free.
 3. **Cosmos DB Gremlin for the trading pack?** Possible (free, Azure-native, avoids Aura dependency)
    but requires rewriting every Cypher query as Gremlin — high migration cost for a working system.
    Not recommended unless Aura becomes genuinely untenable.

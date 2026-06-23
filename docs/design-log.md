@@ -707,35 +707,34 @@ system because it is the requirement that came from trading demands."
 
 **Two distinct workloads, currently sharing one store:**
 
-1. **Substrate registry** — bounded (12 agents, ~200 nodes total ever), flat key-value lookups
-   ("is agent X registered?", "what capabilities does agent X have?"). No graph traversal needed.
-   A document or KV store is sufficient and appropriate.
-
-2. **Trading-pack provenance graph** — unbounded, append-only, graph-traversal-heavy
-   (RunRequest → provider → scanner → analyst → PM → execution → monitor → reporter lineage walk).
-   Cypher queries throughout `kernel/graph_cypher.py`. Grows ~55 nodes / ~60 rels per run.
-   Neo4j is genuinely the right fit here.
+1. **Substrate registry** — Session, AgentInstance, CapabilityGrant nodes written by the master.
+2. **Trading-pack provenance graph** — RunRequest → provider → scanner → analyst → PM → execution →
+   monitor → reporter lineage, graph-traversal-heavy. Cypher queries throughout `kernel/graph_cypher.py`.
+   Grows ~55 nodes / ~60 rels per run. Neo4j is genuinely the right fit here.
 
 **Research complete — see [docs/research/db-placement.md](research/db-placement.md) for full
 capability mapping against AuraDB Free, Azure free-tier options, and self-host alternatives.**
 
-**Direction (not yet decided):**
+**KEY FINDING (2026-06-23): the substrate registry writes are audit-only. Code inspection of
+`agents/master/agent.py` and `agents/master/store.py` shows:**
 
-- **(a) Substrate registry → Azure Cosmos DB NoSQL API (free tier).**
-  Already in the Azure estate (same subscription as Container Apps). 25 GB free, lifetime.
-  Document API is sufficient (no graph traversal). Vector search built-in for future use. Keeps
-  the substrate independent of any graph engine. Requires a `CosmosRegistryStore` implementing
-  the existing `GraphStore` protocol (or a lighter interface), loaded by the master. **Most correct.**
+- `activate()` computes grants entirely from `self._grant_policy` (in-memory dict loaded from JSON)
+  and returns them in `ACTIVATEMessage`. The `write_agent_instance()` + `write_capability_grant()`
+  calls are **write-only audit records** — nothing reads them back to route work or make decisions.
+- `drain()` does one `get_node("AgentInstance", ...)` to verify existence before stamping
+  drain_reason/drain_at. A consistency guard inside the master itself, not external lookup.
+- No agent outside the master, no Cypher pipeline query, no orchestration code reads Session /
+  AgentInstance / CapabilityGrant. `grep -rn "Session\|AgentInstance\|CapabilityGrant"` across
+  `agents/ orchestration/ kernel/` finds only `agents/master/`.
 
-- **(b) Substrate registry → stays on Neo4j; separate INSTANCES.**
-  AuraDB Free: one free instance total. Both layers would need separate accounts or a single
-  shared instance. Does not achieve separation; just relocates the coupling to infra config.
-  **Rejected on principle** (substrate still depends on a trading-pack DB choice).
+**The substrate is already effectively in-memory.** Running the master with `InMemoryGraphStore`
+(which all tests use — and they pass) is functionally identical to Neo4j for anything that matters.
+The Neo4j writes are a pure audit trail. **Option (c) is already the de-facto reality.**
 
-- **(c) Substrate registry → InMemoryGraphStore only (no persistence).**
-  Agents re-register on every startup; master never needs durable registry. Avoids introducing
-  any external store. Simplest if the fleet always starts from scratch and the operator is the
-  only durable source of configuration. **Acceptable short-term**; blocks audit log / recovery.
+**Direction — RECOMMENDED: drop the graph writes from the substrate master; make InMemoryGraphStore
+the only backed store for the substrate.** If an audit trail is wanted later, add it as a
+separate lightweight concern (Azure Table Storage append log, or a JSON file). Do not keep a
+Neo4j dependency in the substrate just for writes nobody reads.
 
 **Trading pack stays on Neo4j regardless.** All Cypher queries and `kernel/graph_cypher.py` /
 `kernel/graph_support.py` / `kernel/graph_neo4j.py` are unchanged. AuraDB Free covers years of
@@ -747,10 +746,10 @@ hatch if Aura Free limits bind or the service becomes unavailable.
 product page may show 50K / 175K. **Verify in console before planning against either number.**
 No automated backups on Free tier; restore is console-only (DL-11). Auto-pauses on inactivity.
 
-**Ruled out.** Cosmos DB Gremlin API for the trading pack — free and Azure-native but requires
-rewriting every Cypher query as Gremlin; high migration cost for a working system.
+**Ruled out.** (b) Separate Neo4j instances — substrate still depends on trading-pack DB choice.
+Cosmos DB Gremlin API for the trading pack — free and Azure-native but requires rewriting every
+Cypher query as Gremlin; high migration cost for a working system.
 
-**Status.** OPEN — research done; decision and sprint pending. Three questions to resolve before
-coding: (1) verify AuraDB Free actual node limit in console; (2) decide whether the substrate
-actually needs a durable registry (option a vs c above); (3) confirm Cosmos DB free tier is not
-already consumed by another account in the subscription.
+**Status.** OPEN — analysis complete; decision and sprint pending. Recommended sprint: remove
+`graph` parameter from `MasterAgent.__init__` and `store.py` writes; master becomes graph-free.
+One remaining question: (1) verify AuraDB Free actual node limit in console (planning only).

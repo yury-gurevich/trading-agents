@@ -851,3 +851,74 @@ INTC. (b) **More conservative pacing** (smaller chunk and/or longer delay) to ma
 clean, not borderline. (c) Whether `max_daily_move_sigma=4.0`→`8.0` should be the committed default
 (the check should catch corrupt ~30σ prints, not legit 6.6σ earnings moves). (d) Only after a clean
 batch do trades actually flow — chunking was necessary but not sufficient.
+
+## DL-18 · Continuous-improvement system — map, measure, tune, gate  ·  status: DESIGN (2026-06-24)
+
+**Trigger.** DL-17's pacing work was hand-tuned: guess → run → measure → re-run, with the operator
+reading flags off a trace and editing env vars. That loop must become a **system**. Operator
+direction: *"PROVIDER_INGEST_CHUNK_SIZE / _DELAY should be **configurable, not settable** parameters.
+Create the whole continuous-improvement system — map what processes we have, measure them, tweak
+parameters, improve."*
+
+**Configurable vs settable — the distinction that drives this.**
+- *Settable* (today): a human edits `PROVIDER_INGEST_CHUNK_SIZE=12` in `.env`; one value, no memory
+  of what it scored, no comparison, no promotion gate.
+- *Configurable* (target): a parameter lives in a **named, versioned ParameterSet** the run loads;
+  the system measures the run, attributes the metrics to that set, sweeps alternatives, and
+  **promotes** the winner via the existing ACTIVATE channel. Env stays only as the local-dev override.
+
+**What already exists (do not rebuild).**
+- **Parameter catalogue** — `kernel/config.py` `tunable()` + `describe()` already expose ~145
+  justified, bounded params across 13 agents (name, env var, default, why, ge/le, unit).
+- **Measurement prototypes** — forecaster IC/return scorecard (`forecaster/domain/return_scorecard.py`),
+  curator filter confusion matrix (`curator/domain/filter_quality.py`), sentiment
+  champion–challenger + eval-gate (ADR-0010). Siloed; each proves one slice of the loop.
+- **Delivery channel** — master → agent ACTIVATE config injection (entrypoints `_apply_config`).
+- **Measurement substrate** — the provenance graph already records every run's lineage.
+
+**The map — processes → key tunables → candidate metrics.**
+
+| Process | Example tunables | Metric to optimise |
+| --- | --- | --- |
+| provider / **ingest** | `ingest_chunk_size`, `ingest_chunk_delay_seconds`, `max_daily_move_sigma`, `max_staleness_days` | degradation rate (pillars clean / total), total fetch time, returned/requested |
+| scanner | `min_average_volume`, `min_relative_strength`, beta/volume gates | survivors/universe, downstream realised-return of survivors |
+| analyst | indicator weights (`settings_indicators.py`, 21 knobs), confidence floor | scored/eligible, hit-rate, calibration |
+| portfolio_manager | sizing, sector/RR gates | approved/scored, realised PnL per decision |
+| execution | broker/slippage params | fill rate, slippage vs expected |
+| monitor | exit thresholds, holding window | premature-exit rate, captured vs left-on-table |
+| reporter | — (metrics sink) | profit_factor, expectancy |
+| forecaster | booster/IC params (existing scorecard) | information coefficient |
+| operator LLM | `system_prompt`, model, reasoning effort | eval-set score (ADR-0010 gate) |
+
+**The loop — four layers.**
+1. **Catalogue** — aggregate `describe()` across *every* agent settings class into one registry
+   (today it runs per-class; nothing unifies them). This is the menu of what is tunable + its bounds.
+2. **Measure** — write a per-run `RunMetrics` record keyed by `(process, parameter_set_id, run_id,
+   as_of)`; start with ingest (degradation rate, fetch seconds, returned/requested), reuse the
+   forecaster/curator scorecards for their slices.
+3. **Experiment** — load a named `ParameterSet` instead of ad-hoc env; run champion vs challenger;
+   record both sets' metrics against the same as-of so they are comparable.
+4. **Gate** — promote a challenger only when its metric ≥ champion with no regression on the
+   guardrails (generalises ADR-0010's eval-gate from prompts to *any* parameter set). Promotion
+   updates the active set delivered via ACTIVATE; provenance records who/why.
+
+**First concrete target (closes the DL-17 loop).** Make `chunk_size`/`delay`/`max_daily_move_sigma`
+a ParameterSet; metric = (Finnhub degradation rate, fetch time) measured across N runs at different
+times of day; sweep a small grid within the tunables' bounds; promote the fastest set that holds 0
+degradation. This is the manual DL-17 loop, automated and recorded.
+
+**Phased build (proposed sprints).**
+- **CI-1 Catalogue** — `describe_all()` over every agent settings class → one registry + a read
+  surface (extend the existing tunables view).
+- **CI-2 RunMetrics** — graph node + writer; populate from the ingest trace first.
+- **CI-3 ParameterSet** — named/versioned set loaded by a run (replaces ad-hoc env for experiments);
+  `run_local --parameter-set <id>`.
+- **CI-4 Experiment + compare** — run two sets on one as-of; tabulate metric deltas.
+- **CI-5 Gate + promote** — no-regression promotion + ACTIVATE delivery; generalise the eval-gate.
+- **CI-6 Optimiser** — sweep within bounds (grid first, smarter later); start on the ingest target.
+
+**Open questions.** (a) Where does ParameterSet live — graph node, JSON in repo, or Cosmos (DL-15)?
+(b) Metric storage — RunMetrics on the provenance graph vs the metrics/Prometheus plane already wired.
+(c) How much overlaps the curator's existing "filter decisions as training source" (DL-09) — likely
+CI-2/CI-4 should subsume it rather than duplicate. (d) Relationship to ADR-0010 — the gate should be
+one mechanism, not two.

@@ -464,10 +464,17 @@ default off) emits would-be-dropped tickers as survivors tagged `bypassed` so th
 can be observed, while the verdict records the real drop. `filters.apply_filters` reworked to emit a
 verdict per ticker (features + first-failing-filter); survivor output unchanged. **Verdict schema +
 bypass semantics are now fixed in code** — ready to graduate to an ADR.
-**REMAINING — measurement side (DL-09 part B):** (1) dual outcome labels (raw forward return + full-
-pipeline trade outcome) by walking the provenance graph from each verdict; (2) curator
-`assemble_filter_examples` → ExampleRecord/Manifest/Predictor; (3) per-filter confusion matrix
-(precision + miss-rate). Now unblocked by DL-10 (trades actually flow on live data).
+**MEASUREMENT ENGINE SHIPPED (S89, 2026-06-23, 0.25.00).** `agents/curator/domain/filter_quality.py`:
+`score_filters(verdicts, outcomes) -> FilterScorecard` (pure) computes the per-filter confusion matrix —
+`good_drops` (dropped×fell), `missed_winners` (dropped×rose), `precision` per filter — plus overall keep
+quality (`good_keeps`/`wrong_keeps`/`keep_precision`); `collect_verdicts(graph)` reads recorded verdicts
+off `ScanRun` nodes. Outcomes are **injected** (fixed-horizon forward return per ticker), same discipline
+as the forecaster scorecards. Bypassed drops carry a real outcome, so a drop that rose is finally counted
+as a missed winner — the counterfactual made measurable.
+**REMAINING — wire real outcomes (DL-09 part B.2):** (1) forward-return outcomes from the reference
+Postgres (price_cache OHLCV) over a fixed horizon from each scan date; (2) expose a curator capability +
+`assemble_filter_examples` → ExampleRecord/Manifest/Predictor; (3) optional surface/CLI to print + persist
+the scorecard. The pure measurement core is done and unit-tested.
 
 ---
 

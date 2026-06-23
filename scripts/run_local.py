@@ -6,18 +6,21 @@ Role: start the system in one process — pre-flight checks, the dispatcher plac
       downstream agent wakes off its prerequisite gate
       (provider → scanner → analyst → PM → execution → monitor → reporter).
       --real: loads .env, uses live Neo4j (NEO4J_URI) + real Tiingo OHLCV data.
+      --universe FILE: newline-delimited tickers; overrides the built-in list.
       Default: in-memory graph + FakeDataSource (no credentials needed).
 External I/O: stdout; network (Tiingo, Finnhub, Neo4j) when --real.
 
 Run it:
   PYTHONPATH=. python scripts/run_local.py           # in-memory demo
   PYTHONPATH=. python scripts/run_local.py --real    # live Neo4j + real market data
+  PYTHONPATH=. python scripts/run_local.py --real --universe scripts/universe_sp100.txt
 """
 
 from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from agents.execution.broker import PaperBroker
 from agents.provider import ProviderAgent
@@ -28,8 +31,8 @@ from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import all_passed, place_run_request, preflight
 
-_TICKERS_DEMO = ("AAPL", "MSFT")
-_TICKERS_REAL = ("AAPL", "MSFT", "GOOGL")
+_TICKERS_DEMO: tuple[str, ...] = ("AAPL", "MSFT")
+_TICKERS_REAL: tuple[str, ...] = ("AAPL", "MSFT", "GOOGL")
 _CHAIN = (
     "RunRequest",
     "MarketData",
@@ -56,6 +59,17 @@ def _bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
     )
 
 
+def _load_universe(path: str) -> tuple[str, ...]:
+    """Read a newline-delimited ticker file (blank lines and # comments ignored)."""
+    lines = Path(path).read_text(encoding="utf-8").splitlines()
+    syms = tuple(
+        s.strip().upper() for s in lines if s.strip() and not s.lstrip().startswith("#")
+    )
+    if not syms:
+        raise SystemExit(f"universe file {path} has no tickers")
+    return syms
+
+
 def _fake_source() -> FakeDataSource:
     bars = (
         _bar("AAPL", 4, 100.0),
@@ -79,6 +93,11 @@ def main() -> None:
         action="store_true",
         help="print per-stage batch metrics after the cascade",
     )
+    parser.add_argument(
+        "--universe",
+        metavar="FILE",
+        help="newline-delimited ticker file; overrides the built-in universe",
+    )
     args = parser.parse_args()
 
     if args.real:
@@ -99,6 +118,10 @@ def main() -> None:
         source = _fake_source()
         tickers = _TICKERS_DEMO
         print("MODE: demo  (in-memory + fake data)")
+
+    if args.universe:
+        tickers = _load_universe(args.universe)
+        print(f"UNIVERSE: {args.universe}  ({len(tickers)} tickers)")
 
     agent = ProviderAgent(
         InProcessBus(),

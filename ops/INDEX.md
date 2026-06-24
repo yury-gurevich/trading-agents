@@ -18,6 +18,7 @@ how it works, update its charter in the same change (`maintenance/loop.md`).
 | [Security & IAM](departments/security-iam/charter.md) | ✅ drafted | worked example |
 | [Experimentation & Tuning](departments/experimentation/charter.md) | ✅ drafted | cross-cutting; governs trading-pipeline parameter tuning (ADR-0013, LAW-01) |
 | [Housekeeping & Navigability](departments/housekeeping/charter.md) | ✅ drafted | cross-cutting; keeps the repo legible — INDEX/README/root/folder/git-size hygiene. Future **Librarian** agent |
+| [Deliberation](departments/deliberation/charter.md) | ✅ drafted | cross-cutting; defend→attack→judge a decision (LLM debate) → a LAW-05 defence. DL-20 made concrete. Future **Tribunal** agent |
 | Release Engineering (CI-CD) | ⬜ stub | charter pending |
 | Platform / Infrastructure | ⬜ stub | charter pending |
 | Data & Storage (DBA) | ⬜ stub | charter pending (Aura→VM lives here) |

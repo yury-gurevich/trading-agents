@@ -7,12 +7,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 Set-Location $repoRoot
 
 if (-not $SkipSetup) {
     Write-Host "Step 1/2: Running local CodeQL setup and analysis..."
-    $setupScript = Join-Path $repoRoot "scripts\setup_codeql_local.ps1"
+    $setupScript = Join-Path $PSScriptRoot "setup_codeql_local.ps1"
     if ($Rebuild) {
         & $setupScript -Languages $Languages -Rebuild
     } else {
@@ -21,7 +21,7 @@ if (-not $SkipSetup) {
 }
 
 Write-Host "Step 2/2: Generating aggregated triage + baseline/diff + owner reports..."
-$reportScript = Join-Path $repoRoot "scripts\generate_codeql_reports.ps1"
+$reportScript = Join-Path $PSScriptRoot "generate_codeql_reports.ps1"
 if ($UpdateBaseline) {
     & $reportScript -UpdateBaseline
 } else {

@@ -27,6 +27,11 @@ htmlcov/
 /data/
 .codeql-db/
 .tools/
+# CodeQL generated scan outputs (the tool — queries + scripts — is committed; runs are not)
+codeql/**/*.sarif
+codeql/python-security/reports/*/latest/
+codeql/python-security/reports/*/archive/
+codeql/python-security/reports/AgentCrossImport-report.md
 
 # OS / editor
 .DS_Store

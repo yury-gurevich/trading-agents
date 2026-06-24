@@ -7,7 +7,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $defaultSarifPaths = @(
     (Join-Path $repoRoot ".codeql-db\python-security-and-quality.sarif"),
     (Join-Path $repoRoot ".codeql-db\yaml-code-scanning.sarif"),

@@ -44,7 +44,7 @@ function Ensure-CodeqlPackLock {
     }
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $analysisPlans = @(
     [PSCustomObject]@{
         Language = "python"
@@ -221,4 +221,4 @@ if (-not $SkipAnalyze) {
     }
 }
 Write-Host "To re-run from repo root:"
-Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/setup_codeql_local.ps1 -Rebuild"
+Write-Host "  powershell -ExecutionPolicy Bypass -File codeql/scripts/setup_codeql_local.ps1 -Rebuild"

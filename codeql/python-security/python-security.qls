@@ -1,0 +1,5 @@
+metadata:
+  description: Local Python security queries for trading-agents.
+suite:
+  - codeql/python-queries.qls
+  - local/python-security/TaintTracking.ql

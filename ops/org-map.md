@@ -18,6 +18,7 @@ table is a *proposal*, not a fixture. Adjust the silos freely.
 | **GRC** (Governance/Risk/Compliance) | residency, audit, retention, the ledger | region-residency, `maintenance/ledger.md` | law/jurisdiction | every dept (constraint) |
 | **Service Desk** | operator-facing requests + comms | `ta` CLI UX, custom-domain requests | all depts | the operator |
 | **Experimentation & Tuning** (cross-cutting) | how a pipeline parameter is changed by evidence — register/run/measure/compare/gate/promote | ADR-0013 ParameterSet/RunMetrics/Experiment nodes, `run_local` | Data (graph), the owning agent's metric | every pipeline process (its dials) |
+| **Housekeeping & Navigability** (cross-cutting) | repo legibility — INDEX/README, folder-per-topic, root cleanliness, gitignore + git/GH size, del-folder | `.gitignore`, INDEX.md map, ledger, del folder | a tracked repo, the ledger | everyone who reads the repo (human + AI) → future **Librarian** agent |
 
 ## Dependency direction (who waits on whom)
 

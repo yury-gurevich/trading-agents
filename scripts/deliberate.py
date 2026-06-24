@@ -7,9 +7,12 @@ Role: drive the kernel deliberation harness so a human can watch three LLM roles
 External I/O: stdout; Anthropic API when --real.
 
 Run it:
-  PYTHONPATH=. python scripts/deliberate.py
+  PYTHONPATH=. python scripts/deliberate.py                      # fake, no creds
+  uv pip install anthropic openai                                # for --real
   PYTHONPATH=. python scripts/deliberate.py --real \\
       --decision "Buy AAPL at market" --context "momentum 0.6; RSI 55; stop -3%"
+
+--real follows LLM_PROVIDER in .env (openai | anthropic) and that provider's key.
 """
 
 from __future__ import annotations
@@ -42,6 +45,29 @@ class _AnthropicText:
         return "".join(getattr(block, "text", "") for block in resp.content)
 
 
+class _OpenAIText:
+    """Free-text OpenAI adapter."""
+
+    def __init__(self, api_key: str, model: str) -> None:
+        openai = importlib.import_module("openai")
+        self._client = openai.OpenAI(api_key=api_key)
+        self._model = model
+
+    def complete(
+        self, *, system: str, user: str, tool_schema: dict[str, object]
+    ) -> str:
+        del tool_schema
+        resp = self._client.chat.completions.create(
+            model=self._model,
+            max_completion_tokens=400,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        )
+        return resp.choices[0].message.content or ""
+
+
 class _DemoFake:
     """Deterministic stand-in so the demo runs with no credentials."""
 
@@ -56,12 +82,20 @@ class _DemoFake:
         return '{"ruling": "revise", "rationale": "enter at half size; edge is thin"}'
 
 
-def _build_llm(real: bool) -> _AnthropicText | _DemoFake:
+def _build_llm(real: bool) -> _AnthropicText | _OpenAIText | _DemoFake:
     if not real:
         return _DemoFake()
     from dotenv import load_dotenv
 
     load_dotenv()
+    provider = os.environ.get("LLM_PROVIDER", "anthropic").strip().lower()
+    if provider == "openai":
+        key = os.environ.get("OPENAI_API_KEY", "")
+        if not key:
+            raise SystemExit("OPENAI_API_KEY not set — cannot run --real")
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o")
+        print(f"MODE: real  (OpenAI {model})")
+        return _OpenAIText(key, model)
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
         raise SystemExit("ANTHROPIC_API_KEY not set — cannot run --real")

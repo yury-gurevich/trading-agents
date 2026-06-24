@@ -23,6 +23,13 @@ from kernel.deliberation import (
     Verdict,
     deliberate,
 )
+from kernel.deliberation_eval import (
+    EvalCase,
+    EvalScore,
+    pass_rate,
+    run_eval,
+    score_debate,
+)
 from kernel.envelope import AgentMessage, MessageType
 from kernel.errors import (
     AgentFault,
@@ -55,6 +62,8 @@ __all__ = [
     "CollectingFaultSink",
     "DebateResult",
     "Edge",
+    "EvalCase",
+    "EvalScore",
     "EventHandler",
     "FakeLLMClient",
     "FaultCapture",
@@ -86,5 +95,8 @@ __all__ = [
     "describe",
     "fault_boundary",
     "fault_from_exception",
+    "pass_rate",
+    "run_eval",
+    "score_debate",
     "tunable",
 ]

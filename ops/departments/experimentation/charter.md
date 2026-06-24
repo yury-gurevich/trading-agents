@@ -186,9 +186,11 @@ delta — the DL-17 run-3 case) is a **first-class outcome**, not a failure; **n
 
 ## OPS-MNT · Maintenance trigger
 
-**When you touch `agents/**/settings*.py`** (add/retire a `tunable`) → refresh the CI-1 catalogue and,
-if the dial becomes loop-eligible, this charter's IN/OUT list. **When you add a metric** → register it in
-CI-2 and name its direction (↑/↓ = better) here. Re-verify the OPS-DOWN neighbours (the governed process).
+**When you touch `agents/**/settings*.py`** (add/retire a `tunable`) → the CI-1 catalogue updates
+*automatically* (auto-registration), and the CI completeness gate fails if a settings class escapes it
+— so the only manual duty is registering the dial's **metric** in CI-2 (the `G-REG` gate) to make it
+loop-eligible. **When you add a metric** → name its direction (↑/↓ = better) here. Re-verify the
+OPS-DOWN neighbours (the governed process).
 
 ## Changelog
 

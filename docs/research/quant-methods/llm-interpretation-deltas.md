@@ -63,8 +63,32 @@ dump 86 at once — itself a steering requirement.
 4. **The eval still decides** (DL-21): even with perfect context, compile the roles against *do upheld
    decisions outperform?* — understanding is necessary, not sufficient.
 
+## Model comparison — gpt-5.4 vs gpt-5.5 (same prompt, same 86 params)
+
+Re-ran the identical cold interpretation on **gpt-5.5**. It is the better debate substrate, and *how*
+it is better matters more than *that* it is.
+
+| Aspect | gpt-5.4 | gpt-5.5 | Verdict |
+| --- | --- | --- | --- |
+| **Coverage** | truncated at `scanner.min_price` (hit token cap) | completed all 86, more tersely | 5.5 — more token-efficient |
+| **`max_sector_pct` (the dangerous Class-2 delta)** | "limits hidden concentration **from correlated holdings**" — *over-claims a guardrail we lack* | "**sector** concentration control" — correctly scoped to what a sector cap *actually* does | **5.5 — did NOT make the dangerous assumption** |
+| **`signal_diversity_slack` (UNSURE)** | guessed "correlated signals" (wrong) | guessed "varied signals near the top score, avoid overconcentrating on one **type**" (close to actual) | 5.5 — better hedge |
+| **`max_daily_move_sigma` (Class-1)** | "in **that stock's** volatility units" (asserts per-stock — wrong) | "4 standard deviations" (vague, non-committal) | 5.5 *less wrong*; **neither got our pooled cross-sectional impl** |
+| **`base_*` regime-modulation (Class-1)** | missed | missed (says "baseline", hints) | tie — both miss |
+| **Style** | verbose | terse | 5.5 |
+
+**The headline finding.** Upgrading the model **shrinks the Class-2 risk** (it over-claims less — gpt-5.5
+scoped the sector cap correctly instead of assuming correlation control) **but does NOT close the
+Class-1 gap** (neither model knows our `max_daily_move_sigma` is pooled, or that `base_*` is
+regime-modulated). That is not a model-capability gap — it is a *our-system-specific* gap. **A better
+model narrows the "assumes guardrails we lack" delta; only grounding (DSPy/context) closes the "doesn't
+know our implementation" delta.** So: use the best available model for the roles, *and* still feed the
+implementation notes + coverage gaps — they fix different failure modes.
+
 ## The meta-insight
 
 The model doesn't need to be taught *finance* — it needs to be taught **this system's actual behaviour
 and its limits**. DSPy's job here is less "make it smarter" and more "stop it assuming we're smarter
-than we are." That is exactly what makes a debate *defensible* rather than *plausible*.
+than we are." That is exactly what makes a debate *defensible* rather than *plausible*. And the
+5.4→5.5 comparison proves model upgrades help with *plausibility* but not with *our-system fidelity* —
+the latter is irreducibly a grounding problem.

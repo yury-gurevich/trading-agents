@@ -3,7 +3,7 @@ department: experimentation
 tier: x cross-cutting
 owner: operator + AI tuning loop
 status: draft
-version: 0.2
+version: 0.3
 implements_with: [docs/decisions/0013-continuous-improvement-system.md, docs/sprints/sprint-90-ci1-parameter-catalogue.md, scripts/run_local.py]
 ---
 
@@ -47,6 +47,16 @@ exists so no dial moves on a hunch and every move is recorded (LAW-01 CI-04, LAW
 > The IN clauses are exactly the OPS-GATE checks (G-BND/MET/GRD/CTL); admissibility is *machine-decided*
 > at registration, not argued case-by-case. Blind auto-promotion is always OUT — the operator is the gate
 > (LAW-01 CI-03; automation is *earned*, CI-05).
+
+### Two kinds of experiment (the IN/OUT above governs kind 1)
+
+1. **Parameter experiment** — moves a `tunable()` dial by champion-vs-challenger evidence. Governed by
+   the IN/OUT + gates here; recorded as the **experiment report** (OPS-OBS) on the graph.
+2. **Research probe** — asks a *question about the system* ("does the LLM understand our parameters?",
+   "does feed X cover name Y?"). It does **not** move a dial; it *informs* one. Recorded in the
+   **[experiments log](../../../docs/research/experiments/INDEX.md)** under **Purpose · Process ·
+   Delivery · Interpretation**. A probe whose *Interpretation* recommends a dial change then hands off
+   to a parameter experiment — the probe never moves the dial itself.
 
 ## OPS-OWN · Owns (single-writer)
 
@@ -198,3 +208,4 @@ OPS-DOWN neighbours (the governed process).
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — operationalizes LAW-01 for the trading pipeline; implements ADR-0013 |
 | 0.2 | 2026-06-24 | tightened IN/OUT to testable predicates; added readiness gates (validate-then-run, no anticipatable runtime error) + fail-safe abort; made the concise experiment report a mandatory output |
+| 0.3 | 2026-06-24 | distinguished two experiment kinds — *parameter experiment* (the report) vs *research probe* (purpose/process/delivery/interpretation, in the experiments log); a probe informs a dial, it never moves it |

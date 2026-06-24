@@ -29,6 +29,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
 | [parameter-inventory/](parameter-inventory/INDEX.md) | Reference | Every `tunable()` (133 params, 18 files) with defaults/bounds/why — the decision-parameter surface; manual stand-in for CI-1. |
 | [quant-methods/](quant-methods/INDEX.md) | Reference | What each quant signal *measures*, why it matters, how to read it + uncovered areas + deterministic params to raise prediction confidence. |
+| [experiments/](experiments/INDEX.md) | Log | Research-probe experiments (purpose · process · delivery · interpretation). EXP-001 = do the LLMs understand our parameters (gpt-5.4 vs 5.5). |
 
 R-numbered folders are formal research docs tracked in the table above; reference folders are
 imported/supporting material without an R-number.

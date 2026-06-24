@@ -1,15 +1,17 @@
 # Project State
 
-**Last updated:** 2026-06-24 21:15 AEST
+**Last updated:** 2026-06-25 01:02 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.27.00): ADR-0013 continuous-improvement
+Governance scaffolding shipped this session (v0.24.00→0.29.00): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
-`tuner` subagents + a deliberation harness (LLM defend/attack/judge); the etalon. Pipeline: Alpaca
-primary OHLCV + chunked ingest. **The bundle now TRADES** — the validate-once fix (0.28.01) yielded a
-clean 99/99 batch that opened 5 positions (2026-06-24). Next: it trades *cleanly but not yet wisely* —
-the 5 names are correlated tech, a concentration/risk gap (quant-methods Part 2/3). Meta-machinery
+`tuner` subagents + a deliberation harness (LLM defend/attack/judge) + an **eval harness** that scores a
+debate against a manufactured answer key (0.29.00); the etalon. Pipeline: Alpaca primary OHLCV + chunked
+ingest. **The bundle now TRADES** — the validate-once fix (0.28.01) yielded a clean 99/99 batch that
+opened 5 positions (2026-06-24). Next: it trades *cleanly but not yet wisely* — the 5 names are
+correlated tech, a concentration/risk gap (quant-methods Part 2/3). DSPy's first job is now framed as a
+**model-drift firewall** (DL-24): a model swap is a *gated* change that must pass the eval. Meta-machinery
 (CI-1..CI-6, the generator) waits behind a perfect etalon (etalon-first).**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* = exists but
@@ -26,12 +28,22 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-24/25 — deliberation eval harness + model-drift gate (0.28.01→0.29.00).** *Proven
+  results (merged to main, GitHub CI green both pushes):* (1) **Eval harness** (0.29.00) —
+  `kernel/deliberation_eval.py` (`EvalCase`/`EvalScore`/`score_debate`/`run_eval`/`pass_rate`, kernel-pure)
+  scores a debate against a manufactured answer key *without* trade outcomes (DL-23 Path B); trading cases
+  live caller-side (`scripts/deliberation_eval.py`, pack wall). **1093 tests, 100% coverage.** (2) **EXP-003**
+  records the build + an honest finding: gpt-5.5 catches *textbook* flaws blind, so grounding's measurable
+  ROI is **Class-1** (our-implementation facts), not Class-2 — known *before* investing in DSPy. (3) **DL-24
+  + Deliberation charter v0.2:** DSPy's first job reframed as a **model-drift firewall**; `model` is now a
+  **GATED** parameter (a downgrade/side-grade must pass the eval — no silent report drift). *Next experiment
+  queued: Class-1 case library + a sharper (LLM-judge) scorer to arm the firewall.*
 - **Session 2026-06-24 — pipeline + governance + housekeeping (0.24.00→0.27.00).** *Proven results
   (all merged to main, CI green):* (1) **Alpaca primary OHLCV** (0.26.00) — batch, no per-symbol
   throttle. (2) **Chunked ingest** (0.27.00) — paced sub-batches reassembled into one batch; **1080
   tests, 100% coverage**. (3) **ADR-0013** continuous-improvement system (all state on the graph) +
   **P16 / S90–S95** specs. (4) **Experimentation** & **Housekeeping** charters (`ops/departments/…`)
-  + **`librarian`** & **`tuner`** subagents (`.claude/agents/…`) + the **etalon** (`ops/agent-genesis.md`).
+  - **`librarian`** & **`tuner`** subagents (`.claude/agents/…`) + the **etalon** (`ops/agent-genesis.md`).
   (5) **Housekeeping:** research docs → folder-per-topic; CodeQL → self-contained `codeql/` tool; root
   swept; **~1.3 GB reclaimed** (2.0 G→719 M); merged branches pruned both ends (local 89→4, remote 51→9). (6)
   **Dependabot** auto-merge fixed (Actions can't approve PRs) — all 6 PRs merged, image-build green.

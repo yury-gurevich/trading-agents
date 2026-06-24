@@ -88,10 +88,17 @@ Merge to `main` is the deploy trigger. Never commit sprint work directly to `mai
 
 ---
 
-## State file timestamp
+## State file discipline (LAW-02)
 
 When updating `docs/STATE.md`, stamp "Last updated" with Melbourne local time
 `HH:MM AEST` (GMT+10) or `HH:MM AEDT` (GMT+11, Oct–Apr). Not just the date.
+
+**Intent → perform → proven result (LAW-02: success is proven, never assumed).** Log each item
+as **INTENT** — what, plus its **verifiable success factors** (the definition-of-done). After doing
+it, report the **PROVEN RESULT**: the checks that actually passed (tests, `make ci`, the named
+postcondition). **Never restate the intent as if it were the outcome** ("did X" without proof is
+forbidden). An item moves to *Recent / shipped* **only when its success factors are verified** — and
+if a success factor is *not* met, say so plainly (e.g. "verified failing"). This binds every session.
 
 ---
 

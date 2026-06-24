@@ -1,23 +1,39 @@
 # Project State
 
-**Last updated:** 2026-06-22 22:14 AEST
+**Last updated:** 2026-06-24 15:34 AEST
 
-**S77–S85 SHIPPED. S77–S83 (graph-pull pipeline) + batch-trace + live-Neo4j hardening merged to
-main (0.23.00). S84+S85 closed BOTH platform/pack leaks in the master (DL-12): the grant policy
-(S84, 0.23.01) and the secret map (S85, 0.23.02) now live in pack data files
-(`orchestration/packs/trading_*.json`), loaded by path and injected — the master substrate names
-zero trading concepts. S84 merged to main + GitHub CI green; S85 on its branch, green locally.
-Next: S86 — deploy wiring (ship the pack JSONs into the master image + set the two MASTER_*_PATH
-env vars), then DL-10 staleness fix / DL-09 filter source.**
+**DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
+*etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
+Governance scaffolding shipped this session (v0.24.00→0.27.00): ADR-0013 continuous-improvement
+system + P16/CI-1..CI-6 specs; Experimentation & Housekeeping charters; `librarian` + `tuner`
+subagents; the etalon. Pipeline: Alpaca primary OHLCV (0.26.00) + chunked ingest (0.27.00). The one
+thing gating a real trade is the chunked-ingest per-chunk-validation fix (DL-17 run 3 = INCONCLUSIVE).
+Meta-machinery (CI-1..CI-6, the generator) waits behind a perfect etalon (etalon-first).**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* = exists but
-inactive. *Recent sprints* = the last ~8 shipped; older history is archived (see Archive). Update
-at every transition. Stamp "Last updated" with Melbourne local time.
+inactive. *Recent sprints* = the last ~8 shipped; older history is archived (see Archive).
+
+**Update protocol — LAW-02 (success is proven, never assumed):** log each item as
+**INTENT** (what + its *verifiable success factors* / definition-of-done) → **perform** → then report
+the **PROVEN RESULT** — the checks that actually passed (tests, `make ci`, the named postcondition) —
+**never restate the intent as if it were the outcome**. An item moves to *Recent sprints / shipped*
+**only when its success factors are verified**. Update at every transition. Stamp "Last updated" with
+Melbourne local time.
 
 ---
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-24 — pipeline + governance + housekeeping (0.24.00→0.27.00).** *Proven results
+  (all merged to main, CI green):* (1) **Alpaca primary OHLCV** (0.26.00) — batch, no per-symbol
+  throttle. (2) **Chunked ingest** (0.27.00) — paced sub-batches reassembled into one batch; **1080
+  tests, 100% coverage**. (3) **ADR-0013** continuous-improvement system (all state on the graph) +
+  **P16 / S90–S95** specs. (4) **Experimentation** & **Housekeeping** charters (`ops/departments/…`)
+  + **`librarian`** & **`tuner`** subagents (`.claude/agents/…`) + the **etalon** (`ops/agent-genesis.md`).
+  (5) **Housekeeping:** research docs → folder-per-topic; CodeQL → self-contained `codeql/` tool; root
+  swept; **~1.3 GB reclaimed** (2.0 G→719 M); merged branches pruned both ends (local 89→4, remote 51→9). (6)
+  **Dependabot** auto-merge fixed (Actions can't approve PRs) — all 6 PRs merged, image-build green.
+  *Captured: DL-15…DL-20.* *Not done (verified failing): a real trade — DL-17 run 3 = INCONCLUSIVE.*
 - **S85 — secret map out of the substrate (DL-12 leak #2; 0.23.01→0.23.02, PATCH).** `AGENT_SECRETS`
   deleted from `agents/master`; the `(kv_name, env_name)` table moved to
   `orchestration/packs/trading_secrets.json`, loaded via `MasterSettings.secret_map_path`
@@ -60,16 +76,25 @@ at every transition. Stamp "Last updated" with Melbourne local time.
 
 ## Now
 
-Platform/pack separation: **both master leaks closed.** With S84+S85 the master substrate is
-domain-agnostic — grants and secrets are pack-supplied data loaded by path, not hardcoded. The
-graph-pull pipeline (S77–S83) runs end-to-end and has been exercised on real Aura. S85 is on its branch,
-green locally, awaiting a merge decision.
+**INTENT: perfect the trading-agents bundle until it is *etalon v0.1* (DL-19, `ops/agent-genesis.md`).**
+On `main`, no active sprint branch. Success factors (the verifiable definition-of-done — each must be
+*proven*, not asserted):
 
-**Architecture (DL-08, 2026-06-21): graph-as-queue / pull model.** Provider writes all data to Neo4j;
-other agents poll the graph for unprocessed work — no Service Bus needed for correctness. P14 pub/sub
-remains an optional fast-path notification. Full detail in `docs/design-log.md`.
+- **A real trade.** A clean batch flows provider→scanner→analyst→PM→execution and opens a real
+  position. *Blocker (verified):* chunked-ingest validates **per chunk**, so sigma/staleness re-trip on
+  partial data → DL-17 run 3 = INCONCLUSIVE. Fix = validate the reassembled batch once + tune pacing.
+- **Laws green.** Remaining gray law clauses → green with cited tests (ledger: provider 23/43, scanner
+  18/39, PM 23/43, analyst 24/43, …).
+- **No cages.** Each charter audited for the "a NEVER quietly became the solution" problem (DL-19) —
+  rules out the unsafe without prescribing the answer.
+- **CI green throughout** (`make ci` + GitHub) at every step.
+
+**Architecture (DL-08): graph-as-queue / pull model.** Provider writes all data to Neo4j; other agents
+poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
 
 ## Next
+
+*The "finish the bundle" backlog — what perfection still needs:*
 
 - **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
   `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
@@ -86,6 +111,9 @@ remains an optional fast-path notification. Full detail in `docs/design-log.md`.
   `idle_loop()` holders.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 - **`contracts/` substrate/pack split** — the remaining ADR-0012 mix; deferred until a 2nd pack.
+- **DEFERRED behind a perfect etalon (etalon-first, DL-19):** CI-1..CI-6 (ADR-0013 machinery, S90–S95)
+  · the bundle **generator** · the **Research & Solution-Design** bundle (DL-20). Do not start these
+  until the bundle is demonstrably perfect — a copier of an imperfect reference only reproduces gaps.
 
 ## Workflow
 
@@ -94,7 +122,9 @@ cycle the operator implements sprints end-to-end (code+tests+CI+commit). See `do
 
 ## Parked
 
-- (none)
+- 3 unmerged local branches (not in `main`; review or delete): `sprint-56-analyst-lm-master-dictionary`,
+  `sprint-57-forecaster-sentiment-scorecard`, `sprint-69-provider-law-cycle`. Their features show
+  complete, so likely stale leftovers — verify before deleting.
 
 ## Archive
 

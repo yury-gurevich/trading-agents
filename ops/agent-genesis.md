@@ -12,6 +12,28 @@
 > This etalon is **extracted from practice**, not invented: it names the pattern we have now built
 > three times. Its boundaries are meant to be *refined by the operator* — that refinement is the work.
 
+**Sequence — first the reference, then the copier.** The immediate goal is **not** a generator. It is
+to bring the **trading-agents bundle itself to demonstrated perfection** — *that finished bundle is
+etalon v0.1*. You cannot reproduce a reference that is not yet a reference. The generator (see
+*self-reproduction*, below) is the **far endgame**, earned only once the etalon is proven complete.
+
+## Laws define a space, not a solution — creativity is first-class
+
+The laws, charters, gates, and NEVERs **do not prescribe the solution**. They draw the **boundaries of
+a space**; inside it, the **agents own and creatively discover** the solution. The constraints say
+*where the walls are*, never *what to find in the room*.
+
+- A bundle that is only gates and NEVERs defines a **cage**, not a creative space — and a cage cannot
+  discover anything. Each charter must therefore leave **deliberate room for discovery**: the *what to
+  find* is the agent's; only the *where it may not go* is the law's.
+- This extends LAW-01: not merely "tune the dials," but **search the lawful space for a better
+  solution** — the dials are one axis; creative re-composition within bounds is another.
+- The test of a good boundary: it **rules out the unsafe/incoherent** without **prescribing the
+  answer**. If a law forces a single outcome, it has stopped being a boundary and become the solution —
+  suspect it.
+- Ownership: the **solution belongs to the agents** that discover it; the laws (and the operator) own
+  only the **space** and the **gate** that admits a discovery as good.
+
 ---
 
 ## What a bundle IS — the parts
@@ -64,9 +86,14 @@ not to the etalon.
 | **Housekeeping & Navigability** | `ops/departments/housekeeping/charter.md` | `.claude/agents/librarian.md` | charter + binding; functional now |
 | **Pipeline agents** (provider, scanner, …) | `agents/<n>/laws/laws.md` | the running agents | the original specimens (LOCKED v1) |
 
-## The endgame — self-reproduction
+## The endgame — self-reproduction (DEFERRED, not now)
 
 The destination is a **generator** that, given a named process, emits the bundle skeleton from this
 etalon — charter stub, binding stub, INDEX rows, ledger row — for a human to fill and gate. At that
 point the platform produces its own agents from its own written standard. **This document is the spec
 that generator targets**; every boundary we add here is one less thing it has to be told.
+
+**But it is too early.** The gate to start building the generator is: **etalon v0.1 — the
+trading-agents bundle — is demonstrably perfect** (complete laws, green clauses, a finished pipeline
+that trades, every part of the bundle present and coherent, room-for-creativity included). Until the
+reference is perfect, a copier would only reproduce its gaps. **Perfect the bundle first.**

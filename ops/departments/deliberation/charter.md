@@ -94,8 +94,10 @@ RPO = the last persisted round; RTO = re-open the debate.
 
 - **Assess:** do **upheld** decisions out-perform **overturned** ones (the real calibration signal)?
   Judge consistency; debate cost/length; Challenger laziness (does it ever actually overturn?).
-- **Improve:** tune role prompts via the ADR-0010 eval-gate; adjust rounds; detect a sycophantic
-  Challenger. (This is itself an Experimentation target — the roles are tunables.)
+- **Improve:** the role prompts are **not hand-written — they are DSPy-compiled** against the eval
+  (ADR-0010): DSPy optimizes each role's prompt + demonstrations so the Challenger reliably finds
+  material flaws and the Judge calibrates to outcomes (DL-21). Adjust rounds; detect a sycophantic
+  Challenger. (The roles are tunables — an Experimentation/DSPy target, not free prose.)
 
 ## OPS-PARAM · Parameters
 

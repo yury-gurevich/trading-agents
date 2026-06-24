@@ -25,15 +25,14 @@ downloaded CLI under `.tools/`) are **not committed** — they are rebuilt by th
 | Install the CodeQL CLI + packs | `pwsh codeql/scripts/setup_codeql_local.ps1` |
 | Run the full local suite (python/yaml/actions) | `pwsh codeql/scripts/run_codeql_local_suite.ps1 -Rebuild` |
 | Run the **agent-boundary** check + report | `pwsh codeql/scripts/run_codeql_agent_boundary.ps1 -Rebuild` |
-| Run the AST helper on one file | `pwsh run_codeql_ast.ps1 -SourceFile <path>` (root shim → `codeql/scripts/`) |
+| Run the AST helper on one file | `pwsh codeql/scripts/run_codeql_ast.ps1 -SourceFile <path>` |
 | Aggregate SARIF → markdown reports | `pwsh codeql/scripts/generate_codeql_reports.ps1` |
 | List error-level findings | `python codeql/scripts/codeql_errors.py` |
 | Sync findings into Neo4j | `python codeql/scripts/sync_codeql_to_neo4j.py` |
 | Clean old reports | `pwsh codeql/scripts/clean_codeql_reports.ps1 -KeepNewest 10` |
 
 The scripts resolve the repo root as `$PSScriptRoot\..\..` — they must stay two levels
-under the root (i.e. directly in `codeql/scripts/`). A convenience shim `run_codeql_ast.ps1`
-remains at repo root and forwards here.
+under the root (i.e. directly in `codeql/scripts/`).
 
 ## The packs
 

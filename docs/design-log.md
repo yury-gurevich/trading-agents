@@ -1023,3 +1023,25 @@ material? Champion–challenger over compiled role prompts, gated by ADR-0010.
 bounded place for DSPy to land — and it needs a labelled eval set (decisions with known outcomes),
 which the pipeline must first *produce* (the real-trade blocker). So: real trades → outcome-labelled
 decisions → DSPy-compiled debate roles. The Deliberation charter OPS-TUNE now names DSPy explicitly.
+
+## DL-22 · The LLM assumes guardrails we don't have — DSPy must teach actual coverage  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** Asked the deliberation model (gpt-5.4) to interpret 86 decision parameters *cold* (only
+`name = default`, our `why` withheld). It read ~90% correctly on general finance — but the errors were
+revealing (full critique: `docs/research/quant-methods/llm-interpretation-deltas.md`).
+
+**The three delta classes.** (1) *Implementation misreads* — e.g. it read `max_daily_move_sigma` as a
+per-stock vol filter; it is actually a **pooled cross-sectional z-score** data gate (the DL-17 bug).
+(2) *Dangerous assumptions* — it read `max_sector_pct=0.30` as "limits concentration from correlated
+holdings", which is the textbook intent **but false for us**: we have a sector cap, **not a
+name-correlation penalty**, and the pipeline just opened 4 semis. A Defender would falsely claim
+concentration is controlled; a Challenger would fail to attack it. (3) *Honest UNSURE* on the genuinely
+obscure (Nadaraya-Watson, Alpha158) — low risk.
+
+**The insight (extends DL-21).** The model does **not** need to be taught finance — it needs to be
+taught **this system's actual behaviour and its limits**. DSPy's job for the deliberation roles is less
+"make it smarter" and more **"stop it assuming we are smarter than we are."** Concretely, the compiled
+role context must carry: (a) per-parameter implementation notes where our code ≠ textbook (the
+withheld `why` fields), and (b) the **coverage gaps** (quant-methods Part 2) as explicit *"the system
+does NOT do X"* facts — otherwise a fluent debate is *falsely reassuring*, which is worse than none.
+The eval (do upheld decisions outperform?) still gates; understanding is necessary, not sufficient.

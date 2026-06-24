@@ -25,10 +25,12 @@ defence for any action it triggers.
 | [EXP-001](EXP-001-llm-parameter-interpretation.md) | Do the LLMs understand our decision parameters? (gpt-5.4 vs 5.5) | 2026-06-24 | DSPy role-prompt grounding (DL-21/22); switched `OPENAI_MODEL`→gpt-5.5 |
 | [EXP-002](EXP-002-manufactured-eval-signal.md) | Can we manufacture a DSPy eval signal without trade outcomes? | 2026-06-24 | DL-23 (manufacture the eval set); proved grounded debate catches a known flaw the blind one misses |
 | [EXP-003](EXP-003-eval-harness.md) | Build the manufactured-eval harness (Path B) | 2026-06-24 | shipped `kernel/deliberation_eval.py`; finding: a strong model catches textbook flaws blind — grounding's ROI is Class-1 (our-impl) facts; needs a sharper scorer |
+| [EXP-004](EXP-004-class1-cases-llm-judge.md) | Arm the drift firewall — Class-1 cases + LLM-judge scorer | 2026-06-25 | **DESIGNED (pending run)**; tests whether grounded ≫ blind on our-implementation flaws + a sharper scorer → golden baseline for the DL-24 model-swap gate |
 
 ## Adding an experiment
 
 1. Next id is the increment (EXP-002). Create `EXP-00N-<slug>.md` with the four headings above.
-2. Add a row here. 3. Link the artifacts (transcripts, critique docs) from *Delivery*.
+2. Add a row here.
+3. Link the artifacts (transcripts, critique docs) from *Delivery*.
 4. If it triggers a parameter change, that change runs as a **parameter experiment** (charter report) —
    the probe *informs* the dial; it does not move it.

@@ -16,6 +16,7 @@ import time
 from itertools import chain
 from typing import TYPE_CHECKING
 
+from agents.provider.domain.integrity import validate_bars
 from agents.provider.ingest import (
     MARKET_FIELDS,
     _today_window,
@@ -23,12 +24,13 @@ from agents.provider.ingest import (
     _write_regime_context,
 )
 from agents.provider.store import write_market_snapshot
-from contracts.provider import DataQualityTrace, DataRequest, MarketData, RegimeRequest
+from contracts.provider import DataRequest, MarketData, RegimeRequest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from agents.provider.agent import ProviderAgent
+    from contracts.common import Window
 
 
 def _chunks(universe: tuple[str, ...], size: int) -> tuple[tuple[str, ...], ...]:
@@ -37,14 +39,19 @@ def _chunks(universe: tuple[str, ...], size: int) -> tuple[tuple[str, ...], ...]
     return tuple(universe[i : i + step] for i in range(0, len(universe), step))
 
 
-def _combine_quality(traces: tuple[DataQualityTrace, ...]) -> DataQualityTrace:
-    """Fold per-chunk quality traces into one honest batch-level trace."""
-    return DataQualityTrace(
-        requested=sum(t.requested for t in traces),
-        returned=sum(t.returned for t in traces),
-        used_fallback=any(t.used_fallback for t in traces),
-        stale_tickers=tuple(sorted({s for t in traces for s in t.stale_tickers})),
-        notes=tuple(dict.fromkeys(n for t in traces for n in t.notes)),
+def _optional_notes(parts: tuple[MarketData, ...]) -> tuple[str, ...]:
+    """Per-chunk optional-field fault notes (`*_degraded`) — kept across the merge.
+
+    These are real fetch faults. OHLCV-side notes are NOT kept here: they are recomputed
+    on the full batch (per-chunk validation saw only partial data — DL-17).
+    """
+    return tuple(
+        dict.fromkeys(
+            note
+            for part in parts
+            for note in part.quality.notes
+            if note.endswith("_degraded")
+        )
     )
 
 
@@ -52,15 +59,28 @@ def _merge_parts(
     agent: ProviderAgent,
     parts: tuple[MarketData, ...],
     universe: tuple[str, ...],
+    window: Window,
 ) -> MarketData:
-    """Reassemble per-chunk MarketData parts into one batch over the full universe."""
+    """Reassemble parts into one batch, validating OHLCV quality on the FULL universe.
+
+    Per-chunk validation (DL-17) computed sigma/staleness on partial data, re-tripping
+    them spuriously; here OHLCV quality is recomputed once over the reassembled batch,
+    and only the real per-chunk optional-field faults (`*_degraded`) are carried over.
+    """
     bars = tuple(chain.from_iterable(p.bars for p in parts))
-    quality = _combine_quality(tuple(p.quality for p in parts))
+    validated, ohlcv = validate_bars(universe, bars, window, agent._settings)
+    optional = _optional_notes(parts)
+    quality = ohlcv.model_copy(
+        update={
+            "used_fallback": ohlcv.used_fallback or bool(optional),
+            "notes": tuple(dict.fromkeys((*ohlcv.notes, *optional))),
+        }
+    )
     provenance = write_market_snapshot(
-        agent._graph, tickers=universe, bars=bars, quality=quality
+        agent._graph, tickers=universe, bars=validated, quality=quality
     )
     return MarketData(
-        bars=bars,
+        bars=validated,
         benchmark=next((p.benchmark for p in parts if p.benchmark), ()),
         fundamentals={k: v for p in parts for k, v in p.fundamentals.items()},
         news={k: v for p in parts for k, v in p.news.items()},
@@ -101,7 +121,7 @@ def ingest_chunked(
         )
         if index < len(chunks) - 1:
             sleep(delay_seconds)
-    market = _merge_parts(agent, tuple(parts), universe)
+    market = _merge_parts(agent, tuple(parts), universe, window)
     _write_market_data(agent._graph, market, universe, window)
     regime = agent._get_regime(RegimeRequest(as_of=window.end))
     _write_regime_context(agent._graph, regime, window)

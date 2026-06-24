@@ -13,11 +13,11 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 
 from agents.provider import ProviderAgent
-from agents.provider.ingest import ingest_once
+from agents.provider.ingest import MARKET_FIELDS, _today_window, ingest_once
 from agents.provider.ingest_chunked import (
     _chunks,
-    _combine_quality,
     _merge_parts,
+    _optional_notes,
     ingest_chunked,
 )
 from agents.provider.settings import ProviderSettings
@@ -25,8 +25,8 @@ from agents.provider.sources import FakeDataSource
 from contracts.common import Window
 from contracts.provider import (
     MARKET_DATA_LABEL,
-    DataQualityTrace,
     DataRequest,
+    MarketData,
     OHLCVBar,
 )
 from kernel import InMemoryGraphStore, InProcessBus
@@ -78,27 +78,35 @@ def test_chunks_splits_into_consecutive_subbatches() -> None:
     assert _chunks(_UNIVERSE, 0) == tuple((t,) for t in _UNIVERSE)
 
 
-def test_combine_quality_folds_traces() -> None:
-    a = DataQualityTrace(
-        requested=2,
-        returned=2,
-        used_fallback=False,
-        stale_tickers=("BBB",),
-        notes=("x",),
+def _part_with_notes(agent: ProviderAgent, notes: tuple[str, ...]) -> MarketData:
+    base = agent._get_market_data(
+        DataRequest(tickers=_UNIVERSE, window=_today_window(), fields=MARKET_FIELDS)
     )
-    b = DataQualityTrace(
-        requested=3,
-        returned=1,
-        used_fallback=True,
-        stale_tickers=("AAA",),
-        notes=("x", "y"),
+    return base.model_copy(
+        update={"quality": base.quality.model_copy(update={"notes": notes})}
     )
-    merged = _combine_quality((a, b))
-    assert merged.requested == 5
-    assert merged.returned == 3
-    assert merged.used_fallback is True
-    assert merged.stale_tickers == ("AAA", "BBB")
-    assert merged.notes == ("x", "y")
+
+
+def test_optional_notes_keeps_only_degraded() -> None:
+    agent = _agent(InMemoryGraphStore())
+    part = _part_with_notes(
+        agent, ("daily_move_sigma_anomaly", "news_degraded", "fundamentals_degraded")
+    )
+    assert _optional_notes((part,)) == ("news_degraded", "fundamentals_degraded")
+
+
+def test_merge_parts_revalidates_full_batch_dropping_per_chunk_ohlcv_notes() -> None:
+    graph = InMemoryGraphStore()
+    agent = _agent(graph)
+    window = _today_window()
+    # per-chunk quality falsely flags an OHLCV anomaly + carries a real optional fault
+    part = _part_with_notes(agent, ("daily_move_sigma_anomaly", "news_degraded"))
+    merged = _merge_parts(agent, (part,), _UNIVERSE, window)
+    # OHLCV recomputed on the full (clean) batch -> spurious per-chunk note gone
+    assert "daily_move_sigma_anomaly" not in merged.quality.notes
+    # the real optional-field fault is carried over, and still taints the batch
+    assert "news_degraded" in merged.quality.notes
+    assert merged.quality.used_fallback is True
 
 
 def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:
@@ -145,7 +153,7 @@ def test_merge_parts_keeps_first_non_empty_benchmark() -> None:
         )
     )
     with_bench = base.model_copy(update={"benchmark": (_bar("SPY", 1),)})
-    merged = _merge_parts(agent, (base, with_bench), _UNIVERSE)
+    merged = _merge_parts(agent, (base, with_bench), _UNIVERSE, _today_window())
     assert merged.benchmark[0].ticker == "SPY"
 
 

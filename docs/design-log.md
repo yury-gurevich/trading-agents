@@ -957,3 +957,44 @@ machinery: finish the laws (green clauses), the pipeline that actually trades (D
 recorded decisions, and — newly — audit each charter for whether it leaves room for creative discovery
 rather than over-constraining. The CI-1…CI-6 experimentation machinery and the generator both wait
 behind a perfect etalon.
+
+## DL-20 · Discovery is research-driven, feasibility-gated, and deliberated  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** DL-19 established that laws define a *space* and agents discover the solution within it,
+but left the **discovery mechanism** abstract. Operator fills it in: creativity + a *solution field* +
+a mandatory research/feasibility front-end, run autonomously by the AI.
+
+**The principle.**
+
+1. **Solution field, not an answer.** A problem can be designed "this way or that", each with
+   different implications. The solution is **created on-the-fly**, not retrieved — there is rarely one
+   right answer, there is a field of viable ones to be weighed.
+2. **Research precedes any offered solution.** Inputs: **legislative / governance**, **typical
+   scenarios**, **best industry practice**, and the **constraining factors** of the specific case —
+   time, money, physical placement, CPU/compute, other resources. You cannot reason about a solution
+   without first finding the facts.
+3. **Feasibility gates** — the questions any sane engineer asks *before committing*, answerable only by
+   research:
+   - **FEAS-POSSIBLE** — is the solution possible at all?
+   - **FEAS-READY** — are we scientifically / technically ready to solve what is being asked? (is it
+     tractable with current knowledge and tools?)
+   - **FEAS-BUDGET** — is it possible within the money / time / compute / physical-resource envelope?
+   A red feasibility gate stops the build before it starts — and is itself a *finding*, recorded.
+4. **Creative, deliberated research.** Develop **several candidate solutions** and **argue them** — a
+   **group of three agents** deliberating (generate → critique → converge), not a single guess. The
+   exact council roles are themselves a solution-field, left open (do not prescribe — DL-19).
+5. **Autonomy — on the AI's side of the screen.** The operator cannot help with technical detail and
+   should not have to. The AI runs the research and the deliberation and brings back a **reasoned
+   recommendation with its trade-offs and feasibility verdict** — the decision, not the derivation
+   (LAW-04 legibility: surface the choice, hide the weeds unless asked).
+
+**Relationship to existing parts.** This is the front-end that precedes `tunable()` tuning
+(Experimentation tunes *within* a chosen design; this *chooses the design*). It generalises
+champion–challenger from parameters to whole solutions. It reuses the platform's `researcher` agent
+seed (P7) but is larger: a research/feasibility/solution-design discipline.
+
+**Identified bundle (charter pending — record now, build while perfecting the etalon).**
+A **Research & Solution-Design** bundle: a deliberative (≈tri-agent) council that, given a problem,
+gathers facts (law/scenarios/practice/constraints), runs the feasibility gates, develops and argues
+candidate solutions, and returns a recommendation. Not built now (etalon-first, DL-19); named so the
+boundary is on record.

@@ -16,6 +16,13 @@ from kernel.bus_celery_config import CeleryBusSettings
 from kernel.claim_check import ReadyEvent, claim_check_read, claim_check_write
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
+from kernel.deliberation import (
+    DebateResult,
+    Proposition,
+    Turn,
+    Verdict,
+    deliberate,
+)
 from kernel.envelope import AgentMessage, MessageType
 from kernel.errors import (
     AgentFault,
@@ -46,6 +53,7 @@ __all__ = [
     "CeleryBus",
     "CeleryBusSettings",
     "CollectingFaultSink",
+    "DebateResult",
     "Edge",
     "EventHandler",
     "FakeLLMClient",
@@ -67,10 +75,14 @@ __all__ = [
     "Node",
     "NullMetrics",
     "PrometheusMetrics",
+    "Proposition",
     "ReadyEvent",
     "TunableDoc",
+    "Turn",
+    "Verdict",
     "claim_check_read",
     "claim_check_write",
+    "deliberate",
     "describe",
     "fault_boundary",
     "fault_from_exception",

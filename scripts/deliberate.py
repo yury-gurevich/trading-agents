@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import os
+import sys
 
 from kernel import Proposition, deliberate
 
@@ -106,6 +107,10 @@ def _build_llm(real: bool) -> _AnthropicText | _OpenAIText | _DemoFake:
 
 def main() -> None:
     """Run one deliberation and print the debate + verdict."""
+    # LLM output carries unicode (em-dashes, non-breaking hyphens); Windows stdout
+    # defaults to cp1252 and would crash on it. Force UTF-8 for console and file.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
     parser = argparse.ArgumentParser(description="defend/attack/judge a decision")
     parser.add_argument("--real", action="store_true", help="call Anthropic (.env key)")
     parser.add_argument("--decision", default="Buy AAPL at market")

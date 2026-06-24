@@ -52,7 +52,7 @@ Local CodeQL CLI install location:
 
 ## Scripts Added
 
-1) scripts/setup_codeql_local.ps1
+1) codeql/scripts/setup_codeql_local.ps1
 
 What it does:
 
@@ -66,7 +66,7 @@ What it does:
 
 Typical usage:
 
-- powershell -ExecutionPolicy Bypass -File scripts/setup_codeql_local.ps1 -Rebuild
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/setup_codeql_local.ps1 -Rebuild
 
 Key parameters:
 
@@ -75,7 +75,7 @@ Key parameters:
 - -SkipAnalyze: Creates the database cluster only and skips query analysis.
 - -CodeQLTag: Overrides the CodeQL CLI release tag.
 
-1) scripts/generate_codeql_reports.ps1
+1) codeql/scripts/generate_codeql_reports.ps1
 
 What it does:
 
@@ -88,7 +88,7 @@ What it does:
 
 Typical usage:
 
-- powershell -ExecutionPolicy Bypass -File scripts/generate_codeql_reports.ps1 -UpdateBaseline
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/generate_codeql_reports.ps1 -UpdateBaseline
 
 Key parameters:
 
@@ -97,24 +97,24 @@ Key parameters:
 - -BaselinePath: Custom baseline JSON path.
 - -UpdateBaseline: Refreshes the baseline from the current aggregated snapshot.
 
-1) scripts/run_codeql_local_suite.ps1
+1) codeql/scripts/run_codeql_local_suite.ps1
 
 What it does:
 
 - Orchestrates setup, analysis, and aggregated report generation in one command.
-- Uses the same default language set as `scripts/setup_codeql_local.ps1`.
+- Uses the same default language set as `codeql/scripts/setup_codeql_local.ps1`.
 - Optionally rebuilds the database cluster and updates the baseline.
 - Aggregates the SARIF files that actually exist, so the current default report set covers Python and GitHub Actions.
 
 Typical usage (full run):
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_local_suite.ps1 -Rebuild -UpdateBaseline
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_local_suite.ps1 -Rebuild -UpdateBaseline
 
 Fast usage (reports only from existing SARIF files):
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_local_suite.ps1 -SkipSetup -UpdateBaseline
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_local_suite.ps1 -SkipSetup -UpdateBaseline
 
-1) scripts/run_codeql_ast.ps1
+1) codeql/scripts/run_codeql_ast.ps1
 
 What it does:
 
@@ -127,7 +127,7 @@ What it does:
 
 Typical usage:
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
 - make codeql-ast FILE=kernel/agent.py
 
 Key parameters:
@@ -175,7 +175,7 @@ Important:
 
 If you still get the AST error, the fastest tested fallback is to run:
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
 
 That command writes the AST graph artifacts directly under `.codeql-db/ast/` without relying on the VS Code AST UI.
 
@@ -198,7 +198,7 @@ Important coverage note:
 
 Validated end to end on 2026-06-18 20:20 local using:
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
 
 Observed successful outcomes:
 
@@ -210,8 +210,8 @@ Observed successful outcomes:
 
 Validated end to end on 2026-06-18 21:57 local using:
 
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_local_suite.ps1 -Rebuild -UpdateBaseline
-- powershell -ExecutionPolicy Bypass -File scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_local_suite.ps1 -Rebuild -UpdateBaseline
+- powershell -ExecutionPolicy Bypass -File codeql/scripts/run_codeql_ast.ps1 -SourceFile kernel/agent.py
 
 Observed successful outcomes:
 
@@ -225,10 +225,10 @@ Observed successful outcomes:
 
 Repository files created:
 
-- scripts/setup_codeql_local.ps1
-- scripts/generate_codeql_reports.ps1
-- scripts/run_codeql_local_suite.ps1
-- scripts/run_codeql_ast.ps1
+- codeql/scripts/setup_codeql_local.ps1
+- codeql/scripts/generate_codeql_reports.ps1
+- codeql/scripts/run_codeql_local_suite.ps1
+- codeql/scripts/run_codeql_ast.ps1
 - docs/codeql-local-tooling.md
 
 Repository files updated:

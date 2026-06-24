@@ -5,10 +5,12 @@
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
 Governance scaffolding shipped this session (v0.24.00→0.27.00): ADR-0013 continuous-improvement
-system + P16/CI-1..CI-6 specs; Experimentation & Housekeeping charters; `librarian` + `tuner`
-subagents; the etalon. Pipeline: Alpaca primary OHLCV (0.26.00) + chunked ingest (0.27.00). The one
-thing gating a real trade is the chunked-ingest per-chunk-validation fix (DL-17 run 3 = INCONCLUSIVE).
-Meta-machinery (CI-1..CI-6, the generator) waits behind a perfect etalon (etalon-first).**
+system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
+`tuner` subagents + a deliberation harness (LLM defend/attack/judge); the etalon. Pipeline: Alpaca
+primary OHLCV + chunked ingest. **The bundle now TRADES** — the validate-once fix (0.28.01) yielded a
+clean 99/99 batch that opened 5 positions (2026-06-24). Next: it trades *cleanly but not yet wisely* —
+the 5 names are correlated tech, a concentration/risk gap (quant-methods Part 2/3). Meta-machinery
+(CI-1..CI-6, the generator) waits behind a perfect etalon (etalon-first).**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* = exists but
 inactive. *Recent sprints* = the last ~8 shipped; older history is archived (see Archive).

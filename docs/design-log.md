@@ -1045,3 +1045,31 @@ role context must carry: (a) per-parameter implementation notes where our code �
 withheld `why` fields), and (b) the **coverage gaps** (quant-methods Part 2) as explicit *"the system
 does NOT do X"* facts — otherwise a fluent debate is *falsely reassuring*, which is worse than none.
 The eval (do upheld decisions outperform?) still gates; understanding is necessary, not sufficient.
+
+## DL-23 · Manufacture the eval set — don't wait for outcomes  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** "DSPy needs outcome-labelled decisions we don't have yet" was framed as a wall (the live
+trades haven't resolved). Operator: *don't give up — be creative.*
+
+**The reframe.** Eval data need not come from the *future*. Two sources are available **now**:
+
+- **Path A — backtest replay (history has the outcomes).** The pipeline already runs `as_of`-dated; run
+  it on *historical* dates → the forward return is **already known** → instant, large, outcome-labelled
+  decision set. This is not just DSPy's eval — it is the eval set for the **whole** continuous-improvement
+  loop (RunMetrics, forecaster IC, the debate), and backtesting the bundle is part of *perfecting* it.
+- **Path B — the known-gap rubric (our own docs are the answer key).** quant-methods Part 2 + EXP-001
+  already wrote down the failure modes the debate *should* catch. Score any debate deterministically:
+  *did the Challenger raise known flaw X?* Construct **adversarial decisions** where the right verdict is
+  known *by construction*. Zero trade outcomes needed.
+
+**Proven (EXP-002).** Same "Buy NVDA" decision, debated blind vs **grounded** with EXP-001's context: the
+blind Challenger missed the correlated-semiconductor concentration; the grounded one caught it precisely.
+**The caught-vs-missed delta is a binary training signal, generated today.** Path B works.
+
+**Bootstrapping ladder (each stronger; start now, don't wait):** Path B (gap-rubric / adversarial,
+*immediate*) → Path A (backtest, *ground-truth profit calibration*) → live outcomes (*gold standard*, as
+the 5 positions resolve). DSPy's prerequisite is unblocked at step 1.
+
+**Bonus + follow-up.** Path A unblocks the *entire* loop, not just DSPy — high leverage beyond this goal.
+Follow-up bug (EXP-002): the Judge sometimes returns unparseable JSON → defaults to `revise`; harden the
+judge output contract (tool-use / stricter parse / retry).

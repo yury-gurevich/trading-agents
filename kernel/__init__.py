@@ -26,7 +26,9 @@ from kernel.deliberation import (
 from kernel.deliberation_eval import (
     EvalCase,
     EvalScore,
+    LLMJudgeScorer,
     pass_rate,
+    run_debates,
     run_eval,
     score_debate,
 )
@@ -73,6 +75,7 @@ __all__ = [
     "InMemoryGraphStore",
     "InProcessBus",
     "LLMClient",
+    "LLMJudgeScorer",
     "MarketPack",
     "MarketPackRegistry",
     "MessageBus",
@@ -96,6 +99,7 @@ __all__ = [
     "fault_boundary",
     "fault_from_exception",
     "pass_rate",
+    "run_debates",
     "run_eval",
     "score_debate",
     "tunable",

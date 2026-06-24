@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-24 15:34 AEST
+**Last updated:** 2026-06-24 21:15 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -80,9 +80,13 @@ Melbourne local time.
 On `main`, no active sprint branch. Success factors (the verifiable definition-of-done — each must be
 *proven*, not asserted):
 
-- **A real trade.** A clean batch flows provider→scanner→analyst→PM→execution and opens a real
-  position. *Blocker (verified):* chunked-ingest validates **per chunk**, so sigma/staleness re-trip on
-  partial data → DL-17 run 3 = INCONCLUSIVE. Fix = validate the reassembled batch once + tune pacing.
+- **A real trade — ✅ DONE (proven 2026-06-24 21:09 AEST).** A clean 99-ticker batch
+  (`quality ok returned=99/99`) flowed provider→scanner→analyst→PM→execution and **opened 5 positions**
+  (C, QCOM, CSCO, AMD, INTC). Unblocked by the **validate-once fix** (0.28.01 — chunked ingest
+  re-validates the reassembled batch once) + `sigma=8.0` + BK dropped + conservative pacing (chunk 10 /
+  delay 70). *New finding:* the 5 names are 4 semis + 1 bank — **correlated concentration** the pipeline
+  has no penalty for (the gap [quant-methods](research/quant-methods/quant-methods.md) Part 2/3 flags;
+  what a Deliberation Challenger would attack). So: *trades cleanly, not yet wisely.*
 - **Laws green.** Remaining gray law clauses → green with cited tests (ledger: provider 23/43, scanner
   18/39, PM 23/43, analyst 24/43, …).
 - **No cages.** Each charter audited for the "a NEVER quietly became the solution" problem (DL-19) —

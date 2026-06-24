@@ -28,6 +28,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | [db-placement/](db-placement/INDEX.md) | R002 | Substrate vs trading-pack DB placement. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
 | [parameter-inventory/](parameter-inventory/INDEX.md) | Reference | Every `tunable()` (133 params, 18 files) with defaults/bounds/why — the decision-parameter surface; manual stand-in for CI-1. |
+| [quant-methods/](quant-methods/INDEX.md) | Reference | What each quant signal *measures*, why it matters, how to read it + uncovered areas + deterministic params to raise prediction confidence. |
 
 R-numbered folders are formal research docs tracked in the table above; reference folders are
 imported/supporting material without an R-number.

@@ -80,7 +80,7 @@ function Get-CodeqlDatabasePath {
     throw "CodeQL database was not found for language '$Language'. Checked: $($candidatePaths -join '; '). Run scripts/setup_codeql_local.ps1 first."
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $codeqlExe = Join-Path $repoRoot ".tools\codeql\codeql.exe"
 $dbPath = Get-CodeqlDatabasePath -RepoRoot $repoRoot -Language $Language
 $outputRoot = Join-Path $repoRoot $OutputDir

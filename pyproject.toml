@@ -83,6 +83,8 @@ ignore = ["D100", "D104", "D203", "D213", "S101", "A005"]
 # scripts/ are CLI tools: they intentionally print to stdout and carry module-level
 # docstrings that double as --help text; RUF010 conversions add noise without value.
 "scripts/**/*.py" = ["T20", "D", "RUF010"]
+# codeql/scripts/ are CLI tools too (moved from scripts/): same intentional prints.
+"codeql/scripts/**/*.py" = ["T20", "D", "RUF010"]
 # batch_trace.py is a print-to-stdout diagnostic; T20 is intentional.
 "orchestration/batch_trace.py" = ["T20"]
 # contracts/ are typed DTOs: the fields, capability summaries, and mission docs

@@ -7,7 +7,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$scriptPath = Join-Path $PSScriptRoot "scripts\run_codeql_ast.ps1"
+$scriptPath = Join-Path $PSScriptRoot "codeql\scripts\run_codeql_ast.ps1"
 
 if (-not (Test-Path $scriptPath)) {
     throw "Expected AST helper at $scriptPath"

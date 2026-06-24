@@ -998,3 +998,28 @@ A **Research & Solution-Design** bundle: a deliberative (≈tri-agent) council t
 gathers facts (law/scenarios/practice/constraints), runs the feasibility gates, develops and argues
 candidate solutions, and returns a recommendation. Not built now (etalon-first, DL-19); named so the
 boundary is on record.
+
+## DL-21 · DSPy steers the deliberation — compile the role prompts, don't hand-write them  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** Ran the same debate ("Buy AAPL", momentum +0.6 / RSI 55 / earnings in 4 days) twice on
+live OpenAI. The **conclusion was stable** (both OVERTURN — the decision is genuinely weak) but the
+**conversation wandered**: different arguments, framings, and kill-shots each run. The role prompts
+(`DEFENDER_SYSTEM` / `CHALLENGER_SYSTEM` / `JUDGE_SYSTEM`) are hand-written statics, so the model
+improvises — quality and steering are uncontrolled. On a *harder* decision that variance would flip
+verdicts. Operator: **"DSPy is needed here to steer the conversation."**
+
+**Direction.** The three role prompts are **not hand-tuned strings; they are DSPy-compiled predictors**
+(ADR-0010, adopted). DSPy optimizes each role's prompt + few-shot demonstrations **against a
+deliberation eval**, so the debate is consistently useful: the **Challenger** reliably surfaces
+*material* flaws (not sycophancy), the **Judge** verdict **calibrates to outcomes**. The conversation
+is steered by the **metric**, not by prose.
+
+**The eval ("a better debate" = ?).** The one the Deliberation charter already names: **do upheld
+decisions out-perform overturned ones?** Plus, does the Challenger find flaws a reviewer agrees are
+material? Champion–challenger over compiled role prompts, gated by ADR-0010.
+
+**Sequencing.** This is the **P12/P13 DSPy harness applied to its first concrete target**. Etalon-first
+(DL-19) keeps the harness queued behind a perfect bundle, but deliberation is a high-value, well-
+bounded place for DSPy to land — and it needs a labelled eval set (decisions with known outcomes),
+which the pipeline must first *produce* (the real-trade blocker). So: real trades → outcome-labelled
+decisions → DSPy-compiled debate roles. The Deliberation charter OPS-TUNE now names DSPy explicitly.

@@ -925,3 +925,35 @@ degradation. This is the manual DL-17 loop, automated and recorded.
 (c) How much overlaps the curator's existing "filter decisions as training source" (DL-09) — likely
 CI-2/CI-4 should subsume it rather than duplicate. (d) Relationship to ADR-0010 — the gate should be
 one mechanism, not two.
+
+## DL-19 · Etalon-first, and laws as a creative space (not a solution)  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** After wiring the `tuner`/`librarian` bindings and writing the etalon
+(`ops/agent-genesis.md`), the AI leapt toward a bundle *generator*. Operator correction:
+**"Too early. Create the ETALON first — the bundle becomes the first etalon v0.1; we need to show
+perfection in a finished trading-agent bundle. I want to cover creativity as well. The overall
+solution will be owned by agents; the solution will have to be discovered within the space boundaries
+which laws define."**
+
+**Two directional locks.**
+
+1. **Etalon-first sequencing.** The generator is the far endgame, **deferred**. The immediate work is
+   to bring the trading-agents bundle to *demonstrated perfection* — and that finished bundle **is**
+   etalon v0.1. You cannot reproduce a reference that is not yet a reference; a copier would only
+   reproduce gaps. Gate to start the generator = etalon v0.1 proven complete.
+2. **Laws define a space, not a solution — creativity is first-class.** Laws/charters/gates/NEVERs
+   draw the **boundaries of a solution space**; the **solution is owned and creatively discovered by
+   the agents** inside it. Constraints say *where the walls are*, never *what to find in the room*. A
+   bundle that is only gates is a **cage**, and a cage discovers nothing — every charter must leave
+   **deliberate room for discovery**. Test of a good boundary: it rules out the unsafe/incoherent
+   without prescribing the answer; if a law forces a single outcome it has become the solution — suspect
+   it. This extends LAW-01 from "tune the dials" to "search the lawful space for a better solution."
+
+**Recorded in** `ops/agent-genesis.md` (Sequence note + "Laws define a space, not a solution" section
++ deferred-generator endgame) and memory [[etalon-bundle-genesis]].
+
+**Implication for the work.** The near-term backlog is *perfecting the bundle*, not building meta-
+machinery: finish the laws (green clauses), the pipeline that actually trades (DL-17 line), the
+recorded decisions, and — newly — audit each charter for whether it leaves room for creative discovery
+rather than over-constraining. The CI-1…CI-6 experimentation machinery and the generator both wait
+behind a perfect etalon.

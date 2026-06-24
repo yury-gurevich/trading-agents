@@ -34,6 +34,27 @@ a space**; inside it, the **agents own and creatively discover** the solution. T
 - Ownership: the **solution belongs to the agents** that discover it; the laws (and the operator) own
   only the **space** and the **gate** that admits a discovery as good.
 
+### How discovery works — research-driven, feasibility-gated, deliberated (DL-20)
+
+Discovery inside the lawful space is not a guess; it is a discipline that runs **autonomously, on the
+AI's side of the screen**, and returns a *reasoned recommendation*, not a derivation:
+
+1. **Treat the problem as a solution field** — "this way or that", each with implications — created
+   on-the-fly, never retrieved.
+2. **Research before offering** — gather facts: legislative/governance, typical scenarios, best
+   industry practice, and the case's constraining factors (time, money, physical placement, compute).
+3. **Pass the feasibility gates** (research answers them; a red gate stops the build and is recorded):
+   **FEAS-POSSIBLE** (possible at all?) · **FEAS-READY** (are we scientifically/technically ready —
+   is it tractable?) · **FEAS-BUDGET** (within money/time/compute/resource limits?).
+4. **Develop and argue several candidates** — a deliberation (≈three agents: generate → critique →
+   converge); the council's exact shape is itself a solution-field, left open.
+5. **Surface the decision, hide the weeds** — bring the operator the recommendation, its trade-offs,
+   and the feasibility verdict (LAW-04); the technical detail stays on the AI's side unless asked.
+
+This is the front-end that *precedes* parameter tuning (Experimentation tunes *within* a chosen
+design; discovery *chooses* the design). A **Research & Solution-Design** bundle is identified for it
+(charter pending — recorded now, built while perfecting the etalon).
+
 ---
 
 ## What a bundle IS — the parts

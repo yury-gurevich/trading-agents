@@ -1073,3 +1073,34 @@ the 5 positions resolve). DSPy's prerequisite is unblocked at step 1.
 **Bonus + follow-up.** Path A unblocks the *entire* loop, not just DSPy — high leverage beyond this goal.
 Follow-up bug (EXP-002): the Judge sometimes returns unparseable JSON → defaults to `revise`; harden the
 judge output contract (tool-use / stricter parse / retry).
+
+## DL-24 · DSPy's first job is a model-drift firewall — a model change is a *gated* change  ·  status: DIRECTION (2026-06-24)
+
+**Trigger.** gpt-5.5 is the flagship — capable but expensive; we will likely downgrade/side-grade the
+model later (cost, or a new provider). Operator foresight: the danger isn't the swap, it's that the swap
+makes *"reports come out slightly different, deep in the code"* — **silently**. *"If we can foresee
+something at design time we need to cater for it."*
+
+**Reframe of DSPy's value (extends ADR-0010, DL-21/22).** DSPy is **not primarily a quality booster**
+for the deliberation — EXP-003 showed a strong model already catches textbook flaws. Its **first job
+here is portability / regression protection across model change.** DSPy compiles the role prompts
+**per-model** (ADR-0010's "per-(task×model) compiled artifact"), so swapping the model swaps to *its*
+compiled prompts, and the **eval (EXP-003 harness) proves the outputs did not regress.**
+
+**Cater for it at design time (the catering, not just the worry):**
+
+1. **The model is a GATED parameter, never silent.** Changing `OPENAI_MODEL` / `operator.model` is an
+   *experiment*: run the eval harness on the new model, compare to the champion baseline; a regression
+   (pass-rate down, or verdicts flipped on the golden set) **blocks the swap** / escalates to the
+   operator gate. No silent drift.
+2. **Per-model compiled artifacts.** Each model gets its own compiled role prompts; the `model` field
+   selects the artifact, so outputs stay consistent because the prompt is re-fit to the model.
+3. **A golden verdict regression set.** A frozen set of decisions whose verdicts must stay stable across
+   model swaps — the EXP-003 harness is the substrate; freeze a baseline once the Class-1 cases +
+   sharper scorer (DL-22/EXP-003) land.
+
+**Status.** DSPy + the per-model gate are still gated on the harness maturing (Class-1 cases, LLM-judge
+scorer) and eval data — but the **design now caters for it**: a model change *cannot* silently drift the
+deliberation's outputs, because it must pass the eval. Recorded in the Deliberation charter (model = a
+gated parameter; OPS-NEV: no swap without the eval gate). This widens ADR-0010 from "guard prompt drift"
+to **"guard model-swap drift."**

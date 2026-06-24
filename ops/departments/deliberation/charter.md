@@ -3,7 +3,7 @@ department: deliberation
 tier: x cross-cutting
 owner: operator + AI deliberation loop  (→ candidate "Tribunal" agent)
 status: draft
-version: 0.1
+version: 0.2
 implements_with: ["the debate harness (to build)", docs/decisions/0010-llm-interaction-quality-gate.md, ops/laws/LAW-05-defendable-decision.md]
 ---
 
@@ -84,6 +84,9 @@ RPO = the last persisted round; RTO = re-open the debate.
 - Never **hide the transcript** — a verdict without its debate is not a LAW-05 defence.
 - Never let **one role both argue and judge** (Defender ≠ Challenger ≠ Judge — independence).
 - Never treat a verdict as **ground truth** — it is an argued opinion, recorded, not a fact.
+- Never **swap the model silently** (DL-24). The `model` is a *gated* parameter: a downgrade/side-grade
+  must run the eval harness on the new model and not regress the golden verdict set — else outputs drift
+  unnoticed *deep in the code*. DSPy re-compiles the roles per-model; the eval gates the change.
 
 ## OPS-OBS · Observability
 
@@ -108,11 +111,14 @@ RPO = the last persisted round; RTO = re-open the debate.
 | `token_budget` | per-debate | — | bounds cost (G-BOUND) |
 | `defender_temperature` / `challenger_temperature` | higher | 0–1 | argumentative creativity |
 | `judge_temperature` | lower | 0–1 | rigour over flair |
+| `model` | per `.env` | provider model id | **GATED (DL-24)** — a change must pass the eval (no silent drift); DSPy re-compiles the roles per-model |
 
 ## OPS-MNT · Maintenance trigger
 
 When you point the debate at a **new decision type** → register its proposition shape + the context the
-roles receive. When you **change a role prompt** → it is an **ADR-0010 eval-gated** change, not a free edit.
+roles receive. When you **change a role prompt** → it is an **ADR-0010 eval-gated** change, not a free
+edit. When you **change the `model`** (downgrade/side-grade) → run the eval harness on the new model and
+confirm no regression on the golden verdict set *before* it goes live (DL-24).
 
 ## Graduation to an agent
 
@@ -126,3 +132,4 @@ charter autonomously. The charter is that agent's `laws.md` in waiting.
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — decision-agnostic defend/attack/judge debate primitive; the DL-20 deliberation made concrete |
+| 0.2 | 2026-06-24 | `model` is a GATED parameter (DL-24) — a downgrade/side-grade must pass the eval; DSPy re-compiles roles per-model to prevent silent output drift |

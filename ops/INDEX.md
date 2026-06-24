@@ -37,6 +37,7 @@ menu. `ta status` (dashboard), `ta doctor` (preflight gates), `ta deploy up|down
 | File | Answers |
 | --- | --- |
 | [README.md](README.md) | What is this realm, why it exists, the principles |
+| [agent-genesis.md](agent-genesis.md) | **The etalon** — what an agent-bundle is and the method to reproduce one (self-bootstrap target) |
 | [org-map.md](org-map.md) | The departments, their remit, the dependency direction |
 | [scenarios.md](scenarios.md) | The situations we must be ready for (disaster, growth, cost, compliance…) |
 | [_template/charter.md](_template/charter.md) | The charter schema every department fills |

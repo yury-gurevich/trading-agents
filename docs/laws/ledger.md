@@ -53,7 +53,8 @@ Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. ⬜
 ## Layer 3 — Acceptance
 
 One full paper-trading day on real S&P 500 data, persisted, with each agent's job + boundaries
-asserted. 🟩 — **"the system works."**
+asserted. 🟩 **at S&P-100 scale** ("the system works"); **🟨 at the literal S&P-500** (data layer scales;
+per-batch quality does not — [DRIFT-014](drift-register.md)).
 
 - **Gate (DL-28, 0.35.00):** `scripts/accept.py` / `accept_run` — every per-stage invariant + cross-stage
   **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
@@ -64,4 +65,7 @@ asserted. 🟩 — **"the system works."**
   + sigma).
 - **Caveat (not blocking):** [DRIFT-013](drift-register.md) — the 5 names are correlated and PM-NEV-06 was
   silently inactive (empty `sectors` from a Finnhub rate-limit). Trades cleanly, not yet wisely; tracked.
-- *S&P-500 scale is the remaining stretch (Tiingo's 500-symbol cap covers it).*
+- **S&P-500 scale (2026-06-25):** committed `universe_sp500.txt` (503 names, authoritative); the run
+  completed — **Alpaca pulled 503/503 OHLCV, the data layer scales** — but `ACCEPTANCE FAIL`:
+  [DRIFT-014](drift-register.md), per-batch quality (one >8σ name taints all 503 → analyst rejects the
+  clean survivors). 🟩 at S&P-500 needs per-ticker quality (exclude the anomalous ticker, not the batch).

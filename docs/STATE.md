@@ -4,7 +4,7 @@
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.34.01): ADR-0013 continuous-improvement
+Governance scaffolding shipped this session (v0.24.00→0.34.02): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
 `tuner` subagents; the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
 eval harness scoring debates against a manufactured answer key, a Class-1 case library + LLM-judge scorer,
@@ -39,12 +39,12 @@ Melbourne local time.
   recorded as a case-status ledger in EXP-004. The firewall's catalogue of real gaps now collapses to one:
   `fixed-fraction-size` (vol-aware sizing, needs a vol field analyst→PM). (2) **Pipeline observatory (DL-27,
   0.34.00→0.34.01).** `orchestration/observatory.py` (substrate: Check/StageView/breaches/render) +
-  `packs/trading_observatory.py` (pack: provider→pm extractors + floor/ceiling invariants) +
-  `scripts/observatory.py`. Prints **each stage's output artifacts** (tickers, scores, recs, orders) with
-  **floor/ceiling WARNs inline** — a degraded run reads top-to-bottom from `quality DEGRADED` to
-  `WARN evaluated:0`. The firewall pattern (baseline + floor/ceiling) applied to the data pipeline. **100%
-  coverage; 1122 tests.** *Next (DL-27): execution/monitor/reporter stages; a frozen golden run + diff;
-  WARN→FAIL gate.* Also: DL-10 closed (S87 fix verified); worktree churn flushed.
+  `packs/trading_observatory.py` (pack: **full provider→reporter spine** extractors + floor/ceiling
+  invariants) + `scripts/observatory.py`. Prints **each stage's output artifacts** (tickers, scores, recs,
+  orders, fills, monitor checks, the report) with **floor/ceiling WARNs inline** — a degraded run reads
+  top-to-bottom from `quality DEGRADED` to `WARN evaluated:0`. The firewall pattern (baseline +
+  floor/ceiling) applied to the data pipeline. **100% coverage; 1122 tests.** *Next (DL-27): a frozen
+  golden run + diff; WARN→FAIL gate.* Also: DL-10 closed (S87 fix verified); worktree churn flushed.
 - **Session 2026-06-25 (cont.) — firewall hardened + first finding→code + DL-19 (0.31.00→0.33.00).**
   *Proven results (merged to main, GitHub CI green every push):* (1) **EXP-006 — N-run hardening
   (0.32.00).** `pass_fractions`/`robust_passing`/`check_robust` + `--runs N`. N=3 revealed

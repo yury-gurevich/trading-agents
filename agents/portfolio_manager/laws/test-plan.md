@@ -48,6 +48,8 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-NEV-04 | min_reward_risk_ratio gate rejects low R/R recommendations. | boundary | `test_reward_risk.py::test_rejects_when_reward_risk_below_minimum` | 🟩 |
 | PM-NEV-04 | max_positions gate rejects when portfolio is full. | boundary | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 | PM-NEV-04 | cash_buffer_pct gate rejects insufficient cash orders. | boundary | `test_portfolio_manager_agent.py::test_risk_rejects_when_cash_buffer_binds` | 🟩 |
+| PM-NEV-06 | max_names_per_sector cap rejects an over-count correlated name the dollar cap allows. | boundary | `test_sector_name_count.py::test_rejects_third_same_sector_name_over_count_cap` | 🟩 |
+| PM-NEV-06 | Already-held same-sector names count toward the name cap. | invariance | `test_sector_name_count.py::test_held_position_counts_toward_name_cap` | 🟩 |
 | PM-STA-03 | Position cap enforced across all candidates within one run. | gate | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 
 ## State & effects

@@ -85,6 +85,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   gate. Partial gate bypasses are not possible — all gates are applied before approval.
 - **PM-NEV-05** — Never outputs fractional shares. `quantity` is always a whole-number
   integer ≥ `min_order_quantity` (default 1). Fractional math is truncated, not rounded.
+- **PM-NEV-06** — Never opens more than `max_names_per_sector` distinct names in any one
+  sector (GICS level 1), independent of the dollar cap. A basket of small correlated names is
+  still one bet; the count cap is the name-correlation penalty the dollar-weight cap misses
+  (deliberation firewall finding, EXP-004..006). `0` disables the gate; already-held names in
+  the sector count toward the limit.
 
 ---
 
@@ -232,6 +237,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
 | `min_reward_risk_ratio` | `1.5` | `float ≥ 0.0, ≤ 20.0` | YES | Minimum R/R ratio; target pct ÷ stop pct must exceed this or reject |
 | `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum portfolio weight in any single sector (GICS level 1) |
+| `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct names per sector (GICS-1); name-correlation cap the dollar cap misses; 0 disables |
 
 ---
 
@@ -246,3 +252,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v0 — drafted (ideal-design, S70). Not yet locked.
+- v0.1 — added PM-NEV-06 (per-sector name-count cap, `max_names_per_sector`) — the
+  name-correlation penalty the dollar cap missed; closes the gap the deliberation firewall
+  surfaced (EXP-004..006) and the live book exposed (4 correlated semis). Cited test:
+  `test_sector_name_count.py`.

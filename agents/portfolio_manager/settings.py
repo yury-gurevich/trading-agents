@@ -79,3 +79,14 @@ class PortfolioManagerSettings(AgentSettings):
         ge=0.0,
         le=1.0,
     )
+    max_names_per_sector: int = tunable(
+        3,
+        why=(
+            "Cap the NUMBER of names held in any one sector — the name-correlation "
+            "penalty the dollar cap misses (small correlated names are still one bet; "
+            "EXP-004..006). 0 disables the gate."
+        ),
+        ge=0,
+        le=500,
+        unit="positions",
+    )

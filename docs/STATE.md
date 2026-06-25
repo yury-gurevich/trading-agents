@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-25 23:40 AEST
+**Last updated:** 2026-06-26 05:17 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -40,6 +40,15 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-26 — OHLCV-only fast mode shipped (0.37.01→0.38.00).** *Proven results (`make ci`
+  green, 100% coverage, 1137 tests):* the live S&P-500 🟩 used a throwaway monkeypatch to request only the
+  `ohlcv` field (9.4s vs ~33 min); that fast mode is now **first-class**. New `provider.ingest_ohlcv_only`
+  setting (`PROVIDER_INGEST_OHLCV_ONLY`) + a `--ohlcv-only` flag on `run_local.py`; `_ingest_fields(settings)`
+  narrows the request to `("ohlcv",)` (else `MARKET_FIELDS`), threaded through both single-shot and chunked
+  ingest. `collect_optional_fields` already gates each enrichment pillar by `field in fields`, so OHLCV-only
+  makes **zero** Finnhub calls. Proven: `test_ingest_ohlcv_only_skips_enrichment_keeps_bars` (bars delivered,
+  sectors/fundamentals empty) + `_ingest_fields` unit. A supported fast S&P-500 acceptance is now a one-liner
+  (`run_local.py --real --ohlcv-only --universe scripts/universe_sp500.txt`), not a scratchpad script.
 - **Session 2026-06-25 (cont.) — DRIFT-014: per-ticker OHLCV quality (0.37.00→0.37.01).** *Proven results
   (on `sprint-drift014-per-ticker-quality`; `make ci` green, 100% coverage, 1134 tests):* the S&P-500
   acceptance `FAIL` (one >8σ name tainted all 503 → analyst scored 0) is **fixed in code**. `validate_bars`
@@ -213,9 +222,6 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
 
 *The "finish the bundle" backlog — what perfection still needs:*
 
-- **OHLCV-only fast mode as a first-class toggle (DL-29 follow-up).** The live S&P-500 🟩 used a throwaway
-  monkeypatch to request only the `ohlcv` field (9.4s vs ~33 min). Promote it to a real `--ohlcv-only` CLI
-  flag / ingest-fields setting so a fast acceptance run is a supported one-liner, not a scratchpad script.
 - **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
   `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
   `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master

@@ -102,6 +102,7 @@ def ingest_chunked(
     *,
     chunk_size: int,
     delay_seconds: float,
+    fields: tuple[str, ...] = MARKET_FIELDS,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str | None:
     """Fetch *universe* in paced chunks, reassemble one batch, write it once.
@@ -120,7 +121,7 @@ def ingest_chunked(
     for index, chunk in enumerate(chunks):
         parts.append(
             agent._get_market_data(
-                DataRequest(tickers=chunk, window=window, fields=MARKET_FIELDS)
+                DataRequest(tickers=chunk, window=window, fields=fields)
             )
         )
         if index < len(chunks) - 1:

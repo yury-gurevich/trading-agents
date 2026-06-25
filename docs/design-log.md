@@ -1321,6 +1321,10 @@ scored (scanner 503→5, analyst HPE/MRVL, **2 positions opened**). The same pat
 passes at the literal S&P-500. The run also **validated the OHLCV-only fast mode**: requesting only the
 `ohlcv` field skipped the ~2000 Finnhub enrichment calls (`collect_optional_fields` gates each pillar by
 `field in fields`), so the whole cascade took **9.4s** vs the ~33 min a fully-enriched single-shot would
-spend rate-limited. Productionising that as a CLI/env toggle (`--ohlcv-only` / ingest fields) is the small
-remaining follow-up; the acceptance gate needs nothing more (sectors come from the warmed cache, the rest
-is advisory). The only WARN was the expected DRIFT-013 sector-coverage advisory (enrichment skipped).
+spend rate-limited. The only WARN was the expected DRIFT-013 sector-coverage advisory (enrichment skipped).
+
+**Toggle shipped (0.38.00).** The fast mode is now first-class, not a monkeypatch: `provider.ingest_ohlcv_only`
+(`PROVIDER_INGEST_OHLCV_ONLY`) + a `--ohlcv-only` flag on `run_local.py`. `_ingest_fields(settings)` returns
+`("ohlcv",)` when set (else `MARKET_FIELDS`), threaded through both the single-shot and chunked ingest paths;
+`collect_optional_fields` already gates each pillar by `field in fields`, so no enrichment call is made. The
+acceptance gate needs nothing more — sectors come from the warmed cache, the rest is advisory.

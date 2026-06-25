@@ -39,7 +39,15 @@ def _cascade(
 def test_clean_run_holds_all_invariants() -> None:
     graph = _cascade(source(), ("AAPL", "MSFT"), "obs-ok")
     out = inspect(graph, "obs-ok")
-    for stage in ("[provider]", "[scanner]", "[analyst]", "[pm]"):
+    for stage in (
+        "[provider]",
+        "[scanner]",
+        "[analyst]",
+        "[pm]",
+        "[execution]",
+        "[monitor]",
+        "[reporter]",
+    ):
         assert stage in out
     assert "<- RunRequest" in out
     assert "<- MarketData(provider)" in out
@@ -47,6 +55,9 @@ def test_clean_run_holds_all_invariants() -> None:
     assert "tickers   AAPL MSFT" in out
     assert "conf=" in out  # an analyst recommendation row
     assert "qty=" in out  # a PM order row
+    assert "submitted=" in out  # execution
+    assert "checked=" in out  # monitor
+    assert "summary" in out  # reporter
     assert "OK - all invariants hold" in out
     assert "WARN" not in out
 
@@ -75,4 +86,5 @@ def test_partial_run_marks_every_stage_not_reached() -> None:
     place_run_request(graph, run_id="obs-partial", tickers=("AAPL",))
     out = inspect(graph, "obs-partial")
     assert "[provider]  <- RunRequest   ... NOT REACHED" in out
-    assert "4 WARN - inspect above" in out
+    assert "[reporter]  <- MonitorRun(monitor)   ... NOT REACHED" in out
+    assert "7 WARN - inspect above" in out

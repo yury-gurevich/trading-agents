@@ -11,6 +11,7 @@ deltas, so a parameter change is judged on evidence, not a single eyeballed trac
 ## Scope
 
 **In:**
+
 - `Experiment` graph node: `{id, as_of, champion_set_id, challenger_set_id, created_at}`; edges to the
   two `RunMetrics` sets it compares.
 - A runner that executes the pipeline twice (or N times for variance) for the two sets on one as_of,

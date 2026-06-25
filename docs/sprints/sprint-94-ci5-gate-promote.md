@@ -12,6 +12,7 @@ generalises the ADR-0010 eval-gate from prompts to any parameter set.)
 ## Scope
 
 **In:**
+
 - Guardrail spec on a `ParameterSet`/`Experiment`: `{target_metric, direction, min_delta,
   guardrail_metrics: [{name, max_regression}]}`.
 - Gate evaluator over an `Experiment`'s RunMetrics: pass iff target improves ≥ `min_delta` and every

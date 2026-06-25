@@ -1,19 +1,27 @@
 # .codeqlignore — tells the CodeQL extractor (during `database create`) which
-# paths to skip entirely.  This stops CodeQL's own bundled Python scripts from
-# being extracted into the database and then reported as findings.
-#
-# Syntax is identical to .gitignore.
 
-# CodeQL CLI and language-pack Python scripts (index.py, python_tracer.py, …)
+## paths to skip entirely.  This stops CodeQL's own bundled Python scripts from
+
+## being extracted into the database and then reported as findings
+
+## ---
+
+## Syntax is identical to .gitignore
+
+## CodeQL CLI and language-pack Python scripts (index.py, python_tracer.py, …)
+
 .tools/
 
-# Compiled CodeQL database — never project source
+## Compiled CodeQL database — never project source
+
 .codeql-db/
 
-# Python virtual environment managed by uv
+## Python virtual environment managed by uv
+
 .venv/
 
-# Coverage and cache artefacts
+## Coverage and cache artefacts
+
 htmlcov/
 .mypy_cache/
 .ruff_cache/

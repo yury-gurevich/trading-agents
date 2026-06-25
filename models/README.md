@@ -6,7 +6,7 @@ scripts and are **not committed to git** (see `.gitignore`).
 ## Contents
 
 | File | Produced by | Consumed by |
-|---|---|---|
+| --- | --- | --- |
 | `lgbm-return-v1.txt` | `scripts/train_lgbm_return.py` | `agents/forecaster/LightGBMModel` |
 
 ## Training

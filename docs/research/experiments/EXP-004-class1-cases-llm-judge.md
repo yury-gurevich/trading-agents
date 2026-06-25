@@ -82,3 +82,23 @@ verdict baseline on this Class-1 library** — that frozen set becomes the concr
 gate** (a downgrade/side-grade must reproduce it) *and* DSPy's compile metric. The one upheld-despite-caught
 case is the first calibration target. Next experiment: **EXP-005 — freeze the golden baseline + a model-swap
 A/B** (run the gate against a cheaper model and measure the regression).
+
+## Class-1 case → code status (verified 2026-06-25)
+
+The Class-1 cases are an **answer key for a model that misreads our system** (DL-22). On verification,
+most describe facts our code already handles *honestly* — they are **grounding probes, not live bugs.**
+Each case below is classed; only one is a genuinely open gap.
+
+| Case | What our code actually does | Status |
+| --- | --- | --- |
+| `pooled-sigma` | pooled cross-sectional validation is a deliberate **design choice** (validate-once, 0.28.01) | by-design — grounding probe |
+| `calendar-staleness` | staleness counts **trading sessions** (`market_calendar.py`); fixed in **S87** | fixed (DL-10) — grounding probe |
+| `name-correlation` | per-sector **name-count cap** (`SectorBook`, PM-NEV-06); fixed in **0.33.00** | fixed (DL-25) — grounding probe |
+| `alpha158-weight-zero` | analyst **only computes the pillar when `weight > 0`** (`analyze.py`); at 0 it is absent from the composite and the metrics. Locked by `test_score_candidate_alpha158_score_is_none_by_default` + the weight=0-composite test | already honest + tested |
+| `lightgbm-shadow` | every forecast asserts `shadow is True` (recommendation **and** the LightGBM return model — `test_forecaster_boundary.py`, `test_forecaster_return_agent.py`); **no PM/execution code imports the forecaster**, so it is architecturally unconsumable as a gate (FORE-NEV-02) | already honest + tested |
+| `fixed-fraction-size` | sizing is flat fixed-fraction; **no** volatility/beta adjustment. The `Recommendation` contract carries no vol field, so the fix needs a vol signal plumbed analyst→PM | **OPEN — the one real gap** |
+
+**Reading.** 5 of 6 Class-1 cases are *by-design or already-fixed-and-locked* — the bundle is more honest
+than the adversarial framing assumed (positive etalon evidence; the model fears guardrails we *do* have).
+The single genuinely-open trade-wisely gap is **`fixed-fraction-size`** (volatility-aware sizing) — a
+deliberate larger piece (contract + multi-agent plumbing), tracked in STATE's findings→code backlog.

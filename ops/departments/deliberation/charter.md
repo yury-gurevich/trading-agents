@@ -3,7 +3,7 @@ department: deliberation
 tier: x cross-cutting
 owner: operator + AI deliberation loop  (→ candidate "Tribunal" agent)
 status: draft
-version: 0.2
+version: 0.3
 implements_with: ["the debate harness (to build)", docs/decisions/0010-llm-interaction-quality-gate.md, ops/laws/LAW-05-defendable-decision.md]
 ---
 
@@ -117,8 +117,9 @@ RPO = the last persisted round; RTO = re-open the debate.
 
 When you point the debate at a **new decision type** → register its proposition shape + the context the
 roles receive. When you **change a role prompt** → it is an **ADR-0010 eval-gated** change, not a free
-edit. When you **change the `model`** (downgrade/side-grade) → run the eval harness on the new model and
-confirm no regression on the golden verdict set *before* it goes live (DL-24).
+edit. When you **change the `model`** (downgrade/side-grade) → run the gate
+(`python scripts/deliberation_gate.py --check <model> --real`) against the committed golden baseline and
+confirm no regression *before* it goes live (DL-24 · EXP-005). The gate is real: gpt-5.4 trips it.
 
 ## Graduation to an agent
 
@@ -133,3 +134,4 @@ charter autonomously. The charter is that agent's `laws.md` in waiting.
 | --- | --- | --- |
 | 0.1 | 2026-06-24 | initial draft — decision-agnostic defend/attack/judge debate primitive; the DL-20 deliberation made concrete |
 | 0.2 | 2026-06-24 | `model` is a GATED parameter (DL-24) — a downgrade/side-grade must pass the eval; DSPy re-compiles roles per-model to prevent silent output drift |
+| 0.3 | 2026-06-25 | the model gate is now runnable (EXP-005) — `scripts/deliberation_gate.py` + a committed golden baseline; gpt-5.4 demonstrably trips it |

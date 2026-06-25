@@ -32,6 +32,7 @@ from kernel.deliberation_eval import (
     run_eval,
     score_debate,
 )
+from kernel.deliberation_gate import BaselineCheck, check_baseline, passing_names
 from kernel.envelope import AgentMessage, MessageType
 from kernel.errors import (
     AgentFault,
@@ -58,6 +59,7 @@ __all__ = [
     "AgentSettings",
     "AzureServiceBusBus",
     "AzureServiceBusSettings",
+    "BaselineCheck",
     "Capability",
     "CeleryBus",
     "CeleryBusSettings",
@@ -92,6 +94,7 @@ __all__ = [
     "TunableDoc",
     "Turn",
     "Verdict",
+    "check_baseline",
     "claim_check_read",
     "claim_check_write",
     "deliberate",
@@ -99,6 +102,7 @@ __all__ = [
     "fault_boundary",
     "fault_from_exception",
     "pass_rate",
+    "passing_names",
     "run_debates",
     "run_eval",
     "score_debate",

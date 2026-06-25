@@ -1,0 +1,39 @@
+{
+  "model": "gpt-5.5",
+  "judge": "gpt-5.5",
+  "date": "2026-06-25",
+  "library": "class1-grounded",
+  "passing": [
+    "alpha158-weight-zero",
+    "calendar-staleness",
+    "lightgbm-shadow",
+    "name-correlation",
+    "pooled-sigma"
+  ],
+  "scores": {
+    "pooled-sigma": {
+      "flaw_caught": true,
+      "passed": true
+    },
+    "calendar-staleness": {
+      "flaw_caught": true,
+      "passed": true
+    },
+    "name-correlation": {
+      "flaw_caught": true,
+      "passed": true
+    },
+    "fixed-fraction-size": {
+      "flaw_caught": true,
+      "passed": false
+    },
+    "alpha158-weight-zero": {
+      "flaw_caught": true,
+      "passed": true
+    },
+    "lightgbm-shadow": {
+      "flaw_caught": true,
+      "passed": true
+    }
+  }
+}

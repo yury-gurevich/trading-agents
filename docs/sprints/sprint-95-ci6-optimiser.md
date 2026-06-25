@@ -12,6 +12,7 @@ ingest pacing loop that DL-17 ran by hand. (Layer 4, automated.)
 ## Scope
 
 **In:**
+
 - Sweep generator: given a target process, a set of tunables, and the catalogue bounds, emit candidate
   `ParameterSet`s. **Grid first** (e.g. `chunk_size ∈ {8,10,12,15}` × `delay ∈ {45,60,90}` ×
   `sigma ∈ {4,8}`), pluggable for smarter search (random/Bayesian) later.

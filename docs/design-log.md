@@ -1223,3 +1223,32 @@ gate. Same arc the deliberation took: print → baseline → gate.
 runs a test and monitors it in one command (0.34.03). **Validated live against the free Aura (`c3ce91d0`)
 with real Tiingo data** — a 3-ticker run pulled 41 bars/name, opened `AAPL qty=34 est=$293.32`, reported
 `OBSERVATORY OK`. Usage doc: `docs/observability.md` §2a. Remaining: golden-run diff + the WARN→FAIL gate.
+
+---
+
+## DL-28 · Layer-3 acceptance gate — the observatory promoted to PASS/FAIL with conservation  ·  status: DECIDED (2026-06-25)
+
+**Trigger.** The law ledger's **Layer-3** row — *"one full paper-trading day on real S&P 500 data,
+persisted, with each agent's **job + boundaries asserted**"* — is the ledger's own *definition of "the
+system works,"* and it is ⬜. The observatory (DL-27) already proves "each agent's **job**" (per-stage
+outputs + invariants) on a real run; it is the instrument for Layer 3. The missing half is "**boundaries
+asserted**" and a hard PASS/FAIL.
+
+**Decision.** Promote the observatory to an acceptance **verdict** (the DL-27 WARN→FAIL gate), and supply
+the missing half as **cross-stage conservation**: each agent's output count is bounded by its input — *no
+fabrication, no overreach*. `scanner.survived ≤ provider.returned` · `analyst.scored ≤ scanner.survived` ·
+`pm.approved ≤ analyst.scored` · `execution.submitted ≤ pm.approved` (**EXEC-NEV-01** "never decides what
+to trade"). Substrate `observatory.accept(stages, cross_checks) → AcceptanceResult{passed, breaches}`
+(per-stage + cross-stage); pack `packs/trading_acceptance.py` (the conservation invariants + `accept_run` +
+`render_acceptance`); `scripts/accept.py` exits non-zero on FAIL — a real gate.
+
+**Two flavors (same as the firewall).** A deterministic **CI guard** (a full cascade must PASS — proves the
+wiring + boundaries every commit) + the **live acceptance run** (real S&P data → Aura, recorded as
+evidence). The **Layer-3 ledger row goes 🟩 when both exist**.
+
+**Road not taken.** A *full golden-run diff* (freeze every value, exact-match) — deferred; conservation +
+floor/ceiling is the high-signal first cut (catches fabrication/overreach without brittle exact-match that
+breaks on every legitimate data change).
+
+**Next.** Run the live acceptance on a real S&P-100/500 universe against Aura; record it; turn the Layer-3
+row 🟩 (or 🟨 if partial). Then the golden-run diff for value-level regression.

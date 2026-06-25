@@ -8,7 +8,14 @@ External I/O: none.
 
 from __future__ import annotations
 
-from orchestration.observatory import Breach, Check, StageView, breaches, render
+from orchestration.observatory import (
+    Breach,
+    Check,
+    StageView,
+    accept,
+    breaches,
+    render,
+)
 
 
 def _stage(
@@ -82,3 +89,27 @@ def test_render_flags_breach_and_unreached() -> None:
     assert "WARN  returned: 0 < floor 1.0" in out
     assert "[pm]  <- x   ... NOT REACHED" in out
     assert "2 WARN - inspect above" in out
+
+
+def test_accept_passes_when_clean_with_passing_cross_check() -> None:
+    stages = (_stage({"out": 1}, (Check("out", "floor", 1.0),)),)
+    result = accept(stages, (lambda observed: None,))
+    assert result.passed
+    assert result.breaches == ()
+
+
+def test_accept_fails_on_a_per_stage_breach() -> None:
+    stages = (_stage({"out": 0}, (Check("out", "floor", 1.0),)),)
+    result = accept(stages, ())
+    assert not result.passed
+
+
+def test_accept_fails_on_a_cross_stage_breach() -> None:
+    stages = (_stage({"out": 5}, ()),)
+
+    def cross(observed: dict[str, dict[str, object]]) -> Breach | None:
+        return Breach("s", "out", "boundary") if observed["s"]["out"] != 1 else None
+
+    result = accept(stages, (cross,))
+    assert not result.passed
+    assert result.breaches == (Breach("s", "out", "boundary"),)

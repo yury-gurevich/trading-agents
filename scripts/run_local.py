@@ -95,6 +95,11 @@ def main() -> None:
         help="print per-stage batch metrics after the cascade",
     )
     parser.add_argument(
+        "--observe",
+        action="store_true",
+        help="print the pipeline observatory (stage outputs + floor/ceiling WARNs)",
+    )
+    parser.add_argument(
         "--universe",
         metavar="FILE",
         help="newline-delimited ticker file; overrides the built-in universe",
@@ -184,6 +189,12 @@ def main() -> None:
         from orchestration.batch_trace import print_trace
 
         print_trace(graph, args.run_id)
+
+    if args.observe:
+        from orchestration.packs.trading_observatory import inspect
+
+        print("\nOBSERVATORY")
+        print(inspect(graph, args.run_id))
 
 
 if __name__ == "__main__":

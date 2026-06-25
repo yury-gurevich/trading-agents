@@ -9,10 +9,13 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from agents.execution.broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import DataSource, FakeDataSource
+from contracts.provider import OHLCVBar
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.packs.trading_observatory import inspect
@@ -21,7 +24,10 @@ from orchestration.tests.helpers import bar, source
 
 
 def _cascade(
-    data_source: DataSource, tickers: tuple[str, ...], run_id: str
+    data_source: DataSource,
+    tickers: tuple[str, ...],
+    run_id: str,
+    settings: ProviderSettings | None = None,
 ) -> InMemoryGraphStore:
     """Run one full in-memory cascade and return the populated graph."""
     graph = InMemoryGraphStore()
@@ -29,7 +35,7 @@ def _cascade(
         InProcessBus(),
         graph=graph,
         source=data_source,
-        settings=ProviderSettings(max_staleness_days=7),
+        settings=settings or ProviderSettings(max_staleness_days=7),
     )
     place_run_request(graph, run_id=run_id, tickers=tickers)
     list(cascade_once(graph, provider_agent=agent, broker=PaperBroker()))
@@ -83,6 +89,37 @@ def test_degraded_run_warns_on_empty_analyst_and_pm() -> None:
     assert "WARN  scored: 0 < floor 1.0" in out
     assert "WARN  evaluated: 0 < floor 1.0" in out
     assert "WARN - inspect above" in out
+
+
+def test_anomalous_ticker_is_excluded_and_shown_not_degraded() -> None:
+    """DRIFT-014: a single >sigma outlier is attributed to its ticker and EXCLUDED —
+    the observatory shows the `anomalous` line, the batch stays `quality   ok` (one
+    outlier does not taint the delivery), and the clean remainder is delivered."""
+    day0 = datetime.now(tz=UTC).date()
+    outlier = OHLCVBar(
+        ticker="MSFT",
+        bar_date=day0,
+        open=100.0,
+        high=131.0,
+        low=99.0,
+        close=130.0,  # +30% intraday vs AAPL's ~+1% -> pooled outlier
+        volume=1_000_000,
+    )
+    # Three near-identical AAPL bars give the pooled outlier a z of sqrt(3) > 1.5.
+    bars = (
+        bar("AAPL", 4, 100.0),
+        bar("AAPL", 2, 100.0),
+        bar("AAPL", 0, 116.0),
+        outlier,
+    )
+    settings = ProviderSettings(max_staleness_days=7, max_daily_move_sigma=1.5)
+    graph = _cascade(
+        FakeDataSource(bars=bars, vix=12.0), ("AAPL", "MSFT"), "obs-anom", settings
+    )
+    out = inspect(graph, "obs-anom")
+    assert "anomalous MSFT" in out  # the exclusion is on screen, never silent
+    assert "DRIFT-014" in out
+    assert "quality   ok" in out  # one outlier does NOT degrade the whole batch
 
 
 def test_partial_run_marks_every_stage_not_reached() -> None:

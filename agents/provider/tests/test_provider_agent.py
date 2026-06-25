@@ -73,8 +73,10 @@ def test_get_market_data_round_trips_and_writes_provenance() -> None:
 
 
 def test_integrity_anomaly_is_reported_without_crashing() -> None:
-    """PROV-NEV-01 / PROV-OUT-03b: an integrity anomaly degrades the quality record
-    (flagged, never crashed, never silently clean)."""
+    """PROV-NEV-01 / PROV-OUT-03b: an integrity anomaly is FLAGGED (the offending
+    ticker excluded into anomalous_tickers), never crashed, never silently clean.
+    Here the lone ticker is the outlier, so nothing survives -> used_fallback
+    (DRIFT-014)."""
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     settings = ProviderSettings(max_daily_move_sigma=0.5, max_staleness_days=10)
@@ -95,8 +97,8 @@ def test_integrity_anomaly_is_reported_without_crashing() -> None:
 
     quality = response.payload["quality"]
     assert response.message_type == "response"
-    assert quality["used_fallback"] is True
-    assert "daily_move_sigma_anomaly" in quality["notes"]
+    assert quality["used_fallback"] is True  # nothing survived -> whole-batch degraded
+    assert "AAPL" in quality["anomalous_tickers"]
 
 
 def test_source_failure_records_fault_and_returns_degraded_data() -> None:
@@ -123,6 +125,7 @@ def test_source_failure_records_fault_and_returns_degraded_data() -> None:
         "returned": 0,
         "used_fallback": True,
         "stale_tickers": ["AAPL"],
+        "anomalous_tickers": [],
         "notes": ["source_unavailable"],
     }
     assert response.payload["provenance"]["incident_refs"] == ["market_data_degraded"]

@@ -29,20 +29,29 @@ def validate_bars(
     """Filter invalid bars and summarize data quality."""
     notes: list[str] = []
     valid = [bar for bar in bars if _valid_bar(bar, notes)]
-    notes.extend(_daily_move_notes(valid, settings))
+    # An extreme-move outlier is attributed to its OWN ticker and that ticker is
+    # EXCLUDED — a partial degradation (DRIFT-014), not a whole-batch fallback. At
+    # S&P-500 scale one >Nsigma name must not reject the clean survivors; the batch
+    # note tainted everything. Staleness is measured on the pre-exclusion bars so an
+    # excluded anomalous name is not double-counted as missing.
+    anomalous = _anomalous_tickers(valid, settings)
     stale = _stale_tickers(tickers, valid, window.end, settings.max_staleness_days)
     if stale:
         notes.append("stale_or_missing_tickers")
-    returned_tickers = {bar.ticker for bar in valid}
+    delivered = [bar for bar in valid if bar.ticker not in anomalous]
+    returned_tickers = {bar.ticker for bar in delivered}
     returned = sum(1 for ticker in tickers if ticker in returned_tickers)
     quality = DataQualityTrace(
         requested=len(tickers),
         returned=returned,
-        used_fallback=bool(notes),
+        # A per-ticker exclusion does not taint the delivery; only a genuine
+        # whole-batch failure does (a tainting note, or nothing left to score).
+        used_fallback=bool(notes) or returned == 0,
         stale_tickers=tuple(sorted(stale)),
+        anomalous_tickers=tuple(sorted(anomalous)),
         notes=tuple(dict.fromkeys(notes)),
     )
-    return tuple(valid), quality
+    return tuple(delivered), quality
 
 
 def degraded_quality(
@@ -72,24 +81,28 @@ def _valid_bar(bar: OHLCVBar, notes: list[str]) -> bool:
     return True
 
 
-def _daily_move_notes(
-    bars: list[OHLCVBar], settings: ProviderSettings
-) -> tuple[str, ...]:
-    returns = [
-        (bar.close - bar.open) / bar.open
+def _anomalous_tickers(bars: list[OHLCVBar], settings: ProviderSettings) -> set[str]:
+    """Tickers with an extreme intraday move, vs the POOLED cross-sectional spread.
+
+    The detector is deliberately pooled: a >Nsigma move (earnings/news/bad-print
+    relative to the whole batch) is a data-integrity flag, not a per-stock vol filter.
+    DRIFT-014 only changes the consequence: instead of one batch note tainting every
+    name, the outlier is attributed to its own ticker, which the caller then excludes.
+    """
+    moves = [
+        (bar.ticker, (bar.close - bar.open) / bar.open)
         for bar in bars
         if bar.open > 0 and math.isfinite((bar.close - bar.open) / bar.open)
     ]
-    if len(returns) < 2:
-        return ()
+    if len(moves) < 2:
+        return set()
+    returns = [value for _, value in moves]
     sigma = pstdev(returns)
     if sigma == 0:
-        return ()
+        return set()
     center = mean(returns)
     limit = settings.max_daily_move_sigma * sigma
-    if any(abs(value - center) > limit for value in returns):
-        return ("daily_move_sigma_anomaly",)
-    return ()
+    return {ticker for ticker, value in moves if abs(value - center) > limit}
 
 
 def _stale_tickers(

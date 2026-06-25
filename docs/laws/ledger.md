@@ -68,4 +68,6 @@ per-batch quality does not — [DRIFT-014](drift-register.md)).
 - **S&P-500 scale (2026-06-25):** committed `universe_sp500.txt` (503 names, authoritative); the run
   completed — **Alpaca pulled 503/503 OHLCV, the data layer scales** — but `ACCEPTANCE FAIL`:
   [DRIFT-014](drift-register.md), per-batch quality (one >8σ name taints all 503 → analyst rejects the
-  clean survivors). 🟩 at S&P-500 needs per-ticker quality (exclude the anomalous ticker, not the batch).
+  clean survivors). **Fixed in code (0.37.01):** the outlier is now attributed to its own ticker and
+  *excluded* (`anomalous_tickers`), not tainting the batch; unit- + observatory-proven. **🟨 holds until a
+  live S&P-500 acceptance run confirms PASS at scale** (best paired with an OHLCV-only fast mode).

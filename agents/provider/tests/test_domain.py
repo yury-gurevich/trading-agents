@@ -117,6 +117,48 @@ def test_integrity_nonzero_sigma_without_anomaly_stays_clean() -> None:
     assert quality.notes == ()
 
 
+def _named_bar(ticker: str, close: float, high: float, low: float) -> OHLCVBar:
+    return OHLCVBar(
+        ticker=ticker,
+        bar_date=date(2026, 1, 1),
+        open=100.0,
+        high=high,
+        low=low,
+        close=close,
+        volume=1000,
+    )
+
+
+def test_integrity_excludes_anomalous_ticker_keeps_clean_remainder() -> None:
+    """PROV-OUT-03 / PROV-NEV-01 (DRIFT-014): one extreme-move outlier is attributed to
+    its OWN ticker and EXCLUDED — a partial degradation, flagged in anomalous_tickers —
+    while the clean remainder is delivered and used_fallback stays False (so the analyst
+    scores the survivors, the bug that blocked S&P-500 acceptance)."""
+    window = Window(start=date(2026, 1, 1), end=date(2026, 1, 1))
+    clean = (
+        _named_bar("AAA", close=101.0, high=102.0, low=99.0),
+        _named_bar("BBB", close=101.2, high=102.0, low=99.0),
+        _named_bar("CCC", close=101.1, high=102.0, low=99.0),
+        _named_bar("DDD", close=100.9, high=102.0, low=99.0),
+    )
+    outlier = _named_bar("ZZZ", close=200.0, high=201.0, low=99.0)
+
+    bars, quality = validate_bars(
+        ("AAA", "BBB", "CCC", "DDD", "ZZZ"),
+        (*clean, outlier),
+        window,
+        ProviderSettings(max_daily_move_sigma=1.5),
+    )
+
+    delivered = {bar.ticker for bar in bars}
+    assert quality.anomalous_tickers == ("ZZZ",)
+    assert "ZZZ" not in delivered
+    assert delivered == {"AAA", "BBB", "CCC", "DDD"}
+    assert quality.returned == 4
+    assert quality.used_fallback is False  # one outlier does NOT taint the batch
+    assert quality.notes == ()
+
+
 def test_regime_classifier_covers_vix_bands() -> None:
     """PROV-OUT-02: the regime classifier maps all VIX bands to the correct label
     (risk_on/neutral/risk_off/high_volatility/extreme_volatility); None → neutral."""

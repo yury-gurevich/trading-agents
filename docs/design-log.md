@@ -478,7 +478,20 @@ the scorecard. The pure measurement core is done and unit-tested.
 
 ---
 
-## DL-10 · Staleness gate counts calendar days, not trading sessions  ·  status: OPEN (2026-06-22)
+## DL-10 · Staleness gate counts calendar days, not trading sessions  ·  status: CORRECTED (S87, 2026-06-23)
+
+**Resolution (S87).** Chose **option (a)** — count **trading sessions**, with the dependency-free twist of
+option (b): `agents/provider/domain/market_calendar.py` (`trading_sessions_between`, a static NYSE holiday
+set 2024–2027, weekend-aware) measures session distance; `integrity.py::_stale_tickers` now flags a ticker
+only when `trading_sessions_between(latest_bar, window.end) > max_staleness_days`. The setting's `why` was
+corrected to read *"three TRADING SESSIONS."* A holiday weekend no longer kills a run. Proven by
+`test_market_calendar.py` (4 cases). *Bookkeeping: this status was left OPEN until the DL-19 session
+(2026-06-25) verified the fix and closed it.* The EXP-006 `calendar-staleness` Class-1 case (an LLM that
+*doesn't* know this fix) remains a useful grounding probe — the firewall's answer key, not a live bug.
+
+---
+
+## DL-10 (original, OPEN 2026-06-22)
 
 **How it surfaced.** First live Aura run (3 tickers, 2026-06-22). The batch trace showed
 `analyst: scored=0 rejected=2`, both rejected `provider market data degraded` — i.e. the analyst

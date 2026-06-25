@@ -1,17 +1,18 @@
 # Project State
 
-**Last updated:** 2026-06-25 11:49 AEST
+**Last updated:** 2026-06-25 13:16 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.31.00): ADR-0013 continuous-improvement
+Governance scaffolding shipped this session (v0.24.00→0.33.00): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
-`tuner` subagents; and the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
+`tuner` subagents; the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
 eval harness scoring debates against a manufactured answer key, a Class-1 case library + LLM-judge scorer,
-and a **runnable model-swap gate** (0.31.00); the etalon. Pipeline: Alpaca primary OHLCV + chunked
-ingest. **The bundle now TRADES** — the validate-once fix (0.28.01) yielded a clean 99/99 batch that
-opened 5 positions (2026-06-24). Next: it trades *cleanly but not yet wisely* — the 5 names are
-correlated tech, a concentration/risk gap (quant-methods Part 2/3). **DSPy's first job is now a working
+and a **runnable model-swap gate** (0.29→0.32); the **DL-19 no-cages audit + discovery-surface register**;
+the etalon. Pipeline: Alpaca primary OHLCV + chunked ingest. **The bundle now TRADES** — the validate-once
+fix (0.28.01) yielded a clean 99/99 batch that opened 5 positions (2026-06-24), and the firewall's finding
+is now **code**: PM-NEV-06 name-correlation cap (0.33.00) stops the correlated-semis basket. So it moves
+from *trades cleanly* toward *trades wisely* (quant-methods Part 2/3). **DSPy's first job is now a working
 model-drift firewall (DL-24): a model swap must clear `deliberation_gate.py` against a frozen golden — and
 gpt-5.4 demonstrably trips it.** Meta-machinery (CI-1..CI-6, the generator) waits behind a perfect etalon
 (etalon-first).**
@@ -30,6 +31,18 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-25 (cont.) — firewall hardened + first finding→code + DL-19 (0.31.00→0.33.00).**
+  *Proven results (merged to main, GitHub CI green every push):* (1) **EXP-006 — N-run hardening
+  (0.32.00).** `pass_fractions`/`robust_passing`/`check_robust` + `--runs N`. N=3 revealed
+  `calendar-staleness` is *champion-flaky* (gpt-5.5 1/3) → EXP-005's single-run trip there was partly
+  noise; the robust golden drops it, yet gpt-5.4 **still** regresses on the *stable* `name-correlation`
+  (2/3→1/3). Found+fixed a 400-token truncation. (2) **PM-NEV-06 — name-correlation gate (0.33.00).** The
+  first firewall finding translated to **code** (DL-25): a per-sector name-**count** cap (`SectorBook`,
+  `max_names_per_sector`=3) — the penalty the dollar cap missed — + a new law clause + cited tests; moves
+  the bundle toward *trades wisely*. (3) **DL-19 tackled (docs).** No-cages audit (**none found** — the
+  constraint surface is healthy boundaries) + discovery-surface register (names each discoverer's space) +
+  DL-26 (the cage test is role-relative). (4) **DL-10 closed.** Verified the S87 trading-session staleness
+  fix and flipped its design-log status (was left OPEN). **1111 tests, 100% coverage.**
 - **Session 2026-06-25 — drift firewall armed + operational (0.29.00→0.31.00).** *Proven results (merged
   to main, GitHub CI green every push):* (1) **EXP-004 — firewall armed (0.30.00).** `LLMJudgeScorer`
   (semantic "did it catch THIS flaw?") + `run_debates` (kernel-pure) + a 6-case **Class-1 library** (flaws
@@ -113,11 +126,14 @@ On `main`, no active sprint branch. Success factors (the verifiable definition-o
   re-validates the reassembled batch once) + `sigma=8.0` + BK dropped + conservative pacing (chunk 10 /
   delay 70). *New finding:* the 5 names are 4 semis + 1 bank — **correlated concentration** the pipeline
   has no penalty for (the gap [quant-methods](research/quant-methods/quant-methods.md) Part 2/3 flags;
-  what a Deliberation Challenger would attack). So: *trades cleanly, not yet wisely.*
+  what a Deliberation Challenger would attack). **Now closed in code:** PM-NEV-06 name-count cap (0.33.00,
+  DL-25). The next live batch should refuse a 4-semi basket. So: moving from *trades cleanly* → *wisely*.
 - **Laws green.** Remaining gray law clauses → green with cited tests (ledger: provider 23/43, scanner
   18/39, PM 23/43, analyst 24/43, …).
-- **No cages.** Each charter audited for the "a NEVER quietly became the solution" problem (DL-19) —
-  rules out the unsafe without prescribing the answer.
+- **No cages — ✅ DONE (2026-06-25).** All ~67 prohibitions audited (`docs/laws/cage-audit.md`); **none is
+  a cage** — every NEVER is a role/safety boundary. Discovery surfaces named in
+  `docs/laws/discovery-surfaces.md`; the cage test sharpened to role-relative (DL-26). Open follow-ups are
+  *positive* (promote a per-charter Discovery-surface section; give re-composition a mechanism), not walls.
 - **CI green throughout** (`make ci` + GitHub) at every step.
 
 **Architecture (DL-08): graph-as-queue / pull model.** Provider writes all data to Neo4j; other agents
@@ -132,7 +148,12 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
   `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master
   Dockerfile. **Without this, a deployed master loads empty policies and rejects every agent** — must land
   before the next fleet deploy.
-- **DL-10 staleness fix** — count trading sessions, not calendar days (market-calendar aware). OPEN.
+- **Findings→code loop (DL-25)** — translate the remaining firewall Class-1 gaps into code: fixed-fraction
+  sizing → vol-adjusted; Alpha158 weight=0 (wire it, or stop presenting it as "enabled"); LightGBM shadow
+  labelling (so it can't read as confirmation). Each a small law + code unit, like PM-NEV-06.
+- **DL-19 discovery surface → template** — promote a per-charter "Discovery surface" section into the
+  LOCKED `_TEMPLATE.md` (a deliberate law cycle); the register (`docs/laws/discovery-surfaces.md`) is its
+  substrate. Then give *re-composition* search a mechanism (gated on CI-6).
 - **DL-09 filter training source** — per-ticker verdict + bypass + dual labels → curator dataset.
 - **Permanent graph store** — self-host Neo4j on a small Azure VM for the fleet to run durably (Enterprise
   if the dev licence lands, else Community).

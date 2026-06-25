@@ -44,8 +44,8 @@ class ProviderSettings(AgentSettings):
         unit="days",
     )
     max_daily_move_sigma: float = tunable(
-        4.0,
-        why="Flag daily returns that are extreme relative to the requested window.",
+        8.0,
+        why="Extreme daily-return guard; 8 sigma not 4.0 (legit movers, DRIFT-012).",
         ge=0.1,
         le=20.0,
         unit="sigma",

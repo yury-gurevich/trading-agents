@@ -82,9 +82,10 @@ def test_fundamentals_empty_by_default() -> None:
     assert response.payload["fundamentals"] == {}
 
 
-def test_fundamentals_failure_degrades_without_affecting_ohlcv() -> None:
-    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: fundamentals failure degrades only
-    that field; OHLCV is unaffected; fault is routed to the central channel."""
+def test_fundamentals_failure_notes_without_tainting_ohlcv() -> None:
+    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: a fundamentals failure is RECORDED as
+    a note but does NOT set used_fallback (DRIFT-012 — optional enrichment never blocks
+    trading on clean OHLCV); OHLCV is unaffected; the fault routes to the channel."""
     bus = InProcessBus()
     sink = CollectingFaultSink()
     ProviderAgent(
@@ -102,7 +103,7 @@ def test_fundamentals_failure_degrades_without_affecting_ohlcv() -> None:
     quality = response.payload["quality"]
     assert response.payload["fundamentals"] == {}
     assert "fundamentals_degraded" in quality["notes"]
-    assert quality["used_fallback"] is True
+    assert quality["used_fallback"] is False  # DRIFT-012: enrichment doesn't taint
     assert response.payload["bars"][0]["ticker"] == "AAPL"
     assert len(sink.faults) == 1
     assert response.payload["provenance"]["graph_node_id"]

@@ -83,9 +83,9 @@ def test_news_empty_by_default() -> None:
     assert response.payload["news"] == {}
 
 
-def test_news_failure_degrades_without_affecting_ohlcv() -> None:
-    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: news failure degrades only the news
-    field; OHLCV is unaffected; fault is routed to the central channel."""
+def test_news_failure_notes_without_tainting_ohlcv() -> None:
+    """PROV-FAIL-02 / PROV-NEV-01 / PROV-OBS-02: a news failure is recorded as a note
+    but does NOT set used_fallback (DRIFT-012); OHLCV is unaffected; fault is routed."""
     bus = InProcessBus()
     sink = CollectingFaultSink()
     ProviderAgent(
@@ -103,7 +103,7 @@ def test_news_failure_degrades_without_affecting_ohlcv() -> None:
     quality = response.payload["quality"]
     assert response.payload["news"] == {}
     assert "news_degraded" in quality["notes"]
-    assert quality["used_fallback"] is True
+    assert quality["used_fallback"] is False  # DRIFT-012: enrichment doesn't taint
     assert response.payload["bars"][0]["ticker"] == "AAPL"
     assert len(sink.faults) == 1
     assert response.payload["provenance"]["graph_node_id"]

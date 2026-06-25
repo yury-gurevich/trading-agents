@@ -43,15 +43,28 @@ def _provider(graph: GraphStore, node: Node) -> StageView:
     for one in market.bars:
         bars[one.ticker] = bars.get(one.ticker, 0) + 1
     flag = "DEGRADED" if quality.used_fallback else "ok"
+    sectors_n = len(market.sectors)
     outputs: tuple[str, ...] = (
         f"tickers   {' '.join(node.props['tickers'])}",
         "bars      " + "  ".join(f"{t}:{n}" for t, n in sorted(bars.items())),
         f"quality   {flag}  returned={quality.returned}/{quality.requested}",
+        f"sectors   {sectors_n}/{quality.requested} classified"
+        f"  (0 = PM concentration caps INACTIVE, DRIFT-013)",
     )
     if quality.stale_tickers:
         outputs += (f"stale     {' '.join(quality.stale_tickers)}",)
-    observed: dict[str, object] = {"returned": quality.returned, "return_ratio": ratio}
-    checks = (Check("returned", "floor", 1.0), Check("return_ratio", "floor", 0.9))
+    observed: dict[str, object] = {
+        "returned": quality.returned,
+        "return_ratio": ratio,
+        "sector_coverage": sectors_n,
+    }
+    checks = (
+        Check("returned", "floor", 1.0),
+        Check("return_ratio", "floor", 0.9),
+        # Advisory (DRIFT-013): no sector data → the PM concentration caps are
+        # silently inactive. A WARN; does NOT block acceptance (the PM acted right).
+        Check("sector_coverage", "floor", 1.0, severity="warn"),
+    )
     return _view("provider", "RunRequest", observed, checks, outputs)
 
 

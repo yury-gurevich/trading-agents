@@ -104,6 +104,14 @@ def test_accept_fails_on_a_per_stage_breach() -> None:
     assert not result.passed
 
 
+def test_accept_warn_severity_is_reported_but_does_not_block() -> None:
+    stages = (_stage({"out": 0}, (Check("out", "floor", 1.0, severity="warn"),)),)
+    result = accept(stages, ())
+    assert result.passed  # an advisory (warn) breach never blocks acceptance
+    assert result.breaches  # ...but it IS still reported
+    assert result.breaches[0].severity == "warn"
+
+
 def test_accept_fails_on_a_cross_stage_breach() -> None:
     stages = (_stage({"out": 5}, ()),)
 

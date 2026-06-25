@@ -54,3 +54,4 @@ infra/*.local.env
 desktop.ini
 
 infra/*.local.py
+trading-agents.code-workspace

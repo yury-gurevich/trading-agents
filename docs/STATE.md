@@ -1,15 +1,16 @@
 # Project State
 
-**Last updated:** 2026-06-25 23:31 AEST
+**Last updated:** 2026-06-25 23:40 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
 **🟩 LAYER-3 ACCEPTANCE GREEN at S&P-100 (0.35.02): the full pipeline runs end-to-end on real data
 → Aura, 5 positions opened, `ACCEPTANCE PASS` — the law ledger's definition of "the system works."
-🟨 at the literal S&P-500 (0.37.01): per-batch quality [DRIFT-014](laws/drift-register.md) is now **fixed in
-code** — a >σ outlier is excluded as a per-ticker `anomalous_ticker`, not tainting the batch (unit- +
-observatory-proven); 🟨 holds only until a live S&P-500 acceptance run confirms PASS at scale. DRIFT-013
-(silent caps) CORRECTED: the concentration caps fired live (INTC SKIP) off a warmed sector cache.**
+🟩 at the FULL S&P-500 (0.37.01, proven live 2026-06-26): after the [DRIFT-014](laws/drift-register.md)
+per-ticker-quality fix, a live S&P-500 → Aura acceptance run returned `ACCEPTANCE PASS` (provider excluded
+the lone outlier `anomalous SMCI`, batch stayed `quality ok returned=502/503`, 2 positions opened, 9.4s
+OHLCV-only). DRIFT-013 (silent caps) CORRECTED: the concentration caps fired live (INTC SKIP) off a warmed
+sector cache.**
 
 Governance scaffolding shipped this session (v0.24.00→0.35.02): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
@@ -49,9 +50,11 @@ Melbourne local time.
   the data-integrity gate); only the *consequence* changed (DL-29). The exclusion is **observable**
   (DRIFT-013 lesson): the observatory prints `anomalous <tickers>` and the batch stays `quality ok`. Proven
   by `test_integrity_excludes_anomalous_ticker_keeps_clean_remainder` + the observatory
-  `test_anomalous_ticker_is_excluded_and_shown_not_degraded`. **Pending (the only thing between here and
-  Layer-3 🟩 at S&P-500): a live S&P-500 acceptance run** — best paired with an OHLCV-only fast mode (the
-  single-shot run makes 503×4 enrichment calls the acceptance doesn't need).
+  `test_anomalous_ticker_is_excluded_and_shown_not_degraded`. **PROVEN LIVE (2026-06-26) — Layer-3 🟩 at the
+  full S&P-500:** a live S&P-500 → Aura acceptance run returned `ACCEPTANCE PASS` (provider excluded the lone
+  outlier `anomalous SMCI`, batch `quality ok returned=502/503`, scanner 503→5, **2 positions opened**). The
+  run also validated an **OHLCV-only fast mode** (9.4s vs ~33 min — requesting only `ohlcv` skips the ~2000
+  Finnhub enrichment calls); a CLI/env toggle for it is the small remaining follow-up.
 - **Session 2026-06-25 (cont.) — DRIFT-013 corrected + S&P-500 scale (0.35.02→0.37.00).** *Proven results
   (merged to main, GitHub CI green every push):* (1) **DRIFT-013 visibility (0.36.00)** — the silent
   PM-cap bypass is now **loud**: a `sectors N/M classified (0 = caps INACTIVE)` observatory line + a
@@ -210,11 +213,9 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
 
 *The "finish the bundle" backlog — what perfection still needs:*
 
-- **Live S&P-500 acceptance run (the last step to Layer-3 🟩 at S&P-500).** DRIFT-014 is **fixed in code**
-  (0.37.01, DL-29) and unit- + observatory-proven; what remains is the *live* proof — one full S&P-500 →
-  Aura acceptance run returning `ACCEPTANCE PASS`. **Best paired first with an OHLCV-only fast mode** (the
-  single-shot run makes 503×4 Finnhub enrichment calls the acceptance doesn't need — sectors come from the
-  warmed cache, so acceptance only needs OHLCV). Then turn the ledger Layer-3 row 🟩 at S&P-500.
+- **OHLCV-only fast mode as a first-class toggle (DL-29 follow-up).** The live S&P-500 🟩 used a throwaway
+  monkeypatch to request only the `ohlcv` field (9.4s vs ~33 min). Promote it to a real `--ohlcv-only` CLI
+  flag / ingest-fields setting so a fast acceptance run is a supported one-liner, not a scratchpad script.
 - **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
   `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
   `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master

@@ -11,8 +11,14 @@ from __future__ import annotations
 from orchestration.observatory import Breach, Check, StageView, breaches, render
 
 
-def _stage(observed: dict[str, object], checks: tuple[Check, ...]) -> StageView:
-    return StageView("s", "trig", observed, reached=True, checks=checks)
+def _stage(
+    observed: dict[str, object],
+    checks: tuple[Check, ...],
+    outputs: tuple[str, ...] = (),
+) -> StageView:
+    return StageView(
+        "s", "trig", observed, reached=True, checks=checks, outputs=outputs
+    )
 
 
 def test_required_present_and_missing() -> None:
@@ -52,10 +58,17 @@ def test_unreached_stage_is_one_breach() -> None:
 
 
 def test_render_clean_run() -> None:
-    stages = (_stage({"returned": 99}, (Check("returned", "floor", 1.0),)),)
+    stages = (
+        _stage(
+            {"returned": 99},
+            (Check("returned", "floor", 1.0),),
+            ("tickers   AAPL MSFT", "quality   ok  returned=99/99"),
+        ),
+    )
     out = render(stages)
     assert "[s]  <- trig" in out
-    assert "returned         99" in out
+    assert "  tickers   AAPL MSFT" in out
+    assert "  quality   ok  returned=99/99" in out
     assert "OK - all invariants hold" in out
     assert "WARN" not in out
 

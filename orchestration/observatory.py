@@ -26,13 +26,18 @@ class Check:
 
 @dataclass(frozen=True)
 class StageView:
-    """One stage's observed I/O: what triggered it and the values it emitted."""
+    """One stage's I/O for the observatory.
+
+    ``outputs`` are the artifacts a human reads; ``observed`` are the scalar values
+    the invariants are checked against.
+    """
 
     name: str
     trigger: str
     observed: dict[str, object]
     reached: bool
     checks: tuple[Check, ...] = field(default_factory=tuple)
+    outputs: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -81,9 +86,7 @@ def render(stages: tuple[StageView, ...]) -> str:
             lines.append(f"[{stage.name}]  <- {stage.trigger}   ... NOT REACHED")
         else:
             lines.append(f"[{stage.name}]  <- {stage.trigger}")
-            lines.extend(
-                f"  {key:<16} {value}" for key, value in stage.observed.items()
-            )
+            lines.extend(f"  {line}" for line in stage.outputs)
             lines.extend(f"  WARN  {b.key}: {b.detail}" for b in stage_breaches)
         total.extend(stage_breaches)
     head = (

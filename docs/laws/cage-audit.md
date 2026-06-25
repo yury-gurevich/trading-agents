@@ -54,9 +54,10 @@ find*. **The bundle's constraint surface is not a cage** — this is positive ev
 **capabilities** (CAP), and the **dials** (PARAM / `tunable`) — but no agent explicitly **names the space
 it owns and may creatively search.** The room exists; it is undeclared. A reader of the etalon cannot see,
 per agent, *"what is this agent free to discover here?"* — which is exactly what DL-19 says a creative-space
-bundle must make legible. **Recommendation:** add a **"Discovery surface"** section to the law schema
-(per discoverer: the lawful space it owns + how it may search it). This edits the **LOCKED `_TEMPLATE.md`**,
-so it is a deliberate law-cycle change — **deferred to its own cycle, not done here.**
+bundle must make legible. **Done (legibility layer):** the
+**discovery-surface register** ([discovery-surfaces.md](discovery-surfaces.md)) now names every
+discoverer's space (Owns / Walls / Search / admitting gate). **Still deferred:** promoting a per-charter
+**"Discovery surface"** section into the **LOCKED `_TEMPLATE.md`** (a deliberate law-cycle change).
 
 **F3 — Discovery today is dial-only.** Where a space exists (e.g. the analyst's scoring weights), the only
 search mechanism is `tunable`-tuning + the deferred optimizer. DL-19 extends LAW-01 from *"tune the dials"*

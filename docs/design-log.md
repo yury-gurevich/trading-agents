@@ -864,6 +864,7 @@ Create the whole continuous-improvement system — map what processes we have, m
 parameters, improve."*
 
 **Configurable vs settable — the distinction that drives this.**
+
 - *Settable* (today): a human edits `PROVIDER_INGEST_CHUNK_SIZE=12` in `.env`; one value, no memory
   of what it scored, no comparison, no promotion gate.
 - *Configurable* (target): a parameter lives in a **named, versioned ParameterSet** the run loads;
@@ -871,6 +872,7 @@ parameters, improve."*
   **promotes** the winner via the existing ACTIVATE channel. Env stays only as the local-dev override.
 
 **What already exists (do not rebuild).**
+
 - **Parameter catalogue** — `kernel/config.py` `tunable()` + `describe()` already expose ~145
   justified, bounded params across 13 agents (name, env var, default, why, ge/le, unit).
 - **Measurement prototypes** — forecaster IC/return scorecard (`forecaster/domain/return_scorecard.py`),
@@ -894,6 +896,7 @@ parameters, improve."*
 | operator LLM | `system_prompt`, model, reasoning effort | eval-set score (ADR-0010 gate) |
 
 **The loop — four layers.**
+
 1. **Catalogue** — aggregate `describe()` across *every* agent settings class into one registry
    (today it runs per-class; nothing unifies them). This is the menu of what is tunable + its bounds.
 2. **Measure** — write a per-run `RunMetrics` record keyed by `(process, parameter_set_id, run_id,
@@ -911,6 +914,7 @@ times of day; sweep a small grid within the tunables' bounds; promote the fastes
 degradation. This is the manual DL-17 loop, automated and recorded.
 
 **Phased build (proposed sprints).**
+
 - **CI-1 Catalogue** — `describe_all()` over every agent settings class → one registry + a read
   surface (extend the existing tunables view).
 - **CI-2 RunMetrics** — graph node + writer; populate from the ingest trace first.
@@ -949,8 +953,7 @@ which laws define."**
    without prescribing the answer; if a law forces a single outcome it has become the solution — suspect
    it. This extends LAW-01 from "tune the dials" to "search the lawful space for a better solution."
 
-**Recorded in** `ops/agent-genesis.md` (Sequence note + "Laws define a space, not a solution" section
-+ deferred-generator endgame) and memory [[etalon-bundle-genesis]].
+**Recorded in** `ops/agent-genesis.md` (Sequence note + "Laws define a space, not a solution" section - deferred-generator endgame) and memory [[etalon-bundle-genesis]].
 
 **Implication for the work.** The near-term backlog is *perfecting the bundle*, not building meta-
 machinery: finish the laws (green clauses), the pipeline that actually trades (DL-17 line), the
@@ -1158,10 +1161,12 @@ prescribes *what to find*. The bundle's constraint surface is healthy — positi
 **Finding 3 — the real DL-19 gap is positive, not corrective.** Discovery surfaces are **implicit**. The
 laws declare the walls (NEV), the capabilities (CAP), and the dials (PARAM/`tunable`) — but **no agent
 names the space it owns and may creatively search.** The room exists; it is undeclared, so the etalon
-can't show, per agent, *"what is this agent free to discover?"* Two sequenced follow-ups: (a) add a
-**"Discovery surface"** section to the law schema (a LOCKED-`_TEMPLATE.md` law-cycle change — deferred to
-its own cycle); (b) give **lawful-space search** a mechanism (DL-19's extension of LAW-01 beyond dial-tuning
-to re-composition) — gated behind the deferred CI-6 optimiser + the DL-20 discovery discipline.
+can't show, per agent, *"what is this agent free to discover?"* Two sequenced follow-ups: (a) **DONE at the
+legibility layer** — the **discovery-surface register** (`docs/laws/discovery-surfaces.md`) names every
+discoverer's space (Owns / Walls / Search / admitting gate); promoting a per-charter "Discovery surface"
+section into the LOCKED `_TEMPLATE.md` stays deferred to its own law cycle; (b) give **lawful-space search**
+a mechanism (DL-19's extension of LAW-01 beyond dial-tuning to re-composition) — gated behind the deferred
+CI-6 optimiser + the DL-20 discovery discipline.
 
 **Decision.** The "No cages" success factor is **satisfied** (audited; none found). DL-19's remaining work
 is to make the rooms explicit, not to knock down walls. Also reconciled a drift the audit surfaced: PM

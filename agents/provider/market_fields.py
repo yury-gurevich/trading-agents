@@ -103,7 +103,6 @@ def collect_optional_fields(
             empty=empty_bars,
             note="benchmark_degraded",
             quality=quality,
-            taint=False,
         )
     return OptionalFields(
         fundamentals=fundamentals,
@@ -124,15 +123,15 @@ def _fetch_optional[T](
     empty: T,
     note: str,
     quality: DataQualityTrace,
-    taint: bool = True,
 ) -> tuple[T, DataQualityTrace]:
     """Fetch one optional field behind its own fault boundary.
 
-    Returns the fetched value with unchanged quality on success; the empty value with
-    a degraded quality on fault; the empty value with unchanged quality when the field
-    was not requested. ``taint`` controls whether a fault sets ``used_fallback`` on the
-    shared candidate-quality trace: candidate fields taint it, the benchmark does not
-    (a degraded benchmark forgoes relative strength, never the whole analysis).
+    Returns the fetched value with unchanged quality on success; the empty value plus a
+    NOTE on fault; the empty value with unchanged quality when not requested. An
+    optional-field fault **never sets ``used_fallback`` (DRIFT-012):** a degraded
+    fundamentals/news/sentiment/sectors/earnings/benchmark field forgoes *that* signal,
+    never the whole analysis — only core OHLCV degradation (`validate_bars`) blocks
+    trading. The fault is still routed to the central channel.
     """
     if not requested:
         return empty, quality
@@ -146,8 +145,6 @@ def _fetch_optional[T](
     ) as capture:
         value = fetch()
     if capture.fault is not None:
-        update: dict[str, object] = {"notes": (*quality.notes, note)}
-        if taint:
-            update["used_fallback"] = True
-        return empty, quality.model_copy(update=update)
+        notes = (*quality.notes, note)
+        return empty, quality.model_copy(update={"notes": notes})
     return value, quality

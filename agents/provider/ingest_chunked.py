@@ -72,7 +72,9 @@ def _merge_parts(
     optional = _optional_notes(parts)
     quality = ohlcv.model_copy(
         update={
-            "used_fallback": ohlcv.used_fallback or bool(optional),
+            # Optional-field faults are recorded as notes but do NOT taint
+            # used_fallback (DRIFT-012); only core OHLCV degradation blocks.
+            "used_fallback": ohlcv.used_fallback,
             "notes": tuple(dict.fromkeys((*ohlcv.notes, *optional))),
         }
     )

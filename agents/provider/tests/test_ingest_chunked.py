@@ -104,9 +104,10 @@ def test_merge_parts_revalidates_full_batch_dropping_per_chunk_ohlcv_notes() -> 
     merged = _merge_parts(agent, (part,), _UNIVERSE, window)
     # OHLCV recomputed on the full (clean) batch -> spurious per-chunk note gone
     assert "daily_move_sigma_anomaly" not in merged.quality.notes
-    # the real optional-field fault is carried over, and still taints the batch
+    # the real optional-field fault is carried over as a NOTE, but no longer taints
+    # the batch (DRIFT-012); the recomputed OHLCV is clean, so used_fallback is False
     assert "news_degraded" in merged.quality.notes
-    assert merged.quality.used_fallback is True
+    assert merged.quality.used_fallback is False
 
 
 def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:

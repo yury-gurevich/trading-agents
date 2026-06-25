@@ -18,11 +18,17 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class Check:
-    """One locked invariant on a named observed value — the floor/ceiling/lock."""
+    """One locked invariant on a named observed value — the floor/ceiling/lock.
+
+    ``severity``: ``"fail"`` (a broken invariant — blocks acceptance) or ``"warn"``
+    (advisory — surfaced but does NOT block; e.g. a risk guard inactive for lack of
+    optional data). The observatory prints both; only ``"fail"`` blocks ``accept``.
+    """
 
     key: str
     kind: str  # "required" | "floor" | "ceiling" | "oneof"
     bound: float | tuple[str, ...] | None = None
+    severity: str = "fail"
 
 
 @dataclass(frozen=True)
@@ -48,6 +54,7 @@ class Breach:
     stage: str
     key: str
     detail: str
+    severity: str = "fail"
 
 
 def _holds(value: object, check: Check) -> tuple[bool, str]:
@@ -73,7 +80,7 @@ def breaches(stage: StageView) -> tuple[Breach, ...]:
     for check in stage.checks:
         ok, detail = _holds(stage.observed.get(check.key), check)
         if not ok:
-            out.append(Breach(stage.name, check.key, detail))
+            out.append(Breach(stage.name, check.key, detail, check.severity))
     return tuple(out)
 
 
@@ -125,4 +132,5 @@ def accept(
         breach = cross_check(observed)
         if breach is not None:
             found.append(breach)
-    return AcceptanceResult(passed=not found, breaches=tuple(found))
+    blocking = tuple(b for b in found if b.severity == "fail")
+    return AcceptanceResult(passed=not blocking, breaches=tuple(found))

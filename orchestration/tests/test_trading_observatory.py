@@ -58,8 +58,12 @@ def test_clean_run_holds_all_invariants() -> None:
     assert "submitted=" in out  # execution
     assert "checked=" in out  # monitor
     assert "summary" in out  # reporter
-    assert "OK - all invariants hold" in out
-    assert "WARN" not in out
+    # The fake source provides no sectors, so the observatory flags the PM
+    # concentration caps as INACTIVE (DRIFT-013) — an advisory WARN, not a failure.
+    assert "sectors   0/" in out
+    assert "WARN  sector_coverage" in out
+    # ...and it is the ONLY breach: every blocking data invariant holds.
+    assert "1 WARN - inspect above" in out
 
 
 def test_degraded_run_warns_on_empty_analyst_and_pm() -> None:

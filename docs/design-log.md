@@ -1252,3 +1252,10 @@ breaks on every legitimate data change).
 
 **Next.** Run the live acceptance on a real S&P-100/500 universe against Aura; record it; turn the Layer-3
 row 🟩 (or 🟨 if partial). Then the golden-run diff for value-level regression.
+
+**Live run (2026-06-25) — gate works; found a real bug.** `accept.py` ran **live against the free Aura** and
+returned `ACCEPTANCE PASS` on a real 3-ticker run — the gate is proven end-to-end on real infra. The
+**full S&P-100 run surfaced [DRIFT-011](../laws/drift-register.md)**: a same-day re-ingest collides on the
+immutable `snapshot` property in Neo4j (the in-memory store hid it) — exactly the integration bug
+100%-coverage unit tests miss, and *the reason Layer 3 exists*. Layer-3 row → 🟨 (gate live-verified; 🟩
+pending the DRIFT-011 fix + one clean full-universe run).

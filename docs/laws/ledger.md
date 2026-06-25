@@ -53,4 +53,12 @@ Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. ⬜
 ## Layer 3 — Acceptance
 
 One full paper-trading day on real S&P 500 data, persisted, with each agent's job + boundaries
-asserted. ⬜ — this row turning 🟩 is the definition of "the system works."
+asserted. 🟨 — this row turning 🟩 is the definition of "the system works."
+
+- **Gate built (DL-28, 0.35.00):** `scripts/accept.py` / `accept_run` — every per-stage invariant +
+  cross-stage **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
+- **Live-verified PASS** against the free Aura (`c3ce91d0`) on a real 3-ticker run (`obs-aura-1782372578`):
+  `ACCEPTANCE PASS - every stage did its job within its boundaries`.
+- **Full-universe (S&P-100) run blocked by [DRIFT-011](drift-register.md)** — a same-day re-ingest against
+  persisted Neo4j collides on the immutable `snapshot` (the in-memory store hid it). 🟩 needs that fix +
+  one clean full-universe run.

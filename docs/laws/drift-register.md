@@ -43,6 +43,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 > broker adapter. Postgres `price_cache` stays the raw historical backtest fallback. Confirms decision
 > **D1**; Stooq retired as default; no scraping.
 
+## Portfolio Manager (`PM`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-010 | PM laws.md changelog | `INDEX.md` + `CLAUDE.md` + memory record PM as **LOCKED v1 (S70)**. | PM `laws.md` changelog footer still read *"v0 — drafted… Not yet locked"* (stale; never updated at the S70 lock). | stale-doc | **CORRECTED** (cage audit, 2026-06-25): footer reconciled to v1 + the PM-NEV-06 amendment (v1.1). |
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

@@ -18,6 +18,7 @@ a new ADR. See [conventions.md](conventions.md) for the full rules.
 | [stack.md](stack.md) | Layer-0 technology stack charter: Azure-native rule + Neo4j exception + SaaS vendor list + transitional retirement triggers | Governed by ADR-0009; requires a new ADR to change any rule |
 | [drift-register.md](drift-register.md) | Central worklist of every law-vs-code drift (OPEN / CORRECTED / CLOSED); **the escalation point for discovered gaps** | Add rows freely; update status when a sprint corrects a drift |
 | [ledger.md](ledger.md) | Gray→green rollup across all agents — "the landscape"; how many clauses are 🟩 per agent | Update after each sprint that closes green clauses; add a row when a new agent law is authored |
+| [cage-audit.md](cage-audit.md) | DL-19 "no cages" audit: classifies every agent's prohibition surface as boundary vs cage; verdict = not a cage, plus the discovery-surface gap | Re-run when an agent's law surface changes materially |
 
 ---
 

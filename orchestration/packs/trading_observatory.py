@@ -53,6 +53,9 @@ def _provider(graph: GraphStore, node: Node) -> StageView:
     )
     if quality.stale_tickers:
         outputs += (f"stale     {' '.join(quality.stale_tickers)}",)
+    if quality.anomalous_tickers:
+        excluded = " ".join(quality.anomalous_tickers)
+        outputs += (f"anomalous {excluded}  (>sigma excluded, DRIFT-014)",)
     observed: dict[str, object] = {
         "returned": quality.returned,
         "return_ratio": ratio,

@@ -1277,3 +1277,40 @@ PASS`**. Three live-only bugs the 100%-coverage in-memory suite hid (DRIFT-011 k
 [DRIFT-013](../laws/drift-register.md)):** the 5 names are correlated and PM-NEV-06 was silently inactive
 (empty `sectors` from a Finnhub rate-limit) — the concentration guard is data-dependent. Trades cleanly,
 not yet wisely. Remaining stretch: the same path at S&P-500 scale.
+
+## DL-29 · Per-ticker OHLCV quality — a partial degradation excludes a ticker, never taints the batch  ·  status: DECIDED (2026-06-25)
+
+**Trigger.** The live S&P-500 acceptance ([DRIFT-014](../laws/drift-register.md)) `FAIL`ed where S&P-100
+passed: Alpaca pulled **503/503** OHLCV (the data layer scales), but the analyst `scored=0`. Root cause —
+`daily_move_sigma_anomaly` is a **pooled cross-sectional** check whose taint is **batch-level**: one name's
+>8σ intraday move among 503 set `used_fallback=True`, and the analyst's `ANLZ-FAIL-02` gate bails the
+*whole* batch. As N→503 the probability of ≥1 outlier → 1, so the batch is ~always "degraded" → zero trades.
+The per-batch quality model doesn't scale.
+
+**Decision.** `used_fallback` means *"the whole delivery is untrustworthy"* — a per-ticker problem must not
+trip it. So the outlier is **attributed to its own ticker and excluded** (`validate_bars` drops its bars;
+new `DataQualityTrace.anomalous_tickers` field records it), exactly parallel to `stale_tickers`. The clean
+remainder is delivered and `used_fallback` is set **only** by a genuine whole-batch failure — a tainting
+note (validity/staleness) or `returned == 0` (nothing survived). The analyst then scores the survivors.
+
+**What did NOT change (deliberate).** The **detector stays pooled cross-sectional** — a >Nσ move *vs the
+whole batch* is the documented data-integrity/event gate (`quant-methods.md`; a Class-1 case the LLMs
+misread as a per-stock vol filter). Only the **consequence** changed (batch note → per-ticker exclusion).
+Mechanically, a pooled outlier among *k* near-identical clean returns has z = √k, so the gate still fires
+for any k ≥ ⌈Nσ²⌉ — detection power preserved, blast radius reduced to the offending name.
+
+**Observability (the DRIFT-013 lesson).** The exclusion is **never silent**: the observatory prints
+`anomalous <tickers>  (>sigma excluded, DRIFT-014)` and the batch reads `quality ok`, so a reader sees *what*
+was dropped and that the delivery was *not* whole-batch degraded.
+
+**Road not taken.** (1) A **per-ticker time-series** detector (judge each name against its *own* return
+history) — rejected: a single unadjusted-split glitch inflates that ticker's *own* σ and **masks itself**;
+the pooled comparison is strictly better at catching glitches, which is the point. (2) **Relaxing σ further**
+or dropping the check — rejected: that blinds a real integrity gate; the bug was the *taint scope*, not the
+threshold. (3) Excluding only the **anomalous bars** but keeping the ticker — rejected: a glitchy name's
+remaining bars are suspect too; excluding the whole ticker (like stale) is the conservative, consistent move.
+
+**Proven.** Unit (`test_domain.py::test_integrity_excludes_anomalous_ticker_keeps_clean_remainder`) +
+observatory (`test_anomalous_ticker_is_excluded_and_shown_not_degraded`); `make ci` green, 100% coverage,
+0.37.01. **Pending:** a live S&P-500 acceptance run to confirm PASS at scale — best paired with an
+**OHLCV-only fast mode** (the single-shot acceptance makes 503×4 enrichment calls it doesn't need).

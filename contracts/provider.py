@@ -55,6 +55,9 @@ class DataQualityTrace(_Frozen):
     returned: int = Field(ge=0)
     used_fallback: bool = False
     stale_tickers: tuple[Ticker, ...] = ()
+    anomalous_tickers: tuple[Ticker, ...] = ()
+    """Tickers excluded for an extreme-move (sigma) outlier — a PARTIAL exclusion, not
+    a whole-batch fallback. The clean remainder is delivered and scored (DRIFT-014)."""
     notes: tuple[str, ...] = ()
 
 

@@ -95,7 +95,7 @@ def _market_and_regime(
         return None, None
     market = MarketData.model_validate(market_node.props["snapshot"])
     regime_node = graph.get_node(
-        REGIME_CONTEXT_LABEL, f"regime-context:{market_node.props['window_end']}"
+        REGIME_CONTEXT_LABEL, f"regime-context:{market_node.props['run_id']}"
     )
     regime = (
         RegimeContext.model_validate(regime_node.props["snapshot"])

@@ -99,6 +99,6 @@ def _market_node(graph: GraphStore, scan_run: Node) -> Node | None:
 
 
 def _regime(graph: GraphStore, market_node: Node) -> RegimeContext | None:
-    key = f"regime-context:{market_node.props['window_end']}"
+    key = f"regime-context:{market_node.props['run_id']}"
     node = graph.get_node(REGIME_CONTEXT_LABEL, key)
     return RegimeContext.model_validate(node.props["snapshot"]) if node else None

@@ -117,6 +117,7 @@ def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:
     key = ingest_chunked(
         agent,
         _UNIVERSE,
+        "run-1",
         chunk_size=2,
         delay_seconds=7.0,
         sleep=slept.append,
@@ -125,7 +126,8 @@ def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:
     # 3 chunks -> 2 inter-chunk pauses of the configured delay.
     assert slept == [7.0, 7.0]
     batch = graph.list_nodes(MARKET_DATA_LABEL)
-    assert key == f"market-data:{batch[0].props['window_end']}"
+    assert key == f"market-data:{batch[0].props['run_id']}"
+    assert key == "market-data:run-1"
     # One reassembled MarketData batch over the full universe.
     assert len(batch) == 1
     assert sorted(batch[0].props["tickers"]) == sorted(_UNIVERSE)
@@ -138,7 +140,10 @@ def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:
 
 def test_ingest_chunked_empty_universe_is_noop() -> None:
     graph = InMemoryGraphStore()
-    assert ingest_chunked(_agent(graph), (), chunk_size=2, delay_seconds=1.0) is None
+    assert (
+        ingest_chunked(_agent(graph), (), "run-1", chunk_size=2, delay_seconds=1.0)
+        is None
+    )
     assert graph.list_nodes(MARKET_DATA_LABEL) == ()
 
 

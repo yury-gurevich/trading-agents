@@ -95,6 +95,7 @@ def _merge_parts(
 def ingest_chunked(
     agent: ProviderAgent,
     universe: tuple[str, ...],
+    run_id: str,
     *,
     chunk_size: int,
     delay_seconds: float,
@@ -105,8 +106,8 @@ def ingest_chunked(
     Each chunk is fetched through ``agent._get_market_data`` (its own fault
     boundary + MarketSnapshot part); ``sleep(delay_seconds)`` paces the gap
     between chunks so the aggregate per-minute API call rate stays under the
-    free-tier ceiling. Returns the reassembled MarketData node key, or ``None``
-    when *universe* is empty.
+    free-tier ceiling. The reassembled node is keyed by *run_id* (DRIFT-011).
+    Returns the reassembled MarketData node key, or ``None`` when *universe* is empty.
     """
     if not universe:
         return None
@@ -122,7 +123,7 @@ def ingest_chunked(
         if index < len(chunks) - 1:
             sleep(delay_seconds)
     market = _merge_parts(agent, tuple(parts), universe, window)
-    _write_market_data(agent._graph, market, universe, window)
+    _write_market_data(agent._graph, market, universe, window, run_id)
     regime = agent._get_regime(RegimeRequest(as_of=window.end))
-    _write_regime_context(agent._graph, regime, window)
-    return f"market-data:{window.end.isoformat()}"
+    _write_regime_context(agent._graph, regime, window, run_id)
+    return f"market-data:{run_id}"

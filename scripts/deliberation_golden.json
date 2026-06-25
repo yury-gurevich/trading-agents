@@ -3,37 +3,20 @@
   "judge": "gpt-5.5",
   "date": "2026-06-25",
   "library": "class1-grounded",
+  "n_runs": 3,
+  "threshold": 0.5,
   "passing": [
     "alpha158-weight-zero",
-    "calendar-staleness",
     "lightgbm-shadow",
     "name-correlation",
     "pooled-sigma"
   ],
-  "scores": {
-    "pooled-sigma": {
-      "flaw_caught": true,
-      "passed": true
-    },
-    "calendar-staleness": {
-      "flaw_caught": true,
-      "passed": true
-    },
-    "name-correlation": {
-      "flaw_caught": true,
-      "passed": true
-    },
-    "fixed-fraction-size": {
-      "flaw_caught": true,
-      "passed": false
-    },
-    "alpha158-weight-zero": {
-      "flaw_caught": true,
-      "passed": true
-    },
-    "lightgbm-shadow": {
-      "flaw_caught": true,
-      "passed": true
-    }
+  "fractions": {
+    "pooled-sigma": 0.667,
+    "calendar-staleness": 0.333,
+    "name-correlation": 0.667,
+    "fixed-fraction-size": 0.0,
+    "alpha158-weight-zero": 1.0,
+    "lightgbm-shadow": 1.0
   }
 }

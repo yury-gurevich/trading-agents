@@ -32,7 +32,14 @@ from kernel.deliberation_eval import (
     run_eval,
     score_debate,
 )
-from kernel.deliberation_gate import BaselineCheck, check_baseline, passing_names
+from kernel.deliberation_gate import (
+    BaselineCheck,
+    check_baseline,
+    check_robust,
+    pass_fractions,
+    passing_names,
+    robust_passing,
+)
 from kernel.envelope import AgentMessage, MessageType
 from kernel.errors import (
     AgentFault,
@@ -95,14 +102,17 @@ __all__ = [
     "Turn",
     "Verdict",
     "check_baseline",
+    "check_robust",
     "claim_check_read",
     "claim_check_write",
     "deliberate",
     "describe",
     "fault_boundary",
     "fault_from_exception",
+    "pass_fractions",
     "pass_rate",
     "passing_names",
+    "robust_passing",
     "run_debates",
     "run_eval",
     "score_debate",

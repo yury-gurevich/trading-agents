@@ -28,9 +28,9 @@ from scripts.deliberation_eval import _CLASS1, _build
 from kernel import (
     EvalScore,
     LLMJudgeScorer,
-    check_baseline,
-    pass_rate,
-    passing_names,
+    check_robust,
+    pass_fractions,
+    robust_passing,
     run_debates,
 )
 
@@ -56,37 +56,48 @@ def _score(debate_llm: object, judge_llm: object, rounds: int) -> tuple[EvalScor
     return tuple(judge(d, c) for d, c in zip(debates, cases, strict=True))
 
 
-def _freeze(rounds: int) -> None:
+def _runs(
+    debate_llm: object, judge_llm: object, rounds: int, n: int
+) -> tuple[tuple[EvalScore, ...], ...]:
+    """Score the library ``n`` times — the noise-averaging pass (EXP-006)."""
+    return tuple(_score(debate_llm, judge_llm, rounds) for _ in range(n))
+
+
+def _fractions(runs: tuple[tuple[EvalScore, ...], ...]) -> dict[str, float]:
+    return {name: round(frac, 3) for name, frac in pass_fractions(runs).items()}
+
+
+def _freeze(rounds: int, n: int, threshold: float) -> None:
     champ = _build_llm(True)
-    scores = _score(champ, champ, rounds)
+    runs = _runs(champ, champ, rounds, n)
     model = os.environ.get("OPENAI_MODEL", "unknown")
+    passing = sorted(robust_passing(runs, threshold=threshold))
     golden = {
         "model": model,
         "judge": model,
         "date": datetime.now(tz=UTC).date().isoformat(),
         "library": "class1-grounded",
-        "passing": sorted(passing_names(scores)),
-        "scores": {
-            s.name: {"flaw_caught": s.flaw_caught, "passed": s.passed} for s in scores
-        },
+        "n_runs": n,
+        "threshold": threshold,
+        "passing": passing,
+        "fractions": _fractions(runs),
     }
     _GOLDEN.write_text(json.dumps(golden, indent=2) + "\n", encoding="utf-8")
-    print(f"\nFROZEN golden ({model}) — pass-rate {pass_rate(scores):.0%}")
-    print(f"  passing: {golden['passing']}")
+    print(f"\nFROZEN golden ({model}) — n={n} threshold={threshold}")
+    print(f"  robust passing ({len(passing)}): {passing}")
+    print(f"  fractions: {golden['fractions']}")
     print(f"  written: {_GOLDEN.name}")
 
 
-def _check(model: str, rounds: int) -> int:
+def _check(model: str, rounds: int, n: int, threshold: float) -> int:
     golden = json.loads(_GOLDEN.read_text(encoding="utf-8"))
     judge = _build_llm(True)  # champion judge — the fixed measuring instrument
     candidate = _named_llm(model)
-    scores = _score(candidate, judge, rounds)
-    result = check_baseline(scores, frozenset(golden["passing"]))
-    print(f"\nGATE — debater {model} vs golden {golden['model']} ({golden['date']})")
-    print(
-        f"  golden pass-rate {len(golden['passing'])}/{len(golden['scores'])}"
-        f"   candidate pass-rate {pass_rate(scores):.0%}"
-    )
+    runs = _runs(candidate, judge, rounds, n)
+    result = check_robust(runs, frozenset(golden["passing"]), threshold=threshold)
+    print(f"\nGATE — {model} (n={n}) vs golden {golden['model']} ({golden['date']})")
+    print(f"  golden robust passing ({len(golden['passing'])}): {golden['passing']}")
+    print(f"  candidate fractions: {_fractions(runs)}")
     print(f"  regressed: {list(result.regressed) or 'none'}")
     print(f"  gained:    {list(result.gained) or 'none'}")
     print(f"  VERDICT: {'PASS' if result.passed else 'FAIL — firewall tripped'}")
@@ -102,14 +113,18 @@ def main() -> None:
     parser.add_argument("--check", metavar="MODEL", help="check MODEL vs the golden")
     parser.add_argument("--real", action="store_true", help="call the model (.env)")
     parser.add_argument("--rounds", type=int, default=1)
+    parser.add_argument("--runs", type=int, default=1, help="N runs to average (noise)")
+    parser.add_argument(
+        "--threshold", type=float, default=0.5, help="robust-pass fraction of N"
+    )
     args = parser.parse_args()
 
     if not args.real:
         raise SystemExit("the gate needs --real (a live model); there is no fake gate")
     if args.freeze:
-        _freeze(args.rounds)
+        _freeze(args.rounds, args.runs, args.threshold)
     elif args.check:
-        raise SystemExit(_check(args.check, args.rounds))
+        raise SystemExit(_check(args.check, args.rounds, args.runs, args.threshold))
     else:
         raise SystemExit("pass --freeze or --check MODEL")
 

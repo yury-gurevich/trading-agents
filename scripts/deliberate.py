@@ -39,7 +39,7 @@ class _AnthropicText:
         del tool_schema
         resp = self._client.messages.create(
             model=self._model,
-            max_tokens=400,
+            max_tokens=2000,
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -60,7 +60,7 @@ class _OpenAIText:
         del tool_schema
         resp = self._client.chat.completions.create(
             model=self._model,
-            max_completion_tokens=400,
+            max_completion_tokens=2000,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},

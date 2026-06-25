@@ -19,6 +19,7 @@ a new ADR. See [conventions.md](conventions.md) for the full rules.
 | [drift-register.md](drift-register.md) | Central worklist of every law-vs-code drift (OPEN / CORRECTED / CLOSED); **the escalation point for discovered gaps** | Add rows freely; update status when a sprint corrects a drift |
 | [ledger.md](ledger.md) | Gray→green rollup across all agents — "the landscape"; how many clauses are 🟩 per agent | Update after each sprint that closes green clauses; add a row when a new agent law is authored |
 | [cage-audit.md](cage-audit.md) | DL-19 "no cages" audit: classifies every agent's prohibition surface as boundary vs cage; verdict = not a cage, plus the discovery-surface gap | Re-run when an agent's law surface changes materially |
+| [discovery-surfaces.md](discovery-surfaces.md) | DL-19 register: names what each discoverer agent is free to discover (Owns / Walls / Search / gate); the creative space made legible | Update when an agent's owned space, dials, or bounding clauses change |
 
 ---
 

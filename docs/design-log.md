@@ -1184,3 +1184,37 @@ CI-6 optimiser + the DL-20 discovery discipline.
 **Decision.** The "No cages" success factor is **satisfied** (audited; none found). DL-19's remaining work
 is to make the rooms explicit, not to knock down walls. Also reconciled a drift the audit surfaced: PM
 `laws.md` footer said "v0, not yet locked" while it is LOCKED v1 (S70) — fixed (DRIFT-010).
+
+---
+
+## DL-27 · Pipeline observatory — a human-legible *checker that prints* for the trade flow  ·  status: DECIDED (2026-06-25)
+
+**Trigger.** Operator wants a **visibility utility**: see what each agent receives (from whom, what
+triggered it) and produces, across the whole pipeline; lock **what must be there**; check **floor/ceiling**
+on the values. *"A print statement for a human to see something is not right."*
+
+**Insight.** This is the **deliberation firewall pattern (golden baseline + floor/ceiling) applied to the
+data pipeline.** It has three separable layers: (1) the **trace/print** (per-stage I/O), (2) the
+**structural lock** — what *must* be present (partly the Pydantic contracts already), (3) the **value
+floor/ceiling** invariants (the new part). The risk: a print-everything firehose becomes noise a human
+stops reading — so build a **checker that prints** (flags only breaches), not a printer that occasionally
+checks.
+
+**Decision (v1 — graph post-hoc; chosen over live bus-tap and gate-first).**
+- **Substrate** `orchestration/observatory.py`: `Check` (required/floor/ceiling/oneof), `StageView`,
+  `breaches`, `render`. Domain-agnostic; evaluates + renders only.
+- **Pack** `orchestration/packs/trading_observatory.py`: per-stage extractors (provider→pm) + the trading
+  invariants (`returned ≥ 1`, `return_ratio ≥ 0.9`, `universe/evaluated/scored/evaluated ≥ 1`) — the "what
+  must be there" + floor/ceiling locks. Reuses `batch_trace.walk_chain`; reads the graph (DL-08 — the data
+  is already all there).
+- **Passive WARN**, never blocks, in v1. The committed invariant set *is* the baseline.
+- **Platform/pack wall (ADR-0012):** the mechanism is substrate; the specific invariants are the trading
+  pack. CLI: `scripts/observatory.py --run-id <id>`.
+
+**Road not taken.** *Live bus-tap* (richer "watch it move" feel; needs a kernel bus-observer hook) —
+later. *Invariant-as-hard-gate* (a "pipeline firewall" sibling to `deliberation_gate`, WARN→FAIL) — later,
+once baselines settle. *Per-field schema re-validation* — already the contracts' job; the observatory
+surfaces, doesn't duplicate.
+
+**Next.** Extend to execution/monitor/reporter; freeze a golden run + diff; then promote WARN→FAIL as the
+gate. Same arc the deliberation took: print → baseline → gate.

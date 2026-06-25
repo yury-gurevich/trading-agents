@@ -27,6 +27,7 @@ defence for any action it triggers.
 | [EXP-003](EXP-003-eval-harness.md) | Build the manufactured-eval harness (Path B) | 2026-06-24 | shipped `kernel/deliberation_eval.py`; finding: a strong model catches textbook flaws blind — grounding's ROI is Class-1 (our-impl) facts; needs a sharper scorer |
 | [EXP-004](EXP-004-class1-cases-llm-judge.md) | Arm the drift firewall — Class-1 cases + LLM-judge scorer | 2026-06-25 | ✅ **firewall armed** — on Class-1, grounding Δ = +50 pp (keyword) / **+83 pp (judge)**; judge sharper (blind judge 0% vs keyword 33%). Next: EXP-005 freeze golden baseline + model-swap A/B |
 | [EXP-005](EXP-005-model-swap-gate.md) | Operationalise the firewall — golden baseline + model-swap gate | 2026-06-25 | ✅ **firewall trips on a real side-grade** — gpt-5.4 debater silently dropped `calendar-staleness` (4/6) vs gpt-5.5 golden (5/6). `kernel/deliberation_gate.py` + committed golden. Next: N-run hardening (CI-4/S93) |
+| [EXP-006](EXP-006-nrun-hardening.md) | Harden the firewall — N-run aggregation against debate noise | 2026-06-25 | ✅ **noise-aware gate** — N=3 reveals `calendar-staleness` was champion-flaky (1/3) so EXP-005's trip was partly noise; gate now trips gpt-5.4 on the *robust* `name-correlation` (2/3→1/3). Found+fixed 400-tok truncation. Next: larger N + margin (CI-4/S93) |
 
 ## Adding an experiment
 

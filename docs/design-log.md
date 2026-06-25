@@ -1259,3 +1259,12 @@ returned `ACCEPTANCE PASS` on a real 3-ticker run — the gate is proven end-to-
 immutable `snapshot` property in Neo4j (the in-memory store hid it) — exactly the integration bug
 100%-coverage unit tests miss, and *the reason Layer 3 exists*. Layer-3 row → 🟨 (gate live-verified; 🟩
 pending the DRIFT-011 fix + one clean full-universe run).
+
+**Re-run after the DRIFT-011 fix (0.35.01).** The full **S&P-100 → Aura run now completes** (99/99 × 41
+real bars, no collision) — DRIFT-011 **CORRECTED, proven live**. The acceptance gate still **FAILed**, now
+on *data quality* ([DRIFT-012](../laws/drift-register.md)): clean OHLCV but `used_fallback=True` from a
+`daily_move_sigma_anomaly` (too-tight default sigma vs a real big-mover) **and** optional-field faults
+(`fundamentals/news/sectors/earnings_degraded` — Finnhub rate-limited at 99 per-ticker calls) → the analyst
+rejected all 5 candidates → zero trades. The gate did its job again: it caught **over-taint** — optional
+*enrichment* failure blocks trading on otherwise-good OHLCV. The 🟩 is now one over-taint fix (optional
+faults record a note but don't set `used_fallback`, à la DRIFT-006's `taint=False`) + sigma review away.

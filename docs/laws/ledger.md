@@ -59,6 +59,9 @@ asserted. 🟨 — this row turning 🟩 is the definition of "the system works.
   cross-stage **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
 - **Live-verified PASS** against the free Aura (`c3ce91d0`) on a real 3-ticker run (`obs-aura-1782372578`):
   `ACCEPTANCE PASS - every stage did its job within its boundaries`.
-- **Full-universe (S&P-100) run blocked by [DRIFT-011](drift-register.md)** — a same-day re-ingest against
-  persisted Neo4j collides on the immutable `snapshot` (the in-memory store hid it). 🟩 needs that fix +
+- **[DRIFT-011](drift-register.md) CORRECTED (0.35.01)** — keyed by run_id; the **full S&P-100 → Aura run
+  now completes** (99/99 × 41 real bars, no collision).
+- **Full-universe acceptance still FAILS on data quality ([DRIFT-012](drift-register.md))** — clean OHLCV
+  but `used_fallback=True` from a sigma outlier + Finnhub-rate-limited *optional* fields → the analyst
+  rejects all candidates → zero trades. 🟩 needs the over-taint fix (optional faults shouldn't block) +
   one clean full-universe run.

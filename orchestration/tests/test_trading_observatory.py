@@ -43,6 +43,10 @@ def test_clean_run_holds_all_invariants() -> None:
         assert stage in out
     assert "<- RunRequest" in out
     assert "<- MarketData(provider)" in out
+    # The actual per-stage OUTPUT artifacts are on screen, not just counts.
+    assert "tickers   AAPL MSFT" in out
+    assert "conf=" in out  # an analyst recommendation row
+    assert "qty=" in out  # a PM order row
     assert "OK - all invariants hold" in out
     assert "WARN" not in out
 
@@ -59,6 +63,8 @@ def test_degraded_run_warns_on_empty_analyst_and_pm() -> None:
     )
     graph = _cascade(FakeDataSource(bars=stale, vix=12.0), ("AAPL", "MSFT"), "obs-deg")
     out = inspect(graph, "obs-deg")
+    assert "quality   DEGRADED" in out  # the root cause is on screen
+    assert "REJECT" in out  # the analyst's per-ticker rejections
     assert "WARN  scored: 0 < floor 1.0" in out
     assert "WARN  evaluated: 0 < floor 1.0" in out
     assert "WARN - inspect above" in out

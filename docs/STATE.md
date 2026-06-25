@@ -1,11 +1,14 @@
 # Project State
 
-**Last updated:** 2026-06-25 18:46 AEST
+**Last updated:** 2026-06-25 23:11 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-**🟩 LAYER-3 ACCEPTANCE GREEN (0.35.02, 2026-06-25): the full S&P-100 pipeline runs end-to-end on real data
-→ Aura, 5 positions opened, `ACCEPTANCE PASS` — the law ledger's definition of "the system works."**
+**🟩 LAYER-3 ACCEPTANCE GREEN at S&P-100 (0.35.02): the full pipeline runs end-to-end on real data
+→ Aura, 5 positions opened, `ACCEPTANCE PASS` — the law ledger's definition of "the system works."
+🟨 at the literal S&P-500 (0.37.00): the data layer scales (503/503 OHLCV) but per-batch quality does not
+([DRIFT-014](laws/drift-register.md) — one >8σ name taints all 503). DRIFT-013 (silent caps) now CORRECTED:
+the concentration caps fired live (INTC SKIP) off a warmed sector cache.**
 
 Governance scaffolding shipped this session (v0.24.00→0.35.02): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
@@ -35,6 +38,22 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-25 (cont.) — DRIFT-013 corrected + S&P-500 scale (0.35.02→0.37.00).** *Proven results
+  (merged to main, GitHub CI green every push):* (1) **DRIFT-013 visibility (0.36.00)** — the silent
+  PM-cap bypass is now **loud**: a `sectors N/M classified (0 = caps INACTIVE)` observatory line + a
+  `sector_coverage` **WARN** via a new **advisory severity** (`Check(severity="warn")` — surfaced,
+  non-blocking). (2) **DRIFT-013 robustness (0.37.00)** — `agents/provider/sector_cache.resolve_sectors`
+  treats a ticker's sector as **cached reference data** (`Sector` nodes, first-write-wins), filling the
+  universe's gaps from the graph so the caps have data even when Finnhub rate-limits. **PROVEN LIVE:** a
+  paced S&P-100 run cached **99/99** sectors in Aura; a later single-shot run (live sectors rate-limited)
+  still showed `sectors 99/99 classified` and **PM-NEV-06 fired** — `INTC SKIP sector_name_count`. So the
+  bundle now trades *wisely* (caps active on real correlated names), not just cleanly. (3) **S&P-500 scale**
+  — committed `scripts/universe_sp500.txt` (503 authoritative names); the run pulled **503/503 OHLCV (the
+  data layer scales)** but `ACCEPTANCE FAIL`: **[DRIFT-014](laws/drift-register.md)** — the per-batch
+  `daily_move_sigma_anomaly` taint is batch-level, so one >8σ name rejects every clean survivor. Recorded
+  OPEN with the fix direction (per-ticker quality: exclude the anomalous bars, not the batch). Layer-3
+  ledger: 🟩 at S&P-100, 🟨 at the literal S&P-500. *Next: DRIFT-014 per-ticker quality + an OHLCV-only
+  fast mode (the single-shot run makes 503×4 enrichment calls acceptance doesn't need).*
 - **Session 2026-06-25 (cont.) — 🟩 Layer-3 acceptance: "the system works" (0.34.01→0.35.02).** *Proven
   results (merged to main, GitHub CI green every push):* (1) **Acceptance gate (DL-28, 0.35.00)** —
   `observatory.accept` → PASS/FAIL over per-stage invariants **+ cross-stage conservation** (no agent
@@ -159,8 +178,9 @@ On `main`, no active sprint branch. Success factors (the verifiable definition-o
   re-validates the reassembled batch once) + `sigma=8.0` + BK dropped + conservative pacing (chunk 10 /
   delay 70). *New finding:* the 5 names are 4 semis + 1 bank — **correlated concentration** the pipeline
   has no penalty for (the gap [quant-methods](research/quant-methods/quant-methods.md) Part 2/3 flags;
-  what a Deliberation Challenger would attack). **Now closed in code:** PM-NEV-06 name-count cap (0.33.00,
-  DL-25). The next live batch should refuse a 4-semi basket. So: moving from *trades cleanly* → *wisely*.
+  what a Deliberation Challenger would attack). **Closed in code + PROVEN LIVE:** PM-NEV-06 name-count cap
+  (0.33.00, DL-25) fired on a real S&P-100 run off a warmed sector cache — `INTC SKIP sector_name_count`
+  (DRIFT-013 corrected, 0.37.00). So: now *trades wisely*, not just cleanly.
 - **Laws green.** Remaining gray law clauses → green with cited tests (ledger: provider 23/43, scanner
   18/39, PM 23/43, analyst 24/43, …).
 - **No cages — ✅ DONE (2026-06-25).** All ~67 prohibitions audited (`docs/laws/cage-audit.md`); **none is
@@ -176,6 +196,12 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
 
 *The "finish the bundle" backlog — what perfection still needs:*
 
+- **DRIFT-014 — per-ticker OHLCV quality (puts S&P-500 green).** The per-batch `daily_move_sigma_anomaly`
+  taint is batch-level, so at 503 names one >8σ outlier rejects every clean survivor (Layer-3 🟨 at the
+  literal S&P-500). Fix: *exclude* the anomalous ticker's bars (like `stale_tickers`), so the analyst
+  scores the clean remainder; touches `provider/domain/integrity.py` + the analyst's `used_fallback`
+  tolerance. Pairs with an **OHLCV-only fast mode** (the single-shot run makes 503×4 enrichment calls the
+  acceptance doesn't need). *Teed up; not started.*
 - **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
   `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
   `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master

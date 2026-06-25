@@ -1136,3 +1136,33 @@ Class-1 case → translated into a law clause + code + cited test.* The machiner
 quality; it now **feeds fixes back into the bundle.** This is how the bundle moves from *trades cleanly*
 to *trades wisely* (DL-19). The remaining Class-1 findings (calendar-day staleness DL-10; fixed-fraction
 sizing; Alpha158 weight=0; LightGBM shadow) are the queued backlog of the same loop.
+
+---
+
+## DL-26 · The cage test is role-relative; cages aren't the bundle's problem — implicit discovery is  ·  status: DECIDED (2026-06-25)
+
+**Trigger.** Tackling DL-19 lock #2 ("laws define a space, not a solution") via the **no-cages audit**
+(`docs/laws/cage-audit.md`) — surveying all ~67 prohibitions across the 13 agents against the cage test.
+
+**Finding 1 — the test is role-relative (a sharpening of DL-19).** The genesis test ("a law that forces a
+single outcome is a cage") is **incomplete as stated**: removing discovery is only a *cage* where discovery
+is the agent's *job*. A **faithful executor** (provider fetches faithfully, execution submits the intent
+exactly, monitor applies stops) is *meant* to be deterministic — its lack of a discovery surface is correct
+scoping, not over-constraint. So the test must first classify the agent: **discoverer** (scanner, analyst,
+forecaster, researcher, curator, operator) vs **faithful-executor / integrity-keeper** (provider, execution,
+monitor, reporter, supervisor, master; PM mechanics). Apply "is this a cage?" only to discoverers.
+
+**Finding 2 — no prohibition is a cage.** Every NEV is a role boundary or a safety/integrity rule; none
+prescribes *what to find*. The bundle's constraint surface is healthy — positive evidence for etalon v0.1.
+
+**Finding 3 — the real DL-19 gap is positive, not corrective.** Discovery surfaces are **implicit**. The
+laws declare the walls (NEV), the capabilities (CAP), and the dials (PARAM/`tunable`) — but **no agent
+names the space it owns and may creatively search.** The room exists; it is undeclared, so the etalon
+can't show, per agent, *"what is this agent free to discover?"* Two sequenced follow-ups: (a) add a
+**"Discovery surface"** section to the law schema (a LOCKED-`_TEMPLATE.md` law-cycle change — deferred to
+its own cycle); (b) give **lawful-space search** a mechanism (DL-19's extension of LAW-01 beyond dial-tuning
+to re-composition) — gated behind the deferred CI-6 optimiser + the DL-20 discovery discipline.
+
+**Decision.** The "No cages" success factor is **satisfied** (audited; none found). DL-19's remaining work
+is to make the rooms explicit, not to knock down walls. Also reconciled a drift the audit surfaced: PM
+`laws.md` footer said "v0, not yet locked" while it is LOCKED v1 (S70) — fixed (DRIFT-010).

@@ -251,8 +251,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Changelog
 
-- v0 — drafted (ideal-design, S70). Not yet locked.
-- v0.1 — added PM-NEV-06 (per-sector name-count cap, `max_names_per_sector`) — the
+- v1 — drafted (ideal-design) and **LOCKED (S70)**. (The earlier "v0 — not yet locked" footer was
+  stale; reconciled in the DL-19 cage audit — see drift-register DRIFT-010.)
+- v1.1 — amendment: added PM-NEV-06 (per-sector name-count cap, `max_names_per_sector`) — the
   name-correlation penalty the dollar cap missed; closes the gap the deliberation firewall
   surfaced (EXP-004..006) and the live book exposed (4 correlated semis). Cited test:
   `test_sector_name_count.py`.

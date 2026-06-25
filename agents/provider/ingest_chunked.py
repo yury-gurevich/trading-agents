@@ -20,6 +20,7 @@ from agents.provider.domain.integrity import validate_bars
 from agents.provider.ingest import (
     MARKET_FIELDS,
     _today_window,
+    _with_cached_sectors,
     _write_market_data,
     _write_regime_context,
 )
@@ -125,6 +126,7 @@ def ingest_chunked(
         if index < len(chunks) - 1:
             sleep(delay_seconds)
     market = _merge_parts(agent, tuple(parts), universe, window)
+    market = _with_cached_sectors(agent._graph, market, universe)
     _write_market_data(agent._graph, market, universe, window, run_id)
     regime = agent._get_regime(RegimeRequest(as_of=window.end))
     _write_regime_context(agent._graph, regime, window, run_id)

@@ -73,6 +73,7 @@ def run_evaluation(
             min_reward_risk_ratio=settings.min_reward_risk_ratio,
             sectors=market.sectors,
             max_sector_pct=settings.max_sector_pct,
+            max_names_per_sector=settings.max_names_per_sector,
         )
     if capture.fault is not None:
         return reject_all(

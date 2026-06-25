@@ -1104,3 +1104,35 @@ scorer) and eval data — but the **design now caters for it**: a model change *
 deliberation's outputs, because it must pass the eval. Recorded in the Deliberation charter (model = a
 gated parameter; OPS-NEV: no swap without the eval gate). This widens ADR-0010 from "guard prompt drift"
 to **"guard model-swap drift."**
+
+---
+
+## DL-25 · Translate the firewall's findings into code — close the name-correlation gap  ·  status: DECIDED (2026-06-25)
+
+**Trigger.** The deliberation firewall (EXP-004..006) was built on DL-23's premise: *our documented gaps
+are the answer key.* So the Class-1 cases are a **catalogue of real holes in our trading logic** — not
+just test fixtures. The operator's directive: *"bake experiment results into code; translate our findings
+into code."* A finding the firewall keeps surfacing — and that gpt-5.4 regressed on, and that the live
+book exposed (it opened 4 correlated semis) — is **name-correlation concentration**.
+
+**The gap (made concrete).** The PM had a `max_sector_pct` *dollar* cap (30 %). But five small correlated
+names at 5 % each clear a 30 % cap while being **one bet**. The dollar cap bounds weight, not *count* —
+there was no name-correlation penalty. (This is the `name-correlation` Class-1 case verbatim.)
+
+**Decision.** Add **PM-NEV-06**: a per-sector **name-count** cap (`max_names_per_sector`, default 3, 0
+disables; already-held names count). A new `SectorBook` (`domain/concentration.py`) owns both the dollar
+and the count gate. The count cap is the name-correlation penalty in **deterministic, interpretable**
+form — consistent with the etalon's "facts + interpretable quant params" style.
+
+**Road not taken.** A **return-correlation matrix** (pairwise correlation from OHLCV, reject a candidate
+too correlated with the book) is more powerful but heavier — needs price history at the PM and a
+correlation computation, and it is *opaque* (a number, not a reason). Deferred: the count cap is the
+honest first cut; a correlation penalty is a future *tunable* the experimentation process can A/B against
+it. Also **not** fixed here: the cap is silent when `market.sectors` is empty (a provider data-completeness
+gap) — logged as a separate follow-up, not a risk-logic change.
+
+**Why this matters.** It is the first loop closed end-to-end: *firewall surfaces a gap → recorded as a
+Class-1 case → translated into a law clause + code + cited test.* The machinery doesn't just measure
+quality; it now **feeds fixes back into the bundle.** This is how the bundle moves from *trades cleanly*
+to *trades wisely* (DL-19). The remaining Class-1 findings (calendar-day staleness DL-10; fixed-fraction
+sizing; Alpha158 weight=0; LightGBM shadow) are the queued backlog of the same loop.

@@ -10,6 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.concentration import SectorBook
 from agents.portfolio_manager.domain.sizing import size_quantity
 from contracts.common import Explanation, Money
 from contracts.portfolio_manager import OrderIntent, RejectedOrder
@@ -33,13 +34,14 @@ def evaluate_recommendations(
     min_reward_risk_ratio: float,
     sectors: dict[str, str] | None = None,
     max_sector_pct: Decimal = Decimal("1"),
+    max_names_per_sector: int = 0,
 ) -> tuple[tuple[OrderIntent, ...], tuple[RejectedOrder, ...]]:
     """Apply sizing and risk checks in deterministic recommendation order."""
     sectors_map = sectors or {}
     approved: list[OrderIntent] = []
     rejected: list[RejectedOrder] = []
     reserved_cash = Decimal("0")
-    sector_deployed: dict[str, Decimal] = {}
+    book = SectorBook(sectors_map, portfolio.positions)
     open_tickers = set(portfolio.positions)
     for item in _ordered(recommendations):
         price = prices.get(item.ticker)
@@ -77,18 +79,20 @@ def evaluate_recommendations(
             rejected.append(rejection)
             continue
         cost = Decimal(quantity) * price.amount
-        sector = sectors_map.get(item.ticker)
-        sector_total = sector_deployed.get(sector or "", Decimal("0")) + cost
-        if sector is not None and sector_total > max_sector_pct * portfolio.value:
-            rejected.append(
-                RejectedOrder(ticker=item.ticker, reason="sector_concentration")
-            )
+        rejection = book.rejection(
+            item,
+            cost,
+            portfolio.value,
+            max_sector_pct=max_sector_pct,
+            max_names_per_sector=max_names_per_sector,
+        )
+        if rejection is not None:
+            rejected.append(rejection)
             continue
         approved.append(_order_intent(item, quantity, price, stop_pct, target_pct))
         reserved_cash += cost
         open_tickers.add(item.ticker)
-        if sector is not None:
-            sector_deployed[sector] = sector_total
+        book.record(item, cost)
     return tuple(approved), tuple(rejected)
 
 

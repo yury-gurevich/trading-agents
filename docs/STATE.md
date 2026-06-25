@@ -1,18 +1,20 @@
 # Project State
 
-**Last updated:** 2026-06-25 01:02 AEST
+**Last updated:** 2026-06-25 11:49 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.29.00): ADR-0013 continuous-improvement
+Governance scaffolding shipped this session (v0.24.00→0.31.00): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
-`tuner` subagents + a deliberation harness (LLM defend/attack/judge) + an **eval harness** that scores a
-debate against a manufactured answer key (0.29.00); the etalon. Pipeline: Alpaca primary OHLCV + chunked
+`tuner` subagents; and the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
+eval harness scoring debates against a manufactured answer key, a Class-1 case library + LLM-judge scorer,
+and a **runnable model-swap gate** (0.31.00); the etalon. Pipeline: Alpaca primary OHLCV + chunked
 ingest. **The bundle now TRADES** — the validate-once fix (0.28.01) yielded a clean 99/99 batch that
 opened 5 positions (2026-06-24). Next: it trades *cleanly but not yet wisely* — the 5 names are
-correlated tech, a concentration/risk gap (quant-methods Part 2/3). DSPy's first job is now framed as a
-**model-drift firewall** (DL-24): a model swap is a *gated* change that must pass the eval. Meta-machinery
-(CI-1..CI-6, the generator) waits behind a perfect etalon (etalon-first).**
+correlated tech, a concentration/risk gap (quant-methods Part 2/3). **DSPy's first job is now a working
+model-drift firewall (DL-24): a model swap must clear `deliberation_gate.py` against a frozen golden — and
+gpt-5.4 demonstrably trips it.** Meta-machinery (CI-1..CI-6, the generator) waits behind a perfect etalon
+(etalon-first).**
 
 **How to read:** *Now* = being worked on. *Next* = queued, not started. *Parked* = exists but
 inactive. *Recent sprints* = the last ~8 shipped; older history is archived (see Archive).
@@ -28,6 +30,17 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-25 — drift firewall armed + operational (0.29.00→0.31.00).** *Proven results (merged
+  to main, GitHub CI green every push):* (1) **EXP-004 — firewall armed (0.30.00).** `LLMJudgeScorer`
+  (semantic "did it catch THIS flaw?") + `run_debates` (kernel-pure) + a 6-case **Class-1 library** (flaws
+  only our implementation reveals, each citing its source). Live gpt-5.5: grounding Δ on Class-1 = **+50 pp
+  (keyword) / +83 pp (judge)**; the judge is sharper (blind judge 0% vs keyword's false 33%). The grounding
+  ROI EXP-003 couldn't show on textbook flaws is total on Class-1. (2) **EXP-005 — firewall operational
+  (0.31.00).** `kernel/deliberation_gate.py` (`check_baseline`→`BaselineCheck`) + `scripts/deliberation_gate.py`
+  (`--freeze`/`--check`, judge held fixed at champion) + a committed golden baseline. **Live A/B: gpt-5.4
+  debater regressed `calendar-staleness` (4/6) vs the gpt-5.5 golden (5/6) — the firewall TRIPS on a real
+  near-peer side-grade.** DL-24 is now a runnable command + DSPy's compile metric. **1102 tests, 100%
+  coverage.** *Honest limit (EXP-005): single-run is noisy → N-run hardening next (folds into CI-4/S93).*
 - **Session 2026-06-24/25 — deliberation eval harness + model-drift gate (0.28.01→0.29.00).** *Proven
   results (merged to main, GitHub CI green both pushes):* (1) **Eval harness** (0.29.00) —
   `kernel/deliberation_eval.py` (`EvalCase`/`EvalScore`/`score_debate`/`run_eval`/`pass_rate`, kernel-pure)
@@ -35,7 +48,7 @@ Melbourne local time.
   live caller-side (`scripts/deliberation_eval.py`, pack wall). **1093 tests, 100% coverage.** (2) **EXP-003**
   records the build + an honest finding: gpt-5.5 catches *textbook* flaws blind, so grounding's measurable
   ROI is **Class-1** (our-implementation facts), not Class-2 — known *before* investing in DSPy. (3) **DL-24
-  + Deliberation charter v0.2:** DSPy's first job reframed as a **model-drift firewall**; `model` is now a
+  - Deliberation charter v0.2:** DSPy's first job reframed as a **model-drift firewall**; `model` is now a
   **GATED** parameter (a downgrade/side-grade must pass the eval — no silent report drift). *Next experiment
   queued: Class-1 case library + a sharper (LLM-judge) scorer to arm the firewall.*
 - **Session 2026-06-24 — pipeline + governance + housekeeping (0.24.00→0.27.00).** *Proven results

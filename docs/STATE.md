@@ -1,10 +1,13 @@
 # Project State
 
-**Last updated:** 2026-06-25 17:35 AEST
+**Last updated:** 2026-06-25 18:46 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.34.03): ADR-0013 continuous-improvement
+**🟩 LAYER-3 ACCEPTANCE GREEN (0.35.02, 2026-06-25): the full S&P-100 pipeline runs end-to-end on real data
+→ Aura, 5 positions opened, `ACCEPTANCE PASS` — the law ledger's definition of "the system works."**
+
+Governance scaffolding shipped this session (v0.24.00→0.35.02): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
 `tuner` subagents; the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
 eval harness scoring debates against a manufactured answer key, a Class-1 case library + LLM-judge scorer,
@@ -32,6 +35,19 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-25 (cont.) — 🟩 Layer-3 acceptance: "the system works" (0.34.01→0.35.02).** *Proven
+  results (merged to main, GitHub CI green every push):* (1) **Acceptance gate (DL-28, 0.35.00)** —
+  `observatory.accept` → PASS/FAIL over per-stage invariants **+ cross-stage conservation** (no agent
+  fabricates/overruns its input); `scripts/accept.py` exits non-zero on FAIL; deterministic CI guard.
+  (2) **Proven LIVE on a full S&P-100 → Aura run** — all 99 names × 41 real bars, provider→reporter, **5
+  positions opened**, `OBSERVATORY OK` + `ACCEPTANCE PASS`. **The law ledger's Layer-3 row is now 🟩 — the
+  definition of "the system works."** (3) Getting there fixed **three live-only bugs the 100%-coverage
+  in-memory suite hid**: **DRIFT-011** (same-day re-ingest collided on Neo4j's immutable `snapshot` → key
+  by run_id, 0.35.01) and **DRIFT-012** (optional-field over-taint + too-tight sigma blocked all trading on
+  clean OHLCV → `_fetch_optional` never taints, sigma 4.0→8.0, 0.35.02). **Caveat (DRIFT-013, not
+  blocking):** the 5 names are correlated and PM-NEV-06 silently bypassed (empty `sectors` from a Finnhub
+  rate-limit) — trades cleanly, not yet wisely. **1128 tests, 100% coverage.** *Next: S&P-500 scale +
+  DRIFT-013 (observatory should flag "caps inactive" / a sector-data fallback).*
 - **Session 2026-06-25 (cont.) — Class-1 close-out + pipeline observatory (0.33.00→0.34.01).** *Proven
   results (merged to main, GitHub CI green every push):* (1) **Class-1 honesty verified.** The two
   remaining firewall "honesty" cases are *already correct + test-locked* (Alpha158 weight=0 is gated off

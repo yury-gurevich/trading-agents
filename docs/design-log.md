@@ -1268,3 +1268,12 @@ on *data quality* ([DRIFT-012](../laws/drift-register.md)): clean OHLCV but `use
 rejected all 5 candidates → zero trades. The gate did its job again: it caught **over-taint** — optional
 *enrichment* failure blocks trading on otherwise-good OHLCV. The 🟩 is now one over-taint fix (optional
 faults record a note but don't set `used_fallback`, à la DRIFT-006's `taint=False`) + sigma review away.
+
+**🟩 Layer-3 GREEN — "the system works" (0.35.02, 2026-06-25).** After the [DRIFT-012](../laws/drift-register.md)
+fix (optional faults never taint; sigma 4.0→8.0), the **clean full S&P-100 → Aura run PASSES**:
+provider→reporter over all 99 names × 41 real bars, **5 positions opened**, `OBSERVATORY OK` + **`ACCEPTANCE
+PASS`**. Three live-only bugs the 100%-coverage in-memory suite hid (DRIFT-011 keying, DRIFT-012 over-taint
+×2) fell out of *one* acceptance push — the thesis of Layer 3, vindicated. **Caveat (not blocking,
+[DRIFT-013](../laws/drift-register.md)):** the 5 names are correlated and PM-NEV-06 was silently inactive
+(empty `sectors` from a Finnhub rate-limit) — the concentration guard is data-dependent. Trades cleanly,
+not yet wisely. Remaining stretch: the same path at S&P-500 scale.

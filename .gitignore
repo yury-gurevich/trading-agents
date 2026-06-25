@@ -55,3 +55,7 @@ desktop.ini
 
 infra/*.local.py
 trading-agents.code-workspace
+
+# Google Drive for Desktop — transient upload-staging folder (816 numbered temp
+# files); not project content, never tracked.
+.tmp.driveupload/

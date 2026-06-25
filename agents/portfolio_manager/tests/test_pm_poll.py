@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 _WINDOW_END = "2026-06-22"
+_RUN_ID = "run-1"
 
 
 def _market_data() -> MarketData:
@@ -81,18 +82,19 @@ def _seed_analyst_run(
     if market:
         market_node = graph.merge_node(
             MARKET_DATA_LABEL,
-            f"market-data:{_WINDOW_END}",
+            f"market-data:{_RUN_ID}",
             {
                 "snapshot": _market_data().model_dump(mode="json"),
                 "window_end": _WINDOW_END,
+                "run_id": _RUN_ID,
             },
         )
         graph.add_edge(scan_run, market_node, "DERIVED_FROM")
     if regime:
         graph.merge_node(
             REGIME_CONTEXT_LABEL,
-            f"regime-context:{_WINDOW_END}",
-            {"snapshot": _regime().model_dump(mode="json"), "window_end": _WINDOW_END},
+            f"regime-context:{_RUN_ID}",
+            {"snapshot": _regime().model_dump(mode="json"), "run_id": _RUN_ID},
         )
     return analyst_run
 

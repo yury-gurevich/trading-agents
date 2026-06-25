@@ -67,7 +67,7 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
         news_counts = {t: len(h) for t, h in market.news.items() if h}
         regime_node = graph.get_node(
             REGIME_CONTEXT_LABEL,
-            f"regime-context:{market_node.props.get('window_end', '')}",
+            f"regime-context:{market_node.props.get('run_id', '')}",
         )
         regime = (
             RegimeContext.model_validate(regime_node.props["snapshot"])

@@ -70,6 +70,7 @@ def _scanner(graph: GraphStore, node: Node) -> StageView:
     observed: dict[str, object] = {
         "universe": trace.universe_size,
         "evaluated": trace.evaluated,
+        "survived": len(candidate_set.candidates),
     }
     checks = (Check("universe", "floor", 1.0), Check("evaluated", "floor", 1.0))
     return _view("scanner", "MarketData(provider)", observed, checks, outputs)
@@ -108,7 +109,10 @@ def _pm(graph: GraphStore, node: Node) -> StageView:
         for o in intents.approved
     )
     outputs += tuple(f"{o.ticker:<6} SKIP  {o.reason}" for o in intents.rejected)
-    observed: dict[str, object] = {"evaluated": evaluated}
+    observed: dict[str, object] = {
+        "approved": len(intents.approved),
+        "evaluated": evaluated,
+    }
     checks = (Check("evaluated", "floor", 1.0),)
     return _view("pm", "RecommendationSet(analyst)", observed, checks, outputs)
 

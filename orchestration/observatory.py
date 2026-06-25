@@ -12,6 +12,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 
@@ -97,3 +98,31 @@ def render(stages: tuple[StageView, ...]) -> str:
     lines.append("")
     lines.append(f"OBSERVATORY  {head}")
     return "\n".join(lines)
+
+
+# A cross-stage invariant: given each reached stage's observed values (keyed by stage
+# name), return a Breach if the boundary is violated, else None. The pack supplies them.
+CrossCheck = Callable[[dict[str, dict[str, object]]], "Breach | None"]
+
+
+@dataclass(frozen=True)
+class AcceptanceResult:
+    """The PASS/FAIL verdict for one run — every per-stage and cross-stage breach."""
+
+    passed: bool
+    breaches: tuple[Breach, ...]
+
+
+def accept(
+    stages: tuple[StageView, ...], cross_checks: tuple[CrossCheck, ...]
+) -> AcceptanceResult:
+    """The Layer-3 verdict: PASS iff no stage and no cross-stage boundary failed."""
+    found: list[Breach] = []
+    for stage in stages:
+        found.extend(breaches(stage))
+    observed = {stage.name: stage.observed for stage in stages if stage.reached}
+    for cross_check in cross_checks:
+        breach = cross_check(observed)
+        if breach is not None:
+            found.append(breach)
+    return AcceptanceResult(passed=not found, breaches=tuple(found))

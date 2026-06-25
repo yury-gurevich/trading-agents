@@ -1218,3 +1218,8 @@ surfaces, doesn't duplicate.
 
 **Next.** Extend to execution/monitor/reporter; freeze a golden run + diff; then promote WARN→FAIL as the
 gate. Same arc the deliberation took: print → baseline → gate.
+
+**Shipped + validated (2026-06-25).** Full `provider→reporter` spine (0.34.02); `run_local.py --observe`
+runs a test and monitors it in one command (0.34.03). **Validated live against the free Aura (`c3ce91d0`)
+with real Tiingo data** — a 3-ticker run pulled 41 bars/name, opened `AAPL qty=34 est=$293.32`, reported
+`OBSERVATORY OK`. Usage doc: `docs/observability.md` §2a. Remaining: golden-run diff + the WARN→FAIL gate.

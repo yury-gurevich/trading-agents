@@ -53,8 +53,8 @@ Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. ⬜
 ## Layer 3 — Acceptance
 
 One full paper-trading day on real S&P 500 data, persisted, with each agent's job + boundaries
-asserted. 🟩 **at S&P-100 scale** ("the system works"); **🟨 at the literal S&P-500** (data layer scales;
-per-batch quality does not — [DRIFT-014](drift-register.md)).
+asserted. 🟩 **at the full S&P-500** ("the system works") — proven live 2026-06-26 after the
+[DRIFT-014](drift-register.md) per-ticker-quality fix.
 
 - **Gate (DL-28, 0.35.00):** `scripts/accept.py` / `accept_run` — every per-stage invariant + cross-stage
   **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
@@ -68,6 +68,8 @@ per-batch quality does not — [DRIFT-014](drift-register.md)).
 - **S&P-500 scale (2026-06-25):** committed `universe_sp500.txt` (503 names, authoritative); the run
   completed — **Alpaca pulled 503/503 OHLCV, the data layer scales** — but `ACCEPTANCE FAIL`:
   [DRIFT-014](drift-register.md), per-batch quality (one >8σ name taints all 503 → analyst rejects the
-  clean survivors). **Fixed in code (0.37.01):** the outlier is now attributed to its own ticker and
-  *excluded* (`anomalous_tickers`), not tainting the batch; unit- + observatory-proven. **🟨 holds until a
-  live S&P-500 acceptance run confirms PASS at scale** (best paired with an OHLCV-only fast mode).
+  clean survivors). **Fixed (0.37.01):** the outlier is now attributed to its own ticker and *excluded*
+  (`anomalous_tickers`), not tainting the batch. **🟩 PROVEN LIVE (2026-06-26):** a full S&P-500 → Aura
+  acceptance run (OHLCV-only, 9.4s) returned `ACCEPTANCE PASS` — provider flagged `anomalous SMCI`, batch
+  stayed `quality ok returned=502/503`, **2 positions opened**. The OHLCV-only fast mode (9.4s vs ~33 min)
+  is demonstrated; a CLI/env toggle for it is a small follow-up.

@@ -1312,5 +1312,15 @@ remaining bars are suspect too; excluding the whole ticker (like stale) is the c
 
 **Proven.** Unit (`test_domain.py::test_integrity_excludes_anomalous_ticker_keeps_clean_remainder`) +
 observatory (`test_anomalous_ticker_is_excluded_and_shown_not_degraded`); `make ci` green, 100% coverage,
-0.37.01. **Pending:** a live S&P-500 acceptance run to confirm PASS at scale — best paired with an
-**OHLCV-only fast mode** (the single-shot acceptance makes 503×4 enrichment calls it doesn't need).
+0.37.01.
+
+**PROVEN LIVE (2026-06-26) — Layer-3 🟩 at the full S&P-500.** A live S&P-500 → Aura acceptance run returned
+**`ACCEPTANCE PASS`**: the provider flagged `anomalous SMCI  (>sigma excluded, DRIFT-014)` and the batch
+stayed `quality ok  returned=502/503` — the single outlier excluded, the clean remainder delivered and
+scored (scanner 503→5, analyst HPE/MRVL, **2 positions opened**). The same path that `FAIL`ed pre-fix now
+passes at the literal S&P-500. The run also **validated the OHLCV-only fast mode**: requesting only the
+`ohlcv` field skipped the ~2000 Finnhub enrichment calls (`collect_optional_fields` gates each pillar by
+`field in fields`), so the whole cascade took **9.4s** vs the ~33 min a fully-enriched single-shot would
+spend rate-limited. Productionising that as a CLI/env toggle (`--ohlcv-only` / ingest fields) is the small
+remaining follow-up; the acceptance gate needs nothing more (sectors come from the warmed cache, the rest
+is advisory). The only WARN was the expected DRIFT-013 sector-coverage advisory (enrichment skipped).

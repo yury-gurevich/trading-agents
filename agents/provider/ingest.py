@@ -13,6 +13,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from agents.provider.sector_cache import resolve_sectors
 from contracts.common import Window
 from contracts.provider import (
     MARKET_DATA_LABEL,
@@ -91,6 +92,14 @@ def _write_regime_context(
     )
 
 
+def _with_cached_sectors(
+    graph: GraphStore, market: MarketData, universe: tuple[str, ...]
+) -> MarketData:
+    """Enrich a payload's sectors from the reference-data cache (DRIFT-013)."""
+    sectors = resolve_sectors(graph, market.sectors, universe)
+    return market.model_copy(update={"sectors": sectors})
+
+
 def ingest_once(
     agent: ProviderAgent, universe: tuple[str, ...], run_id: str | None = None
 ) -> str | None:
@@ -124,6 +133,7 @@ def ingest_once(
         fields=MARKET_FIELDS,
     )
     market = agent._get_market_data(market_request)
+    market = _with_cached_sectors(agent._graph, market, universe)
     _write_market_data(agent._graph, market, universe, window, key_id)
     regime = agent._get_regime(RegimeRequest(as_of=window.end))
     _write_regime_context(agent._graph, regime, window, key_id)

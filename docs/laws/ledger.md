@@ -53,15 +53,15 @@ Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. ⬜
 ## Layer 3 — Acceptance
 
 One full paper-trading day on real S&P 500 data, persisted, with each agent's job + boundaries
-asserted. 🟨 — this row turning 🟩 is the definition of "the system works."
+asserted. 🟩 — **"the system works."**
 
-- **Gate built (DL-28, 0.35.00):** `scripts/accept.py` / `accept_run` — every per-stage invariant +
-  cross-stage **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
-- **Live-verified PASS** against the free Aura (`c3ce91d0`) on a real 3-ticker run (`obs-aura-1782372578`):
-  `ACCEPTANCE PASS - every stage did its job within its boundaries`.
-- **[DRIFT-011](drift-register.md) CORRECTED (0.35.01)** — keyed by run_id; the **full S&P-100 → Aura run
-  now completes** (99/99 × 41 real bars, no collision).
-- **Full-universe acceptance still FAILS on data quality ([DRIFT-012](drift-register.md))** — clean OHLCV
-  but `used_fallback=True` from a sigma outlier + Finnhub-rate-limited *optional* fields → the analyst
-  rejects all candidates → zero trades. 🟩 needs the over-taint fix (optional faults shouldn't block) +
-  one clean full-universe run.
+- **Gate (DL-28, 0.35.00):** `scripts/accept.py` / `accept_run` — every per-stage invariant + cross-stage
+  **conservation** (no agent fabricates or overruns its input). Deterministic CI guard green.
+- **PROVEN LIVE on a full S&P-100 → Aura run (2026-06-25, 0.35.02):** all 99 names × 41 real bars,
+  provider→reporter, **5 positions opened**, `OBSERVATORY OK` + **`ACCEPTANCE PASS - every stage did its
+  job within its boundaries`**. The road there fixed three live-only bugs the in-memory suite hid:
+  [DRIFT-011](drift-register.md) (run_id keying), [DRIFT-012](drift-register.md) (optional-field over-taint
+  + sigma).
+- **Caveat (not blocking):** [DRIFT-013](drift-register.md) — the 5 names are correlated and PM-NEV-06 was
+  silently inactive (empty `sectors` from a Finnhub rate-limit). Trades cleanly, not yet wisely; tracked.
+- *S&P-500 scale is the remaining stretch (Tiingo's 500-symbol cap covers it).*

@@ -1,10 +1,10 @@
 # Project State
 
-**Last updated:** 2026-06-25 17:05 AEST
+**Last updated:** 2026-06-25 17:35 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
-Governance scaffolding shipped this session (v0.24.00→0.34.02): ADR-0013 continuous-improvement
+Governance scaffolding shipped this session (v0.24.00→0.34.03): ADR-0013 continuous-improvement
 system + P16/CI-1..CI-6 specs; Experimentation, Housekeeping & Deliberation charters; `librarian` +
 `tuner` subagents; the **deliberation drift-firewall arc** — an LLM defend/attack/judge harness, an
 eval harness scoring debates against a manufactured answer key, a Class-1 case library + LLM-judge scorer,
@@ -43,8 +43,11 @@ Melbourne local time.
   invariants) + `scripts/observatory.py`. Prints **each stage's output artifacts** (tickers, scores, recs,
   orders, fills, monitor checks, the report) with **floor/ceiling WARNs inline** — a degraded run reads
   top-to-bottom from `quality DEGRADED` to `WARN evaluated:0`. The firewall pattern (baseline +
-  floor/ceiling) applied to the data pipeline. **100% coverage; 1122 tests.** *Next (DL-27): a frozen
-  golden run + diff; WARN→FAIL gate.* Also: DL-10 closed (S87 fix verified); worktree churn flushed.
+  floor/ceiling) applied to the data pipeline. `run_local.py --observe` runs+monitors in one command
+  (0.34.03). **VALIDATED LIVE against the free Aura (`c3ce91d0`) with real Tiingo data** (2026-06-25):
+  a 3-ticker run pulled 41 bars/name, opened `AAPL qty=34 est=$293.32`, reported `OBSERVATORY OK`. **100%
+  coverage; 1122 tests.** *Next (DL-27): a frozen golden run + diff; WARN→FAIL gate.* Also: DL-10 closed
+  (S87 fix verified); worktree churn flushed. Usage: `docs/observability.md` §2a.
 - **Session 2026-06-25 (cont.) — firewall hardened + first finding→code + DL-19 (0.31.00→0.33.00).**
   *Proven results (merged to main, GitHub CI green every push):* (1) **EXP-006 — N-run hardening
   (0.32.00).** `pass_fractions`/`robust_passing`/`check_robust` + `--runs N`. N=3 revealed

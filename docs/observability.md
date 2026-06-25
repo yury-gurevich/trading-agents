@@ -42,6 +42,32 @@ The durable record of *what the system did and why* is not in the metrics stack:
   approvals, audits, faults) as nodes with ACID guarantees — exportable evidence
   without a separate relational store (`docs/decisions/0001-neo4j-primary-store.md`).
 
+## 2a. Pipeline observatory — the human checker-that-prints
+
+For a human's-eye view of **one run** — what each stage received (from whom) and produced, with the
+floor/ceiling/required invariants flagged — use the **pipeline observatory** (`orchestration/observatory.py`
+substrate + `orchestration/packs/trading_observatory.py` trading pack; DL-27). It applies the deliberation
+firewall pattern (baseline + floor/ceiling) to the data pipeline.
+
+- **Run a test + monitor it in one command:** `PYTHONPATH=. python scripts/run_local.py --real --observe`
+  (live Aura + Tiingo; `--observe` alone is the in-memory demo, no creds). *Validated live against the free
+  Aura (`c3ce91d0`) on 2026-06-25:* a 3-ticker run pulled 41 real Tiingo bars/name, opened 1 position
+  (`AAPL qty=34 est=$293.32`), and reported `OBSERVATORY OK - all invariants hold`.
+- **Monitor a persisted run after the fact:** `PYTHONPATH=. python scripts/observatory.py --run-id <id>`
+  (reads the run back from Neo4j).
+
+It prints the full `provider → reporter` spine, each stage as `[stage]  <- (trigger)` with its output
+artifacts, and flags:
+
+- **floor/ceiling** value breaches — e.g. `WARN returned: 0 < floor 1.0`, `WARN scored: 0 < floor 1.0`;
+- **required** structural locks — a field that must be present (execution/monitor/reporter);
+- **NOT REACHED** — a stage that should exist but does not (the chain broke).
+
+Green `OK - all invariants hold` when healthy; the headline counts the WARNs. The committed invariant set
+*is* the baseline ("what must be there"); the mechanism is domain-agnostic **substrate**, the invariants
+are the trading **pack** (ADR-0012). `batch_trace` / `scripts/trace_run.py` print the same per-stage
+numbers *without* the checks. *Next (DL-27): freeze a golden run + diff; promote `WARN`→`FAIL` as a gate.*
+
 ## 3. Logs
 
 Structured logs carry the same `correlation_id` and `source_module` as faults and

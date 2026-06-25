@@ -31,6 +31,17 @@ _DEFAULT_LOOKBACK_DAYS = 60
 MARKET_FIELDS = ("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar")
 
 
+def _ingest_fields(settings: object) -> tuple[str, ...]:
+    """Fields to request per ingest.
+
+    OHLCV-only fast mode (DL-29) skips the per-ticker Finnhub enrichment the
+    acceptance does not need; otherwise all fields.
+    """
+    if getattr(settings, "ingest_ohlcv_only", False):
+        return ("ohlcv",)
+    return MARKET_FIELDS
+
+
 def universe_from_env() -> tuple[str, ...]:
     """Parse PROVIDER_UNIVERSE env var into a tuple of tickers.
 
@@ -115,6 +126,7 @@ def ingest_once(
     if not universe:
         return None
     key_id = run_id or uuid.uuid4().hex
+    fields = _ingest_fields(agent._settings)
     chunk_size = getattr(agent._settings, "ingest_chunk_size", 0)
     if chunk_size and chunk_size > 0 and len(universe) > chunk_size:
         from agents.provider.ingest_chunked import ingest_chunked
@@ -125,12 +137,13 @@ def ingest_once(
             key_id,
             chunk_size=chunk_size,
             delay_seconds=agent._settings.ingest_chunk_delay_seconds,
+            fields=fields,
         )
     window = _today_window()
     market_request = DataRequest(
         tickers=universe,
         window=window,
-        fields=MARKET_FIELDS,
+        fields=fields,
     )
     market = agent._get_market_data(market_request)
     market = _with_cached_sectors(agent._graph, market, universe)

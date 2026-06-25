@@ -113,6 +113,7 @@ class ProviderSettings(AgentSettings):
         le=600.0,
         unit="seconds",
     )
+    ingest_ohlcv_only: bool = Field(default=False)  # OHLCV-only fast mode (DL-29)
 
     finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
     finnhub_api_key: str = Field(default="", repr=False)

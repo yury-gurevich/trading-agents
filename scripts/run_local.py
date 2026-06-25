@@ -124,11 +124,20 @@ def main() -> None:
         metavar="SECONDS",
         help="pause between ingest chunks (with --chunk-size)",
     )
+    parser.add_argument(
+        "--ohlcv-only",
+        action="store_true",
+        help="fast mode (DL-29): request only OHLCV; skip per-ticker Finnhub "
+        "enrichment the acceptance gate doesn't need (~33 min -> seconds at S&P-500)",
+    )
     args = parser.parse_args()
 
     if args.chunk_size:
         os.environ["PROVIDER_INGEST_CHUNK_SIZE"] = str(args.chunk_size)
         os.environ["PROVIDER_INGEST_CHUNK_DELAY_SECONDS"] = str(args.chunk_delay)
+
+    if args.ohlcv_only:
+        os.environ["PROVIDER_INGEST_OHLCV_ONLY"] = "true"
 
     if args.real:
         from dotenv import load_dotenv
@@ -155,6 +164,8 @@ def main() -> None:
 
     if args.chunk_size:
         print(f"INGEST: chunked  size={args.chunk_size}  delay={args.chunk_delay}s")
+    if args.ohlcv_only:
+        print("INGEST: OHLCV-only fast mode (enrichment skipped, DL-29)")
 
     agent = ProviderAgent(
         InProcessBus(),

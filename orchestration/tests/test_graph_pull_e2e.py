@@ -61,10 +61,12 @@ def test_trigger_then_cascade_builds_full_chain() -> None:
     results = cascade_once(graph, provider_agent=agent, broker=PaperBroker())
 
     # Every stage woke off its prerequisite gate and processed exactly one item.
+    # The forecaster is the advisory side branch off the AnalystRun (FORE-TRG-01).
     assert {r.name: r.processed for r in results} == {
         "provider": 1,
         "scanner": 1,
         "analyst": 1,
+        "forecaster": 1,
         "portfolio_manager": 1,
         "execution": 1,
         "monitor": 1,

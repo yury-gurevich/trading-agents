@@ -1328,3 +1328,44 @@ spend rate-limited. The only WARN was the expected DRIFT-013 sector-coverage adv
 `("ohlcv",)` when set (else `MARKET_FIELDS`), threaded through both the single-shot and chunked ingest paths;
 `collect_optional_fields` already gates each pillar by `field in fields`, so no enrichment call is made. The
 acceptance gate needs nothing more — sectors come from the warmed cache, the rest is advisory.
+
+## DL-30 · Activate the forecaster as an orchestrated advisory side branch (RPC, never gates)  ·  status: DECIDED (2026-06-26)
+
+**Trigger.** The forecaster is a *fully built* agent (FinBERT sentiment + LightGBM return models,
+scorecards, graph writes) that **nothing ever called** — it bootstrapped and `idle_loop()`d. The 5
+control-plane agents (forecaster/operator/supervisor/curator/researcher) are the last stubs; the forecaster
+is the natural first because it slots into the proven trading path as the locked champion–challenger's
+FinBERT advisory leg.
+
+**Decision.** Activate it as an **orchestrator-triggered cascade stage**, not a change to the analyst and
+not a graph-pull self-trigger. After the analyst writes its `RecommendationSet`, a new `forecaster` stage in
+`cascade_once` calls the forecaster over the bus (`forecast` + `forecast_return`) for each recommendation;
+the forecaster persists a `ShadowPrediction` per leg and the stage writes a `ForecasterRun` marker linked
+`AnalystRun-[:FORECAST_BY]->ForecasterRun` for idempotency. The provider and forecaster are bound to a
+**shared bus** (the forecaster's `get_market_data` calls reach the provider — it is in the provider's
+allowed-callers). `subject_ref` is the **ticker** (so news/price fetch *and* the by-ticker scorecard line
+up; the `ADVISES` edge to the `{run_id}:{ticker}` Recommendation node simply doesn't form — acceptable, the
+scorecard matches by ticker). Predictions are `shadow=True` and the stage is a **side branch**: it never
+touches the conservation/PM/execution path. Version 0.39.00, `make ci` green (1143 tests, 100%).
+
+**Why this shape.** It respects `FORE-TRG-01/02` (RPC-triggered, never self-triggers — the orchestrator is
+the caller), keeps the **LOCKED analyst** untouched, and matches the locked champion–challenger direction:
+the forecaster lays down a shadow track record per run that the already-built scorecard/comparison evaluates
+offline. The immediate job is to *produce and persist* shadow predictions, not to have the analyst consume
+them — so an orchestrated side stage is exactly right.
+
+**Road not taken.** (1) The analyst calls the forecaster synchronously — rejected: more invasive, touches
+locked laws, couples the trade decision to an advisory agent. (2) A forecaster graph-pull `work_loop` — it
+*looks* like the provider→reporter pattern but **violates FORE-TRG-02** (self-trigger). (3) Linking by the
+`{run_id}:{ticker}` Recommendation key — rejected because the forecaster also uses `subject_ref` as the
+news/price ticker; ticker wins (the scorecard is by-ticker).
+
+**Finding (cross-cutting, not faked).** There is **no distributed RPC-serve transport** in the kernel —
+only `idle_loop` (sleep) and `work_loop` (graph-pull, which self-triggers). So an RPC agent's *standalone
+container* cannot truly "serve" yet; the forecaster is activated **in the in-process cascade demonstrator**,
+not as a live container service. This gap blocks the full-fleet activation of **all 5 RPC control-plane
+agents** and is the real prerequisite for them — a `serve_loop`/bus-consume primitive (Service Bus
+queue → dispatch to bound handlers). Logged as the next infra unblock for the control-plane.
+
+**Deferred (small, noted).** An observatory advisory `[forecaster]` line (shadow-prediction count per run);
+deferred to avoid entangling the trade-spine conservation view — a clean follow-up.

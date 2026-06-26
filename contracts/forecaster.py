@@ -105,7 +105,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("scorecard_refreshed",),
-    owns_graph=("ShadowPrediction", "Model"),
+    owns_graph=("ShadowPrediction", "Model", "ForecasterRun"),
     external_io=(),
     depends_on=("provider",),
     mcp_tools=("forecast", "scorecard"),

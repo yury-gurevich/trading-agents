@@ -42,8 +42,11 @@ def _cascade(
         settings=ProviderSettings(max_staleness_days=7),
     )
     place_run_request(graph, run_id=run_id, tickers=tickers)
-    extra = {"pm_settings": pm_settings} if pm_settings is not None else {}
-    list(cascade_once(graph, provider_agent=agent, broker=PaperBroker(), **extra))
+    list(
+        cascade_once(
+            graph, provider_agent=agent, broker=PaperBroker(), pm_settings=pm_settings
+        )
+    )
     return graph
 
 

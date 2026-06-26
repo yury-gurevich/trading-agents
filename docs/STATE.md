@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-26 05:17 AEST
+**Last updated:** 2026-06-26 11:15 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -40,6 +40,18 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-26 — forecaster activated (advisory shadow predictor, 0.38.00→0.39.00).** *Proven
+  results (`make ci` green, 100% coverage, 1143 tests):* the forecaster was a *fully built* agent (FinBERT +
+  LightGBM + scorecards) that **nothing ever called** — it `idle_loop()`d. Now activated as an
+  **orchestrator-triggered cascade stage** (DL-30): after the analyst writes its `RecommendationSet`, a new
+  `forecaster` stage calls it over a shared bus (`forecast` + `forecast_return`) per recommendation →
+  `ShadowPrediction` per leg, `shadow=True`, linked under a `ForecasterRun` (`FORECAST_BY`, idempotent). It's
+  a **side branch** — the integration tests prove it never touches the PM/execution path. Respects
+  `FORE-TRG-01/02` (RPC-triggered, never self-triggers) and leaves the LOCKED analyst untouched.
+  **Finding:** there is **no distributed RPC-serve transport** (only `idle_loop`/`work_loop`), so the
+  forecaster is activated *in the in-process cascade*, not yet as a live container service — that gap is the
+  real prerequisite for activating all 5 RPC control-plane agents (DL-30). *Deferred (noted): an observatory
+  advisory `[forecaster]` line.*
 - **Session 2026-06-26 — OHLCV-only fast mode shipped (0.37.01→0.38.00).** *Proven results (`make ci`
   green, 100% coverage, 1137 tests):* the live S&P-500 🟩 used a throwaway monkeypatch to request only the
   `ohlcv` field (9.4s vs ~33 min); that fast mode is now **first-class**. New `provider.ingest_ohlcv_only`
@@ -238,8 +250,14 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
   if the dev licence lands, else Community).
 - **Fleet run-through on real store** — full `provider→reporter` cascade against the permanent store.
 - **Dispatcher cron** — schedule the daily `RunRequest` so the fleet runs hands-off.
-- **Forecaster + control-plane agents** (operator/supervisor/curator/researcher) work loops — the last
-  `idle_loop()` holders.
+- **Distributed RPC-serve transport (the real prerequisite for the control-plane).** DL-30 found there is
+  no `serve_loop`/bus-consume primitive — only `idle_loop` (sleep) and `work_loop` (graph-pull, which
+  self-triggers). The 4 remaining RPC stubs (operator/supervisor/curator/researcher) can't be activated as
+  live container services until an agent can consume its capability queue and dispatch to bound handlers.
+  Build this before wiring more control-plane agents. (The forecaster is activated in the in-process cascade;
+  the others follow once the transport exists.)
+- **Observatory `[forecaster]` advisory line** (DL-30 deferred) — show the shadow-prediction count per run,
+  advisory/never-FAIL, without entangling the trade-spine conservation view.
 - **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
 - **`contracts/` substrate/pack split** — the remaining ADR-0012 mix; deferred until a 2nd pack.
 - **DEFERRED behind a perfect etalon (etalon-first, DL-19):** CI-1..CI-6 (ADR-0013 machinery, S90–S95)

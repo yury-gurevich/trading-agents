@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-26 11:15 AEST
+**Last updated:** 2026-06-26 16:32 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -271,9 +271,12 @@ cycle the operator implements sprints end-to-end (code+tests+CI+commit). See `do
 
 ## Parked
 
-- 3 unmerged local branches (not in `main`; review or delete): `sprint-56-analyst-lm-master-dictionary`,
-  `sprint-57-forecaster-sentiment-scorecard`, `sprint-69-provider-law-cycle`. Their features show
-  complete, so likely stale leftovers — verify before deleting.
+- **Branch cleanup (2026-06-26): the 3 stale sprint branches are resolved.** Verified every feature was
+  already byte-identical in `main` (S56 LM dictionary, S57 forecaster scorecard, S69 deps bump); the only
+  branch-unique content was superseded local-observability infra (Prometheus/Grafana/neo4j-compose). Archived
+  each tip as `archive/sprint-56|57|69-*` (recoverable via `git checkout archive/...`) and deleted the
+  branches. ~48 other merged local branches remain as harmless leftovers (their work is all in `main`) — a
+  one-shot `git branch -d` sweep whenever desired.
 
 ## Archive
 

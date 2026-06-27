@@ -22,7 +22,14 @@ import importlib
 import os
 import sys
 
-from kernel import Proposition, deliberate
+from kernel import (
+    Proposition,
+    deliberate,
+    misread_parameters,
+    score_understanding,
+    understanding_rate,
+)
+from orchestration.packs.trading_parameter_truths import TRADING_PARAMETER_TRUTHS
 
 
 class _AnthropicText:
@@ -116,6 +123,11 @@ def main() -> None:
     parser.add_argument("--decision", default="Buy AAPL at market")
     parser.add_argument("--context", default="momentum 0.6; RSI 55; stop -3%")
     parser.add_argument("--rounds", type=int, default=2)
+    parser.add_argument(
+        "--score",
+        action="store_true",
+        help="grade the debate's parameter definitions vs the answer key (DL-31)",
+    )
     args = parser.parse_args()
 
     llm = _build_llm(args.real)
@@ -129,6 +141,21 @@ def main() -> None:
         print(f"[{turn.role:<10} r{turn.round}]  {turn.text}")
     print("-" * 60)
     print(f"VERDICT: {result.verdict.ruling.upper()} — {result.verdict.rationale}")
+
+    if args.score:
+        transcript_text = " ".join(t.text for t in result.transcript)
+        scores = score_understanding(transcript_text, TRADING_PARAMETER_TRUTHS)
+        print("\nUNDERSTANDING (define-then-justify, DL-31)")
+        for s in scores:
+            if not s.cited:
+                continue
+            mark = "MISREAD" if s.misread else ("ok" if s.understood else "vague")
+            print(f"  [{mark:<7}] {s.name}")
+        rate = understanding_rate(scores)
+        misread = misread_parameters(scores)
+        print(f"  understanding score (of cited): {rate:.0%}")
+        if misread:
+            print(f"  KNOWN MISREADS: {', '.join(misread)}")
 
 
 if __name__ == "__main__":

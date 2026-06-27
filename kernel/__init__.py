@@ -40,6 +40,13 @@ from kernel.deliberation_gate import (
     passing_names,
     robust_passing,
 )
+from kernel.deliberation_understanding import (
+    ParameterTruth,
+    UnderstandingScore,
+    misread_parameters,
+    score_understanding,
+    understanding_rate,
+)
 from kernel.envelope import AgentMessage, MessageType
 from kernel.errors import (
     AgentFault,
@@ -95,11 +102,13 @@ __all__ = [
     "Neo4jGraphStore",
     "Node",
     "NullMetrics",
+    "ParameterTruth",
     "PrometheusMetrics",
     "Proposition",
     "ReadyEvent",
     "TunableDoc",
     "Turn",
+    "UnderstandingScore",
     "Verdict",
     "check_baseline",
     "check_robust",
@@ -109,6 +118,7 @@ __all__ = [
     "describe",
     "fault_boundary",
     "fault_from_exception",
+    "misread_parameters",
     "pass_fractions",
     "pass_rate",
     "passing_names",
@@ -116,5 +126,7 @@ __all__ = [
     "run_debates",
     "run_eval",
     "score_debate",
+    "score_understanding",
     "tunable",
+    "understanding_rate",
 ]

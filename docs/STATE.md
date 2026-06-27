@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-26 16:32 AEST
+**Last updated:** 2026-06-27 15:18 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -40,6 +40,18 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-27 — S96 Part A: deliberation understanding gate (0.39.00→0.40.00).** *Proven results
+  (`make ci` green, 100% coverage, 1151 tests):* DL-31 Part A — make the expert-LLM deliberation **define
+  each parameter then justify**, and **score the definitions** against ground truth.
+  `kernel/deliberation.py` prompts now require define-then-justify; `kernel/deliberation_understanding.py`
+  (`ParameterTruth`/`score_understanding`/`understanding_rate`/`misread_parameters`, substrate) grades a
+  transcript; `orchestration/packs/trading_parameter_truths.py` is the answer key (from
+  `llm-interpretation-deltas.md`); `scripts/deliberate.py --score` prints it. **Proven live:** gpt-5.5 gave
+  a fluent UPHOLD on "Buy AMD" yet scored **0–33% understanding** — vague on `max_daily_move_sigma` (never
+  "pooled cross-sectional") and `base_min_confidence` (never "regime-modulated"), the exact Class-1 deltas.
+  *Confidence by measurement, not eloquence* — demonstrated. The live run also surfaced + fixed a scorer
+  false-positive (a misread now requires the param be cited). **Part B (runtime challenger-veto) is the
+  remaining half of S96.**
 - **Session 2026-06-26 — forecaster activated (advisory shadow predictor, 0.38.00→0.39.00).** *Proven
   results (`make ci` green, 100% coverage, 1143 tests):* the forecaster was a *fully built* agent (FinBERT +
   LightGBM + scorecards) that **nothing ever called** — it `idle_loop()`d. Now activated as an

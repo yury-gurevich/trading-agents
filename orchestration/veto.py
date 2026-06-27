@@ -19,7 +19,7 @@ from kernel import CollectingFaultSink, Proposition, deliberate
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
-    from kernel import FaultSink, GraphStore, LLMClient, Node
+    from kernel import DebateResult, FaultSink, GraphStore, LLMClient, Node
 
 PM_RUN_LABEL = "PMRun"
 DELIBERATION_RUN_LABEL = "DeliberationRun"
@@ -49,9 +49,12 @@ def deliberate_pm_node(
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
     verdicts: dict[str, str] = {}
     vetoed: list[str] = []
+    debates: dict[str, object] = {}
     for intent in order_set.approved:
-        ruling = _review(llm, intent, order_set.run_id, sink, max_rounds)
+        result = _review(llm, intent, order_set.run_id, sink, max_rounds)
+        ruling = result.verdict.ruling if result is not None else "uphold"
         verdicts[intent.ticker] = ruling
+        debates[intent.ticker] = _record(result)
         if ruling != "uphold":
             vetoed.append(intent.ticker)
     run = graph.merge_node(
@@ -61,9 +64,29 @@ def deliberate_pm_node(
             "source_pm_run_id": order_set.run_id,
             "verdicts": verdicts,
             "vetoed_tickers": vetoed,
+            # The full transcript per order — the auditable "why" behind each ruling.
+            "debates": debates,
         },
     )
     graph.add_edge(node, run, DELIBERATED_EDGE)
+
+
+def _record(result: DebateResult | None) -> dict[str, object]:
+    """Serialise one order's debate for the graph; a fail-open fault has no turns."""
+    if result is None:
+        return {
+            "verdict": "uphold",
+            "rationale": "llm unavailable (fail-open)",
+            "turns": [],
+        }
+    return {
+        "verdict": result.verdict.ruling,
+        "rationale": result.verdict.rationale,
+        "turns": [
+            {"role": t.role, "round": t.round, "text": t.text}
+            for t in result.transcript
+        ],
+    }
 
 
 def _review(
@@ -72,9 +95,9 @@ def _review(
     run_id: str,
     sink: FaultSink,
     max_rounds: int,
-) -> str:
-    """The judge's ruling for one order; fail-open to 'uphold' on any LLM fault."""
-    ruling = "uphold"
+) -> DebateResult | None:
+    """One order's full debate; fail-open to ``None`` (→ uphold) on any LLM fault."""
+    result: DebateResult | None = None
     with fault_boundary(
         sink,
         agent="deliberation",
@@ -86,5 +109,5 @@ def _review(
             decision=f"{intent.action} {intent.ticker} (qty {intent.quantity})",
             context=f"A PM-approved order from run {run_id}; review before execution.",
         )
-        ruling = deliberate(llm, proposition, max_rounds=max_rounds).verdict.ruling
-    return "uphold" if capture.fault is not None else ruling
+        result = deliberate(llm, proposition, max_rounds=max_rounds)
+    return None if capture.fault is not None else result

@@ -72,6 +72,10 @@ def test_overturn_subtracts_every_order_execution_honours_it() -> None:
     (delib,) = graph.list_nodes("DeliberationRun")
     assert delib.props["vetoed_tickers"]  # at least one order was vetoed
     assert _submitted(graph) == 0  # execution honoured the veto
+    # the full debate transcript is persisted per order (the auditable "why")
+    record = next(iter(dict(delib.props["debates"]).values()))
+    assert record["verdict"] == "overturn"
+    assert record["turns"]
 
 
 def test_veto_is_fail_open_on_llm_outage() -> None:

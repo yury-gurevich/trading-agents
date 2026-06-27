@@ -1201,6 +1201,7 @@ stops reading — so build a **checker that prints** (flags only breaches), not 
 checks.
 
 **Decision (v1 — graph post-hoc; chosen over live bus-tap and gate-first).**
+
 - **Substrate** `orchestration/observatory.py`: `Check` (required/floor/ceiling/oneof), `StageView`,
   `breaches`, `render`. Domain-agnostic; evaluates + renders only.
 - **Pack** `orchestration/packs/trading_observatory.py`: per-stage extractors (provider→pm) + the trading
@@ -1369,3 +1370,83 @@ queue → dispatch to bound handlers). Logged as the next infra unblock for the 
 
 **Deferred (small, noted).** An observatory advisory `[forecaster]` line (shadow-prediction count per run);
 deferred to avoid entangling the trade-spine conservation view — a clean follow-up.
+
+## Discussion agenda — opened 2026-06-26 (4 topics; status: OPEN / in discussion)
+
+Captured per LAW-06 so they are not lost; each resolves into its own DL entry or ADR.
+
+1. **Control flow — whole process vs. financial decision-making.** Is the trading control flow
+   (orchestration *and* the buy/sell/size/reject decision logic) fully pre-determined at code time, or
+   does an LLM make a *runtime* decision that mutates the graph / changes the flow? If it is fully
+   deterministic, what justifies the agent/graph machinery over a hardcoded function — for the *trading
+   pack specifically* (platform dataflow set aside)? **CONCLUDED 2026-06-26 → DL-31.** Verified: the
+   trading path is fully deterministic (zero LLM calls in provider→reporter); the 3-analyst deliberation
+   exists but is *offline-only* (scripts), not wired into the live decision. The agent/graph machinery is
+   justified by isolation / audit / resumability, not flow-dynamism. Direction: put the LLM in the loop as
+   an **asymmetric challenger-veto** (DL-31).
+2. **Rigor about Laws — review + continuous-improvement cycle.** How do we make the law book
+   (~300 gray clauses) rigorous and self-improving, not just a one-time citation pass? Cadence, ownership,
+   and the gray→green ledger as a living instrument. Relates to ADR-0013 (continuous improvement) and the
+   ledger.
+3. **Do LLMs actually understand the parameters we ask them to prioritise/decide on?** When the
+   deliberation/operator LLM weighs `max_daily_move_sigma`, `base_min_confidence`, regime floors, etc., does
+   it grasp our *implementation* meaning (e.g. sigma is pooled cross-sectional, not per-stock)? How to
+   interpret and **test** that understanding. Continues EXP-001 / EXP-003 and
+   `docs/research/quant-methods/llm-interpretation-deltas.md`. **Partly folded into DL-31** (define-then-
+   justify + score the definitions against the answer key); the broader "test understanding" method stays
+   open here.
+4. **Insert an LLM into every agent + a pre-defined command set.** Give each agent an LLM and a standard
+   command vocabulary (start, show-all-parameters, explain, etc.). Relates to topic 1's "where may an LLM
+   make runtime decisions" and to the operator command surface.
+
+## DL-31 · LLM in the loop as an asymmetric challenger-veto, with define-then-justify + scored understanding  ·  status: PROPOSED (2026-06-26)
+
+**Trigger.** Topic-1 discussion. The operator's instinct: the 3-analyst deliberation (defend / challenge /
+judge, `kernel/deliberation.py`) is *expert-LLM input that should influence the purchase decision* — and we
+should make the LLM **explain what each parameter means and justify its verdict** to earn confidence.
+
+**Finding (rigor).** The trading path is **fully deterministic** — zero LLM calls in
+provider→scanner→analyst→PM→execution→monitor→reporter (verified). The deliberation harness is real and
+works, but is called **only from scripts** (`deliberate.py` / `deliberation_eval.py` / `deliberation_gate.py`)
+— it is **not wired into the cascade or any poll/run path**. So today it is a *design-time / offline* tool;
+it does **not** currently let a ticker through or hold one back in a live run. The operator's "in principle"
+was exactly right.
+
+**The core principle.** *Asking the LLM to explain ≠ confidence.* EXP-001/EXP-003 +
+`docs/research/quant-methods/llm-interpretation-deltas.md` already **proved** the model confidently misreads
+our parameters (it calls `max_daily_move_sigma` a per-stock vol filter; it is a **pooled cross-sectional**
+gate). A fluent justification can be confidently wrong. **Confidence comes from measurement, not eloquence.**
+
+**Proposal (three parts).**
+1. **Wire the deliberation into the loop as an asymmetric challenger-veto.** Run defend/challenge/judge on
+   each PM-approved candidate (a new orchestration stage, like the forecaster side branch). The judge may
+   **block** a trade (verdict `revise`/`reject`) but may **never originate or resize** one — the
+   deterministic core stays authoritative. This is the LLM analogue of `FORE-NEV-02` (advise/veto, never
+   gate-up). The transcript + verdict persist as graph nodes (provenance, auditability). A missing/slow
+   deliberation must **fail safe** (default = do not block, or block-and-flag — to decide).
+2. **Define-then-justify prompt.** Each role must, for every parameter it invokes, first **state its meaning
+   in THIS system**, then justify the verdict against those definitions. Edit `DEFENDER_SYSTEM` /
+   `CHALLENGER_SYSTEM` / the judge prompt in `kernel/deliberation.py`. Output: a transcript that names and
+   defines `base_min_confidence`, the regime floor, `max_daily_move_sigma`, etc., then reasons from them.
+3. **Score the definitions against ground truth.** Grade the model's parameter-definitions against the
+   answer key (`llm-interpretation-deltas.md`) using the existing scorer (`kernel/deliberation_eval.py` +
+   the frozen golden). A regression in *understanding* trips the gate (DL-24: model/prompt are gated
+   parameters). This converts "it explained itself, I feel better" into "it defined our N parameters
+   correctly, measured, and we block on drift."
+
+**Why this shape.** Transparency (part 2) is for humans/audit; verification (part 3) is for trust; the
+asymmetric veto (part 1) is the only safe way to put a non-deterministic judge in a capital path —
+reproducibility and testability survive because the LLM can subtract but never add. Parts 2+3 are also the
+concrete method for Discussion-topic 3 ("does the LLM understand the parameters, and how do we test it").
+
+**Road not taken.** (a) LLM as **originator/sizer** — rejected: injects hallucination into capital
+allocation, breaks reproducibility + the acceptance gate. (b) **Explain-only, no scoring** — rejected: the
+project already proved self-explanation is confidently wrong; it is false comfort. (c) Leave deliberation
+offline-only — viable as a governance tool, but then it never influences a live decision (the operator's
+goal), so it does not satisfy the trigger.
+
+**Open questions to settle before building.** Where in the cascade the veto sits (after PM-approve, before
+execution); per-candidate LLM cost/latency (one debate per approved trade) and whether to batch; fail-safe
+default on deliberation outage; veto scope (hard block vs. revise-size-down — the latter edges toward
+origination, so likely hard-block only); how the `llm-interpretation-deltas.md` answer key is owned and kept
+current as parameters evolve.

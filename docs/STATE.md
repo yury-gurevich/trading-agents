@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-27 16:47 AEST
+**Last updated:** 2026-06-27 17:09 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -40,6 +40,12 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-27 — S96 Part B: veto transcript persistence + live `--veto` run (0.41.00→0.42.00).**
+  *Proven results (`make ci` green, 100% coverage, 1156 tests):* the veto now **persists the full debate
+  transcript** per order on the `DeliberationRun` (`debates` prop: per-ticker verdict + rationale + turns)
+  — the auditable "why was this blocked", not just the verdict. `scripts/run_local.py --veto` runs the live
+  challenger-veto (real model per `.env`) in the cascade and prints the persisted verdicts. So a real run
+  writes a queryable `DeliberationRun` with the transcript to Neo4j/Aura.
 - **Session 2026-06-27 — S96 Part B: runtime challenger-veto, mechanism (0.40.00→0.41.00).** *Proven
   results (`make ci` green, 100% coverage, 1156 tests):* DL-31 Part B — an **opt-in asymmetric
   challenger-veto** in the cascade. `orchestration/veto.py` debates each PM-approved order between PM and

@@ -130,6 +130,12 @@ def main() -> None:
         help="fast mode (DL-29): request only OHLCV; skip per-ticker Finnhub "
         "enrichment the acceptance gate doesn't need (~33 min -> seconds at S&P-500)",
     )
+    parser.add_argument(
+        "--veto",
+        action="store_true",
+        help="DL-31 Part B: run the LLM challenger-veto between PM and execution "
+        "(real model per .env); persists a DeliberationRun with the debate transcript",
+    )
     args = parser.parse_args()
 
     if args.chunk_size:
@@ -187,14 +193,32 @@ def main() -> None:
     place_run_request(graph, run_id=args.run_id, tickers=tickers)
     print(f"  placed RunRequest run-request:{args.run_id} ({len(tickers)} tickers)")
 
+    deliberation_llm = None
+    if args.veto:
+        from scripts.deliberate import _build_llm
+
+        deliberation_llm = _build_llm(True)
+        print("VETO: LLM challenger-veto active between PM and execution (DL-31)")
+
     print("\nCASCADE (one graph-pull pass per agent)")
-    for result in cascade_once(graph, provider_agent=agent, broker=PaperBroker()):
+    for result in cascade_once(
+        graph,
+        provider_agent=agent,
+        broker=PaperBroker(),
+        deliberation_llm=deliberation_llm,
+    ):
         woke = "woke" if result.processed else "idle"
         print(f"  {result.name:<18} {woke}: processed {result.processed}")
 
     print("\nGRAPH (provenance chain)")
     for label in _CHAIN:
         print(f"  {label:<14} {len(graph.list_nodes(label))}")
+
+    if args.veto:
+        for delib in graph.list_nodes("DeliberationRun"):
+            print("\nDELIBERATION (persisted on the graph)")
+            print(f"  verdicts: {dict(delib.props['verdicts'])}")
+            print(f"  vetoed:   {list(delib.props['vetoed_tickers'])}")
 
     if args.trace:
         from orchestration.batch_trace import print_trace

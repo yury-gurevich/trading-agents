@@ -1,7 +1,15 @@
 # Sprint 96 — Deliberation: define-then-justify + scored understanding, then challenger-veto
 
 **Branch:** `sprint-96-deliberation-understanding-veto`
-**Status:** queued · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B; do A first)**
+**Status:** Part A SHIPPED (0.40.00, 2026-06-26) · Part B queued · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B)**
+
+> **Part A shipped:** define-then-justify prompts + `kernel/deliberation_understanding.py`
+> (`ParameterTruth`/`score_understanding`/`understanding_rate`/`misread_parameters`) +
+> `orchestration/packs/trading_parameter_truths.py` (answer key from `llm-interpretation-deltas.md`) +
+> `scripts/deliberate.py --score`. **Proven live:** gpt-5.5 gave a fluent UPHOLD on "Buy AMD" yet scored
+> 0–33% understanding (vague on `max_daily_move_sigma`/`base_min_confidence` — the predicted Class-1
+> deltas). The live run also caught + fixed a scorer false-positive (misread now requires the param be
+> cited). 1151 tests, 100%. **Part B (runtime challenger-veto) remains.**
 
 ## Goal
 

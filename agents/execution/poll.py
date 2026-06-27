@@ -22,6 +22,33 @@ if TYPE_CHECKING:
 
 PM_RUN_LABEL = "PMRun"
 EXECUTED_EDGE = "EXECUTED_BY"
+# A deliberation challenger-veto (orchestration) may narrow the approved set before
+# execution. Execution honours that upstream block — it still only executes the intents
+# it is given (EXEC-NEV-01), never deciding what to trade. Read by graph label so the
+# agent imports nothing from orchestration.
+_DELIBERATED_EDGE = "DELIBERATED_BY"
+
+
+def _drop_vetoed(
+    graph: GraphStore, pm_run: Node, order_set: OrderIntentSet
+) -> OrderIntentSet:
+    """Remove any deliberation-vetoed tickers from the approved set (fail-open).
+
+    When a DeliberationRun is linked to the PMRun, its ``vetoed_tickers`` are dropped
+    before submission. No DeliberationRun (the veto stage did not run) → the full set
+    executes, so an absent or failed review never blocks trading.
+    """
+    delib = next(
+        iter(graph.descendants(pm_run, max_depth=1, edge_types={_DELIBERATED_EDGE})),
+        None,
+    )
+    if delib is None:
+        return order_set
+    vetoed = set(delib.props.get("vetoed_tickers", ()))
+    if not vetoed:
+        return order_set
+    survivors = tuple(i for i in order_set.approved if i.ticker not in vetoed)
+    return order_set.model_copy(update={"approved": survivors})
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
@@ -48,6 +75,7 @@ def execute_pm_node(
     settings = settings or ExecutionSettings()
     sink = sink if sink is not None else CollectingFaultSink()
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
+    order_set = _drop_vetoed(graph, node, order_set)
     result = run_submit(
         graph, broker, sink, {}, order_set, default_stage=settings.stage
     )

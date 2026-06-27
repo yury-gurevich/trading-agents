@@ -1,7 +1,19 @@
 # Sprint 96 — Deliberation: define-then-justify + scored understanding, then challenger-veto
 
 **Branch:** `sprint-96-deliberation-understanding-veto`
-**Status:** Part A SHIPPED (0.40.00, 2026-06-26) · Part B queued · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B)**
+**Status:** Part A SHIPPED (0.40.00) · Part B mechanism SHIPPED (0.41.00, opt-in, off by default) · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B)**
+
+> **Part B shipped (mechanism):** `orchestration/veto.py` (opt-in challenger-veto stage between PM and
+> execution — debates each approved order, records a `DeliberationRun` with per-order verdicts + the
+> vetoed/subtracted set; judge may only subtract); execution honours the veto (`_drop_vetoed`, EXEC-NEV-01);
+> `cascade_once(deliberation_llm=...)` adds the stage only when an LLM is injected, so the 1156-test
+> deterministic cascade is unchanged; **fail-open** on LLM outage. **Proven live:** with a real LLM
+> (gpt-5.5) the veto fired and execution submitted 0. **KEY FINDING — the veto must be grounded before it
+> is enabled:** with a thin proposition ("a PM-approved order; review before execution") the LLM revised
+> *everything* (blanket block). So Part B stays **off by default**; enabling it for real needs (a) a
+> grounded/rich proposition (the order's rationale + the parameter facts from Part A's answer key) and
+> (b) verdict semantics (treat `revise` as flag vs `reject` as block). That is the remaining work before
+> the veto touches live capital.
 
 > **Part A shipped:** define-then-justify prompts + `kernel/deliberation_understanding.py`
 > (`ParameterTruth`/`score_understanding`/`understanding_rate`/`misread_parameters`) +

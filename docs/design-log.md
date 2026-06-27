@@ -1418,6 +1418,7 @@ our parameters (it calls `max_daily_move_sigma` a per-stock vol filter; it is a 
 gate). A fluent justification can be confidently wrong. **Confidence comes from measurement, not eloquence.**
 
 **Proposal (three parts).**
+
 1. **Wire the deliberation into the loop as an asymmetric challenger-veto.** Run defend/challenge/judge on
    each PM-approved candidate (a new orchestration stage, like the forecaster side branch). The judge may
    **block** a trade (verdict `revise`/`reject`) but may **never originate or resize** one — the

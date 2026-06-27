@@ -29,11 +29,12 @@ from agents.reporter import poll as reporter_poll
 from agents.scanner import poll as scanner_poll
 from agents.scanner.settings import ScannerSettings
 from kernel.work_loop import run_once
+from orchestration import veto
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
     from agents.provider.agent import ProviderAgent
-    from kernel import GraphStore
+    from kernel import GraphStore, LLMClient
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,7 @@ def cascade_once(
     broker: Broker,
     pm_settings: PortfolioManagerSettings | None = None,
     forecaster_agent: ForecasterAgent | None = None,
+    deliberation_llm: LLMClient | None = None,
 ) -> tuple[StageResult, ...]:
     """Run one graph-pull pass over every stage in dependency order.
 
@@ -58,6 +60,11 @@ def cascade_once(
     bound to the provider's bus so its advisory `forecast` reaches `get_market_data`,
     and the forecaster stage triggers it per recommendation. Its shadow predictions are
     a side branch — they never enter the conservation/PM path.
+
+    When ``deliberation_llm`` is given, an **opt-in** challenger-veto stage runs between
+    the PM and execution (DL-31 Part B): it debates each approved order and records the
+    vetoed (subtracted) set, which execution honours. Omitted → no veto stage at all, so
+    the deterministic cascade is unchanged.
     """
     scanner_settings = ScannerSettings()
     analyst_settings = AnalystSettings()
@@ -67,6 +74,17 @@ def cascade_once(
     provider_agent.bind()  # so the forecaster's advisory RPC can reach the provider
     forecaster_agent = forecaster_agent or ForecasterAgent(bus, graph=graph)
     forecaster_agent.bind()
+    veto_stages = (
+        (
+            (
+                "deliberation",
+                partial(veto.find_pending, graph),
+                partial(veto.deliberate_pm_node, graph=graph, llm=deliberation_llm),
+            ),
+        )
+        if deliberation_llm is not None
+        else ()
+    )
     stages = (
         (
             "provider",
@@ -97,6 +115,7 @@ def cascade_once(
             partial(pm_poll.find_pending, graph),
             partial(pm_poll.evaluate_analyst_node, graph=graph, settings=pm_settings),
         ),
+        *veto_stages,
         (
             "execution",
             partial(execution_poll.find_pending, graph),

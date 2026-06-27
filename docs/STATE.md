@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-27 15:18 AEST
+**Last updated:** 2026-06-27 16:47 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -40,6 +40,18 @@ Melbourne local time.
 
 ## Recent sprints (most recent first)
 
+- **Session 2026-06-27 — S96 Part B: runtime challenger-veto, mechanism (0.40.00→0.41.00).** *Proven
+  results (`make ci` green, 100% coverage, 1156 tests):* DL-31 Part B — an **opt-in asymmetric
+  challenger-veto** in the cascade. `orchestration/veto.py` debates each PM-approved order between PM and
+  execution, records a `DeliberationRun` (per-order verdicts + the vetoed/subtracted set); the judge may
+  only **subtract**, never originate/resize. Execution honours it (`_drop_vetoed`, EXEC-NEV-01 — executes
+  the survivors, never decides). `cascade_once(deliberation_llm=...)` adds the stage **only when an LLM is
+  injected**, so the deterministic cascade is unchanged; **fail-open** on LLM outage (an error upholds).
+  **Proven live:** with gpt-5.5 the veto fired and execution submitted 0. **KEY FINDING:** with a thin
+  proposition the LLM revised *everything* (blanket block) — so the veto stays **off by default** and is
+  not yet safe for live capital; it needs (a) a **grounded** proposition (the order rationale + Part A's
+  parameter answer key) and (b) verdict semantics (`revise` flag vs `reject` block). That grounding is the
+  bridge back to Part A and the real remaining work.
 - **Session 2026-06-27 — S96 Part A: deliberation understanding gate (0.39.00→0.40.00).** *Proven results
   (`make ci` green, 100% coverage, 1151 tests):* DL-31 Part A — make the expert-LLM deliberation **define
   each parameter then justify**, and **score the definitions** against ground truth.

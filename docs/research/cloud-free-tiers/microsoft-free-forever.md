@@ -1,7 +1,7 @@
 # Microsoft Free‑Forever Services
 
-| Category            | Service Name                         | Free‑Forever Limits                                                                 |
-|---------------------|----------------------------------------|--------------------------------------------------------------------------------------|
+| Category            | Service Name                           | Free‑Forever Limits                                                                 |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------|
 | DATABASES           | Cosmos DB (Free Tier)                  | 1,000 RU/s, 5 GB storage, MongoDB/Gremlin/SQL/Cassandra/Table APIs                  |
 |                     | Azure SQL Database (Free Tier)         | 250 MB database, 5 DTUs                                                             |
 |                     | Azure PostgreSQL Flexible Server       | 1 vCore, 32 GB storage, pgvector supported                                          |

@@ -22,7 +22,7 @@ runtime = [
     "prometheus-client>=0.20",
 ]
 # Also pinned in the dev group so CI type-checks the MCP surface.
-mcp = ["mcp>=1.28.0"]
+mcp = ["mcp>=1.28.1"]
 # Forecaster ML models (FinBERT sentiment + LightGBM price/return) — heavy, lazily
 # imported; the unit gate never loads them.
 forecaster = ["torch>=2.12.1", "transformers>=4", "lightgbm>=4"]
@@ -43,10 +43,10 @@ dev = [
     "pytest-cov>=5",
     "pytest-asyncio>=0.23",
     "celery>=5.4",
-    "import-linter>=2.0",
+    "import-linter>=2.12",
     "mypy>=1.10",
-    "mcp>=1.28.0",
-    "ruff>=0.15.18",
+    "mcp>=1.28.1",
+    "ruff>=0.15.20",
     "pip-audit>=2.10.1",
     "detect-secrets>=1.5",
     "neo4j>=5.20",

@@ -17,7 +17,7 @@ trading-agents-mcp = "surfaces.mcp_server:main"
 # Runtime substrate — only the orchestration layer and live agents pull these in.
 runtime = [
     "celery>=5.4",
-    "redis>=5.0",
+    "redis>=8.0.1",
     "neo4j>=5.20",
     "prometheus-client>=0.20",
 ]
@@ -28,7 +28,7 @@ mcp = ["mcp>=1.28.0"]
 forecaster = ["torch>=2.12.1", "transformers>=4", "lightgbm>=4"]
 # LLM provider SDKs — lazily imported (operator client + deliberation demo). Install
 # to run anything against a live model: `uv pip install anthropic openai`.
-llm = ["anthropic>=0.40", "openai>=1.50"]
+llm = ["anthropic>=0.112.0", "openai>=2.44.0"]
 # Azure Service Bus pub/sub backend (P14). Install to activate AzureServiceBusBus.
 # azure-keyvault-secrets + azure-identity: master Key Vault accessor (P15 S75).
 azure = [

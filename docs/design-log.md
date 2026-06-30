@@ -1491,3 +1491,20 @@ in-flight work.
 **Effect.** build-plan P12 row → SHIPPED; STATE "Next" carries only the deferred scorecard-run step (P13 is
 downstream of it). The `sentiment_scorecard` harness stays as cold-but-tested machinery, ready if a news
 runway is ever accrued. Next in the roadmap cleanup: P13, then P15.
+
+## DL-33 · P13 cross-asset/macro graph — deferred, not started (honest reclassification)  ·  status: DECIDED (2026-06-27)
+
+**Trigger.** Roadmap cleanup, after P12 (DL-32). Investigation: **P13 has zero code** — no `Sector`
+propagation graph (`PEER_OF`/`IN_SECTOR`/`EXPOSED_TO`/`Event-[:AFFECTS]`), no signed-propagation logic, no
+sprint doc; only forward-reference mentions in ADR-0002 and a few sentiment/sector sprint docs. (The
+`Sector` nodes that *do* exist are the DRIFT-013 sector-label cache for the PM concentration cap — a
+different thing.)
+
+**Decision.** Reclassify P13 from "planned" to **DEFERRED — not started.** It is gated on three things,
+none active: P12's deferred news runway (DL-32), **premium relationship data** (supplier/exposure edges —
+the hard, expensive part), and the etalon-first pivot (DL-19). It is the plan's highest-ambition phase and
+stays **intact as a future direction** — not killed, just honestly out of any current queue. No code to
+touch (none exists).
+
+**Effect.** build-plan P13 row → DEFERRED/not-started; STATE already carries it only as downstream of P12's
+runway (DL-32 edit). Next in the cleanup: P15 (the partially-shipped one).

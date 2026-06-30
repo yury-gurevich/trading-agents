@@ -1451,3 +1451,43 @@ execution); per-candidate LLM cost/latency (one debate per approved trade) and w
 default on deliberation outage; veto scope (hard block vs. revise-size-down — the latter edges toward
 origination, so likely hard-block only); how the `llm-interpretation-deltas.md` answer key is owned and kept
 current as parameters evolve.
+
+## v1.0 milestone — DRAFT (provisional, NOT final)  ·  status: DRAFT (2026-06-27)
+
+Captured per LAW-06 so it is not lost; the operator is deliberately **not** finalising this yet (more
+criteria in mind). Do **not** treat as a committed milestone — `/roadmap`'s "path to v1.0" stays
+*approximate* until this is closed.
+
+**Provisional v1.0 = the bundle is trustworthy enough to run for real:**
+1. **Soak performance** — a ~2-week paper soak producing **~20 trades** that return **+2 to 5%** overall.
+2. **Dashboard** — a working operator dashboard (surfaces over the graph).
+3. **Continuous improvement, live + automatic** — the model-training / curation pipelines are fully
+   functional and **automatic** (datasets assembled → trained → scorecarded → promoted through the
+   registry with no manual steps).
+
+**OPEN:** the operator has further criteria to add before this is final. Revisit and promote to a
+build-plan milestone (or an ADR) when ready.
+
+## DL-32 · P12 sentiment — closed as SHIPPED; scorecard-run + promotion deferred  ·  status: DECIDED (2026-06-27)
+
+**Trigger.** Roadmap cleanup of "abandoned" P12/P13/P15. Investigation showed P12 is **not abandoned** —
+it is ~shipped and live: the LM-lexicon **champion is binding** (`analyst.sentiment_weight=0.20`, applied
+in `analyst/domain/scoring.py`); the news feed is wired through the provider (`fetch_news`, Finnhub
+`/company-news`); the provider-sentiment challenger (`av_sentiment.py`) is advisory; and the FinBERT
+forecaster was **re-activated this session** (DL-30 advisory shadow stage).
+
+**Decision.** **Close P12 as SHIPPED.** The only open piece is the final *operational* step — run the
+3-scorer scorecard (`forecaster.sentiment_scorecard`, a callable-but-never-triggered RPC) on forward
+returns and promote a challenger via the P10 registry gate. That is **DEFERRED, not abandoned**: it needs
+a live **news-accrual runway** that was never accumulated and is not being pursued under the etalon-first
+pivot (DL-19). **No code removed** — every P12 piece is in the live decision path; ripping out the
+sentiment pillar would be a 20%-of-score regression.
+
+**Road not taken.** (a) Delete the sentiment pillar / scorecard machinery — rejected: regressive (champion
+is binding) and discards the working promotion mechanism. (b) Keep P12 listed as "active / pending
+remainder" — rejected: misleading; nobody is accruing the news runway, so it is a deferred step, not
+in-flight work.
+
+**Effect.** build-plan P12 row → SHIPPED; STATE "Next" carries only the deferred scorecard-run step (P13 is
+downstream of it). The `sentiment_scorecard` harness stays as cold-but-tested machinery, ready if a news
+runway is ever accrued. Next in the roadmap cleanup: P13, then P15.

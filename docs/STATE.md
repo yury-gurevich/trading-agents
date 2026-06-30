@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-27 17:09 AEST
+**Last updated:** 2026-06-27 19:46 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -288,7 +288,9 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
   the others follow once the transport exists.)
 - **Observatory `[forecaster]` advisory line** (DL-30 deferred) — show the shadow-prediction count per run,
   advisory/never-FAIL, without entangling the trade-spine conservation view.
-- **P12/P13 DSPy harness** — queued after agents actually run (news runway needed).
+- **P12 scorecard-run + challenger promotion** (DEFERRED, not abandoned — P12 is otherwise SHIPPED:
+  champion binding, challengers advisory, forecaster live; DL-32). Needs a live **news-accrual runway**
+  not being accrued under the etalon-first pivot. P13 (cross-asset/macro graph) is downstream of this.
 - **`contracts/` substrate/pack split** — the remaining ADR-0012 mix; deferred until a 2nd pack.
 - **DEFERRED behind a perfect etalon (etalon-first, DL-19):** CI-1..CI-6 (ADR-0013 machinery, S90–S95)
   · the bundle **generator** · the **Research & Solution-Design** bundle (DL-20). Do not start these

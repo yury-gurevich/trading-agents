@@ -286,9 +286,11 @@ verify they are talking to the genuine master without sharing the private key.
    master populates `config={}` in ACTIVATE with resolved secrets. **Exit:** master
    resolves provider/execution/operator API keys and distributes them via ACTIVATE; DRIFT-002
    closed. **S75.**
-4. **DockerHub push + Container Apps manifest** — CI push to DockerHub on merge to main;
-   Azure Container Apps deploy manifest for all 13 services. **Exit:** `git push` rebuilds
-   and redeploys all agent images with zero downtime. **S76+.**
+4. **GHCR image push + Container Apps manifest** — CI builds + pushes one image per agent to **GHCR**
+   on merge to main (`build-images.yml`, ADR-0011 — *not* DockerHub; that was an early assumption);
+   Azure Container Apps deploy manifest for all 13 services (`infra/container-apps.bicep`,
+   `infra/deploy-agents.ps1`). **Exit:** `git push` rebuilds and redeploys all agent images with zero
+   downtime. **S76+ (image push live; full deploy run-through pending).**
 **Effort: L.**
 
 ## Cross-cutting workstreams
@@ -408,5 +410,5 @@ stage gates in P8.
 | **Qlib Phase Q1** LightGBM price signal | **complete** (S58–S59: shadow LightGBM price/return model + training harness + per-model IC scorecard; advisory, never gates a decision; forecaster agent foundation) |
 | **Agent law backfill** (S70–S71) | **complete** (S70: scanner/analyst/PM/execution LOCKED v1; S71: monitor/reporter/forecaster/operator/supervisor/curator/researcher LOCKED v1; all 11 non-provider agents have LOCKED v1 laws; 219 green clauses across 12 agents) |
 | **ADR-0010 system_prompt tunable** (S72) | **complete** (`system_prompt` tunable wired into `OperatorSettings` + `_interpret_command`; pre-declared on `ForecasterSettings`; law PARAM sections updated) |
-| **P15** Multi-agent container split | **in progress** (S73: master agent + 13 Dockerfiles + compose; S74: RSA-PSS signing + 12 agent entrypoints; S75: Key Vault integration — DRIFT-001/002 both resolved; version 0.11.0→0.12.0→0.13.0; S76+ DockerHub + Container Apps pending. Post-P14 the forecaster activation surfaced the real prerequisite for the control-plane agents: there is **no distributed RPC-serve transport** yet — DL-30; build it before activating operator/supervisor/curator/researcher as live containers) |
+| **P15** Multi-agent container split | **IN PROGRESS — paused under the etalon-first pivot (DL-34). Heavily built, not abandoned.** Shipped: master bootstrap (S73), RSA-PSS signing + 12 entrypoints (S74), Key Vault secret distribution (S75, DRIFT-001/002 resolved); 13 Dockerfiles + **live GHCR image build/push** (`build-images.yml`); Container Apps IaC present (`infra/container-apps.bicep`, `deploy-agents.ps1`); scanner boot + EHLO confirmed in a log stream (S76). **Not a running fleet yet** — three gaps remain: **(1) S86 deploy wiring** — ship `trading_grants.json` + `trading_secrets.json` into the master image + set `MASTER_GRANT_POLICY_PATH`/`MASTER_SECRET_MAP_PATH`, else a deployed master rejects every agent; **(2) DL-30 distributed RPC-serve transport** — the control-plane agents (operator/supervisor/curator/researcher) cannot serve as live containers without it; **(3)** a full fleet run-through on the permanent store. Paused while the bundle is perfected in-process (DL-19); resume when the fleet is to run durably. version 0.11.0→0.12.0→0.13.0 |
 | **Etalon-first (DL-19), post-P14** | **ongoing — tracked in `docs/STATE.md`, not as a numbered phase.** The current spine since P14: 🟩 **Layer-3 acceptance GREEN at the full S&P-500** (DRIFT-011..014 fixed); pipeline observatory + acceptance gate; the deliberation **drift-firewall** (EXP-004/005/006); **forecaster activated** as an advisory shadow stage (0.39.00); **OHLCV-only fast mode** (0.38.00); **S96 deliberation** define-then-justify + scored understanding gate (0.40.00) + **asymmetric challenger-veto** in the loop (0.41.00) + **transcript persistence** (0.42.00, proven live on Aura). See STATE.md + `docs/laws/ledger.md` + `docs/design-log.md` (DL-19, DL-29..31). |

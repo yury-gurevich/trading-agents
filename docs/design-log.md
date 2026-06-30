@@ -1508,3 +1508,25 @@ touch (none exists).
 
 **Effect.** build-plan P13 row → DEFERRED/not-started; STATE already carries it only as downstream of P12's
 runway (DL-32 edit). Next in the cleanup: P15 (the partially-shipped one).
+
+## DL-34 · P15 container split — in progress, paused (not abandoned); deploy facts reconciled  ·  status: DECIDED (2026-06-27)
+
+**Trigger.** Final roadmap cleanup (after P12 DL-32, P13 DL-33). Investigation: P15 is **heavily built**,
+the opposite of abandoned — master bootstrap (`agents/master/`: grants/key_vault/secret_map/http_server),
+`kernel/crypto.py` + `bootstrap.py`, 13 Dockerfiles, **live GHCR image build/push** (`build-images.yml`),
+and full Container Apps IaC (`infra/container-apps.bicep`, `deploy-agents.ps1`, `main.bicep`).
+
+**Stale fact corrected.** The plan's S76 item said "DockerHub push"; reality is **GHCR** (ADR-0011,
+`build-images.yml`). Fixed in the phase description.
+
+**Decision.** Reclassify P15 from a bare "in progress" to **IN PROGRESS — paused under the etalon-first
+pivot (DL-19), not abandoned.** It is not a running fleet yet; three concrete gaps remain (all already in
+STATE.md "Next"): (1) **S86 deploy wiring** — grants/secrets JSON into the master image + the
+`MASTER_*_PATH` env, else a deployed master rejects every agent; (2) the **DL-30 distributed RPC-serve
+transport** — control-plane agents can't serve as live containers without it; (3) a full **fleet
+run-through** on the permanent store. No infra removed; the `infra/*.local.json` files are gitignored
+local config, not cruft.
+
+**Effect.** build-plan P15 row + S76 item reconciled; STATE already carries the three gaps as discrete Next
+items. **Roadmap cleanup complete** — P12 shipped/deferred (DL-32), P13 deferred/not-started (DL-33), P15
+in-progress/paused (DL-34). None were "abandoned" in the delete sense; all are now honestly classified.

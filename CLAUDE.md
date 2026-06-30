@@ -100,6 +100,13 @@ postcondition). **Never restate the intent as if it were the outcome** ("did X" 
 forbidden). An item moves to *Recent / shipped* **only when its success factors are verified** — and
 if a success factor is *not* met, say so plainly (e.g. "verified failing"). This binds every session.
 
+**Single live tracker — STATE.md only.** `docs/STATE.md` is the *one* live status/direction doc
+(Now/Next, updated every session). `docs/build-plan.md` is the **phase record + standing principles**,
+not a status board: reconcile its Status table *only* at a phase closeout, and never treat it as current
+state. Live "does it work" proof lives in `docs/laws/ledger.md` + `docs/laws/drift-register.md`. Keeping
+exactly one live tracker is what stops them drifting — the build-plan went stale once because two docs
+both tried to track status.
+
 ---
 
 ## Capture decisions — the conversation is part of the work (LAW-06)

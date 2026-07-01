@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-98-control-plane-serve-supervisor-operator`
-**Status:** planned
+**Status:** in progress (0.43.00 → 0.44.00)
 **Effort:** M
 
 ---

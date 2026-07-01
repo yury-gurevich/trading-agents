@@ -6,8 +6,10 @@ Each entrypoint must:
   - call idle_loop() after activate
 
 Note: the provider entrypoint runs a real ingest loop and the scanner/analyst/PM/
-execution/monitor/reporter run graph-pull work loops (not idle_loop); those are tested
-separately under their own agents/<name>/tests/ packages.
+execution/monitor/reporter run graph-pull work loops (not idle_loop); the supervisor
+and operator now serve over serve_loop (S98). All of those are tested separately under
+their own agents/<name>/tests/ packages (e.g. build_served_bus). Only the still-idle
+control-plane stubs remain here.
 """
 
 from __future__ import annotations
@@ -18,8 +20,6 @@ import pytest
 
 _AGENTS = [
     ("agents.forecaster.entrypoint", "forecaster"),
-    ("agents.operator.entrypoint", "operator"),
-    ("agents.supervisor.entrypoint", "supervisor"),
     ("agents.curator.entrypoint", "curator"),
     ("agents.researcher.entrypoint", "researcher"),
 ]

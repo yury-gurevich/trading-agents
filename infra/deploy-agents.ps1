@@ -148,9 +148,12 @@ function Up {
   $packs = Join-Path $PSScriptRoot "..\orchestration\packs"
   $grantB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_grants.json")))
   $secretB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_secrets.json")))
+  # User + database are this account's INSTANCE ID, not the literal "neo4j" (which
+  # fails auth / DatabaseNotFound → crash-loop → auth frenzy → Aura lockout). Source
+  # them from the instance config so they always match what actually works.
   $envv = @(
-    "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=neo4j",
-    "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=neo4j",
+    "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=$($auraInst.username)",
+    "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=$($auraInst.database)",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
   )
@@ -186,7 +189,8 @@ function Up {
       --image $img --registry-server $REGISTRY --registry-username $ghcr.username --registry-password $ghcr.pat `
       --min-replicas 1 --max-replicas 1 `
       --env-vars "MASTER_URL=$masterUrl" "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)" `
-                 "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=neo4j" "NEO4J_PASSWORD=$($auraInst.password)" `
+                 "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=$($auraInst.username)" `
+                 "NEO4J_PASSWORD=$($auraInst.password)" "NEO4J_DATABASE=$($auraInst.database)" `
       --query "properties.provisioningState" -o tsv 2>$null
     Check ($state -eq "Succeeded") $name
   }

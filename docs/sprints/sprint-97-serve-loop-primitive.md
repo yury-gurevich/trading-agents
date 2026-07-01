@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-97-serve-loop-primitive`
-**Status:** planned
+**Status:** in progress (0.42.00 → 0.43.00)
 **Effort:** M
 
 ---

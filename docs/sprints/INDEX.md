@@ -29,9 +29,11 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
-| **P15** | S73–S83 | Multi-agent container split: master bootstrap + Dockerfiles + RSA signing + Key Vault + GHCR build pipeline + credential naming + provider ingestor + graph-pull work loops (S79 provider→scanner; S80 scanner→analyst; S81 analyst→PM; S82 execution+monitor+reporter closes DL-08; S83 dispatcher RunRequest trigger makes provider graph-pull + end-to-end demonstrator) | **in progress** |
+| **P15** | S73–S83 | Multi-agent container split: master bootstrap + Dockerfiles + RSA signing + Key Vault + GHCR build pipeline + credential naming + provider ingestor + graph-pull work loops (S79 provider→scanner; S80 scanner→analyst; S81 analyst→PM; S82 execution+monitor+reporter closes DL-08; S83 dispatcher RunRequest trigger makes provider graph-pull + end-to-end demonstrator) | **in progress** — paused under etalon-first (DL-34) |
+| **Platform/pack + etalon** (post-P14) | S84–S89, S96 | ADR-0012 substrate/pack extraction — grants + secrets out of the master image (S84–S86, DL-12); staleness gate counts trading sessions (S87, DL-10); DL-09 filter verdicts + quality scorecard (S88–S89); deliberation understanding + challenger-veto (S96, DL-31). Continuous etalon-first work — live status in `../STATE.md`, not a numbered phase. | **shipped** |
 | **P12/P13** | tbd | DSPy `PromptOptimizer` port + golden eval set + per-(task×model) compiled prompt artifact | **queued** |
-| **P16** | S90–S95 | Continuous-improvement system (ADR-0013): CI-1 parameter catalogue · CI-2 RunMetrics on graph · CI-3 ParameterSet (configurable-not-settable) · CI-4 experiment+compare · CI-5 gate+promote (absorbs ADR-0010) · CI-6 optimiser (sweep; ingest target first) | **queued** |
+| **P16** | S90–S95 | Continuous-improvement system (ADR-0013): CI-1 parameter catalogue · CI-2 RunMetrics on graph · CI-3 ParameterSet (configurable-not-settable) · CI-4 experiment+compare · CI-5 gate+promote (absorbs ADR-0010) · CI-6 optimiser (sweep; ingest target first) | **queued** — specs written (S90–S95), deferred behind a perfect etalon (DL-19) |
+| **Fleet Activation** (DL-30/DL-35) | S97–S103 | Close the distributed-platform gap: `serve_loop` primitive (S97) → control-plane agents served in-process (S98–S99, retires every `idle_loop()`) → Azure Service Bus receiver + parity (S100) → permanent Neo4j (S101) → 13-container run-through + distributed acceptance (S102) → dispatcher cron (S103). In-process before distributed; reverses the etalon-first pause for the fleet workstream (DL-35). | **planned** |
 
 ---
 
@@ -46,7 +48,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S84**, then S85 …
+1. Next number: **S104**, then S105 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

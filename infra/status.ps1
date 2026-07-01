@@ -53,7 +53,7 @@ import json
 from neo4j import GraphDatabase
 i = json.load(open(r"$((Join-Path $PSScriptRoot 'aura-instance.local.json'))", encoding="utf-8"))
 d = GraphDatabase.driver("$($c.connection_url)", auth=("$($c.username)", i["password"]))
-with d.session(database="neo4j") as s:
+with d.session(database=i["database"]) as s:
     for r in s.run("MATCH (n) RETURN labels(n)[0] AS l, count(*) AS c ORDER BY l"):
         print(f"   {r['l']}: {r['c']}")
 d.close()

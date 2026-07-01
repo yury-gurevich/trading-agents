@@ -1459,6 +1459,7 @@ criteria in mind). Do **not** treat as a committed milestone — `/roadmap`'s "p
 *approximate* until this is closed.
 
 **Provisional v1.0 = the bundle is trustworthy enough to run for real:**
+
 1. **Soak performance** — a ~2-week paper soak producing **~20 trades** that return **+2 to 5%** overall.
 2. **Dashboard** — a working operator dashboard (surfaces over the graph).
 3. **Continuous improvement, live + automatic** — the model-training / curation pipelines are fully
@@ -1530,3 +1531,51 @@ local config, not cruft.
 **Effect.** build-plan P15 row + S76 item reconciled; STATE already carries the three gaps as discrete Next
 items. **Roadmap cleanup complete** — P12 shipped/deferred (DL-32), P13 deferred/not-started (DL-33), P15
 in-progress/paused (DL-34). None were "abandoned" in the delete sense; all are now honestly classified.
+
+---
+
+## DL-35 · Activate the distributed fleet now — the Fleet Activation arc (S97–S103), reversing the etalon-first pause  ·  status: DIRECTION (2026-07-01)
+
+**Trigger.** A code-level readiness audit (2026-07-01) of "is the platform ready, communication and all?"
+found the trading *product* works in-process (Layer-3 acceptance 🟩) but the *distributed platform* does
+not run. Three verified findings: (1) [`AzureServiceBusBus`](../../kernel/bus_azure.py) is **send-only** —
+`publish` can push but there is **no receiver**, and `request` is an in-process shim; (2) the 5
+control-plane agents (operator/supervisor/curator/researcher/forecaster) `idle_loop()` because there is no
+serve/consume primitive (the DL-30 gap); (3) the fleet has never run as containers (only scanner EHLO was
+proven, S76). Also corrected: **DL-34 gap (1) is stale** — S86 deploy wiring *is* done
+([`infra/deploy-agents.ps1`](../../infra/deploy-agents.ps1) L155 passes `MASTER_GRANT_POLICY_B64` /
+`MASTER_SECRET_MAP_B64`; `agents/master/entrypoint.py` `_resolve_pack` consumes them).
+
+**Decision (operator, 2026-07-01).** Take the **full** activation arc — build the distributed fleet now,
+**reversing the DL-19 etalon-first pause** for this workstream. Sequenced as **S97–S103**, in-process
+before distributed (mirrors the P14 method):
+
+1. **S97** — kernel `serve_loop` + `RequestConsumer` Protocol (the missing primitive; the twin of
+   `work_loop`). In-process, CI-provable.
+2. **S98** — supervisor + operator served in-process over `serve_loop` (idle_loop retired for the two).
+3. **S99** — forecaster + curator + researcher served; **zero `idle_loop()` remains**; fleet serviceable
+   in-process. *Forecaster stays RPC-triggered, not graph-pull (`FORE-TRG-02`, DL-30).*
+4. **S100** — Azure Service Bus **receiver** behind the same Protocol + claim-check read + a both-backends
+   parity test (mirrors S67). **← etalon-first cut line: S97–S100 are CI/parity-provable, no live spend.**
+5. **S101** — permanent Neo4j (durable store) + fleet store wiring (live infra; cost).
+6. **S102** — full 13-container run-through → distributed `ACCEPTANCE PASS`; control plane proven serving.
+7. **S103** — dispatcher cron: hands-off scheduled daily runs (closes the S83-deferred item).
+
+**Why this shape.** The trade spine already communicates via graph-as-queue (DL-08, working); the gap is
+purely the *control-plane serve transport* + *live fleet*. `serve_loop` (S97) is the one primitive DL-30
+named; everything else hangs off it. Proving S97–S100 in-process/at-parity means the risky live steps
+(S101–S103) run on a communication layer already verified — the same discipline that made P14 safe.
+
+**Road not taken.** (1) *Make the control-plane agents graph-pull* — rejected: violates `FORE-TRG-02` for
+the forecaster (self-trigger) and mis-models operator/supervisor, which are genuinely request/response.
+(2) *Skip in-process serving, go straight to Service Bus* — rejected: breaks "in-process before
+distributed"; a live-only transport is un-unit-testable and hides bugs (every prior live-first step cost
+a DRIFT). (3) *Stay etalon-first, defer the fleet* — the option DL-19 implies; **explicitly overridden
+here** for this arc by operator choice, accepting the live-infra spend of S101–S103. The etalon-first
+principle still governs the *bundle-generator* meta-work (unchanged); only the fleet-activation timing
+moved.
+
+**Effect.** Seven sprint handovers written (`docs/sprints/sprint-97…103-*.md`); sprints README + INDEX +
+STATE updated to carry the arc. Success is proven per LAW-02 at each step (unit/parity for S97–S100; a
+captured `ACCEPTANCE PASS` + activation log for S102). Supersedes the DL-19 pause **for the fleet
+workstream only**.

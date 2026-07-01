@@ -12,6 +12,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [STATE.md](STATE.md) | Where are we right now? What is the active sprint? What is next? |
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
 | [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
+| [STATE-01.md](STATE-01.md) · [STATE-02.md](STATE-02.md) | Archived older sprint history offloaded to keep STATE.md short (S36→P0 in -01; S37–S76 in -02) |
 
 ---
 
@@ -29,7 +30,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 
 | Folder | Answers |
 | --- | --- |
-| [decisions/](decisions/INDEX.md) | What architecture questions are already closed forever? (10 ADRs) |
+| [decisions/](decisions/INDEX.md) | What architecture questions are already closed forever? (13 ADRs) |
 | [laws/](laws/INDEX.md) | What must each agent do / never do? What is the law book schema? |
 | [research/](research/INDEX.md) | What external tools have we evaluated? What is still in progress? |
 | [sprints/](sprints/INDEX.md) | Which sprints shipped? Which phase are we in? What is queued? |

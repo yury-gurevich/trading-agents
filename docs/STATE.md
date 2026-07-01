@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-06-27 19:46 AEST
+**Last updated:** 2026-07-01 13:41 AEST
 
 **DIRECTION PIVOTED (DL-19). The goal is now to perfect the trading-agents bundle so it becomes
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
@@ -264,11 +264,16 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
 
 *The "finish the bundle" backlog — what perfection still needs:*
 
-- **S86 — deploy wiring (the necessary follow-up to S84+S85; NOT CI-tested).** Ship
-  `trading_grants.json` + `trading_secrets.json` into the master Docker image and set
-  `MASTER_GRANT_POLICY_PATH` + `MASTER_SECRET_MAP_PATH` in `infra/deploy-agents.ps1` / the master
-  Dockerfile. **Without this, a deployed master loads empty policies and rejects every agent** — must land
-  before the next fleet deploy.
+- **🚀 FLEET ACTIVATION ARC — S97–S103 (DL-35, direction pivoted 2026-07-01; planned, not started).**
+  Close the distributed-platform gap in one consistent arc, in-process before distributed: **S97** kernel
+  `serve_loop` primitive → **S98–S99** the 5 control-plane agents served in-process (retires every
+  `idle_loop()`) → **S100** Azure Service Bus receiver + parity (etalon-first cut line) → **S101** permanent
+  Neo4j → **S102** 13-container run-through + distributed `ACCEPTANCE PASS` → **S103** dispatcher cron.
+  Reverses the DL-19 etalon-first pause **for the fleet workstream only** (the generator meta-work still
+  waits). Handovers: `docs/sprints/sprint-97…103-*.md`.
+- **S86 deploy wiring — ✅ DONE (verified in code 2026-07-01).** `infra/deploy-agents.ps1` L155 passes
+  `MASTER_GRANT_POLICY_B64` + `MASTER_SECRET_MAP_B64` to the master container; `agents/master/entrypoint.py`
+  `_resolve_pack` consumes them (b64 wins → image stays pack-agnostic). DL-34's "gap (1)" was stale.
 - **Findings→code loop (DL-25)** — translate the remaining firewall Class-1 gaps into code: fixed-fraction
   sizing → vol-adjusted; Alpha158 weight=0 (wire it, or stop presenting it as "enabled"); LightGBM shadow
   labelling (so it can't read as confirmation). Each a small law + code unit, like PM-NEV-06.
@@ -280,12 +285,10 @@ poll the graph for unprocessed work. Full detail in `docs/design-log.md`.
   if the dev licence lands, else Community).
 - **Fleet run-through on real store** — full `provider→reporter` cascade against the permanent store.
 - **Dispatcher cron** — schedule the daily `RunRequest` so the fleet runs hands-off.
-- **Distributed RPC-serve transport (the real prerequisite for the control-plane).** DL-30 found there is
-  no `serve_loop`/bus-consume primitive — only `idle_loop` (sleep) and `work_loop` (graph-pull, which
-  self-triggers). The 4 remaining RPC stubs (operator/supervisor/curator/researcher) can't be activated as
-  live container services until an agent can consume its capability queue and dispatch to bound handlers.
-  Build this before wiring more control-plane agents. (The forecaster is activated in the in-process cascade;
-  the others follow once the transport exists.)
+- **Distributed RPC-serve transport (DL-30) — now scoped as S97–S100** in the Fleet Activation arc above.
+  DL-30's finding stands (no `serve_loop`/bus-consume primitive — only `idle_loop` + `work_loop`); S97
+  builds the primitive, S98–S99 serve all 5 control-plane agents in-process, S100 adds the Service Bus
+  receiver. The forecaster stays RPC-triggered (`FORE-TRG-02`), never graph-pull.
 - **Observatory `[forecaster]` advisory line** (DL-30 deferred) — show the shadow-prediction count per run,
   advisory/never-FAIL, without entangling the trade-spine conservation view.
 - **P12 scorecard-run + challenger promotion** (DEFERRED, not abandoned — P12 is otherwise SHIPPED:

@@ -28,7 +28,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0013`.
+1. Next number is `0014`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

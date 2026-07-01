@@ -123,6 +123,13 @@ def main() -> None:  # pragma: no cover
     graph_kind = os.environ.get("MASTER_GRAPH", "neo4j")
     graph = select_graph_store(graph_kind)
     log.info("[master] graph store: %s", graph_kind)
+    # Fail SAFE, not fatal: a bad Neo4j connection here must not crash the process,
+    # or the container manager restarts us in a loop and hammers auth until Aura
+    # locks the account (observed 2026-07). Halt instead, loudly. See kernel.startup.
+    from kernel.startup import ensure_reachable_or_halt
+
+    ensure_reachable_or_halt(graph)
+    log.info("[master] graph reachable")
     agent, key_pem = build_app(graph, pem, secret_store=secret_store)
     log.info("[master] session=%s — serving on :8000", agent.session_id)
     serve(8000, agent, key_pem)

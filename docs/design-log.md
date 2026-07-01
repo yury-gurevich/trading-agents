@@ -1579,3 +1579,66 @@ moved.
 STATE updated to carry the arc. Success is proven per LAW-02 at each step (unit/parity for S97–S100; a
 captured `ACCEPTANCE PASS` + activation log for S102). Supersedes the DL-19 pause **for the fleet
 workstream only**.
+
+---
+
+## DL-36 · Credentials tested before handover; a failed test enters bounded self-healing (master→LLM→human), one automatic shot  ·  status: DIRECTION (2026-07-01)
+
+**Trigger.** The master login-frenzy aftermath (DL-35 / 2026-07-01). The master was handed *untested*
+Neo4j credentials, failed to connect, and crash-looped until Aura locked the account. The operator's
+directive generalizes that fix into a system-wide policy.
+
+**The policy (operator, 2026-07-01).**
+
+1. **Test-before-handover.** Every credential the master would distribute in `ACTIVATE.config`
+   (`agents/master/secret_map.resolve_config`) is **tested first**. Handover happens *only* on a pass.
+2. **Fail → stop.** A failed test means *there is no point continuing the next step* — do not activate the
+   agent with a broken credential; **escalate to the master**.
+3. **Master devises a plan.** The master **converses with an LLM** to diagnose the failure and devise a
+   remediation plan to implement.
+4. **Escalate to human.** The plan goes to a human for **approval** — or the operator has pre-set
+   **automatic mode**.
+5. **Remediate.** test → execute → production → documentation.
+6. **One automatic shot.** Automatic mode gets **exactly one** attempt. If it fails, **everything goes to
+   a human** — no second automatic attempt, ever.
+
+**Why this shape — it is the frenzy-fix principle, generalized.** DL-35's guard was "test the connection;
+on failure halt, never crash-loop." This makes it a policy: *test before you trust, fail safe to a human,
+never loop.* The **one automatic shot** is the crash-loop bound promoted to governance. It echoes the
+challenger-veto asymmetry (DL-31 — the LLM proposes within rails, never originates the final action) and
+the stage-gate ladder (P8: paper→shadow→manual→autopilot — "automatic mode" is an autopilot stage).
+
+**Builds on.** `agents/master` activation (`resolve_config`/`activate`); the **probe pattern**
+(`probes/checks.py` — the credential *tests* already exist); `supervisor.flag_for_human` (human
+escalation); `kernel/deliberation.py` (LLM plan-devising); `kernel/startup.ensure_reachable_or_halt`
+(the fail-safe primitive from the frenzy fix). Related: P8 stage gates, DL-09.
+
+**Proposed decomposition (planning).**
+
+- **A — Test-before-handover (near-term, concrete, low risk).** `resolve_config` → a `resolve_and_test`
+  step: fetch each secret, run its per-credential **test** (reusing the probe library), include it only on
+  pass; a *required* failure blocks activation and records an `Escalation`. Directly prevents another
+  bad-credential distribution — the highest-value, lowest-risk start.
+- **B — Escalation record + human gate.** On failure, write an `Escalation`/`Incident` node, flag for
+  human (`supervisor.flag_for_human`), and STOP. A decision surface: approve a remediation, or enable
+  automatic mode. The **one-shot** counter lives here.
+- **C — LLM remediation planning.** The master uses the deliberation LLM to propose a plan **from a
+  bounded remediation catalogue** (rotate credential, re-fetch from Key Vault, recreate instance, pause)
+  — each with a known test + rollback — **not free-form**. (Safety fork; bounded recommended.)
+- **D — Remediation pipeline.** test → execute → production → documentation, with the one-automatic-shot
+  bound; a failed auto attempt escalates to human.
+
+**Open questions (operator's to settle).**
+
+- **Test cost:** live credential tests cost real calls (Anthropic $, broker submits an order, feed quota).
+  Test everything live every activation, or cache a recent pass / gate the expensive ones behind a flag?
+- **LLM safety model:** bounded remediation catalogue (recommended) vs. free-form plan?
+- **"Automatic mode" + "one shot" scope:** global operator toggle vs. per-incident; one shot per-incident,
+  per-credential, or per-run?
+- **"Production" + "documentation":** promote the remediation to the live fleet + auto-write an incident
+  record / ADR — what exactly?
+- **Reuse the P8 stage-gate machinery** for automatic vs. manual modes?
+
+**Status.** DIRECTION — firm invariants (test-before-handover; a failed test halts; fail safe to a human;
+one automatic shot then always human). The self-healing mechanism (C/D) needs the open questions settled
+before build; **Piece A can start now**. Graduates to an ADR once the escalation FSM is designed.

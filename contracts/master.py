@@ -93,6 +93,7 @@ CONTRACT = AgentContract(
         "Session",
         "CapabilityGrant",
         "Escalation",
+        "RemediationPlan",
     ),
     external_io=("key_vault", "neo4j"),
     depends_on=(),

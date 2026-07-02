@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-107-remediation-execution`
-**Status:** planned
+**Status:** shipped
 **Effort:** XL — **designed to split** (see *Sequencing* below): **D-1** eval-gated selector, then
 **D-2** execution pipeline + concurrency + wiring.
 
@@ -271,3 +271,28 @@ automatic shot, safe executors only, a fail-safe fault boundary, and (Part 1) a 
 an eval gate before it can act. The `_instance_counter` fix and the composition-root wiring turn the whole
 A→D loop from *proven-in-process* into *running in the deployed master* — the same "activate it for real"
 step A/B/C also await.
+
+## Closeout Evidence
+
+- Branch: `sprint-107-remediation-execution`; stopped on branch for operator confirmation, no merge/push.
+- D-1 shipped first in commit `33eb1cd` (`feat(master): add remediation selector gate`): eval set,
+  `PromptOptimizer`/DSPy port, prompt artifact, selector gate, version `0.48.00`, `uv.lock` bumped.
+  Gate: `make ci` passed with 1211 passed, 5 skipped, 100% coverage.
+- D-2 shipped after D-1 in commit `7f88d94` (`feat(master): execute safe remediations`): executor
+  pipeline, one-shot cap, thread-safe IDs, `RemediationAttempt` ownership, composition root, version
+  `0.49.00`, `uv.lock` bumped. Gate: `make ci` passed with 1226 passed, 5 skipped, 100% coverage.
+- Exact sprint-contract correction in commit `841dc55` (`fix(master): enforce remediated re-ehlo`):
+  first failed EHLO now refuses after remediation, the final `RemediationAttempt` status is based on
+  the post-exec credential re-test, and the resolved/manual outcome is appended to the `Escalation`.
+  Gate: `make ci` passed with 1228 passed, 5 skipped, 100% coverage.
+- Live functionality check: `uv run --extra llm python -` against Aura `bce05bd6` and OpenAI
+  `gpt-5.5`; selector exact-match 5/5 (`selector_pass_rate=1.0`); drift firewall tripped on a
+  stricter frozen baseline member (`impossible-weaker-model-case`); safe blank Key Vault failure
+  selected `refetch-from-key-vault`, refused first EHLO, then re-EHLO issued ACTIVATE; one-shot failure
+  recorded `failed, skipped` with exactly one auto attempt and manual outcomes; destructive compromised
+  credential selected `rotate-credential` and skipped because no executor was registered; 40 concurrent
+  activations produced 40 unique instance IDs.
+- Aura teardown: pre-clean deleted 0; live check deleted 94 `s107` nodes; final Aura node count restored
+  to baseline 0.
+- Known audit note: `pip-audit` still reports `diskcache 5.6.3` / `CVE-2025-69872` from optional DSPy;
+  the Makefile currently ignores that advisory result after reporting it.

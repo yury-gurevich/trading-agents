@@ -83,8 +83,10 @@ separate optimizer is **not** required to get proactive validation.
 
 ### Deferred (own sprint, ADR-backed)
 
-- The **eval harness** (`PromptOptimizer` port + DSPy first impl + per-(task×model) compiled
-  artifact + registry entry + promotion gate). Gated on having eval data.
+- First concrete harness landed in **S107** for DL-36 remediation selection:
+  `PromptOptimizer` port, DSPy first impl, a trading golden set, a compiled prompt artifact, and
+  `scripts/remediation_gate.py` promotion checks. Remaining deferred work is the reusable registry
+  entry/promotion workflow for other prompt predictors.
 - **The long pole is the metric + example set, not the tool.** Structured tasks (operator
   intent, report schemas) get cheap exact/F1 metrics and can harvest labeled examples from
   the operator's LLM ledger. **Free-form report quality needs a rubric / LLM-as-judge

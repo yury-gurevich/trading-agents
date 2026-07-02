@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-106-remediation-planner`
-**Status:** planned
+**Status:** shipped (0.46.00 → 0.47.00)
 **Effort:** L
 
 ---
@@ -15,6 +15,7 @@ catalogue** (never free-form) and justify it, records the plan on the `Escalatio
 it is **auto-eligible**. C **plans + records + gates**; it does **not** execute — execution is **Piece D**.
 
 **Operator decisions (2026-07-01):**
+
 - **Auto-boundary is a configurable parameter.** `MasterSettings.auto_remediation_scope` ∈
   `{safe_only, all}` (default `safe_only`). Combined with each remediation's `destructive` tag it
   decides auto-eligibility: `auto_eligible = (mode == automatic) and (scope == "all" or not destructive)`.
@@ -55,8 +56,8 @@ LLM injected) = S104 behaviour unchanged.
 
 ### Out
 
-- **Execution (Piece D):** the executors/tests/rollbacks + test→execute→production→documentation pipeline
-  + the one-automatic-shot firing. C only records the plan and its `auto_eligible` flag; nothing runs.
+- **Execution (Piece D):** the executors/tests/rollbacks, the test→execute→production→documentation
+  pipeline, and the one-automatic-shot firing. C only records the plan and its `auto_eligible` flag.
 - The rich human approve/deny **command** UI (a read-only "open escalations + plans" surface is enough).
 
 ## Deliverables
@@ -71,12 +72,21 @@ LLM injected) = S104 behaviour unchanged.
 
 ## Functionality check (sprint-close rule)
 
-Against real Aura + a **FakeLLMClient** (live LLM is cost-gated — DEP-LLM): trigger a credential failure
-→ `Escalation` written → planner selects a catalogue remediation → **`RemediationPlan` durably written**
-and linked to the `Escalation`, with the correct `auto_eligible` under `safe_only`. Then flip
-`auto_remediation_scope=all` and confirm a destructive remediation becomes auto-eligible. **Tear down**
-(DETACH DELETE) → Aura to prior count. Record in `docs/laws/functionality-checks.md`. *(Optional, gated:
-one real-LLM selection to sanity-check the prompt — only if the operator approves the spend.)*
+Against **real Aura + the real GPT-5.5** — the agreed LLM-in-the-loop model (same one the deliberation /
+challenger-veto use), built from `.env` the way `scripts/deliberate.py::_build_llm` does. **Not a fake:**
+FakeLLMClient is for the unit tests (CI is offline); the live check must exercise the real model, because
+the LLM's *selection* is the whole point of Piece C. Steps: trigger a credential failure → `Escalation`
+written → **GPT-5.5 selects a catalogue remediation + justifies it** → assert the choice is a valid
+catalogue member (the enum/membership guardrail held) and a **`RemediationPlan` is durably written** and
+linked to the `Escalation`, with the correct `auto_eligible` under `safe_only`. Then set
+`auto_remediation_scope=all` and confirm a destructive remediation becomes auto-eligible. Capture GPT-5.5's
+chosen remediation + rationale as evidence. **Tear down** (DETACH DELETE) → Aura to prior count. Record in
+`docs/laws/functionality-checks.md`.
+
+**Closeout evidence (2026-07-02):** live check passed on Aura `bce05bd6` with real GPT-5.5. GPT selected
+`refetch-from-key-vault` for the safe-only case (`auto_eligible=True`) and `rotate-credential` for the
+destructive/all case (`auto_eligible=True`). Both plans were durably written and linked from
+`Escalation`; teardown returned Aura from 0 nodes back to 0.
 
 ## Dependencies
 
@@ -86,6 +96,44 @@ one real-LLM selection to sanity-check the prompt — only if the operator appro
 ## Version bump
 
 New capability (LLM remediation planner). **0.46.00 → 0.47.00** (feat → MINOR).
+
+## Execution notes (for the coding agent — cold-start handover)
+
+**Start.** From `main` (`git pull`; HEAD ≥ `598804a`): `git checkout -b sprint-106-remediation-planner`.
+Read `agents/master/{agent.py,secret_map.py,credential_test.py,store.py,settings.py,key_vault.py,
+http_server.py}`, `contracts/master.py`, `kernel/llm.py`, and `scripts/deliberate.py` to match patterns
+(S104 built the `Escalation` + `ActivationRefused` path this extends).
+
+**Gate.** `make ci` green — 9 steps, **100% coverage**, modules ≤ 200 lines, coding-agent headers.
+Bump `pyproject.toml` 0.46.00 → 0.47.00 and run `uv lock`.
+
+**Boundaries.** The master substrate imports **no** agent/probe code (agent independence); the catalogue
+is **injected** as pack data (`orchestration/packs/trading_remediations.json`, loaded by path — ADR-0012).
+`owns_graph += RemediationPlan` (single-writer; keep `tests/test_boundary_map.py` green).
+
+**Commit.** Branch-per-sprint; commit only your own files; conventional message ending with
+`Co-Authored-By: …`. Do **not** merge/push to `main` without operator confirmation.
+
+**Session gotchas (all hit this cycle — save yourself the time):**
+
+1. **detect-secrets** (pre-commit + `make ci`) false-positives on a `password`/`secret`/`key`/`token`
+   keyword next to a string literal in test fixtures — use neutral names or `# pragma: allowlist secret`.
+2. **`InMemoryGraphStore` normalizes list props to tuples** — assert `list(node.props["x"]) == [...]`.
+3. **mypy `--strict` covers agent tests** (`agents/**`) — annotate them; move annotation-only imports into
+   `if TYPE_CHECKING:` (ruff TC001/TC003).
+4. **Agent test files under `agents/**/tests/` need the `Agent:`/`Role:` header**; root `tests/` do not.
+5. **`build_graph_from_env()` returns `InMemoryGraphStore` unless `NEO4J_URI` is in `os.environ`.** A
+   scratch check-script outside the repo tree must `load_dotenv("<repo>/.env")` by explicit path and
+   `assert isinstance(graph, Neo4jGraphStore)` before trusting a "real" result.
+6. **Aura** = instance `bce05bd6` (`.env` + `infra/aura-instance.local.json`); **user AND database are the
+   instance id `bce05bd6`, not `neo4j`** (db `neo4j` → `DatabaseNotFound`).
+7. **Real LLM = GPT-5.5** via `scripts/deliberate.py::_build_llm` (reads `.env`) — used in the live
+   functionality check; unit tests use `FakeLLMClient`.
+8. **`ActivationRefused(ValueError)` → HTTP 422** in `handle_ehlo` (already wired; don't change it).
+9. **Pre-commit stashes unstaged changes and can race/roll back** when the other agent edits the shared
+   tree concurrently — commit with a clean unstaged tree (stage all your files; leave nothing unstaged).
+10. `jq` is installed + allowed (`Bash(jq:*)`); `gh --jq` also works. Tear down all Aura test nodes after
+    the check (`MATCH (n) DETACH DELETE n` → prior count).
 
 ## Notes
 

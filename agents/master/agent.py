@@ -14,11 +14,13 @@ from typing import TYPE_CHECKING
 
 from agents.master.credential_test import ActivationRefused, resolve_and_test
 from agents.master.key_vault import NullSecretStore
+from agents.master.remediation import plan_remediation
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
     write_capability_grant,
     write_escalation,
+    write_remediation_plan,
     write_session,
 )
 from contracts.master import ACTIVATEMessage, DRAINMessage, EHLOMessage
@@ -29,7 +31,9 @@ if TYPE_CHECKING:
     from agents.master.credential_test import CredentialTest, PassCache
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
+    from agents.master.remediation import Remediation
     from agents.master.secret_map import SecretMap
+    from kernel import LLMClient
     from kernel.graph import Node
 
 
@@ -46,6 +50,8 @@ class MasterAgent:
         secret_map: SecretMap | None = None,
         credential_tests: tuple[CredentialTest, ...] = (),
         pass_cache: PassCache | None = None,
+        remediation_llm: LLMClient | None = None,
+        remediation_catalogue: tuple[Remediation, ...] = (),
     ) -> None:
         """Create master with injected graph, settings, grant policy, and secret map.
 
@@ -58,6 +64,8 @@ class MasterAgent:
         self._secret_store: SecretStore = secret_store or NullSecretStore()
         self._credential_tests = credential_tests
         self._pass_cache = pass_cache
+        self._remediation_llm = remediation_llm
+        self._remediation_catalogue = remediation_catalogue
         # No injected policy/map -> the substrate knows no agent types or secrets; a
         # pack supplies them (entrypoint loads orchestration/packs/trading_*.json).
         self._grant_policy: GrantPolicy = (
@@ -94,12 +102,13 @@ class MasterAgent:
                 cache=self._pass_cache,
             )
             if failures:
-                write_escalation(
+                escalation = write_escalation(
                     self._graph,
                     agent_type,
                     tuple(failures),
                     self._settings.remediation_mode,
                 )
+                self._plan_remediation(escalation)
                 raise ActivationRefused(
                     f"credential test(s) failed for {agent_type!r}: {failures}"
                 )
@@ -150,3 +159,22 @@ class MasterAgent:
 
     def _instance_node(self, instance_id: str) -> Node | None:
         return self._graph.get_node("AgentInstance", instance_id)
+
+    def _plan_remediation(self, escalation: Node) -> None:
+        if self._remediation_llm is None or not self._remediation_catalogue:
+            return
+        with fault_boundary(
+            self.sink,
+            agent="master",
+            module="agents.master.agent",
+            capability="plan_remediation",
+            reraise=False,
+        ):
+            plan = plan_remediation(
+                {**dict(escalation.props), "key": escalation.key},
+                self._remediation_catalogue,
+                self._remediation_llm,
+                scope=self._settings.auto_remediation_scope,
+                mode=self._settings.remediation_mode,
+            )
+            write_remediation_plan(self._graph, escalation.key, plan)

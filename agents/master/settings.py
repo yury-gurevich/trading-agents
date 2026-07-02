@@ -72,6 +72,15 @@ class MasterSettings(AgentSettings):
             "force manual. The auto remediation itself is a later piece (C/D)."
         ),
     )
+    auto_remediation_scope: str = tunable(
+        "safe_only",
+        why=(
+            "Auto-remediation boundary after the LLM selects a bounded catalogue "
+            "plan: 'safe_only' allows only non-destructive remediations to be "
+            "auto-eligible; 'all' allows any catalogue remediation to be "
+            "auto-eligible. Still gated by remediation_mode='automatic'."
+        ),
+    )
 
     secret_cache_ttl_minutes: int = tunable(
         5,

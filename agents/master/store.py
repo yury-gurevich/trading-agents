@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from contracts.master import AgentState
 
 if TYPE_CHECKING:
+    from agents.master.remediation import RemediationPlan
     from kernel import GraphStore
     from kernel.graph import Node
 
@@ -89,6 +90,32 @@ def write_escalation(
             "created_at": ts.isoformat(),
         },
     )
+
+
+def write_remediation_plan(
+    graph: GraphStore,
+    escalation_key: str,
+    plan: RemediationPlan,
+) -> Node:
+    """Record the bounded LLM remediation plan for an escalation."""
+    escalation = graph.get_node("Escalation", escalation_key)
+    if escalation is None:
+        raise KeyError(f"no Escalation with key {escalation_key!r}")
+    ts = datetime.now(UTC)
+    node = graph.merge_node(
+        "RemediationPlan",
+        f"remediation-plan:{escalation_key}:{ts.strftime('%Y%m%dT%H%M%S%f')}",
+        {
+            "escalation_key": escalation_key,
+            "remediation": plan.remediation,
+            "rationale": plan.rationale,
+            "auto_eligible": plan.auto_eligible,
+            "status": plan.status,
+            "created_at": ts.isoformat(),
+        },
+    )
+    graph.add_edge(escalation, node, "PLANNED_BY")
+    return node
 
 
 def write_capability_grant(

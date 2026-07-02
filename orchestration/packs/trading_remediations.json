@@ -1,0 +1,27 @@
+[
+  {
+    "name": "refetch-from-key-vault",
+    "description": "Fetch the credential from Key Vault again and re-run the failed credential test.",
+    "destructive": false
+  },
+  {
+    "name": "resume-instance",
+    "description": "Resume the managed graph instance if the failure indicates the backing service is paused.",
+    "destructive": false
+  },
+  {
+    "name": "rotate-credential",
+    "description": "Rotate the failed credential, update the secret store, and re-run the credential test.",
+    "destructive": true
+  },
+  {
+    "name": "recreate-instance",
+    "description": "Recreate the managed service instance and provision replacement connection material.",
+    "destructive": true
+  },
+  {
+    "name": "pause-and-escalate",
+    "description": "Stop automatic remediation and require a human operator decision.",
+    "destructive": false
+  }
+]

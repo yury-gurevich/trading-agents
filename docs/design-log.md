@@ -1643,17 +1643,18 @@ escalation); `kernel/deliberation.py` (LLM plan-devising); `kernel/startup.ensur
 one automatic shot then always human). The self-healing mechanism (C/D) needs the open questions settled
 before build; **Piece A can start now**. Graduates to an ADR once the escalation FSM is designed.
 
-**Resolution — A+B built; C/D decisions (operator, 2026-07-01).**
+**Resolution — ARC COMPLETE: A/B/C/D shipped (S104–S107).** C/D decisions (operator, 2026-07-01).
 
-- **A/B/C shipped** (S104 credential-tested activation + `Escalation`, S105 KV secret cache, S106
-  remediation planner — live GPT-5.5 check). A required
+- **A/B/C/D shipped** (S104 credential-tested activation + `Escalation`, S105 KV secret cache, S106
+  remediation planner, S107 eval-gated auto-execution — all live GPT-5.5-checked). A required
   credential failure refuses handover + writes an `Escalation` with the mode/one-shot structure.
 - **LLM safety model = bounded catalogue** (confirmed) — the LLM selects from a vetted remediation list,
   never free-form (S106 Piece C).
 - **Auto-boundary = a configurable parameter** (both options, dialable): `auto_remediation_scope ∈
   {safe_only, all}` (default `safe_only`), combined with a per-remediation `destructive` tag →
   `auto_eligible = (mode==automatic) and (scope=="all" or not destructive)`. Documented on the setting.
-- **Sequencing:** C shipped (S106, planner + record + human gate), **D next** (execute → production →
-  documentation, the one-automatic-shot firing).
+- **Sequencing:** C shipped (S106, planner + record + human gate), **D shipped** (S107, eval-gated
+  execute → production → documentation; one automatic shot then human; DSPy behind ADR-0010's
+  `PromptOptimizer` port — the harness's first instance).
 - **"Production"/"documentation"** (for D): production = resume the blocked activation once the
   re-run credential test passes; documentation = a `RemediationRun` record + resolve the `Escalation`.

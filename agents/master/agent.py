@@ -12,12 +12,13 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.master.credential_test import ActivationRefused, resolve_and_test
 from agents.master.key_vault import NullSecretStore
-from agents.master.secret_map import resolve_config
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
     write_capability_grant,
+    write_escalation,
     write_session,
 )
 from contracts.master import ACTIVATEMessage, DRAINMessage, EHLOMessage
@@ -25,6 +26,7 @@ from kernel import CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from agents.master.credential_test import CredentialTest, PassCache
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
     from agents.master.secret_map import SecretMap
@@ -42,12 +44,20 @@ class MasterAgent:
         secret_store: SecretStore | None = None,
         grant_policy: GrantPolicy | None = None,
         secret_map: SecretMap | None = None,
+        credential_tests: tuple[CredentialTest, ...] = (),
+        pass_cache: PassCache | None = None,
     ) -> None:
-        """Create master with injected graph, settings, grant policy, and secret map."""
+        """Create master with injected graph, settings, grant policy, and secret map.
+
+        ``credential_tests`` are injected (the substrate ships none — a pack/caller
+        supplies them, ADR-0012); ``pass_cache`` skips a recent costly pass (DL-36).
+        """
         self._graph = graph
         self._settings = settings or MasterSettings()
         self.sink = sink or CollectingFaultSink()
         self._secret_store: SecretStore = secret_store or NullSecretStore()
+        self._credential_tests = credential_tests
+        self._pass_cache = pass_cache
         # No injected policy/map -> the substrate knows no agent types or secrets; a
         # pack supplies them (entrypoint loads orchestration/packs/trading_*.json).
         self._grant_policy: GrantPolicy = (
@@ -76,6 +86,24 @@ class MasterAgent:
             if agent_type not in self._grant_policy:
                 raise ValueError(f"unknown agent_type {agent_type!r}")
 
+            config, failures = resolve_and_test(
+                agent_type,
+                self._secret_store,
+                self._secret_map,
+                self._credential_tests,
+                cache=self._pass_cache,
+            )
+            if failures:
+                write_escalation(
+                    self._graph,
+                    agent_type,
+                    tuple(failures),
+                    self._settings.remediation_mode,
+                )
+                raise ActivationRefused(
+                    f"credential test(s) failed for {agent_type!r}: {failures}"
+                )
+
             n = self._instance_counter.get(agent_type, 0)
             self._instance_counter[agent_type] = n + 1
             ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
@@ -97,7 +125,7 @@ class MasterAgent:
                 instance_id=instance_id,
                 agent_type=agent_type,
                 capability_grants=grants,
-                config=resolve_config(agent_type, self._secret_store, self._secret_map),
+                config=config,
                 signature="",  # RSA signature added by http_server.handle_ehlo()
             )
 

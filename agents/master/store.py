@@ -64,6 +64,33 @@ def write_agent_instance(
     )
 
 
+def write_escalation(
+    graph: GraphStore,
+    agent_type: str,
+    failed_credentials: tuple[str, ...],
+    mode: str = "manual",
+) -> Node:
+    """Record a credential-test failure that blocked an agent's activation (DL-36).
+
+    Open until a human (or, later, an automatic remediation) resolves it. ``mode`` and
+    ``auto_attempts`` are the one-shot structure the remediation loop (C/D) consumes.
+    """
+    ts = datetime.now(UTC)
+    key = f"escalation:{agent_type}:{ts.strftime('%Y%m%dT%H%M%S%f')}"
+    return graph.merge_node(
+        "Escalation",
+        key,
+        {
+            "agent_type": agent_type,
+            "failed_credentials": list(failed_credentials),
+            "mode": mode,
+            "auto_attempts": 0,
+            "status": "open",
+            "created_at": ts.isoformat(),
+        },
+    )
+
+
 def write_capability_grant(
     graph: GraphStore,
     instance_id: str,

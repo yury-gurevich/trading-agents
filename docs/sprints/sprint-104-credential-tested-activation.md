@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-104-credential-tested-activation`
-**Status:** planned
+**Status:** shipped (0.44.01 → 0.45.00) — A+B core (test-before-handover + Escalation/refuse + mode/one-shot structure). Live domain-test injection (pack) + C/D deferred.
 **Effort:** L
 
 ---
@@ -51,8 +51,8 @@ and the execute→production→document pipeline (D) are **out** — deferred un
 
 **Pack (trading, injected — ADR-0012):**
 
-- `orchestration/packs/trading_credential_tests.json` (or `.py`) — maps each secret env-var to its probe
-  + cost + whether it is **required** for the owning agent. Reuses `probes/checks.py` logic (Neo4j
+- `orchestration/packs/trading_credential_tests.json` (or `.py`) — maps each secret env-var to its probe,
+  its cost, and whether it is **required** for the owning agent. Reuses `probes/checks.py` logic (Neo4j
   connect = cheap; Tiingo/FMP/Finnhub/Alpha Vantage auth GET = cheap; Alpaca submit + Anthropic ping =
   costly). Loaded by path, never imported — the master substrate names no trading credential.
 

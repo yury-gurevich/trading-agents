@@ -64,4 +64,13 @@ class MasterSettings(AgentSettings):
         ),
     )
 
+    remediation_mode: str = tunable(
+        "manual",
+        why=(
+            "How a credential-test failure is handled (DL-36): 'manual' = refuse + "
+            "escalate to a human; 'automatic' = allow ONE auto remediation shot then "
+            "force manual. The auto remediation itself is a later piece (C/D)."
+        ),
+    )
+
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

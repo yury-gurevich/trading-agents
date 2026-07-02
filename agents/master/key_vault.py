@@ -24,6 +24,19 @@ class SecretStore(Protocol):
         ...  # pragma: no cover
 
 
+@runtime_checkable
+class VaultWriter(SecretStore, Protocol):
+    """Protocol for writing and cleaning Key Vault secrets."""
+
+    def set_secret(self, name: str, value: str) -> None:
+        """Create or update one secret value."""
+        ...  # pragma: no cover
+
+    def delete_secret(self, name: str) -> None:
+        """Delete one secret value if present."""
+        ...  # pragma: no cover
+
+
 class NullSecretStore:
     """Returns empty string for every secret. Default when no store is configured."""
 
@@ -109,3 +122,17 @@ class AzureKeyVaultSecretStore:  # pragma: no cover
         except ResourceNotFoundError:
             return ""
         return value or ""
+
+    def set_secret(self, name: str, value: str) -> None:
+        """Create or update *name* in Key Vault."""
+        self._client.set_secret(name, value)
+
+    def delete_secret(self, name: str) -> None:
+        """Delete *name* from Key Vault; ignore missing secrets."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        try:
+            poller = self._client.begin_delete_secret(name)
+            poller.result()
+        except ResourceNotFoundError:
+            return

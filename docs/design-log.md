@@ -1642,3 +1642,17 @@ escalation); `kernel/deliberation.py` (LLM plan-devising); `kernel/startup.ensur
 **Status.** DIRECTION — firm invariants (test-before-handover; a failed test halts; fail safe to a human;
 one automatic shot then always human). The self-healing mechanism (C/D) needs the open questions settled
 before build; **Piece A can start now**. Graduates to an ADR once the escalation FSM is designed.
+
+**Resolution — A+B built; C/D decisions (operator, 2026-07-01).**
+
+- **A+B shipped** (S104 credential-tested activation + `Escalation`, S105 KV secret cache). A required
+  credential failure refuses handover + writes an `Escalation` with the mode/one-shot structure.
+- **LLM safety model = bounded catalogue** (confirmed) — the LLM selects from a vetted remediation list,
+  never free-form (S106 Piece C).
+- **Auto-boundary = a configurable parameter** (both options, dialable): `auto_remediation_scope ∈
+  {safe_only, all}` (default `safe_only`), combined with a per-remediation `destructive` tag →
+  `auto_eligible = (mode==automatic) and (scope=="all" or not destructive)`. Documented on the setting.
+- **Sequencing:** C now (planner + record + human gate, S106), **D next** (execute → production →
+  documentation, the one-automatic-shot firing).
+- **"Production"/"documentation"** (for D): production = resume the blocked activation once the
+  re-run credential test passes; documentation = a `RemediationRun` record + resolve the `Escalation`.

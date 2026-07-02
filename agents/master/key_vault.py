@@ -79,6 +79,10 @@ class CachingSecretStore:
             self._cache[name] = (value, self._clock())
         return value
 
+    def invalidate(self) -> None:
+        """Clear cached secrets so the next lookup re-fetches from the inner store."""
+        self._cache.clear()
+
 
 class AzureKeyVaultSecretStore:  # pragma: no cover
     """Reads secrets from Azure Key Vault using DefaultAzureCredential."""

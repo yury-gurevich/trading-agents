@@ -10,17 +10,18 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from threading import Lock
 from typing import TYPE_CHECKING
 
 from agents.master.credential_test import ActivationRefused, resolve_and_test
+from agents.master.identity import next_instance_id
 from agents.master.key_vault import NullSecretStore
-from agents.master.remediation import plan_remediation
+from agents.master.remediation_execution import plan_and_run_remediation
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
     write_capability_grant,
     write_escalation,
-    write_remediation_plan,
     write_session,
 )
 from contracts.master import ACTIVATEMessage, DRAINMessage, EHLOMessage
@@ -28,10 +29,16 @@ from kernel import CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from agents.master.credential_test import CredentialTest, PassCache
     from agents.master.grants import GrantPolicy
     from agents.master.key_vault import SecretStore
     from agents.master.remediation import Remediation
+    from agents.master.remediation_execution import (
+        RemediationAttempt,
+        RemediationExecutor,
+    )
     from agents.master.secret_map import SecretMap
     from kernel import LLMClient
     from kernel.graph import Node
@@ -53,6 +60,7 @@ class MasterAgent:
         remediation_llm: LLMClient | None = None,
         remediation_catalogue: tuple[Remediation, ...] = (),
         remediation_system_prompt: str = "",
+        remediation_executors: Mapping[str, RemediationExecutor] | None = None,
     ) -> None:
         """Create master with injected graph, settings, grant policy, and secret map.
 
@@ -68,14 +76,14 @@ class MasterAgent:
         self._remediation_llm = remediation_llm
         self._remediation_catalogue = remediation_catalogue
         self._remediation_system_prompt = remediation_system_prompt
+        self._remediation_executors = dict(remediation_executors or {})
         # No injected policy/map -> the substrate knows no agent types or secrets; a
         # pack supplies them (entrypoint loads orchestration/packs/trading_*.json).
-        self._grant_policy: GrantPolicy = (
-            grant_policy if grant_policy is not None else {}
-        )
-        self._secret_map: SecretMap = secret_map if secret_map is not None else {}
+        self._grant_policy: GrantPolicy = grant_policy or {}
+        self._secret_map: SecretMap = secret_map or {}
         self._session_id: str | None = None
         self._instance_counter: dict[str, int] = {}
+        self._instance_lock = Lock()
 
     def start(self) -> str:
         """Open a new boot session; write Session node. Returns session_id."""
@@ -110,15 +118,22 @@ class MasterAgent:
                     tuple(failures),
                     self._settings.remediation_mode,
                 )
-                self._plan_remediation(escalation)
-                raise ActivationRefused(
-                    f"credential test(s) failed for {agent_type!r}: {failures}"
-                )
-
-            n = self._instance_counter.get(agent_type, 0)
-            self._instance_counter[agent_type] = n + 1
-            ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-            instance_id = f"{agent_type}:{ts}:{n}"
+                attempt = self._run_remediation(escalation)
+                if attempt is not None and attempt.status == "succeeded":
+                    config, failures = resolve_and_test(
+                        agent_type,
+                        self._secret_store,
+                        self._secret_map,
+                        self._credential_tests,
+                        cache=self._pass_cache,
+                    )
+                if failures:
+                    raise ActivationRefused(
+                        f"credential test(s) failed for {agent_type!r}: {failures}"
+                    )
+            instance_id = next_instance_id(
+                agent_type, self._instance_counter, self._instance_lock
+            )
             grants = self._grant_policy[agent_type]
 
             write_agent_instance(
@@ -162,22 +177,22 @@ class MasterAgent:
     def _instance_node(self, instance_id: str) -> Node | None:
         return self._graph.get_node("AgentInstance", instance_id)
 
-    def _plan_remediation(self, escalation: Node) -> None:
-        if self._remediation_llm is None or not self._remediation_catalogue:
-            return
+    def _run_remediation(self, escalation: Node) -> RemediationAttempt | None:
         with fault_boundary(
             self.sink,
             agent="master",
             module="agents.master.agent",
-            capability="plan_remediation",
+            capability="run_remediation",
             reraise=False,
         ):
-            plan = plan_remediation(
-                {**dict(escalation.props), "key": escalation.key},
-                self._remediation_catalogue,
-                self._remediation_llm,
+            return plan_and_run_remediation(
+                graph=self._graph,
+                escalation=escalation,
+                llm=self._remediation_llm,
+                catalogue=self._remediation_catalogue,
+                system_prompt=self._remediation_system_prompt,
                 scope=self._settings.auto_remediation_scope,
                 mode=self._settings.remediation_mode,
-                system_prompt=self._remediation_system_prompt,
+                executors=self._remediation_executors,
+                max_auto_remediation_attempts=self._settings.max_auto_remediation_attempts,
             )
-            write_remediation_plan(self._graph, escalation.key, plan)

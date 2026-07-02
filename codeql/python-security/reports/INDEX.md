@@ -6,7 +6,8 @@ Each CodeQL query has its own subfolder. Inside each query folder:
 - `archive/<timestamp>/` -- one subfolder per run, never overwritten; for history.
 - `INDEX.md` -- query-specific index listing every archived run.
 
-**Start here:** pick a query, open its `latest/report.md`.
+**Start here:** pick a query. If it already has a generated `latest/report.md`, open that;
+otherwise run the query from the query-specific index first.
 
 ---
 

@@ -7,7 +7,7 @@ Read [README.md](README.md) first for entry points and usage.
 | [README.md](README.md) | Tool overview, layout, and the command entry points |
 | [scripts/](scripts/) | Management layer — setup, run-suite, agent-boundary, AST, report, clean, errors, neo4j-sync |
 | [python-security/](python-security/README.md) | Query pack: agent cross-import boundary + taint tracking (has its own README) |
-| [yaml-diagnostics/](yaml-diagnostics/) | Query pack: YAML parse-error + unresolved-include diagnostics |
+| [yaml-diagnostics/](yaml-diagnostics/INDEX.md) | Query pack: YAML parse-error + unresolved-include diagnostics |
 
 ## scripts/ — what each does
 

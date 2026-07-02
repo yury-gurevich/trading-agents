@@ -33,7 +33,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Platform/pack + etalon** (post-P14) | S84–S89, S96 | ADR-0012 substrate/pack extraction — grants + secrets out of the master image (S84–S86, DL-12); staleness gate counts trading sessions (S87, DL-10); DL-09 filter verdicts + quality scorecard (S88–S89); deliberation understanding + challenger-veto (S96, DL-31). Continuous etalon-first work — live status in `../STATE.md`, not a numbered phase. | **shipped** |
 | **P12/P13** | tbd | DSPy `PromptOptimizer` port + golden eval set + per-(task×model) compiled prompt artifact | **queued** |
 | **P16** | S90–S95 | Continuous-improvement system (ADR-0013): CI-1 parameter catalogue · CI-2 RunMetrics on graph · CI-3 ParameterSet (configurable-not-settable) · CI-4 experiment+compare · CI-5 gate+promote (absorbs ADR-0010) · CI-6 optimiser (sweep; ingest target first) | **queued** — specs written (S90–S95), deferred behind a perfect etalon (DL-19) |
-| **Fleet Activation** (DL-30/DL-35) | S97–S103 | Close the distributed-platform gap: `serve_loop` primitive (S97) → control-plane agents served in-process (S98–S99, retires every `idle_loop()`) → Azure Service Bus receiver + parity (S100) → permanent Neo4j (S101) → 13-container run-through + distributed acceptance (S102) → dispatcher cron (S103). In-process before distributed; reverses the etalon-first pause for the fleet workstream (DL-35). | **planned** |
+| **Fleet Activation / Credential Validation** (DL-30/DL-35/DL-36) | S97–S104 | Close the distributed-platform gap: `serve_loop` primitive (S97) → control-plane agents served in-process (S98–S99, retires every `idle_loop()`) → Azure Service Bus receiver + parity (S100) → permanent Neo4j (S101) → 13-container run-through + distributed acceptance (S102) → dispatcher cron (S103) → credential-tested activation + escalation on failure (S104). In-process before distributed; reverses the etalon-first pause for the fleet workstream (DL-35), then hardens activation handoff (DL-36). | **in progress** — S97–S98 shipped; S99–S104 handovers exist |
 
 ---
 
@@ -48,7 +48,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S104**, then S105 …
+1. Next number: **S106**, then S107 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

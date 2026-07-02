@@ -64,4 +64,24 @@ class MasterSettings(AgentSettings):
         ),
     )
 
+    remediation_mode: str = tunable(
+        "manual",
+        why=(
+            "How a credential-test failure is handled (DL-36): 'manual' = refuse + "
+            "escalate to a human; 'automatic' = allow ONE auto remediation shot then "
+            "force manual. The auto remediation itself is a later piece (C/D)."
+        ),
+    )
+
+    secret_cache_ttl_minutes: int = tunable(
+        5,
+        why=(
+            "Minutes the master caches a fetched Key Vault secret for repeated "
+            "references (0 = never expires). Operator dials: 3 / 5 / 10 / 0."
+        ),
+        ge=0,
+        le=60,
+        unit="minutes",
+    )
+
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

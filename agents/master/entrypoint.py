@@ -100,7 +100,11 @@ def main() -> None:  # pragma: no cover
     import logging
     import os
 
-    from agents.master.key_vault import AzureKeyVaultSecretStore, EnvVarSecretStore
+    from agents.master.key_vault import (
+        AzureKeyVaultSecretStore,
+        CachingSecretStore,
+        EnvVarSecretStore,
+    )
     from kernel.bootstrap import master_private_key_from_env
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -120,6 +124,10 @@ def main() -> None:  # pragma: no cover
         secret_store = EnvVarSecretStore()
         log.info("[master] no MASTER_KEY_VAULT_URL — secrets from env vars")
 
+    settings = MasterSettings()
+    secret_store = CachingSecretStore(secret_store, settings.secret_cache_ttl_minutes)
+    log.info("[master] secret cache TTL: %d min", settings.secret_cache_ttl_minutes)
+
     graph_kind = os.environ.get("MASTER_GRAPH", "neo4j")
     graph = select_graph_store(graph_kind)
     log.info("[master] graph store: %s", graph_kind)
@@ -130,7 +138,7 @@ def main() -> None:  # pragma: no cover
 
     ensure_reachable_or_halt(graph)
     log.info("[master] graph reachable")
-    agent, key_pem = build_app(graph, pem, secret_store=secret_store)
+    agent, key_pem = build_app(graph, pem, settings=settings, secret_store=secret_store)
     log.info("[master] session=%s — serving on :8000", agent.session_id)
     serve(8000, agent, key_pem)
 

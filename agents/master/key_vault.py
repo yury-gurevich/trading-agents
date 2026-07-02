@@ -8,7 +8,11 @@ External I/O: Azure Key Vault (AzureKeyVaultSecretStore only).
 from __future__ import annotations
 
 import os
-from typing import Protocol, runtime_checkable
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @runtime_checkable
@@ -38,6 +42,42 @@ class EnvVarSecretStore:
     def get_secret(self, name: str) -> str:
         """Look up env var derived from *name*; return '' if not set."""
         return os.environ.get(name.upper().replace("-", "_"), "")
+
+
+class CachingSecretStore:
+    """Cache secrets fetched from an inner store for repeated references (DL-36).
+
+    A Key Vault round-trip on every repeated reference is wasteful — the master
+    fetches the same secrets for many agents. Cache each fetched value for
+    ``ttl_minutes`` (0 = never expires). Only non-empty fetches are cached, so a
+    missing secret is re-fetched and a newly-seeded one is picked up.
+    """
+
+    def __init__(
+        self,
+        inner: SecretStore,
+        ttl_minutes: int,
+        *,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Wrap *inner*; cache fetched secrets for *ttl_minutes* (0 = never expires)."""
+        self._inner = inner
+        self._ttl = timedelta(minutes=ttl_minutes)
+        self._never = ttl_minutes == 0
+        self._clock = clock or (lambda: datetime.now(UTC))
+        self._cache: dict[str, tuple[str, datetime]] = {}
+
+    def get_secret(self, name: str) -> str:
+        """Return the cached value if fresh, else fetch from the inner store."""
+        hit = self._cache.get(name)
+        if hit is not None:
+            value, fetched_at = hit
+            if self._never or (self._clock() - fetched_at) < self._ttl:
+                return value
+        value = self._inner.get_secret(name)
+        if value:
+            self._cache[name] = (value, self._clock())
+        return value
 
 
 class AzureKeyVaultSecretStore:  # pragma: no cover

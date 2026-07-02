@@ -50,9 +50,13 @@ single source of truth; this file is only your runtime binding. You also inherit
    and fix every inbound link (run a repo-wide grep for the old path to prove none dangle).
 4. **Branch per chore**, run `make ci` before declaring anything green (per CLAUDE.md),
    and never commit to `main` directly — merge to deploy.
-5. **Write a ledger row** to `ops/maintenance/ledger.md` for the pass
+5. **Pre-delete/pre-move safety check:** before moving or deleting any file, run
+   `git status` and `git log --all --oneline -- <path>` to confirm the file has no
+   uncommitted changes and no open branches that reference it. If either check
+   returns hits, document the conflict in your report and skip that file.
+6. **Write a ledger row** to `ops/maintenance/ledger.md` for the pass
    (`| date | housekeeping | action | outcome | … | note |`).
-6. **Report concisely:** what changed, why, what was reclaimed/relocated, and where
+7. **Report concisely:** what changed, why, what was reclaimed/relocated, and where
    anything removed can be recovered (del path or git history).
 
 When unsure whether something is safe to delete, prefer the del folder over `git rm`,

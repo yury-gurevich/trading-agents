@@ -140,6 +140,15 @@ except config and the probe function):
 
 1. **Celery/Redis** — deferred to P14 (ratified). Retires when `ServiceBusBus` ships. No further hygiene decisions pending.
 
+## Local dev tools
+
+Tools installed on the dev machine (outside `pyproject.toml`) and approved for Claude Code so
+they run without a permission prompt:
+
+| Tool | Install | Approved via | Used for |
+| --- | --- | --- | --- |
+| `jq` 1.8.2 | `winget install jqlang.jq` (user scope) | `.claude/settings.json` → `permissions.allow` `Bash(jq:*)` | JSON processing in bash (e.g. filtering `gh run list --json` output). Note: `gh`'s built-in `--jq` flag also works without the external binary. |
+
 ## Follow-ups (not blocking)
 
 - `kernel/graph_neo4j_config.py` still defaults `neo4j_database="neo4j"`. The runtime `.env`

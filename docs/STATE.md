@@ -3,7 +3,7 @@
 **Last updated:** 2026-07-02 18:51 AEST · **Version:** 0.47.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
-each `docs/sprints/sprint-NN-*.md` + `STATE-01/02.md` + git). **LAW-02:** an item is "shipped" only when
+each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
 its success factors are *proven* (tests, `make ci`, the named live check) — never restate intent as outcome.
 
 ---
@@ -35,7 +35,8 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 - **S96 (0.40.00→0.42.00)** — deliberation define-then-justify + scored understanding gate + asymmetric
   challenger-veto with transcript persistence (DL-31).
 
-Older sprints (S37–S95): `docs/sprints/README.md` + `STATE-02.md`.
+Older sprints — S77–96 detail → [STATE-03.md](STATE-03.md) · S37–76 → [STATE-02.md](STATE-02.md) ·
+S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
 

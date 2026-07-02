@@ -148,6 +148,30 @@ def write_remediation_attempt(
     return node
 
 
+def write_escalation_remediation_outcome(
+    graph: GraphStore,
+    escalation_key: str,
+    attempt: RemediationAttempt,
+    *,
+    resolved: bool,
+) -> Node:
+    """Append the remediation outcome without overwriting the original escalation."""
+    if graph.get_node("Escalation", escalation_key) is None:
+        raise KeyError(f"no Escalation with key {escalation_key!r}")
+    ts = datetime.now(UTC).isoformat()
+    return graph.merge_node(
+        "Escalation",
+        escalation_key,
+        {
+            "resolution_status": "resolved" if resolved else "open",
+            "mode_after_remediation": "" if resolved else "manual",
+            "auto_attempts_used": 1 if attempt.auto else 0,
+            "last_remediation_status": attempt.status,
+            "last_remediation_at": ts,
+        },
+    )
+
+
 def write_capability_grant(
     graph: GraphStore,
     instance_id: str,

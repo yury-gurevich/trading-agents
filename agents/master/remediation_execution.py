@@ -32,6 +32,14 @@ class RemediationAttempt:
     auto: bool
 
 
+@dataclass(frozen=True)
+class RemediationRun:
+    """A planned remediation plus the executor's immediate result."""
+
+    plan: RemediationPlan
+    attempt: RemediationAttempt
+
+
 class RemediationExecutor(Protocol):
     """Injected executor for one non-destructive remediation."""
 
@@ -110,6 +118,36 @@ def plan_and_run_remediation(
     max_auto_remediation_attempts: int,
 ) -> RemediationAttempt | None:
     """Write a plan, run at most one auto remediation, then write its attempt."""
+    run = plan_and_try_remediation(
+        graph=graph,
+        escalation=escalation,
+        llm=llm,
+        catalogue=catalogue,
+        system_prompt=system_prompt,
+        scope=scope,
+        mode=mode,
+        executors=executors,
+        max_auto_remediation_attempts=max_auto_remediation_attempts,
+    )
+    if run is None:
+        return None
+    write_remediation_attempt(graph, escalation.key, run.attempt)
+    return run.attempt
+
+
+def plan_and_try_remediation(
+    *,
+    graph: GraphStore,
+    escalation: Node,
+    llm: LLMClient | None,
+    catalogue: tuple[Remediation, ...],
+    system_prompt: str,
+    scope: str,
+    mode: str,
+    executors: Mapping[str, RemediationExecutor],
+    max_auto_remediation_attempts: int,
+) -> RemediationRun | None:
+    """Write a plan and run an executor, but leave final attempt logging to caller."""
     if llm is None or not catalogue:
         return None
     context = {**dict(escalation.props), "key": escalation.key}
@@ -129,8 +167,7 @@ def plan_and_run_remediation(
         prior_auto_attempts=_prior_auto_attempts(graph, context, plan.remediation),
         max_auto_remediation_attempts=max_auto_remediation_attempts,
     )
-    write_remediation_attempt(graph, escalation.key, attempt)
-    return attempt
+    return RemediationRun(plan, attempt)
 
 
 def _prior_auto_attempts(

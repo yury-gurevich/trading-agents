@@ -16,7 +16,11 @@ from agents.master.remediation_execution import (
     RemediationAttempt,
     plan_and_run_remediation,
 )
-from agents.master.store import write_escalation, write_remediation_attempt
+from agents.master.store import (
+    write_escalation,
+    write_escalation_remediation_outcome,
+    write_remediation_attempt,
+)
 from kernel import InMemoryGraphStore
 
 if TYPE_CHECKING:
@@ -66,6 +70,16 @@ def test_write_remediation_attempt_requires_existing_escalation() -> None:
         )
 
 
+def test_write_escalation_remediation_outcome_requires_existing_escalation() -> None:
+    with pytest.raises(KeyError, match="no Escalation"):
+        write_escalation_remediation_outcome(
+            InMemoryGraphStore(),
+            "missing",
+            RemediationAttempt(_SAFE.remediation, "skipped", "nope", "none", False),
+            resolved=False,
+        )
+
+
 def test_plan_and_run_remediation_writes_plan_and_attempt() -> None:
     graph = InMemoryGraphStore()
     escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
@@ -88,6 +102,25 @@ def test_plan_and_run_remediation_writes_plan_and_attempt() -> None:
     assert attempt.status == "succeeded"
     assert len(graph.list_nodes("RemediationPlan")) == 1
     assert len(graph.list_nodes("RemediationAttempt")) == 1
+
+
+def test_plan_and_run_remediation_skips_when_selector_is_unavailable() -> None:
+    graph = InMemoryGraphStore()
+    escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    attempt = plan_and_run_remediation(
+        graph=graph,
+        escalation=escalation,
+        llm=None,
+        catalogue=(Remediation(_SAFE.remediation, "Fetch again.", False),),
+        system_prompt="compiled",
+        scope="safe_only",
+        mode="automatic",
+        executors={},
+        max_auto_remediation_attempts=1,
+    )
+    assert attempt is None
+    assert not graph.list_nodes("RemediationPlan")
+    assert not graph.list_nodes("RemediationAttempt")
 
 
 def test_plan_and_run_remediation_respects_prior_attempt_cap() -> None:

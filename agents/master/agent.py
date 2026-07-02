@@ -13,10 +13,10 @@ from datetime import UTC, datetime
 from threading import Lock
 from typing import TYPE_CHECKING
 
+from agents.master.activation_remediation import handle_activation_remediation
 from agents.master.credential_test import ActivationRefused, resolve_and_test
 from agents.master.identity import next_instance_id
 from agents.master.key_vault import NullSecretStore
-from agents.master.remediation_execution import plan_and_run_remediation
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
@@ -36,7 +36,6 @@ if TYPE_CHECKING:
     from agents.master.key_vault import SecretStore
     from agents.master.remediation import Remediation
     from agents.master.remediation_execution import (
-        RemediationAttempt,
         RemediationExecutor,
     )
     from agents.master.secret_map import SecretMap
@@ -118,19 +117,24 @@ class MasterAgent:
                     tuple(failures),
                     self._settings.remediation_mode,
                 )
-                attempt = self._run_remediation(escalation)
-                if attempt is not None and attempt.status == "succeeded":
-                    config, failures = resolve_and_test(
-                        agent_type,
-                        self._secret_store,
-                        self._secret_map,
-                        self._credential_tests,
-                        cache=self._pass_cache,
-                    )
-                if failures:
-                    raise ActivationRefused(
-                        f"credential test(s) failed for {agent_type!r}: {failures}"
-                    )
+                handle_activation_remediation(
+                    graph=self._graph,
+                    sink=self.sink,
+                    settings=self._settings,
+                    escalation=escalation,
+                    agent_type=agent_type,
+                    secret_store=self._secret_store,
+                    secret_map=self._secret_map,
+                    credential_tests=self._credential_tests,
+                    pass_cache=self._pass_cache,
+                    llm=self._remediation_llm,
+                    catalogue=self._remediation_catalogue,
+                    system_prompt=self._remediation_system_prompt,
+                    executors=self._remediation_executors,
+                )
+                raise ActivationRefused(
+                    f"credential test(s) failed for {agent_type!r}: {failures}"
+                )
             instance_id = next_instance_id(
                 agent_type, self._instance_counter, self._instance_lock
             )
@@ -176,23 +180,3 @@ class MasterAgent:
 
     def _instance_node(self, instance_id: str) -> Node | None:
         return self._graph.get_node("AgentInstance", instance_id)
-
-    def _run_remediation(self, escalation: Node) -> RemediationAttempt | None:
-        with fault_boundary(
-            self.sink,
-            agent="master",
-            module="agents.master.agent",
-            capability="run_remediation",
-            reraise=False,
-        ):
-            return plan_and_run_remediation(
-                graph=self._graph,
-                escalation=escalation,
-                llm=self._remediation_llm,
-                catalogue=self._remediation_catalogue,
-                system_prompt=self._remediation_system_prompt,
-                scope=self._settings.auto_remediation_scope,
-                mode=self._settings.remediation_mode,
-                executors=self._remediation_executors,
-                max_auto_remediation_attempts=self._settings.max_auto_remediation_attempts,
-            )

@@ -52,6 +52,7 @@ class MasterAgent:
         pass_cache: PassCache | None = None,
         remediation_llm: LLMClient | None = None,
         remediation_catalogue: tuple[Remediation, ...] = (),
+        remediation_system_prompt: str = "",
     ) -> None:
         """Create master with injected graph, settings, grant policy, and secret map.
 
@@ -66,6 +67,7 @@ class MasterAgent:
         self._pass_cache = pass_cache
         self._remediation_llm = remediation_llm
         self._remediation_catalogue = remediation_catalogue
+        self._remediation_system_prompt = remediation_system_prompt
         # No injected policy/map -> the substrate knows no agent types or secrets; a
         # pack supplies them (entrypoint loads orchestration/packs/trading_*.json).
         self._grant_policy: GrantPolicy = (
@@ -176,5 +178,6 @@ class MasterAgent:
                 self._remediation_llm,
                 scope=self._settings.auto_remediation_scope,
                 mode=self._settings.remediation_mode,
+                system_prompt=self._remediation_system_prompt,
             )
             write_remediation_plan(self._graph, escalation.key, plan)

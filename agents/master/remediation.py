@@ -20,7 +20,12 @@ if TYPE_CHECKING:
     from kernel import LLMClient
 
 FALLBACK_REMEDIATION = "pause-and-escalate"
+_FALLBACK_DESCRIPTION = "Pause automation and escalate to a human operator decision."
 _DEFAULT_RATIONALE = "Selected from the bounded remediation catalogue."
+_DEFAULT_SYSTEM_PROMPT = (
+    "You are the master remediation planner. Choose exactly one remediation "
+    "from the catalogue. Do not invent actions. Return JSON only."
+)
 
 
 @dataclass(frozen=True)
@@ -77,9 +82,14 @@ def select_remediation(
     failure: Mapping[str, object] | str,
     catalogue: Sequence[Remediation],
     llm: LLMClient,
+    *,
+    system_prompt: str = "",
 ) -> str:
     """Ask the LLM to choose one catalogue remediation; fallback on bad output."""
-    return _select_with_rationale(failure, catalogue, llm)[0]
+    selected, _ = _select_with_rationale(
+        failure, catalogue, llm, system_prompt=system_prompt
+    )
+    return selected
 
 
 def plan_remediation(
@@ -89,10 +99,13 @@ def plan_remediation(
     *,
     scope: str,
     mode: str,
+    system_prompt: str = "",
 ) -> RemediationPlan:
     """Plan a remediation and mark whether it can auto-run under the settings."""
     try:
-        selected, rationale = _select_with_rationale(escalation, catalogue, llm)
+        selected, rationale = _select_with_rationale(
+            escalation, catalogue, llm, system_prompt=system_prompt
+        )
     except Exception as exc:
         selected = FALLBACK_REMEDIATION
         rationale = f"Planner failed open to human review ({type(exc).__name__})."
@@ -112,13 +125,12 @@ def _select_with_rationale(
     failure: Mapping[str, object] | str,
     catalogue: Sequence[Remediation],
     llm: LLMClient,
+    *,
+    system_prompt: str = "",
 ) -> tuple[str, str]:
     names = tuple(option.name for option in catalogue)
     raw = llm.complete(
-        system=(
-            "You are the master remediation planner. Choose exactly one remediation "
-            "from the catalogue. Do not invent actions. Return JSON only."
-        ),
+        system=system_prompt or _DEFAULT_SYSTEM_PROMPT,
         user=_user_prompt(failure, catalogue),
         tool_schema=_tool_schema(names),
     )
@@ -184,8 +196,4 @@ def _find_remediation(catalogue: Sequence[Remediation], name: str) -> Remediatio
     for remediation in catalogue:
         if remediation.name == name:
             return remediation
-    return Remediation(
-        FALLBACK_REMEDIATION,
-        "Pause automation and escalate to a human operator.",
-        False,
-    )
+    return Remediation(FALLBACK_REMEDIATION, _FALLBACK_DESCRIPTION, False)

@@ -1,0 +1,13 @@
+{
+  "model": "fake",
+  "date": "2026-07-02",
+  "library": "trading-remediation-selection",
+  "passing": [
+    "ambiguous-unknown-failure",
+    "blank-key-vault-secret",
+    "compromised-credential",
+    "destroyed-backing-service",
+    "paused-backing-instance"
+  ],
+  "pass_rate": 1.0
+}

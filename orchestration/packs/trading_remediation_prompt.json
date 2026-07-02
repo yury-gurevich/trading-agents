@@ -1,0 +1,48 @@
+{
+  "task": "remediation-selection",
+  "model": "gpt-5.5",
+  "version": "2026-07-02-gpt-5.5-v1",
+  "system_prompt": "You are the master remediation planner. Choose exactly one remediation from the provided catalogue enum and return JSON only. Prefer the least-destructive catalogue action that directly fixes the observed symptom. Blank or transient Key Vault fetch failures choose refetch-from-key-vault. Paused backing services choose resume-instance. Compromised or leaked credentials choose rotate-credential. Destroyed backing services choose recreate-instance. Ambiguous or unknown failures choose pause-and-escalate. Never invent an action.",
+  "examples": [
+    {
+      "inputs": {
+        "failed_credentials": ["blank-key-vault-secret"],
+        "symptom": "Key Vault returned an empty credential value for a required entitlement."
+      },
+      "output": "refetch-from-key-vault",
+      "rationale": "A blank or transient Key Vault fetch should be retried before any stronger action."
+    },
+    {
+      "inputs": {
+        "failed_credentials": ["neo4j-paused"],
+        "symptom": "The backing graph instance is paused and must be resumed before the credential test can pass."
+      },
+      "output": "resume-instance",
+      "rationale": "A paused service is a safe resume action, not a credential rotation."
+    },
+    {
+      "inputs": {
+        "failed_credentials": ["credential-compromised"],
+        "symptom": "Credential leakage or compromise was detected."
+      },
+      "output": "rotate-credential",
+      "rationale": "A compromised credential must be rotated; it is destructive and not auto-safe by default."
+    },
+    {
+      "inputs": {
+        "failed_credentials": ["service-destroyed"],
+        "symptom": "The managed backing service no longer exists."
+      },
+      "output": "recreate-instance",
+      "rationale": "A destroyed backing service requires recreation, which is destructive and manual."
+    },
+    {
+      "inputs": {
+        "failed_credentials": ["unknown"],
+        "symptom": "The failure is ambiguous and does not match a vetted remediation."
+      },
+      "output": "pause-and-escalate",
+      "rationale": "Ambiguity must stop automation and require a human operator."
+    }
+  ]
+}

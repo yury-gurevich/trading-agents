@@ -124,9 +124,7 @@ def _ehlo() -> EHLOMessage:
 
 
 def test_activate_refuses_and_escalates_on_a_required_failure() -> None:
-    graph, master = _master(
-        (CredentialTest("neo4j", _failing),), {"neo4j-uri": "x"}
-    )
+    graph, master = _master((CredentialTest("neo4j", _failing),), {"neo4j-uri": "x"})
     with pytest.raises(ActivationRefused):
         master.activate(_ehlo())
     (escalation,) = graph.list_nodes("Escalation")
@@ -137,9 +135,7 @@ def test_activate_refuses_and_escalates_on_a_required_failure() -> None:
 
 
 def test_activate_hands_over_config_when_the_test_passes() -> None:
-    graph, master = _master(
-        (CredentialTest("neo4j", _passing),), {"neo4j-uri": "good"}
-    )
+    graph, master = _master((CredentialTest("neo4j", _passing),), {"neo4j-uri": "good"})
     activate = master.activate(_ehlo())
     assert activate.agent_type == "scanner"
     assert activate.config == {"NEO4J_URI": "good"}

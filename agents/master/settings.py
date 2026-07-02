@@ -73,4 +73,15 @@ class MasterSettings(AgentSettings):
         ),
     )
 
+    secret_cache_ttl_minutes: int = tunable(
+        5,
+        why=(
+            "Minutes the master caches a fetched Key Vault secret for repeated "
+            "references (0 = never expires). Operator dials: 3 / 5 / 10 / 0."
+        ),
+        ge=0,
+        le=60,
+        unit="minutes",
+    )
+
     model_config = SettingsConfigDict(env_prefix="MASTER_", frozen=True)

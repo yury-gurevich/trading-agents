@@ -6,12 +6,21 @@ without validation against an allow-list of hosts.
 
 ---
 
-## Latest result -- start here
+## Latest result
+
+No taint-tracking report has been generated yet; `latest/` is intentionally empty.
+After the first run, this folder should contain:
 
 | File | Answers |
 | --- | --- |
-| [latest/report.md](latest/report.md) | What is the current taint flow count? Is any untrusted URL reaching urlopen? |
-| [latest/results.sarif](latest/results.sarif) | Machine-readable copy for GitHub Security / VS Code SARIF Viewer |
+| `latest/report.md` | What is the current taint flow count? Is any untrusted URL reaching urlopen? |
+| `latest/results.sarif` | Machine-readable copy for GitHub Security / VS Code SARIF Viewer |
+
+Run from the repo root:
+
+```powershell
+.\codeql\scripts\run_codeql_agent_boundary.ps1 -Query codeql\python-security\TaintTracking.ql -OutputDir codeql\python-security\reports\taint-tracking -Rebuild
+```
 
 These two files are overwritten on every run.
 

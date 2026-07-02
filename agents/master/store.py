@@ -14,6 +14,7 @@ from contracts.master import AgentState
 
 if TYPE_CHECKING:
     from agents.master.remediation import RemediationPlan
+    from agents.master.remediation_execution import RemediationAttempt
     from kernel import GraphStore
     from kernel.graph import Node
 
@@ -116,6 +117,59 @@ def write_remediation_plan(
     )
     graph.add_edge(escalation, node, "PLANNED_BY")
     return node
+
+
+def write_remediation_attempt(
+    graph: GraphStore,
+    escalation_key: str,
+    attempt: RemediationAttempt,
+) -> Node:
+    """Record an automatic remediation attempt for an escalation."""
+    escalation = graph.get_node("Escalation", escalation_key)
+    if escalation is None:
+        raise KeyError(f"no Escalation with key {escalation_key!r}")
+    ts = datetime.now(UTC)
+    node = graph.merge_node(
+        "RemediationAttempt",
+        f"remediation-attempt:{escalation_key}:{ts.strftime('%Y%m%dT%H%M%S%f')}",
+        {
+            "escalation_key": escalation_key,
+            "agent_type": str(escalation.props.get("agent_type", "")),
+            "failed_credentials": list(escalation.props.get("failed_credentials", ())),
+            "remediation": attempt.remediation,
+            "status": attempt.status,
+            "message": attempt.message,
+            "executor": attempt.executor,
+            "auto": attempt.auto,
+            "created_at": ts.isoformat(),
+        },
+    )
+    graph.add_edge(escalation, node, "ATTEMPTED_BY")
+    return node
+
+
+def write_escalation_remediation_outcome(
+    graph: GraphStore,
+    escalation_key: str,
+    attempt: RemediationAttempt,
+    *,
+    resolved: bool,
+) -> Node:
+    """Append the remediation outcome without overwriting the original escalation."""
+    if graph.get_node("Escalation", escalation_key) is None:
+        raise KeyError(f"no Escalation with key {escalation_key!r}")
+    ts = datetime.now(UTC).isoformat()
+    return graph.merge_node(
+        "Escalation",
+        escalation_key,
+        {
+            "resolution_status": "resolved" if resolved else "open",
+            "mode_after_remediation": "" if resolved else "manual",
+            "auto_attempts_used": 1 if attempt.auto else 0,
+            "last_remediation_status": attempt.status,
+            "last_remediation_at": ts,
+        },
+    )
 
 
 def write_capability_grant(

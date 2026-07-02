@@ -64,6 +64,7 @@ from kernel.llm import FakeLLMClient, LLMClient
 from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
 from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
+from kernel.optimizer import PromptArtifact, PromptExample, PromptOptimizer
 
 __all__ = [
     "AgentBase",
@@ -104,6 +105,9 @@ __all__ = [
     "NullMetrics",
     "ParameterTruth",
     "PrometheusMetrics",
+    "PromptArtifact",
+    "PromptExample",
+    "PromptOptimizer",
     "Proposition",
     "ReadyEvent",
     "TunableDoc",

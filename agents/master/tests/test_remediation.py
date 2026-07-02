@@ -35,14 +35,15 @@ _CATALOGUE = (
 class _LLM:
     """Fake structured LLM with schema capture."""
 
-    def __init__(self, response: str | Exception) -> None:
+    def __init__(self, response: str | Exception, expected_system: str = "") -> None:
         self.response = response
+        self.expected_system = expected_system or "remediation planner"
         self.last_schema: dict[str, object] | None = None
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
-        assert "remediation planner" in system
+        assert self.expected_system in system
         assert "Credential-test failure" in user
         self.last_schema = tool_schema
         if isinstance(self.response, Exception):
@@ -66,6 +67,17 @@ def test_select_remediation_uses_enum_schema_and_valid_choice() -> None:
         "rotate-credential",
         FALLBACK_REMEDIATION,
     ]
+
+
+def test_select_remediation_uses_compiled_system_prompt() -> None:
+    llm = _LLM(_response("refetch-from-key-vault"), "compiled champion")
+    selected = select_remediation(
+        "neo4j test failed",
+        _CATALOGUE,
+        llm,
+        system_prompt="compiled champion prompt",
+    )
+    assert selected == "refetch-from-key-vault"
 
 
 @pytest.mark.parametrize(

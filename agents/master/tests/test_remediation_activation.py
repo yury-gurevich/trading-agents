@@ -37,10 +37,14 @@ _MAP = {"scanner": [("neo4j-uri", "NEO4J_URI")]}
 class _LLM:
     """Fake planner LLM."""
 
+    def __init__(self) -> None:
+        self.system_prompts: list[str] = []
+
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
-        del system, user, tool_schema
+        self.system_prompts.append(system)
+        del user, tool_schema
         return (
             '{"remediation": "refetch-from-key-vault", '
             '"rationale": "Credential can be fetched again."}'
@@ -89,6 +93,7 @@ def test_write_remediation_plan_requires_existing_escalation() -> None:
 
 def test_activate_records_plan_before_refusing_activation() -> None:
     graph = InMemoryGraphStore()
+    llm = _LLM()
     master = MasterAgent(
         graph=graph,
         settings=MasterSettings(
@@ -99,8 +104,9 @@ def test_activate_records_plan_before_refusing_activation() -> None:
         secret_map=_MAP,
         secret_store=_Store({"neo4j-uri": "bad"}),
         credential_tests=(CredentialTest("neo4j", _failing),),
-        remediation_llm=_LLM(),
+        remediation_llm=llm,
         remediation_catalogue=_CATALOGUE,
+        remediation_system_prompt="compiled selector prompt",
     )
     with pytest.raises(ActivationRefused):
         master.activate(_ehlo())
@@ -112,3 +118,4 @@ def test_activate_records_plan_before_refusing_activation() -> None:
         graph.descendants(escalation, max_depth=1, edge_types={"PLANNED_BY"})
     )
     assert linked == (plan,)
+    assert llm.system_prompts == ["compiled selector prompt"]

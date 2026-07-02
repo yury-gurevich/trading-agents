@@ -1,0 +1,47 @@
+[
+  {
+    "name": "blank-key-vault-secret",
+    "failure": {
+      "failed_credentials": ["blank-key-vault-secret"],
+      "symptom": "Key Vault returned an empty credential value for a required entitlement."
+    },
+    "expected": "refetch-from-key-vault",
+    "rationale": "A blank or transient Key Vault fetch should be retried before any stronger action."
+  },
+  {
+    "name": "paused-backing-instance",
+    "failure": {
+      "failed_credentials": ["neo4j-paused"],
+      "symptom": "The backing graph instance is paused and must be resumed before the credential test can pass."
+    },
+    "expected": "resume-instance",
+    "rationale": "A paused service is a safe resume action, not a credential rotation."
+  },
+  {
+    "name": "compromised-credential",
+    "failure": {
+      "failed_credentials": ["credential-compromised"],
+      "symptom": "Credential leakage or compromise was detected."
+    },
+    "expected": "rotate-credential",
+    "rationale": "A compromised credential must be rotated; it is destructive and not auto-safe by default."
+  },
+  {
+    "name": "destroyed-backing-service",
+    "failure": {
+      "failed_credentials": ["service-destroyed"],
+      "symptom": "The managed backing service no longer exists."
+    },
+    "expected": "recreate-instance",
+    "rationale": "A destroyed backing service requires recreation, which is destructive and manual."
+  },
+  {
+    "name": "ambiguous-unknown-failure",
+    "failure": {
+      "failed_credentials": ["unknown"],
+      "symptom": "The failure is ambiguous and does not match a vetted remediation."
+    },
+    "expected": "pause-and-escalate",
+    "rationale": "Ambiguity must stop automation and require a human operator."
+  }
+]

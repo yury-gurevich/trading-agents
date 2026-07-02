@@ -81,6 +81,15 @@ class MasterSettings(AgentSettings):
             "auto-eligible. Still gated by remediation_mode='automatic'."
         ),
     )
+    max_auto_remediation_attempts: int = tunable(
+        1,
+        why=(
+            "Maximum automatic remediation executor runs for the same failure "
+            "signature before forcing human review. Default is one shot."
+        ),
+        ge=0,
+        le=3,
+    )
 
     secret_cache_ttl_minutes: int = tunable(
         5,

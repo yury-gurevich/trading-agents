@@ -1658,3 +1658,7 @@ before build; **Piece A can start now**. Graduates to an ADR once the escalation
   `PromptOptimizer` port — the harness's first instance).
 - **"Production"/"documentation"** (for D): production = resume the blocked activation once the
   re-run credential test passes; documentation = a `RemediationRun` record + resolve the `Escalation`.
+- **Upstream (S108, 0.50.00):** the `.env`→Key Vault seeder tests every credential *before it enters the
+  vault* (fail-**closed** — a failing/empty/unverifiable secret is rejected, never written), so only
+  working credentials ever exist to be handed out. DL-36 at the source; the master's handover-time test
+  (S104) becomes defence-in-depth. Also fixed a latent secret-map bug (provider Alpaca-secret env var).

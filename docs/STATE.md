@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-02 23:20 AEST · **Version:** 0.49.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-03 12:51 AEST · **Version:** 0.50.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -17,13 +17,18 @@ reverses the etalon pause for the fleet workstream only):
   distributed fleet can run. **S97 `serve_loop` + S98 supervisor/operator served — shipped**; S99–S103 remain.
 - **Credential-security + bounded self-healing (DL-36) — ARC COMPLETE.** The master tests every
   credential before handover; failure → refuse + `Escalation` → LLM plans a bounded remediation →
-  eval-gated auto-execute (one shot) → human. **A/B/C/D shipped (S104/S105/S106/S107).**
+  eval-gated auto-execute (one shot) → human. **A/B/C/D shipped (S104/S105/S106/S107)**; **S108** seeds
+  Key Vault tested-before-insert (fail-closed) — the credential lifecycle is now closed at the source.
 
 Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The trade spine runs graph-pull
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S108 (DL-36 family, 0.49.00→0.50.00)** — `.env`→Key Vault seeder, **tested-before-insert**: a secret
+  enters the vault only after a live working-check passes; failing/empty/unverifiable creds are rejected
+  (fail-closed), dry-run by default. Also fixed a latent secret-map bug (provider Alpaca-secret env var).
+  Codex-built, reviewed, `make ci` 100% + **live check** on vault `trading-agents-kv`. Merged `bfd7cf8`.
 - **S107 (DL-36 D, 0.47.00→0.49.00)** — eval-gated auto-remediation execution: DSPy behind ADR-0010's
   `PromptOptimizer` port gates the selector; safe executors run the `test→execute→production→documentation`
   loop (one automatic shot then human); + thread-safe activation IDs + composition-root wiring. Codex-built,
@@ -34,7 +39,7 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   `kernel.startup.ensure_reachable_or_halt`, never crash-loop) · **S104** credential-tested activation
   (refuse + `Escalation`) · **S105** KV secret cache (TTL `3/5/10/0`, 0=never).
 - **Fleet-serve S97+S98 (0.42.00→0.44.00)** — kernel `serve_loop` primitive; supervisor/operator served
-  in-process (`idle_loop()` retired). Also: `jq` approved + documented; merged branches pruned.
+  in-process (`idle_loop()` retired).
 
 Older sprints — S77–96 detail → [STATE-03.md](STATE-03.md) · S37–76 → [STATE-02.md](STATE-02.md) ·
 S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.

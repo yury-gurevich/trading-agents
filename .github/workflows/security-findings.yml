@@ -1,0 +1,57 @@
+# Security Findings — report-only ratchet.
+#
+# Collects this repo's open GitHub code-scanning alerts and compares them to a
+# committed baseline (security/findings-baseline.json). It only *reports* — the
+# gate never fails a PR here. New findings surface in the job summary so they
+# do not accumulate silently (the gap: "a scan ran" -> "findings are triaged").
+#
+# To enforce later: refresh the baseline, then add a fail flag to the gate step,
+# e.g. `--fail-on-code-scanning-error` (block NEW error-level code-scanning) or
+# `--fail-on-security-severity-at-least 7.0`. Dependabot alerts are skipped here
+# because the default GITHUB_TOKEN cannot read them; set a PAT with
+# security_events in the SECURITY_FINDINGS_TOKEN secret to include them.
+name: Security Findings
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: security-findings-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: read the checkout + read code-scanning alerts. Nothing else.
+permissions:
+  contents: read
+  security-events: read
+
+env:
+  TOOL_SPEC: git+https://github.com/yury-gurevich/security-findings-toolset@main
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Collect open findings
+        env:
+          GITHUB_TOKEN: ${{ secrets.SECURITY_FINDINGS_TOKEN || secrets.GITHUB_TOKEN }}
+        run: >
+          uvx --from "$TOOL_SPEC" security-findings collect github
+          --repo "${{ github.repository }}"
+          --output security-findings-current.json
+
+      - name: Gate (report-only) against baseline
+        run: >
+          uvx --from "$TOOL_SPEC" security-findings gate
+          --findings security-findings-current.json
+          --baseline security/findings-baseline.json
+          --report-md security-findings-report.md
+          --report-json security-findings-report.json
+
+      - name: Publish report to job summary
+        if: always()
+        run: cat security-findings-report.md >> "$GITHUB_STEP_SUMMARY"

@@ -2,74 +2,166 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-99-control-plane-serve-forecaster-curator-researcher`
-**Status:** planned
+**Status:** planned (handover refreshed 2026-07-03 for the 0.50.00 codebase; supersedes the pre-S104 draft)
 **Effort:** M
+
+---
+
+## Codex kickoff (paste this)
+
+> Execute **Sprint 99 — serve forecaster/curator/researcher** exactly as specified in this file
+> (`docs/sprints/sprint-99-control-plane-serve-forecaster-curator-researcher.md`). It is a complete,
+> self-contained handover.
+>
+> - **Start:** from `main` (`git pull`),
+>   `git checkout -b sprint-99-control-plane-serve-forecaster-curator-researcher`. Read the files named
+>   under *Execution notes* first — S98's supervisor/operator entrypoints + tests are the exact pattern
+>   to replicate.
+> - **Hard gate every commit:** `make ci` green — 9 steps, **100 % coverage**, modules **≤ 200 lines**,
+>   coding-agent `Agent:`/`Role:` headers. Bump `pyproject.toml` 0.50.00 → 0.51.00 + `uv lock`.
+> - **Law constraint (do not cross):** all three agents are **request-triggered, never self-triggering**.
+>   The forecaster must NOT get a graph-pull `work_loop` (`FORE-TRG-02`); the researcher proposes, never
+>   applies; the curator never gates a live decision. Serving tests cite clause IDs in their docstrings.
+> - **Real-environment check** (sprint-close rule): serve each agent against **real Aura `bce05bd6`**
+>   via `serve_once`, assert the durable artifact from a **separate** connection, tear down to prior
+>   count, record the row in `docs/laws/functionality-checks.md`.
+> - **Do NOT merge or push to `main`** — commit on the branch only, and stop for operator confirmation.
+> - Read the *Session gotchas* before coding. When done, append a **Closeout evidence** block (like
+>   S107/S108's) with the `make ci` result + live-check evidence, and set **Status** to shipped.
 
 ---
 
 ## Goal
 
 Retire the last three `idle_loop()` stubs — **forecaster**, **curator**, **researcher** — by serving each
-over the S97 `serve_loop`. After this sprint **zero `idle_loop()` remains**: every one of the 12 agents
-runs a real loop (7 trade-spine on `work_loop`, 5 control-plane on `serve_loop`), so the whole fleet is
-*serviceable in-process*. S100 then swaps the in-process consumer for the Service Bus backend behind the
-same Protocol.
+over the S97 `serve_loop`, exactly as S98 did for supervisor/operator. After this sprint **zero
+`idle_loop()` remains**: every agent runs a real loop (trade-spine on `work_loop`, control-plane on
+`serve_loop`), so the whole fleet is *serviceable in-process* — the etalon-first-safe milestone. S100 then
+swaps the in-process consumer for the Service Bus backend behind the same `RequestConsumer` Protocol.
+
+## Decisions (resolved at planning — do not reopen in-sprint)
+
+- **Forecaster trigger source: unchanged in S99.** In-process, the *orchestrator* remains the only caller
+  (`cascade_once`'s forecaster stage, DL-30) — S99 adds the container-facing serve surface
+  (`LocalRequestConsumer` inbox), not a new trigger. *Who publishes* `forecast` requests in the
+  distributed fleet (orchestrator stage vs. analyst event) is **S100's decision**, to be captured in the
+  design log when the Service Bus receiver lands. Recommendation on record: the orchestrator publishes
+  per recommendation, so the forecaster never reads the analyst node itself (`FORE-TRG-02`).
+- **Curator/researcher cadence: out-of-band, request-triggered only** (operator command or orchestrator).
+  No pollers, no schedules in this sprint — consistent with "never influences a live decision".
 
 ## Scope
 
-**In:**
+### In
 
-- Serve the forecaster over `serve_loop` bound to its `forecast` / `forecast_return` capabilities.
-  **Critical constraint (DL-30, `FORE-TRG-01/02`):** the forecaster is **RPC-triggered, never
-  self-triggering** — do **not** give it a graph-pull `work_loop` (that violates `FORE-TRG-02`). It serves
-  requests from the orchestrator/cascade, exactly as it is called in `cascade_once` today.
-- Serve curator + researcher over `serve_loop` bound to their existing out-of-band capabilities (dataset
-  assembly / bounded-proposal). These are triggered (operator command or orchestrator), never
-  self-triggering — honour their `TRG`/`NEVER` clauses (`researcher` proposes-never-applies;
-  `curator` never-gates-a-decision).
-- Law reconciliation + clause-cited serving tests for all three.
+- **Three entrypoints, one proven pattern.** Replace `idle_loop()` in
+  `agents/{forecaster,curator,researcher}/entrypoint.py` with the S98 shape (copy
+  `agents/supervisor/entrypoint.py`): a covered `build_served_bus(graph) -> MessageBus` that constructs
+  the agent with defaults and `.bind()`s it, and a `# pragma: no cover` `main()` that does
+  EHLO → verify signed ACTIVATE → `serve_loop(LocalRequestConsumer(), bus)`.
+  - Forecaster binds its existing handlers (`forecast`, `forecast_return`, `scorecard`,
+    `sentiment_scorecard`, `return_scorecard`). Construct as the cascade does —
+    `ForecasterAgent(bus, graph=graph)` (fake models by default; real-model injection is out of scope).
+  - Curator binds `build_dataset`, `describe_corpus`, `train_predictor`, `promote_predictor` —
+    `CuratorAgent(bus, graph=graph)`.
+  - Researcher binds `propose`, `evidence` — `ResearcherAgent(bus, graph=graph)`.
+- **Clause-cited serving tests** (mirror `agents/supervisor/tests/test_supervisor_entrypoint.py`): for
+  each agent, submit a request to a `LocalRequestConsumer`, `serve_once`, assert the handler answered —
+  docstrings citing the relevant `TRG` clause and the NEVER clause the test proves is not crossed
+  (forecaster: prediction is `shadow=True` and the PM/execution path is untouched; researcher: proposal
+  recorded, nothing applied; curator: no gate touched).
+- **Law reconciliation:** touched `TRG` rows in the three `agents/<name>/laws/laws.md` reconciled (only
+  if serving changes the trigger contract — expected: no change, serving implements it), `test-plan.md`
+  cites the new tests, ledger green-count deltas recorded.
+- **Retire the primitive:** delete `idle_loop` from `kernel/bootstrap.py` (zero callers remain) and add a
+  guard test asserting no agent entrypoint references `idle_loop`. If anything unexpected still needs it,
+  keep the function and the guard test only — but prefer removal (it was the S75 placeholder).
 
-**Out:** the Service Bus backend (S100); any change to the forecaster's shadow-prediction logic or the
-curator/researcher domain logic — trigger wiring only.
+### Out
+
+- The **Service Bus backend** (S100) — `LocalRequestConsumer` is the only consumer here.
+- Any change to forecaster/curator/researcher **domain logic**, models, or law semantics — this sprint
+  changes *how they are triggered*, not *what they do*.
+- Real FinBERT/LightGBM model wiring in the forecaster container (a later, separate concern).
 
 ## Deliverables
 
-- Updated `agents/forecaster/entrypoint.py`, `agents/curator/entrypoint.py`,
-  `agents/researcher/entrypoint.py` — serve, not idle.
-- In-process integration tests: forecaster serves a `forecast` request → `ShadowPrediction` (shadow,
-  never gates); curator serves a dataset-assembly request; researcher serves a proposal request — each
-  citing the relevant `TRG` clause and the never-clause it must not cross.
-- `test-plan.md` updates + ledger green-count deltas for all three.
-- A grep-guard test (or CI note) asserting **no `idle_loop` reference remains** in any agent entrypoint.
+- Three served entrypoints + `build_served_bus` each; `idle_loop` removed from `kernel/bootstrap.py`;
+  guard test.
+- Clause-cited in-process serving tests for all three agents.
+- Law `test-plan.md` citations + ledger deltas.
+- `make ci` green, 100 % coverage, modules ≤ 200 lines. Version 0.50.00 → 0.51.00 + `uv lock`.
 
-## Decisions to confirm (before building)
+## Functionality check (sprint-close rule)
 
-- **Forecaster trigger source in the fleet.** In-process, the *orchestrator* calls it (DL-30). As a
-  container, who sends the `forecast` request — the analyst stage via the graph-ref event, or a dedicated
-  orchestrator stage? Recommend: the orchestrator publishes a `forecast` request per recommendation
-  (keeps `FORE-TRG-02` — the forecaster never reads the analyst node itself). **Capture in `design-log.md`.**
-- **Curator/researcher cadence.** Confirm both stay out-of-band (operator/scheduler-triggered), not
-  continuous pollers — consistent with "never influences a live decision".
+Against **real Aura `bce05bd6`** (`Neo4jGraphStore`, asserted — gotcha #1). No LLM needed (none of these
+three serve paths calls one). Mirror the S98 check, once per agent:
 
-## Acceptance / exit criteria
+1. **Forecaster (flagship):** build the served bus on the real graph, submit a `forecast` request via a
+   `LocalRequestConsumer`, `serve_once` → assert accepted; from a **separate raw connection** confirm a
+   durable `ShadowPrediction` with `shadow=True`; assert **no** order/PM artifact was created (the
+   side-branch invariant, `FORE-NEV` + `FORE-TRG-02`).
+2. **Researcher:** serve a `propose` request over a seeded evidence window → durable proposal artifact
+   confirmed from a separate connection; nothing applied (no parameter/settings node mutated).
+3. **Curator:** serve `describe_corpus` (read-only) → correct summary answer; or `build_dataset` if
+   seeding is cheap — then its artifact is confirmed + torn down like the others.
 
-- [ ] No agent entrypoint calls `idle_loop()` (guard test green).
-- [ ] Forecaster serves a request and writes a `shadow=True` prediction without touching the PM/execution
-      path (side-branch invariant preserved, `FORE-TRG-02` upheld).
-- [ ] Curator + researcher serve their capabilities within their never-clauses.
-- [ ] `make ci` green; 100% coverage; modules ≤ 200 lines.
+**Tear down** (DETACH DELETE the test nodes) → Aura back to prior count. Record the row in
+`docs/laws/functionality-checks.md`.
 
 ## Dependencies
 
-- **S97** (`serve_loop`), **S98** (serving pattern established for supervisor/operator).
-- Respects DL-30 (forecaster is RPC-triggered) and the forecaster/curator/researcher LOCKED v1 laws (S71).
+- **S97** (`serve_loop`/`serve_once`/`LocalRequestConsumer`), **S98** (the exact entrypoint + test
+  pattern, shipped 0.44.00). Respects DL-30 and the forecaster/curator/researcher LOCKED v1 laws (S71).
 
 ## Version bump
 
-New capability (final three control-plane agents serve; fleet fully serviceable in-process).
-**0.44.00 → 0.45.00** (feat → MINOR, HARD RULE).
+New capability (final three control-plane agents serve; in-process fleet functionally complete).
+**0.50.00 → 0.51.00** (feat → MINOR, HARD RULE).
+
+## Execution notes (for the coding agent — cold-start handover)
+
+**Start.** From `main` (`git pull`; HEAD ≥ `fabab23`):
+`git checkout -b sprint-99-control-plane-serve-forecaster-curator-researcher`. Read
+`kernel/serve_loop.py`, `agents/supervisor/entrypoint.py` + `agents/supervisor/tests/
+test_supervisor_entrypoint.py` and the operator twins (the S98 pattern), the three target entrypoints,
+`agents/{forecaster,curator,researcher}/agent.py` (handlers + constructor defaults),
+`contracts/{forecaster,curator,researcher}.py` (capability names), and `agents/<name>/laws/laws.md` for
+the three (TRG/NEVER clauses to cite).
+
+**Gate.** `make ci` green — 9 steps, **100 % coverage**, modules ≤ 200 lines, coding-agent headers.
+
+**Boundaries.** Agents never import other agents; entrypoints import only their own agent + kernel.
+No new graph labels (`owns_graph` unchanged — `tests/test_boundary_map.py` must stay green untouched).
+
+**Commit.** Branch-per-sprint; commit only your own files; conventional message ending with
+`Co-Authored-By: …`. Do **not** merge/push to `main` without operator confirmation.
+
+**Session gotchas (carried from S97–S108):**
+
+1. **`build_graph_from_env()` returns `InMemoryGraphStore` unless `NEO4J_URI` is in `os.environ`.** The
+   live check must `load_dotenv("<repo>/.env")` by explicit path and
+   `assert isinstance(graph, Neo4jGraphStore)` before trusting a "real" result.
+2. **Aura** = instance `bce05bd6`; **user AND database are `bce05bd6`, not `neo4j`**. Never hammer it
+   with bad auth (the frenzy risk); reads are cheap, teardown by label of the nodes you created.
+3. **`FORE-TRG-02`:** the forecaster is RPC-triggered — a graph-pull `work_loop` on it is a law
+   violation, not a design option. Serving tests must cite the clause.
+4. **Capability names must match the contract exactly** — `bus.request` dispatch is by capability
+   string; a typo surfaces as "no handler", not a type error.
+5. **`main()` is `# pragma: no cover`; `build_served_bus` is not** — the covered seam is what the tests
+   drive (see the supervisor test). Keep the split or the coverage floor breaks.
+6. **mypy `--strict` covers `agents/**` tests**; annotate; `if TYPE_CHECKING:` for annotation-only
+   imports (ruff TC001/TC003). Agent test files under `agents/**/tests/` need the `Agent:`/`Role:`
+   header; root `tests/` do not.
+7. **`InMemoryGraphStore` normalizes list props to tuples** — assert `list(node.props["x"]) == [...]`.
+8. **`detect-secrets`** false-positives on `password`/`secret`/`key`/`token` near string literals in
+   fixtures — neutral names or `# pragma: allowlist secret`.
+9. **Pre-commit stashes unstaged changes and can race** when the shared tree is edited concurrently —
+   commit with a clean unstaged tree.
+10. `jq` is installed + allowed (`Bash(jq:*)`); `gh --jq` also works.
 
 ## Notes
 
-At this sprint's exit the **in-process fleet is functionally complete** — the etalon-first-safe milestone.
-Everything after (S100+) adds the distributed backend and live infra.
+At this sprint's exit the **in-process fleet is functionally complete** — every agent activates through
+the credential-tested master (DL-36, now seeded from the vault) and runs a real loop. Everything after
+(S100+) swaps transports and adds live infra; nothing after this changes what an agent *does*.

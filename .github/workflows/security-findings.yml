@@ -43,6 +43,14 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
+      - name: Diagnose tool fetch (temporary)
+        env:
+          TOOL_TOKEN: ${{ secrets.SECURITY_FINDINGS_TOKEN }}
+        run: |
+          echo "token present: ${TOOL_TOKEN:+yes}${TOOL_TOKEN:-NO}"
+          echo "token length: ${#TOOL_TOKEN}"
+          git ls-remote "https://x-access-token:${TOOL_TOKEN}@github.com/yury-gurevich/security-findings-toolset" HEAD 2>&1 | sed -E 's/[0-9a-f]{40}/<sha>/' || echo "ls-remote rc=$?"
+
       - name: Collect open findings
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

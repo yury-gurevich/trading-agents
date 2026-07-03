@@ -9,6 +9,7 @@ look in the "Outcome" column for the ADR or sprint it produced.
 | --- | --- | --- | --- | --- | --- | --- |
 | [R001](qlib-integration/) | Microsoft Qlib — integration vision | 2026-06-19 | 🚧 In progress | Can this project benefit from qlib? Which agents, which components, in what order? | Phase Q1 active — **S58** forecaster `lightgbm`-direct shadow runtime (pyqlib is 3.13-incompatible) → **S59** booster training + price-return IC scorecard; Q2–Q4 later | `qlib` `forecaster` `analyst` `portfolio_manager` `researcher` `ml` `backtesting` |
 | [R002](db-placement/) | DB placement — substrate registry vs trading-pack provenance | 2026-06-23 | 📋 Active | What DB does the substrate need? What does AuraDB Free cover? What Azure free-tier DB options exist? Which graph/vector alternatives? | ADR + sprint pending | `neo4j` `cosmos-db` `substrate` `trading-pack` `graph` `vector` `platform` |
+| [R003](textgrad/) | TextGrad — textual-gradient optimization for continuous improvement | 2026-07-03 | 🗄️ Archived | What is TextGrad vs DSPy? Should it join the optimizer stack now? What would make it worth adopting later? | Not adopted — stays the ADR-0010 bake-off candidate behind the `PromptOptimizer` port; revisit triggers named in the doc | `textgrad` `dspy` `prompt-optimization` `adr-0010` `continuous-improvement` |
 
 ## Folder structure — read this before adding an entry
 
@@ -26,6 +27,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | --- | --- | --- |
 | [qlib-integration/](qlib-integration/INDEX.md) | R001 | Microsoft Qlib integration vision. |
 | [db-placement/](db-placement/INDEX.md) | R002 | Substrate vs trading-pack DB placement. |
+| [textgrad/](textgrad/INDEX.md) | R003 | TextGrad evaluated for continuous improvement — not adopted; ADR-0010 bake-off candidate. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
 | [parameter-inventory/](parameter-inventory/INDEX.md) | Reference | Every `tunable()` (133 params, 18 files) with defaults/bounds/why — the decision-parameter surface; manual stand-in for CI-1. |
 | [quant-methods/](quant-methods/INDEX.md) | Reference | What each quant signal *measures*, why it matters, how to read it + uncovered areas + deterministic params to raise prediction confidence. |
@@ -43,7 +45,7 @@ imported/supporting material without an R-number.
 
 ## Adding a new research document
 
-1. Next number is `R003`.
+1. Next number is `R004`.
 2. Create a **folder** `docs/research/<slug>/` (not a loose file). Put the document at
    `<slug>/<slug>.md`, opening with the standard header block:
 

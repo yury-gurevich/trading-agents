@@ -42,21 +42,28 @@ agent's `serve_loop` can pull work off Service Bus and the claim-check `ready:<r
 containers. After it, the fleet's *communication* is complete and **proven at parity** (in-process ==
 Service Bus); only provisioning + a live 13-container run (S101–S102) remain.
 
-## Prerequisite — provisioning (operator action)
+## Prerequisite — provisioning ✅ DONE (2026-07-03)
 
-The CI + parity work needs **no** infra. The **live smoke** (the sprint-close check) needs an **Azure
-Service Bus namespace** (Standard tier — topics/subscriptions + dead-letter) and its connection string.
-Two ways to supply it, recommended in order:
+**The namespace is provisioned and verified** — the live smoke can run. `infra/servicebus.bicep` created
+`trading-agents-bus` (Standard tier — topics/subscriptions + dead-letter) in RG `trading-agents`
+(australiaeast, sub `5ef50a27…`), with a `ready` topic + `probe` subscription for connectivity checks. A
+live **send→receive round-trip passed** at provision time (SENT → RECEIVED → completed), so the connection
+string is proven-good. It is set as `SERVICEBUS_CONNECTION_STRING` in `.env` (gitignored — never commit it).
 
-1. **Seed it as a tested credential (DL-36 tie-in):** add a `servicebus` entry to the S108 vault manifest
-   with a probe = one live send→receive round-trip, so the connection string is *verified before use* like
-   every other credential, and the master hands it out from Key Vault. Best-aligned with the
-   tested-before-insert lifecycle we just shipped.
-2. Or simply set `SERVICEBUS_CONNECTION_STRING` in `.env` (the placeholder is already commented there) for
-   a local smoke.
+Redeploy / rehydrate:
 
-If neither is available at sprint close, the parity test still lands green and the live smoke is recorded
-**pending provisioning** — the sprint is not fully closed until the live round-trip runs.
+```bash
+az deployment group create --subscription 5ef50a27-50a4-4d90-9695-da61b2309cf3 \
+  --resource-group trading-agents --template-file infra/servicebus.bicep
+az servicebus namespace authorization-rule keys list --resource-group trading-agents \
+  --namespace-name trading-agents-bus --name RootManageSharedAccessKey \
+  --query primaryConnectionString -o tsv   # -> SERVICEBUS_CONNECTION_STRING (secret)
+```
+
+**Production route (still recommended, DL-36):** seed the connection string into Key Vault as a *tested
+credential* — add a `servicebus` entry to the S108 vault manifest with a probe = one live send→receive
+round-trip — so the master hands it out verified-before-use like every other secret. `.env` is fine for
+the local smoke; Key Vault is the fleet path.
 
 ## Decisions (resolved at planning — recommendations to confirm + capture in `design-log.md`)
 

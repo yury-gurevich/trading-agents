@@ -60,10 +60,10 @@ to Codex via a self-contained sprint file (proven on S106).
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until an Azure/Aura write path + rollback + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Fleet arc S100–S103** — **S100 Service Bus receiver: handover refreshed Codex-ready (etalon cut line);
-  prerequisite = provision a Service Bus namespace for the live smoke (CI/parity is infra-free)** · permanent
-  Neo4j (S101) · 13-container run-through + distributed acceptance (S102) · dispatcher cron (S103). Refresh
-  the S101–103 pre-S104 drafts before executing, as done for S99/S100.
+- **Fleet arc S100–S103** — **S100 Service Bus receiver: handover Codex-ready + namespace `trading-agents-bus`
+  provisioned & live-verified (`infra/servicebus.bicep`); unblocked to build** (implement the receive half of
+  `bus_azure.py` behind the `RequestConsumer` protocol) · permanent Neo4j (S101) · 13-container run-through +
+  distributed acceptance (S102) · dispatcher cron (S103). Refresh the S101–103 pre-S104 drafts before executing.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

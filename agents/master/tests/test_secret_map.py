@@ -43,9 +43,11 @@ def test_resolve_config_provider_uses_prefixed_env_names(
     """Output keys must match ProviderSettings env_prefix='PROVIDER_'."""
     monkeypatch.setenv("TIINGO_API_KEY", "tk123")  # EnvVarStore reads this unprefixed
     monkeypatch.setenv("FINNHUB_API_KEY", "fh456")
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "sk789")  # pragma: allowlist secret
     config = resolve_config("provider", EnvVarSecretStore(), _MAP)
     assert config["PROVIDER_TIINGO_API_KEY"] == "tk123"  # pragma: allowlist secret
     assert config["PROVIDER_FINNHUB_API_KEY"] == "fh456"  # pragma: allowlist secret
+    assert config["PROVIDER_ALPACA_API_SECRET"] == "sk789"  # noqa: S105  # pragma: allowlist secret
 
 
 def test_resolve_config_operator_uses_bare_anthropic_key(

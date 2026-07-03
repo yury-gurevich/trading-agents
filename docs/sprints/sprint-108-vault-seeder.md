@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-108-vault-seeder`
-**Status:** planned
+**Status:** shipped
 **Effort:** M–L
 
 ---
@@ -190,3 +190,26 @@ This closes the credential lifecycle at the *source*: DL-36 made the master refu
 handover and self-heal within rails; this utility ensures a bad credential never reaches the vault in the
 first place. Same principle (a credential is trusted only once proven to work), one step upstream —
 fail-**closed** here (never write an unverified secret) as the mirror of the planner's fail-open.
+
+## Closeout evidence
+
+- Branch: `sprint-108-vault-seeder`; not merged or pushed to `main`.
+- Version: `pyproject.toml` bumped to `0.50.00`; `uv.lock` refreshed.
+- Gate: `make ci` passed on 2026-07-02 — ruff, format, mypy, import-linter, module-size, module-header,
+  pytest, detect-secrets. Pytest result: **1255 passed, 5 skipped, 100.00% coverage**. Known non-blocking
+  `pip-audit` warning: `diskcache 5.6.3 / CVE-2025-69872` (Makefile ignored).
+- Boundary: `agents/master/vault_seed.py` imports no agent/pack code; probes/manifest live under
+  `orchestration/packs`; `scripts/seed_key_vault.py` is the composition root.
+- Provisioning evidence: resource group is `trading-agents`; vault is `trading-agents-kv`
+  (`https://trading-agents-kv.vault.azure.net/`). Retained grant script:
+  `infra/grant-key-vault-seeder.ps1`.
+- Required grant: local seeder service principal `677fa1c3-5685-450c-a09f-b13679020d40` received
+  `Key Vault Secrets Officer` on the vault scope via the retained script. Existing master managed
+  identity remains `Key Vault Secrets User`.
+- Live functionality check: `uv run --extra azure python scripts/seed_key_vault_live_check.py`.
+  Result: `pass_status=seeded`, `pass_readback_equal=True`, `bad_status=rejected`, `bad_absent=True`,
+  `dry_status=seeded`, `dry_absent=True`.
+- Disposable names: `seedcheck-tiingo-20260702142659`, `seedcheck-badkey-20260702142659`,
+  `seedcheck-dryrun-20260702142659`.
+- Teardown: live script deleted all three names; active Key Vault sweep found no `seedcheck-*` secrets.
+  The written pass-case secret appears only in the soft-deleted list, which is expected after deletion.

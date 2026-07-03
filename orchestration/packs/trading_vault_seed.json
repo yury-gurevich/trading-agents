@@ -1,0 +1,42 @@
+[
+  {
+    "kv_name": "tiingo-api-key",
+    "env_var": "PROVIDER_TIINGO_API_KEY",
+    "probe": "tiingo"
+  },
+  {
+    "kv_name": "finnhub-api-key",
+    "env_var": "PROVIDER_FINNHUB_API_KEY",
+    "probe": "finnhub"
+  },
+  {
+    "kv_name": "fmp-api-key",
+    "env_var": "PROVIDER_FMP_API_KEY",
+    "probe": "fmp"
+  },
+  {
+    "kv_name": "alpaca-key-id",
+    "env_var": "PROVIDER_ALPACA_API_KEY",
+    "probe": "alpaca-data"
+  },
+  {
+    "kv_name": "alpaca-secret-key",
+    "env_var": "PROVIDER_ALPACA_API_SECRET",
+    "probe": "alpaca-data"
+  },
+  {
+    "kv_name": "anthropic-api-key",
+    "env_var": "ANTHROPIC_API_KEY",
+    "probe": "anthropic"
+  },
+  {
+    "kv_name": "openai-api-key",
+    "env_var": "OPENAI_API_KEY",
+    "probe": "openai"
+  },
+  {
+    "kv_name": "neo4j-password",
+    "env_var": "NEO4J_PASSWORD",
+    "probe": "neo4j"
+  }
+]

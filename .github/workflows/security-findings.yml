@@ -32,12 +32,13 @@ permissions:
   contents: read
   security-events: read
 
-env:
-  TOOL_SPEC: git+https://x-access-token:${{ secrets.SECURITY_FINDINGS_TOKEN }}@github.com/yury-gurevich/security-findings-toolset@main
-
 jobs:
   gate:
     runs-on: ubuntu-latest
+    # Job-level env can read the secrets context (workflow-level env cannot),
+    # so the token actually lands in the URL here.
+    env:
+      TOOL_SPEC: git+https://x-access-token:${{ secrets.SECURITY_FINDINGS_TOKEN }}@github.com/yury-gurevich/security-findings-toolset@main
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0

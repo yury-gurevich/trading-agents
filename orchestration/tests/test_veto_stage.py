@@ -32,6 +32,22 @@ class _RaisingLLM:
         raise RuntimeError("LLM unavailable")
 
 
+class _RecordingLLM:
+    """Capture the exact prompt context the veto sends to the debate."""
+
+    def __init__(self) -> None:
+        self.users: list[str] = []
+
+    def complete(
+        self, *, system: str, user: str, tool_schema: dict[str, object]
+    ) -> str:
+        del tool_schema
+        self.users.append(user)
+        if "JUDGE" in system:
+            return _UPHOLD
+        return "context recorded"
+
+
 def _provider(graph: InMemoryGraphStore) -> ProviderAgent:
     return ProviderAgent(
         InProcessBus(),
@@ -41,13 +57,16 @@ def _provider(graph: InMemoryGraphStore) -> ProviderAgent:
     )
 
 
-def _run(graph: InMemoryGraphStore, llm: object | None) -> None:
+def _run(
+    graph: InMemoryGraphStore, llm: object | None, judge_llm: object | None = None
+) -> None:
     place_run_request(graph, run_id="veto", tickers=("AAPL", "MSFT"))
     cascade_once(
         graph,
         provider_agent=_provider(graph),
         broker=PaperBroker(),
         deliberation_llm=llm,  # type: ignore[arg-type]
+        deliberation_judge_llm=judge_llm,  # type: ignore[arg-type]
     )
 
 
@@ -76,6 +95,38 @@ def test_overturn_subtracts_every_order_execution_honours_it() -> None:
     record = next(iter(dict(delib.props["debates"]).values()))
     assert record["verdict"] == "overturn"
     assert record["turns"]
+
+
+def test_dedicated_judge_llm_controls_veto_ruling() -> None:
+    """S109: debate Judge is threaded separately from the arguing LLM."""
+    graph = InMemoryGraphStore()
+    _run(
+        graph,
+        FakeLLMClient({"review": _UPHOLD}),
+        FakeLLMClient({"review": _OVERTURN}),
+    )
+    (delib,) = graph.list_nodes("DeliberationRun")
+    assert delib.props["vetoed_tickers"]
+    assert _submitted(graph) == 0
+
+
+def test_veto_prompt_includes_upstream_analysis_context() -> None:
+    """The debate sees the graph evidence, not only the PM order shell."""
+    graph = InMemoryGraphStore()
+    llm = _RecordingLLM()
+    _run(graph, llm)
+
+    prompt = "\n".join(llm.users)
+
+    assert "PM order: action=buy; ticker=AAPL" in prompt
+    assert "Analyst recommendation for AAPL" in prompt
+    assert "confidence=0.600" in prompt
+    assert "Scanner filter trace:" in prompt
+    assert "Scanner candidate for AAPL" in prompt
+    assert "Market data quality:" in prompt
+    assert "Latest OHLCV for AAPL:" in prompt
+    assert "close=116" in prompt
+    assert "base_min_confidence=" in prompt
 
 
 def test_veto_is_fail_open_on_llm_outage() -> None:

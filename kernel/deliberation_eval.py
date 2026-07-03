@@ -103,19 +103,28 @@ class LLMJudgeScorer:
 
 
 def run_debates(
-    llm: LLMClient, cases: tuple[EvalCase, ...], *, max_rounds: int = 2
+    llm: LLMClient,
+    cases: tuple[EvalCase, ...],
+    *,
+    max_rounds: int = 2,
+    judge_llm: LLMClient | None = None,
 ) -> tuple[DebateResult, ...]:
     """Run the debate for each case once — so multiple scorers can share the result."""
     return tuple(
-        deliberate(llm, case.proposition, max_rounds=max_rounds) for case in cases
+        deliberate(llm, case.proposition, max_rounds=max_rounds, judge_llm=judge_llm)
+        for case in cases
     )
 
 
 def run_eval(
-    llm: LLMClient, cases: tuple[EvalCase, ...], *, max_rounds: int = 2
+    llm: LLMClient,
+    cases: tuple[EvalCase, ...],
+    *,
+    max_rounds: int = 2,
+    judge_llm: LLMClient | None = None,
 ) -> tuple[EvalScore, ...]:
     """Run + keyword-score each case — the manufactured eval pass."""
-    debates = run_debates(llm, cases, max_rounds=max_rounds)
+    debates = run_debates(llm, cases, max_rounds=max_rounds, judge_llm=judge_llm)
     return tuple(score_debate(d, c) for d, c in zip(debates, cases, strict=True))
 
 

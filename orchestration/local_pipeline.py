@@ -53,6 +53,7 @@ def cascade_once(
     pm_settings: PortfolioManagerSettings | None = None,
     forecaster_agent: ForecasterAgent | None = None,
     deliberation_llm: LLMClient | None = None,
+    deliberation_judge_llm: LLMClient | None = None,
 ) -> tuple[StageResult, ...]:
     """Run one graph-pull pass over every stage in dependency order.
 
@@ -63,8 +64,9 @@ def cascade_once(
 
     When ``deliberation_llm`` is given, an **opt-in** challenger-veto stage runs between
     the PM and execution (DL-31 Part B): it debates each approved order and records the
-    vetoed (subtracted) set, which execution honours. Omitted → no veto stage at all, so
-    the deterministic cascade is unchanged.
+    vetoed (subtracted) set, which execution honours. ``deliberation_judge_llm`` may
+    separate the debate Judge from the arguing model. Omitted → no veto stage at all,
+    so the deterministic cascade is unchanged.
     """
     scanner_settings = ScannerSettings()
     analyst_settings = AnalystSettings()
@@ -79,7 +81,12 @@ def cascade_once(
             (
                 "deliberation",
                 partial(veto.find_pending, graph),
-                partial(veto.deliberate_pm_node, graph=graph, llm=deliberation_llm),
+                partial(
+                    veto.deliberate_pm_node,
+                    graph=graph,
+                    llm=deliberation_llm,
+                    judge_llm=deliberation_judge_llm,
+                ),
             ),
         )
         if deliberation_llm is not None

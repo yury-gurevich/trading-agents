@@ -194,10 +194,11 @@ def main() -> None:
     print(f"  placed RunRequest run-request:{args.run_id} ({len(tickers)} tickers)")
 
     deliberation_llm = None
+    deliberation_judge_llm = None
     if args.veto:
-        from scripts.deliberate import _build_llm
+        from scripts.deliberate import build_role_llms
 
-        deliberation_llm = _build_llm(True)
+        deliberation_llm, deliberation_judge_llm = build_role_llms(True)
         print("VETO: LLM challenger-veto active between PM and execution (DL-31)")
 
     print("\nCASCADE (one graph-pull pass per agent)")
@@ -206,6 +207,7 @@ def main() -> None:
         provider_agent=agent,
         broker=PaperBroker(),
         deliberation_llm=deliberation_llm,
+        deliberation_judge_llm=deliberation_judge_llm,
     ):
         woke = "woke" if result.processed else "idle"
         print(f"  {result.name:<18} {woke}: processed {result.processed}")

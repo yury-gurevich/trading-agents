@@ -3,8 +3,8 @@
 Agent: tooling
 Role: drive the kernel deliberation harness so a human can watch three LLM roles
       argue a decision and read the verdict. Default uses a deterministic fake
-      (no credentials); --real calls Anthropic with the .env key.
-External I/O: stdout; Anthropic API when --real.
+      (no credentials); --real calls the .env-configured debate and judge models.
+External I/O: stdout; OpenAI/Anthropic APIs when --real.
 
 Run it:
   PYTHONPATH=. python scripts/deliberate.py                      # fake, no creds
@@ -12,7 +12,8 @@ Run it:
   PYTHONPATH=. python scripts/deliberate.py --real \\
       --decision "Buy AAPL at market" --context "momentum 0.6; RSI 55; stop -3%"
 
---real follows LLM_PROVIDER in .env (openai | anthropic) and that provider's key.
+--real follows LLM_PROVIDER for Defender/Challenger and DELIBERATION_JUDGE_* for
+the debate Judge. This is distinct from the EXP-004 LLMJudgeScorer.
 """
 
 from __future__ import annotations
@@ -31,14 +32,17 @@ from kernel import (
 )
 from orchestration.packs.trading_parameter_truths import TRADING_PARAMETER_TRUTHS
 
+_JUDGE_MAX_TOKENS = 512
+
 
 class _AnthropicText:
     """Free-text Anthropic adapter (the operator's client is tool-use only)."""
 
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(self, api_key: str, model: str, *, max_tokens: int = 2000) -> None:
         anthropic = importlib.import_module("anthropic")
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
+        self._max_tokens = max_tokens
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -46,7 +50,7 @@ class _AnthropicText:
         del tool_schema
         resp = self._client.messages.create(
             model=self._model,
-            max_tokens=2000,
+            max_tokens=self._max_tokens,
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -90,26 +94,80 @@ class _DemoFake:
         return '{"ruling": "revise", "rationale": "enter at half size; edge is thin"}'
 
 
-def _build_llm(real: bool) -> _AnthropicText | _OpenAIText | _DemoFake:
+def _provider_name(provider: str) -> str:
+    return "OpenAI" if provider == "openai" else "Anthropic"
+
+
+def _base_config() -> tuple[str, str]:
+    provider = os.environ.get("LLM_PROVIDER", "anthropic").strip().lower()
+    model = (
+        os.environ.get("OPENAI_MODEL", "gpt-4o")
+        if provider == "openai"
+        else os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+    )
+    return provider, model
+
+
+def _judge_config() -> tuple[str, str]:
+    provider = (
+        os.environ.get("DELIBERATION_JUDGE_PROVIDER", "anthropic").strip().lower()
+    )
+    model = os.environ.get("DELIBERATION_JUDGE_MODEL", "claude-opus-4-8")
+    return provider, model
+
+
+def _provider_llm(
+    provider: str, model: str, *, max_tokens: int = 2000
+) -> _AnthropicText | _OpenAIText:
+    if provider == "openai":
+        key = os.environ.get("OPENAI_API_KEY", "")
+        if not key:
+            raise SystemExit("OPENAI_API_KEY not set — cannot run --real")
+        return _OpenAIText(key, model)
+    if provider == "anthropic":
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            raise SystemExit("ANTHROPIC_API_KEY not set — cannot run --real")
+        return _AnthropicText(key, model, max_tokens=max_tokens)
+    raise SystemExit(f"unsupported LLM provider {provider!r}")
+
+
+def _build_llm(
+    real: bool, *, announce: bool = True
+) -> _AnthropicText | _OpenAIText | _DemoFake:
     if not real:
         return _DemoFake()
     from dotenv import load_dotenv
 
     load_dotenv()
-    provider = os.environ.get("LLM_PROVIDER", "anthropic").strip().lower()
-    if provider == "openai":
-        key = os.environ.get("OPENAI_API_KEY", "")
-        if not key:
-            raise SystemExit("OPENAI_API_KEY not set — cannot run --real")
-        model = os.environ.get("OPENAI_MODEL", "gpt-4o")
-        print(f"MODE: real  (OpenAI {model})")
-        return _OpenAIText(key, model)
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY not set — cannot run --real")
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-    print(f"MODE: real  (Anthropic {model})")
-    return _AnthropicText(key, model)
+    provider, model = _base_config()
+    llm = _provider_llm(provider, model)
+    if announce:
+        print(f"MODE: real  ({_provider_name(provider)} {model})")
+    return llm
+
+
+def build_role_llms(
+    real: bool,
+) -> tuple[
+    _AnthropicText | _OpenAIText | _DemoFake, _AnthropicText | _OpenAIText | _DemoFake
+]:
+    """Build the debate model and the separate debate Judge model."""
+    if not real:
+        return _DemoFake(), _DemoFake()
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    debate_provider, debate_model = _base_config()
+    judge_provider, judge_model = _judge_config()
+    debate_llm = _provider_llm(debate_provider, debate_model)
+    judge_llm = _provider_llm(judge_provider, judge_model, max_tokens=_JUDGE_MAX_TOKENS)
+    print(
+        "MODE: real  "
+        f"(debate {_provider_name(debate_provider)} {debate_model} · "
+        f"judge {_provider_name(judge_provider)} {judge_model})"
+    )
+    return debate_llm, judge_llm
 
 
 def main() -> None:
@@ -130,9 +188,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    llm = _build_llm(args.real)
+    debate_llm, judge_llm = build_role_llms(args.real)
     proposition = Proposition(decision=args.decision, context=args.context)
-    result = deliberate(llm, proposition, max_rounds=args.rounds)
+    result = deliberate(
+        debate_llm, proposition, max_rounds=args.rounds, judge_llm=judge_llm
+    )
 
     print(f"\nDELIBERATION — {proposition.decision}")
     print(f"context: {proposition.context}")

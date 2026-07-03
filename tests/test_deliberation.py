@@ -31,6 +31,20 @@ class _RoleLLM:
         return self._judge
 
 
+class _RecordingLLM(_RoleLLM):
+    """Role fake that records which system prompts were sent to it."""
+
+    def __init__(self, defender: str, challenger: str, judge: str) -> None:
+        super().__init__(defender, challenger, judge)
+        self.systems: list[str] = []
+
+    def complete(
+        self, *, system: str, user: str, tool_schema: dict[str, object]
+    ) -> str:
+        self.systems.append(system)
+        return super().complete(system=system, user=user, tool_schema=tool_schema)
+
+
 _PROP = Proposition(decision="Buy AAPL", context="momentum 0.6; RSI 55")
 
 
@@ -60,6 +74,34 @@ def test_max_rounds_clamped_to_one() -> None:
     result = deliberate(llm, _PROP, max_rounds=0)
     assert len(result.transcript) == 2  # one round: defender + challenger
     assert result.verdict.ruling == "uphold"
+
+
+def test_dedicated_judge_llm_rules_the_debate() -> None:
+    argue = _RecordingLLM(
+        "for", "against", '{"ruling": "uphold", "rationale": "argue"}'
+    )
+    judge = _RecordingLLM(
+        "unused", "unused", '{"ruling": "overturn", "rationale": "judge"}'
+    )
+
+    result = deliberate(argue, _PROP, max_rounds=1, judge_llm=judge)
+
+    assert result.verdict.ruling == "overturn"
+    assert result.verdict.rationale == "judge"
+    assert len(argue.systems) == 2
+    assert all("JUDGE" not in system for system in argue.systems)
+    assert len(judge.systems) == 1
+    assert "JUDGE" in judge.systems[0]
+
+
+def test_without_dedicated_judge_llm_single_model_rules() -> None:
+    llm = _RecordingLLM("for", "against", '{"ruling": "uphold", "rationale": "same"}')
+
+    result = deliberate(llm, _PROP, max_rounds=1)
+
+    assert result.verdict.ruling == "uphold"
+    assert len(llm.systems) == 3
+    assert "JUDGE" in llm.systems[-1]
 
 
 def test_parse_verdict_valid() -> None:

@@ -98,6 +98,18 @@ def test_run_debates_returns_one_result_per_case() -> None:
     assert all(isinstance(d, DebateResult) for d in debates)
 
 
+def test_run_debates_passes_dedicated_debate_judge() -> None:
+    debates = run_debates(
+        _Fake(),
+        (_CASE,),
+        max_rounds=1,
+        judge_llm=_JudgeFake('{"ruling": "revise", "rationale": "dedicated"}'),
+    )
+
+    assert debates[0].verdict.ruling == "revise"
+    assert debates[0].verdict.rationale == "dedicated"
+
+
 def test_pass_rate_empty_is_zero() -> None:
     assert pass_rate(()) == 0.0
 

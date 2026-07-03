@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from kernel import CollectingFaultSink, Proposition, deliberate
 from kernel.errors import fault_boundary
+from orchestration.veto_context import build_veto_context
 
 if TYPE_CHECKING:
     from kernel import DebateResult, FaultSink, GraphStore, LLMClient, Node
@@ -41,6 +42,7 @@ def deliberate_pm_node(
     *,
     graph: GraphStore,
     llm: LLMClient,
+    judge_llm: LLMClient | None = None,
     max_rounds: int = 1,
     sink: FaultSink | None = None,
 ) -> None:
@@ -51,7 +53,9 @@ def deliberate_pm_node(
     vetoed: list[str] = []
     debates: dict[str, object] = {}
     for intent in order_set.approved:
-        result = _review(llm, intent, order_set.run_id, sink, max_rounds)
+        result = _review(
+            llm, judge_llm, graph, node, order_set, intent, sink, max_rounds
+        )
         ruling = result.verdict.ruling if result is not None else "uphold"
         verdicts[intent.ticker] = ruling
         debates[intent.ticker] = _record(result)
@@ -91,8 +95,11 @@ def _record(result: DebateResult | None) -> dict[str, object]:
 
 def _review(
     llm: LLMClient,
+    judge_llm: LLMClient | None,
+    graph: GraphStore,
+    pm_node: Node,
+    order_set: OrderIntentSet,
     intent: OrderIntent,
-    run_id: str,
     sink: FaultSink,
     max_rounds: int,
 ) -> DebateResult | None:
@@ -107,7 +114,9 @@ def _review(
     ) as capture:
         proposition = Proposition(
             decision=f"{intent.action} {intent.ticker} (qty {intent.quantity})",
-            context=f"A PM-approved order from run {run_id}; review before execution.",
+            context=build_veto_context(graph, pm_node, order_set, intent),
         )
-        result = deliberate(llm, proposition, max_rounds=max_rounds)
+        result = deliberate(
+            llm, proposition, max_rounds=max_rounds, judge_llm=judge_llm
+        )
     return None if capture.fault is not None else result

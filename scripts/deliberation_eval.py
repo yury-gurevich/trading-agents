@@ -19,7 +19,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from scripts.deliberate import _build_llm
+from scripts.deliberate import build_role_llms
 
 from kernel import (
     EvalCase,
@@ -163,14 +163,19 @@ def main() -> None:
 
     library = _CLASS1 if args.class1 else _CLASS2
     label = "CLASS-1" if args.class1 else "CLASS-2"
-    llm = _build_llm(args.real)
-    judge = LLMJudgeScorer(llm)
+    debate_llm, debate_judge_llm = build_role_llms(args.real)
+    scorer = LLMJudgeScorer(debate_llm)
 
     def score(grounded: bool) -> tuple[tuple[EvalScore, ...], tuple[EvalScore, ...]]:
         cases = _build(library, grounded=grounded)
-        debates = run_debates(llm, cases, max_rounds=args.rounds)
+        debates = run_debates(
+            debate_llm,
+            cases,
+            max_rounds=args.rounds,
+            judge_llm=debate_judge_llm,
+        )
         kw = tuple(score_debate(d, c) for d, c in zip(debates, cases, strict=True))
-        lj = tuple(judge(d, c) for d, c in zip(debates, cases, strict=True))
+        lj = tuple(scorer(d, c) for d, c in zip(debates, cases, strict=True))
         return kw, lj
 
     bk, bj = score(grounded=False)

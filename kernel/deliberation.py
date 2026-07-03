@@ -108,13 +108,18 @@ def _parse_verdict(raw: str) -> Verdict:
 
 
 def deliberate(
-    llm: LLMClient, proposition: Proposition, *, max_rounds: int = 3
+    llm: LLMClient,
+    proposition: Proposition,
+    *,
+    max_rounds: int = 3,
+    judge_llm: LLMClient | None = None,
 ) -> DebateResult:
     """Run the bounded debate and return the transcript + verdict.
 
     Each round: the Defender argues, then the Challenger rebuts, each seeing the
     proposition and the running transcript. After ``max_rounds`` the Judge rules.
-    ``max_rounds`` is clamped to at least 1 — a debate is bounded, never empty.
+    ``judge_llm`` optionally separates that final debate Judge from the arguing
+    model. ``max_rounds`` is clamped to at least 1 — a debate is bounded, never empty.
     """
     rounds = max(1, max_rounds)
     transcript: list[Turn] = []
@@ -126,7 +131,8 @@ def deliberate(
                 tool_schema={},
             ).strip()
             transcript.append(Turn(role, r, text))
-    raw = llm.complete(
+    ruling_llm = judge_llm if judge_llm is not None else llm
+    raw = ruling_llm.complete(
         system=JUDGE_SYSTEM,
         user=_render(proposition, tuple(transcript)),
         tool_schema={},

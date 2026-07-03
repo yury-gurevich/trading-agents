@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-99-control-plane-serve-forecaster-curator-researcher`
-**Status:** planned (handover refreshed 2026-07-03 for the 0.50.00 codebase; supersedes the pre-S104 draft)
+**Status:** shipped (handover refreshed 2026-07-03 for the 0.50.00 codebase; supersedes the pre-S104 draft)
 **Effort:** M
 
 ---
@@ -165,3 +165,28 @@ No new graph labels (`owns_graph` unchanged — `tests/test_boundary_map.py` mus
 At this sprint's exit the **in-process fleet is functionally complete** — every agent activates through
 the credential-tested master (DL-36, now seeded from the vault) and runs a real loop. Everything after
 (S100+) swaps transports and adds live infra; nothing after this changes what an agent *does*.
+
+## Closeout evidence
+
+- Branch: `sprint-99-control-plane-serve-forecaster-curator-researcher`; stopped on branch for operator
+  confirmation, no merge/push.
+- Version: `pyproject.toml` bumped to `0.51.00`; `uv.lock` refreshed.
+- Gate: `make ci` passed on 2026-07-03 — ruff, format, mypy, import-linter, module-size,
+  module-header, pytest, detect-secrets. Pytest result: **1254 passed, 5 skipped, 100.00% coverage**.
+  Known non-blocking `pip-audit` warning: `diskcache 5.6.3` / `CVE-2025-69872` (Makefile ignored).
+- Scope shipped: `agents/{forecaster,curator,researcher}/entrypoint.py` now expose
+  `build_served_bus(graph)` and serve `LocalRequestConsumer()` after EHLO/ACTIVATE; `idle_loop` is
+  removed from `kernel/bootstrap.py`; guard test confirms no agent entrypoint references the retired
+  symbol.
+- Law evidence: new serving tests cite `FORE-TRG-02`, `CUR-TRG-02`, `CUR-TRG-03`, and `RES-TRG-03`;
+  ledger deltas recorded as forecaster **16/46**, curator **22/48**, researcher **19/44**.
+- Live functionality check: `uv run --extra runtime python -` against Aura `bce05bd6`
+  (`Neo4jGraphStore`, db/user `bce05bd6`, asserted) with durability reads from a separate raw Neo4j
+  connection. Forecaster served `forecast` and wrote **1** durable `ShadowPrediction` with
+  `shadow=true`; researcher served `propose` and wrote **1** durable `Experiment` plus **1**
+  `ParamChange`; curator served `build_dataset` and wrote **1** durable `Dataset` plus **6**
+  `TrainingExample` nodes.
+- Boundary checks: forecaster did not change `OrderIntent`/`PMRun`/`CloseDecision`; researcher did not
+  change parameter-setting labels; curator did not change gate labels during dataset build.
+- Aura teardown: baseline node count **0**; live check deleted **35** stamped nodes (including the
+  transient `Model` created by the check); final Aura node count restored to **0**.

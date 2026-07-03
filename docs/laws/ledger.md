@@ -35,13 +35,13 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 | provider | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S69 citation pass); 20 gap-tests remain ⬜ (written in later sprints); template now locked for copying to other agents |
 | scanner | ✅ v1 (LOCKED) | 18 / 39 | 🟨 partial — 18 clauses green (S70 citation pass); 21 gap-tests remain ⬜ |
 | analyst | ✅ v1 (LOCKED) | 24 / 43 | 🟨 partial — 24 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
-| forecaster | ✅ v1 (LOCKED) | 15 / 46 | 🟨 partial — 15 clauses green (S71 citation pass); 31 gap-tests remain ⬜ |
+| forecaster | ✅ v1 (LOCKED) | 16 / 46 | 🟨 partial — 16 clauses green (S99 served-entrypoint pass); 30 gap-tests remain ⬜ |
 | portfolio_manager | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S70 citation pass); 20 gap-tests remain ⬜ |
 | execution | ✅ v1 (LOCKED) | 30 / 49 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
 | monitor | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S71 citation pass); 21 gap-tests remain ⬜ |
 | reporter | ✅ v1 (LOCKED) | 17 / 40 | 🟨 partial — 17 clauses green (S71 citation pass); 23 gap-tests remain ⬜ |
-| researcher | ✅ v1 (LOCKED) | 18 / 44 | 🟨 partial — 18 clauses green (S71 citation pass); 26 gap-tests remain ⬜ |
-| curator | ✅ v1 (LOCKED) | 20 / 48 | 🟨 partial — 20 clauses green (S71 citation pass); 28 gap-tests remain ⬜ |
+| researcher | ✅ v1 (LOCKED) | 19 / 44 | 🟨 partial — 19 clauses green (S99 served-entrypoint pass); 25 gap-tests remain ⬜ |
+| curator | ✅ v1 (LOCKED) | 22 / 48 | 🟨 partial — 22 clauses green (S99 served-entrypoint pass); 26 gap-tests remain ⬜ |
 | operator | ✅ v1 (LOCKED) | 14 / 51 | 🟨 partial — 14 clauses green (S71 citation pass); 37 gap-tests remain ⬜ |
 | supervisor | ✅ v1 (LOCKED) | 21 / 49 | 🟨 partial — 21 clauses green (S71 citation pass); 28 gap-tests remain ⬜ |
 | master | ✅ v1 (LOCKED) | 10 / 18 | 🟨 partial — 10 clauses green (S73); 8 deferred (RSA signing + Key Vault + integration) |

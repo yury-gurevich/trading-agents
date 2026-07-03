@@ -8,8 +8,8 @@
 # Requires a repository secret SECURITY_FINDINGS_TOKEN: a PAT that can read the
 # (private) security-findings-toolset repo, used only to fetch the tool. A
 # fine-grained PAT scoped to that one repo with Contents: Read is enough. The
-# token is embedded in the git URL (uv does not honour git insteadOf) via an
-# env var, so it is never rendered on a command line and Actions masks it.
+# token is embedded in the git URL (uv does not honour git insteadOf); the
+# "Prepare tool spec" step strips any stray whitespace and re-masks it.
 #
 # To enforce later: refresh the baseline, then add a fail flag to the gate step,
 # e.g. `--fail-on-code-scanning-error` (block NEW error-level code-scanning) or
@@ -35,21 +35,20 @@ permissions:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    # Job-level env can read the secrets context (workflow-level env cannot),
-    # so the token actually lands in the URL here.
-    env:
-      TOOL_SPEC: git+https://x-access-token:${{ secrets.SECURITY_FINDINGS_TOKEN }}@github.com/yury-gurevich/security-findings-toolset@main
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
-      - name: Diagnose tool fetch (temporary)
+      # Build the authenticated tool URL. Strip stray whitespace/newlines from
+      # the pasted secret (a common cause of "Malformed input to a URL"), then
+      # re-mask the cleaned value and hand it to later steps via GITHUB_ENV.
+      - name: Prepare tool spec
         env:
           TOOL_TOKEN: ${{ secrets.SECURITY_FINDINGS_TOKEN }}
         run: |
-          echo "token present: ${TOOL_TOKEN:+yes}${TOOL_TOKEN:-NO}"
-          echo "token length: ${#TOOL_TOKEN}"
-          git ls-remote "https://x-access-token:${TOOL_TOKEN}@github.com/yury-gurevich/security-findings-toolset" HEAD 2>&1 | sed -E 's/[0-9a-f]{40}/<sha>/' || echo "ls-remote rc=$?"
+          T=$(printf '%s' "$TOOL_TOKEN" | tr -d '[:space:]')
+          echo "::add-mask::$T"
+          echo "TOOL_SPEC=git+https://x-access-token:${T}@github.com/yury-gurevich/security-findings-toolset@main" >> "$GITHUB_ENV"
 
       - name: Collect open findings
         env:

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-03 19:20 AEST · **Version:** 0.51.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-03 19:35 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,11 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S109 (ADR-0010, 0.51.00→0.52.00)** — heterogeneous deliberation: GPT-5.5 debaters, a separate **Opus**
+  debate judge (dedicated `DELIBERATION_JUDGE_*` env); the veto now debates a **grounded** proposition
+  (fixes the S96 thin-proposition finding). Codex-built, `make ci` 100%. **⚠ Functional via a temporary
+  gpt-5 judge; the real-Opus check + the drift-firewall golden re-freeze are DEFERRED (Anthropic billing,
+  operator-accepted) — re-run scheduled Sun 2026-07-05.** Merged `81c3922`.
 - **S99 (fleet arc, 0.50.00→0.51.00)** — forecaster/curator/researcher served over `serve_loop` (S98
   pattern); `idle_loop` deleted from `kernel/bootstrap.py` + guard test; clause-cited serving tests
   (`FORE-TRG-02` etc.). Codex-built, reviewed, `make ci` 100% + live Aura check (durable artifacts from a
@@ -41,10 +46,9 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   reviewed, `make ci` 100% + **live GPT-5.5** check on Aura (selector 5/5, gate trips, refetch heals). Merged `f980965`.
 - **S106 (DL-36 C, 0.47.00)** — bounded-catalogue LLM remediation planner (enum guardrail, fail-open,
   configurable `auto_remediation_scope`); plans + gates, never executes. Live GPT-5.5 check. Merged `8f74bfa`.
-- **DL-36 A/B (0.44.01→0.46.00)** — master **login-frenzy fix** (correct deploy creds +
-  `kernel.startup.ensure_reachable_or_halt`, never crash-loop) · **S104** credential-tested activation
-  (refuse + `Escalation`) · **S105** KV secret cache (TTL `3/5/10/0`, 0=never).
-Older sprints — S77–96 detail → [STATE-03.md](STATE-03.md) · S37–76 → [STATE-02.md](STATE-02.md) ·
+
+Older sprints — DL-36 A/B (S104/S105) in the arc above; S77–96 → [STATE-03.md](STATE-03.md) · S37–76 →
+[STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
@@ -57,6 +61,9 @@ to Codex via a self-contained sprint file (proven on S106).
 
 ## Next
 
+- **S109 re-run (pending Anthropic billing)** — re-freeze `scripts/deliberation_golden.json` with the real
+  **Opus** judge + run the live-Opus functionality check; until then the drift-firewall baseline is
+  pre-Opus (config asserts Opus-champion but it is not gate-proven). Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until an Azure/Aura write path + rollback + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).

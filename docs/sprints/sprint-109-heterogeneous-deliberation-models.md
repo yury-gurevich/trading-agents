@@ -2,7 +2,7 @@
 
 **Phase:** LLM interaction quality (ADR-0010 / DL-24)
 **Branch:** `sprint-109-heterogeneous-deliberation-models`
-**Status:** planned
+**Status:** shipped (0.51.00 → 0.52.00; **live-Opus closeout deferred** — see Closeout evidence)
 **Effort:** M
 
 ---
@@ -173,3 +173,25 @@ adjudicator to Opus. The value is asymmetric-by-design — let the debaters be f
 decision be made by the strongest reasoner — while the drift-firewall (re-frozen) still guarantees the
 configuration cannot silently degrade. The debate Judge and the scorer Judge staying distinct is what
 keeps the eval meaningful.
+
+## Closeout evidence
+
+- **Implemented by Codex** on `sprint-109-heterogeneous-deliberation-models`; merged to `main` `81c3922` at
+  **0.52.00**. `make ci` verified locally: **9/9 green, 1266 passed / 5 skipped / 100% coverage**.
+- **Shipped:** per-role `judge_llm` in `kernel.deliberate`; `scripts/deliberate.build_role_llms`; dedicated
+  `DELIBERATION_JUDGE_*` env (default `anthropic` / `claude-opus-4-8`); threaded through the veto. **Bonus
+  beyond scope:** the veto now debates a **grounded** proposition (`orchestration/veto_context.py` injects
+  real graph evidence provider→scanner→analyst→PM), fixing the S96 thin-proposition finding. The EXP-004
+  `LLMJudgeScorer` was left untouched, as required.
+- **Functional activity proven** via a **temporary gpt-5 judge** (`DELIBERATION_JUDGE_MODEL=gpt-5`, inline
+  override): a live `scripts/deliberate.py --real` produced `MODE: real (debate OpenAI gpt-5.5 · judge
+  OpenAI gpt-5)`, real Defender/Challenger turns, and a separate-judge `VERDICT: REVISE`.
+- **⚠ DEFERRED — the two items below are NOT done** (Anthropic `credit balance too low`; **operator
+  accepted landing without them, 2026-07-03**, on the basis that Opus↔GPT judge substitution is unlikely to
+  differ dramatically and the wheels-move test proved functional activity):
+  1. The **real-Opus** functionality check (GPT-5.5 debaters + Opus judge live).
+  2. The **drift-firewall golden re-freeze** — the committed `scripts/deliberation_golden.json` is the
+     **pre-Opus baseline** and MUST be re-frozen (`scripts/deliberation_gate.py --freeze --real`) at the
+     re-run, else the gate baseline does not reflect the shipped champion.
+  A re-run is scheduled (Sunday 2026-07-05 calendar reminder). Until then, ADR-0010's "champion judge =
+  Opus, gated" is **asserted in config but not yet gate-proven**.

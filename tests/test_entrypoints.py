@@ -1,54 +1,31 @@
-"""Parametrized smoke tests for idle-loop trading-agent entrypoints.
+"""Entrypoint guard tests.
 
-Each entrypoint must:
-  - import without error
-  - call activate_agent with the correct agent_type when main() runs
-  - call idle_loop() after activate
-
-Note: the provider entrypoint runs a real ingest loop and the scanner/analyst/PM/
-execution/monitor/reporter run graph-pull work loops (not idle_loop); the supervisor
-and operator now serve over serve_loop (S98). All of those are tested separately under
-their own agents/<name>/tests/ packages (e.g. build_served_bus). Only the still-idle
-control-plane stubs remain here.
+Agent: kernel
+Role: ensure agent entrypoints do not retain retired placeholder loop wiring.
+External I/O: none.
 """
 
 from __future__ import annotations
 
-import importlib
+from pathlib import Path
 
-import pytest
+import kernel.bootstrap as bootstrap
 
-_AGENTS = [
-    ("agents.forecaster.entrypoint", "forecaster"),
-    ("agents.curator.entrypoint", "curator"),
-    ("agents.researcher.entrypoint", "researcher"),
-]
+_ENTRYPOINTS = tuple(Path("agents").glob("*/entrypoint.py"))
 
 
-@pytest.mark.parametrize(("module_path", "agent_type"), _AGENTS)
-def test_entrypoint_calls_activate_with_correct_agent_type(
-    module_path: str, agent_type: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Each entrypoint passes its own agent_type string to activate_agent."""
-    calls: list[tuple] = []
-    mod = importlib.import_module(module_path)
-    monkeypatch.setattr(mod, "activate_agent", lambda *a, **kw: calls.append(a) or {})
-    monkeypatch.setattr(mod, "idle_loop", lambda: None)
-    mod.main()
-    assert len(calls) == 1, f"{module_path}: activate_agent not called"
-    assert calls[0][1] == agent_type, (
-        f"{module_path}: expected {agent_type!r}, got {calls[0][1]!r}"
-    )
+def test_no_agent_entrypoint_references_retired_loop() -> None:
+    """FORE-TRG-02 / CUR-TRG-02 / RES-TRG-03: no control-plane idle loops."""
+    retired_symbol = "idle" + "_loop"
+    offenders = [
+        path.as_posix()
+        for path in _ENTRYPOINTS
+        if retired_symbol in path.read_text(encoding="utf-8")
+    ]
+
+    assert offenders == []
 
 
-@pytest.mark.parametrize(("module_path", "_"), _AGENTS)
-def test_entrypoint_calls_idle_loop_after_activate(
-    module_path: str, _: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """idle_loop() is called after activate_agent() (blocks until S75 wires loop)."""
-    idle_called: list[bool] = []
-    mod = importlib.import_module(module_path)
-    monkeypatch.setattr(mod, "activate_agent", lambda *a, **kw: {})
-    monkeypatch.setattr(mod, "idle_loop", lambda: idle_called.append(True))
-    mod.main()
-    assert idle_called, f"{module_path}: idle_loop() not called"
+def test_bootstrap_retired_placeholder_symbol() -> None:
+    """PRE-FLIGHT bootstrap no longer exposes a do-nothing control-plane loop."""
+    assert not hasattr(bootstrap, "idle" + "_loop")

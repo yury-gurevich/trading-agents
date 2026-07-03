@@ -110,11 +110,3 @@ def _http_post(url: str, data: dict[str, object]) -> dict[str, object]:
     with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310  # pragma: no cover
         result: dict[str, object] = json.loads(resp.read())  # pragma: no cover
         return result  # pragma: no cover
-
-
-def idle_loop() -> None:  # pragma: no cover
-    """Block indefinitely — placeholder until the agent event loop is wired (S75+)."""
-    import time
-
-    while True:
-        time.sleep(60)

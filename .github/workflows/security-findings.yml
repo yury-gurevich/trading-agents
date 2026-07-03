@@ -1,0 +1,73 @@
+# Security Findings — report-only ratchet.
+#
+# Collects this repo's open GitHub code-scanning alerts and compares them to a
+# committed baseline (security/findings-baseline.json). It only *reports* — the
+# gate never fails a PR here. New findings surface in the job summary so they do
+# not accumulate silently (the gap: "a scan ran" -> "findings are triaged").
+#
+# Requires a repository secret SECURITY_FINDINGS_TOKEN: a PAT that can read the
+# (private) security-findings-toolset repo, used only to fetch the tool. A
+# fine-grained PAT scoped to that one repo with Contents: Read is enough. The
+# token is embedded in the git URL (uv does not honour git insteadOf); the
+# "Prepare tool spec" step strips any stray whitespace and re-masks it.
+#
+# To enforce later: refresh the baseline, then add a fail flag to the gate step,
+# e.g. `--fail-on-code-scanning-error` (block NEW error-level code-scanning) or
+# `--fail-on-security-severity-at-least 7.0`. To also gate Dependabot, give the
+# PAT security_events read on this repo and pass it as GITHUB_TOKEN to collect,
+# then re-baseline to include the Dependabot findings.
+name: Security Findings
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: security-findings-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: read the checkout + read code-scanning alerts. Nothing else.
+permissions:
+  contents: read
+  security-events: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      # Build the authenticated tool URL. Strip stray whitespace/newlines from
+      # the pasted secret (a common cause of "Malformed input to a URL"), then
+      # re-mask the cleaned value and hand it to later steps via GITHUB_ENV.
+      - name: Prepare tool spec
+        env:
+          TOOL_TOKEN: ${{ secrets.SECURITY_FINDINGS_TOKEN }}
+        run: |
+          T=$(printf '%s' "$TOOL_TOKEN" | tr -d '[:space:]')
+          echo "::add-mask::$T"
+          echo "TOOL_SPEC=git+https://x-access-token:${T}@github.com/yury-gurevich/security-findings-toolset@main" >> "$GITHUB_ENV"
+
+      - name: Collect open findings
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          uvx --from "$TOOL_SPEC" security-findings collect github
+          --repo "${{ github.repository }}"
+          --output security-findings-current.json
+
+      - name: Gate (report-only) against baseline
+        run: >
+          uvx --from "$TOOL_SPEC" security-findings gate
+          --findings security-findings-current.json
+          --baseline security/findings-baseline.json
+          --report-md security-findings-report.md
+          --report-json security-findings-report.json
+
+      - name: Publish report to job summary
+        if: always()
+        run: >
+          cat security-findings-report.md >> "$GITHUB_STEP_SUMMARY"
+          || echo "Gate produced no report (tool unavailable or collect failed) — see step logs." >> "$GITHUB_STEP_SUMMARY"

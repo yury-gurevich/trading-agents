@@ -7,7 +7,9 @@
 #
 # Requires a repository secret SECURITY_FINDINGS_TOKEN: a PAT that can read the
 # (private) security-findings-toolset repo, used only to fetch the tool. A
-# fine-grained PAT scoped to that one repo with Contents: Read is enough.
+# fine-grained PAT scoped to that one repo with Contents: Read is enough. The
+# token is embedded in the git URL (uv does not honour git insteadOf) via an
+# env var, so it is never rendered on a command line and Actions masks it.
 #
 # To enforce later: refresh the baseline, then add a fail flag to the gate step,
 # e.g. `--fail-on-code-scanning-error` (block NEW error-level code-scanning) or
@@ -31,7 +33,7 @@ permissions:
   security-events: read
 
 env:
-  TOOL_SPEC: git+https://github.com/yury-gurevich/security-findings-toolset@main
+  TOOL_SPEC: git+https://x-access-token:${{ secrets.SECURITY_FINDINGS_TOKEN }}@github.com/yury-gurevich/security-findings-toolset@main
 
 jobs:
   gate:
@@ -39,13 +41,6 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
-
-      # Authenticate git for the private tool repo. insteadOf keeps the token
-      # off the uvx command line; Actions masks the secret in logs.
-      - name: Authenticate git for the private tool
-        env:
-          TOOL_TOKEN: ${{ secrets.SECURITY_FINDINGS_TOKEN }}
-        run: git config --global url."https://x-access-token:${TOOL_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Collect open findings
         env:

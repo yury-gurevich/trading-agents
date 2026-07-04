@@ -22,19 +22,20 @@ def tunable(
     *,
     why: str,
     ge: float | None = None,
+    gt: float | None = None,
     le: float | None = None,
     unit: str | None = None,
 ) -> Any:  # noqa: ANN401 - returns a pydantic FieldInfo, assigned to a typed field
     """Declare a configurable constant.
 
     ``why`` — the justification for this default — is mandatory: no tunable may be
-    introduced without recording why its value was chosen. ``ge``/``le`` bound it so
-    an operator override cannot push it outside a safe range. Every constant that
-    influences processing or a forecast must be declared through this helper rather
-    than written as a bare literal.
+    introduced without recording why its value was chosen. ``ge``/``gt``/``le`` bound
+    it so an operator override cannot push it outside a safe range. Every constant
+    that influences processing or a forecast must be declared through this helper
+    rather than written as a bare literal.
     """
     extra: dict[str, Any] | None = {"unit": unit} if unit is not None else None
-    return Field(default, description=why, ge=ge, le=le, json_schema_extra=extra)
+    return Field(default, description=why, ge=ge, gt=gt, le=le, json_schema_extra=extra)
 
 
 class AgentSettings(BaseSettings):
@@ -75,6 +76,12 @@ def _limit(info: FieldInfo, attr: str) -> float | None:
     return None
 
 
+def _lower_limit(info: FieldInfo) -> float | None:
+    """Pull either inclusive or exclusive lower bound metadata."""
+    inclusive = _limit(info, "ge")
+    return inclusive if inclusive is not None else _limit(info, "gt")
+
+
 def describe(settings_cls: type[AgentSettings]) -> list[TunableDoc]:
     """Introspect a settings class into its tunable catalogue.
 
@@ -95,7 +102,7 @@ def describe(settings_cls: type[AgentSettings]) -> list[TunableDoc]:
                 env_var=f"{prefix}{name}".upper(),
                 default=info.get_default(),
                 justification=info.description or "",
-                minimum=_limit(info, "ge"),
+                minimum=_lower_limit(info),
                 maximum=_limit(info, "le"),
                 unit=str(unit) if unit is not None else None,
             )

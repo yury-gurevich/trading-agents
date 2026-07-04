@@ -36,8 +36,8 @@ does not apply.
 
 | Vendor | Role |
 | --- | --- |
-| Tiingo | Primary OHLCV (500 symbols/month free) |
-| Alpaca | Paper/live broker + OHLCV failover |
+| Alpaca | Paper/live broker + runtime/batch OHLCV |
+| Tiingo | Cheap OHLCV fallback + raw-history/evidence source when DL-37 lineage is required |
 | Finnhub | Fundamentals + news |
 | Alpha Vantage | Vendor news sentiment (challenger, ADR-0002) |
 | FMP | Validation sub-universe (~87 symbols) |

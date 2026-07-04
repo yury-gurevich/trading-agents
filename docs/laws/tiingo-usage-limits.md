@@ -24,11 +24,21 @@ Reset cadence from Tiingo documentation:
 Operational rule:
 
 - Do not run a >50-symbol Tiingo export as a single uninterrupted free-tier job.
-- Use resumable scratch scripts that append successful tickers and skip already
-  exported symbols.
-- Stop on sustained HTTP 429 responses and resume after the hourly reset.
+- Use the committed `scripts/export_tiingo_bars.py` exporter for return-model
+  backfills and sprint checks. It writes `date,ticker,close,volume`, skips
+  tickers already present in the CSV, and defaults to a 72-second pace
+  (50 requests/hour).
+- Stop on HTTP 429 responses and resume after the hourly reset. A 429 is a
+  budget signal, not a transient error to retry in a tight loop.
+- Bounded retry/backoff is for transient 5xx/timeout failures only. The exporter
+  defaults to two retries with linear backoff before skipping that ticker.
 - For S&P share classes, prefer Tiingo's dash symbology when needed
   (`BRK-B`, not `BRK.B`).
+- For broad, repeated OHLCV backfills, prefer a future provider-selectable
+  exporter using `AlpacaDataSource`: Alpaca is the primary OHLCV path and
+  batches many symbols per request. Tiingo is the cheap fallback and raw-history
+  lineage source. Sprint evidence that explicitly requires DL-37 Tiingo lineage
+  must still use Tiingo and say so.
 
 Sources:
 

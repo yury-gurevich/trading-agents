@@ -40,7 +40,8 @@ This guarantees four things at once:
 1. **Isolated & modifiable** — overridable via `ANALYST_MIN_CONFIDENCE` in `.env`.
 2. **Justified in code** — `why` is required; a tunable cannot exist without a
    recorded reason for its value.
-3. **Bounded** — `ge`/`le` reject an override that would push it out of a safe range.
+3. **Bounded** — `ge`/`gt`/`le` reject an override that would push it out of a safe
+   range.
 4. **Visible** — introspectable into the central catalogue (below).
 
 A bare literal that influences a decision or forecast is a defect: convert it to a

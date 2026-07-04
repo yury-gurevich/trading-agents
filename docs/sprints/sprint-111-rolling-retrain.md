@@ -3,7 +3,8 @@
 
 **Phase:** qlib workflow adoption (Q1c — R001 addendum 2026-07-04)
 **Branch:** `sprint-111-rolling-retrain`
-**Status:** packaged (handover ready)
+**Status:** shipped on branch (`sprint-111-rolling-retrain`) — code + Tiingo live check complete;
+pending operator review/merge
 **Effort:** M
 
 ---
@@ -236,4 +237,52 @@ The same policy module is deliberately generic (metric maps in, verdict out) so 
 
 ## Closeout evidence
 
-*(appended by the coding agent at completion)*
+- Implementation branch: `sprint-111-rolling-retrain`.
+- Version bump: `pyproject.toml` `0.53.00 → 0.54.00` plus `uv lock`.
+- `make ci`: **green** — `1327 passed, 5 skipped`, `100.00%` coverage, import-linter kept,
+  headers/module-size passed; known `diskcache 5.6.3 / CVE-2025-69872` pip-audit finding reported
+  then ignored by the Makefile.
+- New functionality shipped:
+  - `scripts/export_tiingo_bars.py`: committed Tiingo exporter, CSV columns
+    `date,ticker,close,volume`, S110 ticker list default, 72-second pace, resumable skip-completed
+    behavior, hard stop on 429, bounded sync retry/backoff for transient 5xx/timeouts.
+  - `agents/forecaster/domain/retrain_policy.py`: pure `should_retrain` and `compare_models`
+    decision math, fail-safe on undefined/thin metrics.
+  - `scripts/retrain_return_model.py`: rolling history/recent partition by distinct dates, dry-run
+    default, `--force` trains challenger, `--apply` archives incumbent and installs challenger only
+    when the verdict earns promotion.
+- Live Tiingo export (DL-37 lineage, after reading `docs/laws/tiingo-usage-limits.md`): 100 S&P-500
+  tickers, 100,400 daily bars, exactly 1,004 bars/ticker, zero duplicate `(ticker,date)` keys. Resume
+  was proven by interrupting after 2 tickers and re-running; an HTTP 429 stopped one chunk and the
+  exporter resumed after the hourly reset.
+- Fresh Tiingo-sourced incumbent training:
+  `uv run --extra forecaster python scripts/train_lgbm_return.py --input <scratch>/tiingo_bars.csv`
+  produced 97,900 label rows, train=68,530, test=29,370, `oos_ic=-0.0009`.
+- Dry-run retrain check:
+  `uv run --extra forecaster python scripts/retrain_return_model.py --input <scratch>/tiingo_bars.csv --model models/lgbm-return-v1.txt --force --out <scratch>/retrain-dry-run.json`
+  printed `DECISION retrain=False reason=recent 0.2451 >= trigger 0.1344` and
+  `VERDICT swap=False reason=challenger did not win both`.
+
+| metric | incumbent | challenger | delta |
+| --- | --- | --- | --- |
+| complete_cases | 6000 | 6000 | 0.0000 |
+| rank_ic | -0.0038 | 0.0467 | 0.0505 |
+| ic_ir | 0.2451 | 0.1692 | -0.0759 |
+| ic | 0.0339 | 0.0314 | -0.0025 |
+| hit_rate | 0.5133 | 0.5543 | 0.0410 |
+| top_bottom_spread | -0.0018 | 0.0154 | 0.0171 |
+
+- Scratch apply proof: a valid deliberately weakened incumbent copy produced
+  `DECISION retrain=False reason=metric undefined`, `VERDICT swap=True reason=incumbent metric undefined`,
+  and `PROMOTED`; the archived file's SHA-256 matched the original weakened incumbent, and the active
+  scratch model differed after challenger installation.
+- Documentation updated: `docs/laws/functionality-checks.md`, `docs/laws/tiingo-usage-limits.md`,
+  `docs/laws/dependencies.md`, `docs/laws/stack.md`, `docs/configuration.md`,
+  `docs/design-log.md`, `docs/research/qlib-integration/*`, `docs/STATE.md`, and sprint indexes.
+- Teardown: scratch Tiingo CSV, report JSONs, logs, scratch model tree, and ignored
+  `models/lgbm-return-v1.txt` / `models/candidates/*` artifacts deleted; `models/` contains only
+  `.gitkeep` and `README.md`. No data artifacts staged.
+- Follow-ups: make the raw-history exporter provider-selectable (`--provider alpaca|tiingo|fmp`) so
+  repeated broad backfills use Alpaca's primary batch OHLCV path while Tiingo stays the cheap fallback
+  / DL-37 lineage source; separately, record exact booster artifact provenance in graph predictions
+  when that design gap is scheduled.

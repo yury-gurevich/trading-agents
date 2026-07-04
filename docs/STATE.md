@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 20:12 AEST · **Version:** 0.53.01 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 21:05 AEST · **Version:** 0.54.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,16 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S111 (qlib Q1c, 0.53.01→0.54.00)** — rolling retrain + IC-decay trigger: committed
+  `scripts/export_tiingo_bars.py` (paced/resumable Tiingo DL-37 raw-history export, bounded sync
+  backoff for transient 5xx/timeouts), pure `retrain_policy` (fail-safe decay +
+  champion-vs-challenger verdict), `scripts/retrain_return_model.py` (dry-run default; `--force`
+  trains challenger; `--apply` archives incumbent then installs challenger only on a positive
+  verdict). Codex-built, reviewed, `make ci` 100 %. Live check: 100 Tiingo tickers × 1,004 bars,
+  fresh incumbent, dry-run verdict `swap=False`, scratch apply proof `swap=True` with archive hash
+  intact. Notes: Alpaca is the primary runtime/batch OHLCV path; Tiingo is the cheap fallback +
+  DL-37 raw-history lineage source (ADR-0006 amendment queued). **The self-improvement loop is now
+  mechanical: decay measured → retrain on evidence → operator holds `--apply`.**
 - **chore-enforce-security-gate (PR #27)** — Security Findings gate flipped **report-only →
   ENFORCING**: a NEW error-severity code-scanning finding now fails the PR
   (`--fail-on-code-scanning-error`). Baseline refreshed post-clearance (81 lines → 1 entry: the
@@ -73,21 +83,14 @@ S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
 
-On `main`, no active sprint branch. The etalon north-star holds (DL-19): remaining gray law clauses →
-green with cited tests; **every sprint ends with a real-environment functionality check**
-(`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own `sprint-NN-<slug>` branch;
-merge to `main` is the deploy trigger (rebuilds + pushes agent images). Coding may be done here or handed
-to Codex via a self-contained sprint file (proven on S106).
+On `main`, no active sprint branch (S111 reviewed and merged). The etalon north-star holds
+(DL-19): remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
+functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
+`sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
 
 ## Next
 
-- **S111 rolling retrain + IC-decay trigger (qlib Q1c) — PACKAGED, ready for the coding agent.**
-  Handover `sprints/sprint-111-rolling-retrain.md`: committed resumable Tiingo exporter · pure
-  `retrain_policy` (decay verdict vs the S110 baseline; challenger must beat incumbent on the same
-  recent window) · pipeline CLI, dry-run default, `--apply` = operator approval, archive-never-delete.
-  Sequencing: Q1b ✅ → **Q1c** → Q3 self-built walk-forward → Q5 governed factor mining. Code not
-  started — ship proof is S111's.
-- **S112 researcher backtest evidence (qlib Q3) — PACKAGED, execute after S111 ships.** Handover
+- **S112 researcher backtest evidence (qlib Q3) — PACKAGED and UNBLOCKED (S111 merged).** Handover
   `sprints/sprint-112-researcher-backtest-evidence.md`: pure no-lookahead walk-forward harness in the
   researcher domain (fills at next close, slippage-on-turnover, ≥30 % holdout) · `BacktestEvidence`
   optional contract field (researcher contract → 0.2.0) · bounded signal-catalogue evidence CLI

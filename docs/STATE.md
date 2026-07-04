@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 16:32 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 16:40 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -73,6 +73,12 @@ to Codex via a self-contained sprint file (proven on S106).
   recent window) · pipeline CLI, dry-run default, `--apply` = operator approval, archive-never-delete.
   Sequencing: Q1b ✅ → **Q1c** → Q3 self-built walk-forward → Q5 governed factor mining. Code not
   started — ship proof is S111's.
+- **S112 researcher backtest evidence (qlib Q3) — PACKAGED, execute after S111 ships.** Handover
+  `sprints/sprint-112-researcher-backtest-evidence.md`: pure no-lookahead walk-forward harness in the
+  researcher domain (fills at next close, slippage-on-turnover, ≥30 % holdout) · `BacktestEvidence`
+  optional contract field (researcher contract → 0.2.0) · bounded signal-catalogue evidence CLI
+  (fail-open on unknown parameters; analyst indicators imported in `scripts/` only). The Q5
+  prerequisite. Code not started — ship proof is S112's.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

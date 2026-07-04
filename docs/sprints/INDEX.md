@@ -27,7 +27,8 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Q1** | S58–S59 | Qlib Phase Q1: LightGBM price/return shadow signal + training + IC scorecard | **complete** |
 | **Q2** | S68 | Qlib Phase Q2: Alpha158 22-field pillar (off by default, weight=0.00) | **complete** |
 | **Q1b** | S110 | Qlib workflow adoption (R001 addendum 2026-07-04): signal evaluation battery — rank IC, per-date IC mean/std/IR, quantile spread + monotonicity, multi-horizon decay, stability; OOS-only CLI. Live Tiingo check (DL-37); baseline best at h=20 (IC-IR 0.27) | **complete** — shipped 0.53.00 (2026-07-04, merged `0818679`) |
-| **Q1c** | S111 | Qlib workflow adoption: rolling retrain + IC-decay trigger — decay measured against the S110 baseline, challenger must beat incumbent on the same window, operator holds `--apply`; + committed resumable Tiingo exporter | **packaged** — handover ready; then Q3 walk-forward harness (self-built) → Q5 governed factor mining |
+| **Q1c** | S111 | Qlib workflow adoption: rolling retrain + IC-decay trigger — decay measured against the S110 baseline, challenger must beat incumbent on the same window, operator holds `--apply`; + committed resumable Tiingo exporter | **packaged** — handover ready |
+| **Q3** | S112 | Qlib workflow adoption: researcher backtest evidence — self-built no-lookahead walk-forward harness (pyqlib 3.13-incompatible), `BacktestEvidence` optional contract field, bounded signal-catalogue CLI; the Q5 prerequisite | **packaged** — execute after S111 ships; then Q5 governed factor mining |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
@@ -51,7 +52,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S112**, then S113 …
+1. Next number: **S113**, then S114 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

@@ -1703,3 +1703,70 @@ that file is touched, not worth a sprint).
 The real defect was **documentation lag**: the S59 docstring recipe, R001's prerequisite note, and
 the S110 handover all still pointed at a server that had been gone for two weeks. This entry kills
 that dead text; Tiingo is the raw-history source going forward.
+
+---
+
+## DL-38 · Agent memory belongs to the agent definition; the spine stays shared and shrinks  ·  status: DIRECTION (2026-07-04)
+
+**Trigger.** Operator frustration with Aura Free limits reopened the DB question ("do I regret
+Neo4j?"), then produced the real insight: *"what if the memory graph should be handled as part of
+the agent definition? — this is at the heart of the process."* Captured because it re-frames both
+the store decision (R002/DL-15) and the eventual RAG question.
+
+**The observation — one graph, three conflated workloads:**
+
+1. **Substrate registry** (master's `AgentInstance`/`Session`/`CapabilityGrant`) — DL-15 already
+   found these writes are audit-only; effectively in-memory; no Neo4j need.
+2. **The shared spine** — cross-agent lineage (`RunRequest` → provider → … → reporter) and the
+   graph-pull work loop (DL-08). *Coordination state*: shared by definition. Neo4j-shaped
+   (traversal-heavy), but **small and stable** once fat artifacts leave it.
+3. **Agent memory** — each agent's own artifacts (forecaster `ShadowPrediction`/`Model`, analyst
+   pillar outputs, curator datasets …). Ownership is **already declared per agent**: every
+   contract's `owns_graph` tuple, enforced by the boundary meta-test. The logical partition
+   exists; only the physical co-location makes it look like one big DB decision.
+
+**Direction.** Make **memory a first-class part of the agent definition** — a **MEMORY
+declaration** in the bundle alongside CAPABILITY DECLARATION: owned labels, retention, engine
+class. Consequences:
+
+- **Engine choice becomes bundle-local.** An agent that needs a different memory engine (first
+  real candidate: **RAG** — a vector store for researcher/curator document retrieval) declares it
+  in *its* bundle; nothing else migrates, no other agent's laws/tests are touched. Memory stops
+  being the odd one out next to per-agent deps, laws, and containers.
+- **The blast radius of any store decision is sliced per agent.** Today an engine question is one
+  big decision about one big store; under this model it is N small, independent, deferrable ones.
+- **The spine shrinks** to lineage edges + work-state + IDs, with fat artifacts referenced by ID
+  (the claim-check pattern, already in-tree). A small spine is cheap to host anywhere — the Aura
+  Free node-cap pressure comes precisely from the fat per-agent artifacts (ShadowPredictions at
+  S&P-500 scale; RunMetrics when CI-2 lands), which this moves out.
+- **S101 reframes** from "provision the permanent graph" to "provision the permanent **spine**" —
+  a smaller, better-scoped sprint. Fold into the S101 handover refresh (it needed one anyway).
+- **Etalon/bundle-genesis fit:** the MEMORY section enriches the agent-definition template — the
+  memory *port* is a substrate primitive, the declared memories are pack/agent content, per
+  ADR-0012's "substrate or pack?" test.
+
+**Constraint (firm).** **The spine cannot be privatized.** Graph-pull coordination, supervisor
+lineage traversal, and cross-agent evidence queries need one shared store; fragmenting it means
+hand-built distributed joins — strictly worse than any free-tier limit. Private memory: yes.
+Private spine: no.
+
+**Sequencing — painless by construction.**
+
+1. **Conceptual first (near-zero cost):** add MEMORY to the agent-definition template and treat
+   `owns_graph` as its first implementation. Docs/template work; no code moves.
+2. **Physical split only on demand:** an agent's memory leaves the shared store only when its
+   workload demands a different engine. First expected instance: the RAG research item (R00x —
+   **this entry is its anchor**). No date; needs a concrete retrieval use case first.
+
+**Ruled out.** Fragmenting the spine across per-agent stores (above). A wholesale Neo4j→Postgres
+migration driven by free-tier pain (measured blast radius 2026-07-04: `neo4j` driver imported in
+4 files, Cypher in 8 — all kernel-adapter/scripts/tests; contained, but pointless when the spine
+can simply be re-hosted). Requiring RAG and provenance to share one engine — different workloads,
+joined by IDs, not one store.
+
+**Builds on.** DL-15 (registry ≠ pack provenance — this extends the same cut: pack provenance ≠
+agent memory), DL-08 (graph-pull spine), ADR-0012 (substrate/pack wall), R002 (db-placement
+research), the `GraphStore` port + `owns_graph` boundary meta-test.
+
+**Status.** DIRECTION — operator-confirmed capture (2026-07-04). Graduates to an ADR with the
+S101 (spine) handover refresh; the RAG research item cites this entry when created.

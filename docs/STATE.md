@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 14:40 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 15:35 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -75,7 +75,9 @@ to Codex via a self-contained sprint file (proven on S106).
   offline DSPy extra → hardening-backlog (not in runtime/images).
 - **Fleet arc S100–S103** — **S100 Service Bus receiver: handover Codex-ready + namespace `trading-agents-bus`
   provisioned & live-verified (`infra/servicebus.bicep`); unblocked to build** (implement the receive half of
-  `bus_azure.py` behind the `RequestConsumer` protocol) · permanent Neo4j (S101) · 13-container run-through +
+  `bus_azure.py` behind the `RequestConsumer` protocol) · permanent graph store (S101 — **reframed by
+  DL-38 to "provision the permanent *spine*"**: agent memory becomes a bundle-declared concern, the shared
+  store shrinks to lineage + work-state; fold into the S101 refresh) · 13-container run-through +
   distributed acceptance (S102) · dispatcher cron (S103). Refresh the S101–103 pre-S104 drafts before executing.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs

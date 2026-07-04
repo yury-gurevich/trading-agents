@@ -15,11 +15,12 @@ exporter + 0.54.00)
 > (`docs/sprints/sprint-112-researcher-backtest-evidence.md`). It is a complete, self-contained
 > handover.
 >
-> - **Start:** from `main` (`git pull`; S111 must already be merged), `git checkout -b
->   sprint-112-researcher-backtest-evidence`. Read the files named under *Execution notes* first.
+> - **Start:** from `main` (`git pull`; S111 is merged — verify `scripts/export_tiingo_bars.py`
+>   exists), `git checkout -b sprint-112-researcher-backtest-evidence` (delete any stale local branch
+>   of that name first). Read the files named under *Execution notes* first.
 > - **Hard gate every commit:** `make ci` green — 9 steps, **100 % coverage**, modules **≤ 200 lines**,
->   coding-agent `Agent:`/`Role:` headers. Bump `pyproject.toml` **0.54.00 → 0.55.00** (feat → MINOR) +
->   `uv lock`.
+>   coding-agent `Agent:`/`Role:` headers. Bump `pyproject.toml` **0.54.01 → 0.55.00** (feat → MINOR
+>   zeroes the patch) + `uv lock`.
 > - **Core rules:** the walk-forward harness is **pure, deterministic, no-lookahead by construction**
 >   (fills at the NEXT close after a score date; slippage charged on turnover) and lives in
 >   `agents/researcher/domain/` — **no qlib, no pandas/numpy dependency in the domain module, no
@@ -166,7 +167,8 @@ ticker list** (shared monthly unique-symbol budget); export via `scripts/export_
 
 ## Version bump
 
-New capability (harness + contract field + evidence CLI). **0.54.00 → 0.55.00** (feat → MINOR).
+New capability (harness + contract field + evidence CLI). **0.54.01 → 0.55.00** (feat → MINOR
+zeroes the patch).
 
 ## Execution notes (for the coding agent — cold-start handover)
 

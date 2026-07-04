@@ -12,10 +12,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from agents.master.remediation import Remediation, RemediationPlan
-from agents.master.remediation_execution import (
-    RemediationAttempt,
-    plan_and_run_remediation,
-)
+from agents.master.remediation_execution import plan_and_run_remediation
+from agents.master.remediation_records import RemediationAttempt
 from agents.master.store import (
     write_escalation,
     write_escalation_remediation_outcome,

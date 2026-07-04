@@ -1,9 +1,14 @@
-# Security Findings — report-only ratchet.
+# Security Findings — ENFORCING ratchet (since 2026-07-04).
 #
 # Collects this repo's open GitHub code-scanning alerts and compares them to a
-# committed baseline (security/findings-baseline.json). It only *reports* — the
-# gate never fails a PR here. New findings surface in the job summary so they do
-# not accumulate silently (the gap: "a scan ran" -> "findings are triaged").
+# committed baseline (security/findings-baseline.json). A NEW error-severity
+# code-scanning finding (not in the baseline) FAILS the PR
+# (`--fail-on-code-scanning-error`); everything is also reported in the job
+# summary so lesser findings do not accumulate silently. The baseline was
+# refreshed 2026-07-04 after the CodeQL clearance (0 open code-scanning alerts;
+# the single baselined entry is the operator-accepted diskcache Dependabot
+# advisory). Report-only history: PR #25 (introduced), PR #26 (cleared the 3
+# blocking cyclic-import errors).
 #
 # Requires a repository secret SECURITY_FINDINGS_TOKEN: a PAT that can read the
 # (private) security-findings-toolset repo, used only to fetch the tool. A
@@ -11,11 +16,10 @@
 # token is embedded in the git URL (uv does not honour git insteadOf); the
 # "Prepare tool spec" step strips any stray whitespace and re-masks it.
 #
-# To enforce later: refresh the baseline, then add a fail flag to the gate step,
-# e.g. `--fail-on-code-scanning-error` (block NEW error-level code-scanning) or
-# `--fail-on-security-severity-at-least 7.0`. To also gate Dependabot, give the
-# PAT security_events read on this repo and pass it as GITHUB_TOKEN to collect,
-# then re-baseline to include the Dependabot findings.
+# To tighten further: `--fail-on-security-severity-at-least 7.0`, or gate
+# Dependabot by giving the PAT security_events read, passing it as GITHUB_TOKEN
+# to collect, and re-baselining. To accept a finding: dismiss it in the GitHub
+# Security tab with a reason (preferred), or re-baseline deliberately.
 name: Security Findings
 
 on:
@@ -58,11 +62,12 @@ jobs:
           --repo "${{ github.repository }}"
           --output security-findings-current.json
 
-      - name: Gate (report-only) against baseline
+      - name: Gate against baseline (enforcing — new error-level code-scanning fails)
         run: >
           uvx --from "$TOOL_SPEC" security-findings gate
           --findings security-findings-current.json
           --baseline security/findings-baseline.json
+          --fail-on-code-scanning-error
           --report-md security-findings-report.md
           --report-json security-findings-report.json
 

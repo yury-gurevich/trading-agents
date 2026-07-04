@@ -72,15 +72,16 @@ def train_and_save(  # pragma: no cover
     All lightgbm I/O is in this function; everything else is pure Python.
     """
     lgb = importlib.import_module("lightgbm")
+    np = importlib.import_module("numpy")
     train, test = split_rows(label_rows, train_fraction=train_fraction)
-    x_train = [list(r.features.as_vector()) for r in train]
+    x_train = np.asarray([r.features.as_vector() for r in train], dtype=float)
     y_train = [r.forward_return for r in train]
-    x_test = [list(r.features.as_vector()) for r in test]
+    x_test = np.asarray([r.features.as_vector() for r in test], dtype=float)
     y_test = [r.forward_return for r in test]
     dataset = lgb.Dataset(x_train, label=y_train, feature_name=list(_FEATURE_NAMES))
     booster = lgb.train(_LGB_PARAMS, dataset, num_boost_round=_NUM_ROUNDS)
     booster.save_model(output_path)
-    preds = [float(p) for p in booster.predict(x_test)] if x_test else []
+    preds = [float(p) for p in booster.predict(x_test)] if len(x_test) else []
     return TrainingReport(
         train_size=len(train),
         test_size=len(test),

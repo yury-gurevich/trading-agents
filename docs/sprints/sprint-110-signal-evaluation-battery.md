@@ -3,8 +3,9 @@
 
 **Phase:** qlib workflow adoption (Q1b — R001 addendum 2026-07-04)
 **Branch:** `sprint-110-signal-evaluation-battery`
-**Status:** code complete on branch (`1777352`, `make ci` 100 %) — **live check pending**; data
-source re-scoped to Tiingo (DL-37: reference Postgres decommissioned, verified 2026-07-04)
+**Status:** shipped on branch (`sprint-110-signal-evaluation-battery`) — code + Tiingo live check
+complete; data source re-scoped to Tiingo (DL-37: reference Postgres decommissioned, verified
+2026-07-04)
 **Effort:** M
 
 ---
@@ -143,15 +144,17 @@ Live, against real data — unit-green ≠ works:
 > zero PG servers across all enabled subscriptions), so the `price_cache` export below is replaced
 > by a **Tiingo** export — Tiingo is the ADR-0006 primary OHLCV feed and its key is live in `.env`.
 
-1. Export real daily bars from **Tiingo** with a **scratch script** (not committed) over the
+1. **Before calling Tiingo, read `docs/laws/tiingo-usage-limits.md`** and budget the run against
+   the free-tier limits. Export real daily bars from **Tiingo** with a **scratch script** (not committed) over the
    in-tree client (`agents/provider/tiingo.py`): **≥ 100 S&P-500 tickers × ≥ 3 years**, written in
    the trainer's CSV format (`date,ticker,close,volume`, date-ascending per ticker). Reuse the
-   universe list the S&P-500 acceptance run used; pace requests to respect the free-tier rate
-   limits (a partial universe is fine — cross-sectional metrics need breadth ≥ 100, not all 507).
+   universe list the S&P-500 acceptance run used; pace/resume requests to respect the free-tier
+   rate limits (a partial universe is fine — cross-sectional metrics need breadth ≥ 100, not all
+   507).
 2. Retrain the booster from that CSV:
    `uv run --extra forecaster python scripts/train_lgbm_return.py --input <scratch>/tiingo_bars.csv`
    — the artifact is now **Tiingo-sourced**; say so in the functionality-checks row.
-3. `uv run --extra forecaster python scripts/evaluate_return_model.py --input price_cache.csv
+3. `uv run --extra forecaster python scripts/evaluate_return_model.py --input <scratch>/tiingo_bars.csv
    --model models/lgbm-return-v1.txt --horizons 1,5,10,20 --out <scratch>/eval-lgbm-return-v1.json`
 4. Evidence: paste the printed per-horizon markdown table into the
    `docs/laws/functionality-checks.md` row; sanity-expect `complete_cases` in the thousands
@@ -220,3 +223,26 @@ Q1b → Q1c (rolling retrain + IC-decay trigger) → Q3 (self-built walk-forward
 factor-mining loop). The battery is deliberately measurement-only — it changes no decision path,
 gates nothing, and exists so that every later promotion/retrain decision has published evidence to
 point at.
+
+## Closeout evidence
+
+- Implementation commit: `1777352 feat(forecaster): add signal evaluation battery`.
+- Resumed live-check branch merge: `ffe9ecf Merge remote-tracking branch 'origin/main' into sprint-110-signal-evaluation-battery`
+  brought in the DL-37 Tiingo re-scope.
+- Final `make ci` after the live-check LightGBM fix and closeout docs: **green** —
+  `1294 passed, 5 skipped`, `100.00%` coverage,
+  import-linter kept, headers/module-size passed; known `diskcache 5.6.3 / CVE-2025-69872`
+  pip-audit finding reported then ignored by the Makefile.
+- Live Tiingo export: scratch script over `agents/provider/tiingo.py`, 100 S&P-500 tickers,
+  87,700 daily bars, 877 bars/ticker from `2023-01-01` through `2026-07-04`; free-tier
+  request budget followed after reading `docs/laws/tiingo-usage-limits.md`.
+- Tiingo-sourced booster (DL-37): `uv run --extra forecaster python scripts/train_lgbm_return.py --input <scratch>/tiingo_bars.csv`
+  produced 85,200 label rows, train=59,639, test=25,561, `oos_ic=0.0132`.
+- Live battery:
+
+| horizon | cases | ic | rank_ic | ic_ir | hit_rate | top_bottom_spread | monotonic_fraction | stability_mean |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 25681 | 0.0057 | 0.0047 | 0.0729 | 0.5075 | 0.0002 | 0.7500 | 0.4358 |
+| 5 | 25561 | 0.0132 | 0.0072 | 0.1869 | 0.5127 | 0.0018 | 0.5000 | 0.4333 |
+| 10 | 25411 | 0.0112 | 0.0041 | 0.2030 | 0.5147 | 0.0016 | 0.5000 | 0.4330 |
+| 20 | 25111 | 0.0171 | 0.0233 | 0.2714 | 0.5175 | 0.0025 | 0.5000 | 0.4319 |

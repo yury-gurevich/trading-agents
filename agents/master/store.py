@@ -14,7 +14,7 @@ from contracts.master import AgentState
 
 if TYPE_CHECKING:
     from agents.master.remediation import RemediationPlan
-    from agents.master.remediation_execution import RemediationAttempt
+    from agents.master.remediation_records import RemediationAttempt
     from kernel import GraphStore
     from kernel.graph import Node
 

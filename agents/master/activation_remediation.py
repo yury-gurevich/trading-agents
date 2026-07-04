@@ -10,10 +10,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.master.credential_test import ActivationRefused, resolve_and_test
-from agents.master.remediation_execution import (
-    RemediationAttempt,
-    plan_and_try_remediation,
-)
+from agents.master.remediation_execution import plan_and_try_remediation
+from agents.master.remediation_records import RemediationAttempt
 from agents.master.store import (
     write_escalation_remediation_outcome,
     write_remediation_attempt,

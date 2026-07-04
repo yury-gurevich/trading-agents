@@ -3,7 +3,8 @@
 
 **Phase:** qlib workflow adoption (Q1b — R001 addendum 2026-07-04)
 **Branch:** `sprint-110-signal-evaluation-battery`
-**Status:** packaged (handover ready)
+**Status:** code complete on branch (`1777352`, `make ci` 100 %) — **live check pending**; data
+source re-scoped to Tiingo (DL-37: reference Postgres decommissioned, verified 2026-07-04)
 **Effort:** M
 
 ---
@@ -138,16 +139,23 @@ Operates on `list[ReturnObservation]` (import from `return_scorecard`; no new da
 
 Live, against real data — unit-green ≠ works:
 
-1. Export the real `price_cache` CSV from the reference Postgres (creds in the sibling project's
-   `.env`; the `\copy` command is in `scripts/train_lgbm_return.py`'s docstring).
-2. If `models/lgbm-return-v1.txt` is absent locally, retrain it first with
-   `uv run --extra forecaster python scripts/train_lgbm_return.py --input price_cache.csv`
-   (reproducible S59 artifact).
+> **Re-scope (2026-07-04, DL-37):** the reference Postgres is decommissioned (host unresolvable;
+> zero PG servers across all enabled subscriptions), so the `price_cache` export below is replaced
+> by a **Tiingo** export — Tiingo is the ADR-0006 primary OHLCV feed and its key is live in `.env`.
+
+1. Export real daily bars from **Tiingo** with a **scratch script** (not committed) over the
+   in-tree client (`agents/provider/tiingo.py`): **≥ 100 S&P-500 tickers × ≥ 3 years**, written in
+   the trainer's CSV format (`date,ticker,close,volume`, date-ascending per ticker). Reuse the
+   universe list the S&P-500 acceptance run used; pace requests to respect the free-tier rate
+   limits (a partial universe is fine — cross-sectional metrics need breadth ≥ 100, not all 507).
+2. Retrain the booster from that CSV:
+   `uv run --extra forecaster python scripts/train_lgbm_return.py --input <scratch>/tiingo_bars.csv`
+   — the artifact is now **Tiingo-sourced**; say so in the functionality-checks row.
 3. `uv run --extra forecaster python scripts/evaluate_return_model.py --input price_cache.csv
    --model models/lgbm-return-v1.txt --horizons 1,5,10,20 --out <scratch>/eval-lgbm-return-v1.json`
 4. Evidence: paste the printed per-horizon markdown table into the
-   `docs/laws/functionality-checks.md` row; sanity-expect `complete_cases` in the tens of thousands
-   (507 tickers × test window) and every horizon column populated. A weak IC is a **valid result**
+   `docs/laws/functionality-checks.md` row; sanity-expect `complete_cases` in the thousands
+   (≥ 100 tickers × the test window) and every horizon column populated. A weak IC is a **valid result**
    (the battery's job is honest measurement) — record it plainly; only a crash, an empty report, or
    a missing metric is a failure.
 5. Tear down: delete the scratch CSV/JSON; confirm `git status` shows no data files staged. Record

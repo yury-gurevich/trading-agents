@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 16:25 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 16:32 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -67,9 +67,12 @@ to Codex via a self-contained sprint file (proven on S106).
 
 ## Next
 
-- **Qlib Q1c — rolling retrain + IC-decay trigger** — next in the R001 addendum sequencing
-  (Q1b ✅ → **Q1c** → Q3 self-built walk-forward → Q5 governed factor mining); consumes the S110
-  battery baseline (h=20 IC-IR 0.27). Not yet packaged — handover to write when prioritized.
+- **S111 rolling retrain + IC-decay trigger (qlib Q1c) — PACKAGED, ready for the coding agent.**
+  Handover `sprints/sprint-111-rolling-retrain.md`: committed resumable Tiingo exporter · pure
+  `retrain_policy` (decay verdict vs the S110 baseline; challenger must beat incumbent on the same
+  recent window) · pipeline CLI, dry-run default, `--apply` = operator approval, archive-never-delete.
+  Sequencing: Q1b ✅ → **Q1c** → Q3 self-built walk-forward → Q5 governed factor mining. Code not
+  started — ship proof is S111's.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

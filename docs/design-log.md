@@ -1662,3 +1662,44 @@ before build; **Piece A can start now**. Graduates to an ADR once the escalation
   vault* (fail-**closed** — a failing/empty/unverifiable secret is rejected, never written), so only
   working credentials ever exist to be handed out. DL-36 at the source; the master's handover-time test
   (S104) becomes defence-in-depth. Also fixed a latent secret-map bug (provider Alpaca-secret env var).
+
+---
+
+## DL-37 · Reference Postgres (`price_cache`) is decommissioned — raw-history needs re-point to Tiingo  ·  status: DIRECTION (2026-07-04)
+
+**Trigger.** The S110 functionality check tried to export the `price_cache` CSV and could not: the
+sibling project's `.env` host `trades-database.postgres.database.azure.com` **does not resolve** (DNS
+`No such host is known`), and a sweep of **all three enabled Azure subscriptions** lists **zero**
+PostgreSQL flexible servers. Verified twice (coding agent + planning agent), 2026-07-04. The server is
+gone, not misconfigured.
+
+**What this invalidates.**
+
+- The standing assumption that the reference Postgres is available as a **raw OHLCV** source
+  (629,823 rows / 507 tickers, 2021-04 → 2026-05). Any doc or plan that says "export `price_cache`"
+  is now dead text: the S59 training-CLI docstring's `\copy` recipe, R001's Q2 prerequisite note,
+  and the original S110 check procedure.
+- The P12 sentiment-scorecard runway idea "news+returns from the reference Postgres" — that harness
+  must source returns elsewhere when it is planned (it was already flagged "verify before planning").
+
+**Decision (planning, within ADR-0006 — no reversal involved).** Raw daily history for training and
+evaluation now comes from **Tiingo**, the ADR-0006 primary OHLCV feed (free tier covers the full
+S&P-500; client already in-tree at `agents/provider/tiingo.py`); Alpaca data remains the failover.
+Historical depth changes from ~5y (price_cache) to whatever Tiingo serves (typically ≥5y daily) —
+acceptable for training/evaluation. The LightGBM booster is retrained from Tiingo-sourced bars; the
+artifact was never committed, so nothing is orphaned, but **the original v1-Postgres training data is
+no longer reproducible** — record the data source in every future `functionality-checks.md` row.
+
+**Ruled out.** Recreating the Azure Postgres server just to keep the old recipe (cost for no new
+information — the same raw bars are available from the primary feed); treating this as an ADR-0006
+change (it is not: Tiingo was already primary; Postgres was only a *backtest convenience* source).
+
+**Consequences applied.** S110's functionality check re-scoped to a Tiingo export (sprint doc
+amended, same evidence bar); S59 trainer docstring recipe is stale (fix opportunistically next time
+that file is touched, not worth a sprint).
+
+**Resolved (same day).** The deletion was **deliberate** — operator removed the server on
+**2026-06-19** (no backup taken; raw price cache only, fully replaceable by the live Tiingo feed).
+The real defect was **documentation lag**: the S59 docstring recipe, R001's prerequisite note, and
+the S110 handover all still pointed at a server that had been gone for two weeks. This entry kills
+that dead text; Tiingo is the raw-history source going forward.

@@ -24,7 +24,7 @@
 > - **Out-of-sample honesty:** the evaluation CLI reports **test-split dates only** by default; evaluating
 >   in-sample requires an explicit, loudly-labelled flag.
 > - **Real-environment check** (sprint-close rule): run the CLI against the real `price_cache` CSV export
->   + a trained booster; capture the per-horizon table; record the row in
+>   plus a trained booster; capture the per-horizon table; record the row in
 >   `docs/laws/functionality-checks.md`. Do **not** commit the CSV, the booster artifact, or the report
 >   JSON.
 > - **Do NOT merge or push to `main`** — commit on the branch only, and stop for operator confirmation.
@@ -44,7 +44,7 @@ signal in the system carries a published battery of evidence ("they did their ho
 2. **Offline (`scripts/evaluate_return_model.py`):** a multi-horizon evaluation CLI that rebuilds
    predictions from the price CSV via the trained booster and reports, per horizon: pooled IC, rank IC,
    hit rate, per-date cross-sectional IC series (mean / std / information ratio), quantile mean returns
-   + top-bottom spread + monotonicity, and day-over-day rank-autocorrelation (signal stability). This
+   plus top-bottom spread and monotonicity, and day-over-day rank-autocorrelation (signal stability). This
    is the IC-decay curve across horizons — and the measurement Phase Q1c's retrain trigger will consume.
 
 Why each metric earns its place: rank IC is invariant to the monotone 0-1 squash on predictions

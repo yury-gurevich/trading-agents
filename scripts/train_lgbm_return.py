@@ -27,12 +27,13 @@ The script expects columns: date, ticker, close, volume (open/high/low ignored).
 from __future__ import annotations
 
 import argparse
-import csv
 import sys
 from pathlib import Path
 
 # Keep sys.path clean: run from the repo root so the package is importable.
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from scripts.price_csv import load_price_csv
 
 from agents.forecaster.domain.return_labels import build_label_rows
 from agents.forecaster.model_trainer import train_and_save
@@ -40,22 +41,6 @@ from agents.forecaster.model_trainer import train_and_save
 _DEFAULT_HORIZONS = (1, 5, 20)
 _DEFAULT_VOL_WINDOW = 20
 _DEFAULT_MOM_WINDOW = 20
-
-
-def _load_csv(path: str) -> dict[str, list[tuple[str, float, float]]]:
-    """Read price_cache CSV into {ticker: [(date, close, volume), ...]}."""
-    ticker_bars: dict[str, list[tuple[str, float, float]]] = {}
-    with Path(path).open(newline="") as fh:
-        for row in csv.DictReader(fh):
-            ticker = row["ticker"]
-            ticker_bars.setdefault(ticker, []).append(
-                (row["date"], float(row["close"]), float(row["volume"]))
-            )
-    # Each ticker's bars arrive in date order from the ORDER BY clause; sort
-    # defensively so the script is correct even without the ORDER BY.
-    for bars in ticker_bars.values():
-        bars.sort(key=lambda t: t[0])
-    return ticker_bars
 
 
 def main() -> None:
@@ -79,7 +64,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"Loading bars from {args.input} …")
-    ticker_bars = _load_csv(args.input)
+    ticker_bars = load_price_csv(args.input)
     n_bars = sum(len(v) for v in ticker_bars.values())
     print(f"  {n_bars} bars across {len(ticker_bars)} tickers")
 

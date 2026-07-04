@@ -1,7 +1,8 @@
 """Pure statistics for the sentiment champion-challenger scorecard.
 
 Agent: forecaster
-Role: deterministic Pearson correlation and 2-regressor OLS over aligned series.
+Role: deterministic Pearson/Spearman correlation and 2-regressor OLS over
+      aligned series.
 External I/O: none.
 """
 
@@ -35,6 +36,28 @@ def pearson(xs: list[float], ys: list[float]) -> float | None:
         return None
     sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True))
     return float(sxy / (sxx**0.5 * syy**0.5))
+
+
+def spearman(xs: list[float], ys: list[float]) -> float | None:
+    """Spearman rank correlation of two equal-length series; never raises."""
+    if len(xs) != len(ys):
+        return None
+    return pearson(_average_ranks(xs), _average_ranks(ys))
+
+
+def _average_ranks(xs: list[float]) -> list[float]:
+    ranked = sorted(enumerate(xs), key=lambda item: item[1])
+    ranks = [0.0] * len(xs)
+    i = 0
+    while i < len(ranked):
+        j = i + 1
+        while j < len(ranked) and ranked[j][1] == ranked[i][1]:
+            j += 1
+        average_rank = (i + 1 + j) / 2.0
+        for original_index, _ in ranked[i:j]:
+            ranks[original_index] = average_rank
+        i = j
+    return ranks
 
 
 def ols2(

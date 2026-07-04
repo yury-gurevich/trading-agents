@@ -4,6 +4,8 @@ Agent: provider
 Role: fetch daily OHLCV bars from Tiingo's tiingo/daily prices endpoint
 (the primary full-universe live OHLCV feed — ADR-0006, closes DRIFT-009).
 External I/O: optional HTTPS calls to api.tiingo.com.
+
+Mandatory before live Tiingo use: read docs/laws/tiingo-usage-limits.md.
 """
 
 from __future__ import annotations

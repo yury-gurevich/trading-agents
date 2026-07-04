@@ -30,11 +30,12 @@ class LightGBMModel:
             lightgbm = importlib.import_module("lightgbm")
         except ModuleNotFoundError as exc:
             raise ConfigurationError("lightgbm is not installed") from exc
+        self._numpy = importlib.import_module("numpy")  # pragma: no cover
         self._booster = lightgbm.Booster(model_file=model_path)  # pragma: no cover
 
     def predict(self, features: FeatureRow) -> float:
         """Score the feature row with the trained booster."""
         prediction = self._booster.predict(  # pragma: no cover
-            [list(features.as_vector())]
+            self._numpy.asarray([features.as_vector()], dtype=float)
         )
         return float(prediction[0])  # pragma: no cover

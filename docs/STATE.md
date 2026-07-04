@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 19:27 AEST · **Version:** 0.53.01 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 20:12 AEST · **Version:** 0.53.01 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,12 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **chore-enforce-security-gate (PR #27)** — Security Findings gate flipped **report-only →
+  ENFORCING**: a NEW error-severity code-scanning finding now fails the PR
+  (`--fail-on-code-scanning-error`). Baseline refreshed post-clearance (81 lines → 1 entry: the
+  operator-accepted diskcache Dependabot advisory; policy embedded). PROVEN: toolset run locally —
+  clean state exit 0, synthetic new error exit 1; PR #27's own `gate` check passed enforcing in CI.
+  Accept-a-finding path documented in the workflow header (dismiss-with-reason preferred).
 - **chore-codeql-fixes (0.53.00→0.53.01, PR #26 `b61aff4`)** — CodeQL security report cleared to
   **0 open alerts**: the 3 error-severity `py/unsafe-cyclic-import` alerts fixed structurally
   (`RemediationAttempt` → new cycle-free `agents/master/remediation_records.py`; CodeQL re-scan marks

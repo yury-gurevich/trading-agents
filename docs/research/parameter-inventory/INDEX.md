@@ -1,8 +1,8 @@
 # Parameter inventory — the complete decision-parameter surface
 
-**Status:** Reference (auto-extracted) · **Date:** 2026-06-24
+**Status:** Reference (auto-extracted) · **Date:** 2026-07-04
 
-Every `tunable()` in the system in one readable place — **133 parameters across 18 files** — with
+Every `tunable()` in the system in one readable place — **136 parameters across 18 files** — with
 each one's default, bounds, unit, and recorded justification.
 
 - **[parameter-inventory.md](parameter-inventory.md)** — the full per-agent tables, split into

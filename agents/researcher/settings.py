@@ -68,3 +68,31 @@ class ResearcherSettings(AgentSettings):
         ge=0.0,
         le=1.0,
     )
+    backtest_top_k: int = tunable(
+        20,
+        why=(
+            "Portfolio breadth for walk-forward proposal evidence; "
+            "equal-weight top-K by score."
+        ),
+        ge=5,
+        le=100,
+    )
+    backtest_slippage_bps: float = tunable(
+        10.0,
+        why=(
+            "Per-unit-turnover cost charged in the walk-forward simulator; "
+            "keeps evidence honest about churn."
+        ),
+        ge=0.0,
+        le=100.0,
+        unit="bps",
+    )
+    backtest_holdout_fraction: float = tunable(
+        0.3,
+        why=(
+            "Trailing fraction of the window reported separately as "
+            "out-of-sample consistency (R001 risk register: OOS >= 30%)."
+        ),
+        ge=0.3,
+        le=0.5,
+    )

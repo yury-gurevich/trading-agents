@@ -7,6 +7,9 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
+
 from agents.researcher.domain.evidence import RunEvidence
 from agents.researcher.domain.proposal import build_proposal
 from agents.researcher.settings import ResearcherSettings
@@ -51,6 +54,20 @@ def test_bound_and_window_violations_return_zero_change() -> None:
     assert "safe bound" in bound_proposal.rationale.summary
     assert not short_proposal.changes
     assert "too short" in short_proposal.rationale.summary
+
+
+def test_backtest_settings_defaults_and_bounds() -> None:
+    settings = ResearcherSettings()
+
+    assert settings.backtest_top_k == 20
+    assert settings.backtest_slippage_bps == 10.0
+    assert settings.backtest_holdout_fraction == 0.3
+    with pytest.raises(ValidationError):
+        ResearcherSettings(backtest_top_k=4)
+    with pytest.raises(ValidationError):
+        ResearcherSettings(backtest_slippage_bps=-0.1)
+    with pytest.raises(ValidationError):
+        ResearcherSettings(backtest_holdout_fraction=0.2)
 
 
 def _evidence(confidence: float) -> RunEvidence:

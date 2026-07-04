@@ -13,9 +13,9 @@ from agents.master.key_vault import CachingSecretStore
 from agents.master.remediation import RemediationPlan
 from agents.master.remediation_execution import (
     RefetchFromKeyVaultExecutor,
-    RemediationAttempt,
     run_remediation,
 )
+from agents.master.remediation_records import RemediationAttempt
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

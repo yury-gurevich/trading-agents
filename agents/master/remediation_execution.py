@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from agents.master.remediation import RemediationPlan, plan_remediation
+from agents.master.remediation_records import RemediationAttempt
 from agents.master.store import write_remediation_attempt, write_remediation_plan
 
 if TYPE_CHECKING:
@@ -19,17 +20,6 @@ if TYPE_CHECKING:
     from agents.master.remediation import Remediation
     from kernel import GraphStore, LLMClient
     from kernel.graph import Node
-
-
-@dataclass(frozen=True)
-class RemediationAttempt:
-    """One execution attempt for a planned remediation."""
-
-    remediation: str
-    status: str
-    message: str
-    executor: str
-    auto: bool
 
 
 @dataclass(frozen=True)

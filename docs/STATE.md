@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 16:40 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 19:27 AEST · **Version:** 0.53.01 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,14 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **chore-codeql-fixes (0.53.00→0.53.01, PR #26 `b61aff4`)** — CodeQL security report cleared to
+  **0 open alerts**: the 3 error-severity `py/unsafe-cyclic-import` alerts fixed structurally
+  (`RemediationAttempt` → new cycle-free `agents/master/remediation_records.py`; CodeQL re-scan marks
+  them `fixed`); the other 68 triaged as false positives / intentional idioms (fault_boundary
+  sentinels, attribute docstrings, string-form casts, pytest.raises flows, deliberate lazy imports)
+  and **dismissed with per-family recorded reasons** — not "fixed" by deleting working idioms.
+  `make ci` 100 % + CI/CodeQL/image-build green on `main`. Unblocks enforcing the security-findings
+  gate (was report-only pending these 3 errors — operator decision).
 - **S110 (qlib Q1b, 0.52.00→0.53.00)** — forecaster **signal evaluation battery**: rank IC (Spearman),
   quantile group returns + top-bottom spread + monotonicity, per-date cross-sectional IC mean/std/IR,
   rank-autocorrelation stability; OOS-only multi-horizon CLI (`scripts/evaluate_return_model.py`).

@@ -3,8 +3,8 @@
 
 **Phase:** qlib workflow adoption (Q3 — R001 addendum 2026-07-04, re-scoped self-built)
 **Branch:** `sprint-112-researcher-backtest-evidence`
-**Status:** packaged (handover ready) — **execute after S111 ships** (needs the committed Tiingo
-exporter + 0.54.00)
+**Status:** packaged (handover ready) — **UNBLOCKED**: S111 is merged (`45f6c34`); the committed
+Tiingo exporter is on `main`
 **Effort:** M
 
 ---
@@ -214,4 +214,4 @@ approving any parameter change.
 
 ## Closeout evidence
 
-*(appended by the coding agent at completion)*
+Appended by the coding agent at completion.

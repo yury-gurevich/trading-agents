@@ -9,6 +9,18 @@ tags: [tiingo, alpaca, finnhub, feeds, provider]
 
 **Status:** Accepted · **Date:** 2026-06-16 · **Decider:** Yury Gurevich (product owner)
 
+> **Amendment (2026-07-04) — primary/fallback roles updated to match shipped reality.** The runtime
+> composite (`agents/provider/composite.py::market_source_from_settings`) routes OHLCV to
+> **Alpaca** (batches many symbols per request — the right shape for daily full-universe pulls);
+> **Tiingo** is the **cheap fallback and the raw-history/lineage source** for offline
+> training/evidence work that must record a DL-37-traceable data source (per-symbol pulls under
+> `docs/laws/tiingo-usage-limits.md` budgets: 500 unique symbols/month, 50 req/hour). The decision's
+> substance is unchanged — tiered free keyed feeds behind the `DataSource` boundary, Alpaca as the
+> single broker+data vendor, FMP validation sub-universe, Finnhub fundamentals/news — only the
+> primary/fallback labels below are superseded. Recorded when S111's doc pass surfaced that the law
+> book had drifted ahead of this ADR (law text: `docs/laws/{stack,dependencies}.md`; design-log
+> S111 operational note).
+
 ## Context
 
 The provider agent needs **live OHLCV for the full S&P 500** to do real work. The original keyless

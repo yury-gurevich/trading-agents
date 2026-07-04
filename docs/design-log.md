@@ -1698,6 +1698,12 @@ change (it is not: Tiingo was already primary; Postgres was only a *backtest con
 amended, same evidence bar); S59 trainer docstring recipe is stale (fix opportunistically next time
 that file is touched, not worth a sprint).
 
+**S111 operational note.** The rolling-retrain evidence check still uses Tiingo when it is proving
+DL-37 lineage, but this is a lineage/cheap-fallback choice, not a runtime-source reversal. Alpaca
+remains the primary OHLCV path for repeated broad backfills because it batches many symbols per
+request; a provider-selectable exporter is the queued cleanup once the Tiingo-specific sprint evidence
+is closed.
+
 **Resolved (same day).** The deletion was **deliberate** — operator removed the server on
 **2026-06-19** (no backup taken; raw price cache only, fully replaceable by the live Tiingo feed).
 The real defect was **documentation lag**: the S59 docstring recipe, R001's prerequisite note, and

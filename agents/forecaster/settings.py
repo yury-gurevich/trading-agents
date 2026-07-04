@@ -96,6 +96,37 @@ class ForecasterSettings(AgentSettings):
         le=1.0,
         unit="return",
     )
+    retrain_window_days: int = tunable(
+        60,
+        why="Trailing distinct-date evaluation window for the rolling IC-decay check.",
+        ge=20,
+        le=252,
+        unit="trading days",
+    )
+    retrain_trigger_fraction: float = tunable(
+        0.5,
+        why="Fraction of the reference metric below which a retrain is recommended.",
+        gt=0.0,
+        le=1.0,
+    )
+    retrain_horizon_days: int = tunable(
+        20,
+        why=(
+            "Forward-return horizon the decay trigger and champion comparison score "
+            "at — S110 baseline is strongest at h=20 (IC-IR 0.27)."
+        ),
+        ge=1,
+        le=60,
+        unit="days",
+    )
+    retrain_min_cases: int = tunable(
+        500,
+        why=(
+            "Minimum aligned recent-window observations before a decay verdict "
+            "is meaningful."
+        ),
+        ge=50,
+    )
 
     # ── LLM champion slot (ADR-0010) ─────────────────────────────────────────
     system_prompt: str = tunable(

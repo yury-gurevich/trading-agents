@@ -23,11 +23,13 @@ contract — runnable in isolation and as the pre-flight of any real run.
 
 ## DEP-FEED — external market-data feed(s)
 
-Feed strategy is **ADR-0006**: **Tiingo** (free, 500 symbols/month) is the primary full-universe live
-OHLCV feed; **Alpaca** (free) is the failover feed; **FMP** (free, ~87 symbols) is a validation
-sub-universe; **Finnhub** (free) serves fundamentals + news. No anti-bot scraping (Stooq retired).
-Postgres `price_cache` was the raw-OHLCV backtest fallback — **retired 2026-06-19** (Tiingo + Alpaca
-cover the need; repo-hygiene.md pass 3). Paid feeds deferred to Phase D.
+Feed strategy is **ADR-0006** plus DL-16/DL-37: **Alpaca** is the primary runtime/batch OHLCV source
+because it fetches many symbols per request; **Tiingo** is the cheap fallback and explicit raw-history
+lineage source when a sprint requires DL-37 Tiingo-sourced evidence (free tier: 500 unique
+symbols/month, 50 requests/hour); **FMP** (free, ~87 symbols) is a validation sub-universe; **Finnhub**
+(free) serves fundamentals + news. No anti-bot scraping (Stooq retired). Postgres `price_cache` was
+the raw-OHLCV backtest fallback — **retired 2026-06-19** (Tiingo + Alpaca cover the need;
+repo-hygiene.md pass 3). Paid feeds deferred to Phase D.
 
 - `DEP-FEED-01` — the price feed is reachable and returns parseable data for a known symbol.
 - `DEP-FEED-02` — the keyed feed (Finnhub fundamentals/news; Alpha Vantage vendor sentiment)

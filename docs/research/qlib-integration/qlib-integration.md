@@ -442,12 +442,17 @@ multi-horizon IC decay, and rank-autocorrelation stability, plus an offline out-
 evaluation CLI producing a per-model evidence report. No qlib import — standard math. Serves claim 1;
 also builds the measurement Q1c triggers on.
 
-**Q1c — Rolling retrain + IC-decay trigger (queued, after Q1b).** A train-once model silently decays;
-qlib's online-serving workflow retrains on a rolling window and swaps champion only when the
-challenger wins walk-forward. Adopt the monitoring half: track the deployed model's rolling IC (Q1b
-battery); decay past a threshold triggers retraining (S59 CLI) and a challenger-vs-incumbent
-comparison; swap on evidence. Skip DDG-DA's drift *forecasting* (research-grade). Serves claim 3
-mechanically, using the existing champion–challenger machinery.
+**Q1c — Rolling retrain + IC-decay trigger (shipped: [sprint-111](../../sprints/sprint-111-rolling-retrain.md)).**
+A train-once model silently decays; qlib's online-serving workflow retrains on a rolling window and
+swaps champion only when the challenger wins walk-forward. Adopted pieces: a pure
+`agents/forecaster/domain/retrain_policy.py` decay/verdict policy, `scripts/export_tiingo_bars.py`
+for DL-37 Tiingo-sourced raw-history exports, and `scripts/retrain_return_model.py` for the operator
+loop. The default is dry-run; `--force` trains a challenger even when decay did not trigger; `--apply`
+is the only path that archives the incumbent and installs the challenger. 429s from Tiingo stop the
+export for hourly-reset resume; transient 5xx/timeouts get bounded sync backoff. Alpaca remains the
+primary runtime/batch OHLCV path; Tiingo is used here only for cheap-fallback / raw-history lineage.
+Skip DDG-DA's drift *forecasting* (research-grade). Serves claim 3 mechanically, using the existing
+champion–challenger machinery.
 
 **Q3 — re-scoped to a self-built walk-forward harness.** The pyqlib wall stands on 3.13 and vendoring
 the engine is rejected (heavy, drifts from upstream, conflicts with the 200-line/100%-coverage

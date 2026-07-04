@@ -23,6 +23,17 @@ class _UnboundedSettings(AgentSettings):
     label: str = tunable("paper", why="names the current local test profile")
 
 
+class _ExclusiveLowerSettings(AgentSettings):
+    model_config = SettingsConfigDict(env_prefix="STRICT_", frozen=True)
+
+    fraction: float = tunable(
+        0.5,
+        why="exclusive zero protects division-style fractions",
+        gt=0.0,
+        le=1.0,
+    )
+
+
 def test_default_is_used_when_no_env():
     assert _SampleSettings().min_confidence == 0.6
 
@@ -36,6 +47,12 @@ def test_bounds_reject_out_of_range(monkeypatch):
     monkeypatch.setenv("SAMPLE_MIN_CONFIDENCE", "1.5")
     with pytest.raises(ValidationError):
         _SampleSettings()
+
+
+def test_exclusive_lower_bound_rejects_equal_value(monkeypatch):
+    monkeypatch.setenv("STRICT_FRACTION", "0.0")
+    with pytest.raises(ValidationError):
+        _ExclusiveLowerSettings()
 
 
 def test_describe_catalogues_the_tunable():
@@ -56,3 +73,12 @@ def test_describe_catalogues_unbounded_tunable():
     assert row.env_var == "UNBOUNDED_LABEL"
     assert row.minimum is None
     assert row.maximum is None
+
+
+def test_describe_catalogues_exclusive_lower_bound():
+    rows = describe(_ExclusiveLowerSettings)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.env_var == "STRICT_FRACTION"
+    assert row.minimum == 0.0
+    assert row.maximum == 1.0

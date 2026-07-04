@@ -10,6 +10,7 @@ look in the "Outcome" column for the ADR or sprint it produced.
 | [R001](qlib-integration/) | Microsoft Qlib — integration vision + workflow addendum | 2026-06-19 | 🚧 In progress | Can this project benefit from qlib? Which agents, which components, which *workflows*, in what order? | Q1 (S58–S59) + Q2 (S68) complete. Addendum 2026-07-04: **Q1b** signal evaluation battery (**S110 packaged**) → Q1c rolling retrain → Q3 self-built walk-forward harness → Q5 governed factor mining; Q4 behind live-data prerequisite | `qlib` `forecaster` `analyst` `portfolio_manager` `researcher` `ml` `backtesting` |
 | [R002](db-placement/) | DB placement — substrate registry vs trading-pack provenance | 2026-06-23 | 📋 Active | What DB does the substrate need? What does AuraDB Free cover? What Azure free-tier DB options exist? Which graph/vector alternatives? | ADR + sprint pending | `neo4j` `cosmos-db` `substrate` `trading-pack` `graph` `vector` `platform` |
 | [R003](textgrad/) | TextGrad — textual-gradient optimization for continuous improvement | 2026-07-03 | 🗄️ Archived | What is TextGrad vs DSPy? Should it join the optimizer stack now? What would make it worth adopting later? | Not adopted — stays the ADR-0010 bake-off candidate behind the `PromptOptimizer` port; revisit triggers named in the doc | `textgrad` `dspy` `prompt-optimization` `adr-0010` `continuous-improvement` |
+| [R004](a2a-boundary/) | A2A (Agent2Agent) — interop standard, boundary only | 2026-07-04 | 🗄️ Archived | How closely do we follow A2A standards/best practice? Should A2A replace any internal mechanism? When/how would compatibility be added? | Not adopted internally (permanent on current architecture — convergent principles, stronger enforcement). Future: A2A front-door adapter in `surfaces/` (MCP-surface pattern) behind named triggers | `a2a` `interop` `surfaces` `mcp` `adr-0012` `platform` |
 
 ## Folder structure — read this before adding an entry
 
@@ -28,6 +29,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | [qlib-integration/](qlib-integration/INDEX.md) | R001 | Microsoft Qlib integration vision. |
 | [db-placement/](db-placement/INDEX.md) | R002 | Substrate vs trading-pack DB placement. |
 | [textgrad/](textgrad/INDEX.md) | R003 | TextGrad evaluated for continuous improvement — not adopted; ADR-0010 bake-off candidate. |
+| [a2a-boundary/](a2a-boundary/INDEX.md) | R004 | A2A interop standard — convergent principles, no internal adoption; boundary adapter behind triggers. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
 | [parameter-inventory/](parameter-inventory/INDEX.md) | Reference | Every `tunable()` (133 params, 18 files) with defaults/bounds/why — the decision-parameter surface; manual stand-in for CI-1. |
 | [quant-methods/](quant-methods/INDEX.md) | Reference | What each quant signal *measures*, why it matters, how to read it + uncovered areas + deterministic params to raise prediction confidence. |
@@ -45,7 +47,7 @@ imported/supporting material without an R-number.
 
 ## Adding a new research document
 
-1. Next number is `R004`.
+1. Next number is `R005`.
 2. Create a **folder** `docs/research/<slug>/` (not a loose file). Put the document at
    `<slug>/<slug>.md`, opening with the standard header block:
 

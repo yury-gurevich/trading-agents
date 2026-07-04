@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-03 19:35 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 14:06 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -60,6 +60,11 @@ to Codex via a self-contained sprint file (proven on S106).
 
 ## Next
 
+- **S110 signal evaluation battery (qlib Q1b) — PACKAGED, ready for the coding agent.** INTENT: R001
+  workflow addendum written (2026-07-04) + self-contained handover
+  (`sprints/sprint-110-signal-evaluation-battery.md`). PROVEN: addendum + handover + index rows exist on
+  `main`; revised phasing Q1b → Q1c (rolling retrain) → Q3 (self-built walk-forward harness; pyqlib still
+  no cp313, re-verified 2026-07-04) → Q5 (governed factor mining). Code not started — ship proof is S110's.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

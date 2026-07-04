@@ -16,6 +16,15 @@
 
 ---
 
+> **Update (2026-07-04) — workflow-level addendum.** Q1 (S58–S59) and Q2 (S68) shipped. A second
+> pass re-examined qlib as a source of **workflows** rather than components; see the
+> §"Addendum (2026-07-04)" at the end. It adds phases Q1b (signal evaluation battery — packaged as
+> [sprint-110](../../sprints/sprint-110-signal-evaluation-battery.md)) and Q1c (rolling retrain),
+> **re-scopes Q3 to a self-built walk-forward harness** (pyqlib still ships no cp313 wheel,
+> re-verified 2026-07-04), and adds Q5 (governed factor-mining loop, = Moonshot #3).
+
+---
+
 ## TL;DR
 
 Qlib is Microsoft's open-source AI-oriented quantitative investment platform. It contains
@@ -409,3 +418,59 @@ Moonshot #4 (causal DAG) is independent of qlib (DoWhy/EconML) and is unaffected
 | RL order execution | execution | XL | High (live broker gap) | Moonshot only |
 | qlib data layer | provider | — | High (replace working system) | **Do not do** |
 | RD-Agent | forecaster/researcher | — | High (policy violation) | **Do not do** |
+
+---
+
+## Addendum (2026-07-04) — workflow-level pass
+
+**Prompt:** the operator's goal restated as three claims the system must earn — *"they did their
+homework"*, *"decisions based on all available evidence"*, *"the system is self-learning and
+self-improving"*. The original document catalogued qlib's **components**; this pass mines its
+**workflows**. Sources re-checked 2026-07-04: `pyqlib` still supports Python 3.8–3.12 only (no
+cp313 wheel — the Q1 constraint stands); RD-Agent(Q) (NeurIPS 2025) since validated the governed
+factor-mining loop's economics (meaningful factor discovery at trivial compute cost).
+
+### Revised phasing
+
+Sequencing: **Q1b → Q1c → Q3 → Q5**; Q4 unchanged behind its 60-day live-data prerequisite.
+
+**Q1b — Signal evaluation battery (packaged: [sprint-110](../../sprints/sprint-110-signal-evaluation-battery.md)).**
+Qlib's report module treats pooled IC as the *start* of signal evaluation, not the conclusion. Extend
+the S59 return scorecard with rank IC (Spearman — robust to the 0-1 squash on predictions), per-date
+cross-sectional IC series (mean/std/IR), quantile group returns with top-bottom spread + monotonicity,
+multi-horizon IC decay, and rank-autocorrelation stability, plus an offline out-of-sample-only
+evaluation CLI producing a per-model evidence report. No qlib import — standard math. Serves claim 1;
+also builds the measurement Q1c triggers on.
+
+**Q1c — Rolling retrain + IC-decay trigger (queued, after Q1b).** A train-once model silently decays;
+qlib's online-serving workflow retrains on a rolling window and swaps champion only when the
+challenger wins walk-forward. Adopt the monitoring half: track the deployed model's rolling IC (Q1b
+battery); decay past a threshold triggers retraining (S59 CLI) and a challenger-vs-incumbent
+comparison; swap on evidence. Skip DDG-DA's drift *forecasting* (research-grade). Serves claim 3
+mechanically, using the existing champion–challenger machinery.
+
+**Q3 — re-scoped to a self-built walk-forward harness.** The pyqlib wall stands on 3.13 and vendoring
+the engine is rejected (heavy, drifts from upstream, conflicts with the 200-line/100%-coverage
+regime). Build a thin deterministic walk-forward simulator inside `agents/researcher/domain/` (fills
+at next close, fixed slippage in bps as a tunable, walk-forward split ≥ 30% out-of-sample). The
+`BacktestEvidence` contract field and reviewer-facing intent are unchanged from the original Q3.
+Serves claim 2 — every proposal carries prospective evidence alongside retrospective provenance.
+Also now the **prerequisite for Q5**.
+
+**Q5 (new) — governed factor-mining loop.** RD-Agent's hypothesis → implement → backtest → feedback
+loop with this project's governance bolted on: the researcher (LLM) *proposes* candidate factors; the
+Q3 harness scores them deterministically; a human approves; shadow period; scorecard; promote or
+kill. The LLM only ever proposes — the "LLM never drives trading decisions" policy is preserved, so
+the original RD-Agent exclusion stands while its loop shape is adopted. This is Moonshot #3 made
+concrete. Blocked by Q3.
+
+### Noted, no sprint yet
+
+**Point-in-time fundamentals discipline.** Fundamentals get restated; a backtest that uses today's
+corrected number for last year's date is silent lookahead. When Finnhub fundamentals become decision
+inputs, store them as-first-reported (qlib's PIT-database lesson). Owner: provider phase planning.
+
+### Still excluded
+
+Nested decision execution (order-execution optimization — irrelevant at Alpaca-paper scale), full
+DDG-DA meta-learning, BPQP, and RD-Agent's autonomous mode — all for the original reasons.

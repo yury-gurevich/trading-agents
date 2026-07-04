@@ -26,6 +26,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Law cycle** | S69 | Provider law cycle: DRIFT-006/007 corrected; 23/43 clauses green; laws LOCKED v1; template locked for agent backfill | **complete** |
 | **Q1** | S58–S59 | Qlib Phase Q1: LightGBM price/return shadow signal + training + IC scorecard | **complete** |
 | **Q2** | S68 | Qlib Phase Q2: Alpha158 22-field pillar (off by default, weight=0.00) | **complete** |
+| **Q1b** | S110 | Qlib workflow adoption (R001 addendum 2026-07-04): signal evaluation battery — rank IC, per-date IC mean/std/IR, quantile spread + monotonicity, multi-horizon decay, stability; OOS-only CLI | **packaged** — handover ready; then Q1c rolling retrain → Q3 walk-forward harness (re-scoped self-built) → Q5 governed factor mining |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
@@ -49,7 +50,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S107**, then S108 …
+1. Next number: **S111**, then S112 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

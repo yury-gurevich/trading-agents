@@ -50,6 +50,9 @@ def build_return_observations(
 
 def return_scorecard_metrics(
     observations: list[ReturnObservation],
+    *,
+    neutral_prediction: float = 0.5,
+    quantiles: int = 5,
 ) -> dict[str, float]:
     """IC + directional metrics over aligned observations; never raises.
 
@@ -64,7 +67,9 @@ def return_scorecard_metrics(
     ic = pearson(preds, rets)
     if ic is not None:
         metrics["ic"] = ic
-    correct = sum(1 for p, r in zip(preds, rets, strict=True) if (p - 0.5) * r > 0)
+    correct = sum(
+        1 for p, r in zip(preds, rets, strict=True) if (p - neutral_prediction) * r > 0
+    )
     metrics["hit_rate"] = correct / len(observations)
     up = [p for p, r in zip(preds, rets, strict=True) if r > 0]
     down = [p for p, r in zip(preds, rets, strict=True) if r <= 0]
@@ -72,4 +77,10 @@ def return_scorecard_metrics(
         metrics["mean_up_pred"] = sum(up) / len(up)
     if down:
         metrics["mean_down_pred"] = sum(down) / len(down)
+    from agents.forecaster.domain.evaluation import quantile_metrics, rank_ic
+
+    rank = rank_ic(observations)
+    if rank is not None:
+        metrics["rank_ic"] = rank
+    metrics.update(quantile_metrics(observations, quantiles=quantiles))
     return metrics

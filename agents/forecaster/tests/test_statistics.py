@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from agents.forecaster.domain.statistics import ols2, pearson, std
+from agents.forecaster.domain.statistics import ols2, pearson, spearman, std
 
 
 def test_pearson_perfect_positive() -> None:
@@ -27,6 +27,26 @@ def test_pearson_too_few_points_is_none() -> None:
 
 def test_pearson_constant_series_is_none() -> None:
     assert pearson([5.0, 5.0, 5.0], [1.0, 2.0, 3.0]) is None
+
+
+def test_spearman_perfect_monotone() -> None:
+    assert spearman([1.0, 2.0, 3.0], [10.0, 20.0, 30.0]) == pytest.approx(1.0)
+
+
+def test_spearman_uses_average_ranks_for_ties() -> None:
+    assert spearman([1.0, 1.0, 2.0], [1.0, 2.0, 3.0]) == pytest.approx(0.8660254038)
+
+
+def test_spearman_constant_series_is_none() -> None:
+    assert spearman([1.0, 1.0, 1.0], [1.0, 2.0, 3.0]) is None
+
+
+def test_spearman_too_few_points_is_none() -> None:
+    assert spearman([1.0], [1.0]) is None
+
+
+def test_spearman_unequal_lengths_is_none() -> None:
+    assert spearman([1.0, 2.0], [1.0]) is None
 
 
 def test_std_is_zero_for_a_constant_series() -> None:

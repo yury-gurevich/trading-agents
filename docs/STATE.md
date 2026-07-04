@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 15:35 AEST · **Version:** 0.52.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-04 16:25 AEST · **Version:** 0.53.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,13 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S110 (qlib Q1b, 0.52.00→0.53.00)** — forecaster **signal evaluation battery**: rank IC (Spearman),
+  quantile group returns + top-bottom spread + monotonicity, per-date cross-sectional IC mean/std/IR,
+  rank-autocorrelation stability; OOS-only multi-horizon CLI (`scripts/evaluate_return_model.py`).
+  Codex-built, reviewed, `make ci` 100 % + **live Tiingo check** (DL-37 re-scope proven: 100 tickers ×
+  877 bars; booster retrained Tiingo-sourced). Honest weak-signal baseline, best at h=20 (IC 0.017,
+  rank-IC 0.023, IC-IR 0.27) — the Q1c retrain-trigger baseline. Also: live-discovered LightGBM
+  NumPy-input fix + `docs/laws/tiingo-usage-limits.md` preflight law. Merged `0818679`.
 - **S109 (ADR-0010, 0.51.00→0.52.00)** — heterogeneous deliberation: GPT-5.5 debaters + a separate **Opus**
   debate judge (`DELIBERATION_JUDGE_*` env); veto now debates a **grounded** proposition (fixes S96).
   `make ci` 100%. **⚠ Functional via a temporary gpt-5 judge; real-Opus check + golden re-freeze DEFERRED
@@ -60,14 +67,9 @@ to Codex via a self-contained sprint file (proven on S106).
 
 ## Next
 
-- **S110 signal evaluation battery (qlib Q1b) — code complete on branch, LIVE CHECK PENDING.** PROVEN:
-  branch `sprint-110-signal-evaluation-battery` (`1777352`), `make ci` green — 1294 passed, 100.00 %
-  coverage, 0.53.00 bumped. **NOT proven:** the real-data check — blocked by **DL-37** (reference
-  Postgres decommissioned; host unresolvable + zero PG servers in all subscriptions, verified
-  2026-07-04). Check re-scoped to a **Tiingo** export (sprint doc amended); coding agent correctly
-  refused to fabricate evidence. Remaining: Tiingo export → retrain booster → run battery → record
-  `functionality-checks.md` row → then merge. Revised qlib phasing: Q1b → Q1c → Q3 (self-built
-  walk-forward) → Q5 (governed factor mining).
+- **Qlib Q1c — rolling retrain + IC-decay trigger** — next in the R001 addendum sequencing
+  (Q1b ✅ → **Q1c** → Q3 self-built walk-forward → Q5 governed factor mining); consumes the S110
+  battery baseline (h=20 IC-IR 0.27). Not yet packaged — handover to write when prioritized.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

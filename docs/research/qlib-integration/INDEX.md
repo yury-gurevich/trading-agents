@@ -12,8 +12,9 @@ Whether and how this project adopts Microsoft Qlib — across which agents and i
 Which qlib *workflows* (not components) serve "did the homework / all evidence / self-improving"?
 
 **Outcome:** Q1 complete (S58–S59: LightGBM shadow + IC scorecard) · Q2 complete (S68: Alpha158
-pillar). Addendum 2026-07-04 re-sequenced the rest: **Q1b** signal evaluation battery (packaged —
-[sprint-110](../../sprints/sprint-110-signal-evaluation-battery.md)) → **Q1c** rolling retrain +
-IC-decay trigger → **Q3** researcher backtest evidence (re-scoped to a **self-built** walk-forward
-harness; pyqlib still has no cp313 wheel) → **Q5** governed factor-mining loop (Moonshot #3);
-Q4 unchanged behind its 60-day live-data prerequisite.
+pillar) · **Q1b complete** ([sprint-110](../../sprints/sprint-110-signal-evaluation-battery.md),
+shipped 0.53.00 2026-07-04 with a live Tiingo check — baseline best at h=20: IC 0.017, rank-IC
+0.023, IC-IR 0.27). Remaining addendum sequencing: **Q1c** rolling retrain + IC-decay trigger
+(next) → **Q3** researcher backtest evidence (re-scoped to a **self-built** walk-forward harness;
+pyqlib still has no cp313 wheel) → **Q5** governed factor-mining loop (Moonshot #3); Q4 unchanged
+behind its 60-day live-data prerequisite.

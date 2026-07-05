@@ -29,6 +29,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Q1b** | S110 | Qlib workflow adoption (R001 addendum 2026-07-04): signal evaluation battery — rank IC, per-date IC mean/std/IR, quantile spread + monotonicity, multi-horizon decay, stability; OOS-only CLI. Live Tiingo check (DL-37); baseline best at h=20 (IC-IR 0.27) | **complete** — shipped 0.53.00 (2026-07-04, merged `0818679`) |
 | **Q1c** | S111 | Qlib workflow adoption: rolling retrain + IC-decay trigger — decay measured against the S110 baseline, challenger must beat incumbent on the same window, operator holds `--apply`; + committed resumable Tiingo exporter | **complete** — shipped 0.54.00 (2026-07-04, merged `45f6c34`) |
 | **Q3** | S112 | Qlib workflow adoption: researcher backtest evidence — self-built no-lookahead walk-forward harness (pyqlib 3.13-incompatible), `BacktestEvidence` optional contract field (researcher 0.2.0), bounded signal-catalogue CLI; the Q5 prerequisite | **complete** — shipped 0.55.00 (2026-07-05, merged `feb7f87`); Q5 governed factor mining unblocked |
+| **Deliberation quality (DL-41)** | S114 | 🔴 **Priority** — complete the challenger-veto evidence: render every enforced gate as value **+ explicit pass/fail outcome**, and thread the **PM risk gates** (`max_sector_pct` concentration, sizing, held positions) that are computed but currently unrendered; PM emits gate outcomes (additive contract), `veto_context.py` split, completeness test. Deterministic evidence fix, not a prompt change (DSPy = DL-42, later). | **packaged — ready for Codex (execute before S113)** |
 | **Q5 (part A)** | S113 | Qlib workflow adoption: governed factor proposal — bounded factor catalogue + LLM proposes an in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores it → `FactorProposal` with `BacktestEvidence` into the review queue. LLM never drives; researcher `external_io=()` intact. Shadow→promote is S114. | **packaged — ready for Codex** |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
@@ -53,7 +54,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S114**, then S115 …
+1. Next number: **S115**, then S116 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

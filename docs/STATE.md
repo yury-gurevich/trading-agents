@@ -119,7 +119,8 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   concentration, sizing basis, held-position context are computed but not rendered (needs the PM to
   emit gate outcomes as an additive `OrderIntentSet` field). Fix: render every gate as value+outcome,
   thread PM gate results, explicit stop-vs-ATR; split `veto_context.py` (195/200); add a completeness
-  test. **Package S114 and execute before S113.** DL-41 holds the spec.
+  test. **S114 packaged + ready for Codex** (`docs/sprints/sprint-114-complete-deliberation-evidence.md`);
+  version 0.55.01 → 0.56.00; execute before S113. DL-41 holds the spec, DL-42 (DSPy) is the layer after.
 - **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex** (now behind S114). Handover written
   (`docs/sprints/sprint-113-governed-factor-proposal.md`): bounded factor catalogue + LLM proposes an
   in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores

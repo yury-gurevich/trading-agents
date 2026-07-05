@@ -17,7 +17,7 @@
 >   any stale local branch of that name first). Read the files under *Execution notes → read first*
 >   before writing anything.
 > - **Hard gate every commit:** `make ci` green — 9 steps, **100 % coverage**, modules **≤ 200 lines**,
->   coding-agent `Agent:`/`Role:` headers. Bump `pyproject.toml` **0.55.01 → 0.56.00** (feat → MINOR
+>   coding-agent `Agent:`/`Role:` headers. Bump `pyproject.toml` **0.56.00 → 0.57.00** (feat → MINOR
 >   zeroes the patch) + `uv lock`.
 > - **The governance invariant (this is the whole point of Q5):** the LLM **only ever proposes a factor
 >   from a bounded catalogue**. It never computes a score, never emits a trade, never applies anything.
@@ -51,10 +51,10 @@ promote/kill**. The tail (approve → … → promote) already exists as governa
 > walk-forward harness scores it deterministically; the result is emitted as a governed `FactorProposal`
 > carrying `BacktestEvidence`, ready for the human-review queue.
 
-**Explicitly out of scope (that is S114, part B):** turning an approved factor into a live shadow
+**Explicitly out of scope (that is S115, part B):** turning an approved factor into a live shadow
 signal, the scorecard over shadow performance, and promote/kill through the P10 predictor registry.
 Anything touching the forecaster/analyst shadow-emitter, a new graph label, a bus event, or a new agent
-capability handler belongs to S114 — **flag it, don't build it.**
+capability handler belongs to S115 — **flag it, don't build it.**
 
 ### Why a "factor" is small here
 
@@ -107,8 +107,8 @@ selectable factor catalogue.
      (**fail-open** — the caller treats `None` as "no proposal").
    - `score(selection, bars) -> Scores` — dispatch to the validated factor.
 
-   If this file approaches 150 lines, split the primitives into `factors_impl.py` and keep the catalogue
-   + validation in `factors.py`. Prefer small.
+   If this file approaches 150 lines, split the primitives into `factors_impl.py` and keep the
+   catalogue and validation in `factors.py`. Prefer small.
 
 2. **Contract types — `contracts/researcher.py`** (additive; bump `version` **0.2.0 → 0.3.0**):
    - `ProposedFactor(_Frozen)`: `name: str`, `params: tuple[tuple[str, float], ...]` (sorted, hashable),
@@ -117,7 +117,7 @@ selectable factor catalogue.
      `backtest: BacktestEvidence | None = None`. Docstring: *"Lands in the human-review queue. The
      researcher never applies it itself."* (same discipline as `ParameterChangeProposal`).
    - **No** new `Capability`, **no** `emits` entry, **no** new `owns_graph` label in this sprint — those
-     are the S114 promotion surface. Keep the change to types only, exactly as S112 added `BacktestEvidence`
+     are the S115 promotion surface. Keep the change to types only, exactly as S112 added `BacktestEvidence`
      without touching capabilities. Update any boundary/contract test that snapshots the researcher shape.
 
 3. **Proposal builder — `agents/researcher/domain/factor_proposal.py`** (pure): `build_factor_proposal(
@@ -146,7 +146,7 @@ selectable factor catalogue.
 ## Definition of done (verifiable success factors)
 
 1. `make ci` green — 9 steps, **100 % coverage**, all modules ≤ 200 lines, headers present. Version
-   `0.56.00`, `uv.lock` staged.
+   `0.57.00`, `uv.lock` staged.
 2. Three catalogue factors implemented, each pure and no-lookahead, each parameter `tunable`-bounded;
    unit tests cover every factor, every `validate_selection` branch (in-catalogue ok, unknown name,
    out-of-bounds param), and the fail-open path — all with **fakes, no live model**.
@@ -189,7 +189,7 @@ selectable factor catalogue.
   `max_tokens`); a tight cap returns empty content (`finish_reason=length`). `gpt-5.5` is the default
   debater/selector and is fine.
 - **Don't touch the harness.** `run_walkforward`/`to_evidence` are frozen S112 API. If you feel the urge
-  to modify them, you are probably doing part B (S114) — stop and flag it.
+  to modify them, you are probably doing part B (S115) — stop and flag it.
 - **Coverage of the script.** `scripts/` is outside the coverage *source* (no 100 % floor there), but any
   logic you can move into the covered domain (`factors.py`, `factor_proposal.py`) should live there and be
   fully tested; keep the script a thin composition root.
@@ -200,7 +200,7 @@ selectable factor catalogue.
 
 Part A ships the governed *proposal* with prospective evidence — the LLM now contributes candidate
 factors under a hard bounded-catalogue guardrail, and every candidate arrives with deterministic
-walk-forward evidence for a human to weigh. Part B (S114) then wires an approved factor into a live
+walk-forward evidence for a human to weigh. Part B (S115) then wires an approved factor into a live
 shadow signal and the promote/kill scorecard. Splitting here keeps each slice inside the 200-line /
 100 %-coverage regime and preserves the "LLM never drives trading decisions" policy at every step:
 here it only *nominates* something to measure. See the R001 addendum (`docs/research/qlib-integration/`)

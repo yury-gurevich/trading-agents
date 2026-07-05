@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-05 14:56 AEST · **Version:** 0.55.01 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-05 18:25 AEST · **Version:** 0.56.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,16 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S114 (DL-41, 0.55.01→0.56.00)** — complete deliberation evidence: additive `GateOutcome` +
+  `OrderIntent.gate_report` (PM contract 0.2.0); PM emits sizing / min-order / max-positions / cash /
+  sector-concentration / names-per-sector / reward-risk outcomes; `veto_context.py` split
+  (`veto_context_pm.py`) and the veto context now renders **every enforced gate as value + explicit
+  PASSED/FAILED**, incl. confidence-floor and stop-vs-regime/ATR, degrading to stated "unavailable"
+  lines (fail-open intact). Completeness test fences regressions. Codex-built, reviewed, `make ci`
+  re-verified locally (1346 passed, 100%). Live check: seeded PMRun through the real veto stage on Aura
+  — every gate rendered with explicit outcome incl. `max_sector_pct`; 6 nodes torn down to baseline 0.
+  Merged `6d9e9d0`. **The challenger-veto now debates complete evidence (DL-41 closed); DL-42 (DSPy on
+  the reasoning) is the next layer.**
 - **S109 re-run (0.55.00→0.55.01, `chore-s109-opus-refreeze`)** — cleared the deferred S109 proofs with a
   funded Anthropic key: live check with the **real Opus judge** (`claude-opus-4-8`) → `VERDICT: REVISE`;
   **golden re-frozen** with the Opus judge (robust-passing `{alpha158-weight-zero, calendar-staleness,
@@ -112,16 +122,14 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **🔴 PRIORITY — S114 complete the deliberation evidence (DL-41).** Money is spent on the veto's
-  output, so its evidence must be complete. Live `orchestration/veto_context.py` already renders
-  confidence + `base_min_confidence` + regime/scanner/market lineage, but (1) gate **outcomes** are
-  implicit (values shown, pass/fail not stated) and (2) **PM risk gates are absent** — `max_sector_pct`
-  concentration, sizing basis, held-position context are computed but not rendered (needs the PM to
-  emit gate outcomes as an additive `OrderIntentSet` field). Fix: render every gate as value+outcome,
-  thread PM gate results, explicit stop-vs-ATR; split `veto_context.py` (195/200); add a completeness
-  test. **S114 packaged + ready for Codex** (`docs/sprints/sprint-114-complete-deliberation-evidence.md`);
-  version 0.55.01 → 0.56.00; execute before S113. DL-41 holds the spec, DL-42 (DSPy) is the layer after.
-- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex** (now behind S114). Handover written
+- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex (now unblocked).**
+  Handover `docs/sprints/sprint-113-governed-factor-proposal.md` re-pointed to **0.56.00 → 0.57.00**
+  after S114 merged. Bounded factor catalogue + LLM proposes in-catalogue (enum-guarded, fail-open,
+  LLM only in composition root) → S112 walk-forward scores → `FactorProposal` + `BacktestEvidence`.
+- **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
+  DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
+  set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package
+  when prioritized. Handover written
   (`docs/sprints/sprint-113-governed-factor-proposal.md`): bounded factor catalogue + LLM proposes an
   in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores
   it → `FactorProposal` + `BacktestEvidence` into the review queue. LLM never drives; researcher

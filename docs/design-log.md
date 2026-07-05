@@ -1776,3 +1776,70 @@ research), the `GraphStore` port + `owns_graph` boundary meta-test.
 
 **Status.** DIRECTION — operator-confirmed capture (2026-07-04). Graduates to an ADR with the
 S101 (spine) handover refresh; the RAG research item cites this entry when created.
+
+---
+
+## DL-39 · Deliberation's primary product is the graded *rationale* — expert reasoning captured as a training source  ·  status: DIRECTION (2026-07-05)
+
+**Trigger.** After the GPT-5/Opus/Fable bake-off, the operator reframed the point of a deliberation
+round: *"one reason is the decision to buy or not, BUT THE MOST IMPORTANT ONE IS WHY THIS DECISION
+WAS MADE — is an expert model performing at the level of a senior stock analyst. We collect this and
+use it to train a model to see what parameters carry the biggest load and why."* Captured because it
+re-frames what the harness is *for*.
+
+**The shift.** Today `kernel.deliberate` returns a `Verdict` (uphold/overturn/revise) — the *decision*.
+The reframe says the verdict is the by-product; the **transcript is the asset**. The recorded WHY —
+Defender's grounded case, Challenger's strongest objection, the Judge's weighing — is a labelled
+corpus of *reasoning quality*, not just outcomes.
+
+**Two questions it must answer:**
+1. **Competence** — does the expert model reason at senior-analyst level? Not "did it pick buy," but
+   "did it cite the right parameters, define them correctly, weigh reward:risk, catch the event-window
+   gap." The bake-off already showed this discriminates: an un-truncated challenger flipped GPT-5's
+   verdict, and the three models argued in distinct registers (economic / procedural / parameter-enumeration).
+2. **Parameter load** — across many graded deliberations, *which parameters carry the decision* and
+   *why*. Feature-importance over the reasoning, not the price series.
+
+**Builds on existing pieces (this is assembly, not green-field):**
+- **DL-31 / `score_understanding`** (the `--score` flag) already grades a transcript's parameter
+  *definitions* against `TRADING_PARAMETER_TRUTHS` (define-then-justify). That is the seed of a
+  "senior-analyst competence" score — extend from "defined correctly" toward "weighted correctly."
+- **DL-09** (filter verdicts as a training source) — same pattern: decisions → labels → a second
+  training signal for the curator. Deliberation rationale is a *richer* label than a filter bit.
+- **ADR-0010** (LLM quality gate) + **ADR-0013 CI-2** (RunMetrics on the graph) — the storage and
+  champion-challenger machinery a rationale corpus would feed.
+
+**Open questions (for a research item, not yet decided):** the answer-key for "senior-analyst level"
+(a rubric? a human-graded gold set? an LLM-judge with a competence scorecard distinct from EXP-004?);
+how a transcript becomes a training row (per-parameter citation → load label?); whether "parameter
+load" is learned from reasoning text or correlated against realised outcomes (DL-09 dual-label style).
+
+**Status.** DIRECTION — operator capture (2026-07-05). Next concretisation: a research item
+("deliberation rationale as a training/competence source") that unifies DL-31, DL-09 and this entry;
+sequence behind a live runway (needs graded deliberations at volume). [[sentiment-champion-challenger]]
+and the curator's second-source appetite are the consumers.
+
+---
+
+## DL-40 · The verdict needs literacy-tiered explanations — low / mid / high financial literacy  ·  status: PARKED-IDEA (2026-07-05)
+
+**Trigger.** Operator, immediately after DL-39: *"Opinion is great but we need to explain it to any
+Karen. There must be versions of what the judge delivered for people with low, mid and high financial
+literacy. Just a thought."* Flagged explicitly as ideation.
+
+**The idea.** The Judge's rationale is written in expert register (reward:risk, ATR multiples,
+expectancy). A non-expert reader can't act on it. Render the *same* verdict at (at least) three
+literacy tiers — plain-language ("this looks okay but there's no clear plan for taking profit, so
+we'd wait"), intermediate, and full expert — without changing the underlying ruling.
+
+**Where it fits.** This is a **surface/presentation** concern, not a substrate one (ADR-0012 test):
+the deliberation produces one grounded verdict; a renderer projects it to an audience. Natural home
+is `surfaces/` (the same layer as the MCP surface and the A2A front-door adapter from R004), behind a
+literacy-tier parameter. Must **not** leak into `kernel.deliberate` — the ruling is single-sourced;
+only its *explanation* is multi-voiced (else the tiers could disagree, which would be a bug).
+
+**Ties to DL-39.** If DL-39 grades *whether* the reasoning is expert-level, DL-40 is the inverse
+projection — *translating* expert reasoning down. Same rationale object, two directions.
+
+**Status.** PARKED-IDEA — captured so it isn't lost; not scheduled. Revisit when there's a
+human-facing surface for verdicts (operator report or A2A front-door). No sprint yet.

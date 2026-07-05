@@ -117,6 +117,11 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   walk-forward harness (deterministic scoring). Shape: researcher (LLM) *proposes* candidate factors
   → S112 harness scores them → human approves → shadow → scorecard → promote/kill. Package as S113
   when prioritized; R001 addendum holds the design.
+- **Deliberation as a reasoning/competence source (DL-39, DIRECTION)** — the transcript's *why*, not
+  the verdict, is the asset: grade whether the expert model reasons at senior-analyst level and learn
+  which parameters carry the decision. Assembles DL-31 (`--score`) + DL-09 + ADR-0010/CI-2; needs a
+  research item + a live runway before packaging. Companion **DL-40 (parked)**: literacy-tiered verdict
+  explanations (low/mid/high) as a `surfaces/` renderer, ruling single-sourced.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until an Azure/Aura write path + rollback + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).

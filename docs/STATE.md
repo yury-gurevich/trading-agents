@@ -112,7 +112,15 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex.** Handover written
+- **🔴 PRIORITY — S114 complete the deliberation evidence (DL-41).** Money is spent on the veto's
+  output, so its evidence must be complete. Live `orchestration/veto_context.py` already renders
+  confidence + `base_min_confidence` + regime/scanner/market lineage, but (1) gate **outcomes** are
+  implicit (values shown, pass/fail not stated) and (2) **PM risk gates are absent** — `max_sector_pct`
+  concentration, sizing basis, held-position context are computed but not rendered (needs the PM to
+  emit gate outcomes as an additive `OrderIntentSet` field). Fix: render every gate as value+outcome,
+  thread PM gate results, explicit stop-vs-ATR; split `veto_context.py` (195/200); add a completeness
+  test. **Package S114 and execute before S113.** DL-41 holds the spec.
+- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex** (now behind S114). Handover written
   (`docs/sprints/sprint-113-governed-factor-proposal.md`): bounded factor catalogue + LLM proposes an
   in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores
   it → `FactorProposal` + `BacktestEvidence` into the review queue. LLM never drives; researcher

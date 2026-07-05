@@ -1843,3 +1843,55 @@ projection — *translating* expert reasoning down. Same rationale object, two d
 
 **Status.** PARKED-IDEA — captured so it isn't lost; not scheduled. Revisit when there's a
 human-facing surface for verdicts (operator report or A2A front-door). No sprint yet.
+
+---
+
+## DL-41 · Deliberation evidence must be complete: explicit gate OUTCOMES + PM risk-gate results — PRIORITY  ·  status: DIRECTION (2026-07-05)
+
+**Trigger.** Operator, reading Fable's live-bake-off challenger ("nothing in the evidence shows
+base_min_confidence was met or even computed"): *"We need to fix it to perfection. Past that process
+the money is spent on the decision this process produces. If it's not the best it can be, let's get
+there — sooner rather than later."* Elevated to priority: this is on the critical path of every real
+trade's quality.
+
+**Finding (not what the wording implies).** The values *are* computed and enforced — `base_min_confidence`
+gates the analyst rec (`agents/analyst/domain/recommend.py:45`); `max_sector_pct` gates the PM
+(`agents/portfolio_manager/domain/concentration.py:59`). And the **live** veto context
+(`orchestration/veto_context.py`) is already rich: it renders analyst `confidence`, a Regime line with
+`base_min_confidence`/stop/target/holding, scanner filter verdicts, market quality, fundamentals,
+sentiment, earnings, news. The starved one-line context in the GPT/Opus/Fable bake-off was a **test
+artifact** (hand-typed `Proposition.context`), not the system.
+
+**The two real gaps (money-critical):**
+1. **Gate outcomes are implicit.** Context prints `confidence=0.62` and `base_min_confidence=0.30` but
+   never states the *result* ("0.62 ≥ 0.30 → PASSED"). The LLM must infer every comparison; a rigorous
+   challenger can still attack an unstated check. Render each gate's **explicit pass/fail** beside its
+   values.
+2. **PM risk gates are absent from the evidence.** `max_sector_pct` concentration, position-sizing
+   basis, and existing-position/portfolio context are computed in the PM but **not rendered** into the
+   veto context. So the challenger's "no `max_sector_pct` check cited, could be doubling into
+   concentrated exposure blind" is a **valid live finding**. This is the substantive hole.
+
+**Fix scope (to perfection).**
+- Render every computed gate in `build_veto_context` as **value + explicit outcome** (passed/failed,
+  by how much).
+- Thread the **PM risk-gate results** into the evidence — sector exposure vs `max_sector_pct`, sizing
+  basis, held positions. Likely needs the PM to **emit its gate outcomes** as a small additive contract
+  field on the `OrderIntentSet`/PMRun (computed today, not persisted for the debate to read).
+- Add the stop-vs-ATR relationship explicitly (the recurring challenger point across all three models).
+- `veto_context.py` is at **195/200 lines** — split before adding (e.g. `veto_context_pm.py`).
+- A completeness test: for a decision, assert every enforced gate appears in the rendered context with
+  an outcome (guard against silent evidence regressions).
+
+**Why priority over S113.** S113 (Q5 factor proposal) improves what we *propose*; DL-41 improves what
+we *decide and spend on*. The veto is the last gate before real orders (`agents/execution/poll.py`
+drops vetoed tickers). A debate over incomplete evidence produces a lower-quality veto — and, per
+DL-39, poisons the graded-rationale training signal at the source (garbage-in). Fix the evidence before
+mining more of it. **Sequence: DL-41 (S114) before S113 execution.**
+
+**Builds on.** S96/DL-31 (challenger-veto + define-then-justify), the live `veto`/`veto_context`
+stage, PM concentration/risk domain. Consumer of the completed evidence: [[project-filter-training-source]]
+and DL-39.
+
+**Status.** DIRECTION — operator priority (2026-07-05). Package as **S114** next session; execute before
+handing S113 to Codex.

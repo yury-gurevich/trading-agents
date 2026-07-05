@@ -11,6 +11,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.concentration import SectorBook
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from agents.portfolio_manager.tests.helpers import (
@@ -88,6 +89,47 @@ def test_max_sector_pct_of_one_disables_the_cap() -> None:
     approved, rejected = _two_tech_buys({"AAPL": "Tech", "MSFT": "Tech"}, Decimal("1"))
     assert {o.ticker for o in approved} == {"AAPL", "MSFT"}
     assert rejected == ()
+
+
+def test_sector_book_rejection_uses_explicit_outcomes() -> None:
+    book = SectorBook({"AAPL": "Tech", "MSFT": "Tech"}, ("AAPL",))
+    item = recommendation("MSFT")
+
+    name_count = book.rejection(
+        item,
+        Decimal("100.00"),
+        Decimal("1000.00"),
+        max_sector_pct=Decimal("1"),
+        max_names_per_sector=1,
+    )
+    sector_cap = book.rejection(
+        item,
+        Decimal("400.00"),
+        Decimal("1000.00"),
+        max_sector_pct=Decimal("0.30"),
+        max_names_per_sector=3,
+    )
+    ok = book.rejection(
+        item,
+        Decimal("100.00"),
+        Decimal("1000.00"),
+        max_sector_pct=Decimal("0.30"),
+        max_names_per_sector=3,
+    )
+    zero_value = book.outcomes(
+        item,
+        Decimal("100.00"),
+        Decimal("0"),
+        max_sector_pct=Decimal("0.30"),
+        max_names_per_sector=3,
+    )
+
+    assert name_count is not None
+    assert name_count.reason == "sector_name_count"
+    assert sector_cap is not None
+    assert sector_cap.reason == "sector_concentration"
+    assert ok is None
+    assert zero_value[0].value == 0.0
 
 
 def test_agent_applies_the_sector_cap_over_the_bus() -> None:

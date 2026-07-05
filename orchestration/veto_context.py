@@ -12,6 +12,11 @@ from typing import TYPE_CHECKING
 from contracts.analyst import Recommendation, RecommendationSet
 from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, OHLCVBar, RegimeContext
 from contracts.scanner import Candidate, CandidateSet, FilterVerdict
+from orchestration.veto_context_pm import (
+    order_lines,
+    recommendation_line,
+    regime_gate_lines,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -31,7 +36,7 @@ def build_veto_context(
     """Render all available upstream evidence for one PM-approved order."""
     lines = [
         f"Run {order_set.run_id}: PM-approved order under challenger-veto review.",
-        _order_line(intent),
+        *order_lines(intent),
         f"PM run: {_explain(order_set.explanation)}",
     ]
     analyst = _first(
@@ -40,6 +45,7 @@ def build_veto_context(
     if analyst is None:
         return "\n".join((*lines, "Lineage: no AnalystRun linked to this PMRun."))
     recs = RecommendationSet.model_validate(analyst.props["recommendation_set"])
+    rec = _recommendation(recs, intent.ticker)
     lines.extend(_analyst_lines(recs, intent.ticker))
     scan = _first(graph.ancestors(analyst, max_depth=1, edge_types={_ANALYZED_EDGE}))
     if scan is None:
@@ -54,23 +60,15 @@ def build_veto_context(
     market = MarketData.model_validate(market_node.props["snapshot"])
     lines.extend(_market_lines(market, intent.ticker))
     regime = _regime(graph, market_node)
-    if regime is not None:
-        lines.append(
-            "Regime: "
-            f"label={regime.label}; vix={regime.vix}; "
-            f"base_min_confidence={regime.base_min_confidence:.3f}; "
-            f"base_stop_loss_pct={_pct(regime.base_stop_loss_pct)}; "
-            f"base_take_profit_pct={_pct(regime.base_take_profit_pct)}; "
-            f"base_max_holding_days={regime.base_max_holding_days}"
-        )
+    lines.extend(regime_gate_lines(regime, rec, intent, market.bars))
     return "\n".join(lines)
 
 
 def _analyst_lines(recs: RecommendationSet, ticker: str) -> list[str]:
-    rec = next((item for item in recs.recommendations if item.ticker == ticker), None)
+    rec = _recommendation(recs, ticker)
     lines = [f"Analyst run: {_explain(recs.explanation)}"]
     if rec is not None:
-        lines.append(_recommendation_line(rec))
+        lines.append(recommendation_line(rec))
     for rejection in recs.rejections:
         if rejection.ticker == ticker:
             lines.append(f"Analyst rejected {ticker}: {rejection.reason}")
@@ -129,27 +127,6 @@ def _market_lines(market: MarketData, ticker: str) -> list[str]:
     return lines
 
 
-def _order_line(intent: OrderIntent) -> str:
-    return (
-        f"PM order: action={intent.action}; ticker={intent.ticker}; "
-        f"quantity={intent.quantity}; est_price={intent.est_price.amount} "
-        f"{intent.est_price.currency}; stop_pct={_pct(intent.stop_pct)}; "
-        f"target_pct={_pct(intent.target_pct)}; rationale={_explain(intent.rationale)}"
-    )
-
-
-def _recommendation_line(rec: Recommendation) -> str:
-    return (
-        f"Analyst recommendation for {rec.ticker}: action={rec.action}; "
-        f"confidence={rec.confidence:.3f}; technical_score={rec.technical_score:.3f}; "
-        f"sentiment_score={_num(rec.sentiment_score)}; "
-        f"fundamental_score={_num(rec.fundamental_score)}; "
-        f"suggested_stop_pct={_pct(rec.suggested_stop_pct)}; "
-        f"suggested_target_pct={_pct(rec.suggested_target_pct)}; "
-        f"rationale={_explain(rec.rationale)}"
-    )
-
-
 def _candidate_line(candidate: Candidate) -> str:
     return (
         f"Scanner candidate for {candidate.ticker}: rank={candidate.rank}; "
@@ -163,6 +140,10 @@ def _regime(graph: GraphStore, market_node: Node) -> RegimeContext | None:
     key = f"regime-context:{market_node.props['run_id']}"
     node = graph.get_node(REGIME_CONTEXT_LABEL, key)
     return RegimeContext.model_validate(node.props["snapshot"]) if node else None
+
+
+def _recommendation(recs: RecommendationSet, ticker: str) -> Recommendation | None:
+    return next((item for item in recs.recommendations if item.ticker == ticker), None)
 
 
 def _verdict(items: tuple[FilterVerdict, ...], ticker: str) -> FilterVerdict | None:
@@ -185,11 +166,3 @@ def _explain(value: Explanation) -> str:
 
 def _dict(values: dict[str, float]) -> str:
     return "{" + ", ".join(f"{key}={values[key]:.4g}" for key in sorted(values)) + "}"
-
-
-def _num(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:.3f}"
-
-
-def _pct(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:.2%}"

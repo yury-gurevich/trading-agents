@@ -11,13 +11,21 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.concentration import SectorBook
+from agents.portfolio_manager.domain.gate_report import (
+    order_intent,
+    position_outcomes,
+    position_rejection,
+    reward_risk_rejection,
+    stop_target_report,
+)
 from agents.portfolio_manager.domain.sizing import size_quantity
-from contracts.common import Explanation, Money
-from contracts.portfolio_manager import OrderIntent, RejectedOrder
+from contracts.portfolio_manager import GateOutcome, RejectedOrder
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.portfolio import PortfolioState
     from contracts.analyst import Recommendation
+    from contracts.common import Money
+    from contracts.portfolio_manager import OrderIntent
 
 
 def evaluate_recommendations(
@@ -55,41 +63,43 @@ def evaluate_recommendations(
             max_position_pct=max_position_pct,
             est_price=price.amount,
         )
-        rejection = _risk_rejection(
+        gates = position_outcomes(
             item=item,
             quantity=quantity,
             price=price,
             portfolio=portfolio,
             reserved_cash=reserved_cash,
             open_tickers=open_tickers,
+            max_position_pct=max_position_pct,
             max_positions=max_positions,
             cash_buffer_pct=cash_buffer_pct,
             min_order_quantity=min_order_quantity,
         )
+        rejection = position_rejection(item.ticker, gates)
         if rejection is not None:
             rejected.append(rejection)
             continue
-        stop_pct, target_pct = _effective_pcts(
-            item, default_stop_pct, default_target_pct
+        stop_target = stop_target_report(
+            item, default_stop_pct, default_target_pct, min_reward_risk_ratio
         )
-        rejection = _reward_risk_rejection(
-            item, stop_pct, target_pct, min_reward_risk_ratio
-        )
+        rejection = reward_risk_rejection(item.ticker, stop_target)
         if rejection is not None:
             rejected.append(rejection)
             continue
         cost = Decimal(quantity) * price.amount
-        rejection = book.rejection(
+        sector_gates = book.outcomes(
             item,
             cost,
             portfolio.value,
             max_sector_pct=max_sector_pct,
             max_names_per_sector=max_names_per_sector,
         )
+        rejection = _sector_rejection(item.ticker, sector_gates)
         if rejection is not None:
             rejected.append(rejection)
             continue
-        approved.append(_order_intent(item, quantity, price, stop_pct, target_pct))
+        gate_report = (*gates, stop_target.outcome, *sector_gates)
+        approved.append(order_intent(item, quantity, price, stop_target, gate_report))
         reserved_cash += cost
         open_tickers.add(item.ticker)
         book.record(item, cost)
@@ -112,78 +122,12 @@ def _precheck(item: Recommendation, price: Money | None) -> RejectedOrder | None
     return None
 
 
-def _risk_rejection(
-    *,
-    item: Recommendation,
-    quantity: int,
-    price: Money,
-    portfolio: PortfolioState,
-    reserved_cash: Decimal,
-    open_tickers: set[str],
-    max_positions: int,
-    cash_buffer_pct: Decimal,
-    min_order_quantity: int,
+def _sector_rejection(
+    ticker: str, outcomes: tuple[GateOutcome, ...]
 ) -> RejectedOrder | None:
-    if quantity < min_order_quantity:
-        return RejectedOrder(ticker=item.ticker, reason="below_min_quantity")
-    if item.ticker not in open_tickers and len(open_tickers) >= max_positions:
-        return RejectedOrder(ticker=item.ticker, reason="max_positions")
-    cost = Decimal(quantity) * price.amount
-    available = portfolio.cash.amount * (Decimal("1") - cash_buffer_pct) - reserved_cash
-    if cost > available:
-        return RejectedOrder(ticker=item.ticker, reason="insufficient_cash")
+    for outcome in outcomes:
+        if outcome.name == "max_names_per_sector" and not outcome.passed:
+            return RejectedOrder(ticker=ticker, reason="sector_name_count")
+        if outcome.name == "max_sector_pct" and not outcome.passed:
+            return RejectedOrder(ticker=ticker, reason="sector_concentration")
     return None
-
-
-def _effective_pcts(
-    item: Recommendation,
-    default_stop_pct: float,
-    default_target_pct: float,
-) -> tuple[float, float]:
-    """Stop/target percentages for this order: the recommendation's or the defaults."""
-    stop_pct = (
-        item.suggested_stop_pct
-        if item.suggested_stop_pct is not None
-        else default_stop_pct
-    )
-    target_pct = (
-        item.suggested_target_pct
-        if item.suggested_target_pct is not None
-        else default_target_pct
-    )
-    return stop_pct, target_pct
-
-
-def _reward_risk_rejection(
-    item: Recommendation,
-    stop_pct: float,
-    target_pct: float,
-    min_ratio: float,
-) -> RejectedOrder | None:
-    """Reject when reward/risk (target_pct / stop_pct) is undefined or too low."""
-    if stop_pct <= 0.0:
-        return RejectedOrder(ticker=item.ticker, reason="invalid_stop_loss")
-    if target_pct / stop_pct < min_ratio:
-        return RejectedOrder(ticker=item.ticker, reason="reward_risk_below_min")
-    return None
-
-
-def _order_intent(
-    item: Recommendation,
-    quantity: int,
-    price: Money,
-    stop_pct: float,
-    target_pct: float,
-) -> OrderIntent:
-    return OrderIntent(
-        ticker=item.ticker,
-        action=item.action,
-        quantity=quantity,
-        est_price=price,
-        stop_pct=stop_pct,
-        target_pct=target_pct,
-        rationale=Explanation(
-            summary=f"Approved {item.ticker}: sized {quantity} shares from PM policy.",
-            evidence_refs=("portfolio_manager.sizing", "provider.regime"),
-        ),
-    )

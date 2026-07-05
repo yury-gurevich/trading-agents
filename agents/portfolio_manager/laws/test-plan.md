@@ -29,6 +29,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-OUT-03 | RejectedOrder carries a reason string naming the blocking gate. | schema | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 | PM-OUT-04 | Provider unavailable → all rejected with "provider_degraded" + fault recorded. | degraded | `test_portfolio_manager_agent.py::test_degraded_provider_rejects_honestly_and_records_fault` | 🟩 |
 | PM-OUT-05 | Pub/sub event carries claim-check ref only, not OrderIntentSet payload. | pub/sub | `test_pm_pubsub.py::test_recommendations_ready_triggers_orders_ready` | 🟩 |
+| PM-OUT-06 | Approved OrderIntent carries additive gate_report outcomes. | audit | `test_portfolio_manager_audit.py::test_order_intent_emits_pm_gate_report` | 🟩 |
 
 ## Prohibitions
 
@@ -80,6 +81,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-TYP-01 | est_price is Decimal, never float. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-TYP-02 | quantity ≥ 1; stop_pct < target_pct when both present. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-TYP-03 | OrderIntentSet deserialises from graph node per contract schema. | schema | `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | 🟩 |
+| PM-TYP-03 | GateOutcome is additive and round-trips through OrderIntent. | schema | `tests/test_contract_values.py::test_order_intent_gate_report_is_additive_and_round_trips` | 🟩 |
 
 ## Security
 
@@ -92,4 +94,5 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PM-OBS-01 | PMRun node contains all gate outcomes and portfolio snapshot. | audit | `test_pm_pubsub.py::test_order_intent_result_node_in_graph` | 🟩 |
+| PM-OBS-01 | OrderIntent graph node preserves the serialized gate_report. | audit | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-OBS-02 | Faults routed to central channel; every rejection has a reason. | observable | `test_portfolio_manager_agent.py::test_degraded_provider_rejects_honestly_and_records_fault` | 🟩 |

@@ -65,3 +65,35 @@ def test_order_intent_preserves_deliberate_stop_and_target() -> None:
     assert rejected == ()
     assert approved[0].stop_pct == 0.04
     assert approved[0].target_pct == 0.12
+
+
+def test_order_intent_emits_pm_gate_report() -> None:
+    approved, rejected = evaluate_recommendations(
+        (recommendation("AAPL"),),
+        {"AAPL": Money(amount=Decimal("100.00"))},
+        cash_portfolio("10000.00", {"MSFT": 1}),
+        max_position_pct=Decimal("0.10"),
+        max_positions=10,
+        cash_buffer_pct=Decimal("0.05"),
+        min_order_quantity=1,
+        default_stop_pct=0.05,
+        default_target_pct=0.10,
+        min_reward_risk_ratio=1.5,
+        sectors={"AAPL": "Technology", "MSFT": "Technology"},
+        max_sector_pct=Decimal("0.30"),
+        max_names_per_sector=3,
+    )
+
+    names = {gate.name for gate in approved[0].gate_report}
+
+    assert rejected == ()
+    assert {
+        "sizing",
+        "min_order_quantity",
+        "max_positions",
+        "cash_available",
+        "reward_risk",
+        "max_sector_pct",
+        "max_names_per_sector",
+    } <= names
+    assert all(gate.passed for gate in approved[0].gate_report)

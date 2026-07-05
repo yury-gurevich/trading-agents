@@ -3,7 +3,7 @@
 
 **Phase:** deliberation quality — critical path (DL-41, operator priority 2026-07-05)
 **Branch:** `sprint-114-complete-deliberation-evidence`
-**Status:** ready for handover — from `main` (DL-41/DL-42 captured; S113 packaged but **waits behind this**)
+**Status:** shipped — implemented on `sprint-114-complete-deliberation-evidence`; awaiting operator review/merge
 **Effort:** M
 
 ---
@@ -169,5 +169,28 @@ deliberation roles) sequences after this sprint.
 
 ## Closeout evidence
 
-<!-- Coding agent: fill this in on handback. Files changed, coverage %, the functionality-check row,
-     the contract bump, any decisions/deviations, and the exact make ci summary line. Do not merge. -->
+- Implemented additive PM gate evidence:
+  - `contracts/portfolio_manager.py`: added `GateOutcome` and optional
+    `OrderIntent.gate_report`, contract `0.1.0 -> 0.2.0`.
+  - `agents/portfolio_manager/domain/gate_report.py` + `concentration.py`/`risk.py`:
+    emit explicit sizing, cash/name-count, sector, and reward/risk outcomes without
+    changing rejection reasons.
+  - `orchestration/veto_context.py` split; `orchestration/veto_context_pm.py` renders
+    PM gates, confidence-floor, and stop-vs-regime/ATR as explicit `PASSED`/`FAILED`
+    lines, with unavailable evidence stated plainly.
+- Documentation updated:
+  - `agents/portfolio_manager/laws/laws.md`
+  - `agents/portfolio_manager/laws/test-plan.md`
+  - `docs/laws/functionality-checks.md`
+- Version bumped `0.55.01 -> 0.56.00`; `uv.lock` refreshed.
+- `make ci`: green on 2026-07-05 — `1346 passed, 5 skipped`, required coverage
+  `100.00%` reached; import-linter kept; module-size hard block kept; pip-audit +
+  detect-secrets passed.
+- Real-environment check recorded in `docs/laws/functionality-checks.md`:
+  Aura `bce05bd6` with `Neo4jGraphStore` asserted; stamped seeded PMRun
+  `s114-livecheck-20260705T081256` driven through `orchestration.veto.deliberate_pm_node`
+  using a recording fake LLM. Captured context contained explicit outcomes for
+  `sizing`, `max_sector_pct`, `max_names_per_sector`, `reward_risk`,
+  `confidence_floor`, and `stop_vs_regime_volatility`. Teardown deleted 6 stamped
+  nodes and restored Aura to baseline 0 nodes; scratch script deleted.
+- Not merged or pushed to `main`.

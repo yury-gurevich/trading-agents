@@ -150,8 +150,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   max). Never a `float`. This prevents rounding errors in downstream sizing math.
 - **PM-TYP-02** — `OrderIntent.quantity` is a positive `int ≥ 1`; `stop_pct` and `target_pct`
   are `float ∈ [0.0, 1.0]`; stop is always strictly less than target.
-- **PM-TYP-03** — `OrderIntentSet`, `OrderIntent`, `RejectedOrder` match `contracts/
-  portfolio_manager.py` exactly; `CONTRACT.version` is the authoritative version string.
+- **PM-TYP-03** — `OrderIntentSet`, `OrderIntent`, `RejectedOrder`, and `GateOutcome`
+  match `contracts/portfolio_manager.py` exactly; `CONTRACT.version` is the
+  authoritative version string. `OrderIntent.gate_report` is additive and defaults
+  to empty for older payloads.
 
 ---
 
@@ -183,9 +185,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Observability & audit (`OBS`)
 
 - **PM-OBS-01** — Every `PMRun` node in the graph is fully reconstructable: input
-  recommendations, per-recommendation gate outcome, reason strings, estimated prices used,
-  and the final `OrderIntentSet`. The `portfolio_state_snapshot` captures pre- and
-  post-run state on the `OrderIntentResult` node.
+  recommendations, per-recommendation `gate_report` outcomes (gate name, value,
+  threshold, pass/fail, detail), reason strings, estimated prices used, and the final
+  `OrderIntentSet`. The `portfolio_state_snapshot` captures pre- and post-run state on
+  the `OrderIntentResult` node.
 - **PM-OBS-02** — Faults (provider degradation, per-evaluation errors) are routed to the
   central fault channel. Every rejection has an attributed reason; no silence, no mystery.
 
@@ -257,3 +260,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   name-correlation penalty the dollar cap missed; closes the gap the deliberation firewall
   surfaced (EXP-004..006) and the live book exposed (4 correlated semis). Cited test:
   `test_sector_name_count.py`.
+- v1.2 — amendment: added additive `OrderIntent.gate_report` with explicit PM risk-gate
+  outcomes for deliberation evidence completeness (DL-41 / S114). Cited tests:
+  `test_portfolio_manager_audit.py::test_order_intent_emits_pm_gate_report` and
+  `tests/test_veto_context.py::test_context_completeness_renders_every_enforced_gate_with_outcome`.

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-05 00:03 AEST · **Version:** 0.55.00 on `sprint-112-researcher-backtest-evidence` · **local gates green; pending operator review/merge.**
+**Last updated:** 2026-07-05 13:30 AEST · **Version:** 0.55.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -34,7 +34,10 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   parameters. Codex-built on branch, `make ci` 100%. Live check: DL-37 Tiingo export via the S111
   exporter using the fixed S110 100-ticker list (100,400 rows; zero duplicate `(ticker,date)` keys);
   `analyst.rsi_period` 14→21 produced populated full/holdout evidence and the proposed JSON
-  round-tripped through `BacktestEvidence.model_validate`. Pending operator review/merge.
+  round-tripped through `BacktestEvidence.model_validate`. Reviewed and merged `feb7f87`
+  (CI/CodeQL/image-build green). **Qlib Q3 complete — Q5 (governed factor mining) is the last
+  workflow phase and is now unblocked.** (Also in this window: torch pinned to CPU wheels, PR #28
+  0.54.01 — forecaster image build 4.6–8.1 min → 1.6 min, deploy wall ~1m35s.)
 - **S111 (qlib Q1c, 0.53.01→0.54.00)** — rolling retrain + IC-decay trigger: committed
   `scripts/export_tiingo_bars.py` (paced/resumable Tiingo DL-37 raw-history export, bounded sync
   backoff for transient 5xx/timeouts), pure `retrain_policy` (fail-safe decay +
@@ -92,15 +95,18 @@ S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
 
-On `sprint-112-researcher-backtest-evidence`, S112 is shipped locally and waiting for operator
-review/merge; do **not** merge or push to `main` from the coding-agent closeout. The etalon
-north-star holds (DL-19): remaining gray law clauses → green with cited tests; **every sprint ends
-with a real-environment functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each
-sprint/chore on its own `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds +
-pushes agent images).
+On `main`, no active sprint branch (S112 reviewed and merged). The etalon north-star holds (DL-19):
+remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
+functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
+`sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
 
 ## Next
 
+- **Qlib Q5 — governed factor-mining loop (Moonshot #3) — UNBLOCKED, not yet packaged.** All
+  prerequisites shipped: S110 battery (evaluation), S111 retrain loop (promotion machinery), S112
+  walk-forward harness (deterministic scoring). Shape: researcher (LLM) *proposes* candidate factors
+  → S112 harness scores them → human approves → shadow → scorecard → promote/kill. Package as S113
+  when prioritized; R001 addendum holds the design.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

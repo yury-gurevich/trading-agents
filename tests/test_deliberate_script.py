@@ -60,7 +60,7 @@ def test_build_role_llms_defaults_judge_to_anthropic_opus(
     assert isinstance(judge, _BuiltAnthropic)
     assert judge.model == "claude-opus-4-8"
     assert judge.api_key == "anthropic-token"  # pragma: allowlist secret
-    assert judge.max_tokens == 512
+    assert judge.max_tokens == 2000
     output = capsys.readouterr().out
     assert "debate OpenAI gpt-5.5" in output
     assert "judge Anthropic claude-opus-4-8" in output

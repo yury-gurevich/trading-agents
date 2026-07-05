@@ -32,13 +32,21 @@ from kernel import (
 )
 from orchestration.packs.trading_parameter_truths import TRADING_PARAMETER_TRUTHS
 
-_JUDGE_MAX_TOKENS = 512
+# Reasoning models (e.g. gpt-5) spend hidden reasoning tokens from the SAME
+# max_completion_tokens pool as visible output. A tight cap can be consumed
+# entirely by reasoning, returning finish_reason="length" with empty content
+# (observed live: gpt-5 challenger burned 2000/2000 on reasoning, 0 visible).
+# These budgets leave headroom for reasoning plus the actual turn.
+_DEBATE_MAX_TOKENS = 8000
+_JUDGE_MAX_TOKENS = 2000
 
 
 class _AnthropicText:
     """Free-text Anthropic adapter (the operator's client is tool-use only)."""
 
-    def __init__(self, api_key: str, model: str, *, max_tokens: int = 2000) -> None:
+    def __init__(
+        self, api_key: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
+    ) -> None:
         anthropic = importlib.import_module("anthropic")
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
@@ -60,10 +68,13 @@ class _AnthropicText:
 class _OpenAIText:
     """Free-text OpenAI adapter."""
 
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(
+        self, api_key: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
+    ) -> None:
         openai = importlib.import_module("openai")
         self._client = openai.OpenAI(api_key=api_key)
         self._model = model
+        self._max_tokens = max_tokens
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -71,7 +82,7 @@ class _OpenAIText:
         del tool_schema
         resp = self._client.chat.completions.create(
             model=self._model,
-            max_completion_tokens=2000,
+            max_completion_tokens=self._max_tokens,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -117,13 +128,13 @@ def _judge_config() -> tuple[str, str]:
 
 
 def _provider_llm(
-    provider: str, model: str, *, max_tokens: int = 2000
+    provider: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
 ) -> _AnthropicText | _OpenAIText:
     if provider == "openai":
         key = os.environ.get("OPENAI_API_KEY", "")
         if not key:
             raise SystemExit("OPENAI_API_KEY not set — cannot run --real")
-        return _OpenAIText(key, model)
+        return _OpenAIText(key, model, max_tokens=max_tokens)
     if provider == "anthropic":
         key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not key:

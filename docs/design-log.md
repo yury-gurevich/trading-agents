@@ -1895,3 +1895,38 @@ and DL-39.
 
 **Status.** DIRECTION — operator priority (2026-07-05). Package as **S114** next session; execute before
 handing S113 to Codex.
+
+---
+
+## DL-42 · DSPy compiles deliberation reasoning quality/consistency — the layer ABOVE DL-41, not a substitute  ·  status: DIRECTION (2026-07-05)
+
+**Trigger.** Operator, on the deliberation quality problem: *"maybe we impose DSPy there — it promises
+to fix quality and consistency."*
+
+**The distinction that matters.** Deliberation has two orthogonal quality holes:
+1. **Evidence completeness (DL-41)** — deterministic: is every computed gate (value + pass/fail) and
+   the PM risk gates in the context? DSPy **cannot** fix this; compiling over incomplete evidence just
+   makes the model argue the wrong case *consistently*. **DL-41 first, and not a DSPy task.**
+2. **Reasoning quality + consistency, given complete evidence** — does the debate reliably
+   define-then-justify, weigh the right parameters, and return stable verdicts? **This is DSPy's job.**
+
+**Why DSPy fits layer 2 well here.** The role prompts are hand-written strings today
+(`kernel/deliberation.py`: `_DEFINE_THEN_JUSTIFY`, `DEFENDER_SYSTEM`, `CHALLENGER_SYSTEM`,
+`JUDGE_SYSTEM`) — prime compile targets. And unusually, the **metric + eval scaffolding already
+exists**: `score_understanding` (DL-31 define-then-justify grader), the EXP-004 `LLMJudgeScorer`, the
+Class-1 grounded eval set (`deliberation_eval`), and the `deliberation_golden` drift firewall
+(EXP-004..006). Most DSPy adoptions start with no metric; this one has one. `system_prompt`-as-tunable
+(ADR-0010) is already live on operator/forecaster — extend the pattern to the deliberation roles.
+
+**This is the first real deliberation instance of the ADR-0010 `PromptOptimizer` port** (first instance
+overall landed in S107's remediation selector). Needs: a metric combining understanding-rate + verdict
+stability/consistency; a golden eval set for deliberation *reasoning* (distinct from the pass/fail
+firewall); the compile pipeline behind the port. Substantial — a sprint after DL-41, and it honours
+ADR-0010's "plumbing complete first" caveat. EvoPrompt/TextGrad (R003) remain the later bake-off
+candidates behind the same port.
+
+**Sequence.** DL-41 (S114, complete the evidence) → DSPy-compile the deliberation roles against the
+understanding+consistency metric (S11x). Feeds DL-39 (a consistent, complete debate is the clean
+training signal). Builds on ADR-0010, DL-31, EXP-004..006, R003.
+
+**Status.** DIRECTION — operator capture (2026-07-05). Package after DL-41 ships.

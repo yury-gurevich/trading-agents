@@ -61,6 +61,26 @@ def test_sizing_returns_zero_for_invalid_inputs() -> None:
     )
 
 
+def test_zero_value_portfolio_rejects_below_minimum_quantity() -> None:
+    approved, rejected = evaluate_recommendations(
+        (recommendation("AAPL"),),
+        {"AAPL": Money(amount=Decimal("100.00"))},
+        cash_portfolio("0.00"),
+        max_position_pct=Decimal("0.10"),
+        max_positions=10,
+        cash_buffer_pct=Decimal("0.05"),
+        min_order_quantity=1,
+        default_stop_pct=0.05,
+        default_target_pct=0.10,
+        min_reward_risk_ratio=1.5,
+    )
+
+    assert approved == ()
+    assert [(item.ticker, item.reason) for item in rejected] == [
+        ("AAPL", "below_min_quantity")
+    ]
+
+
 def test_latest_close_prices_keeps_newest_bar() -> None:
     prices = latest_close_prices(
         MarketData(

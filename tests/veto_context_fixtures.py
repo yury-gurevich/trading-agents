@@ -11,9 +11,11 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from tests.veto_context_gate_fixtures import pm_gate_report
+
 from contracts.analyst import Recommendation, RecommendationSet, Rejection
 from contracts.common import Explanation, Money, Provenance
-from contracts.portfolio_manager import OrderIntent, OrderIntentSet
+from contracts.portfolio_manager import GateOutcome, OrderIntent, OrderIntentSet
 from contracts.provider import (
     REGIME_CONTEXT_LABEL,
     DataQualityTrace,
@@ -49,7 +51,12 @@ def linked_graph(graph: InMemoryGraphStore, *, full: bool) -> Node:
     return pm
 
 
-def intent(*, stop: float | None = 0.03, target: float | None = 0.08) -> OrderIntent:
+def intent(
+    *,
+    stop: float | None = 0.03,
+    target: float | None = 0.08,
+    gates: tuple[GateOutcome, ...] | None = None,
+) -> OrderIntent:
     """Return one PM-approved order intent."""
     return OrderIntent(
         ticker="AAPL",
@@ -59,6 +66,7 @@ def intent(*, stop: float | None = 0.03, target: float | None = 0.08) -> OrderIn
         stop_pct=stop,
         target_pct=target,
         rationale=Explanation(summary="PM sized by risk budget"),
+        gate_report=pm_gate_report() if gates is None else gates,
     )
 
 
@@ -134,6 +142,15 @@ def market_data(full: bool) -> dict[str, object]:
     ticker = "AAPL" if full else "MSFT"
     market = MarketData(
         bars=(
+            OHLCVBar(
+                ticker=ticker,
+                bar_date=date(2026, 7, 2),
+                open=110.0,
+                high=115.0,
+                low=109.0,
+                close=114.0,
+                volume=1_300_000,
+            ),
             OHLCVBar(
                 ticker=ticker,
                 bar_date=date(2026, 7, 3),

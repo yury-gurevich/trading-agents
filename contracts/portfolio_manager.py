@@ -15,6 +15,14 @@ from kernel.contract import AgentContract, Capability
 
 
 # ── Outbound payloads ───────────────────────────────────────────────────────
+class GateOutcome(_Frozen):
+    name: str
+    value: float
+    threshold: float
+    passed: bool
+    detail: str = ""
+
+
 class OrderIntent(_Frozen):
     ticker: Ticker
     action: Action
@@ -23,6 +31,7 @@ class OrderIntent(_Frozen):
     stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     rationale: Explanation
+    gate_report: tuple[GateOutcome, ...] = ()
 
 
 class RejectedOrder(_Frozen):
@@ -41,7 +50,7 @@ class OrderIntentSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="portfolio_manager",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Decide which recommendations become sized, risk-checked orders under "
         "current policy and portfolio state, and record exactly why each was "

@@ -15,7 +15,7 @@ from pydantic import ValidationError
 
 from contracts.analyst import Recommendation
 from contracts.common import Explanation, Money, Window
-from contracts.portfolio_manager import OrderIntent
+from contracts.portfolio_manager import GateOutcome, OrderIntent
 from contracts.researcher import CONTRACT, BacktestEvidence, ParameterChangeProposal
 
 
@@ -49,6 +49,29 @@ def test_order_intent_rejects_zero_quantity() -> None:
             est_price=Money(amount=Decimal("100.00")),
             rationale=Explanation(summary="fixture"),
         )
+
+
+def test_order_intent_gate_report_is_additive_and_round_trips() -> None:
+    legacy = OrderIntent(
+        ticker="AAPL",
+        action="buy",
+        quantity=1,
+        est_price=Money(amount=Decimal("100.00")),
+        rationale=Explanation(summary="fixture"),
+    )
+    outcome = GateOutcome(
+        name="sizing",
+        value=0.10,
+        threshold=0.10,
+        passed=True,
+        detail="fixture",
+    )
+    current = legacy.model_copy(update={"gate_report": (outcome,)})
+
+    parsed = OrderIntent.model_validate(current.model_dump(mode="json"))
+
+    assert legacy.gate_report == ()
+    assert parsed.gate_report == (outcome,)
 
 
 def test_researcher_backtest_evidence_round_trips_optionally() -> None:

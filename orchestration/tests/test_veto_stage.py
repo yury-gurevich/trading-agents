@@ -127,6 +127,11 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
     assert "Latest OHLCV for AAPL:" in prompt
     assert "close=116" in prompt
     assert "base_min_confidence=" in prompt
+    assert "PM gate outcome: name=sizing" in prompt
+    assert "PM gate outcome: name=reward_risk" in prompt
+    assert "confidence_floor gate:" in prompt
+    assert "stop_vs_regime_volatility gate:" in prompt
+    assert "PASSED" in prompt
 
 
 def test_veto_is_fail_open_on_llm_outage() -> None:

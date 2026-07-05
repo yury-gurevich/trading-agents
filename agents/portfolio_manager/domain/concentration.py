@@ -16,7 +16,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from contracts.portfolio_manager import RejectedOrder
+from contracts.portfolio_manager import GateOutcome, RejectedOrder
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -48,17 +48,62 @@ class SectorBook:
         max_names_per_sector: int,
     ) -> RejectedOrder | None:
         """Reject when this order breaches the name-count or the dollar cap."""
+        for outcome in self.outcomes(
+            item,
+            cost,
+            portfolio_value,
+            max_sector_pct=max_sector_pct,
+            max_names_per_sector=max_names_per_sector,
+        ):
+            if outcome.name == "max_names_per_sector" and not outcome.passed:
+                return RejectedOrder(ticker=item.ticker, reason="sector_name_count")
+            if outcome.name == "max_sector_pct" and not outcome.passed:
+                return RejectedOrder(ticker=item.ticker, reason="sector_concentration")
+        return None
+
+    def outcomes(
+        self,
+        item: Recommendation,
+        cost: Decimal,
+        portfolio_value: Decimal,
+        *,
+        max_sector_pct: Decimal,
+        max_names_per_sector: int,
+    ) -> tuple[GateOutcome, ...]:
+        """Return explicit sector-gate outcomes for this tentative order."""
         sector = self._sectors.get(item.ticker)
         if sector is None:
-            return None
+            return ()
         is_new = item.ticker not in self._held
         names = self._names.get(sector, 0)
-        if is_new and 0 < max_names_per_sector <= names:
-            return RejectedOrder(ticker=item.ticker, reason="sector_name_count")
         deployed = self._deployed.get(sector, Decimal("0"))
-        if deployed + cost > max_sector_pct * portfolio_value:
-            return RejectedOrder(ticker=item.ticker, reason="sector_concentration")
-        return None
+        outcomes = [
+            GateOutcome(
+                name="max_sector_pct",
+                value=_ratio(deployed + cost, portfolio_value),
+                threshold=float(max_sector_pct),
+                passed=deployed + cost <= max_sector_pct * portfolio_value,
+                detail=(
+                    f"sector={sector}; deployed={deployed:.2f}; "
+                    f"order_cost={cost:.2f}; portfolio_value={portfolio_value:.2f}"
+                ),
+            )
+        ]
+        if max_names_per_sector > 0:
+            names_after = names + int(is_new)
+            outcomes.append(
+                GateOutcome(
+                    name="max_names_per_sector",
+                    value=float(names_after),
+                    threshold=float(max_names_per_sector),
+                    passed=(not is_new) or names < max_names_per_sector,
+                    detail=(
+                        f"sector={sector}; existing_sector_names={names}; "
+                        f"is_new_position={str(is_new).lower()}"
+                    ),
+                )
+            )
+        return tuple(outcomes)
 
     def record(self, item: Recommendation, cost: Decimal) -> None:
         """Commit an approved order to the running sector totals."""
@@ -69,3 +114,9 @@ class SectorBook:
         if item.ticker not in self._held:
             self._names[sector] = self._names.get(sector, 0) + 1
             self._held.add(item.ticker)
+
+
+def _ratio(numerator: Decimal, denominator: Decimal) -> float:
+    if denominator <= 0:
+        return 0.0
+    return float(numerator / denominator)

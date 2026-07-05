@@ -46,6 +46,7 @@ def test_evaluate_orders_sizes_order_and_stores_money_as_cents() -> None:
     order = graph.get_node("OrderIntent", f"{result.run_id}:AAPL")
     assert order is not None
     assert order.props["est_price_cents"] == 10000
+    assert order.props["gate_report"]
     recommendations = list(
         graph.descendants(order, max_depth=1, edge_types={"APPROVES"})
     )

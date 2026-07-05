@@ -55,6 +55,9 @@ def write_order_decision(
                 "est_price_currency": order.est_price.currency,
                 "stop_pct": order.stop_pct,
                 "target_pct": order.target_pct,
+                "gate_report": [
+                    item.model_dump(mode="json") for item in order.gate_report
+                ],
             },
         )
         graph.add_edge(node, run, "EMITTED_BY")

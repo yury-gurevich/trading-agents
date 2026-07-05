@@ -112,11 +112,12 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **Qlib Q5 — governed factor-mining loop (Moonshot #3) — UNBLOCKED, not yet packaged.** All
-  prerequisites shipped: S110 battery (evaluation), S111 retrain loop (promotion machinery), S112
-  walk-forward harness (deterministic scoring). Shape: researcher (LLM) *proposes* candidate factors
-  → S112 harness scores them → human approves → shadow → scorecard → promote/kill. Package as S113
-  when prioritized; R001 addendum holds the design.
+- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex.** Handover written
+  (`docs/sprints/sprint-113-governed-factor-proposal.md`): bounded factor catalogue + LLM proposes an
+  in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores
+  it → `FactorProposal` + `BacktestEvidence` into the review queue. LLM never drives; researcher
+  `external_io=()` intact. Version 0.55.01 → **0.56.00** (feat). **S114 (part B, later):** approved
+  factor → live shadow signal → scorecard → promote/kill (P10 registry). R001 addendum + DL-39 hold why.
 - **Deliberation as a reasoning/competence source (DL-39, DIRECTION)** — the transcript's *why*, not
   the verdict, is the asset: grade whether the expert model reasons at senior-analyst level and learn
   which parameters carry the decision. Assembles DL-31 (`--score`) + DL-09 + ADR-0010/CI-2; needs a

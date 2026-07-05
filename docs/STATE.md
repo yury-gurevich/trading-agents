@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-05 13:30 AEST · **Version:** 0.55.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-05 14:56 AEST · **Version:** 0.55.01 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,16 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S109 re-run (0.55.00→0.55.01, `chore-s109-opus-refreeze`)** — cleared the deferred S109 proofs with a
+  funded Anthropic key: live check with the **real Opus judge** (`claude-opus-4-8`) → `VERDICT: REVISE`;
+  **golden re-frozen** with the Opus judge (robust-passing `{alpha158-weight-zero, calendar-staleness,
+  lightgbm-shadow, pooled-sigma}`, n=3); **firewall** `--check gpt-5.4` → `PASS` (no false trip). Found +
+  fixed a harness bug: `gpt-5` challenger turns came back **empty** — reproduced as `finish_reason=length`,
+  2000/2000 tokens on hidden reasoning (need 2560); the OpenAI adapter shared one `max_completion_tokens`
+  pool and ignored the budget it was handed. Fix: adapter honours `max_tokens`; debaters 8000, judge 2000.
+  Proof it mattered: at the fixed budget `gpt-5`'s homogeneous verdict **flipped UPHOLD→REVISE** (the muted
+  challenger had been changing the outcome). `make ci` 100% (1339 passed). Drift-firewall baseline is now
+  the real-Opus one. **S109 fully closed.**
 - **S112 (qlib Q3, 0.54.01→0.55.00)** — researcher backtest evidence: additive
   `BacktestEvidence` contract field (researcher contract 0.2.0), pure no-lookahead walk-forward
   harness in `agents/researcher/domain/` (next-close fills, turnover slippage, ≥30% holdout), three
@@ -107,8 +117,6 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   walk-forward harness (deterministic scoring). Shape: researcher (LLM) *proposes* candidate factors
   → S112 harness scores them → human approves → shadow → scorecard → promote/kill. Package as S113
   when prioritized; R001 addendum holds the design.
-- **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
-  judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until an Azure/Aura write path + rollback + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).

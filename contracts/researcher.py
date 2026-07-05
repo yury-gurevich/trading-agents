@@ -51,9 +51,24 @@ class ParameterChangeProposal(_Frozen):
     backtest: BacktestEvidence | None = None
 
 
+class ProposedFactor(_Frozen):
+    name: str
+    params: tuple[tuple[str, float], ...]
+    rationale: Explanation
+
+
+class FactorProposal(_Frozen):
+    """Lands in the human-review queue. The researcher never applies it itself."""
+
+    proposal_id: str
+    factor: ProposedFactor
+    provenance: Provenance
+    backtest: BacktestEvidence | None = None
+
+
 CONTRACT = AgentContract(
     name="researcher",
-    version="0.2.0",
+    version="0.3.0",
     mission=(
         "Mine accumulated evidence for parameter and strategy improvements and "
         "propose bounded, measurable changes into the human-review queue — never "

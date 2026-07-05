@@ -213,3 +213,29 @@ source for "which parameters carry the decision load."
 
 <!-- Coding agent: fill this in on handback. Files changed, coverage %, the functionality-check row,
      any decisions/deviations, and the exact make ci summary line. Do not merge. -->
+
+Completed on branch `sprint-113-governed-factor-proposal` for operator review; not merged or pushed.
+
+- Files changed: `agents/researcher/domain/factors.py`, `factors_impl.py`, `factor_proposal.py`;
+  `contracts/researcher.py`; `scripts/mine_factors.py`, `mine_factors_prompt.py`;
+  `agents/researcher/tests/test_factors.py`, `tests/test_mine_factors.py`,
+  `tests/test_contract_values.py`; `pyproject.toml`, `uv.lock`,
+  `docs/laws/functionality-checks.md`, and this sprint handover.
+- Contract/version: researcher contract bumped `0.2.0 -> 0.3.0`; project version
+  `0.56.00 -> 0.57.00`; `uv lock` refreshed. Added only `ProposedFactor` and
+  `FactorProposal`; no new capability, emit, graph label, or required field on existing types.
+- Governance invariant: LLM selection is enum-guarded by the three-factor catalogue
+  (`momentum`, `mean_reversion`, `volatility_rank`). The researcher domain remains pure;
+  `external_io=()` is unchanged. Live model access exists only in `scripts/mine_factors.py`;
+  `run_walkforward` / `to_evidence` were reused unchanged.
+- Functionality-check row: added to `docs/laws/functionality-checks.md` for S113 on
+  2026-07-05. Real Tiingo export used the S110 100-ticker list: 25,000 rows, 250 bars/ticker,
+  2025-07-07..2026-07-02, zero duplicate `(ticker,date)` keys. OpenAI `gpt-5.5` selected
+  `momentum` with `lookback=60`; `FactorProposal.model_validate` round-tripped; forced
+  `invented_factor` failed open with no output JSON.
+- Teardown: deleted `data/s113-live-bars.csv` and `data/s113-live-proposal.json`; the off-menu
+  check wrote no file. No data CSV/JSON artifacts are staged.
+- Gate: `make ci` green after implementation and script split: `1358 passed, 5 skipped`,
+  `Required test coverage of 100.0% reached. Total coverage: 100.00%`; import-linter kept,
+  module hard block kept, headers check passed, detect-secrets passed, and pip-audit reported
+  no known vulnerabilities (torch skipped because the CPU wheel is not on PyPI).

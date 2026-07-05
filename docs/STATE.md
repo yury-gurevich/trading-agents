@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-04 21:05 AEST · **Version:** 0.54.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-05 00:03 AEST · **Version:** 0.55.00 on `sprint-112-researcher-backtest-evidence` · **local gates green; pending operator review/merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,15 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S112 (qlib Q3, 0.54.01→0.55.00)** — researcher backtest evidence: additive
+  `BacktestEvidence` contract field (researcher contract 0.2.0), pure no-lookahead walk-forward
+  harness in `agents/researcher/domain/` (next-close fills, turnover slippage, ≥30% holdout), three
+  bounded researcher backtest tunables, and `scripts/backtest_proposal.py` with a two-entry analyst
+  signal catalogue (`analyst.rsi_period`, `analyst.bollinger_window`) that fails open for unsupported
+  parameters. Codex-built on branch, `make ci` 100%. Live check: DL-37 Tiingo export via the S111
+  exporter using the fixed S110 100-ticker list (100,400 rows; zero duplicate `(ticker,date)` keys);
+  `analyst.rsi_period` 14→21 produced populated full/holdout evidence and the proposed JSON
+  round-tripped through `BacktestEvidence.model_validate`. Pending operator review/merge.
 - **S111 (qlib Q1c, 0.53.01→0.54.00)** — rolling retrain + IC-decay trigger: committed
   `scripts/export_tiingo_bars.py` (paced/resumable Tiingo DL-37 raw-history export, bounded sync
   backoff for transient 5xx/timeouts), pure `retrain_policy` (fail-safe decay +
@@ -83,19 +92,15 @@ S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
 
-On `main`, no active sprint branch (S111 reviewed and merged). The etalon north-star holds
-(DL-19): remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
-functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
-`sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
+On `sprint-112-researcher-backtest-evidence`, S112 is shipped locally and waiting for operator
+review/merge; do **not** merge or push to `main` from the coding-agent closeout. The etalon
+north-star holds (DL-19): remaining gray law clauses → green with cited tests; **every sprint ends
+with a real-environment functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each
+sprint/chore on its own `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds +
+pushes agent images).
 
 ## Next
 
-- **S112 researcher backtest evidence (qlib Q3) — PACKAGED and UNBLOCKED (S111 merged).** Handover
-  `sprints/sprint-112-researcher-backtest-evidence.md`: pure no-lookahead walk-forward harness in the
-  researcher domain (fills at next close, slippage-on-turnover, ≥30 % holdout) · `BacktestEvidence`
-  optional contract field (researcher contract → 0.2.0) · bounded signal-catalogue evidence CLI
-  (fail-open on unknown parameters; analyst indicators imported in `scripts/` only). The Q5
-  prerequisite. Code not started — ship proof is S112's.
 - **S109 re-run (pending Anthropic billing)** — re-freeze `deliberation_golden.json` with the real **Opus**
   judge + run the live-Opus check; until then the drift-firewall baseline is pre-Opus. Sun 2026-07-05 reminder set.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay

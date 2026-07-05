@@ -3,8 +3,8 @@
 
 **Phase:** qlib workflow adoption (Q3 — R001 addendum 2026-07-04, re-scoped self-built)
 **Branch:** `sprint-112-researcher-backtest-evidence`
-**Status:** packaged (handover ready) — **UNBLOCKED**: S111 is merged (`45f6c34`); the committed
-Tiingo exporter is on `main`
+**Status:** shipped on branch — pending operator review/merge; S111 is merged (`45f6c34`) and the
+committed Tiingo exporter is on `main`
 **Effort:** M
 
 ---
@@ -180,7 +180,7 @@ sprint-112-researcher-backtest-evidence`. Read `contracts/researcher.py`,
 §"For Coding Agents" + §"Addendum (2026-07-04)" (`docs/research/qlib-integration/qlib-integration.md`).
 
 **Gate.** `make ci` green — 9 steps, **100 % coverage**, modules ≤ 200 lines, headers. Bump
-0.54.00 → 0.55.00 + `uv lock`.
+0.54.01 → 0.55.00 + `uv lock`.
 
 **Boundaries.** Harness in `agents/researcher/domain/` imports only stdlib + `contracts` + `kernel`
 — **never another agent**. Analyst imports happen in `scripts/` only. import-linter stays green.
@@ -206,12 +206,55 @@ sprint-112-researcher-backtest-evidence`. Read `contracts/researcher.py`,
 
 ## Notes
 
-Q3 of the R001 addendum sequencing (Q1b ✅ S110 → Q1c 📦 S111 → **Q3** → Q5 governed factor mining).
+Q3 of the R001 addendum sequencing (Q1b ✅ S110 → Q1c ✅ S111 → **Q3** → Q5 governed factor mining).
 The harness is deliberately generic — scores in, evidence out — because Q5 reuses it verbatim: a
 candidate factor is just another score series to this simulator. The reviewer-facing intent from the
 original R001 Q3 is unchanged: humans see simulated Sharpe/IC alongside provenance evidence before
 approving any parameter change.
 
 ## Closeout evidence
+
+- Implementation branch: `sprint-112-researcher-backtest-evidence`.
+- Version bump: `pyproject.toml` `0.54.01 → 0.55.00` plus `uv lock`.
+- `make ci`: **green** — `1339 passed, 5 skipped`, `100.00%` coverage, import-linter kept,
+  headers/module-size passed; `pip-audit` found no known vulnerabilities and skipped only
+  `torch 2.12.1+cpu` because that CPU wheel is not on PyPI.
+- New functionality shipped:
+  - `contracts/researcher.py`: `BacktestEvidence` plus optional `backtest` on
+    `ParameterChangeProposal`; researcher contract version `0.1.0 → 0.2.0`.
+  - `agents/researcher/domain/backtest.py`: pure deterministic walk-forward harness with
+    next-close fills, turnover slippage, missing-price dropout, IC/date skipping, drawdown, and
+    full/holdout metrics; no qlib, pandas, numpy, or cross-agent imports.
+  - `agents/researcher/settings.py`: `backtest_top_k`, `backtest_slippage_bps`, and
+    `backtest_holdout_fraction` tunables; holdout floor enforces OOS ≥ 30%.
+  - `scripts/backtest_proposal.py`: bounded two-entry analyst signal catalogue
+    (`analyst.rsi_period`, `analyst.bollinger_window`), fail-open unsupported-parameter path,
+    side-by-side markdown table, and proposed `BacktestEvidence` JSON writer.
+- Live Tiingo export (DL-37 lineage, after reading `docs/laws/tiingo-usage-limits.md`):
+  `uv run python scripts/export_tiingo_bars.py --tickers scripts/universe_s110_tiingo_100.txt --years 4 --out <scratch>/tiingo_bars.csv`
+  produced 100 S&P-500 tickers, 100,400 rows, exactly 1,004 rows/ticker, zero duplicate
+  `(ticker,date)` keys, date-ascending per ticker, from `2022-07-01` through `2026-07-02`.
+- Live backtest:
+  `uv run python scripts/backtest_proposal.py --parameter analyst.rsi_period --current 14 --proposed 21 --input <scratch>/tiingo_bars.csv --out <scratch>/eval-rsi-period.json`
+  printed the populated full/holdout table below. Direction is mixed and recorded plainly: proposed
+  full-window Sharpe/IC improved, while proposed holdout Sharpe was lower.
+
+| metric | incumbent full | proposed full | delta | incumbent holdout | proposed holdout | holdout delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| n_days | 988 | 981 | -7 | 297 | 295 | -2 |
+| sharpe | 0.079165 | 0.212281 | 0.133116 | 0.875607 | 0.758461 | -0.117146 |
+| ic_mean | -0.000944 | 0.001028 | 0.001972 | 0.000706 | 0.000766 | 0.000059 |
+| max_drawdown | -0.285766 | -0.203705 | 0.082060 | -0.111137 | -0.095386 | 0.015750 |
+| turnover | 0.269737 | 0.224006 | -0.045731 | 0.266498 | 0.214407 | -0.052092 |
+
+- JSON round-trip proof:
+  `BacktestEvidence.model_validate(json.load(open(<scratch>/eval-rsi-period.json)))` succeeded
+  (`engine=walkforward-v1`, `n_days=981`, `ic_mean=0.001028`,
+  `holdout_ic_mean=0.000766`).
+- Documentation updated: `docs/laws/functionality-checks.md`,
+  `docs/research/parameter-inventory/*`, `docs/research/qlib-integration/qlib-integration.md`,
+  `docs/STATE.md`, and `docs/sprints/README.md`.
+- Teardown: scratch Tiingo CSV, evidence JSON, captured table, and exporter logs deleted; no bars
+  CSVs or report JSONs staged. No merge or push to `main`; stop for operator confirmation.
 
 Appended by the coding agent at completion.

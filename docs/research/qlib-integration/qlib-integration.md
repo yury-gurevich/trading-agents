@@ -324,9 +324,11 @@ whether it adds information beyond the existing technical pillar.
 ### Phase Q3 — Researcher backtest evidence
 
 **Prerequisite:** P7 (researcher agent) fully implemented.
-**Work:** Add `qlib.backtest` wrapper inside `agents/researcher/domain/`. Extend
-`ParameterChangeProposal` contract to carry an optional `BacktestEvidence` field. Generate
-evidence automatically when the researcher submits a proposal that touches indicator weights.
+**Work:** Superseded by the 2026-07-04 addendum and Sprint 112: qlib's own
+backtest engine remains unavailable on Python 3.13, so the project ships a
+self-built deterministic walk-forward harness inside `agents/researcher/domain/`.
+`ParameterChangeProposal` carries an optional `BacktestEvidence` field; evidence
+generation is script-only until a governed evidence hand-off pattern is designed.
 **Exit:** Human reviewers see simulated Sharpe/IC alongside provenance-graph evidence on
 every proposal.
 **Effort:** M (4–6 days). Contract change requires boundary map update.
@@ -454,13 +456,13 @@ primary runtime/batch OHLCV path; Tiingo is used here only for cheap-fallback / 
 Skip DDG-DA's drift *forecasting* (research-grade). Serves claim 3 mechanically, using the existing
 champion–challenger machinery.
 
-**Q3 — re-scoped to a self-built walk-forward harness.** The pyqlib wall stands on 3.13 and vendoring
-the engine is rejected (heavy, drifts from upstream, conflicts with the 200-line/100%-coverage
-regime). Build a thin deterministic walk-forward simulator inside `agents/researcher/domain/` (fills
-at next close, fixed slippage in bps as a tunable, walk-forward split ≥ 30% out-of-sample). The
-`BacktestEvidence` contract field and reviewer-facing intent are unchanged from the original Q3.
-Serves claim 2 — every proposal carries prospective evidence alongside retrospective provenance.
-Also now the **prerequisite for Q5**.
+**Q3 — re-scoped to a self-built walk-forward harness (shipped: [sprint-112](../../sprints/sprint-112-researcher-backtest-evidence.md)).**
+The pyqlib wall stands on 3.13 and vendoring the engine is rejected (heavy, drifts from upstream,
+conflicts with the 200-line/100%-coverage regime). The shipped harness is a thin deterministic
+simulator inside `agents/researcher/domain/` (fills at next close, fixed slippage in bps as a tunable,
+walk-forward split ≥ 30% out-of-sample). The `BacktestEvidence` contract field and reviewer-facing
+intent are unchanged from the original Q3. Serves claim 2 — every proposal can carry prospective
+evidence alongside retrospective provenance. Also now the **prerequisite for Q5**.
 
 **Q5 (new) — governed factor-mining loop.** RD-Agent's hypothesis → implement → backtest → feedback
 loop with this project's governance bolted on: the researcher (LLM) *proposes* candidate factors; the

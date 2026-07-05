@@ -27,6 +27,20 @@ class ProposedChange(_Frozen):
     expected_effect: Explanation
 
 
+class BacktestEvidence(_Frozen):
+    sharpe: float
+    ic_mean: float
+    max_drawdown: float
+    turnover: float
+    n_days: int
+    window_start: str
+    window_end: str
+    holdout_sharpe: float | None
+    holdout_ic_mean: float | None
+    slippage_bps: float
+    engine: str = "walkforward-v1"
+
+
 class ParameterChangeProposal(_Frozen):
     """Lands in the human-review queue. The researcher never applies it itself."""
 
@@ -34,11 +48,12 @@ class ParameterChangeProposal(_Frozen):
     changes: tuple[ProposedChange, ...]
     rationale: Explanation
     provenance: Provenance
+    backtest: BacktestEvidence | None = None
 
 
 CONTRACT = AgentContract(
     name="researcher",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Mine accumulated evidence for parameter and strategy improvements and "
         "propose bounded, measurable changes into the human-review queue — never "

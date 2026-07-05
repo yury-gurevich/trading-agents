@@ -1,6 +1,6 @@
 # Parameter inventory — every `tunable()` that shapes the system
 
-**Status:** Reference (auto-extracted snapshot) · **Date:** 2026-06-24 · **133 parameters** across 18 files
+**Status:** Reference (auto-extracted snapshot) · **Date:** 2026-07-04 · **136 parameters** across 18 files
 
 > Point-in-time snapshot of every `tunable()` declaration — the complete decision-
 > parameter surface in one place. The system has no unified catalogue yet; **CI-1**
@@ -150,7 +150,7 @@
 | `min_promotion_accuracy` | `0.55` | 0.0..1.0 | — | Frozen-evidence floor: a predictor below this accuracy is not promotable. |
 | `min_promotion_sample_size` | `5` | 1..100000 | examples | Minimum test-split size behind the accuracy figure to trust it. |
 
-## `agents/researcher/settings.py` — 8 (decision-shaping)
+## `agents/researcher/settings.py` — 11 (decision-shaping)
 
 | Param | Default | Range | Unit | Why |
 | --- | --- | --- | --- | --- |
@@ -162,6 +162,9 @@
 | `confidence_step` | `0.05` | 0.01..0.2 | — | Gradual threshold moves keep effects measurable. |
 | `confidence_low_water` | `0.4` | 0.0..1.0 | — | Below this average, demand stronger signals. |
 | `confidence_high_water` | `0.7` | 0.0..1.0 | — | Above this average, allow more candidates. |
+| `backtest_top_k` | `20` | 5..100 | — | Portfolio breadth for walk-forward proposal evidence; equal-weight top-K by score. |
+| `backtest_slippage_bps` | `10.0` | 0.0..100.0 | bps | Per-unit-turnover cost charged in the walk-forward simulator; keeps evidence honest about churn. |
+| `backtest_holdout_fraction` | `0.3` | 0.3..0.5 | — | Trailing fraction of the window reported separately as out-of-sample consistency (R001 risk register: OOS >= 30%). |
 
 ## `agents/operator/settings.py` — 4 (plumbing / infra)
 
@@ -231,7 +234,7 @@
 | `prometheus_namespace` | `'trading_agents'` | — | — | Keep this app's Prometheus series distinct from host/runtime metrics. |
 | `prometheus_subsystem` | `'kernel'` | — | — | This sprint emits from kernel plumbing rather than agent domains. |
 
-## Total: 133 tunable parameters
+## Total: 136 tunable parameters
 
 ## Regenerate
 

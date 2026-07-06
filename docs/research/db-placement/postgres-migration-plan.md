@@ -17,7 +17,7 @@ the system of record.
    `list_nodes`, `ancestors`, `descendants`. Append-only, `(label, key)` identity, typed directed
    edges, bounded-depth traversal. No agent imports Neo4j; import-linter enforces it.
 2. **The whole Neo4j surface is ~480 lines** in 4 kernel files (`graph_neo4j*.py`, `graph_cypher.py`)
-   + env selector. Driver imports: `kernel/graph_neo4j.py`, `probes/checks.py`,
+   plus the env selector. Driver imports: `kernel/graph_neo4j.py`, `probes/checks.py`,
    `scripts/compare_aura.py`, `tests/test_graph_neo4j.py`. Cypher: `kernel/graph_cypher.py`,
    `scripts/compare_aura.py`, `scripts/neo4j_crud.py`. That is the entire blast radius.
 3. **Production data volume is zero.** Every functionality check tears down to "Aura baseline 0";
@@ -79,11 +79,11 @@ it (YAGNI; noted, not scheduled).
   psycopg adapter + idempotent DDL bootstrap; the backend-rigor suite parameterized over
   InMemory/Neo4j/Postgres (live backends env-gated); `build_graph_from_env` extended —
   `POSTGRES_DSN` selects PG, `NEO4J_URI` keeps working (dual-backend period = instant rollback).
-  Local Docker Postgres for dev + the live check (a full pipeline slice on PG).
-- **S117 — provision + fleet swap (absorbs S101's intent).** Managed Postgres in `australiaeast`
-  (host choice finalized here per R002/cloud-free-tiers: Azure Flexible Server B1ms for
-  subscription/Key-Vault/region locality vs Neon free tier); secret enters Key Vault via the S108
-  **tested-before-insert** seeder; fleet env flip; live distributed-slice check on cloud PG.
+  Live check runs against the **provisioned Neon instance** (see Host DECIDED below) — no local
+  Docker Postgres needed.
+- **S117 — fleet swap (absorbs S101's intent).** Host already provisioned (**Neon free, Sydney** —
+  see Host DECIDED below; Azure B1MS is the paid fallback); `POSTGRES_DSN` enters Key Vault via the
+  S108 **tested-before-insert** seeder; fleet env flip; live distributed-slice check on cloud PG.
   **The superseding ADR is written here** (ADR-0001 → "PostgreSQL as the system of record; Neo4j =
   offline analysis workbench"; ADR-0008 amended to analysis-only scope). DL-38's S101 reframe
   ("provision the permanent *spine*") lands on Postgres.
@@ -136,8 +136,20 @@ bursty fleet, pgvector included; the `GraphStore` port makes the host a DSN swap
 (~US$24/mo) stays the one-command fallback** when storage/latency/vendor-consolidation argues for it.
 Decision confirmed by the operator at S117 kickoff.
 
+## Host DECIDED + provisioned (2026-07-06)
+
+**Neon free (AWS ap-southeast-2 Sydney), project `trading-agents`, PostgreSQL 18** — provisioned by
+the operator 2026-07-06. Credential probe (DL-36 tested-before-use, secret in `.env` as
+`POSTGRES_DSN`, never printed): connect PASS · PostgreSQL 18.4 · db `neondb` · **pgvector 0.8.1
+available** · client TLS **in use** (`sslmode=require`; Neon terminates TLS at its proxy, so
+server-side `SHOW ssl` reads off — expected). Direct (non-pooler) host in the DSN, per plan.
+Azure B1MS (~US$24/mo, australiaeast) remains the one-command paid fallback via the port.
+
+**S116 consequence:** the real-environment check runs against this live Neon instance (it is empty
+and *is* the future spine) — no local Docker Postgres needed.
+
 ## Open items for the operator at S117
 
-1. Confirm host: **Neon free (Sydney)** per the investigation above, vs paying ~US$24/mo for Azure
-   B1MS locality. (Planning lean: Neon free first; the port makes later moves cheap.)
+1. ~~Confirm host~~ — **decided: Neon free (Sydney), provisioned + probed 2026-07-06.**
 2. Aura grace window before deletion (suggest: after S118's live check, keep 7 days read-only).
+3. `POSTGRES_DSN` enters Key Vault via the S108 tested-before-insert seeder at S117.

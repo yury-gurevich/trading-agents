@@ -16,7 +16,13 @@ from pydantic import ValidationError
 from contracts.analyst import Recommendation
 from contracts.common import Explanation, Money, Window
 from contracts.portfolio_manager import GateOutcome, OrderIntent
-from contracts.researcher import CONTRACT, BacktestEvidence, ParameterChangeProposal
+from contracts.researcher import (
+    CONTRACT,
+    BacktestEvidence,
+    FactorProposal,
+    ParameterChangeProposal,
+    ProposedFactor,
+)
 
 
 def test_money_rejects_negative_amount() -> None:
@@ -97,5 +103,35 @@ def test_researcher_backtest_evidence_round_trips_optionally() -> None:
 
     parsed = ParameterChangeProposal.model_validate(proposal.model_dump(mode="json"))
 
-    assert CONTRACT.version == "0.2.0"
+    assert CONTRACT.version == "0.3.0"
+    assert parsed.backtest == evidence
+
+
+def test_researcher_factor_proposal_round_trips_optionally() -> None:
+    evidence = BacktestEvidence(
+        sharpe=1.2,
+        ic_mean=0.03,
+        max_drawdown=-0.10,
+        turnover=0.25,
+        n_days=120,
+        window_start="2024-01-01",
+        window_end="2024-06-30",
+        holdout_sharpe=0.8,
+        holdout_ic_mean=0.02,
+        slippage_bps=10.0,
+    )
+    proposal = FactorProposal(
+        proposal_id="factor",
+        factor=ProposedFactor(
+            name="momentum",
+            params=(("lookback", 20.0),),
+            rationale=Explanation(summary="bounded catalogue member"),
+        ),
+        provenance={"run_id": "factor", "source_agent": "researcher"},
+        backtest=evidence,
+    )
+
+    parsed = FactorProposal.model_validate(proposal.model_dump(mode="json"))
+
+    assert parsed.factor.params == (("lookback", 20.0),)
     assert parsed.backtest == evidence

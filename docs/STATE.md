@@ -133,9 +133,11 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **Qlib Q5 part B — S115 (not yet packaged):** approved `FactorProposal` → live shadow signal →
-  scorecard → promote/kill via the P10 predictor registry. Closes the Q5 governed factor-mining loop
-  (Moonshot #3). Package when prioritized; S113's out-of-scope list is the scope seed.
+- **Qlib Q5 part B — S115 factor shadow signal — PACKAGED, ready for Codex.** Handover
+  `docs/sprints/sprint-115-factor-shadow-signal.md`: approved factor → live forecaster shadow emitter
+  (duplicated catalogue math + parity test, OFF by default per Q2 Alpha158 precedent), additive
+  `forecast_factor` capability, generic scorecard by `model_id`, operator run-book for promote/kill on
+  existing P10/stage rails. Version 0.57.00 → **0.58.00** (feat). Closes the Q5 loop (Moonshot #3).
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package

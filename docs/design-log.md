@@ -1930,3 +1930,30 @@ understanding+consistency metric (S11x). Feeds DL-39 (a consistent, complete deb
 training signal). Builds on ADR-0010, DL-31, EXP-004..006, R003.
 
 **Status.** DIRECTION — operator capture (2026-07-05). Package after DL-41 ships.
+
+---
+
+## DL-43 · PostgreSQL becomes the system of record; Neo4j demoted to an ad-hoc analysis workbench  ·  status: DIRECTION (2026-07-06)
+
+**Trigger.** Operator: *"think deep and see how we can move from Neo4j to PostgreSQL as soon as
+possible"*, refined in the same session: *"we will still use Neo4j but for investigations and graph
+analysis, ad-hoc and out of bounds."*
+
+**Direction.** PostgreSQL becomes the runtime system of record (the DL-38 spine: lineage, work-state,
+provenance — plus pgvector for the RAG/agent-memory candidate and a home for CI-2 RunMetrics). Neo4j
+leaves the runtime entirely: local-Docker analysis workbench only, loaded on demand from a PG
+snapshot, zero runtime/CI/law/cloud dependency. Full analysis + sprint sequence (S116 adapter+parity
+→ S117 provision+swap, absorbs S101 → S118 rip-out):
+`docs/research/db-placement/postgres-migration-plan.md` (R002).
+
+**Why now (measured):** GraphStore port is 6 methods; the whole Neo4j surface is ~480 adapter lines +
+4 driver import sites; production graph data is ZERO (every check tears down to baseline 0; fleet not
+distributed); S101 ("provision the permanent spine") has not run — swap the provisioning target and
+no migration ever happens. Parity rig (`test_graph_backend_rigor.py`) already exists.
+
+**Reverses (surfaced, not buried):** DL-38's ruled-out note against wholesale migration — reversed by
+operator directive with changed facts (RAG/pgvector, zero-data window, S101 queued, Aura economics).
+ADR-0001 (Neo4j primary store) to be formally superseded at S117; ADR-0008 amended to analysis-only
+scope. DL-38's architecture itself is unchanged — Postgres is simply where the spine lives.
+
+**Status.** DIRECTION — plan complete, awaiting operator go to package S116 (after S115 lands).

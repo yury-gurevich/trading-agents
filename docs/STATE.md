@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-05 18:25 AEST · **Version:** 0.56.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-06 12:29 AEST · **Version:** 0.57.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,17 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S113 (qlib Q5 part A, 0.56.00→0.57.00)** — governed factor proposal: pure researcher factor
+  catalogue (`momentum`/`mean_reversion`/`volatility_rank`, `tunable`-bounded), strict
+  `validate_selection` enum guardrail (reject-not-clamp, fail-open `None`), additive `ProposedFactor` +
+  `FactorProposal` (researcher contract 0.3.0), LLM selection **only** in `scripts/mine_factors.py`
+  (`external_io=()` intact), S112 harness reused unchanged, no-lookahead fence test. Codex-built,
+  reviewed, `make ci` re-verified locally (1358 passed, 100%). Live check: 100-ticker Tiingo export
+  (DL-37), GPT-5.5 selected in-catalogue `momentum lookback=60`, evidence populated +
+  `FactorProposal.model_validate` round-trip; forced `invented_factor` failed open (no output). Merged
+  `3ec2d9e` (CI/CodeQL/image-build green, incl. Dependabot #29–31 bumps). **The LLM now nominates
+  factors under a hard catalogue guardrail; part B (S115: approved factor → shadow → scorecard →
+  promote/kill) closes the Q5 loop.**
 - **S114 (DL-41, 0.55.01→0.56.00)** — complete deliberation evidence: additive `GateOutcome` +
   `OrderIntent.gate_report` (PM contract 0.2.0); PM emits sizing / min-order / max-positions / cash /
   sector-concentration / names-per-sector / reward-risk outcomes; `veto_context.py` split
@@ -122,10 +133,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **Qlib Q5 part A — S113 governed factor proposal — PACKAGED, ready for Codex (now unblocked).**
-  Handover `docs/sprints/sprint-113-governed-factor-proposal.md` re-pointed to **0.56.00 → 0.57.00**
-  after S114 merged. Bounded factor catalogue + LLM proposes in-catalogue (enum-guarded, fail-open,
-  LLM only in composition root) → S112 walk-forward scores → `FactorProposal` + `BacktestEvidence`.
+- **Qlib Q5 part B — S115 (not yet packaged):** approved `FactorProposal` → live shadow signal →
+  scorecard → promote/kill via the P10 predictor registry. Closes the Q5 governed factor-mining loop
+  (Moonshot #3). Package when prioritized; S113's out-of-scope list is the scope seed.
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package

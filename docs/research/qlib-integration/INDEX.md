@@ -18,5 +18,9 @@ shipped 0.53.00 2026-07-04 with a live Tiingo check — baseline best at h=20: I
 rolling retrain + IC-decay trigger with dry-run default and scratch-proven apply). **Q3 complete**
 ([sprint-112](../../sprints/sprint-112-researcher-backtest-evidence.md), shipped 0.55.00
 2026-07-05 — self-built no-lookahead walk-forward harness + `BacktestEvidence` contract field +
-bounded signal-catalogue CLI, live Tiingo check). Remaining: **Q5** governed factor-mining loop
-(Moonshot #3) — **unblocked, next**; Q4 unchanged behind its 60-day live-data prerequisite.
+bounded signal-catalogue CLI, live Tiingo check). **Q5 part A complete**
+([sprint-113](../../sprints/sprint-113-governed-factor-proposal.md), shipped 0.57.00 2026-07-06 —
+bounded factor catalogue, LLM proposes in-catalogue only (enum-guarded, fail-open), S112 harness
+scores, `FactorProposal` 0.3.0; live check: GPT-5.5 picked `momentum lookback=60`, off-menu failed
+open). Remaining: **Q5 part B** (S115: approved factor → shadow → scorecard → promote/kill) closes
+the loop; Q4 unchanged behind its 60-day live-data prerequisite.

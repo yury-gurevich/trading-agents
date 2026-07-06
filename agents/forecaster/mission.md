@@ -11,8 +11,8 @@ prove they deserve promotion.
 
 ## Boundary — contract: `contracts/forecaster.py`
 
-- **Consumes:** `forecast(ForecastRequest) -> ShadowPrediction`,
-  `scorecard(ScorecardRequest) -> Scorecard`.
+- **Consumes:** `forecast`, `forecast_return`, `forecast_factor`,
+  `scorecard`, `sentiment_scorecard`, and `return_scorecard`.
 - **Emits:** `scorecard_refreshed`.
 - **Depends on (messages only):** `provider` (features/data).
 
@@ -28,6 +28,16 @@ prove they deserve promotion.
 ## MCP surface
 
 - `forecast`, `scorecard`.
+
+## Governed factor shadow loop
+
+- Approve a `FactorProposal` after reviewing its S113 walk-forward evidence.
+- Enable it by setting `FORECASTER_FACTOR_NAME` and `FORECASTER_FACTOR_PARAMS`
+  in operator-controlled config; leave both empty to keep the feature off.
+- The forecaster emits only `shadow=True` `ShadowPrediction`s under the factor
+  model id; it never gates, sizes, or promotes.
+- Review `scorecard` for the factor model id. Promote through existing
+  registry/stage rails, or kill by clearing the setting.
 
 ## Never
 

@@ -18,6 +18,7 @@ from agents.forecaster.domain.return_scorecard import (
 )
 from agents.forecaster.domain.scorecard import comparison_metrics
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
+from agents.forecaster.factor_prediction import forecast_factor
 from agents.forecaster.model import FakeSentimentModel
 from agents.forecaster.price_signal import read_return
 from agents.forecaster.provider_client import request_news
@@ -70,6 +71,7 @@ class ForecasterAgent(AgentBase):
         self.handlers = {
             "forecast": self._forecast,
             "forecast_return": self._forecast_return,
+            "forecast_factor": self._forecast_factor,
             "scorecard": self._scorecard,
             "sentiment_scorecard": self._sentiment_scorecard,
             "return_scorecard": self._return_scorecard,
@@ -142,6 +144,11 @@ class ForecasterAgent(AgentBase):
             value=reading.value,
             confidence=reading.confidence,
             provenance=provenance,
+        )
+
+    def _forecast_factor(self, request: BaseModel) -> ShadowPrediction:
+        return forecast_factor(
+            self._graph, self.bus, self.sink, self._settings, request
         )
 
     def _return_scorecard(self, request: BaseModel) -> Scorecard:

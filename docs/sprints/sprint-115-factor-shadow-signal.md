@@ -181,5 +181,11 @@ as every other signal in the system: **advisory until the evidence says otherwis
 
 ## Closeout evidence
 
-<!-- Coding agent: fill this in on handback. Files changed, coverage %, the functionality-check row,
-     the contract bump, any decisions/deviations, and the exact make ci summary line. Do not merge. -->
+- Branch: `sprint-115-factor-shadow-signal` only; not merged and not pushed.
+- Contract/version: `contracts.forecaster.CONTRACT.version` bumped `0.4.0 -> 0.5.0` with additive `forecast_factor`; project bumped `0.57.00 -> 0.58.00` and `uv.lock` updated.
+- Implementation: duplicated the S113 catalogue in `agents/forecaster/domain/factor_signal.py` (no forecaster import from researcher), added `forecast_factor` runtime wiring and default-off settings, reused `write_forecast`/generic `scorecard`, and documented the operator approve -> enable -> scorecard -> promote/kill loop in `agents/forecaster/mission.md`.
+- Tests: no-lookahead and bounds tests, cross-copy parity test, default-off/invalid-param refusal tests, `FORE-NEV-02` shadow-only test, and generic factor scorecard test with `promotion_eligible=False`.
+- Locked laws: `agents/forecaster/laws/laws.md` was read and left untouched; no law gap found. `agents/forecaster/laws/test-plan.md` was extended with the new test coverage.
+- Gate: `make ci` green — Ruff lint/format, mypy, import-linter, module-size/header checks, pytest **1370 passed, 5 skipped, 100.00% coverage**, pip-audit, detect-secrets.
+- Functionality check row: `docs/laws/functionality-checks.md` S115 row (2026-07-06). Live check asserted Aura `bce05bd6` `Neo4jGraphStore`, enabled scratch env settings for `momentum/lookback=60`, ran real Tiingo bars for `AAPL,MSFT`, wrote two `ShadowPrediction`s under `factor-s115-live-momentum-60`, read generic scorecard `sample_size=2`, then proved unset/default settings returned `factor-disabled` with zero graph writes. Teardown deleted three stamped nodes and restored Aura baseline `0`.
+- Decision note: provider MarketSnapshot writes were kept on an in-memory provider graph during the live check; forecaster factor `Model`/`ShadowPrediction` writes used live Aura. This preserved the real provider bars seam while keeping Aura teardown exactly scoped to the sprint-owned artifacts.

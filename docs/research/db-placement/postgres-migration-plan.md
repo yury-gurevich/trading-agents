@@ -4,9 +4,10 @@
 **Audience:** Product owner, planning agents, coding agents
 **Companion:** [db-placement.md](db-placement.md) (the substrate-vs-pack placement research this executes)
 
-Operator directive (2026-07-06): *"see how we can move from Neo4j to PostgreSQL as soon as possible"*
-+ refinement: *"we will still use Neo4j but for investigations and graph analysis, ad-hoc and out of
-bounds"* — i.e. Neo4j leaves the runtime entirely; PostgreSQL becomes the system of record.
+Operator directive (2026-07-06): *"see how we can move from Neo4j to PostgreSQL as soon as
+possible"*, refined in the same session: *"we will still use Neo4j but for investigations and graph
+analysis, ad-hoc and out of bounds"* — i.e. Neo4j leaves the runtime entirely; PostgreSQL becomes
+the system of record.
 
 ---
 
@@ -105,8 +106,38 @@ sequential Codex execution). At current velocity the Postgres spine can be live 
   shrinks; memory is bundle-declared) is unchanged — Postgres is simply where the spine lives.
 - **DL-15** (registry writes are audit-only) and **DL-37** (Tiingo raw-history lineage) unaffected.
 
+## Host investigation (2026-07-06, operator-requested): does free Azure satisfy our needs?
+
+**Verdict: NO — there is no applicable free Azure Postgres offering for this project.**
+
+1. **The only free Azure Postgres deal is the new-free-account bundle** — 750 h/mo Burstable B1MS +
+   32 GB for **12 months**, available exclusively to a *new Azure free account*. All three project
+   subscriptions are **pay-as-you-go** (`payg-@Live`, `payg`, `payg-@Office`) — **not eligible**.
+   Creating a new free account for it would mean a separate tenant/directory cut off from the
+   existing RG/Key-Vault/Container-Apps rails, for a benefit that dies in 12 months. Not worth it.
+2. **No always-free Postgres tier exists on Azure** (verified 2026-07-06; the always-free list has
+   Cosmos DB/Functions/App Service — not Flexible Server). The catalog row in
+   `../cloud-free-tiers/microsoft-free-forever.md` was imprecise and is corrected with this finding.
+   Cosmos DB's lifetime free tier is not Postgres (no pgvector, different API) — rejected.
+3. **Real Azure cost (retail API, australiaeast, 2026-07-06):** B1MS Flexible Server =
+   **US$0.0260/h → ≈ US$19/mo** compute (730 h) + 32 GB × $0.138 ≈ **$4.4/mo** storage ≈
+   **~US$24/mo (~A$36)**. Cheaper than Aura Professional (~US$65/mo) but not free. Stop/start
+   scheduling could cut compute ~80 % at the cost of orchestration complexity (server auto-restarts
+   after 7 days; ad-hoc checks would find it down) — not recommended initially.
+4. **If free is the requirement: Neon free plan fits the measured workload.** 100 CU-h/mo compute
+   (our bursty daily-run profile ≈ 10–20 CU-h at 0.25 CU with 5-min autosuspend), **0.5 GB storage**
+   (spine is near-zero today; will bind when CI-2 RunMetrics land → upgrade or move), **pgvector on
+   free**, 5 GB egress/mo, AWS Sydney region per Neon's region list (**confirm at provisioning**;
+   cross-cloud latency Azure australiaeast ↔ AWS Sydney is single-digit ms). Trades: second vendor,
+   ~0.5 s cold start after suspend, the 0.5 GB cap.
+
+**Recommendation:** start S117 on **Neon free (Sydney)** — genuinely $0, serverless matches the
+bursty fleet, pgvector included; the `GraphStore` port makes the host a DSN swap, so **Azure B1MS
+(~US$24/mo) stays the one-command fallback** when storage/latency/vendor-consolidation argues for it.
+Decision confirmed by the operator at S117 kickoff.
+
 ## Open items for the operator at S117
 
-1. Host: Azure Flexible Server (locality, existing SP/Key-Vault rails, ~free tier then ~US$13/mo
-   B1ms) vs Neon (serverless free tier, separate vendor). Planning lean: **Azure**.
+1. Confirm host: **Neon free (Sydney)** per the investigation above, vs paying ~US$24/mo for Azure
+   B1MS locality. (Planning lean: Neon free first; the port makes later moves cheap.)
 2. Aura grace window before deletion (suggest: after S118's live check, keep 7 days read-only).

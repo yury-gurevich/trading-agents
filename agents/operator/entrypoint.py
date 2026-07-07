@@ -2,11 +2,11 @@
 
 Agent: operator
 Role: EHLO to master, verify the signed ACTIVATE, bind the operator's capabilities to
-      a bus, then serve its inbox forever (serve_loop) instead of idling. The real
-      transport inbox arrives in S100; until then the inbox is a LocalRequestConsumer,
-      so a standalone container is serve-ready (idle on an empty inbox). Real LLM-client
-      injection lands when the operator actively serves over the live transport (S100);
-      today it binds with the agent's default client.
+      a bus, then serve its inbox forever (serve_loop) instead of idling. The
+      request consumer is selected from env so local runs keep the empty inbox and
+      distributed containers use Service Bus. Real LLM-client injection lands when
+      the operator actively serves over the live transport; today it binds with
+      the agent's default client.
 External I/O: master HTTP endpoint (POST /ehlo); LLM provider when it serves (S100).
 """
 
@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING
 from agents.operator.agent import OperatorAgent
 from kernel import InProcessBus
 from kernel.bootstrap import activate_agent, master_public_key_from_env
-from kernel.serve_loop import LocalRequestConsumer, serve_loop
+from kernel.serve_loop import serve_loop
+from kernel.serve_transport import consumer_from_env
 
 if TYPE_CHECKING:
     from kernel import GraphStore, MessageBus
@@ -44,8 +45,9 @@ def main() -> None:  # pragma: no cover
     pubkey = master_public_key_from_env()
     activate_agent(master_url, "operator", public_key_pem=pubkey)
 
-    bus = build_served_bus(build_graph_from_env())
-    serve_loop(LocalRequestConsumer(), bus)
+    graph = build_graph_from_env()
+    bus = build_served_bus(graph)
+    serve_loop(consumer_from_env("operator", graph), bus)
 
 
 if __name__ == "__main__":  # pragma: no cover

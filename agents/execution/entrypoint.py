@@ -8,7 +8,7 @@ External I/O: master HTTP endpoint (POST /ehlo); injected broker.
 
 from __future__ import annotations
 
-from agents.execution.broker import PaperBroker
+from agents.execution.broker_factory import broker_from_settings
 from agents.execution.poll import execute_pm_node, find_pending
 from agents.execution.settings import ExecutionSettings
 from kernel.bootstrap import activate_agent, master_public_key_from_env
@@ -26,7 +26,7 @@ def main() -> None:  # pragma: no cover
 
     graph = build_graph_from_env()
     settings = ExecutionSettings()
-    broker = PaperBroker(slippage_bps=settings.slippage_bps)
+    broker = broker_from_settings(settings)
     work_loop(
         lambda: find_pending(graph),
         lambda node: execute_pm_node(

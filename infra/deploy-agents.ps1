@@ -1,7 +1,7 @@
 # deploy-agents.ps1 — One-command fleet deploy/teardown for Azure Container Apps.
 #
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
-#   pwsh infra/deploy-agents.ps1 up          # preflight → schema → master → 12 agents
+#   pwsh infra/deploy-agents.ps1 up -Tag s102 # preflight → schema → master → 12 agents
 #   pwsh infra/deploy-agents.ps1 down        # delete all apps
 #
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
@@ -9,7 +9,8 @@
 
 param(
   [ValidateSet('preflight', 'up', 'down')]
-  [string]$Action = 'preflight'
+  [string]$Action = 'preflight',
+  [string]$Tag = 'latest'
 )
 
 Set-StrictMode -Version Latest
@@ -86,6 +87,18 @@ function Get-GraphConfig {
   throw "POSTGRES_DSN is required after ADR-0014; Neo4j env-var rollback was removed in S118"
 }
 
+function Get-ServiceBusConfig {
+  $conn = $env:AZURE_SERVICEBUS_CONNECTION_STRING
+  if (-not $conn) { $conn = $env:SERVICEBUS_CONNECTION_STRING }
+  if ($conn) {
+    return [pscustomobject]@{
+      envVars = @("AZURE_SERVICEBUS_CONNECTION_STRING=secretref:servicebus-connection-string")
+      secrets = @("servicebus-connection-string=$conn")
+    }
+  }
+  throw "AZURE_SERVICEBUS_CONNECTION_STRING or SERVICEBUS_CONNECTION_STRING is required for distributed serve transport"
+}
+
 function Upgrade-PostgresSchema {
   Top "POSTGRES SCHEMA"
   uv run --extra runtime --extra postgres alembic -c infra/migrations/alembic.ini upgrade head
@@ -93,6 +106,15 @@ function Upgrade-PostgresSchema {
   Check $ok "alembic upgrade head"
   Bot
   if (-not $ok) { throw "alembic upgrade head failed" }
+}
+
+function Prepare-ServiceBusRoutes {
+  Top "SERVICE BUS ROUTES"
+  uv run --extra azure python scripts/servicebus_prepare_routes.py
+  $ok = $LASTEXITCODE -eq 0
+  Check $ok "served request topics + subscriptions"
+  Bot
+  if (-not $ok) { throw "Service Bus route preparation failed" }
 }
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
@@ -129,6 +151,10 @@ function Preflight {
     $ok = $ok -and $pgOk
   }
 
+  try { $serviceBus = Get-ServiceBusConfig } catch { $serviceBus = $null }
+  Check ([bool]$serviceBus) "Service Bus connection config"
+  $ok = $ok -and [bool]$serviceBus
+
   if ($ghcr) {
     $imgs = @()
     try {
@@ -162,9 +188,10 @@ function Get-MasterKeypair {
 # ── Deploy ────────────────────────────────────────────────────────────────────
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
-  $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig
+  $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig; $serviceBus = Get-ServiceBusConfig
 
   Upgrade-PostgresSchema
+  Prepare-ServiceBusRoutes
   $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"
@@ -178,12 +205,12 @@ function Up {
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
-  ) + @($graph.envVars)
-  $masterSecrets = @($graph.secrets) + @("master-key-b64=$($kp.priv_b64)")
+  ) + @($graph.envVars) + @($serviceBus.envVars)
+  $masterSecrets = @($graph.secrets) + @($serviceBus.secrets) + @("master-key-b64=$($kp.priv_b64)")
   $mArgs = @(
     "containerapp", "create", "--name", "master", "--resource-group", $RG,
     "--environment", $ENV_NAME, "--subscription", $SUB,
-    "--image", "$REGISTRY/$OWNER/trading-agents-master:latest",
+    "--image", "$REGISTRY/$OWNER/trading-agents-master:$Tag",
     "--registry-server", $REGISTRY, "--registry-username", $ghcr.username,
     "--registry-password", $ghcr.pat, "--target-port", "8000", "--ingress", "internal",
     "--min-replicas", "1", "--max-replicas", "1",
@@ -206,8 +233,8 @@ function Up {
 
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
   foreach ($name in $AGENTS.Keys) {
-    $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):latest"
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($graph.envVars)
+    $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($graph.envVars) + @($serviceBus.envVars)
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,
@@ -215,7 +242,7 @@ function Up {
       $ghcr.username, "--registry-password", $ghcr.pat,
       "--min-replicas", "1", "--max-replicas", "1",
       "--secrets"
-    ) + @($graph.secrets) + @(
+    ) + @($graph.secrets) + @($serviceBus.secrets) + @(
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"

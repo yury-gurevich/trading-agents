@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING
 from agents.curator.agent import CuratorAgent
 from kernel import InProcessBus
 from kernel.bootstrap import activate_agent, master_public_key_from_env
-from kernel.serve_loop import LocalRequestConsumer, serve_loop
+from kernel.serve_loop import serve_loop
+from kernel.serve_transport import consumer_from_env
 
 if TYPE_CHECKING:
     from kernel import GraphStore, MessageBus
@@ -34,8 +35,9 @@ def main() -> None:  # pragma: no cover
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
     pubkey = master_public_key_from_env()
     activate_agent(master_url, "curator", public_key_pem=pubkey)
-    bus = build_served_bus(build_graph_from_env())
-    serve_loop(LocalRequestConsumer(), bus)
+    graph = build_graph_from_env()
+    bus = build_served_bus(graph)
+    serve_loop(consumer_from_env("curator", graph), bus)
 
 
 if __name__ == "__main__":  # pragma: no cover

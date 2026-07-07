@@ -103,9 +103,87 @@ draft assumed S101/Neo4j and is superseded by this version)
 
 ## Closeout evidence
 
-<!-- Coding agent: replace this comment. Required: files changed; version/deps; Part A test
-evidence; exact `make ci` summary (counts + coverage); Part B evidence — image tag + deploy log
-summary, 12-agent activation proof, provenance tally, verbatim ACCEPTANCE PASS line, the five
-control-plane round-trip proofs, observatory/ledger update, drift entries for live-only fixes;
-teardown proof (pg_teardown 0/0, Service Bus topics clean, fleet scaled to zero); the
-functionality-checks.md row. State any deviation from spec explicitly. Do not merge. -->
+**Branch / version.** Branch `sprint-102-fleet-run-through`; no merge to `main`. Version bumped
+`0.61.00 -> 0.62.00` and `uv.lock` refreshed (`0.62.0`).
+
+**Part A shipped.**
+
+- `kernel/serve_transport.py` adds `consumer_from_env(agent_type, graph)`: no Service Bus connection
+  string -> `LocalRequestConsumer`; `AZURE_SERVICEBUS_CONNECTION_STRING` /
+  `SERVICEBUS_CONNECTION_STRING` -> lazy `AzureServiceBusBus(...).request_consumer(...)`.
+- Curator, forecaster, operator, researcher, and supervisor entrypoints compose through that helper.
+- `scripts/servicebus_request.py` provides the separate-process claim-check request side.
+- `infra/deploy-agents.ps1 -Tag <tag>` deploys branch images and injects the Service Bus connection
+  string as `secretref:servicebus-connection-string`; `scripts/servicebus_prepare_routes.py` creates
+  served request topics/subscriptions before containers poll.
+- `.github/workflows/build-images.yml` supports manual branch image tags; `:s102` builds were published
+  by GitHub Actions, not local Docker.
+
+**CI / tests.** Local gate before live: `make ci` green with 100.00% coverage. Latest pre-closeout
+gate after live fixes: `1393 passed, 5 skipped, 100.00% coverage`; ruff, format, mypy (547 files),
+import-linter, module-size hard block, headers, pip-audit, and detect-secrets all passed. Focused
+regressions: `tests/test_serve_transport.py`, `tests/test_served_agent_images.py`,
+`tests/test_agent_image_commands.py`, `agents/execution/tests/test_execution_entrypoint.py`, and
+`tests/test_servicebus_request.py`.
+
+**Images / deploy.** Final image build: GitHub Actions `build-images.yml` run `28877717323`, commit
+`b50b544`, all 13 matrix jobs green and tagged `s102`. Final deploy:
+`infra/deploy-agents.ps1 up -Tag s102` passed preflight (Azure CLI, Container Apps env, GHCR creds,
+Postgres connect + `SELECT 1`, Service Bus config, GHCR 13/13), ran `alembic upgrade head`, verified
+served request routes, deployed master first, then all 12 agents. Final app list showed all 13
+Container Apps Running on `ghcr.io/yury-gurevich/trading-agents-*:s102`.
+
+**Activation proof.** Postgres latest active instances existed for all 12 agent types:
+`analyst`, `curator`, `execution`, `forecaster`, `monitor`, `operator`, `portfolio_manager`,
+`provider`, `reporter`, `researcher`, `scanner`, `supervisor`; `missing_agent_types=[]`.
+Each had `CapabilityGrant` rows; execution included `broker`, provider included `data_feeds`, operator
+included `llm`.
+
+**Distributed run.** Placed exactly one manual `RunRequest` via `orchestration.start.place_run_request`:
+`s102-dist-20260707T1530Z`, 16 liquid tickers. The distributed containers completed:
+`RunRequest -> MarketData -> ScanRun -> AnalystRun -> PMRun -> ExecutionRun -> MonitorRun -> Snapshot`.
+Trace: 16/16 OHLCV returned, 640 bars, 320 headlines, 4 scanner survivors, 3 analyst buys, 3 PM
+approvals, `ExecutionRun submitted=3 rejected=0`. Alpaca paper proof: the three `Fill` nodes had
+non-empty UUID-like `broker_order_id`s and status `pending`; the in-process `PaperBroker` would have
+produced `paper:` IDs.
+
+**Observatory / acceptance.**
+
+```text
+OBSERVATORY  OK - all invariants hold
+ACCEPTANCE  PASS - every stage did its job within its boundaries
+```
+
+Ledger Layer 2 moved to 🟩 in `docs/laws/ledger.md` with this run as citation. The functionality
+check row was appended to `docs/laws/functionality-checks.md`.
+
+**Service Bus control-plane proofs.** All requests were sent from separate local processes over Azure
+Service Bus into the served Container Apps and returned claim-checked replies:
+
+- operator `interpret` -> `outcome=intent`, `family=status`.
+- supervisor `report_fault` -> `accepted=true`, durable `Fault`.
+- supervisor `dispatch_intent` -> confirmation gate rejection and durable `Flag`.
+- forecaster `forecast` -> durable `ShadowPrediction`, `shadow=true`.
+- curator `build_dataset` -> durable `Dataset`.
+- researcher `propose` -> served response (`insufficient data for evidence window`, no mutation).
+
+**Live-only defects fixed on this branch.**
+
+- `DRIFT-016`: served images lacked `--extra azure`; fixed Dockerfiles + deploy route prep.
+- `DRIFT-017`: `portfolio_manager` Dockerfile used `agents.portfoliomanager.entrypoint`; fixed command.
+- `DRIFT-018`: execution entrypoint hard-coded `PaperBroker`; fixed to `broker_from_settings()`.
+- `DRIFT-019`: Service Bus proof helper could not print frozen Postgres reply payloads; fixed JSON
+  normalization.
+
+**Teardown / cost stop.** `scripts/pg_teardown.py` sweeps deleted **33 edges / 58 S102 nodes**; follow-up
+query reported `remaining_s102_artifacts={}`. Activation registry rows intentionally stayed as
+production boot evidence (`Session=5`, `AgentInstance=115`, `CapabilityGrant=257`). Service Bus cleanup
+deleted 11 disposable `s102-*.reply` topics and verified `remaining_s102_topics=[]`; stable served
+request topics stayed as production routes (`curator.requests`, `forecaster.requests`,
+`operator.requests`, `researcher.requests`, `supervisor.requests`). `infra/deploy-agents.ps1 down`
+deleted all 13 Container Apps; final `az containerapp list` returned no app names.
+
+**Deviation notes.** No local Docker was used after the operator explicitly ruled it out; branch images
+were built and published by GitHub Actions. Stable Service Bus request topics were not deleted because
+they are deploy-prepared production routes, not disposable proof topics. Registry activation rows were
+left by design as production/audit config.

@@ -1,8 +1,8 @@
 # deploy-agents.ps1 — One-command fleet deploy/teardown for Azure Container Apps.
 #
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
-#   pwsh infra/deploy-agents.ps1 up -Tag s102 # preflight → schema → master → 12 agents
-#   pwsh infra/deploy-agents.ps1 down        # delete all apps
+#   pwsh infra/deploy-agents.ps1 up -Tag s103 # preflight → schema → master → 12 agents + cron job
+#   pwsh infra/deploy-agents.ps1 down         # delete apps + dispatcher job
 #
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
 # POSTGRES_DSN is loaded from .env/process env.
@@ -10,7 +10,13 @@
 param(
   [ValidateSet('preflight', 'up', 'down')]
   [string]$Action = 'preflight',
-  [string]$Tag = 'latest'
+  [string]$Tag = 'latest',
+  [string]$MasterScaleStart = '25 22 * * *',
+  [string]$AgentScaleStart = '30 22 * * *',
+  [string]$ScaleEnd = '30 00 * * *',
+  [string]$ScaleTimezone = 'UTC',
+  [int]$ScaleDesiredReplicas = 1,
+  [string]$DispatcherCron = '30 22 * * *'
 )
 
 Set-StrictMode -Version Latest
@@ -22,6 +28,7 @@ $RG = "trading-agents"
 $ENV_NAME = "trading-agents-env"
 $REGISTRY = "ghcr.io"
 $OWNER = "yury-gurevich"
+$DISPATCHER_JOB = "dispatcher-cron"
 # Container App name → GHCR image suffix (app names can't contain underscores).
 $AGENTS = [ordered]@{
   scanner = "scanner"; analyst = "analyst"; "portfolio-manager" = "portfolio_manager"
@@ -117,6 +124,53 @@ function Prepare-ServiceBusRoutes {
   if (-not $ok) { throw "Service Bus route preparation failed" }
 }
 
+function Get-CronScaleArgs($ruleName, $start) {
+  return @(
+    "--min-replicas", "0", "--max-replicas", "1",
+    "--scale-rule-name", $ruleName,
+    "--scale-rule-type", "cron",
+    "--scale-rule-metadata",
+    "timezone=$ScaleTimezone",
+    "start=$start",
+    "end=$ScaleEnd",
+    "desiredReplicas=$ScaleDesiredReplicas"
+  )
+}
+
+function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
+  Top "DEPLOY DISPATCHER JOB"
+  $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
+  $secrets = @($graph.secrets) + @($serviceBus.secrets)
+  $image = "$REGISTRY/$OWNER/trading-agents-dispatcher:$Tag"
+  $exists = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --query name -o tsv 2>$null
+  if ($exists) {
+    $jobId = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
+      --subscription $SUB --query id -o tsv 2>$null
+    az resource update --ids $jobId --set properties.configuration.triggerType=Schedule `
+      properties.configuration.scheduleTriggerConfig.cronExpression="$DispatcherCron" `
+      2>$null | Out-Null
+    $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
+      --subscription $SUB --image $image --cron-expression $DispatcherCron `
+      --replica-timeout 1800 --replica-retry-limit 0 --parallelism 1 `
+      --replica-completion-count 1 --set-env-vars $envv `
+      --query properties.provisioningState -o tsv 2>$null
+    Check ($state -eq "Succeeded") "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
+  }
+  else {
+    $state = az containerapp job create --name $DISPATCHER_JOB --resource-group $RG `
+      --environment $ENV_NAME --subscription $SUB --trigger-type Schedule `
+      --cron-expression $DispatcherCron --image $image `
+      --registry-server $REGISTRY --registry-username $ghcr.username `
+      --registry-password $ghcr.pat --replica-timeout 1800 `
+      --replica-retry-limit 0 --parallelism 1 --replica-completion-count 1 `
+      --cpu 0.5 --memory 1.0Gi --secrets $secrets --env-vars $envv `
+      --query properties.provisioningState -o tsv 2>$null
+    Check ($state -eq "Succeeded") "$DISPATCHER_JOB created ($DispatcherCron UTC)"
+  }
+  Bot
+}
+
 # ── Preflight ─────────────────────────────────────────────────────────────────
 function Preflight {
   Top "FLEET PREFLIGHT"
@@ -163,8 +217,8 @@ function Preflight {
       $imgs = @($resp | Where-Object { $_.name -like "trading-agents-*" })
     } catch {}
     $have = $imgs.Count
-    Check ($have -ge 13) "GHCR images present: $have/13"
-    $ok = $ok -and ($have -ge 13)
+    Check ($have -ge 14) "GHCR images present: $have/14"
+    $ok = $ok -and ($have -ge 14)
   }
 
   Bot
@@ -213,7 +267,6 @@ function Up {
     "--image", "$REGISTRY/$OWNER/trading-agents-master:$Tag",
     "--registry-server", $REGISTRY, "--registry-username", $ghcr.username,
     "--registry-password", $ghcr.pat, "--target-port", "8000", "--ingress", "internal",
-    "--min-replicas", "1", "--max-replicas", "1",
     "--secrets"
   ) + $masterSecrets + @(
     "--query", "properties.provisioningState", "-o", "tsv"
@@ -224,7 +277,7 @@ function Up {
     Line "Key Vault wired: $($kv.vault_url)"
   }
   else { Line "no Key Vault — master uses env-var secrets" }
-  $mArgs += @("--env-vars") + $envv
+  $mArgs += @("--env-vars") + $envv + (Get-CronScaleArgs "daily-master-window" $MasterScaleStart)
   az @mArgs 2>$null | Out-Null
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   Check ([bool]$fqdn) "master @ https://$fqdn"
@@ -240,29 +293,32 @@ function Up {
       "--environment", $ENV_NAME, "--subscription", $SUB,
       "--image", $img, "--registry-server", $REGISTRY, "--registry-username",
       $ghcr.username, "--registry-password", $ghcr.pat,
-      "--min-replicas", "1", "--max-replicas", "1",
       "--secrets"
     ) + @($graph.secrets) + @($serviceBus.secrets) + @(
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
-    )
+    ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart)
     $state = az @agentArgs 2>$null
     Check ($state -eq "Succeeded") $name
   }
   Bot
-  Write-Host "`nFleet up (signature verification ON). Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
+  Deploy-DispatcherJob $ghcr $graph $serviceBus
+  Write-Host "`nFleet deployed with cron scale windows and dispatcher job. Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
 }
 
 function Down {
   Top "TEARDOWN"
+  az containerapp job delete --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --yes 2>$null | Out-Null
+  Check $true "deleted $DISPATCHER_JOB job"
   $all = @("master") + @($AGENTS.Keys)
   foreach ($name in $all) {
     az containerapp delete --name $name --resource-group $RG --subscription $SUB --yes 2>$null | Out-Null
     Check $true "deleted $name"
   }
   Bot
-  Write-Host "`nFleet down. Spend stopped." -ForegroundColor Green
+  Write-Host "`nFleet down. Scheduler removed and spend stopped." -ForegroundColor Green
 }
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────

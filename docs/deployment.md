@@ -134,10 +134,120 @@ Provision from scratch:
 ## Container Apps Fleet Deploy
 
 `infra/deploy-agents.ps1 up` loads `.env`, verifies `POSTGRES_DSN` with a live `SELECT 1`, runs
-`alembic upgrade head`, then deploys master and the 12 agent containers with `POSTGRES_DSN` injected as
-a Container Apps secret reference. The script never prints the DSN. Rollback after S118 is no longer
-an environment-variable operation: use `git revert` and redeploy. Previous GHCR images remain
-available for image-level rollback.
+`alembic upgrade head`, verifies the stable Service Bus served-agent routes, then deploys master, the
+12 agent containers, and the `dispatcher-cron` Container Apps Job. `POSTGRES_DSN` and the Service Bus
+connection string are injected as Container Apps secret references; the script never prints either
+value. Rollback after S118 is no longer an environment-variable operation: use `git revert` and
+redeploy. Previous GHCR images remain available for image-level rollback.
+
+The normal scheduled posture is a standing fleet scaled to zero outside the daily paper-run window:
+
+```powershell
+pwsh infra/deploy-agents.ps1 up -Tag latest
+```
+
+Default schedule:
+
+| Component | Schedule |
+| --- | --- |
+| `dispatcher-cron` job | `30 22 * * *` UTC |
+| `master` app cron scale window | starts `25 22 * * *` UTC |
+| 12 agent app cron scale window | starts `30 22 * * *` UTC |
+| all app scale windows | end `30 00 * * *` UTC |
+
+These are deployment parameters, not code literals:
+
+```powershell
+pwsh infra/deploy-agents.ps1 up -Tag latest `
+  -MasterScaleStart '25 22 * * *' `
+  -AgentScaleStart '30 22 * * *' `
+  -ScaleEnd '30 00 * * *' `
+  -ScaleTimezone UTC `
+  -ScaleDesiredReplicas 1 `
+  -DispatcherCron '30 22 * * *'
+```
+
+To pause scheduled runs without deleting the fleet, disable the schedule and set the app window's
+desired replicas to zero:
+
+```powershell
+$jobId = az containerapp job show -n dispatcher-cron -g trading-agents --query id -o tsv
+az resource update --ids $jobId --set properties.configuration.triggerType=Manual
+
+$apps = @(
+  @{ name='master'; rule='daily-master-window'; start='25 22 * * *' },
+  @{ name='scanner'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='analyst'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='portfolio-manager'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='execution'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='monitor'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='reporter'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='forecaster'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='operator'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='supervisor'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='curator'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='researcher'; rule='daily-agent-window'; start='30 22 * * *' },
+  @{ name='provider'; rule='daily-agent-window'; start='30 22 * * *' }
+)
+foreach ($app in $apps) {
+  az containerapp update -n $app.name -g trading-agents --min-replicas 0 --max-replicas 1 `
+    --scale-rule-name $app.rule --scale-rule-type cron `
+    --scale-rule-metadata "timezone=UTC" "start=$($app.start)" "end=30 00 * * *" `
+                          "desiredReplicas=0"
+}
+```
+
+To resume, set the same scale rules back to `desiredReplicas=1`, then re-enable the schedule:
+
+```powershell
+foreach ($app in $apps) {
+  az containerapp update -n $app.name -g trading-agents --min-replicas 0 --max-replicas 1 `
+    --scale-rule-name $app.rule --scale-rule-type cron `
+    --scale-rule-metadata "timezone=UTC" "start=$($app.start)" "end=30 00 * * *" `
+                          "desiredReplicas=1"
+}
+az resource update --ids $jobId `
+  --set properties.configuration.triggerType=Schedule `
+        properties.configuration.scheduleTriggerConfig.cronExpression='30 22 * * *'
+```
+
+To fire the same dispatcher image manually:
+
+```powershell
+az containerapp job start -n dispatcher-cron -g trading-agents
+```
+
+To simulate a non-trading day, inject the date into that execution:
+
+```powershell
+az containerapp job start -n dispatcher-cron -g trading-agents `
+  --env-vars DISPATCHER_AS_OF=2026-07-04
+```
+
+Observe fired, skipped, and failed executions through the job execution history and logs:
+
+```powershell
+az containerapp job execution list -n dispatcher-cron -g trading-agents -o table
+az containerapp job execution show -n dispatcher-cron -g trading-agents `
+  --job-execution-name <execution-name> -o jsonc
+az containerapp logs show -n dispatcher-cron -g trading-agents --type console --follow
+```
+
+After the window closes, prove idle cost by checking every app has zero replicas:
+
+```powershell
+foreach ($app in @(
+  'master','scanner','analyst','portfolio-manager','execution','monitor','reporter',
+  'forecaster','operator','supervisor','curator','researcher','provider'
+)) {
+  $count = az containerapp replica list -n $app -g trading-agents --query 'length(@)' -o tsv
+  "$app replicas=$count"
+}
+az containerapp job execution list -n dispatcher-cron -g trading-agents -o table
+```
+
+`infra/deploy-agents.ps1 down` is the rollback/cost-stop escape hatch. It deletes the
+`dispatcher-cron` job and all 13 apps; it is not the normal S103 end state.
 
 ## Architecture
 

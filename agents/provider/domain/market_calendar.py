@@ -68,6 +68,11 @@ _NYSE_HOLIDAYS: frozenset[date] = frozenset(
 )
 
 
+def calendar_window_end() -> date:
+    """Return the final calendar date covered by the explicit holiday table."""
+    return date(max(day.year for day in _NYSE_HOLIDAYS), 12, 31)
+
+
 def is_trading_session(day: date) -> bool:
     """True when *day* is a NYSE trading session (a weekday that is not a holiday)."""
     return day.weekday() < 5 and day not in _NYSE_HOLIDAYS

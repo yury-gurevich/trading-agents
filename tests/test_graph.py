@@ -9,6 +9,7 @@ from kernel import (
     GraphStore,
     InMemoryGraphStore,
     Node,
+    PostgresGraphStore,
 )
 
 
@@ -151,3 +152,4 @@ def test_graph_store_protocol_exposes_no_destructive_operations() -> None:
     for name in destructive:
         assert not hasattr(GraphStore, name)
         assert not hasattr(InMemoryGraphStore, name)
+        assert not hasattr(PostgresGraphStore, name)

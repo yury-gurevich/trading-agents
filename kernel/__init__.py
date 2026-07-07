@@ -60,6 +60,8 @@ from kernel.graph import Edge, GraphStore, Node
 from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_neo4j import Neo4jGraphStore
 from kernel.graph_neo4j_config import GraphSettings
+from kernel.graph_postgres import PostgresGraphStore
+from kernel.graph_postgres_config import PostgresGraphSettings
 from kernel.llm import FakeLLMClient, LLMClient
 from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
@@ -104,6 +106,8 @@ __all__ = [
     "Node",
     "NullMetrics",
     "ParameterTruth",
+    "PostgresGraphSettings",
+    "PostgresGraphStore",
     "PrometheusMetrics",
     "PromptArtifact",
     "PromptExample",

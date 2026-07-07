@@ -11,7 +11,7 @@ import argparse
 import json
 import sys
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +46,14 @@ def _payload(text: str) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise SystemExit("--payload-json must decode to a JSON object")
     return data
+
+
+def _jsonable(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, tuple | list):
+        return [_jsonable(item) for item in value]
+    return value
 
 
 def _body_text(raw: object) -> str:
@@ -197,7 +205,7 @@ def main() -> None:
                 "reply_topic": reply_topic,
                 "reply_type": reply.message_type,
                 "correlation_id": str(reply.correlation_id),
-                "payload": reply.payload,
+                "payload": _jsonable(reply.payload),
             },
             sort_keys=True,
         )

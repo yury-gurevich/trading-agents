@@ -19,7 +19,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | DEP-CONFIG | 2 | 🟩 01 real (`POSTGRES_DSN` + feed/LLM creds present) |
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
 | DEP-POSTGRES | 3 | 🟩 **3/3 real** — `01` live Neon connect + `SELECT 1`; `02` Alembic `upgrade head` wired as the pre-start deploy step; `03` S116 parity + S117 served-slice durability/teardown prove append-only props, edge identity, traversal parity, and no destructive default ops |
-| DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
+| DEP-BUS | 3 | 🟩 **Service Bus live for fleet serve path** — S100 proved the receiver/claim-check parity on disposable topics; S102 proved five served-agent request/reply round-trips over `trading-agents-bus` from separate processes into five Container Apps. |
 | DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (anti-bot). Postgres raw fallback retired 2026-06-19 (Tiingo + Alpaca cover the need). |
 | DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |
 | DEP-LLM | 2 | ⬜ key present (Anthropic); live ping gated for cost |
@@ -51,7 +51,13 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 
 ## Layer 2 — Choreography
 
-Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. ⬜
+Every edge in [`flow.md`](flow.md) type-aligned and proven on a real run. 🟩 **PROVEN LIVE
+2026-07-07 in S102**: 13 branch-tagged Container Apps (`:s102`) on the Postgres spine processed one
+manual `RunRequest` (`s102-dist-20260707T1530Z`) by graph-pull across containers:
+`RunRequest -> MarketData -> ScanRun -> AnalystRun -> PMRun -> ExecutionRun -> MonitorRun -> Snapshot`.
+The run returned `OBSERVATORY  OK - all invariants hold` and
+`ACCEPTANCE  PASS - every stage did its job within its boundaries`; five served control-plane agents
+also round-tripped over Azure Service Bus.
 
 ## Layer 3 — Acceptance
 

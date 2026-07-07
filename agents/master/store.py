@@ -1,8 +1,8 @@
-"""Master agent Neo4j graph writes — operational registry.
+"""Master agent graph writes — operational registry.
 
 Agent: master
 Role: write AgentDefinition, AgentInstance, Session, and CapabilityGrant nodes.
-External I/O: Neo4j database via injected GraphStore.
+External I/O: graph database via injected GraphStore.
 """
 
 from __future__ import annotations

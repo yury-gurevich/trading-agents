@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-07 20:06 AEST · **Version:** 0.60.00 · **S117 branch local `make ci` green; not merged/pushed.**
+**Last updated:** 2026-07-07 20:59 AEST · **Version:** 0.60.01 · **S118 branch local `make ci` green; not merged/pushed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,29 +26,31 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S118 (DL-43 step 3, 0.60.00→0.60.01) — NEO4J RUNTIME RIPPED OUT.** Neo4j kernel adapter,
+  Cypher helpers, runtime tests/fakes, driver dependency, probes, Aura scripts, and rollback env paths
+  were deleted; `NEO4J_URI`-only startup now raises the ADR-0014 error instead of silently falling back.
+  Root compose keeps Neo4j only behind the opt-in `workbench` profile (ADR-0008 analysis-only) and
+  Aura deletion is documented as a 7-day-grace operator action, not a sprint action. Rollback is now
+  **git revert + redeploy**; GHCR images persist for image-level rollback. Local evidence on branch
+  `sprint-118-neo4j-ripout`: fresh `uv sync --extra runtime --extra postgres` uninstalled
+  `neo4j==6.2.0`; package/import greps found no runtime Neo4j imports; `make ci` green
+  (**1374 passed, 5 skipped, 100.00% coverage**); Neon live check stamped
+  `s118-livecheck-20260707T205942` asserted `PostgresGraphStore`, raw-verified one durable row, and
+  `pg_teardown.py` returned it to `0/0`. Not merged/pushed.
+
 - **S117 (DL-43 step 2, 0.59.00→0.60.00) — POSTGRES IS THE SYSTEM OF RECORD (ADR-0014 supersedes
   ADR-0001).** `postgres-dsn` seeded to `trading-agents-kv` via the S108 tested-before-insert path
   (probe passed, read-back equal, DSN never printed); composition + container defaults flipped to
-  `POSTGRES_DSN` (`NEO4J_URI` = one-env-var rollback until S118); `deploy-agents.ps1` runs `alembic
+  `POSTGRES_DSN` (the temporary `NEO4J_URI` rollback was removed by S118); `deploy-agents.ps1` runs `alembic
   upgrade head` before fleet start; `DEP-POSTGRES-01` probe green; ADR-0008 amended to
-  analysis/rollback scope; laws/architecture swept. Live: S99-style served slice on **Neon** asserted
+  analysis scope; laws/architecture swept. Live: S99-style served slice on **Neon** asserted
   `PostgresGraphStore`, durable rows verified from a separate raw connection (36 nodes/26 edges),
-  teardown to 0/0. `make ci` re-verified (1383 passed, 100%). Merged `d6776ec`. **S118 (Neo4j runtime
-  rip-out + Aura retirement) is the last step.**
-
-- **S117 (DL-43 step 2, 0.59.00→0.60.00)** — Postgres fleet swap closed on branch
-  `sprint-117-postgres-fleet-swap`: `POSTGRES_DSN` seeded into `trading-agents-kv` through the S108
-  tested-before-insert path (dry-run, apply, read-back equality); composition defaults now prefer
-  Postgres while `NEO4J_URI` remains a one-env-var rollback; deploy pre-start runs
-  `alembic upgrade head`; `DEP-POSTGRES` probes live Neon; ADR-0014 supersedes ADR-0001 and amends
-  ADR-0008 to analysis/rollback scope. Live check with `NEO4J_URI` absent asserted
-  `PostgresGraphStore`, served forecaster/researcher/curator, verified rows from a separate raw
-  connection, and tore down to 0 stamped rows. Local `make ci`: 1383 passed, 6 skipped, 100%.
+  teardown to 0/0. `make ci` re-verified (1383 passed, 100%). Merged `d6776ec`.
 
 - **S116 (DL-43 step 1, 0.58.00→0.59.00)** — `PostgresGraphStore` shipped: psycopg 3 adapter over the
   6-method port with **alembic-owned schema** (`infra/migrations/0001_spine`), append-only JSONB merge
   (`EXCLUDED.props || nodes.props` + schema_version guard), recursive-CTE traversal, `POSTGRES_DSN`
-  selector (Postgres wins; `NEO4J_URI` = rollback), fake-psycopg unit suite + env-gated Neon tests +
+  selector (Postgres wins; temporary Neo4j fallback later removed by S118), fake-psycopg unit suite + env-gated Neon tests +
   `scripts/pg_teardown.py`. Codex-built, reviewed, `make ci` re-verified (1379 passed, 100%). Live
   check on **Neon free (Sydney)**: alembic `0001_spine` applied, backend suite 7 passed, pipeline
   slice asserted `PostgresGraphStore` + rendered veto-context lineage, teardown to nodes=0/edges=0,
@@ -173,10 +175,6 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **🔴 NEXT — S118 Neo4j/Aura removal (DL-43 step 3, not yet packaged).** Delete retired Neo4j/Aura
-  primary-store paths only after S117 is reviewed/merged; keep any deliberately retained ad-hoc
-  analysis workbench affordances called out by ADR-0014. Plan:
-  `docs/research/db-placement/postgres-migration-plan.md`.
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package
@@ -192,7 +190,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   research item + a live runway before packaging. Companion **DL-40 (parked)**: literacy-tiered verdict
   explanations (low/mid/high) as a `surfaces/` renderer, ruling single-sourced.
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
-  human-manual until an Azure/Aura write path + rollback + approval UI land; the diskcache CVE from the
+  human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
 - **Fleet arc S100–S103** — **S100 Service Bus receiver: handover Codex-ready + namespace `trading-agents-bus`
   provisioned & live-verified (`infra/servicebus.bicep`); unblocked to build** (implement the receive half of

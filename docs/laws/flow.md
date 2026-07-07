@@ -31,7 +31,7 @@ flowchart LR
   PROV -. external feeds .-> FEEDS[(market-data APIs)]
 
   FCST[forecaster] -. advisory / shadow .-> ANLY
-  GRAPH[(Neo4j — provenance substrate)]
+  GRAPH[(Postgres graph — provenance substrate)]
 ```
 
 ## Control & support (off the trading spine)
@@ -41,7 +41,7 @@ flowchart LR
   HUMAN([operator/human]) --> OPER[operator]
   OPER -->|typed intent| SUP[supervisor]
   SUP -->|capability gate / hard-NO| ALL[(all agents)]
-  SUP -. faults / lineage .-> GRAPH[(Neo4j)]
+  SUP -. faults / lineage .-> GRAPH[(Postgres graph)]
   CURA[curator] -. out-of-band datasets .-> GRAPH
   RSCH[researcher] -. parameter-change proposals .-> SUP
 ```
@@ -53,7 +53,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  MASTER[master] -->|reads AgentDefinition nodes| GRAPH[(Neo4j registry)]
+  MASTER[master] -->|reads AgentDefinition nodes| GRAPH[(Postgres graph registry)]
   MASTER -->|fetches secrets| KV[(Azure Key Vault)]
   MASTER -->|ACTIVATE signed message| AGENT[any agent container]
   AGENT -->|EHLO + capability declaration| MASTER
@@ -64,8 +64,8 @@ flowchart TD
 
 - **master** is the first container to start and the sole Key Vault accessor.
 - Agents transition: `PRE_FLIGHT → ACTIVE` (on valid signed ACTIVATE) or `→ INERT` (on timeout).
-- Pending messages for crashed instances survive in Neo4j `MessageRecord` nodes and are re-routed
-  on restart by type matching.
+- Pending messages for crashed instances survive in Postgres-backed `MessageRecord` graph nodes and
+  are re-routed on restart by type matching.
 - This layer is **orthogonal** to the trading spine above; `orchestration/dispatcher.py` and the
   `supervisor` agent are unaffected.
 

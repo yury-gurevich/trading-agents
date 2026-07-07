@@ -48,7 +48,8 @@ and policy — whether to:
 
 Every fault is also written to the provenance graph as a `Fault` node (owned by the
 supervisor), so the failure history is queryable and exportable alongside every
-decision (ADR-0001 — Neo4j is the single store; there is no relational `faults` table).
+decision (ADR-0014 — PostgreSQL is the system of record; faults live as graph nodes,
+not in a separate `faults` table).
 
 ## Why this shape
 

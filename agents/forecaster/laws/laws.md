@@ -118,7 +118,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **FORE-DEP-01** — `DEP-BUS` — requests news from provider (`get_market_data`) and price bars
   via the bus for the return model.
-- **FORE-DEP-02** — `DEP-NEO4J` — reads `SentimentReading` and `ShadowPrediction` nodes for
+- **FORE-DEP-02** — `DEP-POSTGRES` — reads `SentimentReading` and `ShadowPrediction` nodes for
   scorecard correlation; writes `ShadowPrediction` and `Model`.
 - **FORE-DEP-03** — `DEP-FEED` (indirect) — provider resolves the feed; forecaster is insulated.
 

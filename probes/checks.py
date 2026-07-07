@@ -3,8 +3,8 @@
 Agent: probes
 Role: prove each shared dependency is healthy against the real system, through the
 provider's functional channels (not mocks).
-External I/O: PostgreSQL, Neo4j, market-data feeds (Tiingo/FMP/Finnhub), and the
-Alpaca paper broker.
+External I/O: PostgreSQL, market-data feeds (Tiingo/FMP/Finnhub), and the Alpaca
+paper broker.
 """
 
 from __future__ import annotations
@@ -29,26 +29,24 @@ class Result:
 def probe_config(creds: dict[str, str]) -> list[Result]:
     """DEP-CONFIG-01 — required keys for the active stage are present."""
     has_postgres = bool(creds.get("POSTGRES_DSN"))
-    has_neo4j = bool(creds.get("NEO4J_URI"))
-    if not (has_postgres or has_neo4j):
+    if not has_postgres:
         return [
             Result(
                 "DEP-CONFIG-01",
                 "config: required keys",
                 RED,
-                "missing POSTGRES_DSN (or NEO4J_URI rollback)",
+                "missing POSTGRES_DSN",
             )
         ]
     extra = [
         k for k in ("PROVIDER_FINNHUB_API_KEY", "ANTHROPIC_API_KEY") if creds.get(k)
     ]
-    backend = "postgres" if has_postgres else "neo4j rollback"
     return [
         Result(
             "DEP-CONFIG-01",
             "config: required keys",
             GREEN,
-            f"{backend} + {len(extra)} feed/llm creds",
+            f"postgres + {len(extra)} feed/llm creds",
         )
     ]
 
@@ -105,84 +103,6 @@ def probe_postgres(creds: dict[str, str]) -> list[Result]:
                 f"{type(exc).__name__}",
             )
         ]
-
-
-def probe_neo4j(creds: dict[str, str]) -> list[Result]:
-    """DEP-NEO4J-01/02/03 — reachable, round-trips, enforces uniqueness."""
-    if creds.get("POSTGRES_DSN") and not creds.get("PROBE_NEO4J"):
-        return [Result("DEP-NEO4J-01", "neo4j", SKIP, "postgres active")]
-    uri, user, pw = (
-        creds.get("NEO4J_URI"),
-        creds.get("NEO4J_USER"),
-        creds.get("NEO4J_PASSWORD"),
-    )
-    db = creds.get("NEO4J_DATABASE") or "neo4j"
-    if not uri:
-        return [Result("DEP-NEO4J-01", "neo4j", SKIP, "no NEO4J_URI")]
-    try:
-        from neo4j import GraphDatabase
-    except ImportError:
-        return [
-            Result("DEP-NEO4J-01", "neo4j", SKIP, "driver missing (--extra runtime)")
-        ]
-    out: list[Result] = []
-    drv = GraphDatabase.driver(uri, auth=(user, pw), connection_timeout=15)
-    try:
-        drv.verify_connectivity()
-        out.append(
-            Result("DEP-NEO4J-01", "neo4j: reachable", GREEN, uri.split("@")[-1])
-        )
-        with drv.session(database=db) as session:
-            key = "depprobe-" + uuid.uuid4().hex
-            session.run("CREATE (n:_DepProbe {key:$k, v:1})", k=key)
-            value = session.run(
-                "MATCH (n:_DepProbe {key:$k}) RETURN n.v AS v", k=key
-            ).single()["v"]
-            session.run("MATCH (n:_DepProbe {key:$k}) DELETE n", k=key)
-            out.append(
-                Result(
-                    "DEP-NEO4J-02",
-                    "neo4j: write/read",
-                    GREEN if value == 1 else RED,
-                    "round-trip",
-                )
-            )
-            out.append(_neo4j_uniqueness(session))
-    except Exception as exc:
-        out.append(
-            Result(
-                "DEP-NEO4J-01",
-                "neo4j: reachable",
-                RED,
-                f"{type(exc).__name__}: {str(exc)[:50]}",
-            )
-        )
-    finally:
-        drv.close()
-    return out
-
-
-def _neo4j_uniqueness(session: object) -> Result:
-    name = "depprobe_unique"
-    session.run(
-        f"CREATE CONSTRAINT {name} IF NOT EXISTS "
-        "FOR (n:_DepProbeU) REQUIRE n.key IS UNIQUE"
-    )
-    key = "u-" + uuid.uuid4().hex
-    session.run("CREATE (n:_DepProbeU {key:$k})", k=key)
-    rejected = False
-    try:
-        session.run("CREATE (n:_DepProbeU {key:$k})", k=key)
-    except Exception:
-        rejected = True
-    session.run("MATCH (n:_DepProbeU {key:$k}) DELETE n", k=key)
-    session.run(f"DROP CONSTRAINT {name} IF EXISTS")
-    return Result(
-        "DEP-NEO4J-03",
-        "neo4j: uniqueness enforced",
-        GREEN if rejected else RED,
-        "duplicate rejected" if rejected else "duplicate ALLOWED",
-    )
 
 
 def probe_feed_ohlcv(creds: dict[str, str]) -> list[Result]:
@@ -438,7 +358,6 @@ PROBES = (
     probe_config,
     probe_clock,
     probe_postgres,
-    probe_neo4j,
     probe_feed_ohlcv,
     probe_feed_fundamentals,
     probe_sentiment,

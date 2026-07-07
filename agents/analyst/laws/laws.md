@@ -166,7 +166,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **ANLZ-DEP-01** — `DEP-BUS`: requires request/reply (provider calls) and subscribe/publish
   (`scan.candidates.ready` / `analysis.recommendations.ready`).
-- **ANLZ-DEP-02** — `DEP-NEO4J`: requires graph append-write access for `AnalystRun`,
+- **ANLZ-DEP-02** — `DEP-POSTGRES`: requires graph append-write access for `AnalystRun`,
   `Recommendation`, and `SentimentReading`; claim-check read for `scan.candidates.ready`.
 - **ANLZ-DEP-03** — `DEP-FEED` (via provider): the provider's `get_market_data` and
   `get_regime` capabilities must be reachable. Provider degradation degrades the analyst's

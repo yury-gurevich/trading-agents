@@ -105,7 +105,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **RPT-DEP-01** — `DEP-BUS` — consumes `monitor.decisions.ready`, publishes
   `report.snapshot.ready`.
-- **RPT-DEP-02** — `DEP-NEO4J` — graph traversal across all agent labels (read-only for all
+- **RPT-DEP-02** — `DEP-POSTGRES` — graph traversal across all agent labels (read-only for all
   except Snapshot/TradeNarrative/ReportSnapshotResult).
 
 ## Observability & audit (`OBS`)

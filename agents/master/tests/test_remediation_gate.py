@@ -44,7 +44,7 @@ def _fake_llm() -> FakeLLMClient:
     return FakeLLMClient(
         {
             "blank-key-vault": _response("refetch-from-key-vault"),
-            "neo4j-paused": _response("resume-instance"),
+            "postgres-unreachable": _response("resume-instance"),
             "ambiguous": _response("pause-and-escalate"),
         }
     )
@@ -60,7 +60,7 @@ def _cases() -> tuple[RemediationSelectionCase, ...]:
         ),
         RemediationSelectionCase(
             "paused-backing-instance",
-            {"summary": "neo4j-paused backing instance"},
+            {"summary": "postgres-unreachable backing instance"},
             "resume-instance",
             "Resume is safe.",
         ),
@@ -155,7 +155,7 @@ def test_real_trading_catalogue_passes_offline_selector_cases() -> None:
         FakeLLMClient(
             {
                 "blank-key-vault-secret": _response("refetch-from-key-vault"),
-                "neo4j-paused": _response("resume-instance"),
+                "postgres-unreachable": _response("resume-instance"),
                 "credential-compromised": _response("rotate-credential"),
                 "service-destroyed": _response("recreate-instance"),
                 "unknown": _response("pause-and-escalate"),

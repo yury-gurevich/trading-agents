@@ -5,14 +5,14 @@ Role: start the system in one process — pre-flight checks, the dispatcher plac
       RunRequest, then run each agent's graph-pull poll once and print how every
       downstream agent wakes off its prerequisite gate
       (provider → scanner → analyst → PM → execution → monitor → reporter).
-      --real: loads .env, uses live Neo4j (NEO4J_URI) + real Tiingo OHLCV data.
+      --real: loads .env, uses PostgreSQL (POSTGRES_DSN) + real Tiingo OHLCV data.
       --universe FILE: newline-delimited tickers; overrides the built-in list.
       Default: in-memory graph + FakeDataSource (no credentials needed).
-External I/O: stdout; network (Tiingo, Finnhub, Neo4j) when --real.
+External I/O: stdout; network (Tiingo, Finnhub, PostgreSQL) when --real.
 
 Run it:
   PYTHONPATH=. python scripts/run_local.py           # in-memory demo
-  PYTHONPATH=. python scripts/run_local.py --real    # live Neo4j + real market data
+  PYTHONPATH=. python scripts/run_local.py --real    # live Postgres + real market data
   PYTHONPATH=. python scripts/run_local.py --real --universe scripts/universe_sp100.txt
 """
 
@@ -87,7 +87,7 @@ def main() -> None:
     parser.add_argument(
         "--real",
         action="store_true",
-        help="use live Neo4j (NEO4J_URI from .env) + real Tiingo market data",
+        help="use live PostgreSQL (POSTGRES_DSN from .env) + real Tiingo market data",
     )
     parser.add_argument(
         "--trace",
@@ -156,7 +156,7 @@ def main() -> None:
         settings = ProviderSettings()
         source = market_source_from_settings(settings)
         tickers = _TICKERS_REAL
-        print("MODE: real  (Neo4j + Tiingo/Finnhub)")
+        print("MODE: real  (Postgres + Tiingo/Finnhub)")
     else:
         graph = InMemoryGraphStore()
         settings = ProviderSettings(max_staleness_days=7)

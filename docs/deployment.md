@@ -30,9 +30,6 @@ Container deployment for the trading-agents app and its Prometheus observability
    uv run --extra runtime --extra postgres alembic -c infra/migrations/alembic.ini upgrade head
    ```
 
-   Neo4j remains available only as a pre-S118 rollback/workbench backend: unset `POSTGRES_DSN`, set
-   `NEO4J_URI` (+ user/password/database), then redeploy.
-
 1. **`.env` file** — copy `.env.example` and fill in `POSTGRES_DSN` plus the live provider/broker/LLM keys:
 
    ```bash
@@ -138,9 +135,9 @@ Provision from scratch:
 
 `infra/deploy-agents.ps1 up` loads `.env`, verifies `POSTGRES_DSN` with a live `SELECT 1`, runs
 `alembic upgrade head`, then deploys master and the 12 agent containers with `POSTGRES_DSN` injected as
-a Container Apps secret reference. The script never prints the DSN. Before S118, rollback is still a
-configuration operation: remove `POSTGRES_DSN`, provide the retained Neo4j rollback config, and rerun
-the deploy script.
+a Container Apps secret reference. The script never prints the DSN. Rollback after S118 is no longer
+an environment-variable operation: use `git revert` and redeploy. Previous GHCR images remain
+available for image-level rollback.
 
 ## Architecture
 

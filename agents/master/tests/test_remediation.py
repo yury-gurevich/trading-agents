@@ -57,7 +57,7 @@ def _response(name: str, rationale: str = "The value is stale.") -> str:
 
 def test_select_remediation_uses_enum_schema_and_valid_choice() -> None:
     llm = _LLM(_response("refetch-from-key-vault"))
-    selected = select_remediation("neo4j test failed", _CATALOGUE, llm)
+    selected = select_remediation("postgres test failed", _CATALOGUE, llm)
     assert selected == "refetch-from-key-vault"
     assert llm.last_schema is not None
     props = cast("dict[str, object]", llm.last_schema["properties"])
@@ -72,7 +72,7 @@ def test_select_remediation_uses_enum_schema_and_valid_choice() -> None:
 def test_select_remediation_uses_compiled_system_prompt() -> None:
     llm = _LLM(_response("refetch-from-key-vault"), "compiled champion")
     selected = select_remediation(
-        "neo4j test failed",
+        "postgres test failed",
         _CATALOGUE,
         llm,
         system_prompt="compiled champion prompt",
@@ -88,14 +88,14 @@ def test_select_remediation_uses_compiled_system_prompt() -> None:
     ],
 )
 def test_select_remediation_falls_back_on_bad_model_output(raw: str) -> None:
-    assert select_remediation({"failed": ["neo4j"]}, _CATALOGUE, _LLM(raw)) == (
+    assert select_remediation({"failed": ["postgres"]}, _CATALOGUE, _LLM(raw)) == (
         FALLBACK_REMEDIATION
     )
 
 
 def test_plan_remediation_uses_default_rationale_when_model_omits_one() -> None:
     plan = plan_remediation(
-        {"failed_credentials": ["neo4j"]},
+        {"failed_credentials": ["postgres"]},
         _CATALOGUE,
         _LLM(_response("refetch-from-key-vault", "")),
         scope="safe_only",
@@ -107,7 +107,7 @@ def test_plan_remediation_uses_default_rationale_when_model_omits_one() -> None:
 
 def test_plan_remediation_fails_open_when_llm_raises() -> None:
     plan = plan_remediation(
-        {"failed_credentials": ["neo4j"]},
+        {"failed_credentials": ["postgres"]},
         (Remediation("refetch-from-key-vault", "Fetch again.", False),),
         _LLM(RuntimeError("offline")),
         scope="all",
@@ -131,7 +131,7 @@ def test_auto_eligible_truth_table(
     scope: str, mode: str, choice: str, expected: bool
 ) -> None:
     plan = plan_remediation(
-        {"failed_credentials": ["neo4j"]},
+        {"failed_credentials": ["postgres"]},
         _CATALOGUE,
         _LLM(_response(choice)),
         scope=scope,

@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from tests.graph_neo4j_fakes import FakeNeo4jDriver
+import pytest
 from tests.graph_postgres_fakes import connectable
 
-from kernel import InMemoryGraphStore, Neo4jGraphStore, PostgresGraphStore
+from kernel import InMemoryGraphStore, PostgresGraphStore
 from kernel.graph_env import build_graph_from_env
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def test_build_graph_from_env_no_uri_returns_in_memory(
@@ -46,20 +41,11 @@ def test_build_graph_from_env_postgres_wins_over_neo4j(
     store.close()
 
 
-def test_build_graph_from_env_neo4j_uri_still_returns_neo4j(
+def test_build_graph_from_env_neo4j_uri_gets_adr0014_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import kernel.graph_neo4j as graph_neo4j
-
-    fake_driver = FakeNeo4jDriver()
     monkeypatch.delenv("POSTGRES_DSN", raising=False)
     monkeypatch.setenv("NEO4J_URI", "bolt://fake:7687")
-    monkeypatch.setattr(
-        graph_neo4j.GraphDatabase, "driver", lambda *_args, **_kwargs: fake_driver
-    )
 
-    store = build_graph_from_env()
-
-    assert isinstance(store, Neo4jGraphStore)
-    store.close()
-    assert fake_driver.closed
+    with pytest.raises(RuntimeError, match="ADR-0014"):
+        build_graph_from_env()

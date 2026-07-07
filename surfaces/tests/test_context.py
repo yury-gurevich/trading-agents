@@ -93,11 +93,11 @@ def test_paper_context_passes_metrics_to_bus() -> None:
     assert "trading_agents_kernel_requests_total" in text
 
 
-def test_paper_context_builds_default_graph_without_real_neo4j(
+def test_paper_context_builds_default_graph_from_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     graph = InMemoryGraphStore()
-    monkeypatch.setattr("surfaces.context.Neo4jGraphStore", lambda: graph)
+    monkeypatch.setattr("surfaces.context.build_graph_from_env", lambda: graph)
     ctx = paper_context(
         source=FakeDataSource(),
         broker=PaperBroker(),

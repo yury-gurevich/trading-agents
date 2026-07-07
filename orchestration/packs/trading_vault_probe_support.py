@@ -2,15 +2,13 @@
 
 Agent: orchestration
 Role: keep live probe mechanics small and testable.
-External I/O: optional HTTPS requests and temporary process-environment overlay.
+External I/O: optional HTTPS requests.
 """
 
 from __future__ import annotations
 
 import json
-import os
 import urllib.request
-from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
@@ -18,7 +16,7 @@ from agents.master.vault_seed import ProbeResult
 from contracts.common import Window
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping
+    from collections.abc import Callable, Mapping
 
 
 def required(env: Mapping[str, str], *names: str) -> str:
@@ -49,15 +47,3 @@ def http_json(request: urllib.request.Request) -> object:
     """Read a JSON HTTPS response for an auth probe."""
     with urllib.request.urlopen(request, timeout=15) as resp:  # noqa: S310
         return json.loads(resp.read().decode("utf-8"))
-
-
-@contextmanager
-def patched_env(env: Mapping[str, str]) -> Iterator[None]:
-    """Temporarily overlay process env for settings-driven graph probes."""
-    old = dict(os.environ)
-    os.environ.update(env)
-    try:
-        yield
-    finally:
-        os.environ.clear()
-        os.environ.update(old)

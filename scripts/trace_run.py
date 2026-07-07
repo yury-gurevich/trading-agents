@@ -1,9 +1,9 @@
 """Post-run batch trace CLI — print per-stage metrics from a persisted pipeline run.
 
 Agent: tooling
-Role: load Neo4j from .env and print the batch trace for a given run_id. Intended
-      for use after `run_local.py --real` has written the provenance chain to Neo4j.
-External I/O: Neo4j (NEO4J_URI from .env).
+Role: load the graph store from .env and print the batch trace for a given run_id.
+      Intended for use after `run_local.py --real` has written the provenance chain.
+External I/O: PostgreSQL (POSTGRES_DSN from .env).
 
 Run it:
   PYTHONPATH=. python scripts/trace_run.py              # traces run-id=local-1
@@ -17,7 +17,7 @@ import sys
 
 
 def main() -> None:
-    """Connect to Neo4j and print the batch trace for --run-id."""
+    """Connect to the graph store and print the batch trace for --run-id."""
     parser = argparse.ArgumentParser(description="trace a persisted graph-pull run")
     parser.add_argument("--run-id", default="local-1", help="run_id to trace")
     args = parser.parse_args()

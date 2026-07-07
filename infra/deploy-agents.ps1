@@ -2,11 +2,10 @@
 #
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
 #   pwsh infra/deploy-agents.ps1 up          # preflight → schema → master → 12 agents
-#   pwsh infra/deploy-agents.ps1 down        # delete all apps + pause Aura
+#   pwsh infra/deploy-agents.ps1 down        # delete all apps
 #
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
-# POSTGRES_DSN is loaded from .env/process env; Neo4j rollback still works via
-# infra/aura-api.local.json + infra/aura-instance.local.json when POSTGRES_DSN is unset.
+# POSTGRES_DSN is loaded from .env/process env.
 
 param(
   [ValidateSet('preflight', 'up', 'down')]
@@ -82,23 +81,9 @@ function Get-GraphConfig {
       mode = "postgres"
       envVars = @("POSTGRES_DSN=secretref:postgres-dsn")
       secrets = @("postgres-dsn=$($env:POSTGRES_DSN)")
-      auraApi = $null
     }
   }
-  $auraApi = Load-Json "aura-api.local.json"
-  $auraInst = Load-Json "aura-instance.local.json"
-  if ($auraApi -and $auraInst) {
-    return [pscustomobject]@{
-      mode = "neo4j"
-      envVars = @(
-        "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=$($auraInst.username)",
-        "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=$($auraInst.database)"
-      )
-      secrets = @("neo4j-password=$($auraInst.password)")
-      auraApi = $auraApi
-    }
-  }
-  throw "POSTGRES_DSN is required unless Neo4j rollback config is supplied"
+  throw "POSTGRES_DSN is required after ADR-0014; Neo4j env-var rollback was removed in S118"
 }
 
 function Upgrade-PostgresSchema {
@@ -108,16 +93,6 @@ function Upgrade-PostgresSchema {
   Check $ok "alembic upgrade head"
   Bot
   if (-not $ok) { throw "alembic upgrade head failed" }
-}
-
-# ── Aura via API ──────────────────────────────────────────────────────────────
-function Aura-Token($api) {
-  $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($api.api_client_id):$($api.api_client_secret)"))
-  (Invoke-RestMethod -Method Post -Uri "https://api.neo4j.io/oauth/token" -Headers @{ Authorization = "Basic $b64" } `
-      -Body @{ grant_type = "client_credentials" } -ContentType "application/x-www-form-urlencoded").access_token
-}
-function Aura-Status($api, $tok) {
-  (Invoke-RestMethod -Uri "https://api.neo4j.io/v1/instances/$($api.instance_id)" -Headers @{ Authorization = "Bearer $tok" }).data.status
 }
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
@@ -146,7 +121,7 @@ function Preflight {
   $ok = $ok -and $ghcr
 
   try { $graph = Get-GraphConfig } catch { $graph = $null }
-  Check ([bool]$graph) "graph config (Postgres default; Neo4j rollback supported)"
+  Check ([bool]$graph) "graph config (Postgres required)"
   $ok = $ok -and [bool]$graph
   if ($graph -and $graph.mode -eq "postgres") {
     $pgOk = Test-PostgresDsn
@@ -166,27 +141,8 @@ function Preflight {
     $ok = $ok -and ($have -ge 13)
   }
 
-  if ($graph -and $graph.mode -eq "neo4j") {
-    try { $st = Aura-Status $graph.auraApi (Aura-Token $graph.auraApi) } catch { $st = "unreachable" }
-    Check ($st -in @("running", "paused")) "Aura instance reachable (status: $st)"
-  }
-
   Bot
   return $ok
-}
-
-# ── Aura resume + wait ────────────────────────────────────────────────────────
-function Resume-Aura($api) {
-  $tok = Aura-Token $api
-  if ((Aura-Status $api $tok) -eq "running") { Line "Aura already running"; return }
-  Invoke-RestMethod -Method Post -Uri "https://api.neo4j.io/v1/instances/$($api.instance_id)/resume" `
-    -Headers @{ Authorization = "Bearer $tok" } -Body "{}" -ContentType "application/json" | Out-Null
-  for ($i = 0; $i -lt 18; $i++) {
-    $s = Aura-Status $api $tok
-    Line ("Aura: {0}" -f $s)
-    if ($s -eq "running") { return }
-    Start-Sleep -Seconds 20
-  }
 }
 
 # ── Master keypair (stable, for ACTIVATE signature verification) ──────────────
@@ -208,8 +164,7 @@ function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig
 
-  if ($graph.mode -eq "postgres") { Upgrade-PostgresSchema }
-  else { Top "AURA ROLLBACK"; Resume-Aura $graph.auraApi; Bot }
+  Upgrade-PostgresSchema
   $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"
@@ -278,13 +233,6 @@ function Down {
   foreach ($name in $all) {
     az containerapp delete --name $name --resource-group $RG --subscription $SUB --yes 2>$null | Out-Null
     Check $true "deleted $name"
-  }
-  $auraApi = Load-Json "aura-api.local.json"
-  if ($auraApi) {
-    $tok = Aura-Token $auraApi
-    Invoke-RestMethod -Method Post -Uri "https://api.neo4j.io/v1/instances/$($auraApi.instance_id)/pause" `
-      -Headers @{ Authorization = "Bearer $tok" } -Body "{}" -ContentType "application/json" 2>$null | Out-Null
-    Line "Aura paused"
   }
   Bot
   Write-Host "`nFleet down. Spend stopped." -ForegroundColor Green

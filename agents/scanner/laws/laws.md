@@ -154,7 +154,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **SCAN-DEP-01** — `DEP-BUS`: requires a messaging substrate capable of request/reply
   (for provider calls) and subscribe/publish (for `run.trigger` / `scan.candidates.ready`).
-- **SCAN-DEP-02** — `DEP-NEO4J`: requires graph append-write access to labels `ScanRun` and
+- **SCAN-DEP-02** — `DEP-POSTGRES`: requires graph append-write access to labels `ScanRun` and
   `Candidate`.
 - **SCAN-DEP-03** — `DEP-FEED` (via provider): the provider must be healthy and reachable
   before a scan can produce non-empty candidates. Provider health is a prerequisite for

@@ -50,7 +50,7 @@ class _Store:
 
 
 def _context() -> dict[str, object]:
-    return {"agent_type": "scanner", "failed_credentials": ("neo4j",)}
+    return {"agent_type": "scanner", "failed_credentials": ("postgres",)}
 
 
 def test_run_remediation_skips_non_auto_eligible_plan() -> None:
@@ -115,13 +115,13 @@ def test_run_remediation_records_executor_exception() -> None:
 
 
 def test_refetch_executor_invalidates_secret_cache() -> None:
-    inner = _Store({"neo4j-uri": "bad"})
+    inner = _Store({"postgres-dsn": "bad"})
     cache = CachingSecretStore(inner, ttl_minutes=0)
-    assert cache.get_secret("neo4j-uri") == "bad"
-    inner.values["neo4j-uri"] = "good"
+    assert cache.get_secret("postgres-dsn") == "bad"
+    inner.values["postgres-dsn"] = "good"
     attempt = RefetchFromKeyVaultExecutor(cache).run({})
     assert attempt.status == "succeeded"
-    assert cache.get_secret("neo4j-uri") == "good"
+    assert cache.get_secret("postgres-dsn") == "good"
     assert inner.calls == 2
 
 

@@ -2,7 +2,7 @@
 
 Agent: surfaces
 Role: build shared graph and bus contexts for CLI and tests.
-External I/O: optional Neo4j graph construction in paper_context.
+External I/O: optional PostgreSQL graph construction in paper_context.
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ from kernel import (
     InProcessBus,
     MarketPackRegistry,
     MeteredFaultSink,
-    Neo4jGraphStore,
     NullMetrics,
 )
+from kernel.graph_env import build_graph_from_env
 from orchestration.bindings import bind_paper_loop_agents
 from orchestration.packs import USEquitiesSP500Pack
 from orchestration.settings import OrchestratorSettings
@@ -52,8 +52,8 @@ def paper_context(
     pack_registry: MarketPackRegistry | None = None,
     metrics: Metrics | None = None,
 ) -> SurfaceContext:
-    """Build a production-ready context with Neo4j, bus, and all agents bound."""
-    active_graph = graph if graph is not None else Neo4jGraphStore()
+    """Build a production-ready context with graph, bus, and all agents bound."""
+    active_graph = graph if graph is not None else build_graph_from_env()
     return _context(
         active_graph,
         source=source,

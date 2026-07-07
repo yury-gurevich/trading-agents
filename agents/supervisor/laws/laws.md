@@ -115,7 +115,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Dependencies (`DEP`)
 
-- **SUP-DEP-01** — `DEP-NEO4J` — graph for `Flag`, `Fault`, `Message`, `FlagResolution` writes
+- **SUP-DEP-01** — `DEP-POSTGRES` — graph for `Flag`, `Fault`, `Message`, `FlagResolution` writes
   and health-check traversal.
 - **SUP-DEP-02** — `DEP-BUS` — receives RPC from operator and dispatcher; routes permitted
   intents to target agents.

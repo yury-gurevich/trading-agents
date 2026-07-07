@@ -110,7 +110,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Dependencies (`DEP`)
 
-- **RES-DEP-01** — `DEP-NEO4J` — reads `Snapshot`, `PMRun`, recommendation metrics for
+- **RES-DEP-01** — `DEP-POSTGRES` — reads `Snapshot`, `PMRun`, recommendation metrics for
   evidence; writes `Experiment`, `ParamChange`.
 - **RES-DEP-02** — `DEP-BUS` — sends `flag_for_human` to supervisor when changes are found.
 

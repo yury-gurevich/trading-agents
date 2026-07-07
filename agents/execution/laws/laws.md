@@ -183,7 +183,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **EXEC-DEP-01** — `DEP-BUS`: requires subscribe/publish (`portfolio.orders.ready` /
   `execution.fills.ready`) and claim-check resolve for the inbound intent.
-- **EXEC-DEP-02** — `DEP-NEO4J`: requires graph append-write for `Fill`, `Reconciliation`,
+- **EXEC-DEP-02** — `DEP-POSTGRES`: requires graph append-write for `Fill`, `Reconciliation`,
   `StageTransition`, `ExecutionResultEvent`; read for stage-authoritative lookup.
 - **EXEC-DEP-03** — `DEP-BROKER` (Alpaca paper API): the execution agent's core I/O boundary.
   Alpaca timeout is bounded by `alpaca_timeout` (default 15 s). Broker unavailability causes

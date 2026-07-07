@@ -17,8 +17,9 @@ DL-43 reversed that trade after the graph port had settled: the project now need
 ordinary, migration-governed system of record that still preserves the `GraphStore` abstraction.
 
 Sprint 116 proved the technical bridge: `PostgresGraphStore` implements the same six-method graph port,
-the schema lives in `infra/migrations/`, `POSTGRES_DSN` wins in `build_graph_from_env`, and `NEO4J_URI`
-continues to work when Postgres is unset. The placement plan in
+the schema lives in `infra/migrations/`, and `POSTGRES_DSN` wins in `build_graph_from_env`. Sprint 117
+flipped the fleet default, and Sprint 118 removed the Neo4j runtime adapter/driver/probes. `NEO4J_URI`
+now raises an ADR-0014 startup error when it is the only graph-store env. The placement plan in
 `docs/research/db-placement/postgres-migration-plan.md` selected Neon free Sydney as the current host,
 with Azure Database for PostgreSQL as the paid fallback when economics justify it.
 
@@ -28,11 +29,11 @@ with Azure Database for PostgreSQL as the paid fallback when economics justify i
 the kernel `GraphStore` port; the physical persistence layer is the Alembic-managed PostgreSQL
 `nodes`/`edges` spine.
 
-**Neo4j is no longer primary infrastructure.** Until S118 removes it from runtime composition, Neo4j is
-kept only as an ad-hoc, out-of-bounds analysis workbench and as a rollback backend.
+**Neo4j is no longer runtime infrastructure.** It is kept only as an ad-hoc, out-of-bounds analysis
+workbench. It is not a fleet dependency, not a probe target, and not used for rollback.
 
-Rollback before S118 is configuration-only: unset `POSTGRES_DSN`, set `NEO4J_URI` plus its credentials,
-and redeploy. No agent contract changes are involved.
+Rollback after S118 is code rollback: `git revert` the rip-out and redeploy. Previous GHCR images
+remain available for image-level rollback; no environment variable re-enables Neo4j.
 
 ## Rationale
 
@@ -41,16 +42,16 @@ and redeploy. No agent contract changes are involved.
 - **Ordinary durability.** PostgreSQL gives mature constraints, SQL inspection, managed backups, and
   standard operator tooling while keeping graph semantics behind the port.
 - **Migration discipline.** Schema changes are deliberate Alembic revisions, never ad-hoc DDL.
-- **Rollback remains cheap.** The S116 selector keeps the Neo4j adapter available during the
-  two-backend window, so S117 can flip defaults without an irreversible cutover.
+- **Clean rollback boundary.** The temporary S116/S117 two-backend window closed in S118. Reversal is
+  now an explicit code revert + redeploy, which is visible in review and CI.
 
 ## Consequences
 
 - `.env.example`, deploy scripts, Container Apps manifests, and probes default to `POSTGRES_DSN`.
 - `alembic upgrade head` is the pre-start deploy step for the graph spine.
-- `DEP-POSTGRES` is the run-gating store dependency; `DEP-NEO4J` is rollback/analysis-only.
+- `DEP-POSTGRES` is the run-gating store dependency; there is no `DEP-NEO4J` runtime dependency.
 - ADR-0001 is superseded by this decision.
-- ADR-0008 remains only as the Neo4j workbench/rollback hosting note until S118.
+- ADR-0008 remains only as the Neo4j analysis-workbench hosting note.
 - pgvector and any RAG/vector schema are explicitly out of scope for this ADR and S117.
 
 ## Links
@@ -58,3 +59,4 @@ and redeploy. No agent contract changes are involved.
 - `docs/research/db-placement/postgres-migration-plan.md` — DL-43 plan, host decision, target schema.
 - `docs/sprints/sprint-116-postgres-graphstore.md` — adapter/schema parity proof.
 - `docs/sprints/sprint-117-postgres-fleet-swap.md` — fleet default flip and live closeout.
+- `docs/sprints/sprint-118-neo4j-ripout.md` — runtime rip-out and Aura retirement runbook.

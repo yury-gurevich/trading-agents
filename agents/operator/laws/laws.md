@@ -125,7 +125,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Dependencies (`DEP`)
 
 - **OPR-DEP-01** — `DEP-LLM` — Anthropic Claude (or injected FakeLLMClient); sole external call.
-- **OPR-DEP-02** — `DEP-NEO4J` — graph for `CommandAudit`, `Intent`, `LLMCall` writes and
+- **OPR-DEP-02** — `DEP-POSTGRES` — graph for `CommandAudit`, `Intent`, `LLMCall` writes and
   evidence reads for `explain`.
 - **OPR-DEP-03** — `DEP-BUS` — routes resulting `TypedIntent` to `supervisor.dispatch_intent`
   (via surfaces, not directly).

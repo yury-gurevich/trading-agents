@@ -8,7 +8,7 @@ law-ID** it proves (conventions §7).
 Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID) · ⛔ blocked (gray dep).
 
 **Precondition:** every row is ⛔ until the provider's dependencies are green —
-`DEP-FEED, DEP-NEO4J, DEP-BUS, DEP-CLOCK, DEP-CONFIG` (see `docs/laws/dependencies.md`).
+`DEP-FEED, DEP-POSTGRES, DEP-BUS, DEP-CLOCK, DEP-CONFIG` (see `docs/laws/dependencies.md`).
 
 ## Inputs / triggers
 

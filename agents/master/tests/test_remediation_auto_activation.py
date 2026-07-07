@@ -23,7 +23,7 @@ from kernel import InMemoryGraphStore
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-_MAP = {"scanner": [("neo4j-uri", "NEO4J_URI")]}
+_MAP = {"scanner": [("postgres-dsn", "POSTGRES_DSN")]}
 _CATALOGUE = (Remediation("refetch-from-key-vault", "Fetch again.", False),)
 _TEST_NAME = "blank-key-vault-secret"
 
@@ -48,7 +48,7 @@ class _RotatingStore:
 
 
 def _passing(config: Mapping[str, str]) -> bool:
-    return config.get("NEO4J_URI") == "good"
+    return config.get("POSTGRES_DSN") == "good"
 
 
 def _ehlo() -> EHLOMessage:
@@ -88,7 +88,7 @@ def test_safe_refetch_remediation_retries_and_activates() -> None:
         master.activate(_ehlo())
     assert not graph.list_nodes("AgentInstance")
     activate = master.activate(_ehlo())
-    assert activate.config == {"NEO4J_URI": "good"}
+    assert activate.config == {"POSTGRES_DSN": "good"}
     assert inner.calls == 2
     (attempt,) = graph.list_nodes("RemediationAttempt")
     assert attempt.props["status"] == "succeeded"

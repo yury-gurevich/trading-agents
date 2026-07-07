@@ -29,9 +29,10 @@ Azure Database for PostgreSQL remains the paid fallback when economics justify i
 - Deployment: `alembic upgrade head` before the fleet starts
 - Governed by DEP-POSTGRES (dependencies.md), ADR-0014, and DL-43.
 
-Neo4j is no longer the primary store. Until S118 removes it from the runtime, it remains
-an ad-hoc analysis workbench and one-env rollback backend (`NEO4J_URI` with
-`POSTGRES_DSN` unset), governed only by ADR-0008's amended scope.
+Neo4j is no longer part of runtime composition. It remains only an ad-hoc,
+out-of-bounds analysis workbench governed by ADR-0008's amended scope. Runtime
+rollback is now `git revert` + redeploy; there is no environment-variable
+backend switch.
 
 ## Rule 3 — External SaaS vendors are a separate category
 

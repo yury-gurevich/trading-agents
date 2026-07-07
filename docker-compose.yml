@@ -16,7 +16,8 @@
 #
 # Secrets: copy .env.example -> .env and fill in API keys before starting.
 # Postgres: run `alembic upgrade head` before starting so the graph spine schema
-# exists. Neo4j remains a rollback/workbench backend until S118, but is not default.
+# exists. Neo4j is only an opt-in analysis workbench profile and is never a
+# runtime rollback backend.
 # RSA keys: if MASTER_PRIVATE_KEY_PEM is unset, master generates a dev keypair
 #   and prints MASTER_PUBLIC_KEY_PEM to stdout. Copy that value into .env so
 #   all trading agents can verify ACTIVATE signatures.
@@ -163,3 +164,28 @@ services:
       dockerfile: agents/researcher/Dockerfile
     image: trading-agents-researcher:local
     <<: *agent-common
+
+  neo4j_workbench:
+    image: neo4j:enterprise
+    profiles: ["workbench"]
+    container_name: trading-agents-neo4j-workbench
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "eval"
+      NEO4J_AUTH: ${NEO4J_WORKBENCH_AUTH:-neo4j/workbench-local-only}
+      NEO4J_PLUGINS: '["apoc","graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
+      NEO4J_dbms_security_procedures_allowlist: "apoc.*,gds.*"
+    volumes:
+      - neo4j-workbench-data:/data
+      - neo4j-workbench-logs:/logs
+      - neo4j-workbench-plugins:/plugins
+      - neo4j-workbench-import:/import
+
+volumes:
+  neo4j-workbench-data:
+  neo4j-workbench-logs:
+  neo4j-workbench-plugins:
+  neo4j-workbench-import:

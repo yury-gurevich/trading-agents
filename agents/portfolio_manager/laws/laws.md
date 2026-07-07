@@ -174,7 +174,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **PM-DEP-01** — `DEP-BUS`: requires request/reply (provider calls) and subscribe/publish
   (`analysis.recommendations.ready` / `portfolio.orders.ready`).
-- **PM-DEP-02** — `DEP-NEO4J`: requires graph append-write access for `PMRun`, `OrderIntent`,
+- **PM-DEP-02** — `DEP-POSTGRES`: requires graph append-write access for `PMRun`, `OrderIntent`,
   `Rejection`, `OrderIntentResult`; claim-check read for `analysis.recommendations.ready`.
 - **PM-DEP-03** — `DEP-FEED` (via provider): the provider's `get_market_data` and
   `get_regime` capabilities must be reachable for price estimates and the sector/RR gate.

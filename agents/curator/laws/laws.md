@@ -126,7 +126,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Dependencies (`DEP`)
 
-- **CUR-DEP-01** — `DEP-NEO4J` — reads `Snapshot`, `TradeNarrative`, and related nodes for
+- **CUR-DEP-01** — `DEP-POSTGRES` — reads `Snapshot`, `TradeNarrative`, and related nodes for
   dataset assembly; writes `Dataset`, `Predictor`, `PredictorPromotion`.
 - **CUR-DEP-02** — `DEP-BUS` — routes `promote_predictor` through the supervisor approval gate.
 

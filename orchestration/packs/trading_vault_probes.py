@@ -2,7 +2,7 @@
 
 Agent: orchestration
 Role: provide pack-specific live working-checks for injected vault seed entries.
-External I/O: optional HTTPS calls to market-data, broker, LLM, and Neo4j services.
+External I/O: optional HTTPS calls to market-data, broker, LLM, and PostgreSQL services.
 """
 
 from __future__ import annotations
@@ -18,7 +18,6 @@ from agents.provider.tiingo import TiingoDataSource
 from orchestration.packs.trading_vault_postgres import postgres_ready
 from orchestration.packs.trading_vault_probe_support import (
     http_json,
-    patched_env,
     probe_window,
     required,
     run_probe,
@@ -129,25 +128,6 @@ def probe_anthropic(env: Mapping[str, str]) -> ProbeResult:
         },
     )
     return run_probe("anthropic", lambda: http_json(req) is not None)
-
-
-@_probe("neo4j")
-def probe_neo4j(env: Mapping[str, str]) -> ProbeResult:
-    """Check Neo4j by building the configured graph store and doing one cheap read."""
-    from kernel.graph_env import build_graph_from_env
-    from kernel.startup import graph_reachable
-
-    def check() -> bool:
-        with patched_env(env):
-            graph = build_graph_from_env()
-        try:
-            return graph_reachable(graph)
-        finally:
-            close = getattr(graph, "close", None)
-            if callable(close):
-                close()
-
-    return run_probe("neo4j", check)
 
 
 @_probe("postgres")

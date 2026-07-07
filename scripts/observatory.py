@@ -1,10 +1,10 @@
 """Pipeline observatory CLI — a human's-eye view of one persisted run.
 
 Agent: tooling
-Role: load Neo4j from .env and print the observatory for a given run_id — per-stage
-      I/O plus floor/ceiling/required WARNs against the locked trading baseline.
-      Use after `run_local.py --real` has written the provenance chain to Neo4j.
-External I/O: Neo4j (NEO4J_URI from .env); stdout.
+Role: load the graph store from .env and print the observatory for a given run_id —
+      per-stage I/O plus floor/ceiling/required WARNs against the locked trading
+      baseline. Use after `run_local.py --real` has written the provenance chain.
+External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout.
 
 Run it:
   PYTHONPATH=. python scripts/observatory.py              # run-id=local-1
@@ -18,7 +18,7 @@ import sys
 
 
 def main() -> None:
-    """Connect to Neo4j and print the observatory for --run-id."""
+    """Connect to the graph store and print the observatory for --run-id."""
     parser = argparse.ArgumentParser(description="observe a persisted graph-pull run")
     parser.add_argument("--run-id", default="local-1", help="run_id to observe")
     args = parser.parse_args()

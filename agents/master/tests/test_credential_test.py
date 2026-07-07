@@ -39,11 +39,11 @@ class _Store:
         return self._s.get(name, "")
 
 
-_MAP: SecretMap = {"scanner": [("neo4j-uri", "NEO4J_URI")]}
+_MAP: SecretMap = {"scanner": [("postgres-dsn", "POSTGRES_DSN")]}
 
 
 def _passing(config: Mapping[str, str]) -> bool:
-    return config.get("NEO4J_URI") == "good"
+    return config.get("POSTGRES_DSN") == "good"
 
 
 def _failing(_config: Mapping[str, str]) -> bool:
@@ -51,24 +51,24 @@ def _failing(_config: Mapping[str, str]) -> bool:
 
 
 def test_resolve_and_test_hands_over_when_the_test_passes() -> None:
-    store = _Store({"neo4j-uri": "good"})
+    store = _Store({"postgres-dsn": "good"})
     config, failures = resolve_and_test(
-        "scanner", store, _MAP, (CredentialTest("neo4j", _passing),)
+        "scanner", store, _MAP, (CredentialTest("postgres", _passing),)
     )
-    assert config == {"NEO4J_URI": "good"}
+    assert config == {"POSTGRES_DSN": "good"}
     assert failures == []
 
 
 def test_resolve_and_test_names_a_failed_required_test() -> None:
-    store = _Store({"neo4j-uri": "bad"})
+    store = _Store({"postgres-dsn": "bad"})
     _, failures = resolve_and_test(
-        "scanner", store, _MAP, (CredentialTest("neo4j", _failing),)
+        "scanner", store, _MAP, (CredentialTest("postgres", _failing),)
     )
-    assert failures == ["neo4j"]
+    assert failures == ["postgres"]
 
 
 def test_resolve_and_test_optional_failure_is_non_blocking() -> None:
-    store = _Store({"neo4j-uri": "x"})
+    store = _Store({"postgres-dsn": "x"})
     _, failures = resolve_and_test(
         "scanner", store, _MAP, (CredentialTest("opt", _failing, required=False),)
     )
@@ -83,7 +83,7 @@ def test_costly_test_uses_cached_pass_and_skips_the_rerun() -> None:
         return True
 
     cache = PassCache(ttl_minutes=0)  # never expires
-    store = _Store({"neo4j-uri": "x"})
+    store = _Store({"postgres-dsn": "x"})
     tests = (CredentialTest("llm", run, cost="costly"),)
     resolve_and_test("scanner", store, _MAP, tests, cache=cache)
     resolve_and_test("scanner", store, _MAP, tests, cache=cache)
@@ -124,19 +124,23 @@ def _ehlo() -> EHLOMessage:
 
 
 def test_activate_refuses_and_escalates_on_a_required_failure() -> None:
-    graph, master = _master((CredentialTest("neo4j", _failing),), {"neo4j-uri": "x"})
+    graph, master = _master(
+        (CredentialTest("postgres", _failing),), {"postgres-dsn": "x"}
+    )
     with pytest.raises(ActivationRefused):
         master.activate(_ehlo())
     (escalation,) = graph.list_nodes("Escalation")
     assert escalation.props["agent_type"] == "scanner"
-    assert list(escalation.props["failed_credentials"]) == ["neo4j"]
+    assert list(escalation.props["failed_credentials"]) == ["postgres"]
     assert escalation.props["status"] == "open"
     assert graph.list_nodes("AgentInstance") == ()  # never activated
 
 
 def test_activate_hands_over_config_when_the_test_passes() -> None:
-    graph, master = _master((CredentialTest("neo4j", _passing),), {"neo4j-uri": "good"})
+    graph, master = _master(
+        (CredentialTest("postgres", _passing),), {"postgres-dsn": "good"}
+    )
     activate = master.activate(_ehlo())
     assert activate.agent_type == "scanner"
-    assert activate.config == {"NEO4J_URI": "good"}
+    assert activate.config == {"POSTGRES_DSN": "good"}
     assert graph.list_nodes("Escalation") == ()

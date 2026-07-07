@@ -1,10 +1,11 @@
 """Layer-3 acceptance gate CLI — PASS/FAIL a persisted run.
 
 Agent: tooling
-Role: load Neo4j from .env and run the acceptance gate for a given run_id — every
-      per-stage invariant + the cross-stage conservation boundaries. Exits non-zero
-      on FAIL, so it can gate a deploy. Use after a `run_local.py --real` run.
-External I/O: Neo4j (NEO4J_URI from .env); stdout; exit code.
+Role: load the graph store from .env and run the acceptance gate for a given
+      run_id — every per-stage invariant + the cross-stage conservation
+      boundaries. Exits non-zero on FAIL, so it can gate a deploy.
+      Use after a `run_local.py --real` run.
+External I/O: PostgreSQL (POSTGRES_DSN from .env); stdout; exit code.
 
 Run it:
   PYTHONPATH=. python scripts/accept.py --run-id <id>
@@ -17,7 +18,7 @@ import sys
 
 
 def main() -> None:
-    """Connect to Neo4j and accept/reject the run for --run-id."""
+    """Connect to the graph store and accept/reject the run for --run-id."""
     parser = argparse.ArgumentParser(description="Layer-3 acceptance gate")
     parser.add_argument("--run-id", default="local-1", help="run_id to accept")
     args = parser.parse_args()

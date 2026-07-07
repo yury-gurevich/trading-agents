@@ -3,7 +3,7 @@
 Agent: surfaces
 Role: bootstrap PrometheusMetrics, expose /metrics HTTP server, build metered
       context, then delegate to the CLI main loop.
-External I/O: HTTP server on METRICS_PORT (default 8000); Neo4j via paper_context.
+External I/O: HTTP server on METRICS_PORT (default 8000); graph store via paper_context.
 """
 
 from __future__ import annotations

@@ -50,7 +50,7 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 ## Outputs (`OUT`)
 
-- `PROV-OUT-01` — For a data-request event → it **writes the validated facts to the store** (Neo4j),
+- `PROV-OUT-01` — For a data-request event → it **writes the validated facts to the store** (PostgreSQL),
   **with an honest data-quality record** (requested vs. returned, stale/missing, fallback used) and
   **provenance**, then **publishes a `ready: <graph-ref>` event** (claim-check, ADR-0005). The
   consumer reads the facts from the store by reference; the message itself stays small.
@@ -163,7 +163,7 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 ## Dependencies (`DEP`)
 
 - `PROV-DEP-01` — External market-data feed(s) → `DEP-FEED-*` green (else `PROV-FAIL-05`).
-- `PROV-DEP-02` — Graph store (append records) → `DEP-NEO4J-*` green.
+- `PROV-DEP-02` — Graph store (append records) → `DEP-POSTGRES-*` green.
 - `PROV-DEP-03` — Message bus (receive request / send response) → `DEP-BUS-*` green.
 - `PROV-DEP-04` — Clock/time source (fetch-time, staleness) → `DEP-CLOCK-*` green.
 - `PROV-DEP-05` — Config/secrets (API keys) → `DEP-CONFIG-*` green.

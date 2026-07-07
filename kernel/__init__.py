@@ -58,8 +58,6 @@ from kernel.errors import (
 )
 from kernel.graph import Edge, GraphStore, Node
 from kernel.graph_memory import InMemoryGraphStore
-from kernel.graph_neo4j import Neo4jGraphStore
-from kernel.graph_neo4j_config import GraphSettings
 from kernel.graph_postgres import PostgresGraphStore
 from kernel.graph_postgres_config import PostgresGraphSettings
 from kernel.llm import FakeLLMClient, LLMClient
@@ -89,7 +87,6 @@ __all__ = [
     "FakeLLMClient",
     "FaultCapture",
     "FaultSink",
-    "GraphSettings",
     "GraphStore",
     "InMemoryGraphStore",
     "InProcessBus",
@@ -102,7 +99,6 @@ __all__ = [
     "MeteredFaultSink",
     "Metrics",
     "MetricsSettings",
-    "Neo4jGraphStore",
     "Node",
     "NullMetrics",
     "ParameterTruth",

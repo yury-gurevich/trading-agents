@@ -3,8 +3,8 @@
 **Prefix:** `MST` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
-> distribute minimum-privilege credentials via ACTIVATE, and maintain the Neo4j
-> operational fleet registry.
+> distribute minimum-privilege credentials via ACTIVATE, and maintain the
+> PostgreSQL-backed operational fleet registry.
 
 Each clause below has a stable ID (`MST-CAT-NN`). IDs are append-only (conventions §2). A clause is
 green only when a functional test cites its ID (conventions §3). Tests + status live in
@@ -13,9 +13,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Identity & purpose (`IDN`)
 
 - **MST-IDN-01** — Master's sole job is bootstrap lifecycle: it activates trading-system agent
-  containers, distributes minimum-necessary credentials, and records the live fleet in Neo4j.
+  containers, distributes minimum-necessary credentials, and records the live fleet in the graph store.
   It has zero trading logic.
-- **MST-IDN-02** — Master exclusively owns Neo4j labels: `AgentDefinition`, `AgentInstance`,
+- **MST-IDN-02** — Master exclusively owns graph labels: `AgentDefinition`, `AgentInstance`,
   `Session`, `CapabilityGrant`. No other agent writes these labels.
 - **MST-IDN-03** — Master is the only process with Azure Key Vault access (ADR-0007). No agent
   receives vault credentials directly; they receive only the resolved config needed for their
@@ -91,7 +91,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-FAIL-02** — If the graph is unavailable on `drain()`, the fault is re-raised. The agent
   continues running; operator must retry drain.
 - **MST-FAIL-03** — Master itself is a single point of failure (RISK-1 in ADR-0007). Mitigation:
-  thin implementation (no business logic), state in Neo4j, Container Apps auto-restart.
+  thin implementation (no business logic), state in PostgreSQL via `GraphStore`, Container Apps
+  auto-restart.
 
 ## Type contracts (`TYP`)
 
@@ -112,17 +113,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Dependencies (`DEP`)
 
-- **MST-DEP-01** — Neo4j must be reachable before `start()`. Connection retry with exponential
-  backoff before declaring startup failure (wired in S74).
+- **MST-DEP-01** — PostgreSQL must be reachable before `start()`. The startup guard retries briefly
+  before halting safely instead of crash-looping.
 - **MST-DEP-02** — Azure Key Vault must be reachable before master can resolve credentials for
   ACTIVATE. Wired in S74; stub config `{}` used in S73.
 - **MST-DEP-03** — No dependency on any trading agent's code. All agent knowledge is in
-  `DEFAULT_GRANTS` and `AgentDefinition` Neo4j nodes.
+  `DEFAULT_GRANTS` and `AgentDefinition` graph nodes.
 
 ## Observability (`OBS`)
 
 - **MST-OBS-01** — Every `activate()` call writes an `AgentInstance` node — the live fleet is
-  fully visible in the Neo4j browser without additional tooling.
+  queryable through the PostgreSQL graph spine.
 - **MST-OBS-02** — Every `drain()` call merges `drain_reason` onto the `AgentInstance` — shutdown
   intent is recorded alongside the live state.
 - **MST-OBS-03** — Fault channel receives all graph/Key Vault errors via `fault_boundary`.
@@ -130,7 +131,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Performance (`PERF`)
 
 - **MST-PERF-01** — `activate()` writes 1 `AgentInstance` node + N `CapabilityGrant` nodes where
-  N = count of granted capabilities (2–4). Expected p99 < 100 ms against local Neo4j.
+  N = count of granted capabilities (2–4). Expected p99 < 100 ms against the graph store.
 
 ## Capability declaration (`CAP`)
 

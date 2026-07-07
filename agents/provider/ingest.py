@@ -69,8 +69,9 @@ def _write_market_data(
 
     Keyed by **run_id** (DRIFT-011): each run's facts are an immutable, independent
     node, so a same-day re-run does not collide on the append-only ``snapshot`` (the
-    in-memory store hid this; Neo4j enforces immutability). Downstream finds it by the
-    ``INGESTED_BY`` / ``DERIVED_FROM`` edge, and links the regime via ``run_id``.
+    in-memory store hid this; the live graph store enforces immutability).
+    Downstream finds it by the ``INGESTED_BY`` / ``DERIVED_FROM`` edge, and
+    links the regime via ``run_id``.
     """
     graph.merge_node(
         MARKET_DATA_LABEL,

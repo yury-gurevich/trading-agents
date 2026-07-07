@@ -12,7 +12,7 @@ superseded_by: ADR-0014
 **Decider:** Yury Gurevich (product owner)
 
 > **Superseded 2026-07-07.** ADR-0014 makes PostgreSQL the system of record. Neo4j remains only as an
-> ad-hoc analysis workbench and pre-S118 rollback backend.
+> ad-hoc analysis workbench.
 
 > **Hosting** (where Neo4j runs) is decided separately in
 > [ADR-0008](0008-neo4j-hosting-local-docker.md): a single **local Docker container**, Community

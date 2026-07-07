@@ -10,7 +10,7 @@ under `codeql/`; nothing CodeQL-specific belongs in the general `scripts/` tree.
 codeql/
 ├── README.md              # this file — the tool overview + entry points
 ├── INDEX.md               # folder map
-├── scripts/               # the management layer (run / report / clean / setup / sync)
+├── scripts/               # the management layer (run / report / clean / setup)
 ├── python-security/       # query pack — agent cross-import + taint tracking (see its README)
 └── yaml-diagnostics/      # query pack — YAML parse-error + unresolved-include diagnostics
 ```
@@ -28,7 +28,6 @@ downloaded CLI under `.tools/`) are **not committed** — they are rebuilt by th
 | Run the AST helper on one file | `pwsh codeql/scripts/run_codeql_ast.ps1 -SourceFile <path>` |
 | Aggregate SARIF → markdown reports | `pwsh codeql/scripts/generate_codeql_reports.ps1` |
 | List error-level findings | `python codeql/scripts/codeql_errors.py` |
-| Sync findings into Neo4j | `python codeql/scripts/sync_codeql_to_neo4j.py` |
 | Clean old reports | `pwsh codeql/scripts/clean_codeql_reports.ps1 -KeepNewest 10` |
 
 The scripts resolve the repo root as `$PSScriptRoot\..\..` — they must stay two levels

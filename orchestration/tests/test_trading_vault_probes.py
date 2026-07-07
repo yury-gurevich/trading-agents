@@ -7,7 +7,6 @@ External I/O: none.
 
 from __future__ import annotations
 
-import os
 import urllib.request
 from typing import TYPE_CHECKING
 
@@ -110,27 +109,6 @@ def test_http_probes_pass_when_endpoint_returns_json(
     assert out.message.endswith("probe passed")
 
 
-def test_neo4j_probe_patches_env_and_closes_graph(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from kernel import graph_env, startup
-
-    class Graph:
-        closed = False
-
-        def close(self) -> None:
-            self.closed = True
-
-    graph = Graph()
-    monkeypatch.setenv("NEO4J_URI", "before")
-    monkeypatch.setattr(graph_env, "build_graph_from_env", lambda: graph)
-    monkeypatch.setattr(startup, "graph_reachable", lambda _graph: True)
-    out = probes.probe_neo4j({"NEO4J_URI": "during"})
-    assert out.ok is True
-    assert graph.closed is True
-    assert os.environ["NEO4J_URI"] == "before"
-
-
 def test_postgres_probe_uses_live_ready_check(monkeypatch: pytest.MonkeyPatch) -> None:
     called: dict[str, str] = {}
 
@@ -177,7 +155,6 @@ def test_probe_registry_exports_expected_names() -> None:
         "anthropic",
         "finnhub",
         "fmp",
-        "neo4j",
         "openai",
         "postgres",
         "tiingo",

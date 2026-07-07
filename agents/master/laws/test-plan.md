@@ -20,7 +20,7 @@
 | MST-NEV-03 | No trading logic | static (contract) | ⬜ |
 | MST-NEV-04 | Private key never distributed | deferred S74 | ⬜ |
 | MST-SEC-01 | RSA signature on ACTIVATE | deferred S74 | ⬜ |
-| MST-DEP-01 | Neo4j retry before startup failure | integration (deferred) | ⬜ |
+| MST-DEP-01 | Graph reachability guard before startup failure | integration (deferred) | ⬜ |
 | MST-DEP-02 | Key Vault credential resolution | deferred S74 | ⬜ |
 
 Functional tests live in `agents/master/tests/test_master_agent.py`.

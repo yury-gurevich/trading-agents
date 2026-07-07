@@ -14,8 +14,8 @@
     },
     {
       "inputs": {
-        "failed_credentials": ["neo4j-paused"],
-        "symptom": "The backing graph instance is paused and must be resumed before the credential test can pass."
+        "failed_credentials": ["postgres-unreachable"],
+        "symptom": "The backing PostgreSQL graph instance is unreachable and may need to be resumed before the credential test can pass."
       },
       "output": "resume-instance",
       "rationale": "A paused service is a safe resume action, not a credential rotation."

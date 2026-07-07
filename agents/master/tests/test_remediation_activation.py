@@ -31,7 +31,7 @@ _CATALOGUE = (
     Remediation("refetch-from-key-vault", "Fetch the value again.", False),
     Remediation(FALLBACK_REMEDIATION, "Escalate to a human.", False),
 )
-_MAP = {"scanner": [("neo4j-uri", "NEO4J_URI")]}
+_MAP = {"scanner": [("postgres-dsn", "POSTGRES_DSN")]}
 
 
 class _LLM:
@@ -73,7 +73,7 @@ def _failing(_config: Mapping[str, str]) -> bool:
 
 def test_write_remediation_plan_links_it_to_escalation() -> None:
     graph = InMemoryGraphStore()
-    escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    escalation = write_escalation(graph, "scanner", ("postgres",), "automatic")
     plan = RemediationPlan("refetch-from-key-vault", "Fetch again.", True, "planned")
     node = write_remediation_plan(graph, escalation.key, plan)
     assert node.props["remediation"] == "refetch-from-key-vault"
@@ -102,8 +102,8 @@ def test_activate_records_plan_before_refusing_activation() -> None:
         ),
         grant_policy={"scanner": {"scan": {"level": "read"}}},
         secret_map=_MAP,
-        secret_store=_Store({"neo4j-uri": "bad"}),
-        credential_tests=(CredentialTest("neo4j", _failing),),
+        secret_store=_Store({"postgres-dsn": "bad"}),
+        credential_tests=(CredentialTest("postgres", _failing),),
         remediation_llm=llm,
         remediation_catalogue=_CATALOGUE,
         remediation_system_prompt="compiled selector prompt",

@@ -127,7 +127,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **MON-DEP-01** — `DEP-BUS` — in-process or distributed bus for provider price requests and
   execution close dispatch.
-- **MON-DEP-02** — `DEP-NEO4J` — graph store for Position, Fill ancestry, CloseDecision,
+- **MON-DEP-02** — `DEP-POSTGRES` — graph store for Position, Fill ancestry, CloseDecision,
   MonitorRun nodes.
 
 ## Observability & audit (`OBS`)

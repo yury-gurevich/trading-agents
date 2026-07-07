@@ -87,23 +87,6 @@ Test-Endpoint 'HuggingFace — whoami' `
     'https://huggingface.co/api/whoami-v2' `
     @{ 'Authorization' = "Bearer $env:HF_TOKEN" }
 
-# ── Neo4j rollback / analysis workbench (optional until S118) ─────────────────
-if ($env:NEO4J_URI -or $env:NEO4J_TEST_URI) {
-    $neo4jCred = [Convert]::ToBase64String(
-        [Text.Encoding]::ASCII.GetBytes("$($env:NEO4J_USER):$($env:NEO4J_PASSWORD)")
-    )
-    Test-Endpoint 'Neo4j local Docker — browser' `
-        'http://localhost:7474' `
-        @{ 'Authorization' = "Basic $neo4jCred" }
-}
-
-if ($env:NEO4J_TEST_URI) {
-    $neo4jTestHost = $env:NEO4J_TEST_URI -replace '^neo4j\+s?://', ''
-    Test-Endpoint 'Neo4j test URI — discovery' `
-        "https://$neo4jTestHost" `
-        @{ 'Authorization' = "Basic $neo4jCred" }
-}
-
 # ── PostgreSQL graph spine ───────────────────────────────────────────────────
 Test-Secret 'PostgreSQL — POSTGRES_DSN' $env:POSTGRES_DSN
 

@@ -6,7 +6,7 @@ and never touching the live decision loop.
 
 ## Owns
 
-- Data preparation for the Neo4j analysis/training layer: cleaning, labelling,
+- Data preparation for the graph-derived analysis/training layer: cleaning, labelling,
   example assembly, train/validation/test splitting, and dataset versioning.
 - The training corpus and its manifests.
 

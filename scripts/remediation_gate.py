@@ -88,7 +88,7 @@ def _fake() -> FakeLLMClient:
     return FakeLLMClient(
         {
             "blank-key-vault-secret": _response("refetch-from-key-vault"),
-            "neo4j-paused": _response("resume-instance"),
+            "postgres-unreachable": _response("resume-instance"),
             "credential-compromised": _response("rotate-credential"),
             "service-destroyed": _response("recreate-instance"),
             "unknown": _response("pause-and-escalate"),

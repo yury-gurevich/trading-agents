@@ -80,7 +80,7 @@ bus, the distributed bus, and the tool interface without redefinition.
 
 A single PostgreSQL graph spine, reached through the kernel `GraphStore` adapter,
 does three jobs — see `docs/decisions/0014-postgresql-system-of-record.md`.
-Neo4j remains only as an ad-hoc analysis workbench and pre-S118 rollback backend.
+Neo4j remains only as an ad-hoc, out-of-bounds analysis workbench.
 
 | Job | Holds | Ownership |
 | --- | --- | --- |

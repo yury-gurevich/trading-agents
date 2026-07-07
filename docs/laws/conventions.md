@@ -29,7 +29,7 @@ Every law clause has a stable ID: **`AGENT-CAT-NN`**.
 
 - `NN` — a zero-padded sequence within the category (`01`, `02`, …).
 
-Dependency (Layer-0) clauses use **`DEP-<COMPONENT>-NN`** (e.g. `DEP-NEO4J-01`).
+Dependency (Layer-0) clauses use **`DEP-<COMPONENT>-NN`** (e.g. `DEP-POSTGRES-01`).
 
 Agent prefixes:
 

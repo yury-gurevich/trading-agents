@@ -87,7 +87,7 @@ RAG = pgvector (available on Neon today, v0.8.1 probed).
 - **S116 — `PostgresGraphStore` adapter + parity rig** (kernel-only; zero infra risk).
   psycopg adapter + idempotent DDL bootstrap; the backend-rigor suite parameterized over
   InMemory/Neo4j/Postgres (live backends env-gated); `build_graph_from_env` extended —
-  `POSTGRES_DSN` selects PG, `NEO4J_URI` keeps working (dual-backend period = instant rollback).
+  `POSTGRES_DSN` selects PG, with a temporary pre-S118 dual-backend rollback window.
   Live check runs against the **provisioned Neon instance** (see Host DECIDED below) — no local
   Docker Postgres needed.
 - **S117 — fleet swap (absorbs S101's intent).** Host already provisioned (**Neon free, Sydney** —
@@ -96,11 +96,11 @@ RAG = pgvector (available on Neon today, v0.8.1 probed).
   **The superseding ADR is written here** (ADR-0001 → "PostgreSQL as the system of record; Neo4j =
   offline analysis workbench"; ADR-0008 amended to analysis-only scope). DL-38's S101 reframe
   ("provision the permanent *spine*") lands on Postgres.
-- **S118 — runtime rip-out.** Neo4j adapter + driver out of the runtime path and default deps
-  (analysis-only optional extra or deletion — decide at the sprint); `probes/checks.py` DEP probe
-  re-pointed; `infra/aura.ps1` + `scripts/compare_aura.py`/`neo4j_crud.py` retired; docs/laws sweep
-  (master "operational registry" wording, stack/dependencies law files); drift-register entry; Aura
-  instance deleted after a grace window.
+- **S118 — runtime rip-out (complete in 0.60.01).** Neo4j adapter + driver removed from the
+  runtime path and default/dev deps; `NEO4J_URI` now raises an ADR-0014 startup error;
+  `probes/checks.py` is Postgres-only; `infra/aura.ps1` + `scripts/compare_aura.py`/
+  `neo4j_crud.py` retired; docs/laws swept. Aura deletion remains an operator action after the
+  documented 7-day read-only grace window.
 
 **Pace:** S116 hands over when S115 lands (no file overlap, but the shared working dir forces
 sequential Codex execution). At current velocity the Postgres spine can be live within days.

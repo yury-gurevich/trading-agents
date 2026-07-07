@@ -2,8 +2,8 @@
 
 Agent: master
 Role: receive EHLO from new agent containers; issue ACTIVATE with capability
-grants; maintain the Neo4j operational fleet registry.
-External I/O: Neo4j database via injected GraphStore.
+grants; maintain the PostgreSQL-backed operational fleet registry.
+External I/O: graph database via injected GraphStore.
 """
 
 from __future__ import annotations

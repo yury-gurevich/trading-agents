@@ -6,7 +6,7 @@
   },
   {
     "name": "resume-instance",
-    "description": "Resume the managed graph instance if the failure indicates the backing service is paused.",
+    "description": "Resume the managed database instance if the failure indicates the backing service is paused.",
     "destructive": false
   },
   {

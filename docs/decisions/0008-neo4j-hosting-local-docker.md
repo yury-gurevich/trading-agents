@@ -9,10 +9,10 @@ tags: [neo4j, docker, hosting, aura, analysis]
 
 **Status:** Amended · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)
 
-> **Amendment (2026-07-07) — scope narrowed to analysis/rollback only.** ADR-0014 supersedes
+> **Amendment (2026-07-07) — scope narrowed to analysis only.** ADR-0014 supersedes
 > ADR-0001 and makes PostgreSQL the system of record. This ADR now records how to run Neo4j only when
-> it is intentionally used as an ad-hoc analysis workbench or pre-S118 rollback backend; it no longer
-> describes production primary-store hosting.
+> it is intentionally used as an ad-hoc analysis workbench; it no longer describes production
+> primary-store hosting or rollback.
 
 > This ADR decides **where the Neo4j server runs and how when Neo4j is deliberately enabled**. It
 > records the move off **Neo4j Aura (cloud)** to a **local** instance, why we run it as a **Docker
@@ -110,9 +110,8 @@ volume; never a shared one. Nothing about the single-instance choice forecloses 
 
 ## Consequences
 
-- **`infra/neo4j/docker-compose.yml`** (+ `infra/neo4j/.env.example`, README) is the reproducible
-  workbench/rollback install; root `.env` uses it only when `POSTGRES_DSN` is unset and `NEO4J_URI` is
-  intentionally configured.
+- **`infra/neo4j/local/docker-compose.yml`** and the root `docker-compose.yml` `workbench` profile are
+  reproducible analysis-workbench installs. Runtime `.env` does not select Neo4j.
 - **No primary-store duty remains.** Provenance/state accrues in PostgreSQL (ADR-0014). Neo4j can be
   populated from exports or pointed at rollback data for ad-hoc graph exploration, not trusted as the
   normal runtime source of truth.
@@ -120,8 +119,8 @@ volume; never a shared one. Nothing about the single-instance choice forecloses 
   any Bolt client can connect for ad-hoc exploration.
 - **`trading-agent` named db is dropped** under Community (default `neo4j` db). Docs/memory that named
   it are updated. (Re-obtainable under Enterprise if ever wanted.)
-- **Migration is clean** (empty graph): stop the Desktop instance, `docker compose up -d`, repoint
-  `.env`, verify `DEP-NEO4J` green. Desktop + `.env.bak` remain as rollback.
+- **Migration is complete:** runtime provenance/state accrues in PostgreSQL. Neo4j workbench data is
+  loaded only for ad-hoc analysis when an investigation needs it.
 
 ## Alternatives considered
 
@@ -138,9 +137,9 @@ volume; never a shared one. Nothing about the single-instance choice forecloses 
 ## Links (how this fits the larger picture)
 
 - [ADR-0014 — PostgreSQL is the system of record](0014-postgresql-system-of-record.md) — supersedes
-  ADR-0001 and narrows Neo4j to workbench/rollback use.
+  ADR-0001 and narrows Neo4j to workbench-only use.
 - [ADR-0007 — container-per-agent + master bootstrap](0007-container-per-agent-master-bootstrap.md) —
-  the container philosophy this aligns with; Neo4j is the operational registry there.
-- `docs/deployment.md` — deployment surfaces (interim monolith; Neo4j hosting note).
+  the container philosophy this aligns with.
+- `docs/deployment.md` — deployment surfaces.
 - `docs/architecture.md` §"Data: one store, three jobs" — the store's role.
 - Memory `neo4j-aura-to-local-migration` — the cutover record + password-reset recovery steps.

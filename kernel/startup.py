@@ -3,11 +3,10 @@
 Agent: kernel
 Role: probe the graph once at startup and, on persistent failure, log and HALT
       (block) instead of raising. A raising startup crashes the process; the
-      container manager then restarts it in a tight loop, and every restart
-      re-attempts the Neo4j login — an auth "frenzy" that locked the Aura account
-      (observed 2026-07, forced an instance recreate). Bounded retries absorb a
-      transient blip; then we stop trying. Correct credentials are the real fix
-      (deploy wiring); this guard makes a *mis*configuration fail safe, not fatal.
+      container manager then restarts it in a tight loop and re-attempts the
+      same bad dependency credentials. Bounded retries absorb a transient blip;
+      then we stop trying. Correct credentials are the real fix (deploy wiring);
+      this guard makes a *mis*configuration fail safe, not fatal.
 External I/O: one read against the graph store (the reachability probe).
 """
 
@@ -48,9 +47,9 @@ def ensure_reachable_or_halt(
     """Probe the graph; return on success. On persistent failure, HALT — never raise.
 
     Raising here crashes the process, which the container manager restarts in a tight
-    loop; each restart re-attempts the login, hammering Neo4j auth until the account
-    locks. So on persistent failure we log a fatal line and block. ``attempts`` and
-    ``backoff_seconds`` absorb a transient blip without ever becoming a frenzy.
+    loop; each restart repeats the same dependency login. So on persistent
+    failure we log a fatal line and block. ``attempts`` and ``backoff_seconds``
+    absorb a transient blip without becoming a retry storm.
     """
     for attempt in range(1, attempts + 1):
         if graph_reachable(graph):
@@ -59,8 +58,7 @@ def ensure_reachable_or_halt(
             sleeper(backoff_seconds)
     _log.error(
         "FATAL: graph unreachable after %d attempt(s) — halting to avoid an "
-        "auth-retry storm that can lock the account. Check POSTGRES_DSN or "
-        "NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE. Not restarting.",
+        "auth-retry storm. Check POSTGRES_DSN. Not restarting.",
         attempts,
     )
     (halt or _block_forever)()

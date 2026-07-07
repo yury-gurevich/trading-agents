@@ -49,7 +49,7 @@ class _LLM:
 
 def test_write_remediation_attempt_links_to_escalation() -> None:
     graph = InMemoryGraphStore()
-    escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    escalation = write_escalation(graph, "scanner", ("postgres",), "automatic")
     attempt = RemediationAttempt(_SAFE.remediation, "succeeded", "ok", "refetch", True)
     node = write_remediation_attempt(graph, escalation.key, attempt)
     assert node.props["agent_type"] == "scanner"
@@ -80,7 +80,7 @@ def test_write_escalation_remediation_outcome_requires_existing_escalation() -> 
 
 def test_plan_and_run_remediation_writes_plan_and_attempt() -> None:
     graph = InMemoryGraphStore()
-    escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    escalation = write_escalation(graph, "scanner", ("postgres",), "automatic")
     attempt = plan_and_run_remediation(
         graph=graph,
         escalation=escalation,
@@ -104,7 +104,7 @@ def test_plan_and_run_remediation_writes_plan_and_attempt() -> None:
 
 def test_plan_and_run_remediation_skips_when_selector_is_unavailable() -> None:
     graph = InMemoryGraphStore()
-    escalation = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    escalation = write_escalation(graph, "scanner", ("postgres",), "automatic")
     attempt = plan_and_run_remediation(
         graph=graph,
         escalation=escalation,
@@ -123,13 +123,13 @@ def test_plan_and_run_remediation_skips_when_selector_is_unavailable() -> None:
 
 def test_plan_and_run_remediation_respects_prior_attempt_cap() -> None:
     graph = InMemoryGraphStore()
-    old = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    old = write_escalation(graph, "scanner", ("postgres",), "automatic")
     write_remediation_attempt(
         graph,
         old.key,
         RemediationAttempt(_SAFE.remediation, "failed", "old", "x", True),
     )
-    new = write_escalation(graph, "scanner", ("neo4j",), "automatic")
+    new = write_escalation(graph, "scanner", ("postgres",), "automatic")
     attempt = plan_and_run_remediation(
         graph=graph,
         escalation=new,

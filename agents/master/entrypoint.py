@@ -2,7 +2,7 @@
 
 Agent: master
 Role: load RSA private key and secret store from env, start HTTP server on :8000.
-External I/O: Neo4j (via GraphStore), Azure Key Vault (optional), TCP port 8000 (HTTP).
+External I/O: PostgreSQL via GraphStore, Azure Key Vault (optional), TCP port 8000.
 """
 
 from __future__ import annotations
@@ -48,17 +48,13 @@ def select_graph_store(graph_kind: str) -> GraphStore:
     """Pick the master's graph store.
 
     ``memory`` runs the operational registry in-process (rebuilt on boot). ``auto``
-    follows the shared fleet selector: ``POSTGRES_DSN`` wins, ``NEO4J_URI`` remains
-    the rollback backend, and neither falls back to memory for local development.
+    follows the shared fleet selector: ``POSTGRES_DSN`` selects PostgreSQL, and
+    absent graph env falls back to memory for local development.
     """
     if graph_kind == "memory":
         from kernel import InMemoryGraphStore
 
         return InMemoryGraphStore()
-    if graph_kind == "neo4j":
-        from kernel.graph_neo4j import Neo4jGraphStore  # pragma: no cover
-
-        return Neo4jGraphStore()  # pragma: no cover
     if graph_kind in ("", "auto", "postgres"):
         from kernel.graph_env import build_graph_from_env
 
@@ -138,9 +134,9 @@ def main() -> None:  # pragma: no cover
     graph_kind = os.environ.get("MASTER_GRAPH", "auto")
     graph = select_graph_store(graph_kind)
     log.info("[master] graph store: %s", graph_kind)
-    # Fail SAFE, not fatal: a bad Neo4j connection here must not crash the process,
-    # or the container manager restarts us in a loop and hammers auth until Aura
-    # locks the account (observed 2026-07). Halt instead, loudly. See kernel.startup.
+    # Fail SAFE, not fatal: a bad graph connection here must not crash the process,
+    # or the container manager restarts us in a loop and hammers auth. Halt instead,
+    # loudly. See kernel.startup.
     from kernel.startup import ensure_reachable_or_halt
 
     ensure_reachable_or_halt(graph)

@@ -12,14 +12,13 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 (`probes/`, real systems, functional channels). Latest Postgres dependency proof (2026-07-07, S117):
 `DEP-CONFIG-01` green with `POSTGRES_DSN`; `DEP-POSTGRES-01` green with live Neon `SELECT 1`;
 Alembic head applied before the fleet slice; durable rows were verified from a separate raw connection
-and torn down to zero. Historical Neo4j rows remain valid for the pre-S117 spine and the rollback path.
+and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S117/S118 spine only.
 
 | Component | Clauses | Status |
 | --- | --- | --- |
-| DEP-CONFIG | 2 | 🟩 01 real (`POSTGRES_DSN` + feed/LLM creds present; `NEO4J_URI` optional rollback/workbench) |
+| DEP-CONFIG | 2 | 🟩 01 real (`POSTGRES_DSN` + feed/LLM creds present) |
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
 | DEP-POSTGRES | 3 | 🟩 **3/3 real** — `01` live Neon connect + `SELECT 1`; `02` Alembic `upgrade head` wired as the pre-start deploy step; `03` S116 parity + S117 served-slice durability/teardown prove append-only props, edge identity, traversal parity, and no destructive default ops |
-| DEP-NEO4J | 3 | 🟩 historical rollback/workbench evidence — reachable + write/read + uniqueness enforced before S117; skipped by default when `POSTGRES_DSN` is active, explicitly runnable for rollback or analysis checks |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
 | DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (anti-bot). Postgres raw fallback retired 2026-06-19 (Tiingo + Alpaca cover the need). |
 | DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |

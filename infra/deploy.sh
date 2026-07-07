@@ -136,23 +136,7 @@ az containerapp update \
   --image "${ACR_LOGIN_SERVER}/${PREFIX}:${IMAGE_TAG}" \
   --output none
 
-# ── 9. Set NEO4J_PASSWORD secret (prompts if not set in env) ──────────────────
-
-if [[ -n "${NEO4J_PASSWORD:-}" ]]; then
-  echo "→ Setting neo4j-password secret from environment"
-  az containerapp secret set \
-    --name "${PREFIX}" \
-    --resource-group "${RESOURCE_GROUP}" \
-    --secrets "neo4j-password=${NEO4J_PASSWORD}" \
-    --output none
-else
-  echo ""
-  echo "⚠  NEO4J_PASSWORD not set. Set the secret manually:"
-  echo "   az containerapp secret set --name ${PREFIX} --resource-group ${RESOURCE_GROUP} \\"
-  echo "     --secrets neo4j-password=<your-password>"
-fi
-
-# ── 10. Import Grafana dashboard ──────────────────────────────────────────────
+# ── 9. Import Grafana dashboard ───────────────────────────────────────────────
 
 echo "→ Importing trading-agents Grafana dashboard"
 GRAFANA_NAME="${PREFIX}-grafana"

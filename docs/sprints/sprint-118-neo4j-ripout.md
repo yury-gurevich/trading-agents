@@ -3,7 +3,7 @@
 
 **Phase:** DL-43 Postgres migration (step 3 of 3; S116 adapter ✅ · S117 swap + ADR-0014 ✅)
 **Branch:** `sprint-118-neo4j-ripout`
-**Status:** ready for handover — from `main` (S117 merged `d6776ec`, 0.60.00)
+**Status:** closed on branch — not merged/pushed (S117 merged `d6776ec`, 0.60.00)
 **Effort:** S
 
 ---
@@ -61,6 +61,57 @@
 
 ## Closeout evidence
 
-<!-- Coding agent: fill in on handback. Files deleted/changed, coverage %, the zero-neo4j-import
-     grep output, the functionality-check row, the Aura retirement checklist, exact make ci summary.
-     Do not merge. -->
+Coding agent closeout (2026-07-07, branch `sprint-118-neo4j-ripout`; not merged, not pushed):
+
+- Version/deps: bumped `0.60.00` -> `0.60.01`; `uv lock` refreshed (`uv.lock` normalizes the root
+  package as `0.60.1`). `neo4j` was removed from the `runtime` extra and dev dependency surface.
+- Deleted runtime adapter/test files: `kernel/graph_neo4j.py`, `kernel/graph_neo4j_queries.py`,
+  `kernel/graph_neo4j_config.py`, `kernel/graph_cypher.py`, `tests/test_graph_neo4j.py`, and
+  `tests/graph_neo4j_fakes.py`. `kernel/__init__.py` no longer exports Neo4j types.
+- Deleted retired ops/runtime scripts: `infra/aura.ps1`, `scripts/compare_aura.py`,
+  `scripts/neo4j_crud.py`, plus stale driver-importing helpers (`infra/fleet-graph.ps1`,
+  `tools/scripts/aura.ps1`, `codeql/scripts/sync_codeql_to_neo4j.py`) so runtime/import grep stays
+  clean. Git history is the archive.
+- Runtime behavior: `POSTGRES_DSN` selects `PostgresGraphStore`; no graph env still uses
+  `InMemoryGraphStore` for local dev/CI; `NEO4J_URI` without `POSTGRES_DSN` raises a clear
+  ADR-0014 error. There is no silent InMemory fallback and no env-var rollback backend.
+- Workbench scope: root `docker-compose.yml` keeps Neo4j only behind the `workbench` profile, and
+  `infra/neo4j/` is documented as ADR-0008 analysis-only. It never starts by default.
+- Docs/laws sweep: dependencies, stack, architecture, deployment, technology stack, law flow,
+  law ledger, drift register, agent dependency clauses, master wording, CodeQL docs, probes,
+  `.env.example`, and deployment scripts now describe PostgreSQL as the only runtime store.
+- Fresh sync proof: `uv sync --extra runtime --extra postgres` completed and explicitly uninstalled
+  `neo4j==6.2.0`; `uv pip show neo4j` returned package not found; `importlib.util.find_spec("neo4j")`
+  returned absent.
+- Zero-import proof: `rg -n "from neo4j|import neo4j|graph_neo4j|graph_cypher|Neo4jGraphStore" kernel agents orchestration surfaces scripts probes tests pyproject.toml uv.lock`
+  produced no matches. Fixed-string package greps for `name = "neo4j"`, `neo4j>=`, and `neo4j==`
+  in `pyproject.toml`/`uv.lock` also produced no matches.
+- Gate: `make ci` green. Summary: Ruff check + format check green; mypy green (`545 source files`);
+  import-linter `4 kept, 0 broken`; module-size guard emitted warnings only, no file over 200 lines;
+  pytest `1374 passed, 5 skipped`; coverage `100.00%`; detect-secrets passed; pip-audit reported
+  no known vulnerabilities.
+- Real Neon check (DSN never printed): stamped `s118-livecheck-20260707T205942`; process forced to
+  `POSTGRES_DSN`-only; asserted `PostgresGraphStore`; wrote one `S118LiveCheck` node; raw SQL verified
+  `durable_count=1`; `uv run python scripts/pg_teardown.py --prefix s118-livecheck-20260707T205942 --env-file .env`
+  deleted `0` edges / `1` node; follow-up raw SQL verified `post_teardown_nodes=0` and
+  `post_teardown_edges=0`.
+- Negative env check: with `POSTGRES_DSN` unset and only `NEO4J_URI=bolt://example.invalid:7687`,
+  `build_graph_from_env()` raised:
+  `NEO4J_URI is no longer a runtime backend after ADR-0014. Set POSTGRES_DSN for the PostgreSQL system of record, or unset NEO4J_URI for local in-memory development.`
+- Functionality-check register: added S118 row to `docs/laws/functionality-checks.md`.
+- Rollback story after this branch: rollback is `git revert` + redeploy. Previous GHCR images persist
+  for image-level rollback; there is no `NEO4J_URI` env-var rollback.
+
+## Aura retirement runbook (operator action; do not delete in this sprint)
+
+1. Start the read-only grace window on the date S118 is merged/deployed.
+2. For 7 days, keep Aura instance `bce05bd6` paused or read-only. Do not write new runtime data to
+   Aura; the runtime no longer has a Neo4j adapter.
+3. During the grace window, rollback is `git revert` + redeploy to the previous GHCR image. Do not
+   re-enable Aura by environment variable; that path is retired.
+4. On day 7 or later, the operator confirms production has run on PostgreSQL and no S118 rollback is
+   pending.
+5. The operator deletes Aura instance `bce05bd6` from the Neo4j Aura console or an Aura API/CLI
+   equivalent. The retired `infra/aura.ps1` script is intentionally not restored for this.
+6. Confirm the Aura instance is gone and billing has stopped, then record the deletion in the
+   operations audit trail.

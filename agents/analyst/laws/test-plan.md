@@ -6,7 +6,7 @@ then add a row here. A test's docstring **must cite the law-ID** it proves (conv
 
 Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID)
 
-**Precondition:** `DEP-BUS, DEP-NEO4J` must be green first (see `docs/laws/dependencies.md`).
+**Precondition:** `DEP-BUS, DEP-POSTGRES` must be green first (see `docs/laws/dependencies.md`).
 
 ## Inputs / triggers
 

@@ -28,7 +28,7 @@ class ReadyEvent(BaseModel):
     """The pub/sub topic this event was published on."""
 
     label: str
-    """Neo4j node label; lets consumers look up the node without schema knowledge."""
+    """Graph node label; lets consumers look up the node without schema knowledge."""
 
     ref: str
     """Node key in the GraphStore — use ``claim_check_read`` to resolve it."""

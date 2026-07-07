@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
@@ -25,6 +25,7 @@ def tunable(
     gt: float | None = None,
     le: float | None = None,
     unit: str | None = None,
+    validation_alias: AliasChoices | str | None = None,
 ) -> Any:  # noqa: ANN401 - returns a pydantic FieldInfo, assigned to a typed field
     """Declare a configurable constant.
 
@@ -35,7 +36,15 @@ def tunable(
     rather than written as a bare literal.
     """
     extra: dict[str, Any] | None = {"unit": unit} if unit is not None else None
-    return Field(default, description=why, ge=ge, gt=gt, le=le, json_schema_extra=extra)
+    return Field(
+        default,
+        description=why,
+        ge=ge,
+        gt=gt,
+        le=le,
+        json_schema_extra=extra,
+        validation_alias=validation_alias,
+    )
 
 
 class AgentSettings(BaseSettings):

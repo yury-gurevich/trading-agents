@@ -1957,3 +1957,31 @@ ADR-0001 (Neo4j primary store) to be formally superseded at S117; ADR-0008 amend
 scope. DL-38's architecture itself is unchanged — Postgres is simply where the spine lives.
 
 **Status.** DIRECTION — plan complete, awaiting operator go to package S116 (after S115 lands).
+
+---
+
+## DL-44 · Service Bus receive path completes the served-agent transport  ·  status: DECIDED (2026-07-07)
+
+**Trigger.** S100 implemented the receive half of the Azure Service Bus backend behind the S97
+`RequestConsumer` protocol, closing the DL-35 communication gap between the in-process served agents
+and the distributed fleet transport.
+
+**Decision.** The distributed served-agent path uses **Service Bus topics plus subscriptions**, not
+queues: the publisher chooses the capability/request topic, and each served agent consumes through its
+own subscription. The operator sync-RPC and master EHLO/ACTIVATE handshake stay HTTP. The forecaster is
+triggered by the orchestrator/dispatcher publishing the `forecast` request, so it remains request-driven
+and never self-triggers from analyst graph nodes (`FORE-TRG-02`).
+
+**Reply semantics.** A request and response are both claim-checked `AgentMessage` envelopes: the bus
+message is a small ready event, the graph holds the envelope payload, and the response ready event is
+published to the requester's reply topic. Correlation is the original envelope id. This keeps
+`serve_once(consumer, bus)` unchanged while swapping `LocalRequestConsumer` for
+`AzureServiceBusRequestConsumer`.
+
+**Ack semantics.** The receiver completes a source Service Bus message only after the response ready
+event is published. Decode/claim-check failures and reply-publish failures abandon for redelivery until
+`max_delivery_count`, then dead-letter. All Azure SDK send/receive I/O remains optional and outside the
+unit coverage path; in-memory and Celery behavior stay unchanged.
+
+**Status.** DECIDED and implemented on `sprint-100-servicebus-receiver`; live namespace smoke passed on
+`trading-agents-bus` with disposable topics torn down.

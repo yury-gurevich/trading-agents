@@ -76,23 +76,24 @@ carrying a serialized typed payload. The bus has two interchangeable backends:
 The contract is transport-agnostic, so the same boundary binds to the in-process
 bus, the distributed bus, and the tool interface without redefinition.
 
-## Data: one store, three jobs (Neo4j)
+## Data: one store, three jobs (PostgreSQL)
 
-A single graph store (Neo4j), reached through the kernel `GraphStore` adapter, does
-three jobs — see `docs/decisions/0001-neo4j-primary-store.md`.
+A single PostgreSQL graph spine, reached through the kernel `GraphStore` adapter,
+does three jobs — see `docs/decisions/0014-postgresql-system-of-record.md`.
+Neo4j remains only as an ad-hoc analysis workbench and pre-S118 rollback backend.
 
 | Job | Holds | Ownership |
 | --- | --- | --- |
 | Transactional truth (ACID, append-only) | orders, positions, approvals, audits, config — as nodes | each agent owns its own node/edge labels — no shared label |
 | Provenance + analysis | every artifact and message as a node; edges for derivation and routing | written by the owning agent; read widely |
-| Retrieval (RAG) | embeddings as node properties, native vector index | the producing agent writes; read widely |
+| Retrieval (RAG) | embeddings/vector retrieval when built on the Postgres spine | the producing agent writes; read widely |
 
 The provenance graph is the data-collection-and-analysis layer. A trade's full
 story — `Candidate → Recommendation → OrderIntent → Fill → CloseDecision →
-Outcome`, plus the message lineage that produced each step — is a graph query, not
-a log scrape. The store is schema-flexible: there is no relational schema and no
-migration step. Money is stored as integer minor units; append-only is held by
-convention, `schema_version` on every node, and uniqueness constraints.
+Outcome`, plus the message lineage that produced each step — is a graph traversal,
+not a log scrape. The physical schema is the Alembic-managed `nodes`/`edges` spine;
+properties stay JSONB-flexible, money is stored as integer minor units, and
+append-only is enforced by the GraphStore adapter plus database constraints.
 
 ## Validated dependency graph (the process flow)
 
@@ -133,9 +134,9 @@ Agents start in a `PRE_FLIGHT` state — no identity, no capabilities, no secret
 enforces least-privilege at the process level: a compromised container has access only to what it
 was explicitly granted.
 
-The fleet registry (live instances, session recovery state, queued messages) lives in Neo4j alongside
-the provenance graph. See `docs/decisions/0007-container-per-agent-master-bootstrap.md` for the full
-design, risk assessment, and mitigations.
+The fleet registry (live instances, session recovery state, queued messages) lives in PostgreSQL
+alongside the provenance graph. See `docs/decisions/0007-container-per-agent-master-bootstrap.md` for
+the full design, risk assessment, and mitigations.
 
 > **Note:** The current `Dockerfile` and `docker-compose.yml` deploy a single monolithic container.
 > That is an interim shortcut, superseded by ADR-0007. The per-agent split is tracked under P14.
@@ -149,7 +150,7 @@ design, risk assessment, and mitigations.
   (`kernel.errors`) redirected to the supervisor's central channel and acted upon.
   See `docs/error-handling.md`.
 - **Observability** — a kernel metrics adapter feeds Prometheus + Grafana for live
-  health; the provenance graph holds the durable, exportable
+  health; the Postgres provenance graph holds the durable, exportable
   decision history. See `docs/observability.md`.
 
 ## Conventions

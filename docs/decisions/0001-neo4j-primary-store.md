@@ -1,13 +1,18 @@
 ---
 type: Architecture Decision
-status: accepted
+status: superseded
 closes: "What database do we use for the graph, provenance, and RAG store?"
 tags: [neo4j, storage]
+superseded_by: ADR-0014
 ---
 
 # ADR 0001 — Neo4j as the single primary store
 
-**Status:** Accepted · **Date:** 2026-06-06 · **Decider:** Yury Gurevich (product owner)
+**Status:** Superseded by [ADR-0014](0014-postgresql-system-of-record.md) · **Date:** 2026-06-06 ·
+**Decider:** Yury Gurevich (product owner)
+
+> **Superseded 2026-07-07.** ADR-0014 makes PostgreSQL the system of record. Neo4j remains only as an
+> ad-hoc analysis workbench and pre-S118 rollback backend.
 
 > **Hosting** (where Neo4j runs) is decided separately in
 > [ADR-0008](0008-neo4j-hosting-local-docker.md): a single **local Docker container**, Community

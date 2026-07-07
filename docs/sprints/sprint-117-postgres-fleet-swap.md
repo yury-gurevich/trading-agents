@@ -3,7 +3,7 @@
 
 **Phase:** DL-43 Postgres migration (step 2 of 3: S116 adapter ✅ → **swap** → S118 rip-out)
 **Branch:** `sprint-117-postgres-fleet-swap`
-**Status:** ready for handover — from `main` (S116 merged `5f11b93`, 0.59.00)
+**Status:** closed on branch — not merged/pushed (S116 merged `5f11b93`, 0.60.00)
 **Effort:** S/M
 
 ---
@@ -70,5 +70,44 @@
 
 ## Closeout evidence
 
-<!-- Coding agent: fill in on handback. Files changed, coverage %, seeder proof, fleet-slice proof,
-     ADR numbers touched, the functionality-check row, exact make ci summary. Do not merge. -->
+Coding agent closeout (2026-07-07, branch `sprint-117-postgres-fleet-swap`; not merged, not pushed):
+
+- Files changed: added `orchestration/packs/trading_vault_postgres.py`,
+  `orchestration/tests/test_trading_vault_postgres.py`, and
+  `docs/decisions/0014-postgresql-system-of-record.md`; updated the S108 vault seed manifest/probes,
+  `agents/master/entrypoint.py`, `probes/checks.py`, `infra/deploy-agents.ps1`, `infra/main.bicep`,
+  `.env.example`, `docker-compose.yml`, deployment/architecture/law/ADR docs, `scripts/pg_teardown.py`,
+  `scripts/test-api-keys.ps1`, `pyproject.toml`, and `uv.lock`.
+- Version/deps: bumped `0.59.00` → `0.60.00`; `uv lock` refreshed (`uv.lock` normalizes the root
+  package version to `0.60.0`).
+- Key Vault: mirrored the S108 tested-before-insert seeder path for `postgres-dsn`. Dry-run
+  `uv run --extra azure --extra runtime python scripts/seed_key_vault.py --only postgres-dsn`
+  reported `postgres probe passed`; operator-approved `--apply` reported `postgres-dsn seeded postgres
+  probe passed`; separate read-back from `trading-agents-kv` proved the value was present and equal to
+  `.env`. The DSN was never printed.
+- Composition/deploy: default graph selection now runs through the shared env selector (`POSTGRES_DSN`
+  wins; `NEO4J_URI` still works as rollback when Postgres is absent). Container defaults and deployment
+  docs now inject `POSTGRES_DSN`; `infra/deploy-agents.ps1` loads `.env` without printing secrets,
+  probes Postgres with a ≥10 s timeout, runs `alembic -c infra/migrations/alembic.ini upgrade head`
+  before starting the fleet, and preserves the Neo4j rollback branch.
+- Probe/laws: `probes/checks.py` adds `DEP-POSTGRES-01` (`SELECT 1`) and treats Neo4j as optional
+  rollback/workbench when Postgres is active. `docs/laws/dependencies.md`, `docs/laws/ledger.md`, and
+  `docs/laws/functionality-checks.md` now make Postgres the default dependency truth.
+- ADRs: added ADR-0014, "PostgreSQL is the system of record; Neo4j is an ad-hoc analysis workbench,"
+  with frontmatter `supersedes: ADR-0001`; marked ADR-0001 superseded; amended ADR-0008 to
+  analysis/rollback scope; updated `docs/decisions/INDEX.md`.
+- Live Neon evidence: with `.env` loaded by explicit path and `NEO4J_URI` removed from the process,
+  `alembic upgrade head` completed against Neon; `DEP-CONFIG-01` and `DEP-POSTGRES-01` were green.
+  The S99-style served slice stamped `s117-livecheck-20260707T194720`, asserted
+  `isinstance(graph, PostgresGraphStore)`, served forecaster/researcher/curator, and a separate raw
+  connection verified durable nodes (`CloseDecision:6`, `Dataset:1`, `Experiment:1`, `Flag:1`,
+  `Model:1`, `ParamChange:1`, `Position:6`, `ShadowPrediction:1`, `Snapshot:6`,
+  `TradeNarrative:6`, `TrainingExample:6`) plus **26** edges.
+- Teardown/functionality register: `uv run python scripts/pg_teardown.py --prefix
+  s117-livecheck-20260707T194720 --contains --env-file .env` deleted **26 edges / 36 nodes**;
+  follow-up raw query verified **post_teardown_nodes=0, post_teardown_edges=0**. Evidence appended to
+  `docs/laws/functionality-checks.md`.
+- Final `make ci`: green. Ruff check + format kept; mypy green for **549 source files**;
+  import-linter **4 kept / 0 broken**; module-size guard had warnings only (new modules under the
+  200-line hard cap); pytest **1383 passed, 6 skipped, 100.00% coverage**; `pip-audit` reported no
+  known vulnerabilities (torch skipped because the CPU wheel is not on PyPI); detect-secrets passed.

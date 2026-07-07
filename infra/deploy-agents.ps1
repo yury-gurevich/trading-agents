@@ -1,11 +1,12 @@
 # deploy-agents.ps1 — One-command fleet deploy/teardown for Azure Container Apps.
 #
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
-#   pwsh infra/deploy-agents.ps1 up          # preflight → Aura → master → 12 agents
+#   pwsh infra/deploy-agents.ps1 up          # preflight → schema → master → 12 agents
 #   pwsh infra/deploy-agents.ps1 down        # delete all apps + pause Aura
 #
-# Creds (all gitignored): infra/ghcr.local.json, infra/aura-api.local.json,
-# infra/aura-instance.local.json. Reads the Container Apps env id from .env.
+# Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
+# POSTGRES_DSN is loaded from .env/process env; Neo4j rollback still works via
+# infra/aura-api.local.json + infra/aura-instance.local.json when POSTGRES_DSN is unset.
 
 param(
   [ValidateSet('preflight', 'up', 'down')]
@@ -46,6 +47,69 @@ function Load-Json($name) {
   Get-Content $p -Raw | ConvertFrom-Json
 }
 
+function Load-DotEnv {
+  $p = Join-Path $PSScriptRoot "..\.env"
+  if (-not (Test-Path $p)) { return }
+  foreach ($line in Get-Content $p) {
+    $trimmed = $line.Trim()
+    if (-not $trimmed -or $trimmed.StartsWith("#")) { continue }
+    $idx = $line.IndexOf("=")
+    if ($idx -lt 1) { continue }
+    $key = $line.Substring(0, $idx).Trim()
+    $value = $line.Substring($idx + 1).Trim()
+    if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+      $value = $value.Substring(1, $value.Length - 2)
+    }
+    if (-not [Environment]::GetEnvironmentVariable($key, "Process")) {
+      [Environment]::SetEnvironmentVariable($key, $value, "Process")
+    }
+  }
+}
+
+function Test-PostgresDsn {
+  if (-not $env:POSTGRES_DSN) { return $false }
+  $py = "import os, psycopg; d=os.environ.get('POSTGRES_DSN',''); " +
+        "c=psycopg.connect(d, connect_timeout=10); cur=c.cursor(); " +
+        "cur.execute('SELECT 1'); row=cur.fetchone(); c.close(); " +
+        "raise SystemExit(0 if row and row[0] == 1 else 1)"
+  uv run --extra runtime python -c $py *> $null
+  return $LASTEXITCODE -eq 0
+}
+
+function Get-GraphConfig {
+  if ($env:POSTGRES_DSN) {
+    return [pscustomobject]@{
+      mode = "postgres"
+      envVars = @("POSTGRES_DSN=secretref:postgres-dsn")
+      secrets = @("postgres-dsn=$($env:POSTGRES_DSN)")
+      auraApi = $null
+    }
+  }
+  $auraApi = Load-Json "aura-api.local.json"
+  $auraInst = Load-Json "aura-instance.local.json"
+  if ($auraApi -and $auraInst) {
+    return [pscustomobject]@{
+      mode = "neo4j"
+      envVars = @(
+        "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=$($auraInst.username)",
+        "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=$($auraInst.database)"
+      )
+      secrets = @("neo4j-password=$($auraInst.password)")
+      auraApi = $auraApi
+    }
+  }
+  throw "POSTGRES_DSN is required unless Neo4j rollback config is supplied"
+}
+
+function Upgrade-PostgresSchema {
+  Top "POSTGRES SCHEMA"
+  uv run --extra runtime --extra postgres alembic -c infra/migrations/alembic.ini upgrade head
+  $ok = $LASTEXITCODE -eq 0
+  Check $ok "alembic upgrade head"
+  Bot
+  if (-not $ok) { throw "alembic upgrade head failed" }
+}
+
 # ── Aura via API ──────────────────────────────────────────────────────────────
 function Aura-Token($api) {
   $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($api.api_client_id):$($api.api_client_secret)"))
@@ -59,6 +123,7 @@ function Aura-Status($api, $tok) {
 # ── Preflight ─────────────────────────────────────────────────────────────────
 function Preflight {
   Top "FLEET PREFLIGHT"
+  Load-DotEnv
   $ok = $true
 
   $acct = az account show --query "{n:name}" -o json 2>$null | ConvertFrom-Json
@@ -77,12 +142,17 @@ function Preflight {
   }
 
   $ghcr = Load-Json "ghcr.local.json"
-  $auraApi = Load-Json "aura-api.local.json"
-  $auraInst = Load-Json "aura-instance.local.json"
   Check ([bool]$ghcr) "GHCR creds (infra/ghcr.local.json)"
-  Check ([bool]$auraApi) "Aura API creds (infra/aura-api.local.json)"
-  Check ([bool]$auraInst) "Aura instance creds (infra/aura-instance.local.json)"
-  $ok = $ok -and $ghcr -and $auraApi -and $auraInst
+  $ok = $ok -and $ghcr
+
+  try { $graph = Get-GraphConfig } catch { $graph = $null }
+  Check ([bool]$graph) "graph config (Postgres default; Neo4j rollback supported)"
+  $ok = $ok -and [bool]$graph
+  if ($graph -and $graph.mode -eq "postgres") {
+    $pgOk = Test-PostgresDsn
+    Check $pgOk "Postgres connect + SELECT 1"
+    $ok = $ok -and $pgOk
+  }
 
   if ($ghcr) {
     $imgs = @()
@@ -96,8 +166,8 @@ function Preflight {
     $ok = $ok -and ($have -ge 13)
   }
 
-  if ($auraApi) {
-    try { $st = Aura-Status $auraApi (Aura-Token $auraApi) } catch { $st = "unreachable" }
+  if ($graph -and $graph.mode -eq "neo4j") {
+    try { $st = Aura-Status $graph.auraApi (Aura-Token $graph.auraApi) } catch { $st = "unreachable" }
     Check ($st -in @("running", "paused")) "Aura instance reachable (status: $st)"
   }
 
@@ -136,9 +206,10 @@ function Get-MasterKeypair {
 # ── Deploy ────────────────────────────────────────────────────────────────────
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
-  $ghcr = Load-Json "ghcr.local.json"; $auraApi = Load-Json "aura-api.local.json"; $auraInst = Load-Json "aura-instance.local.json"
+  $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig
 
-  Top "AURA"; Resume-Aura $auraApi; Bot
+  if ($graph.mode -eq "postgres") { Upgrade-PostgresSchema }
+  else { Top "AURA ROLLBACK"; Resume-Aura $graph.auraApi; Bot }
   $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"
@@ -148,15 +219,12 @@ function Up {
   $packs = Join-Path $PSScriptRoot "..\orchestration\packs"
   $grantB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_grants.json")))
   $secretB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_secrets.json")))
-  # User + database are this account's INSTANCE ID, not the literal "neo4j" (which
-  # fails auth / DatabaseNotFound → crash-loop → auth frenzy → Aura lockout). Source
-  # them from the instance config so they always match what actually works.
   $envv = @(
-    "NEO4J_URI=$($auraApi.connection_url)", "NEO4J_USER=$($auraInst.username)",
-    "NEO4J_PASSWORD=secretref:neo4j-password", "NEO4J_DATABASE=$($auraInst.database)",
+    "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
-  )
+  ) + @($graph.envVars)
+  $masterSecrets = @($graph.secrets) + @("master-key-b64=$($kp.priv_b64)")
   $mArgs = @(
     "containerapp", "create", "--name", "master", "--resource-group", $RG,
     "--environment", $ENV_NAME, "--subscription", $SUB,
@@ -164,7 +232,8 @@ function Up {
     "--registry-server", $REGISTRY, "--registry-username", $ghcr.username,
     "--registry-password", $ghcr.pat, "--target-port", "8000", "--ingress", "internal",
     "--min-replicas", "1", "--max-replicas", "1",
-    "--secrets", "neo4j-password=$($auraInst.password)", "master-key-b64=$($kp.priv_b64)",
+    "--secrets"
+  ) + $masterSecrets + @(
     "--query", "properties.provisioningState", "-o", "tsv"
   )
   if ($kv) {
@@ -183,15 +252,20 @@ function Up {
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):latest"
-    # NEO4J_* injected as plain env vars (DL-08a): each agent reads these to build
-    # its GraphStore via build_graph_from_env(); only the provider uses them for S78.
-    $state = az containerapp create --name $name --resource-group $RG --environment $ENV_NAME --subscription $SUB `
-      --image $img --registry-server $REGISTRY --registry-username $ghcr.username --registry-password $ghcr.pat `
-      --min-replicas 1 --max-replicas 1 `
-      --env-vars "MASTER_URL=$masterUrl" "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)" `
-                 "NEO4J_URI=$($auraApi.connection_url)" "NEO4J_USER=$($auraInst.username)" `
-                 "NEO4J_PASSWORD=$($auraInst.password)" "NEO4J_DATABASE=$($auraInst.database)" `
-      --query "properties.provisioningState" -o tsv 2>$null
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($graph.envVars)
+    $agentArgs = @(
+      "containerapp", "create", "--name", $name, "--resource-group", $RG,
+      "--environment", $ENV_NAME, "--subscription", $SUB,
+      "--image", $img, "--registry-server", $REGISTRY, "--registry-username",
+      $ghcr.username, "--registry-password", $ghcr.pat,
+      "--min-replicas", "1", "--max-replicas", "1",
+      "--secrets"
+    ) + @($graph.secrets) + @(
+      "--env-vars"
+    ) + $agentEnv + @(
+      "--query", "properties.provisioningState", "-o", "tsv"
+    )
+    $state = az @agentArgs 2>$null
     Check ($state -eq "Succeeded") $name
   }
   Bot

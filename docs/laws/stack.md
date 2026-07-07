@@ -18,15 +18,20 @@ production or in the deployed Container Apps environment.
 | Secrets | Azure Key Vault (master agent is sole accessor, ADR-0007) |
 | Container registry | Docker Hub → Azure Container Apps pull |
 
-## Rule 2 — Neo4j is the sanctioned graph-store exception
+## Rule 2 — PostgreSQL is the sanctioned system-of-record store
 
-Neo4j is **not** replaced by an Azure-managed database. Azure has no equivalent for a
-property graph with APOC + GDS. This exception is explicit and permanent until superseded
-by a future ADR.
+The production graph spine is **PostgreSQL**, reached through the kernel `GraphStore`
+port and migrated only through Alembic. This is the explicit ADR-0014 exception to the
+Azure-native rule while the free Neon Sydney instance carries the early system of record;
+Azure Database for PostgreSQL remains the paid fallback when economics justify it.
 
-- Dev/eval: local Docker Enterprise (`infra/neo4j/local/`, named db `traiding-agents`)
-- Production: TBD (Neo4j AuraDS or self-managed on AKS — pending scale decision)
-- Governed by DEP-NEO4J (dependencies.md) and ADR-0001, ADR-0008.
+- Dev/live check: Neon free Sydney (`POSTGRES_DSN`, direct host, TLS required)
+- Deployment: `alembic upgrade head` before the fleet starts
+- Governed by DEP-POSTGRES (dependencies.md), ADR-0014, and DL-43.
+
+Neo4j is no longer the primary store. Until S118 removes it from the runtime, it remains
+an ad-hoc analysis workbench and one-env rollback backend (`NEO4J_URI` with
+`POSTGRES_DSN` unset), governed only by ADR-0008's amended scope.
 
 ## Rule 3 — External SaaS vendors are a separate category
 
@@ -63,6 +68,7 @@ change (code + tests + deps + CI together) — never ad-hoc hygiene.
 
 ## Violation procedure
 
-Any proposed addition that is not an Azure-managed service, not Neo4j, and not an
+Any proposed addition that is not an Azure-managed service, not PostgreSQL/Neon under
+ADR-0014, and not an
 approved SaaS vendor requires a new ADR **before** any code is written. The stack is
 intentionally narrow; new entries are the exception, not the rule.

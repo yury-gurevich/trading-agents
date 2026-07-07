@@ -131,6 +131,20 @@ def test_neo4j_probe_patches_env_and_closes_graph(
     assert os.environ["NEO4J_URI"] == "before"
 
 
+def test_postgres_probe_uses_live_ready_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    called: dict[str, str] = {}
+
+    def ready(env: Mapping[str, str]) -> bool:
+        called.update(env)
+        return True
+
+    monkeypatch.setattr(probes, "postgres_ready", ready)
+    out = probes.probe_postgres({"POSTGRES_DSN": "postgresql://example.invalid/db"})
+    assert out.ok is True
+    assert out.message == "postgres probe passed"
+    assert called["POSTGRES_DSN"].startswith("postgresql://")
+
+
 def test_support_helpers_fail_closed_and_read_http(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -165,5 +179,6 @@ def test_probe_registry_exports_expected_names() -> None:
         "fmp",
         "neo4j",
         "openai",
+        "postgres",
         "tiingo",
     } <= set(probes.PROBES)

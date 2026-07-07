@@ -1,11 +1,11 @@
 # Local Neo4j (Docker)
 
-The system's primary store (graph + provenance + RAG, [ADR-0001](../../docs/decisions/0001-neo4j-primary-store.md))
-runs as a single local Docker container per
-[ADR-0008](../../docs/decisions/0008-neo4j-hosting-local-docker.md).
+Neo4j is no longer the primary store after [ADR-0014](../../docs/decisions/0014-postgresql-system-of-record.md).
+This local Docker instance is retained only as an ad-hoc analysis workbench and pre-S118 rollback backend,
+per amended [ADR-0008](../../docs/decisions/0008-neo4j-hosting-local-docker.md).
 
-**Single source of truth:** [`local/docker-compose.yml`](local/docker-compose.yml) — Neo4j
-**Enterprise** (dev/eval) with the **APOC** + **Graph Data Science** plugins, all state
+**Single source of truth for the workbench:** [`local/docker-compose.yml`](local/docker-compose.yml) —
+Neo4j **Enterprise** (dev/eval) with the **APOC** + **Graph Data Science** plugins, all state
 bind-mounted under `local/` so you can browse/edit it straight from the filesystem.
 
 > The earlier named-volume compose (`infra/neo4j/docker-compose.yml`) plus its `.env` /
@@ -22,11 +22,12 @@ cd infra/neo4j/local && docker compose up -d
 - Default database: **`traiding-agents`** (Enterprise named db; the `neo4j` db is never created).
 - State persists as bind mounts under `local/`: `data/ conf/ logs/ plugins/ import/ backups/`.
 
-## Point the app at it
+## Point the app at it for rollback
 
-The project-root `.env` is already set:
+PostgreSQL is the default. To use Neo4j before S118, unset `POSTGRES_DSN` and set the rollback env:
 
 ```env
+POSTGRES_DSN=
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=<see project-root .env — gitignored>

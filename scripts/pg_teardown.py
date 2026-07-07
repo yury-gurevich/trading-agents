@@ -25,6 +25,11 @@ def main(argv: list[str] | None = None) -> int:
         default=".env",
         help="explicit .env path containing POSTGRES_DSN",
     )
+    parser.add_argument(
+        "--contains",
+        action="store_true",
+        help="match the stamp anywhere in the graph key instead of only as a prefix",
+    )
     args = parser.parse_args(argv)
     if not args.prefix:
         parser.error("--prefix must be non-empty")
@@ -34,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     if not dsn:
         parser.error("POSTGRES_DSN is required")
 
-    pattern = _like_prefix(args.prefix)
+    pattern = _like_pattern(args.prefix, contains=args.contains)
     with (
         psycopg.connect(dsn, connect_timeout=10) as connection,
         connection.cursor() as cursor,
@@ -55,9 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _like_prefix(prefix: str) -> str:
+def _like_pattern(prefix: str, *, contains: bool) -> str:
     escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    return f"{escaped}%"
+    return f"%{escaped}%" if contains else f"{escaped}%"
 
 
 if __name__ == "__main__":

@@ -35,6 +35,11 @@
     "probe": "openai"
   },
   {
+    "kv_name": "postgres-dsn",
+    "env_var": "POSTGRES_DSN",
+    "probe": "postgres"
+  },
+  {
     "kv_name": "neo4j-password",
     "env_var": "NEO4J_PASSWORD",
     "probe": "neo4j"

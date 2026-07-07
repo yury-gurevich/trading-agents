@@ -73,6 +73,15 @@ Docker (ADR-0008's hosting mode), loaded on demand from a Postgres snapshot, wit
 law, or cloud dependency**. Build the PG→Neo4j loader script only when the first investigation needs
 it (YAGNI; noted, not scheduled).
 
+**Noted, not scheduled — Apache AGE (operator-flagged 2026-07-07).** If in-database Cypher over the
+*live* spine is ever wanted (no export step), **Apache AGE** adds a property-graph model + openCypher
+inside Postgres, joinable with plain SQL. Requires a C extension the host must allow: **not on
+Neon's allowlist**; **available on Azure Flexible Server** (our documented ~US$24/mo fallback) and
+any self-hosted PG. The S116 adapter would not change — AGE would sit alongside for analysis.
+Trigger to revisit: an investigation that needs live-data Cypher rather than the local-Neo4j
+workbench + snapshot loader. Until then: runtime = plain SQL (shipped), analysis = Neo4j workbench,
+RAG = pgvector (available on Neon today, v0.8.1 probed).
+
 ## Sprint sequence
 
 - **S116 — `PostgresGraphStore` adapter + parity rig** (kernel-only; zero infra risk).

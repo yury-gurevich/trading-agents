@@ -217,11 +217,16 @@ To fire the same dispatcher image manually:
 az containerapp job start -n dispatcher-cron -g trading-agents
 ```
 
-To simulate a non-trading day, inject the date into that execution:
+To simulate a non-trading day, temporarily inject the date into the job template, start the
+same image, then remove the override. Do not use `job start --env-vars` for this; on Container Apps
+Jobs it can replace the existing secret-backed environment values for that execution.
 
 ```powershell
-az containerapp job start -n dispatcher-cron -g trading-agents `
-  --env-vars DISPATCHER_AS_OF=2026-07-04
+az containerapp job update -n dispatcher-cron -g trading-agents `
+  --set-env-vars DISPATCHER_AS_OF=2026-07-04
+az containerapp job start -n dispatcher-cron -g trading-agents
+az containerapp job update -n dispatcher-cron -g trading-agents `
+  --remove-env-vars DISPATCHER_AS_OF
 ```
 
 Observe fired, skipped, and failed executions through the job execution history and logs:
@@ -240,7 +245,8 @@ foreach ($app in @(
   'master','scanner','analyst','portfolio-manager','execution','monitor','reporter',
   'forecaster','operator','supervisor','curator','researcher','provider'
 )) {
-  $count = az containerapp replica list -n $app -g trading-agents --query 'length(@)' -o tsv
+  $json = az containerapp replica list -n $app -g trading-agents --only-show-errors -o json
+  $count = @($json | ConvertFrom-Json).Count
   "$app replicas=$count"
 }
 az containerapp job execution list -n dispatcher-cron -g trading-agents -o table

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from agents.scanner.universe import FileUniverse, StaticUniverse, load_universe_file
 
 if TYPE_CHECKING:
@@ -34,3 +36,11 @@ def test_file_universe_reads_named_file(tmp_path: Path) -> None:
 
     assert source.members("fixture") == ("NVDA", "SPY")
     assert source.members("missing") == ()
+
+
+def test_load_universe_file_rejects_empty_file(tmp_path: Path) -> None:
+    path = tmp_path / "empty.txt"
+    path.write_text("\n# comment only\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="has no tickers"):
+        load_universe_file(path)

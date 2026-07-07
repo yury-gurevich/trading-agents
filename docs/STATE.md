@@ -26,6 +26,16 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S117 (DL-43 step 2, 0.59.00→0.60.00) — POSTGRES IS THE SYSTEM OF RECORD (ADR-0014 supersedes
+  ADR-0001).** `postgres-dsn` seeded to `trading-agents-kv` via the S108 tested-before-insert path
+  (probe passed, read-back equal, DSN never printed); composition + container defaults flipped to
+  `POSTGRES_DSN` (`NEO4J_URI` = one-env-var rollback until S118); `deploy-agents.ps1` runs `alembic
+  upgrade head` before fleet start; `DEP-POSTGRES-01` probe green; ADR-0008 amended to
+  analysis/rollback scope; laws/architecture swept. Live: S99-style served slice on **Neon** asserted
+  `PostgresGraphStore`, durable rows verified from a separate raw connection (36 nodes/26 edges),
+  teardown to 0/0. `make ci` re-verified (1383 passed, 100%). Merged `d6776ec`. **S118 (Neo4j runtime
+  rip-out + Aura retirement) is the last step.**
+
 - **S117 (DL-43 step 2, 0.59.00→0.60.00)** — Postgres fleet swap closed on branch
   `sprint-117-postgres-fleet-swap`: `POSTGRES_DSN` seeded into `trading-agents-kv` through the S108
   tested-before-insert path (dry-run, apply, read-back equality); composition defaults now prefer

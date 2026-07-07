@@ -26,6 +26,17 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S118 (DL-43 step 3, 0.60.00→0.60.01) — MIGRATION COMPLETE: one store, one truth.** Neo4j is out
+  of the runtime: kernel adapter/tests/`neo4j` dep deleted (fresh sync uninstalls it;
+  zero-import grep clean), `NEO4J_URI`-only env raises the explicit ADR-0014 error (no silent
+  fallback), `aura.ps1`/`compare_aura.py`/`neo4j_crud.py`/stale helpers retired, Neo4j survives only
+  as the opt-in `workbench` compose profile (ADR-0008 analysis scope). Docs/laws swept to
+  Postgres-only. Live: `POSTGRES_DSN`-only slice on Neon asserted `PostgresGraphStore`, durable write
+  verified raw, teardown 0/0; negative check proved the ADR-0014 error. `make ci` re-verified (1374
+  passed, 100%). Merged `ce53230`. **Rollback = git revert + redeploy (GHCR images persist). ONE
+  OPERATOR ACTION REMAINS: delete Aura `bce05bd6` after the 7-day grace window (runbook in the S118
+  doc) — start date 2026-07-07.**
+
 - **S118 (DL-43 step 3, 0.60.00→0.60.01) — NEO4J RUNTIME RIPPED OUT.** Neo4j kernel adapter,
   Cypher helpers, runtime tests/fakes, driver dependency, probes, Aura scripts, and rollback env paths
   were deleted; `NEO4J_URI`-only startup now raises the ADR-0014 error instead of silently falling back.

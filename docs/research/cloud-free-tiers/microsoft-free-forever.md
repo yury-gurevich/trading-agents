@@ -4,7 +4,7 @@
 |---------------------|----------------------------------------|-------------------------------------------------------------------------------------|
 | DATABASES           | Cosmos DB (Free Tier)                  | 1,000 RU/s, 5 GB storage, MongoDB/Gremlin/SQL/Cassandra/Table APIs                  |
 |                     | Azure SQL Database (Free Tier)         | 250 MB database, 5 DTUs                                                             |
-|                     | Azure PostgreSQL Flexible Server       | 1 vCore, 32 GB storage, pgvector supported                                          |
+|                     | Azure PostgreSQL Flexible Server       | CORRECTED 2026-07-06: 12-mo new-account perk only; PAYG ineligible (db-placement)   |
 |                     | Azure Blob Storage                     | 5 GB Hot LRS, 20k read ops, 10k write ops                                           |
 |                     | Azure Files                            | 5 GB, 100k read ops, 100k write ops                                                 |
 |                     | Azure Table Storage                    | 5 GB, 20k read ops, 10k write ops                                                   |

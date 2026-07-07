@@ -49,7 +49,12 @@ def request_news(
 
 
 def request_prices(
-    bus: MessageBus, sink: FaultSink, ticker: str, window: Window
+    bus: MessageBus,
+    sink: FaultSink,
+    ticker: str,
+    window: Window,
+    *,
+    capability: str = "forecast_return",
 ) -> tuple[OHLCVBar, ...]:
     """Request a ticker's recent OHLCV bars from provider; ``()`` on any fault."""
     bars: tuple[OHLCVBar, ...] = ()
@@ -57,7 +62,7 @@ def request_prices(
         sink,
         agent="forecaster",
         module="agents.forecaster.provider_client",
-        capability="forecast_return",
+        capability=capability,
         reraise=False,
     ) as capture:
         response = bus.request(

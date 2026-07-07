@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 ANALYST_RUN_LABEL = "AnalystRun"
 FORECASTER_RUN_LABEL = "ForecasterRun"
 FORECAST_EDGE = "FORECAST_BY"
-#: Both advisory legs: FinBERT sentiment + the LightGBM return predictor.
-_CAPABILITIES = ("forecast", "forecast_return")
+#: Advisory legs: FinBERT sentiment, LightGBM return, and optional factor shadow.
+_CAPABILITIES = ("forecast", "forecast_return", "forecast_factor")
 
 
 def find_pending(graph: GraphStore) -> list[Node]:

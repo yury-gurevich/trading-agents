@@ -1,7 +1,7 @@
-"""Forecaster return-model test message builders.
+"""Forecaster return/factor test message builders.
 
 Agent: forecaster
-Role: provide deterministic message builders for return_scorecard and forecast_return.
+Role: provide deterministic message builders for return_scorecard and forecast RPCs.
 External I/O: none.
 """
 
@@ -37,6 +37,24 @@ def forecast_return_message(
         recipient="forecaster",
         message_type="request",
         capability="forecast_return",
+        payload=ForecastRequest(
+            subject_kind=subject_kind,
+            subject_ref=subject_ref,
+            features={},
+        ).model_dump(mode="json"),
+    )
+
+
+def forecast_factor_message(
+    subject_ref: str,
+    *,
+    subject_kind: Literal["recommendation", "position"] = "recommendation",
+) -> AgentMessage:
+    return AgentMessage(
+        sender="tester",
+        recipient="forecaster",
+        message_type="request",
+        capability="forecast_factor",
         payload=ForecastRequest(
             subject_kind=subject_kind,
             subject_ref=subject_ref,

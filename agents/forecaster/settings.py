@@ -128,6 +128,20 @@ class ForecasterSettings(AgentSettings):
         ge=50,
     )
 
+    # ── Governed factor shadow signal (qlib Phase Q5) ────────────────────────
+    factor_name: str = tunable(
+        "",
+        why="Empty keeps approved factor shadowing disabled by default.",
+    )
+    factor_params: str = tunable(
+        "",
+        why="Operator-approved catalogue params, e.g. lookback=60.",
+    )
+    factor_model_id: str = tunable(
+        "",
+        why="Optional explicit factor scorecard key; empty derives from the selection.",
+    )
+
     # ── LLM champion slot (ADR-0010) ─────────────────────────────────────────
     system_prompt: str = tunable(
         "",

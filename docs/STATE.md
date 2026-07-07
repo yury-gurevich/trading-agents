@@ -26,6 +26,14 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S100 (fleet arc, 0.60.01→0.61.00)** — Azure Service Bus **receive half** shipped:
+  `kernel/bus_azure_receiver.py` behind the `RequestConsumer` protocol, claim-check request
+  resolution + claim-checked replies, complete/abandon/dead-letter semantics, optional SDK imports,
+  `AzureServiceBusBus.request_consumer(...)` factory. Codex-built, reviewed, `make ci` re-verified
+  (1385 passed, 100%). Live smoke against `trading-agents-bus`; teardown `remaining_s100_topics=[]`.
+  Merged `2e50a3d`. **Fleet arc remaining: S102 (13-container run-through — refresh draft first, now
+  on Postgres) → S103 (dispatcher cron).**
+
 - **S118 (DL-43 step 3, 0.60.00→0.60.01) — MIGRATION COMPLETE: one store, one truth.** Neo4j is out
   of the runtime: kernel adapter/tests/`neo4j` dep deleted (fresh sync uninstalls it;
   zero-import grep clean), `NEO4J_URI`-only env raises the explicit ADR-0014 error (no silent

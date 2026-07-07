@@ -155,7 +155,7 @@ uv run pytest
 | [sprint-97](sprint-97-serve-loop-primitive.md) | Fleet Activation (DL-30/DL-35): kernel `serve_loop` + `RequestConsumer` protocol — the missing serve/consume primitive (twin of `work_loop`); in-process, CI-provable | **shipped** (0.43.00) |
 | [sprint-98](sprint-98-control-plane-serve-supervisor-operator.md) | Control-plane served in-process (1/2): supervisor + operator over `serve_loop`; `idle_loop()` retired for both | **shipped** (0.44.00) |
 | [sprint-99](sprint-99-control-plane-serve-forecaster-curator-researcher.md) | Control-plane served in-process (2/2): forecaster (RPC-triggered, `FORE-TRG-02`) + curator + researcher; **zero `idle_loop()` remains** | **planned** |
-| [sprint-100](sprint-100-servicebus-receiver.md) | Azure Service Bus **receiver** behind the serve protocol + claim-check read + both-backends parity test (mirrors S67) — the distributed backend | **closed on branch** (0.61.00; operator review) |
+| [sprint-100](sprint-100-servicebus-receiver.md) | Azure Service Bus **receiver** behind the serve protocol + claim-check read + both-backends parity test (mirrors S67) — the distributed backend | **shipped** (0.61.00) |
 | [sprint-101](sprint-101-permanent-graph-store.md) | Permanent Neo4j (durable store) + fleet store wiring; `deployment.md` refreshed — first live-infra sprint (DL-35 cut line) | **planned** |
 | [sprint-102](sprint-102-fleet-run-through.md) | Full 13-container fleet run-through → distributed `ACCEPTANCE PASS`; all 12 agents activated; control plane proven serving | **planned** |
 | [sprint-103](sprint-103-dispatcher-cron.md) | Dispatcher cron: hands-off scheduled daily `RunRequest` (calendar-aware, idempotent) — closes the S83-deferred item | **planned** |

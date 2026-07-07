@@ -26,7 +26,11 @@ from orchestration.settings import OrchestratorSettings
 def test_trading_day_places_day_keyed_run_request() -> None:
     graph = InMemoryGraphStore()
 
-    result = place_scheduled_run(graph, as_of=date(2026, 7, 8))
+    result = place_scheduled_run(
+        graph,
+        as_of=date(2026, 7, 8),
+        universe_source=FakeUniverse({"sp500": ("AAPL", "MSFT", "NVDA", "SPY")}),
+    )
 
     assert result.action == "placed"
     assert result.run_id == "sched-2026-07-08"

@@ -14,7 +14,7 @@ from agents.provider.domain.market_calendar import (
     calendar_window_end,
     is_trading_session,
 )
-from agents.scanner.universe import StaticUniverse
+from agents.scanner.universe import FileUniverse
 from orchestration.settings import OrchestratorSettings
 from orchestration.start import place_run_request
 
@@ -113,7 +113,7 @@ def place_scheduled_run(
         return ScheduledDispatchResult("skipped", decision.run_id, decision.reason)
 
     active_settings = settings or OrchestratorSettings()
-    source = universe_source or StaticUniverse()
+    source = universe_source or FileUniverse()
     tickers = source.members(active_settings.universe)
     if not tickers:
         raise ValueError(f"universe {active_settings.universe!r} has no tickers")

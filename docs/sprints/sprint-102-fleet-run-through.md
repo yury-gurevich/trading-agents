@@ -3,8 +3,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35 — the payoff sprint of the arc)
 **Branch:** `sprint-102-fleet-run-through`
-**Status:** ready for handover (refreshed 2026-07-07 onto the 0.61.00 Postgres spine; the pre-S104
-draft assumed S101/Neo4j and is superseded by this version)
+**Status:** shipped — merged `3049955` (0.62.00, 2026-07-08); closeout evidence below
 **Effort:** M/L (one small CI-tested wire + live infra validation)
 
 ---

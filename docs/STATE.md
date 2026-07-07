@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-07 23:30 AEST · **Version:** 0.61.00 · **`main` clean through S100; S102 handover refreshed + Codex-ready.**
+**Last updated:** 2026-07-08 02:15 AEST · **Version:** 0.62.00 · **`main` clean through S102 — the fleet is proven distributed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -14,9 +14,9 @@ Since P14 the project runs as **etalon-first continuous improvement** (DL-19). T
 reverses the etalon pause for the fleet workstream only):
 
 - **Fleet-serve transport (DL-35)** — give the control-plane agents a real serve/consume path so the
-  distributed fleet can run. **S97–S100 shipped — zero `idle_loop()` remains; the in-process fleet is
-  functionally complete and the Service Bus receive half exists.** Remaining: S102 (13-container
-  run-through; handover refreshed onto the Postgres spine) → S103 (dispatcher cron). S101 was
+  distributed fleet can run. **S97–S100 + S102 shipped — the fleet is PROVEN DISTRIBUTED: 13
+  containers, 12-agent activation, distributed `ACCEPTANCE PASS`, five control-plane round-trips
+  over Service Bus.** Remaining: S103 (dispatcher cron — refresh its pre-S104 draft first). S101 was
   **absorbed by S116–S118** (the permanent spine is Neon Postgres).
 - **Credential-security + bounded self-healing (DL-36) — ARC COMPLETE.** The master tests every
   credential before handover; failure → refuse + `Escalation` → LLM plans a bounded remediation →
@@ -27,6 +27,23 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S102 (fleet arc, 0.61.00→0.62.00) — THE FLEET IS PROVEN DISTRIBUTED.** Part A: env-selected
+  serve transport (`kernel/serve_transport.py::consumer_from_env` — Service Bus consumer when a
+  connection string is configured, `LocalRequestConsumer` otherwise; all five served entrypoints
+  compose through it), `deploy-agents.ps1 -Tag`, manual-tag image builds, separate-process
+  claim-check request script. Part B (live, evidence in the sprint doc +
+  `functionality-checks.md`): 13 Container Apps on `:s102` GHCR images, **all 12 agents activated**
+  with grants in Postgres, one `RunRequest` (`s102-dist-20260707T1530Z`) ran
+  provider→…→Snapshot **across containers** with 3 real Alpaca-paper orders, `OBSERVATORY OK` +
+  **`ACCEPTANCE PASS`** on the distributed run, five control-plane round-trips over Service Bus
+  into separate containers. Ledger **Layer 2 (choreography) 🟩**. Four live-only defects fixed with
+  cited tests (DRIFT-016..019 — incl. execution entrypoint hard-coding `PaperBroker`; Alpaca paper
+  had never run in-container before). Teardown: graph swept to `remaining_s102_artifacts={}` (33
+  edges/58 nodes), disposable reply topics gone, **all 13 Container Apps deleted** (cost stop);
+  activation registry rows + served request topics stay as production config. Codex-built,
+  reviewed, `make ci` re-verified (1393 passed, 100%). Merged `3049955`. **Fleet arc remaining:
+  S103 (dispatcher cron) only.**
 
 - **S100 (fleet arc, 0.60.01→0.61.00)** — Azure Service Bus **receive half** shipped:
   `kernel/bus_azure_receiver.py` behind the `RequestConsumer` protocol, claim-check request
@@ -174,9 +191,8 @@ Older sprints — DL-36 A/B (S104/S105) in the arc above; S77–96 → [STATE-03
 
 ## Now
 
-On `main` at 0.61.00, no active sprint branch (S100 reviewed and merged; DL-43 migration fully
-closed, Aura deleted). **S102's handover is refreshed onto the Postgres spine and Codex-ready**
-(`docs/sprints/sprint-102-fleet-run-through.md`). The etalon north-star holds (DL-19):
+On `main` at 0.62.00, no active sprint branch (S102 reviewed and merged — the distributed fleet
+milestone is proven; only S103 remains in the fleet arc). The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
 `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
@@ -195,13 +211,13 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Fleet arc — S102 → S103 (S100 shipped; S101 absorbed by S116–S118).** **S102 (13-container
-  run-through + distributed acceptance): handover refreshed 2026-07-07 onto the 0.61.00 Postgres
-  spine — Codex-ready.** Part A wires the env-selected serve transport (the five served entrypoints
-  still hard-code `LocalRequestConsumer`; nothing composes `AzureServiceBusBus` yet); Part B deploys
-  13 branch-tagged containers, proves 12-agent activation + distributed `ACCEPTANCE PASS` + five
-  control-plane round-trips, then scales to zero. S103 (dispatcher cron) follows; refresh its
-  pre-S104 draft before executing.
+- **Fleet arc — S103 (dispatcher cron) is the last item.** S102 proved the fleet distributed
+  (0.62.00); S103 makes runs hands-off: scheduled daily `RunRequest` placement, calendar-aware,
+  idempotent. **Refresh its pre-S104 draft first** — it predates graph-pull maturity, Postgres, and
+  the S102 deploy tooling (`deploy-agents.ps1 -Tag`, route prep, teardown/cost-stop discipline).
+  Decide at packaging: where the cron lives (Container Apps job vs. in-fleet dispatcher container)
+  and the fleet's standing posture (S102 deleted all 13 apps after the proof — a scheduled run
+  needs a deploy-before/teardown-after story or a standing fleet decision).
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

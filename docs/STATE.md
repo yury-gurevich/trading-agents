@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-06 12:29 AEST · **Version:** 0.57.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-07 18:05 AEST · **Version:** 0.58.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -26,6 +26,17 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S115 (qlib Q5 part B, 0.57.00→0.58.00) — THE Q5 LOOP IS CLOSED.** Factor shadow signal: additive
+  `forecast_factor` capability (forecaster contract 0.5.0), factor math duplicated island-clean with a
+  **parity test pinning it to S113 catalogue values**, no-lookahead fence, OFF by default (empty
+  `factor_name` → clean disabled response, zero graph writes), generic `model_id` scorecard covers
+  factor predictions (`promotion_eligible=False`), locked laws untouched (FORE-NEV-02 cited). Live
+  check: real Tiingo bars (AAPL, MSFT) → 2 `ShadowPrediction`s under `factor-s115-live-momentum-60` on
+  Aura, scorecard `sample_size=2`, default-off wrote 0 nodes, teardown to baseline 0. `make ci`
+  re-verified locally (1370 passed, 100%). Merged `ab66caf`. Every Q5 stage now exists and is governed:
+  propose (S113) → approve (operator) → shadow (S115) → scorecard → promote/kill (operator on P10
+  rails). **Moonshot #3 concrete; LLM's only power remains nomination.** (Merge also carried R002
+  Postgres migration plan + DL-43 + Neon host decision — committed on-branch by shared-dir accident.)
 - **S113 (qlib Q5 part A, 0.56.00→0.57.00)** — governed factor proposal: pure researcher factor
   catalogue (`momentum`/`mean_reversion`/`volatility_rank`, `tunable`-bounded), strict
   `validate_selection` enum guardrail (reject-not-clamp, fail-open `None`), additive `ProposedFactor` +
@@ -133,11 +144,12 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **Qlib Q5 part B — S115 factor shadow signal — PACKAGED, ready for Codex.** Handover
-  `docs/sprints/sprint-115-factor-shadow-signal.md`: approved factor → live forecaster shadow emitter
-  (duplicated catalogue math + parity test, OFF by default per Q2 Alpha158 precedent), additive
-  `forecast_factor` capability, generic scorecard by `model_id`, operator run-book for promote/kill on
-  existing P10/stage rails. Version 0.57.00 → **0.58.00** (feat). Closes the Q5 loop (Moonshot #3).
+- **🔴 NEXT — S116 PostgresGraphStore adapter + parity (DL-43 step 1).** Package now: psycopg adapter
+  over the 6-method port, **alembic-managed schema** (operator directive 2026-07-07: "we will need
+  alembic, and CI and all"), backend-rigor suite parameterized across InMemory/Neo4j/Postgres, dual
+  selector (`POSTGRES_DSN` + `NEO4J_URI` = instant rollback). Live check against the provisioned
+  **Neon free (Sydney)** instance (probed PASS 2026-07-06). Then S117 fleet swap + ADR supersede,
+  S118 rip-out. Plan: `docs/research/db-placement/postgres-migration-plan.md`.
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package

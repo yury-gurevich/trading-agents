@@ -1,6 +1,6 @@
 # R001 · Microsoft Qlib — integration vision
 
-**Status:** 🚧 In progress · **Date:** 2026-06-19
+**Status:** ✅ Adopted · **Date:** 2026-06-19
 
 Whether and how this project adopts Microsoft Qlib — across which agents and in what order.
 
@@ -22,5 +22,7 @@ bounded signal-catalogue CLI, live Tiingo check). **Q5 part A complete**
 ([sprint-113](../../sprints/sprint-113-governed-factor-proposal.md), shipped 0.57.00 2026-07-06 —
 bounded factor catalogue, LLM proposes in-catalogue only (enum-guarded, fail-open), S112 harness
 scores, `FactorProposal` 0.3.0; live check: GPT-5.5 picked `momentum lookback=60`, off-menu failed
-open). Remaining: **Q5 part B** (S115: approved factor → shadow → scorecard → promote/kill) closes
-the loop; Q4 unchanged behind its 60-day live-data prerequisite.
+open). **Q5 part B complete** ([sprint-115](../../sprints/sprint-115-factor-shadow-signal.md),
+shipped 0.58.00 2026-07-07 — `forecast_factor` shadow emitter, parity-pinned, off-by-default; live
+Aura check). **The Q5 governed factor-mining loop is CLOSED — every planned qlib workflow phase is
+shipped except Q4**, which stays parked behind its 60-day live-data prerequisite.

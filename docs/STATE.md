@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-07 18:05 AEST · **Version:** 0.58.00 · **`make ci` + GHCR image build green on `main`.**
+**Last updated:** 2026-07-07 18:45 AEST · **Version:** 0.59.00 · **`make ci` + GHCR image build green on `main`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -25,6 +25,16 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S116 (DL-43 step 1, 0.58.00→0.59.00)** — `PostgresGraphStore` shipped: psycopg 3 adapter over the
+  6-method port with **alembic-owned schema** (`infra/migrations/0001_spine`), append-only JSONB merge
+  (`EXCLUDED.props || nodes.props` + schema_version guard), recursive-CTE traversal, `POSTGRES_DSN`
+  selector (Postgres wins; `NEO4J_URI` = rollback), fake-psycopg unit suite + env-gated Neon tests +
+  `scripts/pg_teardown.py`. Codex-built, reviewed, `make ci` re-verified (1379 passed, 100%). Live
+  check on **Neon free (Sydney)**: alembic `0001_spine` applied, backend suite 7 passed, pipeline
+  slice asserted `PostgresGraphStore` + rendered veto-context lineage, teardown to nodes=0/edges=0,
+  DSN never printed. Merged `5f11b93`. **The spine can now run on Postgres — S117 (fleet swap + ADR
+  supersede) is the flip.**
 
 - **S115 (qlib Q5 part B, 0.57.00→0.58.00) — THE Q5 LOOP IS CLOSED.** Factor shadow signal: additive
   `forecast_factor` capability (forecaster contract 0.5.0), factor math duplicated island-clean with a
@@ -144,12 +154,10 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **🔴 NEXT — S116 PostgresGraphStore adapter + parity (DL-43 step 1).** Package now: psycopg adapter
-  over the 6-method port, **alembic-managed schema** (operator directive 2026-07-07: "we will need
-  alembic, and CI and all"), backend-rigor suite parameterized across InMemory/Neo4j/Postgres, dual
-  selector (`POSTGRES_DSN` + `NEO4J_URI` = instant rollback). Live check against the provisioned
-  **Neon free (Sydney)** instance (probed PASS 2026-07-06). Then S117 fleet swap + ADR supersede,
-  S118 rip-out. Plan: `docs/research/db-placement/postgres-migration-plan.md`.
+- **🔴 NEXT — S117 fleet swap to Postgres (DL-43 step 2, not yet packaged).** `POSTGRES_DSN` into Key
+  Vault via the S108 tested-before-insert seeder; fleet env flip; live distributed-slice check on
+  Neon; **ADR-0001 formally superseded here** (Postgres system of record; Neo4j = analysis workbench;
+  ADR-0008 amended). Then S118 rip-out. Plan: `docs/research/db-placement/postgres-migration-plan.md`.
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package

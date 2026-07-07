@@ -8,12 +8,21 @@ failure law (e.g. fail-loud / degrade), never fabrication.
 Health is proven by a **dependency probe** — a check that the component is reachable and behaves to
 contract — runnable in isolation and as the pre-flight of any real run.
 
-## DEP-NEO4J — provenance/graph store
+## DEP-POSTGRES — system-of-record graph spine
 
-- `DEP-NEO4J-01` — reachable with the configured credentials.
-- `DEP-NEO4J-02` — round-trips a node write→read.
-- `DEP-NEO4J-03` — enforces append-only/uniqueness constraints (a prohibited overwrite/dupe is
-  rejected).
+- `DEP-POSTGRES-01` — reachable with the configured `POSTGRES_DSN` and answers `SELECT 1`.
+- `DEP-POSTGRES-02` — schema is Alembic-managed and upgraded to head before fleet startup.
+- `DEP-POSTGRES-03` — graph-store parity holds: append-only props, edge identity,
+  depth/filter/dedup traversal, and no destructive GraphStore operations.
+
+## DEP-NEO4J — rollback / ad-hoc analysis workbench
+
+Neo4j is no longer the system-of-record dependency. Before S118, it remains a supported rollback backend
+when `POSTGRES_DSN` is unset and `NEO4J_URI` is configured; otherwise the probe skips.
+
+- `DEP-NEO4J-01` — rollback workbench is reachable with configured credentials.
+- `DEP-NEO4J-02` — rollback workbench round-trips a node write→read.
+- `DEP-NEO4J-03` — rollback workbench enforces uniqueness.
 
 ## DEP-BUS — message bus (in-process now; Azure Service Bus later, ADR-0005; transitional CeleryBus retires at P14)
 
@@ -67,9 +76,10 @@ same Alpaca credential also backs DEP-FEED failover (one vendor, data + executio
 ## Probe sequencing
 
 A real run's pre-flight runs the probes for the dependencies its flow needs, in this order, and
-**stops loud** on the first red: `DEP-CONFIG → DEP-CLOCK → DEP-NEO4J → DEP-BUS → DEP-FEED →
-DEP-BROKER → (DEP-LLM) → DEP-TELE`. Green pre-flight is the precondition for trusting any agent-level
-result.
+**stops loud** on the first red: `DEP-CONFIG → DEP-CLOCK → DEP-POSTGRES → DEP-BUS → DEP-FEED →
+DEP-BROKER → (DEP-LLM) → DEP-TELE`. `DEP-NEO4J` is run only for explicit rollback/analysis checks and
+skips during the normal Postgres-only path. Green pre-flight is the precondition for trusting any
+agent-level result.
 
 **The probes are real and runnable** — the `probes/` package hits the actual systems through the
 provider's functional channels (no mocks), reading creds from `.env` (v1 `.env` fallback):

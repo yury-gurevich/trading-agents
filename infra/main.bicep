@@ -141,8 +141,13 @@ resource tradingApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
         {
           name: 'neo4j-password'
-          // Set via: az containerapp secret set --name trading-agents --secret-name neo4j-password --value <value>
+          // Rollback-only until S118. Set NEO4J_URI and unset POSTGRES_DSN to use it.
           value: 'REPLACE_WITH_NEO4J_PASSWORD'
+        }
+        {
+          name: 'postgres-dsn'
+          // Set via Key Vault seeder first, then inject as a Container Apps secret.
+          value: 'REPLACE_WITH_POSTGRES_DSN'
         }
       ]
     }
@@ -161,6 +166,7 @@ resource tradingApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
           env: [
             { name: 'METRICS_PORT', value: '8000' }
+            { name: 'POSTGRES_DSN', secretRef: 'postgres-dsn' } // pragma: allowlist secret
             { name: 'NEO4J_PASSWORD', secretRef: 'neo4j-password' } // pragma: allowlist secret
           ]
         }

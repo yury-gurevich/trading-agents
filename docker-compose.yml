@@ -15,7 +15,8 @@
 #   docker compose up
 #
 # Secrets: copy .env.example -> .env and fill in API keys before starting.
-# Neo4j: the local Neo4j instance must be running separately (see infra/neo4j/).
+# Postgres: run `alembic upgrade head` before starting so the graph spine schema
+# exists. Neo4j remains a rollback/workbench backend until S118, but is not default.
 # RSA keys: if MASTER_PRIVATE_KEY_PEM is unset, master generates a dev keypair
 #   and prints MASTER_PUBLIC_KEY_PEM to stdout. Copy that value into .env so
 #   all trading agents can verify ACTIVATE signatures.
@@ -55,6 +56,7 @@ services:
     volumes:
       - ./orchestration/packs:/app/packs:ro
     environment:
+      MASTER_GRAPH: ${MASTER_GRAPH:-auto}
       MASTER_KEY_VAULT_URL: ${MASTER_KEY_VAULT_URL:-}
       MASTER_GRANT_POLICY_PATH: /app/packs/trading_grants.json
       MASTER_SECRET_MAP_PATH: /app/packs/trading_secrets.json

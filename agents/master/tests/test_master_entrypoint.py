@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 from agents.master.entrypoint import build_app, select_graph_store
 from agents.master.key_vault import EnvVarSecretStore
@@ -18,9 +19,6 @@ from agents.master.tests.helpers import TRADING_GRANTS_PATH, TRADING_SECRETS_PAT
 from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def test_build_app_starts_master_session() -> None:
@@ -94,3 +92,19 @@ def test_build_app_loads_pack_data_from_base64_env(
 def test_select_graph_store_memory_returns_in_memory() -> None:
     """MASTER_GRAPH=memory selects the in-process registry (DL-05, no cloud graph)."""
     assert isinstance(select_graph_store("memory"), InMemoryGraphStore)
+
+
+def test_select_graph_store_auto_uses_shared_postgres_selector(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MASTER_GRAPH=auto follows build_graph_from_env; POSTGRES_DSN is default."""
+    from kernel import graph_env
+
+    graph = InMemoryGraphStore()
+    monkeypatch.setattr(graph_env, "build_graph_from_env", lambda: graph)
+    assert select_graph_store("auto") is graph
+
+
+def test_select_graph_store_rejects_unknown_kind() -> None:
+    with pytest.raises(ValueError, match="unknown MASTER_GRAPH"):
+        select_graph_store("surprise")

@@ -9,13 +9,17 @@ Legend: ⬜ gray (unproven) · 🟩 green (proven) · 🟨 partial · ⛔ blocke
 ## Layer 0 — Dependencies (must go green first)
 
 Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
-(`probes/`, real systems, functional channels). Latest run (2026-06-17): **13 green · 0 warn · 0 red · 2 skip** — every live dependency green: **Tiingo OHLCV** (default), FMP, Finnhub fundamentals, **Alpha Vantage vendor sentiment** (provider-sentiment challenger), Neo4j (3/3), and the **live Alpaca paper broker** (submit→idempotent→cancel). Postgres probe retired 2026-06-19.
+(`probes/`, real systems, functional channels). Latest Postgres dependency proof (2026-07-07, S117):
+`DEP-CONFIG-01` green with `POSTGRES_DSN`; `DEP-POSTGRES-01` green with live Neon `SELECT 1`;
+Alembic head applied before the fleet slice; durable rows were verified from a separate raw connection
+and torn down to zero. Historical Neo4j rows remain valid for the pre-S117 spine and the rollback path.
 
 | Component | Clauses | Status |
 | --- | --- | --- |
-| DEP-CONFIG | 2 | 🟩 01 real (Neo4j + 3 feed/LLM creds present) |
+| DEP-CONFIG | 2 | 🟩 01 real (`POSTGRES_DSN` + feed/LLM creds present; `NEO4J_URI` optional rollback/workbench) |
 | DEP-CLOCK | 1 | 🟩 01 real (UTC instant) |
-| DEP-NEO4J | 3 | 🟩 **3/3 real** — reachable + write/read + **uniqueness enforced**; local Enterprise Docker (`traiding-agents` db, `bolt://localhost:7687`); Aura instance deleted 2026-06-19 |
+| DEP-POSTGRES | 3 | 🟩 **3/3 real** — `01` live Neon connect + `SELECT 1`; `02` Alembic `upgrade head` wired as the pre-start deploy step; `03` S116 parity + S117 served-slice durability/teardown prove append-only props, edge identity, traversal parity, and no destructive default ops |
+| DEP-NEO4J | 3 | 🟩 historical rollback/workbench evidence — reachable + write/read + uniqueness enforced before S117; skipped by default when `POSTGRES_DSN` is active, explicitly runnable for rollback or analysis checks |
 | DEP-BUS | 3 | ⬜ in-process; covered by the unit gate (not in the live harness) |
 | DEP-FEED | 3 | 🟩 **OHLCV live**: **Tiingo probed green** (runtime default, S44 — 9 AAPL EOD bars via `TiingoDataSource`); **FMP** 🟩 (failover/validation, 1255 bars); **Finnhub fundamentals 🟩** (11 AAPL metrics). Stooq retired (anti-bot). Postgres raw fallback retired 2026-06-19 (Tiingo + Alpaca cover the need). |
 | DEP-BROKER | 2 | 🟩 **2/2 real** — `probe_broker` against **live Alpaca paper** (`AlpacaBroker`, S45): **01** submit returned a real order (`7327477f-b5a`, pending); **02** same `client_order_id` replayed to one order (422→fetch); cleanup canceled it → account flat. `broker_from_settings` default (Alpaca when keyed, else PaperBroker for the unit gate). |
@@ -25,8 +29,8 @@ Re-run the live harness any time: **`uv run --extra runtime python -m probes`**
 > **The harness already paid for itself (2026-06-16).** Through the functional channels it proved Neo4j
 > Aura green (incl. uniqueness) and **caught a load-bearing break**: the provider's `StooqDataSource`
 > gets a 404 because Stooq now serves a JS proof-of-work interstitial, not CSV — the keyless live OHLCV
-> feed is non-functional programmatically. The Postgres raw store covers OHLCV as the fallback. No
-> `FakeDataSource` unit test could have surfaced this.
+> feed is non-functional programmatically. After S117, PostgreSQL is the graph system of record; Tiingo
+> and Alpaca cover the raw-market-data need. No `FakeDataSource` unit test could have surfaced this.
 
 ## Layer 1 — Agents
 

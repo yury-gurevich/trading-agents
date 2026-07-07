@@ -3,8 +3,8 @@
 Agent: probes
 Role: prove each shared dependency is healthy against the real system, through the
 provider's functional channels (not mocks).
-External I/O: Neo4j, market-data feeds (Tiingo/FMP/Finnhub), and the Alpaca paper
-broker.
+External I/O: PostgreSQL, Neo4j, market-data feeds (Tiingo/FMP/Finnhub), and the
+Alpaca paper broker.
 """
 
 from __future__ import annotations
@@ -28,22 +28,27 @@ class Result:
 
 def probe_config(creds: dict[str, str]) -> list[Result]:
     """DEP-CONFIG-01 — required keys for the active stage are present."""
-    missing = [
-        k for k in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD") if not creds.get(k)
-    ]
-    if missing:
+    has_postgres = bool(creds.get("POSTGRES_DSN"))
+    has_neo4j = bool(creds.get("NEO4J_URI"))
+    if not (has_postgres or has_neo4j):
         return [
-            Result("DEP-CONFIG-01", "config: required keys", RED, f"missing {missing}")
+            Result(
+                "DEP-CONFIG-01",
+                "config: required keys",
+                RED,
+                "missing POSTGRES_DSN (or NEO4J_URI rollback)",
+            )
         ]
     extra = [
         k for k in ("PROVIDER_FINNHUB_API_KEY", "ANTHROPIC_API_KEY") if creds.get(k)
     ]
+    backend = "postgres" if has_postgres else "neo4j rollback"
     return [
         Result(
             "DEP-CONFIG-01",
             "config: required keys",
             GREEN,
-            f"neo4j + {len(extra)} feed/llm creds",
+            f"{backend} + {len(extra)} feed/llm creds",
         )
     ]
 
@@ -60,8 +65,52 @@ def probe_clock(creds: dict[str, str]) -> list[Result]:
     ]
 
 
+def probe_postgres(creds: dict[str, str]) -> list[Result]:
+    """DEP-POSTGRES-01 — reachable and answers a cheap SQL probe."""
+    dsn = creds.get("POSTGRES_DSN")
+    if not dsn:
+        return [Result("DEP-POSTGRES-01", "postgres", SKIP, "no POSTGRES_DSN")]
+    try:
+        import psycopg
+    except ImportError:
+        return [
+            Result(
+                "DEP-POSTGRES-01",
+                "postgres",
+                SKIP,
+                "driver missing (--extra runtime)",
+            )
+        ]
+    try:
+        with (
+            psycopg.connect(dsn, connect_timeout=10) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.execute("SELECT 1")
+            row = cursor.fetchone()
+        return [
+            Result(
+                "DEP-POSTGRES-01",
+                "postgres: reachable",
+                GREEN if row and row[0] == 1 else RED,
+                "SELECT 1",
+            )
+        ]
+    except Exception as exc:
+        return [
+            Result(
+                "DEP-POSTGRES-01",
+                "postgres: reachable",
+                RED,
+                f"{type(exc).__name__}",
+            )
+        ]
+
+
 def probe_neo4j(creds: dict[str, str]) -> list[Result]:
     """DEP-NEO4J-01/02/03 — reachable, round-trips, enforces uniqueness."""
+    if creds.get("POSTGRES_DSN") and not creds.get("PROBE_NEO4J"):
+        return [Result("DEP-NEO4J-01", "neo4j", SKIP, "postgres active")]
     uri, user, pw = (
         creds.get("NEO4J_URI"),
         creds.get("NEO4J_USER"),
@@ -388,6 +437,7 @@ def probe_tele(creds: dict[str, str]) -> list[Result]:
 PROBES = (
     probe_config,
     probe_clock,
+    probe_postgres,
     probe_neo4j,
     probe_feed_ohlcv,
     probe_feed_fundamentals,

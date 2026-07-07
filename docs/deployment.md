@@ -22,11 +22,18 @@ Container deployment for the trading-agents app and its Prometheus observability
 
 ## Prerequisites
 
-0. **Neo4j graph store** — the system's primary store runs as a **local Docker container**
-   ([ADR-0008](decisions/0008-neo4j-hosting-local-docker.md)); see [`infra/neo4j/`](../infra/neo4j/)
-   to start it (or deploy it as a Portainer stack). Point the app's `.env` `NEO4J_*` vars at it.
+0. **PostgreSQL graph spine** — the system of record is PostgreSQL
+   ([ADR-0014](decisions/0014-postgresql-system-of-record.md)). Point `.env` `POSTGRES_DSN` at the
+   direct Postgres/Neon host and apply the schema before any app starts:
 
-1. **`.env` file** — copy `.env.example` and fill in `NEO4J_*` vars:
+   ```bash
+   uv run --extra runtime --extra postgres alembic -c infra/migrations/alembic.ini upgrade head
+   ```
+
+   Neo4j remains available only as a pre-S118 rollback/workbench backend: unset `POSTGRES_DSN`, set
+   `NEO4J_URI` (+ user/password/database), then redeploy.
+
+1. **`.env` file** — copy `.env.example` and fill in `POSTGRES_DSN` plus the live provider/broker/LLM keys:
 
    ```bash
    cp .env.example .env
@@ -46,6 +53,7 @@ Container deployment for the trading-agents app and its Prometheus observability
 Start both services and tail logs:
 
 ```bash
+uv run --extra runtime --extra postgres alembic -c infra/migrations/alembic.ini upgrade head
 make stack-up
 # or
 docker compose up
@@ -125,6 +133,14 @@ Provision from scratch:
 .\infra\setup-prometheus-auth.ps1     # SP auth + prometheus.local.yml
 .\infra\setup-grafana-datasource.ps1  # wire data source + patch dashboard
 ```
+
+## Container Apps Fleet Deploy
+
+`infra/deploy-agents.ps1 up` loads `.env`, verifies `POSTGRES_DSN` with a live `SELECT 1`, runs
+`alembic upgrade head`, then deploys master and the 12 agent containers with `POSTGRES_DSN` injected as
+a Container Apps secret reference. The script never prints the DSN. Before S118, rollback is still a
+configuration operation: remove `POSTGRES_DSN`, provide the retained Neo4j rollback config, and rerun
+the deploy script.
 
 ## Architecture
 

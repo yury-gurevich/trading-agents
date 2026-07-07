@@ -15,6 +15,7 @@ from agents.provider.alpaca_data import AlpacaDataSource
 from agents.provider.fmp import FMPDataSource
 from agents.provider.fundamentals import FinnhubDataSource
 from agents.provider.tiingo import TiingoDataSource
+from orchestration.packs.trading_vault_postgres import postgres_ready
 from orchestration.packs.trading_vault_probe_support import (
     http_json,
     patched_env,
@@ -147,6 +148,12 @@ def probe_neo4j(env: Mapping[str, str]) -> ProbeResult:
                 close()
 
     return run_probe("neo4j", check)
+
+
+@_probe("postgres")
+def probe_postgres(env: Mapping[str, str]) -> ProbeResult:
+    """Check PostgreSQL with a live connection and ``SELECT 1``."""
+    return run_probe("postgres", lambda: postgres_ready(env))
 
 
 def _alpaca_data_source(env: Mapping[str, str]) -> AlpacaDataSource:

@@ -1,16 +1,20 @@
 ---
 type: Architecture Decision
-status: accepted
+status: amended
 closes: "Where does Neo4j run in dev/staging? Aura cloud vs Desktop vs Docker? Single instance or cluster?"
-tags: [neo4j, docker, hosting, aura]
+tags: [neo4j, docker, hosting, aura, analysis]
 ---
 
 # ADR 0008 — Neo4j hosting: local, in Docker, single instance
 
-**Status:** Accepted · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)
+**Status:** Amended · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)
 
-> This ADR decides **where the Neo4j server runs and how**. It does **not** revisit
-> [ADR-0001](0001-neo4j-primary-store.md) (Neo4j is the single primary store) — that stands. It
+> **Amendment (2026-07-07) — scope narrowed to analysis/rollback only.** ADR-0014 supersedes
+> ADR-0001 and makes PostgreSQL the system of record. This ADR now records how to run Neo4j only when
+> it is intentionally used as an ad-hoc analysis workbench or pre-S118 rollback backend; it no longer
+> describes production primary-store hosting.
+
+> This ADR decides **where the Neo4j server runs and how when Neo4j is deliberately enabled**. It
 > records the move off **Neo4j Aura (cloud)** to a **local** instance, why we run it as a **Docker
 > container** rather than Neo4j Desktop, and why a **single instance** (not a cluster) is correct.
 > It also analyses the "can several Neo4j instances share one graph for parallel processing?"
@@ -107,12 +111,13 @@ volume; never a shared one. Nothing about the single-instance choice forecloses 
 ## Consequences
 
 - **`infra/neo4j/docker-compose.yml`** (+ `infra/neo4j/.env.example`, README) is the reproducible
-  install; `.env` (root) points at the container; `NEO4J_DATABASE=neo4j` under Community.
-- **Always-on store** (`restart: unless-stopped`) means provenance/state can accrue continuously —
-  this is what unblocks the **live news-accrual runway** the P12 scorecard harness needs (see memory
-  `sentiment-champion-challenger`), and lets us "start using it as state records" in earnest.
-- **Neo4j Browser is not lost** — the container serves it on `http://localhost:7474`; Desktop or any
-  Bolt client can still connect for ad-hoc exploration.
+  workbench/rollback install; root `.env` uses it only when `POSTGRES_DSN` is unset and `NEO4J_URI` is
+  intentionally configured.
+- **No primary-store duty remains.** Provenance/state accrues in PostgreSQL (ADR-0014). Neo4j can be
+  populated from exports or pointed at rollback data for ad-hoc graph exploration, not trusted as the
+  normal runtime source of truth.
+- **Neo4j Browser is still available** — the container serves it on `http://localhost:7474`; Desktop or
+  any Bolt client can connect for ad-hoc exploration.
 - **`trading-agent` named db is dropped** under Community (default `neo4j` db). Docs/memory that named
   it are updated. (Re-obtainable under Enterprise if ever wanted.)
 - **Migration is clean** (empty graph): stop the Desktop instance, `docker compose up -d`, repoint
@@ -132,8 +137,8 @@ volume; never a shared one. Nothing about the single-instance choice forecloses 
 
 ## Links (how this fits the larger picture)
 
-- [ADR-0001 — Neo4j as the single primary store](0001-neo4j-primary-store.md) — *what* Neo4j is for
-  (provenance graph + transactional truth + RAG); this ADR decides *where it runs*.
+- [ADR-0014 — PostgreSQL is the system of record](0014-postgresql-system-of-record.md) — supersedes
+  ADR-0001 and narrows Neo4j to workbench/rollback use.
 - [ADR-0007 — container-per-agent + master bootstrap](0007-container-per-agent-master-bootstrap.md) —
   the container philosophy this aligns with; Neo4j is the operational registry there.
 - `docs/deployment.md` — deployment surfaces (interim monolith; Neo4j hosting note).

@@ -59,10 +59,10 @@ this," so the same ground is never re-investigated twice and impact analysis is 
 
 | Technology | Status | Governs | If swapped, this breaks |
 | --- | --- | --- | --- |
-| Neo4j (local Enterprise Docker) | **ADOPTED** | ADR-0001 (sole primary store); ADR-0008 (local Docker in dev); ADR-0009 (permanent exception to Azure-native rule) | `kernel/graph.py`, all `store.py` files, provenance graph, RAG vector index, fleet registry (ADR-0007), drift + law ledgers read via graph queries |
+| PostgreSQL / Neon | **ADOPTED** | ADR-0014 (system of record); DL-43; Alembic schema in `infra/migrations/` | `kernel/graph_postgres.py`, `POSTGRES_DSN`, all `GraphStore` writes, provenance graph, fleet registry (ADR-0007), drift + law ledgers read via graph traversal |
+| Neo4j (local Enterprise Docker) | **TRANSITIONAL** | ADR-0008 amended; analysis workbench + pre-S118 rollback only | `kernel/graph_neo4j.py`, optional `NEO4J_URI`; removed from default runtime in S118 |
 | Azure Cosmos DB (Gremlin) | **REJECTED** | ADR-0009 — lacks APOC procedures and Graph Data Science library which are load-bearing for planned graph analytics | nothing (never wired) |
-| PostgreSQL | **RETIRED** | Was v1 `price_cache`; removed 2026-06-19 — Tiingo + Alpaca cover the OHLCV need (ADR-0006); raw Postgres probe retired | nothing (never wired to v2 agents) |
-| Neo4j vector index (native) | **ADOPTED** | ADR-0001; embedded in the graph store — no separate vector DB needed for current RAG scale | `kernel/graph.py` `upsert_vector`, any future RAG query path |
+| pgvector / vector index | **DEFERRED** | ADR-0014 explicitly keeps vector/RAG schema out of S117 | future RAG query path only |
 | Pinecone / Weaviate / Qdrant | **HORIZON** | Evaluate if Neo4j native vector index proves insufficient at scale (>10M embeddings or <50ms P99 ANN query) | would introduce a second data boundary; `kernel/graph.py` RAG path refactored |
 
 ---
@@ -134,13 +134,17 @@ A quick reference for "if we change X, what also changes?" — use before any AD
 that touches a technology.
 
 ```tetx
-Neo4j (ADR-0001)
+PostgreSQL graph spine (ADR-0014)
   └── kernel/graph.py (adapter)
+  └── kernel/graph_postgres.py + infra/migrations/
   └── all agents/*/store.py (owned labels)
   └── provenance graph (every node/edge in the system)
-  └── RAG vector index (native; no separate vector DB)
   └── fleet registry (ADR-0007; master agent)
   └── drift register + ledger (operational state)
+
+Neo4j (ADR-0008 amended)
+  └── analysis workbench + rollback only until S118
+  └── kernel/graph_neo4j.py
 
 Azure Service Bus (ADR-0005)
   └── kernel/bus_azure.py

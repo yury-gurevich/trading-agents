@@ -45,18 +45,25 @@ def _resolve_pack[T](
 
 
 def select_graph_store(graph_kind: str) -> GraphStore:
-    """Pick the master's graph store: 'memory' (no deps) else Neo4j (default).
+    """Pick the master's graph store.
 
-    'memory' runs the operational registry in-process (rebuilt on boot) — used when
-    no cloud graph is provisioned (see docs/design-log.md DL-05).
+    ``memory`` runs the operational registry in-process (rebuilt on boot). ``auto``
+    follows the shared fleet selector: ``POSTGRES_DSN`` wins, ``NEO4J_URI`` remains
+    the rollback backend, and neither falls back to memory for local development.
     """
     if graph_kind == "memory":
         from kernel import InMemoryGraphStore
 
         return InMemoryGraphStore()
-    from kernel.graph_neo4j import Neo4jGraphStore  # pragma: no cover
+    if graph_kind == "neo4j":
+        from kernel.graph_neo4j import Neo4jGraphStore  # pragma: no cover
 
-    return Neo4jGraphStore()  # pragma: no cover
+        return Neo4jGraphStore()  # pragma: no cover
+    if graph_kind in ("", "auto", "postgres"):
+        from kernel.graph_env import build_graph_from_env
+
+        return build_graph_from_env()
+    raise ValueError(f"unknown MASTER_GRAPH {graph_kind!r}")
 
 
 def build_app(
@@ -128,7 +135,7 @@ def main() -> None:  # pragma: no cover
     secret_store = CachingSecretStore(secret_store, settings.secret_cache_ttl_minutes)
     log.info("[master] secret cache TTL: %d min", settings.secret_cache_ttl_minutes)
 
-    graph_kind = os.environ.get("MASTER_GRAPH", "neo4j")
+    graph_kind = os.environ.get("MASTER_GRAPH", "auto")
     graph = select_graph_store(graph_kind)
     log.info("[master] graph store: %s", graph_kind)
     # Fail SAFE, not fatal: a bad Neo4j connection here must not crash the process,

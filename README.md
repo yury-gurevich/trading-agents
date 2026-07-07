@@ -9,7 +9,7 @@ messages over a bus. Everything else is plumbing.
 ```text
 kernel/        Plumbing only. NO trading knowledge. Message envelope, bus
                interface (in-process for tests, Celery for runtime), contract
-               descriptors, the Neo4j GraphStore adapter, observability, MCP binding.
+               descriptors, GraphStore adapters, observability, MCP binding.
 
 contracts/     The shared vocabulary — the boundary map. Typed message payloads
                and one AgentContract per agent. Agents import message types from
@@ -28,8 +28,10 @@ orchestration sit on top. `.importlinter` enforces all of this in CI.
 
 ## Data architecture
 
-One store: **Neo4j** (see `docs/decisions/0001-neo4j-primary-store.md`). It is
-schema-flexible — no relational DB, no migrations.
+One store: **PostgreSQL** (see `docs/decisions/0014-postgresql-system-of-record.md`).
+The graph spine is exposed through the kernel `GraphStore` port and migrated only
+through Alembic. Neo4j remains available until S118 as an ad-hoc analysis workbench
+and rollback backend.
 
 - **Transactional truth** (orders, positions, approvals, audits) — nodes with ACID
   guarantees, append-only; each agent owns *its own* node/edge labels, no shared
@@ -37,7 +39,8 @@ schema-flexible — no relational DB, no migrations.
 - **Provenance & analysis** — every artifact and every A2A message is a node; edges
   encode derivation (`Candidate → Recommendation → OrderIntent → Fill → Outcome`) and
   message lineage. The data-collection-and-analysis layer.
-- **Retrieval (RAG)** — embeddings as node properties with a native vector index.
+- **Retrieval (RAG)** — deferred pgvector/vector-index work; not part of the S117
+  fleet swap.
 
 ## The 12 agents
 
@@ -61,7 +64,7 @@ machine-readable boundary.
 
 ## Status
 
-The kernel runtime (both bus backends, `AgentBase`, the Neo4j `GraphStore`, the
+The kernel runtime (both bus backends, `AgentBase`, the `GraphStore` port, the
 metrics adapter) is in place, and the first pipeline runs end-to-end —
 `provider → scanner → analyst → portfolio_manager` — each agent an island talking only
 through typed messages, with provenance spanning them. Live status: `docs/STATE.md`.

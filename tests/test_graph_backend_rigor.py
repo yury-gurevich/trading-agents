@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.graph_neo4j_fakes import store as fake_store
+from tests.graph_neo4j_fakes import store as fake_neo4j_store
+from tests.graph_postgres_fakes import store as fake_postgres_store
 
 from kernel import GraphStore, InMemoryGraphStore
 from kernel.graph_support import (
@@ -26,19 +27,22 @@ if TYPE_CHECKING:
 def test_edge_identity_matches_between_backends(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    neo4j, fake_driver = fake_store(monkeypatch)
+    neo4j, fake_driver = fake_neo4j_store(monkeypatch)
+    postgres, fake_postgres = fake_postgres_store(monkeypatch)
     memory = InMemoryGraphStore()
 
-    assert _edge_walk(memory) == _edge_walk(neo4j)
+    assert _edge_walk(memory) == _edge_walk(neo4j) == _edge_walk(postgres)
     assert len(memory._edges) == 1
     assert len(fake_driver.edges) == 1
     assert fake_driver.edges[0][3] == {"run": "first"}
+    assert len(fake_postgres.edges) == 1
+    assert fake_postgres.edges[0][3] == {"run": "first"}
 
 
 def test_neo4j_constraints_are_installed_once_per_label(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    graph, fake_driver = fake_store(monkeypatch)
+    graph, fake_driver = fake_neo4j_store(monkeypatch)
 
     graph.merge_node("Artifact", "one", {})
     graph.merge_node("Artifact", "two", {})
@@ -85,11 +89,24 @@ def test_nested_props_survive_the_neo4j_store_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A nested-map property round-trips through Neo4j just like in-memory."""
-    neo4j, _ = fake_store(monkeypatch)
+    neo4j, _ = fake_neo4j_store(monkeypatch)
+    postgres, _ = fake_postgres_store(monkeypatch)
     payload = {"snapshot": {"fundamentals": {"AAPL": {"pe": 35.7}}}}
-    for graph in (InMemoryGraphStore(), neo4j):
+    for graph in (InMemoryGraphStore(), neo4j, postgres):
         node = graph.merge_node("MarketData", "md-1", payload)
         assert node.props["snapshot"] == payload["snapshot"]
+
+
+def test_postgres_list_nodes_keeps_key_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    postgres, _ = fake_postgres_store(monkeypatch)
+
+    postgres.merge_node("Artifact", "b", {})
+    postgres.merge_node("Artifact", "a", {})
+    postgres.merge_node("Other", "c", {})
+
+    assert [node.key for node in postgres.list_nodes("Artifact")] == ["a", "b"]
 
 
 def _edge_walk(graph: GraphStore) -> tuple[list[str], list[str]]:

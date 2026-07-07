@@ -59,8 +59,8 @@ def ensure_reachable_or_halt(
             sleeper(backoff_seconds)
     _log.error(
         "FATAL: graph unreachable after %d attempt(s) — halting to avoid an "
-        "auth-retry storm that can lock the account. Check NEO4J_URI / NEO4J_USER / "
-        "NEO4J_PASSWORD / NEO4J_DATABASE. Not restarting.",
+        "auth-retry storm that can lock the account. Check POSTGRES_DSN or "
+        "NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / NEO4J_DATABASE. Not restarting.",
         attempts,
     )
     (halt or _block_forever)()

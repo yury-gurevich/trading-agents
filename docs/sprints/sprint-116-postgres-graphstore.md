@@ -120,5 +120,38 @@ retirement (S118); any pgvector table (future RAG sprint); any agent or contract
 
 ## Closeout evidence
 
-<!-- Coding agent: fill in on handback. Files changed, coverage %, the functionality-check row,
-     the parity-suite result on Neon, any decisions/deviations, exact make ci summary. Do not merge. -->
+Coding agent closeout (2026-07-07, branch `sprint-116-postgres-graphstore`; not merged, not pushed):
+
+- Files changed: added `kernel/graph_postgres.py`, `kernel/graph_postgres_queries.py`,
+  `kernel/graph_postgres_config.py`, `tests/graph_postgres_fakes.py`,
+  `tests/test_graph_postgres.py`, `scripts/pg_teardown.py`, and
+  `infra/migrations/` Alembic config/revision; updated `kernel/__init__.py`,
+  `kernel/graph_env.py`, `kernel/startup.py`, graph parity/env tests, `pyproject.toml`,
+  `uv.lock`, and `docs/laws/functionality-checks.md`.
+- Version/deps: bumped `0.58.00` → `0.59.00`; `psycopg[binary]>=3.2` added to runtime + dev
+  dependency surfaces; `alembic>=1.13` added to the new `postgres` extra and dev group; `uv lock`
+  refreshed.
+- Adapter/schema: `PostgresGraphStore` implements the six-method `GraphStore` port with append-only
+  merge semantics, edge replay no-op identity, ordered `list_nodes`, recursive CTE traversal with
+  depth/filter/dedup, and the same fault-boundary behavior. Schema creation is only through Alembic
+  revision `0001_spine`; the adapter does no bootstrap DDL.
+- Selector/startup: `POSTGRES_DSN` wins over `NEO4J_URI`; `NEO4J_URI` alone still returns
+  `Neo4jGraphStore`; no agent or Neo4j adapter code changed. Startup halt logging now points at
+  `POSTGRES_DSN` as well as Neo4j credentials.
+- Local parity/gate evidence: focused graph suite
+  `uv run pytest tests/test_graph.py tests/test_graph_backend_rigor.py tests/test_graph_postgres.py tests/test_graph_env.py tests/test_startup.py --no-cov`
+  passed (**31 passed, 1 skipped**). Full `uv run pytest` passed **1379 passed, 6 skipped,
+  100.00% coverage**.
+- Neon live evidence: `.env` loaded by explicit path; DSN never printed. `alembic upgrade head`
+  applied `0001_spine`; env-gated Postgres backend suite with `POSTGRES_TEST_DSN` on Neon passed
+  **7 passed**. Live `build_graph_from_env` slice asserted `PostgresGraphStore`, wrote stamped
+  MarketData→ScanRun→AnalystRun→PMRun lineage, and `build_veto_context` rendered PM gate, analyst,
+  scanner, market, and confidence-floor context fragments.
+- Teardown/functionality register: `scripts/pg_teardown.py --prefix s116-livecheck-20260707T083106`
+  deleted **3 edges / 4 nodes**; follow-up query verified **nodes=0, edges=0** for the stamp. Row
+  appended to `docs/laws/functionality-checks.md`.
+- Final `make ci`: green. Ruff check + format kept; mypy green for **547 source files**;
+  import-linter **4 kept / 0 broken**; module-size guard had warnings only (new files under hard
+  cap: `kernel/graph_postgres.py` 180 lines, `tests/graph_postgres_fakes.py` 199 lines);
+  pytest **1379 passed, 6 skipped, 100.00% coverage**; `pip-audit` reported no known
+  vulnerabilities (torch skipped because CPU wheel is not on PyPI); detect-secrets passed.

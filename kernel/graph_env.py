@@ -15,12 +15,23 @@ if TYPE_CHECKING:
 
 
 def build_graph_from_env() -> GraphStore:
-    """Return Neo4jGraphStore when NEO4J_URI is set, else InMemoryGraphStore.
+    """Return the configured live GraphStore, else InMemoryGraphStore.
 
     The in-memory store is the correct default for local dev and CI; the
-    Neo4j path is only taken when the env var is explicitly set (e.g. by
-    _apply_config injecting it from the master's ACTIVATE payload).
+    Postgres and Neo4j paths are only taken when env vars are explicitly set
+    (e.g. by _apply_config injecting them from the master's ACTIVATE payload).
+    During the dual-backend migration period, POSTGRES_DSN wins over NEO4J_URI.
     """
+    postgres_dsn = os.environ.get("POSTGRES_DSN", "")
+    if postgres_dsn:
+        from kernel.graph_postgres import PostgresGraphStore  # pragma: no cover
+        from kernel.graph_postgres_config import (  # pragma: no cover
+            PostgresGraphSettings,
+        )
+
+        return PostgresGraphStore(
+            PostgresGraphSettings(postgres_dsn=postgres_dsn)
+        )  # pragma: no cover
     uri = os.environ.get("NEO4J_URI", "")
     if not uri:
         from kernel.graph_memory import InMemoryGraphStore

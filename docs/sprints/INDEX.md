@@ -34,6 +34,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Q5 (part B)** | S115 | Qlib workflow adoption: factor shadow signal — approved factor → live forecaster shadow emitter (duplicated catalogue math, parity test, OFF by default per Q2 precedent), additive `forecast_factor` capability, generic scorecard by `model_id`, operator run-book for promote/kill on existing P10/stage rails. Closes the Q5 governed factor-mining loop. | **complete** — shipped 0.58.00 (2026-07-07, merged `ab66caf`); live check: 2 factor ShadowPredictions on Aura, scorecard populated, default-off wrote 0 nodes |
 | **DL-43 (step 1)** | S116 | Postgres migration: `PostgresGraphStore` adapter (psycopg 3) over the 6-method port, **alembic-managed schema** (`infra/migrations/`), backend parity suite across InMemory/Neo4j/Postgres, dual env selector (`POSTGRES_DSN` wins, `NEO4J_URI` = rollback), FK-ordered teardown script. Live check on the provisioned Neon free (Sydney) instance. | **complete** — shipped 0.59.00 (2026-07-07, merged `5f11b93`); Neon live: alembic applied, suite 7 passed, slice + teardown to 0 |
 | **DL-43 (step 2)** | S117 | Postgres fleet swap: `POSTGRES_DSN` into Key Vault via the S108 tested-before-insert seeder, composition defaults flipped to Postgres (`NEO4J_URI` stays as rollback), `alembic upgrade head` as deploy step, `DEP-POSTGRES` probe, **ADR-0001 superseded** (Postgres system of record; Neo4j analysis workbench; ADR-0008 amended). Live: seeder read-back + in-process fleet slice on Neon + teardown. | **closed on branch** — 0.60.00 (2026-07-07, not merged); Key Vault read-back equal, Neon served-slice durable, teardown to 0, `make ci` 1383 passed / 6 skipped / 100% |
+| **DL-43 (step 3)** | S118 | Neo4j runtime rip-out: kernel adapter + tests + `neo4j` dep deleted, `NEO4J_URI`-only env → clear ADR-0014 startup error, `aura.ps1`/`compare_aura.py`/`neo4j_crud.py` retired, workbench-only compose profile kept (ADR-0008 scope), docs/laws sweep, Aura retirement runbook (operator deletes after 7-day grace). Rollback becomes git revert + redeploy. | **packaged — ready for Codex** |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
@@ -57,7 +58,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S118**, then S119 …
+1. Next number: **S119**, then S120 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

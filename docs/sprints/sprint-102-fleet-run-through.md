@@ -1,75 +1,111 @@
-# Sprint 102 — Full 13-container fleet run-through + distributed acceptance
+<!-- Agent: planning | Role: sprint handover -->
+# Sprint 102 — Distributed fleet run-through: 13 containers, one ACCEPTANCE PASS
 
-**Phase:** Fleet Activation (DL-30 / DL-35)
+**Phase:** Fleet Activation (DL-30 / DL-35 — the payoff sprint of the arc)
 **Branch:** `sprint-102-fleet-run-through`
-**Status:** planned
-**Effort:** L (live infra; not CI-tested)
+**Status:** ready for handover (refreshed 2026-07-07 onto the 0.61.00 Postgres spine; the pre-S104
+draft assumed S101/Neo4j and is superseded by this version)
+**Effort:** M/L (one small CI-tested wire + live infra validation)
 
 ---
 
-## Goal
+## What changed since the original draft (why this refresh)
 
-The milestone the whole arc exists for: run the **real distributed fleet** end-to-end. Deploy master +
-12 agents as separate containers on Azure Container Apps, place one `RunRequest`, and prove the pipeline
-completes across containers with the **same acceptance gate** ([`scripts/accept.py`](../../scripts/accept.py))
-that passes in-process — plus prove the 5 control-plane agents actually *serve* in their own containers.
-Until now the fleet has only been proven collapsed into one process (`cascade_once`); this proves it
-distributed.
+- **The store is PostgreSQL (ADR-0014).** S101 never executed — it was **absorbed by S116–S118**.
+  The fleet's shared store is Neon (Sydney) via `POSTGRES_DSN`; `infra/deploy-agents.ps1` already
+  probes the DSN, injects it as `secretref:postgres-dsn`, and runs `alembic upgrade head` before the
+  fleet starts. Graph-pull agents therefore distribute **for free** — every container polls the same
+  Postgres. No Neo4j anywhere (a `NEO4J_URI`-only env raises the ADR-0014 error).
+- **The bus receive half exists but is not composed.** S100 shipped
+  `kernel/bus_azure_receiver.py` behind the `RequestConsumer` protocol (claim-check both directions,
+  complete/abandon/dead-letter), namespace `trading-agents-bus` is provisioned — but all five served
+  entrypoints (curator, forecaster, operator, researcher, supervisor) still hard-code
+  `LocalRequestConsumer()`. **Nothing in the composition root constructs `AzureServiceBusBus`.**
+  That wire is Part A of this sprint.
+- **Deploy images are `:latest` from GHCR**, rebuilt on merge-to-main. A branch run-through cannot
+  use them — Part B needs branch-tagged images (see kickoff).
 
-## Scope
+## Codex kickoff (paste this)
 
-**In:**
+> Execute **Sprint 102 — distributed fleet run-through** exactly as specified in this file
+> (`docs/sprints/sprint-102-fleet-run-through.md`). Read first: `docs/STATE.md` (S100 + S116–S118
+> entries), `kernel/serve_loop.py`, `kernel/bus_azure.py` + `bus_azure_receiver.py` +
+> `bus_azure_config.py`, `infra/deploy-agents.ps1`, `scripts/accept.py`, and
+> `scripts/servicebus_receiver_live_check.py` (the S100 live pattern).
+>
+> - **Start:** from `main` (`git pull`), `git checkout -b sprint-102-fleet-run-through` (delete any
+>   stale local branch first). **Hard gate:** `make ci` green, 100 % coverage, ≤200-line modules,
+>   headers. Bump `pyproject.toml` **0.61.00 → 0.62.00** (feat: distributed serve transport) +
+>   `uv lock`. Live-only fixes found in Part B land on this same branch under the same version.
+> - **Part A — env-selected serve transport (code, CI-tested):**
+>   1. A small kernel composition helper (e.g. `consumer_from_env(agent_type)`): returns
+>      `AzureServiceBusBus(...).request_consumer(...)` when a Service Bus connection string is in
+>      the env (`AZURE_SERVICEBUS_CONNECTION_STRING` / `SERVICEBUS_CONNECTION_STRING`, per
+>      `bus_azure_config.py`), else `LocalRequestConsumer()`. Optional-SDK import discipline as in
+>      S100 (no `azure` import at module top).
+>   2. All five served entrypoints (curator, forecaster, operator, researcher, supervisor) compose
+>      through it instead of hard-coding `LocalRequestConsumer()`. Behavior with no bus env is
+>      **unchanged** (that is the regression fence).
+>   3. The **requesting** side of a cross-container round-trip (whatever the control-plane proofs
+>      in Part B use to place a request — trace how `AzureServiceBusBus` publishes) must work from
+>      a separate process. If a thin helper/script is needed, keep it in `scripts/`.
+>   4. `infra/deploy-agents.ps1`: add a `-Tag` parameter (default `latest`) so Part B can deploy
+>      branch-built images; inject the Service Bus connection string as a secretref alongside
+>      `postgres-dsn` (mirror that pattern; never print either).
+> - **Part B — the run-through (live; the milestone the arc exists for):**
+>   1. **Build + push branch images** tagged `s102` (same build path CI uses) and deploy master
+>      first, then the 12 agents, via `infra/deploy-agents.ps1 -Tag s102` against Azure Container
+>      Apps env `trading-agents-env` (RG `trading-agents`). The script's preflight (DSN probe +
+>      `alembic upgrade head`) must pass.
+>   2. **Activation proof:** master EHLO → signed ACTIVATE for **all 12** agents (only scanner was
+>      proven at S76); `AgentInstance` + `CapabilityGrant` nodes present **in Postgres** for all 12.
+>   3. **The distributed run:** place one `RunRequest` (`orchestration/start.py` path) and let the
+>      fleet run graph-pull across containers; execution against **Alpaca paper** (DEP-BROKER).
+>      Walk the provenance chain (`MarketData → ScanRun → … → Snapshot`) and run
+>      `scripts/accept.py` → **`ACCEPTANCE PASS`** on the distributed run.
+>   4. **Control-plane proofs, each in its own container over Service Bus:** an operator command
+>      round-trips; the supervisor gate/fault path fires; the forecaster writes a `shadow`
+>      prediction; curator and researcher each serve a request.
+>   5. **Observatory:** capture the run (`orchestration/observatory.py`); ledger Layer 2
+>      (choreography) ⬜ → 🟩 with this run as the citation.
+>   6. **Live-only defects** (expect some — every prior live run found in-memory-hidden bugs:
+>      DRIFT-011/012/013/014): fix on this branch, each with a `drift-register.md` entry + cited
+>      regression test.
+>   7. **Teardown + cost stop:** run artifacts stamped and torn down via `scripts/pg_teardown.py`
+>      to 0/0 (registry/audit nodes from activation may stay — they are production config, like the
+>      S108 vault rows; say which stayed); S100-pattern Service Bus topic cleanup; then **scale the
+>      fleet to zero / stop the container apps** (13 × min-replicas 1 bills while running — keep
+>      the live window short). Record everything in `docs/laws/functionality-checks.md`.
+>      **Never print the DSN or any connection string.**
+> - **Out of scope — flag, don't build:** cron scheduling (S103 places runs by hand here), any new
+>   agent feature or contract change, pgvector/RAG, multi-replica scaling policy (S103+), real
+>   capital (Alpaca **paper** only).
+> - **Do NOT merge or push to `main`** — commit on the branch only; fill **Closeout evidence** here.
 
-- Deploy all 13 images (master first, then the rest) via
-  [`infra/deploy-agents.ps1`](../../infra/deploy-agents.ps1) against the S101 permanent store; confirm
-  master EHLO/ACTIVATE for **every** agent (only scanner was proven at S76) — `AgentInstance` +
-  `CapabilityGrant` nodes written for all 12.
-- Place one `RunRequest` (the dispatcher / `orchestration/start.py` `place_run_request`) and let the fleet
-  run graph-pull + served; walk the provenance chain
-  (`MarketData → ScanRun → … → Snapshot`) and run `accept_run` → **`ACCEPTANCE PASS`** on the distributed
-  run.
-- Prove the control plane live: an operator command round-trips; the supervisor gate/fault path fires; the
-  forecaster writes a `shadow` prediction; curator/researcher serve a request — each in its own container.
-- Capture the run in the observatory ([`orchestration/observatory.py`](../../orchestration/observatory.py))
-  and record Layer-2 choreography edges as **proven on a real run** (ledger Layer 2 ⬜ → 🟩).
+---
 
-**Out:** cron scheduling (S103) — this run is placed by hand. No new features; this is validation +
-whatever live-only bugs it surfaces (expect some — every prior live run found in-memory-hidden bugs:
-DRIFT-011/012/013/014).
+## Notes for the coding agent
 
-## Deliverables
+- Neon quirks (S116/S117): scale-to-zero cold start ~0.5 s — connect timeouts ≥ 10 s;
+  `sslmode=require`; direct (non-pooler) host. The DSN comes from `.env` locally and Key Vault
+  secret `postgres-dsn` (`trading-agents-kv`) in the fleet — both already wired.
+- Service Bus: namespace `trading-agents-bus` (`infra/servicebus.bicep`), connection string in
+  `.env`. The S100 live check (`scripts/servicebus_receiver_live_check.py`) is the round-trip
+  pattern to imitate, including claim-check and topic teardown.
+- Master keypair reaches containers as `MASTER_PUBLIC_KEY_PEM_B64` / private-key equivalents
+  (`kernel/bootstrap.py`); `infra/deploy-agents.ps1` handles this today — don't reinvent it.
+- Replicas are pinned 1/1 in the deploy script — correct for this run-through; scheduling/scaling
+  policy is S103's question, not yours.
+- Success is LAW-02-proven: "the fleet works" = the captured `ACCEPTANCE PASS` + the 12-agent
+  activation log + the five control-plane round-trips — never a green deploy alone.
 
-- A documented fleet-run runbook + the evidence: activation log (12 agents), the provenance tally, the
-  `ACCEPTANCE PASS` output, and the control-plane serving proofs.
-- Fixes for any live-only defects found, each as a `drift-register.md` entry with a cited test (the
-  established pattern).
-- Ledger updated: Layer 2 (choreography) and Layer 3 (acceptance) rows reflect the distributed proof.
+---
 
-## Decisions to confirm (before building)
+## Closeout evidence
 
-- **Broker stage in the fleet.** Confirm execution runs against **Alpaca paper** (DEP-BROKER, live-proven)
-  for the run-through — real fills, no real capital — before any live-money consideration.
-- **Scale-to-zero vs. min-replicas.** Control-plane servers (supervisor/operator) likely need
-  `min-replicas 1` to serve; graph-pull agents can scale to zero and wake on poll. Confirm per agent.
-
-## Acceptance / exit criteria
-
-- [ ] Master activates all 12 agents (EHLO → signed ACTIVATE); registry nodes present.
-- [ ] One `RunRequest` drives provider→reporter **across containers**; full provenance chain present.
-- [ ] `accept_run` returns `ACCEPTANCE PASS` on the distributed run.
-- [ ] Each control-plane agent proven serving in its own container.
-- [ ] Any live-only defect captured in `drift-register.md` with a cited regression test; `make ci` green.
-
-## Dependencies
-
-- **S100** (distributed bus proven at parity), **S101** (permanent store). This is the payoff sprint.
-
-## Version bump
-
-Validation milestone. Version bump only if code changes land from live-bug fixes (then PATCH per fix).
-Record in the sprint report.
-
-## Notes
-
-Per LAW-02 this sprint's success is **proven, never assumed**: "the fleet works" means the captured
-`ACCEPTANCE PASS` + the activation log + the control-plane serving evidence — not a green deploy alone.
+<!-- Coding agent: replace this comment. Required: files changed; version/deps; Part A test
+evidence; exact `make ci` summary (counts + coverage); Part B evidence — image tag + deploy log
+summary, 12-agent activation proof, provenance tally, verbatim ACCEPTANCE PASS line, the five
+control-plane round-trip proofs, observatory/ledger update, drift entries for live-only fixes;
+teardown proof (pg_teardown 0/0, Service Bus topics clean, fleet scaled to zero); the
+functionality-checks.md row. State any deviation from spec explicitly. Do not merge. -->

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-07 20:59 AEST · **Version:** 0.60.01 · **S118 branch local `make ci` green; not merged/pushed.**
+**Last updated:** 2026-07-07 23:30 AEST · **Version:** 0.61.00 · **`main` clean through S100; S102 handover refreshed + Codex-ready.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -14,8 +14,10 @@ Since P14 the project runs as **etalon-first continuous improvement** (DL-19). T
 reverses the etalon pause for the fleet workstream only):
 
 - **Fleet-serve transport (DL-35)** — give the control-plane agents a real serve/consume path so the
-  distributed fleet can run. **S97–S99 shipped — zero `idle_loop()` remains; the in-process fleet is
-  functionally complete.** S100–S103 remain (Service Bus receiver is next; refresh its pre-S104 draft first).
+  distributed fleet can run. **S97–S100 shipped — zero `idle_loop()` remains; the in-process fleet is
+  functionally complete and the Service Bus receive half exists.** Remaining: S102 (13-container
+  run-through; handover refreshed onto the Postgres spine) → S103 (dispatcher cron). S101 was
+  **absorbed by S116–S118** (the permanent spine is Neon Postgres).
 - **Credential-security + bounded self-healing (DL-36) — ARC COMPLETE.** The master tests every
   credential before handover; failure → refuse + `Escalation` → LLM plans a bounded remediation →
   eval-gated auto-execute (one shot) → human. **A/B/C/D shipped (S104/S105/S106/S107)**; **S108** seeds
@@ -41,21 +43,7 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   as the opt-in `workbench` compose profile (ADR-0008 analysis scope). Docs/laws swept to
   Postgres-only. Live: `POSTGRES_DSN`-only slice on Neon asserted `PostgresGraphStore`, durable write
   verified raw, teardown 0/0; negative check proved the ADR-0014 error. **Aura `bce05bd6` DELETED by operator 2026-07-07 (waived grace window) — DL-43 fully closed, zero cloud Neo4j remains.** `make ci` re-verified (1374
-  passed, 100%). Merged `ce53230`. **Rollback = git revert + redeploy (GHCR images persist). ONE
-  OPERATOR ACTION REMAINS: delete Aura `bce05bd6` after the 7-day grace window (runbook in the S118
-  doc) — start date 2026-07-07.**
-
-- **S118 (DL-43 step 3, 0.60.00→0.60.01) — NEO4J RUNTIME RIPPED OUT.** Neo4j kernel adapter,
-  Cypher helpers, runtime tests/fakes, driver dependency, probes, Aura scripts, and rollback env paths
-  were deleted; `NEO4J_URI`-only startup now raises the ADR-0014 error instead of silently falling back.
-  Root compose keeps Neo4j only behind the opt-in `workbench` profile (ADR-0008 analysis-only) and
-  Aura deletion is documented as a 7-day-grace operator action, not a sprint action. Rollback is now
-  **git revert + redeploy**; GHCR images persist for image-level rollback. Local evidence on branch
-  `sprint-118-neo4j-ripout`: fresh `uv sync --extra runtime --extra postgres` uninstalled
-  `neo4j==6.2.0`; package/import greps found no runtime Neo4j imports; `make ci` green
-  (**1374 passed, 5 skipped, 100.00% coverage**); Neon live check stamped
-  `s118-livecheck-20260707T205942` asserted `PostgresGraphStore`, raw-verified one durable row, and
-  `pg_teardown.py` returned it to `0/0`. Not merged/pushed.
+  passed, 100%). Merged `ce53230`. **Rollback = git revert + redeploy (GHCR images persist).**
 
 - **S117 (DL-43 step 2, 0.59.00→0.60.00) — POSTGRES IS THE SYSTEM OF RECORD (ADR-0014 supersedes
   ADR-0001).** `postgres-dsn` seeded to `trading-agents-kv` via the S108 tested-before-insert path
@@ -183,11 +171,12 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 
 Older sprints — DL-36 A/B (S104/S105) in the arc above; S77–96 → [STATE-03.md](STATE-03.md) · S37–76 →
 [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
-S36→P0 → [STATE-01.md](STATE-01.md); full index `docs/sprints/README.md`.
 
 ## Now
 
-On `main`, no active sprint branch (S112 reviewed and merged). The etalon north-star holds (DL-19):
+On `main` at 0.61.00, no active sprint branch (S100 reviewed and merged; DL-43 migration fully
+closed, Aura deleted). **S102's handover is refreshed onto the Postgres spine and Codex-ready**
+(`docs/sprints/sprint-102-fleet-run-through.md`). The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
 `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
@@ -197,12 +186,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
   DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
   set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package
-  when prioritized. Handover written
-  (`docs/sprints/sprint-113-governed-factor-proposal.md`): bounded factor catalogue + LLM proposes an
-  in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores
-  it → `FactorProposal` + `BacktestEvidence` into the review queue. LLM never drives; researcher
-  `external_io=()` intact. Version 0.55.01 → **0.56.00** (feat). **S114 (part B, later):** approved
-  factor → live shadow signal → scorecard → promote/kill (P10 registry). R001 addendum + DL-39 hold why.
+  when prioritized.
 - **Deliberation as a reasoning/competence source (DL-39, DIRECTION)** — the transcript's *why*, not
   the verdict, is the asset: grade whether the expert model reasons at senior-analyst level and learn
   which parameters carry the decision. Assembles DL-31 (`--score`) + DL-09 + ADR-0010/CI-2; needs a
@@ -211,12 +195,13 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Fleet arc S100–S103** — **S100 Service Bus receiver: handover Codex-ready + namespace `trading-agents-bus`
-  provisioned & live-verified (`infra/servicebus.bicep`); unblocked to build** (implement the receive half of
-  `bus_azure.py` behind the `RequestConsumer` protocol) · permanent graph store (S101 — **reframed by
-  DL-38 to "provision the permanent *spine*"**: agent memory becomes a bundle-declared concern, the shared
-  store shrinks to lineage + work-state; fold into the S101 refresh) · 13-container run-through +
-  distributed acceptance (S102) · dispatcher cron (S103). Refresh the S101–103 pre-S104 drafts before executing.
+- **Fleet arc — S102 → S103 (S100 shipped; S101 absorbed by S116–S118).** **S102 (13-container
+  run-through + distributed acceptance): handover refreshed 2026-07-07 onto the 0.61.00 Postgres
+  spine — Codex-ready.** Part A wires the env-selected serve transport (the five served entrypoints
+  still hard-code `LocalRequestConsumer`; nothing composes `AzureServiceBusBus` yet); Part B deploys
+  13 branch-tagged containers, proves 12-agent activation + distributed `ACCEPTANCE PASS` + five
+  control-plane round-trips, then scales to zero. S103 (dispatcher cron) follows; refresh its
+  pre-S104 draft before executing.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-100-servicebus-receiver`
-**Status:** planned (handover refreshed 2026-07-03 for the 0.51.00 codebase; supersedes the pre-S104 draft)
+**Status:** ready for handover (re-based 2026-07-07 onto the 0.60.01 codebase — version notes updated; bus seams unchanged since S67/S99)
 **Effort:** M–L
 
 ---
@@ -16,12 +16,12 @@
 >   copy are **S67** (the Azure *send* backend behind the pub/sub protocol) and **S99** (agents serving
 >   over `serve_loop` in-process) — this sprint is their receive-side twin.
 > - **Coordination (read this first):** the shared working tree currently holds **S109's uncommitted WIP**
->   (deliberation split-model) and a `0.52.00` bump. S100 touches `kernel/bus_*` (no file overlap with
+>   (HISTORICAL note — S109 long merged). S100 touches `kernel/bus_*` (no file overlap with
 >   S109's `kernel/deliberation*`), but the tree state + version bump will collide. **Run S100 in a clean
 >   checkout, or only after S109 is committed/merged.**
 > - **Hard gate every commit:** `make ci` green — 9 steps, **100 % coverage on non-`# pragma` lines**,
 >   modules **≤ 200 lines**, coding-agent `Agent:`/`Role:` headers. Bump the MINOR from the **actual**
->   `pyproject.toml` on `main` at branch time (0.51.00 → 0.52.00; if S109 merged first, 0.52.00 → 0.53.00)
+>   `pyproject.toml` on `main` at branch time (**0.60.01 → 0.61.00**, feat → MINOR zeroes patch)
 >   + `uv lock`.
 > - **The unit gate stays infra-free:** all Azure I/O carries `# pragma: no cover`; the Service Bus SDK
 >   stays an **optional** dependency group; the parity test **skips cleanly without creds**.
@@ -133,8 +133,7 @@ the local smoke; Key Vault is the fleet path.
 
 ## Version bump
 
-New capability (distributed serve backend). **0.51.00 → 0.52.00** (feat → MINOR, HARD RULE). **Note:**
-S109 also targets 0.52.00 — whichever merges first takes it; the other rebumps. Bump from the *actual*
+New capability (distributed serve backend). **0.60.01 → 0.61.00** (feat → MINOR, HARD RULE). Bump from the *actual*
 `main` HEAD `pyproject.toml` at branch time.
 
 ## Execution notes (for the coding agent — cold-start handover)

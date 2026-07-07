@@ -32,7 +32,7 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   fallback), `aura.ps1`/`compare_aura.py`/`neo4j_crud.py`/stale helpers retired, Neo4j survives only
   as the opt-in `workbench` compose profile (ADR-0008 analysis scope). Docs/laws swept to
   Postgres-only. Live: `POSTGRES_DSN`-only slice on Neon asserted `PostgresGraphStore`, durable write
-  verified raw, teardown 0/0; negative check proved the ADR-0014 error. `make ci` re-verified (1374
+  verified raw, teardown 0/0; negative check proved the ADR-0014 error. **Aura `bce05bd6` DELETED by operator 2026-07-07 (waived grace window) — DL-43 fully closed, zero cloud Neo4j remains.** `make ci` re-verified (1374
   passed, 100%). Merged `ce53230`. **Rollback = git revert + redeploy (GHCR images persist). ONE
   OPERATOR ACTION REMAINS: delete Aura `bce05bd6` after the 7-day grace window (runbook in the S118
   doc) — start date 2026-07-07.**

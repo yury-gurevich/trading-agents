@@ -1,3 +1,5 @@
+> **ABSORBED BY S116–S118 (DL-43, ADR-0014).** Do not execute.
+
 # Sprint 101 — Permanent graph store + fleet store wiring
 
 **Phase:** Fleet Activation (DL-30 / DL-35)

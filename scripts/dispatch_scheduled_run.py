@@ -17,9 +17,13 @@ import sys
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-from orchestration.scheduled_dispatch import (
+from dotenv import load_dotenv  # noqa: E402
+
+from orchestration.scheduled_dispatch import (  # noqa: E402
     CalendarWindowExceededError,
     place_scheduled_run,
 )

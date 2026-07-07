@@ -15,6 +15,11 @@ on:
       - "uv.lock"
       - ".github/workflows/build-images.yml"
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Container image tag to publish for a manual branch build"
+        required: true
+        default: "manual"
 
 concurrency:
   group: build-images-${{ github.ref }}
@@ -64,7 +69,7 @@ jobs:
           file: agents/${{ matrix.agent }}/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/trading-agents-${{ matrix.agent }}:latest
+            ghcr.io/${{ github.repository_owner }}/trading-agents-${{ matrix.agent }}:${{ github.event_name == 'workflow_dispatch' && inputs.image_tag || 'latest' }}
             ghcr.io/${{ github.repository_owner }}/trading-agents-${{ matrix.agent }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

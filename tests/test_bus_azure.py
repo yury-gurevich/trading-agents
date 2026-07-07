@@ -22,8 +22,12 @@ from kernel import (
 # ── Unit tests (no Azure required) ──────────────────────────────────────────
 
 
+def _dev_settings() -> AzureServiceBusSettings:
+    return AzureServiceBusSettings(_env_file=None, connection_string=None)
+
+
 def test_subscribe_and_publish_fan_out_in_process() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     received: list[dict[str, object]] = []
     bus.subscribe("test.topic", received.append)
 
@@ -34,7 +38,7 @@ def test_subscribe_and_publish_fan_out_in_process() -> None:
 
 
 def test_multiple_subscribers_all_receive_event() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     a: list[dict[str, object]] = []
     b: list[dict[str, object]] = []
     bus.subscribe("shared.topic", a.append)
@@ -47,12 +51,12 @@ def test_multiple_subscribers_all_receive_event() -> None:
 
 
 def test_publish_to_unknown_topic_is_a_no_op() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     bus.publish("no.subscribers", {"x": 1})  # should not raise
 
 
 def test_register_and_request_routes_in_process() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     bus.register("agent", "echo", lambda p: {"echoed": p.get("val")})
     msg = AgentMessage(
         sender="tester",
@@ -69,7 +73,7 @@ def test_register_and_request_routes_in_process() -> None:
 
 
 def test_request_from_unauthorized_caller_is_rejected() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     bus.register("agent", "echo", lambda p: {"echoed": p.get("val")}, ("trusted",))
     msg = AgentMessage(
         sender="intruder",
@@ -86,7 +90,7 @@ def test_request_from_unauthorized_caller_is_rejected() -> None:
 
 
 def test_request_unknown_capability_returns_error() -> None:
-    bus = AzureServiceBusBus()
+    bus = AzureServiceBusBus(settings=_dev_settings())
     msg = AgentMessage(
         sender="tester",
         recipient="nobody",
@@ -103,7 +107,7 @@ def test_request_unknown_capability_returns_error() -> None:
 
 def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
     sink = CollectingFaultSink()
-    bus = AzureServiceBusBus(sink=sink)
+    bus = AzureServiceBusBus(sink=sink, settings=_dev_settings())
 
     def _boom(_p: dict[str, object]) -> dict[str, object]:
         raise RuntimeError("handler exploded")
@@ -126,18 +130,34 @@ def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
 def test_settings_connection_string_read_from_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("SERVICEBUS_CONNECTION_STRING", raising=False)
     monkeypatch.setenv(
         "AZURE_SERVICEBUS_CONNECTION_STRING",
         "Endpoint=sb://test.servicebus.windows.net/",
     )
-    settings = AzureServiceBusSettings()
+    settings = AzureServiceBusSettings(_env_file=None)
     assert settings.connection_string is not None
+
+
+def test_settings_accepts_servicebus_connection_string_alias(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
+    monkeypatch.setenv(
+        "SERVICEBUS_CONNECTION_STRING",
+        "Endpoint=sb://test.servicebus.windows.net/",
+    )
+
+    settings = AzureServiceBusSettings(_env_file=None)
+
+    assert settings.connection_string == "Endpoint=sb://test.servicebus.windows.net/"
 
 
 def test_settings_defaults_to_none_without_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
+    monkeypatch.delenv("SERVICEBUS_CONNECTION_STRING", raising=False)
     monkeypatch.delenv("AZURE_SERVICEBUS_NAMESPACE", raising=False)
-    settings = AzureServiceBusSettings()
+    settings = AzureServiceBusSettings(_env_file=None)
     assert settings.connection_string is None
     assert settings.namespace_endpoint is None
 

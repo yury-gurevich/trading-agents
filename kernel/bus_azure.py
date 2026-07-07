@@ -19,6 +19,8 @@ from kernel.metrics import Metrics, NullMetrics, request_metric
 
 if TYPE_CHECKING:
     from kernel.bus import EventHandler, MessageHandler
+    from kernel.graph import GraphStore
+    from kernel.serve_loop import RequestConsumer
 
 
 class AzureServiceBusBus:
@@ -111,6 +113,26 @@ class AzureServiceBusBus:
             return
         for handler in self._subscribers.get(topic, []):
             handler(event)
+
+    def request_consumer(
+        self,
+        graph: GraphStore,
+        *,
+        topic: str,
+        subscription_name: str | None = None,
+        reply_topic: str | None = None,
+    ) -> RequestConsumer:
+        """Build a Service Bus request consumer for one topic/subscription."""
+        from kernel.bus_azure_receiver import AzureServiceBusRequestConsumer
+
+        return AzureServiceBusRequestConsumer(
+            self,
+            graph,
+            topic=topic,
+            subscription_name=subscription_name or self._settings.subscription_name,
+            reply_topic=reply_topic,
+            settings=self._settings,
+        )
 
     def _azure_send(  # pragma: no cover
         self, topic: str, event: dict[str, Any]

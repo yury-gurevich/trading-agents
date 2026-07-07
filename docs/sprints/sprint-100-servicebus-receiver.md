@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-100-servicebus-receiver`
-**Status:** ready for handover (re-based 2026-07-07 onto the 0.60.01 codebase — version notes updated; bus seams unchanged since S67/S99)
+**Status:** closed on branch for operator review (re-based 2026-07-07 onto the 0.60.01 codebase; shipped branch version 0.61.00)
 **Effort:** M–L
 
 ---
@@ -22,7 +22,7 @@
 > - **Hard gate every commit:** `make ci` green — 9 steps, **100 % coverage on non-`# pragma` lines**,
 >   modules **≤ 200 lines**, coding-agent `Agent:`/`Role:` headers. Bump the MINOR from the **actual**
 >   `pyproject.toml` on `main` at branch time (**0.60.01 → 0.61.00**, feat → MINOR zeroes patch)
->   + `uv lock`.
+>   - `uv lock`.
 > - **The unit gate stays infra-free:** all Azure I/O carries `# pragma: no cover`; the Service Bus SDK
 >   stays an **optional** dependency group; the parity test **skips cleanly without creds**.
 > - **Live check needs a provisioned namespace** (see *Prerequisite*). If it isn't provisioned yet, ship
@@ -141,8 +141,8 @@ New capability (distributed serve backend). **0.60.01 → 0.61.00** (feat → MI
 **Start.** From `main` (`git pull`; HEAD ≥ `0d8f4f8`): `git checkout -b sprint-100-servicebus-receiver`.
 Read `kernel/serve_loop.py` (the `RequestConsumer` protocol + `serve_once`), `kernel/bus_azure.py` +
 `kernel/bus_azure_config.py` (the send-only backend to extend), `kernel/claim_check.py`,
-`kernel/envelope.py`, `agents/supervisor/entrypoint.py` (the S99 serve pattern), the **S67** send backend
-+ its parity test (search `tests/` for the Azure publish parity), and **ADR-0005**.
+`kernel/envelope.py`, `agents/supervisor/entrypoint.py` (the S99 serve pattern), the **S67** send backend,
+its parity test (search `tests/` for the Azure publish parity), and **ADR-0005**.
 
 **Gate.** `make ci` green — 9 steps, **100 % coverage on non-`# pragma` lines**, modules ≤ 200 lines,
 coding-agent headers.
@@ -176,3 +176,29 @@ to running the fleet on live Azure infra (DL-35 accepted that trade). Ship S100 
 *communication* is complete and proven at parity — only provisioning + a live run remain. The
 `servicebus`-as-a-tested-credential path (Prerequisite option 1) also closes the loop with DL-36: the bus
 connection string, like every other credential, is verified before it is trusted.
+
+## Closeout evidence
+
+- Branch: `sprint-100-servicebus-receiver`; stopped on branch for operator review, no merge/push to
+  `main`.
+- Version: `pyproject.toml` bumped from branch-point `0.60.01` to `0.61.00`; `uv.lock` refreshed
+  (`trading-agents v0.60.1 -> v0.61.0`).
+- Scope shipped: `AzureServiceBusRequestConsumer` in `kernel/bus_azure_receiver.py`; `AzureServiceBusBus`
+  factory `request_consumer(...)`; receiver settings for subscription, receive batch/timeout,
+  max-delivery-count, and reply topic suffix; `SERVICEBUS_CONNECTION_STRING` alias retained alongside
+  `AZURE_SERVICEBUS_CONNECTION_STRING`; retained live script
+  `scripts/servicebus_receiver_live_check.py`.
+- Parity: unit tests prove `serve_once` over `LocalRequestConsumer` and the Service Bus consumer produce
+  the same response payload; optional live integration passed when the Service Bus credential was present.
+- Gate: `make ci` passed on 2026-07-07 — ruff, format, mypy, import-linter, module-size, module-header,
+  pytest, pip-audit, and detect-secrets. Pytest result: **1385 passed, 5 skipped, 100.00% coverage**.
+  `pip-audit`: **No known vulnerabilities found**. Module hard block kept (`bus_azure_receiver.py` 196
+  lines; new tests/scripts below 200).
+- Live functionality check: `uv run --extra azure python scripts/servicebus_receiver_live_check.py`
+  against namespace `trading-agents-bus` served one claim-checked request and resolved the claim-checked
+  reply. Evidence: `run_id=s100-a721bfdb5d8d`, request topic `s100-a721bfdb5d8d-request`, reply topic
+  `s100-a721bfdb5d8d-reply`, `served=1`, reply payload `{"run_id": "s100-a721bfdb5d8d", "served": true}`,
+  correlation id `c8ec066f-8589-4c45-8c3c-133221d7b688`.
+- Teardown: live script deleted `s100-a721bfdb5d8d-request` and `s100-a721bfdb5d8d-reply`; follow-up
+  namespace sweep reported `remaining_s100_topics=[]`. Earlier failed-run residue
+  `s100-81c5c8b897b1-*` was also deleted. No data files committed.

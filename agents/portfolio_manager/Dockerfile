@@ -8,4 +8,4 @@ COPY kernel/ kernel/
 COPY contracts/ contracts/
 COPY agents/portfolio_manager/ agents/portfolio_manager/
 EXPOSE 8000
-CMD ["uv", "run", "python", "-m", "agents.portfoliomanager.entrypoint"]
+CMD ["uv", "run", "python", "-m", "agents.portfolio_manager.entrypoint"]

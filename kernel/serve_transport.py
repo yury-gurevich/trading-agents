@@ -18,6 +18,13 @@ if TYPE_CHECKING:
     from kernel.serve_loop import RequestConsumer
 
 _REQUEST_TOPIC_SUFFIX = ".requests"
+SERVED_AGENT_TYPES = (
+    "curator",
+    "forecaster",
+    "operator",
+    "researcher",
+    "supervisor",
+)
 
 
 def request_topic(agent_type: str) -> str:

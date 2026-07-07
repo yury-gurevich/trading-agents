@@ -108,6 +108,15 @@ function Upgrade-PostgresSchema {
   if (-not $ok) { throw "alembic upgrade head failed" }
 }
 
+function Prepare-ServiceBusRoutes {
+  Top "SERVICE BUS ROUTES"
+  uv run --extra azure python scripts/servicebus_prepare_routes.py
+  $ok = $LASTEXITCODE -eq 0
+  Check $ok "served request topics + subscriptions"
+  Bot
+  if (-not $ok) { throw "Service Bus route preparation failed" }
+}
+
 # ── Preflight ─────────────────────────────────────────────────────────────────
 function Preflight {
   Top "FLEET PREFLIGHT"
@@ -182,6 +191,7 @@ function Up {
   $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig; $serviceBus = Get-ServiceBusConfig
 
   Upgrade-PostgresSchema
+  Prepare-ServiceBusRoutes
   $kp = Get-MasterKeypair
 
   Top "DEPLOY MASTER"

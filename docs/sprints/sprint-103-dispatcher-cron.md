@@ -1,73 +1,112 @@
-# Sprint 103 — Dispatcher cron: hands-off scheduled runs
+<!-- Agent: planning | Role: sprint handover -->
+# Sprint 103 — Dispatcher cron: the fleet goes hands-off (fleet arc, final item)
 
-**Phase:** Fleet Activation (DL-30 / DL-35)
+**Phase:** Fleet Activation (DL-30 / DL-35 — the arc's end state: a self-driving platform)
 **Branch:** `sprint-103-dispatcher-cron`
-**Status:** planned
-**Effort:** S–M
+**Status:** ready for handover (refreshed 2026-07-08 onto the 0.62.00 distributed fleet; the
+pre-S104 draft predated Postgres, graph-pull maturity, and the S102 deploy tooling)
+**Effort:** M
 
 ---
 
-## Goal
+## Design decisions taken at packaging (LAW-06 — roads not taken recorded)
 
-Make the fleet run **unattended**. Today the `RunRequest` that starts a run is placed by hand or by the
-demonstrator ([`scripts/run_local.py`](../../scripts/run_local.py)); the dispatcher cron was deferred at
-S83. This sprint schedules the daily trigger so the whole fleet runs on its own — the last step to a live,
-self-driving platform.
+1. **Standing posture: the fleet stays deployed, scaled to zero outside a daily window.** S102
+   deleted all 13 apps after its proof; a scheduled run needs the fleet to exist. Chosen: keep the
+   13 Container Apps deployed with a **KEDA cron scale rule** (replicas 0 → 1 for a bounded daily
+   processing window, master's window opening ~5 min before the agents'), so idle cost is ≈ $0 and
+   the window costs ~1–2 h × 13 small containers. *Ruled out:* standing fleet at min-replicas 1
+   (24/7 billing for a once-daily batch); deploy-then-delete around each run (fragile, slow, makes
+   every run an infra operation). Rollback is trivial: `deploy-agents.ps1 down` still deletes
+   everything.
+2. **Trigger mechanism: Azure Container Apps Job (cron trigger)** running the dispatcher
+   entrypoint. Native, scale-to-zero between fires, visible execution history. *Ruled out:*
+   always-on scheduler container (pays 24/7 to sleep); GitHub Actions cron (couples production
+   scheduling to the repo host); Logic Apps (new service for one cron line).
+3. **Idempotency via the keyed merge, not new state.** `place_run_request` merges on
+   `run-request:{run_id}` — a deterministic day-keyed `run_id` (e.g. `sched-2026-07-08`) makes a
+   double-fire merge into the same node. No dedupe table.
+4. **Fire time: post-close.** Daily cron at **22:30 UTC** (after the 20:00/21:00 UTC NYSE close in
+   DST/standard time) so EOD bars are final; the calendar gate inside the entrypoint decides
+   whether the day was a trading session. *Ruled out:* pre-open (yesterday's bars — staleness gate
+   friction, S87/DL-10).
 
-## Scope
+## Codex kickoff (paste this)
 
-**In:**
+> Execute **Sprint 103 — dispatcher cron** exactly as specified in this file
+> (`docs/sprints/sprint-103-dispatcher-cron.md`), including the four packaging decisions above.
+> Read first: `orchestration/start.py` (`place_run_request` — the keyed merge is the idempotency
+> mechanism), `agents/provider/domain/market_calendar.py` (S87 session calendar; orchestration may
+> import it — layering allows orchestration → agents), `infra/deploy-agents.ps1` + the S102
+> closeout (deploy tooling + teardown discipline), and `docs/laws/functionality-checks.md` (S102
+> row — the distributed-run evidence pattern).
+>
+> - **Start:** from `main` (`git pull`), `git checkout -b sprint-103-dispatcher-cron` (delete any
+>   stale local branch first). **Hard gate:** `make ci` green, 100 % coverage, ≤200-line modules,
+>   headers. Bump `pyproject.toml` **0.62.00 → 0.63.00** (feat: scheduled hands-off runs) +
+>   `uv lock`.
+> - **Part A — the dispatcher trigger (code, CI-tested):**
+>   1. A pure, unit-tested decision core (orchestration layer): given today's date + the calendar →
+>      trading day? → day-keyed `run_id` (`sched-YYYY-MM-DD`) → place or skip. Non-trading day =
+>      clean no-op with a stated reason. Reuse the provider calendar; do **not** duplicate the
+>      holiday table.
+>   2. A thin scheduled entrypoint (`scripts/` or `orchestration/`, trace the house pattern) that
+>      loads env, runs the decision core against the Postgres graph, and **fails loud**: nonzero
+>      exit on any error (unreachable graph, calendar exhaustion past 2027 = explicit error, not
+>      silent weekday fallback). Log line states placed/skipped + the run_id. Never print the DSN.
+>   3. **Universe:** reuse the same ticker-universe source the existing run paths use (trace
+>      `scripts/run_local.py` / scanner universe; state in the closeout which source and why). No
+>      new universe logic.
+>   4. Unit tests: trading-day placement, weekend/holiday skip, double-fire merges to one node
+>      (assert same node key), calendar-window-exceeded error path.
+> - **Part B — the schedule + standing fleet (live):**
+>   1. **Infra:** a Container Apps **Job** (cron `30 22 * * *`, UTC) running the dispatcher image;
+>      KEDA **cron scale rules** on the 13 apps (master opens ~22:25, agents 22:30, window closes
+>      after ~2 h — make the window bounds parameters of `deploy-agents.ps1`/bicep, not literals).
+>      Secrets via the existing secretref pattern (`postgres-dsn`, Service Bus) — mirror, don't
+>      reinvent.
+>   2. **Live check (sprint-close rule):** deploy the fleet with the scale windows + the job; fire
+>      the job **manually once** (same entrypoint, same image) on a trading day and prove the
+>      unattended chain: job log shows `placed sched-<date>`, the fleet wakes/completes
+>      provider→…→Snapshot distributed, `scripts/accept.py` → **`ACCEPTANCE PASS`**; fire it a
+>      second time and prove the double-fire merged (one `RunRequest`, no second run); simulate a
+>      non-trading day (entrypoint with an injected date) → clean skip. Alpaca **paper** only.
+>   3. **Cost proof:** after the window closes, show all 13 apps at 0 replicas (`az containerapp
+>      show` replica counts or equivalent) and the job idle. **The fleet stays deployed** — that is
+>      this sprint's end state (decision 1). Tear down only the run's graph artifacts
+>      (`pg_teardown.py` on the check's stamped run) — production registry rows and topics stay.
+>   4. **Runbook:** `docs/deployment.md` — how the schedule is configured, paused (job disable +
+>      scale window to 0), and observed (where to see fired/skipped/failed executions).
+>      Record the check in `docs/laws/functionality-checks.md`.
+> - **Out of scope — flag, don't build:** live-capital promotion (ADR-only stage gate), intraday
+>   or multi-run scheduling, retries/alerting infrastructure beyond fail-loud exit codes, any agent
+>   contract change, universe changes.
+> - **Do NOT merge or push to `main`** — commit on the branch only; fill **Closeout evidence** here.
 
-- A scheduled trigger that calls `orchestration/start.place_run_request` once per trading day: an Azure
-  Container Apps **Job** with a cron schedule (or a scheduled trigger container), placing the `RunRequest`
-  node against the permanent store.
-- Market-calendar awareness — no run on weekends/holidays (reuse the existing exchange-calendar /
-  trading-session logic from S87 rather than a bare cron).
-- Idempotency — a given trading day gets exactly one `RunRequest` even if the job fires twice (dedupe on a
-  day key, mirroring the graph-pull gate pattern).
-- Observability — the scheduled placement is visible (a log line / observatory note); a missed or failed
-  schedule is loud (fail-loud, per the P4 exit criterion "the fail-loud scheduler").
+---
 
-**Out:** no change to the run itself (S102 proved it); no autopilot / live-capital promotion (that is a
-separate stage-gate decision, ADR-only).
+## Notes for the coding agent
 
-## Deliverables
+- Layering: orchestration → agents imports are legal (import-linter allows the layers above
+  `agents` to depend on it); agent → agent stays forbidden.
+- The calendar's holiday table ends at 2027 — that is why the entrypoint must fail loud past the
+  window rather than silently degrade to weekday-counting for scheduling (staleness counting may
+  degrade; *run placement* may not).
+- Neon quirks: cold start ~0.5 s after autosuspend — connect timeout ≥ 10 s in the job entrypoint.
+- S102's `servicebus_prepare_routes.py` ran at deploy time; a nightly-waking fleet must not depend
+  on manual route prep — routes already exist as production topics, just verify, don't recreate.
+- At this sprint's exit the platform is **self-driving in paper mode**: cron places the trigger,
+  the fleet wakes, runs distributed on Postgres, proves acceptance, and scales back to zero. That
+  is the DL-35 full-activation end state.
 
-- The scheduled job definition in [`infra/`](../../infra) (bicep + deploy script) + the trigger
-  entrypoint (reusing `place_run_request`).
-- Calendar + idempotency logic with unit tests (the pure parts are CI-testable even though the schedule
-  itself is infra).
-- A short runbook in [`docs/deployment.md`](../deployment.md): how the schedule is configured, paused, and
-  observed.
+---
 
-## Decisions to confirm (before building)
+## Closeout evidence
 
-- **Schedule mechanism.** Container Apps Job (cron) vs. a small always-on scheduler container vs. an
-  external scheduler (Logic App / GitHub Actions cron). Recommend a Container Apps Job — native, cheap,
-  scale-to-zero between fires. **Confirm.**
-- **Run time.** When in the trading day to place the `RunRequest` (pre-open scan vs. post-close). Confirm
-  against the data feeds' freshness and the staleness gate (S87 / DL-10).
-
-## Acceptance / exit criteria
-
-- [ ] A scheduled fire places exactly one `RunRequest` on a trading day and none on a non-trading day.
-- [ ] The fleet completes an **unattended** run from that trigger (observed end-to-end in logs / observatory).
-- [ ] A double-fire is deduped; a failed/missed schedule is surfaced loudly.
-- [ ] `make ci` green on the CI-testable calendar/idempotency units; modules ≤ 200 lines.
-
-## Dependencies
-
-- **S102** (the fleet runs distributed on the permanent store). Reuses S83 `place_run_request`, S87
-  trading-session calendar.
-- Closes the "Dispatcher cron" item deferred since S83 and listed in STATE **Next**.
-
-## Version bump
-
-New capability (scheduled hands-off runs). **0.46.00 → 0.47.00** (feat → MINOR, HARD RULE)
-— renumber if S100's bump lands differently; the coding agent stamps the actual bump at merge.
-
-## Notes
-
-At this sprint's exit the platform is **self-driving**: master bootstraps the fleet, a cron places the
-daily trigger, agents run graph-pull + served across containers on a durable store, and the acceptance
-gate proves each run. That is the full-activation end state DL-35 chose.
+<!-- Coding agent: replace this comment. Required: files changed; version/deps; unit evidence for
+the decision core (trading day / skip / double-fire merge / calendar-exhaustion error); exact
+`make ci` summary (counts + coverage); live evidence — job manual-fire log (placed run_id),
+distributed run to Snapshot + verbatim ACCEPTANCE PASS, second-fire dedupe proof, non-trading-day
+skip proof, 0-replica cost proof after the window, runbook location; pg_teardown of the check's
+run artifacts; the functionality-checks.md row. State any deviation from spec explicitly.
+Do not merge. -->

@@ -211,13 +211,12 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Fleet arc — S103 (dispatcher cron) is the last item.** S102 proved the fleet distributed
-  (0.62.00); S103 makes runs hands-off: scheduled daily `RunRequest` placement, calendar-aware,
-  idempotent. **Refresh its pre-S104 draft first** — it predates graph-pull maturity, Postgres, and
-  the S102 deploy tooling (`deploy-agents.ps1 -Tag`, route prep, teardown/cost-stop discipline).
-  Decide at packaging: where the cron lives (Container Apps job vs. in-fleet dispatcher container)
-  and the fleet's standing posture (S102 deleted all 13 apps after the proof — a scheduled run
-  needs a deploy-before/teardown-after story or a standing fleet decision).
+- **Fleet arc — S103 (dispatcher cron): handover refreshed 2026-07-08, Codex-ready**
+  (`docs/sprints/sprint-103-dispatcher-cron.md`). Packaging decisions recorded in the doc (LAW-06):
+  fleet **stays deployed, KEDA cron scale-to-zero window** (ruled out: 24/7 min-replicas 1;
+  deploy-per-run); trigger = **Container Apps Job** cron 22:30 UTC post-close; idempotency via the
+  day-keyed `run-request:{run_id}` merge; calendar gate fails loud past the 2027 holiday window.
+  Exit state = the platform self-driving in paper mode. Version 0.62.00 → **0.63.00** (feat).
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

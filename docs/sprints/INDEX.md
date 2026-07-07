@@ -33,6 +33,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Q5 (part A)** | S113 | Qlib workflow adoption: governed factor proposal — bounded factor catalogue + LLM proposes an in-catalogue factor (enum-guarded, fail-open, LLM only in composition root) → S112 walk-forward scores it → `FactorProposal` with `BacktestEvidence` into the review queue. LLM never drives; researcher `external_io=()` intact. Shadow→promote is S115 (part B). | **complete** — shipped 0.57.00 (2026-07-06, merged `3ec2d9e`); live check: GPT-5.5 selected in-catalogue `momentum lookback=60`, off-menu selection failed open |
 | **Q5 (part B)** | S115 | Qlib workflow adoption: factor shadow signal — approved factor → live forecaster shadow emitter (duplicated catalogue math, parity test, OFF by default per Q2 precedent), additive `forecast_factor` capability, generic scorecard by `model_id`, operator run-book for promote/kill on existing P10/stage rails. Closes the Q5 governed factor-mining loop. | **complete** — shipped 0.58.00 (2026-07-07, merged `ab66caf`); live check: 2 factor ShadowPredictions on Aura, scorecard populated, default-off wrote 0 nodes |
 | **DL-43 (step 1)** | S116 | Postgres migration: `PostgresGraphStore` adapter (psycopg 3) over the 6-method port, **alembic-managed schema** (`infra/migrations/`), backend parity suite across InMemory/Neo4j/Postgres, dual env selector (`POSTGRES_DSN` wins, `NEO4J_URI` = rollback), FK-ordered teardown script. Live check on the provisioned Neon free (Sydney) instance. | **complete** — shipped 0.59.00 (2026-07-07, merged `5f11b93`); Neon live: alembic applied, suite 7 passed, slice + teardown to 0 |
+| **DL-43 (step 2)** | S117 | Postgres fleet swap: `POSTGRES_DSN` into Key Vault via the S108 tested-before-insert seeder, composition defaults flipped to Postgres (`NEO4J_URI` stays as rollback), `alembic upgrade head` as deploy step, `DEP-POSTGRES` probe, **ADR-0001 superseded** (Postgres system of record; Neo4j analysis workbench; ADR-0008 amended). Live: seeder read-back + in-process fleet slice on Neon + teardown. | **packaged — ready for Codex** |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
@@ -56,7 +57,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S117**, then S118 …
+1. Next number: **S118**, then S119 …
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

@@ -1987,3 +1987,43 @@ unit coverage path; in-memory and Celery behavior stay unchanged.
 
 **Status.** DECIDED and implemented on `sprint-100-servicebus-receiver`; live namespace smoke passed on
 `trading-agents-bus` with disposable topics torn down.
+
+---
+
+## DL-44 · Broker is truth for holdings; the graph must reconcile — teardown discipline meets the production era  ·  status: DIRECTION → S120 (2026-07-08)
+
+**Trigger.** Operator, after the first fully unattended scheduled run (2026-07-07 22:30 UTC fire):
+*"capture it and take care of it straight away after the coding agent hands over the previous work."*
+The observed defect: the unattended run **re-bought CSCO (89 sh) on top of the manual S103 check's
+88 sh** because the live-check teardowns had deleted the `Position`/`Fill` nodes for trades the
+Alpaca paper account still holds. Graph state and broker state diverged; the fleet started its solo
+run blind to real holdings. Also observed: the 22:34 UTC after-hours order sits `pending` in its
+`Fill` node forever — nothing ever refreshes broker order status after run end.
+
+**The distinction that matters.** Teardown-to-zero was the *right* discipline while every live run
+was a disposable proof (S99→S118 pattern: stamp, verify, delete). S103 changed the regime: scheduled
+runs are **production**, and the broker account is a *standing* stateful system the graph merely
+mirrors. Two truths now coexist and must be reconciled, not assumed equal:
+- **Broker = source of truth for holdings** (positions, fills, cash) — it executes reality.
+- **Graph = source of truth for lineage** (why each position exists: the DL-41 gate evidence,
+  provenance chain, decisions). Lineage can never be recovered from the broker; holdings can never
+  be trusted from the graph.
+
+**Direction (S120).** (1) Additive read-only `positions()` on the Broker port (Alpaca GET
+/v2/positions; PaperBroker returns its book). (2) An execution-owned reconciliation step at run
+start: fetch broker positions + refresh any `pending` `Fill` statuses, write a
+`BrokerPositionSnapshot`; divergence vs graph `Position` nodes → **loud** (`Flag`, supervisor path)
++ adopt broker truth with provenance `reconciled-from-broker` (never silently fabricate entry
+lineage). Monitor reconciles its `Position` nodes from the snapshot (islands: execution touches
+broker + its own artifacts; monitor owns `Position`). (3) Teardown discipline amended: checks that
+trade must reconcile after teardown; `Position`/`Fill` rows mirroring real broker holdings are
+production state, not test artifacts. The first live run of the reconciliation **is** the repair of
+the current divergence (AMD/CSCO/HPE/MRVL exist at the broker; graph holds zero).
+
+**Ruled out:** flattening the paper account to re-zero reality (destroys the first real
+accumulating dataset — the P12/DL-09 runway); graph-as-truth for holdings (broker executes; the
+graph can only lag); folding this into monitor-pnl-from-broker (S43's queued re-point — related,
+separate; reconciliation is about *existence* of positions, S43 about *valuation*).
+
+**Status.** DIRECTION — packaged as **S120** (`docs/sprints/sprint-120-broker-reconciliation.md`),
+queued immediately after S119's handback (operator: "straight away after the previous work").

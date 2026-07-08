@@ -232,10 +232,16 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Watch the standing fleet (operational, no sprint).** The first fully unattended scheduled
-  fire is the next 22:30 UTC trading day — check the `dispatcher-cron` execution log + acceptance
-  on that run. The scheduled runs now accumulate real daily paper-trading data on the spine —
-  the runway P12 scorecard-run and DL-09 filter-labels have been waiting for.
+- **S120 — broker reconciliation (DL-44): packaged, executes immediately after S119's handback**
+  (`docs/sprints/sprint-120-broker-reconciliation.md`, operator: "straight away after the previous
+  work"). **The first unattended fire HAPPENED (2026-07-07 22:30 UTC) and worked** — full lineage
+  to Snapshot on Neon, CSCO buy 89 accepted at 22:34 — **and exposed DL-44**: teardowns had
+  deleted the Position/Fill rows for holdings the paper account still has, so the solo run
+  re-bought CSCO on top of 88 held shares, and after-hours `Fill`s stay `pending` forever. Policy
+  (DL-44): broker = truth for holdings, graph = truth for lineage; execution-owned run-start
+  reconciliation (`BrokerPositionSnapshot`, loud divergence Flag), monitor adopts broker truth,
+  teardown discipline amended. The S120 live check IS the repair. Version (post-S119) → feat.
+  Paper account meanwhile: 4 positions (AMD/CSCO/HPE/MRVL), equity ~$100.3k, +$274 unrealized.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

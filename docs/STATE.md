@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 02:15 AEST · **Version:** 0.62.00 · **`main` clean through S102 — the fleet is proven distributed.**
+**Last updated:** 2026-07-08 11:20 AEST · **Version:** 0.63.00 · **FLEET ARC COMPLETE — the platform is self-driving in paper mode.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -13,11 +13,13 @@ its success factors are *proven* (tests, `make ci`, the named live check) — ne
 Since P14 the project runs as **etalon-first continuous improvement** (DL-19). Two active arcs (DL-35
 reverses the etalon pause for the fleet workstream only):
 
-- **Fleet-serve transport (DL-35)** — give the control-plane agents a real serve/consume path so the
-  distributed fleet can run. **S97–S100 + S102 shipped — the fleet is PROVEN DISTRIBUTED: 13
-  containers, 12-agent activation, distributed `ACCEPTANCE PASS`, five control-plane round-trips
-  over Service Bus.** Remaining: S103 (dispatcher cron — refresh its pre-S104 draft first). S101 was
-  **absorbed by S116–S118** (the permanent spine is Neon Postgres).
+- **Fleet-serve transport (DL-35) — ARC COMPLETE (S97–S100, S102, S103; S101 absorbed by
+  S116–S118).** The DL-35 full-activation end state is reached and live: a Container Apps Job
+  places a calendar-gated day-keyed `RunRequest` at 22:30 UTC, the 13-container fleet wakes on
+  KEDA cron windows, runs graph-pull + served-over-Service-Bus on the Neon Postgres spine, proves
+  `ACCEPTANCE PASS`, and scales back to zero. **The fleet + dispatcher-cron job are DEPLOYED and
+  STANDING** (idle ≈ $0) — pausing = disable the job + zero the scale windows (runbook in
+  `docs/deployment.md`).
 - **Credential-security + bounded self-healing (DL-36) — ARC COMPLETE.** The master tests every
   credential before handover; failure → refuse + `Escalation` → LLM plans a bounded remediation →
   eval-gated auto-execute (one shot) → human. **A/B/C/D shipped (S104/S105/S106/S107)**; **S108** seeds
@@ -27,6 +29,22 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S103 (fleet arc FINAL, 0.62.00→0.63.00) — THE PLATFORM IS SELF-DRIVING (paper mode).**
+  Dispatcher cron shipped: pure calendar-gated decision core
+  (`orchestration/scheduled_dispatch.py` — provider NYSE calendar via a small port, day-keyed
+  `sched-YYYY-MM-DD` run_id, `CalendarWindowExceededError` past the 2027 holiday table instead of
+  silent weekday fallback), thin fail-loud job entrypoint (`scripts/dispatch_scheduled_run.py`,
+  as_of = UTC today, DSN never printed), universe = committed sp100 file via the shared
+  `load_universe_file()` (run_local now uses it too). Infra: `dispatcher-cron` Container Apps Job
+  (`30 22 * * *` UTC) + KEDA cron scale windows on all 13 apps (master 22:25, agents 22:30, close
+  00:30 UTC). Live (evidence in the sprint doc + `functionality-checks.md`): manual fire placed
+  `sched-2026-07-08` → distributed chain to Snapshot → **`ACCEPTANCE PASS`** (99/99 tickers, 1
+  CSCO paper buy filled); second fire merged to `run_request_count=1`; injected 2026-07-04 →
+  clean skip, 0 RunRequests; all 13 apps at 0 replicas after the window; teardown to
+  `remaining_sched_nodes=0/edges=0` with fleet/job/registry/topics standing. Codex-built,
+  reviewed, `make ci` re-verified (1404 passed, 100%). Merged `6caa2f6`. **DL-35 end state
+  reached: cron fires → fleet wakes → runs → proves acceptance → sleeps.**
 
 - **S102 (fleet arc, 0.61.00→0.62.00) — THE FLEET IS PROVEN DISTRIBUTED.** Part A: env-selected
   serve transport (`kernel/serve_transport.py::consumer_from_env` — Service Bus consumer when a
@@ -191,8 +209,8 @@ Older sprints — DL-36 A/B (S104/S105) in the arc above; S77–96 → [STATE-03
 
 ## Now
 
-On `main` at 0.62.00, no active sprint branch (S102 reviewed and merged — the distributed fleet
-milestone is proven; only S103 remains in the fleet arc). The etalon north-star holds (DL-19):
+On `main` at 0.63.00, no active sprint branch (S103 reviewed and merged — **the fleet arc is
+complete; the platform runs itself daily in paper mode**). The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
 `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
@@ -211,12 +229,10 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **Fleet arc — S103 (dispatcher cron): handover refreshed 2026-07-08, Codex-ready**
-  (`docs/sprints/sprint-103-dispatcher-cron.md`). Packaging decisions recorded in the doc (LAW-06):
-  fleet **stays deployed, KEDA cron scale-to-zero window** (ruled out: 24/7 min-replicas 1;
-  deploy-per-run); trigger = **Container Apps Job** cron 22:30 UTC post-close; idempotency via the
-  day-keyed `run-request:{run_id}` merge; calendar gate fails loud past the 2027 holiday window.
-  Exit state = the platform self-driving in paper mode. Version 0.62.00 → **0.63.00** (feat).
+- **Watch the standing fleet (operational, no sprint).** The first fully unattended scheduled
+  fire is the next 22:30 UTC trading day — check the `dispatcher-cron` execution log + acceptance
+  on that run. The scheduled runs now accumulate real daily paper-trading data on the spine —
+  the runway P12 scorecard-run and DL-09 filter-labels have been waiting for.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

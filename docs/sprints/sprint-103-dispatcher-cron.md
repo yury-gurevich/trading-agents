@@ -3,8 +3,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35 — the arc's end state: a self-driving platform)
 **Branch:** `sprint-103-dispatcher-cron`
-**Status:** ready for handover (refreshed 2026-07-08 onto the 0.62.00 distributed fleet; the
-pre-S104 draft predated Postgres, graph-pull maturity, and the S102 deploy tooling)
+**Status:** shipped — merged `6caa2f6` (0.63.00, 2026-07-08); closeout evidence below
 **Effort:** M
 
 ---

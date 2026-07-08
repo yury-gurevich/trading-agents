@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 11:20 AEST · **Version:** 0.63.00 · **FLEET ARC COMPLETE — the platform is self-driving in paper mode.**
+**Last updated:** 2026-07-08 15:05 AEST · **Version:** 0.64.00 · **S119 merged; next: S120 (broker reconciliation) → S121 (judge promotion + challenger recompile).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -29,6 +29,19 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S119 (DL-42, 0.63.00→0.64.00) — DELIBERATION ROLE PROMPTS ARE NOW COMPILED PREDICTORS.**
+  Second real `PromptOptimizer` instance (ADR-0010): kernel `DeliberationPrompts` override
+  (default byte-identical to the hand-written champions — pinned by test), kernel-pure artifact
+  loader (`deliberation_prompt_artifacts.py`), DSPy compile pipeline + champion-vs-challenger
+  comparison scripts, env opt-in in `scripts/deliberate.py`, per-role artifacts committed.
+  Live report (72 debate + 72 scorer calls, GPT-5.5 debaters / Opus judge; transcripts under
+  `docs/reports/sprint-119-deliberation-roles/`): **judge artifact improves** (94%/94% pass vs
+  78%/83%, stability 100% vs 75%), defender flat, **challenger artifact regresses** (61%) — the
+  per-role gating decision earned its keep. All four firewall checks PASS, `regressed: none`.
+  **No default flipped — promotion operator-held; operator directed resolution "sooner rather
+  than later" → S121 packaged** (promote judge, recompile challenger, golden re-freeze).
+  Codex-built, reviewed, `make ci` re-verified (1421 passed, 100%). Merged `353d983`.
 
 - **S103 (fleet arc FINAL, 0.62.00→0.63.00) — THE PLATFORM IS SELF-DRIVING (paper mode).**
   Dispatcher cron shipped: pure calendar-gated decision core
@@ -232,6 +245,12 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
+- **S121 — judge promotion + challenger recompile (S119 resolution): packaged, executes after
+  S120** (`docs/sprints/sprint-121-judge-promotion-challenger-recompile.md`; operator directed
+  resolution 2026-07-08 — pasting the kickoff is the promotion approval). Promote the compiled
+  judge into `JUDGE_SYSTEM` (artifact `2026-07-08-s119-v4`), **golden re-freeze mandatory**, one
+  bounded challenger recompile gated against the promoted-judge baseline (keeping the champion is
+  a valid outcome). Version: PATCH from main. Defender untouched.
 - **S120 — broker reconciliation (DL-44): packaged, executes immediately after S119's handback**
   (`docs/sprints/sprint-120-broker-reconciliation.md`, operator: "straight away after the previous
   work"). **The first unattended fire HAPPENED (2026-07-07 22:30 UTC) and worked** — full lineage

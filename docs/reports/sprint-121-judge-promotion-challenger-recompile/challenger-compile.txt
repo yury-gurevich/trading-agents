@@ -1,0 +1,1 @@
+wrote challenger: scripts\deliberation_challenger_prompt.json

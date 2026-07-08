@@ -1,0 +1,10 @@
+ENV_OPT_IN_SET: False
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+
+DELIBERATION — Alpha158 is enabled, so trust its contribution to the score.
+context: Alpha158 is part of the scoring stack. The Alpha158 pillar ships with WEIGHT = 0.00 (off by default, S68/Q2); it contributes nothing to the composite despite being enabled.
+------------------------------------------------------------
+[defender   r1]  WEIGHT = the scoring-stack multiplier that determines how much the Alpha158 pillar contributes to the composite score. Since Alpha158 ships with WEIGHT = 0.00, its effective contribution is exactly zero even when the pillar is enabled. Therefore, the safest pro-decision interpretation is: it is acceptable to “trust its contribution” because the system is not actually relying on Alpha158 to move the score. The evidence directly supports this: Alpha158 is present in the stack and enabled, but with WEIGHT = 0.00 it contributes nothing to the composite, so it cannot distort ranking or decisions. Thus enabling Alpha158 is operationally harmless under the shipped configuration.
+[challenger r1]  WEIGHT = the scoring-stack multiplier determining Alpha158’s contribution to the composite score. Because Alpha158 has WEIGHT = 0.00, it contributes nothing despite being enabled, so “trust its contribution” is factually false: there is no contribution to trust. This forces REVISE/OVERTURN, not a policy preference, because the decision’s stated justification relies on a disabled signal and misattributes confidence to a model component that cannot affect the live score.
+------------------------------------------------------------
+VERDICT: REVISE — the Alpha158 weight is 0.00, so although enabled it contributes nothing to the score — trusting its contribution relies on a disabled signal

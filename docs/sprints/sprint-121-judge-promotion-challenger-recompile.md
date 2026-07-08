@@ -95,8 +95,102 @@ the compile — or by honestly keeping the hand-written champion if the new arti
 
 ## Closeout evidence
 
-<!-- Coding agent: replace this comment. Required: files changed; version/deps; exact `make ci`
-summary (counts + coverage); the promoted JUDGE_SYSTEM diff reference + artifact citation; golden
-re-freeze before/after robust-passing sets + firewall PASS line; challenger call plan + verbatim
-comparison table + the adopt-or-keep decision with numbers; live default-prompt deliberation
-proof (no env opt-in); functionality-checks.md row; statement of any deviation. Do not merge. -->
+Completed on branch `sprint-121-judge-promotion-challenger-recompile`; not merged and not pushed to
+`main`.
+
+Files changed:
+
+- Prompt promotion / split: `kernel/deliberation.py`, `kernel/deliberation_prompts.py`.
+- Artifact loader pins/tests: `tests/test_deliberation_prompt_artifacts.py`.
+- Challenger role-only compile support: `scripts/compile_deliberation_prompts.py`,
+  `tests/test_deliberation_prompt_pipeline.py`.
+- Live artifacts/evidence: `scripts/deliberation_challenger_prompt.json`,
+  `scripts/deliberation_golden.json`,
+  `docs/reports/sprint-121-judge-promotion-challenger-recompile/`.
+- Functionality and sprint indices: `docs/laws/functionality-checks.md`,
+  `docs/sprints/README.md`, `docs/sprints/INDEX.md`, `docs/STATE.md`.
+- Version/deps: `pyproject.toml` `0.65.00 -> 0.65.01`; `uv.lock` refreshed.
+
+Local gate:
+
+- Focused pre-live slice after promotions:
+  `uv run pytest tests/test_deliberation.py tests/test_deliberation_prompt_artifacts.py tests/test_deliberation_prompt_pipeline.py --no-cov`
+  passed: `28 passed`.
+- Focused Ruff and module/header checks passed; `kernel/deliberation_prompts.py` is `199` lines
+  after the split/promotions.
+- Final `make ci`: `1439 passed, 5 skipped`, `100.00%` coverage (`9946` stmts, `0`
+  miss, `2016` branches, `0` partial). Ruff, format check, mypy, import-linter,
+  module hard block, headers, detect-secrets, and the test suite passed. The known optional
+  optimizer dependency advisory `diskcache 5.6.3 / CVE-2025-69872` remains reported by
+  `pip-audit` and ignored by the Makefile.
+
+Promoted defaults:
+
+- `JUDGE_SYSTEM` now comes from `scripts/deliberation_judge_prompt.json`, task
+  `deliberation.judge`, version `2026-07-08-s119-v4-judge-claude-opus-4-8`.
+- `CHALLENGER_SYSTEM` now comes from `scripts/deliberation_challenger_prompt.json`, task
+  `deliberation.challenger`, version `2026-07-08-s121-v5-challenger-gpt-5.5`.
+- `DEFENDER_SYSTEM` is untouched.
+- Tests pin both promoted constants byte-for-byte to their committed artifacts; the default prompt
+  byte-identical-to-constants test remains.
+
+Golden re-freeze:
+
+- Before robust-passing set from the pre-S121 golden:
+  `['alpha158-weight-zero', 'calendar-staleness', 'lightgbm-shadow', 'pooled-sigma']`.
+- Re-freeze command:
+  `uv run --extra llm python scripts/deliberation_gate.py --freeze --real --runs 3`.
+- After robust-passing set:
+  `['alpha158-weight-zero', 'calendar-staleness', 'fixed-fraction-size', 'lightgbm-shadow', 'pooled-sigma']`.
+- Re-frozen fractions:
+  `{'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 0.333, 'fixed-fraction-size': 1.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}`.
+- Firewall check on the re-frozen baseline:
+  `regressed: none`, `gained: none`, `VERDICT: PASS`.
+
+Challenger call plan and result:
+
+- Role-only compile command:
+  `uv run --extra optimizer python scripts/compile_deliberation_prompts.py --role challenger --debate-model gpt-5.5 --judge-model claude-opus-4-8 --version 2026-07-08-s121-v5 --output-dir scripts`.
+- The compiler path made no debate/model calls; the live comparison plan was
+  `6 cases x 4 prompt sets x 3 repeats = 72 debate calls (+72 scorer calls)`, with
+  `--max-debate-calls 100`. Debater/Judge budgets stayed at `8000/2000`.
+- Final promoted-judge comparison table, verbatim from
+  `docs/reports/sprint-121-judge-promotion-challenger-recompile/live-report.txt`:
+
+| role | champion pass kw/judge | challenger pass kw/judge | champion understanding | challenger understanding | champion stability | challenger stability | firewall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| defender | 94%/94% | 100%/100% | 17% | 17% | 100% | 100% | PASS |
+| challenger | 94%/94% | 100%/100% | 17% | 17% | 100% | 100% | PASS |
+| judge | 94%/94% | 100%/94% | 17% | 22% | 100% | 100% | PASS |
+
+Decision: adopt Challenger. The new Challenger artifact beat the champion on pass-rate
+(`100%/100%` vs `94%/94%`), matched stability (`100%` vs `100%`), and passed the firewall. Defender
+remained untouched.
+
+Live default-prompt proof:
+
+- Env opt-in was explicitly absent: `ENV_OPT_IN_SET: False`.
+- Command:
+  `uv run --extra llm python scripts/deliberate.py --real --rounds 1 --decision "Alpha158 is enabled, so trust its contribution to the score." --context "... WEIGHT = 0.00 ..."`
+- Verdict:
+  `VERDICT: REVISE — the Alpha158 weight is 0.00, so although enabled it contributes nothing to the score — trusting its contribution relies on a disabled signal`.
+- Final-default firewall check after adopting Challenger:
+  `regressed: none`, `gained: ['name-correlation']`, `VERDICT: PASS`.
+
+Functionality-check register:
+
+- Added the S121 row to `docs/laws/functionality-checks.md` with the re-freeze, comparison,
+  final-default live verdict, final-default firewall PASS, and no-graph-write statement.
+
+Graph/write hygiene:
+
+- `scripts/deliberation_gate.py`, `scripts/compare_deliberation_prompts.py`, and
+  `scripts/deliberate.py` do not construct a graph store. No graph rows were created and no
+  teardown was needed.
+
+Spec deviations / out of scope:
+
+- No defender changes.
+- No new eval cases.
+- No EvoPrompt/TextGrad (R003), DL-39, DL-40, veto-path logic changes beyond prompt text, or
+  scheduling/broker work.

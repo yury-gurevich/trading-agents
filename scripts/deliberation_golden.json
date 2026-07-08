@@ -4,21 +4,22 @@
   "judge": "claude-opus-4-8",
   "judge_provider": "anthropic",
   "scorer_judge": "gpt-5.5",
-  "date": "2026-07-05",
+  "date": "2026-07-08",
   "library": "class1-grounded",
   "n_runs": 3,
   "threshold": 0.5,
   "passing": [
     "alpha158-weight-zero",
     "calendar-staleness",
+    "fixed-fraction-size",
     "lightgbm-shadow",
     "pooled-sigma"
   ],
   "fractions": {
     "pooled-sigma": 1.0,
-    "calendar-staleness": 0.667,
-    "name-correlation": 0.0,
-    "fixed-fraction-size": 0.0,
+    "calendar-staleness": 1.0,
+    "name-correlation": 0.333,
+    "fixed-fraction-size": 1.0,
     "alpha158-weight-zero": 1.0,
     "lightgbm-shadow": 1.0
   }

@@ -21,12 +21,12 @@ from __future__ import annotations
 import argparse
 import os
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 from agents.execution.broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import FakeDataSource
+from agents.scanner.universe import load_universe_file
 from contracts.provider import OHLCVBar
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
@@ -58,17 +58,6 @@ def _bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
         close=close,
         volume=1_000_000,
     )
-
-
-def _load_universe(path: str) -> tuple[str, ...]:
-    """Read a newline-delimited ticker file (blank lines and # comments ignored)."""
-    lines = Path(path).read_text(encoding="utf-8").splitlines()
-    syms = tuple(
-        s.strip().upper() for s in lines if s.strip() and not s.lstrip().startswith("#")
-    )
-    if not syms:
-        raise SystemExit(f"universe file {path} has no tickers")
-    return syms
 
 
 def _fake_source() -> FakeDataSource:
@@ -165,7 +154,7 @@ def main() -> None:
         print("MODE: demo  (in-memory + fake data)")
 
     if args.universe:
-        tickers = _load_universe(args.universe)
+        tickers = load_universe_file(args.universe)
         print(f"UNIVERSE: {args.universe}  ({len(tickers)} tickers)")
 
     if args.chunk_size:

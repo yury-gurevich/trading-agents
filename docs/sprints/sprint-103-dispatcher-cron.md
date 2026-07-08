@@ -103,10 +103,98 @@ pre-S104 draft predated Postgres, graph-pull maturity, and the S102 deploy tooli
 
 ## Closeout evidence
 
-<!-- Coding agent: replace this comment. Required: files changed; version/deps; unit evidence for
-the decision core (trading day / skip / double-fire merge / calendar-exhaustion error); exact
-`make ci` summary (counts + coverage); live evidence — job manual-fire log (placed run_id),
-distributed run to Snapshot + verbatim ACCEPTANCE PASS, second-fire dedupe proof, non-trading-day
-skip proof, 0-replica cost proof after the window, runbook location; pg_teardown of the check's
-run artifacts; the functionality-checks.md row. State any deviation from spec explicitly.
-Do not merge. -->
+**Branch / version.** Completed on `sprint-103-dispatcher-cron`; do not merge to `main`.
+`pyproject.toml` moved `0.62.00` -> `0.63.00` (`feat: scheduled hands-off runs`) and
+`uv lock` was refreshed. Local Docker was not used; GHCR images were built by GitHub Actions.
+
+**Files changed.**
+
+- Dispatcher: `orchestration/scheduled_dispatch.py`, `scripts/dispatch_scheduled_run.py`,
+  `orchestration/Dockerfile`.
+- Calendar/universe reuse: `agents/provider/domain/market_calendar.py`,
+  `agents/scanner/universe.py`, `scripts/run_local.py`.
+- Infra: `.github/workflows/build-images.yml`, `infra/deploy-agents.ps1`.
+- Tests/docs/teardown: `orchestration/tests/test_scheduled_dispatch.py`,
+  `tests/test_dispatch_scheduled_run.py`, `agents/scanner/tests/test_universe.py`,
+  `scripts/pg_teardown.py`, `docs/deployment.md`, `docs/laws/functionality-checks.md`.
+
+**Dispatcher behavior.** The pure orchestration decision core uses the provider-owned NYSE
+calendar; non-trading days skip with a reason; dates past the provider calendar window raise
+`CalendarWindowExceededError` instead of falling back to weekday logic. The job entrypoint loads env,
+requires `POSTGRES_DSN`, never prints the DSN, and exits nonzero on errors.
+
+**Universe source.** The scheduled dispatcher uses `FileUniverse()` backed by the committed
+`scripts/universe_sp100.txt`, now via the same `load_universe_file()` helper used by
+`scripts/run_local.py`. That is the existing realistic run universe; `StaticUniverse` remains the
+small four-ticker unit fixture. This was an intentional live-proof pivot after the fixture universe
+produced an incomplete acceptance path.
+
+**Local tests / gate.**
+
+- Focused tests:
+  `uv run pytest agents/scanner/tests/test_universe.py orchestration/tests/test_scheduled_dispatch.py tests/test_dispatch_scheduled_run.py --no-cov`
+  -> `11 passed`.
+- Decision-core coverage includes trading-day placement, weekend/holiday skip, double-fire merge to
+  one keyed `RunRequest`, and calendar-window-exceeded error.
+- Final `make ci`: ruff, format, mypy (`550` source files), import-linter (`4` contracts kept),
+  module-size hard block, headers, pytest, pip-audit, and detect-secrets all passed;
+  pytest `1404 passed, 5 skipped`, coverage `100.00%`.
+
+**Remote image / deploy.**
+
+- GitHub Actions build-images run `28885499730` built and pushed `:s103` images including
+  `ghcr.io/yury-gurevich/trading-agents-dispatcher:s103`.
+- `pwsh infra/deploy-agents.ps1 up -Tag s103` passed preflight: Azure CLI/containerapp extension,
+  Container Apps env, GHCR credentials, Postgres probe, Service Bus config, GHCR images `14/14`,
+  Alembic `upgrade head`, stable Service Bus routes, master + 12 agents, and `dispatcher-cron`
+  schedule `30 22 * * *` UTC.
+- The deployed posture is standing fleet + KEDA cron scale windows: master `25 22 * * *` UTC,
+  agents `30 22 * * *` UTC, all end `30 00 * * *` UTC, desired replicas `1`.
+
+**Live proof.**
+
+- Manual trading-day job execution `dispatcher-cron-k5n6da4` succeeded
+  (`2026-07-07T17:29:09Z` -> `17:29:32Z`) and logged:
+  `placed sched-2026-07-08 reason=NYSE trading session`.
+- Trace for `sched-2026-07-08`: provider returned `99/99` tickers and `3960` bars; scanner
+  evaluated `99` and kept `5`; analyst scored `1`; PM approved `1` CSCO paper buy; execution
+  submitted `1`; monitor reached; reporter wrote `Snapshot`.
+- Acceptance:
+  `ACCEPTANCE  PASS - every stage did its job within its boundaries`.
+- Second fire `dispatcher-cron-v0fbr3u` succeeded (`2026-07-07T17:37:01Z` -> `17:37:26Z`) and
+  logged the same placed line. Lineage proof after the second fire:
+  `run_request_count=1`, and exactly one `RunRequest -> MarketData -> ScanRun -> AnalystRun ->
+  PMRun -> ExecutionRun -> MonitorRun -> Snapshot` chain for `sched-2026-07-08`.
+- Non-trading injection used the same job template with `DISPATCHER_AS_OF=2026-07-04`;
+  execution `dispatcher-cron-47cppif` succeeded (`2026-07-07T17:42:23Z` -> `17:42:48Z`) and logged:
+  `skipped sched-2026-07-04 reason=2026-07-04 is not a NYSE trading session`.
+  Graph proof: `run_request_count=0` for `sched-2026-07-04`.
+- Alpaca paper only: the proof order
+  `pm-run-6f34914d941d415aada73523ab14d2ea:CSCO:buy` was terminal `filled`; no open order remained
+  to cancel.
+
+**Cost / standing end state.** After restoring the normal production cron scale rules, all 13 apps
+reported zero replicas: `master`, `scanner`, `analyst`, `portfolio-manager`, `execution`, `monitor`,
+`reporter`, `forecaster`, `operator`, `supervisor`, `curator`, `researcher`, `provider` all
+`replicas=0`. `az containerapp job execution list` showed terminal executions only; the
+`dispatcher-cron` job remains deployed for the next scheduled fire.
+
+**Teardown.** Only stamped run graph artifacts were removed; production registry rows, Service Bus
+topics, secrets, the Container Apps fleet, and the dispatcher job stayed.
+
+- `uv run python scripts/pg_teardown.py --run-id sched-2026-07-08 --env-file .env`
+  -> `deleted_edges=18 deleted_nodes=17`.
+- `uv run python scripts/pg_teardown.py --run-id sched-2026-07-07 --env-file .env`
+  -> `deleted_edges=11 deleted_nodes=10`.
+- Follow-up proof: `sched-2026-07-07`, `sched-2026-07-08`, and `sched-2026-07-04` all had
+  `lineage_nodes=0 run_requests=0`; raw SQL reported
+  `remaining_sched_nodes=0 remaining_sched_edges=0`.
+
+**Runbook / register.** Runbook updates are in `docs/deployment.md` under "Container Apps Fleet
+Deploy". The functionality-check row is recorded in `docs/laws/functionality-checks.md`.
+
+**Deviations / out-of-scope.** No local Docker. No live-capital promotion, intraday/multi-run
+scheduling, retry/alerting infrastructure, agent contract change, or ticker-list change was built.
+Two setup attempts failed before final proof and were fixed: dispatcher image import path, and an
+Azure `job start --env-vars` date-injection attempt that replaced secret-backed env values. The
+runbook now documents the safe template-level override.

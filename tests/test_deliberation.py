@@ -8,7 +8,14 @@ External I/O: none.
 
 from __future__ import annotations
 
-from kernel import Proposition, deliberate
+from kernel import (
+    CHALLENGER_SYSTEM,
+    DEFENDER_SYSTEM,
+    JUDGE_SYSTEM,
+    DeliberationPrompts,
+    Proposition,
+    deliberate,
+)
 from kernel.deliberation import _parse_verdict
 
 
@@ -102,6 +109,32 @@ def test_without_dedicated_judge_llm_single_model_rules() -> None:
     assert result.verdict.ruling == "uphold"
     assert len(llm.systems) == 3
     assert "JUDGE" in llm.systems[-1]
+
+
+def test_default_prompts_are_byte_identical_to_constants() -> None:
+    llm = _RecordingLLM("for", "against", '{"ruling": "revise", "rationale": "same"}')
+
+    deliberate(llm, _PROP, max_rounds=1)
+
+    assert llm.systems == [DEFENDER_SYSTEM, CHALLENGER_SYSTEM, JUDGE_SYSTEM]
+
+
+def test_role_prompt_overrides_are_used() -> None:
+    llm = _RecordingLLM("for", "against", '{"ruling": "uphold", "rationale": "ok"}')
+    prompts = DeliberationPrompts(
+        defender="DEFENDER compiled prompt",
+        challenger="CHALLENGER compiled prompt",
+        judge="JUDGE compiled prompt",
+    )
+
+    result = deliberate(llm, _PROP, max_rounds=1, prompts=prompts)
+
+    assert result.verdict.ruling == "uphold"
+    assert llm.systems == [
+        "DEFENDER compiled prompt",
+        "CHALLENGER compiled prompt",
+        "JUDGE compiled prompt",
+    ]
 
 
 def test_parse_verdict_valid() -> None:

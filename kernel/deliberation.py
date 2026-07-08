@@ -43,7 +43,26 @@ JUDGE_SYSTEM = (
     "on the merits, not the volume. Reply ONLY as JSON: "
     '{"ruling": "uphold|overturn|revise", "rationale": "<one line>"}.'
 )
-_ROUND_ROLES = (("defender", DEFENDER_SYSTEM), ("challenger", CHALLENGER_SYSTEM))
+
+
+@dataclass(frozen=True)
+class DeliberationPrompts:
+    """The system prompts used by each deliberation role."""
+
+    defender: str
+    challenger: str
+    judge: str
+
+    def round_roles(self) -> tuple[tuple[str, str], ...]:
+        """Return the speaking roles for one debate round."""
+        return (("defender", self.defender), ("challenger", self.challenger))
+
+
+DEFAULT_DELIBERATION_PROMPTS = DeliberationPrompts(
+    defender=DEFENDER_SYSTEM,
+    challenger=CHALLENGER_SYSTEM,
+    judge=JUDGE_SYSTEM,
+)
 
 
 @dataclass(frozen=True)
@@ -113,18 +132,21 @@ def deliberate(
     *,
     max_rounds: int = 3,
     judge_llm: LLMClient | None = None,
+    prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
 ) -> DebateResult:
     """Run the bounded debate and return the transcript + verdict.
 
     Each round: the Defender argues, then the Challenger rebuts, each seeing the
     proposition and the running transcript. After ``max_rounds`` the Judge rules.
     ``judge_llm`` optionally separates that final debate Judge from the arguing
-    model. ``max_rounds`` is clamped to at least 1 — a debate is bounded, never empty.
+    model. ``prompts`` can override one or more role prompts; the default value is
+    the hand-written champion prompts, byte-for-byte. ``max_rounds`` is clamped to
+    at least 1 — a debate is bounded, never empty.
     """
     rounds = max(1, max_rounds)
     transcript: list[Turn] = []
     for r in range(1, rounds + 1):
-        for role, system in _ROUND_ROLES:
+        for role, system in prompts.round_roles():
             text = llm.complete(
                 system=system,
                 user=_render(proposition, tuple(transcript)),
@@ -133,7 +155,7 @@ def deliberate(
             transcript.append(Turn(role, r, text))
     ruling_llm = judge_llm if judge_llm is not None else llm
     raw = ruling_llm.complete(
-        system=JUDGE_SYSTEM,
+        system=prompts.judge,
         user=_render(proposition, tuple(transcript)),
         tool_schema={},
     )

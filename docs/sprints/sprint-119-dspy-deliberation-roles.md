@@ -112,10 +112,110 @@ the ADR-0010 `PromptOptimizer` port after S107's remediation selector)
 
 ## Closeout evidence
 
-<!-- Coding agent: replace this comment. Required: files changed; version/deps; the byte-identical
-no-override test; compile-pipeline unit evidence (fake dspy_module); exact `make ci` summary
-(counts + coverage); live evidence — the real compile call counts + spend note, the per-role
-champion-vs-challenger table verbatim, golden firewall PASS lines (champion + each artifact),
-load-path proof (env set → artifact prompts; env unset → byte-identical constants); committed
-artifact filenames; the functionality-checks.md row; explicit statement that no default was
-flipped. State any deviation from spec explicitly. Do not merge. -->
+Completed on branch `sprint-119-dspy-deliberation-roles`; not merged and not pushed to `main`.
+No local Docker path was used. No default prompt was flipped: the runtime still uses the
+hand-written constants unless `DELIBERATION_PROMPT_ARTIFACT_DIR` is set.
+
+Files changed:
+
+- Kernel prompt override plumbing: `kernel/deliberation.py`, `kernel/deliberation_eval.py`,
+  `kernel/__init__.py`.
+- Kernel-pure artifact parsing/loading/composition: `kernel/deliberation_prompt_artifacts.py`.
+- DSPy prompt optimizer port cleanup: `kernel/dspy_optimizer.py`.
+- Composition-root opt-in: `scripts/deliberate.py`.
+- Drift firewall artifact loading: `scripts/deliberation_gate.py`.
+- Compile/report tooling: `scripts/compile_deliberation_prompts.py`,
+  `scripts/compare_deliberation_prompts.py`.
+- Tests: `tests/test_deliberation.py`, `tests/test_deliberation_prompt_artifacts.py`,
+  `tests/test_deliberation_prompt_pipeline.py`, `tests/test_optimizer.py`.
+- Live evidence/report files: `docs/reports/sprint-119-deliberation-roles/`.
+- Version/deps: `pyproject.toml` bumped `0.63.00` -> `0.64.00`; `uv.lock` refreshed.
+
+Committed artifact filenames:
+
+- `scripts/deliberation_defender_prompt.json`
+- `scripts/deliberation_challenger_prompt.json`
+- `scripts/deliberation_judge_prompt.json`
+
+Unit and CI evidence:
+
+- Byte-identical no-override pin:
+  `uv run pytest tests/test_deliberation.py::test_default_prompts_are_byte_identical_to_constants --no-cov`
+  passed.
+- Compile-pipeline fake DSPy path:
+  `uv run pytest tests/test_deliberation_prompt_pipeline.py::test_compile_deliberation_prompts_writes_role_artifacts --no-cov`
+  passed; the fake module path exercises the artifact writer without network or real DSPy.
+- Focused S119 unit slice passed: `40 passed`.
+- Hard gate `make ci`: `1421 passed, 5 skipped`, `100.00%` coverage
+  (`9671` stmts, `0` miss, `1920` branches, `0` partial). Ruff, format check, mypy
+  over `kernel contracts agents orchestration surfaces`, import-linter, module hard block,
+  headers, detect-secrets, and the test suite passed. The known optional optimizer
+  dependency advisory `diskcache 5.6.3 / CVE-2025-69872` remains reported by `pip-audit`
+  and ignored by the Makefile.
+
+Live compile:
+
+```powershell
+uv run --extra optimizer python scripts\compile_deliberation_prompts.py --debate-model gpt-5.5 --judge-model claude-opus-4-8 --version 2026-07-08-s119-v4 --output-dir scripts
+```
+
+Spend bound called before the final real report:
+
+```text
+CALL PLAN: 6 cases x 4 prompt sets x 3 repeats = 72 debate calls (+72 scorer calls)
+```
+
+Final champion-vs-challenger report table, verbatim from
+`docs/reports/sprint-119-deliberation-roles/live-report.txt`:
+
+| role | champion pass kw/judge | challenger pass kw/judge | champion understanding | challenger understanding | champion stability | challenger stability | firewall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| defender | 78%/83% | 78%/78% | 17% | 17% | 75% | 75% | PASS |
+| challenger | 78%/83% | 61%/61% | 17% | 17% | 75% | 75% | PASS |
+| judge | 78%/83% | 94%/94% | 17% | 17% | 75% | 100% | PASS |
+
+Golden firewall proof, from
+`docs/reports/sprint-119-deliberation-roles/golden-firewall-proof.txt`:
+
+- Champion prompts: `VERDICT: PASS`, `regressed: none`.
+- Defender artifact: `VERDICT: PASS`, `regressed: none`, gained `name-correlation`.
+- Challenger artifact: `VERDICT: PASS`, `regressed: none`.
+- Judge artifact: `VERDICT: PASS`, `regressed: none`, gained `fixed-fraction-size`.
+
+Load-path proof, from
+`docs/reports/sprint-119-deliberation-roles/load-path-proof.txt`:
+
+- Env set: `scripts/deliberate.py` printed artifact stamps
+  `defender=deliberation.defender@gpt-5.5`,
+  `challenger=deliberation.challenger@gpt-5.5`,
+  `judge=deliberation.judge@claude-opus-4-8`; real artifact-loaded deliberation returned
+  `VERDICT: REVISE`.
+- Env unset: `UNSET_PROMPTS_BYTE_IDENTICAL: True` and `UNSET_ARTIFACTS_EMPTY: True`.
+
+Functionality-check register:
+
+- Added the S119 row to `docs/laws/functionality-checks.md`, including the real model setup,
+  final report call plan/table summary, formal firewall PASS proof, load-path proof, `make ci`
+  result, no local Docker path, and no graph-write teardown requirement.
+
+Graph/write hygiene:
+
+- `scripts/deliberate.py` plus kernel deliberation does not construct a graph store. No graph
+  rows were created, and no teardown was needed.
+
+Conversation retention:
+
+- Final live conversations are saved under
+  `docs/reports/sprint-119-deliberation-roles/live-report-transcripts/`.
+- Earlier probe conversations are retained under
+  `docs/reports/sprint-119-deliberation-roles/live-probe-transcripts/`; they show the rejected
+  Challenger calibration before v4 passed the golden firewall.
+
+Spec deviations / out of scope:
+
+- No spec deviation remains in the delivered branch. An earlier Challenger artifact failed
+  `calendar-staleness`; v4 corrected it using the existing Class-1 case library, with no new eval
+  cases authored.
+- Did not promote/default any compiled prompt.
+- Did not build the EvoPrompt/TextGrad bake-off, DL-39, DL-40, live veto path changes, PM gate
+  changes, locked law changes, or new eval cases.

@@ -1,0 +1,8 @@
+CALL PLAN: 6 cases x 4 prompt sets x 3 repeats = 72 debate calls (+72 scorer calls)
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+TRANSCRIPTS: docs\reports\sprint-119-deliberation-roles\live-report-transcripts
+| role | champion pass kw/judge | challenger pass kw/judge | champion understanding | challenger understanding | champion stability | challenger stability | firewall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| defender | 78%/83% | 78%/78% | 17% | 17% | 75% | 75% | PASS |
+| challenger | 78%/83% | 61%/61% | 17% | 17% | 75% | 75% | PASS |
+| judge | 78%/83% | 94%/94% | 17% | 17% | 75% | 100% | PASS |

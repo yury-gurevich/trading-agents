@@ -1930,6 +1930,8 @@ understanding+consistency metric (S11x). Feeds DL-39 (a consistent, complete deb
 training signal). Builds on ADR-0010, DL-31, EXP-004..006, R003.
 
 **Status.** DIRECTION — operator capture (2026-07-05). Package after DL-41 ships.
+**Update 2026-07-08:** packaged as **S119** (`docs/sprints/sprint-119-dspy-deliberation-roles.md`)
+after the fleet arc closed (DL-41 shipped in S114, so the sequencing condition is met).
 
 ---
 

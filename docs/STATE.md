@@ -217,10 +217,13 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **DL-42 — DSPy-compile the deliberation roles (quality/consistency)** — the layer above the now-closed
-  DL-41: metric scaffolding already exists (DL-31 `score_understanding`, EXP-004 scorer, Class-1 eval
-  set, golden firewall). First deliberation instance of the ADR-0010 `PromptOptimizer` port. Package
-  when prioritized.
+- **DL-42 — DSPy-compile the deliberation roles: S119 handover packaged 2026-07-08, Codex-ready**
+  (`docs/sprints/sprint-119-dspy-deliberation-roles.md`). Decisions recorded in the doc (LAW-06):
+  compile all three roles but gate/promote each independently (judge scored objectively on known
+  verdicts); runtime never imports DSPy (artifact-file opt-in via env, byte-identical default);
+  metric = Class-1 pass-rate + `score_understanding` + n=3 verdict stability, golden firewall as
+  hard veto; **promotion stays operator-held** — the sprint ships artifacts + the
+  champion-vs-challenger report only. Version 0.63.00 → **0.64.00** (feat).
 - **Deliberation as a reasoning/competence source (DL-39, DIRECTION)** — the transcript's *why*, not
   the verdict, is the asset: grade whether the expert model reasons at senior-analyst level and learn
   which parameters carry the decision. Assembles DL-31 (`--score`) + DL-09 + ADR-0010/CI-2; needs a

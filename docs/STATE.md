@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 16:55 AEST · **Version:** 0.65.01 · **S121 merged — the compiled judge + challenger are the live deliberation champions.**
+**Last updated:** 2026-07-08 17:10 AEST · **Version:** 0.65.01 · **S121 merged — the compiled judge + challenger are the live deliberation champions.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -247,21 +247,20 @@ Older sprints — DL-36 A/B (S104/S105) in the arc above; S77–96 → [STATE-03
 
 ## Now
 
-On `main` at 0.63.00, no active sprint branch (S103 reviewed and merged — **the fleet arc is
-complete; the platform runs itself daily in paper mode**). The etalon north-star holds (DL-19):
+On `main` at 0.65.01, no active sprint branch and the packaged queue is empty (S119/S120/S121
+all shipped 2026-07-08 on top of the self-driving fleet). Operational watch: the 22:30 UTC run is
+the first with broker reconciliation + compiled deliberation prompts live — expect the pending
+89-share CSCO fill and a qty-mismatch divergence Flag (the reconciliation working, not a defect).
+The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
 `sprint-NN-<slug>` branch; merge to `main` is the deploy trigger (rebuilds + pushes agent images).
 
 ## Next
 
-- **DL-42 — DSPy-compile the deliberation roles: S119 handover packaged 2026-07-08, Codex-ready**
-  (`docs/sprints/sprint-119-dspy-deliberation-roles.md`). Decisions recorded in the doc (LAW-06):
-  compile all three roles but gate/promote each independently (judge scored objectively on known
-  verdicts); runtime never imports DSPy (artifact-file opt-in via env, byte-identical default);
-  metric = Class-1 pass-rate + `score_understanding` + n=3 verdict stability, golden firewall as
-  hard veto; **promotion stays operator-held** — the sprint ships artifacts + the
-  champion-vs-challenger report only. Version 0.63.00 → **0.64.00** (feat).
+- **DL-42 — SHIPPED (S119 0.64.00 + S121 0.65.01).** Compiled judge + challenger are the live
+  champions; defender stays hand-written; golden re-frozen to 5 robust cases. Next layer when
+  prioritized: EvoPrompt/TextGrad bake-off behind the same port (R003).
 - **Deliberation as a reasoning/competence source (DL-39, DIRECTION)** — the transcript's *why*, not
   the verdict, is the asset: grade whether the expert model reasons at senior-analyst level and learn
   which parameters carry the decision. Assembles DL-31 (`--score`) + DL-09 + ADR-0010/CI-2; needs a

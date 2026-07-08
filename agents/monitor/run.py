@@ -15,11 +15,12 @@ from typing import TYPE_CHECKING
 
 from agents.monitor.decide import evaluate_one
 from agents.monitor.domain.positions import position_from_fill
+from agents.monitor.position_book import active_positions
+from agents.monitor.reconcile import reconcile_positions_from_latest_snapshot
 from agents.monitor.result import run_explanation
 from agents.monitor.store import (
     fills_for_run,
     open_position,
-    open_positions,
     write_monitor_run,
 )
 from contracts.monitor import CloseDecision, CloseDecisionSet
@@ -34,7 +35,6 @@ def open_run_positions(
     graph: GraphStore, settings: MonitorSettings, sink: FaultSink, *, source_run_id: str
 ) -> tuple[Node, ...]:
     """Open positions from a PM run's fills and return the not-yet-closed ones."""
-    positions: list[Node] = []
     for fill in fills_for_run(graph, source_run_id):
         draft = position_from_fill(
             graph,
@@ -46,8 +46,9 @@ def open_run_positions(
         )
         if draft.degraded:
             _record_degraded(sink, "position opened with fallback stop/target")
-        positions.append(open_position(graph, draft, fill))
-    return open_positions(graph, tuple(positions))
+        open_position(graph, draft, fill)
+    reconcile_positions_from_latest_snapshot(graph, settings)
+    return active_positions(graph)
 
 
 def evaluate_and_write(

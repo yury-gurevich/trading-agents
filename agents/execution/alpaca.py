@@ -15,7 +15,8 @@ import urllib.request
 from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
 
-from agents.execution.broker import BrokerFill, BrokerRejectedError
+from agents.execution.alpaca_positions import positions_from_payload
+from agents.execution.broker import BrokerFill, BrokerPosition, BrokerRejectedError
 from contracts.common import Money
 
 if TYPE_CHECKING:
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
 
 _ORDERS_PATH = "/v2/orders"
 _BY_CLIENT_PATH = "/v2/orders:by_client_order_id"
+_POSITIONS_PATH = "/v2/positions"
 _PENDING = frozenset({"new", "accepted", "pending_new", "held", "accepted_for_bidding"})
 
 BrokerStatus = Literal["filled", "partial", "rejected", "pending"]
@@ -66,6 +68,10 @@ class AlpacaBroker:
             for order in self._list_orders()
             if isinstance(order, dict) and order.get("client_order_id")
         )
+
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        """Return read-only Alpaca paper holdings for reconciliation."""
+        return positions_from_payload(self._request("GET", _POSITIONS_PATH, None))
 
     def cancel(self, broker_order_id: str) -> None:  # pragma: no cover - real HTTPS
         """Cancel one open order by its broker id (lifecycle/cleanup; ignores body)."""

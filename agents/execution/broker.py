@@ -33,6 +33,16 @@ class BrokerFill:
     reason: str | None = None
 
 
+@dataclass(frozen=True)
+class BrokerPosition:
+    """Broker-side holding snapshot, with money normalized to integer cents."""
+
+    ticker: Ticker
+    quantity: int
+    avg_entry_cents: int
+    market_value_cents: int
+
+
 class BrokerRejectedError(RuntimeError):
     """Raised when the broker rejects while still returning an auditable outcome."""
 
@@ -58,6 +68,10 @@ class Broker(Protocol):
 
     def fills(self) -> tuple[BrokerFill, ...]:
         """Return broker-known outcomes for reconciliation."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        """Return read-only broker holdings for graph reconciliation."""
         ...  # pragma: no cover - protocol declaration only.
 
 
@@ -123,6 +137,10 @@ class PaperBroker:
         """Return all unique broker outcomes in insertion order."""
         return tuple(self._fills.values())
 
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        """Return the in-memory book implied by filled paper outcomes."""
+        return _positions_from_fills(tuple(self._fills.values()))
+
 
 def _paper_price(
     limit_price: Money, side: Literal["buy", "sell"], slippage_bps: int
@@ -131,3 +149,42 @@ def _paper_price(
     multiplier = ONE + adjustment if side == "buy" else max(ZERO, ONE - adjustment)
     amount = (limit_price.amount * multiplier).quantize(CENT, rounding=ROUND_HALF_UP)
     return Money(amount=amount, currency=limit_price.currency)
+
+
+def _positions_from_fills(fills: tuple[BrokerFill, ...]) -> tuple[BrokerPosition, ...]:
+    book: dict[Ticker, tuple[int, int]] = {}
+    for fill in fills:
+        if fill.status not in ("filled", "partial") or fill.quantity <= 0:
+            continue
+        qty, cost_cents = book.get(fill.ticker, (0, 0))
+        price_cents = _money_to_cents(fill.price)
+        if fill.side == "buy":
+            qty += fill.quantity
+            cost_cents += fill.quantity * price_cents
+        else:
+            qty, cost_cents = _sell_from_book(qty, cost_cents, fill.quantity)
+        if qty > 0:
+            book[fill.ticker] = (qty, cost_cents)
+        else:
+            book.pop(fill.ticker, None)
+    return tuple(
+        BrokerPosition(
+            ticker=ticker,
+            quantity=qty,
+            avg_entry_cents=round(cost_cents / qty),
+            market_value_cents=cost_cents,
+        )
+        for ticker, (qty, cost_cents) in sorted(book.items())
+    )
+
+
+def _sell_from_book(qty: int, cost_cents: int, sold: int) -> tuple[int, int]:
+    if sold >= qty or qty <= 0:
+        return (0, 0)
+    avg_entry_cents = round(cost_cents / qty)
+    return (qty - sold, cost_cents - sold * avg_entry_cents)
+
+
+def _money_to_cents(money: Money) -> int:
+    cents = (money.amount * Decimal("100")).quantize(ONE, rounding=ROUND_HALF_UP)
+    return int(cents)

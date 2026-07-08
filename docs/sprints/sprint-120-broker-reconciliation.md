@@ -96,10 +96,98 @@ state. Full analysis: design-log **DL-44**. Policy line to implement, verbatim:
 
 ## Closeout evidence
 
-<!-- Coding agent: replace this comment. Required: files changed; version/deps; exact `make ci`
-summary (counts + coverage); Part A test evidence incl. the divergence-Flag and idempotence tests;
-live evidence — first-pass Flag content verbatim, the four reconciled Position nodes (label/key/
-qty/provenance) verified raw, second-pass no-divergence proof, pending-Fill terminal-status proof;
-statement that no order was placed/canceled and no Position teardown occurred; the
-functionality-checks.md amendment + drift-register entry; the functionality-checks.md row. State
-any deviation from spec explicitly. Do not merge. -->
+Branch-only closeout on `sprint-120-broker-reconciliation`; **not merged or pushed to `main`**.
+
+Files changed:
+
+- Execution: `agents/execution/broker.py`, `agents/execution/alpaca.py`,
+  `agents/execution/alpaca_positions.py`, `agents/execution/order_status_store.py`,
+  `agents/execution/reconciliation.py`, `agents/execution/reconciliation_store.py`,
+  `agents/execution/poll.py`, `contracts/execution.py`.
+- Monitor/PM: `agents/monitor/position_book.py`, `agents/monitor/reconcile.py`,
+  `agents/monitor/run.py`, `agents/portfolio_manager/graph_portfolio.py`,
+  `agents/portfolio_manager/poll.py`.
+- Tests/docs/version: S120 execution, monitor, and PM regression tests; `pyproject.toml`,
+  `uv.lock`, `docs/laws/functionality-checks.md`, `docs/laws/drift-register.md`.
+
+Version/deps:
+
+- `pyproject.toml` bumped `0.64.00 -> 0.65.00`; `uv lock` updated the root package entry
+  from `0.64.0` to `0.65.0`.
+
+Hard gate:
+
+- `make ci` exited 0.
+- Pytest summary: `1436 passed, 5 skipped in 89.35s`.
+- Coverage: `TOTAL 9943 0 2016 0 100.00%`; required `100.0%` reached.
+- `detect-secrets` passed. `pip-audit` still reports known optional `diskcache 5.6.3 /
+  CVE-2025-69872`; the Makefile ignored that non-runtime advisory as before.
+
+Part A regression evidence:
+
+- Divergence Flag + pending order refresh:
+  `agents/execution/tests/test_reconciliation.py::test_reconcile_run_start_snapshots_flags_and_refreshes_pending_fills`.
+- Fail-open broker-read behavior:
+  `agents/execution/tests/test_reconciliation.py::test_reconcile_run_start_fail_open_on_broker_positions_error`.
+- Idempotent monitor adoption:
+  `agents/monitor/tests/test_broker_reconcile.py::test_reconcile_positions_from_snapshot_creates_broker_positions_once`.
+- Graph-vs-broker mismatch marking:
+  `agents/monitor/tests/test_broker_reconcile.py::test_reconcile_positions_marks_absent_and_superseded_positions`.
+- PM held-position awareness:
+  `agents/portfolio_manager/tests/test_graph_portfolio.py::test_evaluate_analyst_node_uses_graph_positions_for_max_positions_gate`.
+
+Live check (real Alpaca paper + real Neon via `POSTGRES_DSN`; secrets not printed):
+
+- **Deviation from the planned first-pass shape:** the production graph no longer held ~0 positions
+  at the start of this branch's live check. A stale S120 live repair had already created the
+  production `reconciled-from-broker` Position nodes and the loud divergence Flag. Per DL-44, those
+  rows mirror real broker holdings, so they were not deleted to recreate the missing-positions state.
+- Retained first-pass divergence Flag content, verified on Neon:
+
+```text
+Broker position divergence detected:
+- missing graph Position for AMD: broker_qty=19
+- missing graph Position for CSCO: broker_qty=88
+- missing graph Position for HPE: broker_qty=229
+- missing graph Position for MRVL: broker_qty=44
+```
+
+- Broker holdings reported during the branch live check:
+  `AMD qty=19 avg_entry_cents=51235 market_value_cents=976600`,
+  `CSCO qty=88 avg_entry_cents=11277 market_value_cents=985600`,
+  `HPE qty=229 avg_entry_cents=4355 market_value_cents=997753`,
+  `MRVL qty=44 avg_entry_cents=22621 market_value_cents=1001000`.
+- Raw Neon verification found the four active reconciled Position nodes:
+  `Position/broker-reconciled:AMD qty=19 opened_price_cents=51235 provenance=reconciled-from-broker`;
+  `Position/broker-reconciled:CSCO qty=88 opened_price_cents=11277 provenance=reconciled-from-broker`;
+  `Position/broker-reconciled:HPE qty=229 opened_price_cents=4355 provenance=reconciled-from-broker`;
+  `Position/broker-reconciled:MRVL qty=44 opened_price_cents=22621 provenance=reconciled-from-broker`.
+- Current-branch first run-start pass appended fresh snapshot
+  `broker-position-snapshot:s120-livecheck-20260708T054129Z:first:2026-07-08T05:41:31.136978+00:00`;
+  new divergence Flag delta was `0` because the repaired Positions already matched broker truth.
+- Current-branch second run-start pass appended fresh snapshot
+  `broker-position-snapshot:s120-livecheck-20260708T054129Z:second:2026-07-08T05:41:33.045903+00:00`;
+  new divergence Flag delta was again `0` (idempotence proof).
+- Pending-fill refresh live proof: Fill
+  `pm-run-b4e1cd7618b14bdbb7ecc98ee4d0a370:CSCO:buy`, broker id
+  `632f0604-d36a-4f82-9c19-d621f19710ad`, still has graph `status=pending`; Alpaca also still
+  reports that broker order as `pending`. The branch appended two `BrokerOrderStatus` evidence nodes
+  with `status=pending`. **Deviation:** the requested terminal-status mutation could not be truthfully
+  proven live because the real broker still reports non-terminal status, so no terminal status was
+  fabricated. The terminal mutation path is covered by the execution regression test above.
+
+Teardown and scope:
+
+- No order was placed, canceled, sold, or flattened.
+- No Position nodes and no account holdings were torn down; the reconciled Position rows are
+  production state under DL-44.
+- No disposable stamped extras were created beyond append-only reconciliation audit evidence
+  (`BrokerPositionSnapshot` and `BrokerOrderStatus`).
+- Out of scope stayed out of scope: no monitor `pnl_cents` valuation re-point, no cash/equity
+  reconciliation, no scheduling change, no broker-side sell/flatten.
+
+Docs:
+
+- `docs/laws/functionality-checks.md` now has the S120 standing broker-state teardown note and the
+  S120 live-check row.
+- `docs/laws/drift-register.md` now has `DRIFT-020` for the CSCO double-buy, corrected by S120.

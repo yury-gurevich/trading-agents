@@ -39,6 +39,21 @@ def test_compile_deliberation_prompts_writes_role_artifacts(tmp_path) -> None:
     assert len(artifacts["challenger"].examples) == len(_CLASS1) + 2
 
 
+def test_compile_deliberation_prompts_can_write_one_role(tmp_path) -> None:
+    written = compile_artifacts(
+        debate_model="gpt-5.5",
+        judge_model="claude-opus-4-8",
+        version="test-v1",
+        output_dir=tmp_path,
+        roles=("challenger",),
+        dspy_module=object(),
+    )
+
+    assert written == {"challenger": tmp_path / "deliberation_challenger_prompt.json"}
+    assert not (tmp_path / "deliberation_defender_prompt.json").exists()
+    assert not (tmp_path / "deliberation_judge_prompt.json").exists()
+
+
 def test_compare_deliberation_prompts_fake_path_passes(tmp_path) -> None:
     compile_artifacts(
         debate_model="gpt-5.5",

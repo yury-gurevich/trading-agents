@@ -2,12 +2,13 @@
 
 Agent: kernel
 Role: verify compiled deliberation role PromptArtifact parsing and composition.
-External I/O: temporary filesystem writes for loader coverage.
+External I/O: reads committed prompt artifacts and writes temporary loader files.
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -19,9 +20,13 @@ from kernel import (
     ensure_deliberation_artifact,
     load_deliberation_prompt_artifact,
     load_deliberation_prompt_artifacts,
+    load_prompt_artifact,
     parse_prompt_artifact,
     prompts_from_artifacts,
 )
+
+_S119_JUDGE_ARTIFACT = Path("scripts/deliberation_judge_prompt.json")
+_S121_CHALLENGER_ARTIFACT = Path("scripts/deliberation_challenger_prompt.json")
 
 
 def _artifact(role: str, *, prompt: str = "compiled") -> dict[str, object]:
@@ -137,6 +142,22 @@ def test_prompts_from_artifacts_can_overlay_one_role() -> None:
     assert prompts.defender == DEFAULT_DELIBERATION_PROMPTS.defender
     assert prompts.challenger == "compiled"
     assert prompts.judge == DEFAULT_DELIBERATION_PROMPTS.judge
+
+
+def test_promoted_judge_prompt_matches_committed_artifact() -> None:
+    artifact = load_prompt_artifact(_S119_JUDGE_ARTIFACT)
+
+    assert artifact.task == "deliberation.judge"
+    assert artifact.version == "2026-07-08-s119-v4-judge-claude-opus-4-8"
+    assert DEFAULT_DELIBERATION_PROMPTS.judge == artifact.system_prompt
+
+
+def test_promoted_challenger_prompt_matches_committed_artifact() -> None:
+    artifact = load_prompt_artifact(_S121_CHALLENGER_ARTIFACT)
+
+    assert artifact.task == "deliberation.challenger"
+    assert artifact.version == "2026-07-08-s121-v5-challenger-gpt-5.5"
+    assert DEFAULT_DELIBERATION_PROMPTS.challenger == artifact.system_prompt
 
 
 def test_prompts_from_artifacts_rejects_unknown_role() -> None:

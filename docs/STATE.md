@@ -258,13 +258,14 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **S121 — judge promotion + challenger recompile (S119 resolution): packaged, executes after
-  S120** (`docs/sprints/sprint-121-judge-promotion-challenger-recompile.md`; operator directed
-  resolution 2026-07-08 — pasting the kickoff is the promotion approval). Promote the compiled
-  judge into `JUDGE_SYSTEM` (artifact `2026-07-08-s119-v4`), **golden re-freeze mandatory**, one
-  bounded challenger recompile gated against the promoted-judge baseline (keeping the champion is
-  a valid outcome). Version: PATCH from main. Defender untouched.
-- **S120 — broker reconciliation (DL-44): branch closeout complete; awaiting operator merge**
+- **S121 — judge promotion + challenger recompile (S119 resolution): branch closeout complete;
+  awaiting operator review/merge** (`docs/sprints/sprint-121-judge-promotion-challenger-recompile.md`).
+  Compiled Judge artifact `2026-07-08-s119-v4` is now default `JUDGE_SYSTEM`; the golden was
+  re-frozen from 4 to 5 robust cases; one challenger-only recompile produced
+  `2026-07-08-s121-v5`, which beat the promoted-judge champion (`100%/100%` vs `94%/94%`,
+  stability `100%` vs `100%`, firewall PASS) and was promoted into `CHALLENGER_SYSTEM`.
+  Defender untouched. Version **0.65.01**. Not merged.
+- **S120 — broker reconciliation (DL-44): shipped on main**
   (`docs/sprints/sprint-120-broker-reconciliation.md`, operator: "straight away after the previous
   work"). **The first unattended fire HAPPENED (2026-07-07 22:30 UTC) and worked** — full lineage
   to Snapshot on Neon, CSCO buy 89 accepted at 22:34 — **and exposed DL-44**: teardowns had

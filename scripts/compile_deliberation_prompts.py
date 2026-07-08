@@ -127,13 +127,14 @@ def compile_artifacts(
     judge_model: str,
     version: str,
     output_dir: Path,
+    roles: tuple[str, ...] = DELIBERATION_ROLES,
     dspy_module: object | None = None,
 ) -> dict[str, Path]:
-    """Compile all role prompts and write one artifact JSON per role."""
+    """Compile selected role prompts and write one artifact JSON per role."""
     optimizer = DSPyPromptOptimizer(dspy_module=dspy_module)
     output_dir.mkdir(parents=True, exist_ok=True)
     written: dict[str, Path] = {}
-    for role in DELIBERATION_ROLES:
+    for role in roles:
         model = _artifact_model(role, debate_model, judge_model)
         artifact = optimizer.compile_prompt(
             task=DELIBERATION_ROLE_TASKS[role],
@@ -143,7 +144,7 @@ def compile_artifacts(
             examples=build_prompt_examples(role),
         )
         path = output_dir / DELIBERATION_ROLE_FILENAMES[role]
-        path.write_text(_artifact_json(artifact), encoding="utf-8")
+        path.write_text(_artifact_json(artifact), encoding="utf-8", newline="\n")
         written[role] = path
     return written
 
@@ -157,6 +158,12 @@ def main() -> None:
     parser.add_argument("--judge-model", default="claude-opus-4-8")
     parser.add_argument("--version", default="2026-07-08-s119-v1")
     parser.add_argument(
+        "--role",
+        action="append",
+        choices=DELIBERATION_ROLES,
+        help="compile only this role; repeat to compile multiple roles",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path(__file__).resolve().parent,
@@ -168,6 +175,7 @@ def main() -> None:
         judge_model=args.judge_model,
         version=args.version,
         output_dir=args.output_dir,
+        roles=tuple(args.role or DELIBERATION_ROLES),
     )
     for role, path in written.items():
         print(f"wrote {role}: {path}")

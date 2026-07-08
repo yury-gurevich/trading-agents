@@ -1,0 +1,6 @@
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+
+FROZEN golden (debate gpt-5.5; judge claude-opus-4-8) — n=3 threshold=0.5
+  robust passing (5): ['alpha158-weight-zero', 'calendar-staleness', 'fixed-fraction-size', 'lightgbm-shadow', 'pooled-sigma']
+  fractions: {'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 0.333, 'fixed-fraction-size': 1.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}
+  written: deliberation_golden.json

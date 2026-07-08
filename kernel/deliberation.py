@@ -14,35 +14,20 @@ import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from kernel.deliberation_prompts import (
+    CHALLENGER_SYSTEM as CHALLENGER_SYSTEM,
+)
+from kernel.deliberation_prompts import (
+    DEFENDER_SYSTEM as DEFENDER_SYSTEM,
+)
+from kernel.deliberation_prompts import (
+    JUDGE_SYSTEM as JUDGE_SYSTEM,
+)
+
 if TYPE_CHECKING:
     from kernel.llm import LLMClient
 
 _RULINGS = ("uphold", "overturn", "revise")
-
-_DEFINE_THEN_JUSTIFY = (
-    " For EVERY system parameter you invoke (e.g. max_daily_move_sigma, "
-    "base_min_confidence, max_sector_pct), FIRST define what it means in THIS "
-    "system in one clause ('<param> = <meaning>'), THEN reason from that definition. "
-    "Do not assume a guardrail the definition does not state."
-)
-DEFENDER_SYSTEM = (
-    "You are the DEFENDER in a decision review. Argue *for* the decision with the "
-    "strongest, most honest case; be concrete and cite the evidence."
-    + _DEFINE_THEN_JUSTIFY
-    + " Max ~5 sentences."
-)
-CHALLENGER_SYSTEM = (
-    "You are the CHALLENGER in a decision review. Attack the decision: find its "
-    "weakest assumptions, risks, and failure modes; do not be polite or hedge. If it "
-    "is genuinely sound, give the single strongest objection."
-    + _DEFINE_THEN_JUSTIFY
-    + " Max ~5 sentences."
-)
-JUDGE_SYSTEM = (
-    "You are the JUDGE in a decision review. Weigh the Defender vs the Challenger "
-    "on the merits, not the volume. Reply ONLY as JSON: "
-    '{"ruling": "uphold|overturn|revise", "rationale": "<one line>"}.'
-)
 
 
 @dataclass(frozen=True)

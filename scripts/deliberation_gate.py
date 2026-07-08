@@ -123,7 +123,9 @@ def _freeze(rounds: int, n: int, threshold: float) -> None:
         "passing": passing,
         "fractions": _fractions(runs),
     }
-    _GOLDEN.write_text(json.dumps(golden, indent=2) + "\n", encoding="utf-8")
+    _GOLDEN.write_text(
+        json.dumps(golden, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     print(
         f"\nFROZEN golden (debate {model}; judge {judge_model}) — "
         f"n={n} threshold={threshold}"

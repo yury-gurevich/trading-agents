@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 15:50 AEST · **Version:** 0.65.00 · **S120 branch closeout complete (not merged/pushed); next after merge: S121 (judge promotion + challenger recompile).**
+**Last updated:** 2026-07-08 16:20 AEST · **Version:** 0.65.00 · **S120 merged — holdings reconciliation live; next: S121 (judge promotion + challenger recompile).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -41,7 +41,7 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
   states missing graph Positions for AMD/CSCO/HPE/MRVL, and raw verification found CSCO held at 88
   shares. The S103 CSCO broker id `632f0604-d36a-4f82-9c19-d621f19710ad` still reports `pending`,
   so `BrokerOrderStatus` evidence was appended and no terminal status was fabricated. Codex-built,
-  `make ci` re-verified (1436 passed, 5 skipped, 100%). **Not merged/pushed by operator instruction.**
+  `make ci` re-verified (1436 passed, 5 skipped, 100%). Reviewed and merged `6c0c0e9`; DRIFT-020 closes the CSCO double-buy.
 
 - **S119 (DL-42, 0.63.00→0.64.00) — DELIBERATION ROLE PROMPTS ARE NOW COMPILED PREDICTORS.**
   Second real `PromptOptimizer` instance (ADR-0010): kernel `DeliberationPrompts` override

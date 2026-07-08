@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.portfolio import default_portfolio
+from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
 from agents.portfolio_manager.run import run_evaluation
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from contracts.analyst import RecommendationSet
@@ -53,7 +53,7 @@ def evaluate_analyst_node(
     """Evaluate one AnalystRun node from the graph and link the PMRun back to it."""
     settings = settings or PortfolioManagerSettings()
     sink = sink if sink is not None else CollectingFaultSink()
-    portfolio = portfolio or default_portfolio(settings.starting_cash)
+    portfolio = portfolio or portfolio_from_graph(graph, settings.starting_cash)
     recommendation_set = RecommendationSet.model_validate(
         node.props["recommendation_set"]
     )

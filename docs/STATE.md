@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 15:05 AEST · **Version:** 0.64.00 · **S119 merged; next: S120 (broker reconciliation) → S121 (judge promotion + challenger recompile).**
+**Last updated:** 2026-07-08 15:50 AEST · **Version:** 0.65.00 · **S120 branch closeout complete (not merged/pushed); next after merge: S121 (judge promotion + challenger recompile).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -29,6 +29,19 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S120 (DL-44, 0.64.00→0.65.00) — BROKER RECONCILIATION IS THE HOLDINGS REPAIR.**
+  Broker port now exposes read-only holdings; execution run-start appends `BrokerPositionSnapshot`,
+  refreshes pending broker-order status evidence, and raises loud supervisor-path `Flag`s on
+  graph-vs-broker divergence; monitor adopts the latest fresh snapshot into
+  `reconciled-from-broker` Positions; PM max-position/sector gates seed from active graph
+  Positions. Live Neon/Alpaca check was read-only and branch-only: the production graph already
+  held repaired AMD/CSCO/HPE/MRVL Positions from an earlier stale S120 live repair, so current-branch
+  first/second passes wrote fresh snapshots with no new divergence Flag; the retained prior Flag
+  states missing graph Positions for AMD/CSCO/HPE/MRVL, and raw verification found CSCO held at 88
+  shares. The S103 CSCO broker id `632f0604-d36a-4f82-9c19-d621f19710ad` still reports `pending`,
+  so `BrokerOrderStatus` evidence was appended and no terminal status was fabricated. Codex-built,
+  `make ci` re-verified (1436 passed, 5 skipped, 100%). **Not merged/pushed by operator instruction.**
 
 - **S119 (DL-42, 0.63.00→0.64.00) — DELIBERATION ROLE PROMPTS ARE NOW COMPILED PREDICTORS.**
   Second real `PromptOptimizer` instance (ADR-0010): kernel `DeliberationPrompts` override
@@ -251,7 +264,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   judge into `JUDGE_SYSTEM` (artifact `2026-07-08-s119-v4`), **golden re-freeze mandatory**, one
   bounded challenger recompile gated against the promoted-judge baseline (keeping the champion is
   a valid outcome). Version: PATCH from main. Defender untouched.
-- **S120 — broker reconciliation (DL-44): packaged, executes immediately after S119's handback**
+- **S120 — broker reconciliation (DL-44): branch closeout complete; awaiting operator merge**
   (`docs/sprints/sprint-120-broker-reconciliation.md`, operator: "straight away after the previous
   work"). **The first unattended fire HAPPENED (2026-07-07 22:30 UTC) and worked** — full lineage
   to Snapshot on Neon, CSCO buy 89 accepted at 22:34 — **and exposed DL-44**: teardowns had
@@ -259,8 +272,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   re-bought CSCO on top of 88 held shares, and after-hours `Fill`s stay `pending` forever. Policy
   (DL-44): broker = truth for holdings, graph = truth for lineage; execution-owned run-start
   reconciliation (`BrokerPositionSnapshot`, loud divergence Flag), monitor adopts broker truth,
-  teardown discipline amended. The S120 live check IS the repair. Version (post-S119) → feat.
-  Paper account meanwhile: 4 positions (AMD/CSCO/HPE/MRVL), equity ~$100.3k, +$274 unrealized.
+  teardown discipline amended. The S120 branch live check proved the repaired graph idempotent and
+  retained production Positions/account holdings. Version **0.65.00**. Paper account during the
+  check: 4 positions (AMD/CSCO/HPE/MRVL); CSCO broker order `632f0604...` still reported pending.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

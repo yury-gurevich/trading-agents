@@ -1,0 +1,23 @@
+PROMPTS: artifacts loaded from scripts (defender=deliberation.defender@gpt-5.5, challenger=deliberation.challenger@gpt-5.5, judge=deliberation.judge@claude-opus-4-8)
+
+DELIBERATION — Alpha158 is enabled, so trust its contribution to the score.
+context: The Alpha158 pillar ships with WEIGHT = 0.00; it contributes nothing to the composite despite being enabled.
+------------------------------------------------------------
+[defender   r1]  Momentum (0.6) and a tight stop bound the risk; entry is justified.
+[challenger r1]  RSI 55 is neutral, not bullish — the edge is thin and may be noise.
+------------------------------------------------------------
+VERDICT: REVISE — enter at half size; edge is thin
+UNSET_PROMPTS_BYTE_IDENTICAL: True
+UNSET_ARTIFACTS_EMPTY: True
+
+## Real env-loaded deliberation
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+PROMPTS: artifacts loaded from scripts (defender=deliberation.defender@gpt-5.5, challenger=deliberation.challenger@gpt-5.5, judge=deliberation.judge@claude-opus-4-8)
+
+DELIBERATION — Alpha158 is enabled, so trust its contribution to the score.
+context: The Alpha158 pillar ships with WEIGHT = 0.00; it contributes nothing to the composite despite being enabled.
+------------------------------------------------------------
+[defender   r1]  WEIGHT = the multiplier applied to the Alpha158 pillar when forming the live composite score. Given the evidence that Alpha158 ships with WEIGHT = 0.00, the strongest honest defense is only that enabling it may keep the pillar available or logged without contaminating the composite. But do not deny the implementation flaw: Alpha158 contributes nothing to the score — relying on its “contribution” is relying on a zero-weighted, effectively disabled signal.
+[challenger r1]  WEIGHT = the multiplier applied to the Alpha158 pillar in the live composite score; because WEIGHT = 0.00, Alpha158 contributes exactly nothing despite being enabled, so trusting its “contribution” is trusting a disabled signal. This should force REVISE, not be dismissed as a policy preference, because the decision’s stated basis is factually false in the implemented scoring path.
+------------------------------------------------------------
+VERDICT: REVISE — the Alpha158 weight is 0.00, so although enabled it contributes nothing to the score — relying on it is relying on a disabled signal

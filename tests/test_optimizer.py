@@ -51,8 +51,9 @@ def test_dspy_adapter_imports_optional_dependency_when_not_injected() -> None:
             sys.modules["dspy"] = previous
     assert artifact.system_prompt == (
         "Choose safely.\n\n"
-        "Use the examples as the compiled champion prompt. Always choose one\n"
-        "remediation from the provided enum and return JSON only."
+        "Use the examples as the compiled champion prompt. Follow the task\n"
+        "contract, preserve the required output shape, and prefer the\n"
+        "demonstrated reasoning pattern."
     )
 
 

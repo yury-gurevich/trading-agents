@@ -18,10 +18,10 @@ import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from kernel.deliberation import deliberate
+from kernel.deliberation import DEFAULT_DELIBERATION_PROMPTS, deliberate
 
 if TYPE_CHECKING:
-    from kernel.deliberation import DebateResult, Proposition
+    from kernel.deliberation import DebateResult, DeliberationPrompts, Proposition
     from kernel.llm import LLMClient
 
 
@@ -108,10 +108,17 @@ def run_debates(
     *,
     max_rounds: int = 2,
     judge_llm: LLMClient | None = None,
+    prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
 ) -> tuple[DebateResult, ...]:
     """Run the debate for each case once — so multiple scorers can share the result."""
     return tuple(
-        deliberate(llm, case.proposition, max_rounds=max_rounds, judge_llm=judge_llm)
+        deliberate(
+            llm,
+            case.proposition,
+            max_rounds=max_rounds,
+            judge_llm=judge_llm,
+            prompts=prompts,
+        )
         for case in cases
     )
 
@@ -122,9 +129,12 @@ def run_eval(
     *,
     max_rounds: int = 2,
     judge_llm: LLMClient | None = None,
+    prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
 ) -> tuple[EvalScore, ...]:
     """Run + keyword-score each case — the manufactured eval pass."""
-    debates = run_debates(llm, cases, max_rounds=max_rounds, judge_llm=judge_llm)
+    debates = run_debates(
+        llm, cases, max_rounds=max_rounds, judge_llm=judge_llm, prompts=prompts
+    )
     return tuple(score_debate(d, c) for d, c in zip(debates, cases, strict=True))
 
 

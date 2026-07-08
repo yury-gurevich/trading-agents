@@ -8,6 +8,7 @@ External I/O: optional import of the offline DSPy dependency.
 from __future__ import annotations
 
 import importlib
+import json
 from dataclasses import dataclass
 
 from kernel.optimizer import PromptArtifact, PromptExample
@@ -49,14 +50,17 @@ def _few_shot_prompt(instruction: str, examples: tuple[PromptExample, ...]) -> s
     lines = [
         instruction.strip(),
         "",
-        "Use the examples as the compiled champion prompt. Always choose one",
-        "remediation from the provided enum and return JSON only.",
+        "Use the examples as the compiled champion prompt. Follow the task",
+        "contract, preserve the required output shape, and prefer the",
+        "demonstrated reasoning pattern.",
     ]
     if examples:
         lines.append("")
         lines.append("Examples:")
     for example in examples:
-        lines.append(f"- failure={example.inputs}; remediation={example.output}")
+        inputs = json.dumps(example.inputs, sort_keys=True)
+        lines.append(f"- inputs={inputs}")
+        lines.append(f"  expected_output={example.output}")
         if example.rationale:
             lines.append(f"  rationale={example.rationale}")
     return "\n".join(lines).strip()

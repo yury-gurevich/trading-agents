@@ -18,7 +18,12 @@ from kernel.claim_check import ReadyEvent, claim_check_read, claim_check_write
 from kernel.config import AgentSettings, TunableDoc, describe, tunable
 from kernel.contract import AgentContract, Capability
 from kernel.deliberation import (
+    CHALLENGER_SYSTEM,
+    DEFAULT_DELIBERATION_PROMPTS,
+    DEFENDER_SYSTEM,
+    JUDGE_SYSTEM,
     DebateResult,
+    DeliberationPrompts,
     Proposition,
     Turn,
     Verdict,
@@ -40,6 +45,17 @@ from kernel.deliberation_gate import (
     pass_fractions,
     passing_names,
     robust_passing,
+)
+from kernel.deliberation_prompt_artifacts import (
+    DELIBERATION_ROLE_FILENAMES,
+    DELIBERATION_ROLE_TASKS,
+    DELIBERATION_ROLES,
+    ensure_deliberation_artifact,
+    load_deliberation_prompt_artifact,
+    load_deliberation_prompt_artifacts,
+    load_prompt_artifact,
+    parse_prompt_artifact,
+    prompts_from_artifacts,
 )
 from kernel.deliberation_understanding import (
     ParameterTruth,
@@ -68,6 +84,13 @@ from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
 from kernel.optimizer import PromptArtifact, PromptExample, PromptOptimizer
 
 __all__ = [
+    "CHALLENGER_SYSTEM",
+    "DEFAULT_DELIBERATION_PROMPTS",
+    "DEFENDER_SYSTEM",
+    "DELIBERATION_ROLES",
+    "DELIBERATION_ROLE_FILENAMES",
+    "DELIBERATION_ROLE_TASKS",
+    "JUDGE_SYSTEM",
     "AgentBase",
     "AgentContract",
     "AgentFault",
@@ -82,6 +105,7 @@ __all__ = [
     "CeleryBusSettings",
     "CollectingFaultSink",
     "DebateResult",
+    "DeliberationPrompts",
     "Edge",
     "EvalCase",
     "EvalScore",
@@ -122,12 +146,18 @@ __all__ = [
     "claim_check_write",
     "deliberate",
     "describe",
+    "ensure_deliberation_artifact",
     "fault_boundary",
     "fault_from_exception",
+    "load_deliberation_prompt_artifact",
+    "load_deliberation_prompt_artifacts",
+    "load_prompt_artifact",
     "misread_parameters",
+    "parse_prompt_artifact",
     "pass_fractions",
     "pass_rate",
     "passing_names",
+    "prompts_from_artifacts",
     "robust_passing",
     "run_debates",
     "run_eval",

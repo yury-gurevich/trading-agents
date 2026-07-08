@@ -1,0 +1,42 @@
+## champion
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+
+GATE — gpt-5.5 (n=3) vs golden gpt-5.5 + judge claude-opus-4-8 (2026-07-05)
+  golden robust passing (4): ['alpha158-weight-zero', 'calendar-staleness', 'lightgbm-shadow', 'pooled-sigma']
+  candidate fractions: {'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 0.333, 'fixed-fraction-size': 0.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}
+  regressed: none
+  gained:    none
+  VERDICT: PASS
+
+## defender
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+  prompt artifacts: defender=deliberation.defender@gpt-5.5
+
+GATE — gpt-5.5 (n=3) vs golden gpt-5.5 + judge claude-opus-4-8 (2026-07-05)
+  golden robust passing (4): ['alpha158-weight-zero', 'calendar-staleness', 'lightgbm-shadow', 'pooled-sigma']
+  candidate fractions: {'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 1.0, 'fixed-fraction-size': 0.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}
+  regressed: none
+  gained:    ['name-correlation']
+  VERDICT: PASS
+
+## challenger
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+  prompt artifacts: challenger=deliberation.challenger@gpt-5.5
+
+GATE — gpt-5.5 (n=3) vs golden gpt-5.5 + judge claude-opus-4-8 (2026-07-05)
+  golden robust passing (4): ['alpha158-weight-zero', 'calendar-staleness', 'lightgbm-shadow', 'pooled-sigma']
+  candidate fractions: {'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 0.0, 'fixed-fraction-size': 0.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}
+  regressed: none
+  gained:    none
+  VERDICT: PASS
+
+## judge
+MODE: real  (debate OpenAI gpt-5.5 · judge Anthropic claude-opus-4-8)
+  prompt artifacts: judge=deliberation.judge@claude-opus-4-8
+
+GATE — gpt-5.5 (n=3) vs golden gpt-5.5 + judge claude-opus-4-8 (2026-07-05)
+  golden robust passing (4): ['alpha158-weight-zero', 'calendar-staleness', 'lightgbm-shadow', 'pooled-sigma']
+  candidate fractions: {'pooled-sigma': 1.0, 'calendar-staleness': 1.0, 'name-correlation': 0.333, 'fixed-fraction-size': 1.0, 'alpha158-weight-zero': 1.0, 'lightgbm-shadow': 1.0}
+  regressed: none
+  gained:    ['fixed-fraction-size']
+  VERDICT: PASS

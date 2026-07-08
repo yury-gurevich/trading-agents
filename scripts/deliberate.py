@@ -22,15 +22,27 @@ import argparse
 import importlib
 import os
 import sys
+from pathlib import Path
 
-from kernel import (
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from kernel import (  # noqa: E402
+    DEFAULT_DELIBERATION_PROMPTS,
+    DeliberationPrompts,
+    PromptArtifact,
     Proposition,
     deliberate,
+    load_deliberation_prompt_artifacts,
     misread_parameters,
+    prompts_from_artifacts,
     score_understanding,
     understanding_rate,
 )
-from orchestration.packs.trading_parameter_truths import TRADING_PARAMETER_TRUTHS
+from orchestration.packs.trading_parameter_truths import (  # noqa: E402
+    TRADING_PARAMETER_TRUTHS,
+)
 
 # Reasoning models (e.g. gpt-5) spend hidden reasoning tokens from the SAME
 # max_completion_tokens pool as visible output. A tight cap can be consumed
@@ -39,6 +51,7 @@ from orchestration.packs.trading_parameter_truths import TRADING_PARAMETER_TRUTH
 # These budgets leave headroom for reasoning plus the actual turn.
 _DEBATE_MAX_TOKENS = 8000
 _JUDGE_MAX_TOKENS = 2000
+_PROMPT_ARTIFACT_DIR_ENV = "DELIBERATION_PROMPT_ARTIFACT_DIR"
 
 
 class _AnthropicText:
@@ -143,14 +156,18 @@ def _provider_llm(
     raise SystemExit(f"unsupported LLM provider {provider!r}")
 
 
+def _load_dotenv() -> None:
+    from dotenv import load_dotenv
+
+    load_dotenv(_ROOT / ".env")
+
+
 def _build_llm(
     real: bool, *, announce: bool = True
 ) -> _AnthropicText | _OpenAIText | _DemoFake:
     if not real:
         return _DemoFake()
-    from dotenv import load_dotenv
-
-    load_dotenv()
+    _load_dotenv()
     provider, model = _base_config()
     llm = _provider_llm(provider, model)
     if announce:
@@ -166,9 +183,7 @@ def build_role_llms(
     """Build the debate model and the separate debate Judge model."""
     if not real:
         return _DemoFake(), _DemoFake()
-    from dotenv import load_dotenv
-
-    load_dotenv()
+    _load_dotenv()
     debate_provider, debate_model = _base_config()
     judge_provider, judge_model = _judge_config()
     debate_llm = _provider_llm(debate_provider, debate_model)
@@ -179,6 +194,21 @@ def build_role_llms(
         f"judge {_provider_name(judge_provider)} {judge_model})"
     )
     return debate_llm, judge_llm
+
+
+def _load_prompt_overrides() -> tuple[DeliberationPrompts, dict[str, PromptArtifact]]:
+    artifact_dir = os.environ.get(_PROMPT_ARTIFACT_DIR_ENV, "").strip()
+    if not artifact_dir:
+        return DEFAULT_DELIBERATION_PROMPTS, {}
+    artifacts = load_deliberation_prompt_artifacts(artifact_dir)
+    return prompts_from_artifacts(artifacts), artifacts
+
+
+def _prompt_artifact_summary(artifacts: dict[str, PromptArtifact]) -> str:
+    return ", ".join(
+        f"{role}={artifact.task}@{artifact.model}"
+        for role, artifact in artifacts.items()
+    )
 
 
 def main() -> None:
@@ -200,9 +230,20 @@ def main() -> None:
     args = parser.parse_args()
 
     debate_llm, judge_llm = build_role_llms(args.real)
+    prompts, artifacts = _load_prompt_overrides()
+    if artifacts:
+        print(
+            f"PROMPTS: artifacts loaded from "
+            f"{os.environ[_PROMPT_ARTIFACT_DIR_ENV]} "
+            f"({_prompt_artifact_summary(artifacts)})"
+        )
     proposition = Proposition(decision=args.decision, context=args.context)
     result = deliberate(
-        debate_llm, proposition, max_rounds=args.rounds, judge_llm=judge_llm
+        debate_llm,
+        proposition,
+        max_rounds=args.rounds,
+        judge_llm=judge_llm,
+        prompts=prompts,
     )
 
     print(f"\nDELIBERATION — {proposition.decision}")

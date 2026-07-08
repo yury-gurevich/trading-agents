@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 16:20 AEST · **Version:** 0.65.00 · **S120 merged — holdings reconciliation live; next: S121 (judge promotion + challenger recompile).**
+**Last updated:** 2026-07-08 16:55 AEST · **Version:** 0.65.01 · **S121 merged — the compiled judge + challenger are the live deliberation champions.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -29,6 +29,18 @@ Layer-3 acceptance is 🟩 at the full S&P-500 (proven live 2026-06-26). The tra
 (DL-08). The fleet does **not** run distributed yet (S99–S103).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S121 (DL-42 resolution, 0.65.00→0.65.01) — FIRST ADR-0010 PROMPT PROMOTIONS ARE LIVE.**
+  Compiled judge artifact `2026-07-08-s119-v4` promoted into `JUDGE_SYSTEM` and the challenger-only
+  v5 recompile (`2026-07-08-s121-v5`) beat the promoted-judge champion (`100%/100%` vs `94%/94%`,
+  stability 100%, firewall PASS) and was promoted into `CHALLENGER_SYSTEM`; prompts split into
+  `kernel/deliberation_prompts.py` with artifact citations; **golden re-frozen 4→5 robust cases**
+  (gained `fixed-fraction-size`); live default-prompt deliberation (no env opt-in) returned REVISE;
+  final-default firewall PASS (gained `name-correlation`). Defender untouched — the hand-written
+  prompt remains its champion. Evidence + transcripts in
+  `docs/reports/sprint-121-judge-promotion-challenger-recompile/`. Codex-built, reviewed,
+  `make ci` re-verified (1439 passed, 100%). Merged `5c5dd1c`. **The live veto path now debates
+  under measured, compiled prompts.**
 
 - **S120 (DL-44, 0.64.00→0.65.00) — BROKER RECONCILIATION IS THE HOLDINGS REPAIR.**
   Broker port now exposes read-only holdings; execution run-start appends `BrokerPositionSnapshot`,
@@ -258,24 +270,6 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 - **Remaining DL-36 hardening** — destructive executors (`rotate-credential`/`recreate-instance`) stay
   human-manual until a provider-specific write path + approval UI land; the diskcache CVE from the
   offline DSPy extra → hardening-backlog (not in runtime/images).
-- **S121 — judge promotion + challenger recompile (S119 resolution): branch closeout complete;
-  awaiting operator review/merge** (`docs/sprints/sprint-121-judge-promotion-challenger-recompile.md`).
-  Compiled Judge artifact `2026-07-08-s119-v4` is now default `JUDGE_SYSTEM`; the golden was
-  re-frozen from 4 to 5 robust cases; one challenger-only recompile produced
-  `2026-07-08-s121-v5`, which beat the promoted-judge champion (`100%/100%` vs `94%/94%`,
-  stability `100%` vs `100%`, firewall PASS) and was promoted into `CHALLENGER_SYSTEM`.
-  Defender untouched. Version **0.65.01**. Not merged.
-- **S120 — broker reconciliation (DL-44): shipped on main**
-  (`docs/sprints/sprint-120-broker-reconciliation.md`, operator: "straight away after the previous
-  work"). **The first unattended fire HAPPENED (2026-07-07 22:30 UTC) and worked** — full lineage
-  to Snapshot on Neon, CSCO buy 89 accepted at 22:34 — **and exposed DL-44**: teardowns had
-  deleted the Position/Fill rows for holdings the paper account still has, so the solo run
-  re-bought CSCO on top of 88 held shares, and after-hours `Fill`s stay `pending` forever. Policy
-  (DL-44): broker = truth for holdings, graph = truth for lineage; execution-owned run-start
-  reconciliation (`BrokerPositionSnapshot`, loud divergence Flag), monitor adopts broker truth,
-  teardown discipline amended. The S120 branch live check proved the repaired graph idempotent and
-  retained production Positions/account holdings. Version **0.65.00**. Paper account during the
-  check: 4 positions (AMD/CSCO/HPE/MRVL); CSCO broker order `632f0604...` still reported pending.
 - **Deferred behind a perfect etalon (DL-19):** CI-1..CI-6 (ADR-0013, S90–S95) · the bundle **generator** ·
   ADR-0010 reusable predictor registry/promotion (first instance landed in S107) · P12 scorecard-run (needs
   a live news runway) · P13 cross-asset graph · `contracts/` substrate/pack split.

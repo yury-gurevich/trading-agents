@@ -7,8 +7,8 @@ named under **Cross-cutting workstreams**, and the product roadmap (`docs/PRD.md
 §12, Phases A–D) is mapped to these phases under **Product roadmap alignment**.
 Refresh the status column at every closeout.
 
-> **This is the phase record + principles, NOT the live status board.** P0–P14 are complete and P15 is in
-> progress; since P14 the project runs as **continuous etalon-first improvement** (DL-19 / ADR-0013),
+> **This is the phase record + principles, NOT the live status board.** P0–P15 are complete;
+> since P14 the project runs as **continuous etalon-first improvement** (DL-19 / ADR-0013),
 > deliberately *not* carved into new numbered phases. The single live tracker is **`docs/STATE.md`**
 > (Now/Next), with the "does it actually work" proof in **`docs/laws/ledger.md`** + **`docs/laws/drift-register.md`**.
 > Reconcile the Status table below only at a phase closeout; everything post-P14 lives in STATE.md by design.
@@ -263,7 +263,7 @@ Each sprint keeps the 100 % coverage floor and reconciles the touched agent's la
    Celery/RabbitMQ assumption (ADR-0004→0005). **Exit:** a both-backends parity test (in-process ==
    Service Bus). **Effort: M–L.**
 
-### P15 — Multi-agent container split · **in progress**
+### P15 — Multi-agent container split · **complete**
 
 Each agent runs in its own Docker image and Azure Container App (scale-to-zero). A
 **master** bootstrap agent starts first: it assigns each container a permanent instance
@@ -290,7 +290,7 @@ verify they are talking to the genuine master without sharing the private key.
    on merge to main (`build-images.yml`, ADR-0011 — *not* DockerHub; that was an early assumption);
    Azure Container Apps deploy manifest for all 13 services (`infra/container-apps.bicep`,
    `infra/deploy-agents.ps1`). **Exit:** `git push` rebuilds and redeploys all agent images with zero
-   downtime. **S76+ (image push live; full deploy run-through pending).**
+   downtime. **S76 (image push live) + S102/S103 (distributed run-through + scheduled fleet proven).**
 **Effort: L.**
 
 ## Cross-cutting workstreams
@@ -410,5 +410,5 @@ stage gates in P8.
 | **Qlib Phase Q1** LightGBM price signal | **complete** (S58–S59: shadow LightGBM price/return model + training harness + per-model IC scorecard; advisory, never gates a decision; forecaster agent foundation) |
 | **Agent law backfill** (S70–S71) | **complete** (S70: scanner/analyst/PM/execution LOCKED v1; S71: monitor/reporter/forecaster/operator/supervisor/curator/researcher LOCKED v1; all 11 non-provider agents have LOCKED v1 laws; 219 green clauses across 12 agents) |
 | **ADR-0010 system_prompt tunable** (S72) | **complete** (`system_prompt` tunable wired into `OperatorSettings` + `_interpret_command`; pre-declared on `ForecasterSettings`; law PARAM sections updated) |
-| **P15** Multi-agent container split | **IN PROGRESS — paused under the etalon-first pivot (DL-34). Heavily built, not abandoned.** Shipped: master bootstrap (S73), RSA-PSS signing + 12 entrypoints (S74), Key Vault secret distribution (S75, DRIFT-001/002 resolved); 13 Dockerfiles + **live GHCR image build/push** (`build-images.yml`); Container Apps IaC present (`infra/container-apps.bicep`, `deploy-agents.ps1`); scanner boot + EHLO confirmed in a log stream (S76). **Not a running fleet yet** — three gaps remain: **(1) S86 deploy wiring** — ship `trading_grants.json` + `trading_secrets.json` into the master image + set `MASTER_GRANT_POLICY_PATH`/`MASTER_SECRET_MAP_PATH`, else a deployed master rejects every agent; **(2) DL-30 distributed RPC-serve transport** — the control-plane agents (operator/supervisor/curator/researcher) cannot serve as live containers without it; **(3)** a full fleet run-through on the permanent store. Paused while the bundle is perfected in-process (DL-19); resume when the fleet is to run durably. version 0.11.0→0.12.0→0.13.0 |
+| **P15** Multi-agent container split | **complete — closed at the fleet-activation arc (S97–S103, DL-35).** Foundation: master bootstrap (S73), RSA-PSS signing + 12 entrypoints (S74), Key Vault secret distribution (S75, DRIFT-001/002 resolved); 13 Dockerfiles + live GHCR image build/push (`build-images.yml`, ADR-0011); Container Apps IaC (`infra/container-apps.bicep`, `deploy-agents.ps1`). The three DL-34 gaps all closed: **(1)** S86 deploy wiring verified in code 2026-07-01 (`deploy-agents.ps1` passes `MASTER_GRANT_POLICY_B64`/`MASTER_SECRET_MAP_B64`; the gap note was stale); **(2)** DL-30 distributed serve transport shipped S97–S102 (`kernel/serve_transport.py` env-selected Service Bus consumer; all five control-plane agents served in separate containers); **(3)** full 13-container distributed run-through with `ACCEPTANCE PASS` on the permanent Postgres store (S102, ADR-0014) + calendar-gated dispatcher cron with KEDA scale-to-zero (S103). **Exit met: the fleet is standing and self-driving in paper mode** — merge to `main` rebuilds images; the deployed fleet runs the daily loop hands-off. version 0.11.0→0.13.0; closed at 0.63.00 |
 | **Etalon-first (DL-19), post-P14** | **ongoing — tracked in `docs/STATE.md`, not as a numbered phase.** The current spine since P14: 🟩 **Layer-3 acceptance GREEN at the full S&P-500** (DRIFT-011..014 fixed); pipeline observatory + acceptance gate; the deliberation **drift-firewall** (EXP-004/005/006); **forecaster activated** as an advisory shadow stage (0.39.00); **OHLCV-only fast mode** (0.38.00); **S96 deliberation** define-then-justify + scored understanding gate (0.40.00) + **asymmetric challenger-veto** in the loop (0.41.00) + **transcript persistence** (0.42.00, proven live on Aura). See STATE.md + `docs/laws/ledger.md` + `docs/design-log.md` (DL-19, DL-29..31). |

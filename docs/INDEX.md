@@ -52,3 +52,4 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [hardening-backlog.md](hardening-backlog.md) | What security hardening items are queued? |
 | [codeql-local-tooling.md](codeql-local-tooling.md) | How to run CodeQL locally before pushing? |
 | [moonshots.md](moonshots.md) | What big ideas are parked for later? |
+| [ideas.md](ideas.md) | What small ideas are parked mid-flow (captured via `/idea`) so they don't derail the current sprint? |

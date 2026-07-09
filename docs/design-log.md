@@ -1962,7 +1962,10 @@ scope. DL-38's architecture itself is unchanged — Postgres is simply where the
 
 ---
 
-## DL-44 · Service Bus receive path completes the served-agent transport  ·  status: DECIDED (2026-07-07)
+## DL-45 · Service Bus receive path completes the served-agent transport  ·  status: DECIDED (2026-07-07)
+
+*(Renumbered 2026-07-09 from a duplicate DL-44 — that number belongs to broker reconciliation below,
+which every external reference already cites.)*
 
 **Trigger.** S100 implemented the receive half of the Azure Service Bus backend behind the S97
 `RequestConsumer` protocol, closing the DL-35 communication gap between the in-process served agents
@@ -2027,3 +2030,41 @@ separate; reconciliation is about *existence* of positions, S43 about *valuation
 
 **Status.** DIRECTION — packaged as **S120** (`docs/sprints/sprint-120-broker-reconciliation.md`),
 queued immediately after S119's handback (operator: "straight away after the previous work").
+
+---
+
+## DL-46 · Merge-to-main rebuilds images but does not redeploy the fleet — the deploy gap  ·  status: OPEN (2026-07-09)
+
+**Trigger.** The 2026-07-08 22:30 UTC scheduled run — the first STATE.md expected to run with broker
+reconciliation (S120) + compiled deliberation prompts (S119/S121) live — ran entirely on **`:s103`
+images**. All three merges had rebuilt and pushed images successfully (`build-images.yml` green), but
+the 13 Container Apps + `dispatcher-cron` job are **pinned to a named tag**, so none of the merged code
+reached the running fleet. Observed consequences: no `BrokerPositionSnapshot`/divergence `Flag` from the
+run, and the PM — blind to held positions without S120's seeding — bought another 87 CSCO on top of the
+88 held + 89 pending (the pending 89 filled at the 2026-07-08 open, making broker CSCO 177 vs graph 88).
+Repaired by hand 2026-07-09: 87-share order cancelled at the broker; fleet + job updated to `:s121`
+(manual `workflow_dispatch` build off main, then `az containerapp update --image` per app — env vars,
+secrets, and KEDA scale rules survive an image-only update).
+
+**The gap.** "Merge to `main` is the deploy trigger" currently holds for image *builds* only. Named-tag
+pinning (`:s103`, `:s121`) is deliberate — immutable, human-readable, rollback-friendly — but nothing
+moves the running apps to a new tag after merge, and nothing *tells* the operator the fleet is behind.
+The failure mode is silent: CI green, images pushed, acceptance PASS — on last sprint's code.
+
+**Options (none decided).**
+
+- **A — Deploy step in CI:** after `build-images.yml` on main, a job runs `az containerapp update
+  --image` for all 14 targets (needs an Azure service principal secret in GitHub; turns merge into a
+  true deploy trigger; loses the human pause between merge and fleet swap).
+- **B — Pin to `:latest`:** scale-from-zero pulls fresh on each window, so merges self-deploy at the
+  next cold start. Zero new machinery, but mutable-tag drift: a run's code version is no longer
+  provable from the app config, and a bad merge auto-ships to the standing fleet.
+- **C — Keep manual, add a tripwire:** stay tag-pinned; add a check (in the observatory/acceptance
+  path or `infra/status.ps1`) that compares the fleet's running tag against the latest main image and
+  fails/flags loudly when the fleet is behind. Preserves the human gate; kills the silence.
+- Leaning: **C now** (cheap, keeps LAW-02's "proven, never assumed" spirit — the gap was invisible
+  precisely because nothing measured it), with **A** as the end state once the build-on-merge pipeline
+  discussion (memory: branch-per-sprint-merge-deploys) is settled properly.
+
+**Ruled out.** Nothing yet — this entry records the incident + option space; packaging waits for an
+operator decision.

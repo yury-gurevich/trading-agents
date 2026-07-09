@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-08 17:20 AEST · **Version:** 0.65.01 · **S121 merged — the compiled judge + challenger are the live deliberation champions.**
+**Last updated:** 2026-07-09 12:55 AEST · **Version:** 0.65.01 · **Fleet redeployed to `:s121` — S119–S121 code is now actually live (DL-46).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -99,9 +99,17 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 ## Now
 
 On `main` at 0.65.01, no active sprint branch and the packaged queue is empty (S119/S120/S121
-all shipped 2026-07-08 on top of the self-driving fleet). Operational watch: the 22:30 UTC run is
-the first with broker reconciliation + compiled deliberation prompts live — expect the pending
-89-share CSCO fill and a qty-mismatch divergence Flag (the reconciliation working, not a defect).
+all shipped 2026-07-08 on top of the self-driving fleet). **Watch outcome (2026-07-08 22:30 UTC
+run, verified 2026-07-09):** cron fired, `sched-2026-07-08` traced 7/7 stages, `ACCEPTANCE PASS`
+(99 tickers → BAC/WFC/CSCO buys) — **but on `:s103` images**: merges rebuild images without
+moving the tag-pinned fleet, so S119–S121 were not live (no snapshot/Flag; PM re-bought 87 CSCO
+blind; the S103 89-share CSCO order had filled at the 07-08 open → broker CSCO 177 vs graph 88).
+Repaired same day: 87-share order **cancelled at Alpaca (verified `canceled`)**; `s121` images
+built (`workflow_dispatch` green) and **all 13 apps + `dispatcher-cron` updated to `:s121`
+(provisioning `Succeeded`, env/scale rules verified intact)**. Gap recorded as **DL-46** (open:
+CI-deploy vs `:latest` vs tag tripwire). New watch: tonight's 22:30 UTC run is the first truly on
+S119–S121 — expect one qty-mismatch divergence Flag (CSCO 177 vs 88), which is the reconciliation
+working.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
@@ -109,6 +117,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
+- **DL-46 — deploy gap (OPEN, needs operator decision):** merge-to-main rebuilds images but the
+  tag-pinned fleet doesn't move; pick CI-deploy step vs `:latest` pinning vs a fleet-behind
+  tripwire (leaning tripwire now, CI-deploy as end state). See design-log DL-46.
 - **DL-42 — SHIPPED (S119 0.64.00 + S121 0.65.01).** Compiled judge + challenger are the live
   champions; defender stays hand-written; golden re-frozen to 5 robust cases. Next layer when
   prioritized: EvoPrompt/TextGrad bake-off behind the same port (R003).

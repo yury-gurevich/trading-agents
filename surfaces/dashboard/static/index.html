@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>trading-agents · Operations</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <header class="top">
+    <span class="wordmark"><b>trading-agents</b><span class="sep">/</span>Operations</span>
+    <div class="runwrap">
+      <label for="run">Run</label>
+      <select id="run" aria-label="Select run"></select>
+    </div>
+    <span class="pill" id="verdictpill" hidden></span>
+    <div class="spacer"></div>
+    <div class="vitals" id="vitals" aria-label="Vital indicators"></div>
+  </header>
+
+  <nav id="rail" aria-label="Dashboard sections">
+    <button class="railbtn" data-view="infra">
+      <span class="rn">I</span><span class="nm">Infrastructure</span>
+      <span class="st"><span class="dot idle"></span><span>ships in S123</span></span>
+    </button>
+    <button class="railbtn" data-view="fleet">
+      <span class="rn">II</span><span class="nm">Fleet lifecycle</span>
+      <span class="st"><span class="dot idle"></span><span>ships in S123</span></span>
+    </button>
+    <button class="railbtn" data-view="trading" aria-current="true">
+      <span class="rn">III</span><span class="nm">Trading run</span>
+      <span class="st"><span class="dot" id="raildot-trading"></span><span id="raillbl-trading">—</span></span>
+    </button>
+  </nav>
+
+  <main>
+    <section id="infra">
+      <div class="eyebrow">Section I</div>
+      <h2>Infrastructure — health &amp; performance</h2>
+      <p class="lede">Container Apps state, spine and bus health, per-container logs, and the
+        hardware + LLM cost meters land in <b>S123</b>. The design is settled in
+        <span class="mono">docs/design/dashboard-mockup.html</span>.</p>
+    </section>
+
+    <section id="fleet">
+      <div class="eyebrow">Section II</div>
+      <h2>Fleet lifecycle — the containers as logical stages</h2>
+      <p class="lede">The nightly wake → tested ACTIVATE → serve → cascade → sleep flow lands in
+        <b>S123</b>; restart-from-stage in <b>S124</b>.</p>
+    </section>
+
+    <section id="trading" class="active">
+      <div class="eyebrow">Section III · Run-scoped</div>
+      <h2>The trading run — one logical unit</h2>
+      <p class="lede">Did each agent do its job, and what did that add up to? Verdicts come from
+        the acceptance gate — the same numbers <span class="mono">scripts/accept.py</span> prints.
+        <span class="runtag" id="runtag"></span></p>
+
+      <div class="flow" id="tradeflow"></div>
+      <div id="gate"></div>
+
+      <div class="threecol">
+        <div class="panel"><h3>Flags</h3><div id="flagbody"></div></div>
+        <div class="panel"><h3>Positions — graph vs broker</h3><div id="posbody"></div></div>
+        <div class="panel"><h3>Recovery ladder <span class="chip acc">DL-36</span></h3><div id="recbody"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Read-only surface over the graph spine. Sections I–II and the chat land in S123–S125.</footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

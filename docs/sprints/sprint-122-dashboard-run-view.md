@@ -128,10 +128,18 @@ stay mocked until S123/S124/S125.
 
 ```text
 CLOSEOUT — Sprint 122
-Branch / merge commit:
-make ci:                 (paste tail: N passed, coverage %)
-Functionality check:     (live URL opened, runs verified against accept.py/trace_run.py,
-                          screenshot paths, teardown: read-only/nothing)
-Version:                 (old → new)
-Deviations from spec:    (none | list)
+Branch / merge commit:   sprint-122-dashboard-run-view (executed by the planning agent's
+                         session, operator-directed 2026-07-10)
+make ci:                 1463 passed, 5 skipped, 100.00% coverage (9-step gate exit 0)
+Functionality check:     served against live Neon (read-only) — all 3 real runs listed;
+                         sched-2026-07-09 verdict FAIL + no_trade_day=true, sched-2026-07-08
+                         PASS, both matching scripts/accept.py; real critical divergence
+                         Flag surfaced; positions join 6/6 match=true; bundle keys stable;
+                         recorded in docs/laws/functionality-checks.md. Screenshots pending
+                         operator's first open (CLI session); API-layer data verified.
+Version:                 0.65.01 → 0.66.00 (MINOR)
+Deviations from spec:    (1) pure-WSGI app instead of FastAPI — follows the repo's existing
+                         metrics_server pattern, zero new dependencies (no fastapi/uvicorn/
+                         httpx, no new optional group); endpoints/routes exactly as specified.
+                         (2) tests split into three files to respect the 200-line block.
 ```

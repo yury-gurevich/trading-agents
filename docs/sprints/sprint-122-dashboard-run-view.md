@@ -3,7 +3,8 @@
 
 **Phase:** Operations dashboard (DL-47 — the PRD's product surface #1; first of four slices)
 **Branch:** `sprint-122-dashboard-run-view`
-**Status:** ready for handover (packaged 2026-07-10)
+**Status:** ready for handover (packaged 2026-07-10; amended same day — `/bundle` endpoint added
+per DL-47 req. 11 before any code started)
 **Effort:** M
 
 ---
@@ -73,7 +74,13 @@ stay mocked until S123/S124/S125.
 >      `/api/runs/{run_id}/positions` (open Positions + the latest `BrokerPositionSnapshot`
 >      holdings, joined per ticker as graph-vs-broker rows);
 >      `/api/runs/{run_id}/recovery` (Escalation + RemediationPlan nodes for the run window —
->      the DL-36 ladder; empty lists are a valid, renderable answer).
+>      the DL-36 ladder; empty lists are a valid, renderable answer);
+>      `/api/runs/{run_id}/bundle` (**the LLM context bundle, DL-47 req. 11** — one JSON document
+>      aggregating everything the other endpoints return, plus run metadata: run_id, as_of,
+>      version + image tag if recorded, degraded-feed notes. Its consumer is a repair-agent LLM
+>      (S125), so shape it for machine ingestion: stable keys, no HTML, explicit pass/warn/fail
+>      enums, reasons as plain text. S123 extends it with log excerpts — leave a documented,
+>      empty `logs` key now).
 >   3. FastAPI + uvicorn go in a new optional dependency group `dashboard` (mirror how `azure`
 >      / `postgres` extras are declared); unit tests must not require the extra beyond FastAPI's
 >      TestClient (add to dev group).

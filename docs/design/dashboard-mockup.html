@@ -426,7 +426,10 @@
       <p>Also worth your attention: all four enrichment feeds ran degraded, which depresses confidence — that may be <em>why</em> the day looked quiet.</p></div>
     <div class="msg user"><div class="who">Operator (you)</div><p>Why wasn't the degraded-feed problem flagged?</p></div>
     <div class="msg"><div class="who">operator agent</div>
-      <p>Feed degradation is a WARN, not a Flag — it never enters the supervisor path. That is a gap: four-of-four feeds degraded should escalate. I can file it as a drift item for the planning agent.</p></div>
+      <p>Feed degradation is a WARN, not a Flag — it never enters the supervisor path. That is a gap: four-of-four feeds degraded should escalate. Handing this to the repair agent with the run's context bundle.</p></div>
+    <div class="msg"><div class="who">repair agent · repo access <span class="chip acc">branch + PR only</span></div>
+      <p>Investigated with the <span class="mono">sched-2026-07-09</span> bundle + container logs: the provider container is missing <span class="mono">PROVIDER_FINNHUB_API_KEY</span> in its ACTIVATE config — the secret map lists it, the vault entry is stale.</p>
+      <p>Prepared: fix on branch <span class="mono">chore-provider-feed-secret</span> (re-seed via the S108 tested-before-insert seeder + escalation test) → PR #41. On your merge I rebuild the images and retag the fleet — same logged deploy command as DL-46.</p></div>
     <div class="chat-in">
       <input type="text" placeholder="Ask about this run… (canned demo)" aria-label="Ask the operator" />
       <button type="button">Send</button>

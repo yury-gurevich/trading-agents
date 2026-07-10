@@ -2101,6 +2101,29 @@ but not self-explaining — every "how did we go last night" costs a manual trac
     scrolling stack. The **status line carries the vitals**: pending flags, broker↔graph sync,
     degraded feeds, spine/bus health, fleet-images-vs-main currency (the DL-46 tripwire, surfaced),
     month-to-date cost, next fire.
+11. **The LLM must be able to repair, not just explain** (added 2026-07-10): it has **access to
+    the repo**, uses the dashboard's information to investigate, and the information must be
+    **useful enough to prepare a fix if one is needed and rebuild container(s)**. This is the
+    operator directive to productize what the planning agent did by hand on 07-09/07-10
+    (investigate scheduled runs → diagnose the deploy gap → fix → retag the fleet).
+
+**The chat is therefore two-tier (amends the architecture direction above).**
+
+- **Tier 1 — operator agent (always on):** bounded Q&A grounded in stored evidence + the bounded
+  command set (ack a flag, resume a run, deploy tag N). Unchanged.
+- **Tier 2 — repair agent (escalation):** a Claude Code / Agent SDK session launched from the
+  dashboard with (a) a **repo checkout** and (b) the run's **context bundle** as input. It
+  investigates, and when a code fix is warranted it prepares one **on a branch + PR — never a
+  direct push to main** (branch-per-sprint law holds; merge stays the operator's deploy trigger).
+  "Rebuild container(s)" reuses the DL-46 machinery (tagged `workflow_dispatch` image build +
+  `az containerapp update --image`) as one bounded, logged command — no bespoke deploy path. The
+  DL-36 ladder still governs: one automatic shot at a vetted remediation, then human.
+- **The keystone is the context bundle** — "information useful enough" is a deliverable, not a
+  hope: one endpoint (`/api/runs/{id}/bundle`, added to S122) aggregating verdict + per-stage
+  observations/checks + flags with reasons + positions + escalations/remediations + image tags +
+  (from S123) per-container log excerpts and degraded-feed detail, as one JSON document an LLM can
+  ingest whole. The manual equivalent today is five scripts and four az calls; the bundle is that,
+  machine-shaped.
 
 **Prior art (operator asked to draw on similar products).** Airflow's run view + *clear task &
 downstream* re-execution; Dagster's *re-execute from failure*; GitHub Actions' *re-run failed jobs*;

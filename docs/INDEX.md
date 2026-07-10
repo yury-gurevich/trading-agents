@@ -24,6 +24,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [agent-message-chain.md](agent-message-chain.md) | What exact graph nodes, edges, and side-channel messages move one run between agents? |
 | [PRD.md](PRD.md) | What is this product trying to do? (vision doc — see laws for ground truth) |
 | [technology-stack.md](technology-stack.md) | What technologies are adopted, considered, on the horizon, or rejected? What breaks if we swap X? |
+| [design/dashboard-mockup.html](design/dashboard-mockup.html) | What should the operations dashboard look like and do? (interactive design spec for DL-47 / S122–S125 — open rendered) |
 
 ---
 

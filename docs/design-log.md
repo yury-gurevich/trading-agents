@@ -2068,3 +2068,74 @@ The failure mode is silent: CI green, images pushed, acceptance PASS — on last
 
 **Ruled out.** Nothing yet — this entry records the incident + option space; packaging waits for an
 operator decision.
+
+---
+
+## DL-47 · The operations dashboard — the PRD's product surface #1 gets built  ·  status: DIRECTION → S122 (2026-07-10)
+
+**Trigger.** Operator, 2026-07-10, after two nights of scheduled runs verified by hand: *"we cannot
+have it running under your supervision forever. WE NEED DASHBOARD."* The nightly loop is self-driving
+but not self-explaining — every "how did we go last night" costs a manual trace/accept/flag audit.
+
+**Operator requirements (verbatim spirit, all binding).**
+
+1. **All and every signal**, including **per-container logs**.
+2. Look & feel: **ChatGPT / early Anthropic** — calm, minimal, warm paper, serif headers.
+3. **Three sections**: (I) hardware/infrastructure health & performance; (II) process & life flow of
+   the containers **as logical stages**; (III) the trading process **as a logical unit** — *"I want a
+   logic there, not hardware flow"*: did each agent do its job, and what is the result of it.
+4. **Animated**, reflecting stages/health/logical outcomes; an overall how-did-the-system-perform view.
+5. A **run selector at the top**: pick a run and *all contextual information switches to that run and
+   only that run*.
+6. Compliant with the **self-recovery** (DL-36 ladder) and **consistent-delivery** principles — every
+   red state must show where it sits on the ladder (self-healed / escalated / operator-held).
+7. **Talk to an LLM** in the dashboard: ask questions beyond the tiles ("state is green but something
+   smells"), have it run communication tests, find why something wasn't flagged, and fix it.
+8. **Functional, not read-only**: able to **restart a run from the point of failure onwards**.
+
+**Prior art (operator asked to draw on similar products).** Airflow's run view + *clear task &
+downstream* re-execution; Dagster's *re-execute from failure*; GitHub Actions' *re-run failed jobs*;
+Temporal's replay-from-history; Grafana for the infra panels (we already run Managed Grafana — it
+covers metrics, **not** logical verdicts, which is why section III cannot live there). The section-III
+model is closest to Dagster: a run-scoped DAG where every node carries a *logical* verdict, not an
+exit code.
+
+**Why restart-from-stage is cheap here.** The graph-pull architecture already persists every stage's
+full artifact (RunRequest → MarketData → CandidateSet → RecommendationSet → OrderIntentSet →
+ExecutionRun → MonitorRun → Snapshot) and agents poll for unconsumed predecessors. Resume = clear (or
+mark-stale) artifacts from the chosen stage **downstream**, wake the fleet, and the cascade re-runs
+from the last good artifact — Airflow's clear+downstream semantics for free. Idempotency guards exist
+(day-keyed merge-deduped RunRequests; `client_order_id` dedup at the broker). The resume primitive
+lives in `orchestration/`, exposed to the dashboard as one bounded command.
+
+**Architecture direction.**
+
+- `surfaces/dashboard/` — a FastAPI read-model service + a static, build-toolchain-free frontend
+  (vanilla JS/CSS; repo stays Python-first). Local-first (`uv run python -m surfaces.dashboard`),
+  then a 14th scale-to-zero Container App.
+- **Reads**: the Postgres spine (observatory + acceptance verdicts, flags, positions, escalations,
+  remediation plans — sections II/III, run-scoped); Azure APIs (Container Apps state, job executions —
+  section I); **Log Analytics** for per-container logs (section I/II drawer).
+- **Writes**: none directly. Every action (ack a flag, resume a run, ask-and-fix) routes through the
+  **operator agent's bounded command set** (PRD: surfaces never drive agents except through the
+  operator). The chat panel *is* the operator agent with its evidence-grounded explain path; "fix it"
+  is bounded by DL-36 remediation scope — anything beyond it escalates to the human (or to a Claude
+  Code session), it does not free-lance.
+- **Design system**: `docs/design/dashboard-mockup.html` (committed) — interactive mockup built from
+  the real sched-2026-07-08/09 runs; status palette validated (dataviz six-checks: light trio full
+  pass; dark trio passes contrast/CVD/chroma; status never rides color alone — icon + label always).
+
+**Sprint slices (dependency order).** S122: read-model API + section III (run selector, logical
+verdicts, acceptance banner, flags/positions) served locally — kills the manual morning audit.
+S123: section II lifecycle + section I infra + per-container logs (Log Analytics query). S124: the
+resume-from-stage primitive + restart affordance (+ the DL-46 fleet-behind tripwire lands on the
+dashboard naturally). S125: the operator-agent chat panel. Order is by operational value; the mockup
+is the design spec for all four.
+
+**Ruled out.** Building section III in Grafana (verdicts are graph-native logic, not metrics);
+a React/toolchain frontend (repo is Python-first, CI has no node step); dashboard writing to the
+graph or bus directly (operator-agent boundary, PRD §non-negotiable); LLM chat with unbounded
+write access (DL-36 one-shot ladder governs).
+
+**Status.** DIRECTION — S122 packaged (`docs/sprints/sprint-122-dashboard-run-view.md`); mockup
+committed + published for look-and-feel sign-off.

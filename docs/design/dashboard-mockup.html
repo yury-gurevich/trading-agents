@@ -1,0 +1,570 @@
+<title>trading-agents · Operations</title>
+<style>
+  /* ── Tokens ─────────────────────────────────────────────────────────── */
+  :root {
+    --paper: #F7F4EE;
+    --card: #FDFCF8;
+    --card-2: #F1EDE4;
+    --line: #E3DED2;
+    --ink: #211E19;
+    --ink-2: #6B655A;
+    --ink-3: #97907F;
+    --accent: #BE5A38;
+    --accent-ink: #9C4526;
+    --good: #2F8A4C;
+    --warn: #A8730A;
+    --crit: #B3402E;
+    --idle: #8A8378;
+    --good-bg: #E4F0E7;
+    --warn-bg: #F5EBD4;
+    --crit-bg: #F6E0DB;
+    --idle-bg: #ECE8DF;
+    --shadow: 0 1px 2px rgba(60, 50, 30, .06), 0 4px 16px rgba(60, 50, 30, .05);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "SF Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1B1915;
+      --card: #24211C;
+      --card-2: #2C2822;
+      --line: #3A352C;
+      --ink: #ECE7DC;
+      --ink-2: #A49C8C;
+      --ink-3: #7C7466;
+      --accent: #D98A64;
+      --accent-ink: #E09B78;
+      --good: #5FC878;
+      --warn: #E5AE3D;
+      --crit: #EF7E62;
+      --idle: #8A8378;
+      --good-bg: #253527;
+      --warn-bg: #3A3120;
+      --crit-bg: #3D2721;
+      --idle-bg: #2E2B24;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #F7F4EE; --card: #FDFCF8; --card-2: #F1EDE4; --line: #E3DED2;
+    --ink: #211E19; --ink-2: #6B655A; --ink-3: #97907F;
+    --accent: #BE5A38; --accent-ink: #9C4526;
+    --good: #2F8A4C; --warn: #A8730A; --crit: #B3402E; --idle: #8A8378;
+    --good-bg: #E4F0E7; --warn-bg: #F5EBD4; --crit-bg: #F6E0DB; --idle-bg: #ECE8DF;
+    --shadow: 0 1px 2px rgba(60,50,30,.06), 0 4px 16px rgba(60,50,30,.05);
+  }
+  :root[data-theme="dark"] {
+    --paper: #1B1915; --card: #24211C; --card-2: #2C2822; --line: #3A352C;
+    --ink: #ECE7DC; --ink-2: #A49C8C; --ink-3: #7C7466;
+    --accent: #D98A64; --accent-ink: #E09B78;
+    --good: #5FC878; --warn: #E5AE3D; --crit: #EF7E62; --idle: #8A8378;
+    --good-bg: #253527; --warn-bg: #3A3120; --crit-bg: #3D2721; --idle-bg: #2E2B24;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 14.5px; line-height: 1.55;
+    margin: 0; padding: 0 0 96px;
+  }
+
+  /* ── Top bar ────────────────────────────────────────────────────────── */
+  .top {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 28px; background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .wordmark { font-family: var(--serif); font-size: 19px; letter-spacing: .01em; }
+  .wordmark b { font-weight: 600; }
+  .wordmark .sep { color: var(--ink-3); margin: 0 6px; }
+  .runwrap { display: flex; align-items: center; gap: 8px; }
+  .runwrap label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+  select#run {
+    font: 500 13.5px var(--mono); color: var(--ink);
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  select#run:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .top .spacer { flex: 1; }
+  .fleetstate { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .breathe { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); animation: breathe 3s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: .35; } }
+
+  /* ── Pills / chips ──────────────────────────────────────────────────── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
+  }
+  .pill.pass { background: var(--good-bg); color: var(--good); }
+  .pill.fail { background: var(--crit-bg); color: var(--crit); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px;
+    background: var(--idle-bg); color: var(--ink-2); white-space: nowrap;
+  }
+  .chip.good { background: var(--good-bg); color: var(--good); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  .chip.acc  { background: transparent; color: var(--accent-ink); border: 1px solid var(--accent); }
+
+  /* ── Sections ───────────────────────────────────────────────────────── */
+  main { max-width: 1180px; margin: 0 auto; padding: 8px 28px; }
+  section { margin-top: 44px; }
+  .eyebrow {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em;
+    color: var(--accent-ink); margin-bottom: 6px;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.2;
+    margin: 0 0 4px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-2); max-width: 68ch; margin: 0 0 20px; }
+  .runtag { font: 500 11.5px var(--mono); color: var(--ink-3); }
+
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .card h4 { margin: 0 0 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+  .card .big { font-family: var(--serif); font-size: 21px; font-weight: 600; margin: 2px 0; }
+  .card .sub { font-size: 12.5px; color: var(--ink-2); }
+  .statline { display: flex; align-items: baseline; gap: 8px; }
+
+  /* container table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
+  .tablewrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .logbtn {
+    font: 500 12px var(--sans); color: var(--accent-ink); background: none;
+    border: 1px solid var(--line); border-radius: 7px; padding: 3px 10px; cursor: pointer;
+  }
+  .logbtn:hover { border-color: var(--accent); }
+
+  /* ── Stage flow (sections II & III) ─────────────────────────────────── */
+  .flow { display: flex; gap: 0; overflow-x: auto; padding: 14px 2px 6px; align-items: stretch; }
+  .stage { min-width: 138px; flex: 1; position: relative; }
+  .stage + .stage { margin-left: 26px; }
+  .stage .node {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 13px; height: 100%; box-shadow: var(--shadow);
+    opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease;
+  }
+  .revealed .node { opacity: 1; transform: none; }
+  .stage .node.crit-edge { border-color: var(--crit); }
+  .stage .who { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+  .stage .did { font-family: var(--serif); font-size: 15.5px; font-weight: 600; margin: 3px 0 2px; }
+  .stage .num { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .stage .verdict { margin-top: 7px; }
+  .restart {
+    display: none; margin-top: 8px; font: 600 11.5px var(--sans);
+    color: var(--accent-ink); background: none; border: 1px dashed var(--accent);
+    border-radius: 7px; padding: 3px 9px; cursor: pointer;
+  }
+  .stage:hover .restart, .stage:focus-within .restart { display: inline-block; }
+  #toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--paper); font-size: 13px; padding: 10px 18px;
+    border-radius: 10px; z-index: 70; transition: transform .3s ease; max-width: 80vw;
+  }
+  #toast.show { transform: translateX(-50%); }
+  /* connector + travelling dot */
+  .stage + .stage::before {
+    content: ""; position: absolute; left: -26px; top: 50%; width: 26px; height: 1px;
+    background: var(--line);
+  }
+  .stage + .stage::after {
+    content: ""; position: absolute; left: -24px; top: calc(50% - 2.5px);
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+    animation: travel 2.6s linear infinite; opacity: 0;
+  }
+  .revealed.stage + .stage.revealed::after { opacity: 1; }
+  @keyframes travel { 0% { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { transform: translateX(19px); opacity: 0; } }
+
+  .gatecard { border-radius: 12px; padding: 16px 18px; margin: 16px 0 0; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+  .gatecard.fail { border-left: 4px solid var(--crit); }
+  .gatecard.pass { border-left: 4px solid var(--good); }
+  .gatecard h3 { font-family: var(--serif); margin: 0 0 4px; font-size: 17px; }
+  .gatecard p { margin: 4px 0; color: var(--ink-2); max-width: 78ch; }
+  .gatecard .mono { color: var(--ink); }
+
+  .threecol { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; margin-top: 14px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .panel h3 { font-family: var(--serif); font-size: 16px; margin: 0 0 8px; }
+  .panel ul { margin: 0; padding-left: 18px; color: var(--ink-2); }
+  .panel li { margin: 3px 0; }
+  .flagreason { font-family: var(--mono); font-size: 12px; background: var(--card-2); border-radius: 8px; padding: 10px 12px; margin-top: 8px; white-space: pre-wrap; color: var(--ink-2); }
+  .pulse-crit { animation: pulsecrit 2.4s ease-in-out infinite; }
+  @keyframes pulsecrit { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--crit) 14%, transparent); } }
+
+  /* recovery ladder */
+  .ladder { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+  /* ── Log drawer ─────────────────────────────────────────────────────── */
+  #drawer {
+    position: fixed; right: 0; top: 0; bottom: 0; width: min(560px, 92vw); z-index: 60;
+    background: var(--card); border-left: 1px solid var(--line);
+    box-shadow: -12px 0 40px rgba(0,0,0,.18); padding: 18px 22px;
+    transform: translateX(102%); transition: transform .3s ease; overflow-y: auto;
+  }
+  #drawer.open { transform: none; }
+  #drawer h3 { font-family: var(--serif); margin: 0 0 2px; }
+  #drawer .close { float: right; background: none; border: 0; font-size: 20px; color: var(--ink-2); cursor: pointer; }
+  .loglines { font-family: var(--mono); font-size: 12px; line-height: 1.7; margin-top: 12px; white-space: pre-wrap; }
+  .loglines .t { color: var(--ink-3); }
+  .loglines .lv-ok { color: var(--good); } .loglines .lv-warn { color: var(--warn); } .loglines .lv-err { color: var(--crit); }
+
+  /* ── Chat dock ──────────────────────────────────────────────────────── */
+  #chat {
+    position: fixed; right: 24px; bottom: 24px; width: min(390px, 90vw); z-index: 50;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(40,30,10,.18); overflow: hidden;
+  }
+  #chat .head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  #chat .head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  #chat .head b { font-family: var(--serif); font-weight: 600; }
+  #chat .head .chip { margin-left: auto; }
+  #chat .body { max-height: 0; transition: max-height .35s ease; overflow: hidden; }
+  #chat.open .body { max-height: 430px; overflow-y: auto; }
+  .msg { padding: 10px 16px; font-size: 13.5px; }
+  .msg.user { background: var(--card-2); }
+  .msg .who { font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin-bottom: 3px; font-weight: 600; }
+  .msg p { margin: 4px 0; }
+  .chat-in { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+  .chat-in input { flex: 1; font: 13.5px var(--sans); color: var(--ink); background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .chat-in button { font: 600 13px var(--sans); color: #fff; background: var(--accent); border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+
+  .scrim { position: fixed; inset: 0; background: rgba(20,15,5,.25); z-index: 55; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+
+  footer { margin: 56px auto 0; max-width: 1180px; padding: 0 28px; color: var(--ink-3); font-size: 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage .node { transition: none; opacity: 1; transform: none; }
+    .stage + .stage::after, .breathe, .pulse-crit { animation: none; }
+    .revealed.stage + .stage.revealed::after { opacity: 1; transform: translateX(9px); }
+  }
+</style>
+
+<header class="top">
+  <span class="wordmark"><b>trading-agents</b><span class="sep">/</span>Operations</span>
+  <div class="runwrap">
+    <label for="run">Run</label>
+    <select id="run" aria-label="Select run">
+      <option value="sched-2026-07-09" selected>sched-2026-07-09</option>
+      <option value="sched-2026-07-08">sched-2026-07-08</option>
+    </select>
+  </div>
+  <span class="pill" id="verdictpill"></span>
+  <div class="spacer"></div>
+  <span class="fleetstate"><span class="breathe"></span> fleet idle · scale-to-zero · images <span class="mono" style="margin-left:2px">:s121</span></span>
+</header>
+
+<main>
+
+  <!-- ════ I · INFRASTRUCTURE ════ -->
+  <section id="infra">
+    <div class="eyebrow">Section I · Now, not run-scoped</div>
+    <h2>Infrastructure — health &amp; performance</h2>
+    <p class="lede">The hardware truth: what is provisioned, what it costs, and whether each piece
+      answers. Everything here is live state; the run selector does not change it.</p>
+
+    <div class="cardgrid">
+      <div class="card"><h4>Container Apps env</h4><div class="statline"><span class="big">13 apps</span><span class="chip good">✓ provisioned</span></div><div class="sub">trading-agents-env · australiaeast · KEDA cron windows 22:25–00:30 UTC</div></div>
+      <div class="card"><h4>Postgres spine</h4><div class="statline"><span class="big">Neon</span><span class="chip good">✓ SELECT 1</span></div><div class="sub">ap-southeast-2 · POSTGRES_DSN via Key Vault · alembic head</div></div>
+      <div class="card"><h4>Service Bus</h4><div class="statline"><span class="big">trading-agents-bus</span><span class="chip good">✓ topics ready</span></div><div class="sub">5 served request topics + subscriptions</div></div>
+      <div class="card"><h4>Key Vault</h4><div class="statline"><span class="big">trading-agents-kv</span><span class="chip good">✓ master-only</span></div><div class="sub">credential-tested activation (DL-36) · cache TTL 5 min</div></div>
+      <div class="card"><h4>Dispatcher job</h4><div class="statline"><span class="big">3/3 nights</span><span class="chip good">✓ succeeded</span></div><div class="sub">30 22 * * * UTC · calendar-gated · day-keyed run ids</div></div>
+      <div class="card"><h4>Idle cost</h4><div class="statline"><span class="big">≈ $0</span><span class="chip">scale-to-zero</span></div><div class="sub">replicas 0 outside the daily window — by design</div></div>
+    </div>
+
+    <div class="tablewrap" style="margin-top:14px">
+      <table id="containers" aria-label="Per-container state">
+        <thead><tr><th>Container</th><th>Image tag</th><th>Replicas now</th><th>Last window</th><th>State</th><th>Logs</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ════ II · FLEET LIFECYCLE ════ -->
+  <section id="fleet">
+    <div class="eyebrow">Section II · Run-scoped</div>
+    <h2>Fleet lifecycle — the containers as logical stages</h2>
+    <p class="lede">Not a box diagram of machines: the <em>process</em> the fleet walks every night,
+      each stage proven before the next. <span class="runtag" data-runtag></span></p>
+    <div class="flow" id="lifeflow"></div>
+
+    <div class="gatecard" id="recovery">
+      <h3>Self-recovery ladder <span class="chip acc" style="margin-left:6px">DL-36</span></h3>
+      <p>Every failure signal must sit on this ladder — nothing fails silently, nothing retries forever:
+        <b>test → one automatic remediation shot → escalate to operator</b>.</p>
+      <div class="ladder" id="ladder"></div>
+    </div>
+  </section>
+
+  <!-- ════ III · TRADING RUN ════ -->
+  <section id="trading">
+    <div class="eyebrow">Section III · Run-scoped</div>
+    <h2>The trading run — one logical unit</h2>
+    <p class="lede">Did each agent do its job, and what did that add up to? Verdicts are logical
+      (“scored what it was given”), not mechanical (“process exited 0”).
+      <span class="runtag" data-runtag></span></p>
+
+    <div class="flow" id="tradeflow"></div>
+    <div id="gate"></div>
+
+    <div class="threecol">
+      <div class="panel" id="flags"><h3>Flags</h3><div id="flagbody"></div></div>
+      <div class="panel" id="positions"><h3>Positions — graph vs broker</h3><div id="posbody"></div></div>
+      <div class="panel" id="notes"><h3>Run notes</h3><div id="notebody"></div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Design mockup · real data from the runs shown · per-container log lines are representative samples ·
+  chat panel is a wired-in-S125 preview, replies here are canned.
+</footer>
+
+<!-- log drawer -->
+<div class="scrim" id="scrim"></div>
+<aside id="drawer" aria-label="Container logs">
+  <button class="close" aria-label="Close logs">×</button>
+  <h3 id="drawertitle"></h3>
+  <span class="chip" id="drawersub"></span>
+  <div class="loglines" id="drawerbody"></div>
+</aside>
+
+<!-- chat dock -->
+<div id="chat">
+  <div class="head" role="button" tabindex="0" aria-expanded="false">
+    <span class="dot"></span><b>Ask the operator</b>
+    <span class="chip acc">bounded commands · S125</span>
+  </div>
+  <div class="body">
+    <div class="msg user"><div class="who">Operator (you)</div><p>The gate says FAIL but every agent looks green — something smells. What happened?</p></div>
+    <div class="msg"><div class="who">operator agent</div>
+      <p>Nothing malfunctioned. All five scan survivors scored below the 0.600 regime confidence floor, so the analyst issued zero recommendations — a legitimate no-trade day.</p>
+      <p>The acceptance gate, however, hard-requires <span class="mono">analyst.scored ≥ 1</span>, so a quiet market is indistinguishable from a dead analyst. Evidence: 5 rejection nodes with confidences 0.545–0.597, all provenance-linked.</p>
+      <p>Also worth your attention: all four enrichment feeds ran degraded, which depresses confidence — that may be <em>why</em> the day looked quiet.</p></div>
+    <div class="msg user"><div class="who">Operator (you)</div><p>Why wasn't the degraded-feed problem flagged?</p></div>
+    <div class="msg"><div class="who">operator agent</div>
+      <p>Feed degradation is a WARN, not a Flag — it never enters the supervisor path. That is a gap: four-of-four feeds degraded should escalate. I can file it as a drift item for the planning agent.</p></div>
+    <div class="chat-in">
+      <input type="text" placeholder="Ask about this run… (canned demo)" aria-label="Ask the operator" />
+      <button type="button">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── data: two real runs ─────────────────────────────────────────────── */
+  var RUNS = {
+    "sched-2026-07-09": {
+      verdict: { pass: false, label: "ACCEPTANCE FAIL" },
+      images: ":s121 (S119–S121 live)",
+      life: [
+        { who: "cron", did: "Fired on schedule", num: "22:30:00 UTC · Succeeded", v: "good", vt: "✓ did its job" },
+        { who: "master", did: "Woke first, keys ready", num: "window 22:25 · Key Vault ok", v: "good", vt: "✓ did its job" },
+        { who: "12 agents", did: "EHLO → tested ACTIVATE", num: "credentials live-tested first", v: "good", vt: "✓ did its job" },
+        { who: "control plane", did: "Served over Service Bus", num: "5 request topics answering", v: "good", vt: "✓ did its job" },
+        { who: "pipeline", did: "Graph-pull cascade ran", num: "7/7 stages complete", v: "good", vt: "✓ did its job" },
+        { who: "fleet", did: "Slept on time", num: "0 replicas after 00:30", v: "good", vt: "✓ did its job" }
+      ],
+      ladder: [
+        { t: "Escalations this run: 0", v: "good" },
+        { t: "Remediation plans: 0 needed", v: "good" },
+        { t: "Gate FAIL → operator-held (policy gap, not runtime fault — no auto-shot eligible)", v: "warn" },
+        { t: "Divergence Flag → supervisor path, pending your ack", v: "crit" }
+      ],
+      trade: [
+        { who: "provider", did: "Served the universe", num: "99/99 tickers · 4,059 bars", v: "good", vt: "✓ did its job", chips: [{ t: "4 feeds degraded", v: "warn" }] },
+        { who: "scanner", did: "Filtered to candidates", num: "99 → 5 survived", v: "good", vt: "✓ did its job" },
+        { who: "analyst", did: "Scored — none cleared", num: "0 scored · 5 rejected < 0.600", v: "good", vt: "✓ did its job" },
+        { who: "portfolio mgr", did: "Nothing to evaluate", num: "0 in → 0 out", v: "idle", vt: "— no input" },
+        { who: "execution", did: "Reconciled vs broker", num: "snapshot 22:33:32 · 0 orders", v: "crit", vt: "⚑ raised critical Flag", crit: true },
+        { who: "monitor", did: "Adopted broker truth", num: "4 checked · 4 holds · 6 open", v: "good", vt: "✓ did its job" },
+        { who: "reporter", did: "Stitched the narrative", num: "snapshot written", v: "good", vt: "✓ did its job" }
+      ],
+      gate: {
+        pass: false,
+        title: "Acceptance gate: FAIL — and that is the finding, not the failure",
+        body: "Every agent did its job. The gate hard-requires <span class='mono'>analyst.scored ≥ 1</span> and <span class='mono'>pm.evaluated ≥ 1</span>, so a legitimate no-trade day fails. First quiet day of the standing-run era; gate semantics need a no-trade verdict.",
+        breaches: ["analyst.scored: 0 < floor 1.0", "pm.evaluated: 0 < floor 1.0"]
+      },
+      flags: { crit: true, html: "<span class='chip crit pulse-crit'>⚑ critical · pending</span><div class='flagreason'>Broker position divergence at run start:\n- missing_graph_position BAC broker_qty=171\n- missing_graph_position WFC broker_qty=116\n- qty_mismatch CSCO graph_qty=88 broker_qty=177</div><p style='color:var(--ink-2);font-size:12.5px;margin:8px 0 0'>Reconciliation adopted broker truth and healed the graph; the Flag stays pending until you acknowledge it.</p>" },
+      pos: [["AMD", 19, 19], ["BAC", 171, 171], ["CSCO", 177, 177], ["HPE", 229, 229], ["MRVL", 44, 44], ["WFC", 116, 116]],
+      notes: ["First run on <b>:s121</b> — S120 reconciliation live and proven.", "Pending-fill refresh stamped all 4 stale Fill nodes.", "Deliberation (compiled prompts) untested — no PM-approved trade to veto.", "All four enrichment feeds degraded: fundamentals, news, sectors, earnings — analyst ran on technicals alone."]
+    },
+    "sched-2026-07-08": {
+      verdict: { pass: true, label: "ACCEPTANCE PASS" },
+      images: ":s103 (stale — DL-46)",
+      life: [
+        { who: "cron", did: "Fired on schedule", num: "22:30:00 UTC · Succeeded", v: "good", vt: "✓ did its job" },
+        { who: "master", did: "Woke first, keys ready", num: "window 22:25 · Key Vault ok", v: "good", vt: "✓ did its job" },
+        { who: "12 agents", did: "EHLO → ACTIVATE", num: "on :s103 images", v: "warn", vt: "⚠ stale code (DL-46)" },
+        { who: "control plane", did: "Served over Service Bus", num: "5 request topics answering", v: "good", vt: "✓ did its job" },
+        { who: "pipeline", did: "Graph-pull cascade ran", num: "7/7 stages complete", v: "good", vt: "✓ did its job" },
+        { who: "fleet", did: "Slept on time", num: "0 replicas after 00:30", v: "good", vt: "✓ did its job" }
+      ],
+      ladder: [
+        { t: "Escalations this run: 0", v: "good" },
+        { t: "Fleet-behind-main: undetected — no tripwire existed (DL-46, found by operator review)", v: "crit" },
+        { t: "Repair: manual — fleet retagged :s121, stray CSCO order cancelled", v: "warn" }
+      ],
+      trade: [
+        { who: "provider", did: "Served the universe", num: "99/99 tickers", v: "good", vt: "✓ did its job", chips: [{ t: "4 feeds degraded", v: "warn" }] },
+        { who: "scanner", did: "Filtered to candidates", num: "99 → 5 survived", v: "good", vt: "✓ did its job" },
+        { who: "analyst", did: "Scored three buys", num: "BAC .63 · WFC .61 · CSCO .60", v: "good", vt: "✓ did its job" },
+        { who: "portfolio mgr", did: "Approved 3 — blind", num: "no held-position seeding (:s103)", v: "warn", vt: "⚠ re-bought CSCO" },
+        { who: "execution", did: "Submitted 3 paper buys", num: "BAC 171 · WFC 116 · CSCO 87", v: "good", vt: "✓ did its job" },
+        { who: "monitor", did: "Nothing to check", num: "0 positions known to graph", v: "idle", vt: "— blind (:s103)" },
+        { who: "reporter", did: "Stitched the narrative", num: "3 recommendations", v: "good", vt: "✓ did its job" }
+      ],
+      gate: {
+        pass: true,
+        title: "Acceptance gate: PASS — on last sprint's code",
+        body: "The gate was satisfied, but the run executed on <span class='mono'>:s103</span> images: broker reconciliation and compiled deliberation prompts were merged yet not deployed. A green gate on stale code is exactly the silence DL-46 records.",
+        breaches: []
+      },
+      flags: { crit: false, html: "<p style='color:var(--ink-2)'>No Flag raised — reconciliation was not deployed on this run’s images, so the CSCO divergence went undetected until the next night.</p>" },
+      pos: [["AMD", 19, 19], ["CSCO", 88, "177 ⚠"], ["HPE", 229, 229], ["MRVL", 44, 44], ["BAC", "—", "171 ⚠"], ["WFC", "—", "116 ⚠"]],
+      notes: ["Ran on <b>:s103</b> — three merged sprints not live (deploy gap, DL-46).", "PM re-bought 87 CSCO on top of 88 held + 89 pending.", "The pending 89-share CSCO order had already filled at the 07-08 open.", "Repaired 07-09: order cancelled, fleet retagged, DL-46 filed."]
+    }
+  };
+
+  var CONTAINERS = ["master", "provider", "scanner", "analyst", "portfolio-manager", "execution", "monitor", "reporter", "forecaster", "operator", "supervisor", "curator", "researcher"];
+  var LOGS = {
+    "execution": [
+      ["22:30:41", "ok", "EHLO → master · instance exec-7f21 · awaiting ACTIVATE"],
+      ["22:30:44", "ok", "ACTIVATE verified (RSA-PSS) · credentials live-tested: alpaca ✓ postgres ✓"],
+      ["22:33:31", "ok", "run-start reconciliation: fetching broker positions"],
+      ["22:33:32", "warn", "divergence: qty_mismatch CSCO graph=88 broker=177 (+2 missing)"],
+      ["22:33:32", "err", "Flag raised: broker-position-divergence · severity=critical → supervisor"],
+      ["22:33:33", "ok", "pending-fill refresh: 4 Fill nodes stamped with broker status"],
+      ["22:34:07", "ok", "0 order intents received · nothing to submit"],
+      ["00:30:02", "ok", "scale window closed · draining · 0 replicas"]
+    ],
+    "_default": [
+      ["22:30:40", "ok", "EHLO → master · awaiting ACTIVATE"],
+      ["22:30:43", "ok", "ACTIVATE verified (RSA-PSS) · credentials live-tested ✓"],
+      ["22:31:—", "ok", "serving · graph-pull poll loop on the Postgres spine"],
+      ["00:30:01", "ok", "scale window closed · 0 replicas"]
+    ]
+  };
+
+  /* ── renderers ───────────────────────────────────────────────────────── */
+  function el(html) { var d = document.createElement("div"); d.innerHTML = html; return d.firstElementChild; }
+  function chipHtml(c) { return "<span class='chip " + c.v + "'>" + c.t + "</span>"; }
+
+  function renderFlow(elId, stages) {
+    var host = document.getElementById(elId);
+    host.innerHTML = "";
+    stages.forEach(function (s, i) {
+      var chips = (s.chips || []).map(chipHtml).join(" ");
+      var restart = s.restartable ? "<button class='restart' data-stage='" + s.who + "'>⟳ restart from here</button>" : "";
+      var node = el("<div class='stage'><div class='node" + (s.crit ? " crit-edge" : "") + "'>" +
+        "<div class='who'>" + s.who + "</div><div class='did'>" + s.did + "</div>" +
+        "<div class='num'>" + s.num + "</div>" +
+        "<div class='verdict'><span class='chip " + s.v + "'>" + s.vt + "</span> " + chips + "</div>" +
+        restart + "</div></div>");
+      host.appendChild(node);
+      setTimeout(function () { node.classList.add("revealed"); }, 120 * i + 60);
+    });
+  }
+
+  function renderRun(id) {
+    var r = RUNS[id];
+    var pill = document.getElementById("verdictpill");
+    pill.className = "pill " + (r.verdict.pass ? "pass" : "fail");
+    pill.textContent = (r.verdict.pass ? "✓ " : "✕ ") + r.verdict.label;
+
+    document.querySelectorAll("[data-runtag]").forEach(function (n) {
+      n.textContent = "Scoped to " + id + " · images " + r.images;
+    });
+
+    renderFlow("lifeflow", r.life);
+    renderFlow("tradeflow", r.trade.map(function (s) {
+      var c = Object.create(s); c.restartable = true; c.runId = id; return c;
+    }));
+
+    document.getElementById("ladder").innerHTML = r.ladder.map(chipHtml).join(" ");
+
+    var g = r.gate;
+    document.getElementById("gate").innerHTML =
+      "<div class='gatecard " + (g.pass ? "pass" : "fail") + "'><h3>" + g.title + "</h3><p>" + g.body + "</p>" +
+      (g.breaches.length ? "<p class='mono' style='font-size:12.5px'>" + g.breaches.map(function (b) { return "FAIL  " + b; }).join("<br>") + "</p>" : "") +
+      "</div>";
+
+    document.getElementById("flagbody").innerHTML = r.flags.html;
+
+    var rows = r.pos.map(function (p) {
+      return "<tr><td class='mono'>" + p[0] + "</td><td class='mono'>" + p[1] + "</td><td class='mono'>" + p[2] + "</td></tr>";
+    }).join("");
+    document.getElementById("posbody").innerHTML =
+      "<div style='overflow-x:auto'><table><thead><tr><th>Ticker</th><th>Graph qty</th><th>Broker qty</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
+
+    document.getElementById("notebody").innerHTML = "<ul>" + r.notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
+  }
+
+  function renderContainers() {
+    var tb = document.querySelector("#containers tbody");
+    tb.innerHTML = CONTAINERS.map(function (c) {
+      return "<tr><td class='mono'>" + c + "</td><td class='mono'>:s121</td><td>0 <span class='chip'>by design</span></td>" +
+        "<td class='mono'>22:30–00:30</td><td><span class='chip good'>✓ healthy last window</span></td>" +
+        "<td><button class='logbtn' data-c='" + c + "'>view logs</button></td></tr>";
+    }).join("") +
+      "<tr><td class='mono'>dispatcher-cron <span class='chip'>job</span></td><td class='mono'>:s121</td><td>—</td><td class='mono'>22:30 fire</td>" +
+      "<td><span class='chip good'>✓ succeeded</span></td><td><button class='logbtn' data-c='dispatcher-cron'>view logs</button></td></tr>";
+  }
+
+  /* ── interactions ────────────────────────────────────────────────────── */
+  var drawer = document.getElementById("drawer"), scrim = document.getElementById("scrim");
+  function openLogs(c) {
+    document.getElementById("drawertitle").textContent = c + " — last window";
+    document.getElementById("drawersub").textContent = "representative sample · live feed lands in S123 (Log Analytics)";
+    var lines = LOGS[c] || LOGS._default;
+    document.getElementById("drawerbody").innerHTML = lines.map(function (l) {
+      return "<div><span class='t'>" + l[0] + "</span>  <span class='lv-" + l[1] + "'>" + (l[1] === "ok" ? "INFO" : l[1] === "warn" ? "WARN" : "FLAG") + "</span>  " + l[2] + "</div>";
+    }).join("");
+    drawer.classList.add("open"); scrim.classList.add("on");
+  }
+  var toastEl = el("<div id='toast' role='status'></div>");
+  document.body.appendChild(toastEl);
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 4200);
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".logbtn"); if (b) openLogs(b.getAttribute("data-c"));
+    var rs = e.target.closest(".restart");
+    if (rs) toast("Resume (mock, ships S124): clears " + document.getElementById("run").value +
+      " artifacts from “" + rs.getAttribute("data-stage") + "” downstream, then re-fires the cascade — " +
+      "upstream artifacts are reused from the graph (Airflow “clear + downstream” semantics).");
+    if (e.target.closest("#drawer .close") || e.target === scrim) { drawer.classList.remove("open"); scrim.classList.remove("on"); }
+  });
+
+  var chat = document.getElementById("chat"), head = chat.querySelector(".head");
+  function toggleChat() { chat.classList.toggle("open"); head.setAttribute("aria-expanded", chat.classList.contains("open")); }
+  head.addEventListener("click", toggleChat);
+  head.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleChat(); } });
+
+  document.getElementById("run").addEventListener("change", function () { renderRun(this.value); });
+
+  renderContainers();
+  renderRun("sched-2026-07-09");
+})();
+</script>

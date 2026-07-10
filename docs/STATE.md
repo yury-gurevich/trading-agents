@@ -116,8 +116,10 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   cost meters), S124
   (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46 tripwire),
   S125 (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
-  `/bundle` context — investigates, prepares a fix as branch+PR only, rebuilds containers via the
-  DL-46 deploy machinery; DL-47 req. 11). Design spec committed:
+  `/bundle` context — investigates via the **pre-defined skill catalogue** (7 skills shipped
+  2026-07-10 at `.claude/skills/`: diagnose-run/-feeds, check-/deploy-fleet, reconcile-broker,
+  resume-run, audit-costs — usable in any Claude Code session today), prepares a fix as branch+PR
+  only, rebuilds containers via the DL-46 deploy machinery; DL-47 req. 11–12). Design spec committed:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).
 - **Watch outcome (2026-07-09 22:30 UTC run, verified 2026-07-10):** cron fired (3/3 nights),
   7/7 stages on `:s121`; **S120 reconciliation proven live** — critical divergence Flag raised

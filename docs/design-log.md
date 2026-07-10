@@ -2125,6 +2125,29 @@ but not self-explaining — every "how did we go last night" costs a manual trac
   ingest whole. The manual equivalent today is five scripts and four az calls; the bundle is that,
   machine-shaped.
 
+**12. Pre-defined investigation skills (added 2026-07-10).** The repair LLM investigates through a
+**catalogue of pre-defined, versioned skills** — the DL-36 bounded-catalogue pattern applied to
+diagnosis; it composes vetted procedures rather than improvising raw access. Because the repair
+agent is a Claude Code session with a repo checkout, the skills ship **in the repo** at
+`.claude/skills/` and work in any session **today**, before S125 exists. Operator asked for "why
+did a run not complete" and delegated the rest of the set; catalogue as shipped (distilled from
+the 07-09/07-10 live debugging):
+
+| Skill | Answers |
+| --- | --- |
+| `/diagnose-run` | why a run stopped / what a verdict means — the flagship; stage-by-stage procedure + known-signature table |
+| `/diagnose-feeds` | why enrichment feeds ran degraded (stale vault secret vs entitlement vs 429s vs vendor) |
+| `/check-fleet` | fleet health + deploy currency (the DL-46 tripwire, manual) — healthy-idle vs broken |
+| `/deploy-fleet` | the bounded rebuild/retag procedure (proven 07-09); operator approval required |
+| `/reconcile-broker` | broker↔graph divergence readings + safe broker-side actions (DL-44 semantics) |
+| `/resume-run` | resume a stalled run (graph-pull makes it natural); redo-a-completed-stage explicitly deferred to S124 |
+| `/audit-costs` | hardware $ (Cost Management) + LLM $ (priced `LLMCall` ledger, coverage caveats named) |
+
+Each skill ends with a mandatory report format and cites LAW-02 (no cause without evidence).
+Growing the catalogue = adding a folder + PR, reviewable like any code. Later candidates:
+`/diagnose-deliberation` (veto transcripts, prompt artifact versions), `/diagnose-activation`
+(DL-36 escalation deep-dive) — add when a real incident demands them, not speculatively.
+
 **Prior art (operator asked to draw on similar products).** Airflow's run view + *clear task &
 downstream* re-execution; Dagster's *re-execute from failure*; GitHub Actions' *re-run failed jobs*;
 Temporal's replay-from-history; Grafana for the infra panels (we already run Managed Grafana — it

@@ -21,11 +21,11 @@
   <nav id="rail" aria-label="Dashboard sections">
     <button class="railbtn" data-view="infra">
       <span class="rn">I</span><span class="nm">Infrastructure</span>
-      <span class="st"><span class="dot idle"></span><span>ships in S123</span></span>
+      <span class="st"><span class="dot idle" id="raildot-infra"></span><span id="raillbl-infra">loading</span></span>
     </button>
     <button class="railbtn" data-view="fleet">
       <span class="rn">II</span><span class="nm">Fleet lifecycle</span>
-      <span class="st"><span class="dot idle"></span><span>ships in S123</span></span>
+      <span class="st"><span class="dot idle" id="raildot-fleet"></span><span id="raillbl-fleet">loading</span></span>
     </button>
     <button class="railbtn" data-view="trading" aria-current="true">
       <span class="rn">III</span><span class="nm">Trading run</span>
@@ -35,18 +35,31 @@
 
   <main>
     <section id="infra">
-      <div class="eyebrow">Section I</div>
+      <div class="eyebrow">Section I · Now, not run-scoped</div>
       <h2>Infrastructure — health &amp; performance</h2>
-      <p class="lede">Container Apps state, spine and bus health, per-container logs, and the
-        hardware + LLM cost meters land in <b>S123</b>. The design is settled in
-        <span class="mono">docs/design/dashboard-mockup.html</span>.</p>
+      <p class="lede">The hardware truth: what is provisioned, what it costs, and whether each piece
+        answers. Everything here is live state; the run selector does not change it.</p>
+      <div class="cardgrid" id="infracards" aria-live="polite"></div>
+      <div class="tablewrap" style="margin-top:14px">
+        <table id="containers" aria-label="Per-container state">
+          <thead><tr><th>Container</th><th>Image tag</th><th>Replicas now</th><th>Last window</th><th>State</th><th>Logs</th></tr></thead>
+          <tbody id="containerbody"></tbody>
+        </table>
+      </div>
     </section>
 
     <section id="fleet">
-      <div class="eyebrow">Section II</div>
+      <div class="eyebrow">Section II · Run-scoped</div>
       <h2>Fleet lifecycle — the containers as logical stages</h2>
-      <p class="lede">The nightly wake → tested ACTIVATE → serve → cascade → sleep flow lands in
-        <b>S123</b>; restart-from-stage in <b>S124</b>.</p>
+      <p class="lede">Not a box diagram of machines: the <em>process</em> the fleet walks every night,
+        each stage proven before the next. <span class="runtag" id="fleetruntag"></span></p>
+      <div class="flow" id="lifeflow"></div>
+      <div class="gatecard" id="fleetrecovery">
+        <h3>Self-recovery ladder <span class="chip acc">DL-36</span></h3>
+        <p>Every failure signal sits on the bounded ladder: test → one automatic remediation shot → operator.</p>
+        <div class="ladder" id="fleetladder"></div>
+        <div class="agentstates" id="agentstates"></div>
+      </div>
     </section>
 
     <section id="trading" class="active">
@@ -67,8 +80,17 @@
     </section>
   </main>
 
-  <footer>Read-only surface over the graph spine. Sections I–II and the chat land in S123–S125.</footer>
+  <footer>Read-only surface over the graph spine and Azure read APIs. No dashboard action writes state.</footer>
 
+  <div class="scrim" id="scrim"></div>
+  <aside id="drawer" aria-label="Container logs" aria-hidden="true">
+    <button class="close" aria-label="Close logs">×</button>
+    <h3 id="drawertitle"></h3>
+    <span class="chip" id="drawersub"></span>
+    <div class="loglines" id="drawerbody"></div>
+  </aside>
+
+  <script src="/infra.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ Agent: surfaces
 Role: project supervisor Flags, graph-vs-broker positions, and the DL-36
       escalation/remediation ladder into JSON-ready dicts, run-scoped by the
       run's requested day; assemble the LLM context bundle (DL-47 req. 11).
-External I/O: none (reads the injected GraphStore).
+External I/O: injected GraphStore reads and optional injected AzureReader calls.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from surfaces.dashboard.bundle_azure import bundle_artifacts
 from surfaces.dashboard.projections import (
     list_runs,
     run_request_node,
@@ -21,6 +22,8 @@ from surfaces.dashboard.projections import (
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
+    from surfaces.dashboard.azure_port import AzureReader
+    from surfaces.dashboard.settings import DashboardSettings
 
 _FLAG_FIELDS = ("subject_ref", "severity", "reason", "status", "created_at")
 _ESCALATION_FIELDS = (
@@ -123,14 +126,27 @@ def run_recovery(graph: GraphStore, run_id: str) -> dict[str, object]:
     return {"escalations": escalations, "remediation_plans": plans}
 
 
-def run_bundle(graph: GraphStore, run_id: str) -> dict[str, object]:
-    """The LLM context bundle — every projection in one machine-shaped document.
-
-    S123 fills ``logs`` (per-container excerpts) and ``images`` (fleet tags);
-    they are present-but-empty now so consumers can rely on the keys.
-    """
+def run_bundle(
+    graph: GraphStore,
+    run_id: str,
+    azure: AzureReader | None = None,
+    settings: DashboardSettings | None = None,
+) -> dict[str, object]:
+    """The LLM context bundle with bounded per-container logs and fleet images."""
     node = run_request_node(graph, run_id)
     tickers = node.props.get("tickers", ()) if node else ()
+    logs: dict[str, object] = {
+        "available": False,
+        "message": "Log Analytics data unavailable",
+        "containers": {},
+    }
+    images: dict[str, object] = {
+        "available": False,
+        "message": "Azure image data unavailable",
+        "containers": {},
+    }
+    if settings is not None:
+        logs, images = bundle_artifacts(azure, settings, _run_day(graph, run_id))
     return {
         "run_id": run_id,
         "generated_at": datetime.now(tz=UTC).isoformat(),
@@ -144,8 +160,8 @@ def run_bundle(graph: GraphStore, run_id: str) -> dict[str, object]:
         "flags": run_flags(graph, run_id),
         "positions": run_positions(graph, run_id),
         "recovery": run_recovery(graph, run_id),
-        "logs": {},
-        "images": {},
+        "logs": logs,
+        "images": images,
     }
 
 

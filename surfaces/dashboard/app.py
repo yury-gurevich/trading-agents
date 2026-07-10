@@ -11,14 +11,22 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import parse_qs
 
 from surfaces.dashboard import projections, projections_state
+from surfaces.dashboard.bundle_azure import container_logs
+from surfaces.dashboard.projections_fleet import fleet_projection
+from surfaces.dashboard.projections_infra import infra_projection
+from surfaces.dashboard.projections_vitals import vitals_projection
+from surfaces.dashboard.settings import DashboardSettings
 
 if TYPE_CHECKING:
     from kernel import GraphStore
+    from surfaces.dashboard.azure_port import AzureReader
 
 _STATIC = Path(__file__).parent / "static"
 
@@ -28,38 +36,96 @@ _RUN_VIEWS: dict[str, Callable[[GraphStore, str], object]] = {
     "flags": lambda g, r: projections_state.run_flags(g, r),
     "positions": projections_state.run_positions,
     "recovery": projections_state.run_recovery,
-    "bundle": projections_state.run_bundle,
 }
+
+_CONTAINER = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")
 
 StartResponse = Callable[..., Any]
 
 
-def build_app(graph: GraphStore) -> Callable[..., list[bytes]]:
-    """Return the WSGI app over one injected GraphStore."""
+def build_app(
+    graph: GraphStore,
+    azure: AzureReader | None = None,
+    settings: DashboardSettings | None = None,
+) -> Callable[..., list[bytes]]:
+    """Return the WSGI app over injected graph and optional Azure readers."""
+    config = settings or DashboardSettings()
 
     def _app(environ: dict[str, Any], start_response: StartResponse) -> list[bytes]:
         path = str(environ.get("PATH_INFO", "/"))
+        query = parse_qs(str(environ.get("QUERY_STRING", "")))
         if str(environ.get("REQUEST_METHOD", "GET")) != "GET":
             return _json(start_response, 405, {"error": "GET only"})
         if path == "/api/runs":
             return _json(start_response, 200, projections.list_runs(graph))
+        if path == "/api/infra":
+            return _json(start_response, 200, infra_projection(graph, azure, config))
+        if path == "/api/fleet":
+            run_id = _selected_run(graph, query)
+            return _json(
+                start_response, 200, fleet_projection(graph, azure, config, run_id)
+            )
+        if path == "/api/vitals":
+            vital_run = query.get("run_id", [None])[0]
+            return _json(
+                start_response,
+                200,
+                vitals_projection(graph, azure, config, vital_run),
+            )
+        if path.startswith("/api/containers/"):
+            return _container_view(path, query, azure, config, start_response)
         if path.startswith("/api/runs/"):
-            return _run_view(graph, path, start_response)
+            return _run_view(graph, azure, config, path, start_response)
         return _static(path, start_response)
 
     return _app
 
 
 def _run_view(
-    graph: GraphStore, path: str, start_response: StartResponse
+    graph: GraphStore,
+    azure: AzureReader | None,
+    settings: DashboardSettings,
+    path: str,
+    start_response: StartResponse,
 ) -> list[bytes]:
     parts = path.removeprefix("/api/runs/").split("/")
-    if len(parts) != 2 or parts[1] not in _RUN_VIEWS:
+    if len(parts) != 2 or parts[1] not in (*_RUN_VIEWS, "bundle"):
         return _json(start_response, 404, {"error": f"unknown route {path}"})
     run_id, view = parts
     if projections.run_request_node(graph, run_id) is None:
         return _json(start_response, 404, {"error": f"unknown run_id {run_id}"})
+    if view == "bundle":
+        payload = projections_state.run_bundle(graph, run_id, azure, settings)
+        return _json(start_response, 200, payload)
     return _json(start_response, 200, _RUN_VIEWS[view](graph, run_id))
+
+
+def _container_view(
+    path: str,
+    query: dict[str, list[str]],
+    azure: AzureReader | None,
+    settings: DashboardSettings,
+    start_response: StartResponse,
+) -> list[bytes]:
+    parts = path.removeprefix("/api/containers/").split("/")
+    if len(parts) != 2 or parts[1] != "logs" or not _CONTAINER.fullmatch(parts[0]):
+        return _json(start_response, 404, {"error": f"unknown route {path}"})
+    raw = query.get("tail", [str(settings.log_tail_default)])[0]
+    try:
+        requested = int(raw)
+    except ValueError:
+        requested = settings.log_tail_default
+    tail = max(1, min(requested, settings.log_tail_max))
+    payload = container_logs(azure, settings, parts[0], tail)
+    return _json(start_response, 200, payload)
+
+
+def _selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:
+    supplied = query.get("run_id", [""])[0]
+    if supplied:
+        return supplied
+    rows = projections.list_runs(graph)
+    return str(rows[0]["run_id"]) if rows else ""
 
 
 def _json(start_response: StartResponse, status: int, payload: object) -> list[bytes]:

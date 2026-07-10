@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-10 14:05 AEST · **Version:** 0.66.00 · **S122 SHIPPED — the dashboard run view is live locally; sections I/II land in S123.**
+**Last updated:** 2026-07-10 18:48 AEST · **Version:** 0.67.00 · **S123 COMPLETE ON BRANCH — live fleet/infra/log/cost dashboard evidence captured; pending merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,18 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S123 (DL-47 slice 2, 0.66.00→0.67.00) — FLEET + INFRASTRUCTURE ARE LEGIBLE.**
+  One injectable Azure REST read port now projects all 13 Container Apps, `dispatcher-cron`,
+  current replicas, real Log Analytics excerpts, and Cost Management service rows; graph-first
+  Section II projects the six-stage nightly lifecycle, latest per-agent activation state, and the
+  DL-36 ladder. `/api/vitals` drives all status-line facts and `/bundle` now carries bounded
+  per-container logs + image tags. Hardware and ledger/model prices render in A$; USD LLM prices
+  use the committed Commonwealth Bank Send-IMT snapshot (`1 USD=A$1.39450565`). Live Neon/Azure
+  evidence: 13 apps + job all `:s121`, execution log drawer opened, A$0.001062 hardware MTD,
+  2 pending Flags, broker↔graph in sync. Screenshots under
+  `docs/reports/sprint-123-dashboard-fleet-infra/`; `make ci` 1489 passed / 5 skipped / 100%.
+  Branch complete, pending operator merge.
 
 - **S121 (DL-42 resolution, 0.65.00→0.65.01) — FIRST ADR-0010 PROMPT PROMOTIONS ARE LIVE.**
   Compiled judge artifact `2026-07-08-s119-v4` promoted into `JUDGE_SYSTEM` and the challenger-only
@@ -98,9 +110,9 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `main` at 0.66.00, no active sprint branch; **S122 shipped** (merged `820b8c9` — the dashboard
-run view runs locally against the live spine). **S123 is packaged and ready for kickoff**
-(`sprint-123-dashboard-fleet-infra.md` — Sections I/II, per-container logs, cost meters). The
+On `sprint-123-dashboard-fleet-infra` at 0.67.00; **S123 is complete and live-proven on its branch**
+(Sections I/II, real per-container logs, A$ hardware/LLM cost meters, `/api/vitals`, bundle
+logs/images) and awaits operator merge. **S122 remains shipped** (`820b8c9`). The
 07-08 deploy-gap incident + same-day repair (fleet → `:s121`, stray CSCO order cancelled) is
 recorded in design-log **DL-46**; the 07-09 run outcome (reconciliation proven; no-trade
 `ACCEPTANCE FAIL`) is under Watch outcome in Next.
@@ -111,10 +123,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — `uv run python -m surfaces.dashboard` serves the run view on the live spine (verified vs accept.py; check row in functionality-checks.md). S123 packaged same day (`sprint-122-dashboard-run-view.md` was
-  ready for Codex kickoff): `surfaces/dashboard/` read-model API + Section III run view with the
-  top-bar run selector. Then S123 (fleet lifecycle + infra + per-container logs + hardware/LLM
-  cost meters), S124
+- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 COMPLETE ON BRANCH (0.67.00)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. Next: S124
   (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46 tripwire),
   S125 (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
   `/bundle` context — investigates via the **pre-defined skill catalogue** (7 skills shipped

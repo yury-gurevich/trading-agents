@@ -18,10 +18,14 @@ def main() -> None:
 
     from kernel.graph_env import build_graph_from_env
     from surfaces.dashboard.app import build_app
+    from surfaces.dashboard.azure_rest import build_azure_reader
+    from surfaces.dashboard.settings import DashboardSettings
 
     load_dotenv()
     port = int(os.environ.get("DASHBOARD_PORT", "8300"))
-    server = make_server("127.0.0.1", port, build_app(build_graph_from_env()))
+    settings = DashboardSettings()
+    app = build_app(build_graph_from_env(), build_azure_reader(settings), settings)
+    server = make_server("127.0.0.1", port, app)
     sys.stderr.write(f"dashboard: http://127.0.0.1:{port}/  (read-only)\n")
     server.serve_forever()
 

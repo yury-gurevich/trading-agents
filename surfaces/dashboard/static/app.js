@@ -84,8 +84,6 @@
     $("posbody").innerHTML = "<div style='overflow-x:auto'><table><thead><tr><th>Ticker</th><th>Graph</th><th>Broker</th><th></th></tr></thead><tbody>" +
       rows + "</tbody></table></div>" +
       (p.snapshot_at ? "<p class='muted'>snapshot " + esc(p.snapshot_at) + "</p>" : "<p class='muted'>no broker snapshot on record</p>");
-    var synced = p.rows.every(function (r) { return r.match; });
-    vitals.sync = p.rows.length ? (synced ? "in sync" : "DIVERGED") : null;
   }
 
   function renderRecovery(r) {
@@ -104,26 +102,13 @@
       "<p class='muted' style='margin-top:8px'>Ladder: test → one automatic shot → operator (DL-36).</p>";
   }
 
-  var vitals = { flags: 0, sync: null };
-  function renderVitals() {
-    var out = [];
-    if (vitals.flags) out.push("<span class='vital crit'><span class='dot crit'></span><b>" + vitals.flags + " flag" + (vitals.flags > 1 ? "s" : "") + "</b> pending</span>");
-    else out.push("<span class='vital'><span class='dot good'></span>no pending flags</span>");
-    if (vitals.sync) out.push("<span class='vital" + (vitals.sync === "in sync" ? "" : " crit") + "'><span class='dot " +
-      (vitals.sync === "in sync" ? "good" : "crit") + "'></span>broker↔graph <b>" + vitals.sync + "</b></span>");
-    out.push("<span class='vital'><span class='dot idle'></span>more vitals land in <b>S123</b></span>");
-    $("vitals").innerHTML = out.join("");
-  }
-
   function loadRun(runId) {
     $("runtag").textContent = "Scoped to " + runId;
+    window.dispatchEvent(new CustomEvent("dashboard:run-selected", { detail: { runId: runId } }));
     get("/api/runs/" + runId + "/stages").then(renderStages);
     get("/api/runs/" + runId + "/verdict").then(renderVerdict);
-    get("/api/runs/" + runId + "/flags").then(function (f) {
-      vitals.flags = f.filter(function (x) { return x.status === "pending"; }).length;
-      renderFlags(f); renderVitals();
-    });
-    get("/api/runs/" + runId + "/positions").then(function (p) { renderPositions(p); renderVitals(); });
+    get("/api/runs/" + runId + "/flags").then(renderFlags);
+    get("/api/runs/" + runId + "/positions").then(renderPositions);
     get("/api/runs/" + runId + "/recovery").then(renderRecovery);
   }
 

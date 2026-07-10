@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-10 12:27 AEST · **Version:** 0.65.01 · **Dashboard arc opened (DL-47) — S122 packaged; mockup committed.**
+**Last updated:** 2026-07-10 14:05 AEST · **Version:** 0.66.00 · **S122 SHIPPED — the dashboard run view is live locally; sections I/II land in S123.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -110,7 +110,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 queued** (`sprint-122-dashboard-run-view.md`,
+- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — `uv run python -m surfaces.dashboard` serves the run view on the live spine (verified vs accept.py; check row in functionality-checks.md). Next slice to package: S123 (`sprint-122-dashboard-run-view.md` was
   ready for Codex kickoff): `surfaces/dashboard/` read-model API + Section III run view with the
   top-bar run selector. Then S123 (fleet lifecycle + infra + per-container logs + hardware/LLM
   cost meters), S124

@@ -102,37 +102,77 @@
   .pill.fail { background: var(--crit-bg); color: var(--crit); }
   .chip {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px;
     background: var(--idle-bg); color: var(--ink-2); white-space: nowrap;
   }
+  /* vitals on the status line */
+  .vitals { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .vital {
+    display: inline-flex; align-items: center; gap: 5px; cursor: default;
+    font: 500 10.5px var(--mono); padding: 3px 8px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
+  }
+  .vital b { font-weight: 600; color: var(--ink); }
+  .vital .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .vital.crit { border-color: var(--crit); }
+  .vital.crit b { color: var(--crit); }
   .chip.good { background: var(--good-bg); color: var(--good); }
   .chip.warn { background: var(--warn-bg); color: var(--warn); }
   .chip.crit { background: var(--crit-bg); color: var(--crit); }
   .chip.acc  { background: transparent; color: var(--accent-ink); border: 1px solid var(--accent); }
 
-  /* ── Sections ───────────────────────────────────────────────────────── */
-  main { max-width: 1180px; margin: 0 auto; padding: 8px 28px; }
-  section { margin-top: 44px; }
+  /* ── Right flyout rail: the three categories ────────────────────────── */
+  #rail {
+    position: fixed; right: 18px; top: 50%; transform: translateY(-50%); z-index: 45;
+    display: flex; flex-direction: column; gap: 8px; width: 168px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px; box-shadow: var(--shadow);
+  }
+  .railbtn {
+    display: grid; grid-template-columns: 26px 1fr; grid-template-rows: auto auto;
+    column-gap: 8px; align-items: center; text-align: left; cursor: pointer;
+    background: none; border: 1px solid transparent; border-radius: 10px; padding: 8px 9px;
+    color: var(--ink); font-family: var(--sans);
+  }
+  .railbtn:hover { background: var(--card-2); }
+  .railbtn[aria-current="true"] { border-color: var(--accent); background: var(--card-2); }
+  .railbtn .rn { grid-row: 1 / 3; font-family: var(--serif); font-size: 17px; font-weight: 600; color: var(--accent-ink); }
+  .railbtn .nm { font-size: 12px; font-weight: 600; line-height: 1.25; }
+  .railbtn .st { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+  .railbtn .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.crit { background: var(--crit); }
+
+  /* ── Sections (one visible at a time, chosen on the rail) ───────────── */
+  main { max-width: 1080px; margin: 0 auto; padding: 8px 28px; }
+  @media (min-width: 1240px) { main { padding-right: 210px; } }
+  section { margin-top: 28px; display: none; }
+  section.active { display: block; animation: viewin .3s ease; }
+  @keyframes viewin { from { opacity: 0; transform: translateY(5px); } }
   .eyebrow {
-    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em;
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em;
     color: var(--accent-ink); margin-bottom: 6px;
   }
   h2 {
-    font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.2;
+    font-family: var(--serif); font-weight: 600; font-size: 23px; line-height: 1.2;
     margin: 0 0 4px; text-wrap: balance;
   }
-  .lede { color: var(--ink-2); max-width: 68ch; margin: 0 0 20px; }
-  .runtag { font: 500 11.5px var(--mono); color: var(--ink-3); }
+  .lede { color: var(--ink-2); max-width: 68ch; margin: 0 0 18px; font-size: 13.5px; }
+  .runtag { font: 500 11px var(--mono); color: var(--ink-3); }
+  @media (max-width: 900px) {
+    #rail { position: sticky; top: 54px; transform: none; right: auto; width: auto;
+      flex-direction: row; border-radius: 0; border-left: 0; border-right: 0; }
+    .railbtn { flex: 1; }
+  }
 
   .cardgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; }
   .card {
     background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-    padding: 14px 16px; box-shadow: var(--shadow);
+    padding: 12px 14px; box-shadow: var(--shadow); min-width: 0; overflow-wrap: anywhere;
   }
-  .card h4 { margin: 0 0 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
-  .card .big { font-family: var(--serif); font-size: 21px; font-weight: 600; margin: 2px 0; }
-  .card .sub { font-size: 12.5px; color: var(--ink-2); }
-  .statline { display: flex; align-items: baseline; gap: 8px; }
+  .card h4 { margin: 0 0 2px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+  .card .big { font-family: var(--serif); font-size: 17px; font-weight: 600; margin: 2px 0; overflow-wrap: anywhere; }
+  .card .sub { font-size: 11.5px; color: var(--ink-2); }
+  .statline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 
   /* container table */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -149,18 +189,19 @@
 
   /* ── Stage flow (sections II & III) ─────────────────────────────────── */
   .flow { display: flex; gap: 0; overflow-x: auto; padding: 14px 2px 6px; align-items: stretch; }
-  .stage { min-width: 138px; flex: 1; position: relative; }
+  .stage { min-width: 150px; max-width: 210px; flex: 1; position: relative; }
   .stage + .stage { margin-left: 26px; }
   .stage .node {
     background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-    padding: 11px 13px; height: 100%; box-shadow: var(--shadow);
+    padding: 10px 11px; height: 100%; box-shadow: var(--shadow); min-width: 0;
+    overflow-wrap: break-word;
     opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .45s ease;
   }
   .revealed .node { opacity: 1; transform: none; }
   .stage .node.crit-edge { border-color: var(--crit); }
-  .stage .who { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
-  .stage .did { font-family: var(--serif); font-size: 15.5px; font-weight: 600; margin: 3px 0 2px; }
-  .stage .num { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .stage .who { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
+  .stage .did { font-family: var(--serif); font-size: 13.5px; font-weight: 600; margin: 3px 0 2px; line-height: 1.3; }
+  .stage .num { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); line-height: 1.5; }
   .stage .verdict { margin-top: 7px; }
   .restart {
     display: none; margin-top: 8px; font: 600 11.5px var(--sans);
@@ -263,8 +304,30 @@
   </div>
   <span class="pill" id="verdictpill"></span>
   <div class="spacer"></div>
-  <span class="fleetstate"><span class="breathe"></span> fleet idle · scale-to-zero · images <span class="mono" style="margin-left:2px">:s121</span></span>
+  <div class="vitals" aria-label="Vital indicators (live, not run-scoped)">
+    <span class="vital crit" title="Pending critical Flags on the supervisor path"><span class="dot crit" style="background:var(--crit)"></span><b>1 flag</b> pending</span>
+    <span class="vital" title="Graph positions vs broker holdings"><span class="dot good" style="background:var(--good)"></span>broker<b>↔</b>graph in sync</span>
+    <span class="vital" title="Provider enrichment feeds last run"><span class="dot" style="background:var(--warn)"></span><b>4 feeds</b> degraded</span>
+    <span class="vital" title="Postgres spine + Service Bus"><span class="dot" style="background:var(--good)"></span>spine ✓ · bus ✓</span>
+    <span class="vital" title="Fleet images vs latest main"><span class="dot" style="background:var(--good)"></span>images <b>:s121</b> current</span>
+    <span class="vital" title="Next scheduled fire"><span class="breathe"></span>next fire <b>22:30 UTC</b></span>
+  </div>
 </header>
+
+<nav id="rail" aria-label="Dashboard sections">
+  <button class="railbtn" data-view="infra">
+    <span class="rn">I</span><span class="nm">Infrastructure</span>
+    <span class="st"><span class="dot good"></span><span data-raildot="infra">healthy</span></span>
+  </button>
+  <button class="railbtn" data-view="fleet">
+    <span class="rn">II</span><span class="nm">Fleet lifecycle</span>
+    <span class="st"><span class="dot good" data-raildotc="fleet"></span><span data-raildot="fleet">all stages ✓</span></span>
+  </button>
+  <button class="railbtn" data-view="trading" aria-current="true">
+    <span class="rn">III</span><span class="nm">Trading run</span>
+    <span class="st"><span class="dot crit" data-raildotc="trading"></span><span data-raildot="trading">gate FAIL</span></span>
+  </button>
+</nav>
 
 <main>
 
@@ -515,7 +578,28 @@
       "<div style='overflow-x:auto'><table><thead><tr><th>Ticker</th><th>Graph qty</th><th>Broker qty</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
 
     document.getElementById("notebody").innerHTML = "<ul>" + r.notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>";
+
+    /* rail status summaries follow the selected run */
+    var tdot = document.querySelector("[data-raildotc='trading']"), tlbl = document.querySelector("[data-raildot='trading']");
+    tdot.className = "dot " + (r.gate.pass ? "good" : "crit");
+    tlbl.textContent = r.gate.pass ? "gate PASS" : "gate FAIL";
+    var lifeWorst = r.life.some(function (s) { return s.v === "crit"; }) ? "crit" :
+      r.life.some(function (s) { return s.v === "warn"; }) ? "warn" : "good";
+    var fdot = document.querySelector("[data-raildotc='fleet']"), flbl = document.querySelector("[data-raildot='fleet']");
+    fdot.className = "dot " + lifeWorst;
+    flbl.textContent = lifeWorst === "good" ? "all stages ✓" : lifeWorst === "warn" ? "1 stage ⚠" : "stage failed";
   }
+
+  /* rail: one section visible at a time */
+  function showView(v) {
+    ["infra", "fleet", "trading"].forEach(function (id) {
+      document.getElementById(id).classList.toggle("active", id === v);
+      document.querySelector(".railbtn[data-view='" + id + "']").setAttribute("aria-current", id === v ? "true" : "false");
+    });
+  }
+  document.querySelectorAll(".railbtn").forEach(function (b) {
+    b.addEventListener("click", function () { showView(b.getAttribute("data-view")); });
+  });
 
   function renderContainers() {
     var tb = document.querySelector("#containers tbody");
@@ -566,5 +650,6 @@
 
   renderContainers();
   renderRun("sched-2026-07-09");
+  showView("trading");
 })();
 </script>

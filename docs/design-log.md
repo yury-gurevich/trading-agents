@@ -2092,6 +2092,15 @@ but not self-explaining — every "how did we go last night" costs a manual trac
 7. **Talk to an LLM** in the dashboard: ask questions beyond the tiles ("state is green but something
    smells"), have it run communication tests, find why something wasn't flagged, and fix it.
 8. **Functional, not read-only**: able to **restart a run from the point of failure onwards**.
+9. **Accumulated costs visible** (added 2026-07-10): month-to-date **hardware** spend (Azure Cost
+   Management API over the resource group) and **LLM** spend (price the append-only model-call
+   ledger via a per-model pricing table — a tunable catalogue, so a price change is a config
+   change, not code). Status-line vital + Section-I breakdown cards.
+10. **Layout** (redlined 2026-07-10 on mockup r1): a **right flyout rail** holds the three
+    categories; selecting one shows that section in the middle — one section at a time, not a
+    scrolling stack. The **status line carries the vitals**: pending flags, broker↔graph sync,
+    degraded feeds, spine/bus health, fleet-images-vs-main currency (the DL-46 tripwire, surfaced),
+    month-to-date cost, next fire.
 
 **Prior art (operator asked to draw on similar products).** Airflow's run view + *clear task &
 downstream* re-execution; Dagster's *re-execute from failure*; GitHub Actions' *re-run failed jobs*;
@@ -2127,9 +2136,11 @@ lives in `orchestration/`, exposed to the dashboard as one bounded command.
 
 **Sprint slices (dependency order).** S122: read-model API + section III (run selector, logical
 verdicts, acceptance banner, flags/positions) served locally — kills the manual morning audit.
-S123: section II lifecycle + section I infra + per-container logs (Log Analytics query). S124: the
-resume-from-stage primitive + restart affordance (+ the DL-46 fleet-behind tripwire lands on the
-dashboard naturally). S125: the operator-agent chat panel. Order is by operational value; the mockup
+S123: section II lifecycle + section I infra + per-container logs (Log Analytics query) + the
+**cost meters** (Azure Cost Management for hardware; ledger × pricing-table tunable for LLM).
+S124: the resume-from-stage primitive + restart affordance (+ the DL-46 fleet-behind tripwire lands
+on the dashboard naturally — it is already a status-line vital in the mockup). S125: the
+operator-agent chat panel. Order is by operational value; the mockup
 is the design spec for all four.
 
 **Ruled out.** Building section III in Grafana (verdicts are graph-native logic, not metrics);

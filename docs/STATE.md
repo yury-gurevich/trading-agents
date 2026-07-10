@@ -112,7 +112,8 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 - **DL-47 — operations dashboard (ACTIVE ARC).** **S122 queued** (`sprint-122-dashboard-run-view.md`,
   ready for Codex kickoff): `surfaces/dashboard/` read-model API + Section III run view with the
-  top-bar run selector. Then S123 (fleet lifecycle + infra + per-container logs), S124
+  top-bar run selector. Then S123 (fleet lifecycle + infra + per-container logs + hardware/LLM
+  cost meters), S124
   (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46 tripwire),
   S125 (operator-agent chat, "green but smells" diagnostics). Design spec committed:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).

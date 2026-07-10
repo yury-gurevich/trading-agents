@@ -310,6 +310,7 @@
     <span class="vital" title="Provider enrichment feeds last run"><span class="dot" style="background:var(--warn)"></span><b>4 feeds</b> degraded</span>
     <span class="vital" title="Postgres spine + Service Bus"><span class="dot" style="background:var(--good)"></span>spine ✓ · bus ✓</span>
     <span class="vital" title="Fleet images vs latest main"><span class="dot" style="background:var(--good)"></span>images <b>:s121</b> current</span>
+    <span class="vital" title="Month-to-date: hardware + LLM calls"><span class="dot" style="background:var(--good)"></span>mtd <b>$11.13</b> (hw $7.42 · llm $3.71)</span>
     <span class="vital" title="Next scheduled fire"><span class="breathe"></span>next fire <b>22:30 UTC</b></span>
   </div>
 </header>
@@ -345,6 +346,12 @@
       <div class="card"><h4>Key Vault</h4><div class="statline"><span class="big">trading-agents-kv</span><span class="chip good">✓ master-only</span></div><div class="sub">credential-tested activation (DL-36) · cache TTL 5 min</div></div>
       <div class="card"><h4>Dispatcher job</h4><div class="statline"><span class="big">3/3 nights</span><span class="chip good">✓ succeeded</span></div><div class="sub">30 22 * * * UTC · calendar-gated · day-keyed run ids</div></div>
       <div class="card"><h4>Idle cost</h4><div class="statline"><span class="big">≈ $0</span><span class="chip">scale-to-zero</span></div><div class="sub">replicas 0 outside the daily window — by design</div></div>
+      <div class="card"><h4>Hardware cost · month to date</h4>
+        <div class="statline"><span class="big">$7.42</span><span class="chip">sample · Azure Cost Mgmt lands S123</span></div>
+        <div class="sub mono">Service Bus $5.83 · Container Apps $1.10 · Log Analytics $0.36 · Key Vault $0.13</div></div>
+      <div class="card"><h4>LLM cost · month to date</h4>
+        <div class="statline"><span class="big">$3.71</span><span class="chip">from the model-call ledger</span></div>
+        <div class="sub mono">GPT-5.5 (debaters) $2.10 / 144 calls · Opus (judge) $1.48 / 72 · remediation $0.13 / 6</div></div>
     </div>
 
     <div class="tablewrap" style="margin-top:14px">

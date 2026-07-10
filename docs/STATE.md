@@ -98,8 +98,8 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `main` at 0.65.01, no active sprint branch; **S122 (dashboard run view) is packaged and ready
-for Codex kickoff** — the first slice of the DL-47 operations-dashboard arc (see Next). The
+On `main` at 0.66.00, no active sprint branch; **S122 shipped** (merged `820b8c9` — the dashboard
+run view runs locally against the live spine; S123 is the next slice to package). The
 07-08 deploy-gap incident + same-day repair (fleet → `:s121`, stray CSCO order cancelled) is
 recorded in design-log **DL-46**; the 07-09 run outcome (reconciliation proven; no-trade
 `ACCEPTANCE FAIL`) is under Watch outcome in Next.

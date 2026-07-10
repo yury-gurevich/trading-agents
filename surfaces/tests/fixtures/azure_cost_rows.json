@@ -1,0 +1,14 @@
+{
+  "properties": {
+    "columns": [
+      {"name": "PreTaxCost", "type": "Number"},
+      {"name": "ServiceName", "type": "String"},
+      {"name": "Currency", "type": "String"}
+    ],
+    "rows": [
+      [5.83, "Service Bus", "AUD"],
+      [1.10, "Container Apps", "AUD"],
+      [0.36, "Log Analytics", "AUD"]
+    ]
+  }
+}

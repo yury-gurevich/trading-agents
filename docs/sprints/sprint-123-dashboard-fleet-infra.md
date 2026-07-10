@@ -100,9 +100,14 @@ missing inputs), and widens the status-line vitals. The design spec remains
 
 ```text
 CLOSEOUT — Sprint 123
-Branch / merge commit:
-make ci:                 (tail: N passed, coverage %)
-Functionality check:     (live evidence + screenshot paths + teardown note)
-Version:                 (old → new)
-Deviations from spec:    (none | list)
+Branch / merge commit:   sprint-123-dashboard-fleet-infra / pending operator merge
+make ci:                 1489 passed, 5 skipped, 100.00% coverage
+Functionality check:     Live Neon + Azure read-only pass recorded in docs/laws/functionality-checks.md;
+                         screenshots in docs/reports/sprint-123-dashboard-fleet-infra/; local server stopped,
+                         no graph/Azure writes and therefore no data teardown.
+Version:                 0.66.00 → 0.67.00 (MINOR); uv.lock refreshed
+Deviations from spec:    Operator-directed display-currency refinement: all prices are A$, with USD LLM
+                         catalogue rates converted via the committed CBA Send-IMT snapshot. Existing
+                         AZURE_SP_* principal lacks ARM Reader (403); LAW-02 used the explicit read-only
+                         Azure CLI credential mode and retained the RBAC gap as a finding.
 ```

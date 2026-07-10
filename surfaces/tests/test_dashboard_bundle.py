@@ -29,8 +29,8 @@ def test_bundle_shape_over_real_cascade() -> None:
         "logs",
         "images",
     }
-    assert bundle["logs"] == {}
-    assert bundle["images"] == {}
+    assert cast("dict[str, Any]", bundle["logs"])["available"] is False
+    assert cast("dict[str, Any]", bundle["images"])["available"] is False
     meta = cast("dict[str, Any]", bundle["meta"])
     assert meta["ticker_count"] == 2
     assert "dash-bundle" in meta["known_runs"]

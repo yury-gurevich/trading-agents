@@ -1,0 +1,26 @@
+{
+  "value": [
+    {
+      "name": "dispatcher-cron-old",
+      "properties": {
+        "status": "Succeeded",
+        "startTime": "2026-07-08T22:30:00Z",
+        "endTime": "2026-07-08T22:31:00Z",
+        "template": {"containers": []}
+      }
+    },
+    {
+      "name": "dispatcher-cron-new",
+      "properties": {
+        "status": "Succeeded",
+        "startTime": "2026-07-09T22:30:00Z",
+        "endTime": "2026-07-09T22:31:00Z",
+        "template": {
+          "containers": [
+            {"name": "dispatcher", "image": "ghcr.io/yury-gurevich/trading-agents-dispatcher:s123"}
+          ]
+        }
+      }
+    }
+  ]
+}

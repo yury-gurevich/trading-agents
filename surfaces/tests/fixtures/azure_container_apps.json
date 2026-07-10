@@ -1,0 +1,42 @@
+{
+  "value": [
+    {
+      "name": "master",
+      "location": "Australia East",
+      "properties": {
+        "provisioningState": "Succeeded",
+        "runningStatus": "Running",
+        "latestRevisionName": "master--s123",
+        "template": {
+          "containers": [
+            {"name": "master", "image": "ghcr.io/yury-gurevich/trading-agents-master:s123"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "execution",
+      "location": "Australia East",
+      "properties": {
+        "provisioningState": "Succeeded",
+        "runningStatus": "Running",
+        "latestRevisionName": "execution--s123",
+        "template": {
+          "containers": [
+            {"name": "execution", "image": "ghcr.io/yury-gurevich/trading-agents-execution:s123"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "sleeping",
+      "location": "Australia East",
+      "properties": {
+        "provisioningState": "Succeeded",
+        "runningStatus": "Stopped",
+        "latestRevisionName": "",
+        "template": {"containers": []}
+      }
+    }
+  ]
+}

@@ -116,11 +116,17 @@ S125; resume-from-stage + the DL-46 tripwire *judgement* move to S126.
 
 ```text
 CLOSEOUT — Sprint 124
-Branch / merge commit:   <fill>
-make ci:                 <fill: counts + coverage>
-Functionality check:     <fill: what was proven live, where recorded, teardown statement>
-Version:                 <fill: 0.67.00 → 0.68.00 (MINOR); uv.lock refreshed>
-Deviations from spec:    <fill: or "none">
+Branch / merge commit:   sprint-124-dashboard-verdict / pending operator merge
+make ci:                 GREEN — 1511 passed, 5 skipped, 100.00% coverage
+Functionality check:     Live Neon/Azure read-only proof: sched-2026-07-10 = NO_TRADE/GREEN;
+                         absent-run RED = stopped before provider. Recorded in
+                         docs/laws/functionality-checks.md with GREEN/RED screenshots under
+                         docs/reports/sprint-124-dashboard-verdict/. Server stopped; port released;
+                         temporary profiles removed; no writes and no data teardown required.
+Version:                 0.67.00 → 0.68.00 (MINOR); uv.lock refreshed
+Deviations from spec:    No persisted incomplete run remained (all four live scheduled runs were
+                         complete), so the RED screenshot uses a read-only absent-run projection
+                         and URL deep link; no graph node was fabricated.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -132,3 +138,20 @@ not accepted while this section is empty or the closeout placeholder is unfilled
 handback must prove, not restate intent).
 
 <!-- return notes go below this line -->
+
+- The live gate-policy flip is exact: `sched-2026-07-10` moved from the packaged baseline's
+  `ACCEPTANCE FAIL` to `ACCEPTANCE NO_TRADE` with exit 0, and its master light is GREEN with five
+  evidenced confidence-floor rejections. The same policy also classifies `sched-2026-07-09` as
+  `NO_TRADE`; the 07-08 and 07-07 runs remain PASS.
+- `NO_TRADE` validates every persisted rejection reason as `confidence < regime floor`, requires
+  all seven stages reached, and only permits the analyst-scored / PM-evaluated zero floors. The
+  drill-down intentionally retains those raw floor facts while the master verdict and run-result
+  card label the completed quiet day pass-equivalent; no trade-path floor was relaxed.
+- Warning badges count warning rows/classes, not the raw affected-item total. The live GREEN proof
+  has two rows (pending flags and degraded feeds) while the status line retains the underlying
+  counts (2 flags, 4 feeds).
+- `/api/verdict?run=<id>` projects an absent id as an incomplete RED run, and `/?run=<id>` deep-links
+  that diagnostic context into the selector. This was needed because the live spine contained no
+  incomplete persisted run and preserves the surfaces-read-never-write boundary.
+- On Windows, invoke the acceptance file exactly as its header documents (`PYTHONPATH=.`); direct
+  `uv run python scripts/accept.py ...` does not put the repo root on `sys.path`.

@@ -19,18 +19,11 @@ from orchestration.packs.trading_observatory import observe_run
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
-    from orchestration.observatory import Breach, StageView
-
-# The two acceptance floors that a legitimate no-trade day trips (see STATE
-# 2026-07-10 watch outcome): every candidate rejected below the regime
-# confidence floor leaves nothing to score or evaluate.
-_NO_TRADE_BREACHES = frozenset({("analyst", "scored"), ("pm", "evaluated")})
+    from orchestration.observatory import StageView
 
 _NO_TRADE_ANNOTATION = (
-    "Every agent did its job: all {rejected} candidates were rejected below the "
-    "regime confidence floor, so there was nothing to score or evaluate — a "
-    "legitimate no-trade day. The gate requires at least one scored "
-    "recommendation, so it reads FAIL (gate-policy finding, not a runtime fault)."
+    "All {rejected} candidates were rejected below the confidence bar; the run "
+    "completed normally without placing a trade."
 )
 
 
@@ -53,12 +46,13 @@ def list_runs(graph: GraphStore) -> list[dict[str, object]]:
 
 
 def run_verdict(graph: GraphStore, run_id: str) -> dict[str, object]:
-    """Acceptance PASS/FAIL + breaches + the no-trade-day annotation."""
+    """Acceptance verdict + breaches + the no-trade annotation."""
     result = accept_run(graph, run_id)
     rejected = _rejection_count(graph, run_id)
-    no_trade = _is_no_trade_day(result.passed, result.breaches, rejected)
+    no_trade = result.verdict == "NO_TRADE"
     return {
         "run_id": run_id,
+        "verdict": result.verdict,
         "passed": result.passed,
         "breaches": [
             {
@@ -113,13 +107,3 @@ def _rejection_count(graph: GraphStore, run_id: str) -> int:
         return 0
     rejections = rec_set.get("rejections")
     return len(rejections) if isinstance(rejections, (list, tuple)) else 0
-
-
-def _is_no_trade_day(
-    passed: bool, all_breaches: tuple[Breach, ...], rejected: int
-) -> bool:
-    """FAIL caused only by the scored/evaluated floors, with real rejections."""
-    if passed or rejected == 0:
-        return False
-    blocking = {(b.stage, b.key) for b in all_breaches if b.severity == "fail"}
-    return bool(blocking) and blocking <= _NO_TRADE_BREACHES

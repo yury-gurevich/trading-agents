@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>trading-agents · Operations</title>
   <link rel="stylesheet" href="/app.css" />
+  <link rel="stylesheet" href="/verdict.css" />
 </head>
 <body>
   <header class="top">
@@ -34,11 +35,28 @@
   </nav>
 
   <main>
+    <div class="verdict-hero" id="verdict-hero" data-light="loading" aria-live="polite">
+      <div class="master-light" aria-hidden="true">
+        <span class="light-orb"><span class="light-core"></span></span>
+        <strong id="master-light-label">CHECKING</strong>
+      </div>
+      <div class="verdict-copy">
+        <p class="verdict-kicker">Selected run</p>
+        <p class="verdict-summary" id="verdict-summary">Loading the run verdict…</p>
+        <div class="verdict-meta">
+          <span>Next fire <b class="mono" id="verdict-next-fire">—</b></span>
+          <details class="warning-detail" id="warning-detail">
+            <summary><span class="warning-badge" id="warning-badge">0 warnings</span></summary>
+            <ul id="warning-rows"></ul>
+          </details>
+        </div>
+      </div>
+    </div>
+
     <section id="infra">
-      <div class="eyebrow">Section I · Now, not run-scoped</div>
-      <h2>Infrastructure — health &amp; performance</h2>
-      <p class="lede">The hardware truth: what is provisioned, what it costs, and whether each piece
-        answers. Everything here is live state; the run selector does not change it.</p>
+      <div class="eyebrow">Current state</div>
+      <h2>Infrastructure</h2>
+      <p class="lede">Live services, containers, costs, and logs.</p>
       <div class="cardgrid" id="infracards" aria-live="polite"></div>
       <div class="tablewrap" style="margin-top:14px">
         <table id="containers" aria-label="Per-container state">
@@ -49,13 +67,12 @@
     </section>
 
     <section id="fleet">
-      <div class="eyebrow">Section II · Run-scoped</div>
-      <h2>Fleet lifecycle — the containers as logical stages</h2>
-      <p class="lede">Not a box diagram of machines: the <em>process</em> the fleet walks every night,
-        each stage proven before the next. <span class="runtag" id="fleetruntag"></span></p>
+      <div class="eyebrow">Selected run</div>
+      <h2>Fleet lifecycle</h2>
+      <p class="lede">Each nightly stage and its recovery state. <span class="runtag" id="fleetruntag"></span></p>
       <div class="flow" id="lifeflow"></div>
       <div class="gatecard" id="fleetrecovery">
-        <h3>Self-recovery ladder <span class="chip acc">DL-36</span></h3>
+        <h3>Self-recovery ladder</h3>
         <p>Every failure signal sits on the bounded ladder: test → one automatic remediation shot → operator.</p>
         <div class="ladder" id="fleetladder"></div>
         <div class="agentstates" id="agentstates"></div>
@@ -63,11 +80,9 @@
     </section>
 
     <section id="trading" class="active">
-      <div class="eyebrow">Section III · Run-scoped</div>
-      <h2>The trading run — one logical unit</h2>
-      <p class="lede">Did each agent do its job, and what did that add up to? Verdicts come from
-        the acceptance gate — the same numbers <span class="mono">scripts/accept.py</span> prints.
-        <span class="runtag" id="runtag"></span></p>
+      <div class="eyebrow">Selected run</div>
+      <h2>Trading outcome</h2>
+      <p class="lede">Stage evidence, checks, flags, and positions. <span class="runtag" id="runtag"></span></p>
 
       <div class="flow" id="tradeflow"></div>
       <div id="gate"></div>
@@ -75,12 +90,12 @@
       <div class="threecol">
         <div class="panel"><h3>Flags</h3><div id="flagbody"></div></div>
         <div class="panel"><h3>Positions — graph vs broker</h3><div id="posbody"></div></div>
-        <div class="panel"><h3>Recovery ladder <span class="chip acc">DL-36</span></h3><div id="recbody"></div></div>
+        <div class="panel"><h3>Recovery ladder</h3><div id="recbody"></div></div>
       </div>
     </section>
   </main>
 
-  <footer>Read-only surface over the graph spine and Azure read APIs. No dashboard action writes state.</footer>
+  <footer>Read-only operations view. Selecting a run changes context; this screen never changes trading state.</footer>
 
   <div class="scrim" id="scrim"></div>
   <aside id="drawer" aria-label="Container logs" aria-hidden="true">
@@ -91,6 +106,7 @@
   </aside>
 
   <script src="/infra.js"></script>
+  <script src="/verdict.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

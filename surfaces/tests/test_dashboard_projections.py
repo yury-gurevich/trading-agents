@@ -17,7 +17,8 @@ from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
-from orchestration.observatory import AcceptanceResult, Breach
+from orchestration.observatory import Breach
+from orchestration.packs.trading_acceptance import TradingAcceptanceResult
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import source
 
@@ -103,9 +104,9 @@ def test_unreached_stage_projects_as_not_reached() -> None:
     assert stages[0]["checks"] == []
 
 
-def _no_trade_result() -> AcceptanceResult:
-    return AcceptanceResult(
-        passed=False,
+def _no_trade_result() -> TradingAcceptanceResult:
+    return TradingAcceptanceResult(
+        verdict="NO_TRADE",
         breaches=(
             Breach("analyst", "scored", "0 < floor 1.0"),
             Breach("pm", "evaluated", "0 < floor 1.0"),
@@ -140,39 +141,8 @@ def test_no_trade_day_annotated(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     verdict = proj.run_verdict(graph, "quiet")
     assert verdict["no_trade_day"] is True
-    assert "no-trade day" in str(verdict["annotation"])
-    assert "all 5 candidates" in str(verdict["annotation"])
-
-
-def test_no_trade_needs_rejections(monkeypatch: pytest.MonkeyPatch) -> None:
-    graph = _graph_with_rejections(0)
-    monkeypatch.setattr(proj, "accept_run", lambda g, r: _no_trade_result())
-    monkeypatch.setattr(
-        proj,
-        "walk_chain",
-        lambda g, r: {"AnalystRun": g.get_node("AnalystRun", "analyst-run:quiet")},
-    )
-    assert proj.run_verdict(graph, "quiet")["no_trade_day"] is False
-
-
-def test_no_trade_not_when_other_stage_failed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    result = AcceptanceResult(
-        passed=False,
-        breaches=(
-            Breach("analyst", "scored", "0 < floor 1.0"),
-            Breach("execution", "submitted", "MISSING"),
-        ),
-    )
-    graph = _graph_with_rejections(3)
-    monkeypatch.setattr(proj, "accept_run", lambda g, r: result)
-    monkeypatch.setattr(
-        proj,
-        "walk_chain",
-        lambda g, r: {"AnalystRun": g.get_node("AnalystRun", "analyst-run:quiet")},
-    )
-    assert proj.run_verdict(graph, "quiet")["no_trade_day"] is False
+    assert "completed normally" in str(verdict["annotation"])
+    assert "All 5 candidates" in str(verdict["annotation"])
 
 
 def test_rejection_count_handles_missing_node_and_props() -> None:

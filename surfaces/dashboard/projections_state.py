@@ -13,12 +13,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from surfaces.dashboard.bundle_azure import bundle_artifacts
-from surfaces.dashboard.projections import (
-    list_runs,
-    run_request_node,
-    run_stages,
-    run_verdict,
-)
+from surfaces.dashboard.projections import list_runs, run_request_node, run_stages
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -133,6 +128,10 @@ def run_bundle(
     settings: DashboardSettings | None = None,
 ) -> dict[str, object]:
     """The LLM context bundle with bounded per-container logs and fleet images."""
+    from surfaces.dashboard.projections_verdict import verdict_projection
+    from surfaces.dashboard.settings import DashboardSettings
+
+    config = settings or DashboardSettings()
     node = run_request_node(graph, run_id)
     tickers = node.props.get("tickers", ()) if node else ()
     logs: dict[str, object] = {
@@ -155,7 +154,7 @@ def run_bundle(
             "ticker_count": (len(tickers) if isinstance(tickers, (list, tuple)) else 0),
             "known_runs": [str(r["run_id"]) for r in list_runs(graph)],
         },
-        "verdict": run_verdict(graph, run_id),
+        "verdict": verdict_projection(graph, run_id, azure, config),
         "stages": run_stages(graph, run_id),
         "flags": run_flags(graph, run_id),
         "positions": run_positions(graph, run_id),

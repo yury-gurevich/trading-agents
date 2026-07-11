@@ -1,4 +1,4 @@
-/* Dashboard frontend — run-scoped Section III over the read-model API (S122). */
+/* Dashboard frontend — selected-run trading detail over the read-model API. */
 (function () {
   "use strict";
 
@@ -40,27 +40,29 @@
   }
 
   function renderVerdict(v) {
+    var verdict = v.verdict || (v.passed ? "PASS" : "FAIL");
+    var noTrade = verdict === "NO_TRADE";
     var pill = $("verdictpill");
     pill.hidden = false;
     pill.className = "pill " + (v.passed ? "pass" : "fail");
-    pill.textContent = (v.passed ? "✓ ACCEPTANCE PASS" : "✕ ACCEPTANCE FAIL");
+    pill.textContent = noTrade ? "✓ COMPLETED · NO TRADES" :
+      (v.passed ? "✓ RUN PASSED" : "✕ RUN FAILED");
     var dot = $("raildot-trading"), lbl = $("raillbl-trading");
     dot.className = "dot " + (v.passed ? "good" : "crit");
-    lbl.textContent = v.passed ? "gate PASS" : "gate FAIL";
+    lbl.textContent = noTrade ? "completed · no trades" : (v.passed ? "run passed" : "run failed");
 
     var fails = v.breaches.filter(function (b) { return b.severity === "fail"; });
     var warns = v.breaches.filter(function (b) { return b.severity !== "fail"; });
     var html;
-    if (v.no_trade_day) {
-      html = "<div class='gatecard fail'><h3>Acceptance gate: FAIL — and that is the finding, not the failure</h3>" +
-        "<p>" + esc(v.annotation) + "</p>" +
-        "<p class='mono'>" + fails.map(function (b) { return "FAIL  " + esc(b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p></div>";
+    if (noTrade) {
+      html = "<div class='gatecard pass'><h3>Run result: completed — no trades</h3>" +
+        "<p>" + esc(v.annotation) + "</p></div>";
     } else if (v.passed) {
-      html = "<div class='gatecard pass'><h3>Acceptance gate: PASS</h3>" +
+      html = "<div class='gatecard pass'><h3>Run result: passed</h3>" +
         "<p>Every stage did its job within its boundaries.</p>" +
         (warns.length ? "<p class='mono'>" + warns.map(function (b) { return "WARN  " + esc(b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p>" : "") + "</div>";
     } else {
-      html = "<div class='gatecard fail'><h3>Acceptance gate: FAIL</h3>" +
+      html = "<div class='gatecard fail'><h3>Run result: failed</h3>" +
         "<p class='mono'>" + v.breaches.map(function (b) { return esc(b.severity.toUpperCase() + "  " + b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p></div>";
     }
     $("gate").innerHTML = html;
@@ -99,12 +101,16 @@
       bits.push(chip(p.auto_eligible ? "warn" : "idle", "plan · " + p.remediation + " · " + p.status));
     });
     $("recbody").innerHTML = bits.join(" ") +
-      "<p class='muted' style='margin-top:8px'>Ladder: test → one automatic shot → operator (DL-36).</p>";
+      "<p class='muted' style='margin-top:8px'>Ladder: test → one automatic shot → operator.</p>";
   }
 
-  function loadRun(runId) {
+  function loadRun(runId, detailed) {
     $("runtag").textContent = "Scoped to " + runId;
     window.dispatchEvent(new CustomEvent("dashboard:run-selected", { detail: { runId: runId } }));
+    if (!detailed) {
+      $("runtag").textContent = "No persisted stages for " + runId;
+      return;
+    }
     get("/api/runs/" + runId + "/stages").then(renderStages);
     get("/api/runs/" + runId + "/verdict").then(renderVerdict);
     get("/api/runs/" + runId + "/flags").then(renderFlags);
@@ -128,8 +134,17 @@
     sel.innerHTML = runs.map(function (r) {
       return "<option value='" + esc(r.run_id) + "'>" + esc(r.run_id) + "</option>";
     }).join("");
-    sel.addEventListener("change", function () { loadRun(sel.value); });
-    if (runs.length) loadRun(runs[0].run_id);
+    var requested = new URLSearchParams(window.location.search).get("run");
+    if (requested && !runs.some(function (r) { return r.run_id === requested; })) {
+      sel.insertAdjacentHTML("beforeend", "<option value='" + esc(requested) + "'>" +
+        esc(requested) + "</option>");
+    }
+    if (requested) sel.value = requested;
+    function knownRun() {
+      return runs.some(function (r) { return r.run_id === sel.value; });
+    }
+    sel.addEventListener("change", function () { loadRun(sel.value, knownRun()); });
+    if (sel.value) loadRun(sel.value, knownRun());
     else $("runtag").textContent = "No runs on the graph yet.";
   });
 })();

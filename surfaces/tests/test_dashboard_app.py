@@ -53,6 +53,23 @@ def test_runs_list_route() -> None:
     assert json.loads(body)[0]["run_id"] == "app-run"
 
 
+def test_master_verdict_route_uses_run_query() -> None:
+    app = build_app(cascade_graph("app-run"), FakeAzureReader(), _settings())
+    status, _, body = invoke(app, "/api/verdict?run=app-run")
+    assert status == "200 OK"
+    payload = json.loads(body)
+    assert payload["run_id"] == "app-run"
+    assert payload["light"] in {"RED", "GREEN"}
+    missing = json.loads(invoke(app, "/api/verdict?run=ghost")[2])
+    assert missing["light"] == "RED"
+    assert "provider" in missing["summary"]
+    empty_status, _, empty_body = invoke(
+        build_app(InMemoryGraphStore()), "/api/verdict"
+    )
+    assert empty_status == "404 Not Found"
+    assert json.loads(empty_body)["error"] == "no run_id available"
+
+
 def test_every_run_view_responds() -> None:
     app = build_app(cascade_graph("app-run"))
     for view in VIEWS:
@@ -87,9 +104,12 @@ def test_index_and_assets_serve() -> None:
     assert status == "200 OK"
     assert headers["Content-Type"].startswith("text/html")
     assert b"trading-agents" in body
+    assert b"verdict-hero" in body
     assert invoke(app, "/app.css")[1]["Content-Type"].startswith("text/css")
     assert invoke(app, "/app.js")[0] == "200 OK"
     assert invoke(app, "/infra.js")[0] == "200 OK"
+    assert invoke(app, "/verdict.css")[0] == "200 OK"
+    assert invoke(app, "/verdict.js")[0] == "200 OK"
 
 
 def test_missing_static_and_traversal_are_404() -> None:

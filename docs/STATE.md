@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-10 18:48 AEST · **Version:** 0.67.00 · **S123 COMPLETE ON BRANCH — live fleet/infra/log/cost dashboard evidence captured; pending merge.**
+**Last updated:** 2026-07-11 15:55 AEST · **Version:** 0.67.00 · **S124 PACKAGED — glance-first master verdict + NO_TRADE acceptance verdict + operator-language sweep; awaiting Codex.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -29,10 +29,10 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   DL-36 ladder. `/api/vitals` drives all status-line facts and `/bundle` now carries bounded
   per-container logs + image tags. Hardware and ledger/model prices render in A$; USD LLM prices
   use the committed Commonwealth Bank Send-IMT snapshot (`1 USD=A$1.39450565`). Live Neon/Azure
-  evidence: 13 apps + job all `:s121`, execution log drawer opened, A$0.001062 hardware MTD,
+  evidence: 13 apps + job all`:s121`, execution log drawer opened, A$0.001062 hardware MTD,
   2 pending Flags, broker↔graph in sync. Screenshots under
-  `docs/reports/sprint-123-dashboard-fleet-infra/`; `make ci` 1489 passed / 5 skipped / 100%.
-  Branch complete, pending operator merge.
+  `docs/reports/sprint-123-dashboard-fleet-infra/`;`make ci` 1489 passed / 5 skipped / 100%.
+  Merged `2ad656e`.
 
 - **S121 (DL-42 resolution, 0.65.00→0.65.01) — FIRST ADR-0010 PROMPT PROMOTIONS ARE LIVE.**
   Compiled judge artifact `2026-07-08-s119-v4` promoted into `JUDGE_SYSTEM` and the challenger-only
@@ -110,10 +110,17 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `sprint-123-dashboard-fleet-infra` at 0.67.00; **S123 is complete and live-proven on its branch**
-(Sections I/II, real per-container logs, A$ hardware/LLM cost meters, `/api/vitals`, bundle
-logs/images) and awaits operator merge. **S122 remains shipped** (`820b8c9`). The
-07-08 deploy-gap incident + same-day repair (fleet → `:s121`, stray CSCO order cancelled) is
+On `main` at 0.67.00 (S123 merged `2ad656e`). **INTENT: S124 packaged for Codex**
+(`docs/sprints/sprint-124-dashboard-verdict.md`) — glance-first RED/GREEN master verdict +
+first-class `NO_TRADE` acceptance verdict + operator-language sweep with CI jargon-guard, per
+**DL-47 operator redline r2 (reqs 13–15, 2026-07-11)**. Success factors: Codex handback with the
+closeout block + return notes filled, `make ci` 100%, and the LAW-02 live flip —
+`sched-2026-07-10` (verified this session: 7/7 complete, legitimate no-trade, all five candidates
+below the 0.600 floor, `ACCEPTANCE FAIL` today) must render GREEN "completed — no trades".
+DL-47 resequenced: S125 = operator chat, S126 = resume-from-stage + DL-46 tripwire judgement.
+Open from the 07-10 run diagnosis: all four enrichment feeds ran degraded in-fleet (fundamentals/
+news/sectors/earnings) — smells like secrets/entitlement, not one vendor; run `/diagnose-feeds`.
+The 07-08 deploy-gap incident + same-day repair (fleet → `:s121`, stray CSCO order cancelled) is
 recorded in design-log **DL-46**; the 07-09 run outcome (reconciliation proven; no-trade
 `ACCEPTANCE FAIL`) is under Watch outcome in Next.
 The etalon north-star holds (DL-19):
@@ -123,13 +130,15 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 COMPLETE ON BRANCH (0.67.00)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. Next: S124
-  (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46 tripwire),
-  S125 (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
+- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 PACKAGED 2026-07-11** (glance-first
+  master verdict + `NO_TRADE` acceptance verdict + operator-language sweep — redline r2, reqs
+  13–15). Then, resequenced per redline r2: S125 first (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
   `/bundle` context — investigates via the **pre-defined skill catalogue** (7 skills shipped
   2026-07-10 at `.claude/skills/`: diagnose-run/-feeds, check-/deploy-fleet, reconcile-broker,
   resume-run, audit-costs — usable in any Claude Code session today), prepares a fix as branch+PR
-  only, rebuilds containers via the DL-46 deploy machinery; DL-47 req. 11–12). Design spec committed:
+  only, rebuilds containers via the DL-46 deploy machinery; DL-47 req. 11–12), then S126
+  (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46
+  tripwire judgement). Design spec committed:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).
 - **Watch outcome (2026-07-09 22:30 UTC run, verified 2026-07-10):** cron fired (3/3 nights),
   7/7 stages on `:s121`; **S120 reconciliation proven live** — critical divergence Flag raised
@@ -137,7 +146,8 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   matches broker, 6 positions), pending-fill refresh stamped all 4 stale Fills. **But
   `ACCEPTANCE FAIL`** — a legitimate no-trade day (all 5 candidates below the 0.600 regime floor)
   trips the hard `analyst.scored ≥ 1` / `pm.evaluated ≥ 1` floors: gate semantics need a no-trade
-  verdict (candidate drift item, operator to prioritize). Contributing: all four enrichment feeds
+  verdict — **scheduled: S124 Part A** (packaged 2026-07-11). The 07-10 run repeated the
+  signature (7/7 complete, 5 candidates 0.533–0.595 vs floor 0.600, `ACCEPTANCE FAIL`). Contributing: all four enrichment feeds
   (fundamentals/news/sectors/earnings) ran degraded in-fleet — investigate why (secrets? rate
   limits at 22:30?). The pending critical Flag awaits operator ack.
 - **DL-46 — deploy gap (OPEN, needs operator decision):** merge-to-main rebuilds images but the

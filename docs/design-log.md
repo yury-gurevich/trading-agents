@@ -2227,5 +2227,9 @@ operator's call at next packaging). Corollary: the mockup's canned chat dock rea
 dashboard must not show an unwired chat input (hide it or mark it explicitly as not yet live).
 
 **Status.** DIRECTION — S122 shipped (0.66.00, run view); S123 shipped (0.67.00, fleet/infra/logs/
-costs). S124 (resume-from-stage) queued next to package; S125 (chat) may be resequenced per req. 15.
-Redline r2 (reqs 13–15) must be reflected in whichever slice is packaged next.
+costs). **Resequenced 2026-07-11 per redline r2:** S124 = glance-first master verdict + `NO_TRADE`
+acceptance verdict + operator-language sweep (reqs 13–14; packaged,
+`docs/sprints/sprint-124-dashboard-verdict.md`) — the light ships only with the gate fix that makes
+it honest on no-trade days; S125 = operator chat (req 15 pulls it ahead — it is how the skills
+catalogue becomes reachable outside the IDE); S126 = resume-from-stage + the DL-46 tripwire
+judgement (was S124).

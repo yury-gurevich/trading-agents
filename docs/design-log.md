@@ -1793,6 +1793,7 @@ Defender's grounded case, Challenger's strongest objection, the Judge's weighing
 corpus of *reasoning quality*, not just outcomes.
 
 **Two questions it must answer:**
+
 1. **Competence** — does the expert model reason at senior-analyst level? Not "did it pick buy," but
    "did it cite the right parameters, define them correctly, weigh reward:risk, catch the event-window
    gap." The bake-off already showed this discriminates: an un-truncated challenger flipped GPT-5's
@@ -1801,6 +1802,7 @@ corpus of *reasoning quality*, not just outcomes.
    *why*. Feature-importance over the reasoning, not the price series.
 
 **Builds on existing pieces (this is assembly, not green-field):**
+
 - **DL-31 / `score_understanding`** (the `--score` flag) already grades a transcript's parameter
   *definitions* against `TRADING_PARAMETER_TRUTHS` (define-then-justify). That is the seed of a
   "senior-analyst competence" score — extend from "defined correctly" toward "weighted correctly."
@@ -1863,6 +1865,7 @@ sentiment, earnings, news. The starved one-line context in the GPT/Opus/Fable ba
 artifact** (hand-typed `Proposition.context`), not the system.
 
 **The two real gaps (money-critical):**
+
 1. **Gate outcomes are implicit.** Context prints `confidence=0.62` and `base_min_confidence=0.30` but
    never states the *result* ("0.62 ≥ 0.30 → PASSED"). The LLM must infer every comparison; a rigorous
    challenger can still attack an unstated check. Render each gate's **explicit pass/fail** beside its
@@ -1873,6 +1876,7 @@ artifact** (hand-typed `Proposition.context`), not the system.
    concentrated exposure blind" is a **valid live finding**. This is the substantive hole.
 
 **Fix scope (to perfection).**
+
 - Render every computed gate in `build_veto_context` as **value + explicit outcome** (passed/failed,
   by how much).
 - Thread the **PM risk-gate results** into the evidence — sector exposure vs `max_sector_pct`, sizing
@@ -1904,6 +1908,7 @@ handing S113 to Codex.
 to fix quality and consistency."*
 
 **The distinction that matters.** Deliberation has two orthogonal quality holes:
+
 1. **Evidence completeness (DL-41)** — deterministic: is every computed gate (value + pass/fail) and
    the PM risk gates in the context? DSPy **cannot** fix this; compiling over incomplete evidence just
    makes the model argue the wrong case *consistently*. **DL-41 first, and not a DSPy task.**
@@ -2007,6 +2012,7 @@ run blind to real holdings. Also observed: the 22:34 UTC after-hours order sits 
 was a disposable proof (S99→S118 pattern: stamp, verify, delete). S103 changed the regime: scheduled
 runs are **production**, and the broker account is a *standing* stateful system the graph merely
 mirrors. Two truths now coexist and must be reconciled, not assumed equal:
+
 - **Broker = source of truth for holdings** (positions, fills, cash) — it executes reality.
 - **Graph = source of truth for lineage** (why each position exists: the DL-41 gate evidence,
   provenance chain, decisions). Lineage can never be recovered from the broker; holdings can never
@@ -2016,7 +2022,7 @@ mirrors. Two truths now coexist and must be reconciled, not assumed equal:
 /v2/positions; PaperBroker returns its book). (2) An execution-owned reconciliation step at run
 start: fetch broker positions + refresh any `pending` `Fill` statuses, write a
 `BrokerPositionSnapshot`; divergence vs graph `Position` nodes → **loud** (`Flag`, supervisor path)
-+ adopt broker truth with provenance `reconciled-from-broker` (never silently fabricate entry
+— adopt broker truth with provenance `reconciled-from-broker` (never silently fabricate entry
 lineage). Monitor reconciles its `Position` nodes from the snapshot (islands: execution touches
 broker + its own artifacts; monitor owns `Position`). (3) Teardown discipline amended: checks that
 trade must reconcile after teardown; `Position`/`Fill` rows mirroring real broker holdings are
@@ -2194,5 +2200,32 @@ a React/toolchain frontend (repo is Python-first, CI has no node step); dashboar
 graph or bus directly (operator-agent boundary, PRD §non-negotiable); LLM chat with unbounded
 write access (DL-36 one-shot ladder governs).
 
-**Status.** DIRECTION — S122 packaged (`docs/sprints/sprint-122-dashboard-run-view.md`); mockup
-committed + published for look-and-feel sign-off.
+**Operator redline r2 (2026-07-11, after first real use of the shipped slices — all binding).**
+
+**13. Glance verdict first.** Opening the dashboard must answer "is everything right?" with **zero
+reading**: one dominant master indicator — RED or GREEN — backed by pre-attentive signals
+(color, motion/animated borders, arrows). Operator verbatim spirit: *"you have an immediate
+indicator that things are right or wrong AT A GLANCE."* Today the page opens with prose ledes,
+section headers, and tables — reading-first, which inverts how dashboards work. **Dashboards do
+not explain at the beginning — they explain on demand**: the existing detail (stages, tables,
+logs) stays, but as drill-down beneath the verdict, not as the landing view.
+
+**14. No internal project vocabulary on the operator surface.** Sprint ids (S123…), design-log ids
+(the DL-36/DL-47 chips currently in Section II/III headers), and other repo bookkeeping are
+build-time language, not operator language. The surface says what a thing *is* ("self-recovery
+ladder", "deploy currency"), never which internal artifact defined it. Raw image tags remain
+fine as *data* inside detail views; they must not be the headline.
+
+**15. The dashboard must stand alone — the coding environment is not the operations console.**
+Operator verbatim spirit: *"we will have to leave the coding environment one time and never
+come back."* The req-12 skills catalogue (`.claude/skills/`) is reachable only inside Claude
+Code, so every "how did we go last night" still drags the operator back into the IDE. This
+makes the chat tier (reqs 7/11/12) **the mechanism by which the skills become reachable from
+the dashboard**, not a nice-to-have — it weighs on the S124 vs S125 ordering (decision open,
+operator's call at next packaging). Corollary: the mockup's canned chat dock read as broken
+("LLM dialog box is not connected") — a dead control erodes trust; until wired, the production
+dashboard must not show an unwired chat input (hide it or mark it explicitly as not yet live).
+
+**Status.** DIRECTION — S122 shipped (0.66.00, run view); S123 shipped (0.67.00, fleet/infra/logs/
+costs). S124 (resume-from-stage) queued next to package; S125 (chat) may be resequenced per req. 15.
+Redline r2 (reqs 13–15) must be reflected in whichever slice is packaged next.

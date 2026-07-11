@@ -2228,8 +2228,8 @@ dashboard must not show an unwired chat input (hide it or mark it explicitly as 
 
 **Status.** DIRECTION — S122 shipped (0.66.00, run view); S123 shipped (0.67.00, fleet/infra/logs/
 costs). **Resequenced 2026-07-11 per redline r2:** S124 = glance-first master verdict + `NO_TRADE`
-acceptance verdict + operator-language sweep (reqs 13–14; packaged,
-`docs/sprints/sprint-124-dashboard-verdict.md`) — the light ships only with the gate fix that makes
-it honest on no-trade days; S125 = operator chat (req 15 pulls it ahead — it is how the skills
+acceptance verdict + operator-language sweep (reqs 13–14; **shipped 0.68.00, merged `b9ed20e`,
+2026-07-11** — live flip proven: `sched-2026-07-10` NO_TRADE/GREEN) — the light shipped with the
+gate fix that makes it honest on no-trade days; S125 = operator chat (req 15 pulls it ahead — it is how the skills
 catalogue becomes reachable outside the IDE); S126 = resume-from-stage + the DL-46 tripwire
 judgement (was S124).

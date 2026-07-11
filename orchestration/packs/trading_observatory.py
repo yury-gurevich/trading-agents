@@ -107,6 +107,7 @@ def _analyst(graph: GraphStore, node: Node) -> StageView:
     )
     outputs += tuple(f"{r.ticker:<6} REJECT  {r.reason}" for r in rec_set.rejections)
     observed: dict[str, object] = {"scored": len(rec_set.recommendations)}
+    observed["rejected"] = len(rec_set.rejections)
     checks = (Check("scored", "floor", 1.0),)
     return _view("analyst", "CandidateSet(scanner)", observed, checks, outputs)
 
@@ -169,7 +170,6 @@ def _reporter(graph: GraphStore, node: Node) -> StageView:
     return _view("reporter", "MonitorRun(monitor)", observed, checks, outputs)
 
 
-# (stage name, graph label, trigger label, extractor). Order = the full spine.
 _SPEC = (
     ("provider", "MarketData", "RunRequest", _provider),
     ("scanner", "ScanRun", "MarketData(provider)", _scanner),

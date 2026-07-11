@@ -1,4 +1,4 @@
-"""Layer-3 acceptance gate CLI — PASS/FAIL a persisted run.
+"""Layer-3 acceptance gate CLI — PASS/NO_TRADE/FAIL a persisted run.
 
 Agent: tooling
 Role: load the graph store from .env and run the acceptance gate for a given
@@ -24,7 +24,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        sys.stdout.reconfigure(encoding="utf-8")
 
     from dotenv import load_dotenv
 

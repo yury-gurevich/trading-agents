@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-11 15:55 AEST · **Version:** 0.67.00 · **S124 PACKAGED — glance-first master verdict + NO_TRADE acceptance verdict + operator-language sweep; awaiting Codex.**
+**Last updated:** 2026-07-11 16:33 AEST · **Version:** 0.68.00 · **S124 IMPLEMENTED — glance-first master verdict + NO_TRADE acceptance verdict + operator-language sweep; awaiting operator merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,16 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
+  A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,
+  next fire, and warning drill-down. Acceptance has a first-class pass-equivalent `NO_TRADE`
+  verdict only for complete, fully evidenced confidence-floor rejection runs; genuine missing
+  stages and unexplained silence remain FAIL. `/api/verdict?run=<id>` and `/bundle` share the pure
+  projection; static/API jargon guards keep internal ids off the surface. Live proof:
+  `sched-2026-07-10` = NO_TRADE/GREEN; absent-run diagnostic = RED before provider. Screenshots
+  under `docs/reports/sprint-124-dashboard-verdict/`; `make ci` 1511 passed / 5 skipped / 100%.
+  Branch `sprint-124-dashboard-verdict`, pending operator merge.
 
 - **S123 (DL-47 slice 2, 0.66.00→0.67.00) — FLEET + INFRASTRUCTURE ARE LEGIBLE.**
   One injectable Azure REST read port now projects all 13 Container Apps, `dispatcher-cron`,
@@ -110,13 +120,12 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `main` at 0.67.00 (S123 merged `2ad656e`). **INTENT: S124 packaged for Codex**
-(`docs/sprints/sprint-124-dashboard-verdict.md`) — glance-first RED/GREEN master verdict +
-first-class `NO_TRADE` acceptance verdict + operator-language sweep with CI jargon-guard, per
-**DL-47 operator redline r2 (reqs 13–15, 2026-07-11)**. Success factors: Codex handback with the
-closeout block + return notes filled, `make ci` 100%, and the LAW-02 live flip —
-`sched-2026-07-10` (verified this session: 7/7 complete, legitimate no-trade, all five candidates
-below the 0.600 floor, `ACCEPTANCE FAIL` today) must render GREEN "completed — no trades".
+On `sprint-124-dashboard-verdict` at 0.68.00, based on `main` at S123 merge `2ad656e`.
+**S124 is implemented and awaiting operator merge.** Its closeout and return notes are filled;
+`make ci` is 100%; LAW-02 proved `sched-2026-07-10` now exits 0 as `NO_TRADE` and renders GREEN
+"completed — no trades", plus a read-only RED absent-run path with the stalled provider named.
+Evidence is in `docs/laws/functionality-checks.md` and
+`docs/reports/sprint-124-dashboard-verdict/`.
 DL-47 resequenced: S125 = operator chat, S126 = resume-from-stage + DL-46 tripwire judgement.
 Open from the 07-10 run diagnosis: all four enrichment feeds ran degraded in-fleet (fundamentals/
 news/sectors/earnings) — smells like secrets/entitlement, not one vendor; run `/diagnose-feeds`.
@@ -130,9 +139,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 ## Next
 
-- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 PACKAGED 2026-07-11** (glance-first
+- **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 IMPLEMENTED 2026-07-11** (0.68.00; glance-first
   master verdict + `NO_TRADE` acceptance verdict + operator-language sweep — redline r2, reqs
-  13–15). Then, resequenced per redline r2: S125 first (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
+  13–15; awaiting operator merge). Then, resequenced per redline r2: S125 first (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
   `/bundle` context — investigates via the **pre-defined skill catalogue** (7 skills shipped
   2026-07-10 at `.claude/skills/`: diagnose-run/-feeds, check-/deploy-fleet, reconcile-broker,
   resume-run, audit-costs — usable in any Claude Code session today), prepares a fix as branch+PR

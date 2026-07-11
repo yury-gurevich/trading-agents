@@ -36,6 +36,8 @@ def test_bundle_shape_over_real_cascade() -> None:
     assert "dash-bundle" in meta["known_runs"]
     verdict = cast("dict[str, Any]", bundle["verdict"])
     assert verdict["passed"] is True
+    assert verdict["light"] in {"RED", "GREEN"}
+    assert isinstance(verdict["summary"], str)
 
 
 def test_bundle_meta_for_unknown_run() -> None:

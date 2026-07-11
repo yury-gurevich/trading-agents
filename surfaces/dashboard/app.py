@@ -21,6 +21,7 @@ from surfaces.dashboard import projections, projections_state
 from surfaces.dashboard.bundle_azure import container_logs
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
+from surfaces.dashboard.projections_verdict import verdict_projection
 from surfaces.dashboard.projections_vitals import vitals_projection
 from surfaces.dashboard.settings import DashboardSettings
 
@@ -71,6 +72,19 @@ def build_app(
                 start_response,
                 200,
                 vitals_projection(graph, azure, config, vital_run),
+            )
+        if path == "/api/verdict":
+            verdict_run = query.get("run", [""])[0] or _selected_run(graph, query)
+            if not verdict_run:
+                return _json(
+                    start_response,
+                    404,
+                    {"error": "no run_id available"},
+                )
+            return _json(
+                start_response,
+                200,
+                verdict_projection(graph, verdict_run, azure, config),
             )
         if path.startswith("/api/containers/"):
             return _container_view(path, query, azure, config, start_response)

@@ -1,4 +1,4 @@
-/* Design tokens ported from docs/design/dashboard-mockup.html (DL-47). */
+/* Design tokens ported from the operations dashboard mockup. */
 :root {
   --paper:#F7F4EE; --card:#FDFCF8; --card-2:#F1EDE4; --line:#E3DED2;
   --ink:#211E19; --ink-2:#6B655A; --ink-3:#97907F;
@@ -80,7 +80,7 @@ section.active { display:block; animation:viewin .3s ease; }
 .eyebrow { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.14em;
   color:var(--accent-ink); margin-bottom:6px; }
 h2 { font-family:var(--serif); font-weight:600; font-size:23px; line-height:1.2; margin:0 0 4px; text-wrap:balance; }
-.lede { color:var(--ink-2); max-width:68ch; margin:0 0 18px; font-size:13.5px; }
+.lede { color:var(--ink-3); max-width:68ch; margin:0 0 14px; font-size:12px; }
 .runtag { font:500 11px var(--mono); color:var(--ink-3); }
 
 .cardgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; }

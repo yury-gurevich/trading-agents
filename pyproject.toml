@@ -27,10 +27,10 @@ postgres = ["alembic>=1.13"]
 mcp = ["mcp>=1.28.1"]
 # Forecaster ML models (FinBERT sentiment + LightGBM price/return) — heavy, lazily
 # imported; the unit gate never loads them.
-forecaster = ["torch>=2.12.1", "transformers>=5.13.0", "lightgbm>=4"]
+forecaster = ["torch>=2.13.0", "transformers>=5.13.1", "lightgbm>=4"]
 # LLM provider SDKs — lazily imported (operator client + deliberation demo). Install
 # to run anything against a live model: `uv pip install anthropic openai`.
-llm = ["anthropic>=0.116.0", "openai>=2.44.0"]
+llm = ["anthropic>=0.116.0", "openai>=2.45.0"]
 # Azure Service Bus pub/sub backend (P14). Install to activate AzureServiceBusBus.
 # azure-keyvault-secrets + azure-identity: master Key Vault accessor (P15 S75).
 azure = [

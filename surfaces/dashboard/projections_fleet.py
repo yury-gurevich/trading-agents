@@ -63,8 +63,9 @@ def fleet_projection(
         _stage(
             "control plane",
             "Served over Service Bus",
-            f"{len(graph.list_nodes('CapabilityGrant'))} capability grants recorded",
-            "good" if execution and execution.get("status") == "Succeeded" else "idle",
+            f"{len(graph.list_nodes('CapabilityGrant'))} capability grants"
+            " recorded to date",
+            _control_plane_status(execution, azure_available),
         ),
         _stage(
             "pipeline",
@@ -170,6 +171,14 @@ def _execution_detail(row: AzureRow | None) -> str:
     if row is None:
         return "Azure job data unavailable"
     return f"{row.get('start_time', '')} - {row.get('status', 'unknown')}"
+
+
+def _control_plane_status(row: AzureRow | None, available: bool) -> str:
+    # idle = could not verify (no Azure, no execution row); a Failed night is a
+    # real "needs attention", not an availability gap.
+    if not available or row is None:
+        return "idle"
+    return "good" if row.get("status") == "Succeeded" else "warn"
 
 
 def _job_status(row: AzureRow | None, available: bool) -> str:

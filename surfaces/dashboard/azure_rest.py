@@ -22,7 +22,7 @@ from surfaces.dashboard.azure_parsers import (
 from surfaces.dashboard.azure_port import AzureReadError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from datetime import datetime
 
     from surfaces.dashboard.azure_http import JsonSend
@@ -62,7 +62,7 @@ class AzureRestReader:
             return cached
         query = urlencode({"api-version": _APP_API})
         url = f"{self._resource_root()}/containerApps?{query}"
-        rows = parse_container_apps(self._send("GET", url, _ARM_SCOPE, None))
+        rows = parse_container_apps(self._send_retry("GET", url, _ARM_SCOPE, None))
         for row in rows:
             revision = str(row["revision"])
             if not revision:
@@ -94,7 +94,7 @@ class AzureRestReader:
             f"{self._resource_root()}/jobs/{quote(job, safe='')}/executions"
             f"?api-version={_APP_API}"
         )
-        rows = parse_job_executions(self._send("GET", url, _ARM_SCOPE, None))
+        rows = parse_job_executions(self._send_retry("GET", url, _ARM_SCOPE, None))
         self._jobs_cache[job] = (self._clock(), rows)
         return [dict(row) for row in rows]
 
@@ -113,7 +113,7 @@ class AzureRestReader:
         )
         url = f"{_LOGS}/{quote(self._settings.azure_workspace_id, safe='')}/query"
         body = {"query": query, "timespan": f"{start.isoformat()}/{end.isoformat()}"}
-        return parse_log_rows(self._send("POST", url, _LOGS_SCOPE, body))
+        return parse_log_rows(self._send_retry("POST", url, _LOGS_SCOPE, body))
 
     def query_costs(self, scope: str, month_to_date: bool) -> list[AzureRow]:
         """Query and cache month-to-date pretax cost grouped by Azure service."""
@@ -137,9 +137,20 @@ class AzureRestReader:
             f"{_ARM}{scope}/providers/Microsoft.CostManagement/query"
             f"?api-version={_COST_API}"
         )
-        rows = parse_cost_rows(self._send("POST", url, _ARM_SCOPE, body))
+        rows = parse_cost_rows(self._send_retry("POST", url, _ARM_SCOPE, body))
         self._cost_cache[scope] = (self._clock(), rows)
         return [dict(row) for row in rows]
+
+    def _send_retry(
+        self, method: str, url: str, scope: str, body: Mapping[str, object] | None
+    ) -> dict[str, object]:
+        # One immediate retry absorbs transient management-API failures
+        # (throttle, token hiccup) so a single blip does not paint a section
+        # "unavailable" until the next page load.
+        try:
+            return self._send(method, url, scope, body)
+        except AzureReadError:
+            return self._send(method, url, scope, body)
 
     def _resource_root(self) -> str:
         sub = quote(self._settings.azure_subscription_id, safe="")

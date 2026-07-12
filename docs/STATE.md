@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-12 12:30 AEST · **Version:** 0.68.02 · **Chore in flight (`chore-verdict-warning-popup`): warnings drill-down un-clipped + DRIFT-021 (chronic Finnhub feed degradation) recorded.**
+**Last updated:** 2026-07-12 15:05 AEST · **Version:** 0.68.02 · **S125 (operator chat) packaged for handover; chore branch carries 4 dashboard fixes + DRIFT-021, pending operator merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -48,6 +48,13 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   pure reads). PROVEN: 6 parallel API hits all answered; headless screenshot of
   `?run=sched-2026-07-07` renders RUN PASSED / 1 order submitted (vs 07-10's NO_TRADE) —
   selector demonstrably changes the display.
+  Fourth fix, same branch (operator-reported "why is it yellow"): transient Azure management-API
+  failures no longer masquerade as warnings — the REST reader retries each read once
+  (`_send_retry`), `AzureReadError` detail passes through to the infra `message`, the rail
+  separates "couldn't verify — retrying" (idle, with a 45 s self-heal refetch) from genuine
+  "attention" (warn), and a Failed dispatcher night on the control-plane card reads warn instead
+  of idle; grant count labeled "to date". PROVEN: 16 targeted dashboard tests green (incl. new
+  `test_dashboard_azure_retry.py` retry-once/raise-after table) + full `make ci` exit 0.
 
 - **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
   A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,

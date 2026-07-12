@@ -33,6 +33,13 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   (Finnhub free-tier rate limit × whole-feed fault boundary; key/vault/activation ruled out;
   provider faults invisible in Log Analytics after scale-to-zero) → **DRIFT-021 (OPEN)** in
   `docs/laws/drift-register.md` with the candidate fixes to package.
+  Second fix, same branch: the local dashboard died after Neon dropped its idle Postgres
+  connection — `PostgresGraphStore` held one connection forever, so every API 500'd
+  (`psycopg.OperationalError: the connection is closed`) until restart. `_run` now retries a
+  failed statement once on a fresh connection (owned connections only; single autocommit
+  statements, so the retry is safe; injected test connections never replaced). PROVEN:
+  `tests/test_graph_postgres_reconnect.py` (reconnect-once, replacement-also-dead raises,
+  injected-never-replaced) + `make ci` green.
 
 - **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
   A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,

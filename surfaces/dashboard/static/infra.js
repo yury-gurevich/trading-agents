@@ -23,6 +23,14 @@
       esc(big) + "</span>" + badge + "</div><div class='sub'>" + sub + "</div></div>";
   }
 
+  /* Transient Azure read failures self-heal: one pending refetch per section. */
+  var retryTimers = {};
+  var currentRun = null;
+  function scheduleRetry(key, fn) {
+    if (retryTimers[key]) return;
+    retryTimers[key] = setTimeout(function () { delete retryTimers[key]; fn(); }, 45000);
+  }
+
   function renderInfra(data) {
     var env = data.environment, hw = data.hardware_cost, llm = data.llm_cost;
     var services = (hw.services || []).map(function (r) {
@@ -50,7 +58,8 @@
     $("containerbody").innerHTML = data.containers.length ? data.containers.map(containerRow).join("") :
       "<tr><td colspan='6' class='muted'>Azure data unavailable — graph-backed panels remain live.</td></tr>";
     $("raildot-infra").className = "dot " + (data.available ? "good" : "idle");
-    $("raillbl-infra").textContent = data.available ? env.app_count + " apps" : "unavailable";
+    $("raillbl-infra").textContent = data.available ? env.app_count + " apps" : "couldn't verify — retrying";
+    if (!data.available) scheduleRetry("infra", function () { get("/api/infra").then(renderInfra); });
   }
 
   function containerRow(row) {
@@ -80,9 +89,15 @@
       return chip(a.escalation ? "crit" : (a.state === "active" ? "good" : "warn"), a.agent + " · " + a.state + (a.escalation ? " · " + a.escalation : ""));
     }).join(" ");
     var worst = data.stages.some(function (s) { return s.status === "crit"; }) ? "crit" :
-      data.stages.some(function (s) { return s.status === "warn" || s.status === "idle"; }) ? "warn" : "good";
+      data.stages.some(function (s) { return s.status === "warn"; }) ? "warn" :
+      data.stages.some(function (s) { return s.status === "idle"; }) ? "idle" : "good";
     $("raildot-fleet").className = "dot " + worst;
-    $("raillbl-fleet").textContent = worst === "good" ? "all stages ✓" : "attention";
+    $("raillbl-fleet").textContent = worst === "good" ? "all stages ✓" :
+      worst === "idle" ? "couldn't verify — retrying" : "attention";
+    if (worst === "idle") scheduleRetry("fleet", function () {
+      if (data.run_id !== currentRun) return;
+      get("/api/fleet?run_id=" + encodeURIComponent(data.run_id)).then(renderFleet);
+    });
   }
 
   function renderVitals(data) {
@@ -125,6 +140,7 @@
   document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeLogs(); });
   window.addEventListener("dashboard:run-selected", function (event) {
     var runId = event.detail.runId, query = "?run_id=" + encodeURIComponent(runId);
+    currentRun = runId;
     get("/api/fleet" + query).then(renderFleet); get("/api/vitals" + query).then(renderVitals);
   });
   get("/api/infra").then(renderInfra);

@@ -117,10 +117,28 @@ def test_infra_degraded_and_cost_permission_finding() -> None:
     assert cost["available"] is False
     assert "permission" in str(cost["message"])
     assert cast("dict[str, Any]", partial["job"])["status"] == "unavailable"
+    assert cast("dict[str, Any]", partial["job"])["message"] == "jobs unavailable"
     apps_failed = infra_projection(
         graph, FakeAzureReader(fail_apps=True), _settings(), now=NOW
     )
     assert apps_failed["available"] is False
+    assert apps_failed["message"] == "apps unavailable"
+
+
+def test_infra_generic_reader_failure_keeps_generic_message() -> None:
+    class BrokenReader(FakeAzureReader):
+        def list_container_apps(self) -> list[dict[str, object]]:
+            raise ValueError("unparseable")
+
+        def list_job_executions(self, job: str) -> list[dict[str, object]]:
+            raise ValueError("unparseable")
+
+    result = infra_projection(
+        InMemoryGraphStore(), BrokenReader(), _settings(), now=NOW
+    )
+    job = cast("dict[str, Any]", result["job"])
+    assert result["message"] == "Azure data unavailable"
+    assert job["message"] == "Azure job data unavailable"
 
 
 def test_spine_health_reports_graph_read_failure() -> None:

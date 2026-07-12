@@ -64,6 +64,8 @@ def test_fleet_projects_latest_activation_and_recovery_ladder() -> None:
     assert agents["provider"]["escalation"] == "operator-held"
     assert stages[0]["status"] == "good"
     assert stages[1]["status"] == "good"
+    assert stages[3]["status"] == "good"
+    assert str(stages[3]["detail"]).endswith("recorded to date")
     assert stages[4]["status"] == "warn"
 
 
@@ -94,3 +96,18 @@ def test_fleet_failed_latest_job_is_critical_fallback() -> None:
     result = fleet_projection(_graph(), FailedJobReader(), _settings(), "fleet")
     stages = cast("list[dict[str, str]]", result["stages"])
     assert stages[0]["status"] == "crit"
+    assert stages[3]["status"] == "warn"
+
+
+class EmptyJobsReader(FakeAzureReader):
+    def list_job_executions(self, job: str) -> list[dict[str, object]]:
+        return []
+
+
+def test_fleet_no_execution_rows_reads_could_not_verify() -> None:
+    """A reachable Azure with no execution rows is unverified, not failed."""
+    result = fleet_projection(_graph(), EmptyJobsReader(), _settings(), "fleet")
+    stages = cast("list[dict[str, str]]", result["stages"])
+    assert result["azure_available"] is True
+    assert stages[0]["status"] == "idle"
+    assert stages[3]["status"] == "idle"

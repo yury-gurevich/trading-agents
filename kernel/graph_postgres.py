@@ -7,7 +7,7 @@ External I/O: PostgreSQL database.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping  # noqa: TC003 - runtime annotations.
+from collections.abc import Callable, Iterator, Mapping  # noqa: TC003 - runtime.
 from typing import Any, cast
 
 import psycopg
@@ -43,6 +43,7 @@ class PostgresGraphStore(GraphStore):
         """Create a PostgreSQL connection from settings or use an injected one."""
         self._settings = settings if settings is not None else PostgresGraphSettings()
         self.sink = sink if sink is not None else CollectingFaultSink()
+        self._owns_conn = connection is None
         self._conn: Any = connection if connection is not None else self._connect()
 
     def close(self) -> None:
@@ -163,18 +164,36 @@ class PostgresGraphStore(GraphStore):
     def _fetchone(
         self, query: str, params: tuple[object, ...]
     ) -> Mapping[str, Any] | None:
-        with self._conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cast("Mapping[str, Any] | None", cursor.fetchone())
+        return cast(
+            "Mapping[str, Any] | None",
+            self._run(query, params, lambda cursor: cursor.fetchone()),
+        )
 
     def _fetchall(
         self, query: str, params: tuple[object, ...]
     ) -> list[Mapping[str, Any]]:
-        with self._conn.cursor() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-        return list(rows)
+        return list(self._run(query, params, lambda cursor: cursor.fetchall()))
 
     def _execute(self, query: str, params: tuple[object, ...]) -> None:
-        with self._conn.cursor() as cursor:
-            cursor.execute(query, params)
+        self._run(query, params, lambda _cursor: None)
+
+    def _run(
+        self,
+        query: str,
+        params: tuple[object, ...],
+        collect: Callable[[Any], Any],
+    ) -> Any:  # noqa: ANN401 - returns whatever the collect callback yields.
+        # Single autocommit statements, so one retry on a server-dropped
+        # connection (Neon idles out long-lived surfaces) is safe; injected
+        # test connections are never replaced.
+        try:
+            with self._conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return collect(cursor)
+        except psycopg.OperationalError:
+            if not self._owns_conn:
+                raise
+            self._conn = self._connect()
+            with self._conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return collect(cursor)

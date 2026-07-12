@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-11 16:55 AEST · **Version:** 0.68.00 · **S124 SHIPPED — glance-first master verdict + NO_TRADE acceptance verdict + operator-language sweep; merged `b9ed20e`.**
+**Last updated:** 2026-07-12 15:05 AEST · **Version:** 0.68.02 · **S125 (operator chat) packaged for handover; chore branch carries 4 dashboard fixes + DRIFT-021, pending operator merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,40 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chore (0.68.01→0.68.02) — WARNINGS DRILL-DOWN IS VISIBLE; DRIFT-021 RECORDED.**
+  The verdict hero's "N warnings" dropdown opened invisibly: `.verdict-hero { overflow:hidden }`
+  (needed to contain the stripe layer) clipped the absolutely-positioned list at the card's bottom
+  edge. Fixed by dropping the hero's `overflow:hidden` and clipping the `::before` stripes with
+  `border-radius:inherit` instead. PROVEN: headless-Edge screenshot of the open drill-down shows
+  both warning rows fully readable below the card edge, stripes still inside the rounded corners;
+  live server re-served the fixed CSS; `make ci` 1511 passed / 5 skipped / 100%. Same session's
+  `/diagnose-feeds` on `sched-2026-07-10` root-caused the chronic all-four `*_degraded` notes
+  (Finnhub free-tier rate limit × whole-feed fault boundary; key/vault/activation ruled out;
+  provider faults invisible in Log Analytics after scale-to-zero) → **DRIFT-021 (OPEN)** in
+  `docs/laws/drift-register.md` with the candidate fixes to package.
+  Second fix, same branch: the local dashboard died after Neon dropped its idle Postgres
+  connection — `PostgresGraphStore` held one connection forever, so every API 500'd
+  (`psycopg.OperationalError: the connection is closed`) until restart. `_run` now retries a
+  failed statement once on a fresh connection (owned connections only; single autocommit
+  statements, so the retry is safe; injected test connections never replaced). PROVEN:
+  `tests/test_graph_postgres_reconnect.py` (reconnect-once, replacement-also-dead raises,
+  injected-never-replaced) + `make ci` green.
+  Third fix, same branch: the dashboard served over single-threaded `wsgiref` — one hung Azure
+  REST read (`/api/fleet`, stuck ≥30 min despite the urllib timeout; token acquisition has none)
+  wedged the whole server, and past the listen backlog Windows refuses connections, so the run
+  selector "did nothing". `__main__` now serves thread-per-request (`ThreadingMixIn`,
+  daemon threads); shared state is safe (psycopg3 conns + MSAL are thread-safe, projections are
+  pure reads). PROVEN: 6 parallel API hits all answered; headless screenshot of
+  `?run=sched-2026-07-07` renders RUN PASSED / 1 order submitted (vs 07-10's NO_TRADE) —
+  selector demonstrably changes the display.
+  Fourth fix, same branch (operator-reported "why is it yellow"): transient Azure management-API
+  failures no longer masquerade as warnings — the REST reader retries each read once
+  (`_send_retry`), `AzureReadError` detail passes through to the infra `message`, the rail
+  separates "couldn't verify — retrying" (idle, with a 45 s self-heal refetch) from genuine
+  "attention" (warn), and a Failed dispatcher night on the control-plane card reads warn instead
+  of idle; grant count labeled "to date". PROVEN: 16 targeted dashboard tests green (incl. new
+  `test_dashboard_azure_retry.py` retry-once/raise-after table) + full `make ci` exit 0.
 
 - **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
   A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,

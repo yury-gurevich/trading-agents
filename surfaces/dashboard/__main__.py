@@ -9,7 +9,14 @@ from __future__ import annotations
 
 import os
 import sys
-from wsgiref.simple_server import make_server
+from socketserver import ThreadingMixIn
+from wsgiref.simple_server import WSGIServer, make_server
+
+
+class _ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
+    """Thread-per-request server: one slow Azure/graph read must not wedge the UI."""
+
+    daemon_threads = True
 
 
 def main() -> None:
@@ -25,7 +32,7 @@ def main() -> None:
     port = int(os.environ.get("DASHBOARD_PORT", "8300"))
     settings = DashboardSettings()
     app = build_app(build_graph_from_env(), build_azure_reader(settings), settings)
-    server = make_server("127.0.0.1", port, app)
+    server = make_server("127.0.0.1", port, app, server_class=_ThreadingWSGIServer)
     sys.stderr.write(f"dashboard: http://127.0.0.1:{port}/  (read-only)\n")
     server.serve_forever()
 

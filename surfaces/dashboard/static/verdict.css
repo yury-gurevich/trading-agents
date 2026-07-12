@@ -2,11 +2,14 @@
 .verdict-hero {
   position:relative; display:grid; grid-template-columns:190px minmax(0,1fr);
   align-items:center; gap:28px; min-height:190px; margin:22px 0 8px; padding:24px 30px;
-  overflow:hidden; background:var(--card); border:2px solid var(--line); border-radius:18px;
+  background:var(--card); border:2px solid var(--line); border-radius:18px;
   box-shadow:var(--shadow); isolation:isolate;
 }
+/* No overflow:hidden on the hero — it would clip the warnings dropdown, which opens
+   below the card edge. The stripe layer clips itself via border-radius instead. */
 .verdict-hero::before {
   content:""; position:absolute; inset:0; z-index:-1; opacity:.1; pointer-events:none;
+  border-radius:inherit;
   background:repeating-linear-gradient(115deg,transparent 0 26px,currentColor 27px 29px);
   animation:verdict-drift 9s linear infinite;
 }

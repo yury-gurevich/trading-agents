@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-11 16:55 AEST · **Version:** 0.68.00 · **S124 SHIPPED — glance-first master verdict + NO_TRADE acceptance verdict + operator-language sweep; merged `b9ed20e`.**
+**Last updated:** 2026-07-12 12:30 AEST · **Version:** 0.68.02 · **Chore in flight (`chore-verdict-warning-popup`): warnings drill-down un-clipped + DRIFT-021 (chronic Finnhub feed degradation) recorded.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,18 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chore (0.68.01→0.68.02) — WARNINGS DRILL-DOWN IS VISIBLE; DRIFT-021 RECORDED.**
+  The verdict hero's "N warnings" dropdown opened invisibly: `.verdict-hero { overflow:hidden }`
+  (needed to contain the stripe layer) clipped the absolutely-positioned list at the card's bottom
+  edge. Fixed by dropping the hero's `overflow:hidden` and clipping the `::before` stripes with
+  `border-radius:inherit` instead. PROVEN: headless-Edge screenshot of the open drill-down shows
+  both warning rows fully readable below the card edge, stripes still inside the rounded corners;
+  live server re-served the fixed CSS; `make ci` 1511 passed / 5 skipped / 100%. Same session's
+  `/diagnose-feeds` on `sched-2026-07-10` root-caused the chronic all-four `*_degraded` notes
+  (Finnhub free-tier rate limit × whole-feed fault boundary; key/vault/activation ruled out;
+  provider faults invisible in Log Analytics after scale-to-zero) → **DRIFT-021 (OPEN)** in
+  `docs/laws/drift-register.md` with the candidate fixes to package.
 
 - **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
   A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,

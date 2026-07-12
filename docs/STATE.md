@@ -40,6 +40,14 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   statements, so the retry is safe; injected test connections never replaced). PROVEN:
   `tests/test_graph_postgres_reconnect.py` (reconnect-once, replacement-also-dead raises,
   injected-never-replaced) + `make ci` green.
+  Third fix, same branch: the dashboard served over single-threaded `wsgiref` — one hung Azure
+  REST read (`/api/fleet`, stuck ≥30 min despite the urllib timeout; token acquisition has none)
+  wedged the whole server, and past the listen backlog Windows refuses connections, so the run
+  selector "did nothing". `__main__` now serves thread-per-request (`ThreadingMixIn`,
+  daemon threads); shared state is safe (psycopg3 conns + MSAL are thread-safe, projections are
+  pure reads). PROVEN: 6 parallel API hits all answered; headless screenshot of
+  `?run=sched-2026-07-07` renders RUN PASSED / 1 order submitted (vs 07-10's NO_TRADE) —
+  selector demonstrably changes the display.
 
 - **S124 (DL-47 slice 3, 0.67.00→0.68.00) — THE DASHBOARD ANSWERS AT A GLANCE.**
   A dominant binary RED/GREEN hero now follows the selected run with a deterministic sentence,

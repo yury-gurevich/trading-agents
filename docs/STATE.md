@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-12 15:05 AEST · **Version:** 0.68.02 · **S125 (operator chat) packaged for handover; chore branch carries 4 dashboard fixes + DRIFT-021, pending operator merge.**
+**Last updated:** 2026-07-13 18:10 AEST · **Version:** 0.68.03 · **Chore: compact hero wording + responsive stage grid landed; S125 (operator chat) handback VERIFIED on `sprint-125-operator-chat`, pending operator merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,15 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chore (0.68.02→0.68.03) — COMPACT HERO WORDING + RESPONSIVE STAGE GRID.**
+  Operator-directed UI pass landed from the shared working tree: the deterministic server-side
+  hero summary is now terse operator language ("3 orders, 3 candidates" · "5 candidates below
+  confidence bar (0.6)" — the floor value extracted from analyst rejection evidence into a new
+  `confidence_bar` verdict field · "Attention needed: …" on faults); the hero names the selected
+  **Run day** beside Next fire (closes the 07-12 "dates do not match" confusion); stage flow is
+  a responsive wrapping grid; cache-busted assets. Tests updated with the wording.
+  PROVEN: `make ci` all 9 steps green on the exact tree.
 
 - **Chore (0.68.01→0.68.02) — WARNINGS DRILL-DOWN IS VISIBLE; DRIFT-021 RECORDED.**
   The verdict hero's "N warnings" dropdown opened invisibly: `.verdict-hero { overflow:hidden }`

@@ -31,6 +31,7 @@ def _acceptance(verdict: str, *, warning: bool) -> dict[str, object]:
         "passed": verdict != "FAIL",
         "breaches": breaches,
         "no_trade_day": verdict == "NO_TRADE",
+        "confidence_bar": 0.6,
         "annotation": None,
     }
 
@@ -108,10 +109,33 @@ def test_no_trade_summary_and_warning_rows_are_plain_language() -> None:
         {"escalations": []},
     )
     assert result["light"] == "GREEN"
-    assert result["summary"] == (
-        "Run completed — no trades: 5 candidates below the confidence bar."
-    )
+    assert result["summary"] == "5 candidates below confidence bar (0.6)"
     assert result["warning_count"] == 1
+
+
+def test_pass_summary_is_compact_and_pluralized() -> None:
+    stages = _stages()
+    stages[2]["observed"] = {"scored": 3, "rejected": 0}
+    stages[4]["observed"] = {"submitted": 3}
+
+    result = projection.project_verdict(
+        _acceptance("PASS", warning=False),
+        stages,
+        _vitals(fault=False, warning=False),
+        {"escalations": []},
+    )
+
+    assert result["summary"] == "3 orders, 3 candidates"
+
+    stages[2]["observed"] = {"scored": 1, "rejected": 0}
+    stages[4]["observed"] = {"submitted": 1}
+    singular = projection.project_verdict(
+        _acceptance("PASS", warning=False),
+        stages,
+        _vitals(fault=False, warning=False),
+        {"escalations": []},
+    )
+    assert singular["summary"] == "1 order, 1 candidate"
 
 
 def test_stalled_stage_and_operator_hold_are_red() -> None:

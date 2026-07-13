@@ -123,7 +123,10 @@ def _graph_with_rejections(rejected: int) -> InMemoryGraphStore:
         "as_of": "2026-07-09",
         "recommendations": [],
         "rejections": [
-            {"ticker": f"T{i}", "reason": "confidence below regime floor"}
+            {
+                "ticker": f"T{i}",
+                "reason": "confidence 0.527 below regime floor 0.600",
+            }
             for i in range(rejected)
         ],
     }
@@ -141,6 +144,7 @@ def test_no_trade_day_annotated(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     verdict = proj.run_verdict(graph, "quiet")
     assert verdict["no_trade_day"] is True
+    assert verdict["confidence_bar"] == 0.6
     assert "completed normally" in str(verdict["annotation"])
     assert "All 5 candidates" in str(verdict["annotation"])
 

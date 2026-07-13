@@ -26,14 +26,18 @@ def main() -> None:
     from kernel.graph_env import build_graph_from_env
     from surfaces.dashboard.app import build_app
     from surfaces.dashboard.azure_rest import build_azure_reader
+    from surfaces.dashboard.chat_binding import bind_dashboard_chat
     from surfaces.dashboard.settings import DashboardSettings
 
     load_dotenv()
     port = int(os.environ.get("DASHBOARD_PORT", "8300"))
     settings = DashboardSettings()
-    app = build_app(build_graph_from_env(), build_azure_reader(settings), settings)
+    graph = build_graph_from_env()
+    chat = bind_dashboard_chat(graph)
+    app = build_app(graph, build_azure_reader(settings), settings, chat)
     server = make_server("127.0.0.1", port, app, server_class=_ThreadingWSGIServer)
-    sys.stderr.write(f"dashboard: http://127.0.0.1:{port}/  (read-only)\n")
+    chat_state = "operator chat connected" if chat else "operator chat not connected"
+    sys.stderr.write(f"dashboard: http://127.0.0.1:{port}/  ({chat_state})\n")
     server.serve_forever()
 
 

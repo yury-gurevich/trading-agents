@@ -9,6 +9,7 @@ External I/O: none.
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from typing import Any, cast
 from urllib.parse import urlsplit
 
@@ -23,7 +24,7 @@ VIEWS = ("verdict", "stages", "flags", "positions", "recovery", "bundle")
 
 
 def invoke(
-    app: Any, path: str, method: str = "GET"
+    app: Any, path: str, method: str = "GET", body: bytes = b""
 ) -> tuple[str, dict[str, str], bytes]:
     captured: dict[str, Any] = {}
 
@@ -38,6 +39,8 @@ def invoke(
                 "PATH_INFO": parsed.path,
                 "QUERY_STRING": parsed.query,
                 "REQUEST_METHOD": method,
+                "CONTENT_LENGTH": str(len(body)),
+                "wsgi.input": BytesIO(body),
             },
             start_response,
         )
@@ -105,11 +108,16 @@ def test_index_and_assets_serve() -> None:
     assert headers["Content-Type"].startswith("text/html")
     assert b"trading-agents" in body
     assert b"verdict-hero" in body
+    assert b"/chat.css?v=125-1" in body
+    assert b"/chat.js?v=125-1" in body
     assert invoke(app, "/app.css")[1]["Content-Type"].startswith("text/css")
     assert invoke(app, "/app.js")[0] == "200 OK"
     assert invoke(app, "/infra.js")[0] == "200 OK"
     assert invoke(app, "/verdict.css")[0] == "200 OK"
     assert invoke(app, "/verdict.js")[0] == "200 OK"
+    assert invoke(app, "/chat.css")[0] == "200 OK"
+    assert invoke(app, "/chat.js")[0] == "200 OK"
+    assert b"#chat [hidden]" in invoke(app, "/chat.css")[2]
 
 
 def test_missing_static_and_traversal_are_404() -> None:

@@ -6,6 +6,7 @@
   <title>trading-agents · Operations</title>
   <link rel="stylesheet" href="/app.css" />
   <link rel="stylesheet" href="/verdict.css" />
+  <link rel="stylesheet" href="/chat.css?v=125-1" />
 </head>
 <body>
   <header class="top">
@@ -95,7 +96,7 @@
     </section>
   </main>
 
-  <footer>Read-only operations view. Selecting a run changes context; this screen never changes trading state.</footer>
+  <footer>Operations view. Selecting a run changes context; commands stay within the operator's bounded controls.</footer>
 
   <div class="scrim" id="scrim"></div>
   <aside id="drawer" aria-label="Container logs" aria-hidden="true">
@@ -105,8 +106,31 @@
     <div class="loglines" id="drawerbody"></div>
   </aside>
 
+  <aside id="chat" aria-label="Ask the operator">
+    <button class="chat-head" type="button" aria-expanded="false" aria-controls="chat-body">
+      <span class="chat-dot" aria-hidden="true"></span>
+      <b>Ask the operator</b>
+      <span class="chip acc">bounded</span>
+    </button>
+    <div class="chat-body" id="chat-body" hidden>
+      <div class="chat-state" id="chat-state" aria-live="polite">Checking connection…</div>
+      <div class="chat-transcript" id="chat-transcript" aria-live="polite"></div>
+      <div class="chat-asks" id="chat-asks" hidden>
+        <button type="button" data-ask="Explain this run">Explain this run</button>
+        <button type="button" data-ask="System status">System status</button>
+        <button type="button" data-ask="Open incidents">Open incidents</button>
+      </div>
+      <form class="chat-in" id="chat-form" hidden>
+        <label class="sr-only" for="chat-input">Ask the operator</label>
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Ask about this run…" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </aside>
+
   <script src="/infra.js"></script>
   <script src="/verdict.js"></script>
   <script src="/app.js"></script>
+  <script src="/chat.js?v=125-1"></script>
 </body>
 </html>

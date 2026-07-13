@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from agents.operator.domain.evidence import gather_evidence
+from agents.operator.domain.evidence import _RUN_CHAIN, _compact, gather_evidence
 from agents.operator.domain.grammar import INTENT_FAMILIES, apply_confirmation_policy
 from agents.operator.domain.prompts import build_interpret_system
 from agents.operator.domain.result import (
@@ -95,6 +95,38 @@ def test_gather_evidence_returns_trade_and_status_nodes() -> None:
     assert gather_evidence(graph, "why MSFT", 5) == []
     assert gather_evidence(object(), "status", 5) == []  # type: ignore[arg-type]
     assert gather_evidence(_EmptyGraph(), "status", 5) == []  # type: ignore[arg-type]
+
+
+def test_run_evidence_walks_provenance_and_compacts_prompt_values() -> None:
+    graph = InMemoryGraphStore()
+    request = graph.merge_node(
+        "RunRequest",
+        "run-request:run-a",
+        {"run_id": "run-a", "tickers": ("AAPL",)},
+    )
+    current = request
+    for index, (edge, label) in enumerate(_RUN_CHAIN):
+        props = (
+            {"run_id": "run-a", "counts": {"returned": 1}}
+            if label == "MarketData"
+            else {"run_id": "run-a"}
+        )
+        child = graph.merge_node(label, f"{label.lower()}:{index}", props)
+        graph.add_edge(current, child, edge)
+        current = child
+
+    limited = gather_evidence(graph, "Selected run: run-a", 1)
+    walked = gather_evidence(graph, "Selected run: run-a", 5)
+
+    assert limited[0]["label"] == "RunRequest"
+    assert [row["label"] for row in walked[:2]] == ["RunRequest", "MarketData"]
+    assert walked[1]["props"] == {
+        "run_id": "run-a",
+        "counts": {"returned": 1},
+    }
+    assert _compact([object()]) == {"item_count": 1}
+    assert _compact(list(range(11))) == {"item_count": 11}
+    assert str(_compact(object())).startswith("<object object at")
 
 
 class _EmptyGraph:

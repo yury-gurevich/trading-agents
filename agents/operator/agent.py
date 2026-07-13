@@ -18,12 +18,12 @@ from agents.operator.domain.prompts import (
     build_interpret_user,
 )
 from agents.operator.domain.result import (
-    correlation_id,
     intent_from_data,
     message,
     outcome,
     parse_json,
     refused,
+    request_correlation,
     with_graph,
 )
 from agents.operator.ledger import record_llm_call
@@ -81,7 +81,9 @@ class OperatorAgent(AgentBase):
 
     def _explain(self, request: BaseModel) -> Explanation:
         explain = ExplainRequest.model_validate(request)
-        corr = correlation_id("explain", explain.subject, "operator")
+        corr = request_correlation(
+            explain.request_id, "explain", explain.subject, "operator"
+        )
         evidence = gather_evidence(
             self._graph, explain.subject, self._settings.explain_max_evidence_nodes
         )
@@ -108,7 +110,9 @@ class OperatorAgent(AgentBase):
         return Explanation(summary=raw.strip() or "No explanation returned.")
 
     def _interpret_command(self, command: HumanCommand) -> CommandResult:
-        corr = correlation_id(command.actor, command.channel, command.text)
+        corr = request_correlation(
+            command.request_id, command.actor, command.channel, command.text
+        )
         system = self._settings.system_prompt or build_interpret_system()
         user = build_interpret_user(command)
         with record_llm_call(

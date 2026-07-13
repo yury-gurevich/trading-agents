@@ -129,11 +129,15 @@ scope — it depends on the resume primitive (S126) and a launch mechanism that 
 
 ```text
 CLOSEOUT — Sprint 125
-Branch / merge commit:   sprint-125-operator-chat / <pending>
-make ci:                 <result + counts>
-Functionality check:     <live proof + where recorded + teardown note>
+Branch / merge commit:   sprint-125-operator-chat / not merged (branch-only handback)
+make ci:                 all 9 steps green; 1531 passed, 6 skipped, 100.00% coverage
+Functionality check:     live Neon + real Anthropic answered the exact latest-run question;
+                         A$0.008530 priced exchange, 0 untracked; grounded and disconnected
+                         screenshots + retained audit-node teardown inventory recorded in
+                         docs/laws/functionality-checks.md
 Version:                 0.68.02 → 0.69.00 (MINOR); uv.lock refreshed
-Deviations from spec:    <none | list>
+Deviations from spec:    none; screenshots were captured manually because the in-app browser
+                         control backend was unavailable, without changing the product proof
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -145,3 +149,28 @@ not accepted while this section is empty or the closeout placeholder is unfilled
 handback must prove, not restate intent).
 
 <!-- return notes go below this line -->
+
+- **Surprises found:** WSGI request reads blocked when they ignored `CONTENT_LENGTH`; the
+  provider's unforced plain-text explanation path could hang; a broad “status” intent stole the
+  required retrospective question; and flex declarations overrode the native `[hidden]` rule.
+  Exact-length reads, a bounded explanation tool response, run-question routing, an explicit
+  hidden rule, and static cache-busters corrected those live-only failures. Repeating identical
+  text also reused the operator's deliberately idempotent correlation id, hiding fresh LLM spend;
+  an optional surface request id now makes each dashboard POST append a distinct priced exchange
+  while MCP callers retain their existing idempotence.
+- **In-flight decisions:** the dashboard composition root binds the existing operator and graph
+  once, while the dashboard route itself only calls `dispatch_tool`. The run id is appended as
+  operator context and the evidence collector reads existing provenance; no new tool, node type,
+  graph-write path, streaming transport, or repair affordance was introduced. Audit records from
+  the live proof are intentionally retained rather than torn down.
+- **Drift observed:** all three deliberation roles receive the same rendered base context, but the
+  analyst `ScoreBreakdown.metrics` payload is not persisted in full into `Recommendation` or
+  rendered by `veto_context`; role parity therefore exists, full quant-signal availability does
+  not. This pre-existing gap is outside the S125 exposure boundary. Separately, the verdict maps
+  an unavailable Azure job read to “Activation bus is unreachable” even when the graph contains
+  active activation records; that state is unverified, not proof of a bus outage.
+- **Follow-ups queued:** persist a typed, bounded quant-evidence payload and render that identical
+  payload for Defender, Challenger, and Judge, with a three-role capture test proving every
+  calculated quant signal is present. Make bus health tri-state (`reachable` / `unreachable` /
+  `unverified`) and require a real probe before the hero says unreachable. Keep tier-2 repair/repo
+  access in its separately governed dashboard slice.

@@ -31,10 +31,12 @@ class HumanCommand(_Frozen):
     text: str
     actor: str
     channel: Literal["dashboard", "phone", "mcp"]
+    request_id: str | None = None
 
 
 class ExplainRequest(_Frozen):
     subject: str
+    request_id: str | None = None
     """e.g. 'why was AAPL rejected', 'why is the system in manual'."""
 
 
@@ -55,7 +57,7 @@ class CommandResult(_Frozen):
 
 CONTRACT = AgentContract(
     name="operator",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Translate the operator's human-language commands into typed, policy-bound "
         "intents; explain system state from stored evidence; refuse or escalate "

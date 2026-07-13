@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-07-13",
+  "scope": "July 2026 live operator LLMCall ledger after the Sprint 125 functionality check",
+  "successful_required_exchange": {
+    "question": "how did we go last night",
+    "run_id": "sched-2026-07-10",
+    "calls": 2,
+    "tokens_in": 424,
+    "tokens_out": 323,
+    "source_cost_usd": 0.006117,
+    "cost_aud": 0.008530
+  },
+  "full_session_projection": {
+    "model": "claude-sonnet-4-6",
+    "calls": 12,
+    "tokens_in": 2242,
+    "tokens_out": 1813,
+    "source_cost_usd": 0.033921,
+    "cost_aud": 0.047303,
+    "untracked_models": 0
+  },
+  "pricing_as_of": "2026-07-10",
+  "fx": {
+    "aud_per_usd": 1.39450565,
+    "bank": "Commonwealth Bank of Australia",
+    "basis": "Send IMT (AUD sold to buy USD)",
+    "rate_as_of": "2026-07-10T18:06:11+10:00"
+  },
+  "coverage_note": "Only append-only LLMCall ledger usage is priced; deliberation and prompt-compilation spend not present in that ledger is untracked."
+}

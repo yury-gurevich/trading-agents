@@ -44,6 +44,19 @@ def test_anthropic_complete_extracts_tool_input(
     assert "status" in raw
 
 
+def test_anthropic_complete_returns_plain_explanation_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(importlib, "import_module", lambda _name: _FakeAnthropicModule)
+    client = AnthropicLLMClient(api_key="key")  # pragma: allowlist secret
+    raw = client.complete(system="s", user="u", tool_schema={})
+    assert raw == "grounded answer"
+    assert client._client.messages.kwargs["tool_choice"] == {
+        "type": "tool",
+        "name": "answer_question",
+    }
+
+
 def test_tool_input_fallbacks() -> None:
     text_first = SimpleNamespace(
         content=[
@@ -63,7 +76,20 @@ def test_tool_input_fallbacks() -> None:
 
 
 class _FakeMessages:
-    def create(self, **_kwargs: object) -> object:
+    def __init__(self) -> None:
+        self.kwargs: dict[str, object] = {}
+
+    def create(self, **kwargs: object) -> object:
+        self.kwargs = kwargs
+        choice = kwargs.get("tool_choice", {})
+        if isinstance(choice, dict) and choice.get("name") == "answer_question":
+            return SimpleNamespace(
+                content=[
+                    SimpleNamespace(
+                        type="tool_use", input={"answer": "grounded answer"}
+                    )
+                ]
+            )
         return SimpleNamespace(
             content=[
                 SimpleNamespace(

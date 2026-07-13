@@ -39,22 +39,34 @@ class AnthropicLLMClient:
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
-        """Call Anthropic tool use and return the tool input as JSON."""
-        response = self._client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-            tools=[
+        """Call Anthropic with bounded intent or explanation tool output."""
+        name = "parse_intent" if tool_schema else "answer_question"
+        schema = tool_schema or {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"],
+        }
+        kwargs: dict[str, object] = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+            "tools": [
                 {
-                    "name": "parse_intent",
-                    "description": "Parse one operator command.",
-                    "input_schema": tool_schema,
+                    "name": name,
+                    "description": (
+                        "Parse one operator command."
+                        if tool_schema
+                        else "Return one evidence-grounded answer."
+                    ),
+                    "input_schema": schema,
                 }
             ],
-            tool_choice={"type": "tool", "name": "parse_intent"},
-        )
-        return json.dumps(_tool_input(response))
+            "tool_choice": {"type": "tool", "name": name},
+        }
+        response = self._client.messages.create(**kwargs)
+        data = _tool_input(response)
+        return json.dumps(data) if tool_schema else str(data.get("answer", ""))
 
 
 def _tool_input(response: object) -> dict[str, object]:

@@ -43,7 +43,7 @@
   letter-spacing:.14em; text-transform:uppercase;
 }
 .verdict-summary {
-  max-width:780px; margin:0; font:600 clamp(24px,3.2vw,39px)/1.12 var(--serif);
+  max-width:780px; margin:0; font:600 clamp(18px,2.2vw,28px)/1.2 var(--serif);
   color:var(--ink); text-wrap:balance;
 }
 .verdict-meta {

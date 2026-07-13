@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>trading-agents · Operations</title>
-  <link rel="stylesheet" href="/app.css" />
-  <link rel="stylesheet" href="/verdict.css" />
+  <link rel="stylesheet" href="/app.css?v=20260712-responsive-flow" />
+  <link rel="stylesheet" href="/verdict.css?v=20260712-compact-message-2" />
 </head>
 <body>
   <header class="top">
@@ -42,8 +42,9 @@
       </div>
       <div class="verdict-copy">
         <p class="verdict-kicker">Selected run</p>
-        <p class="verdict-summary" id="verdict-summary">Loading the run verdict…</p>
+        <div class="verdict-summary" id="verdict-summary">Loading</div>
         <div class="verdict-meta">
+          <span>Run day <b class="mono" id="verdict-run-day">—</b></span>
           <span>Next fire <b class="mono" id="verdict-next-fire">—</b></span>
           <details class="warning-detail" id="warning-detail">
             <summary><span class="warning-badge" id="warning-badge">0 warnings</span></summary>
@@ -106,7 +107,7 @@
   </aside>
 
   <script src="/infra.js"></script>
-  <script src="/verdict.js"></script>
+  <script src="/verdict.js?v=20260712-run-day"></script>
   <script src="/app.js"></script>
 </body>
 </html>

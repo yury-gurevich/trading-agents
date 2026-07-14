@@ -17,6 +17,10 @@ class _ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     """Thread-per-request server: one slow Azure/graph read must not wedge the UI."""
 
     daemon_threads = True
+    # A taken port must fail loudly. With the reuse default, a second instance
+    # silently double-binds on Windows and a stale process keeps answering the
+    # browser (fixpack item 5, 2026-07-14).
+    allow_reuse_address = False
 
 
 def main() -> None:
@@ -35,7 +39,14 @@ def main() -> None:
     graph = build_graph_from_env()
     chat = bind_dashboard_chat(graph)
     app = build_app(graph, build_azure_reader(settings), settings, chat)
-    server = make_server("127.0.0.1", port, app, server_class=_ThreadingWSGIServer)
+    try:
+        server = make_server("127.0.0.1", port, app, server_class=_ThreadingWSGIServer)
+    except OSError:
+        sys.stderr.write(
+            f"dashboard: port {port} is already in use — another dashboard "
+            "instance is running; stop it first (or set DASHBOARD_PORT).\n"
+        )
+        raise SystemExit(1) from None
     chat_state = "operator chat connected" if chat else "operator chat not connected"
     sys.stderr.write(f"dashboard: http://127.0.0.1:{port}/  ({chat_state})\n")
     server.serve_forever()

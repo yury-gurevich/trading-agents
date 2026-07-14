@@ -18,6 +18,15 @@ AzureRow = dict[str, object]
 class AzureReadError(RuntimeError):
     """A sanitized Azure read failure safe to expose as degraded status."""
 
+    def __init__(self, public_message: str) -> None:
+        """Carry the display-safe message as a structured attribute.
+
+        Projections must render ``public_message`` (never ``str(exc)``) so no
+        exception-text flow ever reaches an HTTP response.
+        """
+        super().__init__(public_message)
+        self.public_message = public_message
+
 
 class AzureReader(Protocol):
     """Read-only Azure facts used by the dashboard projections."""

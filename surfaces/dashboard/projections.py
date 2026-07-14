@@ -9,6 +9,8 @@ External I/O: none (reads the injected GraphStore).
 
 from __future__ import annotations
 
+import re
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from contracts.provider import RUN_REQUEST_LABEL
@@ -24,6 +26,9 @@ if TYPE_CHECKING:
 _NO_TRADE_ANNOTATION = (
     "All {rejected} candidates were rejected below the confidence bar; the run "
     "completed normally without placing a trade."
+)
+_CONFIDENCE_FLOOR = re.compile(
+    r"confidence \d+(?:\.\d+)? below regime floor (?P<floor>\d+(?:\.\d+)?)"
 )
 
 
@@ -49,6 +54,7 @@ def run_verdict(graph: GraphStore, run_id: str) -> dict[str, object]:
     """Acceptance verdict + breaches + the no-trade annotation."""
     result = accept_run(graph, run_id)
     rejected = _rejection_count(graph, run_id)
+    confidence_bar = _confidence_bar(graph, run_id)
     no_trade = result.verdict == "NO_TRADE"
     return {
         "run_id": run_id,
@@ -64,6 +70,7 @@ def run_verdict(graph: GraphStore, run_id: str) -> dict[str, object]:
             for b in result.breaches
         ],
         "no_trade_day": no_trade,
+        "confidence_bar": confidence_bar,
         "annotation": (
             _NO_TRADE_ANNOTATION.format(rejected=rejected) if no_trade else None
         ),
@@ -99,11 +106,26 @@ def _stage_dict(view: StageView) -> dict[str, object]:
 
 def _rejection_count(graph: GraphStore, run_id: str) -> int:
     """How many candidates the analyst explicitly rejected on this run."""
-    from collections.abc import Mapping
-
     node = walk_chain(graph, run_id).get("AnalystRun")
     rec_set = node.props.get("recommendation_set") if node else None
     if not isinstance(rec_set, Mapping):
         return 0
     rejections = rec_set.get("rejections")
     return len(rejections) if isinstance(rejections, (list, tuple)) else 0
+
+
+def _confidence_bar(graph: GraphStore, run_id: str) -> float | None:
+    """Read the common regime floor recorded in analyst rejection evidence."""
+    node = walk_chain(graph, run_id).get("AnalystRun")
+    rec_set = node.props.get("recommendation_set") if node else None
+    rejections = rec_set.get("rejections") if isinstance(rec_set, Mapping) else None
+    if not isinstance(rejections, (list, tuple)):
+        return None
+    floors = {
+        float(match["floor"])
+        for rejection in rejections
+        if isinstance(rejection, Mapping)
+        and isinstance(reason := rejection.get("reason"), str)
+        and (match := _CONFIDENCE_FLOOR.fullmatch(reason)) is not None
+    }
+    return floors.pop() if len(floors) == 1 else None

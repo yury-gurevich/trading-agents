@@ -54,7 +54,9 @@ def project_verdict(
     projected.update(
         {
             "light": light,
-            "summary": _summary(verdict, stages, faults),
+            "summary": _summary(
+                verdict, stages, faults, confidence_bar=acceptance.get("confidence_bar")
+            ),
             "next_fire": _nested_value(vitals, "next_fire", "unavailable"),
             "warning_count": len(warnings),
             "warnings": warnings,
@@ -118,7 +120,11 @@ def _warnings(
 
 
 def _summary(
-    verdict: str, stages: list[dict[str, object]], faults: list[dict[str, str]]
+    verdict: str,
+    stages: list[dict[str, object]],
+    faults: list[dict[str, str]],
+    *,
+    confidence_bar: object = None,
 ) -> str:
     missing = _missing_stage(stages)
     if missing is not None:
@@ -130,19 +136,23 @@ def _summary(
         (fault["message"] for fault in faults if fault["code"] != "acceptance"), None
     )
     if non_acceptance is not None:
-        return f"Run completed, but {non_acceptance.lower()}."
+        return f"Attention needed: {non_acceptance.lower()}."
     if verdict == "NO_TRADE":
         rejected = _observed(stages, "analyst", "rejected")
         noun = "candidate" if rejected == 1 else "candidates"
-        return f"Run completed — no trades: {rejected} {noun} below the confidence bar."
+        bar = (
+            f" ({float(confidence_bar):g})"
+            if isinstance(confidence_bar, int | float)
+            else ""
+        )
+        return f"{rejected} {noun} below confidence bar{bar}"
     if verdict == "PASS":
         scored = _observed(stages, "analyst", "scored")
         submitted = _observed(stages, "execution", "submitted")
-        return (
-            f"Run completed — {submitted} orders submitted from "
-            f"{scored} scored candidates."
-        )
-    return "Run completed, but acceptance failed."
+        order_noun = "order" if submitted == 1 else "orders"
+        candidate_noun = "candidate" if scored == 1 else "candidates"
+        return f"{submitted} {order_noun}, {scored} {candidate_noun}"
+    return "Acceptance failed."
 
 
 def _missing_stage(stages: list[dict[str, object]]) -> str | None:

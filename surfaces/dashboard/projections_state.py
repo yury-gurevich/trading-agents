@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from surfaces.dashboard.bundle_azure import bundle_artifacts
 from surfaces.dashboard.projections import list_runs, run_request_node, run_stages
+from surfaces.queries.flags import flag_ref, resolved_refs
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -59,13 +60,25 @@ def _in_scope(node: Node, day: str) -> bool:
 
 
 def run_flags(graph: GraphStore, run_id: str) -> list[dict[str, object]]:
-    """Supervisor-path Flags scoped to the run day, plus everything pending."""
+    """Supervisor-path Flags scoped to the run day, plus everything pending.
+
+    Flag props are append-only, so resolution truth is the matching
+    FlagResolution record: a resolved flag stays visible on its own run day
+    (with status "resolved") but no longer rides into every other run.
+    """
     day = _run_day(graph, run_id)
-    rows = [
-        _row(node, _FLAG_FIELDS)
-        for node in graph.list_nodes("Flag")
-        if _in_scope(node, day)
-    ]
+    resolved = resolved_refs(graph)
+    rows = []
+    for node in graph.list_nodes("Flag"):
+        done = flag_ref(node) in resolved
+        created = str(node.props.get("created_at", ""))
+        same_day = bool(day) and created.startswith(day)
+        if not same_day and (done or not _in_scope(node, day)):
+            continue
+        row = _row(node, _FLAG_FIELDS)
+        if done:
+            row["status"] = "resolved"
+        rows.append(row)
     rows.sort(key=lambda r: str(r.get("created_at", "")), reverse=True)
     return rows
 

@@ -27,13 +27,27 @@ class FlagView:
 
 def pending_flags(graph: GraphStore) -> tuple[FlagView, ...]:
     """Return Flag nodes that have no matching FlagResolution."""
-    resolved = {_flag_ref(node) for node in nodes_by_label(graph, "FlagResolution")}
+    resolved = resolved_refs(graph)
     flags = (
         _view(node)
         for node in nodes_by_label(graph, "Flag")
         if _flag_ref(node) not in resolved
     )
     return tuple(sorted(flags, key=lambda item: (item.severity, item.subject_ref)))
+
+
+def resolved_refs(graph: GraphStore) -> set[tuple[str, str]]:
+    """Return the (subject_ref, severity) pairs a FlagResolution has answered.
+
+    Flag props are append-only, so a flag's own ``status`` never leaves
+    "pending" — resolution truth lives only in these matching records.
+    """
+    return {_flag_ref(node) for node in nodes_by_label(graph, "FlagResolution")}
+
+
+def flag_ref(node: Node) -> tuple[str, str]:
+    """Public (subject_ref, severity) identity used to match resolutions."""
+    return _flag_ref(node)
 
 
 def _view(node: Node) -> FlagView:

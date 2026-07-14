@@ -4,25 +4,13 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  function compactSummary(summary) {
-    var match = summary.match(
-      /(?:Run completed — )?(\d+) orders? submitted from (\d+) scored candidates?\.?/
-    );
-    if (!match) return summary;
-    var orders = Number(match[1]);
-    var candidates = Number(match[2]);
-    return orders + (orders === 1 ? " order, " : " orders, ") + candidates +
-      (candidates === 1 ? " candidate" : " candidates");
-  }
-
   function render(data) {
     var hero = $("verdict-hero");
     var light = data.light === "GREEN" ? "green" : "red";
-    var summary = compactSummary(data.summary);
     hero.dataset.light = light;
-    hero.setAttribute("aria-label", data.light + ". " + summary);
+    hero.setAttribute("aria-label", data.light + ". " + data.summary);
     $("master-light-label").textContent = data.light;
-    $("verdict-summary").textContent = summary;
+    $("verdict-summary").textContent = data.summary;
     var day = String(data.run_id || "").match(/\d{4}-\d{2}-\d{2}/);
     $("verdict-run-day").textContent = day ? day[0] : (data.run_id || "—");
     $("verdict-next-fire").textContent = data.next_fire || "unavailable";

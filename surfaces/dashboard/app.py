@@ -102,7 +102,7 @@ def build_app(
                 verdict_projection(graph, verdict_run, azure, config),
             )
         if path.startswith("/api/containers/"):
-            return _container_view(path, query, azure, config, start_response)
+            return _container_view(graph, path, query, azure, config, start_response)
         if path.startswith("/api/runs/"):
             return _run_view(graph, azure, config, path, start_response)
         return _static(path, start_response)
@@ -130,6 +130,7 @@ def _run_view(
 
 
 def _container_view(
+    graph: GraphStore,
     path: str,
     query: dict[str, list[str]],
     azure: AzureReader | None,
@@ -145,8 +146,17 @@ def _container_view(
     except ValueError:
         requested = settings.log_tail_default
     tail = max(1, min(requested, settings.log_tail_max))
-    payload = container_logs(azure, settings, parts[0], tail)
+    payload = container_logs(
+        azure, settings, parts[0], tail, run_day=_run_day(graph, query)
+    )
     return _json(start_response, 200, payload)
+
+
+def _run_day(graph: GraphStore, query: dict[str, list[str]]) -> str:
+    """Resolve the selected run's day from its RunRequest, or empty."""
+    run_id = query.get("run", [""])[0]
+    node = projections.run_request_node(graph, run_id) if run_id else None
+    return str(node.props.get("requested_at", ""))[:10] if node else ""
 
 
 def _selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:

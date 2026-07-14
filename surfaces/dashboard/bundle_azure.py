@@ -67,18 +67,30 @@ def container_logs(
     tail: int,
     *,
     now: datetime | None = None,
+    run_day: str = "",
 ) -> dict[str, object]:
-    """Return one bounded latest-window log projection, degraded as HTTP-200 data."""
-    start, end = latest_window(settings, now)
+    """Return one bounded log projection, degraded as HTTP-200 data.
+
+    ``run_day`` scopes the query to that day's fleet window (DL-47 req 5: the
+    selected run scopes everything); without it — or on an unparseable day —
+    the latest window serves and the payload says so via ``scope``.
+    """
+    scope = "run"
+    try:
+        start, end = run_window(run_day, settings)
+    except ValueError:
+        scope = "latest"
+        start, end = latest_window(settings, now)
     if azure is None:
-        return _log_unavailable(container, start, end, tail)
+        return _log_unavailable(container, start, end, tail, scope)
     try:
         rows = azure.query_logs(container, start, end, tail)
     except _AZURE_FAILURES:
-        return _log_unavailable(container, start, end, tail)
+        return _log_unavailable(container, start, end, tail, scope)
     return {
         "available": True,
         "container": container,
+        "scope": scope,
         "window": {"start": start.isoformat(), "end": end.isoformat()},
         "tail": tail,
         "rows": rows,
@@ -100,11 +112,12 @@ def _unavailable(source: str) -> dict[str, object]:
 
 
 def _log_unavailable(
-    container: str, start: datetime, end: datetime, tail: int
+    container: str, start: datetime, end: datetime, tail: int, scope: str
 ) -> dict[str, object]:
     return {
         "available": False,
         "container": container,
+        "scope": scope,
         "window": {"start": start.isoformat(), "end": end.isoformat()},
         "tail": tail,
         "rows": [],

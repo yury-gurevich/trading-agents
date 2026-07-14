@@ -60,9 +60,24 @@ def test_bundle_without_job_still_contains_app_evidence() -> None:
     assert "dispatcher-cron" not in cast("dict[str, object]", images["containers"])
 
 
+def test_container_logs_run_day_scopes_window_and_bad_day_falls_back() -> None:
+    scoped = container_logs(
+        FakeAzureReader(), _settings(), "execution", 200, now=NOW, run_day="2026-07-08"
+    )
+    assert scoped["scope"] == "run"
+    window = cast("dict[str, str]", scoped["window"])
+    assert window["start"].startswith("2026-07-08T22:25")
+    assert window["end"].startswith("2026-07-09T00:30")
+    fallback = container_logs(
+        FakeAzureReader(), _settings(), "execution", 200, now=NOW, run_day="not-a-day"
+    )
+    assert fallback["scope"] == "latest"
+
+
 def test_single_container_logs_good_and_degraded() -> None:
     good = container_logs(FakeAzureReader(), _settings(), "execution", 200, now=NOW)
     assert good["available"] is True
+    assert good["scope"] == "latest"
     assert len(cast("list[object]", good["rows"])) == 3
     failed = container_logs(
         FakeAzureReader(fail_logs_for="execution"),

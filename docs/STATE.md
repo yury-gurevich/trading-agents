@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-14 14:40 AEST · **Version:** 0.69.01 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
+**Last updated:** 2026-07-14 16:20 AEST · **Version:** 0.69.02 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,14 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chore (0.69.01→0.69.02) — LOG DRAWER FOLLOWS THE SELECTED RUN (DRIFT-022 CORRECTED).**
+  `/api/containers/<name>/logs` accepts `run=<id>`, resolves the day from the RunRequest,
+  and queries that day's fleet window (`run_window`); unscoped or unresolvable falls back to
+  the latest window and the payload says which via `scope`. The drawer sends the selected run
+  and titles the window it shows. PROVEN: unit truth-table (run-scoped window bounds, bad-day
+  fallback, unknown-run fallback) + `make ci` green + live Neon/Azure check (07-10 run returns
+  the 07-10 22:25→00:30 window).
 
 - **Chore (0.69.00→0.69.01) — FIXPACK 5+6 EARLY: SECURITY GATE UN-SILENCED; PORT BINDS LOUDLY.**
   The five error-level CodeQL alerts that failed the Security Findings gate on every PR are

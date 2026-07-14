@@ -39,7 +39,17 @@ def test_vitals_reflect_pending_flags_feeds_images_and_cost() -> None:
         },
     )
     graph.add_edge(run, market, "INGESTED_BY")
-    graph.merge_node("Flag", "pending", {"status": "pending"})
+    graph.merge_node(
+        "Flag", "pending", {"status": "pending", "subject_ref": "s", "severity": "warn"}
+    )
+    graph.merge_node(
+        "Flag",
+        "answered",
+        {"status": "pending", "subject_ref": "done", "severity": "critical"},
+    )
+    graph.merge_node(
+        "FlagResolution", "res", {"subject_ref": "done", "severity": "critical"}
+    )
     graph.merge_node(
         "BrokerPositionSnapshot",
         "snapshot",

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-14 09:30 AEST · **Version:** 0.69.00 · **S125 SHIPPED — the operator chat panel is live in the dashboard; handback verified, merged to main.**
+**Last updated:** 2026-07-14 12:20 AEST · **Version:** 0.69.00 · **S125 SHIPPED (operator chat live, merged `9420b78`); S126 (resume-from-stage + DL-46 currency judgement + tri-state bus health) packaged for handover — the last DL-47 slice.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when

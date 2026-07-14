@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-13 18:10 AEST · **Version:** 0.68.03 · **Chore: compact hero wording + responsive stage grid landed; S125 (operator chat) handback VERIFIED on `sprint-125-operator-chat`, pending operator merge.**
+**Last updated:** 2026-07-14 09:30 AEST · **Version:** 0.69.00 · **S125 SHIPPED — the operator chat panel is live in the dashboard; handback verified, merged to main.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,16 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S125 (DL-47 slice 4, 0.68.02→0.69.00) — THE OPERATOR IS AVAILABLE IN THE DASHBOARD.**
+  `POST /api/chat` exposes only the existing bounded operator dispatch with dashboard-channel
+  audit, selected-run grounding, explicit confirmation for gated commands, and deterministic
+  quick asks. The dock has transcript and working states but becomes an honest read-only
+  “chat is not connected” panel when graph/key binding is absent. Live Neon + Anthropic proof
+  answered “how did we go last night” for `sched-2026-07-10`, and the cost ledger priced the
+  final two-call exchange at A$0.008530 with zero untracked models. Evidence and retained audit-node
+  inventory are in `docs/laws/functionality-checks.md` and
+  `docs/reports/sprint-125-operator-chat/`; `make ci` 1531 passed / 6 skipped / 100%.
 
 - **Chore (0.68.02→0.68.03) — COMPACT HERO WORDING + RESPONSIVE STAGE GRID.**
   Operator-directed UI pass landed from the shared working tree: the deterministic server-side
@@ -163,12 +173,10 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `main` at 0.68.00 (**S124 SHIPPED**, merged `b9ed20e`, tag `v0.68.00`; back-tags `v0.66.00`/
-`v0.67.00` cut on the S122/S123 merges). PROVEN RESULT: closeout + return notes filled; `make ci`
-re-run by the planning agent before merge (1511 passed / 5 skipped / 100%); LAW-02 live flip
-verified first-hand — `sched-2026-07-10` exits 0 as `NO_TRADE` and renders GREEN "completed — no
-trades", RED absent-run path names the stalled stage. Evidence in
-`docs/laws/functionality-checks.md` + `docs/reports/sprint-124-dashboard-verdict/`.
+On `sprint-125-operator-chat` at 0.69.00 (**S125 BRANCH COMPLETE; NOT MERGED**). The bounded
+operator chat, confirmation round-trip, run grounding, disconnected state, ledger proof, and
+LAW-02 evidence are complete; `make ci` is green at 1531 passed / 6 skipped / 100%. Main remains
+the merge authority and this handback does not merge it.
 The running fleet stays on `:s121` — the new verdict reaches the deployed dashboard only after a
 DL-46 retag (operator's call; images for `b9ed20e` build on merge).
 DL-47 resequenced: S125 = operator chat, S126 = resume-from-stage + DL-46 tripwire judgement.
@@ -186,11 +194,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 - **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 SHIPPED 2026-07-11 (0.68.00, merged `b9ed20e`)** — glance-first
   master verdict + `NO_TRADE` acceptance verdict + operator-language sweep (redline r2, reqs
-  13–15). Then, resequenced per redline r2: S125 first (two-tier chat: bounded operator agent + **repair agent** with repo access consuming the
-  `/bundle` context — investigates via the **pre-defined skill catalogue** (7 skills shipped
-  2026-07-10 at `.claude/skills/`: diagnose-run/-feeds, check-/deploy-fleet, reconcile-broker,
-  resume-run, audit-costs — usable in any Claude Code session today), prepares a fix as branch+PR
-  only, rebuilds containers via the DL-46 deploy machinery; DL-47 req. 11–12), then S126
+  13–15). **S125 BRANCH COMPLETE 2026-07-13 (0.69.00, pending merge)** — tier-1 bounded
+  operator chat only. The repair agent remains a later tier and was deliberately not exposed.
+  S126 follows
   (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46
   tripwire judgement). Design spec committed:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).

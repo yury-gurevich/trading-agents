@@ -82,6 +82,11 @@ def correlation_id(*parts: str) -> str:
     return hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
+def request_correlation(request_id: str | None, *parts: str) -> str:
+    """Keep legacy idempotence unless a surface identifies a distinct request."""
+    return correlation_id(*parts, request_id) if request_id else correlation_id(*parts)
+
+
 def _params(value: object) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}

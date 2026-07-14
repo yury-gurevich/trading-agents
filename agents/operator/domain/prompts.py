@@ -38,7 +38,9 @@ def build_interpret_system() -> str:
     )
     return (
         "Map the operator command to exactly one allowed trading-system intent, "
-        f"or refuse/ask for clarification. Allowed families: {families}."
+        "or refuse/ask for clarification. Questions about how a selected or past "
+        "run performed are explain intents; status is only current whole-system "
+        f"health. Allowed families: {families}."
     )
 
 
@@ -51,7 +53,11 @@ def build_interpret_user(command: HumanCommand) -> str:
 
 def build_explain_system() -> str:
     """Build the explanation-mode system prompt."""
-    return "Explain the requested system state using only the supplied graph evidence."
+    return (
+        "Explain the requested system state using only the supplied graph evidence. "
+        "Return one concise paragraph prioritizing the verdict, supporting numbers, "
+        "and anything needing operator attention; do not repeat the evidence dump."
+    )
 
 
 def build_explain_user(subject: str, evidence: list[dict[str, object]]) -> str:

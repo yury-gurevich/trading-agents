@@ -1,9 +1,7 @@
-"""Dashboard WSGI app — JSON read-model API + static frontend.
+"""Dashboard WSGI app — read-model API, operator chat, and static frontend.
 
 Agent: surfaces
-Role: route /api/runs* to the projections and serve the static frontend;
-      pure WSGI (same pattern as metrics_server), reads-only over the injected
-      GraphStore. Surfaces never drive an agent.
+Role: route read APIs and bounded operator chat; serve the static frontend.
 External I/O: none (the caller binds it to a server).
 """
 
@@ -19,6 +17,7 @@ from urllib.parse import parse_qs
 
 from surfaces.dashboard import projections, projections_state
 from surfaces.dashboard.bundle_azure import container_logs
+from surfaces.dashboard.chat import handle_chat
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_verdict import verdict_projection
@@ -27,6 +26,7 @@ from surfaces.dashboard.settings import DashboardSettings
 
 if TYPE_CHECKING:
     from kernel import GraphStore
+    from surfaces.context import SurfaceContext
     from surfaces.dashboard.azure_port import AzureReader
 
 _STATIC = Path(__file__).parent / "static"
@@ -48,6 +48,7 @@ def build_app(
     graph: GraphStore,
     azure: AzureReader | None = None,
     settings: DashboardSettings | None = None,
+    chat_context: SurfaceContext | None = None,
 ) -> Callable[..., list[bytes]]:
     """Return the WSGI app over injected graph and optional Azure readers."""
     config = settings or DashboardSettings()
@@ -55,6 +56,9 @@ def build_app(
     def _app(environ: dict[str, Any], start_response: StartResponse) -> list[bytes]:
         path = str(environ.get("PATH_INFO", "/"))
         query = parse_qs(str(environ.get("QUERY_STRING", "")))
+        if path == "/api/chat":
+            status, payload = handle_chat(environ, chat_context)
+            return _json(start_response, status, payload)
         if str(environ.get("REQUEST_METHOD", "GET")) != "GET":
             return _json(start_response, 405, {"error": "GET only"})
         if path == "/api/runs":
@@ -144,7 +148,12 @@ def _selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:
 
 def _json(start_response: StartResponse, status: int, payload: object) -> list[bytes]:
     body = json.dumps(payload).encode("utf-8")
-    reason = {200: "OK", 404: "Not Found", 405: "Method Not Allowed"}[status]
+    reason = {
+        200: "OK",
+        400: "Bad Request",
+        404: "Not Found",
+        405: "Method Not Allowed",
+    }[status]
     start_response(
         f"{status} {reason}",
         [("Content-Type", "application/json; charset=utf-8")],

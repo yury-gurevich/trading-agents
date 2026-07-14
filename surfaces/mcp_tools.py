@@ -10,10 +10,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from contracts.operator import CommandResult, HumanCommand
 from contracts.reporter import NarrativeRequest, TradeNarrative
-from contracts.supervisor import DispatchResult, MasterReport, StatusRequest
+from contracts.supervisor import MasterReport, StatusRequest
 from kernel import AgentMessage
+from surfaces.operator_tools import command_tool, operator_explanation
 from surfaces.queries.faults import open_faults
 from surfaces.queries.runs import recent_runs
 
@@ -27,7 +27,7 @@ ToolHandler = Callable[["SurfaceContext", ToolResult], ToolResult]
 def dispatch_tool(ctx: SurfaceContext, name: str, arguments: ToolResult) -> ToolResult:
     """Route one MCP tool call to the appropriate synchronous handler."""
     handlers: dict[str, ToolHandler] = {
-        "command": _cmd_command,
+        "command": command_tool,
         "status": _cmd_status,
         "runs": _cmd_runs,
         "incidents": _cmd_incidents,
@@ -42,34 +42,6 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: ToolResult) -> Tool
         return {"error": str(exc)}
 
 
-def _cmd_command(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
-    text = str(args["text"])
-    response = _request(
-        ctx,
-        "operator",
-        "interpret",
-        HumanCommand(text=text, actor="assistant", channel="mcp").model_dump(
-            mode="json"
-        ),
-    )
-    result = CommandResult.model_validate(response.payload)
-    if result.intent is None:
-        return {"accepted": False, "reason": result.message.summary}
-    intent = result.intent
-    if args.get("confirmed") is True:
-        intent = intent.model_copy(
-            update={"parameters": {**intent.parameters, "confirmed": "true"}}
-        )
-    dispatch = DispatchResult.model_validate(
-        _request(ctx, "supervisor", "dispatch_intent", intent.model_dump()).payload
-    )
-    return {
-        "accepted": dispatch.accepted,
-        "routed_to": dispatch.routed_to,
-        "reason": dispatch.rejection,
-    }
-
-
 def _cmd_status(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
     del args
     report = MasterReport.model_validate(
@@ -82,6 +54,7 @@ def _cmd_status(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
         "open_incidents": report.open_incidents,
         "pending_flags": report.pending_human_flags,
         "last_run": report.last_successful_run,
+        "summary": report.summary.summary,
     }
 
 
@@ -115,6 +88,13 @@ def _cmd_incidents(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
 
 
 def _cmd_explain(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
+    if "subject" in args:
+        return operator_explanation(
+            ctx,
+            str(args["subject"]),
+            str(args.get("run_id", "")),
+            request_id=str(args.get("request_id", "")) or None,
+        )
     position_id = str(args["position_id"])
     response = _request(
         ctx,

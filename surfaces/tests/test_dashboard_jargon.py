@@ -52,6 +52,7 @@ def test_api_display_strings_contain_no_internal_identifiers() -> None:
         "/api/fleet?run_id=guard",
         "/api/vitals?run_id=guard",
         "/api/verdict?run=guard",
+        "/api/chat",
         "/api/containers/execution/logs",
         *(
             f"/api/runs/guard/{view}"

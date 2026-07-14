@@ -55,6 +55,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 | Sprint | Goal | Blocked by |
 | --- | --- | --- |
+| S127 (fixpack) | Batch confirmed small defects/cleanups — collection open in [s127-fixpack-backlog.md](s127-fixpack-backlog.md) (first: DRIFT-022, run-scoped log drawer) | Collecting; packaged when the list justifies a sprint |
 | S43 (monitor realized PnL) | Monitor real `pnl_cents` → reporter re-point to $ | S55 already re-pointed; revisit when live broker wired |
 | P12/P13 DSPy harness | `PromptOptimizer` port + golden eval set + DSPy first impl | Plumbing complete first (build-plan P11/P14 exit) |
 

@@ -22,6 +22,12 @@
     return "<div class='card'><h4>" + esc(title) + "</h4><div class='statline'><span class='big'>" +
       esc(big) + "</span>" + badge + "</div><div class='sub'>" + sub + "</div></div>";
   }
+  /* Operator-readable UTC stamp: "2026-07-13 22:30 UTC"; non-timestamps pass through. */
+  function ts(value) {
+    var m = String(value == null ? "" : value).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+    return m ? m[1] + " " + m[2] + " UTC" : String(value == null ? "" : value);
+  }
+  window.tsShort = ts;
 
   /* Transient Azure read failures self-heal: one pending refetch per section. */
   var retryTimers = {};
@@ -49,7 +55,7 @@
       card("Service Bus", data.bus.status, chip(data.bus.status === "reachable" ? "good" : "idle", "activation evidence"),
         esc(data.bus.detail)),
       card("Dispatcher job", data.job.status, chip(data.job.status === "Succeeded" ? "good" : "warn", data.job.name),
-        "last " + esc(data.job.last_start || data.job.message || "unavailable") + " · next " + esc(data.job.next_fire)),
+        "last " + esc(ts(data.job.last_start) || data.job.message || "unavailable") + " · next " + esc(ts(data.job.next_fire))),
       card("Scale window", "scale-to-zero", chip("", "by design"),
         "master " + esc(data.scale_windows.master) + " · agents " + esc(data.scale_windows.agents)),
       card("Hardware cost · month to date", money(hw.total, hw.currency), chip(hw.available ? "good" : "warn", hw.available ? hw.currency : "unavailable"), services),
@@ -67,7 +73,7 @@
     var state = row.state === "healthy" || row.state === "succeeded" ? "good" : "warn";
     return "<tr><td class='mono'>" + esc(row.name) + (row.kind === "job" ? " " + chip("", "job") : "") +
       "</td><td class='mono'>:" + esc(row.image_tag) + "</td><td>" + replicas +
-      "</td><td class='mono'>" + esc(row.last_window || "—") + "</td><td>" + chip(state, row.state) +
+      "</td><td class='mono'>" + esc(ts(row.last_window) || "—") + "</td><td>" + chip(state, row.state) +
       "</td><td><button class='logbtn' data-container='" + esc(row.name) + "'>view logs</button></td></tr>";
   }
 
@@ -112,7 +118,7 @@
       vital(feeds.count ? "warn" : "good", feeds.count + " feeds degraded"),
       vital(data.spine.status === "reachable" && data.bus.status === "reachable" ? "good" : "warn", "spine " + data.spine.status + " · bus " + data.bus.status),
       vital(images.available ? "good" : "idle", imageText), vital(cost.total == null ? "warn" : "good", costText),
-      vital("idle", "next fire " + data.next_fire)].join("");
+      vital("idle", "next fire " + ts(data.next_fire))].join("");
   }
 
   function vital(status, text) {
@@ -127,7 +133,7 @@
     var runParam = currentRun ? "&run=" + encodeURIComponent(currentRun) : "";
     get("/api/containers/" + encodeURIComponent(name) + "/logs?tail=200" + runParam).then(function (data) {
       $("drawertitle").textContent = name + (data.scope === "run" ? " — selected run window" : " — last window");
-      $("drawersub").textContent = data.available ? "real data · " + data.window.start + " — " + data.window.end : data.message;
+      $("drawersub").textContent = data.available ? "real data · " + ts(data.window.start) + " — " + ts(data.window.end) : data.message;
       $("drawerbody").innerHTML = data.rows.length ? data.rows.map(function (row) {
         return "<div><span class='t'>" + esc(row.timestamp) + "</span>  <span class='lv-" + esc(row.level) + "'>" + esc(row.level.toUpperCase()) + "</span>  " + esc(row.message) + "</div>";
       }).join("") : "<p class='muted'>No log rows in the bounded window.</p>";

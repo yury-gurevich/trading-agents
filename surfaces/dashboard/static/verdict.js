@@ -13,7 +13,9 @@
     $("verdict-summary").textContent = data.summary;
     var day = String(data.run_id || "").match(/\d{4}-\d{2}-\d{2}/);
     $("verdict-run-day").textContent = day ? day[0] : (data.run_id || "—");
-    $("verdict-next-fire").textContent = data.next_fire || "unavailable";
+    $("verdict-next-fire").textContent = data.next_fire
+      ? (window.tsShort ? window.tsShort(data.next_fire) : data.next_fire)
+      : "unavailable";
 
     var warnings = data.warnings || [];
     var detail = $("warning-detail");

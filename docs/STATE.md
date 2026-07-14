@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-14 16:20 AEST · **Version:** 0.69.02 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
+**Last updated:** 2026-07-14 18:05 AEST · **Version:** 0.69.04 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,15 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chores (0.69.02→0.69.04) — FIXPACK ITEMS 2, 7, 8 SHIPPED.**
+  0.69.03: dead `compactSummary` client shim deleted — the hero renders server wording
+  verbatim (one wording source). 0.69.04: shared `ts()` renders `yyyy-MM-dd HH:mm UTC`
+  (decision: UTC, labeled) in the containers table, job card, vitals + hero next-fire, and
+  log drawer; Alpaca login link (new tab, `noopener`) in the Positions panel header.
+  PROVEN: `make ci` green each; live screenshot shows the readable stamps + the link.
+  Backlog rows 2/7/8 closed; row 9 added (live bus test fails instead of skipping without
+  the azure extra — importorskip guard needed).
 
 - **Chore (0.69.01→0.69.02) — LOG DRAWER FOLLOWS THE SELECTED RUN (DRIFT-022 CORRECTED).**
   `/api/containers/<name>/logs` accepts `run=<id>`, resolves the day from the RunRequest,

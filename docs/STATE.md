@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-14 12:20 AEST · **Version:** 0.69.00 · **S125 SHIPPED (operator chat live, merged `9420b78`); S126 (resume-from-stage + DL-46 currency judgement + tri-state bus health) packaged for handover — the last DL-47 slice.**
+**Last updated:** 2026-07-14 14:40 AEST · **Version:** 0.69.01 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,18 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Chore (0.69.00→0.69.01) — FIXPACK 5+6 EARLY: SECURITY GATE UN-SILENCED; PORT BINDS LOUDLY.**
+  The five error-level CodeQL alerts that failed the Security Findings gate on every PR are
+  fixed at the source: dashboard statics serve from an import-time allowlist dict (request
+  paths are only dict keys — no user input reaches a filesystem path or response header,
+  closing 3× `py/path-injection` + `py/http-response-splitting`); Azure degradation messages
+  render `AzureReadError.public_message` (a structured attribute), never `str(exc)`
+  (closing `py/stack-trace-exposure`). `_ThreadingWSGIServer` sets `allow_reuse_address=False`
+  + a clear taken-port error, so a stale instance can never silently keep answering the
+  browser (fixpack item 5's split-brain). PROVEN: `make ci` green; live checks — traversal
+  paths 404, second instance on the same port exits loudly; gate-green proof lands with the
+  next PR's Security Findings run after CodeQL rescans main.
 
 - **S125 (DL-47 slice 4, 0.68.02→0.69.00) — THE OPERATOR IS AVAILABLE IN THE DASHBOARD.**
   `POST /api/chat` exposes only the existing bounded operator dispatch with dashboard-channel

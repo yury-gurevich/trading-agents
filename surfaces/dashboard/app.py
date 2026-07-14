@@ -30,6 +30,17 @@ if TYPE_CHECKING:
     from surfaces.dashboard.azure_port import AzureReader
 
 _STATIC = Path(__file__).parent / "static"
+# Allowlist computed at import: request paths are only ever dict keys, so no
+# user input can reach a filesystem path or a response header (new static
+# files require a restart to be served).
+_STATIC_FILES: dict[str, tuple[Path, str]] = {
+    entry.name: (
+        entry,
+        mimetypes.guess_type(entry.name)[0] or "application/octet-stream",
+    )
+    for entry in _STATIC.iterdir()
+    if entry.is_file()
+}
 
 _RUN_VIEWS: dict[str, Callable[[GraphStore, str], object]] = {
     "verdict": projections.run_verdict,
@@ -163,9 +174,9 @@ def _json(start_response: StartResponse, status: int, payload: object) -> list[b
 
 def _static(path: str, start_response: StartResponse) -> list[bytes]:
     name = "index.html" if path == "/" else path.lstrip("/")
-    target = (_STATIC / name).resolve()
-    if not target.is_relative_to(_STATIC.resolve()) or not target.is_file():
+    entry = _STATIC_FILES.get(name)
+    if entry is None:
         return _json(start_response, 404, {"error": f"not found {path}"})
-    content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+    target, content_type = entry
     start_response("200 OK", [("Content-Type", content_type)])
     return [target.read_bytes()]

@@ -120,11 +120,13 @@
   }
 
   function openLogs(name) {
-    $("drawertitle").textContent = name + " — last window";
+    $("drawertitle").textContent = name;
     $("drawersub").textContent = "live Log Analytics · bounded tail";
     $("drawerbody").innerHTML = "<p class='muted'>Loading…</p>";
     $("drawer").classList.add("open"); $("drawer").setAttribute("aria-hidden", "false"); $("scrim").classList.add("on");
-    get("/api/containers/" + encodeURIComponent(name) + "/logs?tail=200").then(function (data) {
+    var runParam = currentRun ? "&run=" + encodeURIComponent(currentRun) : "";
+    get("/api/containers/" + encodeURIComponent(name) + "/logs?tail=200" + runParam).then(function (data) {
+      $("drawertitle").textContent = name + (data.scope === "run" ? " — selected run window" : " — last window");
       $("drawersub").textContent = data.available ? "real data · " + data.window.start + " — " + data.window.end : data.message;
       $("drawerbody").innerHTML = data.rows.length ? data.rows.map(function (row) {
         return "<div><span class='t'>" + esc(row.timestamp) + "</span>  <span class='lv-" + esc(row.level) + "'>" + esc(row.level.toUpperCase()) + "</span>  " + esc(row.message) + "</div>";

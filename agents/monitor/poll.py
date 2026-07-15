@@ -55,7 +55,8 @@ def monitor_pm_node(
     )
     assert pm_run is not None  # ExecutionRun is always linked from its PMRun.
     pm_run_id = pm_run.key
-    positions = open_run_positions(graph, settings, sink, source_run_id=pm_run_id)
+    position_source = str(pm_run.props.get("linked_from_key", pm_run_id))
+    positions = open_run_positions(graph, settings, sink, source_run_id=position_source)
     prices = _prices_from_graph(graph, pm_run)
     result = evaluate_and_write(
         graph,

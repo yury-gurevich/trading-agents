@@ -40,6 +40,8 @@ def test_chat_validation_and_result_error_branches() -> None:
     )
     missing_run = _body({"message": "hello"})
     assert handle_chat(missing_run, context)[0] == 400
+    invalid_request_id = _body({"message": "hello", "run_id": "r", "request_id": 1})
+    assert handle_chat(invalid_request_id, context)[0] == 400
     assert _quick_result("status", {"error": "status down"}) == {
         "outcome": "refused",
         "message": "status down",

@@ -48,14 +48,22 @@ def handle_chat(
     message = payload.get("message")
     run_id = payload.get("run_id")
     confirmed = payload.get("confirmed", False)
+    request_id = payload.get("request_id")
     if not isinstance(message, str) or not message.strip():
         return 400, {"error": "message is required"}
     if not isinstance(run_id, str) or not run_id.strip():
         return 400, {"error": "run_id is required"}
     if not isinstance(confirmed, bool):
         return 400, {"error": "confirmed must be true or false"}
-    result = _dispatch(context, message.strip(), run_id.strip(), confirmed)
-    return 200, {"connected": True, "turn": _turn(result, run_id)}
+    if request_id is not None and not isinstance(request_id, str):
+        return 400, {"error": "request_id must be a string"}
+    request_id = request_id or uuid4().hex
+    result = _dispatch(context, message.strip(), run_id.strip(), confirmed, request_id)
+    return 200, {
+        "connected": True,
+        "request_id": request_id,
+        "turn": _turn(result, run_id),
+    }
 
 
 def _availability(context: SurfaceContext | None) -> dict[str, object]:
@@ -65,10 +73,13 @@ def _availability(context: SurfaceContext | None) -> dict[str, object]:
 
 
 def _dispatch(
-    context: SurfaceContext, message: str, run_id: str, confirmed: bool
+    context: SurfaceContext,
+    message: str,
+    run_id: str,
+    confirmed: bool,
+    request_id: str,
 ) -> dict[str, object]:
     tool = _QUICK_TOOLS.get(message.lower(), "command")
-    request_id = uuid4().hex
     if tool == "explain":
         return dispatch_tool(
             context,

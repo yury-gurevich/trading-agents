@@ -25,15 +25,20 @@ soon as the stalled agent runs again — no artifact surgery needed.
 3. Verify: `scripts/trace_run.py --run-id <id>` reaches 7/7 and `scripts/accept.py` gives a
    verdict; report both.
 
-## Case 2 — redo a *completed* stage (destructive; operator approval + caution)
+## Case 2 — redo a completed stage (bounded supersession)
 
-Redoing means the stage's artifact must be superseded, not edited. Until S124 ships the bounded
-resume primitive, treat this as **planning-agent work**: it requires clearing the stage's
-artifact nodes *and* their consumption edges in dependency order, and execution's broker
-idempotency (`client_order_id`) means a redone PM stage submits **new** orders — real broker
-state. Do not improvise this from a chat session; file it back to the operator with what you
-would clear and why. (S124 will make this a logged one-click with Airflow "clear + downstream"
-semantics.)
+Use the selected run's **Resume from &lt;stage&gt;** control in the dashboard. It posts through
+operator chat, echoes the typed `resume` intent, and requires explicit confirmation. The
+bounded primitive creates a child `RunRequest` with a `RESUMES` edge, links immutable upstream
+artifacts, and lets stages from the selected point re-derive under the child run. It never
+deletes graph history or edits existing properties.
+
+For provider, scanner, analyst, portfolio manager, or execution, the confirmation states the
+broker consequence: **re-running from portfolio manager will submit new orders at the broker**.
+That consequence is real because the child identity produces new broker idempotency keys. Stop
+unless the operator explicitly confirms it. Monitor or reporter resumes do not submit orders.
+After confirmation, wait for the fleet's next wake or use the operator-approved manual wake in
+Case 1; then trace and accept the child run id.
 
 ## Case 3 — the day never fired
 

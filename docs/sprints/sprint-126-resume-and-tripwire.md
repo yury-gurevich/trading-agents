@@ -176,13 +176,32 @@ queued; and tier-2 repair (repo-checkout sessions, rebuild buttons) — later sl
 
 ```text
 CLOSEOUT — Sprint 126
-Branch / merge commit:   sprint-126-resume-and-tripwire / <pending>
-make ci:                 <result + counts>
-Functionality check:     <live resume proof + currency=behind proof + bus tri-state proof +
-                          where recorded + retained-vs-torn-down inventory>
+Branch / merge commit:   sprint-126-resume-and-tripwire / merge pending (operator's call;
+                         merge-to-main is the deploy trigger)
+make ci:                 all 9 steps green, exit 0 — 1566 passed, 5 skipped, 100.00% coverage;
+                         pip-audit reports only the accepted diskcache baseline; re-run by the
+                         planning agent 2026-07-15 on the exact handback tree
+Functionality check:     live resume from monitor on sched-2026-07-13 -> child
+                         sched-2026-07-13-resume-monitor 7/7 (5 upstream stages LINKED_FROM, only
+                         monitor/reporter re-derived, 4 holds, 0 broker orders); deploy currency
+                         judged BEHIND from DeployRecord(:s121, 15e9688) vs observed fleet :s121
+                         vs newest main build (re-verified 2026-07-15 against build 29329555693 /
+                         a5bbb5f — still behind); bus unverified (not unreachable) with Azure
+                         credentials unavailable, light stayed GREEN. Recorded in
+                         docs/laws/functionality-checks.md (2026-07-14 row, completed ✅) with the
+                         full node inventory + screenshots in
+                         docs/reports/sprint-126-resume-and-tripwire/ (live-proof.md,
+                         resume-child-run.png, bus-unverified.png). All graph writes retained as
+                         audit/provenance/monitor history; nothing deleted or overwritten; local
+                         servers stopped, ports verified released.
 Version:                 0.69.00 → 0.70.00 (MINOR); uv.lock refreshed
-DL-46 status:            <recorded decision line as committed>
-Deviations from spec:    <none | list>
+DL-46 status:            "Decision (S126). C shipped in S126; A remains the end state." — recorded
+                         under DL-46 in docs/design-log.md, status DECIDED (2026-07-14)
+Deviations from spec:    1) screenshots were captured post-handback by the planning agent
+                         (2026-07-15, headless Chrome) because the coding environment had no
+                         browser surface; 2) the closeout + return notes were completed by the
+                         planning agent — the handback arrived with them unfilled; the API/graph
+                         evidence was independently re-verified live before acceptance.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -194,3 +213,36 @@ not accepted while this section is empty or the closeout placeholder is unfilled
 handback must prove, not restate intent).
 
 <!-- return notes go below this line -->
+
+**Return notes (completed by the planning agent, 2026-07-15).** The coding agent handed back with
+the closeout placeholder unfilled, this section empty, and screenshots pending; instead of bouncing
+the handback, the planning agent re-verified everything live and completed the evidence (deviations
+1–2 in the closeout). What the next session should know:
+
+- **The tripwire proved itself during closeout.** Between the coding run (newest main build
+  `29299680862` / `9420b78`) and screenshot capture (`29329555693` / `a5bbb5f`), main moved again
+  via backlog merges — and the judgement stayed `behind` with `fleet_matches_record=true`,
+  `main_matches_record=false`, tracking the new build with no code change. The fleet is still on
+  `:s121`; a DL-46 retag (`/deploy-fleet`) is the operator's call and now must append a
+  `DeployRecord` (the skill was updated in this sprint).
+- **Four warn-class "Confirm the typed resume intent" flags render pending** in the screenshot —
+  leftovers of the live check's confirm attempts (suffixes listed in `live-proof.md`; one carries
+  the portfolio-manager broker-consequence wording). They are inert (an unconfirmed confirm flag
+  never dispatches). Caveat: this branch's flag view is resolution-blind; main's 0.69.05
+  (`chore-flag-lifecycle-truth`, merged after this branch was cut) makes flag views honour
+  `FlagResolution`, so the already-resolved ones among these stop reading pending once main is
+  merged in. The 3 critical broker-divergence flags are genuinely pending operator ack.
+- **Main moved while this branch was in flight:** origin/main is 12 commits ahead
+  (five dashboard fixpack chores, 0.69.01–0.69.05, base `06089a2` → `a5bbb5f`), touching the same
+  dashboard files this sprint touches. Expect a real merge (pyproject: keep 0.70.00 — still the
+  correct MINOR bump from 0.69.x) and re-run `make ci` on the merge result before pushing main.
+- **`sched-2026-07-14` ran GREEN/PASS with 2 orders** (observed live during capture), and its
+  run-start snapshot raised a fresh critical divergence flag (missing graph Position for USB,
+  qty mismatches AMD/BAC) that the monitor then reconciled — positions table showed graph=broker
+  in sync across all 7 tickers afterward. The critical flags await operator ack.
+- **Bus health nuance:** with Azure unavailable the graph still answered "260 active activation
+  records", so `unverified` (not `unreachable`) rendered exactly per decision 6, and the master
+  light stayed GREEN in the screenshot — the S124 binary-light rule held.
+- Follow-ups to queue: DL-46 option A (deploy step in CI) as the recorded end state; the S125
+  quant-evidence follow-up (analyst `ScoreBreakdown.metrics` persistence) remains separately
+  queued, untouched here.

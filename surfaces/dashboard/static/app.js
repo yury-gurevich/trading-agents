@@ -15,6 +15,7 @@
 
   function renderStages(stages) {
     var host = $("tradeflow");
+    var resumable = stages.some(function (stage) { return stage.reached; });
     host.innerHTML = "";
     stages.forEach(function (s, i) {
       var checks = (s.checks || []).map(function (c) {
@@ -32,6 +33,8 @@
         "<div class='who'>" + esc(STAGE_LABEL[s.name] || s.name) + "</div>" +
         "<div class='num'>" + (s.reached ? nums || "—" : "NOT REACHED") + "</div>" +
         "<div class='verdict'>" + (s.reached ? checks || chip("good", "✓ reached") : chip("crit", "✕ not reached")) + "</div>" +
+        (resumable ? "<button class='resume-action' type='button' data-resume-stage='" +
+          esc(s.name) + "'>Resume from " + esc(STAGE_LABEL[s.name] || s.name) + "</button>" : "") +
         "</div>";
       node.title = (s.outputs || []).join("\n");
       host.appendChild(node);
@@ -127,6 +130,14 @@
           .setAttribute("aria-current", id === v ? "true" : "false");
       });
     });
+  });
+
+  $("tradeflow").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-resume-stage]");
+    if (!button) return;
+    window.dispatchEvent(new CustomEvent("dashboard:resume-request", {
+      detail: { stage: button.getAttribute("data-resume-stage") }
+    }));
   });
 
   get("/api/runs").then(function (runs) {

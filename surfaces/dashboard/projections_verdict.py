@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from kernel import GraphStore
     from surfaces.dashboard.azure_port import AzureReader
+    from surfaces.dashboard.github_builds import GitHubReader
     from surfaces.dashboard.settings import DashboardSettings
 
 
@@ -30,11 +31,12 @@ def verdict_projection(
     settings: DashboardSettings,
     *,
     now: datetime | None = None,
+    github: GitHubReader | None = None,
 ) -> dict[str, object]:
     """Read existing evidence and project the selected run's master verdict."""
     acceptance = run_verdict(graph, run_id)
     stages = run_stages(graph, run_id)
-    vitals = vitals_projection(graph, azure, settings, run_id, now=now)
+    vitals = vitals_projection(graph, azure, settings, run_id, now=now, github=github)
     recovery = run_recovery(graph, run_id)
     return project_verdict(acceptance, stages, vitals, recovery)
 
@@ -75,9 +77,10 @@ def _faults(
     faults: list[dict[str, str]] = []
     if verdict == "FAIL":
         faults.append({"code": "acceptance", "message": "Acceptance failed"})
-    for code, label in (("spine", "Graph spine"), ("bus", "Activation bus")):
-        if _nested_value(vitals, code, "unavailable", key="status") != "reachable":
-            faults.append({"code": code, "message": f"{label} is unreachable"})
+    if _nested_value(vitals, "spine", "unavailable", key="status") != "reachable":
+        faults.append({"code": "spine", "message": "Graph spine is unreachable"})
+    if _nested_value(vitals, "bus", "unverified", key="status") == "unreachable":
+        faults.append({"code": "bus", "message": "Activation bus is unreachable"})
     escalations = recovery.get("escalations", [])
     if isinstance(escalations, list) and any(
         isinstance(row, Mapping) and row.get("status") == "open" for row in escalations
@@ -98,6 +101,8 @@ def _warnings(
     pending = _as_int(vitals.get("pending_flags"))
     degraded = _as_int(_nested_value(vitals, "degraded_feeds", 0, key="count"))
     untracked = _nested_value(vitals, "mtd_cost", [], key="untracked_llm_models")
+    bus = _nested_value(vitals, "bus", "unverified", key="status")
+    currency = _nested_value(vitals, "deploy_currency", "unverified", key="status")
     if pending:
         rows.append({"code": "pending_flags", "message": f"{pending} pending flags"})
     if degraded:
@@ -105,6 +110,21 @@ def _warnings(
     if isinstance(untracked, list) and untracked:
         rows.append(
             {"code": "untracked_spend", "message": "Some model spend is untracked"}
+        )
+    if bus == "unverified":
+        rows.append(
+            {"code": "bus_unverified", "message": "Activation bus is unverified"}
+        )
+    if currency == "behind":
+        rows.append(
+            {"code": "deploy_behind", "message": "Fleet deploy currency is behind"}
+        )
+    elif currency == "unverified":
+        rows.append(
+            {
+                "code": "deploy_unverified",
+                "message": "Fleet deploy currency is unverified",
+            }
         )
     breaches = acceptance.get("breaches", [])
     if isinstance(breaches, list):

@@ -58,6 +58,7 @@ def _vitals(*, fault: bool, warning: bool) -> dict[str, object]:
     return {
         "spine": {"status": "unavailable" if fault else "reachable"},
         "bus": {"status": "reachable"},
+        "deploy_currency": {"status": "current"},
         "pending_flags": 1 if warning else 0,
         "degraded_feeds": {"count": 0},
         "mtd_cost": {"untracked_llm_models": []},
@@ -81,7 +82,7 @@ def test_full_master_light_truth_table_with_fake_store(
     monkeypatch.setattr(
         projection,
         "vitals_projection",
-        lambda graph, azure, settings, run, now=None: _vitals(
+        lambda graph, azure, settings, run, now=None, github=None: _vitals(
             fault=fault, warning=warning
         ),
     )

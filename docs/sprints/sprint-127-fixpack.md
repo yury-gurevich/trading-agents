@@ -146,7 +146,9 @@ deliberation domain, graduates to its own sprint; anything tier-2 (wake-fleet, r
 
 ```text
 CLOSEOUT — Sprint 127
-Branch / merge commit:   sprint-127-fixpack / pending (not merged per kickoff)
+Branch / merge commit:   sprint-127-fixpack / merged `32c73cc` (2026-07-15, planning-agent
+                         review: base+version+closeout verified, core diff reviewed, own
+                         make ci exit 0 at 1584/5/100%, confirm-dialog screenshot inspected)
 make ci:                 exit 0; 1584 passed, 5 skipped, 100.00% coverage;
                           pip-audit found the accepted diskcache baseline and was ignored by
                           the Makefile; detect-secrets passed

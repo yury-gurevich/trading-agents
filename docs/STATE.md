@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-15 16:20 AEST · **Version:** 0.70.00 · **S126 SHIPPED (merged `297354b`) + FLEET DEPLOYED `:s126` — the DL-47 arc is complete and live. S127 fixpack packaged for Codex (rows 4/9/10/11/12, targets 0.71.00) under the new DL-48 handback/drift/secrets contract.**
+**Last updated:** 2026-07-15 18:30 AEST · **Version:** 0.71.00 · **S127 FIXPACK SHIPPED (merged `32c73cc`) — the first handback executed AND verified under the DL-48 contract, bounced-nothing. Fleet on `:s126`; flags are now actionable from the dashboard.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,21 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S127 (fixpack, 0.70.00→0.71.00) — FLAGS ARE ACTIONABLE; CURRENCY JUDGES THE TEMPLATE.**
+  Backlog rows 4/9/10/11/12 in one sprint: per-flag "Acknowledge" through the audited operator
+  `approve` command with the S125 confirm machinery (typed intent echoed verbatim; result is an
+  appended `FlagResolution`); deterministic `approve <target>` routing normalizer + regression
+  table (row 11); deploy currency judges the dispatcher by its *template* image with the last
+  execution kept as evidence — a fresh retag now reads `current` immediately (row 12, proven
+  live pre-fire: template `:s126`/execution `:s121` → `current`); verdict warnings deep-link to
+  their evidence panels; the bus integration test skips without the azure extra. Live check
+  acknowledged exactly one stale warn flag (`15bb3e29df185949`, pending 2→1); the one critical
+  divergence flag remains for the operator. Evidence + 5 screenshots in
+  `docs/reports/sprint-127-fixpack/`. **First sprint under the DL-48 contract — drift rule
+  held (main unmoved at `a823763`), closeout + return notes arrived filled, nothing bounced.**
+  Codex-built; planning review re-ran `make ci` (exit 0, 1584 passed / 5 skipped / 100%).
+  Merged `32c73cc`.
 
 - **S126 (DL-47 slice 5 FINAL, 0.69.00→0.70.00) — RUNS RESUME FROM A STAGE; DEPLOY CURRENCY IS
   JUDGED.** Resume is supersession, never deletion: a child
@@ -229,17 +244,16 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `main` at 0.70.00. **S126 SHIPPED (merged `297354b`; GitHub CI + image build + CodeQL green)
-— THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).**
+On `main` at 0.71.00. **S127 FIXPACK SHIPPED (merged `32c73cc`; local + branch + main CI green)
+on top of the completed DL-47 arc (S122–S126, S126 merged `297354b`).**
 **THE FLEET IS DEPLOYED AT `:s126`** (operator-directed retag, 2026-07-15 ~15:50 AEST): images
 built at `0773ae8` (run `29392150781`, all 14 pushed), all 13 apps + `dispatcher-cron` updated
 `Succeeded`, env + KEDA scale rules verified intact, and
 `DeployRecord deploy:2026-07-15T05:49:41…:s126:0773ae8…` appended after verification. The retag
 also **live-proved the rotated GHCR pull PAT** — every new revision pulled its `:s126` image
-with the new credential. Deploy currency still reads `behind` for an honest-but-surprising
-reason: the judgement takes the dispatcher's tag from its latest *execution* (last night's
-`:s121` run); it flips to `current` at tonight's 22:30 UTC fire — semantics decision queued as
-fixpack backlog row 12.
+with the new credential. S127 then fixed the dispatcher-tag semantics (template decides, last
+execution is evidence — backlog row 12), so currency judged `current` even before tonight's
+first `:s126` execution.
 Same session: the `trading-agents-ghcr-pull` PAT was rotated — tested first (GHCR manifest pull
 200 + Actions read 200), then placed in `.env` (`GITHUB_TOKEN`, read by the deploy-currency
 judgement), `infra/ghcr.local.json`, the `GHCR_PAT` repo secret, and the registry credentials on
@@ -247,12 +261,14 @@ all 13 Container Apps + `dispatcher-cron`; the live pull proof is tonight's 22:3
 Pending operator attention in the graph: 3 critical broker-divergence flags (the 07-14 run-start
 flag was reconciled by monitor but awaits ack) + stale inert confirm-intent warn flags from the
 S126 live check (partly resolution-view artifacts — see the sprint doc's Return notes).
-**S127 PACKAGED for Codex** (`docs/sprints/sprint-127-fixpack.md`, 2026-07-15): backlog rows
-4/9/10/11/12 — flag ack/resolve through the audited `approve` command, `approve` routing fix,
-template-based dispatcher currency semantics, warning deep-links, azure-extra test skip. The
-kickoff enforces the **DL-48** contract (drift reconciliation before handback, closeout/return
-notes as a bounced-not-repaired gate, secrets never through the worktree — also now a CLAUDE.md
-hard rule). Session diagnosis behind it is design-log **DL-48**.
+**S127 SHIPPED same day** (merged `32c73cc`, 0.71.00) — see Recent. The DL-48 contract worked
+on its first run: drift rule held, closeout arrived filled, planning review verified rather
+than repaired.
+Note: images for `32c73cc` build on merge, so the currency judgement will read **behind** again
+(fleet `:s126`, record `0773ae8` vs newest main build `32c73cc`) — correct and intended; retag
+via `/deploy-fleet` when the S127 dashboard fixes should reach the deployed fleet.
+Pending in the graph: **1 critical broker-divergence flag** (operator's ack — now doable from
+the dashboard); tonight's 22:30 UTC fire is the rotated-PAT + `:s126` first scheduled run.
 Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
 (Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
 `docs/laws/drift-register.md`, not yet packaged.

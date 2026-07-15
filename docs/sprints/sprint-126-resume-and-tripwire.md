@@ -176,8 +176,10 @@ queued; and tier-2 repair (repo-checkout sessions, rebuild buttons) — later sl
 
 ```text
 CLOSEOUT — Sprint 126
-Branch / merge commit:   sprint-126-resume-and-tripwire / merge pending (operator's call;
-                         merge-to-main is the deploy trigger)
+Branch / merge commit:   sprint-126-resume-and-tripwire / merged `297354b` (2026-07-15,
+                         operator-directed; fixpack 0.69.01–0.69.05 integrated first via
+                         `3c8060c`, six conflicts hand-resolved, `make ci` 1569/5/100% on the
+                         merge result; main CI + image build + CodeQL green after push)
 make ci:                 all 9 steps green, exit 0 — 1566 passed, 5 skipped, 100.00% coverage;
                          pip-audit reports only the accepted diskcache baseline; re-run by the
                          planning agent 2026-07-15 on the exact handback tree

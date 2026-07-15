@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-15 13:10 AEST · **Version:** 0.70.00 · **S126 BRANCH COMPLETE + fixpack chores 0.69.01–0.69.05 integrated (this merge); resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health — the last DL-47 slice; merging to main.**
+**Last updated:** 2026-07-15 13:50 AEST · **Version:** 0.70.00 · **S126 SHIPPED (merged `297354b`, CI + images + CodeQL green) — resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health. THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -41,7 +41,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   re-verified by the planning agent (see the sprint doc's Return notes). The merge integrated
   fixpack chores 0.69.01–0.69.05 (below): `public_message` carried into the split-out
   `projections_azure.py`, loud port bind + `ts()` timestamps kept alongside the github wiring
-  and deploy-currency chip.
+  and deploy-currency chip; `make ci` on the merge result 1569 passed / 5 skipped / 100%.
+  **Merged `297354b`** (GitHub CI + image build + CodeQL all green). **DL-47 arc complete.**
 
 - **Chore (0.69.04→0.69.05) — FLAG VIEWS HONOUR RESOLUTIONS.** Flag views join
   `FlagResolution`; resolved flags stop reading pending across the dashboard (`412dd82`,
@@ -72,7 +73,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   closing 3× `py/path-injection` + `py/http-response-splitting`); Azure degradation messages
   render `AzureReadError.public_message` (a structured attribute), never `str(exc)`
   (closing `py/stack-trace-exposure`). `_ThreadingWSGIServer` sets `allow_reuse_address=False`
-  + a clear taken-port error, so a stale instance can never silently keep answering the
+  plus a clear taken-port error, so a stale instance can never silently keep answering the
   browser (fixpack item 5's split-brain). PROVEN: `make ci` green; live checks — traversal
   paths 404, second instance on the same port exits loudly; gate-green proof lands with the
   next PR's Security Findings run after CodeQL rescans main.
@@ -228,22 +229,20 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `sprint-126-resume-and-tripwire` at 0.70.00 (**S126 BRANCH COMPLETE; VERIFIED; NOT MERGED**).
-The resume primitive, operator/supervisor wiring, dashboard affordance, `DeployRecord` currency
-judgement, and tri-state bus health are complete; closeout + return notes are filled; `make ci`
-is green at 1566 passed / 5 skipped / 100% (planning-agent re-run). Main remains the merge
-authority — merge-to-main is the deploy trigger. **The DL-47 dashboard arc is complete on
-branches (S122–S126).**
-The running fleet stays on `:s121` and the dashboard now *measurably* says so: deploy currency
-reads **behind**. A DL-46 retag is the operator's call via `/deploy-fleet`, which now must append
-a `DeployRecord`.
+On `main` at 0.70.00. **S126 SHIPPED (merged `297354b`; GitHub CI + image build + CodeQL green)
+— THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).** Images for `297354b` are built and pushed;
+the running fleet stays on `:s121`, and the dashboard now *measurably* says so: deploy currency
+reads **behind**. The natural next step is a DL-46 retag via `/deploy-fleet` (operator's call),
+which now must append a `DeployRecord` — that flips the judgement to `current` and puts the
+whole DL-47 dashboard, S126 resume affordance included, on the deployed fleet.
+Same session: the `trading-agents-ghcr-pull` PAT was rotated — tested first (GHCR manifest pull
+200 + Actions read 200), then placed in `.env` (`GITHUB_TOKEN`, read by the deploy-currency
+judgement), `infra/ghcr.local.json`, the `GHCR_PAT` repo secret, and the registry credentials on
+all 13 Container Apps + `dispatcher-cron`; the live pull proof is tonight's 22:30 UTC scale-up.
 Pending operator attention in the graph: 3 critical broker-divergence flags (the 07-14 run-start
 flag was reconciled by monitor but awaits ack) + stale inert confirm-intent warn flags from the
 S126 live check (partly resolution-view artifacts — see the sprint doc's Return notes).
-This merge integrates main's fixpack chores 0.69.01–0.69.05 (six conflicts hand-resolved;
-`public_message` carried into the split-out `projections_azure.py`); `make ci` re-run on the
-merge result before pushing. S127 fixpack backlog keeps collecting in
-`docs/sprints/s127-fixpack-backlog.md`.
+S127 fixpack backlog keeps collecting in `docs/sprints/s127-fixpack-backlog.md`.
 Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
 (Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
 `docs/laws/drift-register.md`, not yet packaged.
@@ -258,9 +257,9 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   master verdict + `NO_TRADE` acceptance verdict + operator-language sweep (redline r2, reqs
   13–15). **S125 SHIPPED 2026-07-13 (0.69.00, merged `9420b78`)** — tier-1 bounded
   operator chat only. The repair agent remains a later tier and was deliberately not exposed.
-  **S126 BRANCH COMPLETE 2026-07-15 (0.70.00, pending merge)** — resume-from-stage
+  **S126 SHIPPED 2026-07-15 (0.70.00, merged `297354b`)** — resume-from-stage
   (supersession + `RESUMES` lineage) + `DeployRecord` deploy-currency judgement + tri-state bus
-  health. **With S126 merged the arc closes.** Design spec:
+  health. **THE ARC IS CLOSED.** Design spec:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).
 - **Watch outcome (2026-07-09 22:30 UTC run, verified 2026-07-10):** cron fired (3/3 nights),
   7/7 stages on `:s121`; **S120 reconciliation proven live** — critical divergence Flag raised

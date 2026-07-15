@@ -44,15 +44,27 @@ class _ChatLLM:
             )
         if "start scan" in user:
             return '{"outcome":"intent","family":"run","parameters":{"stage":"paper"}}'
+        if "resume from provider" in user.lower():
+            return (
+                '{"outcome":"intent","family":"resume",'
+                '"parameters":{"from_stage":"provider"}}'
+            )
         return (
             '{"outcome":"intent","family":"explain",'
             '"parameters":{"subject":"how the selected run performed"}}'
         )
 
 
-def _post(app: Any, message: str, *, confirmed: bool = False) -> dict[str, Any]:
+def _post(
+    app: Any, message: str, *, confirmed: bool = False, request_id: str | None = None
+) -> dict[str, Any]:
     payload = json.dumps(
-        {"message": message, "run_id": "chat-run", "confirmed": confirmed}
+        {
+            "message": message,
+            "run_id": "chat-run",
+            "confirmed": confirmed,
+            "request_id": request_id,
+        }
     ).encode()
     status, _, body = invoke(app, "/api/chat", "POST", payload)
     assert status == "200 OK"

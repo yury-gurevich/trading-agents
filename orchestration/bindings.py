@@ -25,6 +25,7 @@ from agents.researcher import ResearcherAgent
 from agents.scanner import ScannerAgent
 from agents.scanner.universe import StaticUniverse
 from agents.supervisor import SupervisorAgent
+from orchestration.resume import bind_resume_run
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
@@ -45,6 +46,7 @@ def bind_paper_loop_agents(
     sink: FaultSink,
 ) -> None:
     """Bind provider through supervisor to the injected bus."""
+    bind_resume_run(bus, graph)
     provider_settings = ProviderSettings(
         max_staleness_days=settings.provider_max_staleness_days
     )

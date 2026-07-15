@@ -48,7 +48,7 @@
     return item;
   }
 
-  function renderTurn(turn, original) {
+  function renderTurn(turn, original, requestId) {
     var item = addMessage("operator", turn.message || "No response.");
     if (turn.outcome !== "needs_confirmation" || !turn.typed_intent) return;
     var intent = document.createElement("pre");
@@ -60,13 +60,13 @@
     confirm.textContent = "Confirm";
     confirm.addEventListener("click", function () {
       confirm.disabled = true;
-      send(original, true);
+      send(original, true, requestId);
     });
     item.appendChild(intent);
     item.appendChild(confirm);
   }
 
-  function send(message, confirmed) {
+  function send(message, confirmed, requestId) {
     if (working || !selectedRun()) return;
     addMessage("you", confirmed ? "Confirm: " + message : message);
     setWorking(true);
@@ -76,7 +76,8 @@
       body: JSON.stringify({
         message: message,
         run_id: selectedRun(),
-        confirmed: Boolean(confirmed)
+        confirmed: Boolean(confirmed),
+        request_id: requestId || null
       })
     }).then(function (response) {
       return response.json();
@@ -86,7 +87,7 @@
         return;
       }
       if (data.error) throw new Error(data.error);
-      renderTurn(data.turn, message);
+      renderTurn(data.turn, message, data.request_id);
     }).catch(function (error) {
       addMessage("operator", "Chat could not complete this turn: " + error.message);
     }).finally(function () {
@@ -95,6 +96,7 @@
   }
 
   function disconnect(message) {
+    document.body.classList.remove("resume-wired");
     dock.classList.remove("connected");
     state.textContent = message || "chat is not connected on this deployment";
     transcript.replaceChildren();
@@ -117,6 +119,11 @@
   window.addEventListener("dashboard:run-selected", function () {
     transcript.replaceChildren();
   });
+  window.addEventListener("dashboard:resume-request", function (event) {
+    if (!dock.classList.contains("connected")) return;
+    if (body.hidden) toggle();
+    send("Resume from " + event.detail.stage, false);
+  });
 
   fetch("/api/chat").then(function (response) {
     return response.json();
@@ -126,6 +133,7 @@
       return;
     }
     dock.classList.add("connected");
+    document.body.classList.add("resume-wired");
     state.textContent = "";
     asks.hidden = false;
     form.hidden = false;

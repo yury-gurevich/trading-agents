@@ -46,8 +46,17 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    az containerapp show -n scanner -g trading-agents --query "{env:properties.template.containers[0].env[].name, scale:properties.template.scale.rules[].name}"
    ```
 
-5. **Record it** (LAW-02): note tag, commit, verification output wherever the work is being
-   tracked (STATE.md if a planning session; the PR/chat if a repair session).
+5. **Record the verified deploy fact** (LAW-02) on the graph, then note the same tag,
+   commit, and verification output wherever the work is being tracked:
+
+   ```bash
+   PYTHONPATH=. uv run python scripts/record_deploy.py \
+     --tag <tag> --git-sha <full-built-commit-sha> --actor <operator>
+   ```
+
+   Run this only after step 4 proves every target is on that tag. The append-only
+   `DeployRecord` is the dashboard's currency evidence; never backfill a tag or SHA
+   from inference.
 
 Full re-provisioning (env/secret/scale changes, new apps) is **not** this skill — that is
 `pwsh infra/deploy-agents.ps1 up -Tag <tag>`, which re-runs alembic + Service Bus routes too.

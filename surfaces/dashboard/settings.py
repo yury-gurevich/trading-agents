@@ -80,6 +80,21 @@ class DashboardSettings(AgentSettings):
         le=3600,
         unit="seconds",
     )
+    github_repository: str = tunable(
+        "yury-gurevich/trading-agents",
+        why="Repository whose main image-build workflow defines deploy currency.",
+    )
+    github_image_workflow: str = tunable(
+        "build-images.yml",
+        why="Workflow that publishes the main fleet images compared with DeployRecord.",
+    )
+    github_timeout_seconds: float = tunable(
+        10.0,
+        why="Bound the single read-only GitHub build lookup.",
+        gt=0,
+        le=30,
+        unit="seconds",
+    )
     log_tail_default: int = tunable(
         200,
         why="Match the operator-requested useful default log excerpt.",

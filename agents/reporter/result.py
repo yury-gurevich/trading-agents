@@ -27,7 +27,7 @@ from contracts.common import Explanation
 from contracts.reporter import RunSnapshot, TradeNarrative
 
 if TYPE_CHECKING:
-    from kernel import GraphStore
+    from kernel import GraphStore, Node
 
 
 def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
@@ -35,7 +35,8 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
     pm_run = graph.get_node("PMRun", run_id)
     if pm_run is None:
         return degraded_snapshot(graph, run_id, f"No PMRun found for {run_id}.")
-    lineage = collect_run_lineage(graph, pm_run)
+    lineage_run = _linked_pm_source(graph, pm_run)
+    lineage = collect_run_lineage(graph, lineage_run)
     portfolio = collect_portfolio_metrics(
         pm_run, lineage.positions, lineage.close_decisions
     )
@@ -145,3 +146,10 @@ def _headline(portfolio: dict[str, float], signal: dict[str, float]) -> Explanat
 
 def _trim(summary: str, max_chars: int) -> str:
     return summary if len(summary) <= max_chars else summary[:max_chars]
+
+
+def _linked_pm_source(graph: GraphStore, pm_run: Node) -> Node:
+    """Return immutable source evidence when a resumed PM artifact is linked."""
+    key = pm_run.props.get("linked_from_key")
+    source = graph.get_node("PMRun", str(key)) if key else None
+    return source or pm_run

@@ -12,6 +12,7 @@ from typing import Any, cast
 
 from kernel import InMemoryGraphStore
 from surfaces.dashboard.llm_costs import llm_cost_projection
+from surfaces.dashboard.projections_health import bus_health
 from surfaces.dashboard.projections_infra import (
     _spine_health,
     image_tag,
@@ -102,6 +103,7 @@ def test_infra_projects_service_costs_and_images() -> None:
     assert hardware["services"][0]["service"] == "Service Bus"
     assert len(cast("list[object]", result["containers"])) == 4
     assert cast("dict[str, Any]", result["bus"])["status"] == "reachable"
+    assert cast("dict[str, Any]", result["deploy_currency"])["status"] == ("unverified")
 
 
 def test_infra_degraded_and_cost_permission_finding() -> None:
@@ -147,6 +149,33 @@ def test_spine_health_reports_graph_read_failure() -> None:
             raise RuntimeError("offline")
 
     assert _spine_health(cast("Any", BrokenGraph()))["status"] == "unavailable"
+
+
+def test_bus_unavailable_read_is_unverified_and_failed_read_is_unreachable() -> None:
+    graph = InMemoryGraphStore()
+    graph.merge_node("AgentInstance", "i", {"state": "active"})
+    unavailable = infra_projection(graph, None, _settings(), now=NOW)
+
+    class FailedJobReader(FakeAzureReader):
+        def list_job_executions(self, job: str) -> list[dict[str, object]]:
+            rows = super().list_job_executions(job)
+            rows[0]["status"] = "Failed"
+            return rows
+
+    failed = infra_projection(graph, FailedJobReader(), _settings(), now=NOW)
+    assert cast("dict[str, Any]", unavailable["bus"])["status"] == "unverified"
+    assert cast("dict[str, Any]", failed["bus"])["status"] == "unreachable"
+
+
+def test_bus_graph_failure_is_unverified() -> None:
+    class BrokenGraph:
+        def list_nodes(self, label: str) -> tuple[object, ...]:
+            raise RuntimeError("offline")
+
+    assert bus_health(cast("Any", BrokenGraph()), [], None) == {
+        "status": "unverified",
+        "detail": "activation evidence unavailable",
+    }
 
 
 def test_image_tag_handles_tag_digest_and_missing_tag() -> None:

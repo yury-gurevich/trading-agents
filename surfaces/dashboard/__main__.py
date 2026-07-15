@@ -31,6 +31,7 @@ def main() -> None:
     from surfaces.dashboard.app import build_app
     from surfaces.dashboard.azure_rest import build_azure_reader
     from surfaces.dashboard.chat_binding import bind_dashboard_chat
+    from surfaces.dashboard.github_builds import build_github_reader
     from surfaces.dashboard.settings import DashboardSettings
 
     load_dotenv()
@@ -38,7 +39,13 @@ def main() -> None:
     settings = DashboardSettings()
     graph = build_graph_from_env()
     chat = bind_dashboard_chat(graph)
-    app = build_app(graph, build_azure_reader(settings), settings, chat)
+    app = build_app(
+        graph,
+        build_azure_reader(settings),
+        settings,
+        chat,
+        github=build_github_reader(settings),
+    )
     try:
         server = make_server("127.0.0.1", port, app, server_class=_ThreadingWSGIServer)
     except OSError:

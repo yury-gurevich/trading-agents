@@ -21,7 +21,9 @@ healthy-idle from broken.
 
    Every app + the job should share one tag; compare its build date against the latest merge to
    `main` that touched `agents/ kernel/ contracts/ orchestration/`. **Behind = finding**, even if
-   everything else is green.
+   everything else is green. The operations dashboard automates this judgement from the latest
+   graph `DeployRecord`, every observed app/job tag, and the newest successful main image build.
+   Treat `unverified` as missing evidence, not as current and not as an outage.
 
 2. **Job cadence:** `az containerapp job execution list -g trading-agents -n dispatcher-cron -o table`
    — one `Succeeded` per trading day at 22:30 UTC.

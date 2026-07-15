@@ -52,6 +52,10 @@ def command_tool(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
             "audit_id": audit_id,
         }
     intent = result.intent
+    if intent.family == "resume" and run_id:
+        intent = intent.model_copy(
+            update={"parameters": {**intent.parameters, "run_id": run_id}}
+        )
     typed_intent: ToolResult = {
         "family": intent.family,
         "parameters": dict(intent.parameters),

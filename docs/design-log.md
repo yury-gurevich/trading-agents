@@ -2039,7 +2039,7 @@ queued immediately after S119's handback (operator: "straight away after the pre
 
 ---
 
-## DL-46 · Merge-to-main rebuilds images but does not redeploy the fleet — the deploy gap  ·  status: OPEN (2026-07-09)
+## DL-46 · Merge-to-main rebuilds images but does not redeploy the fleet — the deploy gap  ·  status: DECIDED (2026-07-14)
 
 **Trigger.** The 2026-07-08 22:30 UTC scheduled run — the first STATE.md expected to run with broker
 reconciliation (S120) + compiled deliberation prompts (S119/S121) live — ran entirely on **`:s103`
@@ -2072,8 +2072,11 @@ The failure mode is silent: CI green, images pushed, acceptance PASS — on last
   precisely because nothing measured it), with **A** as the end state once the build-on-merge pipeline
   discussion (memory: branch-per-sprint-merge-deploys) is settled properly.
 
-**Ruled out.** Nothing yet — this entry records the incident + option space; packaging waits for an
-operator decision.
+**Decision (S126). C shipped in S126; A remains the end state.** The dashboard now judges
+`current / behind / unverified` from append-only `DeployRecord` facts, the observed fleet tags, and
+the newest successful main image build. No dashboard control-plane write was added.
+**Ruled out.** B remains ruled out because a mutable `:latest` tag weakens per-run provenance and
+rollback clarity. A is deferred, not rejected.
 
 ---
 

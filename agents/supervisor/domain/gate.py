@@ -18,7 +18,15 @@ from agents.supervisor.store import (
     write_flag,
     write_message,
 )
+from contracts.common import Provenance
 from contracts.execution import PromoteStageRequest, PromoteStageResult
+from contracts.resume import (
+    BROKER_RESUME_CONSEQUENCE,
+    BROKER_RESUME_STAGES,
+    RESUME_STAGES,
+    ResumePlacement,
+    ResumeRequest,
+)
 from contracts.supervisor import DispatchResult
 from kernel import AgentMessage
 
@@ -41,16 +49,14 @@ def dispatch_intent(
     if intent.family == "stage":
         return _dispatch_stage(intent, bus)
     if _needs_confirmation(intent):
+        reason = _confirmation_reason(intent)
         write_flag(
             graph,
             subject_ref=intent.provenance.run_id,
             severity="warn",
-            reason="awaiting confirmation",
+            reason=reason,
         )
-        return rejected(
-            intent.provenance.run_id,
-            "confirmation required - resubmit with confirmed=true",
-        )
+        return rejected(intent.provenance.run_id, reason)
     if intent.parameters.get("confirmed") == "true":
         resolve_flag(graph, intent.provenance.run_id, "warn")
     if not spec.available:
@@ -60,6 +66,8 @@ def dispatch_intent(
             "target", ""
         )
         resolve_flag_by_subject(graph, subject_ref)
+    if intent.family == "resume":
+        return _dispatch_resume(graph, intent, bus)
     node = write_message(
         graph,
         run_id=intent.provenance.run_id,
@@ -75,6 +83,67 @@ def dispatch_intent(
 
 def _needs_confirmation(intent: TypedIntent) -> bool:
     return intent.requires_confirmation and intent.parameters.get("confirmed") != "true"
+
+
+def _confirmation_reason(intent: TypedIntent) -> str:
+    base = "Confirm the typed resume intent to create a superseding child run."
+    if intent.family == "resume" and _resume_stage(intent) in BROKER_RESUME_STAGES:
+        return f"{base} Broker consequence: {BROKER_RESUME_CONSEQUENCE}."
+    return (
+        base
+        if intent.family == "resume"
+        else "confirmation required - resubmit with confirmed=true"
+    )
+
+
+def _dispatch_resume(
+    graph: GraphStore, intent: TypedIntent, bus: MessageBus | None
+) -> DispatchResult:
+    if bus is None:
+        return rejected(
+            intent.provenance.run_id, "resume dispatch requires bus context"
+        )
+    stage = _resume_stage(intent)
+    if stage not in RESUME_STAGES:
+        return rejected(intent.provenance.run_id, f"invalid resume stage: {stage}")
+    request = ResumeRequest(
+        source_run_id=intent.parameters.get("run_id", ""), resume_from=stage
+    )
+    response = bus.request(
+        AgentMessage(
+            sender="supervisor",
+            recipient="orchestration",
+            message_type="request",
+            capability="resume_run",
+            payload=request.model_dump(mode="json"),
+        )
+    )
+    if response.message_type == "error":
+        return rejected(
+            intent.provenance.run_id,
+            str(response.payload.get("message", "resume placement failed")),
+        )
+    result = ResumePlacement.model_validate(response.payload)
+    write_message(
+        graph,
+        run_id=intent.provenance.run_id,
+        step_name=intent.family,
+        status="dispatched",
+    )
+    return DispatchResult(
+        accepted=True,
+        routed_to="orchestration.resume_run",
+        provenance=Provenance(
+            run_id=result.child_run_id,
+            source_agent="orchestration",
+            graph_node_id=f"RunRequest:{result.node_key}",
+        ),
+    )
+
+
+def _resume_stage(intent: TypedIntent) -> str:
+    """Read the operator grammar's canonical field, with legacy test compatibility."""
+    return intent.parameters.get("from_stage") or intent.parameters.get("stage", "")
 
 
 def _dispatch_stage(intent: TypedIntent, bus: MessageBus | None) -> DispatchResult:

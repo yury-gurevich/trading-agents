@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     from kernel import GraphStore
     from surfaces.dashboard.azure_port import AzureReader
+    from surfaces.dashboard.github_builds import GitHubReader
     from surfaces.dashboard.settings import DashboardSettings
 
 
@@ -31,6 +32,7 @@ def vitals_projection(
     run_id: str | None,
     *,
     now: datetime | None = None,
+    github: GitHubReader | None = None,
 ) -> dict[str, object]:
     """Project every DL-47 status-line vital from current read-side evidence."""
     selected = run_id or _latest_run_id(graph)
@@ -39,7 +41,7 @@ def vitals_projection(
     pending = len(pending_flags(graph))
     sync = _sync(graph, selected)
     degraded = _degraded_feeds(graph, selected)
-    infra = infra_projection(graph, azure, settings, now=now)
+    infra = infra_projection(graph, azure, settings, now=now, github=github)
     containers = cast("list[dict[str, Any]]", infra["containers"])
     tags = sorted({str(row["image_tag"]) for row in containers if row.get("image")})
     hardware = cast("dict[str, Any]", infra["hardware_cost"])
@@ -63,6 +65,7 @@ def vitals_projection(
         "degraded_feeds": degraded,
         "spine": infra["spine"],
         "bus": infra["bus"],
+        "deploy_currency": infra["deploy_currency"],
         "images": {
             "available": bool(tags),
             "tags": tags,

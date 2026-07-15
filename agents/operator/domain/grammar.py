@@ -33,7 +33,11 @@ INTENT_FAMILIES: dict[IntentFamily, FamilySpec] = {
     "mode": FamilySpec("switch operating mode", ("mode",), True),
     "stage": FamilySpec("promote or demote execution stage", ("stage",), True),
     "pause": FamilySpec("pause scheduling", (), False),
-    "resume": FamilySpec("resume scheduling", (), False),
+    "resume": FamilySpec(
+        "resume a selected run from one pipeline stage",
+        ("run_id", "stage"),
+        True,
+    ),
 }
 
 

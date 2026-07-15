@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-14 18:05 AEST · **Version:** 0.69.04 · **Fixpack items 5+6 shipped early (security-gate hardening + loud port bind); S126 in flight at Codex; S127 backlog collecting (8 items).**
+**Last updated:** 2026-07-15 13:10 AEST · **Version:** 0.70.00 · **S126 BRANCH COMPLETE + fixpack chores 0.69.01–0.69.05 integrated (this merge); resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health — the last DL-47 slice; merging to main.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,32 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S126 (DL-47 slice 5 FINAL, 0.69.00→0.70.00) — RUNS RESUME FROM A STAGE; DEPLOY CURRENCY IS
+  JUDGED.** Resume is supersession, never deletion: a child
+  `RunRequest` with a `RESUMES` edge links upstream artifacts (`LINKED_FROM`) and re-derives only
+  the stages from the chosen point; operator-gated end-to-end (interpret → validate → primitive)
+  with `CommandAudit` and a broker-consequence double-confirm for stages ≤ execution; dashboard
+  stage cards carry "Resume from" controls posting the bounded command. `/deploy-fleet` now
+  appends an append-only `DeployRecord`, and the dashboard judges deploy currency
+  `current/behind/unverified` against observed fleet tags + the newest successful main image
+  build (`GITHUB_TOKEN` absent → honest `unverified`). Bus health is tri-state — an unavailable
+  Azure read renders `unverified`, never `unreachable`, and never flips the light. DL-46 recorded
+  DECIDED ("C shipped in S126; A remains the end state"). Live proof: child of `sched-2026-07-13`
+  reached 7/7 with only monitor/reporter re-derived and 0 broker orders; currency read **behind**
+  (fleet `:s121`; main moved again to `a5bbb5f` during closeout and the judgement tracked it);
+  bus `unverified` with credentials unset. Evidence + screenshots in
+  `docs/reports/sprint-126-resume-and-tripwire/`; `make ci` 1566 passed / 5 skipped / 100%
+  (planning-agent re-run on the exact tree). Codex-built; handback evidence completed and
+  re-verified by the planning agent (see the sprint doc's Return notes). The merge integrated
+  fixpack chores 0.69.01–0.69.05 (below): `public_message` carried into the split-out
+  `projections_azure.py`, loud port bind + `ts()` timestamps kept alongside the github wiring
+  and deploy-currency chip.
+
+- **Chore (0.69.04→0.69.05) — FLAG VIEWS HONOUR RESOLUTIONS.** Flag views join
+  `FlagResolution`; resolved flags stop reading pending across the dashboard (`412dd82`,
+  merged `a5bbb5f`). Recorded here at the S126 merge — the chore's own session predated this
+  STATE entry.
 
 - **Chores (0.69.02→0.69.04) — FIXPACK ITEMS 2, 7, 8 SHIPPED.**
   0.69.03: dead `compactSummary` client shim deleted — the hero renders server wording
@@ -202,18 +228,25 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-On `sprint-125-operator-chat` at 0.69.00 (**S125 BRANCH COMPLETE; NOT MERGED**). The bounded
-operator chat, confirmation round-trip, run grounding, disconnected state, ledger proof, and
-LAW-02 evidence are complete; `make ci` is green at 1531 passed / 6 skipped / 100%. Main remains
-the merge authority and this handback does not merge it.
-The running fleet stays on `:s121` — the new verdict reaches the deployed dashboard only after a
-DL-46 retag (operator's call; images for `b9ed20e` build on merge).
-DL-47 resequenced: S125 = operator chat, S126 = resume-from-stage + DL-46 tripwire judgement.
-Open from the 07-10 run diagnosis: all four enrichment feeds ran degraded in-fleet (fundamentals/
-news/sectors/earnings) — smells like secrets/entitlement, not one vendor; run `/diagnose-feeds`.
-The 07-08 deploy-gap incident + same-day repair (fleet → `:s121`, stray CSCO order cancelled) is
-recorded in design-log **DL-46**; the 07-09 run outcome (reconciliation proven; no-trade
-`ACCEPTANCE FAIL`) is under Watch outcome in Next.
+On `sprint-126-resume-and-tripwire` at 0.70.00 (**S126 BRANCH COMPLETE; VERIFIED; NOT MERGED**).
+The resume primitive, operator/supervisor wiring, dashboard affordance, `DeployRecord` currency
+judgement, and tri-state bus health are complete; closeout + return notes are filled; `make ci`
+is green at 1566 passed / 5 skipped / 100% (planning-agent re-run). Main remains the merge
+authority — merge-to-main is the deploy trigger. **The DL-47 dashboard arc is complete on
+branches (S122–S126).**
+The running fleet stays on `:s121` and the dashboard now *measurably* says so: deploy currency
+reads **behind**. A DL-46 retag is the operator's call via `/deploy-fleet`, which now must append
+a `DeployRecord`.
+Pending operator attention in the graph: 3 critical broker-divergence flags (the 07-14 run-start
+flag was reconciled by monitor but awaits ack) + stale inert confirm-intent warn flags from the
+S126 live check (partly resolution-view artifacts — see the sprint doc's Return notes).
+This merge integrates main's fixpack chores 0.69.01–0.69.05 (six conflicts hand-resolved;
+`public_message` carried into the split-out `projections_azure.py`); `make ci` re-run on the
+merge result before pushing. S127 fixpack backlog keeps collecting in
+`docs/sprints/s127-fixpack-backlog.md`.
+Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
+(Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
+`docs/laws/drift-register.md`, not yet packaged.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own
@@ -223,11 +256,11 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 - **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 SHIPPED 2026-07-11 (0.68.00, merged `b9ed20e`)** — glance-first
   master verdict + `NO_TRADE` acceptance verdict + operator-language sweep (redline r2, reqs
-  13–15). **S125 BRANCH COMPLETE 2026-07-13 (0.69.00, pending merge)** — tier-1 bounded
+  13–15). **S125 SHIPPED 2026-07-13 (0.69.00, merged `9420b78`)** — tier-1 bounded
   operator chat only. The repair agent remains a later tier and was deliberately not exposed.
-  S126 follows
-  (resume-from-stage — Airflow clear+downstream over graph-pull artifacts — + the DL-46
-  tripwire judgement). Design spec committed:
+  **S126 BRANCH COMPLETE 2026-07-15 (0.70.00, pending merge)** — resume-from-stage
+  (supersession + `RESUMES` lineage) + `DeployRecord` deploy-currency judgement + tri-state bus
+  health. **With S126 merged the arc closes.** Design spec:
   `docs/design/dashboard-mockup.html` (interactive; built from the real 07-08/07-09 runs).
 - **Watch outcome (2026-07-09 22:30 UTC run, verified 2026-07-10):** cron fired (3/3 nights),
   7/7 stages on `:s121`; **S120 reconciliation proven live** — critical divergence Flag raised
@@ -239,10 +272,10 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
   signature (7/7 complete, 5 candidates 0.533–0.595 vs floor 0.600, `ACCEPTANCE FAIL`). Contributing: all four enrichment feeds
   (fundamentals/news/sectors/earnings) ran degraded in-fleet — investigate why (secrets? rate
   limits at 22:30?). The pending critical Flag awaits operator ack.
-- **DL-46 — deploy gap (OPEN, needs operator decision):** merge-to-main rebuilds images but the
-  tag-pinned fleet doesn't move; pick CI-deploy step vs `:latest` pinning vs a fleet-behind
-  tripwire (leaning tripwire now, CI-deploy as end state; the tripwire lands naturally on the
-  S124 dashboard slice). See design-log DL-46.
+- **DL-46 — deploy gap (DECIDED 2026-07-14, S126):** option C shipped — append-only
+  `DeployRecord` + the dashboard's `current/behind/unverified` judgement; option A (deploy step
+  in CI) remains the recorded end state, deferred not rejected. The fleet reads **behind** today;
+  retag via `/deploy-fleet` (now appends `DeployRecord`) when the operator chooses.
 - **DL-42 — SHIPPED (S119 0.64.00 + S121 0.65.01).** Compiled judge + challenger are the live
   champions; defender stays hand-written; golden re-frozen to 5 robust cases. Next layer when
   prioritized: EvoPrompt/TextGrad bake-off behind the same port (R003).

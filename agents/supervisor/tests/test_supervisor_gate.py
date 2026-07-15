@@ -124,7 +124,7 @@ def _intent(family: str, params: dict[str, str] | None = None) -> TypedIntent:
         family=family,  # type: ignore[arg-type]
         parameters=params or {},
         requires_confirmation=family
-        in {"run", "approve", "reject", "modify", "mode", "stage"},
+        in {"run", "approve", "reject", "modify", "mode", "stage", "resume"},
         provenance=Provenance(run_id=f"intent-{family}", source_agent="operator"),
     )
 

@@ -29,7 +29,7 @@ def test_interpret_maps_all_ten_families_with_confirmation_policy() -> None:
         "mode": True,
         "stage": True,
         "pause": False,
-        "resume": False,
+        "resume": True,
     }
     for family, requires_confirmation in expected.items():
         result = _interpret(bus, f"{family} please")

@@ -39,6 +39,7 @@
 
   function renderInfra(data) {
     var env = data.environment, hw = data.hardware_cost, llm = data.llm_cost;
+    var deploy = data.deploy_currency;
     var services = (hw.services || []).map(function (r) {
       return esc(r.service) + " " + money(r.cost, r.currency);
     }).join(" · ") || esc(hw.message || "No billed services this month");
@@ -52,8 +53,11 @@
         esc(env.name) + (env.location ? " · " + esc(env.location) : "")),
       card("Postgres spine", data.spine.status, chip(data.spine.status === "reachable" ? "good" : "crit", data.spine.detail),
         "read-only graph projection"),
-      card("Service Bus", data.bus.status, chip(data.bus.status === "reachable" ? "good" : "idle", "activation evidence"),
+      card("Service Bus", data.bus.status, chip(data.bus.status === "reachable" ? "good" : data.bus.status === "unreachable" ? "crit" : "idle", "activation evidence"),
         esc(data.bus.detail)),
+      card("Deploy currency", deploy.status,
+        chip(deploy.status === "current" ? "good" : "warn", "main image comparison"),
+        esc(deploy.message)),
       card("Dispatcher job", data.job.status, chip(data.job.status === "Succeeded" ? "good" : "warn", data.job.name),
         "last " + esc(ts(data.job.last_start) || data.job.message || "unavailable") + " · next " + esc(ts(data.job.next_fire))),
       card("Scale window", "scale-to-zero", chip("", "by design"),
@@ -108,16 +112,17 @@
 
   function renderVitals(data) {
     var sync = data.broker_graph.status, feeds = data.degraded_feeds, images = data.images, cost = data.mtd_cost;
+    var deploy = data.deploy_currency;
     var flags = data.pending_flags ? vital("crit", data.pending_flags + " flag" + (data.pending_flags > 1 ? "s" : "") + " pending") : vital("good", "no pending flags");
     var syncText = sync === "in_sync" ? "broker↔graph in sync" : sync === "diverged" ? "broker↔graph DIVERGED" : "broker↔graph unavailable";
-    var imageText = images.available ? "images " + images.tags.map(function (t) { return ":" + t; }).join(", ") : "images unavailable";
+    var imageText = "deploy " + deploy.status + (images.available ? " · " + images.tags.map(function (t) { return ":" + t; }).join(", ") : "");
     var costText = cost.status === "split_currency" ? "mtd hw " + money(cost.hardware, cost.hardware_currency) + " · llm " + money(cost.llm, cost.llm_currency) :
       cost.total == null ? "mtd partial (hw unavailable · llm " + money(cost.llm, cost.llm_currency) + ")" :
         "mtd " + money(cost.total, cost.currency) + " (hw " + money(cost.hardware, cost.hardware_currency) + " · llm " + money(cost.llm, cost.llm_currency) + ")";
     $("vitals").innerHTML = [flags, vital(sync === "in_sync" ? "good" : sync === "diverged" ? "crit" : "idle", syncText),
       vital(feeds.count ? "warn" : "good", feeds.count + " feeds degraded"),
       vital(data.spine.status === "reachable" && data.bus.status === "reachable" ? "good" : "warn", "spine " + data.spine.status + " · bus " + data.bus.status),
-      vital(images.available ? "good" : "idle", imageText), vital(cost.total == null ? "warn" : "good", costText),
+      vital(deploy.status === "current" ? "good" : "warn", imageText), vital(cost.total == null ? "warn" : "good", costText),
       vital("idle", "next fire " + ts(data.next_fire))].join("");
   }
 

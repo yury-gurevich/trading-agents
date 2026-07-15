@@ -126,6 +126,8 @@ def test_index_and_assets_serve() -> None:
     assert invoke(app, "/chat.css")[0] == "200 OK"
     assert invoke(app, "/chat.js")[0] == "200 OK"
     assert b"#chat [hidden]" in invoke(app, "/chat.css")[2]
+    assert b"resume-action" in invoke(app, "/app.js")[2]
+    assert b"resume-wired" in invoke(app, "/chat.js")[2]
 
 
 def test_missing_static_and_traversal_are_404() -> None:

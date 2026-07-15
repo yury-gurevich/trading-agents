@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from kernel import GraphStore
     from surfaces.context import SurfaceContext
     from surfaces.dashboard.azure_port import AzureReader
+    from surfaces.dashboard.github_builds import GitHubReader
 
 _STATIC = Path(__file__).parent / "static"
 # Allowlist computed at import: request paths are only ever dict keys, so no
@@ -60,6 +61,8 @@ def build_app(
     azure: AzureReader | None = None,
     settings: DashboardSettings | None = None,
     chat_context: SurfaceContext | None = None,
+    *,
+    github: GitHubReader | None = None,
 ) -> Callable[..., list[bytes]]:
     """Return the WSGI app over injected graph and optional Azure readers."""
     config = settings or DashboardSettings()
@@ -75,7 +78,11 @@ def build_app(
         if path == "/api/runs":
             return _json(start_response, 200, projections.list_runs(graph))
         if path == "/api/infra":
-            return _json(start_response, 200, infra_projection(graph, azure, config))
+            return _json(
+                start_response,
+                200,
+                infra_projection(graph, azure, config, github=github),
+            )
         if path == "/api/fleet":
             run_id = _selected_run(graph, query)
             return _json(
@@ -86,7 +93,7 @@ def build_app(
             return _json(
                 start_response,
                 200,
-                vitals_projection(graph, azure, config, vital_run),
+                vitals_projection(graph, azure, config, vital_run, github=github),
             )
         if path == "/api/verdict":
             verdict_run = query.get("run", [""])[0] or _selected_run(graph, query)
@@ -99,7 +106,7 @@ def build_app(
             return _json(
                 start_response,
                 200,
-                verdict_projection(graph, verdict_run, azure, config),
+                verdict_projection(graph, verdict_run, azure, config, github=github),
             )
         if path.startswith("/api/containers/"):
             return _container_view(graph, path, query, azure, config, start_response)

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.operator.domain.evidence import gather_evidence
+from agents.operator.domain.grammar import normalize_explicit_intent
 from agents.operator.domain.prompts import (
     INTENT_TOOL_SCHEMA,
     build_explain_system,
@@ -126,7 +127,7 @@ class OperatorAgent(AgentBase):
             )
             call.set_response(raw)
         assert call.node is not None
-        data = parse_json(raw)
+        data = normalize_explicit_intent(command.text, parse_json(raw))
         parsed_outcome = outcome(data)
         audit = write_command_audit(
             self._graph,

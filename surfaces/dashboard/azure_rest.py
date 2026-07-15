@@ -16,6 +16,7 @@ from surfaces.dashboard.azure_parsers import (
     parse_container_apps,
     parse_cost_rows,
     parse_job_executions,
+    parse_job_template_image,
     parse_log_rows,
     parse_replica_count,
 )
@@ -97,6 +98,13 @@ class AzureRestReader:
         rows = parse_job_executions(self._send_retry("GET", url, _ARM_SCOPE, None))
         self._jobs_cache[job] = (self._clock(), rows)
         return [dict(row) for row in rows]
+
+    def job_template_image(self, job: str) -> str:
+        """Read the configured image for the next scheduled job execution."""
+        url = (
+            f"{self._resource_root()}/jobs/{quote(job, safe='')}?api-version={_APP_API}"
+        )
+        return parse_job_template_image(self._send_retry("GET", url, _ARM_SCOPE, None))
 
     def query_logs(
         self, container: str, start: datetime, end: datetime, tail: int

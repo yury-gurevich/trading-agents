@@ -15,6 +15,7 @@ from surfaces.dashboard.azure_parsers import (
     parse_container_apps,
     parse_cost_rows,
     parse_job_executions,
+    parse_job_template_image,
     parse_log_rows,
     parse_replica_count,
 )
@@ -47,6 +48,11 @@ def test_parse_job_executions_fixture_newest_first() -> None:
     ]
     assert str(rows[0]["image"]).endswith(":s123")
     assert rows[1]["image"] == ""
+
+
+def test_parse_job_template_image_fixture() -> None:
+    image = parse_job_template_image(_fixture("azure_job_template.json"))
+    assert image == "ghcr.io/yury-gurevich/trading-agents-dispatcher:s123"
 
 
 def test_parse_log_rows_fixture_and_empty_table() -> None:

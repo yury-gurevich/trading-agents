@@ -49,6 +49,20 @@ def jobs(azure: AzureReader | None, name: str) -> tuple[list[AzureRow], str | No
         return [], "Azure job data unavailable"
 
 
+def job_template_image(
+    azure: AzureReader | None, name: str
+) -> tuple[str | None, str | None]:
+    """Read the dispatcher's configured image or return a sanitized error."""
+    if azure is None:
+        return None, "Azure job template unavailable"
+    try:
+        return azure.job_template_image(name), None
+    except AzureReadError as exc:
+        return None, exc.public_message
+    except _FAILURES:
+        return None, "Azure job template unavailable"
+
+
 def hardware(azure: AzureReader | None, scope: str) -> dict[str, object]:
     """Read month-to-date Azure costs."""
     if azure is None:
@@ -81,14 +95,17 @@ def app_row(row: AzureRow, job_rows: list[AzureRow]) -> dict[str, object]:
     }
 
 
-def job_row(name: str, row: AzureRow) -> dict[str, object]:
+def job_row(name: str, row: AzureRow, template_image: str | None) -> dict[str, object]:
     """Normalize the dispatcher job row."""
-    image = str(row["image"])
+    execution_image = str(row["image"])
+    template_tag = image_tag(template_image or "")
     return {
         "name": name,
         "kind": "job",
-        "image": image,
-        "image_tag": image_tag(image),
+        "image": template_image or "",
+        "image_tag": template_tag if template_image else "unverified",
+        "last_execution_image": execution_image,
+        "last_execution_tag": image_tag(execution_image),
         "replicas": None,
         "last_window": row["start_time"],
         "state": str(row["status"]).lower(),

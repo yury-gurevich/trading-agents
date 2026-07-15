@@ -59,7 +59,9 @@
         chip(deploy.status === "current" ? "good" : "warn", "main image comparison"),
         esc(deploy.message)),
       card("Dispatcher job", data.job.status, chip(data.job.status === "Succeeded" ? "good" : "warn", data.job.name),
-        "last " + esc(ts(data.job.last_start) || data.job.message || "unavailable") + " · next " + esc(ts(data.job.next_fire))),
+        "last " + esc(ts(data.job.last_start) || data.job.message || "unavailable") +
+        (data.job.last_execution_tag ? " · last execution ran :" + esc(data.job.last_execution_tag) : "") +
+        " · next " + esc(ts(data.job.next_fire))),
       card("Scale window", "scale-to-zero", chip("", "by design"),
         "master " + esc(data.scale_windows.master) + " · agents " + esc(data.scale_windows.agents)),
       card("Hardware cost · month to date", money(hw.total, hw.currency), chip(hw.available ? "good" : "warn", hw.available ? hw.currency : "unavailable"), services),
@@ -78,6 +80,7 @@
     return "<tr><td class='mono'>" + esc(row.name) + (row.kind === "job" ? " " + chip("", "job") : "") +
       "</td><td class='mono'>:" + esc(row.image_tag) + "</td><td>" + replicas +
       "</td><td class='mono'>" + esc(ts(row.last_window) || "—") + "</td><td>" + chip(state, row.state) +
+      (row.last_execution_tag ? "<br><span class='muted'>last execution ran :" + esc(row.last_execution_tag) + "</span>" : "") +
       "</td><td><button class='logbtn' data-container='" + esc(row.name) + "'>view logs</button></td></tr>";
   }
 
@@ -155,6 +158,10 @@
     var runId = event.detail.runId, query = "?run_id=" + encodeURIComponent(runId);
     currentRun = runId;
     get("/api/fleet" + query).then(renderFleet); get("/api/vitals" + query).then(renderVitals);
+  });
+  window.addEventListener("dashboard:command-completed", function () {
+    var query = currentRun ? "?run_id=" + encodeURIComponent(currentRun) : "";
+    get("/api/vitals" + query).then(renderVitals);
   });
   get("/api/infra").then(renderInfra);
   get("/api/vitals").then(renderVitals);

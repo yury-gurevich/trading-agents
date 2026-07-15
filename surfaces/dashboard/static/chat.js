@@ -88,6 +88,11 @@
       }
       if (data.error) throw new Error(data.error);
       renderTurn(data.turn, message, data.request_id);
+      if (["confirmed_dispatch", "dispatched"].indexOf(data.turn.outcome) !== -1) {
+        window.dispatchEvent(new CustomEvent("dashboard:command-completed", {
+          detail: { turn: data.turn }
+        }));
+      }
     }).catch(function (error) {
       addMessage("operator", "Chat could not complete this turn: " + error.message);
     }).finally(function () {
@@ -123,6 +128,11 @@
     if (!dock.classList.contains("connected")) return;
     if (body.hidden) toggle();
     send("Resume from " + event.detail.stage, false);
+  });
+  window.addEventListener("dashboard:flag-ack", function (event) {
+    if (!dock.classList.contains("connected")) return;
+    if (body.hidden) toggle();
+    send("approve " + event.detail.subject, false);
   });
 
   fetch("/api/chat").then(function (response) {

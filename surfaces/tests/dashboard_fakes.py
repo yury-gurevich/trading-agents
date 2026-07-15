@@ -15,6 +15,7 @@ from surfaces.dashboard.azure_parsers import (
     parse_container_apps,
     parse_cost_rows,
     parse_job_executions,
+    parse_job_template_image,
     parse_log_rows,
 )
 from surfaces.dashboard.azure_port import AzureReadError, AzureRow
@@ -41,11 +42,13 @@ class FakeAzureReader:
         *,
         fail_apps: bool = False,
         fail_jobs: bool = False,
+        fail_template: bool = False,
         fail_costs: bool = False,
         fail_logs_for: str | None = None,
     ) -> None:
         self.fail_apps = fail_apps
         self.fail_jobs = fail_jobs
+        self.fail_template = fail_template
         self.fail_costs = fail_costs
         self.fail_logs_for = fail_logs_for
         self.log_calls: list[tuple[str, datetime, datetime, int]] = []
@@ -64,6 +67,13 @@ class FakeAzureReader:
         if self.fail_jobs:
             raise AzureReadError("jobs unavailable")
         return parse_job_executions(fixture("azure_job_executions.json"))
+
+    def job_template_image(self, job: str) -> str:
+        """Return the configured dispatcher job image fixture."""
+        del job
+        if self.fail_template:
+            raise AzureReadError("job template unavailable")
+        return parse_job_template_image(fixture("azure_job_template.json"))
 
     def query_logs(
         self, container: str, start: datetime, end: datetime, tail: int

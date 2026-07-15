@@ -40,7 +40,10 @@ def build_interpret_system() -> str:
         "Map the operator command to exactly one allowed trading-system intent, "
         "or refuse/ask for clarification. Questions about how a selected or past "
         "run performed are explain intents; status is only current whole-system "
-        f"health. Allowed families: {families}."
+        "health. Commands that say approve <subject-ref> or ask to confirm "
+        "approval for a subject are approve intents with that exact target; "
+        "never classify them as status. "
+        f"Allowed families: {families}."
     )
 
 

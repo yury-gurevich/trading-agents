@@ -29,6 +29,7 @@
       var failed = (s.checks || []).some(function (c) { return !c.ok && c.severity === "fail"; });
       var node = document.createElement("div");
       node.className = "stage";
+      node.id = "stage-" + s.name;
       node.innerHTML = "<div class='node" + ((!s.reached || failed) ? " crit-edge" : "") + "'>" +
         "<div class='who'>" + esc(STAGE_LABEL[s.name] || s.name) + "</div>" +
         "<div class='num'>" + (s.reached ? nums || "—" : "NOT REACHED") + "</div>" +
@@ -74,8 +75,10 @@
   function renderFlags(flags) {
     if (!flags.length) { $("flagbody").innerHTML = "<p class='muted'>No flags in this run's scope.</p>"; return; }
     $("flagbody").innerHTML = flags.map(function (f) {
-      return chip(f.severity === "critical" ? "crit" : "warn", "⚑ " + f.severity + " · " + f.status) +
-        "<div class='flagreason'>" + esc(f.reason || f.subject_ref) + "</div>";
+      var action = f.status === "pending" ? "<button class='flag-ack' type='button' data-flag-subject=\"" +
+        esc(f.subject_ref || f.key) + "\">Acknowledge</button>" : "";
+      return "<div class='flagrow'>" + chip(f.severity === "critical" ? "crit" : "warn", "⚑ " + f.severity + " · " + f.status) +
+        action + "<div class='flagreason'>" + esc(f.reason || f.subject_ref) + "</div></div>";
     }).join("");
   }
 
@@ -138,6 +141,17 @@
     window.dispatchEvent(new CustomEvent("dashboard:resume-request", {
       detail: { stage: button.getAttribute("data-resume-stage") }
     }));
+  });
+  $("flagbody").addEventListener("click", function (event) {
+    var button = event.target.closest("button[data-flag-subject]");
+    if (!button) return;
+    window.dispatchEvent(new CustomEvent("dashboard:flag-ack", {
+      detail: { subject: button.getAttribute("data-flag-subject") }
+    }));
+  });
+  window.addEventListener("dashboard:command-completed", function () {
+    var runId = $("run").value;
+    if (runId) get("/api/runs/" + runId + "/flags").then(renderFlags);
   });
 
   get("/api/runs").then(function (runs) {

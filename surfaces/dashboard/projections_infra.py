@@ -16,6 +16,7 @@ from surfaces.dashboard.projections_azure import (
     hardware,
     image_tag,
     job_row,
+    job_template_image,
     jobs,
 )
 from surfaces.dashboard.projections_currency import deploy_currency_projection
@@ -44,15 +45,21 @@ def infra_projection(
     """Project the fleet, job, reachability, deploy currency, and costs."""
     app_rows, app_error = apps(azure)
     job_rows, job_error = jobs(azure, settings.azure_job_name)
+    template_image, template_error = job_template_image(azure, settings.azure_job_name)
     containers: list[dict[str, Any]] = [app_row(row, job_rows) for row in app_rows]
     if job_rows:
-        containers.append(job_row(settings.azure_job_name, job_rows[0]))
+        containers.append(job_row(settings.azure_job_name, job_rows[0], template_image))
     location = str(app_rows[0].get("location", "")) if app_rows else None
     currency = deploy_currency_projection(
         graph,
         containers,
         github,
-        azure_verified=app_error is None and job_error is None and bool(job_rows),
+        azure_verified=(
+            app_error is None
+            and job_error is None
+            and template_error is None
+            and bool(job_rows)
+        ),
     )
     return {
         "available": app_error is None,
@@ -66,7 +73,9 @@ def infra_projection(
         "spine": spine_health(graph),
         "bus": bus_health(graph, job_rows, job_error),
         "deploy_currency": currency,
-        "job": _job_summary(settings, job_rows, job_error, now),
+        "job": _job_summary(
+            settings, job_rows, job_error or template_error, template_image, now
+        ),
         "scale_windows": {
             "master": window_label(settings),
             "agents": (
@@ -83,6 +92,7 @@ def _job_summary(
     settings: DashboardSettings,
     rows: list[AzureRow],
     error: str | None,
+    template_image: str | None,
     now: datetime | None,
 ) -> dict[str, object]:
     latest = rows[0] if rows else {}
@@ -91,6 +101,10 @@ def _job_summary(
         "status": latest.get("status", "unavailable"),
         "last_start": latest.get("start_time"),
         "last_end": latest.get("end_time"),
+        "template_tag": image_tag(template_image or "") if template_image else None,
+        "last_execution_tag": (
+            image_tag(str(latest["image"])) if latest.get("image") else None
+        ),
         "message": error,
         "next_fire": next_fire(settings, now),
     }

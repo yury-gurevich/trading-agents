@@ -8,14 +8,21 @@ External I/O: none.
 from __future__ import annotations
 
 import json
+from argparse import Namespace
 from io import StringIO
+from typing import TYPE_CHECKING
 
-from contracts.common import Provenance
+from contracts.common import Explanation, Provenance
+from contracts.operator import CommandResult, TypedIntent
 from contracts.supervisor import DispatchResult
 from kernel import FakeLLMClient, InMemoryGraphStore
+from surfaces import cli_commands_extra
 from surfaces.cli import main
 from surfaces.context import test_context as build_context
 from surfaces.render_review import render_approve
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_cli_narrative_renders_run_stories_or_missing_message() -> None:
@@ -74,12 +81,35 @@ def test_cli_approve_resolves_flag_or_accepts_noop() -> None:
     assert "approved: unknown" in noop.getvalue()
 
 
-def test_cli_approve_requires_approve_intent() -> None:
+def test_cli_approve_pins_explicit_subject_when_model_says_status() -> None:
     output = StringIO()
 
     main(["approve", "risk"], context=build_context(), stdout=output)
 
-    assert "could not interpret approve command for: risk" in output.getvalue()
+    assert "approved: risk" in output.getvalue()
+
+
+def test_cli_approve_reports_non_approve_interpret_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_interpret(ctx: object, text: str) -> CommandResult:
+        del ctx, text
+        return CommandResult(
+            outcome="intent",
+            message=Explanation(summary="Parsed status intent."),
+            intent=TypedIntent(
+                family="status",
+                parameters={},
+                requires_confirmation=False,
+                provenance=Provenance(run_id="risk", source_agent="operator"),
+            ),
+        )
+
+    monkeypatch.setattr(cli_commands_extra, "_interpret", fake_interpret)
+
+    result = cli_commands_extra.cmd_approve(Namespace(subject="risk"), build_context())
+
+    assert result == "could not interpret approve command for: risk"
 
 
 def test_render_approve_refusal_includes_reason() -> None:

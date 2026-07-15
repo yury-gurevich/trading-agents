@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -77,7 +77,7 @@ def _read_reply(
         assert messages
         raw = messages[0]
         receiver.complete_message(raw)
-        return json.loads(str(raw))
+        return cast("dict[str, Any]", json.loads(str(raw)))
 
 
 def _delete_topic(admin: Any, topic: str) -> None:
@@ -94,6 +94,7 @@ def _delete_topic(admin: Any, topic: str) -> None:
     reason="AZURE_SERVICEBUS_CONNECTION_STRING/SERVICEBUS_CONNECTION_STRING is not set",
 )
 def test_servicebus_receiver_matches_local_consumer_live() -> None:
+    pytest.importorskip("azure.servicebus")
     from azure.servicebus.management import ServiceBusAdministrationClient
 
     assert _CONNECTION is not None

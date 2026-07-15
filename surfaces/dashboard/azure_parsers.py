@@ -61,6 +61,14 @@ def parse_job_executions(payload: dict[str, object]) -> list[AzureRow]:
     return rows
 
 
+def parse_job_template_image(payload: dict[str, object]) -> str:
+    """Parse the configured image from a Container Apps job resource."""
+    props = cast("dict[str, Any]", payload["properties"])
+    template = cast("dict[str, Any]", props["template"])
+    containers = cast("list[dict[str, Any]]", template["containers"])
+    return str(containers[0].get("image", "")) if containers else ""
+
+
 def parse_log_rows(payload: dict[str, object]) -> list[AzureRow]:
     """Parse the first Logs query table using its declared column names."""
     tables = cast("list[dict[str, Any]]", payload["tables"])

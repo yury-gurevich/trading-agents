@@ -1,0 +1,13 @@
+{
+  "name": "dispatcher-cron",
+  "properties": {
+    "template": {
+      "containers": [
+        {
+          "name": "dispatcher",
+          "image": "ghcr.io/yury-gurevich/trading-agents-dispatcher:s123"
+        }
+      ]
+    }
+  }
+}

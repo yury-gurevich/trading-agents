@@ -71,6 +71,7 @@ deliberation domain, graduates to its own sprint; anything tier-2 (wake-fleet, r
 > 4, 10); `docs/laws/functionality-checks.md` (the evidence register you will append to).
 >
 > **Contract (DL-48 — read before starting, it is enforced):**
+>
 > - **Start:** `git pull` on `main` — `pyproject.toml` must read **0.70.00** (stop and report if
 >   not). Branch `sprint-127-fixpack`. Bump **MINOR → 0.71.00** (rows 4+10 add capability) +
 >   `uv lock`.
@@ -85,6 +86,7 @@ deliberation domain, graduates to its own sprint; anything tier-2 (wake-fleet, r
 >   masks it), 100 % coverage, ≤200-line modules, headers, tunables for any threshold.
 >
 > **Work items (row 11 before row 10):**
+>
 > - **A (row 11):** fix `approve <subject-ref>` interpret routing; regression table over the
 >   2026-07-14 misrouted phrasings + neighbours (`resume`, `run`, `status`), each case asserting
 >   the full typed intent, not just the family.
@@ -144,14 +146,37 @@ deliberation domain, graduates to its own sprint; anything tier-2 (wake-fleet, r
 
 ```text
 CLOSEOUT — Sprint 127
-Branch / merge commit:   sprint-127-fixpack / <pending>
-make ci:                 <exit code + counts>
-Functionality check:     <row-11 routing proof + live flag ack + currency semantics + warning
-                          links + skip proof + where recorded + retained-vs-torn-down inventory>
+Branch / merge commit:   sprint-127-fixpack / pending (not merged per kickoff)
+make ci:                 exit 0; 1584 passed, 5 skipped, 100.00% coverage;
+                          pip-audit found the accepted diskcache baseline and was ignored by
+                          the Makefile; detect-secrets passed
+Functionality check:     Recorded in docs/laws/functionality-checks.md and
+                          docs/reports/sprint-127-fixpack/live-proof.md. Row 11 live
+                          interpret produced approve intents with audits
+                          audit:753f6487336dde4c, audit:d607b17e502c83f8,
+                          audit:dd7ce80835223924. Row 10 acknowledged exactly one stale
+                          warn flag (15bb3e29df185949) through dashboard chat/confirm;
+                          pending flags dropped 2 -> 1 and screenshots cover before,
+                          typed intent, after. Row 12 live currency judged current from
+                          template :s126 while rendering last execution :s121; unit truth
+                          table covers behind/unverified. Row 4 warning link screenshot
+                          lands on Flags. Row 9 no-Azure throwaway venv skipped the bus
+                          integration test. Retained audit/intent/LLM/message/flag
+                          resolution nodes are named in live-proof; torn down local
+                          dashboard server, port 8327, and the throwaway venv only.
 Version:                 0.70.00 → 0.71.00 (MINOR); uv.lock refreshed
-Backlog rows:            <4, 9, 10, 11, 12 status lines as committed>
-Drift rule:              <"main unmoved" | what moved + merge + re-gate evidence>
-Deviations from spec:    <none | list>
+Backlog rows:            rows 4, 9, 10, 11, 12 are FIXED (0.71.00) in
+                          docs/sprints/s127-fixpack-backlog.md with proof pointers
+Drift rule:              main unmoved: git fetch before the final gate and again before
+                          closeout left origin/main at a823763a5c3a39cf1fb20684ce0df49b766ccfca;
+                          no merge required; final make ci ran on the fetched-current branch
+Deviations from spec:    Live graph state had 1 critical broker-divergence flag + 1 stale warn
+                          flag, not the older handover snapshot of 3 critical flags; only
+                          the warn flag was acknowledged. Check ran before the 2026-07-15
+                          22:30 UTC dispatcher fire, so template read :s126 while last
+                          execution still read :s121. Browser-control/node_repl failed
+                          before tab setup, so screenshots were captured through a temporary
+                          Playwright/Edge runner with no repo dependency added.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -163,3 +188,30 @@ empty or the closeout placeholder is unfilled (LAW-02 + DL-48: the handback must
 restate intent — and an incomplete handback is bounced, not repaired).
 
 <!-- return notes go below this line -->
+
+Return notes — Sprint 127 coding handback, 2026-07-15
+
+- Start contract held: began from `main`, pulled, confirmed `pyproject.toml` at `0.70.00`,
+  branched `sprint-127-fixpack`, bumped to `0.71.00`, and refreshed `uv.lock`.
+- Implementation order followed the sprint dependency: row 11 approve-routing normalization landed
+  before row 10 dashboard acknowledgement. The row 10 control uses the existing chat/confirm
+  machinery and is hidden unless the dashboard chat path is wired.
+- Drift rule held twice. `origin/main` stayed at
+  `a823763a5c3a39cf1fb20684ce0df49b766ccfca` after the pre-gate fetch and the pre-closeout fetch;
+  no merge was needed.
+- Live state differed from the handover snapshot: the graph had one critical broker-divergence
+  flag and one stale confirm-intent warn flag. I acknowledged only warn subject
+  `15bb3e29df185949`; the remaining critical broker-divergence flag is still pending for the
+  operator.
+- Currency proof timing also differed from the handover's expected post-fire state: the check ran
+  before the 2026-07-15 22:30 UTC dispatcher fire, so the template was `:s126` and the last
+  execution was still `:s121`. That is now captured as positive proof of the new semantics:
+  template decides currency, last execution is evidence.
+- Browser-control setup failed before a tab could be controlled (`node_repl` could not write kernel
+  assets). I used a temporary Playwright/Edge runner for the required screenshots and added no repo
+  dependency or generated browser artifact to the tree.
+- The first full gate exposed one uncovered defensive CLI branch after the approve-routing contract
+  changed; `surfaces/tests/test_cli_narrative_approve.py` now covers that guard directly. Final
+  gate is green at 100.00% coverage.
+- Closeout records the merge commit as pending because this handback intentionally stops before
+  merge, per kickoff.

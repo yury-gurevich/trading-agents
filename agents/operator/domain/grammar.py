@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -40,9 +41,44 @@ INTENT_FAMILIES: dict[IntentFamily, FamilySpec] = {
     ),
 }
 
+_APPROVE_PATTERNS = (
+    re.compile(r"^\s*(?:please\s+)?approve\s+(?P<target>\S.*?)\s*\.?\s*$", re.I),
+    re.compile(
+        r"^\s*(?:please\s+)?confirm\s+approval\s+(?:for|of)\s+"
+        r"(?P<target>\S.*?)\s*\.?\s*$",
+        re.I,
+    ),
+)
+
+
+def normalize_explicit_intent(
+    command_text: str, data: dict[str, object]
+) -> dict[str, object]:
+    """Pin explicit command grammar when the model picks a broader family."""
+    target = _approve_target(command_text)
+    if target is None:
+        return data
+    params = data.get("parameters", {})
+    existing = params if isinstance(params, dict) else {}
+    return {
+        **data,
+        "outcome": "intent",
+        "family": "approve",
+        "parameters": {**existing, "target": target},
+    }
+
 
 def apply_confirmation_policy(family: IntentFamily, intent: TypedIntent) -> TypedIntent:
     """Force confirmation policy from the grammar, ignoring model output."""
     return intent.model_copy(
         update={"requires_confirmation": INTENT_FAMILIES[family].requires_confirmation}
     )
+
+
+def _approve_target(command_text: str) -> str | None:
+    first_line = command_text.splitlines()[0] if command_text.splitlines() else ""
+    for pattern in _APPROVE_PATTERNS:
+        match = pattern.match(first_line)
+        if match is not None:
+            return match.group("target").strip()
+    return None

@@ -39,6 +39,10 @@ class AzureReader(Protocol):
         """Return recent executions for one Container Apps job."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def job_template_image(self, job: str) -> str:
+        """Return the configured image for the next job execution."""
+        ...  # pragma: no cover - protocol declaration only.
+
     def query_logs(
         self, container: str, start: datetime, end: datetime, tail: int
     ) -> list[AzureRow]:

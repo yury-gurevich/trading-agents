@@ -65,6 +65,11 @@
   background:var(--card); border:1px solid var(--line); border-radius:10px;
   box-shadow:var(--shadow);
 }
+.warning-link { border:0; padding:0; background:none; color:var(--accent-ink);
+  font:inherit; text-align:left; cursor:pointer; }
+.warning-link:hover { text-decoration:underline; }
+.target-flash { animation:target-flash 1.2s ease; }
+@keyframes target-flash { 35% { box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent); } }
 @keyframes verdict-pulse {
   50% { transform:scale(1.04); box-shadow:0 0 0 15px color-mix(in srgb,currentColor 4%,transparent); }
 }

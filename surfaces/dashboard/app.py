@@ -31,6 +31,17 @@ if TYPE_CHECKING:
     from surfaces.dashboard.github_builds import GitHubReader
 
 _STATIC = Path(__file__).parent / "static"
+# Allowlist computed at import: request paths are only ever dict keys, so no
+# user input can reach a filesystem path or a response header (new static
+# files require a restart to be served).
+_STATIC_FILES: dict[str, tuple[Path, str]] = {
+    entry.name: (
+        entry,
+        mimetypes.guess_type(entry.name)[0] or "application/octet-stream",
+    )
+    for entry in _STATIC.iterdir()
+    if entry.is_file()
+}
 
 _RUN_VIEWS: dict[str, Callable[[GraphStore, str], object]] = {
     "verdict": projections.run_verdict,
@@ -98,7 +109,7 @@ def build_app(
                 verdict_projection(graph, verdict_run, azure, config, github=github),
             )
         if path.startswith("/api/containers/"):
-            return _container_view(path, query, azure, config, start_response)
+            return _container_view(graph, path, query, azure, config, start_response)
         if path.startswith("/api/runs/"):
             return _run_view(graph, azure, config, path, start_response)
         return _static(path, start_response)
@@ -126,6 +137,7 @@ def _run_view(
 
 
 def _container_view(
+    graph: GraphStore,
     path: str,
     query: dict[str, list[str]],
     azure: AzureReader | None,
@@ -141,8 +153,17 @@ def _container_view(
     except ValueError:
         requested = settings.log_tail_default
     tail = max(1, min(requested, settings.log_tail_max))
-    payload = container_logs(azure, settings, parts[0], tail)
+    payload = container_logs(
+        azure, settings, parts[0], tail, run_day=_run_day(graph, query)
+    )
     return _json(start_response, 200, payload)
+
+
+def _run_day(graph: GraphStore, query: dict[str, list[str]]) -> str:
+    """Resolve the selected run's day from its RunRequest, or empty."""
+    run_id = query.get("run", [""])[0]
+    node = projections.run_request_node(graph, run_id) if run_id else None
+    return str(node.props.get("requested_at", ""))[:10] if node else ""
 
 
 def _selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:
@@ -170,9 +191,9 @@ def _json(start_response: StartResponse, status: int, payload: object) -> list[b
 
 def _static(path: str, start_response: StartResponse) -> list[bytes]:
     name = "index.html" if path == "/" else path.lstrip("/")
-    target = (_STATIC / name).resolve()
-    if not target.is_relative_to(_STATIC.resolve()) or not target.is_file():
+    entry = _STATIC_FILES.get(name)
+    if entry is None:
         return _json(start_response, 404, {"error": f"not found {path}"})
-    content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+    target, content_type = entry
     start_response("200 OK", [("Content-Type", content_type)])
     return [target.read_bytes()]

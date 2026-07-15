@@ -48,6 +48,14 @@ def invoke(
     return captured["status"], captured["headers"], body
 
 
+def test_container_logs_route_scopes_to_selected_run() -> None:
+    app = build_app(cascade_graph("app-run"), FakeAzureReader(), _settings())
+    scoped = json.loads(invoke(app, "/api/containers/execution/logs?run=app-run")[2])
+    assert scoped["scope"] == "run"
+    unknown = json.loads(invoke(app, "/api/containers/execution/logs?run=ghost")[2])
+    assert unknown["scope"] == "latest"
+
+
 def test_runs_list_route() -> None:
     app = build_app(cascade_graph("app-run"))
     status, headers, body = invoke(app, "/api/runs")

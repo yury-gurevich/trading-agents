@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-15 12:52 AEST · **Version:** 0.70.00 · **S125 SHIPPED (merged `9420b78`); S126 BRANCH COMPLETE (resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health — the last DL-47 slice; verified, pending merge).**
+**Last updated:** 2026-07-15 13:10 AEST · **Version:** 0.70.00 · **S126 BRANCH COMPLETE + fixpack chores 0.69.01–0.69.05 integrated (this merge); resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health — the last DL-47 slice; merging to main.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -23,7 +23,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Recent (most recent first — detail in each sprint doc)
 
 - **S126 (DL-47 slice 5 FINAL, 0.69.00→0.70.00) — RUNS RESUME FROM A STAGE; DEPLOY CURRENCY IS
-  JUDGED. BRANCH COMPLETE, NOT MERGED.** Resume is supersession, never deletion: a child
+  JUDGED.** Resume is supersession, never deletion: a child
   `RunRequest` with a `RESUMES` edge links upstream artifacts (`LINKED_FROM`) and re-derives only
   the stages from the chosen point; operator-gated end-to-end (interpret → validate → primitive)
   with `CommandAudit` and a broker-consequence double-confirm for stages ≤ execution; dashboard
@@ -38,7 +38,44 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   bus `unverified` with credentials unset. Evidence + screenshots in
   `docs/reports/sprint-126-resume-and-tripwire/`; `make ci` 1566 passed / 5 skipped / 100%
   (planning-agent re-run on the exact tree). Codex-built; handback evidence completed and
-  re-verified by the planning agent (see the sprint doc's Return notes).
+  re-verified by the planning agent (see the sprint doc's Return notes). The merge integrated
+  fixpack chores 0.69.01–0.69.05 (below): `public_message` carried into the split-out
+  `projections_azure.py`, loud port bind + `ts()` timestamps kept alongside the github wiring
+  and deploy-currency chip.
+
+- **Chore (0.69.04→0.69.05) — FLAG VIEWS HONOUR RESOLUTIONS.** Flag views join
+  `FlagResolution`; resolved flags stop reading pending across the dashboard (`412dd82`,
+  merged `a5bbb5f`). Recorded here at the S126 merge — the chore's own session predated this
+  STATE entry.
+
+- **Chores (0.69.02→0.69.04) — FIXPACK ITEMS 2, 7, 8 SHIPPED.**
+  0.69.03: dead `compactSummary` client shim deleted — the hero renders server wording
+  verbatim (one wording source). 0.69.04: shared `ts()` renders `yyyy-MM-dd HH:mm UTC`
+  (decision: UTC, labeled) in the containers table, job card, vitals + hero next-fire, and
+  log drawer; Alpaca login link (new tab, `noopener`) in the Positions panel header.
+  PROVEN: `make ci` green each; live screenshot shows the readable stamps + the link.
+  Backlog rows 2/7/8 closed; row 9 added (live bus test fails instead of skipping without
+  the azure extra — importorskip guard needed).
+
+- **Chore (0.69.01→0.69.02) — LOG DRAWER FOLLOWS THE SELECTED RUN (DRIFT-022 CORRECTED).**
+  `/api/containers/<name>/logs` accepts `run=<id>`, resolves the day from the RunRequest,
+  and queries that day's fleet window (`run_window`); unscoped or unresolvable falls back to
+  the latest window and the payload says which via `scope`. The drawer sends the selected run
+  and titles the window it shows. PROVEN: unit truth-table (run-scoped window bounds, bad-day
+  fallback, unknown-run fallback) + `make ci` green + live Neon/Azure check (07-10 run returns
+  the 07-10 22:25→00:30 window).
+
+- **Chore (0.69.00→0.69.01) — FIXPACK 5+6 EARLY: SECURITY GATE UN-SILENCED; PORT BINDS LOUDLY.**
+  The five error-level CodeQL alerts that failed the Security Findings gate on every PR are
+  fixed at the source: dashboard statics serve from an import-time allowlist dict (request
+  paths are only dict keys — no user input reaches a filesystem path or response header,
+  closing 3× `py/path-injection` + `py/http-response-splitting`); Azure degradation messages
+  render `AzureReadError.public_message` (a structured attribute), never `str(exc)`
+  (closing `py/stack-trace-exposure`). `_ThreadingWSGIServer` sets `allow_reuse_address=False`
+  + a clear taken-port error, so a stale instance can never silently keep answering the
+  browser (fixpack item 5's split-brain). PROVEN: `make ci` green; live checks — traversal
+  paths 404, second instance on the same port exits loudly; gate-green proof lands with the
+  next PR's Security Findings run after CodeQL rescans main.
 
 - **S125 (DL-47 slice 4, 0.68.02→0.69.00) — THE OPERATOR IS AVAILABLE IN THE DASHBOARD.**
   `POST /api/chat` exposes only the existing bounded operator dispatch with dashboard-channel
@@ -203,9 +240,10 @@ a `DeployRecord`.
 Pending operator attention in the graph: 3 critical broker-divergence flags (the 07-14 run-start
 flag was reconciled by monitor but awaits ack) + stale inert confirm-intent warn flags from the
 S126 live check (partly resolution-view artifacts — see the sprint doc's Return notes).
-**Merge caution:** origin/main moved 12 commits (fixpack chores 0.69.01–0.69.05) after this
-branch was cut, touching the same dashboard files — expect a real merge and re-run `make ci` on
-the result.
+This merge integrates main's fixpack chores 0.69.01–0.69.05 (six conflicts hand-resolved;
+`public_message` carried into the split-out `projections_azure.py`); `make ci` re-run on the
+merge result before pushing. S127 fixpack backlog keeps collecting in
+`docs/sprints/s127-fixpack-backlog.md`.
 Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
 (Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
 `docs/laws/drift-register.md`, not yet packaged.
@@ -218,7 +256,7 @@ functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each spr
 
 - **DL-47 — operations dashboard (ACTIVE ARC).** **S122 SHIPPED 2026-07-10 (0.66.00, merged `820b8c9`)** — Section III run view. **S123 SHIPPED 2026-07-10 (0.67.00, merged `2ad656e`)** — Sections I/II, Azure REST read port, real logs/images, A$ costs, and live vitals; LAW-02 row + screenshots captured. **S124 SHIPPED 2026-07-11 (0.68.00, merged `b9ed20e`)** — glance-first
   master verdict + `NO_TRADE` acceptance verdict + operator-language sweep (redline r2, reqs
-  13–15). **S125 BRANCH COMPLETE 2026-07-13 (0.69.00, pending merge)** — tier-1 bounded
+  13–15). **S125 SHIPPED 2026-07-13 (0.69.00, merged `9420b78`)** — tier-1 bounded
   operator chat only. The repair agent remains a later tier and was deliberately not exposed.
   **S126 BRANCH COMPLETE 2026-07-15 (0.70.00, pending merge)** — resume-from-stage
   (supersession + `RESUMES` lineage) + `DeployRecord` deploy-currency judgement + tri-state bus

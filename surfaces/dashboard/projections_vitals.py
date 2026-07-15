@@ -14,6 +14,7 @@ from orchestration.batch_trace import walk_chain
 from surfaces.dashboard.projections import list_runs
 from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_state import run_positions
+from surfaces.queries.flags import pending_flags
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -35,10 +36,9 @@ def vitals_projection(
 ) -> dict[str, object]:
     """Project every DL-47 status-line vital from current read-side evidence."""
     selected = run_id or _latest_run_id(graph)
-    pending = sum(
-        str(node.props.get("status", "")) == "pending"
-        for node in graph.list_nodes("Flag")
-    )
+    # Resolution-aware: Flag props are append-only, so status alone lies once
+    # a FlagResolution exists (2026-07-14: the vital read 6 with 1 truly open).
+    pending = len(pending_flags(graph))
     sync = _sync(graph, selected)
     degraded = _degraded_feeds(graph, selected)
     infra = infra_projection(graph, azure, settings, now=now, github=github)

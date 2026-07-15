@@ -32,7 +32,7 @@ def apps(azure: AzureReader | None) -> tuple[list[AzureRow], str | None]:
     try:
         return azure.list_container_apps(), None
     except AzureReadError as exc:
-        return [], str(exc)
+        return [], exc.public_message
     except _FAILURES:
         return [], "Azure data unavailable"
 
@@ -44,7 +44,7 @@ def jobs(azure: AzureReader | None, name: str) -> tuple[list[AzureRow], str | No
     try:
         return azure.list_job_executions(name), None
     except AzureReadError as exc:
-        return [], str(exc)
+        return [], exc.public_message
     except _FAILURES:
         return [], "Azure job data unavailable"
 

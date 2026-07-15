@@ -2236,3 +2236,41 @@ acceptance verdict + operator-language sweep (reqs 13–14; **shipped 0.68.00, m
 gate fix that makes it honest on no-trade days; S125 = operator chat (req 15 pulls it ahead — it is how the skills
 catalogue becomes reachable outside the IDE); S126 = resume-from-stage + the DL-46 tripwire
 judgement (was S124).
+
+---
+
+## DL-48 · Three-actor parallelism outgrew the coordination model — process gaps + remedies  ·  status: DECIDED (2026-07-15)
+
+**Trigger.** The S126 closeout week: three actors now work in parallel (operator fixpack chores on
+main, Codex on sprint branches, planning agent on closeout/merge), and three near-misses surfaced in
+one session — all caught by gates, none reaching production.
+
+**The three gaps and the decided remedies.**
+
+1. **Branch drift is structural.** S126 was cut at 0.69.00; main reached 0.69.05 (12 commits, same
+   dashboard files) before handback. The visible cost was six merge conflicts; the invisible one:
+   the branch had moved `_apps`/`_jobs` into a new module, so main's CodeQL fix (`public_message`,
+   0.69.01) auto-merge-vanished and was restored only by hand during conflict resolution — a
+   semantic conflict no auto-merge catches. **Remedy (standing):** every sprint kickoff includes
+   "if main has moved when you finish: merge main into the branch, resolve, re-run `make ci`, and
+   say so in the return notes" — drift reconciliation is the coding agent's step, not a merge-time
+   surprise. While a sprint is in flight, fixpack chores avoid the sprint's contested files when
+   practical.
+2. **Handback contract must be bounced, not absorbed.** S126 arrived with the closeout placeholder
+   unfilled and return notes empty (both explicitly mandatory); the planning agent completed the
+   evidence instead of returning it. Right for that day's velocity, wrong as precedent. **Remedy:**
+   the kickoff's final instruction is the closeout/return-notes fill, and an incomplete handback is
+   returned to the coding agent, not repaired.
+3. **Secrets never through the worktree.** A rotated PAT arrived as a repo-root scratch file and
+   was staged by `git add -A` during conflict resolution; only detect-secrets stopped it. **Remedy:**
+   new hard rule in CLAUDE.md ("Secrets — never through the worktree"): chat or gitignored
+   `.env`/`*.local.json` only; a secret found in a tree file is deleted, purged from the index, and
+   verified never-committed before work continues.
+
+**Context, not a gap.** The dispatcher tag semantics (backlog row 12) and the operator `approve`
+misroute (row 11) are first-contact findings, not process failures — DL-19's loop working as
+designed. Read: not a quality decline; a coordination model catching up with parallelism.
+
+**Ruled out.** Freezing main during sprints (kills the fixpack loop's same-day value); giving the
+planning agent standing authority to finish handbacks (hides coding-agent regressions and erodes
+the closeout contract).

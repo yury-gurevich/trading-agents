@@ -109,6 +109,16 @@ both tried to track status.
 
 ---
 
+## Secrets — never through the worktree
+
+Credentials never exist as files inside the repo tree, not even untracked scratch files
+(a `git add -A` during a merge stages them; detect-secrets is the last line, not the process).
+Receive secrets via chat or place them directly into `.env` / `infra/*.local.json`
+(both gitignored). If a secret is ever found in a tree file: delete it, purge it from the
+index, and verify it never reached a commit before continuing.
+
+---
+
 ## Capture decisions — the conversation is part of the work (LAW-06)
 
 When a discussion produces a **decision, trade-off, discovered constraint, or ruled-out

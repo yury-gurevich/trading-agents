@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-15 13:50 AEST · **Version:** 0.70.00 · **S126 SHIPPED (merged `297354b`, CI + images + CodeQL green) — resume-from-stage + DL-46 deploy-currency judgement + tri-state bus health. THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).**
+**Last updated:** 2026-07-15 16:20 AEST · **Version:** 0.70.00 · **S126 SHIPPED (merged `297354b`) + FLEET DEPLOYED `:s126` — the DL-47 arc is complete and live. S127 fixpack packaged for Codex (rows 4/9/10/11/12, targets 0.71.00) under the new DL-48 handback/drift/secrets contract.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -247,7 +247,12 @@ all 13 Container Apps + `dispatcher-cron`; the live pull proof is tonight's 22:3
 Pending operator attention in the graph: 3 critical broker-divergence flags (the 07-14 run-start
 flag was reconciled by monitor but awaits ack) + stale inert confirm-intent warn flags from the
 S126 live check (partly resolution-view artifacts — see the sprint doc's Return notes).
-S127 fixpack backlog keeps collecting in `docs/sprints/s127-fixpack-backlog.md`.
+**S127 PACKAGED for Codex** (`docs/sprints/sprint-127-fixpack.md`, 2026-07-15): backlog rows
+4/9/10/11/12 — flag ack/resolve through the audited `approve` command, `approve` routing fix,
+template-based dispatcher currency semantics, warning deep-links, azure-extra test skip. The
+kickoff enforces the **DL-48** contract (drift reconciliation before handback, closeout/return
+notes as a bounced-not-repaired gate, secrets never through the worktree — also now a CLAUDE.md
+hard rule). Session diagnosis behind it is design-log **DL-48**.
 Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
 (Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
 `docs/laws/drift-register.md`, not yet packaged.

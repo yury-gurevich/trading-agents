@@ -230,11 +230,16 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 ## Now
 
 On `main` at 0.70.00. **S126 SHIPPED (merged `297354b`; GitHub CI + image build + CodeQL green)
-— THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).** Images for `297354b` are built and pushed;
-the running fleet stays on `:s121`, and the dashboard now *measurably* says so: deploy currency
-reads **behind**. The natural next step is a DL-46 retag via `/deploy-fleet` (operator's call),
-which now must append a `DeployRecord` — that flips the judgement to `current` and puts the
-whole DL-47 dashboard, S126 resume affordance included, on the deployed fleet.
+— THE DL-47 DASHBOARD ARC IS COMPLETE (S122–S126).**
+**THE FLEET IS DEPLOYED AT `:s126`** (operator-directed retag, 2026-07-15 ~15:50 AEST): images
+built at `0773ae8` (run `29392150781`, all 14 pushed), all 13 apps + `dispatcher-cron` updated
+`Succeeded`, env + KEDA scale rules verified intact, and
+`DeployRecord deploy:2026-07-15T05:49:41…:s126:0773ae8…` appended after verification. The retag
+also **live-proved the rotated GHCR pull PAT** — every new revision pulled its `:s126` image
+with the new credential. Deploy currency still reads `behind` for an honest-but-surprising
+reason: the judgement takes the dispatcher's tag from its latest *execution* (last night's
+`:s121` run); it flips to `current` at tonight's 22:30 UTC fire — semantics decision queued as
+fixpack backlog row 12.
 Same session: the `trading-agents-ghcr-pull` PAT was rotated — tested first (GHCR manifest pull
 200 + Actions read 200), then placed in `.env` (`GITHUB_TOKEN`, read by the deploy-currency
 judgement), `infra/ghcr.local.json`, the `GHCR_PAT` repo secret, and the registry credentials on

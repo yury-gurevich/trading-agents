@@ -63,9 +63,9 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S128** (S122–S127 shipped — S126 merged `297354b` closed the DL-47 arc;
-   S127 fixpack merged `32c73cc` at 0.71.00, the first handback executed and verified under
-   the DL-48 contract).
+1. Next number: **S129** (S127 fixpack merged `32c73cc` at 0.71.00; **S128 packaged**
+   2026-07-16 — `sprint-128-feed-resilience.md`, DRIFT-021 feed resilience, live check
+   blocked on DRIFT-023).
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

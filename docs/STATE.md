@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-15 18:30 AEST · **Version:** 0.71.00 · **S127 FIXPACK SHIPPED (merged `32c73cc`) — the first handback executed AND verified under the DL-48 contract, bounced-nothing. Fleet on `:s126`; flags are now actionable from the dashboard.**
+**Last updated:** 2026-07-16 15:10 AEST · **Version:** 0.71.00 · **🔴 SPINE DOWN — Neon free-tier data-transfer quota exhausted (DRIFT-023, operator decision needed). S127 SHIPPED (merged `32c73cc`); fleet on `:s126` (last night's dispatcher fire Succeeded on the new image + rotated PAT); S128 (DRIFT-021 feed resilience) packaged, live check blocked on the spine.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -244,8 +244,19 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
+**🔴 DRIFT-023 — THE SPINE IS DOWN (2026-07-16 ~15:00 AEST).** Neon refuses every connection:
+free-tier data-transfer quota exhausted. The 2026-07-15T22:30Z dispatcher execution
+**Succeeded on `:s126`** (rotated PAT + new image production-proven), but chain completion is
+unverifiable and tonight's run will fail against a dead spine. Free-tier reset is ~2026-08-01 —
+waiting is not viable. **Operator decision: upgrade the Neon plan vs migrate vs egress-reduction
+only** (read caching/backoff worth packaging regardless). Everything below is pre-incident
+status; **S128's live check is blocked** until the spine is reachable.
+
 On `main` at 0.71.00. **S127 FIXPACK SHIPPED (merged `32c73cc`; local + branch + main CI green)
-on top of the completed DL-47 arc (S122–S126, S126 merged `297354b`).**
+on top of the completed DL-47 arc (S122–S126, S126 merged `297354b`). S128 (DRIFT-021 feed
+resilience) PACKAGED 2026-07-16** (`docs/sprints/sprint-128-feed-resilience.md`, targets
+0.71.01): per-request Finnhub pacing, per-ticker fault attribution (DRIFT-014 pattern), durable
+attributed notes — parts A–C executable now, live check awaits the spine.
 **THE FLEET IS DEPLOYED AT `:s126`** (operator-directed retag, 2026-07-15 ~15:50 AEST): images
 built at `0773ae8` (run `29392150781`, all 14 pushed), all 13 apps + `dispatcher-cron` updated
 `Succeeded`, env + KEDA scale rules verified intact, and

@@ -90,9 +90,17 @@ def _part_with_notes(agent: ProviderAgent, notes: tuple[str, ...]) -> MarketData
 def test_optional_notes_keeps_only_degraded() -> None:
     agent = _agent(InMemoryGraphStore())
     part = _part_with_notes(
-        agent, ("inconsistent_ohlcv_rejected", "news_degraded", "fundamentals_degraded")
+        agent,
+        (
+            "inconsistent_ohlcv_rejected",
+            "news_degraded",
+            "fundamentals_degraded:2:AAPL,MSFT:429",
+        ),
     )
-    assert _optional_notes((part,)) == ("news_degraded", "fundamentals_degraded")
+    assert _optional_notes((part,)) == (
+        "news_degraded",
+        "fundamentals_degraded:2:AAPL,MSFT:429",
+    )
 
 
 def test_merge_parts_revalidates_full_batch_dropping_per_chunk_ohlcv_notes() -> None:
@@ -100,13 +108,15 @@ def test_merge_parts_revalidates_full_batch_dropping_per_chunk_ohlcv_notes() -> 
     agent = _agent(graph)
     window = _today_window()
     # per-chunk quality carries an OHLCV-side note + a real optional fault
-    part = _part_with_notes(agent, ("inconsistent_ohlcv_rejected", "news_degraded"))
+    part = _part_with_notes(
+        agent, ("inconsistent_ohlcv_rejected", "news_degraded:1:AAPL:429")
+    )
     merged = _merge_parts(agent, (part,), _UNIVERSE, window)
     # OHLCV recomputed on the full (clean) batch -> spurious per-chunk note gone
     assert "inconsistent_ohlcv_rejected" not in merged.quality.notes
     # the real optional-field fault is carried over as a NOTE, but no longer taints
     # the batch (DRIFT-012); the recomputed OHLCV is clean, so used_fallback is False
-    assert "news_degraded" in merged.quality.notes
+    assert "news_degraded:1:AAPL:429" in merged.quality.notes
     assert merged.quality.used_fallback is False
 
 

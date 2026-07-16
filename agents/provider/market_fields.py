@@ -1,16 +1,17 @@
 """Provider optional market-data field gating.
 
 Agent: provider
-Role: fetch each optionally-requested MarketData field behind its own fault boundary,
-      degrading to empty with an honest quality note instead of failing the request.
-External I/O: none directly (delegates to the injected DataSource).
+Role: fetch optional fields behind independent fault boundaries.
+External I/O: delegates to the injected DataSource.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import TYPE_CHECKING
 
+from contracts.feed_notes import consume_degraded_feed_notes
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class OptionalFields:
-    """The optional MarketData fields plus the (possibly degraded) quality trace."""
+    """The optional MarketData fields plus the quality trace."""
 
     fundamentals: dict[str, dict[str, float]]
     news: dict[str, tuple[str, ...]]
@@ -53,40 +54,36 @@ def collect_optional_fields(
     empty_strs: dict[str, str] = {}
     empty_dates: dict[str, date] = {}
     empty_bars: tuple[OHLCVBar, ...] = ()
-    fundamentals, quality = _fetch_optional(
-        sink,
+    fetch_optional = partial(_fetch_optional, sink, source=source)
+    fundamentals, quality = fetch_optional(
         requested="fundamentals" in fields,
         fetch=lambda: source.fetch_fundamentals(tickers, window),
         empty=empty_funda,
         note="fundamentals_degraded",
         quality=quality,
     )
-    news, quality = _fetch_optional(
-        sink,
+    news, quality = fetch_optional(
         requested="news" in fields,
         fetch=lambda: source.fetch_news(tickers, window),
         empty=empty_news,
         note="news_degraded",
         quality=quality,
     )
-    sentiment, quality = _fetch_optional(
-        sink,
+    sentiment, quality = fetch_optional(
         requested="sentiment" in fields,
         fetch=lambda: source.fetch_sentiment(tickers),
         empty=empty_floats,
         note="sentiment_degraded",
         quality=quality,
     )
-    sectors, quality = _fetch_optional(
-        sink,
+    sectors, quality = fetch_optional(
         requested="sectors" in fields,
         fetch=lambda: source.fetch_sectors(tickers),
         empty=empty_strs,
         note="sectors_degraded",
         quality=quality,
     )
-    earnings, quality = _fetch_optional(
-        sink,
+    earnings, quality = fetch_optional(
         requested="earnings_calendar" in fields,
         fetch=lambda: source.fetch_earnings(tickers, window),
         empty=empty_dates,
@@ -96,8 +93,7 @@ def collect_optional_fields(
     benchmark = empty_bars
     if "benchmark" in fields and benchmark_ticker is not None:
         bench = benchmark_ticker
-        benchmark, quality = _fetch_optional(
-            sink,
+        benchmark, quality = fetch_optional(
             requested=True,
             fetch=lambda: source.fetch_ohlcv((bench,), window),
             empty=empty_bars,
@@ -123,16 +119,9 @@ def _fetch_optional[T](
     empty: T,
     note: str,
     quality: DataQualityTrace,
+    source: object,
 ) -> tuple[T, DataQualityTrace]:
-    """Fetch one optional field behind its own fault boundary.
-
-    Returns the fetched value with unchanged quality on success; the empty value plus a
-    NOTE on fault; the empty value with unchanged quality when not requested. An
-    optional-field fault **never sets ``used_fallback`` (DRIFT-012):** a degraded
-    fundamentals/news/sentiment/sectors/earnings/benchmark field forgoes *that* signal,
-    never the whole analysis — only core OHLCV degradation (`validate_bars`) blocks
-    trading. The fault is still routed to the central channel.
-    """
+    """Fetch one optional field; enrichment faults never taint OHLCV (DRIFT-012)."""
     if not requested:
         return empty, quality
     value = empty
@@ -147,4 +136,9 @@ def _fetch_optional[T](
     if capture.fault is not None:
         notes = (*quality.notes, note)
         return empty, quality.model_copy(update={"notes": notes})
+    notes = consume_degraded_feed_notes(source)
+    if notes:
+        quality = quality.model_copy(
+            update={"notes": tuple(dict.fromkeys((*quality.notes, *notes)))}
+        )
     return value, quality

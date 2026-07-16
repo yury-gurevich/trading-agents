@@ -31,7 +31,7 @@ def test_vitals_reflect_pending_flags_feeds_images_and_cost() -> None:
                 "quality": {
                     "notes": [
                         "news_degraded",
-                        "fundamentals_degraded",
+                        "fundamentals_degraded:3:AAPL,MSFT,NVDA:429",
                         "not-a-feed",
                     ]
                 }
@@ -64,6 +64,10 @@ def test_vitals_reflect_pending_flags_feeds_images_and_cost() -> None:
     )
     assert result["pending_flags"] == 1
     assert cast("dict[str, Any]", result["degraded_feeds"])["count"] == 2
+    assert cast("dict[str, Any]", result["degraded_feeds"])["feeds"] == [
+        "fundamentals",
+        "news",
+    ]
     assert cast("dict[str, Any]", result["images"])["status"] == "observed"
     assert cast("dict[str, Any]", result["mtd_cost"])["hardware"] == 7.29
 

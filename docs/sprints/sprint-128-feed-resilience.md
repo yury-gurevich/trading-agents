@@ -165,15 +165,27 @@ scorecard-run has been parked behind.
 
 ```text
 CLOSEOUT — Sprint 128
-Branch / merge commit:   sprint-128-feed-resilience / <pending>
-make ci:                 <exit code + counts>
-Functionality check:     <paced full-universe result + elapsed vs window + granularity proof
-                          (attributed 429s, majority kept) + Neon persistence + teardown sweep
-                          + where recorded>
+Branch / merge commit:   sprint-128-feed-resilience / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1590 passed, 5 skipped;
+                          total coverage 100.00 %
+Functionality check:     Code proof complete; live paced/unpaced full-universe Finnhub + Neon
+                          proof blocked before ingest by DRIFT-023 and the read-only uv
+                          Postgres probe returning DEP-POSTGRES-01 RED postgres:
+                          reachable OperationalError. No full-universe Finnhub run started,
+                          no disposable run id created, no graph nodes written, teardown sweep
+                          count 0. Recorded in docs/laws/functionality-checks.md and
+                          docs/reports/sprint-128-feed-resilience/code-and-live-preflight.md.
 Version:                 0.71.00 → 0.71.01 (PATCH); uv.lock refreshed
-DRIFT-021:               <register row status line as committed>
-Drift rule:              <"main unmoved" | what moved + merge + re-gate evidence>
-Deviations from spec:    <none | list>
+DRIFT-021:               OPEN — S128 code proof complete on branch
+                          sprint-128-feed-resilience (0.71.01); live correction blocked by
+                          DRIFT-023 / Neon OperationalError. Paced/unpaced full-universe live
+                          Finnhub + Neon proof still required before CORRECTED.
+Drift rule:              main unmoved after git fetch; branch base and origin/main both da125fb;
+                          no merge and no post-fetch re-gate required.
+Deviations from spec:    Live LAW-02 functionality check and DRIFT-021 → CORRECTED update were
+                          not completed because the sprint file's own DRIFT-023 precondition
+                          still failed and Neon was unreachable. Everything code/test/doc-local
+                          in Sprint 128 completed on branch.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -185,3 +197,12 @@ section is empty or the closeout placeholder is unfilled (LAW-02 + DL-48: the ha
 prove, not restate intent — and an incomplete handback is bounced, not repaired).
 
 <!-- return notes go below this line -->
+
+2026-07-16 handback:
+- Implemented Sprint 128's code-side correction on `sprint-128-feed-resilience`: Finnhub HTTP calls now go through an injectable per-request minute budget (`PROVIDER_FINNHUB_REQUEST_BUDGET_PER_MINUTE`, default 55, `0` disables), with deterministic clock/sleep tests for under-budget bursts, the N+1 wait, and disabled pacing.
+- Hardened all four Finnhub enrichment loops (fundamentals, news, sectors, earnings) so one ticker failure is attributed and skipped while the rest of the feed survives. The bounded note format is `<feed>_degraded:<count>:<first-N-tickers>:<error-class>`; the ticker cap is tunable via `PROVIDER_FINNHUB_DEGRADED_NOTE_TICKER_CAP`.
+- Added the shared note parser in `contracts/feed_notes.py`; `ingest_chunked`, the dashboard degraded-feeds vital, and source-owned provider notes use it so both legacy bare notes and attributed notes count as degraded feeds. The DRIFT-012 invariant is pinned: enrichment faults do not set `used_fallback`.
+- Kept `agents/provider/market_fields.py` as the boundary, not the growth point; it is 131 lines after the change, below the sprint cap of 151 and under the 200-line hard gate.
+- Green evidence before handback: focused resilience/provider tests passed (`6 passed`), full `make ci` passed with `MAKE_CI_EXIT_CODE=0`, `1590 passed, 5 skipped`, total coverage `100.00 %`. The Makefile still reports the known ignored `pip-audit` diskcache advisory after the successful gate.
+- Live proof was not run: DRIFT-023 still reads OPEN and the safe read-only Postgres preflight returned `DEP-POSTGRES-01 RED postgres: reachable OperationalError` with DSN suppressed. Because the sprint file says not to start the live check until DRIFT-023 is resolved, no paced/unpaced Finnhub full-universe run, MarketData durability query, or graph teardown sweep was attempted; created nodes/run ids/sweep count are all zero.
+- Next session should first resolve or verify DRIFT-023, then run exactly the two permitted provider-stage live ingests under non-`sched-*` disposable run ids: paced first, unpaced second using the live Finnhub rate limit as injector, then query Neon for the attributed notes and tear down every named artifact before marking DRIFT-021 CORRECTED.

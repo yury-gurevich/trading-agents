@@ -7,16 +7,12 @@ External I/O: process environment and the .env file.
 
 from __future__ import annotations
 
-from pydantic import Field
-from pydantic_settings import SettingsConfigDict
-
-from kernel import AgentSettings, tunable
+from agents.provider.settings_feeds import ProviderFeedSettings
+from kernel import tunable
 
 
-class ProviderSettings(AgentSettings):
+class ProviderSettings(ProviderFeedSettings):
     """Settings for the market-data boundary agent."""
-
-    model_config = SettingsConfigDict(env_prefix="PROVIDER_", frozen=True)
 
     base_min_confidence: float = tunable(
         0.60,
@@ -83,116 +79,4 @@ class ProviderSettings(AgentSettings):
         why="Extreme-volatility VIX level from the reference regime gate.",
         ge=0.0,
         le=150.0,
-    )
-
-    finnhub_timeout: int = tunable(
-        10,
-        why="Bound the Finnhub fundamentals HTTPS call so a slow feed cannot hang.",
-        ge=1,
-        le=60,
-        unit="seconds",
-    )
-
-    # Chunked ingest (DL-17) — pace per-ticker feeds (Finnhub) under free-tier limits.
-    ingest_chunk_size: int = tunable(
-        0,
-        why=(
-            "Universe sub-batch size for paced ingest; 0 disables chunking (one"
-            " single-shot batch). Tune against the per-ticker feed's per-minute cap."
-        ),
-        ge=0,
-        le=500,
-    )
-    ingest_chunk_delay_seconds: float = tunable(
-        60.0,
-        why=(
-            "Pause between ingest chunks so the aggregate per-minute API call rate"
-            " stays under the free-tier ceiling (Finnhub ~60/min, 4 calls/ticker)."
-        ),
-        ge=0.0,
-        le=600.0,
-        unit="seconds",
-    )
-    ingest_ohlcv_only: bool = Field(default=False)  # OHLCV-only fast mode (DL-29)
-
-    finnhub_base_url: str = Field(default="https://finnhub.io/api/v1")
-    finnhub_api_key: str = Field(default="", repr=False)
-    fred_api_key: str = Field(default="", repr=False)
-
-    # FMP — validation sub-universe / failover feed (~87 symbols, ADR-0006).
-    fmp_base_url: str = Field(default="https://financialmodelingprep.com")
-    fmp_api_key: str = Field(default="", repr=False)
-    fmp_timeout: int = tunable(
-        15,
-        why="Bound the FMP EOD HTTPS call so a slow feed cannot hang the run.",
-        ge=1,
-        le=60,
-        unit="seconds",
-    )
-
-    # Tiingo — full-universe live OHLCV feed (ADR-0006; closes DRIFT-009).
-    tiingo_base_url: str = Field(default="https://api.tiingo.com")
-    tiingo_api_key: str = Field(default="", repr=False)
-    tiingo_timeout: int = tunable(
-        15,
-        why="Bound the Tiingo EOD HTTPS call so a slow feed cannot hang the run.",
-        ge=1,
-        le=60,
-        unit="seconds",
-    )
-
-    # Alpaca — primary batch OHLCV feed (DL-16). One request covers up to ~100
-    # symbols, sidestepping the per-symbol rate limit that 429s Tiingo on large runs.
-    alpaca_data_base_url: str = Field(default="https://data.alpaca.markets")
-    alpaca_api_key: str = Field(default="", repr=False)
-    alpaca_api_secret: str = Field(default="", repr=False)
-    alpaca_data_feed: str = Field(
-        default="iex",  # free feed; 'sip' requires a paid Alpaca market-data plan.
-    )
-    alpaca_data_timeout: int = tunable(
-        15,
-        why="Bound the Alpaca bars HTTPS call so a slow feed cannot hang the run.",
-        ge=1,
-        le=60,
-        unit="seconds",
-    )
-
-    # Alpha Vantage — vendor news sentiment (provider-sentiment challenger, ADR-0002).
-    alphavantage_base_url: str = Field(default="https://www.alphavantage.co")
-    alphavantage_api_key: str = Field(default="", repr=False)
-    alphavantage_timeout: int = tunable(
-        25,
-        why="Bound the Alpha Vantage sentiment call so a slow feed cannot hang.",
-        ge=1,
-        le=60,
-        unit="seconds",
-    )
-    finnhub_news_lookback_days: int = tunable(
-        7,
-        why=(
-            "Trailing window of company news to fetch; recent headlines only,"
-            " not the full OHLCV lookback."
-        ),
-        ge=1,
-        le=90,
-        unit="days",
-    )
-    max_news_per_ticker: int = tunable(
-        20,
-        why=(
-            "Cap headlines per ticker so a noisy feed cannot dominate"
-            " the downstream sentiment pillar."
-        ),
-        ge=1,
-        le=100,
-    )
-    finnhub_earnings_lookahead_days: int = tunable(
-        30,
-        why=(
-            "Forward window scanned for each ticker's next earnings date;"
-            " comfortably covers any scanner earnings-exclusion threshold."
-        ),
-        ge=1,
-        le=180,
-        unit="days",
     )

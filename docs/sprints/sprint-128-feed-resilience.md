@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-128-feed-resilience`
-**Status:** ready for handover (packaged 2026-07-16)
+**Status:** live check complete (2026-07-19) — code handback 2026-07-16, live proof after DRIFT-023 resolved
 **Effort:** M
 
 ---
@@ -168,18 +168,19 @@ CLOSEOUT — Sprint 128
 Branch / merge commit:   sprint-128-feed-resilience / not merged by instruction
 make ci:                 MAKE_CI_EXIT_CODE=0; 1590 passed, 5 skipped;
                           total coverage 100.00 %
-Functionality check:     Code proof complete; live paced/unpaced full-universe Finnhub + Neon
-                          proof blocked before ingest by DRIFT-023 and the read-only uv
-                          Postgres probe returning DEP-POSTGRES-01 RED postgres:
-                          reachable OperationalError. No full-universe Finnhub run started,
-                          no disposable run id created, no graph nodes written, teardown sweep
-                          count 0. Recorded in docs/laws/functionality-checks.md and
-                          docs/reports/sprint-128-feed-resilience/code-and-live-preflight.md.
+Functionality check:     COMPLETE 2026-07-19 (planning agent, after DRIFT-023 resolved and
+                          DEP-POSTGRES-01 probed GREEN): paced full-universe ingest 99/99,
+                          zero degraded notes, 429.0 s; unpaced ingest vs the live 60/min
+                          limit -> <feed>_degraded:39:MET,META,MMM,MO,MRK:429 on all four
+                          feeds, 60/99 kept, used_fallback False; attributed notes read back
+                          off Neon via fresh SQL. Teardown: 12 nodes + 4 edges deleted,
+                          remaining s128-live nodes=0 edges=0. Recorded in
+                          docs/laws/functionality-checks.md and
+                          docs/reports/sprint-128-feed-resilience/live-check.md.
 Version:                 0.71.00 → 0.71.01 (PATCH); uv.lock refreshed
-DRIFT-021:               OPEN — S128 code proof complete on branch
-                          sprint-128-feed-resilience (0.71.01); live correction blocked by
-                          DRIFT-023 / Neon OperationalError. Paced/unpaced full-universe live
-                          Finnhub + Neon proof still required before CORRECTED.
+DRIFT-021:               CORRECTED (2026-07-19) — live paced/unpaced full-universe proof +
+                          Neon durability read-back complete; register row updated with
+                          cited tests + evidence.
 Drift rule:              main unmoved after git fetch; branch base and origin/main both da125fb;
                           no merge and no post-fetch re-gate required.
 Deviations from spec:    Live LAW-02 functionality check and DRIFT-021 → CORRECTED update were
@@ -199,6 +200,7 @@ prove, not restate intent — and an incomplete handback is bounced, not repaire
 <!-- return notes go below this line -->
 
 2026-07-16 handback:
+
 - Implemented Sprint 128's code-side correction on `sprint-128-feed-resilience`: Finnhub HTTP calls now go through an injectable per-request minute budget (`PROVIDER_FINNHUB_REQUEST_BUDGET_PER_MINUTE`, default 55, `0` disables), with deterministic clock/sleep tests for under-budget bursts, the N+1 wait, and disabled pacing.
 - Hardened all four Finnhub enrichment loops (fundamentals, news, sectors, earnings) so one ticker failure is attributed and skipped while the rest of the feed survives. The bounded note format is `<feed>_degraded:<count>:<first-N-tickers>:<error-class>`; the ticker cap is tunable via `PROVIDER_FINNHUB_DEGRADED_NOTE_TICKER_CAP`.
 - Added the shared note parser in `contracts/feed_notes.py`; `ingest_chunked`, the dashboard degraded-feeds vital, and source-owned provider notes use it so both legacy bare notes and attributed notes count as degraded feeds. The DRIFT-012 invariant is pinned: enrichment faults do not set `used_fallback`.
@@ -206,3 +208,11 @@ prove, not restate intent — and an incomplete handback is bounced, not repaire
 - Green evidence before handback: focused resilience/provider tests passed (`6 passed`), full `make ci` passed with `MAKE_CI_EXIT_CODE=0`, `1590 passed, 5 skipped`, total coverage `100.00 %`. The Makefile still reports the known ignored `pip-audit` diskcache advisory after the successful gate.
 - Live proof was not run: DRIFT-023 still reads OPEN and the safe read-only Postgres preflight returned `DEP-POSTGRES-01 RED postgres: reachable OperationalError` with DSN suppressed. Because the sprint file says not to start the live check until DRIFT-023 is resolved, no paced/unpaced Finnhub full-universe run, MarketData durability query, or graph teardown sweep was attempted; created nodes/run ids/sweep count are all zero.
 - Next session should first resolve or verify DRIFT-023, then run exactly the two permitted provider-stage live ingests under non-`sched-*` disposable run ids: paced first, unpaced second using the live Finnhub rate limit as injector, then query Neon for the attributed notes and tear down every named artifact before marking DRIFT-021 CORRECTED.
+
+2026-07-19 planning-agent live check (completes the handback's "next session" item):
+- DRIFT-023 verified resolved before anything else: `DEP-POSTGRES-01 GREEN postgres: reachable SELECT 1` (same Neon Sydney endpoint; operator reported the quota issue solved). Register row moved to RESOLVED.
+- Ran exactly the two permitted full-universe live ingests: paced (`s128-live-paced-20260719`) — 99/99, zero degraded notes, 429.0 s, well inside the fleet window; unpaced (`s128-live-unpaced-20260719`) — the live 60/min limit attributed 39 tickers per feed as `:429` with 60/99 kept and `used_fallback=False`. Zero whole-feed notes in both.
+- Honest deviation: the disposable driver initially loaded no `.env` (it lived outside the repo tree, `load_dotenv()` searches upward from the script), so `build_graph_from_env` silently fell back to in-memory — the two full-universe runs' Finnhub evidence is valid live stdout, but their graph writes never reached Neon. Fixed the driver (explicit env path + a refuse-to-run-in-memory guard) and proved durability with small Neon-wired runs instead of burning a third full-universe ingest: `s128-live-durability-d-20260719` (40 tickers) persisted `sectors_degraded:20:CMCSA,COF,COP,COST,CRM:429` + `earnings_degraded:20:…:429`, read back over a fresh psycopg SELECT. Details in `docs/reports/sprint-128-feed-resilience/live-check.md`.
+- Vendor observation worth keeping: Finnhub's free-tier limiter behaves like fixed calendar-minute buckets (80 calls in 32 s straddling two buckets → zero 429s; ~160 calls in 62 s trips reliably). The 55/min sliding budget is safe under either reading.
+- Follow-up queued by DRIFT-023: egress-reduction hardening (dashboard read caching/backoff, leaner nightly polling) — worth packaging even with the quota issue resolved.
+- Teardown: `pg_teardown --prefix s128-live --contains` deleted 12 nodes + 4 edges; remaining nodes=0, edges=0. DRIFT-021 → CORRECTED in the register.

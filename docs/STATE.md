@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-19 18:40 AEST · **Version:** 0.71.02 · **🟢 S129 (fixpack) SHIPPED same day — merged `3be1ee8`, tag `v0.71.02` (CI + CodeQL green; `build-images` deliberately RED: the new Trivy gate enforces against 22 pre-existing base-image CVEs — backlog row H queued; images still push). Earlier today: DRIFT-023 RESOLVED (Neon plan upgraded), S128 SHIPPED + fleet deployed `:s128`.** Tonight's 22:30 UTC fire is the first scheduled run with paced, per-ticker-resilient feeds — watch for zero `*_degraded` notes. S129's quant-metrics deliberation context reaches the fleet at the next retag (operator's call).
+**Last updated:** 2026-07-19 19:50 AEST · **Version:** 0.71.03 · **🟢 S130 (base-image chore) SHIPPED — merged `8aefe2a`, tag `v0.71.03`; `build-images` on main is GREEN again (Trivy `ignore-unfixed` + all 14 images two-stage on near-zero-CVE `dhi.io/python:3.13`; provider image −30 %; row H Done, R005 Adopted). Third ship today after S128 (+fleet `:s128`) and S129; DRIFT-023 RESOLVED this morning.** Tonight's 22:30 UTC fire: first scheduled run with paced, per-ticker-resilient feeds — watch for zero `*_degraded` notes. Fleet retag past `:s128` (picks up S129 quant-metrics context + S130 hardened nonroot/no-shell runtimes) is the operator's call via `/deploy-fleet`.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -304,12 +304,20 @@ real base-image CVEs per representative image and correctly fails the run (nothi
 image build reads red until drained — images still push**). Hardening backlog C–F reconciled
 with evidence; DL-50 records the ADR-0007 DockerHub→GHCR drift for a future amendment cycle.
 Evidence: `docs/reports/sprint-129-fixpack/live-proof.md`.
-**S130 (base-image chore) PACKAGED 2026-07-19** (`docs/sprints/sprint-130-base-image.md`,
-targets 0.71.03; research R005): Part A `ignore-unfixed: true` drains the red Trivy gate
-today; Part B migrates all 14 Dockerfiles two-stage onto free near-zero-CVE
-`dhi.io/python:3.13` (Docker Hardened Images, Apache 2.0 since Dec 2025); `.trivyignore`
-stays empty; fleet retag stays operator-gated. P12 scorecard-run (unblocked by S128's live
-news runway) queues behind it.
+**S130 (base-image chore) SHIPPED 2026-07-19** (merged `8aefe2a`, 0.71.03, tag `v0.71.03`;
+Codex-built, planning review re-ran the gate — exit 0, 1597 passed / 100 %; PR #51 checks
+green; post-merge `build-images` on main **GREEN**). Trivy keeps HIGH/CRITICAL `exit-code: 1`,
+adds `ignore-unfixed: true`, and now scans **all 14 images** (widened from the S129
+representative trio); all Dockerfiles are two-stage `dhi.io/python:3.13-dev` → `dhi.io/
+python:3.13` (venv-carrying, no shell/uv at runtime — nonroot minimal base); actionable
+findings 22 → 0; provider image 215 MB → 150 MB; `.trivyignore` still empty; permanent
+provider missing-config smoke + size note added to the workflow. Live proof:
+`docs/reports/sprint-130-base-image/live-proof.md` (run `29681635979`, all 14 `s130-test`
+images). Row H Done; R005 Adopted. **2026-07-19 threat-model review added backlog rows I**
+(per-agent spine/bus credential scoping — the shared `POSTGRES_DSN`/Service Bus string is
+the real blast-radius item, DL-49-adjacent Kerckhoffs discussion) **and J** (dispatcher
+image COPYs the whole repo — slim to the dispatch import closure). P12 scorecard-run
+(unblocked by S128's live news runway) is next in queue.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

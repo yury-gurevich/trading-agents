@@ -2274,3 +2274,26 @@ designed. Read: not a quality decline; a coordination model catching up with par
 **Ruled out.** Freezing main during sprints (kills the fixpack loop's same-day value); giving the
 planning agent standing authority to finish handbacks (hides coding-agent regressions and erodes
 the closeout contract).
+
+---
+
+## DL-49 · Stored procedures for dashboard reads — ruled out  ·  status: DECIDED (2026-07-19)
+
+Operator asked why the dashboard does not use Postgres stored procedures. Answer recorded so the
+question stays closed.
+
+**Decision.** Dashboard read logic stays in Python projections behind the `GraphStore` port;
+no logic moves into database procedures.
+
+**Why.** (1) Postgres is one adapter of the port — the same projections run against the
+in-memory store, which is what keeps the suite fast and the 100 % floor holdable; a stored
+procedure has no in-memory twin. (2) Procedures escape the whole CI gate (ruff, mypy, coverage,
+module-size, import-linter) and would be versioned via alembic instead of reviewable code.
+(3) ADR-0012: the substrate stays domain-agnostic — trading-shaped read logic does not belong in
+the storage layer.
+
+**The legitimate pro (egress) and its adopted alternative.** Server-side computation returning
+small results is the real benefit stored procedures would offer. Adopted instead: push heavy
+traversals into adapter SQL (`kernel/graph_postgres_queries.py` already does recursive walks
+server-side) and reduce read volume with the S129 TTL cache. Escalation path if read patterns
+outgrow this: smarter adapter SQL — still code, still gated — never database-resident logic.

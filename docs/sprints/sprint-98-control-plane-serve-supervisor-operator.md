@@ -25,7 +25,7 @@ nothing else can be *governed* until the gate and the command bridge actually se
 - Honour each agent's **TRG / NEVER law clauses** — these agents are *request-triggered*, never
   self-triggering. Reconcile the touched laws' `TRG` rows and cite the new serving tests by clause ID
   (project law convention).
-- Operator keeps its existing tool/MCP surface ([`agents/operator/mcp.py`](../../agents/operator/mcp.py))
+- Operator keeps its existing tool/MCP surface ([`surfaces/mcp_tools.py`](../../surfaces/mcp_tools.py))
   — serving over the bus is *additional*, not a replacement for the human/tool path.
 
 **Out:** forecaster/curator/researcher (S99); the Service Bus backend (S100) — this sprint proves serving

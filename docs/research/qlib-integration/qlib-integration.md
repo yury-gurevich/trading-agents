@@ -11,7 +11,7 @@
 > 3.13), behind the forecaster's model port — no `pyqlib` import. Qlib's `LGBModel` is only a thin
 > wrapper over `lightgbm`, so Q1 loses nothing; this is also cleaner than the "vendor qlib source"
 > fallback in the risk register. Supersedes the `pip install pyqlib` instruction below **for Q1**.
-> Handover: [sprint-58](../sprints/sprint-58-forecaster-lightgbm-shadow.md). Phases Q3/Q4 (qlib's own
+> Handover: [sprint-58](../../sprints/sprint-58-forecaster-lightgbm-shadow.md). Phases Q3/Q4 (qlib's own
 > backtest + strategy engines) still hit this wall and must be re-scoped when reached.
 
 ---
@@ -306,7 +306,7 @@ that model.
 3.13 — see the update note). Implement a `ReturnModel` port + a lazy `LightGBMModel` adapter wrapping
 `lightgbm.Booster`. Wire it into the forecaster's shadow-prediction loop alongside FinBERT. Register
 it in the P10 predictor-registry. Detailed handover:
-[sprint-58](../sprints/sprint-58-forecaster-lightgbm-shadow.md).
+[sprint-58](../../sprints/sprint-58-forecaster-lightgbm-shadow.md).
 **Exit:** `ShadowPrediction` nodes appear in the graph with `model_version = "lgbm-qlib-v1"`;
 scorecard harness tracks IC against forward returns.
 **Effort:** S (2–3 days). No architecture change.

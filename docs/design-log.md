@@ -1256,32 +1256,32 @@ row 🟩 (or 🟨 if partial). Then the golden-run diff for value-level regressi
 
 **Live run (2026-06-25) — gate works; found a real bug.** `accept.py` ran **live against the free Aura** and
 returned `ACCEPTANCE PASS` on a real 3-ticker run — the gate is proven end-to-end on real infra. The
-**full S&P-100 run surfaced [DRIFT-011](../laws/drift-register.md)**: a same-day re-ingest collides on the
+**full S&P-100 run surfaced [DRIFT-011](laws/drift-register.md)**: a same-day re-ingest collides on the
 immutable `snapshot` property in Neo4j (the in-memory store hid it) — exactly the integration bug
 100%-coverage unit tests miss, and *the reason Layer 3 exists*. Layer-3 row → 🟨 (gate live-verified; 🟩
 pending the DRIFT-011 fix + one clean full-universe run).
 
 **Re-run after the DRIFT-011 fix (0.35.01).** The full **S&P-100 → Aura run now completes** (99/99 × 41
 real bars, no collision) — DRIFT-011 **CORRECTED, proven live**. The acceptance gate still **FAILed**, now
-on *data quality* ([DRIFT-012](../laws/drift-register.md)): clean OHLCV but `used_fallback=True` from a
+on *data quality* ([DRIFT-012](laws/drift-register.md)): clean OHLCV but `used_fallback=True` from a
 `daily_move_sigma_anomaly` (too-tight default sigma vs a real big-mover) **and** optional-field faults
 (`fundamentals/news/sectors/earnings_degraded` — Finnhub rate-limited at 99 per-ticker calls) → the analyst
 rejected all 5 candidates → zero trades. The gate did its job again: it caught **over-taint** — optional
 *enrichment* failure blocks trading on otherwise-good OHLCV. The 🟩 is now one over-taint fix (optional
 faults record a note but don't set `used_fallback`, à la DRIFT-006's `taint=False`) + sigma review away.
 
-**🟩 Layer-3 GREEN — "the system works" (0.35.02, 2026-06-25).** After the [DRIFT-012](../laws/drift-register.md)
+**🟩 Layer-3 GREEN — "the system works" (0.35.02, 2026-06-25).** After the [DRIFT-012](laws/drift-register.md)
 fix (optional faults never taint; sigma 4.0→8.0), the **clean full S&P-100 → Aura run PASSES**:
 provider→reporter over all 99 names × 41 real bars, **5 positions opened**, `OBSERVATORY OK` + **`ACCEPTANCE
 PASS`**. Three live-only bugs the 100%-coverage in-memory suite hid (DRIFT-011 keying, DRIFT-012 over-taint
 ×2) fell out of *one* acceptance push — the thesis of Layer 3, vindicated. **Caveat (not blocking,
-[DRIFT-013](../laws/drift-register.md)):** the 5 names are correlated and PM-NEV-06 was silently inactive
+[DRIFT-013](laws/drift-register.md)):** the 5 names are correlated and PM-NEV-06 was silently inactive
 (empty `sectors` from a Finnhub rate-limit) — the concentration guard is data-dependent. Trades cleanly,
 not yet wisely. Remaining stretch: the same path at S&P-500 scale.
 
 ## DL-29 · Per-ticker OHLCV quality — a partial degradation excludes a ticker, never taints the batch  ·  status: DECIDED (2026-06-25)
 
-**Trigger.** The live S&P-500 acceptance ([DRIFT-014](../laws/drift-register.md)) `FAIL`ed where S&P-100
+**Trigger.** The live S&P-500 acceptance ([DRIFT-014](laws/drift-register.md)) `FAIL`ed where S&P-100
 passed: Alpaca pulled **503/503** OHLCV (the data layer scales), but the analyst `scored=0`. Root cause —
 `daily_move_sigma_anomaly` is a **pooled cross-sectional** check whose taint is **batch-level**: one name's
 >8σ intraday move among 503 set `used_fallback=True`, and the analyst's `ANLZ-FAIL-02` gate bails the
@@ -1538,12 +1538,12 @@ in-progress/paused (DL-34). None were "abandoned" in the delete sense; all are n
 
 **Trigger.** A code-level readiness audit (2026-07-01) of "is the platform ready, communication and all?"
 found the trading *product* works in-process (Layer-3 acceptance 🟩) but the *distributed platform* does
-not run. Three verified findings: (1) [`AzureServiceBusBus`](../../kernel/bus_azure.py) is **send-only** —
+not run. Three verified findings: (1) [`AzureServiceBusBus`](../kernel/bus_azure.py) is **send-only** —
 `publish` can push but there is **no receiver**, and `request` is an in-process shim; (2) the 5
 control-plane agents (operator/supervisor/curator/researcher/forecaster) `idle_loop()` because there is no
 serve/consume primitive (the DL-30 gap); (3) the fleet has never run as containers (only scanner EHLO was
 proven, S76). Also corrected: **DL-34 gap (1) is stale** — S86 deploy wiring *is* done
-([`infra/deploy-agents.ps1`](../../infra/deploy-agents.ps1) L155 passes `MASTER_GRANT_POLICY_B64` /
+([`infra/deploy-agents.ps1`](../infra/deploy-agents.ps1) L155 passes `MASTER_GRANT_POLICY_B64` /
 `MASTER_SECRET_MAP_B64`; `agents/master/entrypoint.py` `_resolve_pack` consumes them).
 
 **Decision (operator, 2026-07-01).** Take the **full** activation arc — build the distributed fleet now,

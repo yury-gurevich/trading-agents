@@ -28,7 +28,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 
 ---
 
-## Decisions, laws, research, sprints
+## Decisions, laws, research, sprints, reports
 
 | Folder | Answers |
 | --- | --- |
@@ -36,6 +36,8 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [laws/](laws/INDEX.md) | What must each agent do / never do? What is the law book schema? |
 | [research/](research/INDEX.md) | What external tools have we evaluated? What is still in progress? |
 | [sprints/](sprints/INDEX.md) | Which sprints shipped? Which phase are we in? What is queued? |
+| [reports/](reports/INDEX.md) | Where is the committed live-check evidence (proofs, transcripts, screenshots) for each sprint since S119? |
+| [design/](design/INDEX.md) | What interactive design specs exist (e.g. the DL-47 dashboard mockup)? |
 
 ---
 

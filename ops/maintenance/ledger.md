@@ -17,6 +17,7 @@ Times are Melbourne local (AEST/AEDT).
 | 2026-06-24 | housekeeping | root sweep — stale *.db + empty INDEX.md → del; drop redundant root run_codeql_ast.ps1 shim | ok | — | 0 | AI+op | desktop.ini/folderico left UNTOUCHED per operator; conftest.py kept (pytest root) |
 | 2026-06-24 | housekeeping | size audit — delete .tools + .codeql-db + caches | ok | — | 0 | AI+op | reclaimed ~1.3 GB (2.0 G → 719 M); GitHub pack ~3 MB, no history bloat |
 | 2026-06-24 | housekeeping | charter drafted — Housekeeping & Navigability (future Librarian agent) | ok | — | 0 | AI+op | this register; LAW-01 CI-05 graduation path |
+| 2026-07-19 | housekeeping | post-S128/S129/S130 sweep — G-IDX: new docs/reports/INDEX.md + docs/design/INDEX.md, both registered in docs/INDEX.md; G-DOC: S130 rows in sprints README/INDEX SHIPPED-stamped, S128 phase-map row added, S129 PR-#50 note → merged, R005 → ✅ Adopted + next-number R006; G-LINK: 9 dead links fixed (design-log ×7, qlib-integration ×2) + sprint-98 mcp.py pointer repointed to surfaces/mcp_tools.py; G-ROOT: .trivyignore confirmed legitimate root config (build-images.yml `trivyignores:`) | ok | — | 0 | Librarian | working-tree only, not committed — planning agent reviews; no file moved/deleted |
 
 > Seed entries reconstructed from this session. Going forward, `ta` appends rows
 > automatically at the end of each action.

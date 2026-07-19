@@ -10,12 +10,18 @@ a normal market day can read as a no-trade day. Feed degradation is a WARN (fiel
 Flag — so it will not announce itself.
 
 **Input:** a run id whose trace shows `notes: ..._degraded` (from `/diagnose-run` step 1).
+Both the historical bare form (`news_degraded`) and the attributed form
+(`news_degraded:<count>:<tickers>:<error>`, for example `news_degraded:3:AAPL,MSFT,NVDA:429`)
+mean the feed degraded. The attributed form names how many tickers failed, the first bounded sample,
+and the error/status class while preserving successful tickers from the same feed.
 
 ## Procedure
 
 1. **Which feeds, and is it new?** Compare the run's trace `notes` against the previous runs'
-   traces (`scripts/trace_run.py --run-id <earlier>`). All-four degraded across every fleet run
-   points at credentials/config; a single feed degrading points at the vendor or rate limits.
+   traces (`scripts/trace_run.py --run-id <earlier>`). Strip any detail after the first `:` when
+   counting feeds, but keep the detail for diagnosis. All-four bare degraded notes across every
+   fleet run points at credentials/config; attributed 429 notes point at per-ticker rate limiting
+   with the successful majority preserved.
 2. **Did the provider container even hold the keys?** The entitlement map is
    `orchestration/packs/trading_secrets.json` (provider entries: Finnhub, Alpha Vantage, Tiingo,
    Alpaca). DL-36 tested activation means: if a **required** credential failed its live test, the

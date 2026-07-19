@@ -274,6 +274,8 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | --- | --- | --- | --- | --- |
 | `finnhub_news_lookback_days` | `7` | `int days [1, 90]` | YES | Trailing window of company news to fetch; recent headlines only, not the full OHLCV lookback. |
 | `max_news_per_ticker` | `20` | `int [1, 100]` | YES | Cap headlines per ticker so a noisy feed cannot dominate the downstream sentiment pillar. |
+| `finnhub_request_budget_per_minute` | `55` | `int requests/minute [0, 600]` | YES | Pace per-ticker Finnhub calls just under the 60 req/min free-tier cap; `0` disables pacing for controlled proofs. |
+| `finnhub_degraded_note_ticker_cap` | `5` | `int [1, 50]` | YES | Bound attributed feed-degradation notes while naming representative tickers. |
 
 **Network timeouts:**
 

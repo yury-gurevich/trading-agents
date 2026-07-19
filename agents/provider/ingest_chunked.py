@@ -25,6 +25,7 @@ from agents.provider.ingest import (
     _write_regime_context,
 )
 from agents.provider.store import write_market_snapshot
+from contracts.feed_notes import is_degraded_feed_note
 from contracts.provider import DataRequest, MarketData, RegimeRequest
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ def _optional_notes(parts: tuple[MarketData, ...]) -> tuple[str, ...]:
             note
             for part in parts
             for note in part.quality.notes
-            if note.endswith("_degraded")
+            if is_degraded_feed_note(note)
         )
     )
 

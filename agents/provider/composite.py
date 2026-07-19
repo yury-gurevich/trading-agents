@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from contracts.feed_notes import consume_degraded_feed_notes
+
 if TYPE_CHECKING:
     from datetime import date
 
@@ -69,6 +71,14 @@ class CompositeDataSource:
         """Delegate earnings fetches to the fundamentals (Finnhub) source."""
         return self._fundamentals_source.fetch_earnings(tickers, window)
 
+    def consume_degraded_feed_notes(self) -> tuple[str, ...]:
+        """Drain source-owned feed notes from wrapped sources."""
+        return (
+            *consume_degraded_feed_notes(self._price_source),
+            *consume_degraded_feed_notes(self._fundamentals_source),
+            *consume_degraded_feed_notes(self._sentiment_source),
+        )
+
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
     """Compose live feeds: Alpaca OHLCV + Finnhub fundamentals/news + AV sentiment."""
@@ -88,7 +98,11 @@ def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSour
             api_key=settings.finnhub_api_key,
             base_url=settings.finnhub_base_url,
             timeout=settings.finnhub_timeout,
+            news_lookback_days=settings.finnhub_news_lookback_days,
+            max_news_per_ticker=settings.max_news_per_ticker,
             earnings_lookahead_days=settings.finnhub_earnings_lookahead_days,
+            request_budget_per_minute=settings.finnhub_request_budget_per_minute,
+            degraded_note_ticker_cap=settings.finnhub_degraded_note_ticker_cap,
         ),
         sentiment_source=AlphaVantageSentimentSource(
             api_key=settings.alphavantage_api_key,

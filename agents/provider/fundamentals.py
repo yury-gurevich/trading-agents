@@ -7,11 +7,11 @@ External I/O: optional HTTPS calls to finnhub.io.
 
 from __future__ import annotations
 
-import urllib.parse
-import urllib.request
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+from agents.provider.finnhub_http import FinnhubHttpClient
+from agents.provider.finnhub_resilience import FeedFailureCollector
 from agents.provider.fundamentals_parse import (
     _parse_metrics,
     _parse_news,
@@ -21,6 +21,7 @@ from agents.provider.fundamentals_parse import (
 from agents.provider.sources import RegimeInputs
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from datetime import date
 
     from contracts.common import Window
@@ -39,14 +40,25 @@ class FinnhubDataSource:
         news_lookback_days: int = 7,
         max_news_per_ticker: int = 20,
         earnings_lookahead_days: int = 30,
+        request_budget_per_minute: int = 55,
+        degraded_note_ticker_cap: int = 5,
+        clock: Callable[[], float] | None = None,
+        sleep: Callable[[float], None] | None = None,
     ) -> None:
         """Create a Finnhub source from injected settings."""
-        self._api_key = api_key
-        self._base_url = base_url
-        self._timeout = timeout
+        self._client = FinnhubHttpClient(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            request_budget_per_minute=request_budget_per_minute,
+            clock=clock,
+            sleep=sleep,
+        )
         self._news_lookback_days = news_lookback_days
         self._max_news_per_ticker = max_news_per_ticker
         self._earnings_lookahead_days = earnings_lookahead_days
+        self._degraded_note_ticker_cap = degraded_note_ticker_cap
+        self._degraded_notes: list[str] = []
 
     def fetch_ohlcv(
         self,
@@ -67,10 +79,14 @@ class FinnhubDataSource:
     ) -> dict[str, dict[str, float]]:
         """Fetch key metrics per ticker; skip tickers with no usable metric."""
         out: dict[str, dict[str, float]] = {}
+        failures = self._failures("fundamentals")
         for ticker in tickers:
-            metrics = _parse_metrics(self._download(ticker))
+            metrics = failures.capture(
+                ticker, lambda t: _parse_metrics(self._download(t))
+            )
             if metrics:
                 out[ticker] = metrics
+        self._record_failures(failures)
         return out
 
     def fetch_news(
@@ -82,13 +98,18 @@ class FinnhubDataSource:
         news_to = window.end
         news_from = news_to - timedelta(days=self._news_lookback_days)
         out: dict[str, tuple[str, ...]] = {}
+        failures = self._failures("news")
         for ticker in tickers:
-            headlines = _parse_news(
-                self._download_news(ticker, news_from, news_to),
-                self._max_news_per_ticker,
+            headlines = failures.capture(
+                ticker,
+                lambda t: _parse_news(
+                    self._download_news(t, news_from, news_to),
+                    self._max_news_per_ticker,
+                ),
             )
             if headlines:
                 out[ticker] = headlines
+        self._record_failures(failures)
         return out
 
     def fetch_sentiment(
@@ -101,10 +122,14 @@ class FinnhubDataSource:
     def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
         """Fetch each ticker's sector/industry from Finnhub; skip when unknown."""
         out: dict[str, str] = {}
+        failures = self._failures("sectors")
         for ticker in tickers:
-            sector = _parse_sector(self._download_profile(ticker))
+            sector = failures.capture(
+                ticker, lambda t: _parse_sector(self._download_profile(t))
+            )
             if sector is not None:
                 out[ticker] = sector
+        self._record_failures(failures)
         return out
 
     def fetch_earnings(
@@ -114,60 +139,45 @@ class FinnhubDataSource:
         from_date = window.end
         to_date = from_date + timedelta(days=self._earnings_lookahead_days)
         out: dict[str, date] = {}
+        failures = self._failures("earnings")
         for ticker in tickers:
-            next_date = _parse_next_earnings(
-                self._download_earnings(ticker, from_date, to_date), from_date
+            next_date = failures.capture(
+                ticker,
+                lambda t: _parse_next_earnings(
+                    self._download_earnings(t, from_date, to_date), from_date
+                ),
             )
             if next_date is not None:
                 out[ticker] = next_date
+        self._record_failures(failures)
         return out
 
+    def consume_degraded_feed_notes(self) -> tuple[str, ...]:
+        """Drain per-ticker feed notes produced by the last source call."""
+        notes = tuple(self._degraded_notes)
+        self._degraded_notes.clear()
+        return notes
+
+    def _record_failures(self, failures: FeedFailureCollector) -> None:
+        note = failures.note()
+        if note is not None:
+            self._degraded_notes.append(note)
+
+    def _failures(self, feed: str) -> FeedFailureCollector:
+        return FeedFailureCollector(feed, ticker_cap=self._degraded_note_ticker_cap)
+
     def _download(self, ticker: str) -> str:  # pragma: no cover
-        query = urllib.parse.urlencode(
-            {"symbol": ticker.upper(), "metric": "all", "token": self._api_key}
-        )
-        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
-            f"{self._base_url}/stock/metric?{query}", timeout=self._timeout
-        ) as resp:
-            return str(resp.read().decode("utf-8"))
+        return self._client.metric(ticker)
 
     def _download_news(  # pragma: no cover
         self, ticker: str, from_date: date, to_date: date
     ) -> str:
-        query = urllib.parse.urlencode(
-            {
-                "symbol": ticker.upper(),
-                "from": from_date.isoformat(),
-                "to": to_date.isoformat(),
-                "token": self._api_key,
-            }
-        )
-        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
-            f"{self._base_url}/company-news?{query}", timeout=self._timeout
-        ) as resp:
-            return str(resp.read().decode("utf-8"))
+        return self._client.news(ticker, from_date, to_date)
 
     def _download_profile(self, ticker: str) -> str:  # pragma: no cover
-        query = urllib.parse.urlencode(
-            {"symbol": ticker.upper(), "token": self._api_key}
-        )
-        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
-            f"{self._base_url}/stock/profile2?{query}", timeout=self._timeout
-        ) as resp:
-            return str(resp.read().decode("utf-8"))
+        return self._client.profile(ticker)
 
     def _download_earnings(  # pragma: no cover
         self, ticker: str, from_date: date, to_date: date
     ) -> str:
-        query = urllib.parse.urlencode(
-            {
-                "symbol": ticker.upper(),
-                "from": from_date.isoformat(),
-                "to": to_date.isoformat(),
-                "token": self._api_key,
-            }
-        )
-        with urllib.request.urlopen(  # noqa: S310 - hardcoded HTTPS Finnhub endpoint.
-            f"{self._base_url}/calendar/earnings?{query}", timeout=self._timeout
-        ) as resp:
-            return str(resp.read().decode("utf-8"))
+        return self._client.earnings(ticker, from_date, to_date)

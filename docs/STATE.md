@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-16 15:10 AEST · **Version:** 0.71.00 · **🔴 SPINE DOWN — Neon free-tier data-transfer quota exhausted (DRIFT-023, operator decision needed). S127 SHIPPED (merged `32c73cc`); fleet on `:s126` (last night's dispatcher fire Succeeded on the new image + rotated PAT); S128 (DRIFT-021 feed resilience) packaged, live check blocked on the spine.**
+**Last updated:** 2026-07-19 16:30 AEST · **Version:** 0.71.01 (S128 branch, merging) · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED 2026-07-19: probe GREEN, operator fixed the quota). S128 (DRIFT-021 feed resilience) LIVE CHECK COMPLETE — paced full-universe 99/99 zero degraded notes in 7 min; unpaced run proved per-ticker `:429` attribution with the majority kept; DRIFT-021 → CORRECTED. Fleet still on `:s126` — the fix reaches the fleet at the next `/deploy-fleet` retag after merge.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -244,19 +244,26 @@ S37–76 → [STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.m
 
 ## Now
 
-**🔴 DRIFT-023 — THE SPINE IS DOWN (2026-07-16 ~15:00 AEST).** Neon refuses every connection:
-free-tier data-transfer quota exhausted. The 2026-07-15T22:30Z dispatcher execution
-**Succeeded on `:s126`** (rotated PAT + new image production-proven), but chain completion is
-unverifiable and tonight's run will fail against a dead spine. Free-tier reset is ~2026-08-01 —
-waiting is not viable. **Operator decision: upgrade the Neon plan vs migrate vs egress-reduction
-only** (read caching/backoff worth packaging regardless). Everything below is pre-incident
-status; **S128's live check is blocked** until the spine is reachable.
+**🟢 DRIFT-023 RESOLVED (2026-07-19).** The operator fixed the Neon quota issue; verified live
+before use — `DEP-POSTGRES-01 GREEN` on `SELECT 1`, same Sydney endpoint — then **S128's live
+check ran the same day and PASSED** (see below). Egress-reduction hardening (dashboard read
+caching/backoff, leaner nightly polling) stays queued as a worthwhile chore regardless of the
+plan state.
+**S128 LIVE CHECK COMPLETE (2026-07-19, planning agent).** Paced full-universe ingest: 99/99,
+all four feeds populated, **zero degraded notes**, 7 min 09 s — inside the fleet window.
+Unpaced ingest (live 60/min limit as injector, no mocks): all four feeds attributed exactly the
+39 rate-limited tickers (`<feed>_degraded:39:MET,META,MMM,MO,MRK:429`), kept the other 60, and
+left `used_fallback=False` (DRIFT-012 held). Durability: attributed notes read back off Neon
+over a fresh SQL connection after the writer exited. Teardown: 12 nodes + 4 edges swept,
+0 remaining. **DRIFT-021 → CORRECTED.** Evidence:
+`docs/reports/sprint-128-feed-resilience/live-check.md` + functionality-checks row 2026-07-19.
+Note: the fleet still runs `:s126` images — nightly feeds stay degraded until the operator
+retags via `/deploy-fleet` after the S128 merge builds `0.71.01` images.
 
 On `main` at 0.71.00. **S127 FIXPACK SHIPPED (merged `32c73cc`; local + branch + main CI green)
 on top of the completed DL-47 arc (S122–S126, S126 merged `297354b`). S128 (DRIFT-021 feed
-resilience) PACKAGED 2026-07-16** (`docs/sprints/sprint-128-feed-resilience.md`, targets
-0.71.01): per-request Finnhub pacing, per-ticker fault attribution (DRIFT-014 pattern), durable
-attributed notes — parts A–C executable now, live check awaits the spine.
+resilience) code handback 2026-07-16 (Codex, 0.71.01), LIVE CHECK PASSED 2026-07-19** — merging
+to main is this session's closing step (`docs/sprints/sprint-128-feed-resilience.md`).
 **THE FLEET IS DEPLOYED AT `:s126`** (operator-directed retag, 2026-07-15 ~15:50 AEST): images
 built at `0773ae8` (run `29392150781`, all 14 pushed), all 13 apps + `dispatcher-cron` updated
 `Succeeded`, env + KEDA scale rules verified intact, and
@@ -280,9 +287,8 @@ Note: images for `32c73cc` build on merge, so the currency judgement will read *
 via `/deploy-fleet` when the S127 dashboard fixes should reach the deployed fleet.
 Pending in the graph: **1 critical broker-divergence flag** (operator's ack — now doable from
 the dashboard); tonight's 22:30 UTC fire is the rotated-PAT + `:s126` first scheduled run.
-Open from the 07-10 run diagnosis: all four enrichment feeds run degraded in-fleet — DRIFT-021
-(Finnhub free-tier rate limit × whole-feed fault boundary); candidate fixes recorded in
-`docs/laws/drift-register.md`, not yet packaged.
+The 07-10 feed diagnosis is closed: DRIFT-021 CORRECTED (S128, live-proven 2026-07-19). The
+deployed fleet keeps running degraded until its images move past `:s126` — retag after merge.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
+from contracts.feed_notes import degraded_feed_name
 from orchestration.batch_trace import walk_chain
 from surfaces.dashboard.projections import list_runs
 from surfaces.dashboard.projections_infra import infra_projection
@@ -116,10 +117,6 @@ def _degraded_feeds(graph: GraphStore, run_id: str) -> dict[str, object]:
     quality = snapshot.get("quality") if isinstance(snapshot, Mapping) else None
     notes = quality.get("notes", ()) if isinstance(quality, Mapping) else ()
     names = sorted(
-        {
-            str(note).removesuffix("_degraded")
-            for note in notes
-            if str(note).endswith("_degraded")
-        }
+        {name for note in notes if (name := degraded_feed_name(note)) is not None}
     )
     return {"count": len(names), "feeds": names}

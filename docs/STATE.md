@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-19 16:40 AEST · **Version:** 0.71.01 · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED 2026-07-19: probe GREEN, operator fixed the quota). S128 (DRIFT-021 feed resilience) SHIPPED — live check PASSED and merged `09120b3` (CI + image build + CodeQL all green; tag `v0.71.01`); DRIFT-021 → CORRECTED. Fleet still on `:s126` — the fix reaches the fleet at the next `/deploy-fleet` retag.**
+**Last updated:** 2026-07-19 17:30 AEST · **Version:** 0.71.01 · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED: operator upgraded the Neon plan; probe GREEN). S128 (DRIFT-021 feed resilience) SHIPPED — live check PASSED, merged `09120b3` (CI + images + CodeQL green; tag `v0.71.01`), DRIFT-021 → CORRECTED — AND THE FLEET IS DEPLOYED AT `:s128`** (operator-approved `/deploy-fleet` 2026-07-19 ~17:30 AEST: 14/14 updates `Succeeded`, env + KEDA verified, `DeployRecord deploy:2026-07-19T07:29:58…:s128:0030243…` appended). Tonight's 22:30 UTC fire is the first scheduled run with paced, per-ticker-resilient feeds — watch for zero `*_degraded` notes.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -257,8 +257,10 @@ left `used_fallback=False` (DRIFT-012 held). Durability: attributed notes read b
 over a fresh SQL connection after the writer exited. Teardown: 12 nodes + 4 edges swept,
 0 remaining. **DRIFT-021 → CORRECTED.** Evidence:
 `docs/reports/sprint-128-feed-resilience/live-check.md` + functionality-checks row 2026-07-19.
-Note: the fleet still runs `:s126` images — nightly feeds stay degraded until the operator
-retags via `/deploy-fleet` after the S128 merge builds `0.71.01` images.
+**FLEET RETAGGED `:s128` same day** (operator-approved): images built at `0030243`
+(run `29678020292`), 13 apps + `dispatcher-cron` all `Succeeded`, env + KEDA scale rules
+verified intact, `DeployRecord` appended after verification — the resilience fix is live for
+tonight's 22:30 UTC fire.
 
 On `main` at 0.71.01. **S128 SHIPPED (merged `09120b3`, tag `v0.71.01`; local `make ci` exit 0
 at 1590 passed / 100 %, GitHub CI + image build + CodeQL all green; 0.71.01 images pushed).**
@@ -288,8 +290,8 @@ Note: images for `32c73cc` build on merge, so the currency judgement will read *
 via `/deploy-fleet` when the S127 dashboard fixes should reach the deployed fleet.
 Pending in the graph: **1 critical broker-divergence flag** (operator's ack — now doable from
 the dashboard); tonight's 22:30 UTC fire is the rotated-PAT + `:s126` first scheduled run.
-The 07-10 feed diagnosis is closed: DRIFT-021 CORRECTED (S128, live-proven 2026-07-19). The
-deployed fleet keeps running degraded until its images move past `:s126` — retag after merge.
+The 07-10 feed diagnosis is closed: DRIFT-021 CORRECTED (S128, live-proven 2026-07-19) and
+deployed to the fleet at `:s128` the same day.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

@@ -123,14 +123,23 @@ free since Dec 2025, Debian/glibc variants — no Alpine/musl wheel problem).
 
 ```text
 CLOSEOUT — Sprint 130
-Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
-make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
-Functionality check:     <build run id, Trivy counts before/after, smoke-run result,
-                          image sizes before/after>
-Version:                 0.71.02 → 0.71.03 (PATCH); uv.lock refreshed
-Backlog row H:           <status + evidence link>
-Drift rule:              <origin/main moved? merged? re-gated?>
-Deviations from spec:    <none, or the honest list — incl. any DHI access finding>
+Branch / merge commit:   sprint-130-base-image / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1597 passed, 5 skipped; coverage 100.00%
+Functionality check:     build-images run 29681635979 (image_tag=s130-test) succeeded:
+                          all 14 build+push jobs green, every Trivy HIGH/CRITICAL gate green;
+                          actionable findings 22 (S129 representative: 19 HIGH, 3 CRITICAL)
+                          -> 0 gate-blocking findings; provider digest smoke reached
+                          agents.provider.entrypoint and failed loudly on missing master/config
+                          with urllib.error.URLError / Name or service not known; provider size
+                          215286970 -> 149756082 bytes
+Version:                 0.71.02 -> 0.71.03 (PATCH); uv.lock refreshed
+Backlog row H:           Done; evidence docs/reports/sprint-130-base-image/live-proof.md
+Drift rule:              origin/main stayed c65b8dac75da061167772d1b4d3fea980103f1aa;
+                          no merge required; full make ci rerun on final tree
+Deviations from spec:    Local workstation Docker/GHCR package access was unavailable, so the
+                          provider docker run proof executed post-push in the authenticated
+                          GitHub runner instead of locally; Trivy scan coverage was widened from
+                          the S129 representative set to every matrix image for the S130 proof
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -141,3 +150,26 @@ why, drift observed elsewhere, follow-ups you would queue. A handback is not acc
 this section is empty or the closeout placeholder is unfilled (LAW-02 + DL-48).
 
 <!-- return notes go below this line -->
+
+- DHI access did not require any new repository secret or CI auth. The provider probe run
+  `29681150958` pulled `dhi.io/python:3.13-dev` and `dhi.io/python:3.13`, built the provider
+  image, pushed digest `sha256:0d05044e7b6272e5924268bbd53edcce4bfef305d1c8d219dedf1d3742cb908e`,
+  and passed Trivy with 0 actionable HIGH/CRITICAL findings before the other 13 Dockerfiles were
+  converted.
+- The final workflow run was `29681635979` at commit
+  `1aba6acf142bab064880d956abb481857da8af60`. It produced the named `s130-test` GHCR artifacts
+  listed in `docs/reports/sprint-130-base-image/live-proof.md`; those tags are intentionally
+  retained as CI artifacts. The running fleet was not retagged; `/deploy-fleet` remains the
+  operator-gated post-merge action.
+- The Dockerfile rollout kept the existing matrix image names and OCI labels. Runtime commands now
+  call `python` directly with the copied `.venv` on `PATH`; no runtime image needs `uv`, pip, or a
+  shell. Forecaster kept its `runtime`, `azure`, and `forecaster` extras in the build stage.
+- The workstation could not perform the literal local `docker run`: configured `DOCKER_HOST`
+  timed out, the Docker Desktop pipe/context was absent, no Docker service was present, and GHCR
+  package reads from local credentials returned insufficient package permission. The runner-based
+  digest smoke is therefore the live proof of the same image, after push, with repository-scoped
+  GHCR auth already established by the workflow.
+- No graph store was constructed and no graph, broker, Azure control-plane, or fleet writes were
+  performed. State sweep count is 0 by construction.
+- Drift check before handback fetched `origin/main`; it had not moved from the sprint start commit
+  `c65b8dac75da061167772d1b4d3fea980103f1aa`, so there was no merge-result delta to record.

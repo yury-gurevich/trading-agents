@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: research folder landing page -->
 # R005 — Container base image: what should the 14 agent images stand on?
 
-**Date:** 2026-07-19 · **Status:** 🚧 Proposed (operator decision pending)
+**Date:** 2026-07-19 · **Status:** ✅ Adopted (S130, 2026-07-19)
 **Trigger:** backlog row H — the S129 Trivy gate found 22 HIGH/CRITICAL Debian CVEs per
 representative image on `python:3.13-slim`; operator asked why we are tied to that image and
 what the industry-standard free base is.
@@ -41,6 +41,22 @@ run uv inside the image, so this composes with any base choice.
    `pip install uv && uv sync` build becomes a two-stage build (`-dev` variant builds,
    runtime variant runs). One template edit ×14 Dockerfiles; Trivy gate then enforces
    against a near-zero baseline, `.trivyignore` stays empty.
+
+## Outcome (S130)
+
+S130 adopted the R005 recommendation: `build-images.yml` now keeps the HIGH/CRITICAL
+`exit-code: 1` gate, adds `ignore-unfixed: true`, scans every image in the existing
+matrix, and leaves `.trivyignore` empty. All 14 Dockerfiles moved from `python:3.13-slim`
+to two-stage `dhi.io/python:3.13-dev` build images and `dhi.io/python:3.13` runtime
+images, carrying the `.venv` into runtime and launching direct `python` commands without
+`uv` or a shell at runtime.
+
+Evidence: manual `build-images` run `29681635979` built and pushed all 14 `s130-test`
+GHCR images, passed every Trivy step, and dropped actionable HIGH/CRITICAL gate findings
+from S129's representative `22` to `0` gate-blocking findings. The provider smoke proved
+the minimal runtime reaches `agents.provider.entrypoint` and fails loudly on missing
+activation/master config. Details:
+[S130 base-image live proof](../../reports/sprint-130-base-image/live-proof.md).
 
 **Ruled out:** Alpine (musl vs Python wheels — hard fit problem); Chainguard free tier
 (unpinnable tags break immutable-tag deploys + DL-46 currency evidence); staying put with a

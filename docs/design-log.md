@@ -2277,6 +2277,25 @@ the closeout contract).
 
 ---
 
+## DL-50 · ADR-0007 registry wording lags the shipped GHCR deploy path  ·  status: DECIDED (2026-07-19)
+
+**Trigger.** S129 hardening-backlog reconciliation found row F had effectively landed, but not in
+the exact form ADR-0007 originally described. The accepted ADR says per-agent images are pushed to
+DockerHub; the shipped workflow (`.github/workflows/build-images.yml`) builds all 14 agent images
+and pushes them to GHCR, and the DL-46 deploy-currency path records `DeployRecord` evidence against
+that GHCR reality.
+
+**Decision.** Do not silently amend ADR-0007 inside a fixpack. Treat GHCR as the current operational
+truth, keep the backlog/docs honest, and queue a formal ADR amendment cycle that updates the
+registry choice plus the related supply-chain mitigations (signing, pull credentials, accepted image
+scan findings) in one reviewed change.
+
+**Why.** The sprint's job is to fix evidence loss, reduce read egress, and add bounded hardening
+gates. Rewriting an accepted platform ADR as a side effect would hide architectural drift instead of
+making it governable.
+
+---
+
 ## DL-49 · Stored procedures for dashboard reads — ruled out  ·  status: DECIDED (2026-07-19)
 
 Operator asked why the dashboard does not use Postgres stored procedures. Answer recorded so the

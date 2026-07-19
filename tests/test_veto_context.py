@@ -43,6 +43,9 @@ def test_full_context_includes_all_available_upstream_evidence() -> None:
     assert "Analyst recommendation for AAPL" in context
     assert "sentiment_score=0.700" in context
     assert "fundamental_score=0.650" in context
+    assert "quant_metrics={composite_score=0.61" in context
+    assert "history_bars=40" in context
+    assert "relative_strength=0.08}" in context
     assert "Analyst rejected AAPL: duplicate exposure" in context
     assert "Scanner candidate for AAPL: rank=1; score=0.810" in context
     assert "Scanner verdict for AAPL: decision=survived" in context

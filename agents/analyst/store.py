@@ -51,6 +51,10 @@ def write_analysis(
                 "action": recommendation.action,
                 "confidence": recommendation.confidence,
                 "technical_score": recommendation.technical_score,
+                "quant_metrics": [
+                    metric.model_dump(mode="json")
+                    for metric in recommendation.quant_metrics
+                ],
             },
         )
         _link_candidate(graph, node, scan_key, recommendation.ticker)

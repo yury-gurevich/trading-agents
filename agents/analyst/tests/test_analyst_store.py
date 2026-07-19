@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from agents.analyst.store import write_analysis
 from agents.analyst.tests.helpers import candidate, candidate_set, recommendation
+from contracts.analyst import QuantMetric
 from contracts.common import Provenance
 from kernel import InMemoryGraphStore
 
@@ -45,3 +46,21 @@ def test_write_analysis_skips_missing_candidate_node() -> None:
     rec = graph.get_node("Recommendation", f"{provenance.run_id}:AAPL")
     assert rec is not None
     assert list(graph.descendants(rec, max_depth=1)) == []
+
+
+def test_write_analysis_persists_quant_metrics_on_recommendation_node() -> None:
+    graph = InMemoryGraphStore()
+    rec = recommendation().model_copy(
+        update={"quant_metrics": (QuantMetric(name="composite_score", value=0.61),)}
+    )
+
+    provenance = write_analysis(
+        graph,
+        candidate_set=candidate_set(candidate()),
+        recommendations=(rec,),
+        rejections=(),
+    )
+
+    node = graph.get_node("Recommendation", f"{provenance.run_id}:AAPL")
+    assert node is not None
+    assert node.props["quant_metrics"] == ({"name": "composite_score", "value": 0.61},)

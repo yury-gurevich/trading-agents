@@ -30,6 +30,7 @@ def recommendation_line(rec: Recommendation) -> str:
         f"fundamental_score={_num(rec.fundamental_score)}; "
         f"suggested_stop_pct={_pct(rec.suggested_stop_pct)}; "
         f"suggested_target_pct={_pct(rec.suggested_target_pct)}; "
+        f"quant_metrics={_quant_metrics(rec)}; "
         f"rationale={_explain(rec.rationale)}"
     )
 
@@ -177,3 +178,13 @@ def _num(value: float | None) -> str:
 
 def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.2%}"
+
+
+def _quant_metrics(rec: Recommendation) -> str:
+    if not rec.quant_metrics:
+        return "{}"
+    return (
+        "{"
+        + ", ".join(f"{metric.name}={metric.value:.4g}" for metric in rec.quant_metrics)
+        + "}"
+    )

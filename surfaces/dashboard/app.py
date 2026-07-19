@@ -8,10 +8,8 @@ External I/O: none (the caller binds it to a server).
 from __future__ import annotations
 
 import json
-import mimetypes
 import re
 from collections.abc import Callable
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs
 
@@ -22,26 +20,15 @@ from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_verdict import verdict_projection
 from surfaces.dashboard.projections_vitals import vitals_projection
+from surfaces.dashboard.read_cache import CachingGraphStore
 from surfaces.dashboard.settings import DashboardSettings
+from surfaces.dashboard.static_response import static_response
 
 if TYPE_CHECKING:
     from kernel import GraphStore
     from surfaces.context import SurfaceContext
     from surfaces.dashboard.azure_port import AzureReader
     from surfaces.dashboard.github_builds import GitHubReader
-
-_STATIC = Path(__file__).parent / "static"
-# Allowlist computed at import: request paths are only ever dict keys, so no
-# user input can reach a filesystem path or a response header (new static
-# files require a restart to be served).
-_STATIC_FILES: dict[str, tuple[Path, str]] = {
-    entry.name: (
-        entry,
-        mimetypes.guess_type(entry.name)[0] or "application/octet-stream",
-    )
-    for entry in _STATIC.iterdir()
-    if entry.is_file()
-}
 
 _RUN_VIEWS: dict[str, Callable[[GraphStore, str], object]] = {
     "verdict": projections.run_verdict,
@@ -66,6 +53,7 @@ def build_app(
 ) -> Callable[..., list[bytes]]:
     """Return the WSGI app over injected graph and optional Azure readers."""
     config = settings or DashboardSettings()
+    read_graph = CachingGraphStore(graph, config.projection_cache_ttl_seconds)
 
     def _app(environ: dict[str, Any], start_response: StartResponse) -> list[bytes]:
         path = str(environ.get("PATH_INFO", "/"))
@@ -76,27 +64,27 @@ def build_app(
         if str(environ.get("REQUEST_METHOD", "GET")) != "GET":
             return _json(start_response, 405, {"error": "GET only"})
         if path == "/api/runs":
-            return _json(start_response, 200, projections.list_runs(graph))
+            return _json(start_response, 200, projections.list_runs(read_graph))
         if path == "/api/infra":
             return _json(
                 start_response,
                 200,
-                infra_projection(graph, azure, config, github=github),
+                infra_projection(read_graph, azure, config, github=github),
             )
         if path == "/api/fleet":
-            run_id = _selected_run(graph, query)
+            run_id = _selected_run(read_graph, query)
             return _json(
-                start_response, 200, fleet_projection(graph, azure, config, run_id)
+                start_response, 200, fleet_projection(read_graph, azure, config, run_id)
             )
         if path == "/api/vitals":
             vital_run = query.get("run_id", [None])[0]
             return _json(
                 start_response,
                 200,
-                vitals_projection(graph, azure, config, vital_run, github=github),
+                vitals_projection(read_graph, azure, config, vital_run, github=github),
             )
         if path == "/api/verdict":
-            verdict_run = query.get("run", [""])[0] or _selected_run(graph, query)
+            verdict_run = query.get("run", [""])[0] or _selected_run(read_graph, query)
             if not verdict_run:
                 return _json(
                     start_response,
@@ -106,13 +94,17 @@ def build_app(
             return _json(
                 start_response,
                 200,
-                verdict_projection(graph, verdict_run, azure, config, github=github),
+                verdict_projection(
+                    read_graph, verdict_run, azure, config, github=github
+                ),
             )
         if path.startswith("/api/containers/"):
-            return _container_view(graph, path, query, azure, config, start_response)
+            return _container_view(
+                read_graph, path, query, azure, config, start_response
+            )
         if path.startswith("/api/runs/"):
-            return _run_view(graph, azure, config, path, start_response)
-        return _static(path, start_response)
+            return _run_view(read_graph, azure, config, path, start_response)
+        return static_response(path, config, start_response)
 
     return _app
 
@@ -187,13 +179,3 @@ def _json(start_response: StartResponse, status: int, payload: object) -> list[b
         [("Content-Type", "application/json; charset=utf-8")],
     )
     return [body]
-
-
-def _static(path: str, start_response: StartResponse) -> list[bytes]:
-    name = "index.html" if path == "/" else path.lstrip("/")
-    entry = _STATIC_FILES.get(name)
-    if entry is None:
-        return _json(start_response, 404, {"error": f"not found {path}"})
-    target, content_type = entry
-    start_response("200 OK", [("Content-Type", content_type)])
-    return [target.read_bytes()]

@@ -63,8 +63,8 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S129** (S128 feed resilience live-proven 2026-07-19 at 0.71.01 —
-   DRIFT-021 CORRECTED, DRIFT-023 RESOLVED).
+1. Next number: **S130** (S129 fixpack packaged 2026-07-19, targets 0.71.02 — fixes-first:
+   quant-evidence persistence, egress reduction, CI hardening D+E).
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

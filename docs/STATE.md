@@ -292,6 +292,12 @@ Pending in the graph: **1 critical broker-divergence flag** (operator's ack — 
 the dashboard); tonight's 22:30 UTC fire is the rotated-PAT + `:s126` first scheduled run.
 The 07-10 feed diagnosis is closed: DRIFT-021 CORRECTED (S128, live-proven 2026-07-19) and
 deployed to the fleet at `:s128` the same day.
+**S129 (fixpack) PACKAGED 2026-07-19** (`docs/sprints/sprint-129-fixpack.md`, targets 0.71.02)
+under the operator's fixes-first directive: S127 backlog row 3 (full `ScoreBreakdown.metrics`
+into Recommendation + all three deliberation roles), DRIFT-023 follow-up egress reduction
+(tunable TTL read cache + leaner polling), hardening D (dependency-review on PRs) + E (Trivy
+HIGH/CRITICAL image gate), hardening-backlog status reconciliation. P12 scorecard-run (now
+unblocked by S128's live news runway) queues behind it.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

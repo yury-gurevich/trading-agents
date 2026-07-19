@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-19 16:30 AEST · **Version:** 0.71.01 (S128 branch, merging) · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED 2026-07-19: probe GREEN, operator fixed the quota). S128 (DRIFT-021 feed resilience) LIVE CHECK COMPLETE — paced full-universe 99/99 zero degraded notes in 7 min; unpaced run proved per-ticker `:429` attribution with the majority kept; DRIFT-021 → CORRECTED. Fleet still on `:s126` — the fix reaches the fleet at the next `/deploy-fleet` retag after merge.**
+**Last updated:** 2026-07-19 16:40 AEST · **Version:** 0.71.01 · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED 2026-07-19: probe GREEN, operator fixed the quota). S128 (DRIFT-021 feed resilience) SHIPPED — live check PASSED and merged `09120b3` (CI + image build + CodeQL all green; tag `v0.71.01`); DRIFT-021 → CORRECTED. Fleet still on `:s126` — the fix reaches the fleet at the next `/deploy-fleet` retag.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -260,10 +260,11 @@ over a fresh SQL connection after the writer exited. Teardown: 12 nodes + 4 edge
 Note: the fleet still runs `:s126` images — nightly feeds stay degraded until the operator
 retags via `/deploy-fleet` after the S128 merge builds `0.71.01` images.
 
-On `main` at 0.71.00. **S127 FIXPACK SHIPPED (merged `32c73cc`; local + branch + main CI green)
-on top of the completed DL-47 arc (S122–S126, S126 merged `297354b`). S128 (DRIFT-021 feed
-resilience) code handback 2026-07-16 (Codex, 0.71.01), LIVE CHECK PASSED 2026-07-19** — merging
-to main is this session's closing step (`docs/sprints/sprint-128-feed-resilience.md`).
+On `main` at 0.71.01. **S128 SHIPPED (merged `09120b3`, tag `v0.71.01`; local `make ci` exit 0
+at 1590 passed / 100 %, GitHub CI + image build + CodeQL all green; 0.71.01 images pushed).**
+Codex code handback 2026-07-16; planning-agent live check + merge 2026-07-19
+(`docs/sprints/sprint-128-feed-resilience.md`). S127 fixpack before it (merged `32c73cc`) on
+top of the completed DL-47 arc (S122–S126).
 **THE FLEET IS DEPLOYED AT `:s126`** (operator-directed retag, 2026-07-15 ~15:50 AEST): images
 built at `0773ae8` (run `29392150781`, all 14 pushed), all 13 apps + `dispatcher-cron` updated
 `Succeeded`, env + KEDA scale rules verified intact, and

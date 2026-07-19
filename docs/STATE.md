@@ -303,8 +303,13 @@ real base-image CVEs per representative image and correctly fails the run (nothi
 `.trivyignore` empty by policy → **backlog row H: remediate or formally accept; every main
 image build reads red until drained — images still push**). Hardening backlog C–F reconciled
 with evidence; DL-50 records the ADR-0007 DockerHub→GHCR drift for a future amendment cycle.
-Evidence: `docs/reports/sprint-129-fixpack/live-proof.md`. P12 scorecard-run (unblocked by
-S128's live news runway) is next in queue.
+Evidence: `docs/reports/sprint-129-fixpack/live-proof.md`.
+**S130 (base-image chore) PACKAGED 2026-07-19** (`docs/sprints/sprint-130-base-image.md`,
+targets 0.71.03; research R005): Part A `ignore-unfixed: true` drains the red Trivy gate
+today; Part B migrates all 14 Dockerfiles two-stage onto free near-zero-CVE
+`dhi.io/python:3.13` (Docker Hardened Images, Apache 2.0 since Dec 2025); `.trivyignore`
+stays empty; fleet retag stays operator-gated. P12 scorecard-run (unblocked by S128's live
+news runway) queues behind it.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

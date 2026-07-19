@@ -1,11 +1,17 @@
 # portfolio_manager agent image.
-FROM python:3.13-slim
+FROM dhi.io/python:3.13-dev AS build
 WORKDIR /app
-RUN pip install --no-cache-dir "uv==0.4.29"
+RUN python -m pip install --no-cache-dir "uv==0.4.29"
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --extra runtime --no-dev
 COPY kernel/ kernel/
 COPY contracts/ contracts/
 COPY agents/portfolio_manager/ agents/portfolio_manager/
+
+FROM dhi.io/python:3.13
+WORKDIR /app
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
+COPY --from=build /app /app
 EXPOSE 8000
-CMD ["uv", "run", "python", "-m", "agents.portfolio_manager.entrypoint"]
+CMD ["python", "-m", "agents.portfolio_manager.entrypoint"]

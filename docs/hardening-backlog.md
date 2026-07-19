@@ -39,13 +39,20 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   ADR-0007 still names DockerHub; DL-50 surfaces the GHCR drift and queues a formal ADR amendment
   instead of silently rewriting the accepted ADR. Evidence:
   [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
+- **H — base-image CVE remediation** (`agents/*/Dockerfile`, `orchestration/Dockerfile`, and
+  `.github/workflows/build-images.yml`). Shipped in S130: Trivy now ignores unfixed findings while
+  still failing fixed HIGH/CRITICAL OS/library findings, `.trivyignore` remains empty, and all 14
+  images use two-stage `dhi.io/python:3.13-dev` -> `dhi.io/python:3.13` builds with venv-carrying
+  runtimes. Manual `build-images` run `29681635979` built/pushed all 14 `s130-test` images and
+  passed every Trivy gate; the actionable finding count dropped from S129's representative `22` to
+  `0` gate-blocking findings. Evidence:
+  [S130 base-image live proof](reports/sprint-130-base-image/live-proof.md#final-live-run).
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
 | **G** | Mutation testing (`mutmut`) | 100% line coverage proves lines *run*, not that tests *assert*. Mutmut proves the suite fails when logic breaks — validates test quality beyond coverage | Periodic rigor exercise; run after a stable sprint, not per-PR (it is slow). User flagged it a good candidate (2026-06-18) |
-| **H** | Base-image CVE remediation (or formal accepted-findings entries) | The S129 Trivy gate found **22 HIGH/CRITICAL** Debian base-image CVEs per representative image (`python:3.13-slim` + apt layers) — real, pre-existing, now enforced: **every `build-images.yml` run on main is red until this is drained** (images still push; the scan runs post-push). `.trivyignore` is empty by policy — no silent suppression. | **Next sprint/chore** — either bump/patch the base image (rebuild pulls newer Debian packages) or add owner+expiry accepted-findings entries per `.trivyignore` policy. Evidence: run `29679397636`, `docs/reports/sprint-129-fixpack/live-proof.md` (S129 return notes) |
 
 ## Branch protection recommendations (with CodeQL)
 

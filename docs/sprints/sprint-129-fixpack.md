@@ -145,13 +145,24 @@ The hardening backlog itself has status drift to reconcile while we're in there.
 
 ```text
 CLOSEOUT — Sprint 129
-Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
-make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
-Functionality check:     <what ran, against what, result>
+Branch / merge commit:   sprint-129-fixpack / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1597 passed, 5 skipped; coverage 100.00%
+Functionality check:     PASS. Local opt-in deliberation cited newly persisted quant metrics
+                          (`composite_score` among them) in the debate transcript; live Neon
+                          dashboard cache proof dropped Postgres calls 18 -> 0 inside the 5 s TTL
+                          while the verdict stayed GREEN (`1 order, 1 candidate`); PR #50 security
+                          job ran dependency-review successfully; build-images run
+                          29679397636 executed the Trivy HIGH/CRITICAL gate on analyst/master/
+                          forecaster and failed on real existing findings, proving enforcement.
 Version:                 0.71.01 → 0.71.02 (PATCH); uv.lock refreshed
-Backlog rows:            S127 row 3 → <status>; hardening C/D/E/F → <statuses>
-Drift rule:              <origin/main moved? merged? re-gated?>
-Deviations from spec:    <none, or the honest list>
+Backlog rows:            S127 row 3 → FIXED (0.71.02); hardening C/D/E/F → Done with evidence
+                          links and DL-50 surfacing ADR-0007 DockerHub→GHCR drift.
+Drift rule:              `git fetch` before handback found origin/main unchanged at
+                          8b3fcd229b1df539653888cb8eb596cc4f6ac0c5; no merge needed; final
+                          `make ci` ran on the branch result.
+Deviations from spec:    build-images manual proof is red because the new Trivy gate found
+                          22 HIGH/CRITICAL findings per representative image. No CVE was accepted
+                          or silenced in S129; remediation/accepted-findings review is follow-up.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -162,3 +173,24 @@ why, drift observed elsewhere, follow-ups you would queue. A handback is not acc
 this section is empty or the closeout placeholder is unfilled (LAW-02 + DL-48).
 
 <!-- return notes go below this line -->
+
+2026-07-19 — Coding-agent return notes
+
+- First-contact surprise: adding the Trivy gate immediately exposed existing Debian base-image
+  HIGH/CRITICAL CVEs on the representative images (`analyst`, `master`, `forecaster`). I left
+  `.trivyignore` with documentation-only guidance and no accepted CVE entries, so the next move is
+  either a base-image/dependency remediation sprint or a formal accepted-findings entry with owner
+  and expiry.
+- Dashboard cache scope is projection-read only: `GET` read-model routes use `CachingGraphStore`,
+  while `/api/chat` still uses the original graph store so audited writes are never hidden behind a
+  TTL layer.
+- To keep the hard module-size block green, `surfaces/dashboard/static_response.py` now owns static
+  asset/index serving and `tests/veto_context_provider_fixtures.py` holds the shared provider
+  fixture.
+- ADR-0007 was surfaced, not amended. DL-50 records that the real shipped registry/deploy truth is
+  GHCR plus `DeployRecord`, while ADR-0007 still says DockerHub; queue a formal ADR amendment if the
+  registry decision needs to be made canonical.
+- Live checks stayed credential-safe: no DSN/API key/connection string was printed or written into
+  the repo tree. The Neon dashboard check was read-only; the local server was stopped; the
+  `s129-livecheck` sweep deleted 0 nodes and 0 edges. PR #50 and the GitHub workflow runs remain as
+  audit evidence; the branch-tagged GHCR images from `image_tag=s129-fixpack` are CI artifacts.

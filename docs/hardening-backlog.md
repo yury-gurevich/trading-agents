@@ -19,21 +19,26 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   (codebase targets 3.13). Shipped 2026-06-18 (`chore/dependabot-automerge`).
 - **C — CodeQL SAST** (`.github/workflows/codeql.yml` plus the CI security lane with
   `GHAS_ENABLED=true`). Enforcing since 2026-07-04; S127 proved zero open error-level findings and
-  the security lane remains required alongside `pip-audit` and `detect-secrets`.
+  the security lane remains required alongside `pip-audit` and `detect-secrets`. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
 - **D — dependency review on PRs** (`.github/workflows/ci.yml`). Shipped in S129 with
   `actions/dependency-review-action` pinned to `2031cfc080254a8a887f58cffee85186f0e49e48`
   (`v4.9.0`), failing moderate-or-higher vulnerable additions and the explicit denied package
-  `pkg:pypi/pycrypto`.
+  `pkg:pypi/pycrypto`. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
 - **E — container image scanning** (`.github/workflows/build-images.yml`). Shipped in S129 with
   Trivy pinned to `ed142fd0673e97e23eac54620cfb913e5ce36c25` (`v0.36.0`), gating HIGH/CRITICAL
   OS/library findings on representative images for the runtime-only, runtime+Azure, and
   forecaster dependency-layer families (`analyst`, `master`, `forecaster`). Accepted findings must
   be documented in `.trivyignore` with sprint/design-log evidence, scope, owner, and expiry.
+  Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
 - **F — build + push deploy pipeline** (`.github/workflows/build-images.yml` +
   `scripts/record_deploy.py`). The real shipped shape builds and pushes all 14 images to GHCR on
   `main` and manual dispatch, then records deploy currency through the DL-46 `DeployRecord` flow.
   ADR-0007 still names DockerHub; DL-50 surfaces the GHCR drift and queues a formal ADR amendment
-  instead of silently rewriting the accepted ADR.
+  instead of silently rewriting the accepted ADR. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
 
 ## Open — with unblock triggers
 

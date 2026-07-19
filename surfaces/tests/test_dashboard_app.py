@@ -118,6 +118,7 @@ def test_index_and_assets_serve() -> None:
     assert b"verdict-hero" in body
     assert b"/chat.css?v=125-1" in body
     assert b"/chat.js?v=125-1" in body
+    assert b"selfHealRefetchMs" in body
     assert invoke(app, "/app.css")[1]["Content-Type"].startswith("text/css")
     assert invoke(app, "/app.js")[0] == "200 OK"
     assert invoke(app, "/infra.js")[0] == "200 OK"

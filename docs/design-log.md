@@ -2274,3 +2274,45 @@ designed. Read: not a quality decline; a coordination model catching up with par
 **Ruled out.** Freezing main during sprints (kills the fixpack loop's same-day value); giving the
 planning agent standing authority to finish handbacks (hides coding-agent regressions and erodes
 the closeout contract).
+
+---
+
+## DL-50 · ADR-0007 registry wording lags the shipped GHCR deploy path  ·  status: DECIDED (2026-07-19)
+
+**Trigger.** S129 hardening-backlog reconciliation found row F had effectively landed, but not in
+the exact form ADR-0007 originally described. The accepted ADR says per-agent images are pushed to
+DockerHub; the shipped workflow (`.github/workflows/build-images.yml`) builds all 14 agent images
+and pushes them to GHCR, and the DL-46 deploy-currency path records `DeployRecord` evidence against
+that GHCR reality.
+
+**Decision.** Do not silently amend ADR-0007 inside a fixpack. Treat GHCR as the current operational
+truth, keep the backlog/docs honest, and queue a formal ADR amendment cycle that updates the
+registry choice plus the related supply-chain mitigations (signing, pull credentials, accepted image
+scan findings) in one reviewed change.
+
+**Why.** The sprint's job is to fix evidence loss, reduce read egress, and add bounded hardening
+gates. Rewriting an accepted platform ADR as a side effect would hide architectural drift instead of
+making it governable.
+
+---
+
+## DL-49 · Stored procedures for dashboard reads — ruled out  ·  status: DECIDED (2026-07-19)
+
+Operator asked why the dashboard does not use Postgres stored procedures. Answer recorded so the
+question stays closed.
+
+**Decision.** Dashboard read logic stays in Python projections behind the `GraphStore` port;
+no logic moves into database procedures.
+
+**Why.** (1) Postgres is one adapter of the port — the same projections run against the
+in-memory store, which is what keeps the suite fast and the 100 % floor holdable; a stored
+procedure has no in-memory twin. (2) Procedures escape the whole CI gate (ruff, mypy, coverage,
+module-size, import-linter) and would be versioned via alembic instead of reviewable code.
+(3) ADR-0012: the substrate stays domain-agnostic — trading-shaped read logic does not belong in
+the storage layer.
+
+**The legitimate pro (egress) and its adopted alternative.** Server-side computation returning
+small results is the real benefit stored procedures would offer. Adopted instead: push heavy
+traversals into adapter SQL (`kernel/graph_postgres_queries.py` already does recursive walks
+server-side) and reduce read volume with the S129 TTL cache. Escalation path if read patterns
+outgrow this: smarter adapter SQL — still code, still gated — never database-resident logic.

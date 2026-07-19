@@ -36,13 +36,20 @@ class _RecordingLLM:
     """Capture the exact prompt context the veto sends to the debate."""
 
     def __init__(self) -> None:
-        self.users: list[str] = []
+        self.users: list[tuple[str, str]] = []
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
         del tool_schema
-        self.users.append(user)
+        role = (
+            "judge"
+            if "JUDGE" in system
+            else "challenger"
+            if "CHALLENGER" in system
+            else "defender"
+        )
+        self.users.append((role, user))
         if "JUDGE" in system:
             return _UPHOLD
         return "context recorded"
@@ -116,7 +123,7 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
     llm = _RecordingLLM()
     _run(graph, llm)
 
-    prompt = "\n".join(llm.users)
+    prompt = "\n".join(user for _, user in llm.users)
 
     assert "PM order: action=buy; ticker=AAPL" in prompt
     assert "Analyst recommendation for AAPL" in prompt
@@ -132,6 +139,23 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
     assert "confidence_floor gate:" in prompt
     assert "stop_vs_regime_volatility gate:" in prompt
     assert "PASSED" in prompt
+
+
+def test_veto_context_renders_quant_signals_to_all_three_roles() -> None:
+    """Full analyst metrics reach Defender, Challenger, and Judge contexts."""
+    graph = InMemoryGraphStore()
+    llm = _RecordingLLM()
+    _run(graph, llm)
+
+    by_role = dict(llm.users)
+
+    assert set(by_role) == {"defender", "challenger", "judge"}
+    for role in ("defender", "challenger", "judge"):
+        context = by_role[role]
+        assert "quant_metrics={" in context
+        assert "composite_score=0.5" in context
+        assert "history_bars=2" in context
+        assert "confidence=0.6" in context
 
 
 def test_veto_is_fail_open_on_llm_outage() -> None:

@@ -32,9 +32,11 @@
   /* Transient Azure read failures self-heal: one pending refetch per section. */
   var retryTimers = {};
   var currentRun = null;
+  var retryMs = window.dashboardConfig && window.dashboardConfig.selfHealRefetchMs;
   function scheduleRetry(key, fn) {
+    if (!retryMs) return;
     if (retryTimers[key]) return;
-    retryTimers[key] = setTimeout(function () { delete retryTimers[key]; fn(); }, 45000);
+    retryTimers[key] = setTimeout(function () { delete retryTimers[key]; fn(); }, retryMs);
   }
 
   function renderInfra(data) {

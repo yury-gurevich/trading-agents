@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from contracts.analyst import Recommendation
+from contracts.analyst import QuantMetric, Recommendation
 from contracts.common import Explanation, Money, Window
 from contracts.portfolio_manager import GateOutcome, OrderIntent
 from contracts.researcher import (
@@ -44,6 +44,21 @@ def test_recommendation_rejects_confidence_above_one() -> None:
             technical_score=0.5,
             rationale=Explanation(summary="fixture"),
         )
+
+
+def test_recommendation_quant_metrics_are_typed_and_bounded() -> None:
+    rec = Recommendation(
+        ticker="AAPL",
+        action="buy",
+        confidence=0.8,
+        technical_score=0.5,
+        quant_metrics=(QuantMetric(name="composite_score", value=0.61),),
+        rationale=Explanation(summary="fixture"),
+    )
+
+    assert rec.quant_metrics[0].name == "composite_score"
+    with pytest.raises(ValidationError):
+        QuantMetric(name="", value=0.0)
 
 
 def test_order_intent_rejects_zero_quantity() -> None:

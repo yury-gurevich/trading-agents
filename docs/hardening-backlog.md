@@ -17,15 +17,33 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   auto-approve + auto-merge once the required CI checks pass; branch protection on `main` requires
   `quality` + `test` + `security`. Majors stay open for review; docker `python` majors are ignored
   (codebase targets 3.13). Shipped 2026-06-18 (`chore/dependabot-automerge`).
+- **C — CodeQL SAST** (`.github/workflows/codeql.yml` plus the CI security lane with
+  `GHAS_ENABLED=true`). Enforcing since 2026-07-04; S127 proved zero open error-level findings and
+  the security lane remains required alongside `pip-audit` and `detect-secrets`. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
+- **D — dependency review on PRs** (`.github/workflows/ci.yml`). Shipped in S129 with
+  `actions/dependency-review-action` pinned to `2031cfc080254a8a887f58cffee85186f0e49e48`
+  (`v4.9.0`), failing moderate-or-higher vulnerable additions and the explicit denied package
+  `pkg:pypi/pycrypto`. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
+- **E — container image scanning** (`.github/workflows/build-images.yml`). Shipped in S129 with
+  Trivy pinned to `ed142fd0673e97e23eac54620cfb913e5ce36c25` (`v0.36.0`), gating HIGH/CRITICAL
+  OS/library findings on representative images for the runtime-only, runtime+Azure, and
+  forecaster dependency-layer families (`analyst`, `master`, `forecaster`). Accepted findings must
+  be documented in `.trivyignore` with sprint/design-log evidence, scope, owner, and expiry.
+  Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
+- **F — build + push deploy pipeline** (`.github/workflows/build-images.yml` +
+  `scripts/record_deploy.py`). The real shipped shape builds and pushes all 14 images to GHCR on
+  `main` and manual dispatch, then records deploy currency through the DL-46 `DeployRecord` flow.
+  ADR-0007 still names DockerHub; DL-50 surfaces the GHCR drift and queues a formal ADR amendment
+  instead of silently rewriting the accepted ADR. Evidence:
+  [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
-| **C** | CodeQL SAST (workflow restored; activation pending GHAS) | Code-level static analysis beyond `pip-audit` (deps only) + PR-time security findings | `codeql.yml` has been restored and CI security lane has conditional CodeQL steps. **Set `jobs.security.env.GHAS_ENABLED` to `"true"` only after GHAS/code scanning is enabled** in repo settings (private repo requirement). |
-| **D** | `dependency-review-action` on PRs | Blocks a PR that introduces a vulnerable/denied dependency at review time (Dependabot only reacts after merge) | Next hardening pass, or first time a bad dep slips through — small, can land any time |
-| **E** | Container image scanning (Trivy/Grype) | Scans the built image for **OS-level** CVEs in the `python:3.13-slim` base + apt layers — which `pip-audit` (Python deps only) never sees | **When F lands** — there must be a built image to scan |
-| **F** | Build + push **deploy pipeline** (`deploy.yml`) | The real "merge-to-main = deploy" trigger: build per-agent images → push to DockerHub (ADR-0007). Until it exists, merge-to-main only runs CI, not a deploy | **P14 container-per-agent split** (its own sprint) — see `docs/decisions/0007` |
 | **G** | Mutation testing (`mutmut`) | 100% line coverage proves lines *run*, not that tests *assert*. Mutmut proves the suite fails when logic breaks — validates test quality beyond coverage | Periodic rigor exercise; run after a stable sprint, not per-PR (it is slow). User flagged it a good candidate (2026-06-18) |
 
 ## Branch protection recommendations (with CodeQL)
@@ -39,9 +57,8 @@ When GHAS is enabled and `jobs.security.env.GHAS_ENABLED` is `"true"`:
 
 ## How this list stays alive
 
-1. **Trigger-coupling** (primary): E and F are chained — E is in F's own "out of scope / follow-up"
-   note, so finishing F naturally surfaces E. F is tied to the **P14** milestone in `docs/build-plan.md`
-   and ADR-0007.
+1. **Trigger-coupling** (primary): landed items move to **Done** with code/workflow evidence; registry
+   or supply-chain design drift is surfaced in the design log before any ADR amendment.
 2. **STATE.md pointer**: this file is linked from `docs/STATE.md` Pointers, read every session.
 3. **Optional**: mirror D–G as GitHub issues with a `hardening` label if/when issue-tracking is
    adopted (the repo has a GitHub remote). Not required while this doc is the single source.

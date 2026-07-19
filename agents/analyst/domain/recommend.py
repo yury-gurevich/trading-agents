@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
-from contracts.analyst import Recommendation, Rejection
+from contracts.analyst import QuantMetric, Recommendation, Rejection
 from contracts.common import Explanation
 
 if TYPE_CHECKING:
@@ -81,8 +81,17 @@ def decide(
             sentiment_score=score.sentiment_score,
             suggested_stop_pct=regime.base_stop_loss_pct,
             suggested_target_pct=regime.base_take_profit_pct,
+            quant_metrics=_quant_metrics(score),
             rationale=Explanation(summary=summary, evidence_refs=evidence_refs),
         ),
         rejection=None,
         sentiment_reading=reading,
+    )
+
+
+def _quant_metrics(score: ScoreBreakdown) -> tuple[QuantMetric, ...]:
+    """Return the full score metric payload in a stable, typed order."""
+    return tuple(
+        QuantMetric(name=name, value=value)
+        for name, value in sorted(score.metrics.items())
     )

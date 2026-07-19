@@ -1,0 +1,3 @@
+# Accepted Trivy findings only.
+# Add CVE IDs here only with a sprint/design-log evidence link, scope, owner,
+# and review/expiry date. Sprint 129 starts with no accepted findings.

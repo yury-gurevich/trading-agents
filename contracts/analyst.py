@@ -15,6 +15,13 @@ from kernel.contract import AgentContract, Capability
 
 
 # ── Outbound payloads ───────────────────────────────────────────────────────
+class QuantMetric(_Frozen):
+    """One bounded analyst scoring metric captured for debate/audit context."""
+
+    name: str = Field(min_length=1, max_length=80)
+    value: float = Field(allow_inf_nan=False)
+
+
 class Recommendation(_Frozen):
     ticker: Ticker
     action: Action
@@ -25,6 +32,10 @@ class Recommendation(_Frozen):
     fundamental_score: float | None = None
     suggested_stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     suggested_target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
+    quant_metrics: tuple[QuantMetric, ...] = Field(
+        default_factory=tuple, max_length=128
+    )
+    """Full bounded ScoreBreakdown.metrics payload that supported the recommendation."""
     rationale: Explanation
 
 
@@ -44,7 +55,7 @@ class RecommendationSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="analyst",
-    version="0.2.0",
+    version="0.2.1",
     mission=(
         "Turn candidates into scored, evidence-backed trade recommendations with a "
         "confidence and a rationale — or explain clearly why none qualify."

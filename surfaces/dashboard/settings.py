@@ -80,6 +80,26 @@ class DashboardSettings(AgentSettings):
         le=3600,
         unit="seconds",
     )
+    projection_cache_ttl_seconds: float = tunable(
+        5.0,
+        why=(
+            "Collapse rapid repeated graph projections while keeping the verdict "
+            "seconds-fresh."
+        ),
+        ge=0,
+        le=30,
+        unit="seconds",
+    )
+    self_heal_refetch_seconds: float = tunable(
+        90.0,
+        why=(
+            "Back off transient dashboard self-heal refetches to reduce repeated "
+            "read egress."
+        ),
+        gt=0,
+        le=600,
+        unit="seconds",
+    )
     github_repository: str = tunable(
         "yury-gurevich/trading-agents",
         why="Repository whose main image-build workflow defines deploy currency.",

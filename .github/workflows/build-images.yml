@@ -118,3 +118,13 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$output" | grep -Eq 'master|MASTER_URL|urlopen|Name or service|Connection refused|Temporary failure'
+
+      - name: Provider image size note
+        if: matrix.image == 'provider'
+        shell: bash
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/trading-agents-provider:latest
+          before=$(docker image inspect ghcr.io/${{ github.repository_owner }}/trading-agents-provider:latest --format '{{.Size}}')
+          after=$(docker image inspect ghcr.io/${{ github.repository_owner }}/trading-agents-provider@${{ steps.build.outputs.digest }} --format '{{.Size}}')
+          echo "provider_size_before_latest_bytes=${before}"
+          echo "provider_size_after_s130_test_bytes=${after}"

@@ -11,6 +11,7 @@ look in the "Outcome" column for the ADR or sprint it produced.
 | [R002](db-placement/) | DB placement — substrate registry vs trading-pack provenance + **Postgres migration plan** | 2026-06-23 | 🚧 In progress | What DB does the substrate need? What does AuraDB Free cover? Which graph/vector alternatives? **How do we move the spine to PostgreSQL?** | **DL-43 (2026-07-06):** Postgres = system of record, Neo4j = ad-hoc analysis workbench; plan in `postgres-migration-plan.md`; S116–S118 defined (S116 after S115); ADR-0001 supersede at S117 | `postgres` `pgvector` `neo4j` `substrate` `spine` `graph` `vector` `platform` |
 | [R003](textgrad/) | TextGrad — textual-gradient optimization for continuous improvement | 2026-07-03 | 🗄️ Archived | What is TextGrad vs DSPy? Should it join the optimizer stack now? What would make it worth adopting later? | Not adopted — stays the ADR-0010 bake-off candidate behind the `PromptOptimizer` port; revisit triggers named in the doc | `textgrad` `dspy` `prompt-optimization` `adr-0010` `continuous-improvement` |
 | [R004](a2a-boundary/) | A2A (Agent2Agent) — interop standard, boundary only | 2026-07-04 | 🗄️ Archived | How closely do we follow A2A standards/best practice? Should A2A replace any internal mechanism? When/how would compatibility be added? | Not adopted internally (permanent on current architecture — convergent principles, stronger enforcement). Future: A2A front-door adapter in `surfaces/` (MCP-surface pattern) behind named triggers | `a2a` `interop` `surfaces` `mcp` `adr-0012` `platform` |
+| [R005](base-image/) | Container base image for the 14 agent images — Debian slim vs Alpine vs distroless vs Chainguard vs Docker Hardened Images | 2026-07-19 | 🚧 Proposed | Why is the Trivy gate red on `python:3.13-slim`? What is the industry-standard free low-CVE base in 2026? | Recommendation: `ignore-unfixed` now, migrate to free `dhi.io/python:3.13` (DHI, Apache 2.0) as the row-H chore; Alpine + Chainguard-free ruled out | `docker` `base-image` `trivy` `cve` `supply-chain` `dhi` |
 
 ## Folder structure — read this before adding an entry
 
@@ -28,6 +29,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | --- | --- | --- |
 | [qlib-integration/](qlib-integration/INDEX.md) | R001 | Microsoft Qlib integration vision. |
 | [db-placement/](db-placement/INDEX.md) | R002 | Substrate vs trading-pack DB placement. |
+| [base-image/](base-image/INDEX.md) | R005 | Base-image landscape + DHI migration recommendation. |
 | [textgrad/](textgrad/INDEX.md) | R003 | TextGrad evaluated for continuous improvement — not adopted; ADR-0010 bake-off candidate. |
 | [a2a-boundary/](a2a-boundary/INDEX.md) | R004 | A2A interop standard — convergent principles, no internal adoption; boundary adapter behind triggers. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |

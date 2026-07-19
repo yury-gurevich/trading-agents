@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-19 17:30 AEST · **Version:** 0.71.01 · **🟢 SPINE RESTORED (DRIFT-023 RESOLVED: operator upgraded the Neon plan; probe GREEN). S128 (DRIFT-021 feed resilience) SHIPPED — live check PASSED, merged `09120b3` (CI + images + CodeQL green; tag `v0.71.01`), DRIFT-021 → CORRECTED — AND THE FLEET IS DEPLOYED AT `:s128`** (operator-approved `/deploy-fleet` 2026-07-19 ~17:30 AEST: 14/14 updates `Succeeded`, env + KEDA verified, `DeployRecord deploy:2026-07-19T07:29:58…:s128:0030243…` appended). Tonight's 22:30 UTC fire is the first scheduled run with paced, per-ticker-resilient feeds — watch for zero `*_degraded` notes.
+**Last updated:** 2026-07-19 18:40 AEST · **Version:** 0.71.02 · **🟢 S129 (fixpack) SHIPPED same day — merged `3be1ee8`, tag `v0.71.02` (CI + CodeQL green; `build-images` deliberately RED: the new Trivy gate enforces against 22 pre-existing base-image CVEs — backlog row H queued; images still push). Earlier today: DRIFT-023 RESOLVED (Neon plan upgraded), S128 SHIPPED + fleet deployed `:s128`.** Tonight's 22:30 UTC fire is the first scheduled run with paced, per-ticker-resilient feeds — watch for zero `*_degraded` notes. S129's quant-metrics deliberation context reaches the fleet at the next retag (operator's call).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -292,12 +292,19 @@ Pending in the graph: **1 critical broker-divergence flag** (operator's ack — 
 the dashboard); tonight's 22:30 UTC fire is the rotated-PAT + `:s126` first scheduled run.
 The 07-10 feed diagnosis is closed: DRIFT-021 CORRECTED (S128, live-proven 2026-07-19) and
 deployed to the fleet at `:s128` the same day.
-**S129 (fixpack) PACKAGED 2026-07-19** (`docs/sprints/sprint-129-fixpack.md`, targets 0.71.02)
-under the operator's fixes-first directive: S127 backlog row 3 (full `ScoreBreakdown.metrics`
-into Recommendation + all three deliberation roles), DRIFT-023 follow-up egress reduction
-(tunable TTL read cache + leaner polling), hardening D (dependency-review on PRs) + E (Trivy
-HIGH/CRITICAL image gate), hardening-backlog status reconciliation. P12 scorecard-run (now
-unblocked by S128's live news runway) queues behind it.
+**S129 (fixpack) SHIPPED 2026-07-19** (merged `3be1ee8`, 0.71.02, tag `v0.71.02`; Codex-built
+same-day from packaging, planning review re-ran `make ci` — exit 0, 1597 passed / 5 skipped /
+100 %). Fixes-first directive delivered: S127 backlog row 3 FIXED (bounded `QuantMetric` tuple
+on Recommendation, rendered to all three deliberation roles; live transcript cited
+`composite_score`); egress reduction live-proven (TTL cache: 18 → 0 Postgres round-trips
+inside the 5 s TTL, verdict unchanged; self-heal refetch 90 s); dependency-review enforcing
+on PRs (PR #50 proof); Trivy HIGH/CRITICAL gate enforcing in `build-images.yml` — found 22
+real base-image CVEs per representative image and correctly fails the run (nothing accepted,
+`.trivyignore` empty by policy → **backlog row H: remediate or formally accept; every main
+image build reads red until drained — images still push**). Hardening backlog C–F reconciled
+with evidence; DL-50 records the ADR-0007 DockerHub→GHCR drift for a future amendment cycle.
+Evidence: `docs/reports/sprint-129-fixpack/live-proof.md`. P12 scorecard-run (unblocked by
+S128's live news runway) is next in queue.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

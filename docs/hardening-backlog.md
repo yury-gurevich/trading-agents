@@ -45,6 +45,7 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
 | **G** | Mutation testing (`mutmut`) | 100% line coverage proves lines *run*, not that tests *assert*. Mutmut proves the suite fails when logic breaks — validates test quality beyond coverage | Periodic rigor exercise; run after a stable sprint, not per-PR (it is slow). User flagged it a good candidate (2026-06-18) |
+| **H** | Base-image CVE remediation (or formal accepted-findings entries) | The S129 Trivy gate found **22 HIGH/CRITICAL** Debian base-image CVEs per representative image (`python:3.13-slim` + apt layers) — real, pre-existing, now enforced: **every `build-images.yml` run on main is red until this is drained** (images still push; the scan runs post-push). `.trivyignore` is empty by policy — no silent suppression. | **Next sprint/chore** — either bump/patch the base image (rebuild pulls newer Debian packages) or add owner+expiry accepted-findings entries per `.trivyignore` policy. Evidence: run `29679397636`, `docs/reports/sprint-129-fixpack/live-proof.md` (S129 return notes) |
 
 ## Branch protection recommendations (with CodeQL)
 

@@ -66,9 +66,10 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S132** (S131 blast-radius handoff 2026-07-20 at 0.71.04 —
-   per-agent Postgres roles + dispatcher image slim; S132 candidate: P12 scorecard-run
-   once clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
+1. Next number: **S134** (S131 SHIPPED at 0.71.04, merged `0ca7459`; **S132 mutation-testing
+   packaged** targets 0.71.05, **S133 Service Bus SAS packaged** targets 0.71.06 — both ready
+   for handover, execute after the 2026-07-20 nightly run reads healthy. P12 scorecard-run
+   stays queued until ~2 weeks of clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
    Trivy `ignore-unfixed` + DHI migration per R005; all 14 `s130-test` images green in
    `build-images` run `29681635979`; S129 fixpack SHIPPED at 0.71.02, merged `3be1ee8`;
    fleet deployed at `:s130` 2026-07-19).

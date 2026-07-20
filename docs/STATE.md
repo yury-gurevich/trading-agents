@@ -338,8 +338,18 @@ firing a production trading run outside market hours — operator follow-up is t
 `pg_stat_activity` query during a live KEDA window. Backlog row I narrowed to **part 2
 (Service Bus SAS)**; row J Done. The fleet still runs `:s130` — the per-role DSN flip is an
 operator infra step (outside 22:25–00:30 UTC), not carried by an image retag.
-S132 candidate: P12 scorecard-run once ~2 weeks of clean-news nights accumulate (runway
-starts tonight).
+**S132 + S133 PACKAGED 2026-07-20** (both ready for handover, execute after the 07-20 nightly
+run reads healthy — fixes-first still holds, so a red run reprioritizes). **S132 = mutation
+testing** (`docs/sprints/sprint-132-mutation-testing.md`, targets 0.71.05, backlog row G):
+mutmut over the deterministic decision engines (analyst/PM/scanner/execution gates,
+acceptance, veto context) — kill or explain every survivor, fix any latent gate bug;
+mutmut stays a manual periodic exercise, never a CI gate. **S133 = Service Bus SAS**
+(`docs/sprints/sprint-133-servicebus-sas.md`, targets 0.71.06, backlog row I part 2,
+sequences after S132): per-agent scoped SAS replacing the shared `RootManage` connection
+string (entity-level Send/Listen; 12-rule/namespace cap forces per-topic), mirroring S131's
+secret-backed delivery + rollback; lower-severity (bus = pointers+RPC, not data). **P12
+scorecard-run** stays queued until ~2 weeks of clean-news nights accumulate (runway starts
+tonight) — it cannot execute meaningfully until then.
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

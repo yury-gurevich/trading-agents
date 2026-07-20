@@ -5,10 +5,10 @@
 #   pwsh infra/deploy-agents.ps1 down         # delete apps + dispatcher job
 #
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
-# POSTGRES_DSN is loaded from .env/process env.
+# POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
 param(
-  [ValidateSet('preflight', 'up', 'down')]
+  [ValidateSet('preflight', 'up', 'postgres-flip', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
   [string]$MasterScaleStart = '25 22 * * *',
@@ -16,7 +16,8 @@ param(
   [string]$ScaleEnd = '30 00 * * *',
   [string]$ScaleTimezone = 'UTC',
   [int]$ScaleDesiredReplicas = 1,
-  [string]$DispatcherCron = '30 22 * * *'
+  [string]$DispatcherCron = '30 22 * * *',
+  [switch]$UseSharedPostgresDsn
 )
 
 Set-StrictMode -Version Latest
@@ -29,6 +30,7 @@ $ENV_NAME = "trading-agents-env"
 $REGISTRY = "ghcr.io"
 $OWNER = "yury-gurevich"
 $DISPATCHER_JOB = "dispatcher-cron"
+$POSTGRES_APP_SECRET = "postgres-dsn" # pragma: allowlist secret
 # Container App name → GHCR image suffix (app names can't contain underscores).
 $AGENTS = [ordered]@{
   scanner = "scanner"; analyst = "analyst"; "portfolio-manager" = "portfolio_manager"
@@ -83,12 +85,54 @@ function Test-PostgresDsn {
   return $LASTEXITCODE -eq 0
 }
 
-function Get-GraphConfig {
+function Get-PostgresDsnEnvName($target) {
+  return "POSTGRES_DSN_" + $target.ToUpperInvariant().Replace("-", "_")
+}
+
+function Get-PostgresDsnSecretName($target) {
+  return "postgres-dsn-" + $target.ToLowerInvariant().Replace("_", "-")
+}
+
+function Get-KeyVaultName {
+  if ($env:POSTGRES_ROLE_KEY_VAULT) { return $env:POSTGRES_ROLE_KEY_VAULT }
+  $kv = Load-Json "key-vault.local.json"
+  if (-not $kv -or -not $kv.vault_url) { return "" }
+  try { return ([uri]$kv.vault_url).Host.Split(".")[0] } catch { return "" }
+}
+
+function Get-TargetPostgresDsn($target) {
+  if ($UseSharedPostgresDsn) { return $env:POSTGRES_DSN }
+  $envName = Get-PostgresDsnEnvName $target
+  $value = [Environment]::GetEnvironmentVariable($envName, "Process")
+  if ($value) { return $value }
+  $vault = Get-KeyVaultName
+  if (-not $vault) { return "" }
+  $secretName = Get-PostgresDsnSecretName $target
+  $value = az keyvault secret show --vault-name $vault --name $secretName `
+    --query value -o tsv 2>$null
+  if ($LASTEXITCODE -ne 0) { return "" }
+  return $value.Trim()
+}
+
+function Get-GraphConfig($target = "") {
+  if ($target) {
+    $secretValue = Get-TargetPostgresDsn $target
+    if (-not $secretValue) {
+      $envName = Get-PostgresDsnEnvName $target
+      $secretName = Get-PostgresDsnSecretName $target
+      throw "per-role Postgres DSN missing for $target ($envName or Key Vault $secretName)"
+    }
+    return [pscustomobject]@{
+      mode = "postgres"
+      envVars = @("POSTGRES_DSN=secretref:$POSTGRES_APP_SECRET")
+      secrets = @("$POSTGRES_APP_SECRET=$secretValue")
+    }
+  }
   if ($env:POSTGRES_DSN) {
     return [pscustomobject]@{
       mode = "postgres"
-      envVars = @("POSTGRES_DSN=secretref:postgres-dsn")
-      secrets = @("postgres-dsn=$($env:POSTGRES_DSN)")
+      envVars = @("POSTGRES_DSN=secretref:$POSTGRES_APP_SECRET")
+      secrets = @("$POSTGRES_APP_SECRET=$($env:POSTGRES_DSN)")
     }
   }
   throw "POSTGRES_DSN is required after ADR-0014; Neo4j env-var rollback was removed in S118"
@@ -137,6 +181,10 @@ function Get-CronScaleArgs($ruleName, $start) {
   )
 }
 
+function Get-FleetPostgresTargets {
+  return @("master") + @($AGENTS.Keys) + @("dispatcher")
+}
+
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
   Top "DEPLOY DISPATCHER JOB"
   $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
@@ -150,12 +198,15 @@ function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
     az resource update --ids $jobId --set properties.configuration.triggerType=Schedule `
       properties.configuration.scheduleTriggerConfig.cronExpression="$DispatcherCron" `
       2>$null | Out-Null
+    az containerapp job secret set --name $DISPATCHER_JOB --resource-group $RG `
+      --subscription $SUB --secrets $secrets -o none 2>$null | Out-Null
+    $secretOk = $LASTEXITCODE -eq 0
     $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
       --subscription $SUB --image $image --cron-expression $DispatcherCron `
       --replica-timeout 1800 --replica-retry-limit 0 --parallelism 1 `
       --replica-completion-count 1 --set-env-vars $envv `
       --query properties.provisioningState -o tsv 2>$null
-    Check ($state -eq "Succeeded") "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
+    Check ($secretOk -and $state -eq "Succeeded") "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
   }
   else {
     $state = az containerapp job create --name $DISPATCHER_JOB --resource-group $RG `
@@ -197,13 +248,25 @@ function Preflight {
   $ok = $ok -and $ghcr
 
   try { $graph = Get-GraphConfig } catch { $graph = $null }
-  Check ([bool]$graph) "graph config (Postgres required)"
+  Check ([bool]$graph) "schema graph config (Postgres required)"
   $ok = $ok -and [bool]$graph
   if ($graph -and $graph.mode -eq "postgres") {
     $pgOk = Test-PostgresDsn
     Check $pgOk "Postgres connect + SELECT 1"
     $ok = $ok -and $pgOk
   }
+
+  $pgTargets = Get-FleetPostgresTargets
+  $pgReady = 0
+  foreach ($target in $pgTargets) {
+    try {
+      Get-GraphConfig $target | Out-Null
+      $pgReady += 1
+    } catch {}
+  }
+  $allPgReady = $pgReady -eq $pgTargets.Count
+  Check $allPgReady "per-target Postgres DSNs: $pgReady/$($pgTargets.Count)"
+  $ok = $ok -and $allPgReady
 
   try { $serviceBus = Get-ServiceBusConfig } catch { $serviceBus = $null }
   Check ([bool]$serviceBus) "Service Bus connection config"
@@ -242,7 +305,7 @@ function Get-MasterKeypair {
 # ── Deploy ────────────────────────────────────────────────────────────────────
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
-  $ghcr = Load-Json "ghcr.local.json"; $graph = Get-GraphConfig; $serviceBus = Get-ServiceBusConfig
+  $ghcr = Load-Json "ghcr.local.json"; $serviceBus = Get-ServiceBusConfig
 
   Upgrade-PostgresSchema
   Prepare-ServiceBusRoutes
@@ -259,8 +322,10 @@ function Up {
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
-  ) + @($graph.envVars) + @($serviceBus.envVars)
-  $masterSecrets = @($graph.secrets) + @($serviceBus.secrets) + @("master-key-b64=$($kp.priv_b64)")
+  )
+  $masterGraph = Get-GraphConfig "master"
+  $envv += @($masterGraph.envVars) + @($serviceBus.envVars)
+  $masterSecrets = @($masterGraph.secrets) + @($serviceBus.secrets) + @("master-key-b64=$($kp.priv_b64)")
   $mArgs = @(
     "containerapp", "create", "--name", "master", "--resource-group", $RG,
     "--environment", $ENV_NAME, "--subscription", $SUB,
@@ -287,14 +352,15 @@ function Up {
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($graph.envVars) + @($serviceBus.envVars)
+    $agentGraph = Get-GraphConfig $name
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($serviceBus.envVars)
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,
       "--image", $img, "--registry-server", $REGISTRY, "--registry-username",
       $ghcr.username, "--registry-password", $ghcr.pat,
       "--secrets"
-    ) + @($graph.secrets) + @($serviceBus.secrets) + @(
+    ) + @($agentGraph.secrets) + @($serviceBus.secrets) + @(
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
@@ -303,8 +369,45 @@ function Up {
     Check ($state -eq "Succeeded") $name
   }
   Bot
-  Deploy-DispatcherJob $ghcr $graph $serviceBus
+  Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") $serviceBus
   Write-Host "`nFleet deployed with cron scale windows and dispatcher job. Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
+}
+
+function Set-AppPostgresDsn($name) {
+  $graph = Get-GraphConfig $name
+  az containerapp secret set --name $name --resource-group $RG --subscription $SUB `
+    --secrets $graph.secrets -o none 2>$null | Out-Null
+  $secretOk = $LASTEXITCODE -eq 0
+  $state = az containerapp update --name $name --resource-group $RG `
+    --subscription $SUB --set-env-vars $graph.envVars `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($secretOk -and $state -eq "Succeeded") "$name POSTGRES_DSN secretref"
+  return $secretOk -and $state -eq "Succeeded"
+}
+
+function Set-DispatcherPostgresDsn {
+  $graph = Get-GraphConfig "dispatcher"
+  az containerapp job secret set --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --secrets $graph.secrets -o none 2>$null | Out-Null
+  $secretOk = $LASTEXITCODE -eq 0
+  $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --set-env-vars $graph.envVars `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($secretOk -and $state -eq "Succeeded") "$DISPATCHER_JOB POSTGRES_DSN secretref"
+  return $secretOk -and $state -eq "Succeeded"
+}
+
+function Flip-PostgresRoles {
+  Top "POSTGRES ROLE FLIP"
+  Load-DotEnv
+  $ok = $true
+  $ok = (Set-AppPostgresDsn "master") -and $ok
+  foreach ($name in $AGENTS.Keys) {
+    $ok = (Set-AppPostgresDsn $name) -and $ok
+  }
+  $ok = (Set-DispatcherPostgresDsn) -and $ok
+  Bot
+  if (-not $ok) { throw "Postgres role flip failed" }
 }
 
 function Down {
@@ -326,5 +429,6 @@ az account set --subscription $SUB 2>$null
 switch ($Action) {
   'preflight' { Preflight | Out-Null }
   'up' { Up }
+  'postgres-flip' { Flip-PostgresRoles }
   'down' { Down }
 }

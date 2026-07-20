@@ -41,6 +41,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | **Production hardening (DL-44)** | S120 | Broker reconciliation after the first unattended run exposed graph↔broker divergence (CSCO double-buy): additive `positions()` on the Broker port, execution-owned run-start `BrokerPositionSnapshot` + loud divergence Flag, monitor adopts broker truth (`reconciled-from-broker` provenance), pending-Fill status refresh, teardown discipline amended. Live check = the repair. | **complete** — shipped 0.65.00 (2026-07-08, merged `6c0c0e9`); live check read-only/idempotent (prior in-development repair had already written the production Positions; divergence Flag retained as record); DRIFT-020 |
 | **Feed resilience (DRIFT-021)** | S128 | Per-request Finnhub pacing (55/min tunable budget), per-ticker fault attribution in all four enrichment feeds (DRIFT-014 pattern — one 429 costs one ticker, not the feed), durable attributed notes on the graph quality trace; live proof used the real rate limit as fault injector. | **complete** — shipped 0.71.01 (2026-07-19, merged `09120b3`); live check PASSED (paced 99/99 zero degraded notes in 7 min; unpaced per-ticker `:429` attribution with majority kept; Neon durability read-back); DRIFT-021 CORRECTED; fleet deployed at `:s128` same day |
 | **Supply-chain hardening (R005 / backlog H)** | S130 | Base-image CVE remediation: Trivy keeps HIGH/CRITICAL enforcement with `ignore-unfixed: true`, `.trivyignore` stays empty, and all 14 images moved to two-stage Docker Hardened Images (`dhi.io/python:3.13-dev` build, `dhi.io/python:3.13` runtime) with direct Python entrypoints. | **complete** — shipped 0.71.03 (2026-07-19, merged `8aefe2a`); manual run `29681635979` built/pushed all 14 `s130-test` GHCR images and passed every Trivy gate; post-merge `build-images` on main GREEN; fleet deployed at `:s130` same day |
+| **Blast-radius hardening (DEP-POSTGRES / backlog I+J)** | S131 | Per-agent Postgres runtime identities: 15 `ta_<agent>` roles, per-role Key Vault DSNs, secret-backed Container Apps delivery, revocation canary, plus dispatcher import-closure image slim. Service Bus SAS scoping remains row I part 2. | **handoff** — 0.71.04 branch `sprint-131-blast-radius` pushed unmerged; role provisioning/flip/canary proven live, controlled `pg_stat_activity` role audit saw 15 roles, dispatcher image run `29714326960` Trivy/smoke green |
 | **Law cycle** | S70 | Per-agent law backfill: scanner/analyst/PM/execution laws authored → cited → LOCKED v1 | **complete** |
 | **Law cycle** | S71 | Per-agent law backfill cont.: monitor/reporter/forecaster/operator/supervisor/curator/researcher | **complete** |
 | **ADR-0010** | S72 | `system_prompt` tunable on operator + forecaster (ADR-0010 immediate close) | **complete** |
@@ -65,7 +66,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S132** (S131 blast-radius packaged 2026-07-20, targets 0.71.04 —
+1. Next number: **S132** (S131 blast-radius handoff 2026-07-20 at 0.71.04 —
    per-agent Postgres roles + dispatcher image slim; S132 candidate: P12 scorecard-run
    once clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
    Trivy `ignore-unfixed` + DHI migration per R005; all 14 `s130-test` images green in

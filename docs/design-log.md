@@ -2316,3 +2316,25 @@ small results is the real benefit stored procedures would offer. Adopted instead
 traversals into adapter SQL (`kernel/graph_postgres_queries.py` already does recursive walks
 server-side) and reduce read volume with the S129 TTL cache. Escalation path if read patterns
 outgrow this: smarter adapter SQL — still code, still gated — never database-resident logic.
+
+---
+
+## DL-51 · Per-agent Postgres identities before RLS or ACTIVATE delivery  ·  status: DECIDED (2026-07-20)
+
+**Trigger.** S131 split the shared `POSTGRES_DSN` blast radius. The graph spine still uses two
+shared tables (`nodes`, `edges`) and agents need the spine before the master can issue ACTIVATE
+payloads, so credential scoping had two tempting-but-wrong expansions.
+
+**Decision.** Ship same-grant, distinct-login roles first: `ta_<agent>` identities for every
+fleet target, plus `ta_ops`, delivered as per-target Container Apps secret-backed
+`POSTGRES_DSN` values. This buys attribution (`pg_stat_activity.current_user`) and revocability
+now without changing the graph schema.
+
+**Deferred.** Row/label-level least privilege through RLS is a later design. It needs an explicit
+label write/read matrix, policy tests, migration ownership rules, and a plan for cross-stage
+lineage reads. S131 must not improvise RLS over the append-only graph.
+
+**Ruled out for this sprint.** Delivering `POSTGRES_DSN` through DL-36 ACTIVATE grants. Agents use
+the graph spine to discover work and participate in activation-era recovery, so the DSN is a
+bootstrap credential, not an after-activation secret. Reworking that order is a bootstrap redesign,
+not a hardening patch.

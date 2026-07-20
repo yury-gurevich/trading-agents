@@ -25,6 +25,7 @@ from dotenv import load_dotenv  # noqa: E402
 
 from orchestration.scheduled_dispatch import (  # noqa: E402
     CalendarWindowExceededError,
+    decide_scheduled_run,
     place_scheduled_run,
 )
 
@@ -47,6 +48,15 @@ def main(argv: list[str] | None = None) -> int:
     _configure_stdout()
     load_dotenv(Path(args.env_file), override=False)
     as_of = _as_of_date(args.as_of)
+    try:
+        decision = decide_scheduled_run(as_of)
+    except CalendarWindowExceededError as exc:
+        print(f"error calendar-window-exceeded: {exc}", file=sys.stderr)
+        return 1
+    if decision.action == "skip":
+        print(f"skipped {decision.run_id} reason={decision.reason}")
+        return 0
+
     if not os.environ.get("POSTGRES_DSN"):
         print(
             "error scheduled dispatcher failed: POSTGRES_DSN is required",

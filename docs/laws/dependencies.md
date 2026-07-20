@@ -14,6 +14,9 @@ contract — runnable in isolation and as the pre-flight of any real run.
 - `DEP-POSTGRES-02` — schema is Alembic-managed and upgraded to head before fleet startup.
 - `DEP-POSTGRES-03` — graph-store parity holds: append-only props, edge identity,
   depth/filter/dedup traversal, and no destructive GraphStore operations.
+- `DEP-POSTGRES-04` — production fleet connections use distinct `ta_<agent>` role
+  identities delivered as per-target secret-backed `POSTGRES_DSN` values; the shared
+  admin/schema DSN is not the runtime fleet identity.
 
 ## DEP-BUS — message bus (in-process now; Azure Service Bus later, ADR-0005; transitional CeleryBus retires at P14)
 

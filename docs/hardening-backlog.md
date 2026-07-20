@@ -47,14 +47,21 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   passed every Trivy gate; the actionable finding count dropped from S129's representative `22` to
   `0` gate-blocking findings. Evidence:
   [S130 base-image live proof](reports/sprint-130-base-image/live-proof.md#final-live-run).
+- **J — dispatcher image carries only its measured runtime slice.** Shipped in S131:
+  `scripts/dispatch_scheduled_run.py` was measured at a 43-file calendar-skip closure and a
+  44-file fake-trading-day closure; `orchestration/Dockerfile` now copies `kernel/`,
+  `contracts/`, the scheduled-dispatch orchestration files, the two needed agent modules
+  (`agents/provider/domain/market_calendar.py`, `agents/scanner/universe.py`), and the
+  dispatcher script/universe file instead of wholesale `agents/`, `orchestration/`, and
+  `scripts/`. Evidence:
+  [S131 blast-radius proof](reports/sprint-131-blast-radius/live-proof.md#row-j-dispatcher-image).
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
 | **G** | Mutation testing (`mutmut`) | 100% line coverage proves lines *run*, not that tests *assert*. Mutmut proves the suite fails when logic breaks — validates test quality beyond coverage | Periodic rigor exercise; run after a stable sprint, not per-PR (it is slow). User flagged it a good candidate (2026-06-18) |
-| **I** | Per-agent spine/bus credential scoping | Every container holds the same `POSTGRES_DSN` + Service Bus connection string, so ONE compromised agent can read/write the **entire** graph and the whole bus — the largest real blast-radius item in the 2026-07-19 threat-model review (code visibility is Kerckhoffs-fine; shared credentials are not). Middle path: per-agent Postgres roles (at least distinct roles for audit + read/write split) and per-agent Service Bus SAS scoped to own topics | Next security-focused sprint, or immediately if any container compromise indicator ever appears; needs a small design pass (master grants per-agent creds at activation — the DL-36 ladder already carries them) |
-| **J** | Dispatcher image carries the whole codebase | `orchestration/Dockerfile` COPYs `agents/` + `orchestration/` + `scripts/` — one image with effectively the full repo, contradicting the per-agent blast-radius design; the calendar-gated dispatch likely imports a fraction of it | Next Dockerfile-touching chore — measure the real import closure of `scripts/dispatch_scheduled_run.py`, slim COPY to it (2026-07-19 threat-model review) |
+| **I** | Per-agent Service Bus SAS scoping (part 2) | S131 completed part 1: the Postgres blast radius is split into 15 `ta_<name>` identities with identical graph grants, role-specific Key Vault secret names, and Container Apps secret-backed `POSTGRES_DSN` delivery. The remaining shared credential is the Azure Service Bus connection string, so one compromised container can still use the whole bus. | Next security-focused sprint: create per-topic authorization rules + per-agent Service Bus SAS connection strings, then wire them with the same secret-backed per-target delivery pattern. |
 
 ## Branch protection recommendations (with CodeQL)
 

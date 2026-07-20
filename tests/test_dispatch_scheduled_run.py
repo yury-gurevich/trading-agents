@@ -37,3 +37,29 @@ def test_script_direct_execution_reaches_fail_loud_postgres_check() -> None:
     assert completed.returncode == 1
     assert "POSTGRES_DSN is required" in completed.stderr
     assert "No module named" not in completed.stderr
+
+
+def test_script_direct_execution_skips_weekend_without_postgres() -> None:
+    env = os.environ.copy()
+    env.pop("POSTGRES_DSN", None)
+    env.pop("PYTHONPATH", None)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/dispatch_scheduled_run.py",
+            "--as-of",
+            "2026-07-04",
+            "--env-file",
+            "missing.env",
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert "skipped sched-2026-07-04" in completed.stdout
+    assert "POSTGRES_DSN" not in completed.stderr

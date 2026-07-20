@@ -13,6 +13,7 @@ on:
       - "contracts/**"
       - "orchestration/**"
       - "scripts/dispatch_scheduled_run.py"
+      - "scripts/universe_sp100.txt"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/build-images.yml"
@@ -128,3 +129,28 @@ jobs:
           after=$(docker image inspect ghcr.io/${{ github.repository_owner }}/trading-agents-provider@${{ steps.build.outputs.digest }} --format '{{.Size}}')
           echo "provider_size_before_latest_bytes=${before}"
           echo "provider_size_after_s130_test_bytes=${after}"
+
+      - name: Dispatcher calendar-skip smoke
+        if: matrix.image == 'dispatcher'
+        shell: bash
+        run: |
+          output=$(docker run --rm \
+            -e DISPATCHER_AS_OF=2026-07-04 \
+            ghcr.io/${{ github.repository_owner }}/trading-agents-dispatcher@${{ steps.build.outputs.digest }} 2>&1)
+          code=$?
+          printf '%s\n' "$output"
+          if [ "$code" -ne 0 ]; then
+            echo "dispatcher calendar-skip smoke failed with exit ${code}"
+            exit 1
+          fi
+          printf '%s\n' "$output" | grep -F 'skipped sched-2026-07-04'
+
+      - name: Dispatcher image size note
+        if: matrix.image == 'dispatcher'
+        shell: bash
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/trading-agents-dispatcher:latest
+          before=$(docker image inspect ghcr.io/${{ github.repository_owner }}/trading-agents-dispatcher:latest --format '{{.Size}}')
+          after=$(docker image inspect ghcr.io/${{ github.repository_owner }}/trading-agents-dispatcher@${{ steps.build.outputs.digest }} --format '{{.Size}}')
+          echo "dispatcher_size_before_latest_bytes=${before}"
+          echo "dispatcher_size_after_s131_test_bytes=${after}"

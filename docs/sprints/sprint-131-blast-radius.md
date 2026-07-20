@@ -200,3 +200,6 @@ placeholder is unfilled (LAW-02 + DL-48).
 - Backlog row I now means only Service Bus SAS scoping part 2; Postgres blast-radius part
   1 is complete. Row J is Done. The deferred RLS step and the ruled-out ACTIVATE-delivery
   option are recorded in DL-51.
+- Final CI correction after closeout was documentation-only: GitHub detect-secrets flagged
+  the S131 functionality-register row by keyword, so that row has a narrow false-positive
+  allowlist marker. No credential value was present or added.

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-20 11:57 AEST · **Version:** 0.71.03 · **🟢 THE FLEET IS DEPLOYED AT `:s130`** (operator-approved `/deploy-fleet` ~20:10 AEST: images built at `d0b0d3a` — run `29682697997`, all 14 pushed + Trivy green on the DHI bases; 13 apps + `dispatcher-cron` all `Succeeded`; env + KEDA verified; `DeployRecord deploy:2026-07-19T10:11:33…:s130:d0b0d3a…` appended after verification). **Tonight's 22:30 UTC fire runs S128 feed resilience + S129 quant-metrics debate context + S130 hardened nonroot/no-shell runtimes — watch for zero `*_degraded` notes.** Third ship + second deploy today: S128 SHIPPED, S129 SHIPPED (`3be1ee8`), S130 SHIPPED (`8aefe2a`); DRIFT-023 RESOLVED this morning.
+**Last updated:** 2026-07-20 13:50 AEST · **Version:** 0.71.03 · **🟢 THE FLEET IS DEPLOYED AT `:s130`** (operator-approved `/deploy-fleet` ~20:10 AEST: images built at `d0b0d3a` — run `29682697997`, all 14 pushed + Trivy green on the DHI bases; 13 apps + `dispatcher-cron` all `Succeeded`; env + KEDA verified; `DeployRecord deploy:2026-07-19T10:11:33…:s130:d0b0d3a…` appended after verification). **Tonight's 22:30 UTC fire runs S128 feed resilience + S129 quant-metrics debate context + S130 hardened nonroot/no-shell runtimes — watch for zero `*_degraded` notes.** Third ship + second deploy today: S128 SHIPPED, S129 SHIPPED (`3be1ee8`), S130 SHIPPED (`8aefe2a`); DRIFT-023 RESOLVED this morning.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -262,7 +262,7 @@ over a fresh SQL connection after the writer exited. Teardown: 12 nodes + 4 edge
 verified intact, `DeployRecord` appended after verification — the resilience fix is live for
 tonight's 22:30 UTC fire.
 
-On `main` at 0.71.01. **S128 SHIPPED (merged `09120b3`, tag `v0.71.01`; local `make ci` exit 0
+On `main` at 0.71.04 (S131 latest). **S128 SHIPPED (merged `09120b3`, tag `v0.71.01`; local `make ci` exit 0
 at 1590 passed / 100 %, GitHub CI + image build + CodeQL all green; 0.71.01 images pushed).**
 Codex code handback 2026-07-16; planning-agent live check + merge 2026-07-19
 (`docs/sprints/sprint-128-feed-resilience.md`). S127 fixpack before it (merged `32c73cc`) on
@@ -324,12 +324,22 @@ had completed **7/7 `ACCEPTANCE PASS`** (1 AMD paper buy) before the quota tripp
 07-17's session run is the outage's one lost run (not re-fired — day-keyed). **The new
 stack's first session-day run is tonight, Mon 2026-07-20 22:30 UTC** — green = zero
 `*_degraded` notes + full-signal confidences.
-**S131 (blast radius) PACKAGED 2026-07-20** (`docs/sprints/sprint-131-blast-radius.md`,
-targets 0.71.04; backlog row I part 1 + row J): 15 per-agent Neon roles (`ta_<agent>`,
-attribution + revocability, canary-revocation proof), secret-backed per-app `POSTGRES_DSN`,
-dispatcher image slimmed to its measured import closure; Service Bus SAS = row I part 2,
-own sprint. **Kickoff gated on tonight's run reading healthy.** S132 candidate: P12
-scorecard-run once ~2 weeks of clean-news nights accumulate (runway starts tonight).
+**S131 (blast radius) SHIPPED 2026-07-20** (merged `0ca7459`, 0.71.04, tag `v0.71.04`;
+Codex-built, planning review re-ran the gate — exit 0, 1608 passed / 100 %; post-merge CI +
+CodeQL + build-images all GREEN). Backlog row I part 1 + row J delivered: **15 per-agent Neon
+roles** (`ta_<agent>`, identical grants — attribution + revocability now, RLS deferred as
+DL-51), secret-backed per-target `POSTGRES_DSN` delivery + `postgres-flip` runbook +
+`-UseSharedPostgresDsn` rollback; **dispatcher image slimmed** to its measured import closure
+(the shared-code lazy `__init__` exports are what let it drop `agents/`/`orchestration/`/
+`scripts/` wholesale). Live proof: 15 `ta_*` roles connected + attributable in
+`pg_stat_activity`, `ta_canary` revoked→refused→purged with the fleet green. **Honest
+deviation (correct conservative call):** identities proven via a controlled audit, not by
+firing a production trading run outside market hours — operator follow-up is to repeat the
+`pg_stat_activity` query during a live KEDA window. Backlog row I narrowed to **part 2
+(Service Bus SAS)**; row J Done. The fleet still runs `:s130` — the per-role DSN flip is an
+operator infra step (outside 22:25–00:30 UTC), not carried by an image retag.
+S132 candidate: P12 scorecard-run once ~2 weeks of clean-news nights accumulate (runway
+starts tonight).
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

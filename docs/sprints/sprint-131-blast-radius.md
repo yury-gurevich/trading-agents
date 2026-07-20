@@ -85,7 +85,7 @@ confirmed the 2026-07-20 nightly run came back healthy** — if it did not, run 
 >
 > - **Start:** `git pull` on `main` — `pyproject.toml` must read **0.71.03** (stop and
 >   report if not). Branch `sprint-131-blast-radius`. Bump **PATCH → 0.71.04** (hardening)
->   + `uv lock`.
+>   - `uv lock`.
 > - **Drift rule:** before handback, `git fetch`; if `origin/main` moved, merge it in,
 >   re-run the full gate, record what moved in the Return notes.
 > - **Secrets rule** (CLAUDE.md): no generated password ever exists as a repo-tree file or
@@ -153,14 +153,21 @@ confirmed the 2026-07-20 nightly run came back healthy** — if it did not, run 
 
 ```text
 CLOSEOUT — Sprint 131
-Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
-make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
-Functionality check:     <role provisioning, per-role connection evidence, canary
-                          revocation, row-J build/smoke/size>
+Branch / merge commit:   sprint-131-blast-radius / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1608 passed, 5 skipped; coverage 100.00%
+Functionality check:     PG_PROVISION_EXIT_CODE=0; fleet flip 14/14 secretRefs; preflight
+                          per-target Postgres DSNs 14/14; controlled pg_stat_activity audit
+                          saw 15 distinct ta_<agent> roles; ta_canary refused after NOLOGIN
+                          while fleet stayed Succeeded; dispatcher build-images run
+                          29714326960 passed Trivy + calendar-skip smoke by digest and size
+                          moved 151456849 -> 149552133 bytes
 Version:                 0.71.03 → 0.71.04 (PATCH); uv.lock refreshed
-Backlog rows:            I → <narrowed status>; J → <status>
-Drift rule:              <origin/main moved? merged? re-gated?>
-Deviations from spec:    <none, or the honest list>
+Backlog rows:            I → narrowed to part 2 Service Bus SAS; J → Done
+Drift rule:              git fetch before handback; origin/main stayed at
+                          7d7c9fa797ad96ffde0f62c7967050d1d235aa4d, no merge needed
+Deviations from spec:    container-origin pg_stat_activity capture deferred to next KEDA
+                          window because apps were scaled to zero; local Docker daemon timed
+                          out, so image build/smoke/size proof used the GitHub runner
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
@@ -171,3 +178,25 @@ follow-ups. A handback is not accepted while this section is empty or the closeo
 placeholder is unfilled (LAW-02 + DL-48).
 
 <!-- return notes go below this line -->
+
+- Branch `sprint-131-blast-radius` is pushed and intentionally unmerged. The standing
+  fleet's `POSTGRES_DSN` app secret now points at per-target role DSNs delivered from
+  `trading-agents-kv`; shared rollback material remains untouched.
+- Rollback for the fleet env flip is
+  `pwsh -NoProfile -File infra/deploy-agents.ps1 postgres-flip -UseSharedPostgresDsn`.
+  The per-agent roles can remain dormant after rollback.
+- `.env` was not edited. If local operator tooling should stop using the shared spine
+  identity, the operator should apply the `ta_ops` DSN from Key Vault to their own `.env`.
+- Canary cleanup is complete: `ta_canary` was revoked, then the database role and Key
+  Vault secret were deleted/purged to zero.
+- The dispatcher image proof is a runner substitute for local Docker: local daemon access
+  timed out before the Dockerfile was evaluated; GitHub run `29714326960` built/pushed
+  `s131-test`, passed Trivy, ran the Saturday calendar-skip smoke, and recorded the size
+  reduction.
+- Operator follow-up: during the next scheduled KEDA window, repeat the role query against
+  `pg_stat_activity` to capture container-origin `ta_<agent>` sessions. The controlled
+  audit already proved all 15 role credentials and Postgres attribution, but it used
+  `application_name=s131-role-audit` connections rather than live app replicas.
+- Backlog row I now means only Service Bus SAS scoping part 2; Postgres blast-radius part
+  1 is complete. Row J is Done. The deferred RLS step and the ruled-out ACTIVATE-delivery
+  option are recorded in DL-51.

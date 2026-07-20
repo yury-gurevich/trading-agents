@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-19 20:11 AEST · **Version:** 0.71.03 · **🟢 THE FLEET IS DEPLOYED AT `:s130`** (operator-approved `/deploy-fleet` ~20:10 AEST: images built at `d0b0d3a` — run `29682697997`, all 14 pushed + Trivy green on the DHI bases; 13 apps + `dispatcher-cron` all `Succeeded`; env + KEDA verified; `DeployRecord deploy:2026-07-19T10:11:33…:s130:d0b0d3a…` appended after verification). **Tonight's 22:30 UTC fire runs S128 feed resilience + S129 quant-metrics debate context + S130 hardened nonroot/no-shell runtimes — watch for zero `*_degraded` notes.** Third ship + second deploy today: S128 SHIPPED, S129 SHIPPED (`3be1ee8`), S130 SHIPPED (`8aefe2a`); DRIFT-023 RESOLVED this morning.
+**Last updated:** 2026-07-20 11:57 AEST · **Version:** 0.71.03 · **🟢 THE FLEET IS DEPLOYED AT `:s130`** (operator-approved `/deploy-fleet` ~20:10 AEST: images built at `d0b0d3a` — run `29682697997`, all 14 pushed + Trivy green on the DHI bases; 13 apps + `dispatcher-cron` all `Succeeded`; env + KEDA verified; `DeployRecord deploy:2026-07-19T10:11:33…:s130:d0b0d3a…` appended after verification). **Tonight's 22:30 UTC fire runs S128 feed resilience + S129 quant-metrics debate context + S130 hardened nonroot/no-shell runtimes — watch for zero `*_degraded` notes.** Third ship + second deploy today: S128 SHIPPED, S129 SHIPPED (`3be1ee8`), S130 SHIPPED (`8aefe2a`); DRIFT-023 RESOLVED this morning.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01/02/03.md` + git). **LAW-02:** an item is "shipped" only when
@@ -316,8 +316,20 @@ provider missing-config smoke + size note added to the workflow. Live proof:
 images). Row H Done; R005 Adopted. **2026-07-19 threat-model review added backlog rows I**
 (per-agent spine/bus credential scoping — the shared `POSTGRES_DSN`/Service Bus string is
 the real blast-radius item, DL-49-adjacent Kerckhoffs discussion) **and J** (dispatcher
-image COPYs the whole repo — slim to the dispatch import closure). P12 scorecard-run
-(unblocked by S128's live news runway) is next in queue.
+image COPYs the whole repo — slim to the dispatch import closure).
+**2026-07-20 morning check:** the 07-19 22:30Z fire **Succeeded on `:s130`** and correctly
+placed no RunRequest (Sunday — calendar-gate clean skip; first production proof of the DHI
+dispatcher image). Post-restore verification closed DRIFT-023's loose end: `sched-2026-07-15`
+had completed **7/7 `ACCEPTANCE PASS`** (1 AMD paper buy) before the quota tripped; Friday
+07-17's session run is the outage's one lost run (not re-fired — day-keyed). **The new
+stack's first session-day run is tonight, Mon 2026-07-20 22:30 UTC** — green = zero
+`*_degraded` notes + full-signal confidences.
+**S131 (blast radius) PACKAGED 2026-07-20** (`docs/sprints/sprint-131-blast-radius.md`,
+targets 0.71.04; backlog row I part 1 + row J): 15 per-agent Neon roles (`ta_<agent>`,
+attribution + revocability, canary-revocation proof), secret-backed per-app `POSTGRES_DSN`,
+dispatcher image slimmed to its measured import closure; Service Bus SAS = row I part 2,
+own sprint. **Kickoff gated on tonight's run reading healthy.** S132 candidate: P12
+scorecard-run once ~2 weeks of clean-news nights accumulate (runway starts tonight).
 The etalon north-star holds (DL-19):
 remaining gray law clauses → green with cited tests; **every sprint ends with a real-environment
 functionality check** (`docs/laws/functionality-checks.md`) + teardown. Each sprint/chore on its own

@@ -65,7 +65,9 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S131** (S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
+1. Next number: **S132** (S131 blast-radius packaged 2026-07-20, targets 0.71.04 —
+   per-agent Postgres roles + dispatcher image slim; S132 candidate: P12 scorecard-run
+   once clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
    Trivy `ignore-unfixed` + DHI migration per R005; all 14 `s130-test` images green in
    `build-images` run `29681635979`; S129 fixpack SHIPPED at 0.71.02, merged `3be1ee8`;
    fleet deployed at `:s130` 2026-07-19).

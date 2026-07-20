@@ -30,6 +30,8 @@ concurrency:
 
 jobs:
   build:
+    # CI runner OS (ephemeral build VM), NOT the shipped base image — that is
+    # dhi.io/python:3.13 set by each Dockerfile's FROM (S130 / R005).
     runs-on: ubuntu-latest
     permissions:
       contents: read

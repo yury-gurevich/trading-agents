@@ -54,11 +54,15 @@ def _rising_bars(count: int) -> tuple[OHLCVBar, ...]:
 
 
 def test_score_candidate_reports_insufficient_history() -> None:
+    """Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_8."""
     score = score_candidate(candidate(), _rising_bars(1), {}, (), (), AnalystSettings())
 
     decision = decide(candidate(), score, _regime())
 
     assert score.rejection_reason == "insufficient_market_history"
+    assert score.technical_score == 0.0
+    assert score.confidence == 0.0
+    assert score.metrics == {"history_bars": 1.0}
     assert decision.recommendation is None
     assert decision.rejection is not None
     assert decision.rejection.reason == "insufficient_market_history"

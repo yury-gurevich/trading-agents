@@ -18,6 +18,7 @@ from orchestration.local_pipeline import cascade_once
 from orchestration.observatory import Breach, Check, StageView, accept
 from orchestration.packs.trading_acceptance import (
     _CONSERVATION,
+    _conserves,
     _explains_floor,
     _is_no_trade,
     accept_run,
@@ -145,3 +146,14 @@ def test_conservation_catches_a_fabricated_count() -> None:
     result = accept(stages, _CONSERVATION)
     assert not result.passed
     assert any("fabricated" in b.detail for b in result.breaches)
+
+
+def test_conservation_factory_compares_child_and_parent_keys_directly() -> None:
+    """Kills orchestration.packs.trading_acceptance.x__conserves__mutmut_1."""
+    check = _conserves("scanner", "survived", "provider", "returned")
+
+    breach = check({"provider": {"returned": 2}, "scanner": {"survived": 5}})
+
+    assert breach == Breach(
+        "scanner", "survived", "5 > provider.returned=2 (fabricated)"
+    )

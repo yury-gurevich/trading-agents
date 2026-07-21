@@ -119,16 +119,44 @@ capability.
 ## Closeout (coding agent fills; planning agent verifies before merge)
 
 ```text
-CLOSEOUT — Sprint 132
-Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
-make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
-Functionality check:     <scoped mutation kill-rate before/after; survivor dispositions>
-Version:                 0.71.04 → 0.71.05 (PATCH); uv.lock refreshed
-Backlog row G:           <status + report link>; behavioral bugs found: <n + drift rows>
-Drift rule:              <origin/main moved? merged? re-gated?>
-Deviations from spec:    <none, or the honest list>
+CLOSEOUT - Sprint 132
+Branch / merge commit:   sprint-132-mutation-testing / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1614 passed / 5 skipped; coverage 100.00%
+Functionality check:     mutmut scoped targets 5282/6731 killed (78.47%; 1449 actionable)
+                          -> 5376/6731 killed (79.87%; 1355 actionable); all remaining
+                          survivor/no-test rows are documented-equivalent in the report.
+Version:                 0.71.04 -> 0.71.05 (PATCH); uv.lock refreshed
+Backlog row G:           Done; docs/reports/sprint-132-mutation-testing/README.md; behavioral
+                          bugs found: 0, no drift-register row added
+Drift rule:              git fetch origin before handback; origin/main unchanged at
+                          1b0c739b130d56e60aeaa53b956ebcdff826c56e; no merge needed;
+                          full make ci rerun after fetch
+Deviations from spec:    None. Operational note: mutmut has no native Windows support, so
+                          the manual mutation run used a WSL Ubuntu-22.04 native copy.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
 
 <!-- return notes go below this line -->
+
+- Branch-only handback on `sprint-132-mutation-testing`; do not merge by instruction.
+- Tooling: `mutmut>=3.6.0` added only to `[dependency-groups].dev`; `uv.lock` refreshed;
+  runtime extra check returned `mutmut_in_runtime=False`; no Makefile or workflow wiring for
+  mutmut.
+- Mutation proof: WSL scoped run over the decision-1 target paths improved kill rate from 78.47%
+  to 79.87% (`+94` killed mutants). Full survivor/no-test triage is in
+  [../reports/sprint-132-mutation-testing/actionable-mutants.csv](../reports/sprint-132-mutation-testing/actionable-mutants.csv).
+- Regression tests cite the killed mutants in docstrings. After splitting the execution regression
+  into its own <=200-line test module, a targeted re-check killed
+  `agents.execution.reconciliation_store.x__is_active_position__mutmut_1` again.
+- LAW-02 functionality check is the mutation run plus the full local gate: `MAKE_CI_EXIT_CODE=0`,
+  `1614 passed, 5 skipped`, coverage `100.00%`.
+- Offline boundary: no live infra, production graph, broker, teardown, DSN, or secret material was
+  touched or printed.
+- Drift reconciliation: `git fetch origin` completed before handback; `origin/main` stayed at
+  `1b0c739b130d56e60aeaa53b956ebcdff826c56e`, so no merge was required and no upstream movement
+  needed recording beyond this note.
+- Known local audit output: `pip-audit` still reports the pre-existing non-blocking
+  `diskcache 5.6.3 / PYSEC-2026-2447` finding already present on `origin/main` via `dspy`; it was
+  not introduced by the mutmut dev dependency, and the repository Makefile still returned
+  `MAKE_CI_EXIT_CODE=0`.

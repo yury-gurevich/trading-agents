@@ -44,14 +44,16 @@ _BARS = (
 )
 
 
-def _wire() -> tuple[InProcessBus, InMemoryGraphStore]:
+def _wire(
+    universes: dict[str, tuple[str, ...]] | None = None,
+) -> tuple[InProcessBus, InMemoryGraphStore]:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     ProviderAgent(bus, graph=graph, source=FakeDataSource(bars=_BARS)).bind()
     ScannerAgent(
         bus,
         graph=graph,
-        universe=FakeUniverse({"sp500": ("AAPL", "MSFT")}),
+        universe=FakeUniverse(universes or {"sp500": ("AAPL", "MSFT")}),
         settings=ScannerSettings(min_price=5.0, min_average_volume=100_000),
     ).bind()
     return bus, graph
@@ -95,6 +97,22 @@ def test_scan_result_node_candidates_are_deserializable() -> None:
     node = claim_check_read(graph, received[0])
     candidate_set = CandidateSet.model_validate(node.props["candidates"])
     assert len(candidate_set.candidates) > 0
+
+
+def test_run_trigger_uses_event_universe_for_scan_request() -> None:
+    """Kills agents.scanner.agent.xǁScannerAgentǁ_on_run_trigger__mutmut_9."""
+    bus, graph = _wire({"custom": ("AAPL",), "sp500": ("MSFT",)})
+    received: list[dict[str, object]] = []
+    bus.subscribe("scan.candidates.ready", received.append)
+
+    bus.publish("run.trigger", {"run_id": "run-custom", "universe": "custom"})
+
+    node = claim_check_read(graph, received[0])
+    candidate_set = CandidateSet.model_validate(node.props["candidates"])
+    scan_key = str(candidate_set.provenance.graph_node_id).split(":", 1)[1]
+    scan_node = graph.get_node("ScanRun", scan_key)
+    assert scan_node is not None
+    assert scan_node.props["universe"] == "custom"
 
 
 def test_run_id_propagated_in_ready_event() -> None:

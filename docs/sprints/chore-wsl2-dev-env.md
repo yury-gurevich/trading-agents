@@ -74,6 +74,16 @@ mutant** — brutally I/O-heavy on NTFS, much faster on ext4. That is the concre
      handling) port 1:1 in *logic* but need real *syntax* rewrites. High cost, no benefit while
      `pwsh` runs on Linux. Revisit later **only** if a zero-PowerShell repo is an explicit goal;
      it is not coupled to this chore.
+   - *A hand-rolled cross-platform path shim (a `Normalize-Path`-style regex converter)* —
+     proposed and tested 2026-07-21, rejected. (a) **Redundant:** pwsh already normalises
+     `\`→`/` in provider paths (tested above), so the shim only re-does what the runtime does,
+     with a double-convert hazard. (b) **Wrong + unsafe as written:** the tested regex treats
+     the first char of *any* absolute path as a drive, shredding every non-`/c/` path
+     (`/home`→`h:ome`, `/mnt/c`→`m:nt\c`, `/tmp`→`t:mp`); it targets Git-Bash `/c/` not WSL2's
+     `/mnt/c/`, is case-wrong (`C:`→`/C`), and — because `$IsWindows` is undefined in Windows
+     PowerShell 5.1 — runs the *reverse* branch on 5.1, which is exactly what `make codeql-ast`
+     invokes today. **Rule:** write portable `/` paths and let pwsh normalise; for a genuine
+     Windows↔WSL boundary use `wslpath` (mount-aware, case-correct), never a regex.
 2. **Do not tie the move to a PowerShell→bash rewrite** (corollary of #1). The environment move
    and the language choice are independent decisions; conflating them is what makes a WSL2 move
    look expensive when it is not.

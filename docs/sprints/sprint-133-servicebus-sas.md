@@ -77,9 +77,10 @@ is a lower-severity surface than the Postgres half; the value is the same princi
 >
 > **Contract (DL-48 — enforced):**
 >
-> - **Start:** `git pull` on `main` — `pyproject.toml` must read **0.71.05** (stop and
->   report if S132 has not merged; this sprint sequences AFTER S132). Branch
->   `sprint-133-servicebus-sas`. Bump **PATCH → 0.71.06** + `uv lock`.
+> - **Start:** `git pull` on `main` — `pyproject.toml` must read **0.71.06** (stop and
+>   report if S134 has not merged; **this sprint sequences AFTER S134** per the 2026-07-21
+>   operator directive — assertion hardening runs first). Branch
+>   `sprint-133-servicebus-sas`. Bump **PATCH → 0.71.07** + `uv lock`.
 > - **Drift rule / Secrets rule / Handback rule:** as S131 (fetch+merge+re-gate; no key in
 >   the tree or in output; closeout+return notes last).
 > - Hard gate: `make ci` green (exit code captured), 100 % coverage, ≤200-line modules,
@@ -146,7 +147,7 @@ Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
 make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
 Functionality check:     <scoped-identity delivery, positive send/listen, least-authority
                           refusal, rule revocation, fleet health>
-Version:                 0.71.05 → 0.71.06 (PATCH); uv.lock refreshed
+Version:                 0.71.06 → 0.71.07 (PATCH); uv.lock refreshed
 Backlog row I:           <Done + evidence link>; SAS model chosen: <entity/namespace + why>
 Drift rule:              <origin/main moved? merged? re-gated?>
 Deviations from spec:    <none, or the honest list>

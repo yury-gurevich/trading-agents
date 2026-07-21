@@ -67,10 +67,13 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S134** (S131 handoff at 0.71.04 remains branch-only; **S132 mutation-testing
-   handoff** targets 0.71.05 and remains branch-only; **S133 Service Bus SAS packaged**
-   targets 0.71.06 and is the next executable hardening sprint. P12 scorecard-run
-   stays queued until ~2 weeks of clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
+1. Next number: **S135** (S131 SHIPPED `0ca7459`/0.71.04; S132 SHIPPED `15c23d6`/0.71.05).
+   **Execution order for the two packaged sprints: S134 (assertion hardening, row K) FIRST →
+   0.71.06, then S133 (Service Bus SAS, row I) → 0.71.07** — operator reprioritised
+   assertion hardening ahead of the bus work 2026-07-21 (fixes-first; trade-gating code
+   outranks lower-severity bus creds). Numbers don't match execution order here by intent
+   (S133 was packaged before the reprioritisation). P12 scorecard-run stays queued until
+   ~2 weeks of clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
    Trivy `ignore-unfixed` + DHI migration per R005; all 14 `s130-test` images green in
    `build-images` run `29681635979`; S129 fixpack SHIPPED at 0.71.02, merged `3be1ee8`;
    fleet deployed at `:s130` 2026-07-19).

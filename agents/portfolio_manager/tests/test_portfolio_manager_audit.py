@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from agents.portfolio_manager.domain.gate_report import position_outcomes
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.store import write_order_decision
 from agents.portfolio_manager.tests.helpers import (
@@ -17,7 +18,7 @@ from agents.portfolio_manager.tests.helpers import (
     recommendation_set,
 )
 from contracts.common import Money
-from contracts.portfolio_manager import RejectedOrder
+from contracts.portfolio_manager import GateOutcome, RejectedOrder
 from kernel import InMemoryGraphStore
 
 
@@ -132,3 +133,65 @@ def test_cash_gate_subtracts_reserved_cash_for_later_recommendations() -> None:
     assert [(item.ticker, item.reason) for item in rejected] == [
         ("MSFT", "insufficient_cash")
     ]
+
+
+def test_position_outcomes_hold_gate_boundaries() -> None:
+    """Kills x_position_outcomes__mutmut_13."""
+    observed = [
+        (round(gate.value, 3), gate.threshold, gate.passed)
+        for gate in (_position_gate("sizing", quantity) for quantity in (99, 100, 101))
+    ]
+    assert observed == [(0.099, 0.1, True), (0.1, 0.1, True), (0.101, 0.1, False)]
+
+    observed = [
+        (gate.value, gate.threshold, gate.passed)
+        for gate in (
+            _position_gate("min_order_quantity", quantity, min_quantity=5)
+            for quantity in (4, 5, 6)
+        )
+    ]
+    assert observed == [(4.0, 5.0, False), (5.0, 5.0, True), (6.0, 5.0, True)]
+
+
+def test_position_outcomes_hold_capacity_boundaries() -> None:
+    """Kills x_position_outcomes__mutmut_30."""
+    observed = [
+        (gate.value, gate.threshold, gate.passed)
+        for gate in (
+            _position_gate("max_positions", 1, held=held)
+            for held in ({"MSFT"}, {"MSFT", "TSLA"}, {"MSFT", "TSLA", "NVDA"})
+        )
+    ]
+    assert observed == [(2.0, 3.0, True), (3.0, 3.0, True), (4.0, 3.0, False)]
+
+    observed = [
+        (gate.value, gate.threshold, gate.passed)
+        for gate in (
+            _position_gate("cash_available", quantity, cash="100.00")
+            for quantity in (89, 90, 91)
+        )
+    ]
+    assert observed == [(89.0, 90.0, True), (90.0, 90.0, True), (91.0, 90.0, False)]
+
+
+def _position_gate(
+    name: str,
+    quantity: int,
+    *,
+    cash: str = "1000.00",
+    held: set[str] | None = None,
+    min_quantity: int = 1,
+) -> GateOutcome:
+    outcomes = position_outcomes(
+        item=recommendation("AAPL"),
+        quantity=quantity,
+        price=Money(amount=Decimal("1.00")),
+        portfolio=cash_portfolio(cash),
+        reserved_cash=Decimal("0"),
+        open_tickers=held or {"MSFT"},
+        max_position_pct=Decimal("0.10"),
+        max_positions=3,
+        cash_buffer_pct=Decimal("0.10"),
+        min_order_quantity=min_quantity,
+    )
+    return next(outcome for outcome in outcomes if outcome.name == name)

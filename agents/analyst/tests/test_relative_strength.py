@@ -16,7 +16,7 @@ from agents.analyst.domain.relative_strength import (
     compute_relative_strength,
     score_relative_strength,
 )
-from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.scoring import _bounded, _composite, score_candidate
 from agents.analyst.provider_client import request_market_data
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import bar, candidate, candidate_set
@@ -81,6 +81,29 @@ def test_relative_strength_blends_into_technical_score() -> None:
     assert with_rs.technical_score == pytest.approx(min(1.0, max(0.0, blended)))
     assert with_rs.metrics["relative_strength"] == pytest.approx(spread)
     assert with_rs.metrics["rs_score"] == pytest.approx(score_relative_strength(spread))
+
+
+def test_scoring_helpers_hold_exact_boundaries() -> None:
+    """Kills agents.analyst.domain.scoring.x__composite__mutmut_24.
+
+    Also kills agents.analyst.domain.scoring.x__bounded__mutmut_10.
+    """
+    settings = AnalystSettings(alpha158_pillar_weight=0.10)
+
+    assert [_bounded(v) for v in (-0.001, 0.0, 0.001, 1.0, 1.001)] == [
+        0.0,
+        0.0,
+        0.001,
+        1.0,
+        1.0,
+    ]
+    assert _composite(0.20, None, None, None, settings) == 0.20
+    assert _composite(0.20, 0.80, None, None, settings) == pytest.approx(
+        (0.50 * 0.20 + 0.30 * 0.80) / 0.80
+    )
+    assert _composite(0.20, 0.80, 1.0, 0.50, settings) == pytest.approx(
+        (0.50 * 0.20 + 0.30 * 0.80 + 0.20 * 1.0 + 0.10 * 0.50) / 1.10
+    )
 
 
 def test_market_request_is_none_when_provider_unavailable() -> None:

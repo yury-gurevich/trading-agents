@@ -138,3 +138,37 @@ Deviations from spec:    <none, or the honest list>
 ## Return notes (coding agent appends at handback — mandatory)
 
 <!-- return notes go below this line -->
+
+```text
+CLOSEOUT - Sprint 134
+Branch / merge commit:   sprint-134-assertion-hardening / not merged by instruction
+make ci:                 MAKE_CI_EXIT_CODE=0; 1629 passed, 6 skipped; coverage 100.00%
+Functionality check:     S132 mutmut scope re-run offline: money-parser actionable survivors
+                          39 -> 7 equivalent default-normalization residuals
+                          (_order_body 18 -> 0, _price_of 1 -> 0,
+                          _fill_from_order 20 -> 7); selected non-equivalent
+                          analyst/PM gate-boundary mutants killed with exact boundary
+                          assertions; overall 5376/6731 killed (79.87%) ->
+                          5440/6731 killed (80.82%); excluded buckets recorded.
+Version:                 0.71.05 -> 0.71.06 (PATCH); uv.lock refreshed
+Backlog row K:           Done + docs/reports/sprint-134-assertion-hardening/README.md;
+                          behavioral bugs found: 0; drift rows: none
+Drift rule:              origin/main unchanged at b225bcd7c5758ac63ecb60a4e594c4b892acd4e7;
+                          no merge needed; gated after docs/test changes
+Deviations from spec:    none; mutmut remains manual, no # pragma: no cover removed
+```
+
+Return notes:
+
+- Added exact-value money-parser assertions for Alpaca order body, fill parsing, malformed
+  fill rejection, sparse-order defaults, rejected reasons, and fill/reference price selection.
+- Added analyst and PM boundary assertions for confidence floors, bounded/composite scoring,
+  share sizing, reward/risk gates, sector concentration, sector-name limits, and position
+  gate/capacity outcomes; test docstrings cite the targeted mutant ids.
+- Recorded Sprint 134 proof in `docs/reports/sprint-134-assertion-hardening/README.md`,
+  updated backlog row K to Done, and refreshed sprint/report indexes for version 0.71.06.
+- LAW-02 proof was the offline S132-scope mutmut re-run plus green `make ci`; no
+  infra/graph/broker/teardown or live broker calls were run in this sprint.
+- Permanent justified non-targets remain the pragma-HTTPS transport bucket
+  (verified by live checks, not unit mutation work) and string/render/audit/context buckets
+  (would over-specify wording or representation details).

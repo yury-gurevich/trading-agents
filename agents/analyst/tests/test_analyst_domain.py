@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 
 from agents.analyst.domain.recommend import decide
-from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.scoring import ScoreBreakdown, score_candidate
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import candidate
 from contracts.common import Provenance
@@ -91,6 +91,19 @@ def test_thin_history_is_neutral_technical_score() -> None:
     assert score.metrics["indicators_available"] == 0.0
     assert score.technical_score == pytest.approx(0.5, abs=1e-9)
     assert score.confidence == pytest.approx(0.6, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("confidence", "recommended"),
+    [(0.599, False), (0.6, True), (0.601, True)],
+)
+def test_decide_closed_confidence_floor(confidence: float, recommended: bool) -> None:
+    """Kills agents.analyst.domain.recommend.x_decide__mutmut_16."""
+    score = ScoreBreakdown(technical_score=0.5, confidence=confidence, metrics={})
+    decision = decide(candidate(), score, _regime(floor=0.6))
+
+    assert (decision.recommendation is not None) is recommended
+    assert (decision.rejection is None) is recommended
 
 
 def test_fundamentals_blend_into_confidence_and_recommendation() -> None:

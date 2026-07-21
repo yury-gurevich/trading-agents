@@ -67,10 +67,10 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S135** (S131 SHIPPED `0ca7459`/0.71.04; S132 SHIPPED `15c23d6`/0.71.05).
-   **Execution order for the two packaged sprints: S134 (assertion hardening, row K) FIRST →
-   0.71.06, then S133 (Service Bus SAS, row I) → 0.71.07** — operator reprioritised
-   assertion hardening ahead of the bus work 2026-07-21 (fixes-first; trade-gating code
+1. Next number: **S135** (S131 SHIPPED `0ca7459`/0.71.04; S132 SHIPPED `15c23d6`/0.71.05;
+   S134 HANDOFF / 0.71.06). **Remaining packaged sprint: S133 (Service Bus SAS, row I) →
+   0.71.07** — operator reprioritised assertion hardening ahead of the bus work 2026-07-21
+   (fixes-first; trade-gating code
    outranks lower-severity bus creds). Numbers don't match execution order here by intent
    (S133 was packaged before the reprioritisation). P12 scorecard-run stays queued until
    ~2 weeks of clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —

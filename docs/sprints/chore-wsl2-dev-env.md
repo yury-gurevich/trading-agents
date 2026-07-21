@@ -56,7 +56,17 @@ mutant** — brutally I/O-heavy on NTFS, much faster on ext4. That is the concre
 
 1. **Option chosen: WSL2 dev environment, PowerShell kept (run `.ps1` under `pwsh` on Linux).**
    PowerShell 7 (`pwsh`), the `az` CLI, and the CodeQL CLI all run natively on Linux, so the
-   14 `.ps1` files run **as-is** — no rewrite. *Ruled out:*
+   14 `.ps1` files run **as-is** — no rewrite.
+   **Validated 2026-07-21 on the operator's Ubuntu (pwsh 7.6.3), not assumed:** all 14 parse
+   clean; `pwsh` normalises `\`→`/` in **both** `Join-Path` and bare filesystem-cmdlet paths
+   (`Join-Path $root "..\.env"` → `.../../.env`; `Set-Content -Path "dir\out.txt"` →
+   `dir/out.txt`), so the **infra** scripts run unchanged — including the nightly-critical
+   `deploy-agents.ps1` (`..\.env`, `..\orchestration\packs`) and `setup-azure.ps1`'s
+   `Set-Content`. **Two codeql-only caveats remain** (matter only if CodeQL is run locally
+   *on Linux* — the lowest-value scripts): `run_codeql_ast.ps1:106` uses a `-like "*\...\*"`
+   **string** wildcard (string compare does *not* normalise, so it won't match Linux `/`-paths),
+   and `.tools\codeql\codeql.exe` needs the `.exe` dropped. Both are small in-place fixes, still
+   not a rewrite. *Ruled out:*
    - *Stay on Windows (status quo)* — forgoes the native-ext4 `mutmut`/`pytest` speed-up and
      keeps CRLF/Docker-Desktop friction; the reason the chore exists.
    - *Move to WSL2 **and** rewrite all `.ps1` → `.sh`* — 14 scripts of translation, and the
@@ -135,7 +145,7 @@ secrets). Promote this into `docs/setup-wsl2.md` (work item C) so it is reproduc
    Confirm WSL2 (`wsl -l -v` → VERSION 2).
 2. **Toolchain (inside WSL2):** install `uv` (astral installer), `make`, Docker (Docker Desktop
    WSL2 integration *or* native engine), and — for the infra scripts — `pwsh` (PowerShell 7)
-   + `az` CLI. `az login` once.
+   plus the `az` CLI (`pwsh` already present on the operator's Ubuntu, 2026-07-21). `az login` once.
 3. **Clone into the Linux home:** `git clone <origin> ~/trading-agents` — **not** under
    `/mnt/c`. `uv sync`.
 4. **Secrets, never through the tree:** recreate `.env` and `infra/*.local.json` inside

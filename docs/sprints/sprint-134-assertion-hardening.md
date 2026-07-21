@@ -172,3 +172,87 @@ Return notes:
 - Permanent justified non-targets remain the pragma-HTTPS transport bucket
   (verified by live checks, not unit mutation work) and string/render/audit/context buckets
   (would over-specify wording or representation details).
+
+---
+
+## Round 2 — bounce-back (planning-agent verification, 2026-07-22)
+
+**Verdict of the round-1 verify:** green and a genuine partial win — **but not mergeable as
+"Done."** Bounced by operator directive after verification.
+
+**What verified clean (keep exactly as-is, do not touch):**
+
+- `make ci` reproduced green independently: `MAKE_CI_EXIT=0`, 1629 passed / 6 skipped
+  (offline env-gated skips only), coverage 100.00%.
+- Money-parser bucket genuinely closed: `_order_body` 18→0, `_price_of` 1→0,
+  `_fill_from_order` 20→7 (residuals named + explained). Consistent with the report.
+- PM/gate/sizing/reward-risk/sector-cap/sector-name boundary tests are **real** below/at/above
+  boundary kills citing mutant ids (e.g. `test_reward_risk.py` at the 1.5× ratio boundary).
+- Zero production code changed; no `# pragma` removed. No regression surface.
+
+**Why it is bounced (the one real defect):** round 1 killed **+64** mutants (32 money-parser +
+~32 gate). The remaining analyst survivors — **~250 across `indicators_pattern` (62),
+`alpha_features` (32), `scoring` (28), `analyze` (23), `recommend` (22), `technical_rules`
+(17), `technical_rules_range` (16), `indicators_kernel` (13), `indicators` (12),
+`indicators_range` (10), `indicators_event` (5), `alpha_pillar` (5), `relative_strength` (2)**
+(S132 baseline counts) — were parked under a **single blanket note** ("Analyst
+metric/text/neutral-branch variant did not change the recommendation contract under fixtures"),
+identical on all 274 analyst rows. That is a template, not a per-mutant judgment. A sample is
+**technical-indicator + scoring arithmetic** (ATR, stochastic, choppiness, pattern detection,
+alpha features) — deterministic pure math that is **assertion-weak, not equivalent**: a mutated
+ATR is a real bug, trivially killed by a known-input→known-output assertion. Calling it
+"decision-neutral / equivalent" is exactly the hand-wave row K exists to prevent.
+
+**Round-2 scope — kill the killable, per-mutant-justify the rest, no blanket labels:**
+
+- **R1 (kill analyst pure-math survivors):** strengthen the **existing** analyst tests
+  (`test_indicators*.py`, `test_technical_rules*.py`, `test_analyst_alpha_features.py`,
+  `test_analyst_domain.py`, and the scoring/recommend tests — do **not** create parallel files)
+  with exact known-input→known-output assertions that kill the survivors in the pure-math
+  modules: `indicators_pattern`, `indicators`, `indicators_range`, `indicators_kernel`,
+  `indicators_event`, `alpha_features`, `alpha_pillar`, `scoring`, `technical_rules`,
+  `technical_rules_range`, `relative_strength`. Each test docstring cites the mutant id
+  (round-1 convention).
+- **R2 (`analyze` + `recommend`):** kill the boundary/decision mutants; for any mutation that
+  genuinely cannot change an observable output, write a **per-mutant** justification (below).
+- **R3 (ban blanket labels — the core of this bounce):** every survivor left in any
+  scoring / indicator / alpha / technical module must carry an **individual** note naming the
+  specific reason *that* mutation is unobservable (value clamped, normalized away, dead branch,
+  tie broken downstream, off-by-default weight). If you cannot name a specific reason, it is
+  not equivalent — **kill it.** No survivor may reuse a templated sentence.
+- **R4 (re-run + prove, WSL):** re-run the S132 mutmut scope; add a **per-module before/after
+  survivor table** for the analyst-math modules plus the new overall kill-rate. Measure current
+  counts (round 1 already shifted a few); the S132 numbers above are the baseline, not the live
+  count.
+- **R5 (fix report accuracy):** the round-1 report's "Files Touched" lists
+  `test_alpaca_helpers.py`, which **does not exist** on the branch — remove it; list only files
+  that actually changed.
+- **R6 (row K honesty):** revert backlog row K from "Done" to the honest partial state now
+  (money-parsers + gates done; analyst-math bucket in progress); it returns to Done only when
+  R4 proves the analyst-math drop with per-mutant residual justification.
+
+**Exclusions unchanged and still legit:** pragma-HTTPS transport (live/paper-verified) and
+string/render/audit/reason/context **wording** mutants. **Not** a legit exclusion:
+"indicator/scoring math is decision-neutral under the fixtures" — that is assertion-weakness,
+which is the whole point of the sprint.
+
+**Contract (round 2):** same branch `sprint-134-assertion-hardening`, **stay at 0.71.06** (no
+new bump — not yet merged), DL-48 rules, `make ci` green at 100 %, **do not merge**. Update the
+report + Closeout + Return notes; hand back.
+
+### Kickoff — round 2 (paste this)
+
+> Continue **Sprint 134** on branch `sprint-134-assertion-hardening` per the **Round 2 —
+> bounce-back** section of `docs/sprints/sprint-134-assertion-hardening.md`. Round 1 verified
+> green and is kept as-is; do not touch the money-parser or PM/gate tests. Your job is R1–R6:
+> kill the analyst **pure-math** survivors (`indicators_pattern`, `indicators*`,
+> `alpha_features`, `alpha_pillar`, `scoring`, `technical_rules*`, `relative_strength`) with
+> exact known-input→known-output assertions citing mutant ids; for `analyze`/`recommend` kill
+> the decision mutants; and for **every** survivor you leave alive in those modules, replace the
+> blanket "decision-neutral" note with a per-mutant reason it is unobservable — if you can't
+> name one, kill it. Re-run the S132 mutmut scope on WSL and add a per-module before/after
+> table. Fix the report's phantom `test_alpaca_helpers.py`. Revert row K to honest partial now;
+> re-close it only when the re-run proves the analyst-math drop. Stay at 0.71.06, `make ci`
+> green at 100 %, **do not merge**; refresh Closeout + Return notes and hand back.
+
+<!-- round-2 return notes go below this line -->

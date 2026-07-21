@@ -50,6 +50,14 @@ def test_find_swing_points_below_five_bars_is_empty() -> None:
     assert ip.find_swing_points(closes, highs, lows, 2.0) == []
 
 
+def test_find_swing_points_allows_exact_minimum_window() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x_find_swing_points__mutmut_1."""
+    closes, highs, lows = _flat(5)
+    closes[2] = highs[2] = 120.0
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == [(2, 120.0, "high")]
+
+
 def test_double_top() -> None:
     series = _build([(4, 120.0), (12, 120.0), (8, 90.0)], 100.0)
     assert _pattern(series) == ("double_top", 0.85)

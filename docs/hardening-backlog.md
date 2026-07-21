@@ -39,6 +39,11 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   ADR-0007 still names DockerHub; DL-50 surfaces the GHCR drift and queues a formal ADR amendment
   instead of silently rewriting the accepted ADR. Evidence:
   [S129 GitHub hardening proof](reports/sprint-129-fixpack/live-proof.md#3-github-hardening-proof).
+- **G — mutation testing (`mutmut`)**. Shipped in S132 as a manual periodic exercise, not a CI
+  gate. The scoped decision-engine run improved from 5,282/6,731 killed (78.47%) to 5,376/6,731
+  killed (79.87%); the remaining 1,355 survivor/no-test rows are documented-equivalent in the
+  report. Re-run after a stable sprint or when decision-engine gate logic changes. Evidence:
+  [S132 mutation testing report](reports/sprint-132-mutation-testing/README.md).
 - **H — base-image CVE remediation** (`agents/*/Dockerfile`, `orchestration/Dockerfile`, and
   `.github/workflows/build-images.yml`). Shipped in S130: Trivy now ignores unfixed findings while
   still failing fixed HIGH/CRITICAL OS/library findings, `.trivyignore` remains empty, and all 14
@@ -60,7 +65,6 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
-| **G** | Mutation testing (`mutmut`) | 100% line coverage proves lines *run*, not that tests *assert*. Mutmut proves the suite fails when logic breaks — validates test quality beyond coverage | Periodic rigor exercise; run after a stable sprint, not per-PR (it is slow). User flagged it a good candidate (2026-06-18) |
 | **I** | Per-agent Service Bus SAS scoping (part 2) | S131 completed part 1: the Postgres blast radius is split into 15 `ta_<name>` identities with identical graph grants, role-specific Key Vault secret names, and Container Apps secret-backed `POSTGRES_DSN` delivery. The remaining shared credential is the Azure Service Bus connection string, so one compromised container can still use the whole bus. | Next security-focused sprint: create per-topic authorization rules + per-agent Service Bus SAS connection strings, then wire them with the same secret-backed per-target delivery pattern. |
 
 ## Branch protection recommendations (with CodeQL)

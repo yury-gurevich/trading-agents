@@ -26,3 +26,4 @@ docs; committed bundles start at S119.
 | [sprint-129-fixpack/](sprint-129-fixpack/live-proof.md) | S129 (fixpack) | `live-proof.md`: deliberation quant-metrics, TTL-cache egress proof, GitHub hardening D/E, teardown |
 | [sprint-130-base-image/](sprint-130-base-image/live-proof.md) | S130 (R005 / backlog H) | `live-proof.md`: DHI migration run `29681635979`, all-14 Trivy green, runtime smoke, image size |
 | [sprint-131-blast-radius/](sprint-131-blast-radius/live-proof.md) | S131 (blast radius) | `live-proof.md`: per-agent Postgres role provisioning, Container Apps secret-backed env flip, role activity audit, canary revocation, dispatcher image-slim proof |
+| [sprint-132-mutation-testing/](sprint-132-mutation-testing/README.md) | S132 (backlog G) | `README.md` + `actionable-mutants.csv`: scoped manual `mutmut` run over decision engines; 5,376/6,731 killed (79.87%), 1,355 documented-equivalent actionable rows |

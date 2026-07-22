@@ -28,6 +28,14 @@ def test_obv_signal_uses_requested_tail_window() -> None:
     assert ie.obv(closes, volumes, 4) == pytest.approx((400.0, 175.0), abs=1e-9)
 
 
+def test_obv_last_bar_drop_subtracts_without_peeking_forward() -> None:
+    """Kills agents.analyst.domain.indicators_event.x_obv__mutmut_19."""
+    closes = [10.0, 11.0, 10.0]
+    volumes = [100.0, 200.0, 300.0]
+
+    assert ie.obv(closes, volumes, 2) == pytest.approx((-100.0, 50.0), abs=1e-9)
+
+
 def test_obv_returns_none_below_signal_period_plus_one() -> None:
     closes = [10.0, 11.0, 11.0]
     volumes = [100.0, 200.0, 300.0]

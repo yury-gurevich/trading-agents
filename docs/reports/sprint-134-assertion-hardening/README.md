@@ -6,7 +6,7 @@ money-parsing code that were line-covered but assertion-weak after S132.
 ## Scope
 
 - Branch: `sprint-134-assertion-hardening`
-- Version: Round 1 bumped `0.71.05` to `0.71.06`; Round 2 stayed at
+- Version: Round 1 bumped `0.71.05` to `0.71.06`; Rounds 2 and 3 stayed at
   `0.71.06` with no dependency or lockfile change
 - Baseline: S132 report and `actionable-mutants.csv`
 - Mutmut command:
@@ -22,10 +22,11 @@ money-parsing code that were line-covered but assertion-weak after S132.
 | S132 baseline | 5,376 | 1,178 | 177 | 6,731 | 79.87% |
 | S134 Round 1 rerun | 5,440 | 1,114 | 177 | 6,731 | 80.82% |
 | S134 Round 2 rerun | 5,567 | 987 | 177 | 6,731 | 82.71% |
+| S134 Round 3 rerun | 5,678 | 876 | 177 | 6,731 | 84.36% |
 
-The Round 2 full rerun exited 0 with no timeout, suspicious, skipped, or
-incompetent mutants. Net delta versus S132: +191 killed and -191 survived.
-Net delta versus Round 1: +127 killed and -127 survived.
+The Round 3 full rerun exited 0 with no suspicious, skipped, or incompetent
+mutants. Net delta versus S132: +298 killed and -298 survived. Net delta
+versus Round 2: +107 killed and -107 survived.
 
 ## Targeted Buckets
 
@@ -77,13 +78,29 @@ after the WSL rerun.
 | `technical_rules_range` | 16 | 8 | -8 |
 | **Targeted total** | **249** | **127** | **-122** |
 
-This is a real drop, but not a completed row-K closeout. The remaining 127
-targeted survivors are not blanket-excluded here. They are recorded as residual
-Round 2 work until each is either killed or audited individually. The sampled
-residuals include a mix of likely-equivalent iterator-shape changes, wording
-mutants in recommendation rationale, and still-killable pure math around
-pattern/range/analyze helpers; the still-killable items are why backlog row K
-returns to Partial rather than Done.
+Round 3 closed the bounce-back by forcing every one of the 127 residual analyst
+survivors into an auditable per-mutant disposition. The result is 107 killed,
+12 individually justified equivalent survivors, and 8 recommendation-rationale
+wording exclusions. There are 0 untriaged targeted analyst survivors. The
+anti-hand-wave artifact is
+[`round-3-dispositions.csv`](round-3-dispositions.csv).
+
+| Module | Round 3 before | Killed | Equivalent | Wording exclusion | Round 3 after | Untriaged |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `alpha_features` | 6 | 4 | 2 | 0 | 2 | 0 |
+| `alpha_pillar` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `analyze` | 23 | 21 | 2 | 0 | 2 | 0 |
+| `indicators` | 8 | 5 | 3 | 0 | 3 | 0 |
+| `indicators_event` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `indicators_kernel` | 13 | 8 | 5 | 0 | 5 | 0 |
+| `indicators_pattern` | 35 | 35 | 0 | 0 | 0 | 0 |
+| `indicators_range` | 6 | 6 | 0 | 0 | 0 | 0 |
+| `recommend` | 18 | 10 | 0 | 8 | 8 | 0 |
+| `technical_rules` | 3 | 3 | 0 | 0 | 0 | 0 |
+| `technical_rules_event` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `technical_rules_pattern` | 4 | 4 | 0 | 0 | 0 | 0 |
+| `technical_rules_range` | 8 | 8 | 0 | 0 | 0 | 0 |
+| **Targeted total** | **127** | **107** | **12** | **8** | **20** | **0** |
 
 ## Deliberate Exclusions
 
@@ -99,35 +116,47 @@ outside this sprint. Killing those mutants would over-specify operator prose,
 reason text, list formatting, or audit context that is intentionally allowed
 to evolve. S134 instead asserts structured trade outcomes, thresholds,
 boolean gate decisions, money values, and parser fields where a mutation
-would alter behavior.
+would alter behavior. Round 3 moved only the eight `recommend.x_decide`
+rationale mutants that change named prose strings into this bucket; the exact
+strings are recorded per mutant in `round-3-dispositions.csv`.
 
 Equivalent/default-normalization residuals in non-analyst helper code are
 recorded as a permanent non-target unless the product contract changes.
 Examples include `_fill_from_order` missing/odd status or side defaults that
 still normalize to the same rejected/buy behavior, and ratio helpers where the
-public gate outcome is unchanged. Analyst scoring, indicator, alpha, and
-technical pure-math survivors are not included in this permanent exclusion.
+public gate outcome is unchanged. The remaining targeted analyst residuals are
+not blanket-excluded: each has an individual iterator-shape, dead-initializer,
+defensive-guard, or wording reason in `round-3-dispositions.csv`.
 
 ## Files Touched
 
 - `agents/execution/tests/test_alpaca_broker.py`
 - `agents/analyst/tests/test_analyst_alpha_features.py`
+- `agents/analyst/tests/test_analyst_alpha_feature_edges.py`
 - `agents/analyst/tests/test_analyst_alpha_integration.py`
 - `agents/analyst/tests/test_analyst_alpha_pillar.py`
 - `agents/analyst/tests/test_analyst_domain.py`
+- `agents/analyst/tests/test_analyze_domain.py`
 - `agents/analyst/tests/test_indicators.py`
 - `agents/analyst/tests/test_indicators_event.py`
 - `agents/analyst/tests/test_indicators_kernel.py`
 - `agents/analyst/tests/test_indicators_pattern.py`
+- `agents/analyst/tests/test_indicators_pattern_edges.py`
+- `agents/analyst/tests/test_indicators_pattern_triangles.py`
 - `agents/analyst/tests/test_indicators_range.py`
+- `agents/analyst/tests/test_recommend_domain.py`
 - `agents/analyst/tests/test_relative_strength.py`
 - `agents/analyst/tests/test_sentiment_reading.py`
 - `agents/analyst/tests/test_technical_rules.py`
+- `agents/analyst/tests/test_technical_rules_event.py`
+- `agents/analyst/tests/test_technical_rules_pattern.py`
 - `agents/analyst/tests/test_technical_rules_range.py`
 - `agents/portfolio_manager/tests/test_portfolio_manager_edges.py`
 - `agents/portfolio_manager/tests/test_reward_risk.py`
 - `agents/portfolio_manager/tests/test_sector_cap.py`
 - `agents/portfolio_manager/tests/test_sector_name_count.py`
 - `agents/portfolio_manager/tests/test_portfolio_manager_audit.py`
+- `docs/reports/sprint-134-assertion-hardening/README.md`
+- `docs/reports/sprint-134-assertion-hardening/round-3-dispositions.csv`
 
 No behavioral production bug was found; production source was not changed.

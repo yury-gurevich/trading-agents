@@ -20,6 +20,15 @@ def test_true_ranges_match_hand_values() -> None:
     assert ir._true_ranges(highs, lows, closes) == [2.0, 2.0, 2.0, 2.5]
 
 
+def test_true_ranges_include_low_to_previous_close_gap() -> None:
+    """Kills agents.analyst.domain.indicators_range._true_ranges__mutmut_16."""
+    highs = [10.0, 9.0]
+    lows = [10.0, 1.0]
+    closes = [10.0, 8.0]
+
+    assert ir._true_ranges(highs, lows, closes) == [9.0]
+
+
 def test_atr_is_mean_of_last_period_true_ranges() -> None:
     highs = [11.0, 12.0, 13.0, 12.5, 14.0]
     lows = [9.0, 10.0, 11.0, 10.5, 12.0]
@@ -105,8 +114,49 @@ def test_choppiness_flat_range_returns_none() -> None:
     assert ir.choppiness([5.0] * 5, [5.0] * 5, [5.0] * 5, 4) is None
 
 
+def test_choppiness_zero_true_range_returns_none() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_choppiness__mutmut_19."""
+    assert ir.choppiness([5.0] * 5, [5.0] * 5, [5.0, 6.0, 5.0, 6.0, 5.0], 4) is None
+
+
+def test_choppiness_range_one_is_valid_when_true_range_positive() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_choppiness__mutmut_21."""
+    highs = [2.0, 2.0, 2.0, 2.0, 2.0]
+    lows = [1.0, 1.0, 1.0, 1.0, 1.0]
+    closes = [1.0, 2.0, 1.0, 2.0, 1.0]
+
+    assert ir.choppiness(highs, lows, closes, 4) == pytest.approx(100.0, abs=1e-12)
+
+
+def test_choppiness_true_range_sum_one_is_valid() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_choppiness__mutmut_23."""
+    highs = [1.00, 1.25, 1.50, 1.75, 2.00]
+    lows = [1.00, 1.25, 1.50, 1.75, 2.00]
+    closes = [1.00, 1.25, 1.50, 1.75, 2.00]
+
+    assert ir.choppiness(highs, lows, closes, 4) == pytest.approx(
+        20.75187496394219, abs=1e-12
+    )
+
+
 def test_choppiness_returns_none_below_period_plus_one() -> None:
     assert ir.choppiness([5.0] * 4, [5.0] * 4, [5.0] * 4, 4) is None
+
+
+def test_choppiness_returns_none_well_below_period() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_choppiness__mutmut_2."""
+    assert ir.choppiness([1.0, 3.0, 2.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0], 4) is None
+
+
+def test_choppiness_range_uses_full_tail_window() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_choppiness__mutmut_16."""
+    highs = [1.0, 10.0, 1.0, 1.0, 1.0, 1.0]
+    lows = [0.0] * 6
+    closes = [1.0, 2.0, 1.0, 2.0, 1.0, 2.0]
+
+    assert ir.choppiness(highs, lows, closes, 5) == pytest.approx(
+        29.202967422017917, abs=1e-12
+    )
 
 
 def test_choppiness_mixed_series_matches_hand_value() -> None:

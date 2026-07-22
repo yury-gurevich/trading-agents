@@ -76,6 +76,14 @@ def test_feature_not_in_universe_is_appended_and_scored() -> None:
     assert score_alpha158(outsider, (low,)) == pytest.approx(73.10585786300048)
 
 
+def test_exact_epsilon_std_feature_contributes_zero_z() -> None:
+    """Kills agents.analyst.domain.alpha_pillar.x_score_alpha158__mutmut_28."""
+    low = _row(roc_5=0.0)
+    edge = _row(roc_5=2e-9)
+
+    assert score_alpha158(edge, (edge, low)) == pytest.approx(50.0)
+
+
 def test_zero_variance_feature_contributes_zero_z() -> None:
     # All rows identical → std = 0 for every field → z = 0 → score = 50
     row = _row()

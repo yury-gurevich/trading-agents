@@ -30,6 +30,15 @@ def test_rsi_mixed_series_matches_hand_value() -> None:
     assert indicators.rsi(closes, 14) == pytest.approx(70.0, abs=1e-6)
 
 
+def test_rsi_uses_exact_period_plus_one_window() -> None:
+    """Kills agents.analyst.domain.indicators.x_rsi__mutmut_7."""
+    closes = [50.0, 100.0]
+    for delta in [1, 2, -1, 1, -2, 3, 1, -1, 2, 1, -1, 1, 2, -1]:
+        closes.append(closes[-1] + delta)
+
+    assert indicators.rsi(closes, 14) == pytest.approx(70.0, abs=1e-6)
+
+
 def test_rsi_returns_none_below_period_plus_one() -> None:
     assert indicators.rsi(_ramp(14), 14) is None
 
@@ -95,6 +104,13 @@ def test_bollinger_position_rising_window_matches_exact_position() -> None:
     )
 
 
+def test_bollinger_position_clamps_above_upper_band() -> None:
+    """Kills agents.analyst.domain.indicators.x_bollinger_position__mutmut_31."""
+    closes = [10.0] * 19 + [100.0]
+
+    assert indicators.bollinger_position(closes, 20, 0.5) == 1.0
+
+
 def test_bollinger_position_returns_none_below_window() -> None:
     assert indicators.bollinger_position([1.0] * 19, 20, 2.0) is None
 
@@ -117,12 +133,24 @@ def test_ema_crossover_spread_rising_series_is_positive() -> None:
     )
 
 
+def test_ema_crossover_spread_allows_exact_long_window() -> None:
+    """Kills agents.analyst.domain.indicators.x_ema_crossover_spread__mutmut_1."""
+    assert indicators.ema_crossover_spread(_ramp(50), 20, 50) == pytest.approx(
+        12.048192771084338, abs=1e-12
+    )
+
+
 def test_ema_crossover_spread_returns_none_below_long() -> None:
     assert indicators.ema_crossover_spread(_ramp(49), 20, 50) is None
 
 
 def test_pstdev_single_value_is_zero() -> None:
     assert indicators._pstdev([42.0]) == 0.0
+
+
+def test_pstdev_two_values_uses_variance_not_singleton_guard() -> None:
+    """Kills _pstdev__mutmut_1 and _pstdev__mutmut_2."""
+    assert indicators._pstdev([1.0, 3.0]) == pytest.approx(1.0, abs=1e-12)
 
 
 def test_pstdev_matches_hand_value() -> None:

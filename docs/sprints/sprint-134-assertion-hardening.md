@@ -369,3 +369,34 @@ after verifying the disposition list. Refresh Closeout + Return notes; hand back
 > back.
 
 <!-- round-3 return notes go below this line -->
+
+Closeout - Sprint 134 Round 3 (2026-07-22):
+
+- Branch `sprint-134-assertion-hardening` reconciled with `origin/main` by merge; branch is not merged to
+  `main` per planning contract.
+- Version stayed at `0.71.06`; no dependency changes and no `uv.lock` update.
+- Round 3 killed the remaining killable analyst pure-math mutants and committed
+  `docs/reports/sprint-134-assertion-hardening/round-3-dispositions.csv` with all 127
+  residual analyst mutants dispositioned: 107 killed, 12 individually justified equivalents,
+  8 named wording exclusions, and 0 untriaged.
+- Full S132 WSL mutmut scope rerun completed in a native WSL mirror with
+  `S134_R3_FULL_MUTMUT_EXIT_CODE=0`: 5,678 killed, 876 survived, 177 no tests, 6,731 total,
+  84.36% kill rate. Targeted analyst bucket is 0 untriaged via the per-module before/after
+  table in the report and the per-mutant CSV.
+- Functionality check LAW-02: mutation rerun is the proof. This was offline only; no infra,
+  graph, broker, or teardown work was performed.
+- Hard gate: `make ci` after drift exited `0`; pytest reported 1,692 passed, 6 skipped, and
+  100.00% coverage. `pip-audit` found no known vulnerabilities and detect-secrets passed.
+- Guardrails held: no `# pragma: no cover` removal, mutmut was not wired into `make ci`,
+  changed Python modules remain under the 200-line hard cap, and headers remain present.
+
+Return notes:
+
+- Planning can verify the anti-hand-wave artifact first:
+  `docs/reports/sprint-134-assertion-hardening/round-3-dispositions.csv`.
+- Updated evidence rows are in `docs/reports/sprint-134-assertion-hardening/README.md`,
+  `docs/reports/INDEX.md`, `docs/sprints/README.md`, and backlog row K in
+  `docs/hardening-backlog.md`.
+- Permanent non-targets are unchanged in spirit: pragma-protected Alpaca HTTPS transport,
+  string/render/audit/context wording, seven `_fill_from_order` default-normalization
+  residuals, and the 20 individually justified Round 3 analyst residuals.

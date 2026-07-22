@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 import pytest
 
+from agents.analyst.domain import indicators
 from agents.analyst.domain import technical_rules as rules
 from agents.analyst.settings import AnalystSettings
 from contracts.provider import OHLCVBar
@@ -56,6 +57,7 @@ def test_score_rsi_bands(value: float, expected: float) -> None:
         (0.0, 1.0, 60.0),
         (-1.0, 1.0, 60.0),
         (-1.0, -1.0, 25.0),
+        (-1.0, 0.0, 45.0),
         (0.0, -1.0, 45.0),
         (1.0, 0.0, 45.0),
     ],
@@ -117,6 +119,21 @@ def test_score_technical_partial_history_averages_available_only() -> None:
     assert metrics["bollinger_position"] == pytest.approx(0.9154532910262163, abs=1e-12)
     assert metrics["nw_deviation_pct"] == pytest.approx(4.8228510175484125, abs=1e-12)
     assert raw == pytest.approx(450.0 / 11.0, abs=1e-9)
+
+
+def test_momentum_scores_use_macd_line_for_macd_score(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Kills agents.analyst.domain.technical_rules._momentum_scores__mutmut_49."""
+    monkeypatch.setattr(indicators, "rsi", lambda *_args: None)
+    monkeypatch.setattr(indicators, "bollinger_position", lambda *_args: None)
+    monkeypatch.setattr(indicators, "sma_distance", lambda *_args: None)
+    monkeypatch.setattr(indicators, "ema_crossover_spread", lambda *_args: None)
+    monkeypatch.setattr(indicators, "macd", lambda *_args: (-1.0, 1.0, -1.0))
+
+    assert rules._momentum_scores([1.0] * 40, AnalystSettings()) == [
+        ("macd_histogram", -1.0, 25.0)
+    ]
 
 
 def test_score_technical_neutral_when_no_indicator_available() -> None:

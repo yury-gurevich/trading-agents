@@ -76,10 +76,16 @@ Violations break `make ci`. Never add an import that crosses a boundary.
 Every sprint or chore on its own branch named `sprint-NN-<slug>` or `chore-<slug>`.
 Merge to `main` is the deploy trigger. Never commit sprint work directly to `main`.
 
-**Merge through a pull request — never a local `git merge` into `main`.** The
-security-findings `gate` is `pull_request`-triggered, so a direct merge silently bypasses
-it: S131/S132/S134 each merged with no PR and were never gated (DL-52). Open the PR, let
-`quality` / `test` / `security` / `gate` run, then merge the PR.
+**Work in a worktree; push the branch and wait for green before merging locally.**
+Sequence: worktree per sprint/chore → `make ci` locally → **push the branch** → confirm
+`quality` / `test` / `security` / `gate` all pass on that branch → then merge to `main`
+locally and push. **PRs are not required** — this repo has one developer, so a PR buys no
+review (DL-52 reversal, 2026-07-22).
+
+**Never merge a branch you have not seen go green on the remote.** The point was never the
+PR; it was that the security-findings `gate` used to be `pull_request`-triggered, so direct
+merges bypassed it — S131/S132/S134 each merged ungated that way. The gate now runs on push
+to every branch, so pushing *is* the gate. Skipping the wait is what reopens the hole.
 
 ---
 

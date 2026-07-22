@@ -2496,3 +2496,37 @@ approach the Windows command-line limit on this repo).
 **Standing note.** GitHub CI is unaffected — it checks out a clean tree, so there are no
 untracked files there. This was a local-gate-only blind spot, which is why nothing upstream
 ever caught it.
+
+## DL-56 · PR requirement reversed — the gate, not the PR, was the point  ·  status: DECIDED (2026-07-22)
+
+**Reverses the same-day DL-52 decision to merge through pull requests.** Operator directive: *"I
+do not like a PR process for a single developer — it is meaningless. I prefer worktrees."*
+
+**Why the reversal is right.** A PR buys two things: review, and a `pull_request` trigger. On a
+one-developer repo the review is self-review, which is worth approximately nothing — so the
+entire value being purchased was the trigger. DL-52 correctly identified that S131/S132/S134
+merged ungated, then reached for PRs because that was the only mechanism that made the gate fire.
+That confused the requirement (the gate must run on the code) with one implementation of it.
+
+**What replaces it.** `security-findings.yml` now triggers on `push` to every branch, matching
+`ci.yml`. The job reads repo-level code-scanning alerts against a committed baseline and uses no
+`pull_request` context, so push and PR runs are equivalent — verified by inspection before the
+change. This gates the branch *before* a local merge, which is strictly earlier than a PR would.
+
+**Working agreement now.** Worktree per sprint/chore → `make ci` locally → push the branch →
+confirm `quality`/`test`/`security`/`gate` green on that branch → merge locally. The binding rule
+is **never merge a branch not seen green on the remote**; that, not the PR, is what closes the
+S131/S132/S134 hole.
+
+*Ruled out:* keeping `enforce_admins: true` (enabled and then reverted the same hour — it forced
+even one-line STATE edits through PRs, and its only real function was compelling a PR flow the
+operator does not want); leaving the gate `pull_request`-only and relying on discipline to open
+PRs (that is the human-check-that-cannot-fail pattern DL-55 rejects).
+
+**Process note on how DL-52 over-reached.** The operator chose "the real fix" between two options
+during a gate repair; that was rendered into a CLAUDE.md hard rule worded "never a local
+`git merge` into `main`", which was never shown back for confirmation, and was then cited as
+settled policy in later work. A scoped choice became a standing rule through restatement — the
+same drift shape as DL-54, applied to a rule about how the operator works rather than to
+infrastructure status. Decisions that constrain the operator's own workflow get read back
+verbatim before they land in CLAUDE.md.

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-22 21:12 AEST · **Version:** 0.72.00 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. It was the **first sprint to merge through a PR** under DL-52, so the security gate finally ran on sprint code. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-22 22:05 AEST · **Version:** 0.72.02 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -50,8 +50,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   100 %, no key in the tree, and the credential-fallback path checked to **fail closed** (the
   per-target "primary" secret is itself a scoped grant, so a bundle miss cannot reach `RootManage`).
   *Honest limit:* proof used disposable canary topics, not a production container-origin run —
-  that capture is an operator follow-up. **First sprint merged through a PR (DL-52)** — PR #63,
-  gate green.
+  that capture is an operator follow-up. Merged via PR #63 with the gate green (the PR requirement
+  was reversed hours later — DL-56; the gate now runs on push to every branch).
 - **Security-gate repair + backlog row L (chores on 0.71.06, 2026-07-22) — THE GATE THAT NEVER
   FIRED.** Investigating one red check on a Dependabot PR unwound five stacked defects: the
   `SECURITY_FINDINGS_TOKEN` was absent from the **Dependabot** secret store (separate from
@@ -60,8 +60,10 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   from S131's PEP 562 lazy exports (CodeQL cannot follow `__getattr__`), dismissed with reason;
   **the gate is `pull_request`-triggered, so S131/S132/S134 — each merged directly with no PR —
   were never gated at all**; and `GITHUB_TOKEN` auto-merges fire no `push` workflows, so four
-  dependency merges landed without rebuilding images (`:latest` stale and unscanned). Fixes:
-  PR-based merges are now a hard rule in `CLAUDE.md`, the whole investigation + named residual
+  dependency merges landed without rebuilding images (`:latest` stale and unscanned). Fixes: the
+  gate was first made to fire by requiring PRs, **since replaced** by triggering it on push to every
+  branch (DL-52 → **DL-56**: on a one-developer repo a PR buys no review, so the trigger was the
+  only thing being bought); the whole investigation + named residual
   risk is **DL-52**, the 5-PR dependency backlog (frozen ~2.5 weeks) was drained, and setuptools
   was bumped for CVE-2026-59890 (not reachable — sdist/macOS-only — cleared for signal hygiene).
   **Row L Done:** the container entrypoint smoke went from provider-only to **all 12 agent
@@ -163,8 +165,10 @@ accumulate; the runway began 2026-07-20 and cannot be short-circuited.
 **Standing principles (DL-19 etalon-first):** remaining gray law clauses go green with cited
 tests; **every sprint ends with a real-environment functionality check**
 ([`laws/functionality-checks.md`](laws/functionality-checks.md)) plus teardown; each sprint or
-chore lives on its own branch and **merges through a PR** (DL-52), and merge to `main` is the
-deploy trigger that rebuilds and pushes agent images.
+chore lives in **its own worktree on its own branch**, and is **pushed and seen green on the
+remote before it is merged locally** (DL-56 — no PR required; the `gate` now runs on push to every
+branch, so pushing *is* the gate). Merge to `main` is the deploy trigger that rebuilds and pushes
+agent images.
 
 ## Next
 

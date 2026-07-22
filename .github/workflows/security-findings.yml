@@ -1,5 +1,14 @@
 # Security Findings — ENFORCING ratchet (since 2026-07-04).
 #
+# Triggers on PUSH to every branch (matching ci.yml), not just on pull_request.
+# This repo has one developer, so PRs buy no review — they were only ever the
+# mechanism that made this gate fire, and requiring them for that reason alone
+# was the wrong trade (DL-52 reversal, 2026-07-22). Running on push gates the
+# work on the branch, before a local merge, which is strictly earlier than a PR
+# would. The job reads repo-level code-scanning alerts and compares them to the
+# committed baseline; it uses no pull_request context, so push and PR runs are
+# equivalent.
+#
 # Collects this repo's open GitHub code-scanning alerts and compares them to a
 # committed baseline (security/findings-baseline.json). A NEW error-severity
 # code-scanning finding (not in the baseline) FAILS the PR
@@ -23,6 +32,8 @@
 name: Security Findings
 
 on:
+  push:
+    branches: ["**", "!backup/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:

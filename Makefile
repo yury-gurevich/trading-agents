@@ -26,6 +26,7 @@ test:           ## Run all tests with coverage
 
 check:          ## Run all quality checks (same as "am I done?")
 	uv run pre-commit run --all-files
+	uv run python scripts/check_untracked_secrets.py
 	uv run pytest
 
 ci:             ## Simulate the GitHub CI quality/security lane locally
@@ -38,6 +39,7 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run pytest
 	-uv run pip-audit
 	uv run pre-commit run detect-secrets --all-files
+	uv run python scripts/check_untracked_secrets.py
 
 codeql-ast:     ## Generate CodeQL AST artifacts for FILE=path/to/file.py
 ifndef FILE

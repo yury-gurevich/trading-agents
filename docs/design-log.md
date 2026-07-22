@@ -2466,3 +2466,33 @@ every target as `scoped`, `scoped-degraded`, `shared`, `cross-wired`, `unreachab
 agent's role — is a defect neither the flip script nor preflight could ever have surfaced. First
 live run: 14/14 `scoped`, and a negative run against a bogus resource group correctly exited 1.
 Runbook: `docs/deployment.md` → "Verifying which credential the fleet actually holds".
+
+## DL-55 · The local secret sweep could not see new files  ·  status: RESOLVED (2026-07-22)
+
+**Trigger.** While landing the credential audit (0.72.00), `make ci` reported a clean
+detect-secrets sweep; the commit two minutes later was blocked by detect-secrets on two findings
+in the very files `make ci` had just "scanned".
+
+**Cause.** `pre-commit run detect-secrets --all-files` resolves "all files" through git, so it
+covers **tracked files only**. A module that has been written but never `git add`ed is invisible
+to it. Every new file a sprint adds is therefore unscanned locally until the moment it is staged,
+which is exactly when it is too late for the local gate to be useful.
+
+**Why this is worse than an inconvenience.** The gate's whole purpose is to fail before the
+commit, and its blind spot was aimed precisely at new code — the code most likely to carry a
+pasted credential. A green `make ci` was not evidence that a sprint's new modules were
+secret-clean, and nothing in the output said so.
+
+**Fix.** `scripts/check_untracked_secrets.py` scans exactly the set `--all-files` skips
+(`git ls-files --others --exclude-standard`), wired into both the `ci` and `check` Make targets.
+Proven both directions: with a fake basic-auth URL planted in an untracked file the existing
+sweep still reported **Passed** while the new check exited **1**; with the tree clean it exits 0.
+
+*Ruled out:* telling the operator to remember the gap (a human check that cannot fail is not a
+check — the same reasoning as DL-54, which is what prompted this being fixed rather than
+documented); passing tracked+untracked as one giant `--files` list (the argument list would
+approach the Windows command-line limit on this repo).
+
+**Standing note.** GitHub CI is unaffected — it checks out a clean tree, so there are no
+untracked files there. This was a local-gate-only blind spot, which is why nothing upstream
+ever caught it.

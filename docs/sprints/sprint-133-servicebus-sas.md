@@ -148,16 +148,60 @@ is a lower-severity surface than the Postgres half; the value is the same princi
 
 ```text
 CLOSEOUT — Sprint 133
-Branch / merge commit:   <branch> / <merge sha or "not merged by instruction">
-make ci:                 MAKE_CI_EXIT_CODE=<n>; <passed/skipped>; coverage <pct>
-Functionality check:     <scoped-identity delivery, positive send/listen, least-authority
-                          refusal, rule revocation, fleet health>
-Version:                 0.71.06 → 0.71.07 (PATCH); uv.lock refreshed
-Backlog row I:           <Done + evidence link>; SAS model chosen: <entity/namespace + why>
-Drift rule:              <origin/main moved? merged? re-gated?>
-Deviations from spec:    <none, or the honest list>
+Branch / merge commit:   sprint-133-servicebus-sas / not merged by instruction;
+                          branch reconciled with origin/main at 6c70c62
+make ci:                 MAKE_CI_EXIT_CODE=0; 1702 passed, 5 skipped; coverage
+                          100.00%; pip-audit no known vulnerabilities; detect-secrets
+                          passed
+Functionality check:     Provisioned 33 topic-level SAS rules for 13 measured bus
+                          targets and wrote 26 Key Vault secret names. servicebus-flip
+                          delivered per-target secretRefs to the 12 agent apps plus
+                          dispatcher-cron, removed Service Bus env from master, and
+                          post-flip preflight/fleet state stayed green. Controlled
+                          live canary proved requester Send + served Listen/reply,
+                          refused out-of-scope Send, revoked one scoped rule, confirmed
+                          revoked identity lockout, and tore disposable s133-* topics
+                          back to zero. Evidence:
+                          docs/reports/sprint-133-servicebus-sas/live-proof.md
+Version:                 0.71.06 -> 0.71.07 (PATCH); uv.lock refreshed and
+                          uv lock --check passed after origin/main reconciliation
+Backlog row I:           Done with S131 Postgres proof plus S133 Service Bus evidence;
+                          SAS model chosen: entity-level topic rules with Send/Listen
+                          split because current Azure Service Bus quotas cap shared
+                          access authorization rules at 12 per namespace and 12 per
+                          entity, while the measured fleet has 13 bus targets
+Drift rule:              git fetch origin found origin/main moved from bdd11b2 to
+                          6eedb4b; merged origin/main into this branch, resolved the
+                          hardening-backlog overlap by keeping both S133 row I and
+                          mainline row L closures, then re-ran make ci successfully
+Deviations from spec:    No topic/envelope/message-shape changes. Added runtime
+                          topic credential selection so one app can use multiple
+                          entity-level SAS strings from its secret-backed bundle; the
+                          live proof is a controlled canary rather than a production
+                          container-origin workflow capture, leaving that capture as
+                          an operator follow-up if desired.
 ```
 
 ## Return notes (coding agent appends at handback — mandatory)
 
 <!-- return notes go below this line -->
+
+- Scope completed: the shared namespace-level Service Bus connection string is no longer
+  delivered to measured bus targets in scoped mode. Each agent app and dispatcher-cron now
+  receives `AZURE_SERVICEBUS_CONNECTION_STRING` plus
+  `AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON` as Container Apps secretRefs backed by
+  per-target Key Vault secrets. `master` has no Service Bus env in scoped mode.
+- Rollback is retained and bounded: `pwsh -NoProfile -File infra\deploy-agents.ps1
+  servicebus-flip -UseSharedServiceBusDsn`. Run scoped or rollback flips outside the
+  22:25-00:30 UTC fleet window.
+- Planner/provisioner entry points: `uv run python scripts\sb_sas_plan.py` for the
+  derived matrix; `uv run --extra azure python scripts\sb_provision_sas.py --resource-group
+  <rg> --namespace-name <namespace> --key-vault-name <vault> --ensure-topics` for live
+  idempotent provisioning. The provisioner never prints SAS keys; its catch-all only emits
+  the exception type.
+- Live evidence: `docs/reports/sprint-133-servicebus-sas/live-proof.md` records the
+  official 12-rule cap, 33 scoped rules, 26 Key Vault secret names, Container Apps
+  secretRef proof, positive path, least-authority refusal, revocation refusal, fleet
+  health, and canary teardown to zero.
+- Handback path follows DL-52: push this branch and open a PR for the pull_request security
+  gate. Do not merge locally; planning verifies the PR checks and owns merge.

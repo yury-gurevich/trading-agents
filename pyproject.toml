@@ -18,7 +18,7 @@ trading-agents-mcp = "surfaces.mcp_server:main"
 runtime = [
     "celery>=5.4",
     "redis>=8.0.1",
-    "psycopg[binary]>=3.2",
+    "psycopg[binary]>=3.3.4",
     "prometheus-client>=0.20",
 ]
 # PostgreSQL spine migration tooling. Runtime graph access uses the runtime extra.
@@ -54,7 +54,7 @@ dev = [
     "ruff>=0.15.21",
     "pip-audit>=2.10.1",
     "detect-secrets>=1.5",
-    "psycopg[binary]>=3.2",
+    "psycopg[binary]>=3.3.4",
     "alembic>=1.13",
     "prometheus-client>=0.20",
     "pre-commit>=3.7",

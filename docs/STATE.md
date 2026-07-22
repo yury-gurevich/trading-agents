@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-22 20:30 AEST · **Version:** 0.71.07 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. It was the **first sprint to merge through a PR** under DL-52, so the security gate finally ran on sprint code. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack; the S131 per-role DSN flip is **not yet applied** (runs still use the shared DSN).
+**Last updated:** 2026-07-22 20:30 AEST · **Version:** 0.71.07 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. It was the **first sprint to merge through a PR** under DL-52, so the security gate finally ran on sprint code. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -130,17 +130,17 @@ Queued work is in *Next*; the standing operator items below are the only outstan
 
 **Fleet:** standing on `:s130` (built `d0b0d3a`), self-driving in paper mode — the calendar-gated
 22:30 UTC `dispatcher-cron` fires nightly, KEDA scale-to-zero, idle ≈ $0. Nothing since S130 has
-needed a retag: S131–S134 changed roles, tests and CI, not runtime images. **S133's scoped Service
-Bus delivery is applied live** (unlike the S131 Postgres flip, still pending below), so the running
-fleet already talks to the bus under per-agent identities.
+needed a retag: S131–S134 changed roles, tests and CI, not runtime images. **Both scoped-credential
+flips are applied live** — Service Bus (S133) and Postgres (S131) — so the running fleet holds
+per-agent identities on both. Verified end-to-end 2026-07-22: all 14 app-delivered DSNs connect as
+their own `ta_*` role with the spine privileges, and all 13 bus targets carry scoped SAS
+`secretRef`s. Shared credentials are retained, unused, for rollback only.
 
-**Awaiting the operator (three standing items, none blocking):**
+**Awaiting the operator (two standing items, none blocking):**
 
 1. **Broker-divergence Flags (07-09 / 07-14 / 07-15)** still need acknowledgement — actionable
    from the dashboard since S127.
-2. **S131 per-role `POSTGRES_DSN` flip is not yet applied** — runs still use the shared DSN. It is
-   an infra step to schedule **outside 22:25–00:30 UTC**; rollback is `-UseSharedPostgresDsn`.
-3. **Container-origin identity capture (S131 + S133, one errand)** — both sprints proved their
+2. **Container-origin identity capture (S131 + S133, one errand)** — both sprints proved their
    scoped identities with controlled checks rather than by firing a production run out of hours
    (the honest, conservative call). During one live KEDA window, repeat the `pg_stat_activity`
    query *and* capture Service Bus sessions, to see both under real container origin.

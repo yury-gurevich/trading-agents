@@ -41,6 +41,9 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run pre-commit run detect-secrets --all-files
 	uv run python scripts/check_untracked_secrets.py
 
+gate-selftest:  ## Prove each gate can fail (plants a violation per check)
+	uv run python scripts/gate_selftest.py
+
 codeql-ast:     ## Generate CodeQL AST artifacts for FILE=path/to/file.py
 ifndef FILE
 	$(error Usage: make codeql-ast FILE=kernel/agent.py)

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-22 22:05 AEST · **Version:** 0.72.02 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-22 22:48 AEST · **Version:** 0.73.00 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -22,6 +22,18 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **Gate self-test (chore, 0.73.00, 2026-07-22) — PROVING THE CHECKS CAN FAIL.** Three gates read
+  green in one day while examining nothing: the security gate had run on **zero** sprint merges
+  (DL-52), a STATE claim had no check able to contradict it (DL-54), and the secret sweep could not
+  see new files (DL-55). Shared defect: *"didn't look"* rendered identical to *"looked and found
+  nothing."* `scripts/gate_selftest.py` plants a violation per gate and requires a non-zero exit,
+  and asserts the config facts whose loss silently disables a gate (the `push` triggers, the
+  Makefile line wiring the untracked scan). Runs in CI `quality` on **every push** so it cannot rot.
+  **Proven both directions at introduction:** 7/7 on a healthy tree; removing the `push` trigger —
+  the exact DL-52 regression — made it exit 1 naming the invariant, and neutering a case to a
+  command that always exits 0 made it exit 1 too. **Named limit:** it only tests failure modes
+  someone imagined; it stops known blind spots regressing, it does not promise there are no new
+  ones (DL-57).
 - **Credential-delivery audit (chore, 0.72.00, 2026-07-22) — A CHECK THAT CAN CONTRADICT THE
   STATUS DOC.** Asked to apply the S131 Postgres flip, the audit-before-acting found it **already
   applied** — STATE had carried a false pending item for two days (DL-54). The real gap was that

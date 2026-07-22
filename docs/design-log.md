@@ -2530,3 +2530,37 @@ settled policy in later work. A scoped choice became a standing rule through res
 same drift shape as DL-54, applied to a rule about how the operator works rather than to
 infrastructure status. Decisions that constrain the operator's own workflow get read back
 verbatim before they land in CLAUDE.md.
+
+## DL-57 · Gates must be observed failing, not assumed working  ·  status: DECIDED (2026-07-22)
+
+**Trigger.** Three checks read green on one day while examining nothing or the wrong thing: the
+security gate had run on **zero** sprint merges (DL-52), a STATE claim had no check able to
+contradict it (DL-54), and the secret sweep could not see new files (DL-55). All three were found
+by accident — a red Dependabot check, an operator asking to apply an already-applied flip, and a
+commit that failed two minutes after a clean `make ci`.
+
+**The shared defect.** In each case *"didn't look"* was rendered identical to *"looked and found
+nothing."* Absence of evidence was displayed as evidence of absence. That is mechanizable: a check
+that has never been observed rejecting anything is not known to work.
+
+**Decision.** `scripts/gate_selftest.py` plants a known violation per gate and requires a non-zero
+exit, plus asserts the config facts whose loss would silently disable a gate (the `push` triggers,
+the Makefile line wiring the untracked-secret scan). It runs in the CI `quality` job on **every
+push**, so it cannot rot, and `make gate-selftest` runs it locally.
+
+**Proven at introduction, both directions.** 7/7 pass on a healthy tree. Removing the `push`
+trigger from `security-findings.yml` — simulating the exact DL-52 regression — made it exit 1 and
+name the invariant; neutering a case's command to one that always exits 0 made it exit 1 with
+"gate exited 0 on a planted violation". A self-test never seen failing would have been the same
+sin it exists to catch.
+
+**Named limit (do not oversell this).** It cannot catch a blind spot nobody imagined; it only
+tests failure modes someone thought of. The guarantee is narrower than "never again": known blind
+spots cannot regress, and every new gate ships with a demonstration it can fail. The case table is
+the standing record of blind spots found the hard way — each entry cites the incident that put it
+there.
+
+*Ruled out:* running it inside `make ci` (it writes probe files into the worktree; CI runners are
+disposable, a developer's tree is not — `make gate-selftest` stays opt-in locally); a
+documentation-only blind-spot register (a human check that cannot fail, rejected for the same
+reason as DL-55).

@@ -108,19 +108,36 @@ jobs:
           vuln-type: os,library
           trivyignores: .trivyignore
 
-      - name: Provider missing-config smoke
-        if: matrix.image == 'provider'
+      # Backlog row L (DRIFT-016 / 017 / 018 — the same defect three times): an image
+      # that does not start its REAL agent entrypoint is invisible to the unit gate and
+      # to local graph demos, and was caught only by a live fleet run. A braindead agent
+      # must (a) exit non-zero without activation config and (b) fail while reaching for
+      # the master — which proves the entrypoint actually ran the agent, not merely that
+      # the image exists. Generalised from the former provider-only smoke.
+      # Excluded: `master` performs no master-handshake; `dispatcher` has its own
+      # calendar-skip smoke below.
+      - name: Agent entrypoint smoke (${{ matrix.image }})
+        if: matrix.image != 'master' && matrix.image != 'dispatcher'
         shell: bash
         run: |
           set +e
-          output=$(docker run --rm ghcr.io/${{ github.repository_owner }}/trading-agents-provider@${{ steps.build.outputs.digest }} 2>&1)
+          image="ghcr.io/${{ github.repository_owner }}/trading-agents-${{ matrix.image }}@${{ steps.build.outputs.digest }}"
+          output=$(timeout 180 docker run --rm "$image" 2>&1)
           code=$?
           printf '%s\n' "$output"
           if [ "$code" -eq 0 ]; then
-            echo "provider image started without required activation config"
+            echo "::error::${{ matrix.image }} exited 0 with no activation config — its entrypoint did not run the agent"
             exit 1
           fi
-          printf '%s\n' "$output" | grep -Eq 'master|MASTER_URL|urlopen|Name or service|Connection refused|Temporary failure'
+          if [ "$code" -eq 124 ]; then
+            echo "::error::${{ matrix.image }} hung for 180s instead of failing the master handshake"
+            exit 1
+          fi
+          if ! printf '%s\n' "$output" | grep -Eq 'master|MASTER_URL|urlopen|Name or service|Connection refused|Temporary failure'; then
+            echo "::error::${{ matrix.image }} failed without reaching the master handshake — entrypoint may not be the real agent (DRIFT-016/017/018 shape)"
+            exit 1
+          fi
+          echo "${{ matrix.image }}: reached its real entrypoint and attempted the master handshake"
 
       - name: Provider image size note
         if: matrix.image == 'provider'

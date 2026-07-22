@@ -2376,3 +2376,17 @@ instead of dismissing (the baseline records accepted *keys*, and inflating it hi
 rule is currently binding on process rather than mechanically enforced. Tightening protection to
 disallow bypass is an operator decision, deferred because it would also route routine docs/STATE
 commits through PRs.
+
+**Addendum (same day) — the second silent-gate of the same class.** Draining the 5 unblocked
+Dependabot PRs exposed a sibling defect: **a push made with `GITHUB_TOKEN` does not trigger `push`
+workflows** (GitHub's recursion guard). The Dependabot auto-merge workflow merges with
+`GITHUB_TOKEN`, so #52/#54/#56/#57 landed on `main` firing **nothing** — no `CI` on the merge
+result and, critically, no `build-images`, even though its `paths:` filter explicitly lists
+`pyproject.toml` and `uv.lock`. The consequence was invisible: `main` read green while the
+published `:latest` images were stale at `15c81ae`, predating every dependency bump, with Trivy
+never having scanned the new dependency set. Corrected by dispatching `build-images` manually at
+`image_tag=latest` (run green on `88bb8fb`; all 14 images rebuilt, Trivy gates passed). **Standing
+rule:** after any Dependabot auto-merge that touches `pyproject.toml`/`uv.lock`, confirm
+`build-images` actually ran for that SHA — a green `main` does not imply fresh images. The general
+lesson matching this entry's theme: a gate can be configured, required, and *still never fire*;
+verify the run exists for the commit, not just that the check is green.

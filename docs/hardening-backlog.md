@@ -82,6 +82,20 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   and removal of the last shared runtime credential. Evidence:
   [S131 Postgres proof](reports/sprint-131-blast-radius/live-proof.md) +
   [S133 Service Bus proof](reports/sprint-133-servicebus-sas/live-proof.md).
+- **L — standing container smoke check: every agent image starts its real entrypoint.**
+  Shipped 2026-07-22 (`chore-container-smoke`). DRIFT-016/017/018 were the *same* defect three
+  times — an agent container not starting its real entrypoint, recorded as "unit gate hid it"
+  (×2) and "hidden by local graph demos", each caught only by a live fleet run. A provider-only
+  smoke already proved the assertion shape; `build-images.yml` now applies it to **all 12 agent
+  images** (`master` performs no master-handshake; `dispatcher` keeps its calendar-skip smoke):
+  run with no activation config and require a **non-zero exit** *and* output reaching for the
+  master, which proves the entrypoint ran the agent rather than merely that the image exists.
+  Adds a 180 s timeout (exit 124) so a hang fails loudly. Verified by dispatch run
+  `29904029290` — all 14 jobs green and **all 12 images printed the assertion**, confirming the
+  step executed rather than silently skipping (the DL-52 failure mode). Motivated by the R006
+  [defect-detection-rate analysis](research/code-quality-tooling/defect-detection-rate.md):
+  the unit suite caught **0 of 14** escaped defects, so this was the highest-leverage quality
+  work available.
 
 ## Open — with unblock triggers
 

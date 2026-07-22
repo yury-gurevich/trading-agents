@@ -1,13 +1,13 @@
 # Project State — Archive (STATE-03)
 
-**Continuation of [STATE.md](STATE.md).** This file holds the etalon-era detail for **Sprints 77–96** —
+**Continuation of [STATE.md](../STATE.md).** This file holds the etalon-era detail for **Sprints 77–96** —
 the graph-pull data-path arc (DL-08, S77–S83), the substrate/pack extractions (S84–S85), and the P16
 continuous-improvement build: the deliberation drift-firewall, the pipeline observatory, Layer-3
 acceptance going 🟩 at S&P-100 then the full S&P-500, and the DL-31 deliberation understanding-gate +
 challenger-veto (S96). Split out on 2026-07-02 when STATE.md was trimmed to a lean live dashboard. Earlier
 history: **Sprints 37–76** → [STATE-02.md](STATE-02.md); **Sprint 36 → P0** + retired components →
 [STATE-01.md](STATE-01.md). The live dashboard (current focus / Recent / Now / Next / Pointers) stays in
-[STATE.md](STATE.md).
+[STATE.md](../STATE.md).
 
 > *Snapshot of STATE.md as of 2026-07-01 13:41 AEST, superseded by the live file. Any item in the "Next"
 > section below that is still open now lives (compressed) in STATE.md — read STATE.md for current status.*
@@ -20,7 +20,7 @@ history: **Sprints 37–76** → [STATE-02.md](STATE-02.md); **Sprint 36 → P0*
 *etalon v0.1* — the hand-crafted reference the platform will one day reproduce (`ops/agent-genesis.md`).
 **🟩 LAYER-3 ACCEPTANCE GREEN at S&P-100 (0.35.02): the full pipeline runs end-to-end on real data
 → Aura, 5 positions opened, `ACCEPTANCE PASS` — the law ledger's definition of "the system works."
-🟩 at the FULL S&P-500 (0.37.01, proven live 2026-06-26): after the [DRIFT-014](laws/drift-register.md)
+🟩 at the FULL S&P-500 (0.37.01, proven live 2026-06-26): after the [DRIFT-014](../laws/drift-register.md)
 per-ticker-quality fix, a live S&P-500 → Aura acceptance run returned `ACCEPTANCE PASS` (provider excluded
 the lone outlier `anomalous SMCI`, batch stayed `quality ok returned=502/503`, 2 positions opened, 9.4s
 OHLCV-only). DRIFT-013 (silent caps) CORRECTED: the concentration caps fired live (INTC SKIP) off a warmed
@@ -121,7 +121,7 @@ gpt-5.4 demonstrably trips it.** Meta-machinery (CI-1..CI-6, the generator) wait
   still showed `sectors 99/99 classified` and **PM-NEV-06 fired** — `INTC SKIP sector_name_count`. So the
   bundle now trades *wisely* (caps active on real correlated names), not just cleanly. (3) **S&P-500 scale**
   — committed `scripts/universe_sp500.txt` (503 authoritative names); the run pulled **503/503 OHLCV (the
-  data layer scales)** but `ACCEPTANCE FAIL`: **[DRIFT-014](laws/drift-register.md)** — the per-batch
+  data layer scales)** but `ACCEPTANCE FAIL`: **[DRIFT-014](../laws/drift-register.md)** — the per-batch
   `daily_move_sigma_anomaly` taint is batch-level, so one >8σ name rejects every clean survivor. Recorded
   OPEN with the fix direction (per-ticker quality: exclude the anomalous bars, not the batch). Layer-3
   ledger: 🟩 at S&P-100, 🟨 at the literal S&P-500. *Next: DRIFT-014 per-ticker quality + an OHLCV-only
@@ -249,7 +249,7 @@ On `main`, no active sprint branch. Success factors (the verifiable definition-o
   (C, QCOM, CSCO, AMD, INTC). Unblocked by the **validate-once fix** (0.28.01 — chunked ingest
   re-validates the reassembled batch once) + `sigma=8.0` + BK dropped + conservative pacing (chunk 10 /
   delay 70). *New finding:* the 5 names are 4 semis + 1 bank — **correlated concentration** the pipeline
-  has no penalty for (the gap [quant-methods](research/quant-methods/quant-methods.md) Part 2/3 flags;
+  has no penalty for (the gap [quant-methods](../research/quant-methods/quant-methods.md) Part 2/3 flags;
   what a Deliberation Challenger would attack). **Closed in code + PROVEN LIVE:** PM-NEV-06 name-count cap
   (0.33.00, DL-25) fired on a real S&P-100 run off a warmed sector cache — `INTC SKIP sector_name_count`
   (DRIFT-013 corrected, 0.37.00). So: now *trades wisely*, not just cleanly.

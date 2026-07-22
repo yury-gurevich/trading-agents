@@ -8,9 +8,14 @@
 test-effectiveness methods (code coverage, mutation testing, defect detection rate,
 pseudo-tested detection, flakiness/maintainability), which do we not use — and do we need them?
 
-**Outcome:** No new tool adopted. One **non-tool** recommendation carried forward: run a
-retrospective **defect-detection-rate** analysis over the existing drift register, because it
-exposes a strategic mismatch between where defects actually occur and where test effort goes.
+**Outcome:** No new tool adopted. The one carried-forward action — a retrospective
+**defect-detection-rate** analysis — is **DONE**:
+[defect-detection-rate.md](defect-detection-rate.md). Result: **0 of 14 escaped defects were
+caught by the unit suite**, and in 4 cases a test double *concealed* the defect. The escaped
+population is structurally invisible to unit tests, so more unit-test-quality tooling cannot move
+it. Next quality hour goes to a **standing container smoke check** (DRIFT-016/017/018 are the same
+defect three times), then to protecting the LAW-02 live-check discipline — empirically the only
+mechanism that has ever caught a defect here.
 
 ---
 
@@ -74,11 +79,14 @@ infra limits), not to another unit-test-quality metric.
 
 ### Verdicts
 
-- **Defect detection rate — DO IT (analysis, not tooling).** Computable today from
-  `docs/laws/drift-register.md` + `docs/laws/functionality-checks.md` + the standing
-  "real bug → fix + regression test + drift row" rule. Ask, per drift row: would the suite have
-  caught it pre-production, and was a regression test added? Value is the strategic redirect
-  above, not the number. Cost: an afternoon, no new dependency.
+- **Defect detection rate — DONE 2026-07-22** → [defect-detection-rate.md](defect-detection-rate.md).
+  **0 / 14 escaped defects caught by the unit suite**; 4 rows record a test double or the unit gate
+  *concealing* the defect ("in-memory hid it", "unit gate hid it" ×2, "hidden by local graph
+  demos"). Every escape was found by a live/real-environment run, a law-authoring audit, or manual
+  use. Honest caveat: the register only records defects that *escaped*, so this measures the
+  residual after unit testing — the finding is that **the residual is entirely integration-shaped
+  and structurally invisible to unit tests**, not that the suite is weak. Actionable output: a
+  standing **container smoke check** (DRIFT-016/017/018 are one defect shape, three times).
 - **Pseudo-tested detection — PARK.** It is the cheap proxy for what `mutmut` already did
   expensively; its remaining value is catching *newly added* assertion-weak code between manual
   mutmut runs. Given the finding above, that is fighting the last war. **Unverified caveat:** a

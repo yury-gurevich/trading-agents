@@ -76,6 +76,11 @@ Violations break `make ci`. Never add an import that crosses a boundary.
 Every sprint or chore on its own branch named `sprint-NN-<slug>` or `chore-<slug>`.
 Merge to `main` is the deploy trigger. Never commit sprint work directly to `main`.
 
+**Merge through a pull request — never a local `git merge` into `main`.** The
+security-findings `gate` is `pull_request`-triggered, so a direct merge silently bypasses
+it: S131/S132/S134 each merged with no PR and were never gated (DL-52). Open the PR, let
+`quality` / `test` / `security` / `gate` run, then merge the PR.
+
 ---
 
 ## Law conventions (when working on agent laws)

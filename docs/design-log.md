@@ -2338,3 +2338,41 @@ lineage reads. S131 must not improvise RLS over the append-only graph.
 the graph spine to discover work and participate in activation-era recovery, so the DSN is a
 bootstrap credential, not an after-activation secret. Reworking that order is a bootstrap redesign,
 not a hardening patch.
+
+## DL-52 · Sprints merge through a PR — a direct merge bypasses the enforcing security gate  ·  status: DECIDED (2026-07-22)
+
+**Trigger.** A Dependabot PR's red `gate` check was investigated and unwound three stacked
+defects. (1) `secrets.SECURITY_FINDINGS_TOKEN` was absent from the **Dependabot** secret store —
+Dependabot-triggered runs read a separate store, so the token resolved empty and `uvx` could not
+fetch the private toolset (symptom: "Can't add secret mask for empty string", then
+`could not read Password`). All 7 Dependabot runs failed; all 5 normal-branch runs passed — a
+clean split that proved the cause. (2) Once the secret existed, the PAT lacked read access to
+`security-findings-toolset` (403 "Write access to repository not granted"). (3) With the gate
+finally *running*, it flagged 6 error-level `py/undefined-export` alerts. The deepest finding was
+structural: `security-findings.yml` triggers on `pull_request` **only**, and S131/S132/S134 were
+each merged straight into `main` with **no PR** — so the gate that has been "enforcing since
+2026-07-04" never ran on any of them. The alerts it would have caught were introduced by S131 and
+sat unexamined because nothing evaluated them; the Dependabot PRs were the only traffic still
+hitting the gate, and their token failure masked the whole thing.
+
+**Decision.** Sprint and chore branches merge to `main` **through a pull request**, never a local
+`git merge` + push. The PR event is what makes the enforcing gate (plus `quality`/`test`/`security`)
+actually execute on the code it exists to guard; branch protection already lists `gate` as a
+required context, but that binds PR merges only. Recorded as a hard rule in `CLAUDE.md`.
+
+**Also decided.** The 6 `py/undefined-export` alerts are dismissed as **false positives**: they are
+the PEP 562 lazy-export pattern S131 introduced for the dispatcher image slim (row J) — `__all__`
+declares the name, module `__getattr__` resolves it at runtime, and CodeQL cannot follow
+`__getattr__`. Runtime behaviour is covered by the suite at 100 %. Dismiss-with-reason is this
+repo's accepted-finding path; the baseline file was left untouched.
+
+**Ruled out.** Adding `push: branches: [main]` to the workflow as the fix. It would evaluate direct
+merges *after* they land, which reports rather than gates — a safety net, not enforcement. Kept as a
+possible addition, not a substitute. Also ruled out: refactoring away the lazy exports to satisfy the
+query (they are load-bearing for the S131 image slim), and growing `security/findings-baseline.json`
+instead of dismissing (the baseline records accepted *keys*, and inflating it hides the reason).
+
+**Residual risk (named, not fixed).** Repo-admin pushes can still bypass branch protection, so the
+rule is currently binding on process rather than mechanically enforced. Tightening protection to
+disallow bypass is an operator decision, deferred because it would also route routine docs/STATE
+commits through PRs.

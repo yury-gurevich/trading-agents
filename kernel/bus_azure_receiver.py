@@ -106,7 +106,7 @@ class AzureServiceBusRequestConsumer:
     def _receive_messages(self) -> list[object]:
         """Pull a batch from the injected receiver or the live SDK receiver."""
         if self._receiver is None:
-            if self._settings.connection_string is None:
+            if self._settings.connection_string_for_topic(self._topic) is None:
                 return []
             self._receiver = self._open_receiver()  # pragma: no cover
         return list(
@@ -119,9 +119,10 @@ class AzureServiceBusRequestConsumer:
     def _open_receiver(self) -> _ServiceBusReceiver:  # pragma: no cover
         from azure.servicebus import ServiceBusClient
 
-        client = ServiceBusClient.from_connection_string(
-            self._settings.connection_string,
-        )
+        connection_string = self._settings.connection_string_for_topic(self._topic)
+        if connection_string is None:
+            raise RuntimeError("Service Bus connection string is required")
+        client = ServiceBusClient.from_connection_string(connection_string)
         self._client = client
         receiver: _ServiceBusReceiver = client.get_subscription_receiver(
             topic_name=self._topic,

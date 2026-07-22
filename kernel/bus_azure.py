@@ -108,7 +108,9 @@ class AzureServiceBusBus:
 
     def publish(self, topic: str, event: dict[str, Any]) -> None:
         """Deliver event to subscribers, or to Azure Service Bus if creds are set."""
-        if self._settings.connection_string is not None:  # pragma: no cover
+        if (
+            self._settings.connection_string_for_topic(topic) is not None
+        ):  # pragma: no cover
             self._azure_send(topic, event)
             return
         for handler in self._subscribers.get(topic, []):
@@ -143,9 +145,10 @@ class AzureServiceBusBus:
             ServiceBusMessage,
         )
 
-        client = ServiceBusClient.from_connection_string(
-            self._settings.connection_string,
-        )
+        connection_string = self._settings.connection_string_for_topic(topic)
+        if connection_string is None:
+            return
+        client = ServiceBusClient.from_connection_string(connection_string)
         with client, client.get_topic_sender(topic_name=topic) as sender:
             sender.send_messages(
                 ServiceBusMessage(

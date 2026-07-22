@@ -72,6 +72,16 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   default-normalization residuals, and the 20 R3 residuals named individually in the CSV.
   Evidence: [S134 report](reports/sprint-134-assertion-hardening/README.md) +
   [Round 3 dispositions](reports/sprint-134-assertion-hardening/round-3-dispositions.csv).
+- **I — per-agent blast-radius scoping, Postgres + Service Bus.** Part 1 shipped in
+  S131: 15 per-agent Neon/Postgres roles with secret-backed `POSTGRES_DSN` delivery.
+  Part 2 shipped in S133: the shared Service Bus namespace string was replaced for
+  measured bus targets by entity-level topic SAS rules, per-target Key Vault
+  primary/bundle secrets, Container Apps secretRefs, and a rollback-only shared
+  credential path. The bus carries claim-check refs/RPC envelopes, not data, so this
+  is lower severity than the Postgres half; the value is attribution, revocability,
+  and removal of the last shared runtime credential. Evidence:
+  [S131 Postgres proof](reports/sprint-131-blast-radius/live-proof.md) +
+  [S133 Service Bus proof](reports/sprint-133-servicebus-sas/live-proof.md).
 - **L — standing container smoke check: every agent image starts its real entrypoint.**
   Shipped 2026-07-22 (`chore-container-smoke`). DRIFT-016/017/018 were the *same* defect three
   times — an agent container not starting its real entrypoint, recorded as "unit gate hid it"
@@ -89,9 +99,10 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
 
 ## Open — with unblock triggers
 
+No open hardening rows after S133.
+
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
-| **I** | Per-agent Service Bus SAS scoping (part 2) | S131 completed part 1: the Postgres blast radius is split into 15 `ta_<name>` identities with identical graph grants, role-specific Key Vault secret names, and Container Apps secret-backed `POSTGRES_DSN` delivery. The remaining shared credential is the Azure Service Bus connection string, so one compromised container can still use the whole bus. | Next security-focused sprint (**packaged as S133**): create per-topic authorization rules + per-agent Service Bus SAS connection strings, then wire them with the same secret-backed per-target delivery pattern. |
 
 ## Branch protection recommendations (with CodeQL)
 

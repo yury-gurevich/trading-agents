@@ -7,6 +7,8 @@ External I/O: reads from environment variables.
 
 from __future__ import annotations
 
+import json
+
 from pydantic import AliasChoices
 from pydantic_settings import SettingsConfigDict
 
@@ -39,6 +41,10 @@ class AzureServiceBusSettings(AgentSettings):
             "AZURE_SERVICEBUS_CONNECTION_STRING",
             "SERVICEBUS_CONNECTION_STRING",
         ),
+    )
+    connection_strings_json: str | None = tunable(
+        None,
+        why="Optional topic-to-connection-string bundle for entity-level SAS.",
     )
     namespace_endpoint: str | None = tunable(
         None,
@@ -78,3 +84,17 @@ class AzureServiceBusSettings(AgentSettings):
         ".reply",
         why="Default requester reply topic suffix for ready-event responses.",
     )
+
+    def connection_string_for_topic(self, topic: str) -> str | None:
+        """Return a topic-scoped connection string, falling back to the primary."""
+        if not self.connection_strings_json:
+            return self.connection_string
+        try:
+            mapping = json.loads(self.connection_strings_json)
+        except json.JSONDecodeError:
+            return self.connection_string
+        topic_entry = mapping.get(topic) if isinstance(mapping, dict) else None
+        if not isinstance(topic_entry, dict):
+            return self.connection_string
+        value = topic_entry.get("connection_string")
+        return value if isinstance(value, str) and value else self.connection_string

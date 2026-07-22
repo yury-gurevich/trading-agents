@@ -8,7 +8,7 @@
 # POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
 param(
-  [ValidateSet('preflight', 'up', 'postgres-flip', 'down')]
+  [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
   [string]$MasterScaleStart = '25 22 * * *',
@@ -17,7 +17,8 @@ param(
   [string]$ScaleTimezone = 'UTC',
   [int]$ScaleDesiredReplicas = 1,
   [string]$DispatcherCron = '30 22 * * *',
-  [switch]$UseSharedPostgresDsn
+  [switch]$UseSharedPostgresDsn,
+  [switch]$UseSharedServiceBusDsn
 )
 
 Set-StrictMode -Version Latest
@@ -31,6 +32,8 @@ $REGISTRY = "ghcr.io"
 $OWNER = "yury-gurevich"
 $DISPATCHER_JOB = "dispatcher-cron"
 $POSTGRES_APP_SECRET = "postgres-dsn" # pragma: allowlist secret
+$SERVICEBUS_APP_SECRET = "servicebus-connection-string" # pragma: allowlist secret
+$SERVICEBUS_BUNDLE_SECRET = "servicebus-connection-strings" # pragma: allowlist secret
 # Container App name → GHCR image suffix (app names can't contain underscores).
 $AGENTS = [ordered]@{
   scanner = "scanner"; analyst = "analyst"; "portfolio-manager" = "portfolio_manager"
@@ -138,13 +141,72 @@ function Get-GraphConfig($target = "") {
   throw "POSTGRES_DSN is required after ADR-0014; Neo4j env-var rollback was removed in S118"
 }
 
-function Get-ServiceBusConfig {
+function Get-SharedServiceBusConnectionString {
   $conn = $env:AZURE_SERVICEBUS_CONNECTION_STRING
   if (-not $conn) { $conn = $env:SERVICEBUS_CONNECTION_STRING }
+  return $conn
+}
+
+function Get-ServiceBusConnectionEnvName($target) {
+  return "AZURE_SERVICEBUS_CONNECTION_STRING_" + $target.ToUpperInvariant().Replace("-", "_")
+}
+
+function Get-ServiceBusSecretName($target) {
+  return "servicebus-connection-string-" + $target.ToLowerInvariant().Replace("_", "-")
+}
+
+function Get-ServiceBusBundleSecretName($target) {
+  return "servicebus-connection-strings-" + $target.ToLowerInvariant().Replace("_", "-")
+}
+
+function Get-ServiceBusKeyVaultName {
+  if ($env:SERVICEBUS_SAS_KEY_VAULT) { return $env:SERVICEBUS_SAS_KEY_VAULT }
+  return Get-KeyVaultName
+}
+
+function Get-KeyVaultSecretValue($vault, $secretName) {
+  if (-not $vault) { return "" }
+  $value = az keyvault secret show --vault-name $vault --name $secretName `
+    --query value -o tsv 2>$null
+  if ($LASTEXITCODE -ne 0) { return "" }
+  return $value.Trim()
+}
+
+function Get-TargetServiceBusConnectionString($target) {
+  if ($UseSharedServiceBusDsn) { return Get-SharedServiceBusConnectionString }
+  $envName = Get-ServiceBusConnectionEnvName $target
+  $value = [Environment]::GetEnvironmentVariable($envName, "Process")
+  if ($value) { return $value }
+  return Get-KeyVaultSecretValue (Get-ServiceBusKeyVaultName) (Get-ServiceBusSecretName $target)
+}
+
+function Get-TargetServiceBusBundle($target) {
+  if ($UseSharedServiceBusDsn) { return "" }
+  return Get-KeyVaultSecretValue (Get-ServiceBusKeyVaultName) (Get-ServiceBusBundleSecretName $target)
+}
+
+function Get-ServiceBusConfig($target = "") {
+  if ($target) {
+    $conn = Get-TargetServiceBusConnectionString $target
+    if (-not $conn) {
+      $envName = Get-ServiceBusConnectionEnvName $target
+      $secretName = Get-ServiceBusSecretName $target
+      throw "per-target Service Bus SAS missing for $target ($envName or Key Vault $secretName)"
+    }
+    $envVars = @("AZURE_SERVICEBUS_CONNECTION_STRING=secretref:$SERVICEBUS_APP_SECRET")
+    $secrets = @("$SERVICEBUS_APP_SECRET=$conn")
+    $bundle = Get-TargetServiceBusBundle $target
+    if ($bundle) {
+      $envVars += @("AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON=secretref:$SERVICEBUS_BUNDLE_SECRET")
+      $secrets += @("$SERVICEBUS_BUNDLE_SECRET=$bundle")
+    }
+    return [pscustomobject]@{ envVars = $envVars; secrets = $secrets }
+  }
+  $conn = Get-SharedServiceBusConnectionString
   if ($conn) {
     return [pscustomobject]@{
-      envVars = @("AZURE_SERVICEBUS_CONNECTION_STRING=secretref:servicebus-connection-string")
-      secrets = @("servicebus-connection-string=$conn")
+      envVars = @("AZURE_SERVICEBUS_CONNECTION_STRING=secretref:$SERVICEBUS_APP_SECRET")
+      secrets = @("$SERVICEBUS_APP_SECRET=$conn")
     }
   }
   throw "AZURE_SERVICEBUS_CONNECTION_STRING or SERVICEBUS_CONNECTION_STRING is required for distributed serve transport"
@@ -183,6 +245,10 @@ function Get-CronScaleArgs($ruleName, $start) {
 
 function Get-FleetPostgresTargets {
   return @("master") + @($AGENTS.Keys) + @("dispatcher")
+}
+
+function Get-FleetServiceBusTargets {
+  return @($AGENTS.Keys) + @("dispatcher")
 }
 
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
@@ -269,8 +335,20 @@ function Preflight {
   $ok = $ok -and $allPgReady
 
   try { $serviceBus = Get-ServiceBusConfig } catch { $serviceBus = $null }
-  Check ([bool]$serviceBus) "Service Bus connection config"
+  Check ([bool]$serviceBus) "Service Bus admin connection config"
   $ok = $ok -and [bool]$serviceBus
+
+  $sbTargets = Get-FleetServiceBusTargets
+  $sbReady = 0
+  foreach ($target in $sbTargets) {
+    try {
+      Get-ServiceBusConfig $target | Out-Null
+      $sbReady += 1
+    } catch {}
+  }
+  $allSbReady = $sbReady -eq $sbTargets.Count
+  Check $allSbReady "per-target Service Bus SAS strings: $sbReady/$($sbTargets.Count)"
+  $ok = $ok -and $allSbReady
 
   if ($ghcr) {
     $imgs = @()
@@ -305,7 +383,7 @@ function Get-MasterKeypair {
 # ── Deploy ────────────────────────────────────────────────────────────────────
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
-  $ghcr = Load-Json "ghcr.local.json"; $serviceBus = Get-ServiceBusConfig
+  $ghcr = Load-Json "ghcr.local.json"
 
   Upgrade-PostgresSchema
   Prepare-ServiceBusRoutes
@@ -324,8 +402,8 @@ function Up {
     "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
   )
   $masterGraph = Get-GraphConfig "master"
-  $envv += @($masterGraph.envVars) + @($serviceBus.envVars)
-  $masterSecrets = @($masterGraph.secrets) + @($serviceBus.secrets) + @("master-key-b64=$($kp.priv_b64)")
+  $envv += @($masterGraph.envVars)
+  $masterSecrets = @($masterGraph.secrets) + @("master-key-b64=$($kp.priv_b64)")
   $mArgs = @(
     "containerapp", "create", "--name", "master", "--resource-group", $RG,
     "--environment", $ENV_NAME, "--subscription", $SUB,
@@ -353,14 +431,15 @@ function Up {
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
     $agentGraph = Get-GraphConfig $name
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($serviceBus.envVars)
+    $agentServiceBus = Get-ServiceBusConfig $name
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars)
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,
       "--image", $img, "--registry-server", $REGISTRY, "--registry-username",
       $ghcr.username, "--registry-password", $ghcr.pat,
       "--secrets"
-    ) + @($agentGraph.secrets) + @($serviceBus.secrets) + @(
+    ) + @($agentGraph.secrets) + @($agentServiceBus.secrets) + @(
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
@@ -369,7 +448,7 @@ function Up {
     Check ($state -eq "Succeeded") $name
   }
   Bot
-  Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") $serviceBus
+  Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") (Get-ServiceBusConfig "dispatcher")
   Write-Host "`nFleet deployed with cron scale windows and dispatcher job. Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
 }
 
@@ -410,6 +489,63 @@ function Flip-PostgresRoles {
   if (-not $ok) { throw "Postgres role flip failed" }
 }
 
+function Set-AppServiceBusConfig($name) {
+  $serviceBus = Get-ServiceBusConfig $name
+  az containerapp secret set --name $name --resource-group $RG --subscription $SUB `
+    --secrets $serviceBus.secrets -o none 2>$null | Out-Null
+  $secretOk = $LASTEXITCODE -eq 0
+  $state = az containerapp update --name $name --resource-group $RG `
+    --subscription $SUB --set-env-vars $serviceBus.envVars `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($secretOk -and $state -eq "Succeeded") "$name Service Bus secretref"
+  return $secretOk -and $state -eq "Succeeded"
+}
+
+function Set-DispatcherServiceBusConfig {
+  $serviceBus = Get-ServiceBusConfig "dispatcher"
+  az containerapp job secret set --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --secrets $serviceBus.secrets -o none 2>$null | Out-Null
+  $secretOk = $LASTEXITCODE -eq 0
+  $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
+    --subscription $SUB --set-env-vars $serviceBus.envVars `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($secretOk -and $state -eq "Succeeded") "$DISPATCHER_JOB Service Bus secretref"
+  return $secretOk -and $state -eq "Succeeded"
+}
+
+function Set-MasterServiceBusConfig {
+  if ($UseSharedServiceBusDsn) {
+    $serviceBus = Get-ServiceBusConfig
+    az containerapp secret set --name "master" --resource-group $RG --subscription $SUB `
+      --secrets $serviceBus.secrets -o none 2>$null | Out-Null
+    $secretOk = $LASTEXITCODE -eq 0
+    $state = az containerapp update --name "master" --resource-group $RG `
+      --subscription $SUB --set-env-vars $serviceBus.envVars `
+      --query properties.provisioningState -o tsv 2>$null
+    Check ($secretOk -and $state -eq "Succeeded") "master shared Service Bus rollback"
+    return $secretOk -and $state -eq "Succeeded"
+  }
+  $state = az containerapp update --name "master" --resource-group $RG `
+    --subscription $SUB --remove-env-vars AZURE_SERVICEBUS_CONNECTION_STRING `
+    AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON `
+    --query properties.provisioningState -o tsv 2>$null
+  Check ($state -eq "Succeeded") "master Service Bus env removed"
+  return $state -eq "Succeeded"
+}
+
+function Flip-ServiceBusSas {
+  Top "SERVICE BUS SAS FLIP"
+  Load-DotEnv
+  $ok = $true
+  $ok = (Set-MasterServiceBusConfig) -and $ok
+  foreach ($name in $AGENTS.Keys) {
+    $ok = (Set-AppServiceBusConfig $name) -and $ok
+  }
+  $ok = (Set-DispatcherServiceBusConfig) -and $ok
+  Bot
+  if (-not $ok) { throw "Service Bus SAS flip failed" }
+}
+
 function Down {
   Top "TEARDOWN"
   az containerapp job delete --name $DISPATCHER_JOB --resource-group $RG `
@@ -430,5 +566,6 @@ switch ($Action) {
   'preflight' { Preflight | Out-Null }
   'up' { Up }
   'postgres-flip' { Flip-PostgresRoles }
+  'servicebus-flip' { Flip-ServiceBusSas }
   'down' { Down }
 }

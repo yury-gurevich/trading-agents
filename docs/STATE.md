@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-22 18:54 AEST · **Version:** 0.71.06 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 (Service Bus SAS, backlog row I — the last shared credential) is executing on `sprint-133-servicebus-sas` → 0.71.07, and will be the **first sprint to merge through a PR** under the DL-52 rule, so the security gate finally runs on sprint code. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack; the S131 per-role DSN flip is **not yet applied** (runs still use the shared DSN).
+**Last updated:** 2026-07-22 20:30 AEST · **Version:** 0.71.07 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. It was the **first sprint to merge through a PR** under DL-52, so the security gate finally ran on sprint code. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack; the S131 per-role DSN flip is **not yet applied** (runs still use the shared DSN).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -22,6 +22,24 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **S133 — per-agent Service Bus SAS (0.71.07, 2026-07-22) — THE LAST SHARED CREDENTIAL IS
+  CLOSED.** Every container held the same namespace-level `RootManage` connection string; now each
+  of **13 bus targets** carries its own **entity-level topic SAS** with a Send/Listen split —
+  **33 rules, `cap_violations={}`** (planner output reproduced independently at verify, matching
+  the handback exactly). Azure's **12-rule cap** per namespace *and* per entity is what forced the
+  per-topic model: 13 agents don't fit 12 namespace rules (DL-53). The grant matrix is **derived
+  from source** (`scripts/sb_sas_plan.py` reads `serve_transport.py` + publish topics), not a
+  hand-kept list that drifts. Delivery mirrors S131: per-target Key Vault secrets → Container Apps
+  `secretRef`, `-UseSharedServiceBusDsn` rollback retained. **`master` was given no bus rights
+  rather than an invented permission** — its Service Bus env is removed. Live proof: scoped
+  Send/Listen served a request, an out-of-scope Send was **refused**, and revoking one rule locked
+  out **only** that identity while the fleet stayed `Succeeded`; canary topics torn down to zero.
+  **Backlog row I → Done, leaving no open hardening rows.** Verified at merge: `make ci` exit 0 @
+  100 %, no key in the tree, and the credential-fallback path checked to **fail closed** (the
+  per-target "primary" secret is itself a scoped grant, so a bundle miss cannot reach `RootManage`).
+  *Honest limit:* proof used disposable canary topics, not a production container-origin run —
+  that capture is an operator follow-up. **First sprint merged through a PR (DL-52)** — PR #63,
+  gate green.
 - **Security-gate repair + backlog row L (chores on 0.71.06, 2026-07-22) — THE GATE THAT NEVER
   FIRED.** Investigating one red check on a Dependabot PR unwound five stacked defects: the
   `SECURITY_FINDINGS_TOKEN` was absent from the **Dependabot** secret store (separate from
@@ -100,7 +118,6 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   Codex-built; planning review re-ran `make ci` (exit 0, 1584 passed / 5 skipped / 100%).
   Merged `32c73cc`.
 
-
 Older sprints — **S102–S126 → [STATE-05.md](state-archive/STATE-05.md)** · S99–S118 + chores →
 [STATE-04.md](state-archive/STATE-04.md) · S77–96 → [STATE-03.md](state-archive/STATE-03.md) · S37–76 →
 [STATE-02.md](state-archive/STATE-02.md) · S36→P0 → [STATE-01.md](state-archive/STATE-01.md); full index
@@ -108,17 +125,14 @@ Older sprints — **S102–S126 → [STATE-05.md](state-archive/STATE-05.md)** �
 
 ## Now
 
-**S133 (Service Bus SAS, backlog row I part 2) is executing** on `sprint-133-servicebus-sas`
-→ 0.71.07 — Codex-built, per-agent scoped SAS replacing the shared namespace connection string
-(entity-level Send/Listen; the 12-rule/namespace cap forces per-topic), mirroring S131's
-secret-backed delivery + `-UseSharedServiceBusDsn` rollback. It closes the **last shared
-credential**. Lower severity than the Postgres half — the bus carries claim-check pointers and
-RPC envelopes, not data. It will be the **first sprint to merge through a PR** (DL-52), so the
-security-findings gate finally runs on sprint code.
+**No sprint is in flight.** The hardening backlog has **no open rows** — S133 closed the last one.
+Queued work is in *Next*; the standing operator items below are the only outstanding threads.
 
 **Fleet:** standing on `:s130` (built `d0b0d3a`), self-driving in paper mode — the calendar-gated
 22:30 UTC `dispatcher-cron` fires nightly, KEDA scale-to-zero, idle ≈ $0. Nothing since S130 has
-needed a retag: S131–S134 changed roles, tests and CI, not runtime images.
+needed a retag: S131–S134 changed roles, tests and CI, not runtime images. **S133's scoped Service
+Bus delivery is applied live** (unlike the S131 Postgres flip, still pending below), so the running
+fleet already talks to the bus under per-agent identities.
 
 **Awaiting the operator (three standing items, none blocking):**
 
@@ -126,9 +140,10 @@ needed a retag: S131–S134 changed roles, tests and CI, not runtime images.
    from the dashboard since S127.
 2. **S131 per-role `POSTGRES_DSN` flip is not yet applied** — runs still use the shared DSN. It is
    an infra step to schedule **outside 22:25–00:30 UTC**; rollback is `-UseSharedPostgresDsn`.
-3. **S131 identity follow-up** — the 15 `ta_*` roles were proven by a controlled `pg_stat_activity`
-   audit rather than by firing a production run out of hours (the honest, conservative call).
-   Repeat that query during a live KEDA window to capture container-origin sessions.
+3. **Container-origin identity capture (S131 + S133, one errand)** — both sprints proved their
+   scoped identities with controlled checks rather than by firing a production run out of hours
+   (the honest, conservative call). During one live KEDA window, repeat the `pg_stat_activity`
+   query *and* capture Service Bus sessions, to see both under real container origin.
 
 **P12 sentiment scorecard-run** stays queued until roughly two weeks of clean-news nights
 accumulate; the runway began 2026-07-20 and cannot be short-circuited.
@@ -141,7 +156,8 @@ deploy trigger that rebuilds and pushes agent images.
 
 ## Next
 
-- **`chore-wsl2-dev-env`** (packaged, queued behind S133) — move the dev loop to WSL2 for
+- **`chore-wsl2-dev-env`** (packaged, branch pushed — **next up**, now that S133 has landed and no
+  sprint branch is in flight) — move the dev loop to WSL2 for
   native-ext4 `mutmut`/`pytest` and CI/prod parity; the 14 `.ps1` files stay and run under `pwsh`
   (verified on the operator's Ubuntu), so the real work is `.gitattributes` LF normalisation and
   a setup runbook. Must not overlap an in-flight sprint branch — the renormalise commit touches

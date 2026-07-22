@@ -40,6 +40,14 @@ jobs:
       - name: Module header guard
         run: uv run python scripts/check_module_header.py kernel contracts agents scripts
 
+      # Prove the gates can fail. A check that has never been observed rejecting
+      # anything is not known to work — three read green while examining nothing
+      # on 2026-07-22 (DL-52/54/55). Plants a violation per gate, requires a
+      # non-zero exit, and asserts the config facts that keep gates enabled.
+      # Runs here so it cannot rot: every push exercises it.
+      - name: Gate self-test (can each gate fail?)
+        run: uv run python scripts/gate_selftest.py
+
   # ── Tests + coverage ratchet ──────────────────────────────────────
   test:
     runs-on: ubuntu-latest

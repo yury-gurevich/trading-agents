@@ -101,9 +101,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   Merged `32c73cc`.
 
 
-Older sprints — **S102–S126 → [STATE-05.md](STATE-05.md)** · S99–S118 + chores →
-[STATE-04.md](STATE-04.md) · S77–96 → [STATE-03.md](STATE-03.md) · S37–76 →
-[STATE-02.md](STATE-02.md) · S36→P0 → [STATE-01.md](STATE-01.md); full index
+Older sprints — **S102–S126 → [STATE-05.md](state-archive/STATE-05.md)** · S99–S118 + chores →
+[STATE-04.md](state-archive/STATE-04.md) · S77–96 → [STATE-03.md](state-archive/STATE-03.md) · S37–76 →
+[STATE-02.md](state-archive/STATE-02.md) · S36→P0 → [STATE-01.md](state-archive/STATE-01.md); full index
 `docs/sprints/README.md`.
 
 ## Now

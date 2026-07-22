@@ -1,6 +1,6 @@
 # Project State — Archive (STATE-05)
 
-**Continuation of [STATE.md](STATE.md).** This file holds the detail for **Sprints 102–126** — the
+**Continuation of [STATE.md](../STATE.md).** This file holds the detail for **Sprints 102–126** — the
 fleet arc's last two steps (S102 distributed 13-container run-through, S103 dispatcher cron that
 made the platform self-driving), the DL-42 deliberation-prompt arc (S119 compile, S121 first
 promotion), DL-44 broker reconciliation (S120), and the **DL-47 operations-dashboard arc in full**

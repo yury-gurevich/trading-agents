@@ -1,6 +1,6 @@
 # Project State — Archive (STATE-04)
 
-**Continuation of [STATE.md](STATE.md).** This file holds the detail for **Sprints 99–118 (and the
+**Continuation of [STATE.md](../STATE.md).** This file holds the detail for **Sprints 99–118 (and the
 S109 re-run + security chores)** — the fleet-serve arc's receive half (S99/S100), the qlib workflow
 adoption (S110–S113, S115: evaluation battery, rolling retrain, backtest evidence, governed factor
 mining), the DL-41 complete-deliberation-evidence fix (S114), the DL-36 credential arc close

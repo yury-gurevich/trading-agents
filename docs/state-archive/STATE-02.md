@@ -1,11 +1,11 @@
 # Project State — Archive (STATE-02)
 
-**Continuation of [STATE.md](STATE.md).** This file holds the shipped-sprint ledger for
+**Continuation of [STATE.md](../STATE.md).** This file holds the shipped-sprint ledger for
 **Sprints 37–76** (P11 deterministic-logic depth, P12/P13 sentiment + forecaster, P14 pub/sub
 re-architecture, and the P15 container/master-bootstrap arc), split out on 2026-06-22 to keep
 STATE.md short. Older history (**Sprint 36 → P0** + retired components) lives in
 [STATE-01.md](STATE-01.md). The live dashboard (Now / Next / Parked / recent ~8 Shipped) stays in
-[STATE.md](STATE.md).
+[STATE.md](../STATE.md).
 
 ---
 

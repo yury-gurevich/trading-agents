@@ -18,7 +18,7 @@ is truly dead.
    not a file move.
 3. **Respect the keep-list.** Do not touch: `*.db` files, `desktop.ini`, the operator's
    `.env.bak`, or any in-progress work (currently: all CodeQL artifacts).
-4. **Record retirements** in [`STATE-01.md`](STATE-01.md) → *Retired components*, and update
+4. **Record retirements** in [`STATE-01.md`](state-archive/STATE-01.md) → *Retired components*, and update
    `RESTORE.md`.
 
 ## Staging folder
@@ -51,7 +51,7 @@ mv trading-agent-del/infra/neo4j/docker-compose.yml trading-agents/infra/neo4j/d
 | `infra/neo4j/docker-compose.yml` + `.env` + `.env.example` | Superseded Neo4j instance (named-volume, no plugins, `neo4j` db); replaced by `infra/neo4j/local/`. |
 
 **STATE.md** split: the older shipped ledger (**Sprint 36 → P0**) moved to
-[`STATE-01.md`](STATE-01.md) with a continuation note left in `STATE.md`; STATE.md dropped from
+[`STATE-01.md`](state-archive/STATE-01.md) with a continuation note left in `STATE.md`; STATE.md dropped from
 583 → ~290 lines.
 
 **Deliberately kept** (not moved): `*.db`, `desktop.ini`, `folderico-favorites.ico` (folder

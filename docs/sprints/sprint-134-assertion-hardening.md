@@ -296,3 +296,76 @@ Return notes:
 - Kept mutmut manual/dev-only; did not wire it into make ci; did not remove any
   # pragma: no cover.
 ```
+
+---
+
+## Round 3 — close the residual to an honest Done (planning verification, 2026-07-22)
+
+**Round-2 verify verdict:** genuine, honest partial. `make ci` reproduced green (1650 passed /
+6 skipped / 100 %); analyst survivors 249→127 with a real per-module table; row K honestly
+**Partial**; phantom `test_alpaca_helpers.py` removed; **no blanket labels** — the residual is
+explicitly disclosed, not hidden. Round-1 + Round-2 wins kept; drift reconciled. This is the
+behaviour the bounce was meant to produce. Operator directive: **one final round to reach an
+honest row-K Done, then planning merges.**
+
+**The residual — 127 targeted analyst survivors (round-2-after counts):**
+
+| Module | Remaining | Module | Remaining |
+| --- | ---: | --- | ---: |
+| `indicators_pattern` | 35 | `indicators_range` | 6 |
+| `analyze` | 23 | `technical_rules_pattern` | 4 |
+| `recommend` | 18 | `technical_rules` | 3 |
+| `indicators_kernel` | 13 | `alpha_pillar` | 1 |
+| `indicators` | 8 | `indicators_event` | 1 |
+| `technical_rules_range` | 8 | `technical_rules_event` | 1 |
+| `alpha_features` | 6 | **Total** | **127** |
+
+`analyze` (23) and `indicators_kernel` (13) got **zero** round-2 attention — start there.
+
+**Round-3 scope — every one of the 127 lands in exactly one bucket; zero un-triaged:**
+
+- **T1 (kill the still-killable):** pure-math survivors in pattern/range/analyze/indicators
+  helpers — kill with known-input→known-output assertions citing the mutant id (round-2
+  convention).
+- **T2 (reclassify *true* wording mutants):** a mutant that only changes operator-facing prose
+  (recommendation rationale / reason text) moves to the string/render/audit exclusion — **only**
+  with a per-mutant note naming the exact string it touches. A mutant that changes a **number**
+  or a **boolean gate** is not wording; kill it.
+- **T3 (individually justify *true* equivalents):** iterator-shape / normalized-away /
+  dead-branch survivors get a **per-mutant** reason naming the specific mechanism that makes the
+  mutation unobservable. **No templated sentence may repeat across mutants.**
+- **T4 (auditable disposition — the anti-hand-wave artifact):** produce a per-mutant list for
+  **all 127** — `mutant id → killed | equivalent(reason) | wording-exclusion(reason)` — committed
+  under `docs/reports/sprint-134-assertion-hardening/` (extend the report or add a round-3 CSV).
+- **T5 (re-run + prove, WSL):** re-run the S132 mutmut scope; the targeted analyst bucket reaches
+  **0 un-triaged** — every survivor either killed or on the T4 list with an individual reason.
+  Per-module before/after table.
+- **T6 (row K → Done):** flip row K to **Done** only once T5 proves 0 un-triaged, with the final
+  kill-rate + the T4 disposition list as evidence.
+
+**The bar (non-negotiable):** after round 3 there is **no analyst survivor without an individual
+disposition.** "Decision-neutral under fixtures" is not a disposition — killed, or a named
+per-mutant reason, nothing else.
+
+**Contract (round 3):** same branch `sprint-134-assertion-hardening`, **stay at 0.71.06** (no
+bump), DL-48, `make ci` green at 100 %, no `# pragma` removed. **Do not merge** — planning merges
+after verifying the disposition list. Refresh Closeout + Return notes; hand back.
+
+### Kickoff — round 3 (paste this)
+
+> Continue **Sprint 134 — Round 3** on branch `sprint-134-assertion-hardening` per the **Round 3**
+> section of `docs/sprints/sprint-134-assertion-hardening.md`. Rounds 1–2 verified green and are
+> kept as-is. Close the **127 residual analyst survivors** (module table in that section) so that
+> **every one is either killed or individually dispositioned — zero un-triaged.** T1 kill the
+> still-killable pure math (start with `analyze` 23 and `indicators_kernel` 13, which got no
+> round-2 work) with known-input→known-output assertions citing mutant ids; T2 move *true* wording
+> mutants (prose only) to the string exclusion with a per-mutant note naming the string — a mutant
+> that changes a number or boolean gate is not wording, kill it; T3 give every true equivalent an
+> **individual** reason (no templated repeats). T4 commit a per-mutant disposition list for all 127
+> (`mutant id → killed | equivalent(reason) | wording-exclusion(reason)`) under the report folder.
+> T5 re-run the S132 mutmut scope on WSL → targeted analyst bucket = 0 un-triaged, with a
+> per-module before/after table. T6 flip row K to Done with that evidence. Stay at 0.71.06, `make
+> ci` green at 100 %, no pragma removed, **do not merge**; refresh Closeout + Return notes and hand
+> back.
+
+<!-- round-3 return notes go below this line -->

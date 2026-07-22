@@ -24,8 +24,10 @@ def test_score_atr_bands(atr_pct: float, expected: float) -> None:
     ("percent_k", "percent_d", "expected"),
     [
         (19.0, 19.0, 80.0),
+        (20.0, 19.0, 50.0),
         (19.0, 50.0, 65.0),
         (85.0, 85.0, 20.0),
+        (80.0, 81.0, 50.0),
         (85.0, 50.0, 35.0),
         (50.0, 50.0, 50.0),
         (20.0, 20.0, 50.0),
@@ -35,6 +37,7 @@ def test_score_atr_bands(atr_pct: float, expected: float) -> None:
 def test_score_stochastic_bands(
     percent_k: float, percent_d: float, expected: float
 ) -> None:
+    """Kills x_score_stochastic__mutmut_2, 3, 8, and 9."""
     assert rules.score_stochastic(percent_k, percent_d) == expected
 
 

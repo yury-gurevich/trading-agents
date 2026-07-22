@@ -9,6 +9,9 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+from agents.analyst.domain.recommend import decide
 from agents.analyst.domain.scoring import ScoreBreakdown
 from agents.analyst.domain.sentiment_reading import (
     LEXICON_SCORER,
@@ -26,6 +29,8 @@ from agents.analyst.tests.helpers import (
     wire_analyst,
 )
 from contracts.analyst import Rejection
+from contracts.common import Provenance
+from contracts.provider import RegimeContext
 from kernel import InMemoryGraphStore
 
 
@@ -51,6 +56,44 @@ def test_lexicon_reading_from_a_scored_candidate() -> None:
 def test_lexicon_reading_is_none_without_sentiment() -> None:
     score = ScoreBreakdown(technical_score=0.5, confidence=0.6, metrics={})
     assert lexicon_reading("AAPL", score) is None
+
+
+def test_decide_preserves_sentiment_reading_on_rejections() -> None:
+    """Kills recommend.x_decide__mutmut_8 and x_decide__mutmut_18."""
+    score = ScoreBreakdown(
+        technical_score=0.5,
+        confidence=0.0,
+        metrics={"sentiment_articles": 1.0, "sentiment_positive": 1.0},
+        sentiment_score=1.0,
+        rejection_reason="insufficient_market_history",
+    )
+    regime = RegimeContext(
+        label="risk_on",
+        as_of=datetime.now(tz=UTC),
+        base_min_confidence=0.6,
+        base_stop_loss_pct=0.05,
+        base_take_profit_pct=0.10,
+        base_max_holding_days=10,
+        provenance=Provenance(run_id="regime-fixture", source_agent="provider"),
+    )
+
+    decision = decide(candidate(), score, regime)
+
+    assert decision.rejection == Rejection(
+        ticker="AAPL", reason="insufficient_market_history"
+    )
+    assert decision.sentiment_reading == SentimentReading(
+        "AAPL", "lexicon", 1.0, 1, 1, 0
+    )
+    floor_score = ScoreBreakdown(
+        technical_score=0.5,
+        confidence=0.5,
+        metrics={"sentiment_articles": 1.0, "sentiment_positive": 1.0},
+        sentiment_score=1.0,
+    )
+    floor_decision = decide(candidate(), floor_score, regime)
+    assert floor_decision.rejection is not None
+    assert floor_decision.sentiment_reading == decision.sentiment_reading
 
 
 def test_write_analysis_persists_reading_for_a_rejected_ticker() -> None:

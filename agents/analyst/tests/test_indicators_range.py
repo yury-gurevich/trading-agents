@@ -32,6 +32,14 @@ def test_atr_returns_none_below_period_plus_one() -> None:
     assert ir.atr([1.0, 2.0], [1.0, 2.0], [1.0, 2.0], 2) is None
 
 
+def test_atr_allows_exact_period_plus_one_window() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_atr__mutmut_1."""
+    highs = [11.0, 13.0, 12.0, 15.0]
+    lows = [8.0, 9.0, 10.0, 11.0]
+    closes = [10.0, 12.0, 11.0, 14.0]
+    assert ir.atr(highs, lows, closes, 3) == pytest.approx(10.0 / 3.0)
+
+
 def test_stochastic_close_at_window_high_is_one_hundred() -> None:
     result = ir.stochastic([10.0, 10.0, 12.0], [8.0, 8.0, 8.0], [9.0, 9.0, 12.0], 3, 1)
     assert result == (100.0, 100.0)
@@ -45,6 +53,14 @@ def test_stochastic_close_at_window_low_is_zero() -> None:
 def test_stochastic_flat_window_is_fifty() -> None:
     result = ir.stochastic([5.0, 5.0, 5.0], [5.0, 5.0, 5.0], [5.0, 5.0, 5.0], 3, 1)
     assert result == (50.0, 50.0)
+
+
+def test_stochastic_percent_d_uses_each_offset_window() -> None:
+    """Kills agents.analyst.domain.indicators_range.x_stochastic__mutmut_27."""
+    result = ir.stochastic(
+        [11, 13, 12, 15, 14, 16], [8, 9, 10, 11, 12, 13], [10, 12, 11, 14, 13, 15], 4, 3
+    )
+    assert result == pytest.approx((83.33333333333334, 78.57142857142857), abs=1e-12)
 
 
 def test_stochastic_returns_none_below_k_plus_d_minus_one() -> None:
@@ -91,3 +107,13 @@ def test_choppiness_flat_range_returns_none() -> None:
 
 def test_choppiness_returns_none_below_period_plus_one() -> None:
     assert ir.choppiness([5.0] * 4, [5.0] * 4, [5.0] * 4, 4) is None
+
+
+def test_choppiness_mixed_series_matches_hand_value() -> None:
+    """Kills x_choppiness__mutmut_2, x_choppiness__mutmut_16, and mutmut_19."""
+    highs = [11.0, 13.0, 12.0, 15.0, 14.0, 16.0]
+    lows = [8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
+    closes = [10.0, 12.0, 11.0, 14.0, 13.0, 15.0]
+    assert ir.choppiness(highs, lows, closes, 5) == pytest.approx(
+        47.35442393638177, abs=1e-12
+    )

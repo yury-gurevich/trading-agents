@@ -256,3 +256,43 @@ report + Closeout + Return notes; hand back.
 > green at 100 %, **do not merge**; refresh Closeout + Return notes and hand back.
 
 <!-- round-2 return notes go below this line -->
+
+```text
+CLOSEOUT - Sprint 134 Round 2
+Branch / merge commit:   sprint-134-assertion-hardening / not merged by instruction
+Version / lock:          stayed at 0.71.06; no dependency or uv.lock change
+Drift reconciliation:    git fetch origin main; merged origin/main cleanly after it advanced
+                         docs/STATE.md; re-ran make ci after the merge
+make ci:                 MAKE_CI_EXIT_CODE=0; 1650 passed, 6 skipped; coverage 100.00%
+Functionality check:     WSL S132 mutmut scope re-run offline with
+                         UV_PROJECT_ENVIRONMENT=/home/yury/.cache/trading-agents-s134-native-venv
+                         uv run mutmut run --max-children 8; exit code 0;
+                         5,567 killed, 987 survived, 177 no-test out of 6,731
+Targeted analyst proof:  Round 2 targeted analyst-domain survivors moved from 249 to 127
+                         (-122); scoring moved 24 -> 0, relative_strength 2 -> 0,
+                         alpha_features 32 -> 6, indicators_pattern 62 -> 35, and
+                         technical_rules 17 -> 3
+LAW-02 scope:            mutmut rerun + make ci only; offline; no infra, graph, broker,
+                         or teardown proof was required or run
+Secrets:                 detect-secrets passed in make ci; no secrets printed in handback
+Merge status:            not merged
+Done status:             Partial handoff. Round 1 money-parser/PM-gate wins preserved and
+                         Round 2 killed substantial analyst pure-math survivors, but 127
+                         targeted analyst-domain survivors remain; backlog row K remains
+                         Partial rather than Done.
+
+Return notes:
+- Added exact analyst known-input/known-output assertions in the existing test files for
+  alpha features, alpha pillar, indicators, range/event/kernel/pattern indicators,
+  scoring integration, sentiment/recommendation preservation, relative strength, and
+  technical rule boundaries. Docstrings cite the targeted mutant ids.
+- Preserved the Round 1 money-parser and PM/gate/reward-risk/sector boundary tests.
+- Re-ran the S132 mutmut scope in WSL and refreshed the S134 report with overall
+  before/after counts plus a per-module targeted analyst survivor table.
+- Removed the nonexistent `agents/execution/tests/test_alpaca_helpers.py` entry from
+  the report's touched-file list.
+- Reverted backlog row K from Done to Partial because the remaining analyst math
+  survivors are not individually justified and must not be blanket-excluded.
+- Kept mutmut manual/dev-only; did not wire it into make ci; did not remove any
+  # pragma: no cover.
+```

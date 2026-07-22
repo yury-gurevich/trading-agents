@@ -8,12 +8,11 @@ External I/O: none.
 from __future__ import annotations
 
 import dataclasses
-import math
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from agents.analyst.domain.alpha_features import AlphaFeatureRow, compute_alpha_features
+from agents.analyst.domain.alpha_features import compute_alpha_features
 from contracts.provider import OHLCVBar
 
 
@@ -49,37 +48,104 @@ def test_returns_row_with_exactly_62_bars() -> None:
     assert compute_alpha_features(_linear(62)) is not None
 
 
-def test_all_fields_are_finite() -> None:
-    row = compute_alpha_features(_linear(65))
+def test_all_fields_match_known_mixed_series_snapshot() -> None:
+    """Kills x_compute_alpha_features__mutmut_6/_7/_9/_11/_14/_15/_16."""
+    closes = [
+        100,
+        103,
+        101,
+        106,
+        102,
+        109,
+        105,
+        111,
+        107,
+        114,
+        110,
+        117,
+        113,
+        119,
+        115,
+        122,
+        118,
+        124,
+        120,
+        127,
+        123,
+        129,
+        125,
+        132,
+        128,
+        134,
+        130,
+        137,
+        133,
+        139,
+        135,
+        142,
+        138,
+        144,
+        140,
+        147,
+        143,
+        149,
+        145,
+        152,
+        148,
+        154,
+        150,
+        157,
+        153,
+        159,
+        155,
+        162,
+        158,
+        164,
+        160,
+        167,
+        163,
+        169,
+        165,
+        172,
+        168,
+        174,
+        170,
+        177,
+        173,
+        179,
+        175,
+        182,
+        178,
+    ]
+    row = compute_alpha_features(_bars([float(close) for close in closes]))
     assert row is not None
-    for f in dataclasses.fields(AlphaFeatureRow):
-        assert math.isfinite(getattr(row, f.name)), f"{f.name} is not finite"
-
-
-def test_roc_5_matches_manual_calculation() -> None:
-    # closes = [1, 2, ..., 65]; roc_5 = (65 - 60) / 60 = 1/12
-    row = compute_alpha_features(_linear(65))
-    assert row is not None
-    assert row.roc_5 == pytest.approx(5.0 / 60.0)
-
-
-def test_roc_10_matches_manual_calculation() -> None:
-    row = compute_alpha_features(_linear(65))
-    assert row is not None
-    assert row.roc_10 == pytest.approx(10.0 / 55.0)
-
-
-def test_roc_60_matches_manual_calculation() -> None:
-    # closes[-61] = 5, closes[-1] = 65; roc_60 = (65 - 5) / 5 = 12.0
-    row = compute_alpha_features(_linear(65))
-    assert row is not None
-    assert row.roc_60 == pytest.approx(12.0)
-
-
-def test_std_5_is_non_negative() -> None:
-    row = compute_alpha_features(_linear(65))
-    assert row is not None
-    assert row.std_5 >= 0.0
+    assert dataclasses.astuple(row) == pytest.approx(
+        [
+            0.005649717514124294,
+            0.07878787878787878,
+            0.16339869281045752,
+            0.7450980392156863,
+            0.029270836857948495,
+            0.03079405961284074,
+            0.03169042214126789,
+            0.038846843499095014,
+            0.04,
+            0.04242424242424243,
+            0.04516129032258064,
+            0.06862745098039216,
+            -0.022598870056497175,
+            -0.023255813953488372,
+            -0.025157232704402517,
+            -0.03669724770642202,
+            0.1,
+            0.05,
+            1.0 / 60.0,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        abs=1e-12,
+    )
 
 
 def test_std_is_zero_for_flat_prices() -> None:
@@ -88,13 +154,6 @@ def test_std_is_zero_for_flat_prices() -> None:
     assert row is not None
     assert row.std_5 == pytest.approx(0.0)
     assert row.std_60 == pytest.approx(0.0)
-
-
-def test_max_ret_exceeds_min_ret() -> None:
-    row = compute_alpha_features(_linear(65))
-    assert row is not None
-    assert row.max_5 >= row.min_5
-    assert row.max_60 >= row.min_60
 
 
 def test_imax_is_zero_for_monotone_increasing_prices() -> None:

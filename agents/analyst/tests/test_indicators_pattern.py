@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+
 from agents.analyst.domain import indicators_pattern as ip
 
 _Series = tuple[list[float], list[float], list[float]]
@@ -29,12 +31,10 @@ def _build(points: list[tuple[int, float]], last: float) -> _Series:
 
 
 def _pattern(series: _Series) -> tuple[str, float] | None:
-
     return ip.geometric_patterns(series[0], series[1], series[2], 60, 2.0)
 
 
 def test_find_swing_points_isolated_high_and_low() -> None:
-
     closes, highs, lows = _flat(11)
     closes[4] = highs[4] = 120.0
     closes[8] = lows[8] = 80.0
@@ -45,7 +45,6 @@ def test_find_swing_points_isolated_high_and_low() -> None:
 
 
 def test_find_swing_points_below_five_bars_is_empty() -> None:
-
     closes, highs, lows = _flat(4)
     assert ip.find_swing_points(closes, highs, lows, 2.0) == []
 
@@ -58,6 +57,55 @@ def test_find_swing_points_allows_exact_minimum_window() -> None:
     assert ip.find_swing_points(closes, highs, lows, 2.0) == [(2, 120.0, "high")]
 
 
+def test_find_swing_points_ignores_unscannable_edges() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x_find_swing_points__mutmut_5."""
+    closes, highs, lows = _flat(7)
+    highs[0] = closes[0] = 130.0
+    lows[6] = closes[6] = 70.0
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == []
+
+
+@pytest.mark.parametrize("blocker", [1, 2, 4, 5])
+def test_find_swing_points_uses_each_high_neighbour(blocker: int) -> None:
+    """Kills x_find_swing_points__mutmut_12 through x_find_swing_points__mutmut_17."""
+    closes, highs, lows = _flat(7)
+    closes[3] = highs[3] = 120.0
+    closes[blocker] = highs[blocker] = 130.0
+    expected = [(blocker, 130.0, "high")] if blocker in (2, 4) else []
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == expected
+
+
+@pytest.mark.parametrize("blocker", [1, 2, 4, 5])
+def test_find_swing_points_uses_each_low_neighbour(blocker: int) -> None:
+    """Kills x_find_swing_points__mutmut_30 through x_find_swing_points__mutmut_35."""
+    closes, highs, lows = _flat(7)
+    closes[3] = lows[3] = 80.0
+    closes[blocker] = lows[blocker] = 70.0
+    expected = [(blocker, 70.0, "low")] if blocker in (2, 4) else []
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == expected
+
+
+def test_find_swing_points_threshold_uses_final_close() -> None:
+    """Kills x_find_swing_points__mutmut_30, 40, 42, 44, and 45."""
+    closes, highs, lows = _flat(7, 100.0)
+    highs[3] = 100.995
+    closes[1] = 200.0
+    closes[-1] = 100.0
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == []
+
+
+def test_find_swing_points_keeps_exact_threshold_distance() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x_find_swing_points__mutmut_45."""
+    closes, highs, lows = _flat(7, 100.0)
+    highs[3] = 101.0
+
+    assert ip.find_swing_points(closes, highs, lows, 2.0) == [(3, 101.0, "high")]
+
+
 def test_double_top() -> None:
     series = _build([(4, 120.0), (12, 120.0), (8, 90.0)], 100.0)
     assert _pattern(series) == ("double_top", 0.85)
@@ -66,6 +114,34 @@ def test_double_top() -> None:
 def test_double_bottom() -> None:
     series = _build([(4, 80.0), (12, 80.0), (8, 110.0)], 100.0)
     assert _pattern(series) == ("double_bottom", 0.85)
+
+
+def test_double_top_confidence_reflects_mismatched_swing_distance() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x__double_pattern__mutmut_32."""
+    pattern = ip._double_pattern([(4, 120.0), (12, 121.0)], [], 100.0, 0.02)
+
+    assert pattern == ("double_top", 0.58)
+
+
+def test_double_top_uses_the_last_two_swing_highs() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x__double_pattern__mutmut_6."""
+    pattern = ip._double_pattern([(2, 100.0), (8, 120.0), (16, 120.0)], [], 100.0, 0.02)
+
+    assert pattern == ("double_top", 0.85)
+
+
+def test_double_bottom_confidence_reflects_mismatched_swing_distance() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x__double_pattern__mutmut_72."""
+    pattern = ip._double_pattern([], [(4, 80.0), (12, 81.0)], 100.0, 0.02)
+
+    assert pattern == ("double_bottom", 0.38)
+
+
+def test_double_bottom_uses_the_last_two_swing_lows() -> None:
+    """Kills agents.analyst.domain.indicators_pattern.x__double_pattern__mutmut_46."""
+    pattern = ip._double_pattern([], [(2, 100.0), (8, 80.0), (16, 80.0)], 100.0, 0.02)
+
+    assert pattern == ("double_bottom", 0.85)
 
 
 def test_head_and_shoulders() -> None:
@@ -96,7 +172,6 @@ def test_smooth_series_has_no_pattern() -> None:
 
 
 def test_two_mismatched_highs_and_one_low_is_none() -> None:
-    # Mismatched highs (no double), one low (triangle needs two lows) -> no pattern.
     series = _build([(4, 130.0), (14, 115.0), (9, 90.0)], 100.0)
     assert _pattern(series) is None
 

@@ -9,7 +9,6 @@ External I/O: none.
 from __future__ import annotations
 
 import dataclasses
-import math
 
 import pytest
 
@@ -40,15 +39,17 @@ def test_single_element_universe_returns_fifty() -> None:
 
 
 def test_dominating_row_scores_above_fifty() -> None:
+    """Kills agents.analyst.domain.alpha_pillar.x_score_alpha158__mutmut_16."""
     high = _high_row()
     low = _low_row()
-    assert score_alpha158(high, (high, low)) > 50.0
+    assert score_alpha158(high, (high, low)) == pytest.approx(73.10585786300048)
 
 
 def test_dominated_row_scores_below_fifty() -> None:
+    """Kills agents.analyst.domain.alpha_pillar.x_score_alpha158__mutmut_19."""
     high = _high_row()
     low = _low_row()
-    assert score_alpha158(low, (high, low)) < 50.0
+    assert score_alpha158(low, (high, low)) == pytest.approx(26.894142136999513)
 
 
 def test_scores_are_symmetric_around_fifty() -> None:
@@ -68,11 +69,11 @@ def test_score_is_in_zero_to_hundred() -> None:
 
 
 def test_feature_not_in_universe_is_appended_and_scored() -> None:
+    """Kills agents.analyst.domain.alpha_pillar.x_score_alpha158__mutmut_28."""
     low = _low_row()
     outsider = _high_row()
     # outsider is NOT in the universe; it should be appended and get a high score
-    score = score_alpha158(outsider, (low,))
-    assert score > 50.0
+    assert score_alpha158(outsider, (low,)) == pytest.approx(73.10585786300048)
 
 
 def test_zero_variance_feature_contributes_zero_z() -> None:
@@ -83,7 +84,7 @@ def test_zero_variance_feature_contributes_zero_z() -> None:
 
 
 def test_score_is_finite_for_extreme_values() -> None:
+    """Kills agents.analyst.domain.alpha_pillar.x_score_alpha158__mutmut_33."""
     high = AlphaFeatureRow(**dict.fromkeys(_FIELDS, 10000000000.0))
     low = AlphaFeatureRow(**dict.fromkeys(_FIELDS, -10000000000.0))
-    score = score_alpha158(high, (high, low))
-    assert math.isfinite(score)
+    assert score_alpha158(high, (high, low)) == pytest.approx(73.10585786300048)

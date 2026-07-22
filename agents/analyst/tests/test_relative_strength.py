@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from agents.analyst.domain.relative_strength import (
+    _return_pct,
     compute_relative_strength,
     score_relative_strength,
 )
@@ -49,6 +50,13 @@ def test_compute_relative_strength_is_return_spread() -> None:
     stock = _series("AAA", [100.0, 105.0, 108.0, 110.0])  # +10% over window 3
     benchmark = _series("SPY", [100.0, 101.0, 103.0, 104.0])  # +4%
     assert compute_relative_strength(stock, benchmark, 3) == pytest.approx(6.0)
+
+
+def test_return_pct_is_not_hidden_by_spread_cancellation() -> None:
+    """Kills x__return_pct__mutmut_11 and x__return_pct__mutmut_18."""
+    assert _return_pct(
+        _series("AAA", [100.0, 105.0, 108.0, 110.0]), 3
+    ) == pytest.approx(10.0)
 
 
 def test_short_stock_history_is_none() -> None:

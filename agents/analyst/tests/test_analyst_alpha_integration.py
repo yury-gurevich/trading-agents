@@ -11,6 +11,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+import pytest
+
 from agents.analyst.domain.scoring import ScoreBreakdown, score_candidate
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import (
@@ -47,7 +49,8 @@ def _dummy_candidate(ticker: str = "AAPL") -> Candidate:
     return candidate(ticker=ticker)
 
 
-def test_score_candidate_alpha158_score_is_none_by_default() -> None:
+def test_score_candidate_keeps_alpha158_score_on_history_rejection() -> None:
+    """Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_11."""
     breakdown = score_candidate(
         _dummy_candidate(),
         bars=(),
@@ -55,9 +58,11 @@ def test_score_candidate_alpha158_score_is_none_by_default() -> None:
         benchmark_bars=(),
         news=(),
         settings=AnalystSettings(),
+        alpha_score=65.0,
     )
     assert isinstance(breakdown, ScoreBreakdown)
-    assert breakdown.alpha158_score is None
+    assert breakdown.alpha158_score == 65.0
+    assert breakdown.rejection_reason == "insufficient_market_history"
 
 
 def test_score_candidate_alpha158_score_populated_when_supplied() -> None:
@@ -82,14 +87,11 @@ def test_score_candidate_alpha158_score_populated_when_supplied() -> None:
 
 
 def test_score_candidate_alpha158_blended_into_composite() -> None:
+    """Kills scoring.x_score_candidate__mutmut_59, 60, 84, and 85."""
     # With no bars the technical score is 0.0 (insufficient history).
     # With weight=0 the composite stays 0.0; with weight>0 and a high alpha
     # score the rejection reason is still set (insufficient history guard fires
     # before the composite is computed), so we supply enough bars.
-    from datetime import UTC, datetime, timedelta
-
-    from contracts.provider import OHLCVBar
-
     n = 5
     bars = tuple(
         OHLCVBar(
@@ -119,14 +121,16 @@ def test_score_candidate_alpha158_blended_into_composite() -> None:
         benchmark_bars=(),
         news=(),
         settings=AnalystSettings(alpha158_pillar_weight=0.20),
-        alpha_score=100.0,
+        alpha_score=65.0,
     )
-    # Both composites use only the technical pillar or blend with alpha.
-    # The alpha-boosted run should have a higher composite.
-    assert (
-        alpha_breakdown.metrics["composite_score"]
-        > default_breakdown.metrics["composite_score"]
+    assert default_breakdown.metrics["composite_score"] == 0.35
+    assert alpha_breakdown.metrics["composite_score"] == pytest.approx(
+        0.4357142857142857, abs=1e-12
     )
+    assert alpha_breakdown.metrics["confidence"] == pytest.approx(
+        alpha_breakdown.confidence, abs=1e-12
+    )
+    assert alpha_breakdown.confidence == pytest.approx(0.5614285714285714, abs=1e-12)
 
 
 def test_analyze_populates_alpha158_score_with_sufficient_history() -> None:

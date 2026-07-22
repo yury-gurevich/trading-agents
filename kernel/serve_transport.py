@@ -40,12 +40,13 @@ def consumer_from_env(
 ) -> RequestConsumer:
     """Use Service Bus when configured, otherwise keep the local empty inbox."""
     resolved = settings if settings is not None else AzureServiceBusSettings()
-    if resolved.connection_string is None:
+    topic = request_topic(agent_type)
+    if resolved.connection_string_for_topic(topic) is None:
         return LocalRequestConsumer()
 
     from kernel.bus_azure import AzureServiceBusBus
 
     return AzureServiceBusBus(settings=resolved).request_consumer(
         graph,
-        topic=request_topic(agent_type),
+        topic=topic,
     )

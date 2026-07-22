@@ -135,15 +135,28 @@ Provision from scratch:
 
 `infra/deploy-agents.ps1 up` loads `.env`, verifies `POSTGRES_DSN` with a live `SELECT 1`, runs
 `alembic upgrade head`, verifies the stable Service Bus served-agent routes, then deploys master, the
-12 agent containers, and the `dispatcher-cron` Container Apps Job. `POSTGRES_DSN` and the Service Bus
-connection string are injected as Container Apps secret references; the script never prints either
-value. Rollback after S118 is no longer an environment-variable operation: use `git revert` and
+12 agent containers, and the `dispatcher-cron` Container Apps Job. `POSTGRES_DSN` and scoped Service
+Bus credentials are injected as Container Apps secret references; the script never prints either
+value. Rollback after S118 is no longer a graph environment-variable operation: use `git revert` and
 redeploy. Previous GHCR images remain available for image-level rollback.
 
 The normal scheduled posture is a standing fleet scaled to zero outside the daily paper-run window:
 
 ```powershell
 pwsh infra/deploy-agents.ps1 up -Tag latest
+```
+
+Service Bus SAS delivery can be flipped without changing images. Run outside the
+22:25-00:30 UTC fleet window:
+
+```powershell
+pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip
+```
+
+Rollback keeps the shared namespace string untouched and re-points the fleet to it:
+
+```powershell
+pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip -UseSharedServiceBusDsn
 ```
 
 Default schedule:

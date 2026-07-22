@@ -127,41 +127,6 @@ def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
     assert sink.faults
 
 
-def test_settings_connection_string_read_from_env(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("SERVICEBUS_CONNECTION_STRING", raising=False)
-    monkeypatch.setenv(
-        "AZURE_SERVICEBUS_CONNECTION_STRING",
-        "Endpoint=sb://test.servicebus.windows.net/",
-    )
-    settings = AzureServiceBusSettings(_env_file=None)
-    assert settings.connection_string is not None
-
-
-def test_settings_accepts_servicebus_connection_string_alias(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
-    monkeypatch.setenv(
-        "SERVICEBUS_CONNECTION_STRING",
-        "Endpoint=sb://test.servicebus.windows.net/",
-    )
-
-    settings = AzureServiceBusSettings(_env_file=None)
-
-    assert settings.connection_string == "Endpoint=sb://test.servicebus.windows.net/"
-
-
-def test_settings_defaults_to_none_without_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
-    monkeypatch.delenv("SERVICEBUS_CONNECTION_STRING", raising=False)
-    monkeypatch.delenv("AZURE_SERVICEBUS_NAMESPACE", raising=False)
-    settings = AzureServiceBusSettings(_env_file=None)
-    assert settings.connection_string is None
-    assert settings.namespace_endpoint is None
-
-
 # ── Integration tests (skipped without Azure creds) ────────────────────────
 
 

@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+import json
+
 from kernel import (
     AzureServiceBusRequestConsumer,
     AzureServiceBusSettings,
@@ -50,6 +52,25 @@ def test_consumer_from_env_uses_servicebus_topic_when_configured() -> None:
     assert isinstance(consumer, AzureServiceBusRequestConsumer)
     assert consumer._topic == "forecaster.requests"
     assert consumer._subscription_name == "agent"
+
+
+def test_consumer_from_env_uses_servicebus_topic_bundle() -> None:
+    graph = InMemoryGraphStore()
+
+    consumer = consumer_from_env(
+        "forecaster",
+        graph,
+        settings=AzureServiceBusSettings(
+            _env_file=None,
+            connection_string=None,
+            connection_strings_json=json.dumps(
+                {"forecaster.requests": {"connection_string": "scoped"}}
+            ),
+        ),
+    )
+
+    assert isinstance(consumer, AzureServiceBusRequestConsumer)
+    assert consumer._topic == "forecaster.requests"
 
 
 def test_request_topic_names_agent_inbox_topic() -> None:

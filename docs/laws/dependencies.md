@@ -23,6 +23,9 @@ contract — runnable in isolation and as the pre-flight of any real run.
 - `DEP-BUS-01` — a request reaches a bound handler and the response returns.
 - `DEP-BUS-02` — a handler fault becomes a typed error envelope, not a hang/crash.
 - `DEP-BUS-03` — (distributed) delivery is acknowledged; failures dead-letter, not vanish.
+- `DEP-BUS-04` — production Service Bus access uses scoped entity-level SAS
+  identities delivered as per-target secret-backed credentials; the shared
+  namespace string is retained only as an operator rollback credential.
 
 ## DEP-FEED — external market-data feed(s)
 

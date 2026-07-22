@@ -2390,3 +2390,34 @@ rule:** after any Dependabot auto-merge that touches `pyproject.toml`/`uv.lock`,
 `build-images` actually ran for that SHA — a green `main` does not imply fresh images. The general
 lesson matching this entry's theme: a gate can be configured, required, and *still never fire*;
 verify the run exists for the commit, not just that the check is green.
+
+---
+
+## DL-53 · Service Bus blast radius uses topic-level SAS, not namespace rules  ·  status: DECIDED (2026-07-22)
+
+**Trigger.** S131 removed the shared Postgres runtime identity, leaving the Azure Service Bus
+namespace connection string as the last shared credential across the standing fleet. The bus carries
+claim-check refs and RPC envelopes rather than graph data, so the severity is lower than the
+Postgres half; the remaining value is attribution, revocation, and reducing spoofed bus access.
+
+**Azure limit that forces the shape.** The current Service Bus quota remains **12 shared-access
+authorization rules per namespace, queue, or topic**. The fleet has more than 12 runtime identities,
+so a per-agent namespace-rule model cannot fit honestly. S133 therefore uses entity-level topic
+authorization rules with measured Send/Listen rights. The live plan produced 13 bus targets and 33
+topic rules with no topic over the cap.
+
+**Decision.** Service Bus runtime credentials are delivered as per-target Key Vault secrets:
+`AZURE_SERVICEBUS_CONNECTION_STRING` remains the compatibility primary, and
+`AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON` carries the measured topic bundle. The runtime resolves
+the connection string by topic before sending or receiving; topic names, subscriptions, claim-check
+payloads, and RPC envelopes are unchanged. `master` has no measured bus topic rights, so scoped
+delivery removes its Service Bus env rather than inventing a permission.
+
+**Rollback.** The shared namespace string is retained only as an operator rollback credential:
+`pwsh -NoProfile -File infra/deploy-agents.ps1 servicebus-flip -UseSharedServiceBusDsn`.
+
+**Proof.** S133 provisioned the 33 entity rules, wrote 26 Service Bus Key Vault secret names, flipped
+12 agent apps plus `dispatcher-cron` to secretRefs, removed `master`'s Service Bus env, and proved a
+controlled canary request/reply with separate Send/Listen identities. Wrong-topic Send was refused,
+revocation locked out only the revoked requester rule, canary topics were deleted to zero, and all
+Container Apps/job stayed `Succeeded`.

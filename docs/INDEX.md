@@ -12,7 +12,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [STATE.md](STATE.md) | Where are we right now? What is the active sprint? What is next? |
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
 | [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
-| [STATE-01.md](STATE-01.md) · [STATE-02.md](STATE-02.md) · [STATE-03.md](STATE-03.md) · [STATE-04.md](STATE-04.md) | Archived older sprint history offloaded to keep STATE.md short (S36→P0 in -01; S37–S76 in -02; S77–S96 + etalon-era narrative in -03; S99–S118 + chores in -04) |
+| [STATE-01.md](STATE-01.md) · [STATE-02.md](STATE-02.md) · [STATE-03.md](STATE-03.md) · [STATE-04.md](STATE-04.md) · [STATE-05.md](STATE-05.md) | Archived older sprint history offloaded to keep STATE.md short (S36→P0 in -01; S37–S76 in -02; S77–S96 + etalon-era narrative in -03; S99–S118 + chores in -04; S102–S126 — fleet arc close + DL-42/DL-44 + the whole DL-47 dashboard arc — in -05) |
 
 ---
 

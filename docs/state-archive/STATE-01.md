@@ -1,9 +1,9 @@
 # Project State — Archive (STATE-01)
 
-**Continuation of [STATE.md](STATE.md).** This file holds the older shipped-sprint ledger
+**Continuation of [STATE.md](../STATE.md).** This file holds the older shipped-sprint ledger
 (**Sprint 36 and earlier**), split out on 2026-06-18 to keep STATE.md short, plus a log of
 components retired from the repo. The live dashboard (Now / Next / Parked / recent Shipped)
-stays in [STATE.md](STATE.md).
+stays in [STATE.md](../STATE.md).
 
 ---
 
@@ -314,7 +314,7 @@ sibling `trading-agent-del/` staging folder (not hard-deleted); see `docs/repo-h
   Retired the relational adapter + Alembic; boundary map → single-writer-per-label. 67
   tests, floor raised to 99.5.
 + **Sprint 02 — Relational persistence adapter** (P1, partial; **superseded by
-  [ADR-0001](decisions/0001-neo4j-primary-store.md)** — relational store dropped for
+  [ADR-0001](../decisions/0001-neo4j-primary-store.md)** — relational store dropped for
   Neo4j). Domain-pure SQLAlchemy 2.0 `Base` + `PersistenceSettings` + a fault-wrapped
   `Database.session()`, plus an Alembic harness; 64 tests; `.env.example` now tracked.
 + **Sprint 01 — Kernel runtime spine** (P1, partial). In-process bus + contract-

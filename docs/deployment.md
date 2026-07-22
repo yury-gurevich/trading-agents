@@ -159,6 +159,25 @@ Rollback keeps the shared namespace string untouched and re-points the fleet to 
 pwsh -NoProfile -File infra\deploy-agents.ps1 servicebus-flip -UseSharedServiceBusDsn
 ```
 
+### Verifying which credential the fleet actually holds
+
+**`preflight` and `az containerapp show` cannot answer this.** A flip rewrites the *value* of the
+`postgres-dsn` secret while the env var name stays `POSTGRES_DSN=secretref:postgres-dsn`, so both
+read the same before and after a flip — and before and after a *rollback*. STATE once carried a
+false "flip not yet applied" item for two days for exactly this reason (DL-54).
+
+Use the credential audit, which reads the delivered value, reports the role it names, and connects
+as it. It prints roles and verdicts, never a credential:
+
+```powershell
+uv run --extra runtime python scripts\cred_audit.py --check-bus --strict
+```
+
+`--strict` exits non-zero unless every target is on its own scoped role. Verdicts are `scoped`,
+`scoped-degraded` (own role, missing spine grants), `shared` (an unrecognised role — the rollback
+state), `cross-wired` (holding *another* agent's role), `unreachable`, and `missing`. Run it after
+any flip or rollback, and after a Key Vault rotation, to confirm delivery matches intent.
+
 Default schedule:
 
 | Component | Schedule |

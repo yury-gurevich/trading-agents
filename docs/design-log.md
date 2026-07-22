@@ -2421,3 +2421,39 @@ delivery removes its Service Bus env rather than inventing a permission.
 controlled canary request/reply with separate Send/Listen identities. Wrong-topic Send was refused,
 revocation locked out only the revoked requester rule, canary topics were deleted to zero, and all
 Container Apps/job stayed `Succeeded`.
+
+## DL-54 · A scoped observation drifted into an unscoped status claim  ·  status: RESOLVED (2026-07-22)
+
+**Trigger.** The operator asked to apply the S131 per-role `POSTGRES_DSN` flip, which `STATE.md`
+had listed as a pending operator item. Auditing before acting showed the flip was **already
+applied**: all 14 targets carried distinct per-role DSNs and every one connected as its own
+`ta_*` role with the correct spine privileges. Nothing needed applying.
+
+**How the false entry formed.** On 07-21 STATE recorded, accurately, that *one run* had used the
+shared DSN: "S131 per-role DSN flip not yet applied (**this run** used the shared DSN)". The
+scope qualifier was then dropped in later edits and the sentence became a claim about current
+infrastructure state. The 07-22 Now/Next rewrite (#62) carried it forward unexamined, and the
+S133 STATE update leaned on it a second time ("unlike the still-pending S131 Postgres flip").
+A statement that was true about a past *event* had been promoted to a false statement about
+present *state*, and each subsequent edit reinforced it.
+
+**Why nothing caught it.** The flip is invisible to the obvious check. `postgres-flip` rewrites
+the **value** of the `postgres-dsn` secret while leaving the env var name identical, so
+`az containerapp show` returns `POSTGRES_DSN=secretref:postgres-dsn` before *and* after. Every
+cheap read-only verification looks the same in both worlds; only reading the delivered secret
+value — or observing which role actually connects — distinguishes them.
+
+**Decision.** Do not re-run the flip. It is idempotent, but executing it would have created 14
+new revisions to reach a state already held, and "run it again to be sure" is how an unverified
+claim becomes an unnecessary production change. The audit is recorded in
+`docs/laws/functionality-checks.md` (2026-07-22) as the proof instead.
+
+*Ruled out:* re-running `postgres-flip` as a no-op confirmation (revision churn, no information
+gained — the audit answers the question directly); adding a preflight check that greps env-var
+names (it cannot see the value, so it would have reported the same thing in both worlds).
+
+**Standing correction to how status is written (LAW-02).** An operator item asserting that
+infrastructure is in some state must name the check that would prove it, and a claim about a
+*run* must keep its scope marker when it is restated. Where a claim's cheap check cannot
+distinguish the two states — as here — that fact belongs in the item itself, so the next reader
+knows not to trust the cheap check.

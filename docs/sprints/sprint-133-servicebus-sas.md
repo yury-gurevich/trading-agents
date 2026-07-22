@@ -85,6 +85,11 @@ is a lower-severity surface than the Postgres half; the value is the same princi
 >   the tree or in output; closeout+return notes last).
 > - Hard gate: `make ci` green (exit code captured), 100 % coverage, ≤200-line modules,
 >   headers, tunables where thresholds appear.
+> - **Merge path (DL-52 — new since this sprint was packaged):** push the branch and open a
+>   **pull request**; never `git merge` into `main` locally. The security-findings `gate` is
+>   `pull_request`-triggered, so a direct merge silently bypasses it — S131/S132/S134 each
+>   merged with no PR and were never gated. Let `quality` / `test` / `security` / `gate` run
+>   on the PR. **You still do not merge it** — planning verifies and merges the PR.
 >
 > **Work items:**
 >

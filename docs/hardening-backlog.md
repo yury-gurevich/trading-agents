@@ -72,13 +72,26 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   default-normalization residuals, and the 20 R3 residuals named individually in the CSV.
   Evidence: [S134 report](reports/sprint-134-assertion-hardening/README.md) +
   [Round 3 dispositions](reports/sprint-134-assertion-hardening/round-3-dispositions.csv).
+- **L — standing container smoke check: every agent image starts its real entrypoint.**
+  Shipped 2026-07-22 (`chore-container-smoke`). DRIFT-016/017/018 were the *same* defect three
+  times — an agent container not starting its real entrypoint, recorded as "unit gate hid it"
+  (×2) and "hidden by local graph demos", each caught only by a live fleet run. A provider-only
+  smoke already proved the assertion shape; `build-images.yml` now applies it to **all 12 agent
+  images** (`master` performs no master-handshake; `dispatcher` keeps its calendar-skip smoke):
+  run with no activation config and require a **non-zero exit** *and* output reaching for the
+  master, which proves the entrypoint ran the agent rather than merely that the image exists.
+  Adds a 180 s timeout (exit 124) so a hang fails loudly. Verified by dispatch run
+  `29904029290` — all 14 jobs green and **all 12 images printed the assertion**, confirming the
+  step executed rather than silently skipping (the DL-52 failure mode). Motivated by the R006
+  [defect-detection-rate analysis](research/code-quality-tooling/defect-detection-rate.md):
+  the unit suite caught **0 of 14** escaped defects, so this was the highest-leverage quality
+  work available.
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
 | **I** | Per-agent Service Bus SAS scoping (part 2) | S131 completed part 1: the Postgres blast radius is split into 15 `ta_<name>` identities with identical graph grants, role-specific Key Vault secret names, and Container Apps secret-backed `POSTGRES_DSN` delivery. The remaining shared credential is the Azure Service Bus connection string, so one compromised container can still use the whole bus. | Next security-focused sprint (**packaged as S133**): create per-topic authorization rules + per-agent Service Bus SAS connection strings, then wire them with the same secret-backed per-target delivery pattern. |
-| **L** | Standing **container smoke check** — every agent image starts its real entrypoint | **Three data points, one shape.** DRIFT-016, DRIFT-017 and DRIFT-018 are the *same* defect three times: an agent container that does not start its actual agent entrypoint — explicitly recorded as "container-only; **unit gate hid it**" (×2) and "container entrypoint; **hidden by local graph demos**" — each caught only by a live fleet run. The R006 [defect-detection-rate analysis](research/code-quality-tooling/defect-detection-rate.md) found the unit suite caught **0 of 14** escaped defects, with **4** rows recording a test double *concealing* the defect. This is the single repeating, mechanically-detectable failure in that set, and the highest-leverage quality work available — strictly better than more unit-test-quality tooling, which targets a class with zero recorded escapes. | Next hardening slot **after S133**. Build each of the 14 images, start the container, assert it reaches its real entrypoint and EHLOs as its grant-policy identity; promote from a per-sprint manual act to an automated step. Sequence ahead of `chore-wsl2-dev-env` per the fixes-first directive (this prevents a thrice-recorded defect; the WSL2 chore is dev-environment convenience). |
 
 ## Branch protection recommendations (with CodeQL)
 

@@ -2457,3 +2457,12 @@ infrastructure is in some state must name the check that would prove it, and a c
 *run* must keep its scope marker when it is restated. Where a claim's cheap check cannot
 distinguish the two states — as here — that fact belongs in the item itself, so the next reader
 knows not to trust the cheap check.
+
+**Follow-up shipped (2026-07-22, 0.72.00).** The gap DL-54 exposed was not the wrong status line —
+it was that no cheap check could contradict it. `scripts/cred_audit.py` now closes that: it reads
+each target's *delivered* secret value, reports the role it names, and connects as it, classifying
+every target as `scoped`, `scoped-degraded`, `shared`, `cross-wired`, `unreachable`, or `missing`.
+`--strict` exits non-zero unless all 14 are scoped. `cross-wired` — a target holding *another*
+agent's role — is a defect neither the flip script nor preflight could ever have surfaced. First
+live run: 14/14 `scoped`, and a negative run against a bogus resource group correctly exited 1.
+Runbook: `docs/deployment.md` → "Verifying which credential the fleet actually holds".

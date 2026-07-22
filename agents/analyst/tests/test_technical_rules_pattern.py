@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 import pytest
 
+from agents.analyst.domain import indicators_kernel, indicators_pattern
 from agents.analyst.domain import technical_rules_pattern as rules
 from agents.analyst.settings import AnalystSettings
 
@@ -64,6 +65,55 @@ def test_pattern_indicator_scores_emits_all_three() -> None:
     by_name = {name: (value, score) for name, value, score in scored}
     assert by_name["geometric_pattern"] == (0.85, 24.5)  # double_top: 50 - 0.85*30
     assert by_name["turnaround"][1] == 50.0  # last bar is a Friday, not a Monday
+
+
+def test_pattern_indicator_scores_pins_pattern_and_turnaround_payloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Kills technical_rules_pattern.x_pattern_indicator_scores mutmut_30, 43,
+    44, and 45.
+    """
+    monkeypatch.setattr(indicators_kernel, "nadaraya_watson", lambda *_args: None)
+    monkeypatch.setattr(
+        indicators_pattern,
+        "geometric_patterns",
+        lambda *_args: ("ascending_triangle", 0.80),
+    )
+    monkeypatch.setattr(indicators_kernel, "turnaround_signal", lambda *_args: False)
+
+    scored = rules.pattern_indicator_scores(
+        [1.0] * 20,
+        [1.0] * 20,
+        [1.0] * 20,
+        [date(2025, 1, 1)] * 20,
+        AnalystSettings(),
+    )
+
+    assert scored == [
+        ("geometric_pattern", 0.80, 74.0),
+        ("turnaround", 0.0, 50.0),
+    ]
+
+
+def test_pattern_indicator_scores_true_turnaround_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Kills technical_rules_pattern.x_pattern_indicator_scores__mutmut_43
+    and mutmut_45.
+    """
+    monkeypatch.setattr(indicators_kernel, "nadaraya_watson", lambda *_args: None)
+    monkeypatch.setattr(indicators_pattern, "geometric_patterns", lambda *_args: None)
+    monkeypatch.setattr(indicators_kernel, "turnaround_signal", lambda *_args: True)
+
+    scored = rules.pattern_indicator_scores(
+        [1.0] * 20,
+        [1.0] * 20,
+        [1.0] * 20,
+        [date(2025, 1, 1)] * 20,
+        AnalystSettings(),
+    )
+
+    assert scored == [("turnaround", 1.0, 75.0)]
 
 
 def test_pattern_indicator_scores_skips_unavailable() -> None:

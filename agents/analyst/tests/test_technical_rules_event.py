@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from agents.analyst.domain import indicators, indicators_event
 from agents.analyst.domain import technical_rules_event as rules
 from agents.analyst.settings import AnalystSettings
 
@@ -44,6 +45,19 @@ def test_event_indicator_scores_returns_all_three_when_available() -> None:
     assert [score for _name, _value, score in triples] == [70.0, 75.0, 20.0]
     # The golden-cross boolean is stored as a 1.0/0.0 float metric value.
     assert triples[1][1] == 1.0
+
+
+def test_event_indicator_scores_false_golden_cross_value_is_zero(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Kills technical_rules_event.x_event_indicator_scores__mutmut_30."""
+    monkeypatch.setattr(indicators_event, "obv", lambda *_args: None)
+    monkeypatch.setattr(indicators_event, "golden_cross", lambda *_args: False)
+    monkeypatch.setattr(indicators, "rsi", lambda *_args: None)
+
+    assert rules.event_indicator_scores(
+        [1.0] * 200, [1.0] * 200, AnalystSettings()
+    ) == [("golden_cross", 0.0, 25.0)]
 
 
 def test_event_indicator_scores_skips_unavailable_indicators() -> None:

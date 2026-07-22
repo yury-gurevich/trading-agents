@@ -10,6 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.gate_report import stop_target_report
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.tests.helpers import cash_portfolio, recommendation
 from contracts.common import Money
@@ -58,3 +59,36 @@ def test_approves_when_ratio_meets_minimum() -> None:
 
     assert rejected == ()
     assert approved[0].ticker == "AAPL"
+
+
+def test_reward_risk_gate_holds_ratio_boundary() -> None:
+    """Kills
+    agents.portfolio_manager.domain.gate_report.x_stop_target_report__mutmut_11.
+    """
+    below = _evaluate(stop_pct=0.125, target_pct=0.1874)
+    at = _evaluate(stop_pct=0.125, target_pct=0.1875)
+    above = _evaluate(stop_pct=0.125, target_pct=0.1876)
+
+    assert below[0] == ()
+    assert below[1][0].reason == "reward_risk_below_min"
+    assert at[1] == ()
+    assert at[0][0].ticker == "AAPL"
+    assert above[1] == ()
+    assert above[0][0].ticker == "AAPL"
+
+
+def test_reward_risk_gate_holds_nonpositive_stop_boundary() -> None:
+    """Kills
+    agents.portfolio_manager.domain.gate_report.x_stop_target_report__mutmut_6.
+    """
+    item = recommendation("AAPL").model_copy(
+        update={"suggested_stop_pct": 0.0, "suggested_target_pct": 0.10}
+    )
+
+    report = stop_target_report(item, 0.05, 0.10, 1.5)
+
+    assert report.stop_pct == 0.0
+    assert report.target_pct == 0.10
+    assert report.outcome.value == 0.0
+    assert report.outcome.threshold == 1.5
+    assert report.outcome.passed is False

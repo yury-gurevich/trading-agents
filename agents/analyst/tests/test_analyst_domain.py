@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 
 from agents.analyst.domain.recommend import decide
-from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.scoring import ScoreBreakdown, score_candidate
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import candidate
 from contracts.common import Provenance
@@ -79,7 +79,11 @@ def test_sufficient_history_scores_from_technical_composite() -> None:
     # sum 450 / 11. technical = (450/11)/100; conf = 0.30 + t*0.60.
     technical = (450.0 / 11.0) / 100.0
     assert score.metrics["indicators_available"] == 11.0
-    assert score.technical_score == pytest.approx(technical, abs=1e-9)
+    assert (
+        score.metrics["technical_score"]
+        == score.technical_score
+        == pytest.approx(technical, abs=1e-9)
+    )
     assert score.confidence == pytest.approx(0.30 + technical * 0.60, abs=1e-9)
 
 
@@ -91,6 +95,19 @@ def test_thin_history_is_neutral_technical_score() -> None:
     assert score.metrics["indicators_available"] == 0.0
     assert score.technical_score == pytest.approx(0.5, abs=1e-9)
     assert score.confidence == pytest.approx(0.6, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("confidence", "recommended"),
+    [(0.599, False), (0.6, True), (0.601, True)],
+)
+def test_decide_closed_confidence_floor(confidence: float, recommended: bool) -> None:
+    """Kills agents.analyst.domain.recommend.x_decide__mutmut_16."""
+    score = ScoreBreakdown(technical_score=0.5, confidence=confidence, metrics={})
+    decision = decide(candidate(), score, _regime(floor=0.6))
+
+    assert (decision.recommendation is not None) is recommended
+    assert (decision.rejection is None) is recommended
 
 
 def test_fundamentals_blend_into_confidence_and_recommendation() -> None:
@@ -115,6 +132,7 @@ def test_fundamentals_blend_into_confidence_and_recommendation() -> None:
     assert score.technical_score == pytest.approx(technical, abs=1e-9)
     assert score.fundamental_score == pytest.approx(fundamental, abs=1e-9)
     assert score.metrics["composite_score"] == pytest.approx(composite, abs=1e-9)
+    assert score.metrics["fundamental_score"] == pytest.approx(fundamental, abs=1e-9)
     assert score.metrics["fundamentals_available"] == 2.0
     assert score.confidence == pytest.approx(expected, abs=1e-9)
     assert decision.recommendation is not None
@@ -157,6 +175,7 @@ def test_sentiment_blends_three_pillars_into_confidence() -> None:
 
     assert score.sentiment_score == pytest.approx(1.0, abs=1e-9)
     assert score.metrics["sentiment_score"] == pytest.approx(1.0, abs=1e-9)
+    assert score.metrics["fundamental_score"] == pytest.approx(0.80, abs=1e-9)
     assert score.metrics["sentiment_articles"] == 1.0
     assert score.metrics["sentiment_positive"] == 4.0
     assert score.confidence == pytest.approx(expected, abs=1e-9)
@@ -165,22 +184,16 @@ def test_sentiment_blends_three_pillars_into_confidence() -> None:
     assert rec.sentiment_score == pytest.approx(1.0, abs=1e-9)
     assert "news-sentiment score of" in rec.rationale.summary
     assert "analyst.sentiment_score" in rec.rationale.evidence_refs
+    assert "analyst.signal.sentiment" in rec.rationale.evidence_refs
+    assert score.top_signals == ("stochastic_k", "sentiment", "rsi2", "pe", "rsi")
 
 
 def test_sentiment_without_fundamentals_two_pillar_blend() -> None:
-    # No fundamentals; an all-negative headline -> 0.0. composite renormalises over
-    # the technical/sentiment weights only (the fundamental pillar is absent).
+    """Kills agents.analyst.domain.scoring.x_score_candidate__mutmut_54."""
     settings = AnalystSettings()
-    news = ("Shares plunge as lawsuit and fraud probe widen losses",)
-    technical = (450.0 / 11.0) / 100.0
-    composite = (
-        settings.technical_weight * technical + settings.sentiment_weight * 0.0
-    ) / (settings.technical_weight + settings.sentiment_weight)
-    expected = settings.confidence_floor + composite * settings.confidence_span
-
+    news = ("Shares report profit and loss",)
     score = score_candidate(candidate(), _rising_bars(40), {}, (), news, settings)
 
-    assert score.fundamental_score is None
-    assert score.sentiment_score == pytest.approx(0.0, abs=1e-9)
-    assert score.metrics["sentiment_negative"] == 5.0
-    assert score.confidence == pytest.approx(expected, abs=1e-9)
+    assert score.sentiment_score == pytest.approx(0.5, abs=1e-9)
+    assert score.metrics["sentiment_negative"] == 1.0
+    assert score.confidence == pytest.approx(0.561038961038961, abs=1e-9)

@@ -13,11 +13,27 @@ from agents.analyst.domain import indicators_event as ie
 
 
 def test_obv_accumulates_by_close_direction_with_carry() -> None:
+    """Kills x_obv__mutmut_19, x_obv__mutmut_20, and x_obv__mutmut_24."""
     closes = [10.0, 11.0, 11.0, 10.0, 12.0]
     volumes = [100.0, 200.0, 300.0, 400.0, 500.0]
     # series: 0 -> +200 (up) -> 200 (carry, unchanged close) -> -400 (down) ->
     # +500 (up) = [0, 200, 200, -200, 300]; signal = mean(last 3) = (200-200+300)/3.
     assert ie.obv(closes, volumes, 3) == pytest.approx((300.0, 100.0), abs=1e-9)
+
+
+def test_obv_signal_uses_requested_tail_window() -> None:
+    """Kills agents.analyst.domain.indicators_event.x_obv__mutmut_26."""
+    closes = [10.0, 12.0, 11.0, 13.0, 13.0, 12.0, 14.0]
+    volumes = [100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0]
+    assert ie.obv(closes, volumes, 4) == pytest.approx((400.0, 175.0), abs=1e-9)
+
+
+def test_obv_last_bar_drop_subtracts_without_peeking_forward() -> None:
+    """Kills agents.analyst.domain.indicators_event.x_obv__mutmut_19."""
+    closes = [10.0, 11.0, 10.0]
+    volumes = [100.0, 200.0, 300.0]
+
+    assert ie.obv(closes, volumes, 2) == pytest.approx((-100.0, 50.0), abs=1e-9)
 
 
 def test_obv_returns_none_below_signal_period_plus_one() -> None:

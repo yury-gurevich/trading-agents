@@ -11,6 +11,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.concentration import SectorBook
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.tests.helpers import cash_portfolio, recommendation
 from contracts.common import Money
@@ -82,3 +83,37 @@ def test_rebuy_of_held_name_skips_the_count_check() -> None:
     # AAPL re-buy is not a new name, so AAPL+MSFT fill the 2 slots; NVDA rejects.
     assert [o.ticker for o in approved] == ["AAPL", "MSFT"]
     assert [(r.ticker, r.reason) for r in rejected] == [("NVDA", "sector_name_count")]
+
+
+def test_sector_name_count_holds_new_name_boundary() -> None:
+    """Kills
+    agents.portfolio_manager.domain.concentration.xǁSectorBookǁoutcomes__mutmut_11.
+    """
+    outcome = SectorBook(_SECTORS, ()).outcomes(
+        recommendation("NVDA"),
+        Decimal("10.00"),
+        Decimal("1000.00"),
+        max_sector_pct=Decimal("1"),
+        max_names_per_sector=1,
+    )[1]
+
+    assert (outcome.value, outcome.threshold, outcome.passed) == (1.0, 1.0, True)
+
+
+def test_sector_name_count_holds_capacity_boundary() -> None:
+    """Kills
+    agents.portfolio_manager.domain.concentration.xǁSectorBookǁoutcomes__mutmut_17.
+    """
+    item = recommendation("NVDA")
+    observed = []
+    for held in (("AAPL",), ("AAPL", "MSFT"), ("AAPL", "MSFT", "INTC")):
+        outcome = SectorBook(_SECTORS, held).outcomes(
+            item,
+            Decimal("10.00"),
+            Decimal("1000.00"),
+            max_sector_pct=Decimal("1"),
+            max_names_per_sector=3,
+        )[1]
+        observed.append((outcome.value, outcome.threshold, outcome.passed))
+
+    assert observed == [(2.0, 3.0, True), (3.0, 3.0, True), (4.0, 3.0, False)]

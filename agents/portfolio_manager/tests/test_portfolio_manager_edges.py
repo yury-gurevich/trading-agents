@@ -51,13 +51,56 @@ def test_risk_prechecks_reject_unsupported_action_and_missing_price() -> None:
 
 
 def test_sizing_returns_zero_for_invalid_inputs() -> None:
+    """Kills agents.portfolio_manager.domain.sizing.x_size_quantity__mutmut_1.
+
+    Also kills agents.portfolio_manager.domain.sizing.x_size_quantity__mutmut_2.
+    """
+    valid = {
+        "portfolio_value": Decimal("1000.00"),
+        "max_position_pct": Decimal("0.10"),
+        "est_price": Decimal("100.00"),
+    }
+
+    assert size_quantity(**valid) == 1
+    for field in valid:
+        values = dict(valid)
+        values[field] = Decimal("0")
+        assert size_quantity(**values) == 0
+
+        values[field] = Decimal("-0.01")
+        assert size_quantity(**values) == 0
+
     assert (
         size_quantity(
-            portfolio_value=Decimal("0"),
-            max_position_pct=Decimal("0.10"),
-            est_price=Decimal("100"),
+            portfolio_value=Decimal("-1000.00"),
+            max_position_pct=Decimal("1.00"),
+            est_price=Decimal("1.00"),
         )
         == 0
+    )
+
+
+def test_sizing_holds_whole_share_budget_boundary() -> None:
+    """Kills agents.portfolio_manager.domain.sizing.x_size_quantity__mutmut_7.
+
+    Also kills agents.portfolio_manager.domain.sizing.x_size_quantity__mutmut_4 and
+    agents.portfolio_manager.domain.sizing.x_size_quantity__mutmut_8.
+    """
+    budget = {
+        "portfolio_value": Decimal("1000.00"),
+        "max_position_pct": Decimal("0.10"),
+    }
+
+    assert size_quantity(**budget, est_price=Decimal("100.01")) == 0
+    assert size_quantity(**budget, est_price=Decimal("100.00")) == 1
+    assert size_quantity(**budget, est_price=Decimal("99.99")) == 1
+    assert (
+        size_quantity(
+            portfolio_value=Decimal("1.00"),
+            max_position_pct=Decimal("1.00"),
+            est_price=Decimal("1.00"),
+        )
+        == 1
     )
 
 

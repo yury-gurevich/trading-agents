@@ -132,6 +132,26 @@ def test_sector_book_rejection_uses_explicit_outcomes() -> None:
     assert zero_value[0].value == 0.0
 
 
+def test_sector_book_holds_dollar_cap_boundary() -> None:
+    """Kills
+    agents.portfolio_manager.domain.concentration.xǁSectorBookǁoutcomes__mutmut_11.
+    """
+    book = SectorBook({"AAPL": "Tech"}, ())
+    item = recommendation("AAPL")
+    observed = []
+    for cost in (Decimal("299.00"), Decimal("300.00"), Decimal("301.00")):
+        outcome = book.outcomes(
+            item,
+            cost,
+            Decimal("1000.00"),
+            max_sector_pct=Decimal("0.30"),
+            max_names_per_sector=0,
+        )[0]
+        observed.append((round(outcome.value, 3), outcome.threshold, outcome.passed))
+
+    assert observed == [(0.299, 0.3, True), (0.3, 0.3, True), (0.301, 0.3, False)]
+
+
 def test_agent_applies_the_sector_cap_over_the_bus() -> None:
     """PM-NEV-04: sector cap enforced end-to-end over the bus."""
     payload = recommendation_set(recommendation("AAPL"), recommendation("MSFT"))

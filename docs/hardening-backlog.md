@@ -60,13 +60,24 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   dispatcher script/universe file instead of wholesale `agents/`, `orchestration/`, and
   `scripts/`. Evidence:
   [S131 blast-radius proof](reports/sprint-131-blast-radius/live-proof.md#row-j-dispatcher-image).
+- **K — assertion-strength gap in trade-gating + money-parsing code** (surfaced by S132
+  mutation). Closed in S134 over three rounds: R1 killed the alpaca money-parser bucket
+  (39 → 7 named default-normalization residuals) plus the PM gate / reward-risk / sector
+  boundaries; R2 took the targeted analyst-domain survivors 249 → 127 with a per-module
+  before/after table; R3 forced **all 127** into an auditable per-mutant disposition —
+  **107 killed, 12 individually justified equivalents, 8 named wording exclusions, 0
+  untriaged**. Scoped decision-engine kill-rate 79.87 % → **84.36 %** (5,678/6,731).
+  Permanent justified non-targets: the `# pragma: no cover` Alpaca HTTPS transport
+  (live/paper-verified), string/render/audit wording survivors, the 7 `_fill_from_order`
+  default-normalization residuals, and the 20 R3 residuals named individually in the CSV.
+  Evidence: [S134 report](reports/sprint-134-assertion-hardening/README.md) +
+  [Round 3 dispositions](reports/sprint-134-assertion-hardening/round-3-dispositions.csv).
 
 ## Open — with unblock triggers
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
 | **I** | Per-agent Service Bus SAS scoping (part 2) | S131 completed part 1: the Postgres blast radius is split into 15 `ta_<name>` identities with identical graph grants, role-specific Key Vault secret names, and Container Apps secret-backed `POSTGRES_DSN` delivery. The remaining shared credential is the Azure Service Bus connection string, so one compromised container can still use the whole bus. | Next security-focused sprint (**packaged as S133**): create per-topic authorization rules + per-agent Service Bus SAS connection strings, then wire them with the same secret-backed per-target delivery pattern. |
-| **K** | Assertion-strength gap in trade-gating + money-parsing code (surfaced by S132 mutation) | S132 parked ~1,355 survivors; review triage found ~130 sit in genuinely testable, high-value logic — **~50 in alpaca pure money-parsers** (`_order_body`/`_fill_from_order`/`_price_of`) and **~84 in analyst-scoring / PM-gate / confidence-floor boundaries** — line-covered but assertion-weak (no test kills the mutant). The remaining survivors are two *justified* non-targets: the `# pragma: no cover` HTTPS transport (verified by live DEP-BROKER + paper runs, not the S132 "equivalent" mislabel) and string/render/audit mutants (killing them over-specifies tests). | **Packaged as S134** (executes before S133): kill the ~130 worth-killing survivors, record the two exclusion classes with written justification, re-run the S132 scope to prove the drop. Evidence: [S132 report](reports/sprint-132-mutation-testing/README.md) + `actionable-mutants.csv`. |
 
 ## Branch protection recommendations (with CodeQL)
 

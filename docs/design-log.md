@@ -2682,7 +2682,7 @@ someone re-runs acceptance after the open, which nothing yet does automatically.
 
 ---
 
-## DL-60 · Exit lifecycle: a position is closed by a fill, not by a decision · status: OPEN
+## DL-60 · Exit lifecycle: a position is closed by a fill, not by a decision · status: CLOSED → ADR-0015
 
 **Why this is open.** DL-58 fixed what a close order *contains*; it is live on `s135` and still
 produces **zero sell orders**, because nothing sends one. The `sched-2026-07-23` re-run decided
@@ -2770,5 +2770,10 @@ is to represent "the exit of this position" rather than "one run's opinion".
   decision-time closure still strands a position on every delivery failure; it would just strand
   them faster.
 
-**Status.** Design only, no code. Blocks the exit-path sprint. Needs an operator answer on the
-timing question and on AMD recovery before implementation.
+**Status.** CLOSED — graduated to **ADR-0015** (2026-07-23). The operator answered all four:
+fill-keyed closure, **broker-native stops** (`bracket` at entry, `oco` retrofitted onto the 9 existing
+positions — Alpaca's `oco` class exists precisely for already-held positions), bounded retry (3 runs)
+then escalate, and a partial fill reduces the position rather than creating a new one. AMD self-heals
+under fill-keyed closure; no manual trade. One assumption remains unproven and is named in the ADR:
+bracket/OCO submission **outside regular hours** queues for the next open — needs a live probe before
+the implementation is trusted.

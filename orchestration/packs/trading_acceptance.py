@@ -18,13 +18,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from orchestration.batch_trace import walk_chain
-from orchestration.observatory import Breach, CrossCheck, StageView, accept
+from orchestration.observatory import Breach, StageView, accept
+from orchestration.packs.trading_boundaries import _CONSERVATION
 from orchestration.packs.trading_observatory import observe_run
 
 if TYPE_CHECKING:
     from kernel import GraphStore
 
-AcceptanceVerdict = Literal["PASS", "NO_TRADE", "FAIL"]
+AcceptanceVerdict = Literal["PASS", "NO_TRADE", "UNPROVEN", "FAIL"]
 
 
 @dataclass(frozen=True)
@@ -36,35 +37,13 @@ class TradingAcceptanceResult:
 
     @property
     def passed(self) -> bool:
-        """Whether the CLI should exit successfully."""
+        """Whether the CLI should exit successfully.
+
+        UNPROVEN does not block: orders queued for the next open are not a fault.
+        It must never be reported as PASS, which is the whole point (DL-59).
+        """
         return self.verdict != "FAIL"
 
-
-def _conserves(child: str, child_key: str, parent: str, parent_key: str) -> CrossCheck:
-    """No fabrication: a stage's output count cannot exceed its input count."""
-
-    def check(observed: dict[str, dict[str, object]]) -> Breach | None:
-        out = observed.get(child, {}).get(child_key)
-        src = observed.get(parent, {}).get(parent_key)
-        if not isinstance(out, int) or not isinstance(src, int):
-            return None
-        if out > src:
-            return Breach(
-                child, child_key, f"{out} > {parent}.{parent_key}={src} (fabricated)"
-            )
-        return None
-
-    return check
-
-
-# Each agent's output is bounded by its input — the boundaries asserted (EXEC-NEV-01:
-# "never decides what to trade"; the scanner/analyst/PM cannot invent names).
-_CONSERVATION: tuple[CrossCheck, ...] = (
-    _conserves("scanner", "survived", "provider", "returned"),
-    _conserves("analyst", "scored", "scanner", "survived"),
-    _conserves("pm", "approved", "analyst", "scored"),
-    _conserves("execution", "submitted", "pm", "approved"),
-)
 
 _NO_TRADE_BREACHES = frozenset({("analyst", "scored"), ("pm", "evaluated")})
 _REJECTION_EVIDENCE = re.compile(
@@ -85,12 +64,25 @@ def evaluate_stages(
     """Classify observed stages; exposed for the acceptance truth table."""
     result = accept(stages, _CONSERVATION)
     if result.passed:
-        verdict: AcceptanceVerdict = "PASS"
+        verdict: AcceptanceVerdict = "UNPROVEN" if _undecided(stages) else "PASS"
     elif _is_no_trade(stages, result.breaches, rejection_evidence):
         verdict = "NO_TRADE"
     else:
         verdict = "FAIL"
     return TradingAcceptanceResult(verdict=verdict, breaches=result.breaches)
+
+
+def _undecided(stages: tuple[StageView, ...]) -> bool:
+    """True when orders were submitted but the broker has not resolved them yet."""
+    execution = next((item for item in stages if item.name == "execution"), None)
+    if execution is None or not execution.reached:
+        return False
+    orders = execution.observed.get("orders")
+    filled = execution.observed.get("filled")
+    unfilled = execution.observed.get("unfilled")
+    if not all(isinstance(v, int) for v in (orders, filled, unfilled)):
+        return False
+    return bool(orders) and not filled and unfilled != orders
 
 
 def _is_no_trade(
@@ -144,6 +136,11 @@ def render_acceptance(result: TradingAcceptanceResult) -> str:
         return (
             "ACCEPTANCE  NO_TRADE - completed; no candidates cleared "
             "the confidence floor"
+        )
+    if result.verdict == "UNPROVEN":
+        return (
+            "ACCEPTANCE  UNPROVEN - completed; orders submitted but none filled yet "
+            "(queued for the open). Re-run once the broker resolves them."
         )
     lines = [f"  FAIL  {b.stage}.{b.key}: {b.detail}" for b in result.breaches]
     return "ACCEPTANCE  FAIL\n" + "\n".join(lines)

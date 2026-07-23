@@ -1,4 +1,4 @@
-"""Layer-3 acceptance gate CLI — PASS/NO_TRADE/FAIL a persisted run.
+"""Layer-3 acceptance gate CLI — PASS/NO_TRADE/UNPROVEN/FAIL a persisted run.
 
 Agent: tooling
 Role: load the graph store from .env and run the acceptance gate for a given

@@ -21,7 +21,11 @@ if TYPE_CHECKING:
 
 def portfolio_from_graph(graph: GraphStore, starting_cash: Decimal) -> PortfolioState:
     """Build PM's starting portfolio from active graph Position nodes."""
-    positions = {
-        position.ticker: position.quantity for position in open_positions(graph)
-    }
-    return PortfolioState(cash=Money(amount=starting_cash), positions=positions)
+    holdings = open_positions(graph)
+    positions = {position.ticker: position.quantity for position in holdings}
+    position_refs = {position.ticker: position.position_ref for position in holdings}
+    return PortfolioState(
+        cash=Money(amount=starting_cash),
+        positions=positions,
+        position_refs=position_refs,
+    )

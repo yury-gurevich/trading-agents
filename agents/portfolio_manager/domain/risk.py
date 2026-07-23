@@ -75,7 +75,13 @@ def evaluate_recommendations(
                 continue
             sector_gates = book.exit_outcomes(item, max_names_per_sector)
             approved.append(
-                exit_order_intent(item, quantity, price, (*gates, *sector_gates))
+                exit_order_intent(
+                    item,
+                    quantity,
+                    price,
+                    (*gates, *sector_gates),
+                    portfolio.position_refs.get(item.ticker),
+                )
             )
             open_tickers.discard(item.ticker)
             book.record_exit(item.ticker)

@@ -1,6 +1,6 @@
 [project]
 name = "trading-agents"
-version = "0.74.00"
+version = "0.74.01"
 description = "An operator-controlled, single-user, agent-based trading system. Domain logic lives only in agents; the kernel is plumbing; contracts are the shared boundary."
 requires-python = ">=3.13"
 dependencies = [

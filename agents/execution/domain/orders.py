@@ -36,8 +36,11 @@ class BrokerOrder:
 def order_from_intent(order_set: OrderIntentSet, intent: OrderIntent) -> BrokerOrder:
     """Build the stable paper-broker order for one approved intent."""
     side = _broker_side(intent.action)
+    idempotency_key = f"{order_set.run_id}:{intent.ticker}:{side}"
+    if intent.action == "sell" and intent.position_ref is not None:
+        idempotency_key = f"exit:{intent.position_ref}:{intent.ticker}:sell"
     return BrokerOrder(
-        idempotency_key=f"{order_set.run_id}:{intent.ticker}:{side}",
+        idempotency_key=idempotency_key,
         ticker=intent.ticker,
         side=side,
         quantity=intent.quantity,

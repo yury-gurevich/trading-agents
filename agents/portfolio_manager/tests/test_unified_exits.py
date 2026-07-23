@@ -29,7 +29,7 @@ def test_pm_sizes_sell_from_existing_position_quantity() -> None:
     approved, rejected = evaluate_recommendations(
         (sell,),
         {"AAPL": Money(amount=Decimal("25.00"))},
-        cash_portfolio("10000.00", {"AAPL": 9}),
+        cash_portfolio("10000.00", {"AAPL": 9}, position_refs={"AAPL": "exit-ref"}),
         max_position_pct=Decimal("0.10"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
@@ -43,6 +43,7 @@ def test_pm_sizes_sell_from_existing_position_quantity() -> None:
     assert [(item.ticker, item.action, item.quantity) for item in approved] == [
         ("AAPL", "sell", 9)
     ]
+    assert approved[0].position_ref == "exit-ref"
     assert [gate.name for gate in approved[0].gate_report] == [
         "sizing",
         "min_order_quantity",
@@ -166,4 +167,5 @@ def test_pm_bus_rebuilds_portfolio_from_graph_positions() -> None:
 
     assert response.payload["approved"][0]["action"] == "sell"
     assert response.payload["approved"][0]["quantity"] == 6
+    assert response.payload["approved"][0]["position_ref"]
     assert sink.faults == []

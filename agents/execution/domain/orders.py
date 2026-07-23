@@ -8,6 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
 
 from agents.execution.broker import BrokerFill
@@ -15,10 +16,10 @@ from contracts.common import Money, Ticker
 from contracts.execution import Fill
 
 if TYPE_CHECKING:
-    from decimal import Decimal
-
     from contracts.monitor import CloseDecision, CloseDecisionSet
     from contracts.portfolio_manager import OrderIntent, OrderIntentSet
+
+_CENTS = Decimal("100")
 
 
 @dataclass(frozen=True)
@@ -45,19 +46,19 @@ def order_from_intent(order_set: OrderIntentSet, intent: OrderIntent) -> BrokerO
 
 
 def order_from_close(
-    close_set: CloseDecisionSet,
-    decision: CloseDecision,
-    *,
-    quantity: int,
-    reference_price: Decimal,
+    close_set: CloseDecisionSet, decision: CloseDecision
 ) -> BrokerOrder:
-    """Build the stable paper-broker sell order for one close decision."""
+    """Build the stable paper-broker sell order for one close decision.
+
+    Size and reference price come off the decision itself: the monitor owns position
+    state, so an exit sells the whole position at the price the exit was decided at.
+    """
     return BrokerOrder(
         idempotency_key=f"{close_set.run_id}:{decision.ticker}:sell:{decision.position_id}",
         ticker=decision.ticker,
         side="sell",
-        quantity=quantity,
-        limit_price=Money(amount=reference_price),
+        quantity=decision.quantity,
+        limit_price=Money(amount=Decimal(decision.reference_price_cents) / _CENTS),
     )
 
 

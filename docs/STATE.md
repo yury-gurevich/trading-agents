@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-22 22:48 AEST · **Version:** 0.73.00 · **🟢 THE STACK IS VALIDATED IN PRODUCTION.** `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags (07-09 / 07-14 / 07-15) still await ack. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-23 13:05 AEST · **Version:** 0.73.01 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side had **never executed once** until 0.73.01 (DL-58): a 07-20 stop-out decision reached no broker, and green runs kept scoring PASS while the account ran out of buying power. Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,30 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Exit path made executable + faults made visible (fix, 0.73.01, 2026-07-23) — THE STACK
+  COULD ONLY BUY.** A routine run review found `sched-2026-07-22` green (7/7, `ACCEPTANCE PASS`)
+  while the system had been incapable of selling since inception: **zero sell orders in the
+  broker's entire 33-order history.** The monitor stopped us out of AMD on 07-20
+  (`CloseDecision`, `trigger=stop`, `pnl_cents=-153065`); no order ever reached Alpaca; we still
+  held 55 shares. Two defects (DL-58): `CloseDecision` carried no quantity or price, so execution
+  substituted `close_quantity=1` / `close_reference_price=$1.00` — tunables whose own `why=`
+  admitted they were fixtures; and `dispatch_closes` swallowed failures into an in-process sink,
+  so `surfaces/queries/faults.py` — the operator incident view — had been **empty by
+  construction** and read as "no incidents". Buy-only execution then ratcheted the account to
+  `regt_buying_power=0`; **all five orders on 07-21 were rejected at the open**, and 07-22
+  submitted five more against zero buying power, both days scoring PASS. **Fix:** `CloseDecision`
+  gains required `quantity` + `reference_price_cents` (contract 0.2.0 → 0.3.0), monitor
+  populates both, `order_from_close` reads them, both fixture tunables **deleted**;
+  `GraphFaultSink` appends a `Fault` node on all four graph-pull poll paths, keyed by
+  origin+timestamp so recurrence appends. **Proven:** `make ci` exit 0, 9/9 steps, 1719 passed,
+  100.00% coverage; a new test drives a 55-share stop end-to-end and asserts the broker saw
+  55 shares at $94.00 (it saw 1 @ $1.00 before); a second asserts a swallowed dispatch failure
+  lands as a queryable `Fault`. **Operator action taken:** the 5 unfillable 07-22 orders were
+  cancelled at the broker (verified `canceled`, 0 open). **NOT fixed — named limit:** the
+  acceptance gate still scores stage completion, not whether an order can fill, so it passed on
+  two dead days; and **AMD (55 sh) is still held** against a 07-20 close decision — the code
+  path is fixed, the stranded position is not yet resolved.
 
 - **Gate self-test (chore, 0.73.00, 2026-07-22) — PROVING THE CHECKS CAN FAIL.** Three gates read
   green in one day while examining nothing: the security gate had run on **zero** sprint merges

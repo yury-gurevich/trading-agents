@@ -70,6 +70,7 @@ def seed_fill(
     price_cents: int = 10000,
     stop_pct: float | None = 0.05,
     target_pct: float | None = 0.10,
+    quantity: int = 1,
 ) -> None:
     run = graph.merge_node("PMRun", run_id, {"approved_count": 1})
     order = graph.merge_node(
@@ -78,7 +79,7 @@ def seed_fill(
         {
             "ticker": ticker,
             "action": "buy",
-            "quantity": 1,
+            "quantity": quantity,
             "stop_pct": stop_pct,
             "target_pct": target_pct,
         },
@@ -89,7 +90,7 @@ def seed_fill(
         {
             "ticker": ticker,
             "side": "buy",
-            "quantity": 1,
+            "quantity": quantity,
             "price_cents": price_cents,
             "price_currency": "USD",
             "broker_order_id": f"paper:{run_id}:{ticker}:buy",

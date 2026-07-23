@@ -18,6 +18,7 @@ from agents.analyst.settings import AnalystSettings
 from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 from contracts.scanner import CandidateSet
 from kernel import CollectingFaultSink
+from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
     from contracts.analyst import RecommendationSet
@@ -49,7 +50,7 @@ def analyze_scan_node(
 ) -> None:
     """Analyze one ScanRun node from the graph and link the AnalystRun back to it."""
     settings = settings or AnalystSettings()
-    sink = sink if sink is not None else CollectingFaultSink()
+    sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     candidate_set = CandidateSet.model_validate(node.props["candidate_set"])
     result = _run_from_graph(
         node, candidate_set, graph=graph, settings=settings, sink=sink

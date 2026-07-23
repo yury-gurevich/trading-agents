@@ -18,7 +18,12 @@ from agents.monitor.tests.helpers import (
 )
 from contracts.common import Explanation
 from contracts.monitor import CloseDecisionSet
-from kernel import CollectingFaultSink, InMemoryGraphStore, InProcessBus
+from kernel import (
+    CollectingFaultSink,
+    GraphFaultSink,
+    InMemoryGraphStore,
+    InProcessBus,
+)
 
 
 def test_check_positions_opens_position_idempotently() -> None:
@@ -144,3 +149,33 @@ def test_explain_hold_without_position_returns_explanation() -> None:
 
     assert "No open held positions" in explanation.summary
     assert explanation.evidence_refs == ("monitor.positions",)
+
+
+def test_execution_dispatch_error_survives_the_process() -> None:
+    """MON-OUT-03: a swallowed close-dispatch failure is persisted as a Fault node.
+
+    The in-memory sink alone let the 07-20 AMD stop-out vanish: the close never
+    reached a broker, the fault died with the container, and the run read clean.
+    """
+    graph = InMemoryGraphStore()
+    sink = GraphFaultSink(graph, CollectingFaultSink())
+    bus = InProcessBus()
+    from agents.provider import ProviderAgent
+    from agents.provider.settings import ProviderSettings
+    from agents.provider.sources import FakeDataSource
+
+    ProviderAgent(
+        bus,
+        graph=graph,
+        source=FakeDataSource(bars=(bar("AAPL", 0, 94.0),), vix=12.0),
+        settings=ProviderSettings(max_staleness_days=7),
+    ).bind()
+    MonitorAgent(bus, graph=graph, sink=sink).bind()
+    seed_fill(graph)
+
+    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
+
+    assert result.decisions[0].decision == "close"
+    faults = graph.list_nodes("Fault")
+    assert [node.props["source_agent"] for node in faults] == ["monitor"]
+    assert faults[0].props["capability"] == "check_positions"

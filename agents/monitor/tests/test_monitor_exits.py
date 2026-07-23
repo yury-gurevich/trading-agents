@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from agents.monitor.settings import MonitorSettings
 from agents.monitor.tests.helpers import (
     bar,
@@ -15,6 +17,7 @@ from agents.monitor.tests.helpers import (
     seed_fill,
     wire_monitor,
 )
+from contracts.common import Money
 from contracts.monitor import CloseDecisionSet
 
 
@@ -95,3 +98,22 @@ def test_hold_writes_check_without_close_decision() -> None:
     assert result.decisions[0].pnl_cents is None  # holds carry no realized PnL
     assert node_count(graph, "PositionCheck") == 1
     assert node_count(graph, "CloseDecision") == 0
+
+
+def test_close_sells_whole_position_at_decided_price() -> None:
+    """MON-OUT-02 / EXEC-IN-02: the exit order carries the position's real size and
+    the price the exit was decided at, not an execution-side fixture default."""
+    bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
+    seed_fill(graph, quantity=55)
+
+    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
+
+    decision = result.decisions[0]
+    assert (decision.decision, decision.trigger) == ("close", "stop")
+    assert decision.quantity == 55
+    assert decision.reference_price_cents == 9400
+    # The broker must see the whole position sold at the decided price. Before this
+    # was wired, execution sold 1 share at a $1.00 limit and the stop never landed.
+    sell = next(fill for fill in broker.fills() if fill.side == "sell")
+    assert sell.quantity == 55
+    assert sell.price == Money(amount=Decimal("94.00"))

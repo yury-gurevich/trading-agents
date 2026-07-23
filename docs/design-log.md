@@ -2564,3 +2564,58 @@ there.
 disposable, a developer's tree is not — `make gate-selftest` stays opt-in locally); a
 documentation-only blind-spot register (a human check that cannot fail, rejected for the same
 reason as DL-55).
+
+---
+
+## DL-58 · The exit path never executed — a green run that could only buy · status: CLOSED
+
+**How it surfaced.** A routine "how did the run go" on `sched-2026-07-22`: 7/7 stages,
+`ACCEPTANCE PASS`, five buys submitted. The only anomaly was a recurring `critical`
+broker-divergence Flag naming AMD, which the runbook's own signature table invites you to read
+as *"reconciliation working."* It was not. It was the single visible symptom of two defects.
+
+**What was actually true.** On 2026-07-20 the monitor stopped us out of AMD — a `CloseDecision`
+node with `trigger=stop`, `pnl_cents=-153065`, booked in the graph. The broker's entire
+33-order history contains **zero sell orders**. We still held 55 AMD. The graph believed it had
+exited a position it had never exited, and the divergence Flag had been correctly reporting
+that fact, unread, on every run since.
+
+**Defect 1 — the contract could not describe an exit.** `CloseDecision` carried ticker,
+position, trigger, rationale and PnL, but neither **quantity** nor **price**. Execution filled
+the hole with two `tunable()` settings whose own `why=` text admitted they were fixtures:
+`close_quantity=1` (one share) and `close_reference_price=$1.00`. So even a close that *did*
+dispatch would have offered 1 share at a $1 limit. The monitor had both real values in hand at
+decision time and threw them away at the contract boundary.
+
+**Defect 2 — the failure could not be seen.** `dispatch_closes` wraps its send in
+`fault_boundary(..., reraise=False)` so a dispatch failure cannot kill the run. The default
+sink is `CollectingFaultSink` — an in-process list. Nothing ever wrote a `Fault` node, while
+`surfaces/queries/faults.py` had been reading `Fault` nodes for the operator incident view the
+whole time. **That view was empty by construction, and its emptiness read as "no incidents."**
+The existing regression test asserted `len(sink.faults) == 1` — it proved the fault was
+recorded, never that it survived the process.
+
+**Why it stayed green for days.** Buy-only execution ratchets: positions accumulate, cash goes
+negative, and on 07-21 `regt_buying_power` hit **0** and all five orders were rejected at the
+open. The 07-22 run then submitted five more against zero buying power. The acceptance gate
+passed every one of these days, because it scores *stage completion*, not whether an order can
+execute. Compare DL-57: "didn't look" rendering identical to "looked and found nothing" —
+here, *"decided to sell"* rendered identical to *"sold."*
+
+**Decision.** `CloseDecision` gains required `quantity` and `reference_price_cents` (contract
+`0.2.0` → `0.3.0`); the monitor populates both from position state and the decision price;
+`order_from_close` reads them off the decision; both fixture tunables are **deleted** rather
+than re-defaulted, so the fallback that hid this cannot come back. `GraphFaultSink` wraps the
+sink in all four graph-pull poll paths and appends a `Fault` node — keyed by origin *plus
+timestamp*, so a fault recurring every run appends rather than overwrites, because recurrence
+is itself the signal.
+
+*Ruled out:* making the new fields optional with defaults (identical failure, relocated);
+"fixing" the graph to mark AMD closed (DL-44 — broker is truth for holdings, never edit the
+graph to agree with a story); flattening AMD at the broker to re-zero (destroys the
+accumulating dataset, ruled out in DL-44); persisting faults only for monitor (the same blind
+spot exists on every `reraise=False` boundary).
+
+**Named limit.** This makes exits *executable* and failures *visible*. It does **not** make the
+acceptance gate aware of buying power — a run whose orders cannot fill still scores PASS. That
+gap is open, and it is the reason two dead days looked healthy.

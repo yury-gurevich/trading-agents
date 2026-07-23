@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,7 @@ class OpenPosition:
 
     ticker: Ticker
     quantity: int
+    position_ref: str
 
 
 def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
@@ -37,13 +39,17 @@ def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
 
 def open_positions(graph: GraphStore) -> tuple[OpenPosition, ...]:
     """Return open held tickers with quantities aggregated by ticker."""
-    quantities: dict[Ticker, int] = {}
+    nodes_by_ticker: dict[Ticker, list[Node]] = {}
     for node in active_position_nodes(graph):
         ticker = str(node.props["ticker"])
-        quantities[ticker] = quantities.get(ticker, 0) + int(node.props["quantity"])
+        nodes_by_ticker.setdefault(ticker, []).append(node)
     return tuple(
-        OpenPosition(ticker=ticker, quantity=quantity)
-        for ticker, quantity in sorted(quantities.items())
+        OpenPosition(
+            ticker=ticker,
+            quantity=sum(int(node.props["quantity"]) for node in nodes),
+            position_ref=_position_ref(tuple(node.key for node in nodes)),
+        )
+        for ticker, nodes in sorted(nodes_by_ticker.items())
     )
 
 
@@ -63,3 +69,8 @@ def _broker_active(node: Node) -> bool:
 def _is_open_position(graph: GraphStore, position: Node) -> bool:
     closes = graph.ancestors(position, max_depth=1, edge_types={_CLOSES_EDGE})
     return not any(close.props.get("decision") == "close" for close in closes)
+
+
+def _position_ref(keys: tuple[str, ...]) -> str:
+    joined = "\n".join(sorted(keys)).encode("utf-8")
+    return hashlib.sha256(joined).hexdigest()[:16]

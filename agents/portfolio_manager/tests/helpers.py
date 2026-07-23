@@ -130,9 +130,12 @@ def wire_pm(
 
 
 def cash_portfolio(
-    amount: str, positions: dict[str, int] | None = None
+    amount: str,
+    positions: dict[str, int] | None = None,
+    position_refs: dict[str, str] | None = None,
 ) -> PortfolioState:
     return PortfolioState(
         cash=Money(amount=Decimal(amount)),
         positions=positions or {},
+        position_refs=position_refs or {},
     )

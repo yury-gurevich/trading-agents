@@ -22,6 +22,7 @@ class PortfolioState(_Frozen):
 
     cash: Money
     positions: dict[Ticker, int] = Field(default_factory=dict)
+    position_refs: dict[Ticker, str] = Field(default_factory=dict)
 
     @property
     def value(self) -> Decimal:
@@ -31,4 +32,6 @@ class PortfolioState(_Frozen):
 
 def default_portfolio(starting_cash: Decimal) -> PortfolioState:
     """Build the fresh paper portfolio used until live position state lands."""
-    return PortfolioState(cash=Money(amount=starting_cash), positions={})
+    return PortfolioState(
+        cash=Money(amount=starting_cash), positions={}, position_refs={}
+    )

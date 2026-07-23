@@ -36,6 +36,19 @@ def test_order_from_intent_supports_sell_and_rejects_hold() -> None:
         order_from_intent(payload, hold)
 
 
+def test_order_from_intent_uses_position_ref_for_exit_only() -> None:
+    buy = _intent("AAPL", "buy")
+    sell = _intent("LOW", "sell").model_copy(update={"position_ref": "abc123"})
+    payload = order_set(buy, sell)
+
+    buy_order = order_from_intent(payload, buy)
+    sell_order = order_from_intent(payload, sell)
+
+    assert buy.position_ref is None
+    assert buy_order.idempotency_key == "pm-run-fixture:AAPL:buy"
+    assert sell_order.idempotency_key == "exit:abc123:LOW:sell"
+
+
 def test_reconcile_reports_missing_and_mismatched_broker_fills() -> None:
     fill = _broker_fill("pm-run:AAPL:buy")
 

@@ -68,6 +68,7 @@ def exit_order_intent(
     quantity: int,
     price: Money,
     outcomes: tuple[GateOutcome, ...],
+    position_ref: str | None,
 ) -> OrderIntent:
     """Build a full-exit sell OrderIntent on the existing execution rail."""
     return OrderIntent(
@@ -75,6 +76,7 @@ def exit_order_intent(
         action="sell",
         quantity=quantity,
         est_price=price,
+        position_ref=position_ref,
         rationale=Explanation(
             summary=f"Approved {item.ticker}: full exit of {quantity} held shares.",
             evidence_refs=("portfolio_manager.sizing", "analyst.technical_score"),

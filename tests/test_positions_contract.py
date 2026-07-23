@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from contracts.positions import active_position_nodes, open_position_tickers
+from contracts.positions import active_position_nodes, open_positions
 from kernel import InMemoryGraphStore
 
 
@@ -22,7 +22,26 @@ def test_open_position_tickers_filters_closed_and_broker_inactive_nodes() -> Non
     graph.add_edge(close, closed_by_decision, "CLOSES")
 
     assert active_position_nodes(graph) == (active,)
-    assert open_position_tickers(graph) == ("AAPL",)
+    positions = open_positions(graph)
+    assert positions[0].ticker == "AAPL"
+    assert positions[0].quantity == 2
+    assert positions[0].position_ref
+
+
+def test_open_positions_ref_is_stable_for_same_nodes_and_changes_with_nodes() -> None:
+    graph = InMemoryGraphStore()
+    _position(graph, "b:AAPL", "AAPL", 2)
+    first = _position(graph, "a:AAPL", "AAPL", 3)
+
+    unchanged = open_positions(graph)[0].position_ref
+    graph.add_edge(
+        graph.merge_node("CloseDecision", "close:a", {"decision": "close"}),
+        first,
+        "CLOSES",
+    )
+    _position(graph, "c:AAPL", "AAPL", 3)
+
+    assert open_positions(graph)[0].position_ref != unchanged
 
 
 def _position(

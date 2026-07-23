@@ -30,6 +30,10 @@ class OrderIntent(_Frozen):
     est_price: Money
     stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
+    position_ref: str | None = Field(
+        default=None,
+        description="stable identity of the position being exited; None for entries",
+    )
     rationale: Explanation
     gate_report: tuple[GateOutcome, ...] = ()
 
@@ -50,7 +54,7 @@ class OrderIntentSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="portfolio_manager",
-    version="0.2.0",
+    version="0.2.1",
     mission=(
         "Decide which recommendations become sized, risk-checked orders under "
         "current policy and portfolio state, and record exactly why each was "

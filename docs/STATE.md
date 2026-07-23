@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-23 15:05 AEST · **Version:** 0.73.02 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side has **never executed once**, and 0.73.01 did not fix it: DL-58 corrected what a close order *contains*, but the live `s135` re-run on 07-23 decided `CloseDecision CSCO close` and still produced **0 sell orders, with no fault** — because the graph-pull runtime has **no path that carries a close to execution at all** (DL-60). Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-23 18:05 AEST · **Version:** 0.74.00 · **🟢 THE SELL SIDE EXECUTED FOR THE FIRST TIME (2026-07-23).** Lifetime broker sell count went **0 → 1**: `ABT sell qty=98 accepted` reached Alpaca from run `check-s136-sell` on fleet `:s136`, via analyst `ABT sell 0.62` → PM `ABT sell qty=98` **and** `SCHW buy qty=99` in one `OrderIntentSet` → the existing buy rail (ADR-0016). The nightly re-buy accumulator that walked BAC 171→338→503 into a `regt_buying_power=0` wall is **stopped** — held names now return `hold` and the PM skips them. **Scope the claim honestly:** the sell needed a forced `exit_confidence_floor=0.625`, so the *rail* is proven and the *exit strategy* is still the agreed placeholder; and the monitor's own stop/target closes are **still undispatched** — 4 positions (AMD, CSCO, HPE, MRVL) are stranded and the count grows each run until ADR-0015's fill-keyed closure is built. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,42 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **S135 — one run, one evidence set, both directions (0.74.00, 2026-07-23) — THE SELL SIDE FINALLY
+  EXECUTED.** Entries and exits were decided by two systems on two bodies of evidence: a buy passed
+  provider facts + analyst scoring + PM gates + an LLM veto; a sell was three hardcoded numbers on
+  prices alone. The book showed the cost — BAC 171→338→503, USB 160→320→478, WFC 116→233→348,
+  re-bought nightly, never trimmed, until `regt_buying_power` hit 0. **Shipped (ADR-0016):** the
+  analyst scores scanner survivors ∪ open held positions on the same snapshot/regime (held names
+  bypass the scanner, whose filters are entry-selection criteria) and emits buy/hold/sell — the
+  `held` branch returns *before* the buy path is reachable, so anti-pyramiding is **structural**;
+  the PM sizes both directions into one `OrderIntentSet`; sells ride the **existing buy rail**, so
+  **DL-60's missing close-dispatch became moot rather than built**. Held-position reading moved to
+  `contracts/positions.py` with `monitor/position_book.py` delegating (no second copy to drift).
+  Conservation became `analyst.scored <= scanner.survived + analyst.held`; older runs carry no
+  `held_count` so the bound degrades and no history breaks. **PROVEN:** `make ci` 9/9 exit 0,
+  **1748 passed, 100.00% coverage**, import-linter 4 kept/0 broken, live `pip-audit` clean —
+  verified independently of the agent that wrote it; remote gate green on all four jobs before
+  merge; fleet `:s136` from `1b858e7` with `DeployRecord` written after verification. **Live check
+  (register 2026-07-23):** `check-s136-sell` 7/7 → **`ABT sell qty=98 type=market accepted
+  id=fc7f075f`** — the first sell order in the system's history; `qty=98` matched the real held
+  quantity, not the retired `close_quantity=1` fixture (DL-58); acceptance returned **`UNPROVEN`**,
+  correctly refusing to call a queued order a pass (DL-59). `check-s136-clean` 7/7 proved the other
+  half — all 7 held names `hold`, every one skipped `hold_recommendation`, only the genuine new
+  candidate approved. **Teardown:** override removed (analyst env back to its 5 vars, secretRefs
+  intact), KEDA windows restored to `22:30-00:30Z` and verified against backup, litter run torn
+  down (9 edges/9 nodes); the two runs with real meaning retained — deleting the lineage of a live
+  broker order would manufacture the exact DL-44 divergence we spent the day fixing. **NOT DONE:**
+  ADR-0015 fill-keyed closure (stranded count now 4 and growing), realized-PnL repair where
+  decision-time `pnl_cents` was booked without a fill, and exit strategy proper.
+- **Status board fixed (chore, 2026-07-23) — A BROKEN PROBE READ AS A FACT.** `infra/status.ps1`
+  showed `replicas=0` for the whole fleet while every app had a live replica: on Windows `az` is a
+  `.cmd` shim, PowerShell strips the quotes, and `cmd` chokes on the parentheses in
+  `--query 'length([])'` — exit 255 → `$null` → rendered `0`. Third instance of the DL-57 pattern in
+  one day. Counting moved into PowerShell; a failed probe now prints **`?`**, never `0`; and the
+  board gained the **wake window** with `awake`/`asleep`, so a legitimate scale-to-zero reads grey
+  while `0 while awake` — the only genuinely broken case — reads red. Columns are now named and
+  grouped: identity (`APP`) │ deployed (`DEPLOY`, `IMAGE`) │ running (`PODS`, `POWER`, `WAKE`).
 
 - **Fleet on `s135` + the sell side proven still unbuilt (2026-07-23) — INTENT WAS NOT OUTCOME,
   AGAIN.** Deployed `s135` from `c7ccdb0` (all 14 targets, config intact, `DeployRecord` written),

@@ -99,10 +99,13 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
 
 ## Open — with unblock triggers
 
-No open hardening rows after S133.
+Opened 2026-07-23 — all three are **gates or agent authority**, found while shipping ADR-0016.
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
+| L | **`make ci` cannot fail on a CVE.** The Makefile runs `-uv run pip-audit`; the leading `-` makes make **ignore its exit status**, so a vulnerable dependency never fails the local gate. CLAUDE.md advertises 9 steps that fail; for this one that is untrue. | Same class as DL-57: a check that cannot fail is not a check. It was masked because GitHub's `security` job runs `pip-audit` without the dash, so remote CI does fail — the *local* gate silently does not, and that is the one a developer trusts before pushing. | Next time `gate_selftest.py` is touched — it exists precisely to prove each gate can fail, and it does not cover this one. |
+| M | **A pushed branch can produce zero workflow runs.** On 2026-07-23 `chore-exit-idempotency-key` was pushed to a remote whose CI triggers on `push: branches: ["**"]`, Actions enabled, and GitHub created **no runs at all** (`total_count: 0` for the head SHA, confirmed twice a minute apart). Resolved by `workflow_dispatch`; cause never established. | DL-52's hole was merging code the gate never examined. "No runs appeared" looks identical to "not pushed yet" if you only glance at the run list, so the branch-is-the-gate rule can be silently defeated by an infrastructure miss rather than a process mistake. | Next time the merge procedure or `gate_selftest.py` is touched: make "a run exists for this SHA" an explicit assertion before merge, not an eyeball check. |
+| N | **Delegated coding agents run with full local authority by default.** `~/.codex/config.toml` carries `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`. Every delegated run so far overrode this with an explicit `--sandbox workspace-write`, confining writes to the worktree, `/tmp` and `~/.codex/memories` — but the *default* for any run launched without that flag is unrestricted disk access with no approval prompt, including `.env`, `infra/`, and `main`. | The repo's whole secrets discipline (CLAUDE.md: credentials never exist as files in the worktree) assumes no process is casually rewriting the tree. An agent with `danger-full-access` and no approvals is outside that assumption, and the protection currently lives in the operator remembering a CLI flag. | Before delegation becomes routine/unattended — i.e. the first time a coding agent is run without a human watching the diff. Decide then: change the config default, or wrap delegation in a script that always passes the sandbox flag. |
 
 ## Branch protection recommendations (with CodeQL)
 

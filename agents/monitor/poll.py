@@ -16,6 +16,7 @@ from agents.monitor.run import evaluate_and_write, open_run_positions
 from agents.monitor.settings import MonitorSettings
 from contracts.provider import MarketData
 from kernel import CollectingFaultSink
+from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
     from kernel import FaultSink, GraphStore, Node
@@ -49,7 +50,7 @@ def monitor_pm_node(
 ) -> None:
     """Monitor one ExecutionRun's positions from the graph; link the MonitorRun back."""
     settings = settings or MonitorSettings()
-    sink = sink if sink is not None else CollectingFaultSink()
+    sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     pm_run = next(
         iter(graph.ancestors(node, max_depth=1, edge_types={_EXECUTED_EDGE})), None
     )

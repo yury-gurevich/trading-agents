@@ -131,6 +131,8 @@ def test_execute_close_stage_status_and_reconcile() -> None:
                 decision="close",
                 trigger="target",
                 rationale=Explanation(summary="target reached"),
+                quantity=40,
+                reference_price_cents=19_250,
             ),
             CloseDecision(
                 ticker="MSFT",
@@ -138,6 +140,8 @@ def test_execute_close_stage_status_and_reconcile() -> None:
                 decision="hold",
                 trigger="none",
                 rationale=Explanation(summary="still inside policy"),
+                quantity=15,
+                reference_price_cents=41_000,
             ),
         ),
         positions_checked=2,
@@ -153,6 +157,9 @@ def test_execute_close_stage_status_and_reconcile() -> None:
 
     assert [fill.side for fill in close.fills] == ["sell"]
     assert close.submitted == 1
+    # The exit sells the whole position at the decided price, not a fixture stub.
+    assert [fill.quantity for fill in close.fills] == [40]
+    assert [fill.price.amount for fill in close.fills] == [Decimal("192.50")]
     assert reconcile.matched == 1
     assert reconcile.discrepancies == ()
     assert status.stage == "paper"

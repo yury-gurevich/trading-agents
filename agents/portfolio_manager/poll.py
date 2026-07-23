@@ -19,6 +19,7 @@ from agents.portfolio_manager.settings import PortfolioManagerSettings
 from contracts.analyst import RecommendationSet
 from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 from kernel import CollectingFaultSink
+from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.portfolio import PortfolioState
@@ -52,7 +53,7 @@ def evaluate_analyst_node(
 ) -> None:
     """Evaluate one AnalystRun node from the graph and link the PMRun back to it."""
     settings = settings or PortfolioManagerSettings()
-    sink = sink if sink is not None else CollectingFaultSink()
+    sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     portfolio = portfolio or portfolio_from_graph(graph, settings.starting_cash)
     recommendation_set = RecommendationSet.model_validate(
         node.props["recommendation_set"]

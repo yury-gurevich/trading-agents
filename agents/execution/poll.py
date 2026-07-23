@@ -16,6 +16,7 @@ from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
 from contracts.portfolio_manager import OrderIntentSet
 from kernel import CollectingFaultSink
+from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
@@ -74,7 +75,7 @@ def execute_pm_node(
 ) -> None:
     """Submit one PMRun's orders from the graph and link the ExecutionRun back to it."""
     settings = settings or ExecutionSettings()
-    sink = sink if sink is not None else CollectingFaultSink()
+    sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
     order_set = _drop_vetoed(graph, node, order_set)
     reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)

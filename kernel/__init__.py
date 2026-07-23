@@ -73,6 +73,7 @@ from kernel.errors import (
     fault_boundary,
     fault_from_exception,
 )
+from kernel.fault_graph import GraphFaultSink
 from kernel.graph import Edge, GraphStore, Node
 from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_postgres import PostgresGraphStore
@@ -113,6 +114,7 @@ __all__ = [
     "FakeLLMClient",
     "FaultCapture",
     "FaultSink",
+    "GraphFaultSink",
     "GraphStore",
     "InMemoryGraphStore",
     "InProcessBus",

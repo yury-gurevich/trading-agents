@@ -119,12 +119,7 @@ class ExecutionAgent(AgentBase):
         close_set = CloseDecisionSet.model_validate(request)
         stage = current_stage_from_graph(self._graph, self._settings.stage)
         orders = tuple(
-            order_from_close(
-                close_set,
-                decision,
-                quantity=self._settings.close_quantity,
-                reference_price=self._settings.close_reference_price,
-            )
+            order_from_close(close_set, decision)
             for decision in close_set.decisions
             if decision.decision == "close"
         )

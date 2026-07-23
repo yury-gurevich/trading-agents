@@ -68,5 +68,7 @@ def evaluate_one(
         decision=decision,
         trigger=trigger,
         rationale=rationale,
+        quantity=int(position.props["quantity"]),
+        reference_price_cents=current_price_cents,
         pnl_cents=pnl_cents,
     )

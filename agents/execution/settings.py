@@ -7,7 +7,6 @@ External I/O: process environment and the .env file.
 
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import Literal
 
 from pydantic import AliasChoices, Field
@@ -35,26 +34,6 @@ class ExecutionSettings(AgentSettings):
         ge=0,
         le=1000,
         unit="bps",
-    )
-    close_quantity: int = tunable(
-        1,
-        why=(
-            "CloseDecision names a position but not its quantity until monitor owns "
-            "position state; use one whole-share close fixtures for this slice."
-        ),
-        ge=1,
-        le=1000000,
-        unit="shares",
-    )
-    close_reference_price: Decimal = tunable(
-        Decimal("1.00"),
-        why=(
-            "execute_close is fixture-driven before monitor supplies prices; this "
-            "keeps the broker path exercised without external data."
-        ),
-        ge=0.01,
-        le=1000000.0,
-        unit="USD",
     )
     min_promotion_runs: int = tunable(
         10,

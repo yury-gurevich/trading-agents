@@ -107,7 +107,8 @@ def _analyst(graph: GraphStore, node: Node) -> StageView:
         for r in ranked
     )
     outputs += tuple(f"{r.ticker:<6} REJECT  {r.reason}" for r in rec_set.rejections)
-    observed: dict[str, object] = {"scored": len(rec_set.recommendations)}
+    held = int(node.props.get("held_count", 0))
+    observed: dict[str, object] = {"scored": len(rec_set.recommendations), "held": held}
     observed["rejected"] = len(rec_set.rejections)
     checks = (Check("scored", "floor", 1.0),)
     return _view("analyst", "CandidateSet(scanner)", observed, checks, outputs)

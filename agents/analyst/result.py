@@ -25,6 +25,7 @@ def build_empty_result(
     candidate_set: CandidateSet,
     reason: str,
     incident_refs: tuple[str, ...] = (),
+    held_count: int = 0,
 ) -> RecommendationSet:
     """Build an explainable no-recommendation result."""
     rejections = tuple(
@@ -37,6 +38,7 @@ def build_empty_result(
         recommendations=(),
         rejections=rejections,
         incident_refs=incident_refs,
+        held_count=held_count,
     )
     return RecommendationSet(
         run_id=provenance.run_id,

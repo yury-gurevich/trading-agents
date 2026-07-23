@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.provider.ingest import ingest_once
+from contracts.positions import open_position_tickers
 from contracts.provider import MARKET_DATA_LABEL, RUN_REQUEST_LABEL
 
 if TYPE_CHECKING:
@@ -37,8 +38,16 @@ def find_pending(graph: GraphStore) -> list[Node]:
 def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
     """Ingest one RunRequest's universe and link the MarketData back to it."""
     tickers = tuple(str(ticker) for ticker in node.props["tickers"])
-    market_key = ingest_once(agent, tickers, run_id=str(node.props["run_id"]))
+    market_key = ingest_once(
+        agent,
+        _union(tickers, open_position_tickers(agent._graph)),
+        run_id=str(node.props["run_id"]),
+    )
     assert market_key is not None  # the dispatcher always places a non-empty universe
     market_node = agent._graph.get_node(MARKET_DATA_LABEL, market_key)
     assert market_node is not None  # just written by ingest_once
     agent._graph.add_edge(node, market_node, INGESTED_EDGE)
+
+
+def _union(left: tuple[str, ...], right: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys((*left, *right)))

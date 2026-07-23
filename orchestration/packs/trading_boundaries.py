@@ -29,6 +29,31 @@ def _conserves(child: str, child_key: str, parent: str, parent_key: str) -> Cros
     return check
 
 
+def _analyst_conserves() -> CrossCheck:
+    """Analyst may score scanner survivors plus already-held tickers."""
+
+    def check(observed: dict[str, dict[str, object]]) -> Breach | None:
+        scored = observed.get("analyst", {}).get("scored")
+        survived = observed.get("scanner", {}).get("survived")
+        held = observed.get("analyst", {}).get("held")
+        if not all(isinstance(v, int) for v in (scored, survived, held)):
+            return None
+        assert isinstance(scored, int)
+        assert isinstance(survived, int)
+        assert isinstance(held, int)
+        allowed = survived + held
+        if scored > allowed:
+            return Breach(
+                "analyst",
+                "scored",
+                f"{scored} > scanner.survived={survived} + analyst.held={held}"
+                " (fabricated)",
+            )
+        return None
+
+    return check
+
+
 def _orders_must_fill() -> CrossCheck:
     """Submitting is not trading: a run the broker resolved with no fill is a FAIL.
 
@@ -63,7 +88,7 @@ def _orders_must_fill() -> CrossCheck:
 # "never decides what to trade"; the scanner/analyst/PM cannot invent names).
 _CONSERVATION: tuple[CrossCheck, ...] = (
     _conserves("scanner", "survived", "provider", "returned"),
-    _conserves("analyst", "scored", "scanner", "survived"),
+    _analyst_conserves(),
     _conserves("pm", "approved", "analyst", "scored"),
     _conserves("execution", "submitted", "pm", "approved"),
     _orders_must_fill(),

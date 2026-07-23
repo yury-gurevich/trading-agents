@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from datetime import date
 
     from contracts.common import Window
+    from contracts.positions import OpenPosition
     from contracts.scanner import CandidateSet
 
 
@@ -26,6 +27,7 @@ def request_market_data(
     candidate_set: CandidateSet,
     window: Window,
     benchmark_ticker: str,
+    held_positions: tuple[OpenPosition, ...] = (),
 ) -> MarketData | None:
     """Request candidate OHLCV + the benchmark series from provider over the bus.
 
@@ -48,8 +50,9 @@ def request_market_data(
                 message_type="request",
                 capability="get_market_data",
                 payload=DataRequest(
-                    tickers=tuple(
-                        candidate.ticker for candidate in candidate_set.candidates
+                    tickers=_union(
+                        tuple(c.ticker for c in candidate_set.candidates),
+                        tuple(p.ticker for p in held_positions),
                     ),
                     window=window,
                     fields=("ohlcv", "fundamentals", "news", "sentiment", "benchmark"),
@@ -62,6 +65,10 @@ def request_market_data(
             raise RuntimeError(message)
         market = MarketData.model_validate(response.payload)
     return None if capture.fault is not None else market
+
+
+def _union(left: tuple[str, ...], right: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys((*left, *right)))
 
 
 def request_regime(

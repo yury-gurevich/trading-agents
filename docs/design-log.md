@@ -2679,3 +2679,96 @@ The gate now separates the exact days it previously conflated.
 **Named limit.** This proves *whether orders filled*, not whether they filled *well* — slippage,
 partial fills, and price quality are unscored. And it is retrospective: a run is UNPROVEN until
 someone re-runs acceptance after the open, which nothing yet does automatically.
+
+---
+
+## DL-60 · Exit lifecycle: a position is closed by a fill, not by a decision · status: OPEN
+
+**Why this is open.** DL-58 fixed what a close order *contains*; it is live on `s135` and still
+produces **zero sell orders**, because nothing sends one. The `sched-2026-07-23` re-run decided
+`CloseDecision CSCO close trigger=time` and the broker's lifetime sell count stayed at **0**,
+with **no fault recorded** — nothing was attempted. Before writing that dispatch, the lifecycle
+it plugs into has to be decided, because the current one converts a delivery failure into
+permanent capital loss.
+
+### The three defects, in dependency order
+
+**1 · Nothing carries a close to execution.** `dispatch_closes` is called only from
+`agents/monitor/agent.py` — the **bus RPC** path. The deployed runtime is **graph-pull**, where
+`monitor_pm_node` evaluates, writes the CloseDecision, links the MonitorRun, and stops. Execution's
+`find_pending` polls `PMRun` nodes for *buy* intents; **no graph-pull consumer for close decisions
+exists anywhere**. The sell side is not broken, it is unbuilt. Every unit test that "covers" it
+drives the bus path — the one path production never takes.
+
+**2 · The decision closes the position, so a failure strands it forever.**
+`write_close_decision` writes the `CLOSES` edge at *decision* time, and
+`is_open_position` excludes any Position with one. So the instant the monitor decides, the graph
+stops tracking the position — whether or not a single share was sold. AMD is the proof: decided
+2026-07-20, never sold, 55 shares still held, and **no future run will ever look at it again**.
+One dropped message = one position held forever, silently. This is the defect that turns a
+transient fault into an unrecoverable one, which is why it is worth settling before #1.
+
+**3 · Realized PnL is booked from a price nobody traded at.** The same call writes
+`pnl_cents` computed from the *current* price at decision time — AMD booked **−$1,530.65**
+realized against an exit that never happened (the position is now +$1,277 unrealized). Every
+downstream reporter metric — profit factor, expectancy — is therefore built on fills that do
+not exist. A close is the only moment the system learns a *real* price, and it is currently
+discarded in favour of a hypothetical one.
+
+### Options for the lifecycle (the actual question)
+
+| | Approach | Position stays open until | Verdict |
+| --- | --- | --- | --- |
+| **A** | Add a `close_state` (`decided`/`submitted`/`filled`) to CloseDecision; `is_open_position` excludes only `filled` | the sell fills | Works, but adds a state machine the graph must keep consistent with the broker — two truths again |
+| **B** | Write CloseDecision without `CLOSES`; **execution** adds the edge when the sell fill lands | the sell fills | Lineage stays append-only and the edge means what it says: *this fill closed this position* |
+| **C** | Never infer closure from our own records — the next run's broker snapshot shows the holding gone | the broker says it is gone | Most aligned with DL-44 (**broker = truth for holdings**), and needs no new state |
+
+**Leaning: B as the mechanism, C as the backstop.** B gives the lineage (which decision caused
+which fill), C gives the truth (we hold it or we do not), and they disagree only when something
+is wrong — which is exactly when you want two independent readings. A is rejected: it invents a
+third bookkeeping of a fact the broker already answers.
+
+**Consequence worth stating plainly:** under B/C a close that fails to execute is simply
+**re-decided next run**. Retry becomes the default behaviour rather than a feature to build, and
+AMD would have exited itself on 07-21.
+
+### The idempotency key has to change with it
+
+`order_from_close` currently keys on `f"{close_set.run_id}:{ticker}:sell:{position_id}"`, and
+`run_id` is the **monitor run**, which is new every run. Under a re-decide-until-filled
+lifecycle that key would place a *fresh sell every night* — turning the fix into repeated
+oversells. A whole-position exit happens once, so the key must be stable across runs and derived
+from the position: `f"close:{position_id}"`. CloseDecision's own node key
+(`{monitor_run_id}:{position_id}:close`) has the same problem and needs the same treatment if it
+is to represent "the exit of this position" rather than "one run's opinion".
+
+### Open questions (not yet answered — do not code past these)
+
+- **Partial fills.** A 55-share sell filling 30 leaves a 25-share position. Does the remainder
+  stay open with its original stop, or is it a new position?
+- **Rejected sells.** A sell can be refused (locked shares, halted symbol). Retry silently, or
+  escalate after N attempts? This is the one place where retry-forever is dangerous.
+- **Timing.** Every exit is decided after the close and executes at the next open, hours later,
+  at an unknown price — a stop is not a stop. Does the exit path need an intraday trigger, or is
+  a once-daily exit an accepted property of the strategy? **This is a strategy question, not an
+  engineering one, and it belongs to the operator.**
+- **AMD recovery.** Once closure is fill-keyed, does AMD re-enter the machinery automatically
+  (superseding its stale decision), or is it a one-off manual exit first? Under C it self-heals;
+  under B its existing `CLOSES` edge must be neutralised deliberately.
+- **PnL.** Confirm realized PnL moves to fill time. Ruled out already: keeping the
+  decision-time estimate "for continuity" — it is a fabricated number in a ledger.
+
+### Ruled out
+
+- **Monitor calling execution over the bus from the poll path** — reintroduces a synchronous
+  dependency into a graph-pull cascade (DL-08), and it is precisely the swallowed-RPC shape that
+  hid this for a month.
+- **Marking AMD closed in the graph to clear the divergence flag** — DL-44: never edit the graph
+  to agree with a story. The flag is correct; the position is real.
+- **Flattening the account to re-zero** — destroys the accumulating dataset (ruled out in DL-44).
+- **Fixing #1 first (wiring dispatch before the lifecycle)** — a working dispatch on top of
+  decision-time closure still strands a position on every delivery failure; it would just strand
+  them faster.
+
+**Status.** Design only, no code. Blocks the exit-path sprint. Needs an operator answer on the
+timing question and on AMD recovery before implementation.

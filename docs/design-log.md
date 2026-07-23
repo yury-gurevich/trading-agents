@@ -2619,3 +2619,63 @@ spot exists on every `reraise=False` boundary).
 **Named limit.** This makes exits *executable* and failures *visible*. It does **not** make the
 acceptance gate aware of buying power — a run whose orders cannot fill still scores PASS. That
 gap is open, and it is the reason two dead days looked healthy.
+
+---
+
+## DL-59 · The gate scored intent, not outcome — UNPROVEN as a verdict · status: CLOSED
+
+**Question.** DL-58 left a named limit: acceptance passed `sched-2026-07-21` and
+`sched-2026-07-22` while the account had **zero Reg-T buying power** and not one order could
+fill. Two dead days scored `ACCEPTANCE PASS`. What invariant was missing?
+
+**The defect.** The gate's boundaries were all *conservation* checks — each stage's output
+count bounded by its input (no agent fabricates). Every one held: execution submitted 5, PM
+approved 5. But `submitted` is an **intent count**. It says orders were handed to the broker,
+never that the broker did anything with them. The gate could not distinguish *tried* from
+*traded*, which is the same failure shape as DL-57 ("didn't look" vs "looked and found
+nothing") and DL-58 ("decided to sell" vs "sold").
+
+**Why not simply fail any run with no fills.** An after-hours run legitimately has no outcome
+yet: at 22:30 UTC the orders queue for the next open, and the answer arrives hours later. A
+gate that failed those would be wrong every single night, and one that passed them would be
+asserting a success nobody had observed. **The distinction is three-way, not binary** — filled,
+resolved-unfilled, and not-yet-known — and the third state needed a name.
+
+**Decision.** `FillOutcomes` classifies a run's Fill nodes by their real broker outcome
+(`broker_status` overriding the submit-time `status`), and acceptance gains a fourth verdict:
+
+| Outcome | Verdict | Exit |
+| --- | --- | --- |
+| ≥1 order filled | `PASS` | 0 |
+| every order resolved unfilled (rejected/canceled/expired) | `FAIL` | 1 |
+| orders still queued, none filled | `UNPROVEN` | 0 |
+| no orders submitted, rejections explained | `NO_TRADE` | 0 |
+
+`UNPROVEN` is pass-equivalent — queued orders are not a fault and must not block a deploy — but
+it can **never** render as PASS. That is the whole point: LAW-02 says success is proven, not
+assumed, and the old gate was asserting proof it did not have.
+
+**Counted from Fill nodes, not `ExecutionRun.submitted`.** A broker that refuses an order *at
+submit time* leaves `submitted=0` with rejected Fills on the graph; scoring the intent field
+would let exactly that run pass. The end-to-end test drives a `PaperBroker(reject_tickers=...)`
+cascade and asserts FAIL — with `submitted=0, orders=2, unfilled=2` proving the two differ.
+
+**Dashboard.** `UNPROVEN` keeps the master light **GREEN** with a warning row
+(`orders_unresolved`) and the summary "N orders placed, none filled yet". A nightly false RED
+would train the operator to ignore the light (DL-47 is glance-first); silence would repeat the
+sin. A real fault still turns it RED regardless.
+
+*Ruled out:* reading live broker buying power in the gate (the acceptance pack is graph-only by
+design — ADR-0012; the rejected Fills are the graph-visible proxy and are sufficient); making
+UNPROVEN exit non-zero (blocks deploys nightly for a non-fault); treating UNPROVEN as GREEN with
+no warning (invisible = the original defect); a time-based rule such as "fail if unresolved
+after N hours" (invents a clock the gate does not have — re-running accept after the open gives
+the real verdict for free).
+
+**Verified on the three real runs it was built from:** 07-20 → `PASS` (5 filled), 07-21 →
+`FAIL` naming "0 of 5 submitted orders filled … the run traded nothing", 07-22 → `UNPROVEN`.
+The gate now separates the exact days it previously conflated.
+
+**Named limit.** This proves *whether orders filled*, not whether they filled *well* — slippage,
+partial fills, and price quality are unscored. And it is retrospective: a run is UNPROVEN until
+someone re-runs acceptance after the open, which nothing yet does automatically.

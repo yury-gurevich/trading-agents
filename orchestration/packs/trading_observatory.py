@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, cast
 
 from orchestration.batch_trace import walk_chain
 from orchestration.observatory import Check, StageView, render
+from orchestration.packs.trading_fill_outcomes import execution_view
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -134,15 +135,6 @@ def _pm(graph: GraphStore, node: Node) -> StageView:
     return _view("pm", "RecommendationSet(analyst)", observed, checks, outputs)
 
 
-def _execution(graph: GraphStore, node: Node) -> StageView:
-    del graph
-    submitted = node.props.get("submitted")
-    outputs = (f"submitted={submitted}  rejected={node.props.get('rejected')}",)
-    observed: dict[str, object] = {"submitted": submitted}
-    checks = (Check("submitted", "required"),)
-    return _view("execution", "OrderIntentSet(pm)", observed, checks, outputs)
-
-
 def _monitor(graph: GraphStore, node: Node) -> StageView:
     del graph
     checked = node.props.get("positions_checked")
@@ -175,7 +167,7 @@ _SPEC = (
     ("scanner", "ScanRun", "MarketData(provider)", _scanner),
     ("analyst", "AnalystRun", "CandidateSet(scanner)", _analyst),
     ("pm", "PMRun", "RecommendationSet(analyst)", _pm),
-    ("execution", "ExecutionRun", "OrderIntentSet(pm)", _execution),
+    ("execution", "ExecutionRun", "OrderIntentSet(pm)", execution_view),
     ("monitor", "MonitorRun", "ExecutionRun(execution)", _monitor),
     ("reporter", "Snapshot", "MonitorRun(monitor)", _reporter),
 )

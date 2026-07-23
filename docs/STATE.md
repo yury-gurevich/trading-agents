@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-23 13:05 AEST · **Version:** 0.73.01 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side had **never executed once** until 0.73.01 (DL-58): a 07-20 stop-out decision reached no broker, and green runs kept scoring PASS while the account ran out of buying power. Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-23 14:20 AEST · **Version:** 0.73.02 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side had **never executed once** until 0.73.01 (DL-58): a 07-20 stop-out decision reached no broker, and green runs kept scoring PASS while the account ran out of buying power. Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,26 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Acceptance scores outcome, not intent (fix, 0.73.02, 2026-07-23) — THE GATE COULD NOT SEE
+  TWO DEAD DAYS.** DL-58's named limit, closed. The gate's boundaries were all *conservation*
+  checks, and `execution.submitted` is an **intent count** — it says orders reached the broker,
+  never that the broker did anything with them. So 07-21 (all five orders rejected at the open,
+  `regt_buying_power=0`) and 07-22 (five more against zero buying power) both scored
+  `ACCEPTANCE PASS`. **Fix (DL-59):** `FillOutcomes` classifies a run's Fill nodes by real broker
+  outcome (`broker_status` overrides submit-time `status`), and a fourth verdict **`UNPROVEN`**
+  names the third state — filled → PASS, all resolved unfilled → **FAIL**, still queued →
+  UNPROVEN (exit 0, never rendered as PASS). Counted from Fill nodes, **not**
+  `ExecutionRun.submitted`: a broker refusing at submit time leaves `submitted=0`, so scoring
+  intent would pass exactly that run. Dashboard: UNPROVEN stays **GREEN + warning row**
+  (a nightly false RED trains the operator to ignore the light — DL-47), summary "N orders
+  placed, none filled yet"; a real fault is still RED. **Proven:** `make ci` exit 0, 9/9,
+  1737 passed, 100.00% coverage; end-to-end test drives a rejecting broker and asserts FAIL with
+  `submitted=0, orders=2, unfilled=2` proving intent ≠ outcome; **replayed on the three real
+  runs — 07-20 `PASS`, 07-21 `FAIL` ("0 of 5 submitted orders filled … the run traded
+  nothing"), 07-22 `UNPROVEN`.** **Named limit:** proves *whether* orders filled, not *how well*
+  (slippage/partials unscored); and a run stays UNPROVEN until acceptance is re-run after the
+  open, which nothing yet does automatically.
 
 - **Exit path made executable + faults made visible (fix, 0.73.01, 2026-07-23) — THE STACK
   COULD ONLY BUY.** A routine run review found `sched-2026-07-22` green (7/7, `ACCEPTANCE PASS`)

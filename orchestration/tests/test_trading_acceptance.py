@@ -17,14 +17,13 @@ from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.observatory import Breach, Check, StageView, accept
 from orchestration.packs.trading_acceptance import (
-    _CONSERVATION,
-    _conserves,
     _explains_floor,
     _is_no_trade,
     accept_run,
     evaluate_stages,
     render_acceptance,
 )
+from orchestration.packs.trading_boundaries import _CONSERVATION, _conserves
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import source
 
@@ -65,11 +64,21 @@ def test_broken_chain_is_rejected() -> None:
     assert "NOT REACHED" in out
 
 
-def _complete_stages(scored: int) -> tuple[StageView, ...]:
-    """Minimal complete pipeline for the pack-level truth table."""
+def _complete_stages(
+    scored: int,
+    *,
+    filled: int | None = None,
+    unfilled: int = 0,
+    statuses: str = "filled",
+) -> tuple[StageView, ...]:
+    """Minimal complete pipeline for the pack-level truth table.
+
+    ``filled``/``unfilled`` are what the broker did with the submitted orders; they
+    default to "every order filled" so a healthy run stays the baseline.
+    """
     return (
-        StageView("provider", "x", {"returned": 1}, reached=True),
-        StageView("scanner", "x", {"survived": 1}, reached=True),
+        StageView("provider", "x", {"returned": max(scored, 1)}, reached=True),
+        StageView("scanner", "x", {"survived": max(scored, 1)}, reached=True),
         StageView(
             "analyst",
             "x",
@@ -84,7 +93,18 @@ def _complete_stages(scored: int) -> tuple[StageView, ...]:
             reached=True,
             checks=(Check("evaluated", "floor", 1.0),),
         ),
-        StageView("execution", "x", {"submitted": scored}, reached=True),
+        StageView(
+            "execution",
+            "x",
+            {
+                "submitted": scored,
+                "orders": scored,
+                "filled": scored if filled is None else filled,
+                "unfilled": unfilled,
+                "statuses": statuses,
+            },
+            reached=True,
+        ),
         StageView("monitor", "x", {"checked": scored}, reached=True),
         StageView("reporter", "x", {"summary": "done"}, reached=True),
     )

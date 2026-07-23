@@ -26,6 +26,28 @@ function Get-Json([string[]]$Cmd) {
   try { return $raw | ConvertFrom-Json } catch { return $null }
 }
 
+function Get-ReplicaCount([string]$App) {
+  # Count in PowerShell, never with a JMESPath `length(...)`: az is a .cmd shim here, so
+  # PowerShell strips the quotes and cmd chokes on the parentheses (exit 255). That failure
+  # used to render as a flat `replicas=0` — a broken call looking exactly like a real zero.
+  # Returns $null when the call fails, so the board can say "?" instead of lying.
+  $raw = az containerapp replica list -n $App -g $RG --subscription $SUB -o json 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
+  try { return @($raw | ConvertFrom-Json).Count } catch { return $null }
+}
+
+function Test-InWindow([string]$Start, [string]$End) {
+  # KEDA cron window "M H * * *" -> is UTC now inside it? Wraps past midnight.
+  $s = ($Start ?? '') -split '\s+'; $e = ($End ?? '') -split '\s+'
+  if ($s.Count -lt 2 -or $e.Count -lt 2) { return $null }
+  if ($s[0] -notmatch '^\d+$' -or $s[1] -notmatch '^\d+$') { return $null }
+  if ($e[0] -notmatch '^\d+$' -or $e[1] -notmatch '^\d+$') { return $null }
+  $now = [DateTime]::UtcNow; $mins = $now.Hour * 60 + $now.Minute
+  $from = [int]$s[1] * 60 + [int]$s[0]; $to = [int]$e[1] * 60 + [int]$e[0]
+  if ($from -le $to) { return ($mins -ge $from -and $mins -lt $to) }
+  return ($mins -ge $from -or $mins -lt $to)   # window crosses midnight
+}
+
 function Get-NextFire([string]$Cron) {
   # Supports the simple "M H * * *" daily shape the dispatcher uses; else no ETA.
   $parts = ($Cron ?? '') -split '\s+'
@@ -43,7 +65,7 @@ function Show-Board {
   $build = Get-Json @('gh', 'run', 'list', '--workflow', 'build-images.yml', '--limit', '1',
     '--json', 'status,conclusion,event,headBranch,createdAt')
   $apps = Get-Json @('az', 'containerapp', 'list', '-g', $RG, '--subscription', $SUB, '--query',
-    '[].{name:name, state:properties.provisioningState, image:properties.template.containers[0].image}',
+    '[].{name:name, state:properties.provisioningState, image:properties.template.containers[0].image, winStart:properties.template.scale.rules[0].custom.metadata.start, winEnd:properties.template.scale.rules[0].custom.metadata.end}',
     '-o', 'json')
   $jobInfo = Get-Json @('az', 'containerapp', 'job', 'show', '-n', $JobName, '-g', $RG, '--subscription', $SUB,
     '--query', '{image:properties.template.containers[0].image, cron:properties.configuration.scheduleTriggerConfig.cronExpression}',
@@ -55,6 +77,7 @@ function Show-Board {
   if ($null -ne $execs -and $execs -isnot [array]) { $execs = @($execs) }
 
   $tag = { param($img) if ($img -match ':([^:]+)$') { $Matches[1] } else { '?' } }
+  $hhmm = { param($cron) $p = ($cron ?? '') -split '\s+'; if ($p.Count -ge 2) { "{0:00}:{1:00}" -f [int]$p[1], [int]$p[0] } else { '??:??' } }
   $tags = @(@($apps) + @($jobInfo) | Where-Object { $_ } | ForEach-Object { & $tag $_.image } | Sort-Object -Unique)
   $lastExec = if ($execs) { $execs[0] } else { $null }
 
@@ -108,21 +131,39 @@ function Show-Board {
   } else { Write-Host "    (gh unavailable or no runs)" -ForegroundColor DarkGray }
 
   # ── Fleet ────────────────────────────────────────────────────────────────────
-  $suffix = if ($Replicas) { '' } else { '   (run with -Replicas for live counts)' }
+  # Columns are grouped by what they describe, left to right:
+  #   identity (APP) | what is deployed (DEPLOY, IMAGE) | what is running now (PODS, POWER, WAKE)
+  $suffix = if ($Replicas) { '' } else { '   (-Replicas adds the PODS column)' }
   Write-Host ("`n  CONTAINER APPS ({0} of expected 13){1}" -f @($apps).Count, $suffix) -ForegroundColor Yellow
+  $podHead = if ($Replicas) { '{0,-6}' -f 'PODS' } else { '' }
+  Write-Host ("    {0,-19}{1,-10}{2,-7}{3}{4,-8}{5}" -f
+    'APP', 'DEPLOY', 'IMAGE', $podHead, 'POWER', 'WAKE (UTC)') -ForegroundColor DarkGray
   foreach ($a in @($apps) | Sort-Object name) {
     $c = if ($a.state -eq 'Succeeded') { 'Green' } else { 'Red' }
     Write-Host ("    {0,-19}" -f $a.name) -NoNewline
     Write-Host ("{0,-10}" -f $a.state) -ForegroundColor $c -NoNewline
-    Write-Host (" :{0}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
+    Write-Host ("{0,-7}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
+    $inWin = Test-InWindow $a.winStart $a.winEnd
     if ($Replicas) {
-      $n = Get-Json @('az', 'containerapp', 'replica', 'list', '-n', $a.name, '-g', $RG,
-        '--subscription', $SUB, '--query', 'length([])', '-o', 'json')
-      Write-Host ("  replicas={0}" -f ($n ?? 0)) -ForegroundColor DarkGray -NoNewline
+      $n = Get-ReplicaCount $a.name
+      if ($null -eq $n) {
+        # Never print 0 for a call that failed — that is how a broken probe passes for a fact.
+        Write-Host ("{0,-6}" -f '?') -ForegroundColor Magenta -NoNewline
+      } else {
+        # 0 pods inside the wake window is the only combination that is actually wrong.
+        $rc = if ($n -gt 0) { 'Green' } elseif ($inWin -eq $true) { 'Red' } else { 'DarkGray' }
+        Write-Host ("{0,-6}" -f $n) -ForegroundColor $rc -NoNewline
+      }
     }
-    Write-Host ""
+    $label = switch ($inWin) { $true { 'awake' } $false { 'asleep' } default { '?' } }
+    $wc = if ($inWin -eq $true) { 'Cyan' } else { 'DarkGray' }
+    Write-Host ("{0,-8}" -f $label) -ForegroundColor $wc -NoNewline
+    $win = if ($a.winStart -and $a.winEnd) { "{0}-{1}" -f (& $hhmm $a.winStart), (& $hhmm $a.winEnd) } else { '-' }
+    Write-Host $win -ForegroundColor DarkGray
   }
-  if ($jobInfo) { Write-Host ("    {0,-19}job        :{1}" -f $JobName, (& $tag $jobInfo.image)) -ForegroundColor DarkGray }
+  if ($jobInfo) {
+    Write-Host ("    {0,-19}{1,-10}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor DarkGray
+  }
   Write-Host ""
   return $problems.Count
 }

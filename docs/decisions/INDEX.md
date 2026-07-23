@@ -21,6 +21,7 @@ for the rationale instead of re-deriving it.
 | [0013](0013-continuous-improvement-system.md) | Continuous-improvement system: configurable params, measured runs, gated promotion | ✅ Accepted | How do we stop hand-tuning parameters? How does every process get measured, every tunable optimised against a metric, and improvements promoted without regression — and where does that state live? | `continuous-improvement` `tunable` `parameter-set` `metrics` `champion-challenger` `quality-gate` `p16` |
 | [0014](0014-postgresql-system-of-record.md) | PostgreSQL system of record | ✅ Accepted | What is the system of record after DL-43? What is Neo4j for now? | `postgres` `neo4j` `storage` `graphstore` `dl-43` |
 | [0015](0015-exit-lifecycle-and-stop-ownership.md) | A position is closed by a fill; the broker enforces the stop | ✅ Accepted | What closes a position — a decision or a fill? Who enforces the stop: our daily loop or the broker? What happens when a sell is refused or partially fills? | `exits` `monitor` `execution` `alpaca` `bracket` `oco` `stops` |
+| [0016](0016-one-run-one-evidence-both-directions.md) | One run, one evidence set, both directions | ✅ Accepted | Are buy and sell decided together on the same evidence, or by separate mechanisms? How does a sell reach execution? | `exits` `analyst` `portfolio-manager` `execution` `monitor` `decisions` |
 
 ## Status legend
 
@@ -30,7 +31,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0016`.
+1. Next number is `0017`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

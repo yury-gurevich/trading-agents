@@ -115,6 +115,47 @@ class SectorBook:
             self._names[sector] = self._names.get(sector, 0) + 1
             self._held.add(item.ticker)
 
+    def exit_outcomes(
+        self, item: Recommendation, max_names_per_sector: int
+    ) -> tuple[GateOutcome, ...]:
+        """Return concentration evidence for a sell that reduces exposure."""
+        sector = self._sectors.get(item.ticker)
+        if sector is None:
+            return ()
+        names = self._names.get(sector, 0)
+        outcomes = [
+            GateOutcome(
+                name="max_sector_pct",
+                value=0.0,
+                threshold=1.0,
+                passed=True,
+                detail=f"sector={sector}; sell reduces sector deployment",
+            )
+        ]
+        if max_names_per_sector > 0:
+            outcomes.append(
+                GateOutcome(
+                    name="max_names_per_sector",
+                    value=float(max(0, names - 1)),
+                    threshold=float(max_names_per_sector),
+                    passed=True,
+                    detail=f"sector={sector}; sell reduces held sector names",
+                )
+            )
+        return tuple(outcomes)
+
+    def record_exit(self, ticker: str) -> None:
+        """Commit an approved exit to the running sector name counts."""
+        sector = self._sectors.get(ticker)
+        if sector is None or ticker not in self._held:
+            return
+        self._held.remove(ticker)
+        current = self._names.get(sector, 0)
+        if current <= 1:
+            self._names.pop(sector, None)
+        else:
+            self._names[sector] = current - 1
+
 
 def _ratio(numerator: Decimal, denominator: Decimal) -> float:
     if denominator <= 0:

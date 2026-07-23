@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
 from agents.portfolio_manager.portfolio import PortfolioState, default_portfolio
 from agents.portfolio_manager.provider_client import (
     request_market_data,
@@ -51,7 +52,7 @@ class PortfolioManagerAgent(AgentBase):
         super().__init__(CONTRACT, bus)
         self._graph = graph
         self._settings = settings or PortfolioManagerSettings()
-        self._portfolio = portfolio or default_portfolio(self._settings.starting_cash)
+        self._portfolio = portfolio
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.handlers = {
             "evaluate_orders": self._evaluate_orders,
@@ -82,7 +83,7 @@ class PortfolioManagerAgent(AgentBase):
             market=market,
             regime=regime,
             settings=self._settings,
-            portfolio=self._portfolio,
+            portfolio=self._current_portfolio(),
             sink=self.sink,
         )
 
@@ -105,3 +106,10 @@ class PortfolioManagerAgent(AgentBase):
             start=end - timedelta(days=self._settings.price_lookback_days),
             end=end,
         )
+
+    def _current_portfolio(self) -> PortfolioState:
+        if self._portfolio is not None:
+            return self._portfolio
+        if self._graph.list_nodes("Position"):
+            return portfolio_from_graph(self._graph, self._settings.starting_cash)
+        return default_portfolio(self._settings.starting_cash)

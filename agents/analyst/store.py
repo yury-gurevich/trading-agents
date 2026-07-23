@@ -28,6 +28,7 @@ def write_analysis(
     rejections: tuple[Rejection, ...],
     sentiment_readings: tuple[SentimentReading, ...] = (),
     incident_refs: tuple[str, ...] = (),
+    held_count: int = 0,
 ) -> Provenance:
     """Write an analyst run, recommendations, sentiment readings, and lineage."""
     run_id = f"analyst-run-{uuid.uuid4().hex}"
@@ -37,6 +38,7 @@ def write_analysis(
         {
             "recommendation_count": len(recommendations),
             "rejection_count": len(rejections),
+            "held_count": held_count,
             "source_scan_run_id": candidate_set.run_id,
             "created_at": datetime.now(tz=UTC).isoformat(),
         },

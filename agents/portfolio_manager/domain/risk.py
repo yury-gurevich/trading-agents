@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.concentration import SectorBook
+from agents.portfolio_manager.domain.exits import exit_order_intent, exit_outcomes
 from agents.portfolio_manager.domain.gate_report import (
     order_intent,
     position_outcomes,
@@ -53,11 +54,32 @@ def evaluate_recommendations(
     open_tickers = set(portfolio.positions)
     for item in _ordered(recommendations):
         price = prices.get(item.ticker)
-        rejection = _precheck(item, price)
+        rejection = _precheck(item, price, portfolio)
         if rejection is not None:
             rejected.append(rejection)
             continue
         assert price is not None
+        if item.action == "sell":
+            quantity = portfolio.positions[item.ticker]
+            gates = exit_outcomes(
+                item=item,
+                quantity=quantity,
+                price=price,
+                portfolio=portfolio,
+                min_order_quantity=min_order_quantity,
+                max_positions=max_positions,
+            )
+            rejection = position_rejection(item.ticker, gates)
+            if rejection is not None:
+                rejected.append(rejection)
+                continue
+            sector_gates = book.exit_outcomes(item, max_names_per_sector)
+            approved.append(
+                exit_order_intent(item, quantity, price, (*gates, *sector_gates))
+            )
+            open_tickers.discard(item.ticker)
+            book.record_exit(item.ticker)
+            continue
         quantity = size_quantity(
             portfolio_value=portfolio.value,
             max_position_pct=max_position_pct,
@@ -110,13 +132,30 @@ def _ordered(
     recommendations: tuple[Recommendation, ...],
 ) -> tuple[Recommendation, ...]:
     return tuple(
-        sorted(recommendations, key=lambda item: (-item.confidence, item.ticker))
+        sorted(
+            recommendations,
+            key=lambda item: (_action_rank(item.action), -item.confidence, item.ticker),
+        )
     )
 
 
-def _precheck(item: Recommendation, price: Money | None) -> RejectedOrder | None:
-    if item.action != "buy":
+def _action_rank(action: str) -> int:
+    if action == "sell":
+        return 0
+    if action == "buy":
+        return 1
+    return 2
+
+
+def _precheck(
+    item: Recommendation, price: Money | None, portfolio: PortfolioState
+) -> RejectedOrder | None:
+    if item.action == "hold":
+        return RejectedOrder(ticker=item.ticker, reason="hold_recommendation")
+    if item.action not in ("buy", "sell"):
         return RejectedOrder(ticker=item.ticker, reason="unsupported_action")
+    if item.action == "sell" and item.ticker not in portfolio.positions:
+        return RejectedOrder(ticker=item.ticker, reason="position_unavailable")
     if price is None or price.amount <= 0:
         return RejectedOrder(ticker=item.ticker, reason="price_unavailable")
     return None

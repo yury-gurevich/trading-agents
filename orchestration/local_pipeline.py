@@ -50,6 +50,7 @@ def cascade_once(
     *,
     provider_agent: ProviderAgent,
     broker: Broker,
+    analyst_settings: AnalystSettings | None = None,
     pm_settings: PortfolioManagerSettings | None = None,
     forecaster_agent: ForecasterAgent | None = None,
     deliberation_llm: LLMClient | None = None,
@@ -69,7 +70,7 @@ def cascade_once(
     so the deterministic cascade is unchanged.
     """
     scanner_settings = ScannerSettings()
-    analyst_settings = AnalystSettings()
+    analyst_settings = analyst_settings or AnalystSettings()
     pm_settings = pm_settings or PortfolioManagerSettings()
     execution_settings = ExecutionSettings()
     bus = provider_agent.bus

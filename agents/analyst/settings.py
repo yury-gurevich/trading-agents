@@ -44,6 +44,16 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    exit_confidence_floor: float = tunable(
+        0.50,
+        why=(
+            "Deliberate ADR-0016 foundation-now placeholder: held names exit only "
+            "when confidence falls clearly below the entry floor; real exit strategy "
+            "work lands after one evidence path carries both directions."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
     confidence_span: float = tunable(
         0.60,
         why="Let strong technical evidence clear the default 0.60 regime threshold.",

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from agents.analyst.domain.analyze import score_candidates
 from agents.analyst.domain.sentiment_reading import provider_reading
+from agents.analyst.held_universe import scoring_universe
 from agents.analyst.result import build_empty_result, run_explanation, split_decisions
 from agents.analyst.store import write_analysis
 from contracts.analyst import RecommendationSet
@@ -20,6 +21,7 @@ from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from agents.analyst.settings import AnalystSettings
+    from contracts.positions import OpenPosition
     from contracts.provider import MarketData, RegimeContext
     from contracts.scanner import CandidateSet
     from kernel import FaultSink, GraphStore
@@ -34,42 +36,62 @@ def run_analysis(
     sink: FaultSink,
     *,
     incident_refs: tuple[str, ...] = (),
+    held_positions: tuple[OpenPosition, ...] = (),
 ) -> RecommendationSet:
     """Score candidates against an acquired market+regime and persist the run."""
+    held_tickers = tuple(position.ticker for position in held_positions)
+    scoring_set = scoring_universe(candidate_set, held_positions)
     if market.quality.used_fallback:
         _record_fault(sink, "provider returned degraded market data")
         return build_empty_result(
             graph,
-            candidate_set,
+            scoring_set,
             "provider market data degraded",
             incident_refs or ("market_data_degraded",),
+            held_count=len(held_positions),
         )
     if regime.provenance.incident_refs:
         _record_fault(sink, "provider regime data degraded")
         return build_empty_result(
-            graph, candidate_set, "provider regime data degraded", incident_refs
+            graph,
+            scoring_set,
+            "provider regime data degraded",
+            incident_refs,
+            held_count=len(held_positions),
         )
     decisions = score_candidates(
-        candidate_set, market, regime, market.benchmark, settings, sink
+        scoring_set,
+        market,
+        regime,
+        market.benchmark,
+        settings,
+        sink,
+        held_tickers,
     )
     if decisions is None:
-        return build_empty_result(graph, candidate_set, "analyst scoring failed")
+        return build_empty_result(
+            graph,
+            scoring_set,
+            "analyst scoring failed",
+            held_count=len(held_positions),
+        )
     recommendations, rejections = split_decisions(decisions)
     lexicon = tuple(
         d.sentiment_reading for d in decisions if d.sentiment_reading is not None
     )
     provider_readings = tuple(
         provider_reading(c.ticker, market.sentiment[c.ticker])
-        for c in candidate_set.candidates
+        for c in scoring_set.candidates
         if c.ticker in market.sentiment
     )
     provenance = write_analysis(
         graph,
-        candidate_set=candidate_set,
+        candidate_set=scoring_set,
         recommendations=recommendations,
         rejections=rejections,
         sentiment_readings=lexicon + provider_readings,
         incident_refs=incident_refs,
+        held_count=len(held_positions),
     )
     return RecommendationSet(
         run_id=provenance.run_id,

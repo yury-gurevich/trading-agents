@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from agents.analyst.result import build_empty_result, incident_refs
 from agents.analyst.run import run_analysis
 from agents.analyst.settings import AnalystSettings
+from contracts.positions import open_positions
 from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 from contracts.scanner import CandidateSet
 from kernel import CollectingFaultSink
@@ -73,7 +74,8 @@ def _run_from_graph(
     settings: AnalystSettings,
     sink: FaultSink,
 ) -> RecommendationSet:
-    if not candidate_set.candidates:
+    held = open_positions(graph)
+    if not candidate_set.candidates and not held:
         return build_empty_result(
             graph, candidate_set, "scanner produced no candidates"
         )
@@ -86,7 +88,14 @@ def _run_from_graph(
         return build_empty_result(graph, candidate_set, "provider data unavailable")
     refs = incident_refs(market, regime)
     return run_analysis(
-        graph, candidate_set, market, regime, settings, sink, incident_refs=refs
+        graph,
+        candidate_set,
+        market,
+        regime,
+        settings,
+        sink,
+        incident_refs=refs,
+        held_positions=held,
     )
 
 

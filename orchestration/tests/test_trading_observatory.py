@@ -18,7 +18,7 @@ from agents.provider.sources import DataSource, FakeDataSource
 from contracts.provider import OHLCVBar
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
-from orchestration.packs.trading_observatory import inspect
+from orchestration.packs.trading_observatory import inspect, observe_run
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import bar, source
 
@@ -70,6 +70,14 @@ def test_clean_run_holds_all_invariants() -> None:
     assert "WARN  sector_coverage" in out
     # ...and it is the ONLY breach: every blocking data invariant holds.
     assert "1 WARN - inspect above" in out
+
+
+def test_analyst_view_exposes_held_count() -> None:
+    graph = _cascade(source(), ("AAPL", "MSFT"), "obs-held-field")
+    analyst = next(
+        view for view in observe_run(graph, "obs-held-field") if view.name == "analyst"
+    )
+    assert analyst.observed["held"] == 0
 
 
 def test_degraded_run_warns_on_empty_analyst_and_pm() -> None:

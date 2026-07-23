@@ -65,7 +65,9 @@ def _score(alpha: float | None = None) -> ScoreBreakdown:
     )
 
 
-def _decision(_candidate: Any, _score: Any, _regime: Any) -> AnalysisDecision:
+def _decision(
+    _candidate: Any, _score: Any, _regime: Any, **_context: Any
+) -> AnalysisDecision:
     return AnalysisDecision(recommendation=None, rejection=None)
 
 

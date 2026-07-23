@@ -45,7 +45,7 @@ def test_risk_prechecks_reject_unsupported_action_and_missing_price() -> None:
 
     assert approved == ()
     assert [(item.ticker, item.reason) for item in rejected] == [
-        ("AAPL", "unsupported_action"),
+        ("AAPL", "position_unavailable"),
         ("MSFT", "price_unavailable"),
     ]
 

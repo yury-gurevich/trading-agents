@@ -21,6 +21,7 @@ from agents.analyst.run import run_analysis
 from agents.analyst.settings import AnalystSettings
 from contracts.analyst import CONTRACT, RecommendationSet
 from contracts.common import Explanation, Window
+from contracts.positions import open_positions
 from contracts.scanner import CandidateSet
 from kernel import (
     AgentBase,
@@ -80,7 +81,8 @@ class AnalystAgent(AgentBase):
 
     def _analyze(self, request: BaseModel) -> RecommendationSet:
         candidate_set = CandidateSet.model_validate(request)
-        if not candidate_set.candidates:
+        held = open_positions(self._graph)
+        if not candidate_set.candidates and not held:
             return build_empty_result(
                 self._graph, candidate_set, "scanner produced no candidates"
             )
@@ -91,6 +93,7 @@ class AnalystAgent(AgentBase):
             candidate_set,
             self._window(),
             self._settings.benchmark_ticker,
+            held,
         )
         regime = request_regime(self.bus, self.sink, self._window().end)
         refs = incident_refs(market, regime)
@@ -106,6 +109,7 @@ class AnalystAgent(AgentBase):
             self._settings,
             self.sink,
             incident_refs=refs,
+            held_positions=held,
         )
 
     def _explain_recommendation(self, request: BaseModel) -> Explanation:

@@ -12,8 +12,8 @@ from agents.execution.reconciliation_store import position_divergences
 from kernel import InMemoryGraphStore, Node
 
 
-def test_position_divergences_ignores_inactive_graph_positions() -> None:
-    """Kills agents.execution.reconciliation_store.x__is_active_position__mutmut_1."""
+def test_position_divergences_treats_close_decision_as_active_lineage() -> None:
+    """ADR-0015 s1: close intent stays active while the broker still holds it."""
     graph = InMemoryGraphStore()
     _position(graph, "active:AAPL", "AAPL", 1)
     _position(graph, "closed:MSFT", "MSFT", 1, status="closed")
@@ -23,7 +23,16 @@ def test_position_divergences_ignores_inactive_graph_positions() -> None:
     close = graph.merge_node("CloseDecision", "close:INTC", {"decision": "close"})
     graph.add_edge(close, closed_by_decision, "CLOSES")
 
-    assert position_divergences(graph, (BrokerPosition("AAPL", 1, 10000, 10000),)) == ()
+    assert (
+        position_divergences(
+            graph,
+            (
+                BrokerPosition("AAPL", 1, 10000, 10000),
+                BrokerPosition("INTC", 1, 10000, 10000),
+            ),
+        )
+        == ()
+    )
 
 
 def _position(

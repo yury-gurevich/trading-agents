@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from contracts.common import Provenance
+from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
     from agents.monitor.domain.positions import PositionDraft
@@ -100,6 +101,10 @@ def write_close_decision(
     """Write one close decision (with realized PnL) and connect it to the Position."""
     node = graph.merge_node(
         "CloseDecision",
+        # Run-scoped on purpose: the graph is append-only (graph_support.py
+        # refuses to overwrite a property), so one position-keyed node cannot
+        # carry a changing run_id. Under evidence-based closure the same exit
+        # is re-decided each run, and each decision is its own fact.
         f"{monitor_run_id}:{position.key}:close",
         {
             "run_id": monitor_run_id,
@@ -147,9 +152,9 @@ def write_monitor_run(
 
 
 def is_open_position(graph: GraphStore, position: Node) -> bool:
-    """Return whether no close decision has been written for this position."""
-    closes = graph.ancestors(position, max_depth=1, edge_types={"CLOSES"})
-    return not any(close.props.get("decision") == "close" for close in closes)
+    """Return whether broker reconciliation still shows this position active."""
+    del graph
+    return is_active_position_node(position)
 
 
 def open_positions(graph: GraphStore, positions: tuple[Node, ...]) -> tuple[Node, ...]:

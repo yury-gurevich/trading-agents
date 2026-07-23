@@ -74,18 +74,19 @@ def test_system_health_counts_faults_flags_and_last_run() -> None:
     assert health.last_run_id == "new"
 
 
-def test_open_positions_and_positions_for_run_project_close_state() -> None:
+def test_open_positions_and_positions_for_run_project_broker_close_state() -> None:
+    """ADR-0015 s1: surfaces keep decided positions visible until broker closure."""
     graph = InMemoryGraphStore()
     open_position = _position(graph, "run-a:AAPL", "run-a", "AAPL")
-    closed_by_edge = _position(graph, "run-a:MSFT", "run-a", "MSFT")
+    decided_by_edge = _position(graph, "run-a:MSFT", "run-a", "MSFT")
     non_close_edge = _position(graph, "run-a:TSLA", "run-a", "TSLA")
-    _position(graph, "run-b:NVDA", "run-b", "NVDA", status="closed")
+    _position(graph, "run-b:NVDA", "run-b", "NVDA", broker_absent=True)
     close = graph.merge_node(
         "CloseDecision",
         "monitor:run-a:MSFT:close",
         {"decision": "close", "trigger": "stop"},
     )
-    graph.add_edge(close, closed_by_edge, "CLOSES")
+    graph.add_edge(close, decided_by_edge, "CLOSES")
     other = graph.merge_node("OtherDecision", "monitor:run-a:TSLA:note", {})
     graph.add_edge(other, non_close_edge, "CLOSES")
 
@@ -94,6 +95,7 @@ def test_open_positions_and_positions_for_run_project_close_state() -> None:
 
     assert [view.position_id for view in open_views] == [
         open_position.key,
+        decided_by_edge.key,
         non_close_edge.key,
     ]
     assert [view.position_id for view in run_views] == [
@@ -101,7 +103,7 @@ def test_open_positions_and_positions_for_run_project_close_state() -> None:
         "run-a:MSFT",
         "run-a:TSLA",
     ]
-    assert run_views[1].status == "closed"
+    assert run_views[1].status == "open"
     assert run_views[1].close_trigger == "stop"
 
 
@@ -126,6 +128,7 @@ def _position(
     ticker: str,
     *,
     status: str = "open",
+    broker_absent: bool = False,
 ) -> Node:
     return graph.merge_node(
         "Position",
@@ -136,6 +139,7 @@ def _position(
             "quantity": 2,
             "opened_price_cents": 10100,
             "status": status,
+            "broker_absent": broker_absent,
         },
     )
 

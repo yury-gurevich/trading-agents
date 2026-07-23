@@ -30,18 +30,23 @@ from kernel import InMemoryGraphStore, Node
 
 
 def test_portfolio_from_graph_filters_to_active_positions() -> None:
+    """ADR-0015 s1: only broker evidence closes a position. A decided-but-unsold
+    name (INTC) stays in the book — it is still held, and hiding it is exactly
+    what stranded AMD/CSCO/HPE/MRVL."""
     graph = InMemoryGraphStore()
     _position(graph, "active:AMD", "AMD", 19)
     _position(graph, "absent:HPE", "HPE", 229, broker_absent=True)
     _position(graph, "superseded:CSCO", "CSCO", 88, broker_superseded_by="broker")
     _position(graph, "status:MRVL", "MRVL", 44, status="closed")
-    closed = _position(graph, "closed:INTC", "INTC", 10)
+    decided = _position(graph, "closed:INTC", "INTC", 10)
     close = graph.merge_node("CloseDecision", "close:INTC", {"decision": "close"})
-    graph.add_edge(close, closed, "CLOSES")
+    graph.add_edge(close, decided, "CLOSES")
 
     portfolio = portfolio_from_graph(graph, Decimal("10000.00"))
 
-    assert portfolio.positions == {"AMD": 19}
+    # broker_absent / superseded / status=closed are evidence and do close;
+    # a CloseDecision alone is intent and does not.
+    assert portfolio.positions == {"AMD": 19, "INTC": 10}
     assert portfolio.cash.amount == Decimal("10000.00")
 
 

@@ -12,6 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Literal
 
 from agents.execution.order_status_store import write_order_status
+from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill, BrokerPosition
@@ -143,12 +144,8 @@ def _graph_position_quantities(graph: GraphStore) -> dict[str, int]:
 
 
 def _is_active_position(graph: GraphStore, node: Node) -> bool:
-    if node.props.get("status", "open") != "open":
-        return False
-    if node.props.get("broker_absent") or node.props.get("broker_superseded_by"):
-        return False
-    closes = graph.ancestors(node, max_depth=1, edge_types={"CLOSES"})
-    return not any(close.props.get("decision") == "close" for close in closes)
+    del graph
+    return is_active_position_node(node)
 
 
 def _flag_reason(snapshot: Node, divergences: tuple[str, ...]) -> str:

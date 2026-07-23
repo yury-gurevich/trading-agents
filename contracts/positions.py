@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 POSITION_LABEL = "Position"
-_CLOSES_EDGE = "CLOSES"
 
 
 @dataclass(frozen=True)
@@ -33,7 +32,7 @@ def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
     return tuple(
         node
         for node in graph.list_nodes(POSITION_LABEL)
-        if _broker_active(node) and _is_open_position(graph, node)
+        if is_active_position_node(node)
     )
 
 
@@ -58,17 +57,13 @@ def open_position_tickers(graph: GraphStore) -> tuple[Ticker, ...]:
     return tuple(position.ticker for position in open_positions(graph))
 
 
-def _broker_active(node: Node) -> bool:
+def is_active_position_node(node: Node) -> bool:
+    """Return whether broker evidence still treats a Position as open."""
     if node.props.get("status", "open") != "open":
         return False
     return not (
         node.props.get("broker_absent") or node.props.get("broker_superseded_by")
     )
-
-
-def _is_open_position(graph: GraphStore, position: Node) -> bool:
-    closes = graph.ancestors(position, max_depth=1, edge_types={_CLOSES_EDGE})
-    return not any(close.props.get("decision") == "close" for close in closes)
 
 
 def _position_ref(keys: tuple[str, ...]) -> str:

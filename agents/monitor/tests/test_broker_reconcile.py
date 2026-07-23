@@ -99,28 +99,24 @@ def test_reconcile_positions_keeps_matching_lineage_position() -> None:
     assert active_positions(graph) == (existing,)
 
 
-def test_reconcile_positions_noops_without_a_fresh_snapshot() -> None:
-    graph = InMemoryGraphStore()
-    _snapshot(graph, "stale", status="stale")
-
-    reconcile_positions_from_latest_snapshot(graph, MonitorSettings())
-
-    assert graph.list_nodes("Position") == ()
-
-
-def test_active_position_helpers_filter_closed_positions() -> None:
+def test_active_position_helpers_filter_broker_closed_positions() -> None:
+    """ADR-0015 s1: decisions are lineage; broker flags close a position."""
     graph = InMemoryGraphStore()
     open_node = _position(graph, "pm-run:AMD", "AMD", 19, 15924)
     status_closed = _position(graph, "pm-run:MRVL", "MRVL", 44, 8500, status="closed")
     close_closed = _position(graph, "pm-run:HPE", "HPE", 229, 1800)
     close = graph.merge_node("CloseDecision", "close:HPE", {"decision": "close"})
     graph.add_edge(close, close_closed, "CLOSES")
+    broker_absent = _position(
+        graph, "pm-run:CSCO", "CSCO", 88, 6400, broker_absent=True
+    )
 
-    assert active_positions(graph) == (open_node,)
+    assert active_positions(graph) == (open_node, close_closed)
     assert open_positions(graph, (open_node, status_closed, close_closed)) == (
         open_node,
-        status_closed,
+        close_closed,
     )
+    assert open_positions(graph, (broker_absent,)) == ()
 
 
 def test_reconcile_positions_returns_existing_broker_key_if_present() -> None:

@@ -11,7 +11,8 @@ from contracts.positions import active_position_nodes, open_positions
 from kernel import InMemoryGraphStore
 
 
-def test_open_position_tickers_filters_closed_and_broker_inactive_nodes() -> None:
+def test_open_position_tickers_filter_only_broker_inactive_nodes() -> None:
+    """ADR-0015 s1: close decisions are intent; broker evidence closes them."""
     graph = InMemoryGraphStore()
     active = _position(graph, "active:AAPL", "AAPL", 2)
     _position(graph, "closed:MSFT", "MSFT", 1, status="closed")
@@ -21,14 +22,17 @@ def test_open_position_tickers_filters_closed_and_broker_inactive_nodes() -> Non
     close = graph.merge_node("CloseDecision", "close:intc", {"decision": "close"})
     graph.add_edge(close, closed_by_decision, "CLOSES")
 
-    assert active_position_nodes(graph) == (active,)
+    assert active_position_nodes(graph) == (active, closed_by_decision)
     positions = open_positions(graph)
-    assert positions[0].ticker == "AAPL"
-    assert positions[0].quantity == 2
-    assert positions[0].position_ref
+    assert [(position.ticker, position.quantity) for position in positions] == [
+        ("AAPL", 2),
+        ("INTC", 1),
+    ]
+    assert all(position.position_ref for position in positions)
 
 
 def test_open_positions_ref_is_stable_for_same_nodes_and_changes_with_nodes() -> None:
+    """ADR-0015 section 1: lineage decisions do not alter openness; broker nodes do."""
     graph = InMemoryGraphStore()
     _position(graph, "b:AAPL", "AAPL", 2)
     first = _position(graph, "a:AAPL", "AAPL", 3)
@@ -39,6 +43,7 @@ def test_open_positions_ref_is_stable_for_same_nodes_and_changes_with_nodes() ->
         first,
         "CLOSES",
     )
+    assert open_positions(graph)[0].position_ref == unchanged
     _position(graph, "c:AAPL", "AAPL", 3)
 
     assert open_positions(graph)[0].position_ref != unchanged

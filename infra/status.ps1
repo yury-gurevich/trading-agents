@@ -134,14 +134,17 @@ function Show-Board {
   # Columns are grouped by what they describe, left to right:
   #   identity (APP) | what is deployed (DEPLOY, IMAGE) | what is running now (PODS, POWER, WAKE)
   $suffix = if ($Replicas) { '' } else { '   (-Replicas adds the PODS column)' }
-  Write-Host ("`n  CONTAINER APPS ({0} of expected 13){1}" -f @($apps).Count, $suffix) -ForegroundColor Yellow
+  # 14 deploy targets, not 13: the dispatcher-cron job is retagged with the apps and is
+  # just as able to be left behind on an old image, so it is counted here too (DL-46).
+  $targets = @($apps).Count + @(@($jobInfo) | Where-Object { $_ }).Count
+  Write-Host ("`n  FLEET ({0} of expected 14 targets = 13 apps + 1 job){1}" -f $targets, $suffix) -ForegroundColor Yellow
   $podHead = if ($Replicas) { '{0,-6}' -f 'PODS' } else { '' }
-  Write-Host ("    {0,-19}{1,-10}{2,-7}{3}{4,-8}{5}" -f
+  Write-Host ("    {0,-19}{1,-11}{2,-7}{3}{4,-8}{5}" -f
     'APP', 'DEPLOY', 'IMAGE', $podHead, 'POWER', 'WAKE (UTC)') -ForegroundColor DarkGray
   foreach ($a in @($apps) | Sort-Object name) {
     $c = if ($a.state -eq 'Succeeded') { 'Green' } else { 'Red' }
     Write-Host ("    {0,-19}" -f $a.name) -NoNewline
-    Write-Host ("{0,-10}" -f $a.state) -ForegroundColor $c -NoNewline
+    Write-Host ("{0,-11}" -f $a.state) -ForegroundColor $c -NoNewline
     Write-Host ("{0,-7}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
     $inWin = Test-InWindow $a.winStart $a.winEnd
     if ($Replicas) {
@@ -162,7 +165,8 @@ function Show-Board {
     Write-Host $win -ForegroundColor DarkGray
   }
   if ($jobInfo) {
-    Write-Host ("    {0,-19}{1,-10}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor DarkGray
+    $jc = if ($jobInfo.image) { 'DarkGray' } else { 'Red' }
+    Write-Host ("    {0,-19}{1,-11}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor $jc
   }
   Write-Host ""
   return $problems.Count

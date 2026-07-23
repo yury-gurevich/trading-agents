@@ -25,22 +25,28 @@ _PM_RUN = "pm-run-fixture"
 _EXEC_RUN = "execution-submit-pm-run-fixture"
 
 
-def _market(close: float) -> MarketData:
+def _market(close: float, ticker: str) -> MarketData:
     return MarketData(
-        bars=(bar("AAPL", 0, close),),
+        bars=(bar(ticker, 0, close),),
         quality=DataQualityTrace(requested=1, returned=1),
         provenance=Provenance(run_id="provider-md", source_agent="provider"),
     )
 
 
 def _seed(
-    graph: InMemoryGraphStore, *, close: float = 100.0, lineage: bool = True
+    graph: InMemoryGraphStore,
+    *,
+    close: float = 100.0,
+    opened: float = 100.0,
+    lineage: bool = True,
+    ticker: str = "AAPL",
+    execution_key: str = _EXEC_RUN,
 ) -> Node:
-    seed_fill(graph, price_cents=int(close * 100))
+    seed_fill(graph, ticker=ticker, price_cents=int(opened * 100))
     pm_run = graph.get_node("PMRun", _PM_RUN)
     assert pm_run is not None
     exec_run = graph.merge_node(
-        "ExecutionRun", _EXEC_RUN, {"source_pm_run_id": _PM_RUN}
+        "ExecutionRun", execution_key, {"source_pm_run_id": _PM_RUN}
     )
     graph.add_edge(pm_run, exec_run, "EXECUTED_BY")
     if lineage:
@@ -51,7 +57,7 @@ def _seed(
         market_node = graph.merge_node(
             "MarketData",
             "market-data:fixture",
-            {"snapshot": _market(close).model_dump(mode="json")},
+            {"snapshot": _market(close, ticker).model_dump(mode="json")},
         )
         graph.add_edge(scan, market_node, "DERIVED_FROM")
     return exec_run
@@ -77,6 +83,40 @@ def test_monitor_pm_node_checks_positions_from_graph() -> None:
     assert find_pending(graph) == []
 
 
+def test_monitor_poll_redecides_amd_close_when_broker_still_holds_it() -> None:
+    """ADR-0015 s1: AMD/CSCO/HPE/MRVL stay open until the broker drops them."""
+    graph = InMemoryGraphStore()
+    first = _seed(graph, ticker="AMD", opened=100.0, close=94.0)
+    _snapshot(graph, "AMD", 1, 10000)
+
+    monitor_pm_node(first, graph=graph)
+    close_node = graph.list_nodes("CloseDecision")[0]
+    first_run_id = str(close_node.props["run_id"])
+    second = _seed(
+        graph,
+        ticker="AMD",
+        opened=100.0,
+        close=94.0,
+        execution_key="execution-submit-pm-run-fixture-second",
+    )
+
+    monitor_pm_node(second, graph=graph)
+
+    close_nodes = graph.list_nodes("CloseDecision")
+    runs = graph.list_nodes("MonitorRun")
+    # STILL EVALUATED on the second run — the whole fix. Before ADR-0015 s1 the
+    # first decision removed it from the book forever (the real AMD/CSCO/HPE/MRVL
+    # stranding), so positions_checked would have read [1, 0].
+    assert [run.props["positions_checked"] for run in runs] == [1, 1]
+    # Two decisions, not one: the graph is append-only, so each run's decision is
+    # its own immutable fact rather than a mutation of the previous one.
+    assert len(close_nodes) == 2
+    assert {str(node.props["run_id"]) for node in close_nodes} == {
+        first_run_id,
+        str(runs[-1].key),
+    }
+
+
 def test_monitor_pm_node_no_market_lineage_checks_nothing() -> None:
     graph = InMemoryGraphStore()
     node = _seed(graph, lineage=False)
@@ -94,3 +134,29 @@ def test_monitor_pm_node_stamps_recent_run() -> None:
     run = graph.list_nodes("MonitorRun")[0]
     created = datetime.fromisoformat(str(run.props["created_at"]))
     assert created <= datetime.now(tz=UTC)
+
+
+def _snapshot(
+    graph: InMemoryGraphStore,
+    ticker: str,
+    quantity: int,
+    avg_entry_cents: int,
+) -> None:
+    graph.merge_node(
+        "BrokerPositionSnapshot",
+        "snapshot:fresh",
+        {
+            "run_id": "broker-run",
+            "status": "fresh",
+            "created_at": "2026-07-23T00:00:00+00:00",
+            "holding_count": 1,
+            "holdings": [
+                {
+                    "ticker": ticker,
+                    "quantity": quantity,
+                    "avg_entry_cents": avg_entry_cents,
+                    "market_value_cents": quantity * avg_entry_cents,
+                }
+            ],
+        },
+    )

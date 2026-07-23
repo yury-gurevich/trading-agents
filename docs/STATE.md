@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-07-23 14:20 AEST · **Version:** 0.73.02 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side had **never executed once** until 0.73.01 (DL-58): a 07-20 stop-out decision reached no broker, and green runs kept scoring PASS while the account ran out of buying power. Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
+**Last updated:** 2026-07-23 15:05 AEST · **Version:** 0.73.02 · **🟡 THE STACK IS VALIDATED IN PRODUCTION — ON THE BUY SIDE ONLY.** The sell side has **never executed once**, and 0.73.01 did not fix it: DL-58 corrected what a close order *contains*, but the live `s135` re-run on 07-23 decided `CloseDecision CSCO close` and still produced **0 sell orders, with no fault** — because the graph-pull runtime has **no path that carries a close to execution at all** (DL-60). Read every "validated" claim below as scoped to entries until an exit is proven live. `sched-2026-07-20` (dispatcher `dispatcher-cron-29743110`, fleet on `:s130`) ran **7/7 → ACCEPTANCE PASS** with **ZERO `*_degraded` notes** — the first fully-fed scheduled run since 07-07, and the proof S128 mattered: all four enrichment feeds populated (1867 headlines; the earnings-window filter actually fired), sentiment restored, the analyst scoring on **full signal**, and the chronic all-reject no-trade signature flipped into **5 buys** (USB/BAC/PYPL/WFC/ABT, conf 0.61–0.68 lifted over the 0.600 floor by sentiment). S130's hardened DHI runtimes booted and ran the whole chain; 0 Escalations. Fleet standing on `:s130` (built `d0b0d3a`); **P12 clean-news runway accumulating since 2026-07-20**. **Now:** S133 **shipped** (0.71.07) — the **last shared credential is closed**: Service Bus access is now per-agent entity-level SAS, delivered and flipped live, and the hardening backlog has **no open rows**. The security gate finally ran on sprint code — via a PR at the time, and **since DL-56 it runs on push to every branch**, so worktree-and-merge-locally is gated without any PR. **Pending operator:** the standing broker-divergence Flags were **not** noise — they were correctly reporting an exit that never executed (DL-58); do **not** ack them until the AMD position is resolved. *Correction:* STATE had carried "S131 per-role DSN flip not yet applied" since 07-21 — **it was wrong**; the flip ran during S131 and a full 14/14 live probe on 07-22 proves every app connects under its own `ta_*` role (DL-54).
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + `STATE-01…05.md` + git). **LAW-02:** an item is "shipped" only when
@@ -21,6 +21,25 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **Fleet on `s135` + the sell side proven still unbuilt (2026-07-23) — INTENT WAS NOT OUTCOME,
+  AGAIN.** Deployed `s135` from `c7ccdb0` (all 14 targets, config intact, `DeployRecord` written),
+  then widened the KEDA windows to fire a real run and **restored them, verified identical to
+  backup** (master `25 22`, twelve agents `30 22`, all `end 30 00`). `sched-2026-07-23` ran
+  **7/7** on the new images. **PROVEN WORKING:** the DL-58 `GraphFaultSink` — the first `Fault`
+  nodes ever written (`provider returned no current price for HPE` / `MRVL`, so those two are
+  silently skipped every run); and the DL-59 gate, which returned **`UNPROVEN`** on the live run
+  instead of a false PASS. **PROVEN FAILING:** the monitor decided `CloseDecision CSCO close
+  trigger=time` and the broker's lifetime sell count stayed at **0**, with **no fault recorded**
+  — nothing was attempted. Root cause (DL-60): `dispatch_closes` exists only on the **bus RPC**
+  path; the deployed **graph-pull** path writes the decision and stops, and execution's poll
+  handles `PMRun` buys only. **There is no graph-pull consumer for close decisions anywhere — the
+  sell side is unbuilt, not broken.** DL-58's fix was necessary but insufficient: it corrected the
+  payload of a message nothing sends. Design note **DL-60** written (lifecycle: a position is
+  closed by a **fill**, not a decision — decision-time `CLOSES` is what stranded AMD forever, and
+  decision-time `pnl_cents` books realized PnL at a price nobody traded at). **Blocked on
+  operator:** exit timing (a once-daily after-hours stop executes at the next open) and AMD
+  recovery. 5 more unfillable buys cancelled; `regt_buying_power` still 0.
 
 - **Acceptance scores outcome, not intent (fix, 0.73.02, 2026-07-23) — THE GATE COULD NOT SEE
   TWO DEAD DAYS.** DL-58's named limit, closed. The gate's boundaries were all *conservation*

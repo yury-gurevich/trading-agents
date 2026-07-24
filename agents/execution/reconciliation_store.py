@@ -12,11 +12,12 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Literal
 
 from agents.execution.order_status_store import write_order_status
+from agents.execution.realized_pnl import realized_pnl_props
 from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill, BrokerPosition
-    from kernel import GraphStore, Node
+    from kernel import FaultSink, GraphStore, Node
 
 SnapshotStatus = Literal["fresh", "stale"]
 
@@ -25,7 +26,7 @@ _ONE = Decimal("1")
 
 
 def refresh_pending_fills(
-    graph: GraphStore, broker_fills: tuple[BrokerFill, ...]
+    graph: GraphStore, broker_fills: tuple[BrokerFill, ...], sink: FaultSink
 ) -> None:
     """Append broker terminal-status evidence to pending Fill nodes."""
     by_key = {fill.idempotency_key: fill for fill in broker_fills}
@@ -41,16 +42,40 @@ def refresh_pending_fills(
         if broker_fill is None:
             continue
         write_order_status(graph, fill_node=node, broker_fill=broker_fill)
-        if broker_fill.status == "pending" or "broker_status" in node.props:
+        if broker_fill.status == "pending":
             continue
-        props: dict[str, object] = {
+        broker_price_cents = _money_to_cents(broker_fill)
+        exit_price_cents = int(node.props.get("broker_price_cents", broker_price_cents))
+        props = _broker_status_props(node, broker_fill, broker_price_cents)
+        props.update(
+            realized_pnl_props(
+                graph,
+                node,
+                broker_fill,
+                sink,
+                exit_price_cents=exit_price_cents,
+            )
+        )
+        if props:
+            graph.merge_node("Fill", node.key, props)
+
+
+def _broker_status_props(
+    node: Node, broker_fill: BrokerFill, broker_price_cents: int
+) -> dict[str, object]:
+    props: dict[str, object] = {}
+    if "broker_status" not in node.props:
+        props = {
             "broker_status": broker_fill.status,
             "broker_status_broker_order_id": broker_fill.broker_order_id,
             "broker_status_refreshed_at": datetime.now(tz=UTC).isoformat(),
         }
-        if broker_fill.status in ("filled", "partial"):
-            props["broker_price_cents"] = _money_to_cents(broker_fill)
-        graph.merge_node("Fill", node.key, props)
+    if (
+        broker_fill.status in ("filled", "partial")
+        and "broker_price_cents" not in node.props
+    ):
+        props["broker_price_cents"] = broker_price_cents
+    return props
 
 
 def write_snapshot(

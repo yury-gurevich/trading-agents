@@ -28,7 +28,7 @@ def reconcile_run_start(
     """Run fail-open broker reconciliation before execution submits new intents."""
     broker_fills = _read_fills(broker, sink)
     if broker_fills is not None:
-        refresh_pending_fills(graph, broker_fills)
+        refresh_pending_fills(graph, broker_fills, sink)
     positions, stale_reason = _read_positions(broker, sink)
     if positions is None:
         return write_snapshot(

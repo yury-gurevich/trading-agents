@@ -37,7 +37,7 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run python scripts/check_module_size.py $(PKGS) tests
 	uv run python scripts/check_module_header.py $(PKGS) scripts
 	uv run pytest
-	-uv run pip-audit
+	uv run pip-audit
 	uv run pre-commit run detect-secrets --all-files
 	uv run python scripts/check_untracked_secrets.py
 

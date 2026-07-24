@@ -27,6 +27,30 @@ class OpenPosition:
     position_ref: str
 
 
+@dataclass(frozen=True)
+class PositionBasisLot:
+    """One active position lot contributing to a sell intent."""
+
+    node_key: str
+    ticker: Ticker
+    quantity: int
+    opened_price_cents: int
+
+
+@dataclass(frozen=True)
+class PositionBasis:
+    """Resolved basis for the position_ref carried by a sell OrderIntent."""
+
+    ticker: Ticker
+    position_ref: str
+    lots: tuple[PositionBasisLot, ...]
+
+    @property
+    def quantity(self) -> int:
+        """Return total active quantity represented by this basis."""
+        return sum(lot.quantity for lot in self.lots)
+
+
 def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
     """Return open Position nodes not superseded by broker reconciliation."""
     return tuple(
@@ -38,10 +62,7 @@ def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
 
 def open_positions(graph: GraphStore) -> tuple[OpenPosition, ...]:
     """Return open held tickers with quantities aggregated by ticker."""
-    nodes_by_ticker: dict[Ticker, list[Node]] = {}
-    for node in active_position_nodes(graph):
-        ticker = str(node.props["ticker"])
-        nodes_by_ticker.setdefault(ticker, []).append(node)
+    nodes_by_ticker = _active_nodes_by_ticker(graph)
     return tuple(
         OpenPosition(
             ticker=ticker,
@@ -57,6 +78,27 @@ def open_position_tickers(graph: GraphStore) -> tuple[Ticker, ...]:
     return tuple(position.ticker for position in open_positions(graph))
 
 
+def position_basis_for_ref(
+    graph: GraphStore, *, position_ref: str, ticker: Ticker
+) -> PositionBasis | None:
+    """Resolve a sell intent's stable position_ref into active basis lots."""
+    for current_ticker, nodes in _active_nodes_by_ticker(graph).items():
+        if current_ticker != ticker:
+            continue
+        sorted_nodes = tuple(sorted(nodes, key=lambda node: node.key))
+        if _position_ref(tuple(node.key for node in sorted_nodes)) != position_ref:
+            return None
+        lots = tuple(_basis_lot(node) for node in sorted_nodes)
+        if any(lot is None for lot in lots):
+            return None
+        return PositionBasis(
+            ticker=ticker,
+            position_ref=position_ref,
+            lots=tuple(lot for lot in lots if lot is not None),
+        )
+    return None
+
+
 def is_active_position_node(node: Node) -> bool:
     """Return whether broker evidence still treats a Position as open."""
     if node.props.get("status", "open") != "open":
@@ -64,6 +106,26 @@ def is_active_position_node(node: Node) -> bool:
     return not (
         node.props.get("broker_absent") or node.props.get("broker_superseded_by")
     )
+
+
+def _active_nodes_by_ticker(graph: GraphStore) -> dict[Ticker, list[Node]]:
+    nodes_by_ticker: dict[Ticker, list[Node]] = {}
+    for node in active_position_nodes(graph):
+        ticker = str(node.props["ticker"])
+        nodes_by_ticker.setdefault(ticker, []).append(node)
+    return nodes_by_ticker
+
+
+def _basis_lot(node: Node) -> PositionBasisLot | None:
+    try:
+        return PositionBasisLot(
+            node_key=node.key,
+            ticker=str(node.props["ticker"]),
+            quantity=int(node.props["quantity"]),
+            opened_price_cents=int(node.props["opened_price_cents"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def _position_ref(keys: tuple[str, ...]) -> str:

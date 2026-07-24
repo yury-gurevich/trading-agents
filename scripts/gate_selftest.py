@@ -71,6 +71,10 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
             target.unlink(missing_ok=True)
     if completed.returncode == 0:
         return False, "gate exited 0 on a planted violation — it does not catch this"
+    output = f"{completed.stdout}\n{completed.stderr}"
+    missing = [needle for needle in case.must_output if needle not in output]
+    if missing:
+        return False, f"gate failed without proving: {', '.join(missing)}"
     return True, f"rejected (exit {completed.returncode})"
 
 
@@ -83,6 +87,9 @@ def check_invariant(inv: Invariant, root: Path) -> tuple[bool, str]:
     absent = [needle for needle in inv.must_contain if needle not in text]
     if absent:
         return False, f"{inv.path} no longer contains: {', '.join(absent)}"
+    present = [needle for needle in inv.must_not_contain if needle in text]
+    if present:
+        return False, f"{inv.path} still contains: {', '.join(present)}"
     return True, "present"
 
 

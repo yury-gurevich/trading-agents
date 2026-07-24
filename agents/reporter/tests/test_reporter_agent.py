@@ -101,7 +101,7 @@ def test_reporter_trims_long_narratives_at_configured_limit() -> None:
 
 
 def test_snapshot_reports_profit_factor_and_expectancy() -> None:
-    """RPT-OUT-02 / RPT-NEV-03: profit_factor + expectancy_cents; mixed trades."""
+    """RPT-OUT-02 / RPT-NEV-03: fill PnL drives PF + expectancy; mixed trades."""
     graph = InMemoryGraphStore()
     _seed_two_closed_trades(graph)
     snapshot = build_snapshot(graph, RUN_ID)
@@ -133,7 +133,9 @@ def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
             "OrderIntent", pos_id, {"ticker": ticker, "action": "buy"}
         )
         fill = graph.merge_node(
-            "Fill", f"{pos_id}:buy", {"ticker": ticker, "status": "filled"}
+            "Fill",
+            f"{pos_id}:sell",
+            {"ticker": ticker, "status": "filled", "realized_pnl_cents": pnl_cents},
         )
         position = graph.merge_node(
             "Position", pos_id, {"run_id": RUN_ID, "ticker": ticker}
@@ -145,7 +147,6 @@ def _seed_two_closed_trades(graph: InMemoryGraphStore) -> None:
                 "ticker": ticker,
                 "position_id": pos_id,
                 "trigger": trigger,
-                "pnl_cents": pnl_cents,
             },
         )
         graph.add_edge(order, pm_run, "EMITTED_BY")

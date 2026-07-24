@@ -61,6 +61,28 @@ def test_recommendation_quant_metrics_are_typed_and_bounded() -> None:
         QuantMetric(name="", value=0.0)
 
 
+def test_recommendation_exit_trigger_is_optional_and_bounded() -> None:
+    rec = Recommendation(
+        ticker="AAPL",
+        action="sell",
+        exit_trigger="stop",
+        confidence=0.8,
+        technical_score=0.5,
+        rationale=Explanation(summary="fixture"),
+    )
+
+    assert rec.exit_trigger == "stop"
+    with pytest.raises(ValidationError):
+        Recommendation(
+            ticker="AAPL",
+            action="sell",
+            exit_trigger="target",
+            confidence=0.8,
+            technical_score=0.5,
+            rationale=Explanation(summary="fixture"),
+        )
+
+
 def test_order_intent_rejects_zero_quantity() -> None:
     with pytest.raises(ValidationError):
         OrderIntent(

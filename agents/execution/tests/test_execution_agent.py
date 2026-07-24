@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 
 from agents.execution.broker import PaperBroker
 from agents.execution.tests.helpers import (
-    close_message,
     fill_node_count,
     order,
     order_set,
@@ -22,9 +21,8 @@ from agents.execution.tests.helpers import (
     submit_message,
     wire,
 )
-from contracts.common import Explanation, Money, Provenance
+from contracts.common import Money
 from contracts.execution import ExecutionResult, ReconcileResult, StageStatus
-from contracts.monitor import CloseDecision, CloseDecisionSet
 
 if TYPE_CHECKING:
     import pytest
@@ -118,49 +116,14 @@ def test_broker_failure_records_rejected_fill_and_fault(
     assert len(sink.faults) == 1
 
 
-def test_execute_close_stage_status_and_reconcile() -> None:
-    """EXEC-IN-02 / EXEC-TRG-03 / EXEC-TRG-05 / EXEC-OUT-04: execute_close,
-    stage_status, and reconcile return typed results."""
+def test_stage_status_and_reconcile_return_typed_results() -> None:
+    """EXEC-TRG-05 / EXEC-OUT-04: stage_status and reconcile return typed results."""
     bus, _graph, _broker, _sink = wire()
-    close_set = CloseDecisionSet(
-        run_id="monitor-run-1",
-        decisions=(
-            CloseDecision(
-                ticker="AAPL",
-                position_id="position-1",
-                decision="close",
-                trigger="target",
-                rationale=Explanation(summary="target reached"),
-                quantity=40,
-                reference_price_cents=19_250,
-            ),
-            CloseDecision(
-                ticker="MSFT",
-                position_id="position-2",
-                decision="hold",
-                trigger="none",
-                rationale=Explanation(summary="still inside policy"),
-                quantity=15,
-                reference_price_cents=41_000,
-            ),
-        ),
-        positions_checked=2,
-        explanation=Explanation(summary="fixture monitor pass"),
-        provenance=Provenance(run_id="monitor-run-1", source_agent="monitor"),
-    )
 
-    close = ExecutionResult.model_validate(
-        bus.request(close_message(close_set)).payload
-    )
     reconcile = ReconcileResult.model_validate(bus.request(reconcile_message()).payload)
     status = StageStatus.model_validate(bus.request(stage_status_message()).payload)
 
-    assert [fill.side for fill in close.fills] == ["sell"]
-    assert close.submitted == 1
-    # The exit sells the whole position at the decided price, not a fixture stub.
-    assert [fill.quantity for fill in close.fills] == [40]
-    assert [fill.price.amount for fill in close.fills] == [Decimal("192.50")]
-    assert reconcile.matched == 1
+    assert reconcile.matched == 0
     assert reconcile.discrepancies == ()
     assert status.stage == "paper"
     assert status.idempotent is True

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -51,6 +52,15 @@ class PositionBasis:
         return sum(lot.quantity for lot in self.lots)
 
 
+@dataclass(frozen=True)
+class PositionStopThreshold:
+    """Aggregated stop threshold inputs for one active held ticker."""
+
+    ticker: Ticker
+    opened_price_cents: int
+    stop_pct: float
+
+
 def active_position_nodes(graph: GraphStore) -> tuple[Node, ...]:
     """Return open Position nodes not superseded by broker reconciliation."""
     return tuple(
@@ -76,6 +86,16 @@ def open_positions(graph: GraphStore) -> tuple[OpenPosition, ...]:
 def open_position_tickers(graph: GraphStore) -> tuple[Ticker, ...]:
     """Return active held tickers in stable order."""
     return tuple(position.ticker for position in open_positions(graph))
+
+
+def open_position_stop_thresholds(
+    graph: GraphStore,
+) -> tuple[PositionStopThreshold, ...]:
+    """Return weighted stop inputs for active positions grouped by ticker."""
+    return tuple(
+        _stop_threshold(ticker, tuple(sorted(nodes, key=lambda node: node.key)))
+        for ticker, nodes in sorted(_active_nodes_by_ticker(graph).items())
+    )
 
 
 def position_basis_for_ref(
@@ -126,6 +146,39 @@ def _basis_lot(node: Node) -> PositionBasisLot | None:
         )
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def _stop_threshold(ticker: Ticker, nodes: tuple[Node, ...]) -> PositionStopThreshold:
+    lots = tuple(_stop_lot(ticker, node) for node in nodes)
+    stop_pcts = {stop_pct for _quantity, _opened, stop_pct in lots}
+    if len(stop_pcts) != 1:
+        raise ValueError(f"active lots for {ticker} carry different stop_pct values")
+    quantity = sum(lot_quantity for lot_quantity, _opened, _stop_pct in lots)
+    if quantity <= 0:
+        raise ValueError(f"active lots for {ticker} carry non-positive quantity")
+    numerator = sum(opened * lot_quantity for lot_quantity, opened, _stop_pct in lots)
+    opened = int(
+        (Decimal(numerator) / Decimal(quantity)).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
+    return PositionStopThreshold(
+        ticker=ticker,
+        opened_price_cents=opened,
+        stop_pct=next(iter(stop_pcts)),
+    )
+
+
+def _stop_lot(ticker: Ticker, node: Node) -> tuple[int, int, float]:
+    try:
+        return (
+            int(node.props["quantity"]),
+            int(node.props["opened_price_cents"]),
+            float(node.props["stop_pct"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        message = f"active lot for {ticker} lacks stop threshold inputs"
+        raise ValueError(message) from exc
 
 
 def _position_ref(keys: tuple[str, ...]) -> str:

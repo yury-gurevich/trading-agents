@@ -1,8 +1,7 @@
 """Monitor per-position decision.
 
 Agent: monitor
-Role: turn one open Position + its current price into a CloseDecision, persisting the
-      position check and close intent.
+Role: observe one open Position against its stop and persist check/fault evidence.
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -12,52 +11,49 @@ from typing import TYPE_CHECKING
 
 from agents.monitor.domain.exit_rules import evaluate_position
 from agents.monitor.domain.positions import exit_position
-from agents.monitor.result import decision_rationale
-from agents.monitor.store import write_check, write_close_decision
-from contracts.monitor import CloseDecision
+from agents.monitor.store import write_check
+from kernel import AgentFault
+from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
-    from datetime import date
-
-    from kernel import GraphStore, Node
+    from kernel import FaultSink, GraphStore, Node
 
 
 def evaluate_one(
     graph: GraphStore,
+    sink: FaultSink,
     monitor_run_id: str,
     position: Node,
     current_price_cents: int,
-    today: date,
-) -> CloseDecision:
-    """Evaluate one open position; persist its check/close, return the decision."""
+) -> bool:
+    """Evaluate one open position; return whether its stop is breached."""
     ticker = str(position.props["ticker"])
-    decision, trigger = evaluate_position(
-        exit_position(position), current_price_cents, today
+    observation, trigger = evaluate_position(
+        exit_position(position), current_price_cents
     )
-    rationale = decision_rationale(ticker, decision, trigger)
+    breached = observation == "stop_breached"
     write_check(
         graph,
         monitor_run_id=monitor_run_id,
         position=position,
-        decision=decision,
+        observation=observation,
         trigger=trigger,
         current_price_cents=current_price_cents,
     )
-    if decision == "close":
-        write_close_decision(
-            graph,
-            monitor_run_id=monitor_run_id,
-            position=position,
-            decision=decision,
-            trigger=trigger,
-            rationale=rationale,
+    if breached:
+        _fault_sink(graph, sink).submit(
+            AgentFault(
+                source_agent="monitor",
+                source_module="agents.monitor.decide",
+                capability="check_positions",
+                error_type="StopBreached",
+                message=f"stop breached on {ticker}, still held",
+            )
         )
-    return CloseDecision(
-        ticker=ticker,
-        position_id=position.key,
-        decision=decision,
-        trigger=trigger,
-        rationale=rationale,
-        quantity=int(position.props["quantity"]),
-        reference_price_cents=current_price_cents,
-    )
+    return breached
+
+
+def _fault_sink(graph: GraphStore, sink: FaultSink) -> FaultSink:
+    if isinstance(sink, GraphFaultSink):
+        return sink
+    return GraphFaultSink(graph, sink)

@@ -65,10 +65,7 @@ def exit_position(node: Node) -> ExitPosition:
     """Return an exit-rule position object from a stored graph node."""
     return ExitPosition(
         opened_price_cents=int(node.props["opened_price_cents"]),
-        opened_at=str(node.props["opened_at"]),
         stop_pct=float(node.props["stop_pct"]),
-        target_pct=float(node.props["target_pct"]),
-        horizon_days=int(node.props["horizon_days"]),
     )
 
 

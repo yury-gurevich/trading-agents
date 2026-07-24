@@ -65,3 +65,57 @@ def test_decide_emits_exact_recommendation_payload_contract() -> None:
         ("alpha", 0.2),
         ("zeta", 0.7),
     ]
+    assert rec.exit_trigger is None
+
+
+def test_decide_forces_stop_sell_even_above_exit_floor() -> None:
+    score = ScoreBreakdown(technical_score=0.72, confidence=0.81, metrics={})
+
+    decision = decide(
+        candidate("AAPL"),
+        score,
+        _regime(),
+        held=True,
+        exit_confidence_floor=0.70,
+        stop_breached=True,
+    )
+
+    assert decision.recommendation is not None
+    assert decision.recommendation.action == "sell"
+    assert decision.recommendation.exit_trigger == "stop"
+    assert "forced stop exit" in decision.recommendation.rationale.summary
+
+
+def test_decide_held_above_stop_sells_on_thesis_below_floor() -> None:
+    score = ScoreBreakdown(technical_score=0.20, confidence=0.30, metrics={})
+
+    decision = decide(
+        candidate("AAPL"),
+        score,
+        _regime(),
+        held=True,
+        exit_confidence_floor=0.70,
+        stop_breached=False,
+    )
+
+    assert decision.recommendation is not None
+    assert decision.recommendation.action == "sell"
+    assert decision.recommendation.exit_trigger == "thesis"
+    assert "thesis exit" in decision.recommendation.rationale.summary
+
+
+def test_decide_held_above_stop_holds_when_confidence_clears_floor() -> None:
+    score = ScoreBreakdown(technical_score=0.72, confidence=0.81, metrics={})
+
+    decision = decide(
+        candidate("AAPL"),
+        score,
+        _regime(),
+        held=True,
+        exit_confidence_floor=0.70,
+        stop_breached=False,
+    )
+
+    assert decision.recommendation is not None
+    assert decision.recommendation.action == "hold"
+    assert decision.recommendation.exit_trigger is None

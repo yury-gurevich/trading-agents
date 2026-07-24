@@ -1,7 +1,7 @@
 """Monitor graph write and lookup path.
 
 Agent: monitor
-Role: open positions, write checks/close decisions, and read run fills.
+Role: open positions, write checks/legacy close decisions, and read run fills.
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -67,11 +67,11 @@ def write_check(
     *,
     monitor_run_id: str,
     position: Node,
-    decision: str,
+    observation: str,
     trigger: str,
     current_price_cents: int,
 ) -> Node:
-    """Write one position check and connect it to the Position."""
+    """Write one stop observation and connect it to the Position."""
     node = graph.merge_node(
         "PositionCheck",
         f"{monitor_run_id}:{position.key}:check",
@@ -79,7 +79,8 @@ def write_check(
             "run_id": monitor_run_id,
             "ticker": position.props["ticker"],
             "checked_at": datetime.now(tz=UTC).isoformat(),
-            "decision": decision,
+            "observation": observation,
+            "stop_breached": observation == "stop_breached",
             "trigger": trigger,
             "current_price_cents": current_price_cents,
         },
@@ -128,6 +129,7 @@ def write_monitor_run(
     positions_checked: int,
     closes: int,
     holds: int,
+    stop_breaches: int = 0,
 ) -> Provenance:
     """Write the top-level monitor run node and return provenance."""
     node = graph.merge_node(
@@ -139,6 +141,7 @@ def write_monitor_run(
             "positions_checked": positions_checked,
             "closes": closes,
             "holds": holds,
+            "stop_breaches": stop_breaches,
             "created_at": datetime.now(tz=UTC).isoformat(),
         },
     )

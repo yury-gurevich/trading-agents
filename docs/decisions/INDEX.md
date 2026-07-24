@@ -22,6 +22,7 @@ for the rationale instead of re-deriving it.
 | [0014](0014-postgresql-system-of-record.md) | PostgreSQL system of record | ✅ Accepted | What is the system of record after DL-43? What is Neo4j for now? | `postgres` `neo4j` `storage` `graphstore` `dl-43` |
 | [0015](0015-exit-lifecycle-and-stop-ownership.md) | A position is closed by a fill; the broker enforces the stop | 🔄 Amended 2026-07-24 | What closes a position — a decision or a fill? Who enforces the stop: our daily loop or the broker? What happens when a sell is refused or partially fills? | `exits` `monitor` `execution` `alpaca` `bracket` `oco` `stops` |
 | [0016](0016-one-run-one-evidence-both-directions.md) | One run, one evidence set, both directions | ✅ Accepted | Are buy and sell decided together on the same evidence, or by separate mechanisms? How does a sell reach execution? | `exits` `analyst` `portfolio-manager` `execution` `monitor` `decisions` |
+| [0017](0017-exit-authority-alpha-proposes-risk-disposes.md) | Exit authority: alpha proposes, risk disposes | ✅ Accepted | When the monitor's mechanical exit and the analyst's thesis disagree on a held position, which decider wins? What happens to target and time exits? | `exits` `analyst` `monitor` `execution` `stops` `risk` |
 
 ## Status legend
 
@@ -31,7 +32,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0017`.
+1. Next number is `0018`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

@@ -7,8 +7,11 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+
 from contracts.positions import (
     active_position_nodes,
+    open_position_stop_thresholds,
     open_positions,
     position_basis_for_ref,
 )
@@ -79,6 +82,53 @@ def test_position_basis_returns_none_when_ref_or_open_price_is_unknown() -> None
     assert position_basis_for_ref(graph, position_ref="unknown", ticker="AAPL") is None
     assert position_basis_for_ref(graph, position_ref=ref, ticker="MSFT") is None
     assert position_basis_for_ref(graph, position_ref=ref, ticker="AAPL") is None
+
+
+def test_open_position_stop_thresholds_weight_lots_by_quantity() -> None:
+    graph = InMemoryGraphStore()
+    _position(
+        graph,
+        "a:AAPL",
+        "AAPL",
+        1,
+        opened_price_cents=10000,
+        stop_pct=0.05,
+    )
+    _position(
+        graph,
+        "b:AAPL",
+        "AAPL",
+        3,
+        opened_price_cents=20000,
+        stop_pct=0.05,
+    )
+
+    thresholds = open_position_stop_thresholds(graph)
+
+    assert [
+        (item.ticker, item.opened_price_cents, item.stop_pct) for item in thresholds
+    ] == [("AAPL", 17500, 0.05)]
+
+
+def test_open_position_stop_thresholds_reject_different_stop_pct() -> None:
+    graph = InMemoryGraphStore()
+    _position(graph, "a:AAPL", "AAPL", 1, opened_price_cents=10000, stop_pct=0.05)
+    _position(graph, "b:AAPL", "AAPL", 1, opened_price_cents=10000, stop_pct=0.08)
+
+    with pytest.raises(ValueError, match="different stop_pct"):
+        open_position_stop_thresholds(graph)
+
+
+def test_open_position_stop_thresholds_reject_missing_or_nonpositive_basis() -> None:
+    missing = InMemoryGraphStore()
+    _position(missing, "a:AAPL", "AAPL", 1, opened_price_cents=10000)
+    zero = InMemoryGraphStore()
+    _position(zero, "a:AAPL", "AAPL", 0, opened_price_cents=10000, stop_pct=0.05)
+
+    with pytest.raises(ValueError, match="lacks stop threshold inputs"):
+        open_position_stop_thresholds(missing)
+    with pytest.raises(ValueError, match="non-positive quantity"):
+        open_position_stop_thresholds(zero)
 
 
 def _position(

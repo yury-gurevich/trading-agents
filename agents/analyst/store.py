@@ -51,6 +51,7 @@ def write_analysis(
             {
                 "ticker": recommendation.ticker,
                 "action": recommendation.action,
+                "exit_trigger": recommendation.exit_trigger,
                 "confidence": recommendation.confidence,
                 "technical_score": recommendation.technical_score,
                 "quant_metrics": [

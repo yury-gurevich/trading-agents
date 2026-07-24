@@ -112,13 +112,13 @@ def test_snapshot_reports_profit_factor_and_expectancy() -> None:
     assert metrics["closed_trades_with_pnl"] == 2.0
 
 
-def test_degraded_snapshot_carries_zero_outcome_keys() -> None:
-    """RPT-OUT-06 / RPT-NEV-03: degraded snapshot zero sentinels; keys present."""
+def test_degraded_snapshot_omits_uncomputed_outcome_keys() -> None:
+    """RPT-OUT-06: degraded snapshot does not present absent PnL as measured zero."""
     graph = InMemoryGraphStore()
     snapshot = degraded_snapshot(graph, "missing-run", "no data")
     metrics = snapshot.portfolio_metrics
-    assert metrics["profit_factor"] == 0.0
-    assert metrics["expectancy_cents"] == 0.0
+    assert "profit_factor" not in metrics
+    assert "expectancy_cents" not in metrics
     assert metrics["closed_trades_with_pnl"] == 0.0
 
 

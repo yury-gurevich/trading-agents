@@ -83,6 +83,18 @@ def test_monitor_pm_node_checks_positions_from_graph() -> None:
     assert find_pending(graph) == []
 
 
+def test_monitor_poll_close_decision_has_no_realized_pnl() -> None:
+    """ADR-0015 section 1: graph-pull close intent carries no realized pnl_cents."""
+    graph = InMemoryGraphStore()
+    node = _seed(graph, close=94.0)
+
+    monitor_pm_node(node, graph=graph)
+
+    decision = graph.list_nodes("CloseDecision")[0]
+    assert decision.props["decision"] == "close"
+    assert "pnl_cents" not in decision.props
+
+
 def test_monitor_poll_redecides_amd_close_when_broker_still_holds_it() -> None:
     """ADR-0015 s1: AMD/CSCO/HPE/MRVL stay open until the broker drops them."""
     graph = InMemoryGraphStore()
@@ -111,6 +123,7 @@ def test_monitor_poll_redecides_amd_close_when_broker_still_holds_it() -> None:
     # Two decisions, not one: the graph is append-only, so each run's decision is
     # its own immutable fact rather than a mutation of the previous one.
     assert len(close_nodes) == 2
+    assert all("pnl_cents" not in node.props for node in close_nodes)
     assert {str(node.props["run_id"]) for node in close_nodes} == {
         first_run_id,
         str(runs[-1].key),

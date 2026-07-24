@@ -20,8 +20,8 @@ def _close(key: str, *, trigger: str, pnl_cents: int | None) -> Node:
 
 def test_no_closes_returns_zero_sentinels() -> None:
     outcomes = collect_trade_outcomes(())
-    assert outcomes["profit_factor"] == 0.0
-    assert outcomes["expectancy_cents"] == 0.0
+    assert "profit_factor" not in outcomes
+    assert "expectancy_cents" not in outcomes
     assert outcomes["closed_trades_with_pnl"] == 0.0
 
 
@@ -76,3 +76,21 @@ def test_close_without_pnl_is_skipped() -> None:
     )
     assert outcomes["closed_trades_with_pnl"] == 1.0
     assert outcomes["expectancy_cents"] == 800.0
+
+
+def test_invalidated_close_pnl_is_skipped() -> None:
+    outcomes = collect_trade_outcomes(
+        (
+            Node(
+                "CloseDecision",
+                "bad",
+                {
+                    "position_id": "a",
+                    "trigger": "stop",
+                    "pnl_cents": -600,
+                    "pnl_invalidated_at": "2026-07-23T00:00:00+00:00",
+                },
+            ),
+        )
+    )
+    assert outcomes == {"closed_trades_with_pnl": 0.0}

@@ -44,7 +44,6 @@ def test_redeciding_one_position_appends_a_fact_per_run() -> None:
         decision="close",
         trigger="stop",
         rationale=rationale,
-        pnl_cents=-10,
     )
     write_close_decision(
         graph,
@@ -53,7 +52,6 @@ def test_redeciding_one_position_appends_a_fact_per_run() -> None:
         decision="close",
         trigger="stop",
         rationale=rationale,
-        pnl_cents=-20,
     )
 
     close_nodes = graph.list_nodes("CloseDecision")
@@ -62,9 +60,7 @@ def test_redeciding_one_position_appends_a_fact_per_run() -> None:
         "monitor-run-old:pm-run:AMD:close",
         "monitor-run-latest:pm-run:AMD:close",
     }
-    by_run = {str(node.props["run_id"]): node for node in close_nodes}
-    assert by_run["monitor-run-latest"].props["pnl_cents"] == -20
-    assert by_run["monitor-run-old"].props["pnl_cents"] == -10
+    assert all("pnl_cents" not in node.props for node in close_nodes)
 
 
 def _snapshot(graph: InMemoryGraphStore, suffix: str, *, status: str = "fresh") -> Node:

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from orchestration.trace_format import metric_text as mt
+
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
@@ -180,14 +182,11 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
         headline: str = str(snapshot_node.props.get("headline_summary", ""))
         print("[reporter]")
         if pm_metrics:  # pragma: no branch
-            pf = pm_metrics.get("profit_factor")
-            exp = pm_metrics.get("expectancy_cents")
-            pf_str = f"  profit_factor={pf:.2f}" if pf is not None else ""
-            exp_str = f"  expectancy_cents={exp:.0f}" if exp is not None else ""
             print(
                 f"  open={pm_metrics.get('positions_opened', '?')}"
                 f"  closed={pm_metrics.get('positions_closed', '?')}"
-                f"{pf_str}{exp_str}"
+                f"  profit_factor={mt(pm_metrics.get('profit_factor'), '.2f')}"
+                f"  expectancy_cents={mt(pm_metrics.get('expectancy_cents'), '.0f')}"
             )
         if headline:  # pragma: no branch
             print(f"  summary   {headline[:80]}")

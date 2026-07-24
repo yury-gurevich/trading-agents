@@ -63,7 +63,7 @@ idempotent, reconciled, and covered by the DL-59 acceptance gate.
    new poll source, no second idempotency scheme. DL-60's missing consumer becomes moot rather
    than built.
 
-5. **The monitor narrows to a safety net**: broker-enforced stop/target (ADR-0015), time and
+5. **The monitor narrows to a safety net**: broker-enforced stop/target (ADR-0015 §3 — **not built as of 2026-07-24; nothing is broker-enforced yet**), time and
    regime exits, position bookkeeping, and broker reconciliation. It is no longer the primary
    author of exit decisions.
 

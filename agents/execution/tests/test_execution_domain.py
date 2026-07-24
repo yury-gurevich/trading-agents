@@ -52,9 +52,11 @@ def test_order_from_intent_uses_position_ref_for_exit_only() -> None:
 def test_reconcile_reports_missing_and_mismatched_broker_fills() -> None:
     fill = _broker_fill("pm-run:AAPL:buy")
 
+    matched = reconcile_fills((fill,), (fill,))
     missing = reconcile_fills((fill,), ())
     mismatch = reconcile_fills((fill,), (replace(fill, status="pending"),))
 
+    assert matched == (1, ())
     assert missing == (0, ("pm-run:AAPL:buy: missing_broker_fill",))
     assert mismatch == (0, ("pm-run:AAPL:buy: broker_mismatch",))
 

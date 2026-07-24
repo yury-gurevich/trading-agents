@@ -10,7 +10,6 @@ External I/O: none (reads/writes the injected GraphStore).
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.monitor.decide import evaluate_one
@@ -23,7 +22,7 @@ from agents.monitor.store import (
     open_position,
     write_monitor_run,
 )
-from contracts.monitor import CloseDecision, CloseDecisionSet
+from contracts.monitor import CloseDecisionSet
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -59,27 +58,27 @@ def evaluate_and_write(
     positions: tuple[Node, ...],
     prices: dict[str, int] | None,
 ) -> CloseDecisionSet:
-    """Evaluate exits against current prices and persist the monitor run."""
+    """Observe stops against current prices and persist the monitor run."""
     monitor_run_id = f"monitor-run-{uuid.uuid4().hex}"
-    decisions = (
-        ()
+    positions_checked, stop_breaches = (
+        (0, 0)
         if prices is None
         else _evaluate_positions(graph, sink, monitor_run_id, positions, prices)
     )
-    closes = tuple(item for item in decisions if item.decision == "close")
     provenance = write_monitor_run(
         graph,
         monitor_run_id=monitor_run_id,
         source_run_id=source_run_id,
-        positions_checked=len(decisions),
-        closes=len(closes),
-        holds=len(decisions) - len(closes),
+        positions_checked=positions_checked,
+        closes=0,
+        holds=positions_checked,
+        stop_breaches=stop_breaches,
     )
     return CloseDecisionSet(
         run_id=monitor_run_id,
-        decisions=decisions,
-        positions_checked=len(decisions),
-        explanation=run_explanation(decisions),
+        decisions=(),
+        positions_checked=positions_checked,
+        explanation=run_explanation(positions_checked, stop_breaches),
         provenance=provenance,
     )
 
@@ -90,19 +89,20 @@ def _evaluate_positions(
     monitor_run_id: str,
     positions: tuple[Node, ...],
     prices: dict[str, int],
-) -> tuple[CloseDecision, ...]:
-    decisions: list[CloseDecision] = []
-    today = datetime.now(tz=UTC).date()
+) -> tuple[int, int]:
+    positions_checked = 0
+    stop_breaches = 0
     for position in positions:
         ticker = str(position.props["ticker"])
         current_price_cents = prices.get(ticker)
         if current_price_cents is None:
             _record_degraded(sink, f"provider returned no current price for {ticker}")
             continue
-        decisions.append(
-            evaluate_one(graph, monitor_run_id, position, current_price_cents, today)
+        positions_checked += 1
+        stop_breaches += int(
+            evaluate_one(graph, sink, monitor_run_id, position, current_price_cents)
         )
-    return tuple(decisions)
+    return positions_checked, stop_breaches
 
 
 def _record_degraded(sink: FaultSink, message: str) -> None:

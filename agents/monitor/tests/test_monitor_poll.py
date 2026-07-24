@@ -83,27 +83,26 @@ def test_monitor_pm_node_checks_positions_from_graph() -> None:
     assert find_pending(graph) == []
 
 
-def test_monitor_poll_close_decision_has_no_realized_pnl() -> None:
-    """ADR-0015 section 1: graph-pull close intent carries no realized pnl_cents."""
+def test_monitor_poll_stop_breach_fault_has_no_close_decision() -> None:
+    """ADR-0017: graph-pull stop breach records Fault, not CloseDecision."""
     graph = InMemoryGraphStore()
     node = _seed(graph, close=94.0)
 
     monitor_pm_node(node, graph=graph)
 
-    decision = graph.list_nodes("CloseDecision")[0]
-    assert decision.props["decision"] == "close"
-    assert "pnl_cents" not in decision.props
+    assert graph.list_nodes("CloseDecision") == ()
+    fault = graph.list_nodes("Fault")[0]
+    assert fault.props["message"] == "stop breached on AAPL, still held"
+    assert fault.props["error_type"] == "StopBreached"
 
 
-def test_monitor_poll_redecides_amd_close_when_broker_still_holds_it() -> None:
+def test_monitor_poll_resurfaces_amd_stop_when_broker_still_holds_it() -> None:
     """ADR-0015 s1: AMD/CSCO/HPE/MRVL stay open until the broker drops them."""
     graph = InMemoryGraphStore()
     first = _seed(graph, ticker="AMD", opened=100.0, close=94.0)
     _snapshot(graph, "AMD", 1, 10000)
 
     monitor_pm_node(first, graph=graph)
-    close_node = graph.list_nodes("CloseDecision")[0]
-    first_run_id = str(close_node.props["run_id"])
     second = _seed(
         graph,
         ticker="AMD",
@@ -114,20 +113,17 @@ def test_monitor_poll_redecides_amd_close_when_broker_still_holds_it() -> None:
 
     monitor_pm_node(second, graph=graph)
 
-    close_nodes = graph.list_nodes("CloseDecision")
     runs = graph.list_nodes("MonitorRun")
     # STILL EVALUATED on the second run — the whole fix. Before ADR-0015 s1 the
     # first decision removed it from the book forever (the real AMD/CSCO/HPE/MRVL
     # stranding), so positions_checked would have read [1, 0].
     assert [run.props["positions_checked"] for run in runs] == [1, 1]
-    # Two decisions, not one: the graph is append-only, so each run's decision is
-    # its own immutable fact rather than a mutation of the previous one.
-    assert len(close_nodes) == 2
-    assert all("pnl_cents" not in node.props for node in close_nodes)
-    assert {str(node.props["run_id"]) for node in close_nodes} == {
-        first_run_id,
-        str(runs[-1].key),
-    }
+    assert [run.props["stop_breaches"] for run in runs] == [1, 1]
+    assert graph.list_nodes("CloseDecision") == ()
+    assert [fault.props["message"] for fault in graph.list_nodes("Fault")] == [
+        "stop breached on AMD, still held",
+        "stop breached on AMD, still held",
+    ]
 
 
 def test_monitor_pm_node_no_market_lineage_checks_nothing() -> None:

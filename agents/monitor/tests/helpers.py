@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from agents.execution import ExecutionAgent
 from agents.execution.broker import PaperBroker
 from agents.monitor import MonitorAgent
 from agents.provider import ProviderAgent
@@ -57,7 +56,6 @@ def wire_monitor(
         source=FakeDataSource(bars=bars, vix=12.0, fail_ohlcv=fail_ohlcv),
         settings=ProviderSettings(max_staleness_days=7),
     ).bind()
-    ExecutionAgent(bus, graph=graph, broker=broker).bind()
     MonitorAgent(bus, graph=graph, settings=settings, sink=sink).bind()
     return bus, graph, broker, sink
 

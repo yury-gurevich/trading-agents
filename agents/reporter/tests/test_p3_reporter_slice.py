@@ -29,7 +29,7 @@ from contracts.scanner import CandidateSet
 from kernel import InMemoryGraphStore, InProcessBus
 
 
-def test_full_p3_exit_produces_report_and_trade_narrative() -> None:
+def test_full_p3_stop_breach_reports_held_position_and_fault() -> None:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     broker = PaperBroker()
@@ -63,12 +63,16 @@ def test_full_p3_exit_produces_report_and_trade_narrative() -> None:
         "response",
     ]
     assert snapshot.portfolio_metrics["positions_opened"] >= 1
-    assert snapshot.portfolio_metrics["positions_closed"] >= 1
+    assert snapshot.portfolio_metrics["positions_closed"] == 0.0
+    assert snapshot.portfolio_metrics["positions_held"] >= 1
     assert snapshot.signal_metrics["recommendation_count"] >= 1
     assert snapshot.headline.summary
     assert "AAPL" in story.story.summary
-    assert [(item.decision, item.trigger) for item in close_set.decisions] == [
-        ("close", "stop")
-    ]
+    assert close_set.decisions == ()
+    assert graph.list_nodes("CloseDecision") == ()
+    assert (
+        "stop breached on AAPL, still held"
+        in graph.list_nodes("Fault")[0].props["message"]
+    )
     assert_reporter_outputs(graph, str(orders.payload["run_id"]))
     assert_complete_chain(graph)

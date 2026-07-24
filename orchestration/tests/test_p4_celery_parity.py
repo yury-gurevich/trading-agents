@@ -36,7 +36,12 @@ def test_p4_celery_eager_parity() -> None:
     assert result.completed is True
     assert result.snapshot is not None
     assert result.snapshot.portfolio_metrics["positions_opened"] >= 1
-    assert result.snapshot.portfolio_metrics["positions_closed"] >= 1
+    assert result.snapshot.portfolio_metrics["positions_closed"] == 0.0
+    assert result.snapshot.portfolio_metrics["positions_held"] >= 1
     assert node_count(graph, "Snapshot") == 1
     assert node_count(graph, "TradeNarrative") == 1
+    assert any(
+        fault.props.get("message") == "stop breached on AAPL, still held"
+        for fault in graph.list_nodes("Fault")
+    )
     assert node_count(graph, "Message") >= 1

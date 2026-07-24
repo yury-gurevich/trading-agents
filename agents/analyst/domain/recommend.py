@@ -8,7 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
 from contracts.analyst import QuantMetric, Recommendation, Rejection
@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from agents.analyst.domain.scoring import ScoreBreakdown
     from contracts.provider import RegimeContext
     from contracts.scanner import Candidate
+
+ExitTrigger = Literal["stop", "thesis"]
 
 
 @dataclass(frozen=True)
@@ -36,9 +38,18 @@ def decide(
     *,
     held: bool = False,
     exit_confidence_floor: float = 0.0,
+    stop_breached: bool = False,
 ) -> AnalysisDecision:
     """Turn one score into an actionable recommendation or a rejection."""
     reading = lexicon_reading(candidate.ticker, score)
+    if held and stop_breached:
+        return AnalysisDecision(
+            recommendation=_recommendation(
+                candidate, score, regime, "sell", exit_confidence_floor, "stop"
+            ),
+            rejection=None,
+            sentiment_reading=reading,
+        )
     if score.rejection_reason is not None:
         return AnalysisDecision(
             recommendation=None,
@@ -47,9 +58,10 @@ def decide(
         )
     if held:
         action: Action = "sell" if score.confidence < exit_confidence_floor else "hold"
+        exit_trigger: ExitTrigger | None = "thesis" if action == "sell" else None
         return AnalysisDecision(
             recommendation=_recommendation(
-                candidate, score, regime, action, exit_confidence_floor
+                candidate, score, regime, action, exit_confidence_floor, exit_trigger
             ),
             rejection=None,
             sentiment_reading=reading,
@@ -98,21 +110,45 @@ def _recommendation(
     regime: RegimeContext,
     action: Action,
     exit_floor: float,
+    exit_trigger: ExitTrigger | None,
 ) -> Recommendation:
-    verb = "exit" if action == "sell" else "hold"
-    relation = "below" if action == "sell" else "at or above"
-    summary = (
-        f"{candidate.ticker} is already held; analyst says {verb} because "
-        f"confidence {score.confidence:.3f} is {relation} the conservative "
-        f"exit floor {exit_floor:.3f}."
-    )
+    evidence_refs: tuple[str, ...]
+    if exit_trigger == "stop":
+        summary = (
+            f"{candidate.ticker} is already held; forced stop exit because "
+            "the latest close is at or through the stop threshold."
+        )
+        evidence_refs = ("contracts.stop_rule", "provider.market_data")
+    elif exit_trigger == "thesis":
+        summary = (
+            f"{candidate.ticker} is already held; thesis exit because "
+            f"confidence {score.confidence:.3f} is below the conservative "
+            f"exit floor {exit_floor:.3f}."
+        )
+        evidence_refs = (
+            "analyst.technical_score",
+            "provider.market_data",
+            "provider.regime",
+        )
+    else:
+        summary = (
+            f"{candidate.ticker} is already held; analyst says hold because "
+            f"confidence {score.confidence:.3f} is at or above the conservative "
+            f"exit floor {exit_floor:.3f}."
+        )
+        evidence_refs = (
+            "analyst.technical_score",
+            "provider.market_data",
+            "provider.regime",
+        )
     return _build_recommendation(
         candidate,
         score,
         action,
         regime,
         summary,
-        ("analyst.technical_score", "provider.market_data", "provider.regime"),
+        evidence_refs,
+        exit_trigger=exit_trigger,
     )
 
 
@@ -123,10 +159,12 @@ def _build_recommendation(
     regime: RegimeContext,
     summary: str,
     evidence_refs: tuple[str, ...],
+    exit_trigger: ExitTrigger | None = None,
 ) -> Recommendation:
     return Recommendation(
         ticker=candidate.ticker,
         action=action,
+        exit_trigger=exit_trigger,
         confidence=score.confidence,
         technical_score=score.technical_score,
         fundamental_score=score.fundamental_score,

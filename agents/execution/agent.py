@@ -1,7 +1,7 @@
 """Execution agent implementation.
 
 Agent: execution
-Role: submit approved intents and close decisions through the idempotent broker port;
+Role: submit approved intents through the idempotent broker port;
       publish execution.fills.ready claim-check events on portfolio.orders.ready.
 External I/O: injected Broker and GraphStore backends.
 """
@@ -12,16 +12,12 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from agents.execution.broker import PaperBroker
-from agents.execution.domain.orders import execution_run_id, order_from_close
 from agents.execution.domain.reconcile import reconcile_fills
-from agents.execution.domain.result import execution_result
-from agents.execution.domain.submit import remember, submit_order
 from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
 from agents.execution.stage_flow import promote_stage
 from agents.execution.store import (
     current_stage_from_graph,
-    write_fills,
     write_reconciliation,
 )
 from contracts.execution import (
@@ -34,7 +30,6 @@ from contracts.execution import (
     StageStatus,
     StageStatusRequest,
 )
-from contracts.monitor import CloseDecisionSet
 from contracts.portfolio_manager import OrderIntentSet
 from kernel import (
     AgentBase,
@@ -73,7 +68,6 @@ class ExecutionAgent(AgentBase):
         self._recorded: dict[str, BrokerFill] = {}
         self.handlers = {
             "submit": self._submit,
-            "execute_close": self._execute_close,
             "reconcile": self._reconcile,
             "stage_status": self._stage_status,
             "promote_stage": self._promote_stage,
@@ -114,23 +108,6 @@ class ExecutionAgent(AgentBase):
             order_set,
             default_stage=self._settings.stage,
         )
-
-    def _execute_close(self, request: BaseModel) -> ExecutionResult:
-        close_set = CloseDecisionSet.model_validate(request)
-        stage = current_stage_from_graph(self._graph, self._settings.stage)
-        orders = tuple(
-            order_from_close(close_set, decision)
-            for decision in close_set.decisions
-            if decision.decision == "close"
-        )
-        fills = tuple(
-            submit_order(self._broker, self.sink, order, "execute_close")
-            for order in orders
-        )
-        remember(self._recorded, fills)
-        run_id = execution_run_id("close", close_set.run_id)
-        provenance = write_fills(self._graph, run_id=run_id, fills=fills)
-        return execution_result(run_id, stage, fills, provenance)
 
     def _reconcile(self, request: BaseModel) -> ReconcileResult:
         ReconcileRequest.model_validate(request)

@@ -17,11 +17,12 @@ from agents.analyst.held_universe import scoring_universe
 from agents.analyst.result import build_empty_result, run_explanation, split_decisions
 from agents.analyst.store import write_analysis
 from contracts.analyst import RecommendationSet
+from contracts.positions import open_position_stop_thresholds
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from agents.analyst.settings import AnalystSettings
-    from contracts.positions import OpenPosition
+    from contracts.positions import OpenPosition, PositionStopThreshold
     from contracts.provider import MarketData, RegimeContext
     from contracts.scanner import CandidateSet
     from kernel import FaultSink, GraphStore
@@ -59,6 +60,14 @@ def run_analysis(
             incident_refs,
             held_count=len(held_positions),
         )
+    held_stops = _held_stop_thresholds(graph, sink)
+    if held_stops is None:
+        return build_empty_result(
+            graph,
+            scoring_set,
+            "held position stop threshold unavailable",
+            held_count=len(held_positions),
+        )
     decisions = score_candidates(
         scoring_set,
         market,
@@ -67,6 +76,7 @@ def run_analysis(
         settings,
         sink,
         held_tickers,
+        held_stops,
     )
     if decisions is None:
         return build_empty_result(
@@ -112,3 +122,19 @@ def _record_fault(sink: FaultSink, message: str) -> None:
         reraise=False,
     ):
         raise RuntimeError(message)
+
+
+def _held_stop_thresholds(
+    graph: GraphStore, sink: FaultSink
+) -> tuple[PositionStopThreshold, ...] | None:
+    """Return held stop thresholds, recording non-representable books as faults."""
+    thresholds: tuple[PositionStopThreshold, ...] = ()
+    with fault_boundary(
+        sink,
+        agent="analyst",
+        module="agents.analyst.run",
+        capability="analyze",
+        reraise=False,
+    ) as capture:
+        thresholds = open_position_stop_thresholds(graph)
+    return None if capture.fault is not None else thresholds

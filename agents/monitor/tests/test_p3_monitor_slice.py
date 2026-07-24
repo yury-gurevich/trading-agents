@@ -1,7 +1,7 @@
 """Full P3 monitor lineage integration test.
 
 Agent: monitor
-Role: verify provider to scanner to analyst to PM to execution to monitor chain.
+Role: verify scanner→analyst→PM→execution→monitor stop-observation lineage.
 External I/O: none.
 """
 
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from kernel import Node
 
 
-def test_full_p3_slice_records_close_decision_with_complete_lineage() -> None:
+def test_full_p3_slice_records_stop_check_fault_without_dispatch() -> None:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     broker = PaperBroker()
@@ -62,17 +62,20 @@ def test_full_p3_slice_records_close_decision_with_complete_lineage() -> None:
     monitor = bus.request(monitor_message(str(orders.payload["run_id"])))
 
     result = CloseDecisionSet.model_validate(monitor.payload)
-    close = _only_close(graph)
+    check = _only_check(graph)
     assert scan.message_type == "response"
     assert analysis.message_type == "response"
     assert orders.message_type == "response"
     assert execution.message_type == "response"
     assert monitor.message_type == "response"
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "stop")
-    ]
-    assert broker.order_count == 2
-    _assert_lineage(graph, close)
+    assert result.decisions == ()
+    assert result.positions_checked == 1
+    assert broker.order_count == 1
+    assert graph.list_nodes("CloseDecision") == ()
+    assert graph.list_nodes("Fault")[0].props["message"] == (
+        "stop breached on AAPL, still held"
+    )
+    _assert_lineage(graph, check)
 
 
 def _bind_pipeline(
@@ -115,8 +118,8 @@ def _bind_provider(
     ).bind()
 
 
-def _assert_lineage(graph: InMemoryGraphStore, close: Node) -> None:
-    position = _only(graph.descendants(close, max_depth=1, edge_types={"CLOSES"}))
+def _assert_lineage(graph: InMemoryGraphStore, check: Node) -> None:
+    position = _only(graph.descendants(check, max_depth=1, edge_types={"CHECKS"}))
     fill = _only(graph.ancestors(position, max_depth=1, edge_types={"OPENS"}))
     order = _only(graph.descendants(fill, max_depth=1, edge_types={"EXECUTES"}))
     recommendation = _only(
@@ -127,8 +130,9 @@ def _assert_lineage(graph: InMemoryGraphStore, close: Node) -> None:
     )
     scan = _only(graph.descendants(candidate, max_depth=1, edge_types={"SURVIVED"}))
     snapshot = _only(graph.descendants(scan, max_depth=1, edge_types={"DERIVED_FROM"}))
-    lineage = (position, fill, order, recommendation, candidate, scan, snapshot)
+    lineage = (check, position, fill, order, recommendation, candidate, scan, snapshot)
     assert [node.label for node in lineage] == [
+        "PositionCheck",
         "Position",
         "Fill",
         "OrderIntent",
@@ -139,8 +143,8 @@ def _assert_lineage(graph: InMemoryGraphStore, close: Node) -> None:
     ]
 
 
-def _only_close(graph: InMemoryGraphStore) -> Node:
-    rows = graph.list_nodes("CloseDecision")
+def _only_check(graph: InMemoryGraphStore) -> Node:
+    rows = graph.list_nodes("PositionCheck")
     assert len(rows) == 1
     return rows[0]
 

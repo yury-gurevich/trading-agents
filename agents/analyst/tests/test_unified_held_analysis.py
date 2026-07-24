@@ -100,5 +100,14 @@ def _position(graph: InMemoryGraphStore, ticker: str, quantity: int) -> None:
     graph.merge_node(
         "Position",
         f"held:{ticker}",
-        {"ticker": ticker, "quantity": quantity, "status": "open"},
+        {
+            "ticker": ticker,
+            "quantity": quantity,
+            "opened_price_cents": 10000,
+            "stop_pct": 0.05,
+            "target_pct": 0.10,
+            "horizon_days": 10,
+            "opened_at": "2026-07-20",
+            "status": "open",
+        },
     )

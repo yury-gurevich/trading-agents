@@ -1,7 +1,7 @@
 """MonitorAgent capability tests.
 
 Agent: monitor
-Role: verify position opening, exit rules, provider degradation, and hold explains.
+Role: verify position opening, stop observation, provider degradation, and explains.
 External I/O: none.
 """
 
@@ -27,7 +27,7 @@ from kernel import (
 
 
 def test_check_positions_opens_position_idempotently() -> None:
-    """MON-IN-01 / MON-TRG-01 / MON-OUT-01 / MON-IDM-02: RPC path; hold;
+    """MON-IN-01 / MON-TRG-01 / MON-OUT-01 / MON-IDM-02: RPC path;
     Position opened once."""
     bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 100.0),))
     seed_fill(graph)
@@ -35,8 +35,10 @@ def test_check_positions_opens_position_idempotently() -> None:
     first = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
     second = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert [item.decision for item in first.decisions] == ["hold"]
-    assert [item.decision for item in second.decisions] == ["hold"]
+    assert first.decisions == ()
+    assert second.decisions == ()
+    assert first.positions_checked == 1
+    assert second.positions_checked == 1
     assert node_count(graph, "Position") == 1
     assert broker.order_count == 0
 
@@ -87,16 +89,15 @@ def test_missing_stop_target_uses_fallback_and_records_fault() -> None:
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
     position = graph.get_node("Position", "pm-run-fixture:AAPL")
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("hold", "none")
-    ]
+    assert result.decisions == ()
+    assert result.positions_checked == 1
     assert position is not None
     assert position.props["stop_pct"] == 0.05
     assert position.props["target_pct"] == 0.10
     assert len(sink.faults) == 1
 
 
-def test_execution_dispatch_error_records_fault_after_close_decision() -> None:
+def test_stop_breach_records_fault_without_execution_dispatch() -> None:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
@@ -115,7 +116,11 @@ def test_execution_dispatch_error_records_fault_after_close_decision() -> None:
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert result.decisions[0].decision == "close"
+    assert result.decisions == ()
+    assert graph.list_nodes("CloseDecision") == ()
+    assert graph.list_nodes("Fault")[0].props["message"] == (
+        "stop breached on AAPL, still held"
+    )
     assert len(sink.faults) == 1
 
 
@@ -138,7 +143,7 @@ def test_explain_hold_returns_non_empty_explanation() -> None:
     explanation = Explanation.model_validate(bus.request(explain_message()).payload)
 
     assert "Held 1 open positions" in explanation.summary
-    assert explanation.evidence_refs == ("monitor.exit_rules",)
+    assert explanation.evidence_refs == ("contracts.stop_rule",)
 
 
 def test_explain_hold_without_position_returns_explanation() -> None:
@@ -151,12 +156,8 @@ def test_explain_hold_without_position_returns_explanation() -> None:
     assert explanation.evidence_refs == ("monitor.positions",)
 
 
-def test_execution_dispatch_error_survives_the_process() -> None:
-    """MON-OUT-03: a swallowed close-dispatch failure is persisted as a Fault node.
-
-    The in-memory sink alone let the 07-20 AMD stop-out vanish: the close never
-    reached a broker, the fault died with the container, and the run read clean.
-    """
+def test_stop_breach_fault_survives_the_process() -> None:
+    """ADR-0017: a held breached stop is persisted as a Fault node."""
     graph = InMemoryGraphStore()
     sink = GraphFaultSink(graph, CollectingFaultSink())
     bus = InProcessBus()
@@ -175,7 +176,8 @@ def test_execution_dispatch_error_survives_the_process() -> None:
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert result.decisions[0].decision == "close"
+    assert result.decisions == ()
     faults = graph.list_nodes("Fault")
     assert [node.props["source_agent"] for node in faults] == ["monitor"]
+    assert faults[0].props["source_module"] == "agents.monitor.decide"
     assert faults[0].props["capability"] == "check_positions"

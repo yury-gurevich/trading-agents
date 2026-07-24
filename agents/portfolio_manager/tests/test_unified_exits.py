@@ -24,7 +24,9 @@ from contracts.common import Money
 
 def test_pm_sizes_sell_from_existing_position_quantity() -> None:
     """PM-OUT-01 / ADR-0016: sell recommendations become full-exit intents."""
-    sell = recommendation("AAPL").model_copy(update={"action": "sell"})
+    sell = recommendation("AAPL").model_copy(
+        update={"action": "sell", "exit_trigger": "stop"}
+    )
 
     approved, rejected = evaluate_recommendations(
         (sell,),
@@ -44,6 +46,7 @@ def test_pm_sizes_sell_from_existing_position_quantity() -> None:
         ("AAPL", "sell", 9)
     ]
     assert approved[0].position_ref == "exit-ref"
+    assert all(gate.passed for gate in approved[0].gate_report)
     assert [gate.name for gate in approved[0].gate_report] == [
         "sizing",
         "min_order_quantity",

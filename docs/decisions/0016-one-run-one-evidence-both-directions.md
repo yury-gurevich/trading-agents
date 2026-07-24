@@ -65,7 +65,10 @@ idempotent, reconciled, and covered by the DL-59 acceptance gate.
 
 5. **The monitor narrows to a safety net**: broker-enforced stop/target (ADR-0015 §3 — **not built as of 2026-07-24; nothing is broker-enforced yet**), time and
    regime exits, position bookkeeping, and broker reconciliation. It is no longer the primary
-   author of exit decisions.
+   author of exit decisions. **Narrowed further by [ADR-0017](0017-exit-authority-alpha-proposes-risk-disposes.md) (2026-07-24):** the monitor stops
+   authoring exit decisions entirely — the analyst owns discretionary exits and a breached stop
+   is forced onto this same rail; `target`/`time` retire into deferred strategy; the monitor
+   keeps reconciliation and raises a `Fault` when a stop is breached but not yet exited.
 
 ### Foundation now, strategy later
 

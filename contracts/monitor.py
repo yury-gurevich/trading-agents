@@ -1,4 +1,4 @@
-"""Monitor agent contract — open positions into exit decisions.
+"""Monitor agent contract — position reconciliation and stop-breach observation.
 
 Agent: monitor
 Role: contract — typed boundary (capabilities, owned data, never-do).
@@ -43,15 +43,15 @@ class CloseDecisionSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="monitor",
-    version="0.3.0",
+    version="0.4.0",
     mission=(
-        "Watch open positions and decide when to exit under policy (stops, targets, "
-        "time, regime), hand exits to execution, and explain every close and hold."
+        "Watch open positions, keep reconciliation current, surface breached stops "
+        "as faults, and explain still-held positions."
     ),
     consumes=(
         Capability(
             "check_positions",
-            "Evaluate open positions and emit close/hold decisions.",
+            "Observe open positions and surface breached stops.",
             request=MonitorRequest,
             response=CloseDecisionSet,
             mcp=True,
@@ -64,11 +64,10 @@ CONTRACT = AgentContract(
             mcp=True,
         ),
     ),
-    emits=("exits_decided",),
+    emits=("positions_observed",),
     owns_graph=(
         "MonitorRun",
         "PositionCheck",
-        "CloseDecision",
         "Position",
         "MonitorDecisionResult",
     ),
@@ -76,7 +75,8 @@ CONTRACT = AgentContract(
     depends_on=("forecaster", "execution"),
     mcp_tools=("check_positions", "explain_hold"),
     never=(
-        "submit to the broker directly (hand close decisions to execution)",
+        "submit to the broker directly",
+        "hand close decisions to execution",
         "open new positions (it manages and exits existing ones)",
         "call a market-data API directly (request it from provider)",
     ),

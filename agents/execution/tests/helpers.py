@@ -8,7 +8,6 @@ External I/O: none.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from agents.execution import ExecutionAgent
 from agents.execution.broker import PaperBroker
@@ -16,9 +15,6 @@ from agents.execution.tests.stage_helpers import flag_handler
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
-
-if TYPE_CHECKING:
-    from contracts.monitor import CloseDecisionSet
 
 
 def wire(
@@ -73,16 +69,6 @@ def submit_message(payload: OrderIntentSet) -> AgentMessage:
         recipient="execution",
         message_type="request",
         capability="submit",
-        payload=payload.model_dump(mode="json"),
-    )
-
-
-def close_message(payload: CloseDecisionSet) -> AgentMessage:
-    return AgentMessage(
-        sender="tester",
-        recipient="execution",
-        message_type="request",
-        capability="execute_close",
         payload=payload.model_dump(mode="json"),
     )
 

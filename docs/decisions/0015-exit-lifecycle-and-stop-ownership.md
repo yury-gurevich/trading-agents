@@ -211,3 +211,9 @@ and only one of them is wired to the broker.
 
 **Which decider wins is not settled by this ADR or by ADR-0016.** It is the open question this
 work surfaced, and it needs an operator decision before either exit path is wired further.
+
+> **Settled 2026-07-24 by [ADR-0017](0017-exit-authority-alpha-proposes-risk-disposes.md).**
+> Alpha proposes, risk disposes: the analyst owns discretionary exits and wins every
+> discretionary disagreement; the stop is an unconditional floor forced onto the same rail;
+> `target`/`time` retire into deferred strategy. §3's broker-native stop remains the durable
+> home of the floor.

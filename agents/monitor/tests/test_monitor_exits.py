@@ -1,13 +1,11 @@
-"""MonitorAgent exit-rule tests.
+"""Monitor stop-observation tests.
 
 Agent: monitor
-Role: verify stop/target/time closes and holds without decision-time realized PnL.
+Role: verify stop breaches become Faults, not CloseDecisions or broker dispatches.
 External I/O: none.
 """
 
 from __future__ import annotations
-
-from decimal import Decimal
 
 from agents.monitor.settings import MonitorSettings
 from agents.monitor.tests.helpers import (
@@ -17,54 +15,48 @@ from agents.monitor.tests.helpers import (
     seed_fill,
     wire_monitor,
 )
-from contracts.common import Money
 from contracts.monitor import CloseDecisionSet
 
 
-def test_stop_rule_writes_check_close_and_dispatches_execution() -> None:
-    """MON-OUT-02 / MON-NEV-01: stop rule → CloseDecision + PositionCheck."""
-    bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
+def test_stop_breach_writes_check_fault_and_no_close_or_dispatch() -> None:
+    """ADR-0017: breached stop is surfaced, never dispatched by monitor."""
+    bus, graph, broker, sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
     seed_fill(graph)
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    position = graph.get_node("Position", "pm-run-fixture:AAPL")
-    assert position is not None
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "stop")
+    check = graph.list_nodes("PositionCheck")[0]
+    assert result.decisions == ()
+    assert result.positions_checked == 1
+    assert check.props["observation"] == "stop_breached"
+    assert check.props["stop_breached"] is True
+    assert check.props["trigger"] == "stop"
+    assert node_count(graph, "CloseDecision") == 0
+    assert broker.order_count == 0
+    assert [fault.message for fault in sink.faults] == [
+        "stop breached on AAPL, still held"
     ]
-    assert result.decisions[0].pnl_cents is None
-    close_node = next(
-        node
-        for node in graph.ancestors(position, max_depth=1)
-        if node.label == "CloseDecision"
-    )
-    assert "pnl_cents" not in close_node.props
-    assert [node.label for node in graph.ancestors(position, max_depth=1)] == [
-        "Fill",
-        "PositionCheck",
-        "CloseDecision",
-    ]
-    assert broker.order_count == 1
+    assert graph.list_nodes("Fault")[0].props["error_type"] == "StopBreached"
 
 
-def test_target_rule_triggers_close() -> None:
-    """MON-OUT-02: target rule → close decision without realized pnl_cents."""
-    bus, _graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 111.0),))
-    seed_fill(_graph)
+def test_target_rule_is_retired_without_exit_or_fault() -> None:
+    """ADR-0017: target exits are deferred strategy, not monitor mechanics."""
+    bus, graph, broker, sink = wire_monitor(bars=(bar("AAPL", 0, 111.0),))
+    seed_fill(graph)
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "target")
-    ]
-    assert result.decisions[0].pnl_cents is None
-    assert broker.order_count == 1
+    assert result.decisions == ()
+    assert result.positions_checked == 1
+    assert graph.list_nodes("PositionCheck")[0].props["observation"] == "clear"
+    assert node_count(graph, "CloseDecision") == 0
+    assert broker.order_count == 0
+    assert sink.faults == []
 
 
-def test_time_rule_triggers_close() -> None:
-    """MON-OUT-02: horizon=0 → time trigger; realized pnl_cents absent."""
-    bus, graph, _broker, _sink = wire_monitor(
+def test_time_rule_is_retired_without_exit_or_fault() -> None:
+    """ADR-0017: horizon exits are deferred strategy, not monitor mechanics."""
+    bus, graph, broker, sink = wire_monitor(
         bars=(bar("AAPL", 0, 100.0),),
         settings=MonitorSettings(default_horizon_days=0),
     )
@@ -72,44 +64,25 @@ def test_time_rule_triggers_close() -> None:
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("close", "time")
-    ]
-    assert result.decisions[0].pnl_cents is None
+    assert result.decisions == ()
+    assert result.positions_checked == 1
+    assert node_count(graph, "CloseDecision") == 0
+    assert broker.order_count == 0
+    assert sink.faults == []
 
 
-def test_hold_writes_check_without_close_decision() -> None:
-    """MON-OUT-02 / MON-OUT-05: hold → PositionCheck written;
-    no CloseDecision; pnl_cents None."""
-    bus, graph, _broker, _sink = wire_monitor(
+def test_clear_position_writes_check_without_close_decision() -> None:
+    """ADR-0017: clear stop observation writes only PositionCheck evidence."""
+    bus, graph, broker, sink = wire_monitor(
         bars=(bar("AAPL", 0, 100.0), bar("AAPL", 1, 99.0))
     )
     seed_fill(graph)
 
     result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
 
-    assert [(item.decision, item.trigger) for item in result.decisions] == [
-        ("hold", "none")
-    ]
-    assert result.decisions[0].pnl_cents is None  # holds carry no realized PnL
-    assert node_count(graph, "PositionCheck") == 1
+    assert result.decisions == ()
+    assert result.positions_checked == 1
+    assert graph.list_nodes("PositionCheck")[0].props["stop_breached"] is False
     assert node_count(graph, "CloseDecision") == 0
-
-
-def test_close_sells_whole_position_at_decided_price() -> None:
-    """MON-OUT-02 / EXEC-IN-02: the exit order carries the position's real size and
-    the price the exit was decided at, not an execution-side fixture default."""
-    bus, graph, broker, _sink = wire_monitor(bars=(bar("AAPL", 0, 94.0),))
-    seed_fill(graph, quantity=55)
-
-    result = CloseDecisionSet.model_validate(bus.request(check_message()).payload)
-
-    decision = result.decisions[0]
-    assert (decision.decision, decision.trigger) == ("close", "stop")
-    assert decision.quantity == 55
-    assert decision.reference_price_cents == 9400
-    # The broker must see the whole position sold at the decided price. Before this
-    # was wired, execution sold 1 share at a $1.00 limit and the stop never landed.
-    sell = next(fill for fill in broker.fills() if fill.side == "sell")
-    assert sell.quantity == 55
-    assert sell.price == Money(amount=Decimal("94.00"))
+    assert broker.order_count == 0
+    assert sink.faults == []

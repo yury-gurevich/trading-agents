@@ -30,9 +30,9 @@ def test_missing_price_in_nonempty_price_map_records_fault() -> None:
     )
     position = open_position(graph, draft, fill)
 
-    decisions = _evaluate_positions(
+    observed = _evaluate_positions(
         graph, sink, "monitor-run-fixture", (position,), {"MSFT": 10000}
     )
 
-    assert decisions == ()
+    assert observed == (0, 0)
     assert len(sink.faults) == 1

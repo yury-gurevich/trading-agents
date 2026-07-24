@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 
 from contracts.common import Action, Explanation, Provenance, Ticker, _Frozen
@@ -25,6 +27,7 @@ class QuantMetric(_Frozen):
 class Recommendation(_Frozen):
     ticker: Ticker
     action: Action
+    exit_trigger: Literal["stop", "thesis"] | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     """0..1. Must clear the regime's base_min_confidence to be actionable."""
     technical_score: float
@@ -55,7 +58,7 @@ class RecommendationSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="analyst",
-    version="0.2.1",
+    version="0.3.0",
     mission=(
         "Turn candidates into scored, evidence-backed trade recommendations with a "
         "confidence and a rationale — or explain clearly why none qualify."

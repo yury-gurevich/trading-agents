@@ -1,16 +1,15 @@
 """Monitor agent implementation.
 
 Agent: monitor
-Role: open filled positions, evaluate exits, and hand closes to execution; publish
+Role: open filled positions, observe stops, and publish
       monitor.decisions.ready claim-check events on execution.fills.ready.
-External I/O: none; provider and execution are reached only over the message bus.
+External I/O: none; provider is reached only over the message bus.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from agents.monitor.execution_client import dispatch_closes
 from agents.monitor.provider_client import latest_close_cents
 from agents.monitor.pubsub import on_fills_ready
 from agents.monitor.run import evaluate_and_write, open_run_positions
@@ -75,15 +74,13 @@ class MonitorAgent(AgentBase):
             tickers=tuple(str(item.props["ticker"]) for item in positions),
             lookback_days=self._settings.price_lookback_days,
         )
-        result = evaluate_and_write(
+        return evaluate_and_write(
             self._graph,
             self.sink,
             source_run_id=monitor_request.run_id,
             positions=positions,
             prices=prices,
         )
-        dispatch_closes(self.bus, self.sink, result)
-        return result
 
     def _explain_hold(self, request: BaseModel) -> Explanation:
         monitor_request = MonitorRequest.model_validate(request)
@@ -100,9 +97,9 @@ class MonitorAgent(AgentBase):
         return Explanation(
             summary=(
                 f"Held {len(held)} open positions: {', '.join(sorted(held))}. "
-                "No stop, target, or time exit has closed them yet."
+                "Monitor has not surfaced a stop breach for them in this check."
             ),
-            evidence_refs=("monitor.exit_rules",),
+            evidence_refs=("contracts.stop_rule",),
         )
 
     def _positions_for_run(self, run_id: str) -> tuple[Node, ...]:

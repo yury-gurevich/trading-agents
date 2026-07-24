@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Literal
 
 from contracts.common import Money, Provenance, Ticker, _Frozen
-from contracts.monitor import CloseDecisionSet
 from contracts.portfolio_manager import OrderIntentSet
 from kernel.contract import AgentContract, Capability
 
@@ -73,7 +72,7 @@ class PromoteStageResult(_Frozen):
 
 CONTRACT = AgentContract(
     name="execution",
-    version="0.1.0",
+    version="0.2.0",
     mission=(
         "Be the single, idempotent boundary to the broker: submit approved orders, "
         "record fills, reconcile, and enforce stage gates (paper -> shadow -> live)."
@@ -85,12 +84,6 @@ CONTRACT = AgentContract(
             request=OrderIntentSet,
             response=ExecutionResult,
             mcp=True,
-        ),
-        Capability(
-            "execute_close",
-            "Execute monitor's close decisions against open positions.",
-            request=CloseDecisionSet,
-            response=ExecutionResult,
         ),
         Capability(
             "reconcile",
@@ -123,10 +116,10 @@ CONTRACT = AgentContract(
         "BrokerOrderStatus",
     ),
     external_io=("alpaca_broker",),
-    depends_on=("portfolio_manager", "monitor", "supervisor"),
+    depends_on=("portfolio_manager", "supervisor"),
     mcp_tools=("submit", "reconcile", "stage_status"),
     never=(
-        "decide what to trade (only executes approved intents and close decisions)",
+        "decide what to trade (only executes approved intents)",
         "size positions or override risk checks",
         "skip the idempotency key on a live-adjacent submission",
     ),

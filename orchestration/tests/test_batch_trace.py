@@ -95,6 +95,8 @@ def test_print_trace_complete(
         assert section in out
     assert "7/7 stages complete" in out
     assert "OK batch processed" in out
+    assert "profit_factor=unavailable" in out
+    assert "expectancy_cents=unavailable" in out
 
 
 def test_print_trace_missing_run_id(

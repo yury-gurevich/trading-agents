@@ -96,9 +96,8 @@ def write_close_decision(
     decision: str,
     trigger: str,
     rationale: Explanation,
-    pnl_cents: int,
 ) -> Node:
-    """Write one close decision (with realized PnL) and connect it to the Position."""
+    """Write one close intent and connect it to the Position."""
     node = graph.merge_node(
         "CloseDecision",
         # Run-scoped on purpose: the graph is append-only (graph_support.py
@@ -114,7 +113,6 @@ def write_close_decision(
             "trigger": trigger,
             "rationale": rationale.summary,
             "evidence_refs": list(rationale.evidence_refs),
-            "pnl_cents": pnl_cents,
             "created_at": datetime.now(tz=UTC).isoformat(),
         },
     )

@@ -30,7 +30,7 @@ class CloseDecision(_Frozen):
     reference_price_cents: int
     """Price the exit was decided at, in integer cents; execution's order reference."""
     pnl_cents: int | None = None
-    """Realized PnL in integer cents on a close (gross, long-only); None on a hold."""
+    """Realized PnL in integer cents when a real fill exists; otherwise None."""
 
 
 class CloseDecisionSet(_Frozen):

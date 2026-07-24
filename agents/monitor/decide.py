@@ -2,7 +2,7 @@
 
 Agent: monitor
 Role: turn one open Position + its current price into a CloseDecision, persisting the
-      position check and (on close) the realized-PnL close-decision node.
+      position check and close intent.
 External I/O: GraphStore writes via the injected backend.
 """
 
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.monitor.domain.exit_rules import evaluate_position, realized_pnl_cents
+from agents.monitor.domain.exit_rules import evaluate_position
 from agents.monitor.domain.positions import exit_position
 from agents.monitor.result import decision_rationale
 from agents.monitor.store import write_check, write_close_decision
@@ -43,16 +43,7 @@ def evaluate_one(
         trigger=trigger,
         current_price_cents=current_price_cents,
     )
-    pnl_cents = (
-        realized_pnl_cents(
-            current_price_cents,
-            int(position.props["opened_price_cents"]),
-            int(position.props["quantity"]),
-        )
-        if decision == "close"
-        else None
-    )
-    if decision == "close" and pnl_cents is not None:
+    if decision == "close":
         write_close_decision(
             graph,
             monitor_run_id=monitor_run_id,
@@ -60,7 +51,6 @@ def evaluate_one(
             decision=decision,
             trigger=trigger,
             rationale=rationale,
-            pnl_cents=pnl_cents,
         )
     return CloseDecision(
         ticker=ticker,
@@ -70,5 +60,4 @@ def evaluate_one(
         rationale=rationale,
         quantity=int(position.props["quantity"]),
         reference_price_cents=current_price_cents,
-        pnl_cents=pnl_cents,
     )

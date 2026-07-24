@@ -4,10 +4,10 @@ Agent: reporter
 Role: compute dollar-based profit-factor and expectancy from realized close PnL.
 External I/O: none.
 
-Reads realized ``pnl_cents`` from historical close records until execution records
-fill-time PnL. Close decisions marked with ``pnl_invalidated_at`` are skipped.
-When no realized PnL evidence exists, uncomputable metric keys are omitted instead
-of rendered as confident zeroes.
+Reads realized ``realized_pnl_cents`` from execution Fill records. Historical
+CloseDecision PnL remains legacy evidence only when it was not invalidated. When
+no realized PnL evidence exists, uncomputable metric keys are omitted instead of
+rendered as confident zeroes.
 """
 
 from __future__ import annotations
@@ -18,9 +18,15 @@ if TYPE_CHECKING:
     from kernel import Node
 
 
-def collect_trade_outcomes(close_decisions: tuple[Node, ...]) -> dict[str, float]:
+def collect_trade_outcomes(
+    fills: tuple[Node, ...], close_decisions: tuple[Node, ...] = ()
+) -> dict[str, float]:
     """Collect dollar-based profit-factor and expectancy from realized close PnL."""
-    pnls = [cents for cd in close_decisions if (cents := _pnl_cents(cd)) is not None]
+    pnls = [
+        cents
+        for node in (*fills, *close_decisions)
+        if (cents := _pnl_cents(node)) is not None
+    ]
     if not pnls:
         return {"closed_trades_with_pnl": 0.0}
     wins = sum(pnl for pnl in pnls if pnl > 0)
@@ -32,11 +38,11 @@ def collect_trade_outcomes(close_decisions: tuple[Node, ...]) -> dict[str, float
     }
 
 
-def _pnl_cents(close_decision: Node) -> int | None:
-    """Read the realized integer-cents PnL off a close decision; None when absent."""
-    if "pnl_invalidated_at" in close_decision.props:
+def _pnl_cents(node: Node) -> int | None:
+    """Read realized integer-cents PnL from fill-first evidence."""
+    if "pnl_invalidated_at" in node.props:
         return None
-    value = close_decision.props.get("pnl_cents")
+    value = node.props.get("realized_pnl_cents", node.props.get("pnl_cents"))
     if isinstance(value, bool) or not isinstance(value, int):
         return None
     return value

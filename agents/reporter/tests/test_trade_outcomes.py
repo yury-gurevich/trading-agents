@@ -18,11 +18,30 @@ def _close(key: str, *, trigger: str, pnl_cents: int | None) -> Node:
     return Node("CloseDecision", f"close:{key}", props)
 
 
+def _fill(key: str, *, realized_pnl_cents: int | None) -> Node:
+    props: dict[str, object] = {"side": "sell", "broker_status": "filled"}
+    if realized_pnl_cents is not None:
+        props["realized_pnl_cents"] = realized_pnl_cents
+    return Node("Fill", f"fill:{key}", props)
+
+
 def test_no_closes_returns_zero_sentinels() -> None:
     outcomes = collect_trade_outcomes(())
     assert "profit_factor" not in outcomes
     assert "expectancy_cents" not in outcomes
     assert outcomes["closed_trades_with_pnl"] == 0.0
+
+
+def test_fill_realized_pnl_is_the_current_reporter_source() -> None:
+    outcomes = collect_trade_outcomes(
+        (
+            _fill("win", realized_pnl_cents=1000),
+            _fill("loss", realized_pnl_cents=-500),
+        )
+    )
+    assert outcomes["profit_factor"] == 2.0
+    assert outcomes["expectancy_cents"] == 250.0
+    assert outcomes["closed_trades_with_pnl"] == 2.0
 
 
 def test_time_exits_now_contribute() -> None:
@@ -80,6 +99,7 @@ def test_close_without_pnl_is_skipped() -> None:
 
 def test_invalidated_close_pnl_is_skipped() -> None:
     outcomes = collect_trade_outcomes(
+        (),
         (
             Node(
                 "CloseDecision",
@@ -91,6 +111,24 @@ def test_invalidated_close_pnl_is_skipped() -> None:
                     "pnl_invalidated_at": "2026-07-23T00:00:00+00:00",
                 },
             ),
-        )
+        ),
     )
     assert outcomes == {"closed_trades_with_pnl": 0.0}
+
+
+def test_invalidated_close_pnl_does_not_mask_fill_evidence() -> None:
+    outcomes = collect_trade_outcomes(
+        (_fill("abt", realized_pnl_cents=5586),),
+        (
+            Node(
+                "CloseDecision",
+                "bad",
+                {
+                    "pnl_cents": -600,
+                    "pnl_invalidated_at": "2026-07-23T00:00:00+00:00",
+                },
+            ),
+        ),
+    )
+    assert outcomes["closed_trades_with_pnl"] == 1.0
+    assert outcomes["expectancy_cents"] == 5586.0

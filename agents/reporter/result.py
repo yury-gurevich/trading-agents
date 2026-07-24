@@ -40,7 +40,7 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
     portfolio = collect_portfolio_metrics(
         pm_run, lineage.positions, lineage.close_decisions
     )
-    outcomes = collect_trade_outcomes(lineage.close_decisions)
+    outcomes = collect_trade_outcomes(lineage.fills, lineage.close_decisions)
     portfolio = {**portfolio, **outcomes}
     signal = collect_signal_metrics(
         lineage.recommendations, rejection_count=len(lineage.rejections)

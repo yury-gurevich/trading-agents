@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
 
+from contracts.pnl import realized_pnl_cents as realized_pnl_cents
+
 Decision = Literal["close", "hold"]
 Trigger = Literal["stop", "target", "time", "none"]
 PCT_SCALE = 10000
@@ -47,17 +49,6 @@ def check_time(opened_at_iso: str, default_horizon_days: int, today: date) -> bo
     """Return whether the configured holding horizon has elapsed."""
     opened_at = datetime.fromisoformat(opened_at_iso).date()
     return (today - opened_at).days >= default_horizon_days
-
-
-def realized_pnl_cents(
-    exit_price_cents: int, entry_price_cents: int, quantity: int
-) -> int:
-    """Gross realized PnL in integer cents (long-only): (exit - entry) * quantity.
-
-    Pure integer arithmetic — money is never a float. Positive above entry, negative
-    below, zero at break-even. No fees/slippage (v1 parity). Never raises.
-    """
-    return (exit_price_cents - entry_price_cents) * quantity
 
 
 def evaluate_position(

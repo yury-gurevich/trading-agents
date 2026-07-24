@@ -132,8 +132,51 @@ only proves the bus path is worthless here (DL-60 is exactly that lesson).
 
 ## Closeout — evidence (coding agent fills at handback; never leave this placeholder)
 
-- **Files changed:**
+- **Files changed:** `Makefile`; `pyproject.toml`; `uv.lock`; `contracts/pnl.py`;
+  `contracts/positions.py`; `agents/monitor/domain/exit_rules.py`;
+  `agents/execution/realized_pnl.py`; `agents/execution/reconciliation.py`;
+  `agents/execution/reconciliation_store.py`;
+  `agents/execution/tests/test_realized_pnl_refresh.py`;
+  `agents/execution/tests/test_realized_pnl_multilot.py`;
+  `orchestration/tests/test_realized_pnl_graph_pull.py`;
+  `agents/reporter/domain/trade_outcomes.py`; `agents/reporter/result.py`;
+  `agents/reporter/tests/test_trade_outcomes.py`;
+  `agents/reporter/tests/test_reporter_agent.py`; `tests/test_positions_contract.py`;
+  `scripts/gate_selftest.py`; `scripts/gate_selftest_cases.py`;
+  `docs/sprints/sprint-136-realized-pnl-and-gate-integrity.md`.
 - **`make ci` verbatim result:**
-- **Realized-PnL proof (the ABT arithmetic):**
+  ```text
+  uv run ruff check . --output-format=github
+  uv run ruff format --check .
+  778 files already formatted
+  uv run mypy kernel contracts agents orchestration surfaces
+  Success: no issues found in 657 source files
+  Contracts: 4 kept, 0 broken.
+  Required test coverage of 100.0% reached. Total coverage: 100.00%
+  ====================== 1774 passed, 6 skipped in 32.30s =======================
+  uv run pip-audit
+  No known vulnerabilities found
+  uv run pre-commit run detect-secrets --all-files
+  Detect secrets...........................................................Passed
+  uv run python scripts/check_untracked_secrets.py
+  Detect secrets...........................................................Passed
+  detect-secrets (untracked): scanning 5 new file(s)
+  ```
+  Command exit code: `0`.
+- **Realized-PnL proof (the ABT arithmetic):** graph-pull test
+  `orchestration/tests/test_realized_pnl_graph_pull.py::test_cascade_once_refreshes_abt_sell_fill_realized_pnl_from_broker_price`
+  seeds entry `opened_price_cents=10078`, a pending sell Fill whose decision-time
+  `price_cents=1`, and broker evidence `ABT sell quantity=98 price=$101.35`.
+  Reconciliation appends `broker_price_cents=10135` and `realized_pnl_cents=5586`.
+  Arithmetic: `(10135 - 10078) * 98 = 57 * 98 = 5586`.
 - **Part B both directions (gate passes clean / fails on a planted CVE):**
-- **Anything not done, and why:**
+  clean direction is covered by final `make ci` running non-ignored `uv run pip-audit`
+  and reporting `No known vulnerabilities found`. Failure direction on the final tree:
+  ```text
+  PASS  can-fail: pip-audit-cve — rejected (exit 1)
+  PASS  invariant: pip-audit-not-ignored-by-ci — present
+  gate self-test: 9/9 passed
+  ```
+- **Anything not done, and why:** no commit, push, merge, deploy, ADR/STATE/infra/.env
+  edit, live database repair, or monitor-vs-analyst decider resolution was performed; all
+  were explicitly out of scope. No unsettled implementation decision was encountered.

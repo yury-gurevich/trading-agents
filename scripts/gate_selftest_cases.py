@@ -24,6 +24,7 @@ class FailureCase:
     why: str
     files: dict[str, str]
     command: list[str]
+    must_output: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class Invariant:
     why: str
     path: str
     must_contain: tuple[str, ...] = field(default=())
+    must_not_contain: tuple[str, ...] = field(default=())
 
 
 _OVERSIZE = "\n".join(f"X{n} = {n}" for n in range(230))
@@ -87,6 +89,23 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         files={f"scripts/{PROBE_PREFIX}_secret.py": f'FAKE = "{_FAKE_DSN}"\n'},
         command=["uv", "run", "python", "scripts/check_untracked_secrets.py"],
     ),
+    FailureCase(
+        name="pip-audit-cve",
+        why="the local dependency CVE gate must fail closed on a vulnerable package",
+        files={f"scripts/{PROBE_PREFIX}_cve_requirements.txt": "urllib3==1.25.6\n"},
+        command=[
+            "uv",
+            "run",
+            "pip-audit",
+            "--no-deps",
+            "--disable-pip",
+            "--progress-spinner",
+            "off",
+            "-r",
+            f"scripts/{PROBE_PREFIX}_cve_requirements.txt",
+        ],
+        must_output=("urllib3",),
+    ),
 )
 
 INVARIANTS: tuple[Invariant, ...] = (
@@ -113,5 +132,12 @@ INVARIANTS: tuple[Invariant, ...] = (
         ),
         path="Makefile",
         must_contain=("scripts/check_untracked_secrets.py",),
+    ),
+    Invariant(
+        name="pip-audit-not-ignored-by-ci",
+        why="the local CVE gate must fail make ci instead of being ignored",
+        path="Makefile",
+        must_contain=("\tuv run pip-audit",),
+        must_not_contain=("\t-uv run pip-audit",),
     ),
 )

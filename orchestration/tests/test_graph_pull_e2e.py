@@ -9,7 +9,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider import poll as provider_poll
 from agents.provider.settings import ProviderSettings

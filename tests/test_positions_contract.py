@@ -104,10 +104,18 @@ def test_open_position_stop_thresholds_weight_lots_by_quantity() -> None:
     )
 
     thresholds = open_position_stop_thresholds(graph)
+    ref = open_positions(graph)[0].position_ref
 
     assert [
-        (item.ticker, item.opened_price_cents, item.stop_pct) for item in thresholds
-    ] == [("AAPL", 17500, 0.05)]
+        (
+            item.ticker,
+            item.quantity,
+            item.position_ref,
+            item.opened_price_cents,
+            item.stop_pct,
+        )
+        for item in thresholds
+    ] == [("AAPL", 4, ref, 17500, 0.05)]
 
 
 def test_open_position_stop_thresholds_reject_different_stop_pct() -> None:

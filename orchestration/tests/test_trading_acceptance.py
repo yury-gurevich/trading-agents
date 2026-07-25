@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import InMemoryGraphStore, InProcessBus

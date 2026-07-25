@@ -13,8 +13,10 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+from contracts.analyst import CONTRACT as ANALYST_CONTRACT
 from contracts.analyst import QuantMetric, Recommendation
 from contracts.common import Explanation, Money, Window
+from contracts.execution import CONTRACT as EXECUTION_CONTRACT
 from contracts.portfolio_manager import GateOutcome, OrderIntent
 from contracts.researcher import (
     CONTRACT,
@@ -115,6 +117,12 @@ def test_order_intent_gate_report_is_additive_and_round_trips() -> None:
 
     assert legacy.gate_report == ()
     assert parsed.gate_report == (outcome,)
+
+
+def test_broker_native_stops_bump_contract_ownership() -> None:
+    assert EXECUTION_CONTRACT.version == "0.3.0"
+    assert "BrokerStopOrder" in EXECUTION_CONTRACT.owns_graph
+    assert ANALYST_CONTRACT.version == "0.4.0"
 
 
 def test_researcher_backtest_evidence_round_trips_optionally() -> None:

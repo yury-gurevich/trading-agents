@@ -13,8 +13,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from decimal import Decimal
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
+from agents.execution import alpaca_orders
 from agents.execution.alpaca_positions import positions_from_payload
 from agents.execution.broker import BrokerFill, BrokerPosition, BrokerRejectedError
 from contracts.common import Money
@@ -25,10 +26,13 @@ if TYPE_CHECKING:
 _ORDERS_PATH = "/v2/orders"
 _BY_CLIENT_PATH = "/v2/orders:by_client_order_id"
 _POSITIONS_PATH = "/v2/positions"
-_PENDING = frozenset({"new", "accepted", "pending_new", "held", "accepted_for_bidding"})
 
-BrokerStatus = Literal["filled", "partial", "rejected", "pending"]
-BrokerSide = Literal["buy", "sell"]
+BrokerSide = alpaca_orders.BrokerSide
+
+_order_body = alpaca_orders.order_body
+_stop_order_body = alpaca_orders.stop_order_body
+_fill_from_order = alpaca_orders.fill_from_order
+_price_of = alpaca_orders.price_of
 
 
 class AlpacaBroker:
@@ -56,6 +60,24 @@ class AlpacaBroker:
             _order_body(idempotency_key, ticker, side, quantity)
         )
         fill = _fill_from_order(order, idempotency_key, limit_price)
+        if fill.status == "rejected":
+            raise BrokerRejectedError(fill)
+        return fill
+
+    def submit_stop(
+        self,
+        idempotency_key: str,
+        ticker: Ticker,
+        side: BrokerSide,
+        quantity: int,
+        stop_price: Money,
+        tif: str = "gtc",
+    ) -> BrokerFill:
+        """Submit one resting stop order; replay on dupe."""
+        order = self._submit_or_get(
+            _stop_order_body(idempotency_key, ticker, side, quantity, stop_price, tif)
+        )
+        fill = _fill_from_order(order, idempotency_key, stop_price)
         if fill.status == "rejected":
             raise BrokerRejectedError(fill)
         return fill
@@ -121,69 +143,3 @@ class AlpacaBroker:
             request, timeout=self._timeout
         ) as resp:
             return json.loads(resp.read().decode("utf-8"))
-
-
-def _order_body(
-    idempotency_key: str, ticker: Ticker, side: BrokerSide, quantity: int
-) -> dict[str, object]:
-    return {
-        "symbol": str(ticker),
-        "qty": str(quantity),
-        "side": side,
-        "type": "market",
-        "time_in_force": "day",
-        "client_order_id": idempotency_key,
-    }
-
-
-def _fill_from_order(
-    order: object, idempotency_key: str, reference: Money
-) -> BrokerFill:
-    """Map an Alpaca order object onto a BrokerFill; never raise on a dict."""
-    if not isinstance(order, dict):
-        return _rejected(idempotency_key, reference, "malformed_broker_response")
-    status = _status_of(str(order.get("status", "")))
-    return BrokerFill(
-        idempotency_key=idempotency_key,
-        ticker=str(order.get("symbol", "")),
-        side=_side_of(str(order.get("side", "buy"))),
-        quantity=int(float(str(order.get("qty", 0)))),
-        price=_price_of(order, reference),
-        broker_order_id=str(order.get("id", "")),
-        status=status,
-        reason=str(order.get("status", "rejected")) if status == "rejected" else None,
-    )
-
-
-def _rejected(idempotency_key: str, reference: Money, reason: str) -> BrokerFill:
-    return BrokerFill(
-        idempotency_key=idempotency_key,
-        ticker="",
-        side="buy",
-        quantity=0,
-        price=reference,
-        broker_order_id="",
-        status="rejected",
-        reason=reason,
-    )
-
-
-def _status_of(raw: str) -> BrokerStatus:
-    if raw == "filled":
-        return "filled"
-    if raw == "partially_filled":
-        return "partial"
-    if raw in _PENDING:
-        return "pending"
-    return "rejected"
-
-
-def _side_of(raw: str) -> BrokerSide:
-    return "sell" if raw == "sell" else "buy"
-
-
-def _price_of(order: dict[str, object], reference: Money) -> Money:
-    raw = order.get("filled_avg_price")
-    if raw in (None, ""):
-        return reference
-    return Money(amount=Decimal(str(raw)))

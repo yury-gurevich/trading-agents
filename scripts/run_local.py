@@ -22,7 +22,7 @@ import argparse
 import os
 from datetime import UTC, datetime, timedelta
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import FakeDataSource

@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration import Dispatcher
 from orchestration.lineage import position_ids_for_run

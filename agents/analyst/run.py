@@ -17,6 +17,7 @@ from agents.analyst.held_universe import scoring_universe
 from agents.analyst.result import build_empty_result, run_explanation, split_decisions
 from agents.analyst.store import write_analysis
 from contracts.analyst import RecommendationSet
+from contracts.broker_stops import active_broker_stop_refs
 from contracts.positions import open_position_stop_thresholds
 from kernel.errors import fault_boundary
 
@@ -77,6 +78,7 @@ def run_analysis(
         sink,
         held_tickers,
         held_stops,
+        active_broker_stop_refs(graph),
     )
     if decisions is None:
         return build_empty_result(

@@ -7,7 +7,7 @@ External I/O: none; Celery uses eager in-memory settings.
 
 from __future__ import annotations
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from kernel import CeleryBus, CeleryBusSettings, InMemoryGraphStore
 from orchestration import Dispatcher
 from orchestration.tests.helpers import (

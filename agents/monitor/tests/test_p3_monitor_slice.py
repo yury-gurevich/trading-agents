@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from agents.analyst import AnalystAgent
 from agents.execution import ExecutionAgent
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.monitor import MonitorAgent
 from agents.monitor.tests.helpers import (
     analysis_message,

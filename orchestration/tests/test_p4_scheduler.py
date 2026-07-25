@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider.sources import FakeDataSource
 from kernel import InMemoryGraphStore, InProcessBus
 from orchestration import Dispatcher, RunScheduler

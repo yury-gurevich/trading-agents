@@ -35,6 +35,7 @@ def score_candidates(
     sink: FaultSink,
     held_tickers: tuple[str, ...] = (),
     held_stops: tuple[PositionStopThreshold, ...] = (),
+    active_broker_stop_refs: frozenset[str] = frozenset(),
 ) -> tuple[AnalysisDecision, ...] | None:
     """Score all candidates; returns None when the scoring step faults."""
     held = set(held_tickers)
@@ -80,7 +81,10 @@ def score_candidates(
                     held=candidate.ticker in held,
                     exit_confidence_floor=settings.exit_confidence_floor,
                     stop_breached=_stop_breached(
-                        candidate.ticker, ticker_bars, stop_thresholds
+                        candidate.ticker,
+                        ticker_bars,
+                        stop_thresholds,
+                        active_broker_stop_refs,
                     ),
                 )
             )
@@ -115,9 +119,12 @@ def _stop_breached(
     ticker: str,
     bars: tuple[OHLCVBar, ...],
     thresholds: dict[str, PositionStopThreshold],
+    active_stop_refs: frozenset[str],
 ) -> bool:
     threshold = thresholds.get(ticker)
     if threshold is None or not bars:
+        return False
+    if threshold.position_ref in active_stop_refs:
         return False
     return check_stop(
         _latest_close_cents(bars),

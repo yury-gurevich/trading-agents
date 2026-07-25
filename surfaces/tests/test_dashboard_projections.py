@@ -12,7 +12,7 @@ from datetime import date
 from typing import TYPE_CHECKING, Any, cast
 
 import surfaces.dashboard.projections as proj
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import InMemoryGraphStore, InProcessBus

@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.reporter.tests.helpers import bar, narrative_message, report_message
 from agents.reporter.tests.p3_helpers import (
     analysis_message,

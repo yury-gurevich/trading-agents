@@ -145,6 +145,7 @@ only proves the bus path is worthless here (DL-60 is exactly that lesson).
   `scripts/gate_selftest.py`; `scripts/gate_selftest_cases.py`;
   `docs/sprints/sprint-136-realized-pnl-and-gate-integrity.md`.
 - **`make ci` verbatim result:**
+
   ```text
   uv run ruff check . --output-format=github
   uv run ruff format --check .
@@ -162,6 +163,7 @@ only proves the bus path is worthless here (DL-60 is exactly that lesson).
   Detect secrets...........................................................Passed
   detect-secrets (untracked): scanning 5 new file(s)
   ```
+
   Command exit code: `0`.
 - **Realized-PnL proof (the ABT arithmetic):** graph-pull test
   `orchestration/tests/test_realized_pnl_graph_pull.py::test_cascade_once_refreshes_abt_sell_fill_realized_pnl_from_broker_price`
@@ -172,11 +174,13 @@ only proves the bus path is worthless here (DL-60 is exactly that lesson).
 - **Part B both directions (gate passes clean / fails on a planted CVE):**
   clean direction is covered by final `make ci` running non-ignored `uv run pip-audit`
   and reporting `No known vulnerabilities found`. Failure direction on the final tree:
+
   ```text
   PASS  can-fail: pip-audit-cve — rejected (exit 1)
   PASS  invariant: pip-audit-not-ignored-by-ci — present
   gate self-test: 9/9 passed
   ```
+
 - **Anything not done, and why:** no commit, push, merge, deploy, ADR/STATE/infra/.env
   edit, live database repair, or monitor-vs-analyst decider resolution was performed; all
   were explicitly out of scope. No unsettled implementation decision was encountered.

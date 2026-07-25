@@ -58,7 +58,7 @@ class RecommendationSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="analyst",
-    version="0.3.0",
+    version="0.4.0",
     mission=(
         "Turn candidates into scored, evidence-backed trade recommendations with a "
         "confidence and a rationale — or explain clearly why none qualify."

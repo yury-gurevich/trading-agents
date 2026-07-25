@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import DataSource, FakeDataSource

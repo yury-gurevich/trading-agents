@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.execution.poll import execute_pm_node, find_pending
 from agents.execution.tests.helpers import order, order_set
 from kernel import InMemoryGraphStore

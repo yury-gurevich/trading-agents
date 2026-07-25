@@ -17,6 +17,7 @@ from agents.execution.reconciliation_store import (
     position_divergences,
     write_divergence_flag,
 )
+from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from contracts.common import Money
 from kernel import CollectingFaultSink, InMemoryGraphStore, Node
 
@@ -101,7 +102,7 @@ def test_position_divergences_is_empty_when_books_match() -> None:
 
 
 @dataclass
-class _StaticBroker:
+class _StaticBroker(NoStopBrokerMixin):
     broker_fills: tuple[BrokerFill, ...]
     broker_positions: tuple[BrokerPosition, ...]
 
@@ -122,7 +123,7 @@ class _StaticBroker:
         return self.broker_positions
 
 
-class _FailingBroker:
+class _FailingBroker(NoStopBrokerMixin):
     def submit(
         self,
         idempotency_key: str,

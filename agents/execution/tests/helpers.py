@@ -10,7 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from agents.execution import ExecutionAgent
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.execution.tests.stage_helpers import flag_handler
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet

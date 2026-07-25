@@ -56,6 +56,9 @@ def _needs_realized_pnl(fill_node: Node, broker_fill: BrokerFill) -> bool:
 
 
 def _position_ref_from_order(graph: GraphStore, fill_node: Node) -> str | None:
+    direct = fill_node.props.get("position_ref")
+    if isinstance(direct, str) and direct:
+        return direct
     order = next(
         iter(graph.descendants(fill_node, max_depth=1, edge_types={_EXECUTES_EDGE})),
         None,

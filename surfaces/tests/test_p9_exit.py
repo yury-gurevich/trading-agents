@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import cast
 
 from agents.analyst.tests.helpers import analyze_message, candidate, candidate_set
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider.sources import FakeDataSource
 from kernel import (
     AgentMessage,

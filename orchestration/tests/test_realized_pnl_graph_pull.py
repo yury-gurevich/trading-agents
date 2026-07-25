@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import Literal
 
 from agents.execution.broker import BrokerFill, BrokerPosition
+from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from contracts.common import Explanation, Money, Provenance
@@ -43,7 +44,7 @@ def test_cascade_once_refreshes_abt_sell_fill_realized_pnl_from_broker_price() -
 
 
 @dataclass
-class _RefreshOnlyBroker:
+class _RefreshOnlyBroker(NoStopBrokerMixin):
     broker_fills: tuple[BrokerFill, ...]
 
     def submit(

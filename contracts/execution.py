@@ -72,7 +72,7 @@ class PromoteStageResult(_Frozen):
 
 CONTRACT = AgentContract(
     name="execution",
-    version="0.2.0",
+    version="0.3.0",
     mission=(
         "Be the single, idempotent boundary to the broker: submit approved orders, "
         "record fills, reconcile, and enforce stage gates (paper -> shadow -> live)."
@@ -114,6 +114,7 @@ CONTRACT = AgentContract(
         "ExecutionResultEvent",
         "BrokerPositionSnapshot",
         "BrokerOrderStatus",
+        "BrokerStopOrder",
     ),
     external_io=("alpaca_broker",),
     depends_on=("portfolio_manager", "supervisor"),

@@ -13,7 +13,7 @@ import pytest
 
 from agents.analyst import poll as analyst_poll
 from agents.execution import poll as execution_poll
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.monitor import poll as monitor_poll
 from agents.portfolio_manager import poll as pm_poll
 from agents.provider import ProviderAgent

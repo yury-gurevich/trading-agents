@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import overbought_bars
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from contracts.portfolio_manager import OrderIntentSet

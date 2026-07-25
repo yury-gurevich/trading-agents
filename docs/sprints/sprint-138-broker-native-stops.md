@@ -27,6 +27,7 @@ closed): an `AMD` `gtc` sell stop 30% below market returned `status=accepted, ty
 rested, and cancelled clean. Build to `gtc` stops; do not re-probe, and do not fire live orders.
 
 **Two design points that are NOT the original §3 (both in DL-61):**
+
 - **Stop-only, no take-profit leg.** ADR-0017 retired `target`; a `bracket`/`oco` take-profit leg
   would re-introduce the mechanical profit-taking we just deleted. A resting **sell stop** only.
 - **The S137 forced-stop becomes a gated fallback, not a peer** — the analyst defers to a live
@@ -42,7 +43,7 @@ rested, and cancelled clean. Build to `gtc` stops; do not re-probe, and do not f
 `submit(idempotency_key, ticker, side, quantity, limit_price)`. Add a **new method** (do not change
 `submit`'s signature — three call sites depend on it):
 
-```
+```text
 submit_stop(idempotency_key, ticker, side, quantity, stop_price: Money, tif="gtc") -> BrokerFill
 ```
 
@@ -149,9 +150,117 @@ position gets a fresh `stop:{new_ref}` from Part B next run.
 
 ## Closeout — evidence (coding agent fills at handback; never leave this placeholder)
 
-- **Files changed:** _(list every file)_
-- **`make ci` verbatim result:** _(paste the tail; state the exit code)_
-- **Stop-price formula + where extracted from:** _(show it, and that it reuses `check_stop`)_
-- **`BrokerStopOrder` liveness under append-only:** _(how placement/cancel are modelled)_
-- **Part B sequencing vs a same-run thesis sell:** _(how a sold ticker is excluded)_
-- **Anything not done, and why:** _(commit/push/merge/deploy/live-order must all be absent)_
+- **Files changed:**
+  - `agents/analyst/domain/analyze.py`
+  - `agents/analyst/run.py`
+  - `agents/analyst/tests/test_broker_stop_deferral.py` (new)
+  - `agents/execution/agent.py`
+  - `agents/execution/alpaca.py`
+  - `agents/execution/alpaca_orders.py` (new)
+  - `agents/execution/broker.py`
+  - `agents/execution/broker_factory.py`
+  - `agents/execution/broker_stop_actions.py` (new)
+  - `agents/execution/broker_stops.py` (new)
+  - `agents/execution/paper_broker.py` (new)
+  - `agents/execution/poll.py`
+  - `agents/execution/realized_pnl.py`
+  - `agents/execution/tests/broker_protocol_helpers.py` (new)
+  - `agents/execution/tests/broker_stop_helpers.py` (new)
+  - `agents/execution/tests/test_broker_stop_edges.py` (new)
+  - `agents/execution/tests/helpers.py`
+  - `agents/execution/tests/test_alpaca_broker.py`
+  - `agents/execution/tests/test_alpaca_stop_orders.py` (new)
+  - `agents/execution/tests/test_broker_positions.py`
+  - `agents/execution/tests/test_broker_stops.py` (new)
+  - `agents/execution/tests/test_execution_agent.py`
+  - `agents/execution/tests/test_execution_poll.py`
+  - `agents/execution/tests/test_reconciliation.py`
+  - `agents/monitor/tests/helpers.py`
+  - `agents/monitor/tests/test_p3_monitor_slice.py`
+  - `agents/reporter/tests/p3_helpers.py`
+  - `agents/reporter/tests/test_p3_reporter_slice.py`
+  - `contracts/analyst.py`
+  - `contracts/broker_stops.py` (new)
+  - `contracts/execution.py`
+  - `contracts/positions.py`
+  - `contracts/stop_rule.py`
+  - `docs/sprints/sprint-138-broker-native-stops.md`
+  - `orchestration/tests/test_adr0015_graph_pull.py`
+  - `orchestration/tests/test_batch_trace.py`
+  - `orchestration/tests/test_dispatcher_unit.py`
+  - `orchestration/tests/test_forecaster_stage.py`
+  - `orchestration/tests/test_graph_pull_e2e.py`
+  - `orchestration/tests/test_p4_celery_parity.py`
+  - `orchestration/tests/test_p4_daily_loop.py`
+  - `orchestration/tests/test_p4_scheduler.py`
+  - `orchestration/tests/test_realized_pnl_graph_pull.py`
+  - `orchestration/tests/test_resume.py`
+  - `orchestration/tests/test_trading_acceptance.py`
+  - `orchestration/tests/test_trading_acceptance_outcomes.py`
+  - `orchestration/tests/test_trading_observatory.py`
+  - `orchestration/tests/test_unified_decision_run.py`
+  - `orchestration/tests/test_veto_stage.py`
+  - `pyproject.toml`
+  - `scripts/run_local.py`
+  - `surfaces/context.py`
+  - `surfaces/tests/test_context.py`
+  - `surfaces/tests/test_dashboard_projections.py`
+  - `surfaces/tests/test_p9_exit.py`
+  - `tests/test_broker_stops_contract.py` (new)
+  - `tests/test_contract_values.py`
+  - `tests/test_positions_contract.py`
+  - `tests/test_stop_rule.py`
+  - `uv.lock`
+  - Pre-existing unrelated local change retained and not used for Sprint 138:
+    `docs/sprints/sprint-136-realized-pnl-and-gate-integrity.md`
+- **`make ci` verbatim result:** exit code `0`.
+
+  ```text
+  TOTAL                                                12079      0   2520      0  100.00%
+  Coverage HTML written to dir htmlcov
+  Required test coverage of 100.0% reached. Total coverage: 100.00%
+  =========================== short test summary info ===========================
+  SKIPPED [1] tests\test_bus_azure.py:133: AZURE_SERVICEBUS_CONNECTION_STRING is not set
+  SKIPPED [1] tests\test_bus_celery.py:181: CELERY_BROKER_URL is not set
+  SKIPPED [1] tests\test_graph_postgres.py:137: POSTGRES_TEST_DSN is not set
+  SKIPPED [1] agents\provider\tests\test_sources.py:134: FINNHUB_TEST_NETWORK=1 is not set
+  SKIPPED [1] agents\provider\tests\test_stooq.py:66: STOOQ_TEST_NETWORK=1 is not set
+  ================= 1809 passed, 5 skipped in 153.85s (0:02:33) =================
+  uv run pip-audit
+  No known vulnerabilities found
+  uv run pre-commit run detect-secrets --all-files
+  Detect secrets...........................................................Passed
+  uv run python scripts/check_untracked_secrets.py
+  Detect secrets...........................................................Passed
+  detect-secrets (untracked): scanning 12 new file(s)
+  ```
+  Post-evidence sanity: `git diff --check` exit code `0`; `uv run pre-commit run
+  detect-secrets --files docs/sprints/sprint-138-broker-native-stops.md` exit code `0`.
+- **Stop-price formula + where extracted from:** extracted into
+  `contracts/stop_rule.py::stop_price_cents`:
+
+  ```text
+  opened_price_cents*(10000 - round(stop_pct*10000)) // 10000
+  ```
+
+  `contracts/stop_rule.py::check_stop` now calls that helper, and execution imports the same helper
+  in `agents/execution/broker_stop_actions.py`, so the analyst fallback and broker-native stop
+  placement cannot drift on cents arithmetic.
+- **`BrokerStopOrder` liveness under append-only:** execution writes immutable
+  `BrokerStopOrder` facts keyed as `stop:{position_ref}:{ticker}` with `{ticker, position_ref,
+  stop_price_cents, broker_order_id, placed_at}`. Liveness is derived by contracts accessors:
+  active stops are `BrokerStopOrder` nodes with no `cancelled_at`. Reconciliation never mutates a
+  status field; it calls `broker.cancel(broker_order_id)` for stops whose `position_ref` no longer
+  appears in active positions, then appends `cancelled_at`. Placement also requires a fresh broker
+  position snapshot with matching ticker quantity, so a graph-active but broker-absent holding does
+  not receive a new stop while monitor reconciliation catches up.
+- **Part B sequencing vs a same-run thesis sell:** execution now reconciles broker positions first,
+  cancels stale broker stops, then places missing stops before submitting the run's market orders.
+  `agents/execution/broker_stops.py::place_broker_stops` derives the post-veto same-run sell ticker
+  set from the `OrderIntentSet` and skips those tickers, so execution never puts a protective stop
+  under a position that the same run is already selling. The immutable graph key and broker
+  `client_order_id` provide double idempotency on rerun.
+- **Anything not done, and why:** no commit, push, merge, deploy, or live order was performed. No
+  take-profit, bracket, OCO, trailing-stop, monitor-to-execution close-dispatch, infra, `.env`,
+  `docs/STATE.md`, ADR, or DL-61/design-log change was made because the sprint explicitly excludes
+  those paths.

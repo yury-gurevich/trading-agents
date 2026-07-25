@@ -11,6 +11,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.execution.broker_stops import (
+    place_broker_stops,
+    reconcile_broker_stops,
+)
 from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
@@ -78,7 +82,9 @@ def execute_pm_node(
     sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
     order_set = _drop_vetoed(graph, node, order_set)
-    reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
+    snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
+    reconcile_broker_stops(graph, broker, sink)
+    place_broker_stops(graph, broker, sink, order_set, snapshot)
     result = run_submit(
         graph, broker, sink, {}, order_set, default_stage=settings.stage
     )

@@ -14,7 +14,8 @@ import pytest
 
 from agents.execution.alpaca import AlpacaBroker
 from agents.execution.alpaca_positions import positions_from_payload
-from agents.execution.broker import BrokerRejectedError, PaperBroker
+from agents.execution.broker import BrokerRejectedError
+from agents.execution.paper_broker import PaperBroker
 from contracts.common import Money
 
 
@@ -35,6 +36,50 @@ def test_paper_broker_positions_track_the_in_memory_book() -> None:
 
     broker.submit("s2", "AAPL", "sell", 2, Money(amount=Decimal("11.00")))
     assert broker.positions() == ()
+
+
+def test_paper_broker_stop_rests_pending_and_does_not_move_book() -> None:
+    broker = PaperBroker()
+    broker.submit("b1", "AAPL", "buy", 2, Money(amount=Decimal("100.00")))
+
+    fill = broker.submit_stop(
+        "stop:ref:AAPL", "AAPL", "sell", 2, Money(amount=Decimal("95.00"))
+    )
+    replay = broker.submit_stop(
+        "stop:ref:AAPL", "AAPL", "sell", 2, Money(amount=Decimal("95.00"))
+    )
+
+    assert fill is replay
+    assert fill.status == "pending"
+    assert fill.price == Money(amount=Decimal("95.00"))
+    assert [(p.ticker, p.quantity) for p in broker.positions()] == [("AAPL", 2)]
+
+
+def test_paper_broker_stop_rejection_is_replayed_as_rejected() -> None:
+    broker = PaperBroker(reject_tickers={"MSFT"})
+
+    with pytest.raises(BrokerRejectedError) as exc:
+        broker.submit_stop(
+            "stop:ref:MSFT", "MSFT", "sell", 1, Money(amount=Decimal("95.00"))
+        )
+    with pytest.raises(BrokerRejectedError):
+        broker.submit_stop(
+            "stop:ref:MSFT", "MSFT", "sell", 1, Money(amount=Decimal("95.00"))
+        )
+
+    assert exc.value.fill.status == "rejected"
+    assert exc.value.fill.reason == "paper_broker_rejected"
+    assert broker.order_count == 1
+    assert broker.positions() == ()
+
+
+def test_paper_broker_cancel_records_each_broker_order_once() -> None:
+    broker = PaperBroker()
+
+    broker.cancel("paper:stop:ref:AAPL")
+    broker.cancel("paper:stop:ref:AAPL")
+
+    assert broker.cancelled == ["paper:stop:ref:AAPL"]
 
 
 def test_alpaca_position_payloads_normalize_decimal_strings() -> None:

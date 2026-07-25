@@ -57,6 +57,8 @@ class PositionStopThreshold:
     """Aggregated stop threshold inputs for one active held ticker."""
 
     ticker: Ticker
+    quantity: int
+    position_ref: str
     opened_price_cents: int
     stop_pct: float
 
@@ -164,6 +166,8 @@ def _stop_threshold(ticker: Ticker, nodes: tuple[Node, ...]) -> PositionStopThre
     )
     return PositionStopThreshold(
         ticker=ticker,
+        quantity=quantity,
+        position_ref=_position_ref(tuple(node.key for node in nodes)),
         opened_price_cents=opened,
         stop_pct=next(iter(stop_pcts)),
     )

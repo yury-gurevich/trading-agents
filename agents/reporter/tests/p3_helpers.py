@@ -28,7 +28,7 @@ from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from agents.execution.broker import PaperBroker
+    from agents.execution.paper_broker import PaperBroker
     from contracts.analyst import RecommendationSet
     from contracts.portfolio_manager import OrderIntentSet
     from contracts.provider import OHLCVBar

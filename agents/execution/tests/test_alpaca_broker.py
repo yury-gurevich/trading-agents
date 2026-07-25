@@ -15,8 +15,9 @@ import pytest
 
 from agents.execution import alpaca
 from agents.execution.alpaca import AlpacaBroker
-from agents.execution.broker import BrokerFill, BrokerRejectedError, PaperBroker
+from agents.execution.broker import BrokerFill, BrokerRejectedError
 from agents.execution.broker_factory import broker_from_settings
+from agents.execution.paper_broker import PaperBroker
 from agents.execution.settings import ExecutionSettings
 from contracts.common import Money
 

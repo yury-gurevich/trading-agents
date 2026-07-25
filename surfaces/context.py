@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from agents.execution.broker import PaperBroker
+from agents.execution.paper_broker import PaperBroker
 from agents.operator import OperatorAgent
 from agents.provider.sources import FakeDataSource
 from agents.scanner.universe import FakeUniverse

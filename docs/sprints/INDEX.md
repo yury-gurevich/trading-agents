@@ -67,16 +67,10 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S135** (S131 SHIPPED `0ca7459`/0.71.04; S132 SHIPPED `15c23d6`/0.71.05;
-   S134 HANDOFF / 0.71.06). **Remaining packaged sprint: S133 (Service Bus SAS, row I) →
-   0.71.07** — operator reprioritised assertion hardening ahead of the bus work 2026-07-21
-   (fixes-first; trade-gating code
-   outranks lower-severity bus creds). Numbers don't match execution order here by intent
-   (S133 was packaged before the reprioritisation). P12 scorecard-run stays queued until
-   ~2 weeks of clean-news nights accumulate. S130 base-image chore SHIPPED at 0.71.03, merged `8aefe2a` —
-   Trivy `ignore-unfixed` + DHI migration per R005; all 14 `s130-test` images green in
-   `build-images` run `29681635979`; S129 fixpack SHIPPED at 0.71.02, merged `3be1ee8`;
-   fleet deployed at `:s130` 2026-07-19).
+1. Next number: **S139** (S135 SHIPPED `1b858e7`/0.74.00 — unified buy/sell run; S136 SHIPPED
+   `b435183`/0.75.00 — realized PnL from fills + CVE gate; S137 SHIPPED `29a36f4`/0.76.00 — exit
+   authority ADR-0017, fleet `:s141`; **S138 HANDOFF / 0.77.00** — broker-native stops ADR-0015 §3,
+   design in DL-61). P12 scorecard-run stays queued until ~2 weeks of clean-news nights accumulate.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

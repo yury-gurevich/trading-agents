@@ -2777,3 +2777,118 @@ then escalate, and a partial fill reduces the position rather than creating a ne
 under fill-keyed closure; no manual trade. One assumption remains unproven and is named in the ADR:
 bracket/OCO submission **outside regular hours** queues for the next open — needs a live probe before
 the implementation is trusted.
+
+---
+
+## DL-61 · Broker-native stops (ADR-0015 §3): stop-only, on the same rail, reconciled with ADR-0017 · status: OPEN
+
+**Question.** ADR-0015 §3 accepted "the broker enforces stops and targets" but never shipped. ADR-0017
+then made the analyst the sole exit decider and forced a breached stop onto the daily rail as the
+**interim** floor — explicitly naming §3 as the *durable* home. Two things must now be worked out before
+§3 can be built: (1) §3 as written assumed a **take-profit + stop bracket**, but ADR-0017 **retired
+`target`** — so what does a broker order without a take-profit look like? and (2) if the broker holds a
+resting stop *and* the analyst still force-sells at 22:30, do we **double-sell**?
+
+### Context — what changed under §3's feet
+
+- §3's table: new entry → `bracket` (entry + take-profit + stop-loss); held position → `oco`
+  (a take-profit / stop-loss pair). Both legs assume a **target**.
+- ADR-0017 §4 retired `target`/`time` as mechanics ("let winners run; exit on thesis"). A fixed +10%
+  take-profit leg would **re-introduce** the mechanical profit-taking ADR-0017 deleted — a direct
+  contradiction.
+- S137 shipped `contracts/positions.open_position_stop_thresholds` (quantity-weighted entry × `stop_pct`,
+  raises on lot disagreement) and `contracts/stop_rule.check_stop`. **The stop *price* is already
+  computable** from what we built last sprint. Reuse it.
+- The broker port (`agents/execution/broker.py::Broker`) does **market orders only**:
+  `submit(key, ticker, side, qty, limit_price)`. It already has `cancel(broker_order_id)`
+  (`alpaca.py`). Idempotency is `client_order_id` (422 → GET-by-client → replay).
+
+### Decision 1 — **stop-only, no take-profit leg**
+
+The broker order is a **resting sell stop**, not a bracket/OCO pair. Rationale: ADR-0017 owns the upside
+(thesis, discretionary) — the broker owns only the **downside floor**. Concretely:
+
+- **Held position** → a standalone **sell stop** at `weighted_opened_price_cents × (1 − stop_pct)`,
+  full held quantity (whole shares), `time_in_force = gtc` so it *rests* until triggered or cancelled.
+  (Not `oco` — OCO requires a limit take-profit leg we no longer want.)
+- **New entry** → the entry is a market buy today; once it fills and shows as a position, the *same
+  per-position pass* attaches its sell stop. So there is **one mechanism** — "every active position gets
+  a resting sell stop" — covering both the 8 currently-held names and every future entry. (Not a
+  `bracket` at submit time, because bracket also needs a take-profit leg.)
+
+This **amends ADR-0015 §3** (bracket/oco → stop-only) and will be recorded there under "what shipped"
+when it ships, the same way §1/§2 were corrected.
+
+### Decision 2 — the broker stop rides the state we already have; the analyst **defers** to it
+
+To avoid a double-sell, the ADR-0017 interim forced-stop (§2) becomes a **fallback**, not a peer:
+
+- The analyst force-sells a held name on a breached stop **only when that position has no confirmed
+  resting broker stop**. When a broker stop *is* resting, the analyst defers — the broker owns the floor.
+- This is safe by construction: the only names the analyst force-sells are those **without** a broker
+  order to collide with. And it is *robust*: if a broker stop ever fails to place, the daily forced-stop
+  still fires as the safety net — we never silently lose the floor (the exact risk-control gap we keep
+  fighting). ADR-0017 §5 called §3 "the durable home"; this makes the interim degrade to a backstop
+  rather than be deleted.
+- The monitor's S137 stop-breach `Fault` stays as the third layer: if a position is through its stop but
+  still held (broker stop present but un-triggered, or placement failed), it is **visible** (DL-57).
+
+Three layers, no collision: **broker stop (continuous)** → **analyst forced-stop (daily fallback when no
+broker stop)** → **monitor Fault (visibility)**.
+
+### Decision 3 — liveness comes from the broker, not a mutable graph status (append-only)
+
+`kernel/graph_support.py` is append-only; a `status: placed→filled→cancelled` property is **not
+representable** (the same wall that broke ADR-0015 §2's position-keyed node). So:
+
+- A `BrokerStopOrder` node keyed `stop:{position_ref}:{ticker}` records the **immutable placement fact**
+  (stop_price_cents, broker_order_id, placed_at) and is the **idempotency guard** — if it exists, don't
+  re-place. The same string is the broker `client_order_id`, so a re-submit *also* replays broker-side
+  (double idempotency, like the S135 exit key).
+- **"Is a broker stop active?"** is answered by the **broker** (DL-44 — broker is truth for order/holding
+  state): a resting stop shows as an open order; a triggered one shows as a fill and the position leaves
+  the book. Closure + realized PnL then flow through the **existing** reconciliation (DL-44) and
+  fill-price PnL (0.75.00) with **no new closure path** — a stop fill is just a sell fill.
+- Re-basis (partial fill / re-entry) changes `position_ref` → a new `stop:{new_ref}` is placed and the
+  stale one is `cancel()`-ed by its recorded `broker_order_id`. Bounded lifecycle, reusing the existing
+  cancel.
+
+### Decision 4 — the one assumption that must be **probed** before coding
+
+Runs fire **22:30 UTC — after the US close**. The entire design rests on: *does Alpaca paper accept a
+`type=stop, tif=gtc, sell` order submitted after hours and let it rest for the next session?* ADR-0015 §3
+already flagged this as "the one assumption not yet proven against the API." **It is a hard gate:** if
+after-hours gtc stops are rejected, stop-only-at-22:30 does not work and the design pivots (e.g. an
+intraday placement window — which ADR-0015 rejected for other reasons). **Probe before Codex builds:**
+submit one gtc sell stop far below market on a held name against the paper account, confirm it rests
+(`new`/`held`), then `cancel()` it. Operator-authorized, controlled, self-cleaning.
+**PROVEN 2026-07-25** (market closed, ~03:00 UTC — the same after-hours condition as a 22:30 run): an
+`AMD` gtc sell stop 30% below market returned `status=accepted, type=stop, tif=gtc` (resting, not
+rejected) and cancelled clean. The gate is cleared; the mechanism stands.
+
+### Options weighed
+
+| Option | Verdict |
+| --- | --- |
+| Full `bracket`/`oco` with a take-profit leg (§3 as written) | **Ruled out** — reintroduces the mechanical target ADR-0017 retired. |
+| Stop-only resting sell stop, one per active position | **Chosen** — floor without touching the upside. |
+| Remove the ADR-0017 interim forced-stop entirely once §3 ships | **Ruled out (for v1)** — a placement failure would then leave a position with *no* stop, silently. Keep it as the gated fallback. |
+| Mutable `status` on a stop node | **Ruled out** — append-only forbids it; broker is truth for liveness anyway (DL-44). |
+| Intraday KEDA window to place stops during RTH | **Ruled out** — ADR-0015 already rejected: still polling, adds market-hours compute; gtc resting removes the need if the probe passes. |
+| A second order rail for stops | **Ruled out** — DL-60; the stop is submitted by execution on the one rail. |
+
+### Open questions (do not code past these)
+
+1. ~~**The after-hours probe (Decision 4)** — must pass first.~~ **CLEARED 2026-07-25** (see Decision 4).
+2. **Where the per-position stop pass runs** — most likely execution's existing poll, right after
+   reconciliation each run, iterating active positions. Confirm it does not fight the buy/sell submission
+   ordering.
+3. **Interaction with a same-run thesis sell** — if the analyst sells a name on thesis *and* that name has
+   a resting broker stop, the market sell will fill and the stop must be `cancel()`-ed (or it dangles as a
+   naked sell stop with no position). Cancel-on-exit is part of the lifecycle.
+
+**Status.** Design settled; the after-hours probe **PASSED 2026-07-25**. Reuses S137's `open_position_stop_thresholds` for the stop
+price and the existing reconciliation/PnL for closure. Graduates to an ADR-0015 §3 "what shipped"
+amendment on merge. **feat** → 0.76.00 → 0.77.00.
+
+---

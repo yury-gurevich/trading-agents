@@ -2892,3 +2892,58 @@ price and the existing reconciliation/PnL for closure. Graduates to an ADR-0015 
 amendment on merge. **feat** → 0.76.00 → 0.77.00.
 
 ---
+
+## DL-62 · Unify stop exits through the broker; retire the interim forced-stop · status: OPEN (recommended: A)
+
+**Question.** S138 gave every *un-breached* held position a resting broker `gtc` stop (ADR-0015 §3).
+But a position that is **already through its stop** never gets one: `place_broker_stops` skips tickers
+being sold this run, and the S137 analyst forced-stop (a market sell) is what exits it. So stop-driven
+exits are now split across two mechanisms by breached-vs-not. What is the durable single mechanism?
+
+### Evidence that surfaced it (MRVL, 2026-07-24 → 2026-07-27)
+
+MRVL breached its 5% stop (entry $226.21, now $194.23, **−$1,407**). The S137 forced-stop fired
+correctly and submitted `sell 44 market tif=day` at **Fri 22:40 UTC** — but the market was closed, so
+it sat `accepted`/unfilled all weekend and fills at **Monday's open**, at whatever price that is
+(≈ **14% loss**, not the 5% the stop implies). Three flaws the interim can't escape:
+
+1. **Uncontrolled fill** — a market sell placed after close fills at the *next open*, gap-exposed. The
+   "stop" triggers an exit; it does not cap the loss near the stop level.
+2. **No intraday/weekend protection** — the position bleeds for days with a dead order on it. (A broker
+   stop is no better *over a closed market* — nothing trades — but during the week it triggers intraday.)
+3. **Idempotency-key-reuse risk** — the sell is keyed `exit:{position_ref}:{ticker}:sell` (0.74.01). If
+   the `day` order **expires** unfilled over a weekend, the key is consumed: the idempotent replay
+   returns the dead order and the position may never be re-submitted. **Must be watched.**
+
+### Why S138 does not already cover it
+
+`agents/execution/broker_stops.py::place_broker_stops` skips `sold_tickers` (names with a sell
+`OrderIntent` this run). A breached name is force-sold by the analyst → it is in `sold_tickers` → no
+broker stop is placed. So the broker stop only ever protects names **above** their stop; breached names
+fall through to the after-hours analyst market sell. Complementary, but two paths and a gap.
+
+### Options
+
+| Option | What | Trade-off |
+| --- | --- | --- |
+| **A (recommended)** | A broker stop for **every** held name: resting `gtc` for un-breached; a **marketable** broker exit for already-breached. Retire the S137 analyst forced-stop; keep the monitor breach-`Fault` as the visible safety net (DL-57). | One continuous mechanism, no dual path, no after-hours analyst market sell. Removes S138 §C's analyst fallback — the monitor Fault must carry the "stop failed to place" visibility. |
+| **B** | Keep the split; make the forced-stop a **stop-limit** to bound the gap-down fill. | A limit can **miss** on a hard gap → the position does *not* exit. Worse risk control; rejected. |
+| **C** | Leave as-is. | MRVL exits Monday and the design is coherent, but flaws 1–3 persist. Rejected as the end-state; acceptable only as the interim it already is. |
+
+### Recommendation
+
+**A.** The broker becomes the *sole* home of the stop for all held names — the natural completion of
+S138 and ADR-0017 §5 ("§3 is the durable home"). The analyst forced-stop retires; the monitor's
+stop-breach Fault stays as the safety net for a placement failure. Graduates to an **ADR-0015 §3
+amendment** when built.
+
+**Open sub-questions for the sprint:** (a) exact Alpaca order for the marketable exit of a breached
+name (market vs stop with a trigger already crossed) and its after-hours/next-open behaviour — **probe
+like DL-61**; (b) the idempotency-key-reuse case (flaw 3) — detect an expired/dead exit order and re-key
+rather than replay it.
+
+**Status.** OPEN, recommended **A**, pending operator go for a sprint. Immediate MRVL action: none (can't
+trade over a weekend) — verify the Monday fill + booked realized PnL; if the `day` order expired, cancel
+and re-key.
+
+---

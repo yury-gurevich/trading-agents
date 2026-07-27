@@ -2947,3 +2947,44 @@ trade over a weekend) — verify the Monday fill + booked realized PnL; if the `
 and re-key.
 
 ---
+
+## DL-63 · Non-secret runtime config has no delivery channel to the fleet · status: OPEN (recommended: B)
+
+**Question.** Where should a *non-secret* runtime parameter — the LLM model id, the reasoning
+effort level — live, so that changing it changes what the deployed fleet actually runs?
+
+### The constraint, discovered while moving the operator to Opus 5 at max effort
+
+Editing `.env` looks like the answer and is not. A deployed container **never reads `.env`**.
+`kernel/bootstrap.py::_apply_config` writes into `os.environ` exactly what the master returns in
+`ACTIVATE.config`, and what the master returns is driven by `orchestration/packs/trading_secrets.json`
+— a map of **Key Vault secret name → env var name**. The operator's entire grant is one row:
+`["anthropic-api-key", "ANTHROPIC_API_KEY"]`.
+
+Verified live on the deployed operator app (2026-07-27): its container env is `MASTER_URL`,
+`MASTER_PUBLIC_KEY_PEM_B64`, `POSTGRES_DSN`, `AZURE_SERVICEBUS_CONNECTION_STRING`,
+`AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON`. No model, no effort, no `.env`.
+
+**Therefore the `tunable()` literal in code is the fleet's effective value.** That is why 0.78.00
+moved the defaults (`claude-sonnet-4-6` → `claude-opus-5`) rather than relying on the operator's
+local file — an `.env`-only change would have been a silent no-op in production while appearing to
+work locally.
+
+### Options
+
+- **A · Status quo — code default + redeploy.** Honest and versioned; every change is a commit, a
+  CI run, and a fleet retag. Cost: a model swap is a deploy, not a config edit.
+- **B · Extend the pack with a non-secret `config` section** (recommended). ACTIVATE already writes
+  arbitrary key/values into `os.environ`; only the *pack schema* is secret-only. Keeps one delivery
+  path, keeps the graph as the record of what was delivered.
+- **C · Set Container App env vars directly** (`az containerapp update --set-env-vars`). Works today,
+  no code change — but bypasses the pack, leaves no trace in the graph, and drifts from the IaC.
+
+### Ruled out
+
+- **Key Vault for the model id.** A model name is not a secret. It buys nothing and *loses* the
+  `tunable()` catalogue, the bounds validation (the `Literal` that rejects a bad effort level at load
+  instead of as a 400 mid-run), and the `laws.md` PARAM documentation — in exchange for a vault
+  round-trip on every boot. Vault is for credentials.
+
+---

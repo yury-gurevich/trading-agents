@@ -26,7 +26,7 @@ def set_secret(vault_name: str, secret_name: str, value: str) -> None:
         f"{quote(secret_name)}?api-version={KEY_VAULT_API_VERSION}"
     )
     body = json.dumps({"value": value}).encode("utf-8")
-    request = Request(  # noqa: S310 - fixed https Key Vault URL.
+    request = Request(  # fixed https Key Vault URL.
         url,
         data=body,
         method="PUT",

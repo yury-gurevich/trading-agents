@@ -3098,3 +3098,59 @@ three the *config existed* — reading it was enough to believe it worked. Only 
 consumes it settles the question.
 
 ---
+
+## DL-66 · Graph vocabulary: constraints wired, inference still refused · status: CLOSED (0.79.00)
+
+Builds the constraint half R007 recommended. `kernel/graph_vocabulary.py` declares a closed set of
+labels, edge types, and edge shapes; `kernel/graph_guarded.py` wraps any `GraphStore` and rejects a
+non-conforming write **before it reaches the store**. Reads pass straight through. Nothing derives
+or writes a fact — the refusal of inference in R007 §5 stands.
+
+**ADR-0012 split.** Mechanism is substrate (`kernel/`, names no trading concept); the vocabulary is
+pack data (`orchestration/packs/trading_graph_vocabulary.json`), loaded via `GRAPH_VOCABULARY_PATH`
+at the one composition root, `build_graph_from_env`. Unset ⇒ unguarded, so nothing changes for a
+caller that has not opted in.
+
+### The vocabulary was derived from evidence, not written by hand
+
+Union of three sources: the **live Neon graph** (36 labels, 25 edge types, 31 observed
+`parent -> edge -> child` triples), **code literals and constants**, and the `labels_owned` /
+`labels_read` blocks in the agent law files. Result: 71 labels, 42 edge types, 34 signatures.
+
+### The guard immediately found something, which is the point
+
+Running the real cascade under the guard failed with:
+
+```text
+VocabularyError: edge 'FORECAST_BY' is not declared to run AnalystRun -> ForecasterRun
+```
+
+`ForecasterRun` is **not among the 36 labels in the live graph** — that code path exists and has
+never written to production. A vocabulary built from live observation alone would have been
+complete-looking and wrong. Fixed by recording what the cascade actually writes and merging it in
+(31 → 34 signatures).
+
+### Proof that the gate can fail
+
+The first proof attempt was worthless and is worth recording as such: running the existing e2e
+tests with `GRAPH_VOCABULARY_PATH` set passed 6/6 — but those tests construct `InMemoryGraphStore()`
+**directly**, bypassing `build_graph_from_env`, so the guard never engaged. A passing test proved
+nothing, which is exactly the DL-65 pattern one layer up.
+
+`orchestration/tests/test_graph_vocabulary_e2e.py` replaces it with three tests, and the
+load-bearing one is negative — drop `RunRequest` from the declaration and the cascade must raise.
+Same principle as `pip-audit-cve` in `gate_selftest_cases.py`: a gate that cannot be shown to fail
+is not a gate.
+
+### Ownership is deliberately NOT enabled, and why
+
+`Vocabulary.check_node(writer=)` is built and tested, but the pack ships `owners: {}`. The eight
+law declarations are **not accurate enough to enforce**: `reporter` lists a read-set (13 labels it
+mostly does not write), and `supervisor` declares the literal string `"all"`. Enforcing them today
+would break agents on bad data.
+
+**Named, not dormant:** the next step is reconciling those declarations against what each agent
+actually writes — measurable now by running each agent under a recording store. That is the
+remaining half of R007's item 1.
+
+---

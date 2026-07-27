@@ -13,6 +13,61 @@ and every claim there carries its evidence.
 
 ---
 
+## 0 · In plain language — what a reasoner is, and why it is refused
+
+*Written for the person who has to live with this decision, not for someone who already
+knows what entailment means.*
+
+**A reasoner is software that reads rules and then writes new rows into your database that
+nobody put there.**
+
+Give it a rule — *anything that fills is a trade*. Record one fact — *ABT sell filled*. The
+reasoner quietly adds a second row: *ABT sell is a trade*. You never wrote that row; it worked
+it out.
+
+That sounds useful. Here is the catch: a week later you read the database and **you cannot tell
+which rows are things that actually happened and which rows the software worked out.** They look
+identical.
+
+### Why that is fatal here specifically
+
+This graph is not a general database. It is an **evidence log** — a record of what actually
+happened. The whole project runs on one rule: only believe what was proven (LAW-02).
+
+Both of the expensive bugs of July 2026 were the same mistake:
+
+| What was recorded | What it was then treated as | What it cost |
+| --- | --- | --- |
+| "decided to close MRVL" | "MRVL is closed" | Four positions invisible for days — unscoreable, unexitable |
+| "profit at the moment we decided to sell" | "profit we made" | Profit factor and expectancy described trades that never happened |
+
+In both, something only *intended* or *worked out* was treated as something that *happened*.
+A reasoner is a machine for producing exactly that kind of row, automatically, at scale. Having
+just paid for accidental versions of this bug, installing a device whose job is to generate them
+deliberately would be a poor trade.
+
+### The half worth taking
+
+The constraint half never invents anything. It only says **no**:
+
+- *an agent may only write the kinds of records it declared it writes*
+- *an edge coming off a Fill must point at an Order*
+
+Those add zero rows. They reject bad ones at the door — completely safe in an evidence log.
+
+The short version: **constraints are a doorman checking IDs.** A **reasoner is someone inside
+adding names to the guest list** because it reckons those people probably belong. Now the list
+contains people who never showed up, and no way to tell which is which.
+
+### Why "permanently", not "not yet"
+
+This is not a maturity call — that would be a revisit trigger (§8), and the genuine ones are
+listed there. It is a direct conflict with what the graph *is*. Inference only starts making
+sense if the graph stops being a record of what happened, and that is not adopting a library —
+it is changing the foundation the project's credibility rests on.
+
+---
+
 ## 1 · The claim
 
 An agent is an LLM with tools and a loop; that makes it Turing-complete, and therefore unbounded.

@@ -138,8 +138,10 @@ The fleet registry (live instances, session recovery state, queued messages) liv
 alongside the provenance graph. See `docs/decisions/0007-container-per-agent-master-bootstrap.md` for
 the full design, risk assessment, and mitigations.
 
-> **Note:** The current `Dockerfile` and `docker-compose.yml` deploy a single monolithic container.
-> That is an interim shortcut, superseded by ADR-0007. The per-agent split is tracked under P14.
+> **Note:** The per-agent split shipped — ADR-0007 is the deployed shape, not a plan. There are 14
+> images (13 agents + the dispatcher job), each built from its own `agents/<name>/Dockerfile` or
+> `orchestration/Dockerfile`, and `docker-compose.yml` runs the same split locally. The interim
+> monolithic root `Dockerfile` this note used to describe was deleted 2026-07-27 (DL-65).
 
 ## Configuration, faults, and observability
 

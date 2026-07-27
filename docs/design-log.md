@@ -2970,7 +2970,7 @@ moved the defaults (`claude-sonnet-4-6` → `claude-opus-5`) rather than relying
 local file — an `.env`-only change would have been a silent no-op in production while appearing to
 work locally.
 
-### Options
+### Delivery options
 
 - **A · Status quo — code default + redeploy.** Honest and versioned; every change is a commit, a
   CI run, and a fleet retag. Cost: a model swap is a deploy, not a config edit.
@@ -2980,7 +2980,7 @@ work locally.
 - **C · Set Container App env vars directly** (`az containerapp update --set-env-vars`). Works today,
   no code change — but bypasses the pack, leaves no trace in the graph, and drifts from the IaC.
 
-### Ruled out
+### Options ruled out
 
 - **Key Vault for the model id.** A model name is not a secret. It buys nothing and *loses* the
   `tunable()` catalogue, the bounds validation (the `Literal` that rejects a bad effort level at load
@@ -3042,12 +3042,59 @@ routine members included. That is the intended trade — and it is a second, unp
 the production-majors carve-out was right: `python-production` stays minor/patch-only, so
 production dependency updates keep auto-merging untouched.
 
-### Ruled out
+### Approaches ruled out
 
 - **Batch everything including production majors.** A hard ceiling of 3 PRs/month is tempting, but
   a grouped red build gives no signal about *which* member broke it, and for a runtime dependency
   that is the moment isolation is worth most.
 - **Monthly cadence alone, grouping untouched.** Fixes frequency, not the trickle — #69 and #70
   would still have arrived as separate PRs, just less often. It treats the symptom.
+
+---
+
+## DL-65 · The root Dockerfile was dead, and the guard watching it was wrong · status: CLOSED
+
+**Trigger.** The first monthly Dependabot batch (DL-64) auto-merged `#73`:
+`FROM python:3.13-slim` → `python:3.14-slim`, on a repo whose `requires-python` is `>=3.13` and
+whose ruff/mypy both target py313.
+
+### Two separate defects, one symptom
+
+**1 · The ignore rule did not do what its comment said.** It blocked
+`version-update:semver-major` while claiming to "pin to 3.13.x". `3.13 → 3.14` is semver-**minor**,
+so it walked straight through. The guard was wrong, not unlucky — a real runtime migration would
+have auto-merged the same way. Fixed: block minor *and* major.
+
+**2 · The file it changed was dead.** Nothing built the root `Dockerfile`. Verified exhaustively
+before deleting, because "unused" is the kind of claim that is cheap to assert and expensive to get
+wrong:
+
+| Candidate consumer | Reality |
+| --- | --- |
+| `build-images.yml` | Builds 14 images from `agents/*/Dockerfile` + `orchestration/Dockerfile` |
+| `docker-compose.yml` | Every service pins `dockerfile: agents/<name>/Dockerfile` |
+| `infra/`, `Makefile` | No reference |
+| `docs/architecture.md`, `docs/deployment.md` | Referenced it — **both stale**, describing a monolith superseded by ADR-0007 |
+
+It was the pre-P15 monolith image. Deleted, and both doc references corrected rather than left to
+describe a deployment shape that has not existed since S74.
+
+### Consequence for the docker ecosystem
+
+Dependabot's `docker` entry was `directory: "/"` — so it watched **only the dead file**, and had
+never watched the 14 images actually shipped. Repointed at `/agents/*` and `/orchestration`.
+
+**Named uncertainty:** those Dockerfiles use `dhi.io/python` (Docker Hardened Images), and whether
+Dependabot can resolve that registry is **unverified**. If it cannot, this entry produces nothing —
+which is precisely the silent-no-op trap this entry exists to close, so it is written down rather
+than assumed. Trivy HIGH/CRITICAL at image build stays the real CVE net (backlog E/H); this is
+freshness signal only.
+
+### The general lesson, matching DL-52 and row L
+
+A guard can be present, documented, and still not guard: `-uv run pip-audit` could not fail, this
+rule blocked the wrong semver level, and a `directory` pointed at a file nothing built. In all
+three the *config existed* — reading it was enough to believe it worked. Only tracing what actually
+consumes it settles the question.
 
 ---

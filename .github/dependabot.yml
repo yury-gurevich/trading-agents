@@ -1,4 +1,4 @@
-# Dependabot — weekly dependency surveillance.
+# Dependabot — monthly, batched dependency surveillance.
 # Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
 #
 # Three ecosystems are watched:
@@ -6,19 +6,29 @@
 #   - github-actions → action versions pinned in .github/workflows
 #   - docker         → the base image in the Dockerfile
 #
-# Routine minor/patch bumps are grouped into a single PR per ecosystem to keep
-# review noise low; MAJOR bumps open their own PR so a breaking change is reviewed
-# in isolation. Every PR runs the full CI lane (lint, types, import boundaries,
-# 100% coverage ratchet, pip-audit, detect-secrets) before it can merge — so a bump
-# that breaks a gate is caught automatically, not in production.
+# BATCHING POLICY (chore-dependabot-monthly-batch, 2026-07-27 — reverses the
+# earlier "every major gets its own PR" rule; see docs/design-log.md DL-64).
+# Routine surveillance is noise, and a weekly trickle of solo major bumps got
+# closed unread rather than reviewed — which is worse than batching. So:
+#   - monthly, not weekly;
+#   - majors are folded INTO the group for CI tooling and dev dependencies,
+#     where a break costs a red build and nothing else;
+#   - a MAJOR bump to a Python *production* dependency still opens its own PR,
+#     because that is the one class that reaches the running fleet.
+# Expect ≤3 PRs in a typical month.
+#
+# This is not the CVE net and was never load-bearing for one: `pip-audit` runs
+# in `make ci` and fails the build on a known Python vulnerability, and the
+# agent images are Trivy-scanned for HIGH/CRITICAL at build time. Every PR here
+# still runs the full CI lane (lint, types, import boundaries, 100% coverage
+# ratchet, pip-audit, detect-secrets) before it can merge.
 version: 2
 updates:
   # ── Python (uv: pyproject.toml + uv.lock) ───────────────────────────────────
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
       timezone: "Australia/Melbourne"
     open-pull-requests-limit: 10
@@ -29,19 +39,20 @@ updates:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
     groups:
-      python-production-minor:
+      # Production majors are deliberately absent here: they fall out of the
+      # group and open a solo PR, so a runtime-breaking bump is reviewed alone.
+      python-production:
         dependency-type: "production"
         update-types: ["minor", "patch"]
-      python-development-minor:
+      python-development:
         dependency-type: "development"
-        update-types: ["minor", "patch"]
+        update-types: ["major", "minor", "patch"]
 
   # ── GitHub Actions (workflow action versions) ───────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
       timezone: "Australia/Melbourne"
     labels:
@@ -52,14 +63,13 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
-        update-types: ["minor", "patch"]
+        update-types: ["major", "minor", "patch"]
 
   # ── Docker base image (Dockerfile) ──────────────────────────────────────────
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
       timezone: "Australia/Melbourne"
     labels:
@@ -67,6 +77,10 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(docker)"
+    groups:
+      docker:
+        patterns: ["*"]
+        update-types: ["major", "minor", "patch"]
     ignore:
       # The codebase targets Python 3.13 (requires-python, ruff/mypy py313). A major
       # Python bump is a deliberate runtime migration, not an auto-merge — pin to 3.13.x.

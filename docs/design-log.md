@@ -2988,3 +2988,48 @@ work locally.
   round-trip on every boot. Vault is for credentials.
 
 ---
+
+## DL-64 · Dependabot: batch monthly, isolate only production majors · status: CLOSED (implemented)
+
+**Question.** The dependency-surveillance config promised "MAJOR bumps open their own PR so a
+breaking change is reviewed in isolation." In practice those solo PRs were **closed unread**
+(#69 setup-uv 8→9, #70 setup-python 6→7, #72 dev-minor group, all closed 2026-07-27 without
+review). A review rule that reliably produces non-review is worse than no rule. What cadence and
+grouping actually gets looked at?
+
+### What was actually happening
+
+Grouping already worked — #72 was a proper grouped PR. The leak was that every group covered only
+`["minor", "patch"]`, so **majors fell out and opened solo**, weekly, across three ecosystems.
+
+### Decision
+
+Monthly, and fold majors into the group **except** for Python *production* dependencies:
+
+| Ecosystem | Majors | Why |
+| --- | --- | --- |
+| uv · production | **solo PR** | The only class that reaches the running fleet |
+| uv · development | grouped | A break costs a red build, nothing else |
+| github-actions | grouped | Ditto; also SHA-pinned, so tag-hijack is already blocked |
+| docker | grouped | Python major already pinned out by the existing `ignore` |
+
+Expect ≤3 PRs in a typical month.
+
+### Constraint discovered while deciding
+
+**This was never the CVE net, and `dependabot_security_updates` is `disabled` on the repo.** The
+actual net is `pip-audit` inside `make ci` — no `-` prefix on the Makefile recipe, so a known
+Python vulnerability **fails the build** (hardening row L is closed) — plus the Trivy HIGH/CRITICAL
+image scan in `build-images.yml`. So slowing *version* updates does not slow *vulnerability*
+response. Enabling Dependabot alerts would add a net for GitHub Actions and the base image, which
+neither pip-audit nor Trivy covers as advisories; that remains **open and unclaimed**.
+
+### Ruled out
+
+- **Batch everything including production majors.** A hard ceiling of 3 PRs/month is tempting, but
+  a grouped red build gives no signal about *which* member broke it, and for a runtime dependency
+  that is the moment isolation is worth most.
+- **Monthly cadence alone, grouping untouched.** Fixes frequency, not the trickle — #69 and #70
+  would still have arrived as separate PRs, just less often. It treats the symptom.
+
+---

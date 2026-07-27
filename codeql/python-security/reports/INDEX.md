@@ -15,7 +15,6 @@ otherwise run the query from the query-specific index first.
 
 | Folder | Query file | Answers |
 | --- | --- | --- |
-| [agent-cross-import/](agent-cross-import/INDEX.md) | `AgentCrossImport.ql` | Does any agent import another agent? (architecture boundary) |
 | [taint-tracking/](taint-tracking/INDEX.md) | `TaintTracking.ql` | Does untrusted input reach `urlopen` without validation? (SSRF / URL injection) |
 
 ---
@@ -24,10 +23,10 @@ otherwise run the query from the query-specific index first.
 
 ```powershell
 # Agent cross-import boundary (rebuild database from current source):
-.\scripts\run_codeql_agent_boundary.ps1 -Rebuild
+.\scripts\run_codeql_query.ps1 -Rebuild
 
 # Same query, reuse existing database:
-.\scripts\run_codeql_agent_boundary.ps1
+.\scripts\run_codeql_query.ps1
 ```
 
 ## How to clean up old reports

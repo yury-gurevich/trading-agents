@@ -2970,7 +2970,7 @@ moved the defaults (`claude-sonnet-4-6` → `claude-opus-5`) rather than relying
 local file — an `.env`-only change would have been a silent no-op in production while appearing to
 work locally.
 
-### Options
+### Delivery options
 
 - **A · Status quo — code default + redeploy.** Honest and versioned; every change is a commit, a
   CI run, and a fleet retag. Cost: a model swap is a deploy, not a config edit.
@@ -2980,7 +2980,7 @@ work locally.
 - **C · Set Container App env vars directly** (`az containerapp update --set-env-vars`). Works today,
   no code change — but bypasses the pack, leaves no trace in the graph, and drifts from the IaC.
 
-### Ruled out
+### Options ruled out
 
 - **Key Vault for the model id.** A model name is not a secret. It buys nothing and *loses* the
   `tunable()` catalogue, the bounds validation (the `Literal` that rejects a bad effort level at load
@@ -3024,12 +3024,293 @@ image scan in `build-images.yml`. So slowing *version* updates does not slow *vu
 response. Enabling Dependabot alerts would add a net for GitHub Actions and the base image, which
 neither pip-audit nor Trivy covers as advisories; that remains **open and unclaimed**.
 
-### Ruled out
+### Resolved (2026-07-27, same day)
+
+**Dependabot alerts + security updates: ENABLED.** The open item above is closed. Repo went
+`disabled` → `enabled` with **zero open alerts** at the time, so nothing was hiding and no
+backlog surfaced. Security PRs bypass both the monthly schedule and `open-pull-requests-limit`,
+so a vulnerability still arrives the day its advisory drops — routine noise stays batched,
+genuine ones jump the queue. That closes the gap this entry named: advisories against pinned
+GitHub Actions and the base image, which `pip-audit` (Python packages only) and Trivy (image
+contents, not action versions) both miss.
+
+**Interaction found while reconciling the docs.** `dependabot/fetch-metadata` reports a
+**group's** `update-type` as the *highest* semver change among its members, and
+`dependabot-auto-merge.yml` only auto-merges when that is not `semver-major`. So folding
+majors into a group means **one major makes the whole monthly batch wait for a human**,
+routine members included. That is the intended trade — and it is a second, unplanned reason
+the production-majors carve-out was right: `python-production` stays minor/patch-only, so
+production dependency updates keep auto-merging untouched.
+
+### Approaches ruled out
 
 - **Batch everything including production majors.** A hard ceiling of 3 PRs/month is tempting, but
   a grouped red build gives no signal about *which* member broke it, and for a runtime dependency
   that is the moment isolation is worth most.
 - **Monthly cadence alone, grouping untouched.** Fixes frequency, not the trickle — #69 and #70
   would still have arrived as separate PRs, just less often. It treats the symptom.
+
+---
+
+## DL-65 · The root Dockerfile was dead, and the guard watching it was wrong · status: CLOSED
+
+**Trigger.** The first monthly Dependabot batch (DL-64) auto-merged `#73`:
+`FROM python:3.13-slim` → `python:3.14-slim`, on a repo whose `requires-python` is `>=3.13` and
+whose ruff/mypy both target py313.
+
+### Two separate defects, one symptom
+
+**1 · The ignore rule did not do what its comment said.** It blocked
+`version-update:semver-major` while claiming to "pin to 3.13.x". `3.13 → 3.14` is semver-**minor**,
+so it walked straight through. The guard was wrong, not unlucky — a real runtime migration would
+have auto-merged the same way. Fixed: block minor *and* major.
+
+**2 · The file it changed was dead.** Nothing built the root `Dockerfile`. Verified exhaustively
+before deleting, because "unused" is the kind of claim that is cheap to assert and expensive to get
+wrong:
+
+| Candidate consumer | Reality |
+| --- | --- |
+| `build-images.yml` | Builds 14 images from `agents/*/Dockerfile` + `orchestration/Dockerfile` |
+| `docker-compose.yml` | Every service pins `dockerfile: agents/<name>/Dockerfile` |
+| `infra/`, `Makefile` | No reference |
+| `docs/architecture.md`, `docs/deployment.md` | Referenced it — **both stale**, describing a monolith superseded by ADR-0007 |
+
+It was the pre-P15 monolith image. Deleted, and both doc references corrected rather than left to
+describe a deployment shape that has not existed since S74.
+
+### Consequence for the docker ecosystem
+
+Dependabot's `docker` entry was `directory: "/"` — so it watched **only the dead file**, and had
+never watched the 14 images actually shipped. Repointed at `/agents/*` and `/orchestration`.
+
+**Named uncertainty:** those Dockerfiles use `dhi.io/python` (Docker Hardened Images), and whether
+Dependabot can resolve that registry is **unverified**. If it cannot, this entry produces nothing —
+which is precisely the silent-no-op trap this entry exists to close, so it is written down rather
+than assumed. Trivy HIGH/CRITICAL at image build stays the real CVE net (backlog E/H); this is
+freshness signal only.
+
+### The general lesson, matching DL-52 and row L
+
+A guard can be present, documented, and still not guard: `-uv run pip-audit` could not fail, this
+rule blocked the wrong semver level, and a `directory` pointed at a file nothing built. In all
+three the *config existed* — reading it was enough to believe it worked. Only tracing what actually
+consumes it settles the question.
+
+---
+
+## DL-66 · Graph vocabulary: constraints wired, inference still refused · status: CLOSED (0.79.00)
+
+Builds the constraint half R007 recommended. `kernel/graph_vocabulary.py` declares a closed set of
+labels, edge types, and edge shapes; `kernel/graph_guarded.py` wraps any `GraphStore` and rejects a
+non-conforming write **before it reaches the store**. Reads pass straight through. Nothing derives
+or writes a fact — the refusal of inference in R007 §5 stands.
+
+**ADR-0012 split.** Mechanism is substrate (`kernel/`, names no trading concept); the vocabulary is
+pack data (`orchestration/packs/trading_graph_vocabulary.json`), loaded via `GRAPH_VOCABULARY_PATH`
+at the one composition root, `build_graph_from_env`. Unset ⇒ unguarded, so nothing changes for a
+caller that has not opted in.
+
+### The vocabulary was derived from evidence, not written by hand
+
+Union of three sources: the **live Neon graph** (36 labels, 25 edge types, 31 observed
+`parent -> edge -> child` triples), **code literals and constants**, and the `labels_owned` /
+`labels_read` blocks in the agent law files. Result: 71 labels, 42 edge types, 34 signatures.
+
+### The guard immediately found something, which is the point
+
+Running the real cascade under the guard failed with:
+
+```text
+VocabularyError: edge 'FORECAST_BY' is not declared to run AnalystRun -> ForecasterRun
+```
+
+`ForecasterRun` is **not among the 36 labels in the live graph** — that code path exists and has
+never written to production. A vocabulary built from live observation alone would have been
+complete-looking and wrong. Fixed by recording what the cascade actually writes and merging it in
+(31 → 34 signatures).
+
+### Proof that the gate can fail
+
+The first proof attempt was worthless and is worth recording as such: running the existing e2e
+tests with `GRAPH_VOCABULARY_PATH` set passed 6/6 — but those tests construct `InMemoryGraphStore()`
+**directly**, bypassing `build_graph_from_env`, so the guard never engaged. A passing test proved
+nothing, which is exactly the DL-65 pattern one layer up.
+
+`orchestration/tests/test_graph_vocabulary_e2e.py` replaces it with three tests, and the
+load-bearing one is negative — drop `RunRequest` from the declaration and the cascade must raise.
+Same principle as `pip-audit-cve` in `gate_selftest_cases.py`: a gate that cannot be shown to fail
+is not a gate.
+
+### Ownership is deliberately NOT enabled, and why
+
+`Vocabulary.check_node(writer=)` is built and tested, but the pack ships `owners: {}`. The eight
+law declarations are **not accurate enough to enforce**: `reporter` lists a read-set (13 labels it
+mostly does not write), and `supervisor` declares the literal string `"all"`. Enforcing them today
+would break agents on bad data.
+
+**Named, not dormant:** the next step is reconciling those declarations against what each agent
+actually writes — measurable now by running each agent under a recording store. That is the
+remaining half of R007's item 1.
+
+---
+
+## DL-67 · CodeQL is the wrong tool for "guards that don't guard" - gate_selftest is · status: CLOSED
+
+**Question.** Can CodeQL detect the class of defect that dominated 2026-07-27 - a check that is
+present, documented, and examines nothing?
+
+**Answer: mostly no, and the right tool was already in the repo.** CodeQL queries a database built
+by a *language extractor* over source code. Of the seven gaps found that day, five were not in code
+at all:
+
+| Gap | Where it lived | CodeQL |
+| --- | --- | --- |
+| `-uv run pip-audit` ignoring exit status | Makefile recipe | no extractor |
+| ignore rule blocked major, not minor | dependabot.yml semantics | no |
+| `directory: "/"` -> a Dockerfile nothing builds | config <-> filesystem <-> workflow | no |
+| `labels_owned` declared, never read | Markdown <-> Python | no |
+| `ANTHROPIC_MODEL` never reaches the operator | env name <-> pydantic `env_prefix` | no |
+| e2e tests bypass the guarded factory | Python | plausible |
+| `output_config` never sent | Python | plausible |
+
+These are **correspondence failures between artifacts**. CodeQL models one artifact. The fitting
+tool is `scripts/gate_selftest_cases.py` - a bespoke conformance harness that runs inside `make ci`
+and reads whatever file it is pointed at. Three cases added: `dependabot-pins-python-to-3-13`,
+`graph-vocabulary-guard-wired`, `codeql-custom-query-referenced`. Each was **proven able to fail**
+by removing the asserted string and re-running, not merely observed passing.
+
+### What the investigation found on the way
+
+**The custom CodeQL pack never ran.** `codeql.yml` requested only `security-and-quality`; nothing
+referenced `codeql/python-security/`. Latest report: 2026-06-23. A fifth instance of the pattern -
+and the one that makes the point, because it is the *security* tooling that was reading as coverage
+while examining nothing.
+
+The two queries got opposite treatment, because they are not alike:
+
+- **`TaintTracking.ql` - WIRED IN.** Project-specific and genuinely uncovered by the standard suite:
+  it tracks MCP tool args, `os.environ`, `sys.argv` and argparse namespaces into
+  `urllib.request.urlopen`, which this codebase calls with env-derived URLs in the provider,
+  execution and probe paths. Now referenced from `.github/codeql-config.yml`.
+- **`AgentCrossImport.ql` - DELETED.** Its own docstring conceded it duplicates the `.importlinter`
+  independence contract, which fails `make ci` on every commit. It was also absent from its own
+  pack's `.qls` suite - an orphan twice over. Kept, it would be a second implementation of an
+  already-enforced rule, and 263 lines of README documenting it.
+
+**A latent bug surfaced while removing it.** `run_codeql_agent_boundary.ps1` is a *generic* runner
+(`-Query`, `-OutputDir`), and `reports/taint-tracking/INDEX.md` documents using it for
+TaintTracking - but line 148 hardcoded
+`results\local\python-security\AgentCrossImport.bqrs`. Every non-default `-Query` looked for the
+wrong result file. So the documented TaintTracking invocation could never have worked. Renamed to
+`run_codeql_query.ps1` and the result name derived from the query.
+
+### The general rule
+
+CodeQL answers *"does untrusted data reach a dangerous sink?"*. It does not answer *"did the thing
+I wired actually get wired?"*. The second question is the one this repo keeps losing, and it is an
+assertion, not a dataflow query.
+
+### Addendum — the fix for this entry was itself a dormant guard, for one commit
+
+Wiring `TaintTracking.ql` into `codeql-config.yml` **did nothing**. A dispatched CodeQL run went
+green having evaluated **172 queries, none of them ours** — found only by grepping the run log for
+the query name instead of accepting the green tick.
+
+Cause: `queries:` on the `codeql-action/init` step **replaces** the config-file list unless it is
+prefixed with `+`. The workflow said `queries: security-and-quality`, so the config's `queries:`
+block was ignored entirely. Fixed to `+security-and-quality`; re-dispatched and verified from the
+log — `Compiling query plan for .../TaintTracking.ql`, and the query-source tally moved from
+`172 codeql` to `172 codeql / 1 local`.
+
+Invariant added: `codeql-config-queries-not-overridden`, asserting the plus.
+
+**This is the entry's own thesis landing on the entry.** Writing the config was not the same as the
+query running, exactly as declaring `labels_owned` was not the same as enforcing it, and a `.ql`
+file existing was not the same as it being referenced. Three layers of the same mistake in one
+afternoon, and only the last one was caught by *checking the artifact rather than the status*.
+
+---
+## DL-68 - The vocabulary guard was undeployable, and its pack was a trailing indicator · status: CLOSED (0.80.00)
+
+S143 shipped the write-time vocabulary guard and closed honestly: `GRAPH_VOCABULARY_PATH` was unset
+everywhere, so the guard guarded nothing. Turning it on was supposed to be a one-line change. It was
+two defects deep, and the second one nearly cost a live capital-protection proof.
+
+### Defect 1 - a path interface, and no image has the file
+
+`GRAPH_VOCABULARY_PATH` names a file. **None of the 14 images contains one.** Every agent Dockerfile
+copies exactly `kernel/`, `contracts/`, and its own `agents/<name>/`; `orchestration/packs/` is in
+none of them. Setting the variable to the pack path would not have enabled the guard - it would have
+raised `FileNotFoundError` inside `build_graph_from_env` and taken the agent down at boot.
+
+The repo had already solved this. The master receives its trading pack as **base64 env content**,
+path as the local-dev fallback (S86 / DL-12, `_resolve_pack`). S143 invented a weaker mechanism
+instead of following the one in the same repository. Fixed: `GRAPH_VOCABULARY_B64` resolved first,
+`GRAPH_VOCABULARY_PATH` retained for local dev, injected for every agent by `deploy-agents.ps1`.
+
+### Defect 2 - a vocabulary derived from history cannot cover code that has not run
+
+The pack was built from the live graph (31 observed triples) plus code literals. **Observed** edges
+only. So any path that had never executed in production was missing by construction.
+
+ADR-0015 section 3 broker-native stops merged Friday and had never placed a stop. Both its write
+edges were undeclared:
+
+```text
+('Fill',     'STOPS_WITH',   'BrokerStopOrder')  -> declared: False
+('Position', 'PROTECTED_BY', 'BrokerStopOrder')  -> declared: False
+```
+
+Both *labels* and both *edge types* were declared; only the signatures were missing - the last thing
+`check_edge` tests. **Enabling the guard would have raised `VocabularyError` at the moment execution
+placed the first real stop**, destroying the ADR-0015 proof pending since Friday, in the name of a
+guard built to prevent damage. A guard whose declaration lags the code is not a safety net; it is a
+scheduled outage.
+
+### The fix: prove the pack is a superset, two ways
+
+Neither check alone is sufficient, which is the point.
+
+- **Static** (`scripts/vocabulary_coverage.py`, `scripts/vocabulary_signatures.py`) - every label,
+  edge type, and *recoverable* signature in shipped code must be declared. Signature recovery
+  follows Node-valued locals back to the `merge_node` that produced them, one hop through helpers
+  that return one directly. It recovers `Fill -STOPS_WITH-> BrokerStopOrder`, so this check would
+  have caught the defect that nearly landed tonight.
+- **Dynamic** (`test_graph_vocabulary_e2e.py`) - the broker-stop path executed under a guarded
+  store. `Position -PROTECTED_BY-> BrokerStopOrder` resolves its parent through a dict lookup, so
+  **no static scan can recover it**; only running the code proves it.
+
+The static pass also found a third genuine gap neither the live graph nor manual reading had:
+`Experiment -PROPOSES-> ParamChange` in the researcher.
+
+### The check's own false positive - worth recording
+
+The first signature run reported `Rejection -EMITTED_BY-> PMRun`, which no call site writes. Cause:
+resolution was flow-insensitive, and `agents/portfolio_manager/store.py` rebinds `node` from
+`OrderIntent` to `Rejection` inside one function, so the later binding answered for the earlier
+call. Fixed by resolving to the nearest assignment **above** the call site. Unioning the bindings
+would have been worse than the bug: it would have invented edges and pushed them into the pack,
+permanently weakening the guard to make a check pass. **A completeness check that over-reports gets
+"fixed" by declaring fiction.**
+
+### Ruled out
+
+- **Enable in the same change that makes it enablable.** Rejected on sequencing: tonight is the
+  first session-day run since the broker-stops deploy, nine positions hold no protective stop, and
+  a fail-closed write path is the wrong thing to introduce into that run. Fixes before features -
+  the stop proof outranks the guard. Enablement is a dated action, not an indefinite deferral.
+- **Warn-only / observe-then-enforce mode.** This is precisely the "guard that doesn't guard"
+  pattern (DL-65) with a flag on it. If it cannot reject, it is not a guard.
+- **Copy `orchestration/packs/` into all 13 images.** Larger blast radius than a deploy-time env
+  var, and it bakes pack data into substrate images - the coupling ADR-0012 exists to prevent.
+- **Drop `edge_signatures` and check only labels plus edge types.** Would have made enabling safe
+  today by deleting the dimension that actually catches misattached edges.
+
+### The standing rule
+
+A declaration derived from observation is a trailing indicator. It must be mechanically checked
+against what the code *can* do, or it silently rots into a trap that fires on the first novel path -
+which is, by definition, the path nobody has tested.
 
 ---

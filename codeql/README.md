@@ -24,7 +24,7 @@ downloaded CLI under `.tools/`) are **not committed** — they are rebuilt by th
 | --- | --- |
 | Install the CodeQL CLI + packs | `pwsh codeql/scripts/setup_codeql_local.ps1` |
 | Run the full local suite (python/yaml/actions) | `pwsh codeql/scripts/run_codeql_local_suite.ps1 -Rebuild` |
-| Run the **agent-boundary** check + report | `pwsh codeql/scripts/run_codeql_agent_boundary.ps1 -Rebuild` |
+| Run a custom query + report | `pwsh codeql/scripts/run_codeql_query.ps1 -Rebuild` |
 | Run the AST helper on one file | `pwsh codeql/scripts/run_codeql_ast.ps1 -SourceFile <path>` |
 | Aggregate SARIF → markdown reports | `pwsh codeql/scripts/generate_codeql_reports.ps1` |
 | List error-level findings | `python codeql/scripts/codeql_errors.py` |
@@ -36,6 +36,5 @@ under the root (i.e. directly in `codeql/scripts/`).
 ## The packs
 
 - **`python-security/`** — enforces the core architecture rule *no agent imports another
-  agent* (`AgentCrossImport.ql`) plus taint tracking. See `python-security/README.md`.
 - **`yaml-diagnostics/`** — surfaces YAML parse errors and unresolved includes in workflow
   files (`parse-errors.ql`, `unresolved-includes.ql`).

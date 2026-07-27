@@ -12,10 +12,9 @@ Container deployment for the trading-agents app and its Prometheus observability
 
 | File | Purpose |
 | --- | --- |
-| `Dockerfile` | Python 3.13-slim image; entrypoint `surfaces.entrypoint` starts /metrics server then CLI |
-| `docker-compose.yml` | App + Prometheus stack; works with both `docker compose up` and `docker stack deploy` |
-| `infra/prometheus/prometheus.compose.yml` | Committed Prometheus config; scrapes `app:8000`; remote_write commented out |
-| `infra/prometheus/prometheus.local.yml` | Generated config with Azure credentials; gitignored; enables remote_write to Azure Monitor |
+| `agents/<name>/Dockerfile` | One image per agent (13) — two-stage `dhi.io/python:3.13-dev` → `dhi.io/python:3.13`. There is no root `Dockerfile`: the pre-P15 monolith image was deleted 2026-07-27 (DL-65) |
+| `orchestration/Dockerfile` | The 14th image — the `dispatcher-cron` job |
+| `docker-compose.yml` | Local multi-agent dev runner (P15/S74): master first, then the 12 trading agents, each built from its own `agents/<name>/Dockerfile`. Plus an opt-in `workbench` profile for Neo4j analysis (never a runtime backend) |
 | `infra/setup-prometheus-auth.ps1` | Generates `prometheus.local.yml` and writes Azure SP creds to `.env` |
 | `infra/setup-azure.ps1` | Provisions Azure Monitor Workspace + Azure Managed Grafana |
 | `infra/setup-grafana-datasource.ps1` | Wires Prometheus data source into Grafana and patches the dashboard |

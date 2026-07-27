@@ -12,7 +12,15 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   2026-06-18 (`chore/dependabot-and-hygiene`).
 - **B — GitHub Actions pinned to commit SHAs** (Dependabot `github-actions` ecosystem keeps them
   fresh). Shipped 2026-06-18.
-- **Weekly Dependabot** (uv / github-actions / docker). Shipped 2026-06-18.
+- **Dependabot** (uv / github-actions / docker). Shipped 2026-06-18 weekly; **moved to monthly,
+  batched 2026-07-27** (DL-64) after a weekly trickle of solo major PRs was closed unread rather
+  than reviewed. Majors now fold into the group everywhere except Python *production* deps, which
+  keep a solo PR. ≤3 PRs in a typical month.
+- **Dependabot alerts + security updates enabled** 2026-07-27. Previously `disabled` — the CVE net
+  was `pip-audit` in `make ci` (Python) plus Trivy HIGH/CRITICAL at image build (image contents),
+  leaving **GitHub Actions and base-image advisories unwatched by anything**. Enabled with **zero
+  open alerts** at the time (no backlog). Security PRs bypass the monthly schedule and the
+  `open-pull-requests-limit`, so a vulnerability still arrives the day the advisory drops.
 - **Dependabot auto-merge** (`.github/workflows/dependabot-auto-merge.yml`): non-major dependency PRs
   auto-approve + auto-merge once the required CI checks pass; branch protection on `main` requires
   `quality` + `test` + `security`. Majors stay open for review; docker `python` majors are ignored
@@ -96,14 +104,22 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   [defect-detection-rate analysis](research/code-quality-tooling/defect-detection-rate.md):
   the unit suite caught **0 of 14** escaped defects, so this was the highest-leverage quality
   work available.
+- **L² — `make ci` can fail on a CVE.** (The letter is reused: the entry above is the
+  older L from the A–L series; this is L from the 2026-07-23 series.) Was: the Makefile's
+  `-uv run pip-audit` made make ignore its exit status, so the *local* gate could not fail on a
+  vulnerable dependency. Fixed in `77769ce` (0.75.00, 2026-07-24) — the recipe is now a bare
+  `uv run pip-audit`. **Both halves** are closed: `gate_selftest_cases.py` covers it twice —
+  `pip-audit-cve` proves the gate *can* fail, and `pip-audit-not-ignored-by-ci` asserts the
+  recipe does **not** carry the leading dash, so it cannot come back unnoticed. Verified
+  2026-07-27; the row sat stale in *Open* for three days after the fix landed, which is why
+  STATE was still advertising it as a live gap.
 
 ## Open — with unblock triggers
 
-Opened 2026-07-23 — all three are **gates or agent authority**, found while shipping ADR-0016.
+Opened 2026-07-23 — **gates or agent authority**, found while shipping ADR-0016. **L closed 2026-07-27** (see Done); M and N remain.
 
 | ID | Item | Why | Unblock trigger |
 | --- | --- | --- | --- |
-| L | **`make ci` cannot fail on a CVE.** The Makefile runs `-uv run pip-audit`; the leading `-` makes make **ignore its exit status**, so a vulnerable dependency never fails the local gate. CLAUDE.md advertises 9 steps that fail; for this one that is untrue. | Same class as DL-57: a check that cannot fail is not a check. It was masked because GitHub's `security` job runs `pip-audit` without the dash, so remote CI does fail — the *local* gate silently does not, and that is the one a developer trusts before pushing. | Next time `gate_selftest.py` is touched — it exists precisely to prove each gate can fail, and it does not cover this one. |
 | M | **A pushed branch can produce zero workflow runs.** On 2026-07-23 `chore-exit-idempotency-key` was pushed to a remote whose CI triggers on `push: branches: ["**"]`, Actions enabled, and GitHub created **no runs at all** (`total_count: 0` for the head SHA, confirmed twice a minute apart). Resolved by `workflow_dispatch`; cause never established. | DL-52's hole was merging code the gate never examined. "No runs appeared" looks identical to "not pushed yet" if you only glance at the run list, so the branch-is-the-gate rule can be silently defeated by an infrastructure miss rather than a process mistake. | Next time the merge procedure or `gate_selftest.py` is touched: make "a run exists for this SHA" an explicit assertion before merge, not an eyeball check. |
 | N | **Delegated coding agents run with full local authority by default.** `~/.codex/config.toml` carries `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`. Every delegated run so far overrode this with an explicit `--sandbox workspace-write`, confining writes to the worktree, `/tmp` and `~/.codex/memories` — but the *default* for any run launched without that flag is unrestricted disk access with no approval prompt, including `.env`, `infra/`, and `main`. | The repo's whole secrets discipline (CLAUDE.md: credentials never exist as files in the worktree) assumes no process is casually rewriting the tree. An agent with `danger-full-access` and no approvals is outside that assumption, and the protection currently lives in the operator remembering a CLI flag. | Before delegation becomes routine/unattended — i.e. the first time a coding agent is run without a human watching the diff. Decide then: change the config default, or wrap delegation in a script that always passes the sandbox flag. |
 

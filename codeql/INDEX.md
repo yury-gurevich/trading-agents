@@ -15,7 +15,7 @@ Read [README.md](README.md) first for entry points and usage.
 | --- | --- |
 | `setup_codeql_local.ps1` | Download the CodeQL CLI + build the local DB cluster + install packs |
 | `run_codeql_local_suite.ps1` | One-shot: setup/analysis then aggregate reports |
-| `run_codeql_agent_boundary.ps1` | Run the agent cross-import query → readable `reports/` output |
+| `run_codeql_query.ps1` | Run the agent cross-import query → readable `reports/` output |
 | `run_codeql_ast.ps1` | Dump the CodeQL AST for one source file (debugging queries) |
 | `generate_codeql_reports.ps1` | SARIF → triage + baseline/diff + owner markdown reports |
 | `clean_codeql_reports.ps1` | Delete report runs (keep-newest / by-age / all) |

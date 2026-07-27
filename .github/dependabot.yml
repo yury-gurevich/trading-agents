@@ -65,9 +65,18 @@ updates:
         patterns: ["*"]
         update-types: ["major", "minor", "patch"]
 
-  # ── Docker base image (Dockerfile) ──────────────────────────────────────────
+  # ── Docker base images (the 14 images actually built) ───────────────────────
+  # Was `directory: "/"`, which watched only the root Dockerfile — the pre-P15
+  # monolith that no build referenced. It was deleted 2026-07-27 (DL-65), so this
+  # now points at the images `build-images.yml` and `docker-compose.yml` really
+  # build. CAVEAT: those use `dhi.io/python` (Docker Hardened Images); whether
+  # Dependabot can resolve that registry is UNVERIFIED — if it cannot, this
+  # produces nothing. Trivy HIGH/CRITICAL at image build remains the actual CVE
+  # net (hardening backlog E/H); treat this as freshness signal, not a gate.
   - package-ecosystem: "docker"
-    directory: "/"
+    directories:
+      - "/agents/*"
+      - "/orchestration"
     schedule:
       interval: "monthly"
       time: "06:00"
@@ -82,7 +91,15 @@ updates:
         patterns: ["*"]
         update-types: ["major", "minor", "patch"]
     ignore:
-      # The codebase targets Python 3.13 (requires-python, ruff/mypy py313). A major
-      # Python bump is a deliberate runtime migration, not an auto-merge — pin to 3.13.x.
-      - dependency-name: "python"
-        update-types: ["version-update:semver-major"]
+      # The codebase targets Python 3.13 (requires-python, ruff/mypy py313), so a
+      # 3.13 → 3.14 move is a deliberate runtime migration, not an auto-merge.
+      #
+      # This rule used to block ONLY semver-major, while its comment claimed to
+      # "pin to 3.13.x". 3.13 → 3.14 is semver-MINOR, so on 2026-07-27 exactly that
+      # bump sailed through the guard and auto-merged (#73). It landed in the dead
+      # root Dockerfile so nothing broke — but the guard was wrong, not lucky.
+      # Blocking minor as well as major is what "pin to 3.13.x" actually requires.
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"

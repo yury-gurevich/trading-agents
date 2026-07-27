@@ -3154,3 +3154,61 @@ actually writes — measurable now by running each agent under a recording store
 remaining half of R007's item 1.
 
 ---
+
+## DL-67 · CodeQL is the wrong tool for "guards that don't guard" - gate_selftest is · status: CLOSED
+
+**Question.** Can CodeQL detect the class of defect that dominated 2026-07-27 - a check that is
+present, documented, and examines nothing?
+
+**Answer: mostly no, and the right tool was already in the repo.** CodeQL queries a database built
+by a *language extractor* over source code. Of the seven gaps found that day, five were not in code
+at all:
+
+| Gap | Where it lived | CodeQL |
+| --- | --- | --- |
+| `-uv run pip-audit` ignoring exit status | Makefile recipe | no extractor |
+| ignore rule blocked major, not minor | dependabot.yml semantics | no |
+| `directory: "/"` -> a Dockerfile nothing builds | config <-> filesystem <-> workflow | no |
+| `labels_owned` declared, never read | Markdown <-> Python | no |
+| `ANTHROPIC_MODEL` never reaches the operator | env name <-> pydantic `env_prefix` | no |
+| e2e tests bypass the guarded factory | Python | plausible |
+| `output_config` never sent | Python | plausible |
+
+These are **correspondence failures between artifacts**. CodeQL models one artifact. The fitting
+tool is `scripts/gate_selftest_cases.py` - a bespoke conformance harness that runs inside `make ci`
+and reads whatever file it is pointed at. Three cases added: `dependabot-pins-python-to-3-13`,
+`graph-vocabulary-guard-wired`, `codeql-custom-query-referenced`. Each was **proven able to fail**
+by removing the asserted string and re-running, not merely observed passing.
+
+### What the investigation found on the way
+
+**The custom CodeQL pack never ran.** `codeql.yml` requested only `security-and-quality`; nothing
+referenced `codeql/python-security/`. Latest report: 2026-06-23. A fifth instance of the pattern -
+and the one that makes the point, because it is the *security* tooling that was reading as coverage
+while examining nothing.
+
+The two queries got opposite treatment, because they are not alike:
+
+- **`TaintTracking.ql` - WIRED IN.** Project-specific and genuinely uncovered by the standard suite:
+  it tracks MCP tool args, `os.environ`, `sys.argv` and argparse namespaces into
+  `urllib.request.urlopen`, which this codebase calls with env-derived URLs in the provider,
+  execution and probe paths. Now referenced from `.github/codeql-config.yml`.
+- **`AgentCrossImport.ql` - DELETED.** Its own docstring conceded it duplicates the `.importlinter`
+  independence contract, which fails `make ci` on every commit. It was also absent from its own
+  pack's `.qls` suite - an orphan twice over. Kept, it would be a second implementation of an
+  already-enforced rule, and 263 lines of README documenting it.
+
+**A latent bug surfaced while removing it.** `run_codeql_agent_boundary.ps1` is a *generic* runner
+(`-Query`, `-OutputDir`), and `reports/taint-tracking/INDEX.md` documents using it for
+TaintTracking - but line 148 hardcoded
+`results\local\python-security\AgentCrossImport.bqrs`. Every non-default `-Query` looked for the
+wrong result file. So the documented TaintTracking invocation could never have worked. Renamed to
+`run_codeql_query.ps1` and the result name derived from the query.
+
+### The general rule
+
+CodeQL answers *"does untrusted data reach a dangerous sink?"*. It does not answer *"did the thing
+I wired actually get wired?"*. The second question is the one this repo keeps losing, and it is an
+assertion, not a dataflow query.
+
+---

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     1. (Optional) Rebuilds the CodeQL Python database from current source.
-    2. Runs the AgentCrossImport.ql query against the local Python CodeQL
+    2. Runs the -Query CodeQL query against the local Python CodeQL
        database.
     3. Decodes the .bqrs results to CSV.
     4. Generates a human-readable markdown report with a summary table and a
@@ -27,7 +27,7 @@
 
 .PARAMETER Query
     Path to the .ql query file.
-    Default: codeql\python-security\AgentCrossImport.ql
+    Default: codeql\python-security\TaintTracking.ql
 
 .PARAMETER SearchPath
     Search path for CodeQL packs.
@@ -35,14 +35,14 @@
 
 .PARAMETER OutputDir
     Directory for the generated report and SARIF.
-    Default: codeql\python-security\reports\agent-cross-import
+    Default: codeql\python-security\reports\taint-tracking
 
 .EXAMPLE
-    .\scripts\run_codeql_agent_boundary.ps1
+    .\scripts\run_codeql_query.ps1
     Runs the query and writes the report to codeql\python-security\reports\.
 
 .EXAMPLE
-    .\scripts\run_codeql_agent_boundary.ps1 -Database .codeql-db\python
+    .\scripts\run_codeql_query.ps1 -Database .codeql-db\python
     Uses a custom database path.
 #>
 
@@ -50,9 +50,9 @@
 param(
     [switch]$Rebuild,
     [string]$Database = '.codeql-db\python',
-    [string]$Query = 'codeql\python-security\AgentCrossImport.ql',
+    [string]$Query = 'codeql\python-security\TaintTracking.ql',
     [string]$SearchPath = 'codeql\python-security',
-    [string]$OutputDir = 'codeql\python-security\reports\agent-cross-import'
+    [string]$OutputDir = 'codeql\python-security\reports\taint-tracking'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -145,7 +145,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # The .bqrs result file lives under the database results directory.
-$bqrsPath = Join-Path $dbPath 'results\local\python-security\AgentCrossImport.bqrs'
+# Derive the result name from the query actually being run - this was hardcoded
+# to AgentCrossImport.bqrs, so every other -Query looked for the wrong file.
+$queryStem = [System.IO.Path]::GetFileNameWithoutExtension($queryPath)
+$bqrsPath = Join-Path $dbPath "results\local\python-security\$queryStem.bqrs"
 if (-not (Test-Path $bqrsPath)) {
     throw "Expected result file not found: $bqrsPath"
 }
@@ -264,7 +267,7 @@ $lines += '---'
 $lines += ''
 $lines += '## Scan details'
 $lines += ''
-$lines += "**Query:** ``local/py/agent-cross-import`` (``$Query``)"
+$lines += "**Query:** ``$queryStem`` (``$Query``)"
 $lines += "**Database:** ``$Database``"
 $lines += '**Scope:** Production code only -- test files (``**/tests/**``) excluded'
 $lines += ''
@@ -318,10 +321,10 @@ $lines += '## How to reproduce'
 $lines += ''
 $lines += '```powershell'
 $lines += '# Rebuild database from current source + run query + generate report:'
-$lines += '.\scripts\run_codeql_agent_boundary.ps1 -Rebuild'
+$lines += '.\scripts\run_codeql_query.ps1 -Rebuild'
 $lines += ''
 $lines += '# Run against the existing database (no rebuild):'
-$lines += '.\scripts\run_codeql_agent_boundary.ps1'
+$lines += '.\scripts\run_codeql_query.ps1'
 $lines += '```'
 
 $reportContent = $lines -join "`n"

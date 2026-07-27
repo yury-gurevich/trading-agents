@@ -19,7 +19,7 @@ After the first run, this folder should contain:
 Run from the repo root:
 
 ```powershell
-.\codeql\scripts\run_codeql_agent_boundary.ps1 -Query codeql\python-security\TaintTracking.ql -OutputDir codeql\python-security\reports\taint-tracking -Rebuild
+.\codeql\scripts\run_codeql_query.ps1 -Query codeql\python-security\TaintTracking.ql -OutputDir codeql\python-security\reports\taint-tracking -Rebuild
 ```
 
 These two files are overwritten on every run.

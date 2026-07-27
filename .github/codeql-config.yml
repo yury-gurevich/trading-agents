@@ -1,5 +1,14 @@
 name: trading-agents CodeQL config
 
+# Custom project queries. Without this the pack in `codeql/python-security/` is
+# never run — it sat unreferenced from 2026-06-23 until 2026-07-27, looking like
+# coverage while examining nothing. `TaintTracking.ql` is project-specific and
+# not covered by the standard suite: it tracks MCP tool args, os.environ, argv
+# and argparse namespaces into `urllib.request.urlopen`, which this codebase
+# calls with env-derived URLs in the provider, execution and probe paths.
+queries:
+  - uses: ./codeql/python-security/TaintTracking.ql
+
 # Paths that CodeQL should never analyse — its own database artifacts,
 # CLI binaries/extractor scripts, and non-project directories.
 paths-ignore:

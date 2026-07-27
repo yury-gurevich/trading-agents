@@ -140,4 +140,34 @@ INVARIANTS: tuple[Invariant, ...] = (
         must_contain=("\tuv run pip-audit",),
         must_not_contain=("\t-uv run pip-audit",),
     ),
+    Invariant(
+        name="dependabot-pins-python-to-3-13",
+        why=(
+            "the ignore rule blocked only semver-major while its comment claimed "
+            "to pin 3.13.x; 3.13 -> 3.14 is MINOR and auto-merged through it "
+            "(#73, DL-65) - a runtime migration must not arrive unattended"
+        ),
+        path=".github/dependabot.yml",
+        must_contain=("version-update:semver-minor",),
+    ),
+    Invariant(
+        name="graph-vocabulary-guard-wired",
+        why=(
+            "the vocabulary constrains nothing unless build_graph_from_env "
+            "actually wraps the store; unwired it is a declared guard that "
+            "guards nothing (DL-66) - the exact pattern it was built to catch"
+        ),
+        path="kernel/graph_env.py",
+        must_contain=("GRAPH_VOCABULARY_PATH", "_guarded("),
+    ),
+    Invariant(
+        name="codeql-custom-query-referenced",
+        why=(
+            "a .ql file in the repo is not a running check: the custom pack sat "
+            "unreferenced by any workflow from 2026-06-23 to 2026-07-27, reading "
+            "as coverage while examining nothing"
+        ),
+        path=".github/codeql-config.yml",
+        must_contain=("codeql/python-security/TaintTracking.ql",),
+    ),
 )

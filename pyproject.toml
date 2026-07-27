@@ -117,7 +117,8 @@ src = ["kernel", "contracts", "agents", "orchestration", "surfaces", "tests"]
 # ruff 0.16 began formatting Python code blocks inside Markdown. Docs here carry
 # illustrative snippets (deliberate alignment, elided bodies, pseudo-signatures)
 # that are read, not run — reformatting them rewrites 36 files and destroys the
-# alignment that made them readable. Keep ruff on the code it owns.
+# alignment that made them readable. Keep ruff on the code it owns. If doc
+# snippets should ever be formatted, that is its own chore — see DL-69.
 extend-exclude = ["*.md"]
 
 [tool.ruff.lint]

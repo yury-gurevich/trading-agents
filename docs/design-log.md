@@ -3314,3 +3314,53 @@ against what the code *can* do, or it silently rots into a trap that fires on th
 which is, by definition, the path nobody has tested.
 
 ---
+## DL-69 - ruff 0.16 wanted to reformat 36 docs; a dependency bump is not the place · status: CLOSED (0.80.01)
+
+The first monthly batched Dependabot PR under DL-64 (#75: ruff 0.15.22 -> 0.16.0,
+prometheus-client 0.20 -> 0.26.0) failed `quality`. Neither cause was a defect in the bump; both
+were ruff behaviour changes, and only the second needed a decision.
+
+### 1 - S310 narrowed, so two suppressions went dead
+
+`S310` (unvalidated URL open) no longer fires on a `Request(...)` built from a literal `https://`
+f-string, so `RUF100` rejected the now-unused directives at `scripts/sb_sas_kv.py:29` and
+`surfaces/dashboard/github_builds.py:71`. Removed them, kept the rationale as plain comments.
+
+**Checked per site rather than blanket-stripping:** the `urlopen(...)` suppression at
+`sb_sas_kv.py:38` *still* fires and stays. The rule narrowed for one call shape, not for the file.
+No runtime change - both URLs remain fixed-scheme HTTPS with `quote()`-escaped interpolation.
+
+### 2 - ruff format now formats Python inside Markdown
+
+Scanned files went 800 -> 1105. **36 doc files would be rewritten.** The snippets in `docs/` are
+read, not run: they carry deliberate alignment, elided bodies and pseudo-signatures. The first diff
+ruff offered stripped the aligned `Callable` parameters in `sprint-79-agent-work-loops.md` - the
+alignment that made the example legible.
+
+Set `extend-exclude = ["*.md"]`, which is exactly behaviour-preserving: ruff never linted or
+formatted Markdown before 0.16.
+
+### Ruled out
+
+- **Accept the 36-file reformat.** Unreviewable scope creep riding a version bump. It silently
+  edits example code that **no test covers**, so nothing would catch a snippet made wrong - and it
+  buries a docs-style decision inside a dependency chore where no one would look for it.
+- **Pin ruff below 0.16.** Freezes the linter to dodge one formatting opinion, and every later
+  security or rule improvement pays for it. The exclusion is narrower and reversible.
+- **A numbered sprint for this.** Dependency policy already lives in the design log (DL-64); the
+  code change is three lines. A sprint doc would be ceremony around a chore.
+
+### Worth noting for next month
+
+The group is labelled `deps-dev`, but `prometheus-client` sits in the **runtime** extra too, so a
+"dev" batch moved a production dependency. It is a MINOR, so DL-64's config grouped it correctly -
+the *label* undersells the blast radius, not the rule. Read the diff, not the title.
+
+### The standing rule
+
+**A dependency bump may change the tool; it must not carry an unrelated repo-wide rewrite.** When a
+new tool version wants to touch files outside its previous scope, the default is to hold the old
+scope and let the expansion be argued on its own. If Markdown snippets should be formatted, that is
+its own chore with its own diff - not a side effect of upgrading a linter.
+
+---

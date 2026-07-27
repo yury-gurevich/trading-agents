@@ -5,6 +5,14 @@ name: Dependabot auto-merge
 # required CI checks (quality, test, security) pass. MAJOR updates are
 # deliberately left open for a human to look at — they can change behaviour.
 #
+# Interaction with grouped updates (DL-64): `fetch-metadata` reports a GROUP's
+# `update-type` as the HIGHEST semver change across its members. Since 2026-07-27
+# the dev / github-actions / docker groups fold majors in, so one major makes the
+# whole monthly batch wait for a human — routine members included. That is the
+# intended trade (one thing to look at, occasionally), and it is why Python
+# *production* majors were deliberately left OUT of their group: that group stays
+# minor/patch-only, so production dependency updates keep auto-merging.
+#
 # No approval step: `main` requires status checks but NOT a review, and the
 # Actions GITHUB_TOKEN is hard-blocked from approving PRs by GitHub, so
 # `gh pr review --approve` always fails. Auto-merge alone is sufficient here.

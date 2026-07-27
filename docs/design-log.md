@@ -3024,6 +3024,24 @@ image scan in `build-images.yml`. So slowing *version* updates does not slow *vu
 response. Enabling Dependabot alerts would add a net for GitHub Actions and the base image, which
 neither pip-audit nor Trivy covers as advisories; that remains **open and unclaimed**.
 
+### Resolved (2026-07-27, same day)
+
+**Dependabot alerts + security updates: ENABLED.** The open item above is closed. Repo went
+`disabled` → `enabled` with **zero open alerts** at the time, so nothing was hiding and no
+backlog surfaced. Security PRs bypass both the monthly schedule and `open-pull-requests-limit`,
+so a vulnerability still arrives the day its advisory drops — routine noise stays batched,
+genuine ones jump the queue. That closes the gap this entry named: advisories against pinned
+GitHub Actions and the base image, which `pip-audit` (Python packages only) and Trivy (image
+contents, not action versions) both miss.
+
+**Interaction found while reconciling the docs.** `dependabot/fetch-metadata` reports a
+**group's** `update-type` as the *highest* semver change among its members, and
+`dependabot-auto-merge.yml` only auto-merges when that is not `semver-major`. So folding
+majors into a group means **one major makes the whole monthly batch wait for a human**,
+routine members included. That is the intended trade — and it is a second, unplanned reason
+the production-majors carve-out was right: `python-production` stays minor/patch-only, so
+production dependency updates keep auto-merging untouched.
+
 ### Ruled out
 
 - **Batch everything including production majors.** A hard ceiling of 3 PRs/month is tempting, but

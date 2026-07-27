@@ -170,4 +170,14 @@ INVARIANTS: tuple[Invariant, ...] = (
         path=".github/codeql-config.yml",
         must_contain=("codeql/python-security/TaintTracking.ql",),
     ),
+    Invariant(
+        name="codeql-config-queries-not-overridden",
+        why=(
+            "`queries:` in the workflow REPLACES the config-file list unless it "
+            "is prefixed with '+'; without the plus the custom pack silently "
+            "does not run - a green CodeQL run evaluated 172 queries, none ours"
+        ),
+        path=".github/workflows/codeql.yml",
+        must_contain=("queries: +security-and-quality",),
+    ),
 )

@@ -158,7 +158,17 @@ INVARIANTS: tuple[Invariant, ...] = (
             "guards nothing (DL-66) - the exact pattern it was built to catch"
         ),
         path="kernel/graph_env.py",
-        must_contain=("GRAPH_VOCABULARY_PATH", "_guarded("),
+        must_contain=("GRAPH_VOCABULARY_PATH", "GRAPH_VOCABULARY_B64", "_guarded("),
+    ),
+    Invariant(
+        name="graph-vocabulary-injected-at-deploy",
+        why=(
+            "no agent image copies orchestration/packs, so a path-only guard is "
+            "undeployable and silently absent in the fleet (S144, DL-68); the "
+            "deploy must inject the vocabulary as base64 the way it does grants"
+        ),
+        path="infra/deploy-agents.ps1",
+        must_contain=("GRAPH_VOCABULARY_B64=", "Get-VocabularyEnv"),
     ),
     Invariant(
         name="codeql-custom-query-referenced",

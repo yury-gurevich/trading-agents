@@ -3231,3 +3231,86 @@ file existing was not the same as it being referenced. Three layers of the same 
 afternoon, and only the last one was caught by *checking the artifact rather than the status*.
 
 ---
+## DL-68 - The vocabulary guard was undeployable, and its pack was a trailing indicator · status: CLOSED (0.80.00)
+
+S143 shipped the write-time vocabulary guard and closed honestly: `GRAPH_VOCABULARY_PATH` was unset
+everywhere, so the guard guarded nothing. Turning it on was supposed to be a one-line change. It was
+two defects deep, and the second one nearly cost a live capital-protection proof.
+
+### Defect 1 - a path interface, and no image has the file
+
+`GRAPH_VOCABULARY_PATH` names a file. **None of the 14 images contains one.** Every agent Dockerfile
+copies exactly `kernel/`, `contracts/`, and its own `agents/<name>/`; `orchestration/packs/` is in
+none of them. Setting the variable to the pack path would not have enabled the guard - it would have
+raised `FileNotFoundError` inside `build_graph_from_env` and taken the agent down at boot.
+
+The repo had already solved this. The master receives its trading pack as **base64 env content**,
+path as the local-dev fallback (S86 / DL-12, `_resolve_pack`). S143 invented a weaker mechanism
+instead of following the one in the same repository. Fixed: `GRAPH_VOCABULARY_B64` resolved first,
+`GRAPH_VOCABULARY_PATH` retained for local dev, injected for every agent by `deploy-agents.ps1`.
+
+### Defect 2 - a vocabulary derived from history cannot cover code that has not run
+
+The pack was built from the live graph (31 observed triples) plus code literals. **Observed** edges
+only. So any path that had never executed in production was missing by construction.
+
+ADR-0015 section 3 broker-native stops merged Friday and had never placed a stop. Both its write
+edges were undeclared:
+
+```text
+('Fill',     'STOPS_WITH',   'BrokerStopOrder')  -> declared: False
+('Position', 'PROTECTED_BY', 'BrokerStopOrder')  -> declared: False
+```
+
+Both *labels* and both *edge types* were declared; only the signatures were missing - the last thing
+`check_edge` tests. **Enabling the guard would have raised `VocabularyError` at the moment execution
+placed the first real stop**, destroying the ADR-0015 proof pending since Friday, in the name of a
+guard built to prevent damage. A guard whose declaration lags the code is not a safety net; it is a
+scheduled outage.
+
+### The fix: prove the pack is a superset, two ways
+
+Neither check alone is sufficient, which is the point.
+
+- **Static** (`scripts/vocabulary_coverage.py`, `scripts/vocabulary_signatures.py`) - every label,
+  edge type, and *recoverable* signature in shipped code must be declared. Signature recovery
+  follows Node-valued locals back to the `merge_node` that produced them, one hop through helpers
+  that return one directly. It recovers `Fill -STOPS_WITH-> BrokerStopOrder`, so this check would
+  have caught the defect that nearly landed tonight.
+- **Dynamic** (`test_graph_vocabulary_e2e.py`) - the broker-stop path executed under a guarded
+  store. `Position -PROTECTED_BY-> BrokerStopOrder` resolves its parent through a dict lookup, so
+  **no static scan can recover it**; only running the code proves it.
+
+The static pass also found a third genuine gap neither the live graph nor manual reading had:
+`Experiment -PROPOSES-> ParamChange` in the researcher.
+
+### The check's own false positive - worth recording
+
+The first signature run reported `Rejection -EMITTED_BY-> PMRun`, which no call site writes. Cause:
+resolution was flow-insensitive, and `agents/portfolio_manager/store.py` rebinds `node` from
+`OrderIntent` to `Rejection` inside one function, so the later binding answered for the earlier
+call. Fixed by resolving to the nearest assignment **above** the call site. Unioning the bindings
+would have been worse than the bug: it would have invented edges and pushed them into the pack,
+permanently weakening the guard to make a check pass. **A completeness check that over-reports gets
+"fixed" by declaring fiction.**
+
+### Ruled out
+
+- **Enable in the same change that makes it enablable.** Rejected on sequencing: tonight is the
+  first session-day run since the broker-stops deploy, nine positions hold no protective stop, and
+  a fail-closed write path is the wrong thing to introduce into that run. Fixes before features -
+  the stop proof outranks the guard. Enablement is a dated action, not an indefinite deferral.
+- **Warn-only / observe-then-enforce mode.** This is precisely the "guard that doesn't guard"
+  pattern (DL-65) with a flag on it. If it cannot reject, it is not a guard.
+- **Copy `orchestration/packs/` into all 13 images.** Larger blast radius than a deploy-time env
+  var, and it bakes pack data into substrate images - the coupling ADR-0012 exists to prevent.
+- **Drop `edge_signatures` and check only labels plus edge types.** Would have made enabling safe
+  today by deleting the dimension that actually catches misattached edges.
+
+### The standing rule
+
+A declaration derived from observation is a trailing indicator. It must be mechanically checked
+against what the code *can* do, or it silently rots into a trap that fires on the first novel path -
+which is, by definition, the path nobody has tested.
+
+---

@@ -253,7 +253,7 @@ function Get-FleetServiceBusTargets {
 
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
   Top "DEPLOY DISPATCHER JOB"
-  $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
+  $envv = @("POSTGRES_DSN=secretref:postgres-dsn", (Get-VocabularyEnv)) + @($serviceBus.envVars)
   $secrets = @($graph.secrets) + @($serviceBus.secrets)
   $image = "$REGISTRY/$OWNER/trading-agents-dispatcher:$Tag"
   $exists = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
@@ -381,6 +381,15 @@ function Get-MasterKeypair {
 }
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
+function Get-VocabularyEnv {
+  # The graph write-guard vocabulary is pack data, injected as base64 the same way
+  # the master's grants and secret map are (S86 / DL-12, S144 / DL-68). None of the
+  # 14 images copies orchestration/packs, so GRAPH_VOCABULARY_PATH can only ever
+  # resolve in local dev — base64 is the only deployable form.
+  $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_graph_vocabulary.json"
+  return "GRAPH_VOCABULARY_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+}
+
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   $ghcr = Load-Json "ghcr.local.json"
@@ -399,7 +408,8 @@ function Up {
   $envv = @(
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
-    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
+    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64",
+    (Get-VocabularyEnv)
   )
   $masterGraph = Get-GraphConfig "master"
   $envv += @($masterGraph.envVars)
@@ -432,7 +442,7 @@ function Up {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
     $agentGraph = Get-GraphConfig $name
     $agentServiceBus = Get-ServiceBusConfig $name
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars)
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars) + @((Get-VocabularyEnv))
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,

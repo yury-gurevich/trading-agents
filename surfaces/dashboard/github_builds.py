@@ -68,7 +68,7 @@ class GitHubActionsReader:
             f"https://api.github.com/repos/{self._repository}/actions/workflows/"
             f"{workflow}/runs?branch=main&status=success&per_page=1"
         )
-        request = Request(  # noqa: S310 - fixed GitHub HTTPS origin.
+        request = Request(  # fixed GitHub HTTPS origin.
             url,
             headers={
                 "Accept": "application/vnd.github+json",

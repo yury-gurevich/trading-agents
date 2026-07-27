@@ -3211,4 +3211,23 @@ CodeQL answers *"does untrusted data reach a dangerous sink?"*. It does not answ
 I wired actually get wired?"*. The second question is the one this repo keeps losing, and it is an
 assertion, not a dataflow query.
 
+### Addendum — the fix for this entry was itself a dormant guard, for one commit
+
+Wiring `TaintTracking.ql` into `codeql-config.yml` **did nothing**. A dispatched CodeQL run went
+green having evaluated **172 queries, none of them ours** — found only by grepping the run log for
+the query name instead of accepting the green tick.
+
+Cause: `queries:` on the `codeql-action/init` step **replaces** the config-file list unless it is
+prefixed with `+`. The workflow said `queries: security-and-quality`, so the config's `queries:`
+block was ignored entirely. Fixed to `+security-and-quality`; re-dispatched and verified from the
+log — `Compiling query plan for .../TaintTracking.ql`, and the query-source tally moved from
+`172 codeql` to `172 codeql / 1 local`.
+
+Invariant added: `codeql-config-queries-not-overridden`, asserting the plus.
+
+**This is the entry's own thesis landing on the entry.** Writing the config was not the same as the
+query running, exactly as declaring `labels_owned` was not the same as enforcing it, and a `.ql`
+file existing was not the same as it being referenced. Three layers of the same mistake in one
+afternoon, and only the last one was caught by *checking the artifact rather than the status*.
+
 ---

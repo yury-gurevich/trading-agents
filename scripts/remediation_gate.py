@@ -35,9 +35,14 @@ class _AnthropicStructured:
     """Structured-ish Anthropic adapter for live selector probes."""
 
     def __init__(self, api_key: str, model: str) -> None:
+        # Local import: this module puts the repo root on sys.path below its own
+        # import block, so a top-level `scripts.` import would not resolve.
+        from scripts.deliberate import anthropic_effort
+
         anthropic = importlib.import_module("anthropic")
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
+        self._effort = anthropic_effort()
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -46,6 +51,7 @@ class _AnthropicStructured:
         resp = self._client.messages.create(
             model=self._model,
             max_tokens=1000,
+            output_config={"effort": self._effort},
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -109,7 +115,7 @@ def _build_real_llm() -> _OpenAIStructured | _AnthropicStructured:
         key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not key:
             raise SystemExit("ANTHROPIC_API_KEY not set - cannot run --real")
-        model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+        model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
         print(f"MODE: real (Anthropic {model})")
         return _AnthropicStructured(key, model)
     key = os.environ.get("OPENAI_API_KEY", "")

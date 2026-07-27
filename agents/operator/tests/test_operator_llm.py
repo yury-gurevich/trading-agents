@@ -8,6 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 import importlib
+import inspect
 from types import SimpleNamespace
 
 import pytest
@@ -55,6 +56,35 @@ def test_anthropic_complete_returns_plain_explanation_text(
         "type": "tool",
         "name": "answer_question",
     }
+
+
+def test_anthropic_complete_sends_max_effort_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reasoning depth reaches the API — the knob is inert unless it is sent."""
+    monkeypatch.setattr(importlib, "import_module", lambda _name: _FakeAnthropicModule)
+    client = AnthropicLLMClient(api_key="key")  # pragma: allowlist secret
+    client.complete(system="s", user="u", tool_schema={"type": "object"})
+    assert client._client.messages.kwargs["output_config"] == {"effort": "max"}
+
+
+def test_anthropic_complete_honours_an_explicit_effort(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(importlib, "import_module", lambda _name: _FakeAnthropicModule)
+    client = AnthropicLLMClient(
+        api_key="key",  # pragma: allowlist secret
+        effort="low",
+    )
+    client.complete(system="s", user="u", tool_schema={})
+    assert client._client.messages.kwargs["output_config"] == {"effort": "low"}
+
+
+def test_anthropic_max_tokens_leaves_room_for_thinking() -> None:
+    """A 512 ceiling is spent reasoning before any tool call is emitted."""
+    assert AnthropicLLMClient.__init__.__defaults__ is None
+    signature = inspect.signature(AnthropicLLMClient.__init__)
+    assert signature.parameters["max_tokens"].default == 4096
 
 
 def test_tool_input_fallbacks() -> None:

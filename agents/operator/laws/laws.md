@@ -140,7 +140,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Performance envelope (`PERF`)
 
-- **OPR-PERF-01** — `max_tokens=512` caps LLM output length; controls both cost and latency.
+- **OPR-PERF-01** — `max_tokens=4096` caps thinking *plus* structured output together;
+  controls both cost and latency. On models where thinking is on by default a tighter
+  ceiling is spent reasoning before any tool call is emitted, so the parse returns refused.
 - **OPR-PERF-02** — `explain_max_evidence_nodes=20` caps graph traversal before LLM call.
 - **OPR-PERF-03** — Single-turn calls (no streaming); latency dominated by LLM round-trip.
 
@@ -151,7 +153,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   "llm": {
     "operations": ["complete"],
     "schema": "tool_use",
-    "max_tokens": 512
+    "max_tokens": 4096,
+    "effort": "max"
   },
   "graph": {
     "operations": ["append_write", "read"],
@@ -169,8 +172,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
-| `model` | `"claude-sonnet-4-6"` | `str` | YES | Production default for structured intent parsing |
-| `max_tokens` | `512` | `int ≥ 64 ≤ 4096` | YES | Structured output needs short output; cap controls cost |
+| `model` | `"claude-opus-5"` | `str` | YES | Production default for structured intent parsing. Effective value in the fleet — a container reads no `.env`; ACTIVATE carries credentials only (DL-07) |
+| `effort` | `"max"` | `low\|medium\|high\|xhigh\|max` | YES | Anthropic `output_config` reasoning depth; literal mirrors the API ladder so an override cannot be rejected |
+| `max_tokens` | `4096` | `int ≥ 64 ≤ 4096` | YES | Caps thinking plus structured output together; too tight and the parse refuses before emitting a tool call |
 | `explain_max_evidence_nodes` | `20` | `int ≥ 1 ≤ 100` | YES | Bound graph evidence included in explanation prompts |
 | `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled interpret prompt (ADR-0010); empty = dynamic construction |
 
@@ -184,3 +188,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
 - v1.1 — S72: added `system_prompt` tunable (ADR-0010 immediate consequence); wired into `_interpret_command`.
+- v1.2 — chore-anthropic-effort-max: added the `effort` tunable (Anthropic `output_config`,
+  default `max`) and raised `max_tokens` 512 → 4096, because effort-driven thinking shares
+  that ceiling with the structured output. `model` default moved `claude-sonnet-4-6` →
+  `claude-opus-5`: the deployed container never reads `.env`, so the code default — not the
+  operator's local file — is what the fleet actually runs.

@@ -26,6 +26,11 @@
       "input": 5.0,
       "output": 25.0,
       "source": "https://www.anthropic.com/news/claude-opus-4-8"
+    },
+    "claude-opus-5": {
+      "input": 5.0,
+      "output": 25.0,
+      "source": "https://www.anthropic.com/claude/opus"
     }
   }
 }

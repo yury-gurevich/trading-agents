@@ -35,6 +35,7 @@ def bind_dashboard_chat(
             api_key=api_key,
             model=settings.model,
             max_tokens=settings.max_tokens,
+            effort=settings.effort,
         )
     except ConfigurationError:
         return None

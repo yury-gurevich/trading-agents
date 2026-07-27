@@ -7,6 +7,9 @@ External I/O: none.
 
 from __future__ import annotations
 
+import importlib
+from types import SimpleNamespace
+
 import pytest
 import scripts.deliberate as subject
 
@@ -39,6 +42,43 @@ class _BuiltAnthropic(_BuiltText):
 def _patch_adapters(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(subject, "_OpenAIText", _BuiltOpenAI)
     monkeypatch.setattr(subject, "_AnthropicText", _BuiltAnthropic)
+
+
+def test_anthropic_effort_defaults_to_max(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_EFFORT", raising=False)
+    assert subject.anthropic_effort() == "max"
+
+
+def test_anthropic_effort_honours_the_env_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_EFFORT", " medium ")
+    assert subject.anthropic_effort() == "medium"
+
+
+def test_anthropic_text_sends_effort_to_the_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The knob is inert unless output_config actually reaches the request."""
+    monkeypatch.delenv("ANTHROPIC_EFFORT", raising=False)
+    sent: dict[str, object] = {}
+
+    class _Messages:
+        def create(self, **kwargs: object) -> object:
+            sent.update(kwargs)
+            return SimpleNamespace(content=[SimpleNamespace(text="ok")])
+
+    class _Client:
+        def __init__(self, *, api_key: str) -> None:
+            del api_key
+            self.messages = _Messages()
+
+    monkeypatch.setattr(
+        importlib, "import_module", lambda _n: SimpleNamespace(Anthropic=_Client)
+    )
+    client = subject._AnthropicText("key", "claude-opus-5")
+    assert client.complete(system="s", user="u", tool_schema={}) == "ok"
+    assert sent["output_config"] == {"effort": "max"}
 
 
 def test_build_role_llms_defaults_judge_to_anthropic_opus(

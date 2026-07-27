@@ -163,7 +163,7 @@ def _selector_client(real: bool) -> _SelectorClient:
     model = (
         os.environ.get("OPENAI_MODEL", "gpt-5.5")
         if provider == "openai"
-        else os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+        else os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
     )
     print(f"MODE: real factor selector ({provider} {model})")
     return _provider_llm(provider, model, max_tokens=_SELECTOR_MAX_TOKENS)

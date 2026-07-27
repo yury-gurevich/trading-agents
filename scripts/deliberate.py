@@ -51,7 +51,17 @@ from orchestration.packs.trading_parameter_truths import (  # noqa: E402
 # These budgets leave headroom for reasoning plus the actual turn.
 _DEBATE_MAX_TOKENS = 8000
 _JUDGE_MAX_TOKENS = 2000
+_ANTHROPIC_EFFORT = "max"
 _PROMPT_ARTIFACT_DIR_ENV = "DELIBERATION_PROMPT_ARTIFACT_DIR"
+
+
+def anthropic_effort() -> str:
+    """Return the Anthropic ``output_config`` effort level for script-side calls.
+
+    Shared with the remediation gate so every script-side Anthropic call reasons
+    at the same depth. ``max`` is the deepest rung of the API's own ladder.
+    """
+    return os.environ.get("ANTHROPIC_EFFORT", _ANTHROPIC_EFFORT).strip()
 
 
 class _AnthropicText:
@@ -64,6 +74,7 @@ class _AnthropicText:
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
         self._max_tokens = max_tokens
+        self._effort = anthropic_effort()
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -72,6 +83,7 @@ class _AnthropicText:
         resp = self._client.messages.create(
             model=self._model,
             max_tokens=self._max_tokens,
+            output_config={"effort": self._effort},
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -127,7 +139,7 @@ def _base_config() -> tuple[str, str]:
     model = (
         os.environ.get("OPENAI_MODEL", "gpt-4o")
         if provider == "openai"
-        else os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+        else os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
     )
     return provider, model
 

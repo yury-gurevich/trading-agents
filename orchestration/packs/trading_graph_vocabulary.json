@@ -1,6 +1,6 @@
 {
   "_comment": "Pack graph vocabulary (R007). Mechanism lives in kernel/graph_vocabulary.py; these names are trading-pack data (ADR-0012). Constraints only - no inference.",
-  "_sources": "live graph (36 labels / 25 edge types) + code literals and constants + laws labels_owned/read",
+  "_sources": "live graph (36 labels / 25 edge types) + code literals and constants + laws labels_owned/read + code-only paths not yet observed live (S144: broker-native stop edges)",
   "labels": [
     "Agent",
     "AgentDefinition",
@@ -175,6 +175,11 @@
       "MonitorRun"
     ],
     [
+      "Experiment",
+      "PROPOSES",
+      "ParamChange"
+    ],
+    [
       "Fill",
       "EXECUTES",
       "OrderIntent"
@@ -183,6 +188,11 @@
       "Fill",
       "OPENS",
       "Position"
+    ],
+    [
+      "Fill",
+      "STOPS_WITH",
+      "BrokerStopOrder"
     ],
     [
       "FlagResolution",
@@ -233,6 +243,11 @@
       "PMRun",
       "LINKED_FROM",
       "PMRun"
+    ],
+    [
+      "Position",
+      "PROTECTED_BY",
+      "BrokerStopOrder"
     ],
     [
       "PositionCheck",

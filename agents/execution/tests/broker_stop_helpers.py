@@ -19,7 +19,7 @@ from kernel import InMemoryGraphStore
 
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerPosition
-    from kernel import Node
+    from kernel import GraphStore, Node
 
 
 @dataclass
@@ -96,7 +96,7 @@ def sell(ticker: str, quantity: int, position_ref: str) -> OrderIntent:
 
 
 def position(
-    graph: InMemoryGraphStore,
+    graph: GraphStore,
     key: str,
     ticker: str,
     quantity: int,

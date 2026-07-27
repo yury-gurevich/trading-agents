@@ -18,10 +18,17 @@ from pathlib import Path
 
 import pytest
 
+from agents.execution.broker_stop_actions import place_stop
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.tests.broker_stop_helpers import (
+    PendingStopBroker,
+    position,
+    stop_threshold,
+)
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
+from contracts.positions import open_positions
+from kernel import CollectingFaultSink, InMemoryGraphStore, InProcessBus
 from kernel.graph_guarded import GuardedGraphStore
 from kernel.graph_vocabulary import Vocabulary, VocabularyError
 from orchestration.local_pipeline import cascade_once
@@ -78,6 +85,34 @@ def test_the_guard_can_actually_reject_a_write() -> None:
 
     with pytest.raises(VocabularyError, match="undeclared node label 'RunRequest'"):
         place_run_request(graph, run_id="vocab", tickers=("AAPL",))
+
+
+def test_declared_vocabulary_admits_the_broker_native_stop_path() -> None:
+    """The path `cascade_once` never reaches — which is how S143 missed it.
+
+    Both edges here were undeclared until S144: the labels and edge types were
+    known, so only exercising the real write path exposes the gap. One of them
+    (Position -PROTECTED_BY-> BrokerStopOrder) resolves its parent through a dict
+    lookup, so no static scan can recover it either.
+    """
+    inner = InMemoryGraphStore()
+    graph = GuardedGraphStore(inner, Vocabulary.from_mapping(_declaration()))
+    position(graph, "held:AAPL", "AAPL", 2, opened_price_cents=10000)
+    ref = open_positions(graph)[0].position_ref
+
+    place_stop(
+        graph,
+        PendingStopBroker(),
+        CollectingFaultSink(),
+        stop_threshold("AAPL", ref, 2),
+        f"stop:{ref}:AAPL",
+    )
+
+    stop = inner.get_node("BrokerStopOrder", f"stop:{ref}:AAPL")
+    assert stop is not None
+    for edge, parent in (("PROTECTED_BY", "Position"), ("STOPS_WITH", "Fill")):
+        found = list(inner.ancestors(stop, max_depth=1, edge_types={edge}))
+        assert [node.label for node in found] == [parent], edge
 
 
 def test_declared_vocabulary_covers_every_label_the_cascade_writes() -> None:

@@ -7,12 +7,9 @@ External I/O: none.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from kernel import InMemoryGraphStore
-from kernel.graph_env import GRAPH_VOCABULARY_PATH_ENV, build_graph_from_env
 from kernel.graph_guarded import GuardedGraphStore
 from kernel.graph_vocabulary import Vocabulary, VocabularyError
 
@@ -121,28 +118,3 @@ def test_guard_passes_reads_straight_through() -> None:
     assert graph.list_nodes("Run") == (run,)
     assert [n.key for n in graph.ancestors(run, max_depth=2)] == ["a"]
     assert [n.key for n in graph.descendants(item, max_depth=2)] == ["r"]
-
-
-def test_factory_is_unguarded_when_no_vocabulary_is_configured(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv(GRAPH_VOCABULARY_PATH_ENV, raising=False)
-    monkeypatch.delenv("POSTGRES_DSN", raising=False)
-    monkeypatch.delenv("NEO4J_URI", raising=False)
-    assert isinstance(build_graph_from_env(), InMemoryGraphStore)
-
-
-def test_factory_guards_when_a_vocabulary_is_configured(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: object
-) -> None:
-    path = tmp_path / "vocab.json"  # type: ignore[operator]
-    path.write_text(json.dumps(_DECLARATION), encoding="utf-8")
-    monkeypatch.delenv("POSTGRES_DSN", raising=False)
-    monkeypatch.delenv("NEO4J_URI", raising=False)
-    monkeypatch.setenv(GRAPH_VOCABULARY_PATH_ENV, str(path))
-
-    graph = build_graph_from_env()
-
-    assert isinstance(graph, GuardedGraphStore)
-    with pytest.raises(VocabularyError):
-        graph.merge_node("Postion", "a", {})

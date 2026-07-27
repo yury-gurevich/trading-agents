@@ -3364,3 +3364,75 @@ scope and let the expansion be argued on its own. If Markdown snippets should be
 its own chore with its own diff - not a side effect of upgrading a linter.
 
 ---
+## DL-70 - Arresting artifact/claim drift: stop asserting presence, start planting violations · status: OPEN
+
+Six entries this month record the same failure (DL-52/54/55, DL-65, DL-66, DL-67, DL-68). It is not
+six accidents. It is one structural weakness, and it follows from a deliberate choice.
+
+### Why it is endemic here
+
+The platform is assembled from **declarations** - law files, pack JSON, workflow YAML, env vars,
+`labels_owned`. That is ADR-0012 working as intended. But a declaration is **not self-executing**,
+and **a dead declaration is indistinguishable from a live one**. Dead imperative code shows up as
+unreachable or uncovered; a dead declaration just sits there looking enforced.
+
+| Artifact that existed | Claim it was taken to prove | What was missing |
+| --- | --- | --- |
+| `labels_owned` in 8 law files | ownership enforced | zero lines of Python read it |
+| `TaintTracking.ql` | the query runs | unreferenced; then `queries:` replaced instead of appending |
+| `-uv run pip-audit` | CI fails on a CVE | the leading dash swallowed the exit code |
+| `GRAPH_VOCABULARY_PATH` | the guard is enablable | no image copies `orchestration/packs/` |
+| 34 edge signatures | the pack covers writes | derived from history; unrun code invisible |
+
+The shape is always: **an artifact is necessary, is mistaken for sufficient, and nothing tests the
+path between it and the effect.**
+
+### The instrument exists; we reach for the weaker half
+
+`gate_selftest.py` holds two kinds of case, and they are not equal:
+
+- **can-fail** - plant the real violation, assert rejection. Tests the *claim*. **5 cases.**
+- **invariant** - assert a string is present in a file. Tests the *artifact*. **9 cases.**
+
+The invariants are the same class of thing that keeps failing: `must_contain=("GRAPH_VOCABULARY_B64",
+"_guarded(")` passes happily if the guard is unreachable. **Every `must_contain` is an IOU.** S144
+made the ratio worse - it added one invariant and no can-fail twin.
+
+`pip-audit` is the only gate carrying **both** (`pip-audit-cve` proves it can fail;
+`pip-audit-not-ignored-by-ci` blocks the dash returning). That pairing is the template.
+
+### Three rules
+
+1. **A guard ships with the violation it exists to catch** - plant the specific bad input and assert
+   rejection, in the same commit. Positive-only tests are why S143's "6/6 passing" proved nothing.
+2. **One test per guard must traverse the composition root.** The recurring mechanism is *bypass*:
+   tests construct `InMemoryGraphStore()` directly, proving the class while saying nothing about
+   whether the wiring is reached. The guard lives in the wiring.
+3. **Ask reachability, not presence.** For the fleet the sharp form is: **the image is the boundary
+   of truth - not COPY'd means it does not exist at runtime.** That one question would have caught
+   DL-68 defect 1 before it shipped.
+
+### Moving the existing debt back
+
+Audit the 9 invariants; for each, name the claim and ask whether it can be executed. Convert what
+converts, and **mark the rest explicitly as artifact-only** so they stop reading as proof. Then
+track the ratio: if invariants outgrow can-fail cases, the IOUs are accumulating again.
+
+Two convert cheaply, both added by S144:
+
+- `graph-vocabulary-injected-at-deploy` asserts a string in a `.ps1`. The claim is *a container
+  receives a usable vocabulary* - executable by running `Get-VocabularyEnv` and asserting the output
+  base64-decodes into a valid `Vocabulary`.
+- An **image-reachability check**: every path a runtime default can reference must be either COPY'd
+  into the image that reads it or delivered by env.
+
+### Honest limits
+
+Not all of it mechanises. DL-69 - reasoning that existed but was recorded only in a commit message -
+was not a guard failure; LAW-06 already covered it and the discipline simply was not applied. The
+cheap mechanical half is asserting that every `DL-NN` cited in code exists in this file.
+
+**Sequenced after the ADR-0015 section 3 stop proof.** It is a fix, but nothing is bleeding from it,
+and capital protection outranks it.
+
+---

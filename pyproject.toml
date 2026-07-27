@@ -19,7 +19,7 @@ runtime = [
     "celery>=5.4",
     "redis>=8.0.1",
     "psycopg[binary]>=3.3.4",
-    "prometheus-client>=0.20",
+    "prometheus-client>=0.26.0",
 ]
 # PostgreSQL spine migration tooling. Runtime graph access uses the runtime extra.
 postgres = ["alembic>=1.13"]
@@ -51,12 +51,12 @@ dev = [
     "import-linter>=2.13",
     "mypy>=2.3.0",
     "mcp>=1.28.1",
-    "ruff>=0.15.22",
+    "ruff>=0.16.0",
     "pip-audit>=2.10.1",
     "detect-secrets>=1.5",
     "psycopg[binary]>=3.3.4",
     "alembic>=1.13",
-    "prometheus-client>=0.20",
+    "prometheus-client>=0.26.0",
     "pre-commit>=4.6.1",
     "mutmut>=3.6.0",
 ]

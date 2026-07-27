@@ -3,7 +3,9 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-144-vocabulary-live`
-**Status:** SPEC
+**Status:** SHIPPED 0.80.00 — merged `d215a76`, `make ci` 1851 passed / 100.00 %, all four remote
+gates green before merge, functionality check PROVEN on the live Neon store. **Fleet enablement
+still open** — one dated action after tonight's ADR-0015 §3 proof (see Closeout).
 **Effort:** M
 **Decisions:** [DL-68](../design-log.md) · completes [S143](sprint-143-graph-vocabulary.md) ·
 pattern from [DL-65](../design-log.md) · delivery precedent S86 / [DL-12](../design-log.md)
@@ -107,14 +109,59 @@ repeating it deliberately would be worse than the original.
 
 ## Closeout — evidence
 
-_To be filled on completion. Success factors (LAW-02):_
+**Files changed:** `kernel/graph_env.py` (`GRAPH_VOCABULARY_B64`, resolved before the path),
+`scripts/vocabulary_coverage.py` (new), `scripts/vocabulary_signatures.py` (new),
+`orchestration/packs/trading_graph_vocabulary.json` (34 → 37 signatures),
+`infra/deploy-agents.ps1` (`Get-VocabularyEnv`, injected for master, all 13 agents, dispatcher),
+`scripts/gate_selftest_cases.py` (+`graph-vocabulary-injected-at-deploy`),
+`tests/test_graph_vocabulary_completeness.py` (new), `tests/test_graph_vocabulary_env.py` (new,
+split out to stay under the 200-line block), `orchestration/tests/test_graph_vocabulary_e2e.py`
+(broker-stop path), `agents/execution/tests/broker_stop_helpers.py` (`position` widened to
+`GraphStore`).
 
-- [ ] `make ci` green — all 9 steps, 100 % coverage floor held.
-- [ ] Both remote gates (`quality` / `test` / `security` / `gate`) green on the pushed branch
-      **before** merge.
-- [ ] The static completeness check **verified failing** on a deliberately undeclared label
-      (a check that cannot fail is not a check — DL-65).
-- [ ] The e2e conformance test exercises the broker-stop path and passes against the pack.
-- [ ] Functionality check: an agent runs with `GRAPH_VOCABULARY_B64` set, writes to the real
-      graph, and the write is guarded — recorded in `docs/laws/functionality-checks.md`.
-- [ ] Fleet enabled after tonight's ADR-0015 §3 proof; tag and verification output recorded here.
+**Proven (LAW-02):**
+
+- ✅ `make ci` — **1851 passed / 6 skipped / 100.00 % coverage**, pip-audit clean, detect-secrets
+  clean. Gate self-test **14/14**.
+- ✅ Remote gates green **before** merge, on `9878d02`: `quality` ✅ `test` ✅ `security` ✅ `gate` ✅.
+  Merged `d215a76`.
+- ✅ The completeness checks are **verified able to fail**: the planted-package tests assert the
+  scan reports `PlantedRun` / `PlantedItem` / `PLANTED_EDGE` and the triple
+  `PlantedItem -PLANTED_EDGE-> PlantedRun` as undeclared. A check never observed failing is
+  indistinguishable from one examining nothing (DL-52, DL-65).
+- ✅ The static pass recovers `Fill -STOPS_WITH-> BrokerStopOrder` — **the defect that would have
+  broken tonight is inside the check's reach**, not merely fixed by hand this once.
+- ✅ The e2e conformance test runs `place_stop` under a `GuardedGraphStore` and both stop edges pass.
+- ✅ **Functionality check PROVEN** (2026-07-27 19:28 AEST) — against the live Neon spine, base64
+  only, no file on disk:
+
+  ```text
+  1. store type            : GuardedGraphStore
+  2. wrapped store         : PostgresGraphStore      <- the real spine, not in-memory (S98 lesson)
+  3. rejected typo'd label : VocabularyError: undeclared node label 'Postion'
+  4. rows for 'Postion'    : 0 (must be 0)
+  5. accepts Fill -STOPS_WITH-> BrokerStopOrder
+  5. accepts Position -PROTECTED_BY-> BrokerStopOrder
+  6. live BrokerStopOrder  : 0
+     live Position nodes   : 21
+  ```
+
+  No artifacts created — the only write attempted was one that had to be refused, so there was
+  nothing to tear down.
+
+**Not done, deliberately — this sprint stays OPEN until it is:**
+
+- ⬜ **Fleet enablement.** The running fleet is `:s143` (0.78.00) and does not contain the code that
+  reads `GRAPH_VOCABULARY_B64`, so enabling requires a build + retag at 0.80.00. That was **not**
+  done before tonight's 22:30 UTC run: it is the first session-day run since the broker-stops
+  deploy, `BrokerStopOrder` is still **0** with **21 Position nodes** in the book, and a new
+  fail-closed write path does not belong in that run. Fixes before features — the stop proof
+  outranks the guard.
+- ⬜ **Ownership (`owners: {}`).** Unchanged from S143; reconciling the 8 `labels_owned` declarations
+  is the next sprint.
+
+**The dated action.** After tonight's run has been checked for a real `BrokerStopOrder`: build
+images at the next `:sNNN` tag from `main`, retag the 13 apps + dispatcher, confirm 14/14 on tag,
+and verify `GRAPH_VOCABULARY_B64` is present on an agent's env. Then this sprint closes — and not
+before. "Shipped but unset" is exactly what S143 recorded; repeating it knowingly would be worse
+than the original.

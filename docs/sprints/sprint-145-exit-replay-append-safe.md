@@ -323,7 +323,7 @@ An incomplete handback is returned, not repaired (DL-48).
 ```text
 TOTAL                                                12278      0   2574      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-====================== 1856 passed, 6 skipped in 58.32s =======================
+====================== 1856 passed, 6 skipped in 52.61s =======================
 No known vulnerabilities found
 Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 3 new file(s)
@@ -340,9 +340,21 @@ PASS  can-fail: pip-audit-cve � rejected (exit 1)
 gate self-test: 14/14 passed
 ```
 
-- ⬜ Remote gates green **before** merge on `<sha>`: not done — branch has not been
-  pushed yet at this evidence edit. Must be replaced after `quality` · `test` ·
-  `security` · `gate` finish on the pushed branch.
+- ✅ Remote gates green **before** merge on `1f97ef1`: GitHub Actions push run
+  `30332359712` completed `success`; `quality`, `test`, and `security` all
+  completed `success`, with `quality` step `Gate self-test (can each gate fail?)`
+  completed `success`. Separate `Security Findings` push run `30332359747`
+  completed `success`.
+
+```text
+✓ sprint-145-exit-replay-append-safe CI · 30332359712
+✓ quality in 37s (ID 90190041284)
+✓ security in 2m0s (ID 90190041288)
+✓ test in 51s (ID 90190137160)
+
+Security Findings · 30332359747
+status=completed conclusion=success headSha=1f97ef1c3125a01de14406c2ed42609565224ab3
+```
 - ✅ Item 1 — a second attempt writes a **new node**:
   `test_write_fills_appends_conflicting_exit_attempt_without_rewrite` asserts
   original `price_cents == 19451` and replay `exit:position-1:MRVL:sell#1`

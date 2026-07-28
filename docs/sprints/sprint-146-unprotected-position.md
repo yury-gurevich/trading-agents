@@ -363,27 +363,31 @@ revision exists to collect.
 
 | Element | Law file(s) read | Clauses that bind | Changed my approach? |
 | --- | --- | --- | --- |
-| `agents/execution/broker_stops.py` | | | |
-| `agents/execution/store.py` | | | |
-| `agents/execution/alpaca.py` / `settings.py` | | | |
-| `contracts/positions.py` (read-only) | | | |
-| `agents/monitor/reconcile.py` (read-only) | | | |
-| `orchestration/packs/trading_vault_probes.py` | | | |
-| `scripts/*` | | | |
+| `agents/execution/broker_stops.py` | `agents/execution/laws/laws.md` | `EXEC-IDN-01`, `EXEC-NEV-01`, `EXEC-NEV-03`, `EXEC-STA-03`, `EXEC-IDM-01`, `EXEC-IDM-02`, `EXEC-FAIL-01`, `EXEC-FAIL-02`, `EXEC-DEP-03`, `EXEC-OBS-02`, `EXEC-PARAM` table | Yes — the stop fallback must be a declared/bounded tunable and any unprotected held position must be loud; the law is silent on `BrokerStopOrder` and the broker-stop fallback parameter, so DRIFT-024 is required before code. |
+| `agents/execution/store.py` | `agents/execution/laws/laws.md` | `EXEC-IDN-02`, `EXEC-OUT-02`, `EXEC-NEV-03`, `EXEC-STA-01`, `EXEC-STA-03`, `EXEC-IDM-01`, `EXEC-IDM-02`, `EXEC-FAIL-03`, `EXEC-FAIL-04`, `EXEC-TYP-01`, `EXEC-TYP-02`, `EXEC-OBS-01`, `EXEC-OBS-02` | No — the intended orphan-fill repair already had to converge through `write_fills`, preserve the client order id, and stay append-only/idempotent. |
+| `agents/execution/alpaca.py` / `settings.py` | `agents/execution/laws/laws.md`; `docs/laws/dependencies.md` | `EXEC-NEV-03`, `EXEC-NEV-05`, `EXEC-SEC-01`, `EXEC-DEP-03`, `EXEC-PERF-01`, `DEP-BROKER-01`, `DEP-BROKER-02`, `DEP-CONFIG-02`, `EXEC-PARAM` table | No — the probe-path fix must preserve the execution base-url meaning, keep credentials out of output, and keep idempotent broker order keys intact. |
+| `contracts/positions.py` (read-only) | `agents/monitor/laws/laws.md` | `MON-IDN-01`, `MON-IDN-02`, `MON-NEV-05`, `MON-STA-01`, `MON-STA-02`, `MON-IDM-01`, `MON-IDM-02`, `MON-FAIL-03`, `MON-OBS-01`, `MON-OBS-02`, `MON-PARAM` table | Yes — use `is_active_position_node` as the source of truth and do not infer active state from raw `status` props. |
+| `agents/monitor/reconcile.py` (read-only) | `agents/monitor/laws/laws.md` | `MON-IDN-01`, `MON-NEV-05`, `MON-STA-01`, `MON-STA-02`, `MON-IDM-02`, `MON-FAIL-03`, `MON-OBS-01`, `MON-OBS-02` | Yes — superseded broker-reconciled positions are append-only evidence, so reconciliation is not part of this fix. |
+| `orchestration/packs/trading_vault_probes.py` | `agents/master/laws/laws.md`; `docs/laws/dependencies.md` | `MST-IDN-03`, `MST-NEV-02`, `MST-NEV-04`, `MST-SEC-02`, `MST-SEC-03`, `MST-DEP-02`, `DEP-BROKER-01`, `DEP-CONFIG-02` | No — normalize the Alpaca account URL in the probe without changing secret delivery or logging sensitive values. |
+| `scripts/*` | `docs/laws/conventions.md`; `docs/laws/functionality-checks.md` | conventions §§3, 7, 9; functionality-check procedure; `DEP-BROKER-01`, `DEP-BROKER-02` | Yes — tests must cite law IDs, the audit must import code-owned predicates instead of re-deriving them, and the live proof/teardown row belongs in `docs/laws/functionality-checks.md`. |
 
 **Contradictions found between a law and this spec** (rule 4 — a contradiction surfaced is a
 success):
 
-_(fill in, or "none")_
+None.
 
 **Laws silent where I had to decide** (rule 5 — add a `drift-register.md` row for each):
 
-_(fill in, or "none")_
+Execution laws do not yet declare ADR-0015 broker-stop graph state (`BrokerStopOrder`) or the
+fallback stop-percent parameter needed when a broker-adopted position has no PM lineage. Record as
+DRIFT-024 in `docs/laws/drift-register.md` before implementation.
 
 **Overall verdict on the trial:** did law-first reading change the outcome of this sprint, and
 where? Answer plainly, including "it did not".
 
-_(fill in)_
+Yes. It changed the sprint from "patch the skip and add an audit" to "patch the skip, make the
+stop fallback an explicit bounded parameter, keep every governed test clause-cited, and log the
+law gap instead of pretending the execution constitution already covers broker-stop state."
 
 ---
 

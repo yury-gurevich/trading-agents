@@ -633,7 +633,30 @@ detect-secrets (untracked): no untracked files to scan
 Remote gates:
 
 ```text
-PENDING - branch has not been pushed yet at this edit point.
+gh run list --branch sprint-146-unprotected-position --limit 10
+completed	success	fix: protect unprotected broker positions	Security Findings	sprint-146-unprotected-position	push	30344885685	18s	2026-07-28T09:02:31Z
+in_progress		fix: protect unprotected broker positions	CI	sprint-146-unprotected-position	push	30344886036	58s	2026-07-28T09:02:31Z
+
+gh run watch 30344886036 --exit-status
+✓ sprint-146-unprotected-position CI · 30344886036
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ quality in 42s (ID 90228673321)
+  ✓ Ruff lint
+  ✓ Ruff format check
+  ✓ Mypy
+  ✓ import-linter (agents are islands)
+  ✓ Module size guard
+  ✓ Module header guard
+  ✓ Gate self-test (can each gate fail?)
+✓ security in 2m20s (ID 90228673341)
+  ✓ pip-audit (Python vulnerabilities)
+  ✓ detect-secrets
+  ✓ Initialize CodeQL
+  ✓ Perform CodeQL analysis
+✓ test in 55s (ID 90228846022)
+  ✓ Tests + coverage floor
 ```
 
 **Not done, deliberately:**

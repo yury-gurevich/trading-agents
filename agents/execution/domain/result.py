@@ -23,6 +23,8 @@ def execution_result(
     stage: ExecutionStage,
     fills: tuple[BrokerFill, ...],
     provenance: Provenance,
+    *,
+    skipped: int = 0,
 ) -> ExecutionResult:
     """Build the public ExecutionResult from broker-side fills."""
     public_fills: tuple[Fill, ...] = tuple(fill_from_broker(fill) for fill in fills)
@@ -32,5 +34,6 @@ def execution_result(
         fills=public_fills,
         submitted=sum(fill.status != "rejected" for fill in fills),
         rejected=sum(fill.status == "rejected" for fill in fills),
+        skipped=skipped,
         provenance=provenance,
     )

@@ -144,7 +144,9 @@ Separate the two jobs the key is doing.
   `scripts/vocabulary_signatures.py`) and declare anything new in
   `orchestration/packs/trading_graph_vocabulary.json`.
 
-**Result:** ⬜
+**Result:** ✅ Implemented append-safe Fill attempt keys with `attempt_ordinal` and
+`broker_idempotency_key`; conflicting replays write `#1`, `#2`, ... without touching
+the original Fill, and exact replays remain idempotent.
 
 ### 2 · Never re-issue a completed exit
 
@@ -158,7 +160,9 @@ Separate the two jobs the key is doing.
   is the inner one, and its real value is that the *reason* becomes legible instead of arriving as
   an opaque submit-time rejection.
 
-**Result:** ⬜
+**Result:** ✅ Implemented completed-exit replay skip before broker submit; the result
+records `skipped`, and a graph-persisted `Fault` names the ticker, `position_ref`, and
+prior Fill key.
 
 ### 3 · One bad intent must not kill three stages
 
@@ -172,7 +176,9 @@ S128 pattern (*one 429 costs one ticker, not the feed*) applied to order submiss
 - This is the half of the fix that would have limited last night's blast radius to one ticker even
   with the item-1 defect still present. Ship both.
 
-**Result:** ⬜
+**Result:** ✅ Implemented per-intent submit/write isolation with `kernel.fault_boundary`;
+a poisoned write records one `Fault`, the other intents still write, and the PMRun gets
+an `ExecutionRun`.
 
 ### 4 · Adopt, don't fabricate — the orphaned 2026-07-27 orders
 
@@ -186,7 +192,9 @@ S128 pattern (*one 429 costs one ticker, not the feed*) applied to order submiss
   two existing orphans — but the submit-path behaviour must still be specified and tested, because
   a crash-then-retry recreates this situation every time it happens.
 
-**Result:** ⬜
+**Result:** ⚠️ Submit-path adoption is specified and tested through Alpaca duplicate
+`client_order_id` lookup. **Not done:** actual production AMD/ABT orphan Fill nodes are
+not written before merge/retag/resume; the branch is intentionally not deployed here.
 
 ### 5 · Prove the checks can fail (DL-70)
 
@@ -198,7 +206,8 @@ No presence assertions. Plant the violation and require the failure:
   is recorded naming the position;
 - the item-3 test above is itself a planted-violation test — keep it that shape.
 
-**Result:** ⬜
+**Result:** ✅ Added planted-violation tests for append-safe replay, completed-exit skip,
+poisoned fan-out, Alpaca duplicate adoption, and vocabulary completeness.
 
 ---
 
@@ -276,37 +285,136 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-> **PLACEHOLDER — the coding agent fills this in. Do not hand back with it unfilled.**
-
 **Files changed:**
-*(list every file, with a phrase on why)*
+
+- `agents/execution/fill_attempts.py` — attempt-chain helper separating broker
+  idempotency keys from immutable Fill graph keys.
+- `agents/execution/store.py` — `write_fills` selects compatible/free attempt keys
+  before merging.
+- `agents/execution/run.py` — per-intent submit/write fault boundary, completed-exit
+  skip, and skipped result accounting.
+- `agents/execution/reconciliation_store.py` — pending refresh matches attempt nodes by
+  broker idempotency key.
+- `agents/execution/poll.py` — `ExecutionRun` records `skipped`.
+- `agents/execution/domain/result.py`, `contracts/execution.py` — `ExecutionResult`
+  carries backwards-compatible `skipped=0`.
+- `agents/execution/tests/test_fill_attempts.py` — planted append-safe replay and
+  attempt-chain tests.
+- `agents/execution/tests/test_execution_domain.py` — completed-exit skip/Fault proof.
+- `agents/execution/tests/test_execution_poll.py` — poisoned fan-out proof through
+  `run_once` and graph-poll execution.
+- `agents/execution/tests/test_alpaca_adoption.py` — Alpaca duplicate
+  `client_order_id` adoption proof.
+- `agents/execution/tests/test_alpaca_broker.py` — split adoption proof out to keep the
+  module below the hard size block.
+- `docs/laws/functionality-checks.md` — live-spine functionality row and teardown.
+- `docs/sprints/sprint-145-exit-replay-append-safe.md` — in-place Result lines,
+  closeout, and return notes.
+- `pyproject.toml`, `uv.lock` — version bump `0.80.01` → `0.80.02` (`uv.lock`
+  normalized `0.80.1` → `0.80.2`).
 
 **Proven (LAW-02):**
 
-- ⬜ `make ci` — *N passed / N skipped / coverage %*, pip-audit clean, detect-secrets clean, gate
-  self-test *N/N*.
-- ⬜ Remote gates green **before** merge on `<sha>`: `quality` · `test` · `security` · `gate`.
-- ⬜ Item 1 — a second attempt writes a **new node**; paste the test name and the assertion.
-- ⬜ Item 2 — a completed exit is skipped with a `Fault`; paste the test name and the Fault message.
-- ⬜ Item 3 — a poisoned intent leaves the other two submitted and the `ExecutionRun` written;
-  paste the counts.
-- ⬜ Item 4 — the AMD/ABT orphans carry Fill nodes matching their real broker state; paste the
-  before/after.
-- ⬜ Item 5 — every new check observed **failing** on a planted violation, not merely passing.
-- ⬜ **Functionality check** against the live spine (`docs/laws/functionality-checks.md`), plus
-  teardown of anything created. Unit-green ≠ works.
+- ✅ `make ci` — implementation-tree run reached `1856 passed / 6 skipped /
+  100.00%`; `pip-audit` printed `No known vulnerabilities found`; detect-secrets
+  and untracked secret scan passed. Final documented-tree rerun before push matched
+  this evidence (exit `0`).
+
+```text
+TOTAL                                                12278      0   2574      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+====================== 1856 passed, 6 skipped in 58.32s =======================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 3 new file(s)
+```
+
+- ✅ Gate self-test — planted gate violations and required rejection: `14/14`.
+
+```text
+PASS  can-fail: ruff � rejected (exit 1)
+PASS  can-fail: module-size � rejected (exit 1)
+PASS  can-fail: module-header � rejected (exit 1)
+PASS  can-fail: untracked-secrets � rejected (exit 1)
+PASS  can-fail: pip-audit-cve � rejected (exit 1)
+gate self-test: 14/14 passed
+```
+
+- ⬜ Remote gates green **before** merge on `<sha>`: not done — branch has not been
+  pushed yet at this evidence edit. Must be replaced after `quality` · `test` ·
+  `security` · `gate` finish on the pushed branch.
+- ✅ Item 1 — a second attempt writes a **new node**:
+  `test_write_fills_appends_conflicting_exit_attempt_without_rewrite` asserts
+  original `price_cents == 19451` and replay `exit:position-1:MRVL:sell#1`
+  `price_cents == 18928`, `status == "rejected"`, `attempt_ordinal == 1`.
+- ✅ Item 2 — a completed exit is skipped with a `Fault`:
+  `test_completed_exit_replay_is_skipped_with_fault` asserts `submitted == 0`,
+  `rejected == 0`, `skipped == 1`, `broker.order_count == 0`, and the Fault message
+  contains `position_ref=position-2` plus
+  `prior_fill_key=exit:position-2:MRVL:sell`.
+- ✅ Item 3 — a poisoned intent leaves the other two submitted and the `ExecutionRun`
+  written: `test_run_once_continues_after_poisoned_intent_and_anchors_execution`
+  asserts broker calls `[AAA, BAD, CCC]`, `ExecutionRun.submitted == 2`,
+  `rejected == 0`, `skipped == 0`, Fill statuses `{"AAA": "filled", "CCC":
+  "filled"}`, one `Fault`, and `find_pending(graph) == []`.
+- ⚠️ Item 4 — submit-path adoption proven; actual production AMD/ABT orphan Fill
+  nodes not done pre-merge. `test_alpaca_duplicate_submit_adopts_existing_order_state`
+  plants a `422 duplicate` and asserts the adapter performs `GET
+  /v2/orders:by_client_order_id`, returning broker state `broker_order_id ==
+  "live-amd"` and `status == "pending"` instead of a fabricated rejection.
+- ✅ Item 5 — planted checks require failure/negative evidence:
+  `test_write_fills_appends_conflicting_exit_attempt_without_rewrite`,
+  `test_completed_exit_replay_is_skipped_with_fault`,
+  `test_run_once_continues_after_poisoned_intent_and_anchors_execution`,
+  `test_alpaca_duplicate_submit_adopts_existing_order_state`, and
+  `tests/test_graph_vocabulary_completeness.py` negative planted-pack tests all ran.
+- ✅ S144 vocabulary scripts re-run: `uv run python scripts\vocabulary_coverage.py`
+  exit `0`; `uv run python scripts\vocabulary_signatures.py` exit `0`;
+  `uv run pytest tests/test_graph_vocabulary_completeness.py --no-cov`:
+  `6 passed`.
+- ✅ **Functionality check** against the live spine (`docs/laws/functionality-checks.md`),
+  plus teardown:
+
+```text
+LIVE_CHECK stamp=s145-livecheck-20260728T052258Z
+graph_backend=PostgresGraphStore
+pre_cleanup deleted_edges=0 deleted_nodes=0
+item1 append_safe base_price=19451 attempt_key=exit:s145-livecheck-20260728T052258Z-append:MRVL:sell#1 attempt_price=18928
+item2 completed_exit_skip submitted=0 rejected=0 skipped=1 broker_orders=0
+item3 fanout_fault_boundary broker_calls=3 submitted=2 rejected=0 skipped=0
+post_cleanup deleted_edges=3 deleted_nodes=14 remaining_edges=0 remaining_nodes=0
+LIVE_CHECK PASS
+```
 
 **Not done, deliberately:**
 
-- ⬜ *(list, with the reason — or "nothing")*
+- Actual production AMD/ABT orphan Fill nodes: **not done** before merge/retag/resume.
+  The submit path that will adopt them is implemented/tested; production data should be
+  verified during `/resume-run`.
+- SCHW broker stop healing after monitor reconciliation: **not done** before
+  merge/retag/resume. No stop-path code was changed; the existing stop e2e test still
+  passes.
+- Resumed cascade proof (7/7 stages, monitor/reporter reached, MRVL removed from the
+  position book): **not done** before merge/retag/resume.
 
 ---
 
 ## Return notes
 
-> **PLACEHOLDER — the coding agent fills this in.**
-
-- **Decisions made inside the sprint** (and anything ruled out — LAW-06):
-- **Surprises / anything the spec got wrong:**
-- **Did `main` move? Merge performed, `make ci` re-run?**
-- **Out-of-scope findings** (flag, do not fix):
+- **Decisions made inside the sprint** (and anything ruled out — LAW-06): kept the
+  broker `client_order_id` scheme byte-for-byte; made only the graph Fill key
+  append-safe. Exact duplicate Fill writes still merge idempotently; conflicting
+  replays allocate the first free `#n` attempt. Added `ExecutionResult.skipped` with a
+  default of `0` instead of overloading `rejected`.
+- **Surprises / anything the spec got wrong:** item 4's actual AMD/ABT production
+  orphan proof is sequenced after merge/retag/resume by the sprint itself; pre-merge
+  branch handback can prove the adoption path and live-spine mechanics, but cannot
+  honestly claim the real orphan Fill nodes exist yet.
+- **Did `main` move? Merge performed, `make ci` re-run?** fetched `origin/main`
+  before push; remote stayed at `ef5e0d9` (same as sprint start), while local
+  sprint-packet `main` and branch base stayed at `a891dbb`. No drift merge was
+  required; no merge to `main` was performed. Final documented-tree `make ci` was
+  re-run and exited `0`.
+- **Out-of-scope findings** (flag, do not fix): production remains on fleet `:s143`
+  until this fix is merged, built, retagged, and resumed; SCHW's missing stop remains
+  the expected quantity guard until monitor reconciliation heals the position book.

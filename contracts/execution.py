@@ -47,6 +47,7 @@ class ExecutionResult(_Frozen):
     fills: tuple[Fill, ...]
     submitted: int
     rejected: int
+    skipped: int = 0
     provenance: Provenance
 
 

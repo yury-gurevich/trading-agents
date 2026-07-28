@@ -95,6 +95,7 @@ def execute_pm_node(
             "source_pm_run_id": order_set.run_id,
             "submitted": result.submitted,
             "rejected": result.rejected,
+            "skipped": result.skipped,
         },
     )
     graph.add_edge(node, execution_run, EXECUTED_EDGE)

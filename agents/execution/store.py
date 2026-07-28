@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
+from agents.execution.fill_attempts import select_fill_attempt
 from contracts.common import Money, Provenance
 
 if TYPE_CHECKING:
@@ -40,20 +41,8 @@ def write_fills(
     first: Node | None = None
     pm_run_key = _pm_run_key(order_set)
     for fill in fills:
-        node = graph.merge_node(
-            "Fill",
-            fill.idempotency_key,
-            {
-                "ticker": fill.ticker,
-                "side": fill.side,
-                "quantity": fill.quantity,
-                "price_cents": _money_to_cents(fill.price),
-                "price_currency": fill.price.currency,
-                "broker_order_id": fill.broker_order_id,
-                "status": fill.status,
-                "reason": fill.reason,
-            },
-        )
+        attempt = select_fill_attempt(graph, fill.idempotency_key, _fill_props(fill))
+        node = graph.merge_node("Fill", attempt.key, attempt.props)
         first = node if first is None else first
         _link_order_intent(graph, node, pm_run_key, fill.ticker)
     return Provenance(
@@ -128,6 +117,19 @@ def _money_to_cents(money: Money) -> int:
         Decimal("1"), rounding=ROUND_HALF_UP
     )
     return int(cents)
+
+
+def _fill_props(fill: BrokerFill) -> dict[str, object]:
+    return {
+        "ticker": fill.ticker,
+        "side": fill.side,
+        "quantity": fill.quantity,
+        "price_cents": _money_to_cents(fill.price),
+        "price_currency": fill.price.currency,
+        "broker_order_id": fill.broker_order_id,
+        "status": fill.status,
+        "reason": fill.reason,
+    }
 
 
 def _pm_run_key(order_set: OrderIntentSet | None) -> str | None:

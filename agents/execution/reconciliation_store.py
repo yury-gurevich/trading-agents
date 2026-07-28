@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Literal
 
+from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
 from agents.execution.realized_pnl import realized_pnl_props
 from contracts.positions import is_active_position_node
@@ -36,7 +37,7 @@ def refresh_pending_fills(
     for node in graph.list_nodes("Fill"):
         if node.props.get("status") != "pending":
             continue
-        broker_fill = by_key.get(node.key) or by_order_id.get(
+        broker_fill = by_key.get(broker_idempotency_key(node)) or by_order_id.get(
             str(node.props.get("broker_order_id", ""))
         )
         if broker_fill is None:

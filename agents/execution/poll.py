@@ -84,7 +84,14 @@ def execute_pm_node(
     order_set = _drop_vetoed(graph, node, order_set)
     snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
     reconcile_broker_stops(graph, broker, sink)
-    place_broker_stops(graph, broker, sink, order_set, snapshot)
+    place_broker_stops(
+        graph,
+        broker,
+        sink,
+        order_set,
+        snapshot,
+        fallback_stop_pct=settings.broker_stop_fallback_stop_pct,
+    )
     result = run_submit(
         graph, broker, sink, {}, order_set, default_stage=settings.stage
     )

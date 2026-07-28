@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution.broker import BrokerFill, BrokerRejectedError
+from agents.execution.fill_attempts import fill_attempt_chain, select_fill_attempt
 from contracts.broker_stops import BROKER_STOP_ORDER_LABEL, BrokerStopOrder
 from contracts.common import Money
 from contracts.positions import (
@@ -36,16 +37,23 @@ def place_stop(
     sink: FaultSink,
     threshold: PositionStopThreshold,
     key: str,
-) -> None:
+    *,
+    stop_pct_source: str = "position",
+) -> BrokerFill:
     """Submit and record one broker-native stop for a position threshold."""
     stop_cents = stop_price_cents(threshold.opened_price_cents, threshold.stop_pct)
     fill = _submit_stop(broker, sink, threshold, key, stop_cents)
-    fill_node = _write_stop_fill(graph, threshold, key, fill, stop_cents)
+    fill_node = _write_stop_fill(
+        graph, threshold, key, fill, stop_cents, stop_pct_source=stop_pct_source
+    )
     if fill.status == "rejected":
-        return
-    stop = _write_stop_order(graph, threshold, key, fill, stop_cents)
+        return fill
+    stop = _write_stop_order(
+        graph, threshold, key, fill, stop_cents, stop_pct_source=stop_pct_source
+    )
     graph.add_edge(fill_node, stop, STOP_FILL_EDGE)
     _link_positions(graph, threshold, stop)
+    return fill
 
 
 def cancel_stop(
@@ -110,22 +118,33 @@ def _write_stop_fill(
     key: str,
     fill: BrokerFill,
     stop_cents: int,
+    *,
+    stop_pct_source: str,
 ) -> Node:
+    props = {
+        "ticker": threshold.ticker,
+        "side": "sell",
+        "quantity": threshold.quantity,
+        "price_cents": stop_cents,
+        "price_currency": fill.price.currency,
+        "broker_order_id": fill.broker_order_id,
+        "status": fill.status,
+        "reason": fill.reason,
+        "position_ref": threshold.position_ref,
+        "stop_order_key": key,
+        "stop_pct": threshold.stop_pct,
+        "stop_pct_source": stop_pct_source,
+    }
+    attempt = select_fill_attempt(
+        graph,
+        key,
+        props,
+        force_new=fill.status == "rejected" and bool(fill_attempt_chain(graph, key)),
+    )
     return graph.merge_node(
         "Fill",
-        key,
-        {
-            "ticker": threshold.ticker,
-            "side": "sell",
-            "quantity": threshold.quantity,
-            "price_cents": stop_cents,
-            "price_currency": fill.price.currency,
-            "broker_order_id": fill.broker_order_id,
-            "status": fill.status,
-            "reason": fill.reason,
-            "position_ref": threshold.position_ref,
-            "stop_order_key": key,
-        },
+        attempt.key,
+        attempt.props,
     )
 
 
@@ -135,6 +154,8 @@ def _write_stop_order(
     key: str,
     fill: BrokerFill,
     stop_cents: int,
+    *,
+    stop_pct_source: str = "position",
 ) -> Node:
     return graph.merge_node(
         BROKER_STOP_ORDER_LABEL,
@@ -143,6 +164,8 @@ def _write_stop_order(
             "ticker": threshold.ticker,
             "position_ref": threshold.position_ref,
             "stop_price_cents": stop_cents,
+            "stop_pct": threshold.stop_pct,
+            "stop_pct_source": stop_pct_source,
             "broker_order_id": fill.broker_order_id,
             "placed_at": datetime.now(tz=UTC).isoformat(),
         },

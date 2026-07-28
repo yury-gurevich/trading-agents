@@ -171,7 +171,11 @@ fails.
 
 State the answer explicitly in the return notes.
 
-**Result:**
+**Result:** The production shape did **not** reproduce a graph skip: ABT is one active
+`reconciled-from-broker` Position (`broker:ABT:96:10437`) with `stop_pct=0.05`, graph quantity 96
+matching broker quantity 96, and a computed stop threshold. The failed gate is the broker submit
+itself: Alpaca refuses the ABT stop with HTTP 403 because an opposite-side order already exists.
+The earlier gate-4 hypothesis was wrong; see DL-75 and the pre-audit / live retry output below.
 
 ### 2 · A snapshot-adopted position must still be able to receive a stop
 
@@ -191,7 +195,11 @@ Assuming item 1 confirms gate 4 (or whichever it is), fix the **cause**:
   refused SCHW while the graph and broker disagreed, and that self-healed. Preserve that behaviour
   exactly; S145 proved it works.
 
-**Result:**
+**Result:** Added `agents/execution/broker_stop_thresholds.py` so broker-adopted active Positions
+can be planned from the code-owned `contracts.positions` predicates. The fallback stop percent is
+declared as `ExecutionSettings.broker_stop_fallback_stop_pct` with `kernel.tunable` bounds, and the
+stop price still flows through `contracts.stop_rule.check_stop`. If a held ticker cannot receive a
+threshold, execution now raises an `UnprotectedPosition` Fault instead of silently skipping it.
 
 ### 3 · A refused stop must be retried, and its refusal must be visible
 
@@ -205,7 +213,11 @@ The 403 was recorded and then nothing happened — for days, on a live position.
   (retry suffices) or structural (e.g. shares committed to another order). **Say which in the return
   notes**; if structural, the retry must not become an infinite loop of refusals.
 
-**Result:**
+**Result:** Refused stop submissions are retryable and visible. A rejected retry does not write a
+`BrokerStopOrder`, appends a new `Fill` attempt ordinal when a prior refusal chain exists, preserves
+the same broker idempotency key, and records an `UnprotectedPosition` Fault with the ticker,
+quantity, and broker refusal body. The live ABT retry proved the 403 is structural right now:
+Alpaca reported an existing opposite-side order, not a transient transport failure.
 
 ### 4 · Lineage for the four filled orphans (append-only)
 
@@ -225,14 +237,21 @@ declared tunable, in the `scripts/repair_close_pnl.py` mould.
   destroy the record in order to tidy it (DL-72).
 - Second run reports `already_recorded` for every row and changes no node count.
 
-**Result:**
+**Result:** Added `scripts/repair_orphan_fills.py`, dry-run by default and append-only through
+`write_fills`. Production dry-run found the four PM-run orphans, `--apply` recorded all four, and a
+second `--apply` recorded zero and reported them as already recorded. The script uses broker-read
+fill state, attaches `Fill -EXECUTES-> OrderIntent` where present, allowlists known probe prefixes
+with reasons, and never writes an `ExecutionRun`.
 
 ### 5 · The probe path fix (Finding 3)
 
 `_alpaca_account_request` must not append `/v2` to a base URL that already ends in it. Fix the
 fallback; do not change `EXECUTION_ALPACA_BASE_URL`'s meaning.
 
-**Result:**
+**Result:** Fixed `_alpaca_account_request` to normalize the configured Alpaca base URL to exactly
+one trailing `/v2` before appending `/account`. Added a regression test that plants
+`ALPACA_ENDPOINT=https://paper-api.alpaca.markets/v2` and proves the probe requests
+`https://paper-api.alpaca.markets/v2/account`, not `/v2/v2/account`.
 
 ### 6 · An audit that uses the code's own predicates
 
@@ -248,7 +267,10 @@ wrong (DL-73 retraction).
 - A comment at the top stating why the predicates are imported rather than reimplemented, citing
   DL-73's retraction. This is the guard against repeating the mistake.
 
-**Result:**
+**Result:** Added read-only `scripts/audit_broker_graph.py`. It imports
+`contracts.positions.is_active_position_node` and `agents.execution.fill_attempts.fill_attempt_chain`
+instead of re-deriving active Position or Fill-chain semantics, and it includes the DL-73 comment at
+the top. Checks A1/A2/A3 return non-zero on failures; A4 reports unacknowledged Flags as INFO.
 
 ### 7 · Prove every check can fail (DL-70)
 
@@ -264,7 +286,10 @@ Plant the violation and require the failure — no presence assertions:
 - plant a stop submission that raises 403 → assert a `Fault` is recorded **and** the next run
   re-attempts.
 
-**Result:**
+**Result:** Added unit coverage that plants each violation and proves the checks fail before they
+pass: duplicate active Positions for A1, superseded Positions ignored by A1, missing live stops for
+A2 then broker-stop placement, orphan broker orders for A3 then repair, the one-`/v2` probe URL, and
+403 stop retry visibility with a second Fill attempt.
 
 ### 8 · Prove it against production
 
@@ -275,7 +300,11 @@ Plant the violation and require the failure — no presence assertions:
   have one — a refusal you can justify is a valid outcome, a silent gap is not (LAW-02).
 - Record the row in `docs/laws/functionality-checks.md`, with teardown for anything the check created.
 
-**Result:**
+**Result:** Production proof completed with a deliberate caveat. Before repair, A2 failed for ABT
+and A3 failed for four PM-run fills. Repair cleaned A3. The post-repair audit has A1 clean, A3
+clean, A4 reported, and a verified remaining A2 failure for ABT (`held=96 stop_qty=0`). ABT did not
+end with a live broker stop because Alpaca refused the retry as a potential wash trade against an
+existing opposite-side order; that refusal is now durable and visible rather than silent.
 
 ---
 
@@ -395,22 +424,255 @@ law gap instead of pretending the execution constitution already covers broker-s
 
 **Files changed:**
 
-_(fill in)_
+- Execution stop placement:
+  `agents/execution/broker_stop_thresholds.py`, `agents/execution/broker_stops.py`,
+  `agents/execution/broker_stop_actions.py`, `agents/execution/fill_attempts.py`,
+  `agents/execution/poll.py`, `agents/execution/settings.py`, `agents/execution/broker.py`,
+  `agents/execution/alpaca.py`, `agents/execution/alpaca_orders.py`.
+- Tests:
+  `agents/execution/tests/test_broker_stop_unprotected.py`,
+  `agents/execution/tests/test_broker_stop_branch_edges.py`,
+  `agents/execution/tests/test_broker_stop_sold_edges.py`,
+  `agents/execution/tests/test_alpaca_http_errors.py`,
+  `agents/execution/tests/test_alpaca_stop_orders.py`,
+  `tests/test_repair_orphan_fills.py`, `tests/test_audit_broker_graph.py`,
+  `orchestration/tests/test_trading_vault_probes.py`.
+- Scripts:
+  `scripts/audit_broker_graph.py`, `scripts/_audit_broker_graph_impl.py`,
+  `scripts/repair_orphan_fills.py`, `scripts/_repair_orphan_fills_impl.py`.
+- Probe/docs/version:
+  `orchestration/packs/trading_vault_probes.py`, `docs/design-log.md`,
+  `docs/laws/drift-register.md`, `docs/laws/functionality-checks.md`,
+  this sprint doc, `pyproject.toml`, `uv.lock`.
 
 **Proven (LAW-02):**
 
-_(fill in — before-audit, `make ci`, remote gates, repair output, after-audit, ABT's final stop state)_
+Before audit, production read-only:
+
+```text
+PRE-AUDIT production read-only
+A1 active positions vs broker holdings
+A1 OK ABT active_nodes=1 graph_qty=96 broker_qty=96
+A1 OK AMD active_nodes=1 graph_qty=55 broker_qty=55
+A1 OK BAC active_nodes=1 graph_qty=503 broker_qty=503
+A1 OK CSCO active_nodes=1 graph_qty=177 broker_qty=177
+A1 OK HPE active_nodes=1 graph_qty=229 broker_qty=229
+A1 OK PYPL active_nodes=1 graph_qty=175 broker_qty=175
+A1 OK SCHW active_nodes=1 graph_qty=196 broker_qty=196
+A1 OK USB active_nodes=1 graph_qty=478 broker_qty=478
+A1 OK WFC active_nodes=1 graph_qty=348 broker_qty=348
+A2 live broker stops
+A2 FAIL ABT held=96 stop_qty=0
+A2 SKIP AMD held=55 reason=pending_sell
+A2 OK BAC held=503 stop_qty=503
+A2 OK CSCO held=177 stop_qty=177
+A2 OK HPE held=229 stop_qty=229
+A2 OK PYPL held=175 stop_qty=175
+A2 OK SCHW held=196 stop_qty=196
+A2 OK USB held=478 stop_qty=478
+A2 OK WFC held=348 stop_qty=348
+A3 broker orders without Fill chain
+A3 FAIL pm-run-6f34914d941d415aada73523ab14d2ea:CSCO:buy ticker=CSCO side=buy qty=88 status=filled broker_order_id=98991314-326e-4f26-a970-915a42c257c9
+A3 FAIL pm-run-f1f38e5c76104d259ff5383294141273:AMD:buy ticker=AMD side=buy qty=19 status=filled broker_order_id=dd94c982-7b0f-4ef1-97fd-dbdf880057ff
+A3 FAIL pm-run-f1f38e5c76104d259ff5383294141273:HPE:buy ticker=HPE side=buy qty=229 status=filled broker_order_id=972b9e0b-ca54-4857-adbe-50e278c89b58
+A3 FAIL pm-run-f1f38e5c76104d259ff5383294141273:MRVL:buy ticker=MRVL side=buy qty=44 status=filled broker_order_id=10752fe2-9f77-4112-bce6-8733852f46af
+A3 total_missing=4
+ABT active node detail
+ABT node=broker:ABT:96:10437 qty=96 opened=10437 stop_pct=0.05 provenance=reconciled-from-broker degraded=True
+stop thresholds
+ABT threshold qty=96 ref=5244d9de63d93691 opened=10437 stop_pct=0.05
+graph_active_broker_stop_orders=7
+```
+
+Audit script before repair (exit 1 as expected):
+
+```text
+check	verdict	subject	detail
+A1	OK	ABT	active_nodes=1 graph_qty=96 broker_qty=96
+A2	FAIL	ABT	held=96 stop_qty=0
+A3	FAIL	pm-run-6f34914d941d415aada73523ab14d2ea:CSCO:buy	ticker=CSCO side=buy qty=88 status=filled
+A3	FAIL	pm-run-f1f38e5c76104d259ff5383294141273:AMD:buy	ticker=AMD side=buy qty=19 status=filled
+A3	FAIL	pm-run-f1f38e5c76104d259ff5383294141273:HPE:buy	ticker=HPE side=buy qty=229 status=filled
+A3	FAIL	pm-run-f1f38e5c76104d259ff5383294141273:MRVL:buy	ticker=MRVL side=buy qty=44 status=filled
+A4	INFO	unacknowledged_flags	46
+totals failures=5
+```
+
+Repair dry-run with the correct production window:
+
+```text
+uv run --extra runtime python scripts/repair_orphan_fills.py --env-file .env --since 2026-07-01T00:00:00Z
+mode=dry-run since=2026-07-01T00:00:00+00:00
+client_order_id	ticker	side	quantity	status	verdict	reason
+pm-run-6f34914d941d415aada73523ab14d2ea:CSCO:buy	CSCO	buy	88	filled	would_record	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:AMD:buy	AMD	buy	19	filled	would_record	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:HPE:buy	HPE	buy	229	filled	would_record	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:MRVL:buy	MRVL	buy	44	filled	would_record	missing Fill chain
+totals candidates=50 would_record=4 recorded=0 already_recorded=44 ignored=2
+```
+
+Repair apply:
+
+```text
+uv run --extra runtime python scripts/repair_orphan_fills.py --env-file .env --since 2026-07-01T00:00:00Z --apply
+client_order_id	ticker	side	quantity	status	verdict	reason
+pm-run-6f34914d941d415aada73523ab14d2ea:CSCO:buy	CSCO	buy	88	filled	recorded	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:AMD:buy	AMD	buy	19	filled	recorded	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:HPE:buy	HPE	buy	229	filled	recorded	missing Fill chain
+pm-run-f1f38e5c76104d259ff5383294141273:MRVL:buy	MRVL	buy	44	filled	recorded	missing Fill chain
+totals candidates=50 would_record=0 recorded=4 already_recorded=44 ignored=2
+```
+
+Repair second apply proves idempotence:
+
+```text
+uv run --extra runtime python scripts/repair_orphan_fills.py --env-file .env --since 2026-07-01T00:00:00Z --apply
+totals candidates=50 would_record=0 recorded=0 already_recorded=48 ignored=2
+```
+
+Live ABT retry proof:
+
+```text
+S146 stop placement proof
+fill_nodes_delta=1
+broker_stop_nodes_delta=0
+fault_nodes_delta=2
+abt_position_ref=5244d9de63d93691
+abt_broker_stop_order=absent
+abt_fill_chain=['stop:5244d9de63d93691:ABT', 'stop:5244d9de63d93691:ABT#1']
+fault RuntimeError: HTTP Error 403: Forbidden: {"code":40310000,"existing_order_id":"fd1f1c2c-4911-4df5-b7a1-e2e9929a7341","message":"potential wash trade detected. use complex orders","reject_reason":"opposite side market/stop order exists"}
+fault UnprotectedPosition: unprotected held position ABT qty=96: stop submission rejected: HTTP Error 403: Forbidden: {"code":40310000,"existing_order_id":"fd1f1c2c-4911-4df5-b7a1-e2e9929a7341","message":"potential wash trade detected. use complex orders","reject_reason":"opposite side market/stop order exists"}
+```
+
+After audit (exit 1, with the only remaining failure verified as ABT's live broker-stop absence):
+
+```text
+uv run --extra runtime python scripts/audit_broker_graph.py --env-file .env
+check	verdict	subject	detail
+A1	OK	ABT	active_nodes=1 graph_qty=96 broker_qty=96
+A1	OK	AMD	active_nodes=1 graph_qty=55 broker_qty=55
+A1	OK	BAC	active_nodes=1 graph_qty=503 broker_qty=503
+A1	OK	CSCO	active_nodes=1 graph_qty=177 broker_qty=177
+A1	OK	HPE	active_nodes=1 graph_qty=229 broker_qty=229
+A1	OK	PYPL	active_nodes=1 graph_qty=175 broker_qty=175
+A1	OK	SCHW	active_nodes=1 graph_qty=196 broker_qty=196
+A1	OK	USB	active_nodes=1 graph_qty=478 broker_qty=478
+A1	OK	WFC	active_nodes=1 graph_qty=348 broker_qty=348
+A2	FAIL	ABT	held=96 stop_qty=0
+A2	SKIP	AMD	pending full-exit sell
+A2	OK	BAC	held=503 stop_qty=503
+A2	OK	CSCO	held=177 stop_qty=177
+A2	OK	HPE	held=229 stop_qty=229
+A2	OK	PYPL	held=175 stop_qty=175
+A2	OK	SCHW	held=196 stop_qty=196
+A2	OK	USB	held=478 stop_qty=478
+A2	OK	WFC	held=348 stop_qty=348
+A3	SKIP	dep-broker-probe-40b86996aa344259	dependency probe order; no pipeline Fill expected
+A3	SKIP	dep-broker-probe-d467017ee70247b9	dependency probe order; no pipeline Fill expected
+A3	SKIP	dep-broker-probe-d8d17e0855224306	dependency probe order; no pipeline Fill expected
+A3	SKIP	dep-broker-probe-dad74f5af1a44da5	dependency probe order; no pipeline Fill expected
+A3	SKIP	probe-s138-1784950327	S138 broker-stop live probe order; no pipeline Fill expected
+A4	INFO	unacknowledged_flags	46
+totals failures=1
+```
+
+Focused tests:
+
+```text
+uv run pytest --no-cov agents/execution/tests/test_alpaca_http_errors.py agents/execution/tests/test_broker_stop_branch_edges.py agents/execution/tests/test_broker_stop_sold_edges.py agents/execution/tests/test_alpaca_stop_orders.py agents/execution/tests/test_broker_stop_unprotected.py
+collected 16 items
+agents\execution\tests\test_alpaca_http_errors.py ..                     [ 12%]
+agents\execution\tests\test_broker_stop_branch_edges.py .....            [ 43%]
+agents\execution\tests\test_broker_stop_sold_edges.py .                  [ 50%]
+agents\execution\tests\test_alpaca_stop_orders.py .....                  [ 81%]
+agents\execution\tests\test_broker_stop_unprotected.py ...               [100%]
+============================= 16 passed in 1.17s ==============================
+```
+
+Vocabulary guard scripts:
+
+```text
+uv run python scripts/vocabulary_coverage.py
+# exit 0, no stdout
+uv run python scripts/vocabulary_signatures.py
+# exit 0, no stdout
+```
+
+Version / lock:
+
+```text
+uv lock
+Resolved 170 packages in 1.98s
+Updated trading-agents v0.80.2 -> v0.80.3
+```
+
+Local `make ci`:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+813 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 681 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+TOTAL                                                12405      0   2606      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 1877 passed, 5 skipped in 133.31s (0:02:13) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+detect-secrets (untracked): no untracked files to scan
+```
+
+Remote gates:
+
+```text
+PENDING - branch has not been pushed yet at this edit point.
+```
 
 **Not done, deliberately:**
 
-_(fill in)_
+- ABT does **not** have a live broker stop after this branch-local proof. That is verified failing
+  in A2, with an evidenced structural broker refusal: Alpaca reports an existing opposite-side
+  order and refuses the stop as a potential wash trade.
+- I did not cancel or modify broker-side orders. The sprint explicitly forbids broker cleanup.
+- I did not acknowledge the 46 unacknowledged Flags.
+- I did not touch reconciliation or Position supersession; DL-73 says that path is correct.
 
 ---
 
 ## Return notes
 
 - **Which gate skipped ABT (item 1), and was the 403 transient or structural (item 3)?**
+- ABT was not skipped by a graph gate. It passed active-position discovery, quantity matching, and
+  threshold planning (`stop_pct=0.05`, ref `5244d9de63d93691`). The stop reached broker submission
+  and was refused. The 403 is structural in the current broker state: Alpaca says an opposite-side
+  order already exists (`fd1f1c2c-4911-4df5-b7a1-e2e9929a7341`) and returned
+  `reject_reason="opposite side market/stop order exists"`.
 - **Decisions made inside the sprint** (and anything ruled out — LAW-06):
+- DL-75 records the diagnosis pivot: make ABT's refusal durable/retryable instead of changing active
+  Position semantics. The fallback stop policy lives in execution as a bounded tunable; the audit
+  imports `contracts.positions.is_active_position_node`; refused stops append a new Fill attempt
+  but do not write a `BrokerStopOrder`.
+- Ruled out: changing reconciliation/supersession, placing a fake `BrokerStopOrder` for a refused
+  stop, cancelling broker orders, or forcing a stop onto AMD while its full-exit sell is pending.
 - **Surprises / anything the spec got wrong:**
+- The spec's likely gate-4 diagnosis was wrong for current production: ABT already carried
+  `stop_pct=0.05` and produced a threshold. The live blocker is broker-side wash-trade protection.
+- The first repair `--since 2026-07-20T00:00:00Z` was too tight; the four orphans were older, so the
+  production repair used `--since 2026-07-01T00:00:00Z`.
 - **Did `main` move? Merge performed, `make ci` re-run?**
+- `git fetch origin main` left `main` and `origin/main` at
+  `96dfa6f2501be4db028efc764665a997608f3fc9`, and `git merge-base --is-ancestor
+  origin/main HEAD` returned `origin/main is ancestor of HEAD`. No merge was needed and no merge to
+  `main` was performed.
 - **Out-of-scope findings** (flag, do not fix):
+- A4 still reports 46 unacknowledged Flags. They remain operator/dashboard action, not S146 scope.
+- ABT's opposite-side broker order is the operator/fleet state that keeps the stop structurally
+  refused; this sprint records and retries the refusal, but does not alter live orders.

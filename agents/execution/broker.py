@@ -26,6 +26,7 @@ class BrokerFill:
     broker_order_id: str
     status: Literal["filled", "partial", "rejected", "pending"]
     reason: str | None = None
+    submitted_at: str | None = None
 
 
 @dataclass(frozen=True)

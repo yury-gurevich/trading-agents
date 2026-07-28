@@ -116,7 +116,7 @@ class AlpacaBroker:
             return self._request("POST", _ORDERS_PATH, body)
         except urllib.error.HTTPError as exc:
             if exc.code != 422:
-                raise
+                raise RuntimeError(_http_error_message(exc)) from exc
             query = urllib.parse.urlencode(
                 {"client_order_id": str(body["client_order_id"])}
             )
@@ -143,3 +143,18 @@ class AlpacaBroker:
             request, timeout=self._timeout
         ) as resp:
             return json.loads(resp.read().decode("utf-8"))
+
+
+def _http_error_message(exc: urllib.error.HTTPError) -> str:
+    body = _http_error_body(exc)
+    if body:
+        return f"HTTP Error {exc.code}: {exc.reason}: {body}"
+    return str(exc)
+
+
+def _http_error_body(exc: urllib.error.HTTPError) -> str:
+    try:
+        body = exc.read()
+    except OSError:
+        return ""
+    return body.decode("utf-8", errors="replace").strip()

@@ -11,6 +11,7 @@ import urllib.error
 import urllib.parse
 from decimal import Decimal
 from email.message import Message
+from io import BytesIO
 from types import MethodType
 
 import pytest
@@ -119,6 +120,35 @@ def test_submit_or_get_replays_422_by_client_order_id() -> None:
     assert calls[1][0] == "GET"
     assert urllib.parse.urlsplit(calls[1][1]).path == "/v2/orders:by_client_order_id"
     assert query == {"client_order_id": ["stop:ref:AAPL"]}
+
+
+def test_submit_or_get_keeps_non_duplicate_error_body() -> None:
+    """EXEC-FAIL-01 / EXEC-OBS-02: broker refusal details remain observable."""
+    broker = AlpacaBroker(
+        api_key="k",
+        secret_key="s",  # noqa: S106 - test fixture, not a real secret
+        base_url="https://alpaca.test",
+        timeout=10,
+    )
+
+    def fake_request(
+        _self: AlpacaBroker,
+        _method: str,
+        path: str,
+        _body: dict[str, object] | None,
+    ) -> object:
+        raise urllib.error.HTTPError(
+            path,
+            403,
+            "Forbidden",
+            Message(),
+            BytesIO(b'{"message":"insufficient qty available"}'),
+        )
+
+    broker._request = MethodType(fake_request, broker)  # type: ignore[method-assign]
+
+    with pytest.raises(RuntimeError, match="insufficient qty available"):
+        broker._submit_or_get({"client_order_id": "stop:ref:AAPL"})
 
 
 def _broker(submit_result: object) -> AlpacaBroker:

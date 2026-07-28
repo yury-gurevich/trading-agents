@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import urllib.request
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -121,6 +122,19 @@ def test_postgres_probe_uses_live_ready_check(monkeypatch: pytest.MonkeyPatch) -
     assert out.ok is True
     assert out.message == "postgres probe passed"
     assert called["POSTGRES_DSN"].startswith("postgresql://")
+
+
+def test_alpaca_broker_probe_does_not_double_v2_path() -> None:
+    """MST-DEP-02 / DEP-BROKER-01: broker probe URL uses one API version path."""
+    request = probes._alpaca_account_request(
+        {
+            "ALPACA_ENDPOINT": "https://paper-api.alpaca.markets/v2",
+            "ALPACA_API_KEY": "x",
+            "ALPACA_API_SECRET": "y",
+        }
+    )
+
+    assert urlsplit(request.full_url).path == "/v2/account"
 
 
 def test_support_helpers_fail_closed_and_read_http(

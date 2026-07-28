@@ -77,3 +77,13 @@ class ExecutionSettings(AgentSettings):
         le=60,
         unit="seconds",
     )
+    broker_stop_fallback_stop_pct: float = tunable(
+        0.05,
+        why=(
+            "Protect broker-adopted positions that lack PM stop lineage with the "
+            "same paper-stage downside floor used by monitor reconciliation."
+        ),
+        gt=0.0,
+        le=1.0,
+        unit="fraction",
+    )

@@ -3728,3 +3728,29 @@ the failure mode under test: it keeps the law book as a thing the planner has re
 has not. *Applying it to every sprint immediately* - this is a trial; adopt or drop it on evidence.
 
 ---
+
+## DL-75 - S146 diagnosis: unprotected ABT is a broker refusal, not a graph skip · status: ACCEPTED
+
+**Question.** The S146 handover suspected ABT was skipped because a broker-reconciled `Position`
+could fail threshold discovery or active-position filtering. Is the exposed position caused by graph
+state, or by the broker refusing the stop?
+
+**Decision.** Treat ABT as an active position that reaches the stop-submission rail. The production
+pre-audit found `Position key=broker:ABT:96:10437`, `stop_pct=0.05`, one active node, graph quantity
+96 matching the broker, and `open_position_stop_thresholds` returning the ABT threshold. The live
+retry submitted the same stop idempotency key and Alpaca rejected it with HTTP 403
+`potential wash trade detected. use complex orders` because an opposite-side order already exists.
+The fix therefore makes the refusal durable and retryable instead of rewriting reconciliation.
+
+**Implementation consequence.** Execution owns a broker-stop threshold planner that reuses
+`contracts.positions` predicates, applies a bounded execution fallback only when an active position
+is missing `stop_pct`, and records `UnprotectedPosition` faults when protection is absent or refused.
+Repeated stop refusals append a new `Fill` attempt while preserving the broker idempotency key.
+
+**Ruled out.** *Changing `contracts.positions` active semantics* - DL-73 proved the predicate is the
+source of truth and the ABT node already passes it. *Retiring or replacing broker-reconciled
+positions* - that would reintroduce the invisibility ADR-0015 exists to prevent. *Recording a
+`BrokerStopOrder` for a refused submission* - ADR-0015 makes the stop order a fact about broker
+state, and a 403 refusal never creates a live broker stop.
+
+---

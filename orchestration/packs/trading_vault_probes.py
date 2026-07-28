@@ -149,12 +149,9 @@ def _alpaca_data_source(env: Mapping[str, str]) -> AlpacaDataSource:
 
 
 def _alpaca_account_request(env: Mapping[str, str]) -> urllib.request.Request:
-    base_url = env.get(
-        "EXECUTION_ALPACA_BASE_URL",
-        env.get("ALPACA_ENDPOINT", "https://paper-api.alpaca.markets"),
-    )
+    base_url = _alpaca_broker_api_base_url(env)
     return urllib.request.Request(  # noqa: S310
-        f"{base_url}/v2/account",
+        f"{base_url}/account",
         headers={
             "APCA-API-KEY-ID": required(env, *_ALPACA_KEY_NAMES),
             "APCA-API-SECRET-KEY": required(
@@ -162,3 +159,11 @@ def _alpaca_account_request(env: Mapping[str, str]) -> urllib.request.Request:
             ),
         },
     )
+
+
+def _alpaca_broker_api_base_url(env: Mapping[str, str]) -> str:
+    base_url = env.get(
+        "EXECUTION_ALPACA_BASE_URL",
+        env.get("ALPACA_ENDPOINT", "https://paper-api.alpaca.markets"),
+    ).rstrip("/")
+    return base_url if base_url.endswith("/v2") else f"{base_url}/v2"

@@ -69,6 +69,7 @@ def fill_from_order(
         broker_order_id=str(order.get("id", "")),
         status=status,
         reason=str(order.get("status", "rejected")) if status == "rejected" else None,
+        submitted_at=_optional_str(order.get("submitted_at")),
     )
 
 
@@ -108,3 +109,7 @@ def price_of(order: dict[str, object], reference: Money) -> Money:
     if raw in (None, ""):
         return reference
     return Money(amount=Decimal(str(raw)))
+
+
+def _optional_str(value: object) -> str | None:
+    return value if isinstance(value, str) and value else None

@@ -11,20 +11,22 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from agents.execution.broker_stop_actions import cancel_stop, place_stop
+from agents.execution.broker_stop_thresholds import (
+    BrokerStopThresholdPlan,
+    broker_stop_thresholds,
+)
+from agents.execution.settings import ExecutionSettings
 from contracts.broker_stops import (
     BROKER_STOP_ORDER_LABEL,
     active_broker_stop_orders,
     active_broker_stop_refs,
     broker_stop_order_key,
 )
-from contracts.positions import (
-    PositionStopThreshold,
-    open_position_stop_thresholds,
-    open_positions,
-)
+from contracts.positions import PositionStopThreshold, open_positions
+from kernel import AgentFault
 
 if TYPE_CHECKING:
-    from agents.execution.broker import Broker
+    from agents.execution.broker import Broker, BrokerFill
     from contracts.portfolio_manager import OrderIntentSet
     from kernel import FaultSink, GraphStore, Node
 
@@ -43,31 +45,92 @@ def place_broker_stops(
     sink: FaultSink,
     order_set: OrderIntentSet,
     snapshot: Node | None,
+    *,
+    fallback_stop_pct: float | None = None,
 ) -> None:
     """Place missing sell stops for active positions not being sold this run."""
     broker_quantities = _fresh_snapshot_quantities(snapshot)
     if broker_quantities is None:
         return
+    fallback = (
+        ExecutionSettings().broker_stop_fallback_stop_pct
+        if fallback_stop_pct is None
+        else fallback_stop_pct
+    )
     sold_tickers = {item.ticker for item in order_set.approved if item.action == "sell"}
     protected_refs = active_broker_stop_refs(graph)
-    for threshold in open_position_stop_thresholds(graph):
+    plan_set = broker_stop_thresholds(graph, fallback_stop_pct=fallback)
+    plans = {plan.threshold.ticker: plan for plan in plan_set.plans}
+    error_tickers: set[str] = set()
+    for error in plan_set.errors:
+        error_tickers.add(error.ticker)
+        if error.ticker not in sold_tickers:
+            _record_unprotected_fault(
+                sink,
+                error.ticker,
+                broker_quantities.get(error.ticker, 0),
+                f"no stop threshold: {error.reason}",
+            )
+    for ticker, quantity in sorted(broker_quantities.items()):
+        if ticker in sold_tickers:
+            continue
+        if ticker in error_tickers:
+            continue
+        plan = plans.get(ticker)
+        if plan is None:
+            _record_unprotected_fault(
+                sink, ticker, quantity, "no active graph position"
+            )
+            continue
+        threshold = plan.threshold
         if not _broker_quantity_matches(threshold, broker_quantities):
+            _record_unprotected_fault(
+                sink,
+                ticker,
+                quantity,
+                f"graph quantity {threshold.quantity} does not match broker quantity",
+                position_ref=threshold.position_ref,
+            )
             continue
-        if threshold.ticker in sold_tickers or threshold.position_ref in protected_refs:
+        if threshold.position_ref in protected_refs:
             continue
-        _place_stop(graph, broker, sink, threshold)
+        fill = _place_stop(graph, broker, sink, plan)
+        if fill is None:
+            _record_unprotected_fault(
+                sink,
+                ticker,
+                quantity,
+                "existing inactive BrokerStopOrder fact blocks retry",
+                position_ref=threshold.position_ref,
+            )
+        elif fill.status == "rejected":
+            _record_unprotected_fault(
+                sink,
+                ticker,
+                quantity,
+                f"stop submission rejected: {fill.reason or fill.status}",
+                position_ref=threshold.position_ref,
+            )
 
 
 def _place_stop(
     graph: GraphStore,
     broker: Broker,
     sink: FaultSink,
-    threshold: PositionStopThreshold,
-) -> None:
+    plan: BrokerStopThresholdPlan,
+) -> BrokerFill | None:
+    threshold = plan.threshold
     key = broker_stop_order_key(threshold.position_ref, threshold.ticker)
     if graph.get_node(BROKER_STOP_ORDER_LABEL, key) is not None:
-        return
-    place_stop(graph, broker, sink, threshold, key)
+        return None
+    return place_stop(
+        graph,
+        broker,
+        sink,
+        threshold,
+        key,
+        stop_pct_source=plan.stop_pct_source,
+    )
 
 
 def _fresh_snapshot_quantities(snapshot: Node | None) -> dict[str, int] | None:
@@ -88,3 +151,30 @@ def _broker_quantity_matches(
     threshold: PositionStopThreshold, broker_quantities: dict[str, int]
 ) -> bool:
     return broker_quantities.get(threshold.ticker) == threshold.quantity
+
+
+def _record_unprotected_fault(
+    sink: FaultSink,
+    ticker: str,
+    quantity: int,
+    reason: str,
+    *,
+    position_ref: str | None = None,
+) -> None:
+    message = f"unprotected held position {ticker} qty={quantity}: {reason}"
+    sink.submit(
+        AgentFault(
+            source_agent="execution",
+            source_module="agents.execution.broker_stops",
+            capability="place_broker_stops",
+            severity="error",
+            error_type="UnprotectedPosition",
+            message=message,
+            context={
+                "ticker": ticker,
+                "quantity": quantity,
+                "reason": reason,
+                "position_ref": position_ref,
+            },
+        )
+    )

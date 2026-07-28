@@ -56,6 +56,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 > broker adapter. Postgres `price_cache` stays the raw historical backtest fallback. Confirms decision
 > **D1**; Stooq retired as default; no scraping.
 
+## Execution (`EXEC`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-024 | `EXEC-IDN-02` / `EXEC-DEP-02` / `EXEC-PARAM` | Execution's constitution lists durable execution labels and tunables, but does not name ADR-0015 broker-stop state or the broker-stop fallback parameter. | ADR-0015 §3 and S146 require execution to place/retry broker-native stops, write/read `BrokerStopOrder`, and use a bounded fallback stop percent for broker-adopted positions with no PM `stop_pct`. | law gap | **OPEN** — S146 implements and tests the behaviour without editing the LOCKED law; a later law amendment should declare broker-stop labels/capability and the fallback stop parameter. |
+
 ## Portfolio Manager (`PM`)
 
 | ID | Law | Intent says | Reality says | Kind | Status / decision |

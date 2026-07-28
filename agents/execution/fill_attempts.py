@@ -31,7 +31,11 @@ class FillAttempt:
 
 
 def select_fill_attempt(
-    graph: GraphStore, broker_idempotency_key: str, props: dict[str, object]
+    graph: GraphStore,
+    broker_idempotency_key: str,
+    props: dict[str, object],
+    *,
+    force_new: bool = False,
 ) -> FillAttempt:
     """Return an existing compatible attempt, or the first free ordinal."""
     ordinal = BASE_ATTEMPT_ORDINAL
@@ -39,7 +43,9 @@ def select_fill_attempt(
         key = fill_attempt_key(broker_idempotency_key, ordinal)
         attempt_props = _with_attempt_props(props, broker_idempotency_key, ordinal)
         current = graph.get_node("Fill", key)
-        if current is None or _props_compatible(current.props, attempt_props):
+        if current is None or (
+            not force_new and _props_compatible(current.props, attempt_props)
+        ):
             return FillAttempt(key=key, ordinal=ordinal, props=attempt_props)
         ordinal += 1
 

@@ -3542,7 +3542,7 @@ is a DL-36 credential-probe defect; file it, do not fold it into S146.
 
 ---
 
-## DL-73 - Broker reconciliation mints a new Position per (qty, basis) and never closes the old · status: OPEN
+## DL-73 - Broker reconciliation mints a new Position per (qty, basis) and never closes the old · status: RETRACTED (2026-07-28 — the defect does not exist; see the retraction at the end of this entry)
 
 **Trigger.** The 2026-07-28 resumed run on fleet `:s145` - fired to prove the S145 exit-replay fix.
 It did prove it (7/7 stages, see DL-71), and in passing it made the position book **worse**:
@@ -3619,5 +3619,73 @@ execution placed SCHW's missing protective stop (`stop:b56b2d2f124326d3:SCHW`, s
 and stated a consequence it had not observed. The run cost ~15 minutes and refuted half of it. A
 count plus a plausible mechanism is a hypothesis, not a finding - this is DL-70's thesis landing on
 the design log itself.
+
+---
+
+### RETRACTED IN FULL - the defect does not exist (2026-07-28, same day)
+
+**DL-73 is wrong. Both the mechanism and the consequence. It should not have been written.**
+
+I audited `Position` nodes by filtering on `status == "open"` and concluded that reconciliation
+mints nodes and never closes them. `status` is **not** the active-position predicate. The real one
+is `contracts/positions.py::is_active_position_node`, which excludes any node carrying
+`broker_absent` **or `broker_superseded_by`** - and
+`agents/monitor/reconcile.py::reconcile_positions_from_latest_snapshot` already calls
+`_mark_superseded` for every non-matching candidate (line 48-50) and `_mark_absent` for every
+ticker absent from the snapshot (line 51-54). Supersession was built all along; `status` stays
+`"open"` deliberately, because this is an append-only store and closure is recorded as a **separate
+fact**, not by mutating the original node.
+
+Re-audited with the correct predicate:
+
+```text
+total Position nodes = 23      ACTIVE by is_active_position_node = 9
+OK ABT  1 node  96 vs 96       OK MRVL  (absent, correctly)
+OK AMD  1 node  55 vs 55       OK PYPL  1 node 175 vs 175
+OK BAC  1 node 503 vs 503      OK SCHW  1 node 196 vs 196
+OK CSCO 1 node 177 vs 177      OK USB   1 node 478 vs 478
+OK HPE  1 node 229 vs 229      OK WFC   1 node 348 vs 348
+```
+
+**One active position per held ticker, every quantity matching the broker exactly.** The 14
+"phantoms" are a correct supersession chain - `BAC 171 -> 338 -> 503`, `USB 160 -> 320 -> 478`,
+`WFC 116 -> 233 -> 348`, `AMD broker-reconciled -> 37 -> 55` - plus two correctly `broker_absent`
+(MRVL, `ABT:98`). That is the history the append-only store exists to keep.
+
+**This also answers the "unexplained mitigation".** There was no mystery: the PM sized `AMD sell
+qty=55` correctly because `is_active_position_node` filters superseded nodes, exactly as designed
+and tested. I invented a puzzle out of my own measurement error and then proposed a sprint to solve
+it.
+
+**Two further claims from the same audit, also withdrawn.** *"3 fabricated rejections"* -
+`agents/execution/domain/orders.py::rejected_broker_fill` sets `broker_order_id="rejected:{key}"`
+**by design**, as the durable record of a submission refused before it reached the broker, with
+`reason` carrying the cause (all three read `HTTP Error 403: Forbidden`). That is DL-57 working, not
+a lie. *"`canceled` recorded as `rejected`"* - `BrokerStatus` is a deliberate four-value contract
+(`filled|partial|rejected|pending`) and `fill_from_order` preserves the broker's raw word in
+`reason`; the information is modelled coarsely, not lost.
+
+**What actually survived the audit** (carried into the S146 packet):
+
+1. **ABT holds 96 shares (~$10k) with no protective stop.** Its last stop attempt was refused
+   `HTTP Error 403: Forbidden`; no `BrokerStopOrder` node was written, so retry is *not* blocked -
+   yet the 2026-07-28 run placed SCHW's stop and still skipped ABT. **Cause not established.** This
+   is real, it is capital, and it is the one item worth a sprint.
+2. **4 filled broker orders carry no `Fill` node** - `pm-run-f1f38e5c…` AMD 19 / HPE 229 / MRVL 44
+   and `pm-run-6f34914d…` CSCO 88, all `status=filled`. A genuine lineage gap, and the reason those
+   four `broker-reconciled:*` Positions had to be invented from a snapshot.
+3. **`orchestration/packs/trading_vault_probes.py:154`** builds `/v2/v2/account` whenever
+   `EXECUTION_ALPACA_BASE_URL` is unset and `ALPACA_ENDPOINT` holds its documented `.env.example`
+   value. Code-verified, unaffected by the audit error.
+4. **46 `Flag` nodes, 0 acknowledged** - operator action from the dashboard, not code.
+
+**The lesson, which is the point of keeping this retraction rather than deleting the entry.** I
+wrote a red-severity defect into `STATE.md` and the design log from a node count and a code read,
+without running the system's own predicate over the data. DL-70's thesis is *stop asserting
+presence, start planting violations* - and the check I should have planted was trivial: assert that
+`is_active_position_node` returns one node per held ticker. It would have failed in seconds and
+DL-73 would never have existed. **An audit that does not use the code's own definitions is not an
+audit of the system; it is an audit of my assumptions about it.** Any future graph-vs-broker audit
+must import the predicates from `contracts/` rather than re-deriving them from raw props.
 
 ---

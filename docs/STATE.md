@@ -385,20 +385,21 @@ it, and created exactly **one** new broker order across both — SCHW's missing 
 `UNPROVEN - completed` because AMD sell 55 and ABT buy 95 are queued for the 13:30 UTC open.
 Re-run `accept.py --run-id sched-2026-07-27` after the open for the realized verdict.
 
-**🟠 NEW — DL-73: reconciliation accumulates phantom positions (consequence claim CORRECTED).**
-`agents/monitor/reconcile.py:108` keys positions `broker:{ticker}:{qty}:{avg_entry_cents}` and
-matches on **both** quantity and basis, so any holding change mints a **new** open `Position` and
-never closes the old one. Confirmed: **23 `Position` nodes for 8 actual broker holdings** — BAC
-open at 171 *and* 338 *and* 503, USB at 160/320/478, WFC at 116/233/348, AMD at 19/37/55, plus
-SCHW/ABT/MRVL doubled. `broker_absent` marking is applied **inconsistently** —
-`broker:MRVL:44:22621` holds 44 shares of a stock the broker holds **none** of and is not flagged.
-**Corrected:** STATE first claimed these phantoms "get scored, sized, and turned into exit keys —
-the exact chain that produced DL-71". That was inferred from node counts, and the
-`confirm-s145-20260728` run **tested it and did not reproduce it**: the analyst scored **9 tickers,
-one per ticker** (AMD scored once despite three nodes), the PM sized `AMD sell qty=55` — the **true
-holding**, not 111 — and MRVL was excluded entirely. So this is an **unbounded junk-accumulation
-defect with an unexplained mitigation**, not live firefighting. The open question is *why* the
-per-ticker selection picks correctly, since nothing tests it. DL-71 option B still owns it.
+**⬜ DL-73 — RETRACTED IN FULL the same day; the defect does not exist.** I audited `Position` nodes on `status == "open"`, which is **not** the active-position predicate. The real one is `contracts/positions.py::is_active_position_node`, which also excludes `broker_absent` **and `broker_superseded_by`** — and `reconcile.py` has always called `_mark_superseded` / `_mark_absent`. Re-audited correctly: **23 nodes, 9 active — exactly one per held ticker, every quantity matching the broker** (ABT 96/96, AMD 55/55, BAC 503/503, CSCO 177/177, HPE 229/229, PYPL 175/175, SCHW 196/196, USB 478/478, WFC 348/348). The 14 "phantoms" are a correct supersession chain (`BAC 171→338→503`, `USB 160→320→478`, `WFC 116→233→348`) plus two correctly `broker_absent`. The "unexplained mitigation" was my own measurement error: the PM sized AMD at 55 because the predicate filters superseded nodes, as designed. Two further claims from that audit are also withdrawn — the "3 fabricated rejections" are `rejected_broker_fill`'s documented `rejected:{key}` sentinel for pre-submit refusals (all three `HTTP Error 403: Forbidden`), and `canceled`→`rejected` is a deliberate four-value `BrokerStatus` contract that keeps the raw word in `reason`. **The lesson (kept, not deleted):** an audit that does not use the code's own predicates audits my assumptions, not the system. **What genuinely survived** is in [sprint-146](sprints/sprint-146-unprotected-position.md).
+
+**🟠 REAL AND CAPITAL-RELEVANT — ABT holds 96 shares (~$10k) with no protective stop.**
+Eight of nine held names carry a live broker stop at the correct quantity; **ABT does not.** Its
+last stop attempt was refused `HTTP Error 403: Forbidden` (Fill `stop:5244d9de63d93691:ABT`,
+`broker_order_id='rejected:…'`), and **no `BrokerStopOrder` node was written** — so
+`_place_stop`'s existence check does *not* block a retry, yet the 2026-07-28 run placed SCHW's
+stop and still skipped ABT. **The cause is not established**, and that is the sprint. Two smaller
+real findings ride with it: **4 filled broker orders carry no `Fill` node** (`pm-run-f1f38e5c…`
+AMD 19 / HPE 229 / MRVL 44, `pm-run-6f34914d…` CSCO 88 — the reason those `broker-reconciled:*`
+Positions had to be invented from a snapshot), and
+`orchestration/packs/trading_vault_probes.py:154` builds `/v2/v2/account` whenever
+`EXECUTION_ALPACA_BASE_URL` is unset. Separately, **46 `Flag` nodes are unacknowledged** —
+operator action from the dashboard, not code. Packaged as
+[sprint-146](sprints/sprint-146-unprotected-position.md).
 
 **PROVEN (LAW-02) — what the merge actually established.** One attempt = one immutable `Fill` node
 with the broker `client_order_id` unchanged (the 0.74.01 oversell guard stands); a `filled` exit is

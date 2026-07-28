@@ -68,13 +68,16 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S146** (S137 SHIPPED `29a36f4`/0.76.00 — exit authority ADR-0017; S138 SHIPPED
+1. Next number: **S147** (S137 SHIPPED `29a36f4`/0.76.00 — exit authority ADR-0017; S138 SHIPPED
    `043b5a5`/0.77.00 — broker-native stops ADR-0015 §3, fleet `:s142`; S143 SHIPPED `798bfd4`/0.79.00
    — graph vocabulary guard, DL-66; S144 / 0.80.00 — the guard made deployable and its pack
-   proven complete, DL-68; **S145 / 0.80.02 SPEC** — exit replay append-safe, DL-71, 🔴 execution
-   bricked in production). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
-   accumulate. **Next named work:** DL-71 option B (reconcile the book before the analyst decides),
-   then reconcile the 8 `labels_owned` declarations and enable `owners` enforcement.
+   proven complete, DL-68; S145 SHIPPED `2c49f88`/0.80.02 — exit replay append-safe, DL-71,
+   unbricked execution; **S146 / 0.80.03 SPEC** — orphan Fill lineage repair, DL-72, 🟠 two live
+   orders with no graph record). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
+   accumulate. **Next named work:** DL-71 option B (reconcile the book before the analyst decides —
+   S146's probe found AMD at 111 graph shares against 55 held and MRVL open in the graph but held
+   nowhere, which makes option B the priority successor), then reconcile the 8 `labels_owned`
+   declarations and enable `owners` enforcement.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

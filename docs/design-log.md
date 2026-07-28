@@ -3489,3 +3489,55 @@ node, so a naive retry records `rejected` for orders that are actually live - a 
 of exactly the DL-57/DL-59 class. Adopting broker state on a duplicate-key refusal is part of A.
 
 ---
+
+## DL-72 - Self-healing that only works once is not a repair path · status: OPEN (S146)
+
+**Trigger.** Probing production on 2026-07-28, after S145 merged (`2c49f88`), to find out what the
+AMD/ABT orphans actually need. The probe found something the S145 spec did not: **no `ExecutionRun`
+exists for `pm-run-df925eea017a4a7e94cd4365bf20c25a`**. `find_pending` returns `PMRun`s with no
+downstream `ExecutionRun`, so the crashed run is *still pending*, and the next execution pass will
+re-process all three intents through the S145 code - skipping MRVL as a completed exit and adopting
+AMD and ABT through the `422 duplicate` -> `by_client_order_id` path.
+
+**So the orphans will probably heal by themselves.** That is the finding, and it is also the
+problem.
+
+**The insight.** The self-heal is **single-shot and unrepeatable**. The same pass that adopts the
+orphans also writes the missing `ExecutionRun`, and that write is what removes the `PMRun` from
+`find_pending` forever. If adoption succeeds for ABT and fails for AMD - a 404 on the by-client
+lookup, a timeout caught by S145's new per-intent fault boundary, an order aged out at the broker -
+the window still closes. The failure is *silent by construction*: the node that proves the crash
+happened is the same node whose absence keeps the repair possible. A repair path whose availability
+is destroyed by its own execution is not a repair path; it is a coincidence with good timing.
+
+**Decision.** Ship a bounded one-shot repair script (S146) that finds orphaned broker orders by
+empty `fill_attempt_chain` and adopts broker state through the *same* `write_fills` path the agent
+uses, so both routes converge on one key and either can run second as a no-op. Explicitly **do not**
+let the script write an `ExecutionRun`: forging the node whose absence is the evidence of the crash
+would destroy the record to tidy the record.
+
+**Ruled out.** *Doing nothing and letting the nightly run adopt them* - probably sufficient, but
+single-shot, unprovable in advance, and it leaves the next crash-orphan with no path at all;
+"probably worked" fails LAW-02. *Extending the monitor to adopt orphans during reconciliation* -
+the right long-term home, and it would fix the position book too, but it moves order truth into the
+reconciliation pass, which is the cascade-ordering change DL-71 option B already defers; do not
+reorder the cascade while cleaning up after an outage. *Hardcoding the observed `accepted` status
+into the repair* - the orders are queued market orders that fill at the next open, so the document
+would be stale before the code ran; the script must read broker state at execution time.
+
+**Found alongside, not fixed (worse than the orphans).** The position book has diverged badly from
+the broker: AMD carries three `open` Position nodes totalling **111 shares against 55 held**
+(`broker-reconciled:AMD` 19, `broker:AMD:37:53978` 37, `broker:AMD:55:53127` 55); MRVL is **held
+nowhere at the broker** yet has two `open` Positions of 44; ABT 98 vs 96; SCHW 98 vs 196. And
+`exit:e67227ec57fa1e46:MRVL:sell` still reads `status='pending'` while `broker_status='filled'` and
+its realized PnL is booked. These are monitor-reconciliation defects and they strengthen the case
+for DL-71 option B rather than for widening S146.
+
+**Unrelated bug found while probing.** `orchestration/packs/trading_vault_probes.py`
+`_alpaca_account_request` falls back to `ALPACA_ENDPOINT` and then appends `/v2/account`. The
+documented value in `.env.example` (and the live `.env`) already ends in `/v2`, so the Alpaca
+credential probe requests `/v2/v2/account` and 404s whenever `EXECUTION_ALPACA_BASE_URL` is unset.
+The execution agent is unaffected - it reads `EXECUTION_ALPACA_BASE_URL` with its own default. This
+is a DL-36 credential-probe defect; file it, do not fold it into S146.
+
+---

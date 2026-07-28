@@ -355,6 +355,7 @@ gate self-test: 14/14 passed
 Security Findings · 30332359747
 status=completed conclusion=success headSha=1f97ef1c3125a01de14406c2ed42609565224ab3
 ```
+
 - ✅ Item 1 — a second attempt writes a **new node**:
   `test_write_fills_appends_conflicting_exit_attempt_without_rewrite` asserts
   original `price_cents == 19451` and replay `exit:position-1:MRVL:sell#1`

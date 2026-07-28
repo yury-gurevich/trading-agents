@@ -431,3 +431,51 @@ LIVE_CHECK PASS
 - **Out-of-scope findings** (flag, do not fix): production remains on fleet `:s143`
   until this fix is merged, built, retagged, and resumed; SCHW's missing stop remains
   the expected quantity guard until monitor reconciliation heals the position book.
+
+---
+
+## Post-merge addendum — the deferred proofs, now met (2026-07-28)
+
+Added by the planning agent after merge, deploy, and a resumed run. This closes the three items the
+handback listed under *Not done, deliberately*.
+
+**Deploy.** Fleet retagged `:s143` → `:s145`, images built from `fcd81a4` (code identical to the
+merge tip `2c49f88`; the only commits between are docs). All 13 apps + `dispatcher-cron` returned
+`Succeeded`; verified 13/13 on `s145` plus the job, env vars (5) and the `daily-agent-window` KEDA
+rule intact at `minReplicas=0`. `DeployRecord deploy:2026-07-28T06:17:06…:s145:fcd81a4` written
+**after** verification.
+
+**Resumed run — `sched-2026-07-27`, from `4/7 ACCEPTANCE FAIL` to `RESULT 7/7 stages complete`.**
+Fired by temporarily widening the KEDA windows for master/execution/monitor/reporter, restored to
+`25 22`/`30 22` → `30 00` UTC immediately afterwards and verified.
+
+```text
+[execution]  submitted=2  rejected=0        (ExecutionRun … skipped=1)
+[monitor]    checked=9  closes=0  holds=9
+[reporter]   0 positions opened; 0 closed; 3 recommendations stitched.
+RESULT  7/7 stages complete  OK batch processed
+```
+
+- ✅ **Item 2 proven in production** — `ExecutionRun execution-submit-pm-run-df925eea…` carries
+  `{'skipped': 1, 'rejected': 0, 'submitted': 2}`. The `skipped=1` is the MRVL completed-exit skip;
+  the exit that crashed the run last night was refused, not re-issued.
+- ✅ **Item 4 proven in production — adopted, not fabricated.** Both orphans now carry `Fill` nodes
+  with the **live broker order ids**: `exit:22d71d0d3acc0586:AMD:sell` →
+  `broker_order_id=d040c762-3621-49f7-b862-60540a271aa2`, and
+  `pm-run-df925eea017a4a7e94cd4365bf20c25a:ABT:buy` →
+  `fd1f1c2c-4911-4df5-b7a1-e2e9929a7341`. Both match the orders standing at Alpaca exactly. No
+  fabricated `rejected` outcome was written for a live order (the DL-57/DL-59 hazard).
+- ✅ **The oversell guard held.** The Alpaca order list is **byte-identical before and after** the
+  run — 18 orders, no new ones, no MRVL re-submission. Adoption replaced duplication.
+- ⚠️ **Acceptance is `UNPROVEN - completed`**, not PASS: `accept.py --run-id sched-2026-07-27`
+  returns *"completed; orders submitted but none filled yet (queued for the open)"*. AMD sell 55
+  and ABT buy 95 fill at the 13:30 UTC open. This is the honest verdict, not a failure — re-run
+  after the open for the realized outcome.
+- ⬜ **SCHW broker stop healing: still not verified.** The monitor reconciled but SCHW's stop was
+  not re-examined in this run; it remains a resume-time check, as the handback said.
+
+**What the run also exposed — a new defect, not an S145 regression.** `Position` count went
+**21 → 23** in one reconciliation. `agents/monitor/reconcile.py:108` keys positions
+`broker:{ticker}:{qty}:{avg_entry_cents}` and matches on both quantity and basis, so any holding
+change mints a new open `Position` and closes nothing. Recorded as **DL-73**; it belongs to DL-71
+option B, and it makes that sprint non-optional. S145 neither caused nor touched it.

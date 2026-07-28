@@ -3541,3 +3541,40 @@ The execution agent is unaffected - it reads `EXECUTION_ALPACA_BASE_URL` with it
 is a DL-36 credential-probe defect; file it, do not fold it into S146.
 
 ---
+
+## DL-73 - Broker reconciliation mints a new Position per (qty, basis) and never closes the old · status: OPEN
+
+**Trigger.** The 2026-07-28 resumed run on fleet `:s145` - fired to prove the S145 exit-replay fix.
+It did prove it (7/7 stages, see DL-71), and in passing it made the position book **worse**:
+`Position` node count went **21 -> 23 in a single reconciliation**.
+
+**Mechanism.** `agents/monitor/reconcile.py:108` keys the node
+`broker:{ticker}:{quantity}:{avg_entry_cents}`, and `_matching_position` (lines 91-99) requires
+**both** `quantity` and `opened_price_cents` to match a holding exactly. Any change - a fill, a
+partial sell, a second buy moving the average - fails the match and mints a **new** `Position`,
+while the previous node stays `status="open"`. **Nothing ever closes it.**
+
+**Observed this run.** SCHW went 98 -> 196 at the broker, producing `broker:SCHW:196:10222`
+alongside the still-open `broker:SCHW:98:10177` - **294 graph shares against 196 held**. ABT went
+98 -> 96, producing `broker:ABT:96:10437` alongside `broker:ABT:98:10078` - **194 against 96**.
+Standing damage from earlier runs: AMD carries **three** open Positions (19 + 37 + 55 = **111
+against 55 held**); MRVL carries **two** open 44s while the broker holds **none at all**.
+
+**Why it matters.** ADR-0016 has the analyst score scanner survivors **union open held positions**.
+Phantom positions are `open`, so the analyst scores them, the PM can size a full exit against one,
+and execution builds an exit key from it. That is precisely the chain that produced DL-71 - an exit
+authored for a position that did not exist. This is not a divergence to be reconciled once; it is a
+**generator** of divergence, and it grows by construction every time a holding changes. S146's
+orphan-Fill repair does not touch it.
+
+**Ruled out.** *Deleting the stale nodes* - append-only store (LAW-02); supersession/closure is the
+shape here, following the S126 `RESUMES` precedent, not deletion. *Keying on ticker alone* - throws
+away the entry basis that realized PnL resolves against (S136), which would trade a visible defect
+for a silent one. *Treating it as stale data to be hand-corrected* - the correction would be undone
+by the next holding change.
+
+**Consequence for sequencing.** This makes DL-71 option B **non-optional rather than the natural
+successor**: reconciling the book before the analyst decides is worth little while reconciliation
+is itself the thing manufacturing the phantoms. Option B should absorb this, or precede it.
+
+---

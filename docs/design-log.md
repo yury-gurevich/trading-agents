@@ -3578,3 +3578,46 @@ successor**: reconciling the book before the analyst decides is worth little whi
 is itself the thing manufacturing the phantoms. Option B should absorb this, or precede it.
 
 ---
+
+### CORRECTION - the consequence claim was inferred, then tested, and is weaker than written (2026-07-28)
+
+The entry above asserted that the phantom positions "get scored, sized, and turned into exit keys -
+the exact chain that produced DL-71". That was **inference from the node counts, not observation**.
+A full fresh cascade (`confirm-s145-20260728`, fleet `:s145`, 7/7 stages) was then run specifically
+to confirm it, and it did **not** reproduce that consequence:
+
+- The analyst scored **9 tickers, one per ticker** - not one per `Position` node. AMD has three open
+  nodes (19 / 37 / 55) and was scored **once**.
+- The PM approved `AMD sell qty=55` - the **true broker holding**, not the 111 the three nodes sum
+  to. Sizing was correct.
+- MRVL was excluded from scoring entirely, so no exit was authored against the stock the broker no
+  longer holds.
+- Execution submitted 1 order and created **no duplicate**: AMD still shows exactly one live sell
+  (`d040c762…`, qty 55). No oversell.
+
+**What stands.** The accumulation is real and confirmed: **23 `Position` nodes for 8 actual broker
+holdings** - BAC open at 171 *and* 338 *and* 503, USB at 160/320/478, WFC at 116/233/348, AMD at
+19/37/55, plus SCHW, ABT and MRVL doubled. Nothing closes the superseded nodes. The `broker_absent`
+marking that ought to isolate them is applied **inconsistently**: `broker-reconciled:MRVL` and
+`broker:ABT:98:10078` carry `broker_absent=True`, but `broker:MRVL:44:22621` - 44 shares of a stock
+held **nowhere** at the broker - does not.
+
+**What does not stand.** That the phantoms currently drive sizing or exit-key construction. Some
+per-ticker selection upstream is picking one position per ticker and picking the right one. That
+path was not identified, and **that is the actual open question** - the correctness is currently
+unexplained, therefore unguarded, and nothing tests it.
+
+**Revised severity.** Not "DL-71's chain, live" - DL-71 happened, but this run did not reproduce it.
+It is an **unbounded junk-accumulation defect with an unexplained mitigation**, which is a different
+and lower-urgency problem. DL-71 option B remains the right owner; the correction is that it is not
+firefighting. **Also worth noting the opposite result:** the same reconciliation *fixed* something -
+`broker:SCHW:196:10222` matched the real holding, so `_broker_quantity_matches` finally passed and
+execution placed SCHW's missing protective stop (`stop:b56b2d2f124326d3:SCHW`, sell stop qty=196,
+2026-07-28T06:55:22Z), closing the item S145 left as "verify, do not fix".
+
+**Method note (LAW-02).** The original entry was written from a node-count delta and a code read,
+and stated a consequence it had not observed. The run cost ~15 minutes and refuted half of it. A
+count plus a plausible mechanism is a hypothesis, not a finding - this is DL-70's thesis landing on
+the design log itself.
+
+---

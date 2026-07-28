@@ -11,12 +11,64 @@ exposure · [DL-57](../design-log.md)/[DL-59](../design-log.md) intent ≠ outco
 [DL-70](../design-log.md) plant violations · [DL-73](../design-log.md) **(RETRACTED — read it before
 you audit anything)** · [DL-44](../design-log.md) broker truth
 
-> **Read [DL-73](../design-log.md) first, including its retraction.** A prior audit of this exact
-> area produced a red-severity defect that did not exist, because it filtered `Position` nodes on
-> `status == "open"` instead of using `contracts/positions.py::is_active_position_node`. The
-> position book is **correct**: 23 nodes, 9 active, one per held ticker, every quantity matching the
-> broker. **Do not "fix" reconciliation. Do not close superseded nodes.** If your work makes you
-> want to, you have made the same mistake — stop and re-read.
+> **Handover revision 2 (2026-07-28).** Revision 1 is in git history. This revision adds the
+> **law-first MUST RULE** below. It is a deliberate trial: the operator wants to see whether making
+> the coding agent read the governing law clauses *before* writing code changes the result. Treat
+> the rule as binding, not decorative — the handback is how the trial is judged.
+
+---
+
+## 🔴 MUST RULE — read the laws for every element you touch, BEFORE you write any code
+
+**This is a gate, not advice. Do not open an editor until step 3 is done.**
+
+This repo is governed by a law book. Each agent has a locked constitution at
+`agents/<name>/laws/laws.md`, with clause IDs of the form `<AGENT>-<SECTION>-<NN>` (e.g.
+`EXEC-NEV-03`, `MON-STA-02`). Sections are shared across agents: `IDN` identity, `IN` inputs, `TRG`
+triggers, `OUT` outputs, **`NEV` prohibitions**, `STA` state & effects, **`IDM` determinism &
+idempotency**, `ORD` ordering, **`FAIL` failure/recovery**, `TYP` types, `SEC` security, `DEP`
+dependencies, `OBS` observability, `PERF` performance, `CAP` capabilities, `PARAM` parameters.
+
+### The rule
+
+1. **Before writing code**, for **every** element in the map below, open and read its law file(s).
+   Read the whole file the first time — not a keyword grep. The `NEV`, `IDM`, `FAIL` and `PARAM`
+   sections bind this sprint most tightly.
+2. Also read the umbrella laws that cross-cut: [`docs/laws/dependencies.md`](../laws/dependencies.md)
+   (`DEP-BROKER` governs the Alpaca boundary), [`docs/laws/conventions.md`](../laws/conventions.md)
+   (clause-ID scheme, gray ⬜ → green 🟩 rules), and
+   [`docs/laws/drift-register.md`](../laws/drift-register.md) (where discovered gaps go).
+3. **Write the Law reading record** (template at the bottom of this file) into this document
+   **before** your first code change. It is the first thing reviewed at handback.
+4. **If a law contradicts this spec, STOP and report.** Do not silently follow either one. The law
+   is the constitution; this sprint doc is one sprint's opinion, and it can be wrong — revision 1 of
+   this very handover was built on a retracted defect. A contradiction you surface is a **success**,
+   not a blocker.
+5. **If a law is silent** on something you must decide, that silence is a finding: record it in the
+   Law reading record and add a row to `docs/laws/drift-register.md`.
+6. Every test you write for behaviour a clause governs **must cite the clause ID in its docstring**
+   (e.g. `"""EXEC-NEV-03 / EXEC-IDM-01: ..."""`). This is already a CLAUDE.md rule; the trial
+   makes it measurable.
+
+### Element → law map (read these, all of them)
+
+| Element you will touch | Law file(s) to read first | Why it binds |
+| --- | --- | --- |
+| `agents/execution/broker_stops.py` (items 1–3) | `agents/execution/laws/laws.md` | Stop placement is an execution effect; `NEV`, `IDM`, `FAIL`, `STA`, `PARAM` |
+| `agents/execution/store.py` — `write_fills` (item 4) | `agents/execution/laws/laws.md` | `EXEC-NEV-03` (never skip the idempotency key), `IDM`, `STA`, `OBS` |
+| `agents/execution/alpaca.py` / `settings.py` (items 3, 5) | `agents/execution/laws/laws.md` + `docs/laws/dependencies.md` | The broker boundary; `DEP-BROKER`, `SEC` |
+| `contracts/positions.py` (**read-only** — item 6 imports it) | `agents/monitor/laws/laws.md` | Monitor owns `Position` state; `MON-STA-*` explains why `status` stays `"open"` |
+| `agents/monitor/reconcile.py` (**do not modify** — see non-goals) | `agents/monitor/laws/laws.md` | Confirm for yourself that supersession is lawful and intended before believing any audit that says otherwise |
+| `orchestration/packs/trading_vault_probes.py` (item 5) | `agents/master/laws/laws.md` + `docs/laws/dependencies.md` | Master is the sole Key Vault accessor; credential probes are its surface |
+| `scripts/*` (items 4, 6) | `docs/laws/conventions.md` + `docs/laws/functionality-checks.md` | Tooling has no agent law; the umbrella conventions govern it |
+
+### What the trial is measuring
+
+Answer this honestly in the Law reading record, per element: **did reading the law change what you
+were going to do?** "No — the intended approach already complied" is a perfectly good answer and
+must be recorded as such. A record where every row says "no change" is a real result. A record that
+is vague, or written after the code, defeats the trial — and will be treated as an incomplete
+handback (DL-48).
 
 ---
 
@@ -28,6 +80,13 @@ refused. DL-62 describes the exposure this leaves — a gap-down between the 22:
 open — and MRVL already turned that exposure into a real **−$1,330.12**.
 
 This is not a big sprint. It is a small one about a real hole in a capital-protection guarantee.
+
+> **Read [DL-73](../design-log.md) and its retraction first.** A prior audit of this exact area
+> produced a red-severity defect that did not exist, because it filtered `Position` nodes on
+> `status == "open"` instead of using `contracts/positions.py::is_active_position_node`. The
+> position book is **correct**: 23 nodes, 9 active, one per held ticker, every quantity matching the
+> broker. **Do not "fix" reconciliation. Do not close superseded nodes.** If your work makes you
+> want to, you have made the same mistake — stop and re-read.
 
 ---
 
@@ -120,11 +179,14 @@ Assuming item 1 confirms gate 4 (or whichever it is), fix the **cause**:
 
 - A position adopted from a broker snapshot has no PM-supplied `stop_pct`. It still needs a floor.
   Give it one from a declared default — `kernel.tunable(..., why=...)` with bounds, **never a bare
-  literal** — and make the fallback explicit and visible rather than implicit.
+  literal** — and make the fallback explicit and visible rather than implicit. **Check the execution
+  `PARAM` section first**: a parameter that must be declared there is a law obligation, not a style
+  preference.
 - The stop price arithmetic must reuse `contracts/stop_rule.py::check_stop`'s own computation, as
   S138 required, so the two cannot drift.
 - A position that genuinely cannot be given a justified stop must raise a **`Fault` naming the
-  ticker and the reason** — silence is what let ABT sit unprotected (DL-57).
+  ticker and the reason** — silence is what let ABT sit unprotected (DL-57, and the execution `FAIL`
+  and `OBS` clauses).
 - **Do not force a stop where the guard is right to refuse.** `_broker_quantity_matches` correctly
   refused SCHW while the graph and broker disagreed, and that self-healed. Preserve that behaviour
   exactly; S145 proved it works.
@@ -228,6 +290,8 @@ Plant the violation and require the failure — no presence assertions:
   is what S138 Part B's `sold_tickers` skip exists to prevent.
 - **No broker-side cleanup** — do not cancel or modify live orders.
 - **No cascade reordering** — DL-71 option B stays out.
+- **Do not edit any `laws.md`.** They are LOCKED v1. If one is wrong, that is a
+  `docs/laws/drift-register.md` row and a report — never an edit.
 
 ### The road not taken (LAW-06)
 
@@ -274,17 +338,52 @@ DL-73 happened. The import rule in item 6 is the fix.
 
 ## Handback contract — MANDATORY
 
-**Append your results INSIDE this file, at the bottom, in the two placeholder sections below.**
+**Append your results INSIDE this file, at the bottom, in the placeholder sections below.**
 Not a separate report file. Not chat-only. Not a summary that points elsewhere.
 
-1. Fill the `**Result:**` line under **each** of the eight spec items above, in place.
-2. Fill the **Closeout — evidence** block with real command output: the **before** audit, `make ci`
+1. **Fill the Law reading record FIRST**, before any code. It is reviewed first at handback.
+2. Fill the `**Result:**` line under **each** of the eight spec items above, in place.
+3. Fill the **Closeout — evidence** block with real command output: the **before** audit, `make ci`
    counts, the remote gate results, the repair dry-run and `--apply` tables, and the **after** audit.
-3. Fill the **Return notes** block — including item 1's answer (**which gate skipped ABT**) and
+4. Fill the **Return notes** block — including item 1's answer (**which gate skipped ABT**) and
    item 3's (**was the 403 transient or structural**).
-4. State any success factor you did **not** meet plainly, as "verified failing" or "not done".
+5. State any success factor you did **not** meet plainly, as "verified failing" or "not done".
 
-An incomplete handback is returned, not repaired (DL-48).
+An incomplete handback is returned, not repaired (DL-48). **A handback with an empty or
+written-afterwards Law reading record is incomplete by definition** — it is the one thing this
+revision exists to collect.
+
+---
+
+## Law reading record — FILL BEFORE WRITING CODE
+
+> One row per element in the map. `Clauses that bind` = the specific IDs you judged relevant, not
+> the whole file. `Changed my approach?` = **yes + what changed**, or **no + the approach already
+> complied**. Both are valid; vagueness is not.
+
+| Element | Law file(s) read | Clauses that bind | Changed my approach? |
+| --- | --- | --- | --- |
+| `agents/execution/broker_stops.py` | | | |
+| `agents/execution/store.py` | | | |
+| `agents/execution/alpaca.py` / `settings.py` | | | |
+| `contracts/positions.py` (read-only) | | | |
+| `agents/monitor/reconcile.py` (read-only) | | | |
+| `orchestration/packs/trading_vault_probes.py` | | | |
+| `scripts/*` | | | |
+
+**Contradictions found between a law and this spec** (rule 4 — a contradiction surfaced is a
+success):
+
+_(fill in, or "none")_
+
+**Laws silent where I had to decide** (rule 5 — add a `drift-register.md` row for each):
+
+_(fill in, or "none")_
+
+**Overall verdict on the trial:** did law-first reading change the outcome of this sprint, and
+where? Answer plainly, including "it did not".
+
+_(fill in)_
 
 ---
 

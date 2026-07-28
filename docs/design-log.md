@@ -3689,3 +3689,42 @@ audit of the system; it is an audit of my assumptions about it.** Any future gra
 must import the predicates from `contracts/` rather than re-deriving them from raw props.
 
 ---
+
+## DL-74 - Trial: make the coding agent read the governing laws before writing code · status: OPEN (running on S146)
+
+**Question.** The law book is authored, locked, and cited by tests - but nothing makes the coding
+agent *read* it before implementing. Does law-first reading change what gets built, or is the law
+book only a review artefact?
+
+**The trial.** S146's handover (revision 2) opens with a **MUST RULE**: before any code, read
+`agents/<name>/laws/laws.md` for every element to be modified, plus the cross-cutting umbrella laws
+(`dependencies.md` for `DEP-BROKER`, `conventions.md`, `drift-register.md`), and fill a **Law
+reading record** table *in the handover* before the first edit. One row per element: which clauses
+bind, and **did reading them change the intended approach - yes and what, or no and why the
+approach already complied.** An empty or retrospectively-written record makes the handback
+incomplete by definition (DL-48).
+
+**Why S146 is the right first subject.** It touches the execution agent's stop-placement path -
+governed by `EXEC-NEV-*`, `EXEC-IDM-*`, `EXEC-FAIL-*` and `EXEC-PARAM-*` - plus a read-only
+dependency on monitor's `Position` state (`MON-STA-*`). It also has a **known correct answer to a
+tempting wrong move**: the DL-73 retraction proves reconciliation is lawful and must not be
+"fixed". If law-first reading is worth anything, an agent that reads `MON-STA-*` should reach that
+conclusion independently rather than on the sprint doc's say-so.
+
+**What counts as a result.** Three outcomes are all informative and all must be reported honestly:
+the record shows laws **changed** a decision (the rule earns its cost); the record shows **no
+change** everywhere (the sprint spec was already law-compliant - cheap insurance, keep or drop on
+cost); or the agent surfaces a **contradiction between a law and the spec**, which is the highest
+value outcome available, because the spec is one sprint's opinion and the law is the constitution.
+
+**Deliberately not measured yet.** Whether the rule slows the agent down materially, and whether it
+scales to sprints touching six agents rather than two. One trial does not settle either.
+
+**Ruled out.** *Making it a CI gate* - unenforceable, since reading is not observable in a diff;
+the observable artefact is the record, and a record can be faked, which is why the rule demands
+clause IDs and a yes/no-with-reason rather than a tick. *Quoting the relevant clauses into the
+sprint doc instead* - that is what the planning agent already does implicitly, and it is exactly
+the failure mode under test: it keeps the law book as a thing the planner has read and the coder
+has not. *Applying it to every sprint immediately* - this is a trial; adopt or drop it on evidence.
+
+---

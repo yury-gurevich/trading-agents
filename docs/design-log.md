@@ -3436,3 +3436,56 @@ cheap mechanical half is asserting that every `DL-NN` cited in code exists in th
 and capital protection outranks it.
 
 ---
+
+## DL-71 - The exit replay was a rewrite in an append-only store · status: OPEN (A shipping as S145, B deferred)
+
+**Trigger.** `sched-2026-07-27` reached 4/7 stages and scored `ACCEPTANCE FAIL`. Execution crashed
+with `ValueError: property 'price_cents' cannot be overwritten` in `write_fills`, restarted, and
+crash-looped from 22:40:31 until the KEDA window closed at 00:33. Monitor and reporter never ran.
+The same run placed the **first six broker-native stops** (ADR-0015 section 3, proof pending since
+Friday) and booked the **first realized forced-stop exit** (MRVL 44 @ $195.98, -$1,330.12), because
+`place_broker_stops` runs before `run_submit` in `poll.py`.
+
+**The defect.** 0.74.01 keyed exit orders on the position rather than the run, so an unfilled sell
+would *"replay instead of duplicating"*. That one string does two jobs: at the broker it is the
+`client_order_id` (the oversell guard - it worked), and in the graph it is the `Fill` node key. The
+graph is append-only. A replay is byte-identical only if the reference price never moves, and it
+always moves (`19451` -> `18928`). **The replay path had never actually replayed before**; its first
+real execution killed the cascade. The oversell guard was right; treating a replay as a *rewrite*
+was not.
+
+**Why a replay happened at all - the upstream cause.** The MRVL exit had filled at Monday's open,
+nine hours earlier. Nothing removed the position from the book: the broker snapshot is written by
+execution at stage 5, but the book is only healed by the monitor at stage 6 - one full run later -
+and 07-25/07-26 were weekend skips. So the analyst scored a stale book, re-decided `MRVL sell`, the
+PM approved a full exit of a position that no longer existed, and execution rebuilt the dead
+position's exit key.
+
+**Two options, both real.**
+
+- **A - make attempts append-safe (shipping, S145).** One attempt = one immutable node; the broker
+  key stays stable, the graph key gains an attempt ordinal; a completed exit is never re-issued; a
+  per-intent failure degrades to a per-intent `Fault` instead of taking three stages down. Bounded,
+  testable, and it unbricks production.
+- **B - reconcile the book before the analyst decides (deferred).** Heals the actual cause: no stale
+  book, no phantom exit intent. Deferred because it reorders the cascade and moves position truth
+  across DL-44's ownership line, and that is not a change to make on top of a live outage. **Not
+  rejected** - the natural successor sprint.
+
+**Ruled out.** *Making `price_cents` mutable* - it would fix the crash by discarding the property
+the store exists to provide; the wrong number staying visible-but-superseded is the better audit
+trail (the `repair_close_pnl.py` precedent, 0.74.03). *Reverting to a run-scoped exit key* - that
+restores the 0.74.01 oversell hazard, where an unfilled sell is re-submitted as a second distinct
+order every night. *Catching the `ValueError` in the work loop and continuing* - it would keep the
+fleet alive while writing nothing, which is DL-57's failure mode with extra steps.
+
+**The general lesson.** Execution is a **fan-out** stage, and it had no per-item containment: one
+ticker's write failure cost three stages, a night's trading, and the reconciliation that would have
+prevented it. This is DRIFT-014 / S128 (*one 429 costs one ticker, not the feed*) restated for
+order submission. Worth auditing every other fan-out stage for the same shape.
+
+**Named limit.** Both live orders from the crashed run (AMD sell 55, ABT buy 95) carry no `Fill`
+node, so a naive retry records `rejected` for orders that are actually live - a fabricated outcome
+of exactly the DL-57/DL-59 class. Adopting broker state on a duplicate-key refusal is part of A.
+
+---

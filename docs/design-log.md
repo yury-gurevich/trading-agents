@@ -3488,15 +3488,23 @@ order submission. Worth auditing every other fan-out stage for the same shape.
 node, so a naive retry records `rejected` for orders that are actually live - a fabricated outcome
 of exactly the DL-57/DL-59 class. Adopting broker state on a duplicate-key refusal is part of A.
 
-**Where this stands, 2026-07-29.** **A is done and proven** (S145, 0.80.02, merged `2c49f88`, fleet
+**Where this stands, 2026-07-29 (updated — B is now packaged as S147).** **A is done and proven**
+(S145, 0.80.02, merged `2c49f88`, fleet
 `:s145`): `sched-2026-07-27` — the run that crash-looped for two hours — was resumed and scored
 `ACCEPTANCE PASS` at 7/7, and the completed-exit skip later fired on a live scheduled run for real
 (`CompletedExitReplaySkipped … AMD position_ref=22d71d0d3acc0586`), containing the exact defect that
 bricked the fleet. The named limit held: no fabricated `rejected` was written, and both crash
-orphans adopted broker state as designed. **B is still deferred** and now smaller than it looked —
+orphans adopted broker state as designed. **B is packaged as
+[S147](sprints/sprint-147-fresh-book-before-decision.md)** — a head-of-run position sync, kept
+lawful by leaving both jobs with their owners: execution refreshes the `BrokerPositionSnapshot`
+(`EXEC-IDN-01`, sole broker interface) and the monitor reconciles the book (`MON-IDN-02`, sole
+`Position` writer), with the analyst simply not pending until that has happened. Two agents in a new
+order rather than one agent doing both jobs — the ownership line DL-71 worried about is not crossed,
+because only the *triggers* move. B is also smaller than it looked:
 [ADR-0018](decisions/0018-decision-validity-same-session-or-dropped.md) drops unfilled orders at
-session end, which removes the *carried phantom intent* half of the hazard; what B still owns is the
-one-run reconciliation lag itself. **The fan-out lesson was never acted on** — S145 gave *execution*
+session end, removing the *carried* phantom intent — but not the *authored* one, which is what B
+fixes and why the two are complementary rather than alternatives.
+**The fan-out lesson was never acted on** — S145 gave *execution*
 per-item containment, but the audit this entry called for ("worth auditing every other fan-out stage
 for the same shape") was never scheduled. Parked in [ideas.md](ideas.md) 2026-07-29 so it stops
 living only inside this paragraph.

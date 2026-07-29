@@ -73,12 +73,14 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
    — graph vocabulary guard, DL-66; S144 / 0.80.00 — the guard made deployable and its pack
    proven complete, DL-68; S145 SHIPPED `2c49f88`/0.80.02 — exit replay append-safe, DL-71,
    unbricked execution, **PROVEN in production** 2026-07-28 (`7/7`, then a fresh cascade at
-   `ACCEPTANCE PASS`); **S146 / 0.80.03 SPEC** — the unprotected ABT position, DL-73 retraction,
-   🟠 96 shares with no broker stop). P12 scorecard-run stays queued until ~2 weeks of clean-news
-   nights accumulate. **Next named work:** DL-71 option B (reconcile the book before the analyst
-   decides) — note its urgency was **not** raised by the 2026-07-28 audit, which found the position
-   book correct once `is_active_position_node` is used; then reconcile the 8 `labels_owned`
-   declarations and enable `owners` enforcement.
+   `ACCEPTANCE PASS`); **S146 SHIPPED** `7b06662`/0.80.03 — the unprotected ABT position and the
+   DL-73 retraction, fleet `:s146`, DRIFT-024 left open). P12 scorecard-run stays queued until
+   ~2 weeks of clean-news nights accumulate. **Next named work: S147 / DL-71 option B is packaged**
+   ([sprint-147](sprint-147-fresh-book-before-decision.md)) — a head-of-run position sync so the
+   analyst never scores a book that is a full run stale; note its urgency was **not** raised by the
+   2026-07-28 audit, which found the position book correct once `is_active_position_node` is used.
+   Then ADR-0018 (drop unfilled orders at session end), and reconciling the 8 `labels_owned`
+   declarations to enable `owners` enforcement.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

@@ -9,7 +9,8 @@ External I/O: injected Broker and GraphStore backends.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
 
 from agents.execution.broker_stops import (
     place_broker_stops,
@@ -19,7 +20,13 @@ from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
 from contracts.portfolio_manager import OrderIntentSet
-from kernel import CollectingFaultSink
+from contracts.position_sync import (
+    RUN_REQUEST_LABEL,
+    SNAPSHOT_REFRESH_EDGE,
+    linked_snapshot,
+    run_request_id,
+)
+from kernel import CollectingFaultSink, fault_boundary
 from kernel.fault_graph import GraphFaultSink
 
 if TYPE_CHECKING:
@@ -33,6 +40,14 @@ EXECUTED_EDGE = "EXECUTED_BY"
 # it is given (EXEC-NEV-01), never deciding what to trade. Read by graph label so the
 # agent imports nothing from orchestration.
 _DELIBERATED_EDGE = "DELIBERATED_BY"
+
+
+@dataclass(frozen=True)
+class ExecutionWorkItem:
+    """One execution poll item, preserving a single work_loop entrypoint."""
+
+    kind: Literal["position_sync", "submit"]
+    node: Node
 
 
 def _drop_vetoed(
@@ -57,6 +72,15 @@ def _drop_vetoed(
     return order_set.model_copy(update={"approved": survivors})
 
 
+def find_pending_position_sync(graph: GraphStore) -> list[Node]:
+    """Return RunRequest nodes with no execution-authored broker snapshot."""
+    pending: list[Node] = []
+    for node in graph.list_nodes(RUN_REQUEST_LABEL):
+        if linked_snapshot(graph, node) is None:
+            pending.append(node)
+    return pending
+
+
 def find_pending(graph: GraphStore) -> list[Node]:
     """Return PMRun nodes with no downstream ExecutionRun (unprocessed work)."""
     pending: list[Node] = []
@@ -67,6 +91,57 @@ def find_pending(graph: GraphStore) -> list[Node]:
         if not executed:
             pending.append(node)
     return pending
+
+
+def find_pending_work(graph: GraphStore) -> list[ExecutionWorkItem]:
+    """Return head sync work before order-submission work."""
+    return [
+        *(
+            ExecutionWorkItem("position_sync", node)
+            for node in find_pending_position_sync(graph)
+        ),
+        *(ExecutionWorkItem("submit", node) for node in find_pending(graph)),
+    ]
+
+
+def process_work_item(
+    item: ExecutionWorkItem,
+    *,
+    graph: GraphStore,
+    broker: Broker,
+    settings: ExecutionSettings | None = None,
+    sink: FaultSink | None = None,
+) -> None:
+    """Dispatch one execution work item without widening the work_loop."""
+    if item.kind == "position_sync":
+        sync_run_request(item.node, graph=graph, broker=broker, sink=sink)
+    else:
+        execute_pm_node(
+            item.node, graph=graph, broker=broker, settings=settings, sink=sink
+        )
+
+
+def sync_run_request(
+    node: Node,
+    *,
+    graph: GraphStore,
+    broker: Broker,
+    sink: FaultSink | None = None,
+) -> None:
+    """Write a run-start broker snapshot and link it to its RunRequest."""
+    sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
+    with fault_boundary(
+        sink,
+        agent="execution",
+        module="agents.execution.poll",
+        capability="position_sync",
+        reraise=False,
+    ) as capture:
+        snapshot = reconcile_run_start(graph, broker, sink, run_id=run_request_id(node))
+        if snapshot is not None:
+            graph.add_edge(node, snapshot, SNAPSHOT_REFRESH_EDGE)
+    if capture.fault is not None:
+        return
 
 
 def execute_pm_node(

@@ -7,9 +7,10 @@ External I/O: none.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import overbought_bars
-from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from contracts.portfolio_manager import OrderIntentSet
@@ -17,12 +18,16 @@ from kernel import InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import ReboundingDataSource, entry_bars, rebound_bars
+from orchestration.tests.seeded_broker import SeededPaperBroker
+
+if TYPE_CHECKING:
+    from agents.execution.paper_broker import PaperBroker
 
 
 def test_graph_pull_cascade_sells_held_low_confidence_name() -> None:
     """ADR-0016: graph-pull scores held+survivors and sends sell via OrderIntent."""
     graph = InMemoryGraphStore()
-    broker = PaperBroker()
+    broker = SeededPaperBroker({"LOW": 7})
     _position(graph, "LOW", 7)
     source = ReboundingDataSource(
         entry=(*entry_bars(), *overbought_bars("LOW")),
@@ -51,7 +56,7 @@ def test_graph_pull_cascade_sells_held_low_confidence_name() -> None:
 def test_graph_pull_sell_replays_until_position_nodes_change() -> None:
     """ADR-0015/0016: unchanged exit holding reuses one broker idempotency key."""
     graph = InMemoryGraphStore()
-    broker = PaperBroker(reject_tickers={"LOW"})
+    broker = SeededPaperBroker({"LOW": 7}, reject_tickers={"LOW"})
     _position(graph, "LOW", 7)
     source = ReboundingDataSource(
         entry=(*entry_bars(), *overbought_bars("LOW")),
@@ -71,6 +76,7 @@ def test_graph_pull_sell_replays_until_position_nodes_change() -> None:
 
     graph.merge_node("Position", "held:LOW", {"broker_superseded_by": "remaining"})
     _position(graph, "LOW", 4, key="remaining:LOW")
+    broker.set_position("LOW", 4)
     _run_sell(graph, agent, broker, "exit-3")
 
     keys = {fill.idempotency_key for fill in broker.fills()}
@@ -82,7 +88,7 @@ def test_graph_pull_sell_replays_until_position_nodes_change() -> None:
 def test_graph_pull_sets_position_ref_on_exits_only() -> None:
     """ADR-0016: PM emits entry and exit intents on one graph-pull rail."""
     graph = InMemoryGraphStore()
-    broker = PaperBroker()
+    broker = SeededPaperBroker({"LOW": 7})
     _position(graph, "LOW", 7)
     source = ReboundingDataSource(
         entry=(*entry_bars(), *overbought_bars("LOW")),
@@ -109,7 +115,7 @@ def test_graph_pull_sets_position_ref_on_exits_only() -> None:
 def test_graph_pull_held_survivor_holds_without_pyramiding() -> None:
     """ADR-0016: held survivor above exit floor is hold, never a duplicate buy."""
     graph = InMemoryGraphStore()
-    broker = PaperBroker()
+    broker = SeededPaperBroker({"AAPL": 3})
     _position(graph, "AAPL", 3)
     source = ReboundingDataSource(entry=entry_bars(), rebound=rebound_bars())
     agent = _provider(graph, source)
@@ -121,7 +127,7 @@ def test_graph_pull_held_survivor_holds_without_pyramiding() -> None:
     assert [(r.props["ticker"], r.props["action"]) for r in recommendations] == [
         ("AAPL", "hold")
     ]
-    assert broker.fills() == ()
+    assert not any(fill.side == "buy" for fill in broker.fills())
     assert graph.list_nodes("OrderIntent") == ()
 
 

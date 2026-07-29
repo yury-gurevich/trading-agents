@@ -12,9 +12,17 @@ from typing import Literal
 from contracts.common import _Frozen
 
 ResumeStage = Literal[
-    "provider", "scanner", "analyst", "pm", "execution", "monitor", "reporter"
+    "position_sync",
+    "provider",
+    "scanner",
+    "analyst",
+    "pm",
+    "execution",
+    "monitor",
+    "reporter",
 ]
 RESUME_STAGES: tuple[ResumeStage, ...] = (
+    "position_sync",
     "provider",
     "scanner",
     "analyst",
@@ -23,9 +31,11 @@ RESUME_STAGES: tuple[ResumeStage, ...] = (
     "monitor",
     "reporter",
 )
-BROKER_RESUME_STAGES = frozenset(RESUME_STAGES[:5])
+BROKER_RESUME_STAGES = frozenset(
+    {"position_sync", "provider", "scanner", "analyst", "pm", "execution"}
+)
 BROKER_RESUME_CONSEQUENCE = (
-    "re-running from portfolio manager will submit new orders at the broker"
+    "re-running from this stage can submit new orders at the broker"
 )
 
 

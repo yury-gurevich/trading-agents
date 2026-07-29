@@ -61,6 +61,7 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | ID | Law | Intent says | Reality says | Kind | Status / decision |
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-024 | `EXEC-IDN-02` / `EXEC-DEP-02` / `EXEC-PARAM` | Execution's constitution lists durable execution labels and tunables, but does not name ADR-0015 broker-stop state or the broker-stop fallback parameter. | ADR-0015 §3 and S146 require execution to place/retry broker-native stops, write/read `BrokerStopOrder`, and use a bounded fallback stop percent for broker-adopted positions with no PM `stop_pct`. | law gap | **OPEN** — S146 implements and tests the behaviour without editing the LOCKED law; a later law amendment should declare broker-stop labels/capability and the fallback stop parameter. |
+| DRIFT-025 | `EXEC-IDN-02` / `EXEC-DEP-02` / execution CAP | Execution's constitution says execution exclusively owns `Fill`, `Reconciliation`, `StageTransition`, and `ExecutionResultEvent`, and its graph dependency/capability lists those durable labels. | S120 code already writes `BrokerPositionSnapshot` from `agents/execution/reconciliation_store.py:82` / `:101` during `reconcile_run_start`, and S147 adds a head-of-run work source that relies on that execution-owned snapshot before the analyst runs. | law gap | **OPEN** — S147 records and tests the behaviour without editing the LOCKED law; a later law amendment should declare `BrokerPositionSnapshot` ownership/capability and the run-start snapshot trigger explicitly. |
 
 ## Portfolio Manager (`PM`)
 

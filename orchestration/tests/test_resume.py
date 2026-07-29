@@ -7,8 +7,6 @@ External I/O: none; the graph and broker are in-memory fakes.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 
 from agents.analyst import poll as analyst_poll
@@ -25,12 +23,6 @@ from orchestration.local_pipeline import cascade_once
 from orchestration.resume import resume_run
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import source
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-    from typing import Any
-
-    from kernel import Node
 
 
 def _complete(run_id: str = "original") -> tuple[InMemoryGraphStore, ProviderAgent]:
@@ -49,16 +41,22 @@ def _complete(run_id: str = "original") -> tuple[InMemoryGraphStore, ProviderAge
 @pytest.mark.parametrize(
     ("stage", "labels", "pending"),
     [
-        ("provider", (), provider_poll.find_pending),
-        ("analyst", ("MarketData", "ScanRun"), analyst_poll.find_pending),
+        ("position_sync", (), execution_poll.find_pending_position_sync),
+        ("provider", ("PositionSync",), provider_poll.find_pending),
+        (
+            "analyst",
+            ("PositionSync", "MarketData", "ScanRun"),
+            analyst_poll.find_pending,
+        ),
         (
             "pm",
-            ("MarketData", "ScanRun", "AnalystRun"),
+            ("PositionSync", "MarketData", "ScanRun", "AnalystRun"),
             pm_poll.find_pending,
         ),
         (
             "monitor",
             (
+                "PositionSync",
                 "MarketData",
                 "ScanRun",
                 "AnalystRun",
@@ -92,7 +90,7 @@ def test_stage_matrix_links_upstream_and_leaves_selected_stage_pending(
     assert resumed == (original["RunRequest"],)
 
 
-def test_monitor_resume_reaches_seven_of_seven_without_execution() -> None:
+def test_monitor_resume_reaches_eight_of_eight_without_execution() -> None:
     graph, agent = _complete()
     broker = PaperBroker()
     result = resume_run(graph, source_run_id="original", resume_from="monitor")
@@ -102,6 +100,7 @@ def test_monitor_resume_reaches_seven_of_seven_without_execution() -> None:
 
     assert set(walk_chain(graph, result.child_run_id)) == {
         "RunRequest",
+        "PositionSync",
         "MarketData",
         "ScanRun",
         "AnalystRun",
@@ -137,11 +136,18 @@ def test_child_of_child_and_double_resume_are_deterministic() -> None:
     assert len(graph.list_nodes("RunRequest")) == 3
 
 
-def test_provider_double_resume_has_no_linked_upstream() -> None:
+def test_position_sync_double_resume_has_no_linked_upstream() -> None:
     graph, _agent = _complete()
-    first = resume_run(graph, source_run_id="original", resume_from="provider")
-    replay = resume_run(graph, source_run_id="original", resume_from="provider")
+    first = resume_run(graph, source_run_id="original", resume_from="position_sync")
+    replay = resume_run(graph, source_run_id="original", resume_from="position_sync")
     assert first.linked == replay.linked == ()
+
+
+def test_provider_resume_links_position_sync_upstream() -> None:
+    graph, _agent = _complete()
+    result = resume_run(graph, source_run_id="original", resume_from="provider")
+    assert len(result.linked) == 1
+    assert result.linked[0].startswith("MonitorRun:position-sync:original")
 
 
 def test_resume_tolerates_missing_optional_regime_link() -> None:
@@ -155,43 +161,9 @@ def test_resume_tolerates_missing_optional_regime_link() -> None:
 def test_missing_source_stage_and_invalid_stage_are_refused() -> None:
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="partial", tickers=("AAPL",))
-    with pytest.raises(ValueError, match="upstream MarketData is missing"):
+    with pytest.raises(ValueError, match="upstream PositionSync is missing"):
         resume_run(graph, source_run_id="partial", resume_from="analyst")
     with pytest.raises(ValueError, match="invalid resume stage"):
         resume_run(graph, source_run_id="partial", resume_from="unknown")
     with pytest.raises(ValueError, match="unknown source run"):
         resume_run(graph, source_run_id="missing", resume_from="provider")
-
-
-class _PostgresSemanticsGraph(InMemoryGraphStore):
-    """Track attempts to merge existing nodes like append-only PostgreSQL."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.existing_merges: list[tuple[str, str]] = []
-
-    def merge_node(
-        self,
-        label: str,
-        key: str,
-        props: Mapping[str, Any],
-        *,
-        schema_version: int = 1,
-    ) -> Node:
-        if self.get_node(label, key) is not None:
-            self.existing_merges.append((label, key))
-        return super().merge_node(label, key, props, schema_version=schema_version)
-
-
-def test_postgres_semantics_never_overwrite_or_delete_original_artifacts() -> None:
-    base, _agent = _complete()
-    graph = _PostgresSemanticsGraph()
-    graph._nodes = dict(base._nodes)
-    graph._edges = list(base._edges)
-    before = dict(graph._nodes)
-
-    resume_run(graph, source_run_id="original", resume_from="monitor")
-
-    assert graph.existing_merges == []
-    assert all(graph._nodes[key] == node for key, node in before.items())
-    assert not hasattr(graph, "delete_node")

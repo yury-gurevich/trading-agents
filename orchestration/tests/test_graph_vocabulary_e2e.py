@@ -27,6 +27,15 @@ from agents.execution.tests.broker_stop_helpers import (
 )
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
+from contracts.position_sync import (
+    POSITION_SYNC_EDGE,
+    POSITION_SYNC_PHASE,
+    RUN_REQUEST_LABEL,
+    SNAPSHOT_LABEL,
+    SNAPSHOT_REFRESH_EDGE,
+    SNAPSHOT_SYNC_EDGE,
+    run_request_key,
+)
 from contracts.positions import open_positions
 from kernel import CollectingFaultSink, InMemoryGraphStore, InProcessBus
 from kernel.graph_guarded import GuardedGraphStore
@@ -38,7 +47,7 @@ from orchestration.tests.helpers import source
 _VOCABULARY = (
     Path(__file__).resolve().parents[1] / "packs" / "trading_graph_vocabulary.json"
 )
-_CHAIN = ("MarketData", "ScanRun", "AnalystRun", "PMRun", "ExecutionRun", "MonitorRun")
+_UNIQUE_CHAIN = ("MarketData", "ScanRun", "AnalystRun", "PMRun", "ExecutionRun")
 
 
 def _declaration() -> dict[str, object]:
@@ -71,8 +80,10 @@ def test_declared_vocabulary_admits_the_whole_cascade() -> None:
 
     _run(graph)
 
-    for label in _CHAIN:
+    for label in _UNIQUE_CHAIN:
         assert len(inner.list_nodes(label)) == 1, label
+    assert len(inner.list_nodes(SNAPSHOT_LABEL)) == 2
+    assert len(inner.list_nodes("MonitorRun")) == 2
 
 
 def test_the_guard_can_actually_reject_a_write() -> None:
@@ -85,6 +96,34 @@ def test_the_guard_can_actually_reject_a_write() -> None:
 
     with pytest.raises(VocabularyError, match="undeclared node label 'RunRequest'"):
         place_run_request(graph, run_id="vocab", tickers=("AAPL",))
+
+
+def test_declared_vocabulary_covers_sync_edges_and_rejects_bad_signature() -> None:
+    """MON-IDN-02 / EXEC-IDN-02: planted undeclared sync edge is rejected."""
+    graph = GuardedGraphStore(
+        InMemoryGraphStore(), Vocabulary.from_mapping(_declaration())
+    )
+    request = graph.merge_node(
+        RUN_REQUEST_LABEL,
+        run_request_key("sync-vocab"),
+        {"run_id": "sync-vocab"},
+    )
+    snapshot = graph.merge_node(
+        SNAPSHOT_LABEL,
+        "snapshot:sync-vocab",
+        {"run_id": "sync-vocab", "status": "fresh", "holdings": ()},
+    )
+    marker = graph.merge_node(
+        "MonitorRun",
+        "position-sync:sync-vocab",
+        {"phase": POSITION_SYNC_PHASE, "position_book_status": "fresh"},
+    )
+
+    graph.add_edge(request, snapshot, SNAPSHOT_REFRESH_EDGE)
+    graph.add_edge(snapshot, marker, SNAPSHOT_SYNC_EDGE)
+    graph.add_edge(request, marker, POSITION_SYNC_EDGE)
+    with pytest.raises(VocabularyError, match="RunRequest -> MonitorRun"):
+        graph.add_edge(request, marker, SNAPSHOT_SYNC_EDGE)
 
 
 def test_declared_vocabulary_admits_the_broker_native_stop_path() -> None:
@@ -123,5 +162,5 @@ def test_declared_vocabulary_covers_every_label_the_cascade_writes() -> None:
     _run(graph)
 
     declared = set(_declared_labels())
-    written = {node.label for label in _CHAIN for node in inner.list_nodes(label)}
+    written = {label for label in declared if inner.list_nodes(label)}
     assert written <= declared

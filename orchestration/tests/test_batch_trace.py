@@ -57,10 +57,11 @@ def full_graph() -> InMemoryGraphStore:
 
 
 def test_walk_chain_returns_all_nodes(full_graph: InMemoryGraphStore) -> None:
-    """walk_chain should find all 8 nodes in the complete chain."""
+    """walk_chain should find all 9 run nodes in the complete chain."""
     nodes = walk_chain(full_graph, "trace-test")
     assert set(nodes.keys()) == {
         "RunRequest",
+        "PositionSync",
         "MarketData",
         "ScanRun",
         "AnalystRun",
@@ -79,11 +80,12 @@ def test_walk_chain_missing_run_id(full_graph: InMemoryGraphStore) -> None:
 def test_print_trace_complete(
     full_graph: InMemoryGraphStore, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """print_trace returns 7 for a complete cascade and outputs all 7 sections."""
+    """print_trace returns 8 for a complete cascade and outputs all 8 sections."""
     complete = print_trace(full_graph, "trace-test")
-    assert complete == 7
+    assert complete == 8
     out = capsys.readouterr().out
     for section in (
+        "[position_sync]",
         "[provider]",
         "[scanner]",
         "[analyst]",
@@ -93,7 +95,7 @@ def test_print_trace_complete(
         "[reporter]",
     ):
         assert section in out
-    assert "7/7 stages complete" in out
+    assert "8/8 stages complete" in out
     assert "OK batch processed" in out
     assert "profit_factor=unavailable" in out
     assert "expectancy_cents=unavailable" in out
@@ -139,7 +141,7 @@ def test_print_trace_with_news_and_drops(capsys: pytest.CaptureFixture[str]) -> 
     )
     src = FakeDataSource(bars=bars, vix=12.0, news={"AAPL": ("breaking: AAPL up",)})
     graph = _cascade(src, ("AAPL", "MSFT", "NVDA"), "drops")
-    assert print_trace(graph, "drops") == 7
+    assert print_trace(graph, "drops") == 8
     out = capsys.readouterr().out
     assert "news" in out
     assert "min_relative_strength" in out
@@ -163,7 +165,7 @@ def test_print_trace_degraded_data_exposes_reasons(
         bar("MSFT", 24, 110.0),
     )
     graph = _cascade(FakeDataSource(bars=bars, vix=12.0), ("AAPL", "MSFT"), "deg")
-    assert print_trace(graph, "deg") == 7
+    assert print_trace(graph, "deg") == 8
     out = capsys.readouterr().out
     assert "quality   DEGRADED" in out
     assert "stale" in out
@@ -184,5 +186,5 @@ def test_print_trace_with_pm_rejection(capsys: pytest.CaptureFixture[str]) -> No
         "pmrej",
         pm_settings=PortfolioManagerSettings(max_positions=1),
     )
-    assert print_trace(graph, "pmrej") == 7
+    assert print_trace(graph, "pmrej") == 8
     assert "SKIP" in capsys.readouterr().out

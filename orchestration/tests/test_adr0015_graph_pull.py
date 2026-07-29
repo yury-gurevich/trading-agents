@@ -9,19 +9,19 @@ from __future__ import annotations
 
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import overbought_bars
-from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import InMemoryGraphStore, InProcessBus, Node
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import ReboundingDataSource, entry_bars, rebound_bars
+from orchestration.tests.seeded_broker import SeededPaperBroker
 
 
 def test_graph_pull_cascade_sells_previously_decided_close_holding() -> None:
     """ADR-0015 s1: a stranded close intent still reaches the sell rail."""
     graph = InMemoryGraphStore()
-    broker = PaperBroker()
+    broker = SeededPaperBroker({"AMD": 7})
     held = _position(graph, "AMD", 7)
     close = graph.merge_node("CloseDecision", "held:AMD:close", {"decision": "close"})
     graph.add_edge(close, held, "CLOSES")

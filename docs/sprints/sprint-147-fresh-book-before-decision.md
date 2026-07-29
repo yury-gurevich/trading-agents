@@ -215,7 +215,12 @@ Two agents, each doing only what it already lawfully does, in a new order. Concr
   one, state which, and make sure the *existing* source keeps working — the end-of-run monitor stage
   is not optional (item 3).
 
-**Result:**
+**Result:** Implemented. Execution now has a `RunRequest` work source that writes one
+`BrokerPositionSnapshot` per run via the existing broker reconciliation path, and monitor now has a
+snapshot work source that adopts fresh snapshots into `Position` before analyst work. Both agents
+compose the new source with the existing source through typed work items, keeping a single
+`work_loop` per entrypoint. The sync marker is `MonitorRun phase="sync"` linked from the
+`RunRequest`, so it stays inside monitor-owned labels.
 
 ### 2 · The analyst never scores an unreconciled book
 
@@ -236,7 +241,10 @@ This is the clause that makes 2026-07-27 impossible.
   one. The floor is the resting broker stop (ADR-0015 §3), which is exactly why it is exempt from
   ADR-0018 — it keeps working while everything else degrades.
 
-**Result:**
+**Result:** Implemented. `agents/analyst/poll.py::find_pending` now returns a `ScanRun` only after
+the run has a fresh-or-stale sync marker. Missing sync waits without writing an `AnalystRun`; stale
+sync proceeds with `position_book_status="stale"`, a visible stale reason, and a
+`position_book_stale` incident in the recommendation provenance.
 
 ### 3 · Keep the end-of-run reconcile — both, and both idempotent
 
@@ -250,7 +258,10 @@ This is the clause that makes 2026-07-27 impossible.
   `_create_broker_position` already returns the existing node — confirm that this holds under a
   double call and prove it with a test rather than reading it and assuming (LAW-02).
 
-**Result:**
+**Result:** Implemented. The tail monitor reconcile remains in place and still adopts fills created
+by the same run. Head sync and tail monitor now both call the shared snapshot reconciliation helper,
+and the tests prove repeated sync/reconcile passes do not duplicate `Position` nodes or rewrite
+supersession state.
 
 ### 4 · The new stage must not be able to brick the run
 
@@ -265,7 +276,10 @@ that would have prevented it.
   raise, it can brick the fleet before a single decision is made — strictly worse than the outage
   this sprint exists to prevent.
 
-**Result:**
+**Result:** Implemented. New sync paths are wrapped per run in `kernel.fault_boundary`; broker read
+failure becomes a stale snapshot plus `Fault`, while an outer reconciliation failure is captured and
+does not escape `work_loop`. A poisoned first run no longer prevents a healthy second run from
+syncing in the same pass.
 
 ### 5 · Wire the stage in everywhere it is enumerated — including the index trap
 
@@ -287,7 +301,10 @@ wrong.
   warning before a resume that really does submit orders.** Fix it by making the set explicit by
   name rather than by slice, and pin it with the test in the plan below.
 
-**Result:**
+**Result:** Implemented. `position_sync` is now the first local pipeline stage, acceptance and trace
+counts are eight stages, resume stages start with `position_sync`, and broker-consequence stages are
+an explicit named set rather than an index slice. Resume artifact alignment moved to
+`orchestration/resume_plan.py` with a planted mismatch test.
 
 ### 6 · Declare every new label, edge and prop in the vocabulary
 
@@ -299,14 +316,22 @@ real broker stop because two edges were undeclared.
 - Re-run `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py` and paste the
   output into the closeout.
 
-**Result:**
+**Result:** Implemented. Added the new sync edges to
+`orchestration/packs/trading_graph_vocabulary.json`:
+`RunRequest -REFRESHES-> BrokerPositionSnapshot`,
+`BrokerPositionSnapshot -MONITORED_BY-> MonitorRun`, and
+`RunRequest -POSITION_SYNCED_BY-> MonitorRun`. Vocabulary tests include a planted undeclared-edge
+rejection.
 
 ### 7 · Prove the checks can fail (DL-70)
 
 No presence assertions. Plant the violation and require the failure — see the full test plan below,
 where every test is specified with the violation it plants.
 
-**Result:**
+**Result:** Implemented. The test suite plants each critical violation before asserting the fix:
+unsynced run not pending, stale snapshot not adopted, MRVL absent after broker truth says absent,
+resume artifact mismatch raising, index-slice drift rejected, and undeclared vocabulary edge
+rejected.
 
 ### 8 · Record the declaration debt you find (do not fix it here)
 
@@ -319,7 +344,10 @@ DRIFT-024 (already open) records that execution's constitution declares neither 
 state nor a fallback stop parameter. If you find more of the same shape, that is a pattern worth
 naming as one finding rather than three rows.
 
-**Result:**
+**Result:** Implemented. Added DRIFT-025 to `docs/laws/drift-register.md` for execution law
+declaration debt: execution writes `BrokerPositionSnapshot` through
+`agents/execution/reconciliation_store.py`, but `EXEC-IDN-02` does not declare that label. No locked
+`laws.md` file was edited.
 
 ---
 
@@ -476,19 +504,31 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `agents/monitor/reconcile.py` + new poll path | | | |
-| `agents/execution/reconciliation.py` + new poll path | | | |
-| `agents/analyst/poll.py` | | | |
-| `contracts/positions.py` (read-only) | | | |
-| `contracts/resume.py` + `orchestration/resume.py` | | | |
-| `orchestration/local_pipeline.py` + acceptance | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `agents/monitor/reconcile.py` + new poll path | `agents/monitor/laws/laws.md`; `agents/monitor/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `MON-IDN-02` single-writer ownership of `Position`/`MonitorRun`; `MON-TRG-01` authorized caller trigger; `MON-TRG-04` never self-triggers; `MON-STA-02` append-only writes; `MON-IDM-02` existing `check_positions` is not globally idempotent; `MON-OBS-01` reconstructable monitor run facts | Yes - the marker must stay on owned `MonitorRun` rather than a new label, and the early work source must be dispatcher/run-request driven rather than self-triggered. `MON-IDN-02` and `MON-TRG-04` are gray in the test plan, so this sprint must cite and prove them where relied on. |
+| `agents/execution/reconciliation.py` + new poll path | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `EXEC-IDN-01` sole broker interface; `EXEC-IDN-02` declared execution-owned labels; `EXEC-TRG-01` dispatcher-triggered submit door; `EXEC-FAIL-02` broker unavailable degrades without crash; `EXEC-OBS-02` broker outcomes are not silent; `DEP-BROKER-01/02` broker boundary and idempotency | Yes - the head sync must reuse execution for the broker read but cannot let execution adopt `Position`. Reading `EXEC-IDN-02` found declaration debt: `BrokerPositionSnapshot` is written by execution code but absent from the owned-label list. Added DRIFT-025 before code changes. |
+| `agents/analyst/poll.py` | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `ANLZ-TRG-01`/`ANLZ-TRG-03` reactive only, never self-triggered; `ANLZ-IN-03` empty candidate set behavior; `ANLZ-IDN-02` owned labels only; `ANLZ-NEV-04` read-only to other agents' labels; `ANLZ-FAIL-01/02` degraded provider-like paths are visible and non-crashing | Yes - the analyst change must be a pending precondition, not a direct reconcile or broker read. `ANLZ-TRG-03` is gray, so the new wait-for-sync test must plant the unsynced case first and cite it. |
+| `contracts/positions.py` (read-only) | `agents/monitor/laws/laws.md`; `agents/monitor/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-73 retraction in `docs/design-log.md` | `MON-IDN-02` owns `Position`; `MON-STA-02` append-only state; DL-73 requires `is_active_position_node`, not raw `status == "open"` | No - the sprint already required read-only use. The law/design-log pass confirmed the active-position predicate is the correct import and that superseded/absent nodes must keep `status="open"`. |
+| `contracts/resume.py` + `orchestration/resume.py` | `agents/supervisor/laws/laws.md`; `agents/supervisor/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `SUP-IDN-01` governance/routing only; `SUP-NEV-03` never routes forbidden capability; `SUP-FAIL-03` clear failure on graph placement errors; conventions section 3 gray-to-green and section 7 test citations | Yes - `BROKER_RESUME_STAGES` must become explicit by stage name rather than index slice. Resume placement also needs an explicit sync artifact in `_ARTIFACTS` so resume-from-analyst cannot bypass the fresh-book precondition. |
+| `orchestration/local_pipeline.py` + acceptance | `docs/laws/conventions.md`; `docs/laws/functionality-checks.md`; `docs/laws/drift-register.md`; DL-57/DL-59/DL-70 in `docs/design-log.md` | Conventions section 3 requires passing functional tests for green claims; DL-57/DL-70 require planted failures; DL-59 requires UNPROVEN/PASS distinction based on outcome, not intent | Yes - acceptance must expose an 8-stage chain with a real sync stage, and tests must prove the old 7-stage shape can fail rather than only asserting the new stage is present. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-70 in `docs/design-log.md` | Conventions section 9 drift register; DL-70 plant-the-violation rule; S143/S144 vocabulary guard discipline | No - the pack already declares `BrokerPositionSnapshot`, `MonitorRun`, and `RunRequest`; any new edge such as `RunRequest -> BrokerPositionSnapshot` / `BrokerPositionSnapshot -> MonitorRun` / `RunRequest -> MonitorRun` must be added and then proven with an undeclared-edge rejection. |
+| `agents/reporter/poll.py` (phase-skip only) | `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `RPT-IDN-01` reporter projects completed runs only; `RPT-IN-01` report is keyed by a pipeline run; `RPT-NEV-02` never mutates other agents' nodes; `RPT-TRG-04` never self-triggers | Yes - I rejected using `MonitorDecisionResult` as the sync marker because `MON-TYP-02` gives it a claim-check payload meaning. The cleaner path is the spec's `MonitorRun phase="sync"` marker plus a reporter pending predicate that ignores sync-phase monitor runs. |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found before code changes.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+`EXEC-IDN-02` / `EXEC-DEP-02` / execution CAP are silent on `BrokerPositionSnapshot`, even though `agents/execution/reconciliation_store.py:82` defines `write_snapshot` and `agents/execution/reconciliation_store.py:101` writes the `BrokerPositionSnapshot` label. DRIFT-025 added before code changes. I did not edit locked `laws.md`.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+`MON-IDN-02`, `MON-TRG-04`, `MON-STA-02`, `MON-IDM-02`, `ANLZ-TRG-03`,
+`ANLZ-IN-03`, `EXEC-TRG-01`, `EXEC-IDN-01`, `EXEC-IDM-02`, `EXEC-FAIL-02`,
+`EXEC-OBS-02`, `SUP-FAIL-03`, and `SUP-OBS-01` now have sprint-local tests that cite
+the clause IDs and plant at least one failure/violation path before asserting the protected
+behavior. `EXEC-IDN-02` itself remains declaration debt and is recorded as DRIFT-025 rather than
+claimed green.
 
 ---
 
@@ -496,28 +536,41 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| B5 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
-| C4 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| D4 | | | | |
-| D5 | | | | |
-| E1 | | | | |
-| E2 | | | | |
+| A1 | `test_sync_work_source_finds_only_unsynced_runs` | `agents/execution/tests/test_position_sync_poll.py` | PASS | `EXEC-TRG-01` / `EXEC-IDN-01` |
+| A2 | `test_sync_writes_fresh_snapshot_from_broker_truth` | `agents/execution/tests/test_position_sync_poll.py` | PASS | `EXEC-IDN-01` / `EXEC-OBS-02` |
+| A3 | `test_sync_broker_failure_degrades_without_raising` | `agents/execution/tests/test_position_sync_poll.py` | PASS | `EXEC-FAIL-02` / `EXEC-OBS-02` |
+| A4 | `test_sync_is_idempotent_per_run` | `agents/execution/tests/test_position_sync_poll.py` | PASS | `EXEC-IDM-02` / `EXEC-TRG-01` |
+| B1 | `test_sync_removes_sold_position_before_analyst_book_read` | `agents/monitor/tests/test_monitor_position_sync.py` | PASS | `MON-IDN-02` / `MON-STA-02` |
+| B2 | `test_sync_supersedes_changed_quantity_cleanly` | `agents/monitor/tests/test_monitor_position_sync.py` | PASS | `MON-IDN-02` / `MON-STA-02` |
+| B3 | `test_sync_stale_snapshot_never_adopts_book` | `agents/monitor/tests/test_monitor_position_sync.py` | PASS | `MON-IDN-02` / `MON-STA-02` |
+| B4 | `test_sync_marker_stays_inside_monitor_owned_labels` | `agents/monitor/tests/test_monitor_position_sync.py` | PASS | `MON-IDN-02` |
+| B5 | `test_sync_reconcile_twice_is_noop` | `agents/monitor/tests/test_monitor_position_sync.py` | PASS | `MON-IDM-02` / `MON-STA-02` |
+| C1 | `test_analyst_pending_waits_until_book_synced` | `orchestration/tests/test_fresh_book_before_decision.py` | PASS | `ANLZ-TRG-03` / `MON-TRG-04` |
+| C2 | `test_2026_07_27_mrvl_sold_book_never_reaches_analyst` | `orchestration/tests/test_fresh_book_before_decision.py` | PASS | `ANLZ-TRG-03` / `MON-STA-02` |
+| C3 | `test_stale_book_degrades_but_still_writes_recommendation_set` | `orchestration/tests/test_fresh_book_before_decision.py` | PASS | `ANLZ-FAIL-01` / `MON-FAIL-01` |
+| C4 | `test_synced_held_tickers_still_reach_scoring_universe` | `orchestration/tests/test_fresh_book_before_decision.py` | PASS | `ANLZ-IN-03` / `MON-STA-02` |
+| D1 | `test_tail_monitor_still_adopts_this_run_fill` | `orchestration/tests/test_graph_pull_e2e.py` | PASS | `MON-STA-02` / `MON-IDM-02` |
+| D2 | `test_clean_cascade_is_accepted` | `orchestration/tests/test_trading_acceptance.py` | PASS | LAW-02 / DL-70 |
+| D3 | `test_broker_resume_stages_are_explicit_by_name` | `orchestration/tests/test_resume_stage_contracts.py` | PASS | `SUP-FAIL-03` / `SUP-OBS-01` |
+| D4 | `test_resume_artifacts_validate_alignment_rejects_mismatch` | `orchestration/tests/test_resume_stage_contracts.py` | PASS | `SUP-FAIL-03` / `SUP-OBS-01` |
+| D5 | `test_missing_source_stage_and_invalid_stage_are_refused` | `orchestration/tests/test_resume.py` | PASS | `SUP-FAIL-03` |
+| E1 | `test_sync_failure_for_one_run_does_not_stop_next_run` | `agents/execution/tests/test_position_sync_poll.py` | PASS | `EXEC-FAIL-02` / `EXEC-OBS-02` |
+| E2 | `test_declared_vocabulary_covers_sync_edges_and_rejects_bad_signature` | `orchestration/tests/test_graph_vocabulary_e2e.py` | PASS | LAW-02 / DL-70 |
 
 **Tests added beyond the plan:**
+
+- `agents/analyst/tests/test_position_sync_poll_branches.py` covers a `ScanRun` with no
+  `MarketData` lineage and an invalid sync-marker status.
+- `agents/execution/tests/test_position_sync_work_items.py` covers mixed execution work-item
+  ordering, both dispatch arms, no-snapshot reconciliation, and outer-fault containment.
+- `agents/monitor/tests/test_monitor_position_sync_work_items.py` covers mixed monitor work-item
+  ordering, both dispatch arms, orphan snapshots with no fake `RunRequest`, and direct non-fresh
+  snapshot no-op reconciliation.
+- `orchestration/tests/test_position_sync_display_branches.py` covers stale sync reasons in
+  `batch_trace` and observatory output.
+- Updated existing analyst, supervisor, dashboard, resume, graph-pull, observatory, vocabulary, and
+  acceptance tests so the new `position_sync` stage is part of their actual fixture truth rather
+  than a presence-only assertion.
 
 ---
 
@@ -525,20 +578,144 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:**
 
-_(fill in)_
+- New sync contract and chain helpers: `contracts/position_sync.py`, `orchestration/batch_chain.py`,
+  `orchestration/resume_plan.py`.
+- Execution head sync: `agents/execution/poll.py`, `agents/execution/entrypoint.py`, and execution
+  sync tests/helpers.
+- Monitor head sync and reconciliation reuse: `agents/monitor/position_sync.py`,
+  `agents/monitor/poll.py`, `agents/monitor/entrypoint.py`, `agents/monitor/reconcile.py`, and
+  monitor sync tests/helpers.
+- Analyst pending/precondition: `agents/analyst/poll.py` plus analyst sync fixtures/regressions.
+- Stage enumeration, observatory, acceptance, resume, dashboard, and vocabulary updates across
+  `orchestration/`, `contracts/resume.py`, `agents/reporter/poll.py`, and `surfaces/tests/`.
+- Version/lock: `pyproject.toml` bumped `0.80.03 -> 0.81.00`; `uv.lock` refreshed.
+- Law/debt docs: DRIFT-025 added to `docs/laws/drift-register.md`; this sprint file filled in.
 
 **Proven (LAW-02):**
 
-_(paste real command output: `make ci` counts and coverage, the remote gate job IDs and results,
-planted-violation runs showing the failure before the fix, vocabulary script output)_
+Branch and version:
+
+```text
+git branch --show-current
+sprint-147-fresh-book-before-decision
+
+uv lock
+Resolved 170 packages in 3.84s
+Updated trading-agents v0.80.3 -> v0.81.0
+```
+
+Focused branch/planted-violation coverage:
+
+```text
+uv run pytest agents/analyst/tests/test_position_sync_poll_branches.py agents/execution/tests/test_position_sync_work_items.py agents/monitor/tests/test_monitor_position_sync_work_items.py orchestration/tests/test_position_sync_display_branches.py --tb=short -x --no-cov
+============================= test session starts =============================
+collected 10 items
+
+agents\analyst\tests\test_position_sync_poll_branches.py ..              [ 20%]
+agents\execution\tests\test_position_sync_work_items.py ...              [ 50%]
+agents\monitor\tests\test_monitor_position_sync_work_items.py ....       [ 90%]
+orchestration\tests\test_position_sync_display_branches.py .             [100%]
+
+============================= 10 passed in 2.06s ==============================
+```
+
+Expanded affected suite:
+
+```text
+uv run pytest agents/execution/tests/test_position_sync_poll.py agents/monitor/tests/test_monitor_position_sync.py agents/analyst/tests/test_analyst_poll.py agents/analyst/tests/test_broker_stop_deferral.py agents/analyst/tests/test_exit_authority.py agents/analyst/tests/test_unified_held_analysis.py agents/execution/tests/test_execution_entrypoint.py agents/supervisor/tests/test_resume_dispatch.py orchestration/tests/test_fresh_book_before_decision.py orchestration/tests/test_graph_pull_e2e.py orchestration/tests/test_adr0015_graph_pull.py orchestration/tests/test_unified_decision_run.py orchestration/tests/test_batch_trace.py orchestration/tests/test_trading_observatory.py orchestration/tests/test_trading_acceptance.py orchestration/tests/test_trading_acceptance_outcomes.py orchestration/tests/test_resume.py orchestration/tests/test_resume_stage_contracts.py orchestration/tests/test_resume_postgres_semantics.py orchestration/tests/test_graph_vocabulary_e2e.py surfaces/tests/test_dashboard_app.py surfaces/tests/test_dashboard_projections.py surfaces/tests/test_dashboard_resume.py surfaces/tests/test_dashboard_chat.py --tb=short -x --no-cov
+============================= test session starts =============================
+collected 121 items
+...
+============================ 121 passed in 16.09s =============================
+```
+
+Vocabulary scripts:
+
+```text
+uv run python scripts/vocabulary_coverage.py
+<exit 0; no stdout>
+
+uv run python scripts/vocabulary_signatures.py
+<exit 0; no stdout>
+```
+
+Local full gate:
+
+```text
+make ci
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+834 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 700 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+<warnings only; exit 0>
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 1910 passed, 5 skipped in 180.40s (0:03:00) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 19 new file(s)
+```
+
+Diff hygiene:
+
+```text
+git diff --check
+<exit 0; no stdout>
+```
+
+Remote gates:
+
+```text
+git push -u origin sprint-147-fresh-book-before-decision
+To https://github.com/yury-gurevich/trading-agents.git
+ * [new branch]      sprint-147-fresh-book-before-decision -> sprint-147-fresh-book-before-decision
+branch 'sprint-147-fresh-book-before-decision' set up to track 'origin/sprint-147-fresh-book-before-decision'.
+
+gh run watch 30423330499 --exit-status
+✓ sprint-147-fresh-book-before-decision CI · 30423330499
+✓ quality in 35s (ID 90484393659)
+✓ security in 1m55s (ID 90484393710)
+✓ test in 55s (ID 90484479721)
+
+gh run watch 30423330469 --exit-status
+✓ sprint-147-fresh-book-before-decision Security Findings · 30423330469
+✓ gate in 12s (ID 90484393396)
+```
 
 **Not met / verified failing:**
 
-_(fill in — a proven failure is a valid handback; a silent gap is not)_
+- First scheduled production run proof is not done. That is explicitly post-merge/retag sequencing,
+  so no production functionality-check row was added in `docs/laws/functionality-checks.md`.
+- Remote gates for the implementation commit passed. This evidence-only doc update will be pushed
+  and watched separately; recording that final result inside the same file would require another
+  evidence-only commit and create a new gate run.
 
 ---
 
 ## Return notes
 
-_(fill in: what surprised you, what you deliberately did not do and why, anything the next sprint
-inherits, and whether `main` had moved when you finished)_
+- The law pass changed the shape of the implementation: execution owns the broker snapshot,
+  monitor owns the book adoption, and the marker stays in `MonitorRun phase="sync"` so no new
+  monitor-owned label was required.
+- The only law debt found was execution's missing `BrokerPositionSnapshot` declaration in
+  `EXEC-IDN-02`; DRIFT-025 records it. No locked `laws.md` files were edited.
+- I deliberately did not change `contracts/positions.py`, did not close superseded/absent
+  positions, did not remove the tail monitor reconcile, did not implement ADR-0018, and did not
+  perform broker-side cleanup.
+- Resume needed the most care: the broker-risk set is now explicit by stage name, and resume
+  artifact alignment has a planted mismatch test so a future head-stage insert cannot silently
+  shift consequences.
+- Final pre-implementation-commit drift check: `origin/main` did not move while the sprint ran
+  (`git rev-list --left-right --count HEAD...origin/main` returned `0 0`; both tips were
+  `4933ae1`). Initial remote gates for commit `d8fe82e` passed: CI `30423330499` and Security
+  Findings `30423330469`.

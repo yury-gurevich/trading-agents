@@ -2,8 +2,9 @@
 
 Agent: orchestration
 Role: prove the dispatcher's single RunRequest drives the whole pipeline by graph-pull
-      — provider→scanner→analyst→PM→execution→monitor→reporter — with each agent waking
-      itself off its prerequisite gate and no direct agent-to-agent calls.
+      — position_sync→provider→scanner→analyst→PM→execution→monitor→reporter — with
+      each agent waking itself off its prerequisite gate and no direct agent-to-agent
+      calls.
 External I/O: none.
 """
 
@@ -13,7 +14,9 @@ from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider import poll as provider_poll
 from agents.provider.settings import ProviderSettings
+from contracts.position_sync import POSITION_SYNC_PHASE, SNAPSHOT_LABEL
 from kernel import InMemoryGraphStore, InProcessBus
+from orchestration.batch_trace import walk_chain
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import all_passed, place_run_request, preflight
 from orchestration.tests.helpers import node_count, source
@@ -63,6 +66,7 @@ def test_trigger_then_cascade_builds_full_chain() -> None:
     # Every stage woke off its prerequisite gate and processed exactly one item.
     # The forecaster is the advisory side branch off the AnalystRun (FORE-TRG-01).
     assert {r.name: r.processed for r in results} == {
+        "position_sync": 1,
         "provider": 1,
         "scanner": 1,
         "analyst": 1,
@@ -73,8 +77,28 @@ def test_trigger_then_cascade_builds_full_chain() -> None:
         "reporter": 1,
     }
     # The full provenance chain now exists in the graph.
-    for label in _CHAIN:
+    for label in (*_CHAIN[:-2], "Snapshot"):
         assert node_count(graph, label) == 1, label
+    assert (
+        sum(
+            1
+            for node in graph.list_nodes(SNAPSHOT_LABEL)
+            if node.props["run_id"] == "e2e"
+        )
+        == 1
+    )
+    sync_markers = [
+        node
+        for node in graph.list_nodes("MonitorRun")
+        if node.props.get("phase") == POSITION_SYNC_PHASE
+    ]
+    monitor_runs = [
+        node
+        for node in graph.list_nodes("MonitorRun")
+        if node.props.get("phase") != POSITION_SYNC_PHASE
+    ]
+    assert len(sync_markers) == 1
+    assert len(monitor_runs) == 1
 
 
 def test_second_cascade_is_idempotent() -> None:
@@ -87,6 +111,21 @@ def test_second_cascade_is_idempotent() -> None:
 
     # Nothing is pending on a second pass: every gate is already satisfied.
     assert all(r.processed == 0 for r in again)
+
+
+def test_tail_monitor_still_adopts_this_run_fill() -> None:
+    """MON-IDN-02 / EXEC-OUT-02: tail monitor keeps this run's fill in the book."""
+    graph = InMemoryGraphStore()
+    agent = _provider(graph)
+    place_run_request(graph, run_id="tail", tickers=("AAPL", "MSFT"))
+
+    cascade_once(graph, provider_agent=agent, broker=PaperBroker())
+
+    pm_run = walk_chain(graph, "tail")["PMRun"]
+    assert any(
+        position.props.get("run_id") == pm_run.key
+        for position in graph.list_nodes("Position")
+    )
 
 
 def test_downstream_gates_block_until_provider_runs() -> None:

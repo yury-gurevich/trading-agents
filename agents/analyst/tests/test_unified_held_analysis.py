@@ -17,6 +17,7 @@ from agents.analyst.tests.helpers import (
     overbought_bars,
     wire_analyst,
 )
+from agents.analyst.tests.position_sync_helpers import mark_book_synced
 from contracts.common import Provenance
 from contracts.provider import (
     MARKET_DATA_LABEL,
@@ -73,6 +74,7 @@ def test_graph_pull_held_ticker_without_market_data_records_fault() -> None:
         "regime-context:r1",
         {"snapshot": _regime().model_dump(mode="json"), "run_id": "r1"},
     )
+    mark_book_synced(graph, "r1")
     _position(graph, "NODATA", 4)
 
     analyze_scan_node(scan, graph=graph, sink=sink)

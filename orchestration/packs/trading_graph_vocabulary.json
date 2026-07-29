@@ -99,6 +99,7 @@
     "NARRATES",
     "OPENS",
     "PLANNED_BY",
+    "POSITION_SYNCED_BY",
     "PREDICTED",
     "PRODUCED",
     "PRODUCED_BY",
@@ -143,6 +144,11 @@
       "BrokerOrderStatus",
       "REFRESHES",
       "Fill"
+    ],
+    [
+      "BrokerPositionSnapshot",
+      "MONITORED_BY",
+      "MonitorRun"
     ],
     [
       "Candidate",
@@ -278,6 +284,16 @@
       "RunRequest",
       "INGESTED_BY",
       "MarketData"
+    ],
+    [
+      "RunRequest",
+      "POSITION_SYNCED_BY",
+      "MonitorRun"
+    ],
+    [
+      "RunRequest",
+      "REFRESHES",
+      "BrokerPositionSnapshot"
     ],
     [
       "RunRequest",

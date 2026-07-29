@@ -2,8 +2,8 @@
 
 Agent: orchestration
 Role: walk the provenance chain for a given run_id and print structured numbers for
-      every stage (provider -> reporter). A batch is one RunRequest: one universe,
-      one download, processed end-to-end. Reads only; never writes.
+      every stage (position sync -> reporter). A batch is one RunRequest: one
+      universe, one download, processed end-to-end. Reads only; never writes.
 External I/O: none (delegates to the injected GraphStore).
 """
 
@@ -11,38 +11,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from orchestration.batch_chain import CHAIN, POSITION_SYNC_KEY
+from orchestration.batch_chain import walk_chain as walk_chain
 from orchestration.trace_format import metric_text as mt
 
 if TYPE_CHECKING:
-    from kernel import GraphStore, Node
+    from kernel import GraphStore
 
-_CHAIN = (
-    ("INGESTED_BY", "MarketData"),
-    ("SCANNED_BY", "ScanRun"),
-    ("ANALYZED_BY", "AnalystRun"),
-    ("EVALUATED_BY", "PMRun"),
-    ("EXECUTED_BY", "ExecutionRun"),
-    ("MONITORED_BY", "MonitorRun"),
-    ("REPORTED_BY", "Snapshot"),
-)
-
-
-def walk_chain(graph: GraphStore, run_id: str) -> dict[str, Node]:
-    """Walk the provenance chain and return all found nodes keyed by label."""
-    run_request = graph.get_node("RunRequest", f"run-request:{run_id}")
-    if run_request is None:
-        return {}
-    nodes: dict[str, Node] = {"RunRequest": run_request}
-    current: Node = run_request
-    for edge, label in _CHAIN:
-        child = next(
-            iter(graph.descendants(current, max_depth=1, edge_types={edge})), None
-        )
-        if child is None:
-            break
-        nodes[label] = child
-        current = child
-    return nodes
+_COMPLETE_KEYS = (POSITION_SYNC_KEY, *(label for _, label in CHAIN))
 
 
 def print_trace(graph: GraphStore, run_id: str) -> int:
@@ -58,6 +34,18 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
     as_of = run_request.props.get("requested_at", "unknown")
     print(f"\nBATCH TRACE  run-id={run_id}  as-of={as_of}")
     print("-" * 56)
+
+    sync_node = nodes.get(POSITION_SYNC_KEY)
+    if sync_node:
+        print("[position_sync]")
+        print(
+            f"  status={sync_node.props.get('position_book_status', '?')}"
+            f"  snapshot={sync_node.props.get('snapshot_key', '?')}"
+        )
+        reason = sync_node.props.get("position_book_stale_reason")
+        if reason:
+            print(f"  stale_reason={reason}")
+        print()
 
     market_node = nodes.get("MarketData")
     if market_node:
@@ -192,7 +180,8 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
             print(f"  summary   {headline[:80]}")
         print()
 
-    complete = sum(1 for lbl in (lbl for _, lbl in _CHAIN) if lbl in nodes)
-    status = "OK batch processed" if complete == len(_CHAIN) else "INCOMPLETE"
-    print(f"RESULT  {complete}/{len(_CHAIN)} stages complete  {status}")
+    complete = sum(1 for key in _COMPLETE_KEYS if key in nodes)
+    total = len(_COMPLETE_KEYS)
+    status = "OK batch processed" if complete == total else "INCOMPLETE"
+    print(f"RESULT  {complete}/{total} stages complete  {status}")
     return complete

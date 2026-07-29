@@ -9,7 +9,7 @@ External I/O: master HTTP endpoint (POST /ehlo); injected broker.
 from __future__ import annotations
 
 from agents.execution.broker_factory import broker_from_settings
-from agents.execution.poll import execute_pm_node, find_pending
+from agents.execution.poll import find_pending_work, process_work_item
 from agents.execution.settings import ExecutionSettings
 from kernel.bootstrap import activate_agent, master_public_key_from_env
 from kernel.graph_env import build_graph_from_env
@@ -28,9 +28,9 @@ def main() -> None:  # pragma: no cover
     settings = ExecutionSettings()
     broker = broker_from_settings(settings)
     work_loop(
-        lambda: find_pending(graph),
-        lambda node: execute_pm_node(
-            node, graph=graph, broker=broker, settings=settings
+        lambda: find_pending_work(graph),
+        lambda item: process_work_item(
+            item, graph=graph, broker=broker, settings=settings
         ),
         poll_interval=int(os.environ.get("EXECUTION_POLL_INTERVAL", "60")),
     )

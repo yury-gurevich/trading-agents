@@ -37,6 +37,15 @@ def reconcile_positions_from_latest_snapshot(
     snapshot = _latest_fresh_snapshot(graph)
     if snapshot is None:
         return
+    reconcile_positions_from_snapshot(graph, snapshot, settings)
+
+
+def reconcile_positions_from_snapshot(
+    graph: GraphStore, snapshot: Node, settings: MonitorSettings
+) -> None:
+    """Adopt one fresh broker snapshot into monitor-owned Position nodes."""
+    if snapshot.props.get("status") != "fresh":
+        return
     holdings = _holdings(snapshot)
     active_by_ticker = _positions_by_ticker(active_positions(graph))
     held_tickers = {holding.ticker for holding in holdings}

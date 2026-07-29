@@ -188,6 +188,11 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   behaviour: a paper order whose price is outside tolerance must not fill.
 
 **Result:**
+Shipped. `ExecutionSettings.order_price_tolerance_bps` is a bounded `kernel.tunable`
+defaulting to 50 bps (`ge=0`, `le=500`, `unit="bps"`), `order_body` now builds
+`limit`/`day` Alpaca payloads from the PM decided price, and `PaperBroker` mirrors the live bounded
+limit behavior by leaving outside-tolerance orders pending instead of filling them. `stop_order_body`
+and `submit_stop` stayed untouched.
 
 ### 2 · A head-of-run drop sweep: cancel what did not fill, and say so
 
@@ -207,6 +212,11 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   taken for the after-close job.
 
 **Result:**
+Shipped as a head-of-run sweep in `agents/execution/poll.py` before run reconciliation. The sweep
+reads broker orders, skips current-run orders, cancels previous-run pending non-stop orders, records
+drop evidence on the existing Fill chain, writes a `BrokerOrderStatus -> REFRESHES -> Fill`
+terminal refresh, and emits a visible `DroppedDecision` Fault with ticker, decided price,
+idempotency key, broker order id, and `unfilled at session end`.
 
 ### 3 · 🚨 Resting broker stops are exempt — cancel none of them, ever
 
@@ -219,6 +229,10 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   otherwise you have proven a naming convention, not a safety property.
 
 **Result:**
+Shipped. The sweep exempts broker-native stops by broker order type (`stop`/`stop_limit`) and graph
+`BrokerStopOrder` facts, records a warning if those signals disagree, and never cancels a stop even
+when its client id lacks the `stop:` prefix. Current-run orders are exempt before stale-order
+cancellation.
 
 ### 4 · A dropped decision is visible, and is not a rejection or a loss
 
@@ -232,6 +246,10 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   That divergence must be legible on the surface, not inferred.
 
 **Result:**
+Shipped. `ExecutionResult` now has an additive `dropped` count and dropped fills stay out of the
+`rejected` bucket. Reporter metrics now surface `approved_count`, `execution_count`,
+`rejected_count`, `dropped_decision_count`, and `approval_execution_gap`; dropped/canceled fills are
+not treated as realized losses.
 
 ### 5 · ADR-0017's forced exit becomes best-effort — and that makes A2 load-bearing
 
@@ -246,6 +264,10 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   `scripts/audit_broker_graph.py` is the cheapest home.
 
 **Result:**
+Shipped. Forced exits now travel the same bounded limit path as entries and may remain unfilled.
+`scripts/audit_broker_graph.py` now reports the distinct A5 condition: a held position with no live
+full-quantity broker stop and a dropped sell/forced exit. Prefixless broker-native stops still clear
+the risk condition via order metadata, not naming convention.
 
 ### 6 · Containment and idempotency
 
@@ -263,6 +285,11 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   and test it.
 
 **Result:**
+Shipped. Per-order cancellation is wrapped in `kernel.fault_boundary`; one cancel failure records a
+Fault and the sweep continues to other orders. Re-running the sweep in the same run records no
+duplicate drops. S145's append-safe attempt chain was verified for exit keys: a dropped
+`exit:{position_ref}:{ticker}:sell` attempt does not block tomorrow's re-decision, which writes
+`#1`.
 
 ### 7 · Declare every new label, edge and prop in the vocabulary
 
@@ -272,6 +299,9 @@ test that only checks "the buy was cancelled" does not prove the stop survived.
   into the closeout.
 
 **Result:**
+No vocabulary pack change was needed: the implementation used existing graph vocabulary
+(`Fill`, `Fault`, `BrokerOrderStatus`, `REFRESHES`, `BrokerStopOrder`). Both vocabulary scripts
+were rerun after the implementation and exited 0 with no output.
 
 ### 8 · Prove the checks can fail (DL-70)
 
@@ -279,6 +309,9 @@ No presence assertions. Plant the violation and require the failure — the test
 the violation for every test.
 
 **Result:**
+Shipped. The test suite includes planted inversions/failures for tolerance direction, bare literal
+tolerance config, stop-sweep exemption, sweep idempotency, dropped-vs-rejected/loss metrics, A5
+audit detection, cancel-failure containment, and vocabulary rejection.
 
 ---
 
@@ -431,19 +464,32 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `alpaca_orders.py` — `order_body` | | | |
-| `settings.py` — the tolerance tunable | | | |
-| `poll.py` + the drop sweep | | | |
-| `broker_stops.py` / `broker_stop_actions.py` (read-only) | | | |
-| `reporter/domain/metrics.py` | | | |
-| `contracts/execution.py` / `portfolio_manager.py` | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `alpaca_orders.py` — `order_body` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; ADR-0018 | `EXEC-IDN-01`; `EXEC-IN-01`; `EXEC-NEV-01`; `EXEC-NEV-02`; `EXEC-NEV-03`; `EXEC-TYP-01`; `EXEC-TYP-02`; `EXEC-DEP-03`; `DEP-BROKER-01`; `DEP-BROKER-02` | Yes - the bounded price is execution-owned guardrail math only, not a trading decision. Preserve side, quantity, idempotency key, `day` TIF, Decimal money, and the existing four-value Fill status unless the contract is deliberately amended. |
+| `settings.py` — the tolerance tunable | `agents/execution/laws/laws.md` PARAM section; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; ADR-0013; ADR-0018 | `EXEC-PARAM`; `EXEC-IDN-01`; `EXEC-NEV-01`; conventions section 3; conventions section 7 | Yes - the tolerance must be a declared `kernel.tunable` with `why`, bounds, and unit. The locked execution law does not declare this new parameter, so record law silence in `drift-register.md` after this pre-edit record. |
+| `poll.py` + the drop sweep | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; ADR-0018; DL-57; DL-59; DL-70 | `EXEC-IDN-01`; `EXEC-IDN-02`; `EXEC-NEV-01`; `EXEC-NEV-03`; `EXEC-STA-03`; `EXEC-IDM-01`; `EXEC-IDM-02`; `EXEC-FAIL-01`; `EXEC-FAIL-02`; `EXEC-FAIL-03`; `EXEC-OBS-01`; `EXEC-OBS-02`; `DEP-BROKER-01`; `DEP-BROKER-02` | Yes - the sweep must be append-only, per-order contained, idempotent, visible through Fault/drop evidence, and current-run safe. Cancellation is a broker effect, so each cancel failure degrades to evidence instead of aborting fan-out. |
+| `broker_stops.py` / `broker_stop_actions.py` (read-only) | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; ADR-0015 §3 amendment; ADR-0017; ADR-0018; DL-62 | `EXEC-IDN-01`; `EXEC-NEV-01`; `EXEC-NEV-02`; `EXEC-NEV-03`; `EXEC-STA-03`; `EXEC-IDM-01`; `EXEC-OBS-02`; ADR-0015 §3 broker-native stop exemption | Yes - stops are risk instruments, not expiring alpha decisions. The sweep must require stop-type/graph-stop evidence checks before cancellation and must not touch `submit_stop` / `stop_order_body` behavior. |
+| `reporter/domain/metrics.py` | `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; ADR-0018; DL-57; DL-59 | `RPT-IDN-01`; `RPT-OUT-01`; `RPT-OUT-02`; `RPT-NEV-01`; `RPT-NEV-02`; `RPT-NEV-03`; `RPT-STA-02`; `RPT-IDM-01`; `RPT-TYP-02`; `RPT-OBS-01`; `RPT-OBS-02` | No - the intended reporter change is a read-only projection. It must keep dropped decisions out of rejected/loss buckets and may add a metric so approval-vs-execution divergence is visible. |
+| `contracts/execution.py` / `portfolio_manager.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; ADR-0018 | `EXEC-IN-01`; `EXEC-OUT-01`; `EXEC-TYP-02`; `EXEC-TYP-03`; `PM-OUT-02`; `PM-TYP-01`; `PM-IDM-02`; `PM-OBS-01` | Yes - `OrderIntent.est_price` is already the decided Decimal price and PM-owned. Prefer threading existing fields into execution rather than adding upstream contract fields. If a dropped outcome needs additive execution contract fields, keep PM untouched. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; DL-70; S143/S144 vocabulary guard context from the sprint brief | conventions section 3; conventions section 7; DL-70 can-fail rule | No - any new label, edge, or signature must be declared and proven by both acceptance and a planted undeclared violation. |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found before code. One constraint matters: `EXEC-TYP-02` currently permits only `filled`,
+`partial`, `rejected`, and `pending` Fill statuses, so I will not silently introduce a `dropped`
+Fill status unless the contract/law gap is explicitly recorded. The current intended path is to
+make dropped visible via additive result metrics, reason/provenance, Fault/drop evidence, and
+reporter projection rather than pretending it is a rejection.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+- Execution PARAM is silent on the new `order_price_tolerance_bps` tunable required by ADR-0018.
+- Execution's locked label/capability/output clauses are silent on durable dropped-decision evidence
+  and any additive `ExecutionResult` drop count needed to distinguish dropped from rejected.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+Now proven by the sprint tests and focused can-fail coverage: `EXEC-NEV-02`, `EXEC-FAIL-03`,
+`RPT-IDM-01`, and `RPT-TYP-02`.
 
 ---
 
@@ -451,31 +497,40 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| B5 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
-| C4 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| D4 | | | | |
-| E1 | | | | |
-| E2 | | | | |
-| E3 | | | | |
-| E4 | | | | |
+| A1 | `test_order_body_builds_bounded_buy_limit_payload` | `agents/execution/tests/test_order_tolerance.py` | Passed | `EXEC-IN-01`; `EXEC-NEV-01`; `EXEC-TYP-01` |
+| A2 | `test_order_body_builds_bounded_sell_limit_payload` | `agents/execution/tests/test_order_tolerance.py` | Passed | `EXEC-IN-01`; `EXEC-NEV-01`; `EXEC-TYP-01` |
+| A3 | `test_order_body_rounds_half_cent_up_and_keeps_day_tif` | `agents/execution/tests/test_order_tolerance.py` | Passed | `EXEC-IDM-01`; `EXEC-TYP-01`; `EXEC-NEV-02` |
+| A4 | `test_execution_order_price_tolerance_is_declared_tunable` | `agents/execution/tests/test_order_tolerance.py` | Passed | `EXEC-PARAM`; `EXEC-NEV-01` |
+| A5 | `test_order_body_rounds_half_cent_up_and_keeps_day_tif` | `agents/execution/tests/test_order_tolerance.py` | Passed | `EXEC-IDM-01`; `EXEC-TYP-01`; `EXEC-NEV-02` |
+| A6 | `test_paper_broker_order_outside_tolerance_does_not_fill` | `agents/execution/tests/test_broker_positions.py` | Passed | `EXEC-NEV-01`; `EXEC-TYP-01` |
+| B1 | `test_sweep_cancels_prior_run_order_and_records_drop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-STA-03`; `EXEC-OBS-02`; `EXEC-FAIL-01` |
+| B2 | `test_sweep_leaves_current_and_filled_orders_alone` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-IDM-01`; `EXEC-IDM-02` |
+| B3 | `test_sweep_leaves_current_and_filled_orders_alone` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-IDM-01`; `EXEC-IDM-02` |
+| B4 | `test_sweep_cancels_prior_run_order_and_records_drop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-STA-03`; `EXEC-OBS-02`; `EXEC-FAIL-01` |
+| B5 | `test_sweep_is_idempotent_for_same_run` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-IDM-01`; `EXEC-STA-03` |
+| C1 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-NEV-01`; `EXEC-NEV-03` |
+| C2 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-NEV-01`; `EXEC-NEV-03` |
+| C3 | `test_stop_order_body_builds_exact_gtc_stop_payload` | `agents/execution/tests/test_alpaca_stop_orders.py` | Passed | `EXEC-NEV-01`; `EXEC-TYP-01`; `EXEC-IDM-01` |
+| C4 | `test_cancel_failure_is_contained_and_other_orders_continue` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-FAIL-01`; `EXEC-FAIL-02` |
+| D1 | `test_execution_result_counts_dropped_separately_from_rejected` | `agents/execution/tests/test_execution_domain.py` | Passed | `EXEC-TYP-02`; `EXEC-OBS-02` |
+| D2 | `test_dropped_sell_is_not_counted_as_realized_loss` | `agents/reporter/tests/test_trade_outcomes.py` | Passed | `RPT-OUT-02`; `RPT-NEV-03` |
+| D3 | `test_dropped_decision_is_visible_but_not_rejected` | `agents/reporter/tests/test_metrics_narrative.py` | Passed | `RPT-IDN-01`; `RPT-NEV-01`; `RPT-TYP-02` |
+| D4 | `test_audit_a5_fails_unprotected_position_with_dropped_sell` | `tests/test_audit_broker_graph.py` | Passed | `EXEC-OBS-02`; `RPT-NEV-03` |
+| E1 | `test_cancel_failure_is_contained_and_other_orders_continue` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-FAIL-01`; `EXEC-FAIL-02` |
+| E2 | `test_cancel_failure_is_contained_and_other_orders_continue` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-FAIL-01`; `EXEC-FAIL-02` |
+| E3 | `test_dropped_exit_key_can_be_redecided_tomorrow` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-IDM-01`; `EXEC-NEV-03` |
+| E4 | `test_the_guard_can_actually_reject_a_write` | `orchestration/tests/test_graph_vocabulary_e2e.py` | Passed | Vocabulary guard rejection path |
 
 **Tests added beyond the plan:**
+
+- `test_resolved_rejected_order_is_recorded_as_drop_without_cancel`
+- `test_untracked_pipeline_order_is_faulted_after_cancel_attempt`
+- `test_resolved_untracked_order_is_faulted_without_cancel`
+- `test_graph_tracked_stop_mismatch_is_faulted_and_exempted`
+- `test_run_marking_helpers_tolerate_missing_lineage_and_existing_count`
+- `test_paper_broker_cancel_records_each_broker_order_once` now asserts pending stop cancellation
+  mutates the paper order state to rejected/canceled.
+- `test_canceled_broker_status_is_not_counted_as_realized_loss`
 
 ---
 
@@ -483,25 +538,160 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:**
 
-_(fill in)_
+Implementation:
+
+- `agents/execution/settings.py`
+- `agents/execution/alpaca_orders.py`
+- `agents/execution/alpaca.py`
+- `agents/execution/broker.py`
+- `agents/execution/broker_factory.py`
+- `agents/execution/paper_broker.py`
+- `agents/execution/paper_broker_math.py`
+- `agents/execution/poll.py`
+- `agents/execution/drop_sweep.py`
+- `agents/execution/drop_sweep_records.py`
+- `agents/execution/domain/result.py`
+- `agents/execution/store.py`
+- `agents/reporter/domain/metrics.py`
+- `agents/reporter/domain/trade_outcomes.py`
+- `agents/reporter/result.py`
+- `contracts/execution.py`
+- `scripts/_audit_broker_graph_impl.py`
+- `scripts/_audit_broker_graph_drops.py`
+
+Tests/docs/version:
+
+- `agents/execution/tests/test_order_tolerance.py`
+- `agents/execution/tests/test_drop_sweep.py`
+- `agents/execution/tests/test_drop_sweep_edges.py`
+- `agents/execution/tests/drop_sweep_helpers.py`
+- `agents/execution/tests/test_execution_domain.py`
+- `agents/execution/tests/test_alpaca_broker.py`
+- `agents/execution/tests/test_alpaca_stop_orders.py`
+- `agents/execution/tests/test_broker_positions.py`
+- `agents/reporter/tests/test_metrics_narrative.py`
+- `agents/reporter/tests/test_trade_outcomes.py`
+- `tests/test_audit_broker_graph.py`
+- `tests/test_contract_values.py`
+- `docs/STATE.md`
+- `docs/laws/drift-register.md`
+- `docs/sprints/sprint-148-decision-valid-one-session.md`
+- `pyproject.toml`
+- `uv.lock`
 
 **Proven (LAW-02):**
 
-_(paste real command output: `make ci` counts and coverage, remote gate job IDs and results,
-planted-violation runs showing the failure before the fix, vocabulary script output)_
+Local gates:
+
+```text
+uv lock
+Resolved 170 packages in 2.11s
+Updated trading-agents v0.81.0 -> v0.82.0
+```
+
+```text
+uv run pytest tests/test_contract_values.py agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_drop_sweep_edges.py agents/execution/tests/test_broker_positions.py agents/reporter/tests/test_trade_outcomes.py --no-cov
+38 passed in 1.51s
+```
+
+```text
+uv run pytest agents/execution/tests/test_execution_domain.py agents/execution/tests/test_drop_sweep_edges.py --no-cov
+11 passed in 1.03s
+```
+
+```text
+uv run python scripts/vocabulary_coverage.py
+exit 0, no output
+uv run python scripts/vocabulary_signatures.py
+exit 0, no output
+```
+
+```text
+git diff --check
+exit 0, no output
+```
+
+```text
+make ci
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+842 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 707 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+warnings only; no hard 200-line block
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+1930 passed, 5 skipped in 158.38s
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 8 new file(s)
+exit 0
+```
+
+Planted violation evidence:
+
+- A2 planted inverted sell/buy direction under `pytest.raises(AssertionError)` in
+  `test_order_body_builds_bounded_sell_limit_payload`.
+- A4 planted a bare-literal settings class under `pytest.raises(AssertionError)` in
+  `test_execution_order_price_tolerance_is_declared_tunable`.
+- C1/C2 planted seven graph/broker stops plus a prefixless stop alongside a stale entry; only the
+  stale entry was canceled.
+- B5 planted a duplicate sweep and proved the second pass wrote no duplicate drop/status/fault.
+- D2 planted a dropped sell with bogus negative `realized_pnl_cents`; reporter returned no closed
+  PnL.
+- D4 planted held position + dropped sell + no stop; audit reported distinct A5 FAIL, then a
+  prefixless broker-native stop cleared it.
+- E1/E2 planted three stale orders with the middle cancel raising; the first and third were
+  canceled and one Fault was recorded.
+- E4 existing vocabulary guard test plants an undeclared write/signature and requires rejection.
+
+Remote gates:
+
+Pending branch push at this point in the local closeout. The branch will be pushed after this
+evidence is committed; final remote run IDs/results will be recorded in the return/handoff notes.
 
 **The tolerance value shipped, and why:**
 
-_(fill in — the number, its bounds, and the `why` string)_
+Default: `50` bps. Bounds: `ge=0`, `le=500`, `unit="bps"`. Why string shipped:
+`Bound entry and discretionary-exit orders near the PM's decided price so after-close decisions do
+not trade at unevaluated opens.`
+
+Rationale: 50 bps is conservative enough to prevent the large unevaluated-open gap ADR-0018 was
+written to close, but not tuned as a performance claim. Future movement belongs to ADR-0013
+experimentation using measured drop rate/fill quality, not this implementation sprint.
 
 **Not met / verified failing:**
 
-_(fill in — a proven failure is a valid handback; a silent gap is not)_
+- Remote GitHub gates are not yet proven in this local file section because they require the branch
+  commit to be pushed first.
+- Post-merge deployment, fleet retag to `:s148`, scheduled-run watch, MDT stop verification, and
+  `docs/laws/functionality-checks.md` entry are not done; the sprint sequencing explicitly puts
+  them after merge/deploy.
+- No manual broker cleanup was performed, by sprint non-goal.
 
 ---
 
 ## Return notes
 
-_(fill in: the item-2 deviation from the ADR's literal wording and why; what surprised you; what you
-deliberately did not do; anything the next sprint inherits; and whether `main` had moved when you
-finished)_
+- Item-2 deviation from ADR-0018 literal wording: the cancellation/drop sweep runs at the head of
+  the next run, not in an after-close job. That is deliberate because the fleet scales to zero at
+  session end; `time_in_force=day` usually lets the broker expire the order, and the head sweep runs
+  before any new decision so stale decisions still cannot enter a later session.
+- Surprise: the graph vocabulary did not need new labels/edges. The honest drop path fits existing
+  `Fill`, `Fault`, `BrokerOrderStatus`, and `REFRESHES` vocabulary.
+- Deliberately did not do: no `submit_stop`/`stop_order_body` behavior change, no market-order
+  escape hatch for forced exits, no per-ticker tolerance model, no after-close job, no locked-law
+  edits, no live broker/manual cleanup.
+- The implementation records `DRIFT-026` because locked execution laws are silent on the new
+  tolerance tunable and durable dropped-decision semantics.
+- Main movement check before commit: `git rev-parse main` and `git merge-base main HEAD` both
+  returned `04e81c3162a623c14304f6d7ed77b41c1bfcb2c5`; `git rev-list --left-right --count
+  main...HEAD` returned `0 0`.

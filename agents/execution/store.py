@@ -41,7 +41,9 @@ def write_fills(
     first: Node | None = None
     pm_run_key = _pm_run_key(order_set)
     for fill in fills:
-        attempt = select_fill_attempt(graph, fill.idempotency_key, _fill_props(fill))
+        attempt = select_fill_attempt(
+            graph, fill.idempotency_key, _fill_props(fill, order_set=order_set)
+        )
         node = graph.merge_node("Fill", attempt.key, attempt.props)
         first = node if first is None else first
         _link_order_intent(graph, node, pm_run_key, fill.ticker)
@@ -119,8 +121,10 @@ def _money_to_cents(money: Money) -> int:
     return int(cents)
 
 
-def _fill_props(fill: BrokerFill) -> dict[str, object]:
-    return {
+def _fill_props(
+    fill: BrokerFill, *, order_set: OrderIntentSet | None = None
+) -> dict[str, object]:
+    props: dict[str, object] = {
         "ticker": fill.ticker,
         "side": fill.side,
         "quantity": fill.quantity,
@@ -130,6 +134,15 @@ def _fill_props(fill: BrokerFill) -> dict[str, object]:
         "status": fill.status,
         "reason": fill.reason,
     }
+    if fill.submitted_at is not None:
+        props["submitted_at"] = fill.submitted_at
+    if fill.order_type is not None:
+        props["order_type"] = fill.order_type
+    if fill.time_in_force is not None:
+        props["time_in_force"] = fill.time_in_force
+    if order_set is not None:
+        props["source_run_id"] = order_set.run_id
+    return props
 
 
 def _pm_run_key(order_set: OrderIntentSet | None) -> str | None:

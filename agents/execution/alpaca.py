@@ -39,13 +39,20 @@ class AlpacaBroker:
     """Alpaca paper-trading broker satisfying the execution Broker port."""
 
     def __init__(
-        self, *, api_key: str, secret_key: str, base_url: str, timeout: int
+        self,
+        *,
+        api_key: str,
+        secret_key: str,
+        base_url: str,
+        timeout: int,
+        order_price_tolerance_bps: int = 0,
     ) -> None:
         """Create an Alpaca broker from injected settings."""
         self._api_key = api_key
         self._secret_key = secret_key
         self._base_url = base_url
         self._timeout = timeout
+        self._order_price_tolerance_bps = order_price_tolerance_bps
 
     def submit(
         self,
@@ -55,9 +62,16 @@ class AlpacaBroker:
         quantity: int,
         limit_price: Money,
     ) -> BrokerFill:
-        """Submit one market order under a stable client_order_id; replay on dupe."""
+        """Submit one bounded day order under a stable client_order_id; replay dupe."""
         order = self._submit_or_get(
-            _order_body(idempotency_key, ticker, side, quantity)
+            _order_body(
+                idempotency_key,
+                ticker,
+                side,
+                quantity,
+                limit_price,
+                self._order_price_tolerance_bps,
+            )
         )
         fill = _fill_from_order(order, idempotency_key, limit_price)
         if fill.status == "rejected":

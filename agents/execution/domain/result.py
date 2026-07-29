@@ -33,7 +33,14 @@ def execution_result(
         stage=stage,
         fills=public_fills,
         submitted=sum(fill.status != "rejected" for fill in fills),
-        rejected=sum(fill.status == "rejected" for fill in fills),
+        rejected=sum(
+            fill.status == "rejected" and not _is_dropped(fill) for fill in fills
+        ),
+        dropped=sum(_is_dropped(fill) for fill in fills),
         skipped=skipped,
         provenance=provenance,
     )
+
+
+def _is_dropped(fill: BrokerFill) -> bool:
+    return str(fill.reason or "").startswith("dropped:")

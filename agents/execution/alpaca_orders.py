@@ -7,27 +7,37 @@ External I/O: none.
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from agents.execution.broker import BrokerFill
 from contracts.common import Money
 
 _PENDING = frozenset({"new", "accepted", "pending_new", "held", "accepted_for_bidding"})
+BASIS_POINTS_PER_UNIT = Decimal("10000")
+CENT = Decimal("0.01")
+ONE = Decimal("1")
+ZERO = Decimal("0")
 
 BrokerStatus = Literal["filled", "partial", "rejected", "pending"]
 BrokerSide = Literal["buy", "sell"]
 
 
 def order_body(
-    idempotency_key: str, ticker: str, side: BrokerSide, quantity: int
+    idempotency_key: str,
+    ticker: str,
+    side: BrokerSide,
+    quantity: int,
+    decision_price: Money,
+    tolerance_bps: int,
 ) -> dict[str, object]:
-    """Return an Alpaca market-order payload."""
+    """Return an Alpaca day limit-order payload bounded by the decision price."""
     return {
         "symbol": str(ticker),
         "qty": str(quantity),
         "side": side,
-        "type": "market",
+        "type": "limit",
+        "limit_price": str(bounded_limit_price(decision_price, side, tolerance_bps)),
         "time_in_force": "day",
         "client_order_id": idempotency_key,
     }
@@ -70,6 +80,8 @@ def fill_from_order(
         status=status,
         reason=str(order.get("status", "rejected")) if status == "rejected" else None,
         submitted_at=_optional_str(order.get("submitted_at")),
+        order_type=_optional_str(order.get("type")),
+        time_in_force=_optional_str(order.get("time_in_force")),
     )
 
 
@@ -109,6 +121,15 @@ def price_of(order: dict[str, object], reference: Money) -> Money:
     if raw in (None, ""):
         return reference
     return Money(amount=Decimal(str(raw)))
+
+
+def bounded_limit_price(
+    decision_price: Money, side: BrokerSide, tolerance_bps: int
+) -> Decimal:
+    """Return the cent-rounded limit price allowed by the tolerance."""
+    tolerance = Decimal(tolerance_bps) / BASIS_POINTS_PER_UNIT
+    multiplier = ONE + tolerance if side == "buy" else max(ZERO, ONE - tolerance)
+    return (decision_price.amount * multiplier).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 def _optional_str(value: object) -> str | None:

@@ -16,6 +16,7 @@ import pytest
 from agents.execution.broker import BrokerFill
 from agents.execution.domain.orders import order_from_intent
 from agents.execution.domain.reconcile import reconcile_fills
+from agents.execution.domain.result import execution_result
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.run import run_submit
 from agents.execution.store import write_fills
@@ -61,6 +62,26 @@ def test_reconcile_reports_missing_and_mismatched_broker_fills() -> None:
     assert matched == (1, ())
     assert missing == (0, ("pm-run:AAPL:buy: missing_broker_fill",))
     assert mismatch == (0, ("pm-run:AAPL:buy: broker_mismatch",))
+
+
+def test_execution_result_counts_dropped_separately_from_rejected() -> None:
+    """EXEC-TYP-02 / EXEC-OBS-02: dropped decisions are not rejections."""
+    dropped = replace(
+        _broker_fill("drop", status="pending"),
+        reason="dropped: unfilled at session end",
+    )
+    rejected = _broker_fill("reject", status="rejected")
+
+    result = execution_result(
+        "execution-submit-fixture",
+        "paper",
+        (dropped, rejected),
+        Provenance(run_id="execution-submit-fixture", source_agent="execution"),
+    )
+
+    assert result.submitted == 1
+    assert result.dropped == 1
+    assert result.rejected == 1
 
 
 def test_write_fills_skips_absent_or_non_pm_order_lineage() -> None:

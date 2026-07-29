@@ -10,6 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from scripts._audit_broker_graph_drops import (
+    is_stop_order,
+    unprotected_dropped_exit_rows,
+)
+
 from agents.execution.fill_attempts import fill_attempt_chain
 from contracts.positions import is_active_position_node
 
@@ -50,6 +55,10 @@ def audit_graph(
     rows: list[AuditRow] = []
     _audit_positions(graph, broker_positions, rows)
     _audit_stops(broker_positions, broker_orders, rows)
+    rows.extend(
+        AuditRow(row.check, row.verdict, row.subject, row.detail)
+        for row in unprotected_dropped_exit_rows(graph, broker_positions, broker_orders)
+    )
     _audit_orphan_fills(graph, broker_orders, rows)
     _audit_flags(graph, rows)
     failures = sum(row.verdict == "FAIL" for row in rows)
@@ -155,11 +164,7 @@ def _broker_quantities(positions: tuple[BrokerPosition, ...]) -> dict[str, int]:
 def _pending_stop_quantities(orders: tuple[BrokerFill, ...]) -> dict[str, int]:
     quantities: dict[str, int] = {}
     for order in orders:
-        if (
-            order.idempotency_key.startswith("stop:")
-            and order.side == "sell"
-            and order.status == "pending"
-        ):
+        if is_stop_order(order) and order.side == "sell" and order.status == "pending":
             quantities[order.ticker] = quantities.get(order.ticker, 0) + order.quantity
     return quantities
 

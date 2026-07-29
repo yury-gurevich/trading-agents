@@ -120,7 +120,7 @@ def test_order_intent_gate_report_is_additive_and_round_trips() -> None:
 
 
 def test_broker_native_stops_bump_contract_ownership() -> None:
-    assert EXECUTION_CONTRACT.version == "0.3.0"
+    assert EXECUTION_CONTRACT.version == "0.3.1"
     assert "BrokerStopOrder" in EXECUTION_CONTRACT.owns_graph
     assert ANALYST_CONTRACT.version == "0.4.0"
 

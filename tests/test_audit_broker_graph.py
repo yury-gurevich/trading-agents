@@ -92,6 +92,40 @@ def test_audit_a3_fails_orphan_order_then_passes_after_repair() -> None:
     ]
 
 
+def test_audit_a5_fails_unprotected_position_with_dropped_sell() -> None:
+    """EXEC-OBS-02 / RPT-NEV-03: unprotected held plus dropped exit is distinct."""
+    graph = InMemoryGraphStore()
+    _position(graph, "held:AMD", "AMD", 3)
+    graph.merge_node(
+        "Fill",
+        "exit:ref:AMD:sell",
+        {
+            "ticker": "AMD",
+            "side": "sell",
+            "status": "pending",
+            "broker_status": "canceled",
+            "drop_reason": "unfilled at session end",
+        },
+    )
+    broker_position = _broker_position("AMD", 3)
+    stop = BrokerFill(
+        "custom-stop-client",
+        "AMD",
+        "sell",
+        3,
+        Money(amount=Decimal("95.00")),
+        "broker-stop",
+        "pending",
+        order_type="stop",
+    )
+
+    before = audit_graph(graph, (broker_position,), ())
+    after = audit_graph(graph, (broker_position,), (stop,))
+
+    assert _row(before, "A5", "AMD").verdict == "FAIL"
+    assert [row for row in after.rows if row.check == "A5"] == []
+
+
 def _row(report: AuditReport, check: str, subject: str) -> AuditRow:
     return next(
         row for row in report.rows if row.check == check and row.subject == subject

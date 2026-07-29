@@ -47,6 +47,7 @@ class ExecutionResult(_Frozen):
     fills: tuple[Fill, ...]
     submitted: int
     rejected: int
+    dropped: int = 0
     skipped: int = 0
     provenance: Provenance
 
@@ -73,7 +74,7 @@ class PromoteStageResult(_Frozen):
 
 CONTRACT = AgentContract(
     name="execution",
-    version="0.3.0",
+    version="0.3.1",
     mission=(
         "Be the single, idempotent boundary to the broker: submit approved orders, "
         "record fills, reconcile, and enforce stage gates (paper -> shadow -> live)."

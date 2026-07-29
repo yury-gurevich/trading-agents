@@ -52,6 +52,27 @@ def test_metrics_handle_empty_and_bad_numeric_values() -> None:
     assert collect_regime_attribution((), ()) == {}
 
 
+def test_dropped_decision_is_visible_but_not_rejected() -> None:
+    """RPT-IDN-01 / RPT-NEV-01 / RPT-TYP-02: dropped stays out of rejections."""
+    pm_run = Node("PMRun", "pm", {"approved_count": 3, "rejected_count": 1})
+    fills = (
+        Node("Fill", "filled", {"status": "filled"}),
+        Node(
+            "Fill",
+            "dropped",
+            {"status": "pending", "broker_status": "canceled", "drop_reason": "x"},
+        ),
+    )
+
+    portfolio = collect_portfolio_metrics(pm_run, (), (), fills)
+
+    assert portfolio["approved_count"] == 3.0
+    assert portfolio["rejected_count"] == 1.0
+    assert portfolio["execution_count"] == 1.0
+    assert portfolio["dropped_decision_count"] == 1.0
+    assert portfolio["approval_execution_gap"] == 2.0
+
+
 def test_compose_story_uses_full_lineage_and_close_decision() -> None:
     story = compose_story(
         Node("Position", "pm:AAPL", {"ticker": "AAPL", "opened_price_cents": 10100}),

@@ -26,5 +26,9 @@ def broker_from_settings(settings: ExecutionSettings) -> Broker:
             secret_key=settings.alpaca_secret_key,
             base_url=settings.alpaca_base_url,
             timeout=settings.alpaca_timeout,
+            order_price_tolerance_bps=settings.order_price_tolerance_bps,
         )
-    return PaperBroker(slippage_bps=settings.slippage_bps)
+    return PaperBroker(
+        slippage_bps=settings.slippage_bps,
+        order_price_tolerance_bps=settings.order_price_tolerance_bps,
+    )

@@ -23,6 +23,7 @@ from contracts.common import Money
 
 
 def test_stop_order_body_builds_exact_gtc_stop_payload() -> None:
+    """EXEC-NEV-03 / EXEC-IDM-02: stop submission remains a gtc stop order."""
     assert alpaca._stop_order_body(
         "stop:ref:MSFT", "MSFT", "sell", 7, Money(amount=Decimal("95.00")), "gtc"
     ) == {

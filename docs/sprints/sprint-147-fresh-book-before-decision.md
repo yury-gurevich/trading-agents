@@ -676,15 +676,29 @@ git diff --check
 Remote gates:
 
 ```text
-Pending branch push/watch in this handback turn.
+git push -u origin sprint-147-fresh-book-before-decision
+To https://github.com/yury-gurevich/trading-agents.git
+ * [new branch]      sprint-147-fresh-book-before-decision -> sprint-147-fresh-book-before-decision
+branch 'sprint-147-fresh-book-before-decision' set up to track 'origin/sprint-147-fresh-book-before-decision'.
+
+gh run watch 30423330499 --exit-status
+✓ sprint-147-fresh-book-before-decision CI · 30423330499
+✓ quality in 35s (ID 90484393659)
+✓ security in 1m55s (ID 90484393710)
+✓ test in 55s (ID 90484479721)
+
+gh run watch 30423330469 --exit-status
+✓ sprint-147-fresh-book-before-decision Security Findings · 30423330469
+✓ gate in 12s (ID 90484393396)
 ```
 
 **Not met / verified failing:**
 
 - First scheduled production run proof is not done. That is explicitly post-merge/retag sequencing,
   so no production functionality-check row was added in `docs/laws/functionality-checks.md`.
-- Remote GitHub gate results are pending until this branch is pushed; this section will be updated
-  after the run is watched.
+- Remote gates for the implementation commit passed. This evidence-only doc update will be pushed
+  and watched separately; recording that final result inside the same file would require another
+  evidence-only commit and create a new gate run.
 
 ---
 
@@ -701,6 +715,7 @@ Pending branch push/watch in this handback turn.
 - Resume needed the most care: the broker-risk set is now explicit by stage name, and resume
   artifact alignment has a planted mismatch test so a future head-stage insert cannot silently
   shift consequences.
-- Final pre-commit drift check: `origin/main` did not move while the sprint ran
+- Final pre-implementation-commit drift check: `origin/main` did not move while the sprint ran
   (`git rev-list --left-right --count HEAD...origin/main` returned `0 0`; both tips were
-  `4933ae1`). Remote-gate result is pending until the branch push step.
+  `4933ae1`). Initial remote gates for commit `d8fe82e` passed: CI `30423330499` and Security
+  Findings `30423330469`.

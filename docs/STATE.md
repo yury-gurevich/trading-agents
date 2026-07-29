@@ -463,8 +463,8 @@ agent images.
 
 ## Next
 
-- **🔴 ADR-0018 — implement same-session decision validity**
-  ([ADR-0018](decisions/0018-decision-validity-same-session-or-dropped.md), accepted 2026-07-29).
+- **🔴 ADR-0018 — PACKAGED as [S148](sprints/sprint-148-decision-valid-one-session.md), handed to Codex
+  2026-07-29** ([ADR-0018](decisions/0018-decision-validity-same-session-or-dropped.md), accepted 2026-07-29).
   **The largest measured cost in the system, and now a closed decision.** Every order today is a
   market order submitted after the close and filled at the next open, at a price nobody evaluated —
   **≈ −$2,850 across two exits** (MRVL −$1,330.12; AMD −$3,515.60, of which ≈ −$1,515 is the

@@ -655,8 +655,17 @@ Planted violation evidence:
 
 Remote gates:
 
-Pending branch push at this point in the local closeout. The branch will be pushed after this
-evidence is committed; final remote run IDs/results will be recorded in the return/handoff notes.
+- Implementation commit `6c869b4b6e6192ca33c8a6202f1bf2961623976a` pushed to
+  `origin/sprint-148-decision-valid-one-session`.
+- Security Findings run `30444869448`: `success`.
+- CI run `30444870088`: `success`.
+  - `quality` job `90552650004`: success in 37s; includes ruff, format, mypy, import-linter,
+    module size/header, and gate self-test.
+  - `security` job `90552650161`: success in 1m53s; includes pip-audit, detect-secrets, and
+    CodeQL analysis.
+  - `test` job `90552794487`: success in 54s; includes tests + coverage floor.
+- Note: this remote evidence is recorded in a docs-only follow-up edit after the implementation
+  commit's remote run completed. No source or test code changed after `6c869b4`.
 
 **The tolerance value shipped, and why:**
 
@@ -670,8 +679,6 @@ experimentation using measured drop rate/fill quality, not this implementation s
 
 **Not met / verified failing:**
 
-- Remote GitHub gates are not yet proven in this local file section because they require the branch
-  commit to be pushed first.
 - Post-merge deployment, fleet retag to `:s148`, scheduled-run watch, MDT stop verification, and
   `docs/laws/functionality-checks.md` entry are not done; the sprint sequencing explicitly puts
   them after merge/deploy.

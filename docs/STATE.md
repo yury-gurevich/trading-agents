@@ -484,10 +484,10 @@ agent images.
   monitor at stage 6 — one full run later. That is why the analyst scored a nine-hour-stale book on
   07-27 and authored an exit for a position that had already sold. Deferred out of S145 because it
   reorders the cascade and moves position truth across DL-44's ownership line, which is not a change
-  to make on top of a live outage. **Deferred, not rejected — and S146's probe raised its
-  priority:** the book is not merely stale, it is wrong. AMD carries three `open` Position nodes
-  totalling **111 shares against 55 held**; MRVL is **held nowhere at the broker** yet has two
-  `open` Positions of 44; ABT 98 vs 96; SCHW 98 vs 196. Every night the analyst scores that.
+  to make on top of a live outage. **Deferred, not rejected — and now smaller than it looked:**
+  ADR-0018 drops unfilled orders at session end, which removes the *carried phantom intent* half of
+  the hazard. What B still owns is the one-run reconciliation lag itself. Sequence it after
+  ADR-0018, not before.
 - **S144's dated fleet enablement** — build + retag at the next `:sNNN`, then set
   `GRAPH_VOCABULARY_B64` and verify it on an agent's env. Sequenced *after* S145 and its resumed
   run: a new fail-closed write path does not go into a fleet that cannot execute. S144 stays OPEN.

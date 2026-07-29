@@ -3437,7 +3437,7 @@ and capital protection outranks it.
 
 ---
 
-## DL-71 - The exit replay was a rewrite in an append-only store · status: OPEN (A shipping as S145, B deferred)
+## DL-71 - The exit replay was a rewrite in an append-only store · status: PARTLY RESOLVED (A shipped and proven as S145; B still deferred; the fan-out lesson unfiled)
 
 **Trigger.** `sched-2026-07-27` reached 4/7 stages and scored `ACCEPTANCE FAIL`. Execution crashed
 with `ValueError: property 'price_cents' cannot be overwritten` in `write_fills`, restarted, and
@@ -3488,9 +3488,22 @@ order submission. Worth auditing every other fan-out stage for the same shape.
 node, so a naive retry records `rejected` for orders that are actually live - a fabricated outcome
 of exactly the DL-57/DL-59 class. Adopting broker state on a duplicate-key refusal is part of A.
 
+**Where this stands, 2026-07-29.** **A is done and proven** (S145, 0.80.02, merged `2c49f88`, fleet
+`:s145`): `sched-2026-07-27` — the run that crash-looped for two hours — was resumed and scored
+`ACCEPTANCE PASS` at 7/7, and the completed-exit skip later fired on a live scheduled run for real
+(`CompletedExitReplaySkipped … AMD position_ref=22d71d0d3acc0586`), containing the exact defect that
+bricked the fleet. The named limit held: no fabricated `rejected` was written, and both crash
+orphans adopted broker state as designed. **B is still deferred** and now smaller than it looked —
+[ADR-0018](decisions/0018-decision-validity-same-session-or-dropped.md) drops unfilled orders at
+session end, which removes the *carried phantom intent* half of the hazard; what B still owns is the
+one-run reconciliation lag itself. **The fan-out lesson was never acted on** — S145 gave *execution*
+per-item containment, but the audit this entry called for ("worth auditing every other fan-out stage
+for the same shape") was never scheduled. Parked in [ideas.md](ideas.md) 2026-07-29 so it stops
+living only inside this paragraph.
+
 ---
 
-## DL-72 - Self-healing that only works once is not a repair path · status: OPEN (S146)
+## DL-72 - Self-healing that only works once is not a repair path · status: RESOLVED (S146 — repair script shipped, applied to production, proven idempotent)
 
 **Trigger.** Probing production on 2026-07-28, after S145 merged (`2c49f88`), to find out what the
 AMD/ABT orphans actually need. The probe found something the S145 spec did not: **no `ExecutionRun`
@@ -3525,13 +3538,18 @@ reorder the cascade while cleaning up after an outage. *Hardcoding the observed 
 into the repair* - the orders are queued market orders that fill at the next open, so the document
 would be stale before the code ran; the script must read broker state at execution time.
 
-**Found alongside, not fixed (worse than the orphans).** The position book has diverged badly from
+**Found alongside, not fixed (worse than the orphans).** ⛔ **RETRACTED 2026-07-28 — every claim in
+this paragraph is false.** It audited `Position` nodes on the raw `status` property instead of
+`contracts.positions.is_active_position_node`, so it counted superseded and broker-absent nodes as
+live. The correct audit found **one active node per held ticker, every quantity matching the
+broker**. Kept verbatim because the retraction is the lesson; see DL-73 below for the full account.
+The false text follows. ~~The position book has diverged badly from
 the broker: AMD carries three `open` Position nodes totalling **111 shares against 55 held**
 (`broker-reconciled:AMD` 19, `broker:AMD:37:53978` 37, `broker:AMD:55:53127` 55); MRVL is **held
 nowhere at the broker** yet has two `open` Positions of 44; ABT 98 vs 96; SCHW 98 vs 196. And
 `exit:e67227ec57fa1e46:MRVL:sell` still reads `status='pending'` while `broker_status='filled'` and
 its realized PnL is booked. These are monitor-reconciliation defects and they strengthen the case
-for DL-71 option B rather than for widening S146.
+for DL-71 option B rather than for widening S146.~~
 
 **Unrelated bug found while probing.** `orchestration/packs/trading_vault_probes.py`
 `_alpaca_account_request` falls back to `ALPACA_ENDPOINT` and then appends `/v2/account`. The
@@ -3539,6 +3557,19 @@ documented value in `.env.example` (and the live `.env`) already ends in `/v2`, 
 credential probe requests `/v2/v2/account` and 404s whenever `EXECUTION_ALPACA_BASE_URL` is unset.
 The execution agent is unaffected - it reads `EXECUTION_ALPACA_BASE_URL` with its own default. This
 is a DL-36 credential-probe defect; file it, do not fold it into S146.
+
+**Resolved 2026-07-29 (S146, 0.80.03, merged `7b06662`).** `scripts/repair_orphan_fills.py` shipped
+dry-run-by-default, `--since`-bounded, writing through the agent's own `write_fills` path, and
+**never** forging an `ExecutionRun`. Proven on production in three passes: dry-run
+`would_record=4`, apply `recorded=4`, second apply `recorded=0 already_recorded=48` — idempotence
+demonstrated rather than argued. `scripts/audit_broker_graph.py` shipped alongside it, so the
+condition is now *detectable on demand*, which is the part that actually answers this entry's
+title: the repair is repeatable and its precondition is observable, so it no longer depends on the
+crash evidence surviving. The AMD/ABT orphans this entry was written about **did** self-heal on
+`:s145` exactly as predicted — they are absent from the post-S145 audit. The four orphans the
+script actually repaired were older ones nobody knew about (CSCO 88, AMD 19, HPE 229, MRVL 44),
+which is the vindication of not relying on the single-shot window. The `/v2/v2/account` probe
+defect was fixed in the same sprint: `_alpaca_broker_api_base_url` appends `/v2` only when absent.
 
 ---
 

@@ -11,6 +11,10 @@ from agents.supervisor import SupervisorAgent
 from agents.supervisor.domain.gate import dispatch_intent
 from contracts.common import Provenance
 from contracts.operator import TypedIntent
+from contracts.position_sync import (
+    POSITION_SYNC_EDGE,
+    POSITION_SYNC_PHASE,
+)
 from contracts.supervisor import DispatchResult
 from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 from orchestration.resume import bind_resume_run
@@ -26,9 +30,8 @@ def test_resume_is_double_gated_then_places_audited_child_run() -> None:
     confirmed = _dispatch(bus, _intent({**params, "confirmed": "true"}))
 
     assert gated.accepted is False
-    assert (
-        "re-running from portfolio manager will submit new orders at the broker"
-        in str(gated.rejection)
+    assert "re-running from this stage can submit new orders at the broker" in str(
+        gated.rejection
     )
     assert confirmed.accepted is True
     assert confirmed.routed_to == "orchestration.resume_run"
@@ -65,7 +68,23 @@ def test_invalid_stage_and_missing_bus_are_explained() -> None:
 def _source_graph() -> InMemoryGraphStore:
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="source", tickers=("AAPL",))
+    _mark_position_synced(graph, "source")
     return graph
+
+
+def _mark_position_synced(graph: InMemoryGraphStore, run_id: str) -> None:
+    run = graph.get_node("RunRequest", f"run-request:{run_id}")
+    assert run is not None
+    marker = graph.merge_node(
+        "MonitorRun",
+        f"position-sync:{run_id}",
+        {
+            "source_run_id": run_id,
+            "phase": POSITION_SYNC_PHASE,
+            "position_book_status": "fresh",
+        },
+    )
+    graph.add_edge(run, marker, POSITION_SYNC_EDGE)
 
 
 def _bound_bus(graph: InMemoryGraphStore) -> InProcessBus:

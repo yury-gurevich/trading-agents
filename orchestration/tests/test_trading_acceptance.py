@@ -24,6 +24,7 @@ from orchestration.packs.trading_acceptance import (
     render_acceptance,
 )
 from orchestration.packs.trading_boundaries import _CONSERVATION, _conserves
+from orchestration.packs.trading_observatory import observe_run
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import source
 
@@ -47,10 +48,12 @@ def _cascade(
 
 
 def test_clean_cascade_is_accepted() -> None:
+    """SUP-OBS-01 / DL-70: full cascade is accepted with the sync stage present."""
     graph = _cascade(source(), ("AAPL", "MSFT"), "acc-ok")
     result = accept_run(graph, "acc-ok")
     assert result.passed
     assert result.verdict == "PASS"
+    assert len(observe_run(graph, "acc-ok")) == 8
     assert "PASS" in render_acceptance(result)
 
 
@@ -77,6 +80,7 @@ def _complete_stages(
     default to "every order filled" so a healthy run stays the baseline.
     """
     return (
+        StageView("position_sync", "x", {"synced": 1}, reached=True),
         StageView("provider", "x", {"returned": max(scored, 1)}, reached=True),
         StageView("scanner", "x", {"survived": max(scored, 1)}, reached=True),
         StageView(

@@ -8,7 +8,7 @@ External I/O: master HTTP endpoint (POST /ehlo).
 
 from __future__ import annotations
 
-from agents.monitor.poll import find_pending, monitor_pm_node
+from agents.monitor.poll import find_pending_work, process_work_item
 from agents.monitor.settings import MonitorSettings
 from kernel.bootstrap import activate_agent, master_public_key_from_env
 from kernel.graph_env import build_graph_from_env
@@ -26,8 +26,8 @@ def main() -> None:  # pragma: no cover
     graph = build_graph_from_env()
     settings = MonitorSettings()
     work_loop(
-        lambda: find_pending(graph),
-        lambda node: monitor_pm_node(node, graph=graph, settings=settings),
+        lambda: find_pending_work(graph),
+        lambda item: process_work_item(item, graph=graph, settings=settings),
         poll_interval=int(os.environ.get("MONITOR_POLL_INTERVAL", "60")),
     )
 

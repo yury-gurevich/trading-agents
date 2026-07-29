@@ -28,7 +28,7 @@ def test_resume_round_trip_echoes_consequence_and_places_audited_child() -> None
         "run_id": "chat-run",
     }
     assert (
-        "re-running from portfolio manager will submit new orders at the broker"
+        "re-running from this stage can submit new orders at the broker"
         in gated["message"]
     )
     assert confirmed["outcome"] == "confirmed_dispatch"

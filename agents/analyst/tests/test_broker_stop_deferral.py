@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from agents.analyst.poll import analyze_scan_node
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import bar, candidate_set
+from agents.analyst.tests.position_sync_helpers import mark_book_synced
 from contracts.analyst import RecommendationSet
 from contracts.common import Provenance
 from contracts.positions import open_positions
@@ -85,6 +86,7 @@ def _seed_scan(graph: InMemoryGraphStore, market_bars: tuple[OHLCVBar, ...]) -> 
         f"regime-context:{_RUN_ID}",
         {"snapshot": _regime().model_dump(mode="json"), "run_id": _RUN_ID},
     )
+    mark_book_synced(graph, _RUN_ID)
     return scan
 
 

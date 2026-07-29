@@ -11,19 +11,18 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from contracts.resume import RESUME_STAGES, ResumePlacement, ResumeRequest, ResumeStage
-from orchestration.batch_trace import walk_chain
+from orchestration.batch_chain import walk_chain
+from orchestration.resume_plan import (
+    ARTIFACTS as _ARTIFACTS,
+)
+from orchestration.resume_plan import (
+    ResumeArtifact,
+    artifact_parent,
+    required_artifacts,
+)
 
 if TYPE_CHECKING:
     from kernel import GraphStore, MessageBus, Node
-_ARTIFACTS = (
-    ("MarketData", "INGESTED_BY"),
-    ("ScanRun", "SCANNED_BY"),
-    ("AnalystRun", "ANALYZED_BY"),
-    ("PMRun", "EVALUATED_BY"),
-    ("ExecutionRun", "EXECUTED_BY"),
-    ("MonitorRun", "MONITORED_BY"),
-    ("Snapshot", "REPORTED_BY"),
-)
 
 
 def resume_run(
@@ -35,8 +34,8 @@ def resume_run(
     if source is None:
         raise ValueError(f"unknown source run: {source_run_id}")
     chain = walk_chain(graph, source_run_id)
-    required = _ARTIFACTS[: RESUME_STAGES.index(stage)]
-    missing = next((label for label, _edge in required if label not in chain), None)
+    required = required_artifacts(stage)
+    missing = next((a.chain_key for a in required if a.chain_key not in chain), None)
     if missing is not None:
         raise ValueError(f"cannot resume from {stage}: upstream {missing} is missing")
 
@@ -94,32 +93,30 @@ def _link_upstream(
     graph: GraphStore,
     child: Node,
     chain: dict[str, Node],
-    required: tuple[tuple[str, str], ...],
+    required: tuple[ResumeArtifact, ...],
 ) -> tuple[str, ...]:
-    previous = child
-    clones: dict[str, Node] = {}
+    clones: dict[str, Node] = {"RunRequest": child}
     refs: list[str] = []
-    for label, edge in required:
-        source = chain[label]
-        clone_key = f"resume-link:{child.props['run_id']}:{label.lower()}"
+    for artifact in required:
+        source = chain[artifact.chain_key]
+        clone_key = f"resume-link:{child.props['run_id']}:{artifact.chain_key.lower()}"
         props = _linked_props(
-            label, source, clone_key, clones, str(child.props["run_id"])
+            artifact, source, clone_key, clones, str(child.props["run_id"])
         )
-        clone = graph.merge_node(label, clone_key, props)
-        graph.add_edge(previous, clone, edge)
+        clone = graph.merge_node(artifact.label, clone_key, props)
+        graph.add_edge(artifact_parent(artifact, child, clones), clone, artifact.edge)
         graph.add_edge(clone, source, "LINKED_FROM")
-        if label == "ScanRun":
+        if artifact.chain_key == "ScanRun":
             graph.add_edge(clone, clones["MarketData"], "DERIVED_FROM")
-        _link_side_branch(graph, clone, source, label)
-        clones[label] = clone
-        previous = clone
+        _link_side_branch(graph, clone, source, artifact.chain_key)
+        clones[artifact.chain_key] = clone
         refs.append(f"{source.label}:{source.key}")
     _link_regime(graph, clones, chain, str(child.props["run_id"]), refs)
     return tuple(refs)
 
 
 def _linked_props(
-    label: str,
+    artifact: ResumeArtifact,
     source: Node,
     clone_key: str,
     clones: dict[str, Node],
@@ -127,18 +124,20 @@ def _linked_props(
 ) -> dict[str, object]:
     props = dict(source.props)
     props.update({"linked_from_key": source.key, "resume_run_id": child_id})
-    if label == "MarketData":
+    if artifact.chain_key == "PositionSync":
+        props["source_run_id"] = child_id
+    elif artifact.chain_key == "MarketData":
         props["run_id"] = child_id
-    elif label == "PMRun":
+    elif artifact.chain_key == "PMRun":
         order_set = dict(props["order_intent_set"])
         order_set["run_id"] = clone_key
         provenance = dict(order_set["provenance"])
         provenance.update({"run_id": clone_key, "graph_node_id": f"PMRun:{clone_key}"})
         order_set["provenance"] = provenance
         props["order_intent_set"] = order_set
-    elif label == "ExecutionRun":
+    elif artifact.chain_key == "ExecutionRun":
         props["source_pm_run_id"] = clones["PMRun"].key
-    elif label == "MonitorRun":
+    elif artifact.chain_key == "MonitorRun":
         props["source_run_id"] = clones["PMRun"].key
         props["exec_run_id"] = clones["ExecutionRun"].key
     return props
@@ -175,7 +174,7 @@ def _link_regime(
 
 def _linked_refs(graph: GraphStore, child: Node) -> tuple[str, ...]:
     linked = graph.descendants(
-        child, max_depth=8, edge_types={edge for _, edge in _ARTIFACTS}
+        child, max_depth=8, edge_types={artifact.edge for artifact in _ARTIFACTS}
     )
     refs: list[str] = []
     for clone in linked:

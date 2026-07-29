@@ -9,8 +9,13 @@ External I/O: none (reads/writes the injected GraphStore).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
 
+from agents.monitor.position_sync import (
+    find_pending_position_sync,
+    sync_positions_snapshot,
+)
 from agents.monitor.provider_client import _latest_cents
 from agents.monitor.run import evaluate_and_write, open_run_positions
 from agents.monitor.settings import MonitorSettings
@@ -29,6 +34,14 @@ _ANALYZED_EDGE = "ANALYZED_BY"
 _DERIVED_FROM = "DERIVED_FROM"
 
 
+@dataclass(frozen=True)
+class MonitorWorkItem:
+    """One monitor poll item, preserving a single work_loop entrypoint."""
+
+    kind: Literal["position_sync", "evaluate"]
+    node: Node
+
+
 def find_pending(graph: GraphStore) -> list[Node]:
     """Return ExecutionRun nodes with no downstream MonitorRun (unprocessed work)."""
     pending: list[Node] = []
@@ -39,6 +52,31 @@ def find_pending(graph: GraphStore) -> list[Node]:
         if not monitored:
             pending.append(node)
     return pending
+
+
+def find_pending_work(graph: GraphStore) -> list[MonitorWorkItem]:
+    """Return head sync work before end-of-run monitor work."""
+    return [
+        *(
+            MonitorWorkItem("position_sync", node)
+            for node in find_pending_position_sync(graph)
+        ),
+        *(MonitorWorkItem("evaluate", node) for node in find_pending(graph)),
+    ]
+
+
+def process_work_item(
+    item: MonitorWorkItem,
+    *,
+    graph: GraphStore,
+    settings: MonitorSettings | None = None,
+    sink: FaultSink | None = None,
+) -> None:
+    """Dispatch one monitor work item without widening the work_loop."""
+    if item.kind == "position_sync":
+        sync_positions_snapshot(item.node, graph=graph, settings=settings, sink=sink)
+    else:
+        monitor_pm_node(item.node, graph=graph, settings=settings, sink=sink)
 
 
 def monitor_pm_node(

@@ -22,6 +22,7 @@ from agents.execution.settings import ExecutionSettings
 from agents.forecaster import poll as forecaster_poll
 from agents.forecaster.agent import ForecasterAgent
 from agents.monitor import poll as monitor_poll
+from agents.monitor import position_sync as monitor_position_sync
 from agents.portfolio_manager import poll as pm_poll
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from agents.provider import poll as provider_poll
@@ -77,6 +78,7 @@ def cascade_once(
     provider_agent.bind()  # so the forecaster's advisory RPC can reach the provider
     forecaster_agent = forecaster_agent or ForecasterAgent(bus, graph=graph)
     forecaster_agent.bind()
+    sync_processed = _position_sync_once(graph, broker=broker)
     veto_stages = (
         (
             (
@@ -145,6 +147,18 @@ def cascade_once(
             partial(reporter_poll.report_monitor_node, graph=graph),
         ),
     )
-    return tuple(
-        StageResult(name, run_once(find, process)) for name, find, process in stages
+    return (
+        StageResult("position_sync", sync_processed),
+        *(StageResult(name, run_once(find, process)) for name, find, process in stages),
+    )
+
+
+def _position_sync_once(graph: GraphStore, *, broker: Broker) -> int:
+    run_once(
+        partial(execution_poll.find_pending_position_sync, graph),
+        partial(execution_poll.sync_run_request, graph=graph, broker=broker),
+    )
+    return run_once(
+        partial(monitor_position_sync.find_pending_position_sync, graph),
+        partial(monitor_position_sync.sync_positions_snapshot, graph=graph),
     )

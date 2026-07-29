@@ -46,6 +46,7 @@ def test_clean_run_holds_all_invariants() -> None:
     graph = _cascade(source(), ("AAPL", "MSFT"), "obs-ok")
     out = inspect(graph, "obs-ok")
     for stage in (
+        "[position_sync]",
         "[provider]",
         "[scanner]",
         "[analyst]",
@@ -134,6 +135,7 @@ def test_partial_run_marks_every_stage_not_reached() -> None:
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="obs-partial", tickers=("AAPL",))
     out = inspect(graph, "obs-partial")
+    assert "[position_sync]  <- RunRequest   ... NOT REACHED" in out
     assert "[provider]  <- RunRequest   ... NOT REACHED" in out
     assert "[reporter]  <- MonitorRun(monitor)   ... NOT REACHED" in out
-    assert "7 WARN - inspect above" in out
+    assert "8 WARN - inspect above" in out

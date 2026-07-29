@@ -30,12 +30,12 @@ def test_main_uses_settings_broker_factory(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(ep, "master_public_key_from_env", lambda: "pub")
     monkeypatch.setattr(ep, "build_graph_from_env", lambda: graph)
     monkeypatch.setattr(ep, "broker_from_settings", lambda settings: broker)
-    monkeypatch.setattr(ep, "find_pending", lambda graph_arg: ["pm-node"])
+    monkeypatch.setattr(ep, "find_pending_work", lambda graph_arg: ["work-item"])
 
-    def fake_execute(
-        node: object, *, graph: object, broker: object, settings: object
+    def fake_process(
+        item: object, *, graph: object, broker: object, settings: object
     ) -> None:
-        seen["node"] = node
+        seen["item"] = item
         seen["graph"] = graph
         seen["broker"] = broker
         seen["settings"] = settings
@@ -48,16 +48,16 @@ def test_main_uses_settings_broker_factory(monkeypatch: pytest.MonkeyPatch) -> N
     ) -> None:
         seen["pending"] = find_pending()
         seen["poll_interval"] = poll_interval
-        process_one("pm-node")
+        process_one("work-item")
 
-    monkeypatch.setattr(ep, "execute_pm_node", fake_execute)
+    monkeypatch.setattr(ep, "process_work_item", fake_process)
     monkeypatch.setattr(ep, "work_loop", fake_work_loop)
     monkeypatch.setenv("EXECUTION_POLL_INTERVAL", "7")
 
     ep.main()
 
-    assert seen["pending"] == ["pm-node"]
-    assert seen["node"] == "pm-node"
+    assert seen["pending"] == ["work-item"]
+    assert seen["item"] == "work-item"
     assert seen["graph"] is graph
     assert seen["broker"] is broker
     assert seen["poll_interval"] == 7

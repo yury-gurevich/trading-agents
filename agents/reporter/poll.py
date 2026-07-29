@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.reporter.result import build_snapshot
+from contracts.position_sync import POSITION_SYNC_PHASE
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -24,6 +25,8 @@ def find_pending(graph: GraphStore) -> list[Node]:
     """Return MonitorRun nodes with no downstream Snapshot (unprocessed work)."""
     pending: list[Node] = []
     for node in graph.list_nodes(MONITOR_RUN_LABEL):
+        if node.props.get("phase") == POSITION_SYNC_PHASE:
+            continue
         reported = list(
             graph.descendants(node, max_depth=1, edge_types={REPORTED_EDGE})
         )

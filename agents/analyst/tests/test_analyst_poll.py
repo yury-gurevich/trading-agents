@@ -10,11 +10,18 @@ External I/O: none.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from agents.analyst.poll import analyze_scan_node, find_pending
 from agents.analyst.tests.helpers import bars, candidate, candidate_set
 from contracts.common import Provenance
+from contracts.position_sync import (
+    POSITION_BOOK_STALE_INCIDENT,
+    POSITION_SYNC_EDGE,
+    POSITION_SYNC_PHASE,
+    RUN_REQUEST_LABEL,
+    run_request_key,
+)
 from contracts.provider import (
     MARKET_DATA_LABEL,
     REGIME_CONTEXT_LABEL,
@@ -57,6 +64,7 @@ def _seed_scan_run(
     market: bool = True,
     regime: bool = True,
     candidates: bool = True,
+    book_status: Literal["fresh", "stale"] | None = "fresh",
 ) -> Node:
     cset = (
         candidate_set(candidate("AAPL"), candidate("MSFT"))
@@ -77,6 +85,8 @@ def _seed_scan_run(
             },
         )
         graph.add_edge(scan_run, market_node, "DERIVED_FROM")
+        if book_status is not None:
+            _seed_position_sync(graph, status=book_status)
     if regime:
         graph.merge_node(
             REGIME_CONTEXT_LABEL,
@@ -86,10 +96,39 @@ def _seed_scan_run(
     return scan_run
 
 
+def _seed_position_sync(
+    graph: GraphStore,
+    *,
+    status: Literal["fresh", "stale"],
+    reason: str | None = None,
+) -> None:
+    request = graph.merge_node(
+        RUN_REQUEST_LABEL,
+        run_request_key(_RUN_ID),
+        {"run_id": _RUN_ID},
+    )
+    props: dict[str, object] = {
+        "phase": POSITION_SYNC_PHASE,
+        "position_book_status": status,
+    }
+    if reason:
+        props["position_book_stale_reason"] = reason
+    marker = graph.merge_node("MonitorRun", f"position-sync:{_RUN_ID}", props)
+    graph.add_edge(request, marker, POSITION_SYNC_EDGE)
+
+
 def test_find_pending_returns_unanalyzed_scan_run() -> None:
+    """ANLZ-TRG-03 / MON-TRG-04: synced ScanRuns become analyst-eligible."""
     graph = InMemoryGraphStore()
     _seed_scan_run(graph)
     assert len(find_pending(graph)) == 1
+
+
+def test_find_pending_waits_for_position_sync() -> None:
+    """ANLZ-TRG-03 / MON-TRG-04: missing sync marker blocks analyst polling."""
+    graph = InMemoryGraphStore()
+    _seed_scan_run(graph, book_status=None)
+    assert find_pending(graph) == []
 
 
 def test_find_pending_empty_when_no_scan_run() -> None:
@@ -98,6 +137,7 @@ def test_find_pending_empty_when_no_scan_run() -> None:
 
 
 def test_analyze_scan_node_scores_candidates_from_graph() -> None:
+    """ANLZ-TRG-03 / MON-TRG-04: analyst scores only after book sync is marked."""
     graph = InMemoryGraphStore()
     node = _seed_scan_run(graph)
     analyze_scan_node(node, graph=graph)
@@ -105,6 +145,29 @@ def test_analyze_scan_node_scores_candidates_from_graph() -> None:
     # Real scoring ran (market found via DERIVED_FROM), not the empty-market
     # fallback — the happy-path AAPL fixture clears the neutral confidence floor.
     assert len(graph.list_nodes("Recommendation")) >= 1
+
+
+def test_analyze_scan_node_waits_when_position_sync_missing() -> None:
+    """ANLZ-TRG-03 / MON-TRG-04: planted missing-sync run writes no AnalystRun."""
+    graph = InMemoryGraphStore()
+    node = _seed_scan_run(graph, book_status=None)
+    analyze_scan_node(node, graph=graph)
+    assert not graph.list_nodes("AnalystRun")
+
+
+def test_analyze_scan_node_records_stale_book_incident() -> None:
+    """ANLZ-FAIL-01 / MON-FAIL-01: stale broker sync is loud in provenance."""
+    graph = InMemoryGraphStore()
+    node = _seed_scan_run(graph, book_status=None)
+    _seed_position_sync(graph, status="stale", reason="broker unavailable")
+    analyze_scan_node(node, graph=graph)
+    analyst_run = graph.list_nodes("AnalystRun")[0]
+    recommendation_set = analyst_run.props["recommendation_set"]
+    assert tuple(recommendation_set["provenance"]["incident_refs"]) == (
+        POSITION_BOOK_STALE_INCIDENT,
+    )
+    assert analyst_run.props["position_book_status"] == "stale"
+    assert analyst_run.props["position_book_stale_reason"] == "broker unavailable"
 
 
 def test_analyze_scan_node_marks_node_processed() -> None:

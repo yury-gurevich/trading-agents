@@ -14,6 +14,7 @@ from kernel import InMemoryGraphStore
 from orchestration.start import place_run_request
 from surfaces.context import build_test_context
 from surfaces.dashboard import build_app, chat_binding
+from surfaces.tests.position_sync_helpers import mark_position_synced
 from surfaces.tests.test_dashboard_app import invoke
 
 if TYPE_CHECKING:
@@ -74,6 +75,7 @@ def _post(
 def _chat_app() -> tuple[Any, InMemoryGraphStore, _ChatLLM]:
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="chat-run", tickers=("AAPL",))
+    mark_position_synced(graph, "chat-run")
     llm = _ChatLLM()
     context = build_test_context(graph=graph, llm=llm)
     return build_app(graph, chat_context=context), graph, llm

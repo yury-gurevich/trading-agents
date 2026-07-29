@@ -8,8 +8,10 @@ External I/O: none.
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Literal
 
 from agents.execution import ExecutionAgent
+from agents.execution.broker import BrokerFill, BrokerPosition
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.tests.stage_helpers import flag_handler
 from contracts.common import Explanation, Money, Provenance
@@ -95,3 +97,64 @@ def stage_status_message() -> AgentMessage:
 
 def fill_node_count(graph: InMemoryGraphStore) -> int:
     return len(graph.list_nodes("Fill"))
+
+
+class PositionBroker:
+    """Broker fake that returns configured positions."""
+
+    def __init__(self, positions: tuple[BrokerPosition, ...]) -> None:
+        self._positions = positions
+
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        return self._positions
+
+    def fills(self) -> tuple[BrokerFill, ...]:
+        return ()
+
+    def submit(
+        self,
+        idempotency_key: str,
+        ticker: str,
+        side: Literal["buy", "sell"],
+        quantity: int,
+        limit_price: Money,
+    ) -> BrokerFill:
+        raise AssertionError("position-sync test should not submit orders")
+
+    def submit_stop(
+        self,
+        idempotency_key: str,
+        ticker: str,
+        side: Literal["buy", "sell"],
+        quantity: int,
+        stop_price: Money,
+        tif: str = "gtc",
+    ) -> BrokerFill:
+        raise AssertionError("position-sync test should not submit stops")
+
+    def cancel(self, broker_order_id: str) -> None:
+        raise AssertionError("position-sync test should not cancel orders")
+
+
+class FailingBroker(PositionBroker):
+    """Broker fake that always fails the positions read."""
+
+    def __init__(self) -> None:
+        super().__init__(())
+
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        raise RuntimeError("broker unavailable")
+
+
+class FailFirstBroker(PositionBroker):
+    """Broker fake that fails once, then returns a healthy book."""
+
+    def __init__(self) -> None:
+        super().__init__((BrokerPosition("AAPL", 3, 10000, 30000),))
+        self.calls = 0
+
+    def positions(self) -> tuple[BrokerPosition, ...]:
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("first run poisoned")
+        return super().positions()

@@ -77,6 +77,7 @@ def test_verdict_fail_on_broken_chain_is_not_no_trade() -> None:
 def test_stages_shape_on_clean_cascade() -> None:
     stages = proj.run_stages(cascade_graph(), "dash-ok")
     assert [s["name"] for s in stages] == [
+        "position_sync",
         "provider",
         "scanner",
         "analyst",
@@ -85,7 +86,7 @@ def test_stages_shape_on_clean_cascade() -> None:
         "monitor",
         "reporter",
     ]
-    provider = stages[0]
+    provider = stages[1]
     assert provider["reached"] is True
     checks = provider["checks"]
     assert isinstance(checks, list)

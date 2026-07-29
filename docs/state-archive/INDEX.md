@@ -15,6 +15,7 @@ canonical chronological list of every sprint, use [`../sprints/README.md`](../sp
 | [STATE-03.md](STATE-03.md) | S77–S96 | Graph-pull work loops, platform/pack extraction, and the etalon-era narrative | — |
 | [STATE-04.md](STATE-04.md) | S99–S118 + chores | Fleet-serve receive half (S99/S100), the qlib workflow adoption (S110–S115), the DL-36 credential arc close (S106–S108), and the DL-43 Postgres migration trilogy (S116–S118) | 2026-07-08 |
 | [STATE-05.md](STATE-05.md) | S102–S126 | Fleet arc close (S102 distributed run-through, S103 dispatcher cron), DL-42 deliberation prompts (S119/S121), DL-44 broker reconciliation (S120), and the **whole DL-47 dashboard arc** (S123–S126) | 2026-07-22 |
+| [STATE-06.md](STATE-06.md) | S128–S146 | Feed resilience (S128), the blast-radius hardening run (S130–S134), ADR-0017 exit authority (S137), broker-native stops (S138), the graph-vocabulary pair (S143/S144), and the **exit-replay outage and its two-sprint recovery** (S145/S146). Contains two claims later corrected in place — **DL-73 was retracted in full** and the first S146 packet was superseded | 2026-07-29 |
 
 ## A note on the overlapping ranges
 
@@ -22,7 +23,7 @@ canonical chronological list of every sprint, use [`../sprints/README.md`](../sp
 duplicate content. The **S102 and S103 entries lingered in STATE.md's *Recent* section past the
 2026-07-08 split** (they were the fleet arc's headline results and stayed visible deliberately), so
 their detail travelled into `STATE-05` at the 2026-07-22 split. Ranges here are *nominal*; the
-entries themselves are unique to one file. If you cannot find a sprint, search all five — or use
+entries themselves are unique to one file. If you cannot find a sprint, search all six — or use
 `docs/sprints/sprint-NN-*.md`, which is always authoritative for a single sprint.
 
 ## When to split again

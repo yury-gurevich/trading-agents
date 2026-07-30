@@ -3793,3 +3793,62 @@ positions* - that would reintroduce the invisibility ADR-0015 exists to prevent.
 state, and a 403 refusal never creates a live broker stop.
 
 ---
+
+## DL-76 - A flat price tolerance is not a neutral parameter; it silently picks winners · status: OPEN (challenger packaged as S149)
+
+**Trigger.** S148 shipped ADR-0018's order-price tolerance as a flat **50 bps**. Before merging, I
+measured that number against 60 sessions of real overnight gaps (Alpaca daily bars, 2026-05-01
+onward) for the nine held names plus AMD and MRVL, computing **directional** refusal - a buy only
+fails if the price gaps *up* through the band, so a two-sided rate would overstate it by roughly
+double.
+
+**What the measurement says.** Blended, 50 bps refuses **35 % of buys and 23 % of sells**. That part
+is ADR-0018 working as designed. The finding is the **distribution**:
+
+| Ticker | Median overnight gap | Buys refused @ 50 bps |
+| --- | --- | --- |
+| SCHW | 42 bps | 25 % |
+| USB | 47 bps | 30 % |
+| WFC | 47 bps | 37 % |
+| HPE | 132 bps | 45 % |
+| AMD | 251 bps | 52 % |
+| MRVL | 318 bps | 48 % |
+
+Tolerance sweep, blended buy/sell: 25 bps -> 40 %, **50 bps -> 29 %**, 100 bps -> 18 %,
+200 bps -> 9 %, 500 bps -> 2 %.
+
+**The insight.** 50 bps is *one* median gap for SCHW and *one fifth* of one for MRVL. A single
+number therefore encodes two completely different policies depending on which ticker it lands on -
+and nobody chose that. The flat band quietly decides that the system trades the low-volatility book
+roughly normally and goes nearly silent on AMD/MRVL/HPE.
+
+**Why scaling is about edge, not volatility.** A tolerance says *how far from my decided price I
+will still trade*. On a name whose typical move is 3 %, refusing a 0.5 % adverse gap discards trades
+whose edge dwarfs the slippage; on a name whose typical move is 0.5 %, the same gap eats the entire
+edge. Volatility is the available proxy for edge size, so the band should scale with it. `atr_pct`
+already exists per ticker and already crosses the analyst -> PM boundary inside
+`Recommendation.quant_metrics`, so the input is free; only PM -> execution needs a field.
+
+**Decision: make it a measured challenger, not a correction (ADR-0013).** Packaged as
+[S149](sprints/sprint-149-volatility-scaled-tolerance.md), shipping **off by default**, with the
+counterfactual tolerance recorded on every order so the comparison is judged on evidence rather than
+argued. Promotion is an operator config flip, never automatic.
+
+**Ruled out.** *Widening the flat band to ~150 bps* - one number, no plumbing, drops fall to ~11 %;
+rejected as the primary answer because it does not fix the **shape** (SCHW would get three median
+gaps, MRVL half of one), but retained as the baseline the challenger must beat. *Keeping the flat
+band and simply not trading high-gap names after close* - genuinely defensible, and what the flat
+band already does implicitly; rejected only as an **unexamined default**, and if the measurement
+says the flat band wins, that is a real result. *Scaling by realized overnight gap instead of ATR* -
+more directly on target, deferred because nothing computes that statistic today. *Letting the PM
+decide the tolerance* - rejected on the `EXEC-IDN-01` line: the PM carries the input, execution owns
+the band. *Auto-promotion on N winning runs* - rejected; ADR-0013 requires gated promotion.
+
+**Found alongside, not fixed (arguably larger).** `suggested_stop_pct` is **not per-ticker at all**:
+`agents/analyst/domain/recommend.py:172` sets it to `regime.base_stop_loss_pct` for every buy. So
+every position carries an identically-sized stop regardless of volatility - SCHW at a 42 bps median
+gap and MRVL at 318 bps get the same floor. That is the same flat-band defect one layer over, and it
+governs **risk** rather than execution price, which makes it the more consequential of the two.
+Recorded here deliberately rather than folded into S149.
+
+---

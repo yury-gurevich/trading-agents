@@ -53,6 +53,7 @@ def write_order_decision(
                 "quantity": order.quantity,
                 "est_price_cents": _money_to_cents(order.est_price),
                 "est_price_currency": order.est_price.currency,
+                "decision_atr_pct": order.decision_atr_pct,
                 "stop_pct": order.stop_pct,
                 "target_pct": order.target_pct,
                 "position_ref": order.position_ref,

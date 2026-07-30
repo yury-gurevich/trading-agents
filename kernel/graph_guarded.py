@@ -36,7 +36,7 @@ class GuardedGraphStore:
         self, label: str, key: str, props: Props, *, schema_version: int = 1
     ) -> Node:
         """Check the label, then merge through to the wrapped store."""
-        self._vocabulary.check_node(label, writer=self._writer)
+        self._vocabulary.check_node(label, writer=self._writer, props=props)
         return self._inner.merge_node(label, key, props, schema_version=schema_version)
 
     def add_edge(

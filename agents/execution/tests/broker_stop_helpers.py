@@ -37,6 +37,7 @@ class TrackingBroker:
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         raise AssertionError("test PM run should not submit market orders")
 

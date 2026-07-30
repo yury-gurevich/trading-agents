@@ -63,6 +63,7 @@ class Vocabulary:
     edge_types: frozenset[str]
     edge_signatures: frozenset[EdgeSignature]
     owners: Mapping[str, frozenset[str]]
+    properties: Mapping[str, frozenset[str]]
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, object]) -> Vocabulary:
@@ -75,9 +76,15 @@ class Vocabulary:
                 str(writer): _names(labels)
                 for writer, labels in _pairs(data.get("owners"))
             },
+            properties={
+                str(label): _names(names)
+                for label, names in _pairs(data.get("properties"))
+            },
         )
 
-    def check_node(self, label: str, *, writer: str = "") -> None:
+    def check_node(
+        self, label: str, *, writer: str = "", props: Mapping[str, object] | None = None
+    ) -> None:
         """Raise unless *label* is declared, and *writer* may create it.
 
         An unknown label is the typo case: without this it merges happily and the
@@ -93,6 +100,13 @@ class Vocabulary:
             raise VocabularyError(
                 f"{writer!r} may not write label {label!r}; it declared {sorted(owned)}"
             )
+        declared = self.properties.get(label)
+        if declared is not None and props is not None:
+            unknown = set(props) - set(declared)
+            if unknown:
+                raise VocabularyError(
+                    f"undeclared properties for label {label!r}: {sorted(unknown)}"
+                )
 
     def check_edge(self, parent_label: str, edge_type: str, child_label: str) -> None:
         """Raise unless the edge type is declared and this shape is permitted."""

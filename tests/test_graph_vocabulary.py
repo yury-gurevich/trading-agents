@@ -18,6 +18,7 @@ _DECLARATION = {
     "edge_types": ["MADE"],
     "edge_signatures": [["Item", "MADE", "Run"]],
     "owners": {"scanner": ["Item"]},
+    "properties": {"Item": ["status"]},
 }
 
 
@@ -37,6 +38,7 @@ def test_empty_declaration_yields_an_empty_vocabulary() -> None:
     assert vocabulary.edge_types == frozenset()
     assert vocabulary.edge_signatures == frozenset()
     assert dict(vocabulary.owners) == {}
+    assert dict(vocabulary.properties) == {}
 
 
 def test_malformed_signature_rows_are_ignored_not_half_parsed() -> None:
@@ -49,6 +51,19 @@ def test_malformed_signature_rows_are_ignored_not_half_parsed() -> None:
 
 def test_declared_label_passes() -> None:
     _vocab().check_node("Run")
+
+
+def test_declared_property_passes() -> None:
+    _vocab().check_node("Item", props={"status": "new"})
+
+
+def test_undeclared_property_is_rejected() -> None:
+    with pytest.raises(VocabularyError, match="undeclared properties"):
+        _vocab().check_node("Item", props={"typo_status": "new"})
+
+
+def test_label_without_property_declaration_is_unconstrained() -> None:
+    _vocab().check_node("Run", props={"freeform": "ok"})
 
 
 def test_undeclared_label_is_rejected() -> None:

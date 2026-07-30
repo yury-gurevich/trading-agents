@@ -109,7 +109,7 @@ class ExecutionAgent(AgentBase):
             self.sink,
             self._recorded,
             order_set,
-            default_stage=self._settings.stage,
+            settings=self._settings,
         )
 
     def _reconcile(self, request: BaseModel) -> ReconcileResult:

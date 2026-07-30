@@ -28,6 +28,10 @@ class OrderIntent(_Frozen):
     action: Action
     quantity: int = Field(ge=1)
     est_price: Money
+    decision_atr_pct: float | None = Field(
+        default=None,
+        description="analyst ATR as a percent of price at decision time",
+    )
     stop_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     target_pct: float | None = Field(default=None, ge=0.0, le=1.0)
     position_ref: str | None = Field(
@@ -54,7 +58,7 @@ class OrderIntentSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="portfolio_manager",
-    version="0.2.1",
+    version="0.2.2",
     mission=(
         "Decide which recommendations become sized, risk-checked orders under "
         "current policy and portfolio state, and record exactly why each was "

@@ -16,6 +16,7 @@ from agents.execution.domain.result import execution_result
 from agents.execution.domain.submit import remember, submit_order
 from agents.execution.fill_attempts import latest_fill_attempt
 from agents.execution.live_gate import live_gate_rejected
+from agents.execution.order_tolerance import OrderToleranceConfig
 from agents.execution.store import current_stage_from_graph, write_fills
 from contracts.common import Provenance
 from kernel import AgentFault, fault_boundary
@@ -23,7 +24,8 @@ from kernel import AgentFault, fault_boundary
 if TYPE_CHECKING:
     from agents.execution.broker import Broker, BrokerFill
     from agents.execution.domain.orders import BrokerOrder
-    from contracts.execution import ExecutionResult, ExecutionStage
+    from agents.execution.settings import ExecutionSettings
+    from contracts.execution import ExecutionResult
     from contracts.portfolio_manager import OrderIntent, OrderIntentSet
     from kernel import FaultSink, GraphStore, Node
 
@@ -37,12 +39,14 @@ def run_submit(
     recorded: dict[str, BrokerFill],
     order_set: OrderIntentSet,
     *,
-    default_stage: ExecutionStage,
+    settings: ExecutionSettings,
 ) -> ExecutionResult:
     """Submit an approved order set through the broker and persist fills."""
-    stage = current_stage_from_graph(graph, default_stage)
+    stage = current_stage_from_graph(graph, settings.stage)
+    tolerance_config = OrderToleranceConfig.from_settings(settings)
     orders = tuple(
-        order_from_intent(order_set, intent) for intent in order_set.approved
+        order_from_intent(order_set, intent, tolerance_config)
+        for intent in order_set.approved
     )
     if stage not in ("paper", "broker_shadow"):
         return live_gate_rejected(graph, order_set, orders, stage)

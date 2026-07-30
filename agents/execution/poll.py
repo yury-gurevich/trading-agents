@@ -170,9 +170,7 @@ def execute_pm_node(
         snapshot,
         fallback_stop_pct=settings.broker_stop_fallback_stop_pct,
     )
-    result = run_submit(
-        graph, broker, sink, {}, order_set, default_stage=settings.stage
-    )
+    result = run_submit(graph, broker, sink, {}, order_set, settings=settings)
     execution_run = graph.merge_node(
         "ExecutionRun",
         result.run_id,

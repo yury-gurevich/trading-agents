@@ -10,6 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.volatility import decision_atr_pct
 from contracts.common import Explanation
 from contracts.portfolio_manager import GateOutcome, OrderIntent
 
@@ -76,6 +77,7 @@ def exit_order_intent(
         action="sell",
         quantity=quantity,
         est_price=price,
+        decision_atr_pct=decision_atr_pct(item),
         position_ref=position_ref,
         rationale=Explanation(
             summary=f"Approved {item.ticker}: full exit of {quantity} held shares.",

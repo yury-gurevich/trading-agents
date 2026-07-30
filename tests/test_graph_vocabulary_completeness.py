@@ -21,11 +21,15 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from vocabulary_coverage import scan  # noqa: E402
 from vocabulary_signatures import signatures  # noqa: E402
+
+from kernel.graph_vocabulary import Vocabulary, VocabularyError  # noqa: E402
 
 _PACK = ROOT / "orchestration" / "packs" / "trading_graph_vocabulary.json"
 
@@ -102,3 +106,21 @@ def test_the_signature_scan_detects_a_shape_no_pack_declares(tmp_path: Path) -> 
     found = signatures(_plant(tmp_path), packages=("planted",))
     assert ("PlantedItem", "PLANTED_EDGE", "PlantedRun") in found
     assert found - _declared_signatures() != set()
+
+
+def test_fill_tolerance_props_are_declared_and_unknown_prop_fails() -> None:
+    """EXEC-OBS-01 / DL-70: S149 Fill props are vocabulary-declared."""
+    vocabulary = Vocabulary.from_mapping(_declaration())
+    props = {
+        "order_tolerance_mode": "flat",
+        "order_applied_tolerance_bps": 50,
+        "order_counterfactual_limit_price_cents": 10150,
+        "position_ref": "position:AMD",
+        "stop_order_key": "stop:AMD",
+        "stop_pct": 0.05,
+        "stop_pct_source": "position",
+    }
+
+    vocabulary.check_node("Fill", props=props)
+    with pytest.raises(VocabularyError, match="undeclared properties"):
+        vocabulary.check_node("Fill", props={**props, "order_tolerence_mode": "flat"})

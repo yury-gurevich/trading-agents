@@ -463,37 +463,25 @@ agent images.
 
 ## Next
 
-- **🔴 ADR-0018 — PACKAGED as [S148](sprints/sprint-148-decision-valid-one-session.md), handed to Codex
-  2026-07-29** ([ADR-0018](decisions/0018-decision-validity-same-session-or-dropped.md), accepted 2026-07-29).
-  **The largest measured cost in the system, and now a closed decision.** Every order today is a
-  market order submitted after the close and filled at the next open, at a price nobody evaluated —
-  **≈ −$2,850 across two exits** (MRVL −$1,330.12; AMD −$3,515.60, of which ≈ −$1,515 is the
-  overnight gap). Ship: a bounded price tolerance around the decision price (a `tunable`, not a
-  literal), cancel-unfilled at session end, dropped decisions recorded as a visible `Fault`
-  (DL-57), and **resting broker stops exempt** — they are risk instruments, not decisions. Two
-  consequences to build against rather than discover: ADR-0017's forced daily-rail stop becomes
-  best-effort within tolerance, which makes S146's audit check `A2` (every held position carries a
-  live stop) **load-bearing**; and the reporter must not read a dropped decision as a rejection or
-  a loss. Second-order win: stale live orders stop existing, removing the wash-trade stop blocker
-  and most of the orphan/adopt complexity S145 and S146 had to build.
-- **S146 — SHIPPED** ([sprint-146](sprints/sprint-146-unprotected-position.md), 0.80.03, merged
-  `7b06662`, fleet `:s146`, `ACCEPTANCE PASS`). Left open: **DRIFT-024** — execution's LOCKED
-  constitution declares neither `BrokerStopOrder` state nor a fallback stop parameter despite
-  ADR-0015 §3 depending on both. Second sighting of S138's declaration debt after S144 caught the
-  vocabulary half; wants a law amendment, not another register row.
-- **DL-71 option B — SHIPPED as [S147](sprints/sprint-147-fresh-book-before-decision.md) (0.81.00,
-  merged `2989acb`), NOT YET DEPLOYED — the fleet still runs `:s146`.** *Priority corrected:* the
-  2026-07-28 audit that appeared to raise its urgency was **wrong and is retracted** — using
-  `is_active_position_node`, the position book is correct (one active node per held ticker, every
-  quantity matching the broker). This stays worth doing for its original reason only. The
-  broker snapshot is written by execution at stage 5, but the position book is only healed by the
-  monitor at stage 6 — one full run later. That is why the analyst scored a nine-hour-stale book on
-  07-27 and authored an exit for a position that had already sold. Deferred out of S145 because it
-  reorders the cascade and moves position truth across DL-44's ownership line, which is not a change
-  to make on top of a live outage. **Deferred, not rejected — and now smaller than it looked:**
-  ADR-0018 drops unfilled orders at session end, which removes the *carried phantom intent* half of
-  the hazard. What B still owns is the one-run reconciliation lag itself. Sequence it after
-  ADR-0018, not before.
+- **🔴 Tomorrow morning: read S148's first live run.** The fleet has been on `:s148` since
+  2026-07-30 05:08 UTC and tonight is ADR-0018's first real test. Check in this order: **(1)** the
+  drop rate — expect roughly 3 in 10 and treat that as the ADR working, not a defect; **(2)** that
+  **all nine resting stops survived the drop sweep** — the one failure mode that would be serious;
+  **(3)** whether anything dropped that should not have. **Both challengers (S149 tolerance, S150
+  stops) stay off until this baseline exists** — they are measured *against* the flat champion's
+  live behaviour, so promoting before it exists would compare against nothing.
+- **🟠 The law book is behind its code in five places, and it is no longer one agent's problem.**
+  DRIFT-024/025/026/027 are execution (broker-stop state, `BrokerPositionSnapshot`, the tolerance
+  tunable and drop semantics, S149's additions); **DRIFT-028 is the analyst**. Five consecutive
+  sprints have each opened one. This wants **one law-amendment cycle** covering all five, not a
+  sixth register row — and the fact that it now spans two agents means the gap is in how laws are
+  maintained, not in any single constitution.
+- **🟠 Property completeness before S144 is ever enabled.** S149 extended the kernel vocabulary
+  guard to enforce declared node **properties** (currently `Fill` only, 45 props). The static
+  completeness suite proves labels, edge types and edge signatures are supersets of what the code
+  can write — **it does not do that for properties**, which is S143/S144's trailing-indicator lesson
+  one level down. Harmless while the guard is off; it makes **enabling S144 a bigger step than S144
+  was scoped for**. Extend the scan first, then enable.
 - **🟠 S144's dated fleet enablement — now unblocked and overdue.** Deferred through S145, S146
   and S147; a write-time guard that is never enabled protects nothing. Build + retag at `:s147`, then set
   `GRAPH_VOCABULARY_B64` and verify it on an agent's env. Sequenced *after* S145 and its resumed

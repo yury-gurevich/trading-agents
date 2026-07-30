@@ -24,6 +24,27 @@ class QuantMetric(_Frozen):
     value: float = Field(allow_inf_nan=False)
 
 
+StopTargetMode = Literal["flat", "scaled"]
+
+
+class StopTargetEvidence(_Frozen):
+    """Applied and counterfactual stop/target proposal evidence for one buy."""
+
+    mode: StopTargetMode
+    counterfactual_mode: StopTargetMode
+    atr_pct: float | None = Field(default=None, ge=0.0)
+    volatility_present: bool
+    volatility_fallback: bool
+    applied_stop_pct: float = Field(ge=0.0, le=1.0)
+    applied_target_pct: float = Field(ge=0.0, le=1.0)
+    counterfactual_stop_pct: float = Field(ge=0.0, le=1.0)
+    counterfactual_target_pct: float = Field(ge=0.0, le=1.0)
+    flat_stop_pct: float = Field(ge=0.0, le=1.0)
+    flat_target_pct: float = Field(ge=0.0, le=1.0)
+    scaled_stop_pct: float = Field(ge=0.0, le=1.0)
+    scaled_target_pct: float = Field(ge=0.0, le=1.0)
+
+
 class Recommendation(_Frozen):
     ticker: Ticker
     action: Action
@@ -39,6 +60,7 @@ class Recommendation(_Frozen):
         default_factory=tuple, max_length=128
     )
     """Full bounded ScoreBreakdown.metrics payload that supported the recommendation."""
+    stop_target_evidence: StopTargetEvidence | None = None
     rationale: Explanation
 
 
@@ -58,7 +80,7 @@ class RecommendationSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="analyst",
-    version="0.4.0",
+    version="0.5.0",
     mission=(
         "Turn candidates into scored, evidence-backed trade recommendations with a "
         "confidence and a rationale — or explain clearly why none qualify."

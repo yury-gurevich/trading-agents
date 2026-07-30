@@ -64,7 +64,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| PM-IDM-01 | Same inputs + same starting portfolio state → same OrderIntentSet. | determinism | _tbd_ | ⬜ |
+| PM-IDM-01 | Same inputs + same starting portfolio state → same OrderIntentSet. | determinism | `test_scaled_stop_rr_gate.py::test_reward_risk_verdict_is_mode_invariant_when_both_values_scale` | 🟩 |
 | PM-IDM-02 | run_id threaded from RecommendationSet to portfolio.orders.ready event. | provenance | `test_pm_pubsub.py::test_run_id_propagated_in_orders_ready_event` | 🟩 |
 
 ## Failure & recovery

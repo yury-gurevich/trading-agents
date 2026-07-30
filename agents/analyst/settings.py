@@ -7,13 +7,15 @@ External I/O: process environment and the .env file.
 
 from __future__ import annotations
 
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
 
 from agents.analyst.settings_indicators import _IndicatorSettings
 from kernel import tunable
+
+StopTargetMode = Literal["flat", "scaled"]
 
 
 class AnalystSettings(_IndicatorSettings):
@@ -131,6 +133,38 @@ class AnalystSettings(_IndicatorSettings):
         ge=0.0,
         le=1.0,
     )
+    stop_target_mode: StopTargetMode = "flat"
+    scaled_stop_atr_multiplier: float = tunable(
+        2.0,
+        why=(
+            "Measure a challenger stop near two times decision-time ATR; S150 "
+            "evidence showed this equalizes ordinary touch rates before the "
+            "risk cap clamps the widest names."
+        ),
+        ge=0.0,
+        le=5.0,
+        unit="ratio",
+    )
+    scaled_stop_floor_pct: float = tunable(
+        0.025,
+        why=(
+            "Keep volatility-scaled stops from becoming too tight on very quiet "
+            "or tiny-ATR names while still allowing a narrower-than-flat challenger."
+        ),
+        ge=0.0,
+        le=0.08,
+        unit="pct",
+    )
+    scaled_stop_ceiling_pct: float = tunable(
+        0.08,
+        why=(
+            "Respect the current PRD/regime maximum stop risk; the challenger must "
+            "not silently widen a stop past the system's declared risk cap."
+        ),
+        ge=0.0,
+        le=0.08,
+        unit="pct",
+    )
 
     @model_validator(mode="after")
     def _spans_are_ordered(self) -> Self:
@@ -139,4 +173,6 @@ class AnalystSettings(_IndicatorSettings):
             raise ValueError("macd_fast must be below macd_slow")
         if self.ema_short_period >= self.ema_long_period:
             raise ValueError("ema_short_period must be below ema_long_period")
+        if self.scaled_stop_floor_pct > self.scaled_stop_ceiling_pct:
+            raise ValueError("scaled_stop_floor_pct must be <= scaled_stop_ceiling_pct")
         return self

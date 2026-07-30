@@ -3916,3 +3916,51 @@ correct; rejected because the exposure is structural and measurable **in advance
 it to cost money is how the ADR-0018 gap went unnoticed for months.
 
 ---
+
+## DL-78 - After S150, the risk cap binds the volatile names, not the stop formula · status: OPEN (successor undecided)
+
+**Trigger.** Verifying S150 at handback. The sprint shipped exactly as specified - `k=2.0`, floor
+2.5 %, ceiling **8 %**, with the ceiling bounded `le=0.08` so a scaled stop can never exceed the
+declared PRD/regime maximum risk. That is the correct behaviour. I then measured what the shipped
+configuration actually delivers, rather than what the formula wants.
+
+| Ticker | ATR % | 2 x ATR wants | Shipped (capped) | ATRs | Flat 5 % touched | Shipped touched |
+| --- | --- | --- | --- | --- | --- | --- |
+| BAC / USB | 2.1 % | 4.1 % | 4.1 % | 2.00x | 0.0 % | 0.0 % |
+| SCHW | 2.5 % | 4.9 % | 4.9 % | 2.00x | 1.5 % | 1.5 % |
+| CSCO | 3.2 % | 6.4 % | 6.4 % | 2.00x | 6.1 % | **1.5 %** |
+| HPE | 5.5 % | 11.0 % | 7.7 % | 1.40x | 19.7 % | **6.1 %** |
+| AMD | 6.4 % | 12.8 % | 8.0 % | 1.25x | 36.4 % | **10.6 %** |
+| MRVL | 8.5 % | 17.1 % | **8.0 %** | **0.94x** | 39.4 % | **18.2 %** |
+
+**The finding.** The challenger delivers most of what DL-77 promised - CSCO, HPE and AMD improve
+sharply - but **MRVL only halves, from 39 % to 18 %, and remains under one ATR**. For the most
+volatile names the binding constraint is no longer the scaling formula; it is the **8 % risk cap**.
+2 x ATR wants 17.1 % for MRVL and the ceiling clamps it to 8 %.
+
+**Why this matters at promotion time.** A comparison report will show the challenger failing to fix
+the very name that motivated the work. That reads as "the scaling underperformed", and it would be
+the wrong conclusion: the scaling hit a wall that is not its to move. Recording it here so the
+promotion decision is made against the complete picture rather than the report alone.
+
+**Two ways past it, neither belonging to S150.**
+
+- **Raise the cap.** `base_stop_loss_pct` is bounded `le=0.08` today. Widening it is a decision about
+  the maximum risk the system may take per position - a PRD/ADR question, not a tuning knob, and it
+  should not be made by an experiment.
+- **Size positions by volatility instead (the more promising).** If MRVL needs a ~17 % stop to sit
+  outside ordinary noise, the answer may be to hold proportionally *less* MRVL so that a 17 % move is
+  within the same dollar-risk budget as a 4 % move on BAC. That keeps the cap intact and attacks the
+  problem from the other side: constant *dollar* risk rather than constant *percentage* risk. It is
+  the classic volatility-scaled sizing argument and it is the natural successor to S149/S150.
+
+**Not yet decided.** Which of the two (or neither) is right depends on evidence S150 has not produced
+yet, because the challenger ships off. Sequence: let the flat champion and the recorded counterfactual
+accumulate, then choose. **Do not raise the risk cap to make an experiment look better.**
+
+**Ruled out already.** *Removing the ceiling so the formula runs free* - it would let a scaled stop
+exceed the declared risk cap silently, which is exactly the safety rail the sprint was right to build.
+*Treating 18.2 % as good enough for MRVL* - it is a halving and real progress, but a stop under one
+ATR is still inside the noise band, so the structural problem is reduced, not solved.
+
+---

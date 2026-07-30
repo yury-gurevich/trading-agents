@@ -176,6 +176,13 @@ together, that is a finding — report it, do not implement it silently.
   `ceiling_pct` is for, and it is a safety rail, not a tuning knob.
 
 **Result:**
+Implemented in the analyst proposal path, behind `AnalystSettings.stop_target_mode` with default
+`flat`. `flat` keeps the existing `regime.base_stop_loss_pct` and
+`regime.base_take_profit_pct` behaviour. `scaled` resolves
+`clamp(k * atr_pct, floor_pct, ceiling_pct)` through `kernel.tunable` settings:
+`scaled_stop_atr_multiplier=2.0`, `scaled_stop_floor_pct=0.025`,
+`scaled_stop_ceiling_pct=0.08`. The scaling lives in the analyst as a proposal; PM gates still
+dispose risk. `DRIFT-028` records the analyst law silence around the new mode/tunables/evidence.
 
 ### 2 · Scale the target in lockstep — or the RR gate becomes a volatility filter
 
@@ -186,6 +193,10 @@ together, that is a finding — report it, do not implement it silently.
   volatile half of the book.
 
 **Result:**
+Implemented in lockstep: the target is multiplied by the same factor as the stop whenever scaled
+mode is active, preserving `target_pct / stop_pct`. The PM RR gate was not changed; new PM tests
+prove the same recommendation reaches the same reward-risk verdict in flat and scaled modes, and
+that stop-only scaling is the planted failure.
 
 ### 3 · A missing ATR degrades to flat — it never blocks a recommendation
 
@@ -197,6 +208,9 @@ together, that is a finding — report it, do not implement it silently.
   produces a nonsense stop.
 
 **Result:**
+Implemented. Missing, zero, negative, and non-finite `atr_pct` degrade to the flat stop/target and
+record `volatility_fallback=True`; they do not suppress or downgrade a recommendation. Extreme ATR
+values clamp at the configured floor/ceiling.
 
 ### 4 · Record the counterfactual — this is what makes it an experiment
 
@@ -211,6 +225,12 @@ together, that is a finding — report it, do not implement it silently.
 - The script **reports**; it never promotes and never writes a settings change (ADR-0013).
 
 **Result:**
+Implemented as an additive optional `Recommendation.stop_target_evidence` contract field and
+persisted `Recommendation` graph properties. Every buy records applied and counterfactual
+stop/target pairs, mode, counterfactual mode, ATR value, and fallback flags. The comparison script
+`scripts/compare_stop_targets.py` reads only and reports flat/scaled stop-width distribution,
+RR pass rate, known outcome counts, and would-touch rate where `stop_target_observed_drawdown_pct`
+is present. It performs no settings writes and no promotion.
 
 ### 5 · Do not touch a live position's stop
 
@@ -221,6 +241,10 @@ together, that is a finding — report it, do not implement it silently.
   `stop_pct` is unaffected by a mode flip.
 
 **Result:**
+Proven without changing monitor or position contracts. S150 adds no live-position repricing path:
+existing `Position.stop_pct` and `BrokerStopOrder` rows remain untouched under a scaled-mode
+analyst run. The S148 drop-sweep stop-safety test was rerun verbatim and continues to exempt
+resting broker stops.
 
 ### 6 · Declare any new prop in the vocabulary
 
@@ -230,12 +254,20 @@ together, that is a finding — report it, do not implement it silently.
   `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py`; paste the output.
 
 **Result:**
+Declared the durable `Recommendation` stop-target evidence props in
+`orchestration/packs/trading_graph_vocabulary.json` and extended the completeness test so an
+undeclared `stop_targt_mode` typo is rejected. Both vocabulary scripts exited 0 with no output;
+`tests/test_graph_vocabulary_completeness.py` passed 8/8.
 
 ### 7 · Prove the checks can fail (DL-70)
 
 Plant the violation and require the failure — the plan below specifies the violation for each test.
 
 **Result:**
+Done. The tests plant the failure modes the sprint names: stop-only scaling fails the RR gate,
+sub-floor and absurd ATR values must clamp, bare literal settings fail tunable metadata checks,
+missing ATR cannot suppress the recommendation, one-sided evidence is caught, read-only comparison
+fakes fail on writes, live-position repricing is detected, and undeclared graph props are rejected.
 
 ---
 
@@ -379,21 +411,39 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `recommend.py` — stop/target proposal | | | |
-| analyst settings — mode + tunables | | | |
-| `gate_report.py` — the RR gate | | | |
-| `contracts/analyst.py` | | | |
-| monitor / `contracts/positions.py` (read-only) | | | |
-| the comparison script | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `recommend.py` — stop/target proposal | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/decisions/0017-exit-authority-alpha-proposes-risk-disposes.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `ANLZ-OUT-01`, `ANLZ-OUT-02`, `ANLZ-NEV-01`, `ANLZ-IDM-01`, `ANLZ-FAIL-03`, `ANLZ-TYP-02`, ADR-0017 alpha-proposes/risk-disposes | No contradiction. Reading confirmed the analyst is allowed to propose `suggested_stop_pct` / `suggested_target_pct` but must not size, approve, submit, or dispose risk. Approach: keep scaling in analyst as proposal math, keep PM as gate/disposal. |
+| analyst settings — mode + tunables | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `docs/decisions/0013-continuous-improvement-system.md` | `ANLZ-IDM-01`, `ANLZ-TYP-02`, analyst `PARAM`, conventions §§3/7, ADR-0013 | Yes. Analyst `PARAM` is silent on a selectable stop-scaling mode, scaled tunables, and counterfactual proposal evidence, so `DRIFT-028` is opened. Tunables stay bounded with `why`; default remains `flat`. |
+| `gate_report.py` — the RR gate | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; ADR-0017 | `PM-IDN-01`, `PM-NEV-04`, `PM-OUT-03`, `PM-OBS-01`, `PM-IDM-01`, `PM-TYP-02` | Yes. The laws make PM the risk gate owner, so the implementation must prove the RR verdict is invariant instead of weakening or bypassing the gate. Stop-only scaling is a planted failure. |
+| `contracts/analyst.py` | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; ADR-0017 | `ANLZ-OUT-02`, `ANLZ-TYP-01`, `ANLZ-TYP-02`, `ANLZ-STA-02` | Yes. The applied `suggested_*` fields already exist, but the spec requires both applied and counterfactual pairs on every buy; that durable evidence is not representable without an additive optional contract field. |
+| monitor / `contracts/positions.py` (read-only) | `agents/monitor/laws/laws.md`; `agents/monitor/laws/test-plan.md`; `docs/decisions/0015-exit-lifecycle-and-stop-ownership.md`; ADR-0017 | `MON-IDN-01`, `MON-IDN-02`, `MON-NEV-05`, `MON-STA-01`, `MON-STA-02`, ADR-0015 broker-enforced stop ownership | No. Existing `Position.stop_pct` is a recorded fact for live positions. S150 applies only to new analyst proposals; monitor/position paths stay read-only except tests proving mode flips do not mutate them. |
+| the comparison script | `docs/decisions/0013-continuous-improvement-system.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-57/DL-59/DL-70/DL-77 in `docs/design-log.md` | ADR-0013 configurable-not-settable; LAW-02 proof discipline; conventions §7 | No. The script must read/report only: per-mode stop width distribution, RR pass rate, and touched counts where outcomes are known. It must never write settings or promote the challenger. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; S144/S149 vocabulary guard context | Conventions §§2/3/9; vocabulary guard requires declared graph labels/edges/properties | No. Any new durable recommendation evidence props must be declared in the pack vocabulary; property enforcement may not cover `Recommendation` today, but the declaration prevents another trailing-indicator gap. |
 
 **Where does the scaling belong — analyst or PM? What did the laws say?**
 
+The scaling belongs in the analyst as a proposal. `ANLZ-OUT-02` already declares
+`suggested_stop_pct` and `suggested_target_pct` as analyst output, while `ANLZ-NEV-01` forbids
+sizing, price and dollar decisions but not a bounded stop/target proposal. ADR-0017's
+"alpha proposes, risk disposes" line matches this split: analyst proposes the entry stop/target
+shape, PM applies the RR gate and other risk gates, and broker/monitor live-stop ownership remains
+unchanged. A PM implementation would mix proposal generation into the risk disposer and make the
+RR-trap harder to surface.
+
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
+
+None found. The spec's proposed analyst home is compatible with `ANLZ-OUT-02` / `ANLZ-NEV-01`,
+PM law keeps the RR gate binding, and monitor law plus ADR-0015/0017 forbid repricing live stops.
 
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+`DRIFT-028` opened: analyst `PARAM` / `OUT` / `OBS` are silent on a selectable stop-scaling mode,
+bounded volatility-scaled stop/target tunables, and durable applied-vs-counterfactual proposal
+evidence.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+`ANLZ-IDM-01`, `ANLZ-TYP-02`, and `PM-IDM-01`. The analyst law map now records 26 / 43 green
+clauses, and the portfolio-manager map records 24 / 43.
 
 ---
 
@@ -401,32 +451,37 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| A7 | | | | |
-| A8 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
-| C4 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| D4 | | | | |
-| D5 | | | | |
-| E1 | | | | |
-| E2 | | | | |
-| E3 | | | | |
+| A1 | `test_flat_mode_applied_stop_and_target_ignore_atr` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-OUT-02`, `ANLZ-IDM-01` |
+| A2 | `test_scaled_mode_resolves_quiet_and_volatile_exact_values` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS; exact 2x ATR asserted on a volatile under-cap case because MRVL-like 8.5% correctly hits A5's risk ceiling | `ANLZ-OUT-02`, `ANLZ-IDM-01` |
+| A3 | `test_scaled_mode_resolves_quiet_and_volatile_exact_values` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-OUT-02`, `ANLZ-IDM-01` |
+| A4 | `test_scaled_mode_floor_and_risk_ceiling_clamp` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-TYP-02`, `ANLZ-FAIL-03` |
+| A5 | `test_scaled_mode_floor_and_risk_ceiling_clamp` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-TYP-02`, `ANLZ-FAIL-03` |
+| A6 | `test_scaled_stop_knobs_are_tunables_and_mode_is_bounded` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-PARAM`, ADR-0013 |
+| A7 | `test_resolution_is_deterministic_for_same_inputs` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-IDM-01` |
+| A8 | `test_scaled_stop_knobs_are_tunables_and_mode_is_bounded` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-PARAM`, ADR-0013 |
+| B1 | `test_missing_atr_falls_back_to_flat_without_suppressing_recommendation` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-FAIL-03`, `ANLZ-OUT-01`, DL-57 |
+| B2 | `test_missing_atr_falls_back_to_flat_without_suppressing_recommendation` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-FAIL-03`, `ANLZ-OUT-01`, DL-57 |
+| B3 | `test_nonsensical_atr_is_missing_or_clamped_not_trusted` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-FAIL-03`, `ANLZ-TYP-02` |
+| B4 | `test_sells_are_unchanged_under_scaled_mode` | `agents/analyst/tests/test_scaled_stop_targets.py` | PASS | `ANLZ-NEV-01`, `ANLZ-OUT-02` |
+| C1 | `test_reward_risk_verdict_is_mode_invariant_when_both_values_scale` | `agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py` | PASS | `PM-IDM-01`, `PM-NEV-04` |
+| C2 | `test_volatile_scaled_name_still_passes_and_stop_only_scaling_fails` | `agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py` | PASS | `PM-NEV-04`, `PM-OUT-03` |
+| C3 | `test_pm_default_stop_target_fallback_is_unchanged` | `agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py` | PASS | `PM-NEV-04`, `PM-TYP-02` |
+| C4 | `test_reward_risk_threshold_still_rejects_poor_setups` | `agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py` | PASS | `PM-NEV-04`, `PM-OUT-03` |
+| D1 | `test_flat_mode_records_applied_and_counterfactual_stop_target_pairs` | `agents/analyst/tests/test_stop_target_evidence.py` | PASS | `ANLZ-STA-02`, `ANLZ-OBS-01`, ADR-0013 |
+| D2 | `test_scaled_mode_records_flat_counterfactual_symmetrically` | `agents/analyst/tests/test_stop_target_evidence.py` | PASS | `ANLZ-STA-02`, `ANLZ-OBS-01`, ADR-0013 |
+| D3 | `test_stop_target_record_is_append_only_for_repeated_recommendations` | `agents/analyst/tests/test_stop_target_evidence.py` | PASS | `ANLZ-STA-02`, `ANLZ-IDM-02` |
+| D4 | `test_comparison_script_reports_both_modes_and_touch_difference` | `tests/test_compare_stop_targets.py` | PASS | `ANLZ-OBS-01`, ADR-0013 |
+| D5 | `test_comparison_script_never_writes_or_promotes` | `tests/test_compare_stop_targets.py` | PASS | `ANLZ-NEV-01`, ADR-0013 |
+| E1 | `test_scaled_mode_does_not_reprice_existing_position_or_resting_stop` | `agents/analyst/tests/test_stop_target_live_positions.py` | PASS | `MON-IDN-02`, `MON-STA-02`, ADR-0015 |
+| E2 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | PASS | `EXEC-NEV-01`, `EXEC-NEV-03` |
+| E3 | `test_recommendation_stop_target_props_are_declared_and_unknown_prop_fails` | `tests/test_graph_vocabulary_completeness.py` | PASS | `ANLZ-OBS-01`, conventions |
 
 **Tests added beyond the plan:**
+
+- `test_zero_flat_stop_keeps_target_defined_when_scaled` covers the defensive no-divide path when
+  a zero flat stop is supplied.
+- `test_stop_target_evidence_is_optional_and_round_trips` also proves legacy recommendations
+  serialize without synthetic stop-target evidence props.
 
 ---
 
@@ -434,25 +489,172 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:**
 
-_(fill in)_
+Code and contracts:
+`agents/analyst/domain/analyze.py`, `agents/analyst/domain/recommend.py`,
+`agents/analyst/domain/recommend_text.py`, `agents/analyst/domain/stop_target.py`,
+`agents/analyst/recommendation_props.py`, `agents/analyst/settings.py`,
+`agents/analyst/store.py`, `contracts/analyst.py`, `scripts/compare_stop_targets.py`,
+`orchestration/packs/trading_graph_vocabulary.json`, `pyproject.toml`, `uv.lock`.
+
+Tests and law maps:
+`agents/analyst/tests/test_scaled_stop_targets.py`,
+`agents/analyst/tests/test_stop_target_evidence.py`,
+`agents/analyst/tests/test_stop_target_live_positions.py`,
+`agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py`,
+`tests/test_compare_stop_targets.py`, `tests/test_contract_values.py`,
+`tests/test_graph_vocabulary_completeness.py`, `agents/analyst/laws/test-plan.md`,
+`agents/portfolio_manager/laws/test-plan.md`, `docs/laws/INDEX.md`,
+`docs/laws/drift-register.md`, `docs/laws/ledger.md`, `docs/STATE.md`, this sprint doc.
 
 **Proven (LAW-02):**
 
-_(paste real command output: `make ci` counts and coverage, remote gate job IDs and results,
-planted-violation runs, vocabulary script output, and a sample comparison-script report)_
+Branch and dependency gate:
+
+```text
+origin/main=79027e9
+S149 1b471c4 is an ancestor of origin/main
+branch=sprint-150-volatility-scaled-stops
+uv lock:
+Resolved 170 packages in 1.49s
+Updated trading-agents v0.83.0 -> v0.84.0
+```
+
+Focused compilation:
+
+```text
+uv run python -m py_compile agents\analyst\domain\recommend.py agents\analyst\domain\recommend_text.py agents\analyst\domain\stop_target.py agents\analyst\settings.py contracts\analyst.py agents\analyst\store.py agents\analyst\recommendation_props.py
+exit 0
+```
+
+Focused S150 suite:
+
+```text
+uv run pytest agents/analyst/tests/test_scaled_stop_targets.py agents/analyst/tests/test_stop_target_evidence.py agents/analyst/tests/test_stop_target_live_positions.py agents/portfolio_manager/tests/test_scaled_stop_rr_gate.py tests/test_compare_stop_targets.py tests/test_graph_vocabulary_completeness.py --no-cov
+collected 28 items
+28 passed in 6.53s
+```
+
+Affected suite including S148 stop safety:
+
+```text
+uv run pytest agents/analyst/tests agents/portfolio_manager/tests agents/execution/tests/test_drop_sweep.py tests/test_compare_stop_targets.py tests/test_graph_vocabulary.py tests/test_graph_vocabulary_completeness.py tests/test_contract_values.py --no-cov
+collected 485 items
+485 passed in 12.59s
+```
+
+Static gates:
+
+```text
+uv run ruff check .
+All checks passed!
+
+uv run ruff format --check .
+860 files already formatted
+
+uv run mypy kernel contracts agents orchestration surfaces
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 720 source files
+```
+
+Vocabulary:
+
+```text
+uv run python scripts\vocabulary_coverage.py
+exit 0, no stdout
+
+uv run python scripts\vocabulary_signatures.py
+exit 0, no stdout
+
+uv run pytest tests/test_graph_vocabulary_completeness.py --no-cov
+collected 8 items
+8 passed in 5.75s
+```
+
+Real comparison-script read against configured graph:
+
+```text
+uv run python scripts\compare_stop_targets.py --env-file .env
+mode recommendations stop_min_pct stop_median_pct stop_max_pct rr_pass_rate_pct known_outcomes would_touch_rate_pct
+flat 0 n/a n/a n/a 0.00 0 n/a
+scaled 0 n/a n/a n/a 0.00 0 n/a
+```
+
+Synthetic comparison-script report proving mode-visible differences:
+
+```text
+mode recommendations stop_min_pct stop_median_pct stop_max_pct rr_pass_rate_pct known_outcomes would_touch_rate_pct
+flat 2 5.00 5.00 5.00 100.00 2 50.00
+scaled 2 4.20 6.10 8.00 100.00 2 0.00
+```
+
+Full local `make ci`:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+860 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+pyproject.toml: note: unused section(s): module = ['azure.core', 'azure.identity.*', 'azure.keyvault', 'celery.*', 'redis', 'redis.*']
+Success: no issues found in 720 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+[WARN] agents\analyst\domain\recommend.py: 196 lines (warn 150, hard block 200)
+[WARN] agents\analyst\tests\test_scaled_stop_targets.py: 198 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+TOTAL                                                13049      0   2768      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 1971 passed, 5 skipped in 159.07s (0:02:39) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 9 new file(s)
+```
+
+Remote branch gates for implementation commit `3fa9496`:
+
+```text
+gh run watch 30520713599 --exit-status
+✓ sprint-150-volatility-scaled-stops CI · 30520713599
+✓ security in 1m48s (ID 90800231988)
+✓ quality in 35s (ID 90800232062)
+✓ test in 58s (ID 90800339095)
+
+gh run list --branch sprint-150-volatility-scaled-stops --limit 10
+completed success feat: add volatility-scaled stop challenger Security Findings sprint-150-volatility-scaled-stops push 30520713598
+```
 
 **The `k`, floor and ceiling shipped, and why:**
 
-_(fill in)_
+Shipped `k=2.0`, `floor_pct=0.025`, `ceiling_pct=0.08`. `k=2.0` matches the measured challenger in
+the handover table and is not tuned to a target. The 2.5% floor prevents near-zero ATR readings from
+creating decorative stops that will be touched by noise; the 8% ceiling keeps the existing PRD risk
+cap binding. The MRVL-like 8.5% ATR case therefore clamps at 8% instead of producing a 17% stop,
+which is the intended safety rail.
 
 **Not met / verified failing:**
 
-_(fill in)_
+No sprint success factor is currently verified failing.
 
 ---
 
 ## Return notes
 
-_(fill in: where you concluded the scaling belongs and why; what surprised you; whether `atr_pct`
-proved a good proxy; what you deliberately did not do; and whether `main` had moved when you
-finished)_
+The scaling belongs in the analyst as a proposal. That matches `ANLZ-OUT-02`, stays inside
+`ANLZ-NEV-01`, and preserves ADR-0017's split: alpha proposes the stop/target shape, PM disposes
+risk through gates, and broker/monitor ownership of live stops is untouched.
+
+The important surprise was that the most intuitive exact MRVL test conflicts with the PRD risk cap:
+2 × 8.5% ATR is 17%, so a correct implementation must clamp it. I proved exact `k * ATR` on an
+under-cap volatile case and proved the MRVL-like/absurd cases through the ceiling test. `atr_pct`
+is good enough for an ADR-0013 challenger because it is already present on the analyst score and
+gives a deterministic, measurable counterfactual, but it is not promoted by this sprint.
+
+Deliberately not done: no default-on flip, no PM gate weakening, no live stop repricing, no broker
+orders, no monitor exit changes, and no law edits. `origin/main` was `79027e9` at branch creation
+and S149 `1b471c4` was verified as an ancestor before work began; main movement will be checked
+again before handback.

@@ -11,6 +11,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.analyst.recommendation_props import recommendation_props
 from contracts.common import Provenance
 
 if TYPE_CHECKING:
@@ -48,17 +49,7 @@ def write_analysis(
         node = graph.merge_node(
             "Recommendation",
             f"{run_id}:{recommendation.ticker}",
-            {
-                "ticker": recommendation.ticker,
-                "action": recommendation.action,
-                "exit_trigger": recommendation.exit_trigger,
-                "confidence": recommendation.confidence,
-                "technical_score": recommendation.technical_score,
-                "quant_metrics": [
-                    metric.model_dump(mode="json")
-                    for metric in recommendation.quant_metrics
-                ],
-            },
+            recommendation_props(recommendation),
         )
         _link_candidate(graph, node, scan_key, recommendation.ticker)
     _write_readings(graph, run, run_id, sentiment_readings)

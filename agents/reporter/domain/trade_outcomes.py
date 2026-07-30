@@ -40,6 +40,10 @@ def collect_trade_outcomes(
 
 def _pnl_cents(node: Node) -> int | None:
     """Read realized integer-cents PnL from fill-first evidence."""
+    if node.props.get("drop_reason"):
+        return None
+    if str(node.props.get("broker_status", "")) in {"canceled", "cancelled", "expired"}:
+        return None
     if "pnl_invalidated_at" in node.props:
         return None
     value = node.props.get("realized_pnl_cents", node.props.get("pnl_cents"))

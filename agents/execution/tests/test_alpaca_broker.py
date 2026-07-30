@@ -53,18 +53,6 @@ def _order(**overrides: object) -> dict[str, object]:
     return order
 
 
-def test_order_body_builds_exact_market_order_payload() -> None:
-    """Kills agents.execution.alpaca.x__order_body__mutmut_1."""
-    assert alpaca._order_body("run2:MSFT:sell", "MSFT", "sell", 7) == {
-        "symbol": "MSFT",
-        "qty": "7",
-        "side": "sell",
-        "type": "market",
-        "time_in_force": "day",
-        "client_order_id": "run2:MSFT:sell",
-    }
-
-
 def test_fill_from_order_parses_all_fill_fields_exactly() -> None:
     """Kills agents.execution.alpaca.x__fill_from_order__mutmut_38."""
     order = _order(

@@ -132,3 +132,36 @@ def test_invalidated_close_pnl_does_not_mask_fill_evidence() -> None:
     )
     assert outcomes["closed_trades_with_pnl"] == 1.0
     assert outcomes["expectancy_cents"] == 5586.0
+
+
+def test_dropped_sell_is_not_counted_as_realized_loss() -> None:
+    """RPT-OUT-02 / RPT-NEV-03: dropped sell is not realized PnL evidence."""
+    outcomes = collect_trade_outcomes(
+        (
+            Node(
+                "Fill",
+                "drop",
+                {
+                    "side": "sell",
+                    "broker_status": "canceled",
+                    "drop_reason": "unfilled at session end",
+                    "realized_pnl_cents": -1000,
+                },
+            ),
+        )
+    )
+    assert outcomes == {"closed_trades_with_pnl": 0.0}
+
+
+def test_canceled_broker_status_is_not_counted_as_realized_loss() -> None:
+    """RPT-OUT-02 / RPT-NEV-03: canceled outcomes are not realized PnL evidence."""
+    outcomes = collect_trade_outcomes(
+        (
+            Node(
+                "Fill",
+                "canceled",
+                {"broker_status": "canceled", "realized_pnl_cents": -1000},
+            ),
+        )
+    )
+    assert outcomes == {"closed_trades_with_pnl": 0.0}

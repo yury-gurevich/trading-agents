@@ -38,7 +38,7 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
     lineage_run = _linked_pm_source(graph, pm_run)
     lineage = collect_run_lineage(graph, lineage_run)
     portfolio = collect_portfolio_metrics(
-        pm_run, lineage.positions, lineage.close_decisions
+        pm_run, lineage.positions, lineage.close_decisions, lineage.fills
     )
     outcomes = collect_trade_outcomes(lineage.fills, lineage.close_decisions)
     portfolio = {**portfolio, **outcomes}

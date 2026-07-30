@@ -35,6 +35,16 @@ class ExecutionSettings(AgentSettings):
         le=1000,
         unit="bps",
     )
+    order_price_tolerance_bps: int = tunable(
+        50,
+        why=(
+            "Bound entry and discretionary-exit orders near the PM's decided "
+            "price so after-close decisions do not trade at unevaluated opens."
+        ),
+        ge=0,
+        le=500,
+        unit="bps",
+    )
     min_promotion_runs: int = tunable(
         10,
         why="Require ten completed runs before stage promotion.",

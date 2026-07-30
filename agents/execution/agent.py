@@ -63,7 +63,10 @@ class ExecutionAgent(AgentBase):
         super().__init__(CONTRACT, bus)
         self._graph = graph
         self._settings = settings or ExecutionSettings()
-        self._broker = broker or PaperBroker(slippage_bps=self._settings.slippage_bps)
+        self._broker = broker or PaperBroker(
+            slippage_bps=self._settings.slippage_bps,
+            order_price_tolerance_bps=self._settings.order_price_tolerance_bps,
+        )
         self.sink = sink if sink is not None else CollectingFaultSink()
         self._recorded: dict[str, BrokerFill] = {}
         self.handlers = {

@@ -16,6 +16,7 @@ from agents.execution.broker_stops import (
     place_broker_stops,
     reconcile_broker_stops,
 )
+from agents.execution.drop_sweep import sweep_unfilled_orders
 from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
@@ -137,7 +138,9 @@ def sync_run_request(
         capability="position_sync",
         reraise=False,
     ) as capture:
-        snapshot = reconcile_run_start(graph, broker, sink, run_id=run_request_id(node))
+        run_id = run_request_id(node)
+        sweep_unfilled_orders(graph, broker, sink, run_id=run_id)
+        snapshot = reconcile_run_start(graph, broker, sink, run_id=run_id)
         if snapshot is not None:
             graph.add_edge(node, snapshot, SNAPSHOT_REFRESH_EDGE)
     if capture.fault is not None:

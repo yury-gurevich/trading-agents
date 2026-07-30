@@ -19,17 +19,25 @@ def collect_portfolio_metrics(
     pm_run: Node | None,
     positions: tuple[Node, ...],
     close_decisions: tuple[Node, ...],
+    fills: tuple[Node, ...] = (),
 ) -> dict[str, float]:
     """Collect position and PM approval metrics for one PM run."""
     approved = _number(pm_run, "approved_count")
     rejected = _number(pm_run, "rejected_count")
     closed = float(len(close_decisions))
     opened = float(len(positions))
+    executed = _executed_count(fills)
+    dropped = _dropped_count(fills)
     total_decisions = approved + rejected
     return {
         "positions_opened": opened,
         "positions_closed": closed,
         "positions_held": max(opened - closed, ZERO),
+        "approved_count": approved,
+        "rejected_count": rejected,
+        "execution_count": executed,
+        "dropped_decision_count": dropped,
+        "approval_execution_gap": max(approved - executed, ZERO),
         "close_trigger_stop": _trigger_count(close_decisions, "stop"),
         "close_trigger_target": _trigger_count(close_decisions, "target"),
         "close_trigger_time": _trigger_count(close_decisions, "time"),
@@ -69,6 +77,18 @@ def _average(nodes: tuple[Node, ...], prop: str) -> float:
 
 def _trigger_count(close_decisions: tuple[Node, ...], trigger: str) -> float:
     return float(sum(_is_trigger(decision, trigger) for decision in close_decisions))
+
+
+def _executed_count(fills: tuple[Node, ...]) -> float:
+    return float(sum(_status(fill) in {"filled", "partial"} for fill in fills))
+
+
+def _dropped_count(fills: tuple[Node, ...]) -> float:
+    return float(sum(bool(fill.props.get("drop_reason")) for fill in fills))
+
+
+def _status(fill: Node) -> str:
+    return str(fill.props.get("broker_status") or fill.props.get("status") or "")
 
 
 def _is_trigger(decision: Node, trigger: str) -> bool:

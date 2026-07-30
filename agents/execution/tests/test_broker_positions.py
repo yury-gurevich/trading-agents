@@ -75,11 +75,30 @@ def test_paper_broker_stop_rejection_is_replayed_as_rejected() -> None:
 
 def test_paper_broker_cancel_records_each_broker_order_once() -> None:
     broker = PaperBroker()
+    broker.submit_stop(
+        "stop:ref:AAPL", "AAPL", "sell", 1, Money(amount=Decimal("95.00"))
+    )
 
     broker.cancel("paper:stop:ref:AAPL")
     broker.cancel("paper:stop:ref:AAPL")
 
+    fill = broker.fills()[0]
     assert broker.cancelled == ["paper:stop:ref:AAPL"]
+    assert fill.status == "rejected"
+    assert fill.reason == "canceled"
+
+
+def test_paper_broker_order_outside_tolerance_does_not_fill() -> None:
+    """EXEC-NEV-01 / EXEC-TYP-01: paper bounded order mirrors live limit behavior."""
+    broker = PaperBroker(slippage_bps=100, order_price_tolerance_bps=50)
+
+    fill = broker.submit(
+        "run:AAPL:buy", "AAPL", "buy", 2, Money(amount=Decimal("100.00"))
+    )
+
+    assert fill.status == "pending"
+    assert fill.reason == "outside_order_price_tolerance"
+    assert broker.positions() == ()
 
 
 def test_alpaca_position_payloads_normalize_decimal_strings() -> None:

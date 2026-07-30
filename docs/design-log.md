@@ -3852,3 +3852,67 @@ governs **risk** rather than execution price, which makes it the more consequent
 Recorded here deliberately rather than folded into S149.
 
 ---
+
+## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: OPEN (challenger packaged as S150)
+
+**Trigger.** DL-76 recorded, as a finding left unfixed, that `suggested_stop_pct` is
+`regime.base_stop_loss_pct` for every buy - one global number, currently 5 %, for the whole book. I
+measured what that actually means before packaging anything.
+
+**The measurement** (Alpaca daily bars, ~65 sessions from 2026-04-01; 14-day ATR as a percent of
+price; "touched" = the day's low fell more than the stop width below the prior close):
+
+| Ticker | ATR % | Flat 5 % stop touched | 2 x ATR stop touched | 2 x ATR width |
+| --- | --- | --- | --- | --- |
+| BAC | 2.1 % | 0.0 % | 0.0 % | 4.1 % |
+| USB | 2.1 % | 0.0 % | 0.0 % | 4.1 % |
+| SCHW | 2.5 % | 1.5 % | 1.5 % | 4.9 % |
+| CSCO | 3.2 % | 6.1 % | 1.5 % | 6.4 % |
+| HPE | 5.5 % | **19.7 %** | 0.0 % | 11.0 % |
+| AMD | 6.4 % | **36.4 %** | 1.5 % | 12.8 % |
+| MRVL | 8.5 % | **39.4 %** | 1.5 % | 17.1 % |
+
+**The insight.** A 5 % stop on MRVL is **0.6 ATRs - inside a single day's normal range** - and is
+touched on ~39 % of days by ordinary noise. That is not a protective floor; it is a near-certainty
+that the position exits within days regardless of thesis. The same 5 % on BAC is **2.4 ATRs** and is
+touched on 0 % of days. So "5 % stop" is not one policy at all: it is a different risk appetite per
+ticker, chosen by accident rather than decided. A 2 x ATR stop equalises the touch rate across the
+book at 0-3 %, with the *width* ranging 4.1 % -> 17.1 %, which is what holding risk constant actually
+looks like.
+
+**This is DL-76's defect one layer over, and it governs risk rather than execution price.** DL-76
+was about how far from a decided price we will still trade; this is about how far a position may
+fall before it is closed. The second is the more consequential of the two.
+
+**An honest check that did not support the story.** The tempting narrative is that MRVL's 07-27
+forced stop (-$1,330.12, the ADR-0018 trigger) was a noise stop-out caused by exactly this defect.
+**It was not.** MRVL closed 189.28 / 174.36 / 163.39 on 07-27/28/29 - **16.6 % below the $195.98
+exit**. That stop was correct and it saved money. The statistical finding stands without the
+anecdote; recording the failed check because a convenient story that survives testing is worth more
+than one never tested.
+
+**The coupling that makes this dangerous to fix naively.** `gate_report.py:125` computes
+`ratio = target_pct / stop_pct` and gates approval on it, while `suggested_target_pct` is *also* the
+flat `regime.base_take_profit_pct`. Widen the stop for volatile names without widening the target and
+the ratio collapses exactly where the stop widened most - **AMD, MRVL and HPE silently stop passing
+the reward-risk gate and stop being traded at all**, with no error, no fault and no dropped decision.
+Stop and target must scale together, and the RR verdict must be provably mode-invariant.
+
+**Decision: a measured challenger, off by default (ADR-0013).** Packaged as
+[S150](sprints/sprint-150-volatility-scaled-stops.md), consistent with S149's shape - mode selector,
+counterfactual recorded, promotion an operator config flip on evidence. Being off by default matters
+more here than for the tolerance: this is a **risk** parameter, and a stop that changes width without
+evidence is not an improvement, it is a different bet.
+
+**Ruled out.** *Raising the flat stop to 8 %* (the current `le` bound) - makes BAC's stop 3.8 ATRs,
+decorative, while MRVL's is still under 1 ATR; moves the problem without changing the shape and
+raises the risk cap for names that never needed it. *Scaling by realized downside gap rather than
+ATR* - more directly on target, deferred because nothing computes it. *Putting the scaling in the PM
+rather than the analyst* - defensible on "risk disposes", left as a live question for the law-first
+pass to settle rather than assumed. *Letting the monitor re-price stops as volatility drifts* -
+mutating live risk instruments on a schedule is a much larger safety question than choosing a stop at
+entry. *Doing nothing* - no measured loss is yet attributable to the flat band, and MRVL's stop was
+correct; rejected because the exposure is structural and measurable **in advance**, and waiting for
+it to cost money is how the ADR-0018 gap went unnoticed for months.
+
+---

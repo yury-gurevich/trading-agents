@@ -600,7 +600,13 @@ Planted-violation evidence:
 Remote gates:
 
 ```text
-Pending until branch push; this line must be updated after the first remote run.
+Pushed implementation tip: 0db7790
+CI 30512414390: green
+  quality job 90775090709: green in 38s
+  test job 90775173192: green in 55s
+  security job 90775090734: green in 2m17s
+Security Findings 30512414394: green
+  gate job 90775090649: green in 16s
 ```
 
 **The `k`, floor and ceiling shipped, and why:**
@@ -622,7 +628,8 @@ Pending until branch push; this line must be updated after the first remote run.
 - The fleet was not retagged and the challenger was not enabled; that is deliberate non-goal scope.
 - There are no production S149 tolerance rows yet; the real Postgres comparison report correctly
   returns zero orders until runs accumulate after merge/deploy.
-- Remote gates are pending until this branch is pushed.
+- No remote gate is verified failing; CI and Security Findings passed on the pushed implementation
+  tip `0db7790`.
 
 ---
 

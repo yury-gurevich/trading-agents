@@ -369,6 +369,30 @@
       "submitted_at",
       "ticker",
       "time_in_force"
+    ],
+    "Recommendation": [
+      "action",
+      "confidence",
+      "exit_trigger",
+      "quant_metrics",
+      "stop_target_applied_stop_pct",
+      "stop_target_applied_target_pct",
+      "stop_target_atr_pct",
+      "stop_target_counterfactual_mode",
+      "stop_target_counterfactual_stop_pct",
+      "stop_target_counterfactual_target_pct",
+      "stop_target_flat_stop_pct",
+      "stop_target_flat_target_pct",
+      "stop_target_mode",
+      "stop_target_observed_drawdown_pct",
+      "stop_target_scaled_stop_pct",
+      "stop_target_scaled_target_pct",
+      "stop_target_volatility_fallback",
+      "stop_target_volatility_present",
+      "suggested_stop_pct",
+      "suggested_target_pct",
+      "technical_score",
+      "ticker"
     ]
   },
   "_owners_note": "Empty deliberately. The 8 agents that declare labels_owned mix write-sets with read-sets (reporter) and a wildcard (supervisor 'all'), so the declarations are not yet accurate enough to enforce. Reconciling them is the named next step - the mechanism (Vocabulary.check_node writer=) is built and tested."

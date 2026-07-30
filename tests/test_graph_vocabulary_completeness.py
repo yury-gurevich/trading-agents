@@ -124,3 +124,24 @@ def test_fill_tolerance_props_are_declared_and_unknown_prop_fails() -> None:
     vocabulary.check_node("Fill", props=props)
     with pytest.raises(VocabularyError, match="undeclared properties"):
         vocabulary.check_node("Fill", props={**props, "order_tolerence_mode": "flat"})
+
+
+def test_recommendation_stop_target_props_are_declared_and_unknown_prop_fails() -> None:
+    """ANLZ-OBS-01 / DL-70: S150 Recommendation props are vocabulary-declared."""
+    vocabulary = Vocabulary.from_mapping(_declaration())
+    props = {
+        "ticker": "MRVL",
+        "action": "buy",
+        "confidence": 0.8,
+        "technical_score": 0.7,
+        "stop_target_mode": "scaled",
+        "stop_target_applied_stop_pct": 0.08,
+        "stop_target_counterfactual_stop_pct": 0.05,
+        "stop_target_observed_drawdown_pct": 0.06,
+    }
+
+    vocabulary.check_node("Recommendation", props=props)
+    with pytest.raises(VocabularyError, match="undeclared properties"):
+        vocabulary.check_node(
+            "Recommendation", props={**props, "stop_targt_mode": "flat"}
+        )

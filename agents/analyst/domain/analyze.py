@@ -86,6 +86,7 @@ def score_candidates(
                         stop_thresholds,
                         active_broker_stop_refs,
                     ),
+                    settings=settings,
                 )
             )
         decisions = tuple(scored)

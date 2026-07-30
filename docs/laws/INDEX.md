@@ -38,9 +38,9 @@ Each agent's law files live at `agents/<name>/laws/`:
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
 | provider | ✅ LOCKED v1 (S69) | 23 / 43 | Template stress-test complete; pattern is now the reference copy |
-| analyst | ✅ LOCKED v1 (S70) | 24 / 43 | |
+| analyst | ✅ LOCKED v1 (S70) | 26 / 43 | S150 proved stop/target determinism and type bounds |
 | scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
-| portfolio_manager | ✅ LOCKED v1 (S70) | 23 / 43 | |
+| portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
 | execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | reporter | ✅ LOCKED v1 (S71) | 17 / 40 | |

@@ -10,12 +10,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from agents.analyst.domain.recommend_text import held_recommendation_context
 from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
+from agents.analyst.domain.stop_target import resolve_stop_target
 from contracts.analyst import QuantMetric, Recommendation, Rejection
 from contracts.common import Action, Explanation
 
 if TYPE_CHECKING:
     from agents.analyst.domain.scoring import ScoreBreakdown
+    from agents.analyst.settings import AnalystSettings
     from contracts.provider import RegimeContext
     from contracts.scanner import Candidate
 
@@ -39,13 +42,21 @@ def decide(
     held: bool = False,
     exit_confidence_floor: float = 0.0,
     stop_breached: bool = False,
+    settings: AnalystSettings | None = None,
 ) -> AnalysisDecision:
     """Turn one score into an actionable recommendation or a rejection."""
+    settings = _settings(settings)
     reading = lexicon_reading(candidate.ticker, score)
     if held and stop_breached:
         return AnalysisDecision(
             recommendation=_recommendation(
-                candidate, score, regime, "sell", exit_confidence_floor, "stop"
+                candidate,
+                score,
+                regime,
+                "sell",
+                exit_confidence_floor,
+                "stop",
+                settings,
             ),
             rejection=None,
             sentiment_reading=reading,
@@ -61,7 +72,13 @@ def decide(
         exit_trigger: ExitTrigger | None = "thesis" if action == "sell" else None
         return AnalysisDecision(
             recommendation=_recommendation(
-                candidate, score, regime, action, exit_confidence_floor, exit_trigger
+                candidate,
+                score,
+                regime,
+                action,
+                exit_confidence_floor,
+                exit_trigger,
+                settings,
             ),
             rejection=None,
             sentiment_reading=reading,
@@ -97,7 +114,13 @@ def decide(
     evidence_refs += tuple(f"analyst.signal.{name}" for name in score.top_signals)
     return AnalysisDecision(
         recommendation=_build_recommendation(
-            candidate, score, "buy", regime, summary, evidence_refs
+            candidate,
+            score,
+            "buy",
+            regime,
+            summary,
+            evidence_refs,
+            settings,
         ),
         rejection=None,
         sentiment_reading=reading,
@@ -111,36 +134,11 @@ def _recommendation(
     action: Action,
     exit_floor: float,
     exit_trigger: ExitTrigger | None,
+    settings: AnalystSettings,
 ) -> Recommendation:
-    evidence_refs: tuple[str, ...]
-    if exit_trigger == "stop":
-        summary = (
-            f"{candidate.ticker} is already held; forced stop exit because "
-            "the latest close is at or through the stop threshold."
-        )
-        evidence_refs = ("contracts.stop_rule", "provider.market_data")
-    elif exit_trigger == "thesis":
-        summary = (
-            f"{candidate.ticker} is already held; thesis exit because "
-            f"confidence {score.confidence:.3f} is below the conservative "
-            f"exit floor {exit_floor:.3f}."
-        )
-        evidence_refs = (
-            "analyst.technical_score",
-            "provider.market_data",
-            "provider.regime",
-        )
-    else:
-        summary = (
-            f"{candidate.ticker} is already held; analyst says hold because "
-            f"confidence {score.confidence:.3f} is at or above the conservative "
-            f"exit floor {exit_floor:.3f}."
-        )
-        evidence_refs = (
-            "analyst.technical_score",
-            "provider.market_data",
-            "provider.regime",
-        )
+    summary, evidence_refs = held_recommendation_context(
+        candidate.ticker, score.confidence, exit_floor, exit_trigger
+    )
     return _build_recommendation(
         candidate,
         score,
@@ -149,6 +147,7 @@ def _recommendation(
         summary,
         evidence_refs,
         exit_trigger=exit_trigger,
+        settings=settings,
     )
 
 
@@ -159,8 +158,12 @@ def _build_recommendation(
     regime: RegimeContext,
     summary: str,
     evidence_refs: tuple[str, ...],
+    settings: AnalystSettings,
     exit_trigger: ExitTrigger | None = None,
 ) -> Recommendation:
+    stop_target = None
+    if action == "buy":
+        stop_target = resolve_stop_target(regime, score.metrics, settings)
     return Recommendation(
         ticker=candidate.ticker,
         action=action,
@@ -169,9 +172,10 @@ def _build_recommendation(
         technical_score=score.technical_score,
         fundamental_score=score.fundamental_score,
         sentiment_score=score.sentiment_score,
-        suggested_stop_pct=regime.base_stop_loss_pct if action == "buy" else None,
-        suggested_target_pct=regime.base_take_profit_pct if action == "buy" else None,
+        suggested_stop_pct=None if stop_target is None else stop_target.stop_pct,
+        suggested_target_pct=None if stop_target is None else stop_target.target_pct,
         quant_metrics=_quant_metrics(score),
+        stop_target_evidence=None if stop_target is None else stop_target.evidence,
         rationale=Explanation(summary=summary, evidence_refs=evidence_refs),
     )
 
@@ -182,3 +186,11 @@ def _quant_metrics(score: ScoreBreakdown) -> tuple[QuantMetric, ...]:
         QuantMetric(name=name, value=value)
         for name, value in sorted(score.metrics.items())
     )
+
+
+def _settings(settings: AnalystSettings | None) -> AnalystSettings:
+    if settings is not None:
+        return settings
+    from agents.analyst.settings import AnalystSettings
+
+    return AnalystSettings()

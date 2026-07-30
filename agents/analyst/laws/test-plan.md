@@ -51,7 +51,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| ANLZ-IDM-01 | Same CandidateSet + MarketData + settings → same RecommendationSet. | determinism | _tbd_ | ⬜ |
+| ANLZ-IDM-01 | Same CandidateSet + MarketData + settings → same RecommendationSet. | determinism | `test_scaled_stop_targets.py::test_resolution_is_deterministic_for_same_inputs` | 🟩 |
 | ANLZ-IDM-02 | run_id threaded from CandidateSet to recommendations.ready event. | provenance | `test_analyst_pubsub.py::test_run_id_propagated_in_ready_event` | 🟩 |
 
 ## Failure & recovery
@@ -68,7 +68,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | ANLZ-TYP-01 | Recommendation.confidence ∈ [0.0, 1.0]; never fabricated above 1.0. | schema | `test_analyst_pubsub.py::test_recommendation_result_is_deserializable` | 🟩 |
-| ANLZ-TYP-02 | suggested_stop_pct < suggested_target_pct when both present; never inverted. | schema | _tbd_ | ⬜ |
+| ANLZ-TYP-02 | suggested_stop_pct < suggested_target_pct when both present; never inverted. | schema | `test_scaled_stop_targets.py::test_scaled_mode_floor_and_risk_ceiling_clamp` | 🟩 |
 | ANLZ-TYP-03 | SentimentReading.scorer ∈ {"lexicon", "provider"}; never omitted. | schema | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
 
 ## Security

@@ -56,6 +56,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 > broker adapter. Postgres `price_cache` stays the raw historical backtest fallback. Confirms decision
 > **D1**; Stooq retired as default; no scraping.
 
+## Analyst (`ANLZ`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-028 | `ANLZ-PARAM` / `ANLZ-OUT-02` / `ANLZ-OBS-01` | The analyst law declares optional `suggested_stop_pct` / `suggested_target_pct` outputs and its existing tunables, but does not name a selectable stop-scaling mode, scaled stop/target tunables, or durable applied-vs-counterfactual proposal evidence. | S150 ships an ADR-0013 challenger off by default: `flat` preserves today's proposal, `scaled` proposes bounded ATR-scaled stop and target in lockstep, degrades missing ATR to flat, and records applied plus counterfactual proposal evidence on recommendations for later operator comparison. | law gap | **OPEN** — S150 records and tests the behaviour without editing the LOCKED analyst law; a later analyst law amendment should declare the stop-scaling mode, scaled tunables, and durable experiment-evidence semantics. |
+
 ## Execution (`EXEC`)
 
 | ID | Law | Intent says | Reality says | Kind | Status / decision |

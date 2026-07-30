@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import SettingsConfigDict
 
 from kernel import AgentSettings, tunable
 
 ExecutionStageValue = Literal["paper", "broker_shadow", "live_manual", "live_autopilot"]
+OrderPriceToleranceMode = Literal["flat", "scaled"]
 
 
 class ExecutionSettings(AgentSettings):
@@ -40,6 +41,37 @@ class ExecutionSettings(AgentSettings):
         why=(
             "Bound entry and discretionary-exit orders near the PM's decided "
             "price so after-close decisions do not trade at unevaluated opens."
+        ),
+        ge=0,
+        le=500,
+        unit="bps",
+    )
+    order_price_tolerance_mode: OrderPriceToleranceMode = "flat"
+    scaled_order_price_tolerance_atr_multiplier: float = tunable(
+        0.50,
+        why=(
+            "Measure a challenger band near half of decision-time daily ATR; "
+            "overnight gaps observed for S149 cluster around 0.3-0.6x ATR."
+        ),
+        ge=0.0,
+        le=2.0,
+        unit="ratio",
+    )
+    scaled_order_price_tolerance_floor_bps: int = tunable(
+        25,
+        why=(
+            "Keep the volatility-scaled challenger from becoming so narrow "
+            "that quiet names cannot trade at all."
+        ),
+        ge=0,
+        le=500,
+        unit="bps",
+    )
+    scaled_order_price_tolerance_ceiling_bps: int = tunable(
+        250,
+        why=(
+            "Keep the volatility-scaled challenger narrow enough that "
+            "ADR-0018 still rejects materially unevaluated opens."
         ),
         ge=0,
         le=500,
@@ -97,3 +129,12 @@ class ExecutionSettings(AgentSettings):
         le=1.0,
         unit="fraction",
     )
+
+    @model_validator(mode="after")
+    def _scaled_tolerance_bounds_are_ordered(self) -> ExecutionSettings:
+        if (
+            self.scaled_order_price_tolerance_floor_bps
+            > self.scaled_order_price_tolerance_ceiling_bps
+        ):
+            raise ValueError("scaled tolerance floor must be <= ceiling")
+        return self

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from agents.execution.broker import BrokerRejectedError
 from agents.execution.domain.orders import BrokerOrder, rejected_broker_fill
+from agents.execution.order_tolerance import attach_order_tolerance
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -33,15 +34,17 @@ def submit_order(
             capability=capability,
             reraise=True,
         ):
-            return broker.submit(
+            fill = broker.submit(
                 order.idempotency_key,
                 order.ticker,
                 order.side,
                 order.quantity,
                 order.limit_price,
+                order.tolerance_bps,
             )
+            return attach_order_tolerance(fill, order.tolerance_evidence)
     except BrokerRejectedError as exc:
-        return exc.fill
+        return attach_order_tolerance(exc.fill, order.tolerance_evidence)
     except Exception as exc:
         return rejected_broker_fill(order, str(exc))
 

@@ -61,8 +61,12 @@ class AlpacaBroker:
         side: BrokerSide,
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         """Submit one bounded day order under a stable client_order_id; replay dupe."""
+        tolerance = (
+            self._order_price_tolerance_bps if tolerance_bps is None else tolerance_bps
+        )
         order = self._submit_or_get(
             _order_body(
                 idempotency_key,
@@ -70,7 +74,7 @@ class AlpacaBroker:
                 side,
                 quantity,
                 limit_price,
-                self._order_price_tolerance_bps,
+                tolerance,
             )
         )
         fill = _fill_from_order(order, idempotency_key, limit_price)

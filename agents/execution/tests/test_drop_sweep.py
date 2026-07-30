@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from agents.execution.drop_sweep import sweep_unfilled_orders
 from agents.execution.run import run_submit
+from agents.execution.settings import ExecutionSettings
 from agents.execution.tests.broker_stop_helpers import TrackingBroker
 from agents.execution.tests.drop_sweep_helpers import (
     SelectiveCancelBroker,
@@ -171,7 +172,7 @@ def test_dropped_exit_key_can_be_redecided_tomorrow() -> None:
         CollectingFaultSink(),
         {},
         order_set(sell_order),
-        default_stage="paper",
+        settings=ExecutionSettings(),
     )
 
     assert result.submitted == 1

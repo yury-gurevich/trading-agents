@@ -13,6 +13,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution.fill_attempts import select_fill_attempt
+from agents.execution.tolerance_store_props import order_tolerance_props
 from contracts.common import Money, Provenance
 
 if TYPE_CHECKING:
@@ -140,6 +141,7 @@ def _fill_props(
         props["order_type"] = fill.order_type
     if fill.time_in_force is not None:
         props["time_in_force"] = fill.time_in_force
+    props.update(order_tolerance_props(fill))
     if order_set is not None:
         props["source_run_id"] = order_set.run_id
     return props

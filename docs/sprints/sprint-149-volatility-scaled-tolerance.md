@@ -146,7 +146,11 @@ counterfactual so the experiment can actually be judged later.
   a decider (`PM-NEV-*`). If the metric is missing, `None` is the honest answer.
 - **Do not change the analyst.** It already emits `atr_pct`.
 
-**Result:**
+**Result:** Done. `OrderIntent` now carries optional/defaulted `decision_atr_pct`; legacy payloads
+without the field still validate. The PM copies the existing analyst `QuantMetric(name="atr_pct")`
+value unchanged through `agents/portfolio_manager/domain/volatility.py` into buy and sell
+`OrderIntent`s, and leaves `None` when the metric is absent. Analyst code was read and left
+unchanged.
 
 ### 2 · Resolve the tolerance through a selectable mode
 
@@ -163,7 +167,11 @@ counterfactual so the experiment can actually be judged later.
 - The resolved tolerance must be **deterministic**: same intent + same settings → same tolerance →
   same payload (`EXEC-IDM-*`).
 
-**Result:**
+**Result:** Done. `ExecutionSettings.order_price_tolerance_mode` defaults to `flat`, preserving the
+S148 `order_price_tolerance_bps=50` path. The opt-in `scaled` challenger resolves
+`round_half_up(atr_pct * 100 * k)` with `k=0.50`, then clamps to `floor_bps=25` and
+`ceiling_bps=250`; all three scaled knobs are `kernel.tunable(...)` values with bounds and `why`
+metadata. Resolution is deterministic and feeds the same bounded limit-order payload builder.
 
 ### 3 · A missing volatility degrades to flat — it never blocks a decision
 
@@ -174,7 +182,9 @@ counterfactual so the experiment can actually be judged later.
 - The floor and ceiling are the safety rails: **no ticker may end up with a tolerance so wide that
   ADR-0018 stops meaning anything**, and none so narrow that it can never trade. Prove both clamps.
 
-**Result:**
+**Result:** Done. `decision_atr_pct=None`, negative values, and NaN fall back to the flat 50 bps
+champion and set `order_volatility_fallback=True`; they do not skip, reject, or drop the order.
+Very small valid ATR clamps to 25 bps and absurdly high ATR clamps to 250 bps.
 
 ### 4 · Record the counterfactual — this is what makes it an experiment
 
@@ -191,7 +201,11 @@ Without this the sprint is unmeasurable and therefore pointless.
 - The script **reports**; it never promotes and never writes a settings change (ADR-0013: the
   researcher never applies its own proposal).
 
-**Result:**
+**Result:** Done. Every submitted/rejected Fill with order-tolerance evidence records the applied
+mode, counterfactual mode, decided price, both tolerances, both limit prices, volatility presence,
+and fallback flag. Replays append a new Fill attempt instead of rewriting the old one.
+`scripts/compare_order_tolerances.py` reads those Fill facts and reports both modes; it never writes
+or promotes a mode flip.
 
 ### 5 · Keep the S148 guarantees intact
 
@@ -201,20 +215,37 @@ Without this the sprint is unmeasurable and therefore pointless.
 - The drop sweep, `dropped` counting, and the reporter's dropped-vs-rejected handling are unchanged.
 - `time_in_force` stays `day`.
 
-**Result:**
+**Result:** Done. Resting broker stops stay outside the tolerance path: `submit_stop` and the stop
+payload remain `type=stop`, `time_in_force=gtc`, and the drop sweep's stop exemption still passes.
+Bounded entry/exit orders still use `time_in_force=day`.
 
 ### 6 · Declare any new prop or edge in the vocabulary
 
 - New props/edges go in [`trading_graph_vocabulary.json`](../../orchestration/packs/trading_graph_vocabulary.json).
 - Re-run `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py`; paste the output.
 
-**Result:**
+**Result:** Done. The new Fill tolerance evidence props are declared in
+`orchestration/packs/trading_graph_vocabulary.json`. The same stricter property guard exposed
+previously-declared-but-not-property-listed broker-stop Fill props (`position_ref`,
+`stop_order_key`, `stop_pct`, `stop_pct_source`), so those are declared too. Final vocabulary
+scripts:
+
+```text
+uv run python scripts/vocabulary_coverage.py
+# exit 0, no stdout
+
+uv run python scripts/vocabulary_signatures.py
+# exit 0, no stdout
+```
 
 ### 7 · Prove the checks can fail (DL-70)
 
 Plant the violation and require the failure — the test plan specifies the violation for each test.
 
-**Result:**
+**Result:** Done. Planned tests plant violations with `pytest.raises(AssertionError)` or explicit
+guard rejection: fabricated missing-ATR defaults, unclamped absurd ATR, one-sided counterfactual
+evidence, missing-drop behavior, invalid mode strings, bare non-tunable settings, and undeclared
+Fill props all fail when planted.
 
 ---
 
@@ -376,19 +407,30 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `agents/portfolio_manager/` — carrying `atr_pct` | | | |
-| `contracts/portfolio_manager.py` — the new field | | | |
-| `agents/analyst/` (read-only) | | | |
-| `agents/execution/settings.py` — mode + tunables | | | |
-| `agents/execution/alpaca_orders.py` + resolution | | | |
-| the comparison script | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `agents/portfolio_manager/` — carrying `atr_pct` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/dependencies.md`; `docs/laws/drift-register.md` | `PM-IDN-01`, `PM-IDN-02`, `PM-OUT-01`, `PM-OUT-02`, `PM-NEV-01`, `PM-NEV-04`, `PM-TYP-03`, `PM-OBS-01` | No - the PM remains a courier. It may copy the analyst's existing metric onto the intent, but must not compute, smooth, clamp, or interpret execution tolerance. |
+| `contracts/portfolio_manager.py` — the new field | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-IDN-02`, `PM-OUT-02`, `PM-TYP-03`, `EXEC-IN-01`, `EXEC-NEV-01`, `EXEC-NEV-02`, `EXEC-TYP-03` | No - make the field optional/defaulted for old payload compatibility, and keep execution as the only component that resolves a tolerance from it. |
+| `agents/analyst/` (read-only) | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md` | `ANLZ-OUT-01`, `ANLZ-OUT-02`, `ANLZ-NEV-01`, `ANLZ-STA-02`, `ANLZ-TYP-01`, `ANLZ-OBS-01` | No - the analyst law confirms it owns Recommendation output and must not size/order. `atr_pct` will be consumed from declared `quant_metrics`; analyst code stays untouched. |
+| `agents/execution/settings.py` — mode + tunables | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `EXEC-IDN-01`, `EXEC-PARAM`, `EXEC-IDM-01`, `EXEC-IDM-02`, `EXEC-FAIL-01`, `EXEC-TYP-03`, `EXEC-OBS-01` | Yes - the `PARAM` section is silent on S148/S149 tolerance controls, so the implementation must keep the locked law read-only and add DRIFT-027 instead of editing `laws.md`. |
+| `agents/execution/alpaca_orders.py` + resolution | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; `docs/laws/drift-register.md`; ADR-0018 | `EXEC-IDN-01`, `EXEC-NEV-01`, `EXEC-NEV-02`, `EXEC-NEV-03`, `EXEC-IDM-01`, `EXEC-IDM-02`, `EXEC-FAIL-01`, `EXEC-FAIL-02`, `EXEC-OBS-01`, `DEP-BROKER-01`, `DEP-BROKER-02` | Yes - missing or nonsensical volatility must degrade to flat and still submit; only broker failure/stage gates may reject. Stops remain outside tolerance handling. |
+| the comparison script | `docs/laws/conventions.md`; `docs/laws/dependencies.md`; ADR-0013; ADR-0018 | `DEP-POSTGRES-03`, `DEP-CLOCK-01`; ADR-0013 gated promotion; ADR-0018 same-session decision validity | No - script must be read/report only, use append-only graph evidence, and never mutate settings or promote a challenger. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | conventions §§2, 3, 7, 9; S143/S144 vocabulary declaration rule | No - any new durable props must be declared and then proven by the vocabulary scripts. |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found. The spec fits the locked laws if the PM only carries a pre-existing analyst metric, execution owns tolerance resolution, and missing volatility degrades rather than blocks.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+`DRIFT-027` opened: execution's locked law is silent on S149's selectable order-tolerance mode, the scaled-tolerance tunables, and the counterfactual evidence props required to measure the challenger.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+This sprint adds cited tests for PM volatility passthrough (`PM-IDN-01`, `PM-OUT-02`,
+`PM-NEV-01`, `PM-OBS-01`, `PM-TYP-03`) and execution tolerance behavior/evidence
+(`EXEC-IN-01`, `EXEC-NEV-01`, `EXEC-NEV-02`, `EXEC-NEV-03`, `EXEC-IDM-01`,
+`EXEC-IDM-02`, `EXEC-FAIL-01`, `EXEC-OBS-01`, `EXEC-STA-03`, `EXEC-TYP-01`, plus
+`EXEC-PARAM` as the local parameter-governance heading used by existing tests). Analyst clauses
+remain read-only/out of scope; no analyst test status changed.
 
 ---
 
@@ -396,57 +438,217 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| B5 | | | | |
-| B6 | | | | |
-| B7 | | | | |
-| B8 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| D4 | | | | |
-| D5 | | | | |
-| E1 | | | | |
-| E2 | | | | |
-| E3 | | | | |
-| E4 | | | | |
+| A1 | `test_pm_carries_atr_pct_onto_order_intent_unchanged` | `agents/portfolio_manager/tests/test_order_volatility.py` | PASS | `PM-IDN-01` / `PM-OUT-02` / `PM-NEV-01` / `PM-TYP-03` |
+| A2 | `test_pm_missing_atr_pct_yields_none_not_a_guess` | `agents/portfolio_manager/tests/test_order_volatility.py` | PASS | `PM-IDN-01` / `PM-NEV-01` / `PM-OBS-01` |
+| A3 | `test_order_intent_decision_atr_pct_is_optional_and_round_trips` | `tests/test_order_intent_contract.py` | PASS | `PM-TYP-03` / `EXEC-IN-01` |
+| B1 | `test_flat_mode_ignores_volatility_and_matches_s148_payload` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-NEV-01` / `EXEC-IDM-01` |
+| B2 | `test_scaled_mode_resolves_exact_volatile_and_quiet_tolerances` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-IDM-01` / `EXEC-NEV-01` |
+| B3 | `test_scaled_mode_resolves_exact_volatile_and_quiet_tolerances` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-IDM-01` / `EXEC-NEV-01` |
+| B4 | `test_scaled_mode_floor_and_ceiling_clamps` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-FAIL-01` / `EXEC-IDM-01` |
+| B5 | `test_scaled_mode_floor_and_ceiling_clamps` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-FAIL-01` / `EXEC-IDM-01` |
+| B6 | `test_resolution_is_deterministic_for_same_intent_and_settings` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-IDM-01` / `EXEC-IDM-02` |
+| B7 | `test_scaled_tolerance_knobs_are_declared_tunables_and_mode_is_bounded` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-PARAM` / `ADR-0013` |
+| B8 | `test_scaled_tolerance_knobs_are_declared_tunables_and_mode_is_bounded` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-PARAM` / `ADR-0013` |
+| C1 | `test_missing_volatility_scaled_mode_falls_back_and_still_submits` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-FAIL-01` / `EXEC-NEV-01` / `EXEC-OBS-01` |
+| C2 | `test_missing_volatility_scaled_mode_falls_back_and_still_submits` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-FAIL-01` / `EXEC-NEV-01` / `EXEC-OBS-01` |
+| C3 | `test_nonsensical_volatility_is_missing_or_clamped_not_trusted` | `agents/execution/tests/test_scaled_order_tolerance.py` | PASS | `EXEC-FAIL-01` / `EXEC-IDM-01` |
+| D1 | `test_flat_mode_fill_records_scaled_counterfactual` | `agents/execution/tests/test_tolerance_evidence.py` | PASS | `EXEC-OBS-01` / `EXEC-IDM-01` |
+| D2 | `test_scaled_mode_fill_records_flat_counterfactual` | `agents/execution/tests/test_tolerance_evidence.py` | PASS | `EXEC-OBS-01` / `EXEC-NEV-01` |
+| D3 | `test_tolerance_evidence_replay_appends_without_rewriting` | `agents/execution/tests/test_tolerance_evidence.py` | PASS | `EXEC-STA-03` / `EXEC-OBS-01` |
+| D4 | `test_comparison_script_reports_both_modes_when_limits_differ` | `tests/test_compare_order_tolerances.py` | PASS | `EXEC-OBS-01` / `ADR-0013` |
+| D5 | `test_comparison_script_never_writes_or_promotes` | `tests/test_compare_order_tolerances.py` | PASS | `EXEC-NEV-01` / `ADR-0013` |
+| E1 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | PASS | `EXEC-NEV-01` / `EXEC-NEV-03` |
+| E2 | `test_stop_order_body_builds_exact_gtc_stop_payload` | `agents/execution/tests/test_alpaca_stop_orders.py` | PASS | `EXEC-NEV-03` / `EXEC-IDM-02` |
+| E3 | `test_order_body_rounds_half_cent_up_and_keeps_day_tif` | `agents/execution/tests/test_order_tolerance.py` | PASS | `EXEC-IDM-01` / `EXEC-TYP-01` |
+| E4 | `test_fill_tolerance_props_are_declared_and_unknown_prop_fails` | `tests/test_graph_vocabulary_completeness.py` | PASS | `EXEC-OBS-01` / `DL-70` |
 
 **Tests added beyond the plan:**
 
+- `test_partial_tolerance_evidence_omits_absent_optional_prices`
+  (`agents/execution/tests/test_tolerance_evidence.py`) covers sparse/legacy tolerance evidence so
+  absent optional money fields are omitted rather than serialized as fake prices.
+- `orchestration/tests/test_graph_vocabulary_e2e.py::test_declared_vocabulary_admits_the_broker_native_stop_path`
+  was re-run after the stricter Fill property guard exposed missing broker-stop Fill property
+  declarations; this protects the S148/S142 stop path under S149's stricter vocabulary check.
 ---
 
 ## Closeout — evidence
 
 **Files changed:**
 
-_(fill in)_
+- Portfolio manager contract/courier path:
+  `contracts/portfolio_manager.py`,
+  `agents/portfolio_manager/domain/volatility.py`,
+  `agents/portfolio_manager/domain/gate_report.py`,
+  `agents/portfolio_manager/domain/exits.py`,
+  `agents/portfolio_manager/store.py`.
+- Execution tolerance path:
+  `agents/execution/settings.py`, `agents/execution/order_tolerance.py`,
+  `agents/execution/domain/orders.py`, `agents/execution/domain/submit.py`,
+  `agents/execution/run.py`, `agents/execution/agent.py`, `agents/execution/poll.py`,
+  `agents/execution/broker.py`, `agents/execution/alpaca.py`,
+  `agents/execution/paper_broker.py`, `agents/execution/store.py`,
+  `agents/execution/tolerance_store_props.py`.
+- Graph/vocabulary/reporting:
+  `kernel/graph_vocabulary.py`, `kernel/graph_guarded.py`,
+  `orchestration/packs/trading_graph_vocabulary.json`,
+  `scripts/compare_order_tolerances.py`.
+- Tests and fixtures:
+  `agents/portfolio_manager/tests/test_order_volatility.py`,
+  `agents/execution/tests/test_scaled_order_tolerance.py`,
+  `agents/execution/tests/test_tolerance_evidence.py`,
+  `tests/test_order_intent_contract.py`, `tests/test_compare_order_tolerances.py`,
+  `tests/test_graph_vocabulary.py`, `tests/test_graph_vocabulary_completeness.py`,
+  plus execution fake-broker signature updates in existing tests/helpers.
+- Governance/versioning:
+  `docs/laws/drift-register.md`, this sprint document, `pyproject.toml`, `uv.lock`.
 
 **Proven (LAW-02):**
 
-_(paste real command output: `make ci` counts and coverage, remote gate job IDs and results,
-planted-violation runs, vocabulary script output, and a sample comparison-script report)_
+Precondition and branch:
+
+```text
+branch=sprint-149-volatility-scaled-tolerance
+HEAD=e8bcca1
+origin/main=e8bcca1
+S148_73f0132_ancestor_of_origin_main=yes
+```
+
+Version/lock:
+
+```text
+uv lock
+Resolved 170 packages in 3.43s
+Updated trading-agents v0.82.0 -> v0.83.0
+```
+
+Focused and affected test evidence:
+
+```text
+uv run pytest agents/portfolio_manager/tests/test_order_volatility.py agents/execution/tests/test_order_tolerance.py agents/execution/tests/test_scaled_order_tolerance.py agents/execution/tests/test_tolerance_evidence.py tests/test_compare_order_tolerances.py tests/test_graph_vocabulary.py tests/test_graph_vocabulary_completeness.py tests/test_contract_values.py tests/test_order_intent_contract.py agents/execution/tests/test_execution_domain.py agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_alpaca_stop_orders.py --no-cov
+============================= 70 passed in 8.47s ==============================
+
+uv run pytest agents/execution/tests agents/portfolio_manager/tests tests/test_contract_values.py tests/test_order_intent_contract.py tests/test_compare_order_tolerances.py tests/test_graph_vocabulary.py tests/test_graph_vocabulary_completeness.py orchestration/tests/test_realized_pnl_graph_pull.py --no-cov
+============================ 233 passed in 11.08s =============================
+
+uv run pytest agents/execution/tests/test_scaled_order_tolerance.py agents/execution/tests/test_tolerance_evidence.py orchestration/tests/test_graph_vocabulary_e2e.py tests/test_graph_vocabulary_completeness.py --no-cov
+============================= 23 passed in 7.31s ==============================
+```
+
+Final local `make ci` (exit 0):
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+851 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 713 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+# warnings only; no FAIL rows
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+================= 1950 passed, 5 skipped in 164.08s (0:02:44) =================
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 9 new file(s)
+```
+
+Vocabulary scripts:
+
+```text
+uv run python scripts/vocabulary_coverage.py
+# exit 0, no stdout
+
+uv run python scripts/vocabulary_signatures.py
+# exit 0, no stdout
+```
+
+Comparison script against the real configured graph, read-only (`.env` loaded, DSN not printed):
+
+```text
+PostgresGraphStore
+mode	orders	would_have_filled	drop_rate_pct	avg_slippage_bps
+flat	0	0	0.00	n/a
+scaled	0	0	0.00	n/a
+```
+
+Synthetic report proving the modes can differ:
+
+```text
+mode	orders	would_have_filled	drop_rate_pct	avg_slippage_bps
+flat	2	1	50.00	40.00
+scaled	2	2	0.00	80.00
+```
+
+Planted-violation evidence:
+
+- A2 plants a fabricated missing-ATR default and requires `None`.
+- B5 plants the unclamped absurd-ATR result (`4950`) and requires the 250 bps ceiling.
+- B7 plants bare literal scaled settings and requires tunable metadata to be present.
+- B8 plants invalid mode `wide` and requires settings validation failure.
+- C2 plants missing-volatility blocking (`submitted == 0`) and requires the order still submit.
+- D2 plants one-sided evidence and requires the two-sided assertion to fail.
+- E4 plants misspelled `order_tolerence_mode` and requires `VocabularyError`.
+
+Remote gates:
+
+```text
+Pushed implementation tip: 0db7790
+CI 30512414390: green
+  quality job 90775090709: green in 38s
+  test job 90775173192: green in 55s
+  security job 90775090734: green in 2m17s
+Security Findings 30512414394: green
+  gate job 90775090649: green in 16s
+```
 
 **The `k`, floor and ceiling shipped, and why:**
 
-_(fill in — the values, their bounds, and the `why` strings)_
+- `scaled_order_price_tolerance_atr_multiplier = 0.50`, bounded `ge=0.0`, `le=2.0`,
+  unit `ratio`. Why: "Measure a challenger band near half of decision-time daily ATR; overnight
+  gaps observed for S149 cluster around 0.3-0.6x ATR."
+- `scaled_order_price_tolerance_floor_bps = 25`, bounded `ge=0`, `le=500`, unit `bps`.
+  Why: "Keep the volatility-scaled challenger from becoming so narrow that quiet names cannot
+  trade at all."
+- `scaled_order_price_tolerance_ceiling_bps = 250`, bounded `ge=0`, `le=500`, unit `bps`.
+  Why: "Keep the volatility-scaled challenger narrow enough that ADR-0018 still rejects materially
+  unevaluated opens."
+- The champion remains `order_price_tolerance_mode = "flat"` and `order_price_tolerance_bps = 50`.
 
 **Not met / verified failing:**
 
-_(fill in)_
+- No local success factor is verified failing.
+- The fleet was not retagged and the challenger was not enabled; that is deliberate non-goal scope.
+- There are no production S149 tolerance rows yet; the real Postgres comparison report correctly
+  returns zero orders until runs accumulate after merge/deploy.
+- No remote gate is verified failing; CI and Security Findings passed on the pushed implementation
+  tip `0db7790`.
 
 ---
 
 ## Return notes
 
-_(fill in: what surprised you; whether `atr_pct` turned out to be a good proxy or a poor one; what
-you deliberately did not do; whether the flat-`stop_pct` finding got its design-log thread; and
-whether `main` had moved when you finished)_
+- Law reading changed the execution approach only where expected: the locked execution law is
+  silent on S148/S149 tolerance details, so `DRIFT-027` was opened rather than changing `laws.md`.
+  The PM/analyst boundary stayed clean: analyst unchanged, PM courier-only, execution owns the
+  policy.
+- `atr_pct` is a good enough proxy for this sprint because its unit is already percent of last
+  close and it already crosses the analyst boundary as a typed `QuantMetric`. It is not proven
+  superior to flat tolerance; the experiment exists to measure that.
+- The stricter Fill property guard found a nearby defect: broker-stop Fill props were used by code
+  but not declared in the new property vocabulary. Fixed here because S149's guard would otherwise
+  break the stop path, but no stop semantics were changed.
+- Deliberately not done: no analyst change, no default-on scaled mode, no tuning to a target drop
+  rate, no per-ticker stop work, no fleet retag, no broker submission/live trade, and no automatic
+  promotion.
+- The flat-`stop_pct` finding already exists as `DL-76` on main, so I did not create a duplicate
+  design-log thread.
+- `origin/main` was fetched at closeout and remained `e8bcca1`, matching this branch base; no main
+  merge was needed.

@@ -44,6 +44,7 @@ class TrackingSubmitBroker(TrackingBroker):
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         return BrokerFill(
             idempotency_key,

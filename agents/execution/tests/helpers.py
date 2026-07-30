@@ -8,7 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from agents.execution import ExecutionAgent
 from agents.execution.broker import BrokerFill, BrokerPosition
@@ -18,16 +18,20 @@ from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
 
+if TYPE_CHECKING:
+    from agents.execution.settings import ExecutionSettings
+
 
 def wire(
     broker: PaperBroker | None = None,
+    settings: ExecutionSettings | None = None,
 ) -> tuple[InProcessBus, InMemoryGraphStore, PaperBroker, CollectingFaultSink]:
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     paper = broker or PaperBroker()
     bus.register("supervisor", "flag_for_human", flag_handler(graph))
-    ExecutionAgent(bus, graph=graph, broker=paper, sink=sink).bind()
+    ExecutionAgent(bus, graph=graph, broker=paper, settings=settings, sink=sink).bind()
     return bus, graph, paper, sink
 
 
@@ -118,6 +122,7 @@ class PositionBroker:
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         raise AssertionError("position-sync test should not submit orders")
 

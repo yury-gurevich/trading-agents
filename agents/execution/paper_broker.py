@@ -50,6 +50,7 @@ class PaperBroker:
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         """Fill immediately at the deterministic paper price, or return a replay."""
         current = self._fills.get(idempotency_key)
@@ -58,9 +59,10 @@ class PaperBroker:
         if ticker in self._reject_tickers:
             return self._reject(idempotency_key, ticker, side, quantity, limit_price)
         simulated_price = paper_price(limit_price, side, self._slippage_bps)
-        if not within_tolerance(
-            limit_price, simulated_price, side, self._order_price_tolerance_bps
-        ):
+        tolerance = (
+            self._order_price_tolerance_bps if tolerance_bps is None else tolerance_bps
+        )
+        if not within_tolerance(limit_price, simulated_price, side, tolerance):
             fill = BrokerFill(
                 idempotency_key=idempotency_key,
                 ticker=ticker,

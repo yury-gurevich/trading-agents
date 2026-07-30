@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Literal, Protocol
 if TYPE_CHECKING:
     from contracts.common import Money, Ticker
 
+OrderToleranceMode = Literal["flat", "scaled"]
+
 
 @dataclass(frozen=True)
 class BrokerFill:
@@ -29,6 +31,20 @@ class BrokerFill:
     submitted_at: str | None = None
     order_type: str | None = None
     time_in_force: str | None = None
+    order_tolerance_mode: OrderToleranceMode | None = None
+    order_counterfactual_mode: OrderToleranceMode | None = None
+    order_decided_price: Money | None = None
+    order_applied_tolerance_bps: int | None = None
+    order_applied_limit_price: Money | None = None
+    order_counterfactual_tolerance_bps: int | None = None
+    order_counterfactual_limit_price: Money | None = None
+    order_flat_tolerance_bps: int | None = None
+    order_flat_limit_price: Money | None = None
+    order_scaled_tolerance_bps: int | None = None
+    order_scaled_limit_price: Money | None = None
+    order_decision_atr_pct: float | None = None
+    order_volatility_present: bool | None = None
+    order_volatility_fallback: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -60,6 +76,7 @@ class Broker(Protocol):
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         """Submit one order under a stable idempotency key."""
         ...  # pragma: no cover - protocol declaration only.

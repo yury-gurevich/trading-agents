@@ -54,6 +54,7 @@ class _RefreshOnlyBroker(NoStopBrokerMixin):
         side: Literal["buy", "sell"],
         quantity: int,
         limit_price: Money,
+        tolerance_bps: int | None = None,
     ) -> BrokerFill:
         raise AssertionError("empty PM run must not submit")
 

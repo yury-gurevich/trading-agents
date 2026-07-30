@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.volatility import decision_atr_pct
 from contracts.common import Explanation, Money
 from contracts.portfolio_manager import GateOutcome, OrderIntent, RejectedOrder
 
@@ -161,6 +162,7 @@ def order_intent(
         action=item.action,
         quantity=quantity,
         est_price=price,
+        decision_atr_pct=decision_atr_pct(item),
         stop_pct=report.stop_pct,
         target_pct=report.target_pct,
         rationale=Explanation(

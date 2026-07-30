@@ -17,8 +17,10 @@ from agents.execution.broker import BrokerFill
 from agents.execution.domain.orders import order_from_intent
 from agents.execution.domain.reconcile import reconcile_fills
 from agents.execution.domain.result import execution_result
+from agents.execution.order_tolerance import OrderToleranceConfig
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.run import run_submit
+from agents.execution.settings import ExecutionSettings
 from agents.execution.store import write_fills
 from agents.execution.tests.helpers import order_set
 from contracts.common import Action, Explanation, Money, Provenance
@@ -31,12 +33,12 @@ def test_order_from_intent_supports_sell_and_rejects_hold() -> None:
     hold = _intent("MSFT", "hold")
     payload = order_set(sell, hold)
 
-    order = order_from_intent(payload, sell)
+    order = order_from_intent(payload, sell, _tolerance_config())
 
     assert order.idempotency_key == "pm-run-fixture:AAPL:sell"
     assert order.side == "sell"
     with pytest.raises(ValueError, match="only buy or sell"):
-        order_from_intent(payload, hold)
+        order_from_intent(payload, hold, _tolerance_config())
 
 
 def test_order_from_intent_uses_position_ref_for_exit_only() -> None:
@@ -44,8 +46,8 @@ def test_order_from_intent_uses_position_ref_for_exit_only() -> None:
     sell = _intent("LOW", "sell").model_copy(update={"position_ref": "abc123"})
     payload = order_set(buy, sell)
 
-    buy_order = order_from_intent(payload, buy)
-    sell_order = order_from_intent(payload, sell)
+    buy_order = order_from_intent(payload, buy, _tolerance_config())
+    sell_order = order_from_intent(payload, sell, _tolerance_config())
 
     assert buy.position_ref is None
     assert buy_order.idempotency_key == "pm-run-fixture:AAPL:buy"
@@ -150,7 +152,7 @@ def test_completed_exit_replay_is_skipped_with_fault() -> None:
         sink,
         {},
         order_set(sell),
-        default_stage="paper",
+        settings=ExecutionSettings(),
     )
 
     faults = graph.list_nodes("Fault")
@@ -172,6 +174,10 @@ def _intent(ticker: str, action: str) -> OrderIntent:
         est_price=Money(amount=Decimal("10.00")),
         rationale=Explanation(summary="fixture order"),
     )
+
+
+def _tolerance_config() -> OrderToleranceConfig:
+    return OrderToleranceConfig.from_settings(ExecutionSettings())
 
 
 def _broker_fill(

@@ -106,14 +106,7 @@ class _StaticBroker(NoStopBrokerMixin):
     broker_fills: tuple[BrokerFill, ...]
     broker_positions: tuple[BrokerPosition, ...]
 
-    def submit(
-        self,
-        idempotency_key: str,
-        ticker: str,
-        side: Literal["buy", "sell"],
-        quantity: int,
-        limit_price: Money,
-    ) -> BrokerFill:
+    def submit(self, *_args: object, **_kwargs: object) -> BrokerFill:
         raise AssertionError("reconciliation must not submit")
 
     def fills(self) -> tuple[BrokerFill, ...]:
@@ -124,14 +117,7 @@ class _StaticBroker(NoStopBrokerMixin):
 
 
 class _FailingBroker(NoStopBrokerMixin):
-    def submit(
-        self,
-        idempotency_key: str,
-        ticker: str,
-        side: Literal["buy", "sell"],
-        quantity: int,
-        limit_price: Money,
-    ) -> BrokerFill:
+    def submit(self, *_args: object, **_kwargs: object) -> BrokerFill:
         raise AssertionError("reconciliation must not submit")
 
     def fills(self) -> tuple[BrokerFill, ...]:

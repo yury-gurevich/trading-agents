@@ -615,7 +615,18 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 9 new file(s)
 ```
 
-Remote branch gates: pending branch push.
+Remote branch gates for implementation commit `3fa9496`:
+
+```text
+gh run watch 30520713599 --exit-status
+✓ sprint-150-volatility-scaled-stops CI · 30520713599
+✓ security in 1m48s (ID 90800231988)
+✓ quality in 35s (ID 90800232062)
+✓ test in 58s (ID 90800339095)
+
+gh run list --branch sprint-150-volatility-scaled-stops --limit 10
+completed success feat: add volatility-scaled stop challenger Security Findings sprint-150-volatility-scaled-stops push 30520713598
+```
 
 **The `k`, floor and ceiling shipped, and why:**
 
@@ -627,8 +638,7 @@ which is the intended safety rail.
 
 **Not met / verified failing:**
 
-No sprint success factor is currently verified failing. Remote branch gates are still pending branch
-push.
+No sprint success factor is currently verified failing.
 
 ---
 

@@ -38,12 +38,13 @@ def test_sweep_cancels_prior_run_order_and_records_drop() -> None:
     assert dropped == 1
     assert broker.cancelled == [f"broker:{key}"]
     assert fill is not None
-    assert fill.props["broker_status"] == "canceled"
+    assert "broker_status" not in fill.props
     assert fill.props["drop_reason"] == "unfilled at session end"
     assert execution is not None
     assert execution.props["dropped"] == 1
     assert "decided_price=100.00" in graph.list_nodes("Fault")[0].props["message"]
-    assert graph.list_nodes("BrokerOrderStatus")
+    status = graph.list_nodes("BrokerOrderStatus")[0]
+    assert status.props["status"] == "canceled"
 
 
 def test_sweep_leaves_current_and_filled_orders_alone() -> None:
@@ -100,8 +101,12 @@ def test_sweep_exempts_resting_stops_and_prefixless_stop() -> None:
     stale = "old-run:ENTRY:buy"
     seed_fill_lineage(graph, "old-run", stale, "ENTRY")
     stop_orders = tuple(
-        broker_order(f"stop:ref-{idx}:S{idx}", f"S{idx}", order_type="stop")
-        for idx in range(7)
+        broker_order(
+            f"stop:ref-{idx}:S{idx}",
+            f"S{idx}",
+            order_type="stop_limit" if idx % 2 else "stop",
+        )
+        for idx in range(9)
     )
     prefixless = broker_order("custom-stop-client", "SAFE", order_type="stop")
     for order in (*stop_orders, prefixless):
@@ -140,6 +145,13 @@ def test_cancel_failure_is_contained_and_other_orders_continue() -> None:
     assert any(
         "cancel failed for BAD" in fault.props["message"]
         for fault in graph.list_nodes("Fault")
+    )
+    assert (
+        sum(
+            fault.props["error_type"] == "RuntimeError"
+            for fault in graph.list_nodes("Fault")
+        )
+        == 1
     )
 
 

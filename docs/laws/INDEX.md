@@ -43,7 +43,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
 | execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
-| reporter | ✅ LOCKED v1 (S71) | 17 / 40 | |
+| reporter | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | forecaster | ✅ LOCKED v1 (S71) | 15 / 46 | |
 | operator | ✅ LOCKED v1 (S71) | 14 / 51 | |
 | supervisor | ✅ LOCKED v1 (S71) | 21 / 49 | |

@@ -143,7 +143,6 @@ def test_dropped_sell_is_not_counted_as_realized_loss() -> None:
                 "drop",
                 {
                     "side": "sell",
-                    "broker_status": "canceled",
                     "drop_reason": "unfilled at session end",
                     "realized_pnl_cents": -1000,
                 },

@@ -83,10 +83,13 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
    prerequisite). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
    accumulate. **Next named work: the one law-amendment cycle**
    ([sprint-152](sprint-152-law-amendment-cycle.md)) covering DRIFT-024/025/026/027/028 rather
-   than a sixth register row — five sprints have each opened one and the fifth crossed into a
-   second agent. Also open: S144's dated fleet enablement, whether to declare properties for
-   the other 51 labels, and
-   reconciling the 8 `labels_owned` declarations to enable `owners` enforcement.
+   than a sixth register row, and **[S153](sprint-153-deliberator-agent.md) — the deliberator
+   agent**, because the LLM veto has never run in production ([DL-80](../design-log.md))
+   and every order so far reached the broker unvetoed. **S144 is CLOSED** — the write guard
+   was enabled on the fleet 2026-07-31 (`:s152`, 0.84.04) after three undeclared edge
+   signatures were found and fixed first. Still open: whether to declare properties for the
+   other 51 labels, the 46 `add_edge` sites the static scan cannot resolve, and reconciling
+   the 8 `labels_owned` declarations to enable `owners` enforcement.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

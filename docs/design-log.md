@@ -4113,4 +4113,29 @@ rot the same way with the same green verdict.
 reconciles, places stops and scores acceptance honestly on what it does cover. The exposure is that
 the risk *review* layer described in the PRD and STATE is absent, and nothing said so.
 
+**Operator correction, 2026-07-31 — the design was right; the implementation shape is what stranded
+it.** The intended design, confirmed by the operator and recorded at the time in
+[sprint-109](sprints/sprint-109-heterogeneous-deliberation-models.md), is that the Manager activates
+**three copies of the researcher agent** — Manager, Proponent, Opponent — which receive *identical*
+evidence (external feeds plus the quant research done inside the app), deliberate over rounds,
+narrow to the major points of influence, and return recommendations the Manager rules on with its
+own verdict. The narrative of that conversation is a first-class output: the point of exposure for
+what was actually argued.
+
+Almost all of that **is** built, and faithfully: `kernel/deliberation.py` runs bounded rounds
+(`max_rounds=3`, Defender argues then Challenger rebuts, each seeing the running transcript), the
+Judge rules afterwards with a verdict plus rationale, `build_veto_context` renders the full
+provider→scanner→analyst→PM lineage including quant evidence, and every `Turn` (role, round, text)
+is persisted on the `DeliberationRun` node. S109 additionally made the model per-role.
+
+The single divergence is the one that matters: the roles were built as **system prompts inside a
+kernel harness**, called from `orchestration/veto.py`, rather than as **three researcher-agent
+instances**. Three agent instances would have been fleet-native by construction — agents get
+images, identities, work sources and scheduling, and the master already activates them. A kernel
+harness only runs where something calls it, and the only caller is the local pipeline. **The
+shortcut is the root cause**: had the roles been agents, the stage would have been scheduled like
+every other. This reframes the fix — it is not "wire deliberation into the fleet somehow", it is
+"build the three researcher instances the design always called for", and the harness becomes the
+reasoning core they share rather than the thing that runs.
+
 ---

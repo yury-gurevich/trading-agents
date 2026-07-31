@@ -575,18 +575,17 @@ reconciled to execution 31/49 and reporter 19/40.
 | E2 | `test_graph_tracked_stop_mismatch_is_faulted_and_exempted`; `test_broker_stop_mismatch_is_faulted_and_exempted` | `agents/execution/tests/test_drop_sweep_edges.py` | Passed | `EXEC-NEV-01`, `EXEC-NEV-03` |
 | E3 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-NEV-01`, `EXEC-NEV-03` |
 
-**Tests added beyond the plan:**
+## Tests added beyond the plan
 
 `orchestration/tests/test_trading_fill_outcomes.py::test_drop_reason_is_resolved_unfilled_without_broker_status` covers the fifth consumer found during implementation.
 
-**Tests changed because they encoded the old spec:**
+## Tests changed because they encoded the old spec
 
 `agents/execution/tests/test_drop_sweep.py::test_sweep_cancels_prior_run_order_and_records_drop` and
 `agents/execution/tests/test_drop_sweep_edges.py::test_resolved_rejected_order_is_recorded_as_drop_without_cancel`
 previously asserted `Fill.broker_status == "canceled"/"expired"`. They now assert the status props
 are not written by the sweep and that the raw terminal status is captured in `BrokerOrderStatus`.
-Reporter tests were also narrowed to prove `drop_reason` without a synthetic canceled broker status.
----
+Reporter tests were also narrowed to prove `drop_reason` without a synthetic canceled broker status
 
 ## Closeout — evidence
 

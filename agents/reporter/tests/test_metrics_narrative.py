@@ -60,7 +60,7 @@ def test_dropped_decision_is_visible_but_not_rejected() -> None:
         Node(
             "Fill",
             "dropped",
-            {"status": "pending", "broker_status": "canceled", "drop_reason": "x"},
+            {"status": "pending", "drop_reason": "x"},
         ),
     )
 

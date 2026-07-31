@@ -36,16 +36,6 @@ def sweep_unfilled_orders(
     dropped = 0
     touched_runs: set[str] = set()
     for order in broker_orders:
-        fill = latest_fill_attempt(graph, order.idempotency_key)
-        if _skip_order(graph, order, fill, run_id, sink):
-            continue
-        if _is_resolved_drop(order):
-            if record_drop(graph, sink, order, fill, _resolved_drop_status(order)):
-                dropped += 1
-                remember_execution_run(graph, fill, touched_runs)
-            continue
-        if order.status != "pending":
-            continue
         recorded = False
         with fault_boundary(
             sink,
@@ -54,13 +44,41 @@ def sweep_unfilled_orders(
             capability="drop_unfilled_orders",
             reraise=False,
         ):
-            _cancel_order(broker, order)
-            recorded = record_drop(graph, sink, order, fill, "canceled")
+            recorded = _sweep_order(graph, broker, sink, order, run_id, touched_runs)
         if recorded:
             dropped += 1
-            remember_execution_run(graph, fill, touched_runs)
-    mark_execution_runs(graph, touched_runs)
+    with fault_boundary(
+        sink,
+        agent="execution",
+        module="agents.execution.drop_sweep",
+        capability="drop_unfilled_orders",
+        reraise=False,
+    ):
+        mark_execution_runs(graph, touched_runs)
     return dropped
+
+
+def _sweep_order(
+    graph: GraphStore,
+    broker: Broker,
+    sink: FaultSink,
+    order: BrokerFill,
+    run_id: str,
+    touched_runs: set[str],
+) -> bool:
+    fill = latest_fill_attempt(graph, order.idempotency_key)
+    if _skip_order(graph, order, fill, run_id, sink):
+        return False
+    if _is_resolved_drop(order):
+        recorded = record_drop(graph, sink, order, fill, _resolved_drop_status(order))
+    elif order.status == "pending":
+        _cancel_order(broker, order)
+        recorded = record_drop(graph, sink, order, fill, "canceled")
+    else:
+        return False
+    if recorded:
+        remember_execution_run(graph, fill, touched_runs)
+    return recorded
 
 
 def _read_broker_orders(broker: Broker, sink: FaultSink) -> tuple[BrokerFill, ...]:

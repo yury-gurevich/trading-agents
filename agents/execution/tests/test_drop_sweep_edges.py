@@ -44,9 +44,13 @@ def test_resolved_rejected_order_is_recorded_as_drop_without_cancel() -> None:
     assert broker.cancelled == []
     assert expired_fill is not None
     assert canceled_fill is not None
-    assert expired_fill.props["broker_status"] == "expired"
-    assert canceled_fill.props["broker_status"] == "canceled"
+    assert "broker_status" not in expired_fill.props
+    assert "broker_status" not in canceled_fill.props
     assert expired_fill.props["drop_reason"] == "unfilled at session end"
+    statuses = sorted(
+        node.props["status"] for node in graph.list_nodes("BrokerOrderStatus")
+    )
+    assert statuses == ["canceled", "expired"]
 
 
 def test_untracked_pipeline_order_is_faulted_after_cancel_attempt() -> None:
@@ -88,6 +92,24 @@ def test_graph_tracked_stop_mismatch_is_faulted_and_exempted() -> None:
     stop_fact(graph, key, "SAFE", f"broker:{key}")
     broker = TrackingBroker(
         broker_fills=(broker_order(key, "SAFE", side="sell", order_type="limit"),)
+    )
+    sink = GraphFaultSink(graph, CollectingFaultSink())
+
+    dropped = sweep_unfilled_orders(graph, broker, sink, run_id="new-run")
+
+    assert dropped == 0
+    assert broker.cancelled == []
+    assert graph.list_nodes("Fault")[0].props["error_type"] == (
+        "BrokerStopIdentityMismatch"
+    )
+
+
+def test_broker_stop_mismatch_is_faulted_and_exempted() -> None:
+    """EXEC-NEV-01 / EXEC-NEV-03: broker stop mismatch keeps risk protection."""
+    graph = InMemoryGraphStore()
+    key = "old-run:SAFE:sell"
+    broker = TrackingBroker(
+        broker_fills=(broker_order(key, "SAFE", side="sell", order_type="stop_limit"),)
     )
     sink = GraphFaultSink(graph, CollectingFaultSink())
 

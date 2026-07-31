@@ -63,6 +63,25 @@ def test_broker_evidence_overrides_the_submit_time_status() -> None:
     assert outcomes.statuses == ("rejected",)
 
 
+def test_drop_reason_is_resolved_unfilled_without_broker_status() -> None:
+    """DL-59 / EXEC-OBS-02: dropped decisions do not need mutable status props."""
+    graph = InMemoryGraphStore()
+    run = _run(
+        graph,
+        {
+            "AAPL": {
+                "status": "pending",
+                "drop_reason": "unfilled at session end",
+            }
+        },
+    )
+
+    outcomes = fill_outcomes(graph, run)
+
+    assert (outcomes.filled, outcomes.unfilled, outcomes.unresolved) == (0, 1, 0)
+    assert outcomes.statuses == ("dropped",)
+
+
 def test_a_run_with_no_orders_reports_nothing_to_resolve() -> None:
     graph = InMemoryGraphStore()
     run = _run(graph, {})

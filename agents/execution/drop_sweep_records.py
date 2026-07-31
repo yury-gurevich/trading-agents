@@ -28,7 +28,7 @@ def record_drop(
     sink: FaultSink,
     order: BrokerFill,
     fill: Node | None,
-    broker_status: str,
+    drop_status: str,
 ) -> bool:
     """Append drop evidence for one broker order if its Fill chain exists."""
     if fill is None:
@@ -39,9 +39,6 @@ def record_drop(
         "Fill",
         fill.key,
         {
-            "broker_status": broker_status,
-            "broker_status_broker_order_id": order.broker_order_id,
-            "broker_status_refreshed_at": dropped_at,
             "drop_reason": DROP_REASON,
             "dropped_at": dropped_at,
         },
@@ -54,7 +51,7 @@ def record_drop(
             "ticker": order.ticker,
             "quantity": order.quantity,
             "broker_order_id": order.broker_order_id,
-            "status": broker_status,
+            "status": drop_status,
             "reason": DROP_REASON,
             "created_at": dropped_at,
         },

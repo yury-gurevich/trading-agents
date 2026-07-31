@@ -131,6 +131,15 @@ def sync_run_request(
 ) -> None:
     """Write a run-start broker snapshot and link it to its RunRequest."""
     sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
+    run_id = run_request_id(node)
+    with fault_boundary(
+        sink,
+        agent="execution",
+        module="agents.execution.poll",
+        capability="drop_unfilled_orders",
+        reraise=False,
+    ):
+        sweep_unfilled_orders(graph, broker, sink, run_id=run_id)
     with fault_boundary(
         sink,
         agent="execution",
@@ -138,8 +147,6 @@ def sync_run_request(
         capability="position_sync",
         reraise=False,
     ) as capture:
-        run_id = run_request_id(node)
-        sweep_unfilled_orders(graph, broker, sink, run_id=run_id)
         snapshot = reconcile_run_start(graph, broker, sink, run_id=run_id)
         if snapshot is not None:
             graph.add_edge(node, snapshot, SNAPSHOT_REFRESH_EDGE)

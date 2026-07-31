@@ -24,7 +24,9 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 _FILLED = frozenset({"filled", "partial"})
-_RESOLVED_UNFILLED = frozenset({"rejected", "canceled", "cancelled", "expired"})
+_RESOLVED_UNFILLED = frozenset(
+    {"rejected", "canceled", "cancelled", "expired", "dropped"}
+)
 _PM_EDGE = "EXECUTED_BY"
 _ORDER_EDGE = "EMITTED_BY"
 
@@ -108,5 +110,7 @@ def _run_fills(graph: GraphStore, execution_run: Node) -> tuple[Node, ...]:
 
 def _effective_status(fill: Node) -> str:
     """Broker evidence wins over the status recorded at submit time."""
+    if fill.props.get("drop_reason"):
+        return "dropped"
     status = fill.props.get("broker_status") or fill.props.get("status")
     return str(status or "unknown")

@@ -2,7 +2,7 @@
 
 | Clause | Status | Test |
 | --- | --- | --- |
-| RPT-IDN-01 | ⬜ | — |
+| RPT-IDN-01 | 🟩 | `test_metrics_narrative.py::test_dropped_decision_is_visible_but_not_rejected` |
 | RPT-IDN-02 | ⬜ | — |
 | RPT-IN-01 | 🟩 | `test_report_and_narrative_return_payloads_and_write_graph_nodes` |
 | RPT-IN-02 | ⬜ | — |
@@ -31,7 +31,7 @@
 | RPT-FAIL-02 | ⬜ | — |
 | RPT-FAIL-03 | ⬜ | — |
 | RPT-TYP-01 | 🟩 | `test_report_snapshot_is_deserializable` |
-| RPT-TYP-02 | ⬜ | — |
+| RPT-TYP-02 | 🟩 | `test_metrics_narrative.py::test_dropped_decision_is_visible_but_not_rejected` |
 | RPT-SEC-01 | ⬜ | — |
 | RPT-SEC-02 | ⬜ | — |
 | RPT-DEP-01 | ⬜ | — |
@@ -43,4 +43,4 @@
 | RPT-PERF-02 | ⬜ | — |
 | RPT-CAP | ⬜ | — |
 
-**Green: 17 / 40**
+**Green: 19 / 40**

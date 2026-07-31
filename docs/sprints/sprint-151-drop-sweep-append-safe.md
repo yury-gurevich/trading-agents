@@ -239,7 +239,12 @@ report it — do not restore the overwrite.** That would be a real finding and i
 Leave `trade_outcomes.py:45` alone. It is now belt-and-braces rather than load-bearing; removing it
 is a separate judgement with its own coverage consequences, and it is not this sprint's job.
 
-**Result:**
+**Result:** Done. `record_drop` no longer writes `broker_status`,
+`broker_status_broker_order_id`, or `broker_status_refreshed_at` to `Fill`. Drop evidence now stays
+on `Fill.drop_reason` / `Fill.dropped_at` plus the append-only `BrokerOrderStatus` drop fact. I also
+found a fifth consumer, `orchestration/packs/trading_fill_outcomes.py`; it did not need
+`broker_status="canceled"`, but it did need to treat `drop_reason` as resolved-unfilled evidence, so
+it now reads the real drop path instead of requiring a mutable status prop.
 
 ### 2 · One bad order must not abort the sweep
 
@@ -251,7 +256,10 @@ Bring the resolved-drop path up to the containment the cancel path already has.
 - `mark_execution_runs` (line 62) must not be able to take down a sweep that otherwise succeeded.
 - The sweep's return value (`dropped`) must stay truthful — a contained failure is **not** a drop.
 
-**Result:**
+**Result:** Done. `sweep_unfilled_orders` wraps each order in its own `fault_boundary`, including the
+resolved-drop branch, and wraps `mark_execution_runs` separately. The return count is incremented
+only for drops whose evidence was recorded; a contained cancellation/read/roll-up failure records a
+Fault and the loop continues.
 
 ### 3 · 🎯 A sweep failure must never cost the snapshot
 
@@ -277,7 +285,11 @@ Consider ordering as a *secondary* hardening and say what you chose and why: run
 itself (the sweep would still be permanently broken and silently dropping nothing), so it does not
 replace items 1–3 — but if you find it strictly safer, take it and record the reasoning.
 
-**Result:**
+**Result:** Done. `sync_run_request` now computes `run_id`, runs the sweep inside a dedicated
+`drop_unfilled_orders` boundary, and then runs `reconcile_run_start` / snapshot linking inside the
+existing `position_sync` boundary. I kept the sweep before reconciliation rather than moving snapshot
+first because `reconcile_run_start` also refreshes broker fill statuses; the separate boundary gives
+the snapshot the protection without changing that established status-refresh order.
 
 ### 4 · The evidence must still be visible end to end
 
@@ -288,7 +300,9 @@ A drop that no report shows is a drop nobody can audit.
 - Prove it through the **real** path (`drop_reason`), not through the property this sprint stops
   writing.
 
-**Result:**
+**Result:** Done. Reporter dropped counts and trade outcomes are proven through `drop_reason` with no
+synthetic `broker_status="canceled"`. `ExecutionRun.dropped` is still written by the sweep roll-up,
+and the acceptance pack now classifies `drop_reason` as resolved-unfilled.
 
 ### 5 · Re-prove the vocabulary, including properties
 
@@ -300,7 +314,10 @@ it. Prove that rather than assume it:
 - run `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py`, paste the output;
 - keep a planted-undeclared-write rejection in the suite so the guard is proven awake, not quiet.
 
-**Result:**
+**Result:** Done. `uv run python scripts\vocabulary_coverage.py` exited 0 with no stdout.
+`uv run python scripts\vocabulary_signatures.py` exited 0 with no stdout. The planted undeclared
+property/label/edge rejection suite still passes (`tests/test_graph_vocabulary_completeness.py` and
+`tests/test_graph_vocabulary.py`).
 
 ### 6 · Record the drift you find (do not fix it here)
 
@@ -309,7 +326,9 @@ no durable drop evidence. This sprint **changes what that evidence is**. Decide 
 true: DRIFT-026 already covers it (append a note), or the append-only state model for drop evidence
 is a distinct gap needing its own row. **Do not edit any `laws.md`.**
 
-**Result:**
+**Result:** Done. DRIFT-026 already covers the missing ADR-0018 drop output/evidence law; I appended
+an S151 note there naming the narrowed evidence shape. No `laws.md` file was edited, and no new
+drift row was opened.
 
 ---
 
@@ -488,19 +507,29 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `agents/execution/drop_sweep_records.py` | | | |
-| `agents/execution/drop_sweep.py` | | | |
-| `agents/execution/poll.py` | | | |
-| `agents/execution/reconciliation_store.py` (read-only) | | | |
-| `kernel/graph_support.py` (read-only) | | | |
-| `agents/reporter/domain/*` | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `agents/execution/drop_sweep_records.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; ADR-0014; ADR-0018; DL-79 | `EXEC-IDN-02`, `EXEC-OUT-01`, `EXEC-STA-03`, `EXEC-TYP-02`, `EXEC-OBS-01`, `EXEC-OBS-02`; DRIFT-026 covers law silence for durable drop evidence | Yes - the lawful fix is to stop writing raw broker reasons into `broker_status`; drop evidence must remain append-safe on `drop_reason` / `dropped_at` plus a new status fact node. |
+| `agents/execution/drop_sweep.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; ADR-0015; ADR-0018; DL-71; DL-79 | `EXEC-IDN-01`, `EXEC-NEV-03`, `EXEC-FAIL-01`, `EXEC-FAIL-02`, `EXEC-IDM-02`, `EXEC-OBS-02`, `DEP-BROKER-01`, `DEP-BROKER-02` | Yes - containment must be per order and the count must include only drops actually recorded; resting broker stops remain exempt. |
+| `agents/execution/poll.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/dependencies.md`; ADR-0014; ADR-0018; DL-71; DL-79 | `EXEC-IDN-01`, `EXEC-STA-03`, `EXEC-FAIL-02`, `EXEC-FAIL-03`, `EXEC-OBS-02`, `DEP-BROKER-01`; DRIFT-025 covers law silence for `BrokerPositionSnapshot` ownership | Yes - the sweep is cleanup and must have its own fault boundary so the run-start snapshot is still written and linked. |
+| `agents/execution/reconciliation_store.py` (read-only) | `agents/execution/laws/laws.md`; ADR-0014; DL-79 | `EXEC-STA-03`, `EXEC-TYP-02`, `EXEC-OBS-01`, `EXEC-OBS-02` | Yes - its `broker_status` write-if-absent guard is a useful precedent but not the chosen fix, because it would leave two vocabularies in one property. |
+| `kernel/graph_support.py` (read-only) | `docs/laws/conventions.md`; `docs/laws/dependencies.md`; ADR-0014; DL-79 | `DEP-POSTGRES-03`, law conventions section 3, ADR-0014 append-only system-of-record decision | No - the append-only guard is correct and must not be weakened. |
+| `agents/reporter/domain/*` | `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; ADR-0018; DL-57; DL-59; DL-79 | `RPT-IDN-01`, `RPT-OUT-02`, `RPT-NEV-02`, `RPT-STA-01`, `RPT-OBS-01` | Yes - reporter must stay read-only and prove visibility from `drop_reason`, not from the removed `broker_status` write. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/dependencies.md`; DL-70; DL-79 | Law conventions sections 3 and 7; `DEP-POSTGRES-03`; DL-70 planted-violation rule | No - removing writes should not require pack expansion, but the vocabulary scripts and planted rejection must prove the guard is awake. |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found before implementation.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+Execution's LOCKED law remains silent on ADR-0018 dropped-decision output and durable drop evidence; DRIFT-026 already covers that gap. Execution law is also silent on `BrokerPositionSnapshot`; DRIFT-025 already covers that existing S147/S120 gap. No new row opened before implementation.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+`EXEC-FAIL-03` is now mapped to
+`test_drop_sweep_append_safe.py::test_rollup_failure_is_contained_after_drops_are_recorded`.
+`RPT-IDN-01` and `RPT-TYP-02` are now mapped to
+`test_metrics_narrative.py::test_dropped_decision_is_visible_but_not_rejected`. Ledger counts were
+reconciled to execution 31/49 and reporter 19/40.
 
 ---
 
@@ -508,40 +537,112 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| B5 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| E1 | | | | |
-| E2 | | | | |
-| E3 | | | | |
+| A1 | `test_2026_07_30_collision_records_drop_without_status_rewrite` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-STA-03`, `EXEC-OBS-02` |
+| A2 | `test_2026_07_30_collision_records_drop_without_status_rewrite` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-STA-03`, `EXEC-OBS-02` |
+| A3 | `test_never_reconciled_drop_does_not_create_broker_status` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-STA-03`, `EXEC-OBS-02` |
+| A4 | `test_append_only_store_still_rejects_direct_status_overwrite` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-STA-03`, `DEP-POSTGRES-03` |
+| A5 | `test_sweep_is_idempotent_for_same_run` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-IDM-01`, `EXEC-STA-03` |
+| A6 | `test_ten_legacy_reconciled_fills_sweep_cleanly` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-FAIL-01`, `EXEC-OBS-02` |
+| B1 | `test_sweep_failure_never_costs_the_snapshot` | `agents/execution/tests/test_position_sync_drop_sweep.py` | Passed | `EXEC-FAIL-02`, `EXEC-OBS-02` |
+| B2 | `test_cancel_failure_is_contained_and_other_orders_continue` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-FAIL-01`, `EXEC-FAIL-02` |
+| B3 | `test_broker_read_failure_records_fault_and_returns_empty` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-FAIL-02`, `EXEC-OBS-02` |
+| B4 | `test_rollup_failure_is_contained_after_drops_are_recorded` | `agents/execution/tests/test_drop_sweep_append_safe.py` | Passed | `EXEC-FAIL-03`, `EXEC-OBS-02` |
+| B5 | `test_legacy_drop_collision_through_poll_completes_position_sync` | `agents/execution/tests/test_position_sync_drop_sweep.py` | Passed | `EXEC-STA-03`, `EXEC-IDM-02` |
+| C1 | `test_poisoned_drop_sweep_still_reaches_reporter` | `orchestration/tests/test_drop_sweep_cascade.py` | Passed | `EXEC-FAIL-02`, `DL-79` |
+| C2 | `test_legacy_colliding_fill_runs_end_to_end_and_records_drop` | `orchestration/tests/test_drop_sweep_cascade.py` | Passed | `EXEC-STA-03`, `EXEC-OBS-02` |
+| D1 | `test_dropped_decision_is_visible_but_not_rejected` | `agents/reporter/tests/test_metrics_narrative.py` | Passed | `RPT-IDN-01`, `RPT-NEV-01`, `RPT-TYP-02` |
+| D2 | `test_dropped_sell_is_not_counted_as_realized_loss` | `agents/reporter/tests/test_trade_outcomes.py` | Passed | `RPT-OUT-02`, `RPT-NEV-03` |
+| D3 | `test_sweep_cancels_prior_run_order_and_records_drop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-STA-03`, `EXEC-OBS-02`, `EXEC-FAIL-01` |
+| E1 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-NEV-01`, `EXEC-NEV-03` |
+| E2 | `test_graph_tracked_stop_mismatch_is_faulted_and_exempted`; `test_broker_stop_mismatch_is_faulted_and_exempted` | `agents/execution/tests/test_drop_sweep_edges.py` | Passed | `EXEC-NEV-01`, `EXEC-NEV-03` |
+| E3 | `test_sweep_exempts_resting_stops_and_prefixless_stop` | `agents/execution/tests/test_drop_sweep.py` | Passed | `EXEC-NEV-01`, `EXEC-NEV-03` |
 
 **Tests added beyond the plan:**
 
+`orchestration/tests/test_trading_fill_outcomes.py::test_drop_reason_is_resolved_unfilled_without_broker_status` covers the fifth consumer found during implementation.
+
 **Tests changed because they encoded the old spec:**
 
+`agents/execution/tests/test_drop_sweep.py::test_sweep_cancels_prior_run_order_and_records_drop` and
+`agents/execution/tests/test_drop_sweep_edges.py::test_resolved_rejected_order_is_recorded_as_drop_without_cancel`
+previously asserted `Fill.broker_status == "canceled"/"expired"`. They now assert the status props
+are not written by the sweep and that the raw terminal status is captured in `BrokerOrderStatus`.
+Reporter tests were also narrowed to prove `drop_reason` without a synthetic canceled broker status.
 ---
 
 ## Closeout — evidence
 
 **Files changed:**
 
+- `agents/execution/drop_sweep_records.py`
+- `agents/execution/drop_sweep.py`
+- `agents/execution/poll.py`
+- `orchestration/packs/trading_fill_outcomes.py`
+- `agents/execution/tests/test_drop_sweep.py`
+- `agents/execution/tests/test_drop_sweep_edges.py`
+- `agents/execution/tests/test_drop_sweep_append_safe.py`
+- `agents/execution/tests/test_position_sync_drop_sweep.py`
+- `orchestration/tests/test_drop_sweep_cascade.py`
+- `orchestration/tests/test_trading_fill_outcomes.py`
+- `agents/reporter/tests/test_metrics_narrative.py`
+- `agents/reporter/tests/test_trade_outcomes.py`
+- `agents/execution/laws/test-plan.md`
+- `agents/reporter/laws/test-plan.md`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `docs/laws/drift-register.md`
+- `docs/STATE.md`
+- `docs/sprints/sprint-151-drop-sweep-append-safe.md`
+- `pyproject.toml`
+- `uv.lock`
+
 **Proven (LAW-02):**
 
+- Version bump: `pyproject.toml` is `0.84.01`; `uv lock` completed and updated the local package
+  entry in `uv.lock` from `0.84.0` to normalized `0.84.1`.
+- Focused S151 test run:
+  `uv run pytest agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_drop_sweep_edges.py agents/execution/tests/test_drop_sweep_append_safe.py agents/execution/tests/test_position_sync_poll.py agents/execution/tests/test_position_sync_drop_sweep.py orchestration/tests/test_drop_sweep_cascade.py orchestration/tests/test_trading_fill_outcomes.py agents/reporter/tests/test_metrics_narrative.py agents/reporter/tests/test_trade_outcomes.py --no-cov`
+  -> `49 passed in 2.47s`.
+- Stop mismatch follow-up focused run:
+  `uv run pytest agents/execution/tests/test_drop_sweep_edges.py agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_drop_sweep_append_safe.py agents/execution/tests/test_position_sync_drop_sweep.py orchestration/tests/test_drop_sweep_cascade.py --no-cov`
+  -> `22 passed in 2.34s`.
+- Focused ruff: `uv run ruff check ...` on touched S151 Python paths -> `All checks passed!`.
+- Focused mypy: `uv run mypy ...` on 13 changed source/test files -> `Success: no issues found in 13 source files`.
+- Vocabulary scripts:
+  `uv run python scripts\vocabulary_coverage.py` -> exit 0, no stdout.
+  `uv run python scripts\vocabulary_signatures.py` -> exit 0, no stdout.
+- Vocabulary planted guard proof:
+  `uv run pytest tests/test_graph_vocabulary_completeness.py tests/test_graph_vocabulary.py --no-cov`
+  -> `25 passed in 5.87s`.
+- Module size on touched Python files -> exit 0; warnings only, no hard-blocked file.
+- Full local gate:
+  `make ci` -> exit 0.
+  Key output: ruff passed; format check `863 files already formatted`; mypy `Success: no issues found in 723 source files`; import-linter `4 kept, 0 broken`; module-size warnings only; module-header passed; pytest `1983 passed, 5 skipped`, `Total coverage: 100.00%`; `pip-audit` `No known vulnerabilities found`; detect-secrets tracked and untracked scans passed.
+
 **Not met / verified failing:**
+
+- Remote GitHub gates are not yet proven in this first local closeout edit; branch push and remote
+  gate verification are the next handback steps.
+- Fleet deploy, `v0.84.01` tag, `:s151` retag, daytime production resume, and live nine-stop proof
+  are explicitly operator sequencing after merge, not performed by this coding handback.
 
 ---
 
 ## Return notes
+
+- Branch: `sprint-151-drop-sweep-append-safe`, based on `origin/main` `f788607`; `origin/main` had
+  not moved at local closeout.
+- I kept the sweep before reconciliation but split its fault boundary from the snapshot. Reordering
+  snapshot first would also protect the foundation, but `reconcile_run_start` refreshes broker fill
+  statuses; keeping the order preserves the existing status-refresh semantics while making cleanup
+  unable to stall `position_sync`.
+- The fifth consumer found during implementation was
+  `orchestration/packs/trading_fill_outcomes.py`; it now treats `drop_reason` as resolved-unfilled
+  evidence, so the removed `broker_status="canceled"` write is not restored.
+- Updated old-spec assertions:
+  `agents/execution/tests/test_drop_sweep.py::test_sweep_cancels_prior_run_order_and_records_drop`
+  stopped expecting `Fill.broker_status == "canceled"` and now checks the `BrokerOrderStatus` drop
+  fact. `agents/execution/tests/test_drop_sweep_edges.py::test_resolved_rejected_order_is_recorded_as_drop_without_cancel`
+  stopped expecting `"expired"` / `"canceled"` on `Fill.broker_status` and now checks the append-only
+  status facts.
+  Reporter tests were also narrowed so `drop_reason` alone proves the metrics/PnL path.

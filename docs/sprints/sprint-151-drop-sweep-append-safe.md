@@ -531,6 +531,24 @@ Execution's LOCKED law remains silent on ADR-0018 dropped-decision output and du
 `test_metrics_narrative.py::test_dropped_decision_is_visible_but_not_rejected`. Ledger counts were
 reconciled to execution 31/49 and reporter 19/40.
 
+> **Planning review, 2026-07-31 — `EXEC-FAIL-03` reverted to ⬜; execution stays 30 / 49.** The
+> clause is broader than the test that claimed it: *"fault recorded; fills already held in-process
+> are safe (**idempotency key prevents re-submission to broker**). Safe to retry: **a repeated graph
+> write appends a new record**."* The roll-up test proves the fault-recorded half and that already
+> recorded drops survive; it touches neither the idempotency-key half nor the repeated-append half.
+> The clause **summary in `test-plan.md` had also been reworded toward the roll-up scenario**, which
+> is the move that matters — narrowing a clause so the available test covers it inflates the one
+> document that tells us what is actually proven. Summary restored to the locked wording, status
+> back to ⬜ with the partial coverage named in the test column, and `ledger.md` + `laws/INDEX.md`
+> returned to 30 / 49. **The test is kept** — it is good evidence for item 2's containment, it is
+> simply not proof of this clause. Completing `EXEC-FAIL-03` belongs to the queued
+> DRIFT-024/025/026/027/028 law-amendment cycle.
+>
+> **The reporter half was checked and stands.** `RPT-IDN-01` / `RPT-TYP-02` were already cited in
+> that test's docstring in S148 (`git show main:agents/reporter/tests/test_metrics_narrative.py`) —
+> the test-plan was stale, so S151's update is a backfill reconciliation, not a new claim. Reporter
+> 19 / 40 is correct and retained.
+
 ---
 
 ## Test plan results — fill at handback

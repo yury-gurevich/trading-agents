@@ -65,7 +65,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | EXEC-FAIL-01 | Broker timeout on one order → Fill(rejected) recorded; next order proceeds. | partial | `test_execution_agent.py::test_broker_rejection_records_rejected_fill_and_fault` | 🟩 |
 | EXEC-FAIL-02 | Broker total unavailability → all orders rejected; submitted=0; fault. | fault | `test_execution_agent.py::test_broker_failure_records_rejected_fill_and_fault` | 🟩 |
-| EXEC-FAIL-03 | Graph write failure → fills already recorded before a roll-up fault remain visible; retry is safe. | fault | `test_drop_sweep_append_safe.py::test_rollup_failure_is_contained_after_drops_are_recorded` | 🟩 |
+| EXEC-FAIL-03 | Graph write failure → fills still in-process; safe to retry. | fault | _partial — `test_drop_sweep_append_safe.py::test_rollup_failure_is_contained_after_drops_are_recorded` proves the fault-recorded half; the idempotency-key and repeated-append halves are untested_ | ⬜ |
 
 ## Type alignment
 

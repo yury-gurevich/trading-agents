@@ -41,7 +41,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | analyst | ✅ LOCKED v1 (S70) | 26 / 43 | S150 proved stop/target determinism and type bounds |
 | scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
-| execution | ✅ LOCKED v1 (S70) | 31 / 49 | |
+| execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | reporter | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | forecaster | ✅ LOCKED v1 (S71) | 15 / 46 | |

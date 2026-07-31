@@ -40,7 +40,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | analyst | ✅ v1 (LOCKED) | 26 / 43 | 🟨 partial — 26 clauses green (S150 stop/target citation pass); 17 gap-tests remain ⬜ |
 | forecaster | ✅ v1 (LOCKED) | 16 / 46 | 🟨 partial — 16 clauses green (S99 served-entrypoint pass); 30 gap-tests remain ⬜ |
 | portfolio_manager | ✅ v1 (LOCKED) | 24 / 43 | 🟨 partial — 24 clauses green (S150 RR-invariance citation pass); 19 gap-tests remain ⬜ |
-| execution | ✅ v1 (LOCKED) | 31 / 49 | 🟨 partial — 31 clauses green (S151 citation pass); 18 gap-tests remain ⬜ |
+| execution | ✅ v1 (LOCKED) | 30 / 49 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
 | monitor | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S71 citation pass); 21 gap-tests remain ⬜ |
 | reporter | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S151 citation pass); 21 gap-tests remain ⬜ |
 | researcher | ✅ v1 (LOCKED) | 19 / 44 | 🟨 partial — 19 clauses green (S99 served-entrypoint pass); 25 gap-tests remain ⬜ |

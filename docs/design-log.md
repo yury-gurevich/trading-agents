@@ -4138,4 +4138,32 @@ every other. This reframes the fix — it is not "wire deliberation into the fle
 "build the three researcher instances the design always called for", and the harness becomes the
 reasoning core they share rather than the thing that runs.
 
+**LAW-06 finding, same session — the embodiment decision was never recorded.** The operator
+recalls deciding "ages ago" that, because the three debate roles are so similar, they would ship as
+**one image with the role distributed**, and that **one researcher instance activates the other
+two**. A search of `design-log.md`, every ADR, every sprint doc, both state archives, the
+researcher's `mission.md` and its LOCKED `laws.md` finds **no trace of it**. What *is* recorded is
+the debate's *structure* (S109: Defender/Challenger/Judge, per-role models) — never its
+embodiment. Per LAW-06 a decision discussed but unrecorded is treated as not-yet-made, so this is
+the second time in one investigation that the gap was not the thinking but the capture.
+
+**And the name collides with a different agent.** The `researcher` that exists is the
+parameter-improvement researcher — *"mine accumulated evidence for parameter and strategy
+improvements and propose bounded, measurable changes into the human-review queue — never apply
+them"* — owning `Experiment` and `ParamChange`, with LOCKED v1 laws. Debating a PM order is not
+that mission. So "three copies of the researcher agent" resolves to one of two materially different
+designs, and the choice is the operator's:
+
+- **(a) Broaden the researcher.** One image, one agent identity, a `role` parameter selecting
+  manager/proponent/opponent, and its mission + LOCKED laws amended to cover adversarial review of a
+  proposed order. Cheapest in infrastructure, but it makes one agent responsible for two unrelated
+  jobs and requires a law amendment on top of the five already owed (see S152).
+- **(b) A new `deliberator` agent that reuses the pattern.** One image, three instances, role by
+  parameter — exactly the shape the operator described — but its own identity, mission and laws,
+  leaving the researcher's mission intact. Costs a new agent bundle; keeps both missions honest and
+  is the better fit for `ops/agent-genesis.md`.
+
+Either way the debate roles stay one image with a distributed role, and one instance activates the
+other two, because that part is settled — it simply had never been written down.
+
 ---

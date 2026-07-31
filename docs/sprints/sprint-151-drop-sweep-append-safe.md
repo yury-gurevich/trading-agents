@@ -621,8 +621,10 @@ Reporter tests were also narrowed to prove `drop_reason` without a synthetic can
 
 **Not met / verified failing:**
 
-- Remote GitHub gates are not yet proven in this first local closeout edit; branch push and remote
-  gate verification are the next handback steps.
+- Remote GitHub gates for pushed implementation commit `6779efd` are green: CI run `30604818156`
+  completed `success` with `quality` job `91074823371`, `test` job `91074896322`, and `security`
+  job `91074823376` green; Security Findings run `30604818167` completed `success` with `gate`
+  job `91074823389` green.
 - Fleet deploy, `v0.84.01` tag, `:s151` retag, daytime production resume, and live nine-stop proof
   are explicitly operator sequencing after merge, not performed by this coding handback.
 
@@ -632,6 +634,9 @@ Reporter tests were also narrowed to prove `drop_reason` without a synthetic can
 
 - Branch: `sprint-151-drop-sweep-append-safe`, based on `origin/main` `f788607`; `origin/main` had
   not moved at local closeout.
+- Pushed implementation commit: `6779efd` (`fix: make drop sweep append safe`); remote CI
+  `30604818156` and Security Findings `30604818167` were both green before this docs-only evidence
+  update.
 - I kept the sweep before reconciliation but split its fault boundary from the snapshot. Reordering
   snapshot first would also protect the foundation, but `reconcile_run_start` refreshes broker fill
   statuses; keeping the order preserves the existing status-refresh semantics while making cleanup

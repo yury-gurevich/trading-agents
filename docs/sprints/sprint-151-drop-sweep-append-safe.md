@@ -669,3 +669,17 @@ Reporter tests were also narrowed to prove `drop_reason` without a synthetic can
   stopped expecting `"expired"` / `"canceled"` on `Fill.broker_status` and now checks the append-only
   status facts.
   Reporter tests were also narrowed so `drop_reason` alone proves the metrics/PnL path.
+
+---
+
+## Production proof — planning agent, 2026-07-31
+
+The handback's two open items are now closed, and closed **by observation, not by deploy**.
+
+- **Deployed.** Fleet `:s148` → **`:s151`**, 14/14 `Succeeded` (13 apps + `dispatcher-cron`), images built 14/14 by run `30607835286` at commit `410830f`, env vars and KEDA rules intact, `DeployRecord deploy:2026-07-31T05:56:51Z:s151:410830f` written **after** tag verification.
+- **Proven live.** The stalled `sched-2026-07-30` was resumed in a manual daytime window (no new `RunRequest` minted — the pending one was still unconsumed, which is graph-pull working as designed) and went **2/8 → 8/8, `ACCEPTANCE PASS`**. `position_sync` `status=fresh`, one snapshot. **11** `Fill` nodes gained `drop_reason`/`dropped_at` with **11** matching `BrokerOrderStatus` drop facts, and **all 11 still read `broker_status=rejected`** — A2's assertion holding on production data. **Zero** `cannot be overwritten` faults, against 5,762 the night before.
+- **E3 held in production.** 9 positions / 9 open orders / **9 resting `gtc` stops**, submit timestamps unchanged from 07-28/07-30 — never touched, not re-placed — and **0 non-stop open orders** left behind.
+- **Scope of the proof, stated honestly.** The analyst returned nine holds, so the PM approved nothing and **no orders were placed**. That makes this a clean *structural* proof — sweep, snapshot, cascade, stop exemption — and **not** a proof of the trading path or of a real ADR-0018 drop rate. The 11 drops are the 07-22/07-23 backlog clearing at once; the per-session rate starts accruing on tonight's scheduled run.
+- **Torn down.** Manual scale window closed and verified: all 13 apps back to `minReplicas=0`, cron rules intact (12 `daily-agent-window` + 1 `daily-master-window`). Run `sched-2026-07-30` retained — it is production lineage (DL-44).
+
+Recorded in [`docs/laws/functionality-checks.md`](../laws/functionality-checks.md).

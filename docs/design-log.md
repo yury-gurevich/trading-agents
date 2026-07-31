@@ -4056,3 +4056,61 @@ sweep, so expect **~10 drops, not ~3**. That number is not the ADR-0018 drop rat
 per-session rate is only measurable from the second clean run onward.
 
 ---
+
+## DL-80 · Five deployed agents have never run, and the LLM veto has never vetoed · status: OPEN (operator escalated 2026-07-31)
+
+**The finding.** A live-graph inventory taken while enabling S144 shows **zero** nodes for
+`DeliberationRun`, `ForecasterRun`, `TrainingExample`, `Dataset`, `Predictor`,
+`ShadowPrediction`, `PredictorPromotion`, `Experiment`, `Escalation` and `RemediationPlan`.
+The core pipeline is healthy — 22 each of `RunRequest` → `MarketData` → `ScanRun` → `AnalystRun`
+→ `PMRun` → `ExecutionRun`, 44 `MonitorRun`, 22 `Snapshot` — so this is not an outage. It is a
+capability that was built, deployed, described as live, and never wired to anything.
+
+**The LLM veto has never run in production. Not once.** All 25 `LLMCall` nodes carry a single
+edge shape, `CommandAudit -PRODUCED_BY-> LLMCall`: they are operator-chat calls (S125), and the
+newest is **2026-07-15**, sixteen days before this was found. `agents/execution/poll.py::_drop_vetoed`
+is *documented* fail-open — "No DeliberationRun (the veto stage did not run) → the full set
+executes, so an absent or failed review never blocks trading." That design is defensible; what is
+not is that **the fail-open branch is the only branch that has ever executed.** Every order this
+system has submitted went to the broker unvetoed.
+
+**Root cause — two different gaps wearing one symptom.**
+
+1. *Deliberation is not an agent.* It lives in `orchestration/veto.py` and is wired only into
+   `orchestration/local_pipeline.py`, the local/manual runner. The deployed fleet runs per-agent
+   graph-pull entrypoints, and **no entrypoint calls `veto.find_pending`**. There is no image, no
+   app, and no work source for it.
+2. *Five agents are served, not pulled.* Only **seven** of the thirteen deployed apps have a
+   graph-pull work loop (provider, scanner, analyst, portfolio_manager, execution, monitor,
+   reporter). `forecaster`, `curator`, `operator`, `researcher` and `supervisor` have entrypoints
+   with **no `find_pending` loop** — they serve Service Bus request/reply (proven in S102). Nothing
+   in the nightly pipeline ever sends them a request, so they wake, idle, and scale back to zero.
+
+**Why no gate caught it.** `trading_acceptance.py`, `trading_boundaries.py` and
+`trading_observatory.py` contain **no reference to deliberation or the forecaster**. Every run has
+scored `ACCEPTANCE PASS` with both absent. This is the DL-57 / DL-59 pattern a third time: a gate
+reports green on what it does not examine, and "the stage did not run" is indistinguishable from
+"the stage ran and found nothing". The S144 lesson generalises past the vocabulary guard — *a
+capability with no check that can fail is not a capability, it is an intention.*
+
+**Collateral.** DL-63 (0.78.00) moved the default model to `claude-opus-5` and priced it into the
+ledger; since no fleet LLM call has happened since 07-15, **that upgrade has never executed in
+production** — the live calls are all `claude-sonnet-4-6`. STATE's caveat that DL-63 proved only
+the script-side adapter was true but understated: the deployed path is not merely unproven, it is
+unreached. Likewise DL-41/DL-42's compiled judge and challenger are live champions of a stage that
+does not run, and the DL-09/curator training loop has no source data because the curator has never
+been invoked.
+
+**The decision this forces (not yet made).** Deliberation must either become a real fleet
+participant — its own image and graph-pull work source keyed on unvetoed `PMRun` nodes, which is
+the shape every other pipeline agent already uses — or be honestly retired from the architecture
+and from STATE. The same question applies to the forecaster: an advisory input nothing requests is
+not advisory, it is dead code with a container bill. **Whichever way it goes, the acceptance gate
+must gain a check that fails when a declared stage produces nothing**, or the next capability will
+rot the same way with the same green verdict.
+
+**Do not read this as "the trading path is broken."** It is not: the seven-agent pipeline works,
+reconciles, places stops and scores acceptance honestly on what it does cover. The exposure is that
+the risk *review* layer described in the PRD and STATE is absent, and nothing said so.
+
+---

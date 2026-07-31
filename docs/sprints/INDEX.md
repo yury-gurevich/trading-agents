@@ -68,19 +68,20 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 
 ## Adding a sprint
 
-1. Next number: **S147** (S137 SHIPPED `29a36f4`/0.76.00 — exit authority ADR-0017; S138 SHIPPED
-   `043b5a5`/0.77.00 — broker-native stops ADR-0015 §3, fleet `:s142`; S143 SHIPPED `798bfd4`/0.79.00
-   — graph vocabulary guard, DL-66; S144 / 0.80.00 — the guard made deployable and its pack
-   proven complete, DL-68; S145 SHIPPED `2c49f88`/0.80.02 — exit replay append-safe, DL-71,
-   unbricked execution, **PROVEN in production** 2026-07-28 (`7/7`, then a fresh cascade at
-   `ACCEPTANCE PASS`); **S146 SHIPPED** `7b06662`/0.80.03 — the unprotected ABT position and the
-   DL-73 retraction, fleet `:s146`, DRIFT-024 left open). P12 scorecard-run stays queued until
-   ~2 weeks of clean-news nights accumulate. **Next named work: S147 / DL-71 option B is packaged**
-   ([sprint-147](sprint-147-fresh-book-before-decision.md)) — a head-of-run position sync so the
-   analyst never scores a book that is a full run stale; note its urgency was **not** raised by the
-   2026-07-28 audit, which found the position book correct once `is_active_position_node` is used.
-   Then ADR-0018 (drop unfilled orders at session end), and reconciling the 8 `labels_owned`
-   declarations to enable `owners` enforcement.
+1. Next number: **S152** (S143 SHIPPED `798bfd4`/0.79.00 — graph vocabulary guard, DL-66;
+   S144 / 0.80.00 — the guard made deployable and its pack proven complete, DL-68; S145 SHIPPED
+   `2c49f88`/0.80.02 — exit replay append-safe, DL-71; **S146 SHIPPED** `7b06662`/0.80.03 — the
+   unprotected ABT position and the DL-73 retraction; **S147 SHIPPED** `2989acb`/0.81.00 —
+   head-of-run position sync, DRIFT-025; **S148 SHIPPED** `314fb8b`/0.82.00 — ADR-0018 fill-it-or-
+   drop-it, DRIFT-026, **deployed `:s148` 2026-07-30 and its drop sweep stalled the next run**;
+   **S149 SHIPPED** `eee68d1`/0.83.00 — volatility-scaled tolerance challenger, off by default,
+   DRIFT-027; **S150 SHIPPED** `ca97797`/0.84.00 — volatility-scaled stop challenger, off by
+   default, DRIFT-028, DL-78). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
+   accumulate. **Next named work: S151 is packaged and is a live outage fix**
+   ([sprint-151](sprint-151-drop-sweep-append-safe.md), [DL-79](../design-log.md)) — append-safe
+   drop evidence plus the containment that stops a cleanup step costing the run its foundation.
+   Then the **one law-amendment cycle** covering DRIFT-024/025/026/027/028 rather than a sixth
+   register row, and reconciling the 8 `labels_owned` declarations to enable `owners` enforcement.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

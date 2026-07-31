@@ -3964,3 +3964,95 @@ exceed the declared risk cap silently, which is exactly the safety rail the spri
 ATR is still inside the noise band, so the structural problem is reduced, not solved.
 
 ---
+
+## DL-79 - A cleanup step outranked the run's foundation: the drop sweep stalled the fleet · status: ACCEPTED (fix packaged as S151)
+
+**Trigger.** `sched-2026-07-30` - S148's first night on the fleet - reached **2/8 stages** and
+stopped. `ACCEPTANCE FAIL`, six stages `NOT REACHED`. Diagnosed 2026-07-31.
+
+**Everything that normally explains a stall was healthy**, and it is worth recording so the next
+diagnosis does not re-walk it: `dispatcher-cron-29757510` `Succeeded` 22:30:00-22:30:25 UTC and wrote
+`run-request:sched-2026-07-30`; all 13 Container Apps KEDA-activated at 22:30:21, pulled `:s148`, ran
+the full window and deactivated cleanly at 00:34:50; master fetched every Key Vault secret at HTTP
+200 with **zero** `Escalation` nodes; provider served 100/100 tickers, 4,200 bars, 1,920 headlines,
+no `*_degraded` notes. The fleet was fine. The code was not.
+
+**Root cause - two vocabularies in one property.** `BrokerStatus` is a four-value Literal
+(`filled|partial|rejected|pending`, `agents/execution/alpaca_orders.py:22`); Alpaca's raw `canceled`
+is normalised to `status="rejected"` with the raw string kept in `reason`. Reconciliation writes the
+**normalised** value (`reconciliation_store.py:70` -> `broker_status="rejected"`). S148's drop sweep
+writes the **raw reason** into the same property (`drop_sweep_records.py:42` -> `"canceled"`). The
+append-only store permits re-writing the same value and refuses a different one
+(`kernel/graph_support.py:70`), so it refused - correctly.
+
+```text
+ValueError: property 'broker_status' cannot be overwritten
+  agents/execution/drop_sweep.py:43 -> drop_sweep_records.py:38 -> kernel/graph_support.py:71
+```
+
+Ten `Fill` nodes from the 07-22 and 07-23 cancelled runs sit in exactly that state
+(`broker_status=rejected`, `drop_reason=None`) and each is a landmine the sweep steps on.
+
+**The store is not the bug - it is the only component that behaved well.** This is the second time a
+caller has fought it (S145: `property 'price_cents' cannot be overwritten`) and both times the caller
+was wrong. Recorded here because the tempting fix - an overwrite escape hatch for "status-like"
+properties - would destroy the guarantee that what we believed at each moment stays recoverable.
+
+**Why the blast radius was 5,762 faults and not one.** The sweep runs *inside* the same fault
+boundary as `reconcile_run_start` and *before* it (`agents/execution/poll.py:142-145`). So the
+exception cost the `BrokerPositionSnapshot`; the missing snapshot left `position_sync` incomplete;
+S147 correctly gates the analyst on the sync, so stages 3-8 waited on a stage that could never
+finish. The work item stayed pending, `work_loop` retried it every ~1.3 s from 22:30:38 to 00:35:20
+UTC, and each attempt appended an identical `Fault` - **5,762 rows, one cause**. Only the *cancel*
+path inside `sweep_unfilled_orders` has per-order containment; the resolved-drop path (line 43) and
+`mark_execution_runs` (line 62) have none.
+
+**The lesson, which outlives the specific defect.** *A cleanup of yesterday's leftovers may never
+outrank the foundation it runs beside.* Nothing downstream depends on the sweep; everything depends
+on the snapshot. A failed sweep should cost a `Fault` and a night of stale resting orders - the
+pre-S148 world the system ran in for months - never a stalled fleet. This is DL-71's per-item
+containment lesson, which S145 already paid for once, arriving in a new module.
+
+**Why the tests missed it.** Every drop-sweep fixture builds a fresh `Fill` with no prior
+`broker_status`, so the first write always succeeds. The collision needs *history*. That is the
+S143/S144 trailing-indicator lesson one level down: a check built only from what the code has been
+observed to do cannot cover state the code has never been run against. Two tests
+(`test_drop_sweep.py:41`, `test_drop_sweep_edges.py:47-48`) actively assert the defective behaviour -
+correct tests of a wrong spec.
+
+**What held.** Nine positions, nine resting `gtc` broker stops, verified at Alpaca after the outage:
+**none cancelled, none missing.** The ADR-0015 §3 floor survived a two-hour fault storm inside the
+agent that owns it. That is the reason a lost session is survivable rather than dangerous, and it is
+the strongest available evidence for the broker-native stop decision.
+
+**Cost.** One session: no analyst, PM, execution or monitor evaluation. Modest in practice - the
+07-29 run approved 0 (nine `hold_recommendation` skips), so the book was static anyway.
+
+**Decided.** Fix packaged as [S151](sprints/sprint-151-drop-sweep-append-safe.md): drop evidence stops
+writing `broker_status` entirely and lives on `drop_reason`/`dropped_at` plus the append-only
+`BrokerOrderStatus` node that the sweep *already* writes correctly on the next line; per-order
+containment in the sweep; and the sweep gets its own fault boundary so a failure can never cost the
+snapshot. Version is a PATCH (`0.84.01`) - no new capability, the sweep already exists.
+
+**Ruled out.** *Relax the append-only guard* - destroys the evidence model (above). *Write
+`broker_status` only when absent*, copying the `reconciliation_store.py:68` precedent - fixes the
+crash but leaves two vocabularies in one property, the same broker fact under two names decided by
+timing; kept as the fallback if the primary shape proves unworkable. *Widen the `BrokerStatus`
+Literal to include `canceled`/`expired`* - arguably the right model, but a contract change rippling
+through the adapter, reconciler and every consumer: MINOR-sized redesign inside a PATCH-sized outage
+fix, worth reconsidering in a law-amendment cycle. *Only reorder the sweep after the snapshot* -
+the run would survive but the sweep would be permanently broken and silently drop nothing, a green
+run that does not do its job; kept as additional hardening, not as the fix. *Roll back to `:s147`
+and abandon the sweep* - valid as a one-night contingency, rejected as a fix: ADR-0018 addresses the
+largest measured cost in the system (≈ -$2,850 across two exits).
+
+**Left open, deliberately not in S151.** General **fault de-duplication / retry backoff** for a
+work item that fails deterministically. 5,762 rows for one cause is a real problem, but it is a
+kernel/`work_loop` concern affecting every agent; S151 makes it impossible *on this path* by
+construction (a completed snapshot ends the loop) and the general version needs its own sprint.
+
+**First measurement warning.** The ten legacy fills will all be recorded on the first corrected
+sweep, so expect **~10 drops, not ~3**. That number is not the ADR-0018 drop rate; the real
+per-session rate is only measurable from the second clean run onward.
+
+---

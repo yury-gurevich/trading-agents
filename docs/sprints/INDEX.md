@@ -76,12 +76,17 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
    drop-it, DRIFT-026, **deployed `:s148` 2026-07-30 and its drop sweep stalled the next run**;
    **S149 SHIPPED** `eee68d1`/0.83.00 — volatility-scaled tolerance challenger, off by default,
    DRIFT-027; **S150 SHIPPED** `ca97797`/0.84.00 — volatility-scaled stop challenger, off by
-   default, DRIFT-028, DL-78). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
-   accumulate. **Next named work: S151 is packaged and is a live outage fix**
-   ([sprint-151](sprint-151-drop-sweep-append-safe.md), [DL-79](../design-log.md)) — append-safe
-   drop evidence plus the containment that stops a cleanup step costing the run its foundation.
-   Then the **one law-amendment cycle** covering DRIFT-024/025/026/027/028 rather than a sixth
-   register row, and reconciling the 8 `labels_owned` declarations to enable `owners` enforcement.
+   default, DRIFT-028, DL-78; **S151 SHIPPED** `8f57f5f`/0.84.01 — append-safe drop evidence,
+   **deployed `:s151` 2026-07-31, stalled run resumed 2/8 -> 8/8 `ACCEPTANCE PASS`**;
+   **`chore-vocabulary-property-completeness` SHIPPED** `7f05829`/0.84.03 — the vocabulary
+   guard's property dimension proven a superset for the 2 enforced labels, an S144
+   prerequisite). P12 scorecard-run stays queued until ~2 weeks of clean-news nights
+   accumulate. **Next named work: the one law-amendment cycle**
+   ([sprint-152](sprint-152-law-amendment-cycle.md)) covering DRIFT-024/025/026/027/028 rather
+   than a sixth register row — five sprints have each opened one and the fifth crossed into a
+   second agent. Also open: S144's dated fleet enablement, whether to declare properties for
+   the other 51 labels, and
+   reconciling the 8 `labels_owned` declarations to enable `owners` enforcement.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

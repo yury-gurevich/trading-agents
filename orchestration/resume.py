@@ -16,6 +16,7 @@ from orchestration.resume_plan import (
     ARTIFACTS as _ARTIFACTS,
 )
 from orchestration.resume_plan import (
+    SIDE_BRANCH_EDGES,
     ResumeArtifact,
     artifact_parent,
     required_artifacts,
@@ -144,7 +145,7 @@ def _linked_props(
 
 
 def _link_side_branch(graph: GraphStore, clone: Node, source: Node, label: str) -> None:
-    edge = {"AnalystRun": "FORECAST_BY", "PMRun": "DELIBERATED_BY"}.get(label)
+    edge = SIDE_BRANCH_EDGES.get(label)
     if edge is None:
         return
     side = next(iter(graph.descendants(source, max_depth=1, edge_types={edge})), None)

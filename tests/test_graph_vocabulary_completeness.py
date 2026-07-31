@@ -30,6 +30,10 @@ from vocabulary_coverage import scan  # noqa: E402
 from vocabulary_signatures import signatures  # noqa: E402
 
 from kernel.graph_vocabulary import Vocabulary, VocabularyError  # noqa: E402
+from orchestration.resume_plan import (  # noqa: E402
+    SIDE_BRANCH_EDGES,
+    resume_edge_signatures,
+)
 
 _PACK = ROOT / "orchestration" / "packs" / "trading_graph_vocabulary.json"
 
@@ -106,6 +110,32 @@ def test_the_signature_scan_detects_a_shape_no_pack_declares(tmp_path: Path) -> 
     found = signatures(_plant(tmp_path), packages=("planted",))
     assert ("PlantedItem", "PLANTED_EDGE", "PlantedRun") in found
     assert found - _declared_signatures() != set()
+
+
+def test_the_resume_clone_path_declares_every_edge_it_can_write() -> None:
+    """The signature dimension the static scan cannot reach at all.
+
+    `resume.py` merges under `artifact.label` from a descriptor table, so the
+    label never resolves and `vocabulary_signatures` never sees those call
+    sites. The pack's six LINKED_FROM shapes were therefore the ones past
+    resumes happened to produce — S143's trailing indicator, in the dimension
+    S144 believed it had closed. `MonitorRun` and `Snapshot` were missing, and
+    a late-stage resume under the guard would have raised on the *recovery*
+    path. Derived from ARTIFACTS so a new stage cannot reintroduce the gap.
+    """
+    undeclared = resume_edge_signatures() - _declared_signatures()
+    assert undeclared == set(), (
+        f"undeclared resume edge signatures: {sorted(undeclared)}"
+    )
+
+
+def test_the_resume_side_branch_edges_are_declared() -> None:
+    """A resumed clone re-links its forecaster/deliberation branch."""
+    declared = _declared_signatures()
+    for label, edge in SIDE_BRANCH_EDGES.items():
+        assert any(row[0] == label and row[1] == edge for row in declared), (
+            f"no declared signature for {label} -{edge}->"
+        )
 
 
 def test_fill_tolerance_props_are_declared_and_unknown_prop_fails() -> None:

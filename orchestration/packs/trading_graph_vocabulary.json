@@ -227,6 +227,11 @@
     ],
     [
       "MonitorRun",
+      "LINKED_FROM",
+      "MonitorRun"
+    ],
+    [
+      "MonitorRun",
       "REPORTED_BY",
       "Snapshot"
     ],
@@ -239,6 +244,11 @@
       "OrderIntent",
       "EMITTED_BY",
       "PMRun"
+    ],
+    [
+      "PMRun",
+      "DELIBERATED_BY",
+      "DeliberationRun"
     ],
     [
       "PMRun",
@@ -314,6 +324,11 @@
       "ScanRun",
       "LINKED_FROM",
       "ScanRun"
+    ],
+    [
+      "Snapshot",
+      "LINKED_FROM",
+      "Snapshot"
     ],
     [
       "Snapshot",

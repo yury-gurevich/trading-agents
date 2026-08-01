@@ -156,6 +156,19 @@ def test_fill_tolerance_props_are_declared_and_unknown_prop_fails() -> None:
         vocabulary.check_node("Fill", props={**props, "order_tolerence_mode": "flat"})
 
 
+def test_fill_unresolved_pnl_marker_is_declared_and_guarded() -> None:
+    """EXEC-FAIL-03 / DL-70: unresolved-PnL marker is vocabulary-declared."""
+    vocabulary = Vocabulary.from_mapping(_declaration())
+
+    vocabulary.check_node(
+        "Fill", props={"pnl_unresolved_at": "2026-08-01T00:00:00+00:00"}
+    )
+    with pytest.raises(VocabularyError, match="undeclared properties"):
+        vocabulary.check_node(
+            "Fill", props={"pnl_unresolved_timestamp": "2026-08-01T00:00:00+00:00"}
+        )
+
+
 def test_recommendation_stop_target_props_are_declared_and_unknown_prop_fails() -> None:
     """ANLZ-OBS-01 / DL-70: S150 Recommendation props are vocabulary-declared."""
     vocabulary = Vocabulary.from_mapping(_declaration())

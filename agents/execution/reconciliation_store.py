@@ -24,6 +24,7 @@ SnapshotStatus = Literal["fresh", "stale"]
 
 _CENTS = Decimal("100")
 _ONE = Decimal("1")
+_TERMINAL_BROKER_STATUSES = frozenset({"filled", "rejected"})
 
 
 def refresh_pending_fills(
@@ -36,6 +37,8 @@ def refresh_pending_fills(
     }
     for node in graph.list_nodes("Fill"):
         if node.props.get("status") != "pending":
+            continue
+        if node.props.get("broker_status") in _TERMINAL_BROKER_STATUSES:
             continue
         broker_fill = by_key.get(broker_idempotency_key(node)) or by_order_id.get(
             str(node.props.get("broker_order_id", ""))

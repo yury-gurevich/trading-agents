@@ -7,6 +7,7 @@ External I/O: GraphStore writes only through the caller's append path.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from contracts.pnl import realized_pnl_cents
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from kernel import FaultSink, GraphStore, Node
 
 REALIZED_PNL_PROP = "realized_pnl_cents"
+PNL_UNRESOLVED_AT_PROP = "pnl_unresolved_at"
 _EXECUTES_EDGE = "EXECUTES"
 _REALIZED_STATUSES = {"filled", "partial"}
 
@@ -36,14 +38,14 @@ def realized_pnl_props(
     position_ref = _position_ref_from_order(graph, fill_node)
     if position_ref is None:
         _record_unresolved(sink, fill_node, broker_fill, "missing position_ref")
-        return {}
+        return _unresolved_props()
     basis = position_basis_for_ref(
         graph, position_ref=position_ref, ticker=broker_fill.ticker
     )
     pnl = _pnl_from_basis(basis, broker_fill.quantity, exit_price_cents)
     if pnl is None:
         _record_unresolved(sink, fill_node, broker_fill, "entry basis unresolved")
-        return {}
+        return _unresolved_props()
     return {REALIZED_PNL_PROP: pnl}
 
 
@@ -52,7 +54,12 @@ def _needs_realized_pnl(fill_node: Node, broker_fill: BrokerFill) -> bool:
         broker_fill.side == "sell"
         and broker_fill.status in _REALIZED_STATUSES
         and REALIZED_PNL_PROP not in fill_node.props
+        and PNL_UNRESOLVED_AT_PROP not in fill_node.props
     )
+
+
+def _unresolved_props() -> dict[str, object]:
+    return {PNL_UNRESOLVED_AT_PROP: datetime.now(tz=UTC).isoformat()}
 
 
 def _position_ref_from_order(graph: GraphStore, fill_node: Node) -> str | None:

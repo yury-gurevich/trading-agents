@@ -164,3 +164,21 @@ def test_canceled_broker_status_is_not_counted_as_realized_loss() -> None:
         )
     )
     assert outcomes == {"closed_trades_with_pnl": 0.0}
+
+
+def test_unresolved_pnl_marker_is_not_counted_as_realized_loss() -> None:
+    """RPT-OUT-02 / RPT-NEV-02: unresolved marker is not PnL evidence."""
+    outcomes = collect_trade_outcomes(
+        (
+            Node(
+                "Fill",
+                "unresolved",
+                {
+                    "side": "sell",
+                    "broker_status": "filled",
+                    "pnl_unresolved_at": "2026-08-01T00:00:00+00:00",
+                },
+            ),
+        )
+    )
+    assert outcomes == {"closed_trades_with_pnl": 0.0}

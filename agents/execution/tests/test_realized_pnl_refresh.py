@@ -41,13 +41,12 @@ def test_confirmed_sell_fill_uses_fill_price_for_abt_realized_pnl() -> None:
     assert sink.faults == []
 
 
-def test_existing_broker_price_is_used_when_backfilling_realized_pnl() -> None:
+def test_existing_broker_price_is_used_on_first_realized_pnl_refresh() -> None:
+    """EXEC-STA-03 / EXEC-OBS-01: first PnL refresh preserves broker price."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     key = _seed_exit(graph, "ABT", quantity=98, opened_price_cents=10078)
-    graph.merge_node(
-        "Fill", key, {"broker_status": "filled", "broker_price_cents": 10135}
-    )
+    graph.merge_node("Fill", key, {"broker_price_cents": 10135})
 
     refresh_pending_fills(
         graph,

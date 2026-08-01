@@ -5,6 +5,32 @@ Last updated: 2026-06-04
 This workflow keeps branch work short-lived, preserves recovery points, and
 keeps quality gates consistent across stages.
 
+## Delegating a sprint to a coding agent
+
+The sprint document **is** the handover. Do not write a separate handover or report file — spec at
+the top, proof at the bottom, one artifact (see any sprint's *Handback contract*). The delegation
+prompt points at the sprint doc; it never restates it.
+
+**Always pass an explicit sandbox flag.** `~/.codex/config.toml` carries `approval_policy = "never"`
+and `sandbox_mode = "danger-full-access"`, so a bare launch gets unrestricted disk access with no
+prompts — including `.env`, `infra/` and `main`. Confine every delegated run to its worktree:
+
+```bash
+cd <the sprint worktree>
+codex -s workspace-write            # interactive, watchable
+codex exec -s workspace-write ...   # unattended
+```
+
+Verify the startup banner reads `sandbox: workspace-write` before letting it work. This is
+[hardening-backlog](hardening-backlog.md) row **N** — the protection currently lives entirely in
+remembering the flag.
+
+**Prepare before launching:** create the branch and its worktree from current `main`, so the agent
+starts clean and never has to branch or merge. **Tell it what is not its job** — a sandboxed agent
+has no `.env`, so anything needing live credentials (deploy, live-spine proof, functionality checks)
+is operator sequencing after merge and must be named as such, or it will either flail or quietly
+claim it.
+
 ## Branching
 
 1. Sync `main` with `origin/main`.

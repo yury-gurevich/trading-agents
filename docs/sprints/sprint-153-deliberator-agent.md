@@ -90,6 +90,8 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
 
 ## Scope
 
+> Fill in the `**Result:**` line under each item as you complete it, **in place**.
+
 1. **The acceptance gate learns to fail on an absent stage — do this FIRST.**
    `trading_acceptance.py`, `trading_boundaries.py` and `trading_observatory.py` reference neither
    deliberation nor the forecaster, which is why every run scored `ACCEPTANCE PASS` with both
@@ -104,9 +106,14 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    > deploy while a declared stage can produce nothing and still score `ACCEPTANCE PASS` would
    > automate the propagation of green-but-inert releases. So item 1 is not only this sprint's
    > guardrail — it is what unblocks a separate deferred decision. Build it accordingly.
+
+   **Result:** _fill at handback_
+
 2. **`contracts/deliberator.py`** — typed request/reply for one debate turn and one verdict.
    Substrate/pack discipline (ADR-0012): the *mechanism* is domain-free; the trading proposition is
    the payload.
+   **Result:** _fill at handback_
+
 3. **The bundle**, to [agent-genesis](../../ops/agent-genesis.md): `agents/deliberator/` with
    `mission.md`, `laws/laws.md` copied from **`docs/laws/_TEMPLATE.md`** (never from provider's),
    `laws/test-plan.md`, `settings.py` (role + `max_rounds` + per-role model as `tunable()`),
@@ -120,10 +127,14 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    > `test-plan.md` **row for every clause**, not only for the ones you write tests for:
    > hardening-backlog row **O** exists because the older law books have clauses with no row at all,
    > which makes them invisible rather than unproven. Do not reproduce that in a new bundle.
+   **Result:** _fill at handback_
+
 4. **`kernel/deliberation.py` is demoted, not rewritten** — it becomes the shared reasoning core the
    three instances call. **No change to debate behaviour**: same rounds, same prompts byte-for-byte,
    same verdict parsing. `orchestration/veto_context.py` keeps building the evidence packet.
    `orchestration/veto.py` stops being the runner; `local_pipeline.py` keeps working.
+   **Result:** _fill at handback_
+
 5. **Fleet wiring** — this is the long tail and it is where the sprint will actually be spent:
    three app names in `$AGENTS` (`infra/deploy-agents.ps1`) sharing one image suffix; grants in
    `trading_grants.json`; **`ANTHROPIC_API_KEY` in `trading_secrets.json`** (the deliberator is the
@@ -131,6 +142,8 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    `ta_deliberator_*` Postgres roles (S131); three scoped Service Bus SAS identities (S133);
    KEDA scale windows; import-linter (agents are islands — the deliberator must not import
    `orchestration` or another agent).
+   **Result:** _fill at handback_
+
 6. **Vocabulary** — `DeliberationRun` is a declared label and `PMRun -DELIBERATED_BY->
    DeliberationRun` was declared in 0.84.04, but `DeliberationRun` has **no declared property
    list**, and the S144 guard is now **live on the fleet**. Declare its properties (including the
@@ -144,7 +157,12 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    property, or derivable from edges. Whichever you choose, the cost consumers
    (`surfaces/dashboard/llm_costs.py`, `/audit-costs`) must still be able to attribute spend per
    agent, because attributing the new spend is the entire reason the label stayed shared.
+
+   **Result:** _fill at handback_
+
 7. **Ledger + INDEX rows** for the new agent in `docs/laws/ledger.md` and `docs/laws/INDEX.md`.
+
+   **Result:** _fill at handback_
 
 ## Non-goals — do not do these
 
@@ -173,6 +191,23 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
 6. The functionality-check row is written with teardown, and the fail-open path is re-proven: a
    forced LLM failure leaves trading unblocked.
 
+### Scope boundary — what is NOT yours, and why "done" is smaller than it looks
+
+**You have no credentials.** `.env` is not in this worktree, by design (CLAUDE.md: credentials never
+exist as files inside the repo tree). So **success factors 3, 4, 5 and 6 are not yours** — deploying
+the three instances, the live `DeliberationRun`, the post-deploy `LLMCall`, and the functionality
+check are **operator sequencing after merge**, exactly as in S151 and S154.
+
+**Your definition of done is:** scope items 1–7, `make ci` green, the four remote gates green, and
+every placeholder section at the bottom of this file filled in.
+
+Do **not** attempt to reach the live graph, Azure, or Alpaca, and do not work around a missing
+credential. If something appears to require one, say so in the Return notes and stop.
+
+**Hold on to this:** a fully green handback does **not** close [DL-80](../design-log.md). The LLM
+veto will still never have run in production until the deploy and the live proof happen. Green code
+is honest progress, not the outcome — report it that way.
+
 ## Risks
 
 | Risk | Why it matters | Mitigation |
@@ -183,16 +218,78 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
 | **Deliberation slows the run** | A stage that talks to an LLM sits between the PM and execution. | Bounded rounds; the fail-open path already covers timeout. |
 | **The peers are "similar enough" to collapse** | The temptation is to run all three prompts in one process — which is exactly the harness that stranded this capability. | Three instances is the point; per-role models (S109) and independent identities are the reason. |
 
+---
+
+## Handback contract — MANDATORY
+
+**Append your results INSIDE this file, at the bottom, in the placeholder sections below.**
+Not a separate report file. Not chat-only. Not a summary that points elsewhere. This document is the
+one artifact: spec at the top, proof at the bottom.
+
+Specifically:
+
+1. Fill the **Law reading record** *before* your first code change.
+2. Fill the `**Result:**` line under **each** of the seven scope items above, in place.
+3. Fill the **Test plan results** table — one row per test, with its final name and status. A test
+   you chose not to write needs a reason, not a blank.
+4. Fill the **Closeout — evidence** block with real command output pasted in: `make ci` counts, the
+   remote gate job results and run IDs, and the planted-violation runs.
+5. Fill the **Return notes** block.
+6. State any success factor you did **not** meet plainly, as "verified failing" or "not done"
+   (LAW-02 — intent is never restated as outcome; a proven failure is a valid handback, a silent
+   gap is not). Success factors 3-6 are operator sequencing and should be recorded as such, not as
+   omissions.
+
+An incomplete handback is returned, not repaired (DL-48).
+
+---
+
+## Law reading record — fill BEFORE writing code
+
+| Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
+| --- | --- | --- | --- |
+| `agents/deliberator/laws/laws.md` (new, from `_TEMPLATE.md`) | | | |
+| `agents/operator/laws/laws.md` (v1.1 — read `OPR-IDN-01/02` and ADR-0020) | | | |
+| `orchestration/veto.py` / `kernel/deliberation.py` callers | | | |
+| `docs/laws/conventions.md` | | | |
+| `docs/laws/dependencies.md` (`DEP-LLM`, `DEP-BUS`) | | | |
+| `docs/laws/drift-register.md` | | | |
+
+---
+
+## Test plan results — fill at handback
+
+| # | What it proves | Test | Status | Planted-failure observed? |
+| --- | --- | --- | --- | --- |
+| 1 | Acceptance fails when a declared stage produces no artifact | | | |
+| 2 | Acceptance passes once a `DeliberationRun` exists | | | |
+| 3 | Manager pulls `PMRun`s with no `DeliberationRun` | | | |
+| 4 | Peers answer one turn per request (served) | | | |
+| 5 | Debate behaviour unchanged (rounds/prompts/verdict parsing) | | | |
+| 6 | Fail-open holds: LLM failure never blocks trading | | | |
+| 7 | Vocabulary: `DeliberationRun` properties declared, superset proven | | | |
+| 8 | `LLMCall` written by a non-operator agent, spend attributable | | | |
+| 9 | import-linter: deliberator imports neither `orchestration` nor another agent | | | |
+
+---
+
 ## Closeout — evidence
 
 > **Fill this in at handback. Do not return the sprint with this block unedited.**
 
-- `make ci` result (pass count, coverage) and the remote gate run IDs:
-- The acceptance check observed **failing** (which run, what it said):
-- Bundle inventory against `ops/agent-genesis.md` — every part present, with its path:
-- Clause counts added (all ⬜) in `ledger.md` / `laws/INDEX.md` / `test-plan.md`:
-- Deploy: tag, all instances verified on it, `DeployRecord`, config intact:
-- **The live `DeliberationRun`**: node key, verdict, rationale, round count, both peers' turns:
-- The post-deploy `LLMCall` node and its model:
-- Fail-open re-proof (forced LLM failure, trading unblocked):
-- Functionality-check row + teardown:
+- Files changed:
+- Version bump (`pyproject.toml`, and `uv.lock` restaged):
+- `make ci` result — pass count, skips, coverage:
+- Planted-failure observations (scope item 1 especially):
+- Remote gate run IDs **and job conclusions**, with the assertion that a run exists for the head SHA:
+- New agent's clause count (`0 / N` is the correct honest number):
+- Not met / operator sequencing:
+
+---
+
+## Return notes
+
+- Branch and base commit:
+- Every red remote run hit on the way (run ID + cause + fix):
+- Anything the laws or this spec contradicted:
+- Anything found and deliberately not fixed:

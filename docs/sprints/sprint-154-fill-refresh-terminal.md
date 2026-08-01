@@ -507,10 +507,10 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 
    | Workflow | Job | Run ID | Conclusion |
    | --- | --- | --- | --- |
-   | CI | `quality` | | |
-   | CI | `test` | | |
-   | CI | `security` | | |
-   | Security Findings | `gate` | | |
+   | CI | `quality` | `30682454551` / job `91322042972` | success |
+   | CI | `test` | `30682454551` / job `91322086153` | success |
+   | CI | `security` | `30682454551` / job `91322042999` | success |
+   | Security Findings | `gate` | `30682454545` / job `91322043003` | success |
 
    Read the full rules in **DEFINITION OF DONE** above — including *if it goes red, you fix it*.
    **Do not merge.** Merging is the operator's step, after review.
@@ -624,8 +624,11 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
   warnings only, no hard blocks; module-header passed; pytest `2000 passed, 6 skipped`, total
   coverage `100.00%`; `pip-audit` `No known vulnerabilities found`; detect-secrets tracked and
   untracked scans passed.
-- Remote gate: pending branch push and GitHub run completion; fill the table above after the run IDs
-  exist.
+- Remote gate on implementation SHA `ae9e106dea11cfecd0c28c9d80030fad7eb3024c`: CI
+  `30682454551` succeeded (`quality`, `test`, `security` jobs all success) and Security Findings
+  `30682454545` succeeded (`gate` job success).
+- This final remote-evidence edit is Markdown-only. Per operator note, no extra full local CI was
+  rerun for the `.md`-only change after the already-green local `make ci`.
 
 **Not met / verified failing:**
 
@@ -634,7 +637,6 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 - ABT PnL/lineage backfill was explicitly out of scope and not performed.
 - Existing production terminal fills that already have `broker_status` will not be re-selected by
   this code path; newly terminal unresolved sells get the durable marker at first terminal refresh.
-- Remote GitHub gate evidence is not yet filled until the branch is pushed and all four jobs finish.
 
 ---
 
@@ -656,4 +658,6 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 - Local red on the way: first `make ci` failed only on coverage (`99.99%`, missed
   `reconciliation_store.py:47`); fixed by adding the no-matching-broker-fill no-op test, then
   `make ci` passed.
-- Remote red runs on the way: pending; record any after the branch push.
+- Remote red runs on the way: none. First pushed implementation SHA
+  `ae9e106dea11cfecd0c28c9d80030fad7eb3024c` went green on CI `30682454551` and Security Findings
+  `30682454545`.

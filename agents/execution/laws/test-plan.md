@@ -22,6 +22,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | EXEC-TRG-03 | RPC execute_close returns ExecutionResult from monitor-sourced closes. | happy | `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` | 🟩 |
 | EXEC-TRG-05 | RPC stage_status returns current stage without side effects. | read-only | `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` | 🟩 |
 | EXEC-TRG-06 | promote_stage with confirmed=True writes StageTransition. | gate | `test_promote_stage.py::test_promote_stage_confirmed_writes_transition_and_status_reads_graph` | 🟩 |
+| EXEC-TRG-07 | Run-start position_sync writes exactly one BrokerPositionSnapshot before downstream scoring is released. | happy | _tbd_ | ⬜ |
 
 ## Outputs
 
@@ -33,6 +34,8 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | EXEC-OUT-04 | reconcile returns ReconcileResult with matched count + discrepancies. | reconcile | `test_execution_agent.py::test_reconcile_reports_unrecorded_broker_fill` | 🟩 |
 | EXEC-OUT-05 | promote_stage returns PromoteStageResult with from/to stage + evidence. | gate | `test_promote_stage.py::test_promote_stage_writes_flag_when_evidence_passes` | 🟩 |
 | EXEC-OUT-06 | execution.fills.ready event is a claim-check ref; run_id in envelope. | pub/sub | `test_execution_pubsub.py::test_run_id_propagated_in_fills_ready_event` | 🟩 |
+| EXEC-OUT-07 | A decision unfilled in its session is dropped, recorded via Fill.drop_reason/dropped_at plus an append-only BrokerOrderStatus drop fact, and no raw terminal reason is written into Fill.broker_status. | boundary | _tbd_ | ⬜ |
+| EXEC-OUT-08 | Every submitted order records applied and counterfactual tolerance mode, bps and limit price; the counterfactual never reaches the broker. | happy | _tbd_ | ⬜ |
 
 ## Prohibitions
 
@@ -51,6 +54,8 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | EXEC-STA-01 | In-process _recorded dict rebuilt from graph Fill nodes on restart. | stateful | `test_execution_agent.py::test_reconcile_reports_unrecorded_broker_fill` | 🟩 |
 | EXEC-STA-02 | Stage is graph-authoritative; latest StageTransition wins. | stateful | `test_stage_gate.py::test_current_stage_from_graph_falls_back_and_reads_latest_transition` | 🟩 |
 | EXEC-STA-03 | Graph writes are append-only; no Fill modified after creation. | append-only | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
+| EXEC-STA-05 | A Fill with terminal broker_status (filled/rejected) is not re-read and appends no further BrokerOrderStatus; partial still refreshes. | idempotency | _tbd_ | ⬜ |
+| EXEC-STA-06 | An unresolvable realized-PnL conclusion writes Fill.pnl_unresolved_at once and faults once; a marked fill is never re-evaluated. | failure | _tbd_ | ⬜ |
 
 ## Determinism & idempotency
 
@@ -89,3 +94,6 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | EXEC-OBS-01 | Fill, Reconciliation, and StageTransition nodes reconstructable from graph. | audit | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
 | EXEC-OBS-02 | Broker rejections and stage-gate rejections routed to central channel. | observable | `test_execution_agent.py::test_broker_rejection_records_rejected_fill_and_fault` | 🟩 |
+| EXEC-IDN-03 | BrokerStopOrder, BrokerPositionSnapshot and BrokerOrderStatus are written only by execution. | boundary | _tbd_ | ⬜ |
+| EXEC-DEP-04 | Graph append-write for the three broker-evidence labels and broker cancel/stop-placement are exercised. | happy | _tbd_ | ⬜ |
+| EXEC-OBS-03 | Stop placement is an immutable fact, cancellation a cancelled_at marker, and a held position with no live stop raises UnprotectedPosition and is retried. | failure | _tbd_ | ⬜ |

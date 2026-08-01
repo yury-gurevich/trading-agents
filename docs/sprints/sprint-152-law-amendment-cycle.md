@@ -140,13 +140,141 @@ ID kept and the change recorded in the changelog.
 
 ## Closeout — evidence
 
-> **Fill this in at handback. Do not return the sprint with this block unedited.**
+**Law versions before → after.** `execution` LOCKED **v1 → v1.1**; `analyst` LOCKED **v1 → v1.1**.
+Each carries a changelog entry naming, per clause, *what* was declared and *which ADR/DL decided it*.
 
-- Law versions before → after (both agents):
-- Clause IDs added / amended, each with the ADR that decided it:
-- Per-clause decided-vs-appeared verdict (and any row kept OPEN, with its reason):
-- Clause counters before → after, in all three files, with the arithmetic:
-- `git diff --stat` proving no production source changed:
-- `make ci` result (pass count, coverage):
-- Remote gate run IDs, and the assertion that runs exist for the merge SHA:
+**Clause IDs added, with the decision that warrants each.** All are **new IDs** — nothing was
+renumbered, reused or repurposed, and **no existing clause was amended in place.** That was a
+deliberate choice: widening a green clause (adding labels to `EXEC-IDN-02`, say) would silently
+extend what an already-passing test is claimed to prove. New IDs keep the existing greens honest.
+
+| Clause | Declares | Decided by | Drift |
+| --- | --- | --- | --- |
+| `EXEC-IDN-03` | owns `BrokerStopOrder`, `BrokerPositionSnapshot`, `BrokerOrderStatus` | ADR-0015 §3, DL-44 | 024, 025 |
+| `EXEC-TRG-07` | run-start `position_sync` writes one snapshot before scoring | DL-44 (+ DL-79 containment) | 025 |
+| `EXEC-OUT-07` | `dropped` distinct from `rejected`/`skipped`; append-safe drop evidence | ADR-0018 (shape: S151/DL-79) | 026 |
+| `EXEC-OUT-08` | applied + counterfactual tolerance evidence on submitted orders | ADR-0013 | 027 |
+| `EXEC-STA-05` | broker-status refresh terminates; `partial` still refreshes | ADR-0014 implication, DL-44 | 029 |
+| `EXEC-STA-06` | unresolvable realized PnL recorded once via `pnl_unresolved_at` | S154 spec + DL-81 | 029 |
+| `EXEC-OBS-03` | stop lifecycle reconstructable; `UnprotectedPosition` retried | ADR-0015 §3 (S146) | 024 |
+| `EXEC-DEP-04` | graph append-write for the 3 labels; broker cancel + stop placement | ADR-0015 §3, ADR-0018, DL-44 | 024/025/026 |
+| `ANLZ-OUT-07` | selectable `flat`/`scaled` mode; target scaled in lockstep; ATR-absent degrade | ADR-0013 | 028 |
+| `ANLZ-OUT-08` | applied vs counterfactual proposal evidence | ADR-0013 | 028 |
+| `ANLZ-OBS-03` | proposal reconstructable without re-running the agent | ADR-0013 | 028 |
+
+Plus the `CAP` block widened (execution) and `PARAM` rows added to both, **copied from the
+`tunable()` declarations in `settings.py` rather than restated from memory**. Two of those rows are
+marked **NO (mode selector)**: `order_price_tolerance_mode` and `stop_target_mode` select *which
+formula runs*, not a value within one, so they are not tunables and must not be moved by experiment.
+
+**Per-clause decided-vs-appeared verdict.** Five of six rows are unambiguously **decided** — an ADR
+or DL settled the capability *before* the code existed, and only the declaration was skipped:
+024 (ADR-0015 §3), 025 (DL-44), 026 (ADR-0018), 027 (ADR-0013), 028 (ADR-0013).
+
+**DRIFT-029 is decided on a weaker warrant, and that is recorded rather than smoothed over.** Its
+first half — a terminating refresh — is implied by ADR-0014's append-only model and was named as an
+open defect in DL-44 itself (*"nothing ever refreshes broker order status after run end"*), so it is
+properly decided. Its second half, the `pnl_unresolved_at` marker, has **no ADR**: it was decided in
+the S154 sprint spec and DL-81, planning artifacts written before the code, which satisfies
+*decided-before-built* but on thinner authority. Declared, with the distinction written into the
+drift row so a later reader sees the weaker basis rather than a sixth tidy amendment.
+
+**No row was kept OPEN.** All six move to CORRECTED. One item stays deliberately open *inside*
+DRIFT-029: `broker_status="partial"` cannot upgrade to `filled` under the write-once property model,
+so that case still refreshes indefinitely. Zero production fills are in it today, and the fix is a
+current-status read model derived from `BrokerOrderStatus` facts — a design change, not a law edit.
+
+**Clause counters before → after, with the arithmetic.** Counted by unique IDs in each `laws.md`,
+not by trusting the previous number:
+
+| File | execution | analyst |
+| --- | --- | --- |
+| `laws.md` unique IDs | 49 → **57** (+8) | 43 → **46** (+3) |
+| `docs/laws/ledger.md` | `30 / 49` → **`30 / 57`** | `26 / 43` → **`26 / 46`** |
+| `docs/laws/INDEX.md` | `30 / 49` → **`30 / 57`** | `26 / 43` → **`26 / 46`** |
+| `test-plan.md` rows | 36 → **44** (+8) | 31 → **34** (+3) |
+
+**Greens are unchanged at 30 and 26 — the ratios got worse, and that is the correct outcome.**
+Declaring a clause is not proving one; every new clause starts ⬜ with `_tbd_` as its test.
+
+**A pre-existing gap found while reconciling, not introduced here:** the test-plans still carry fewer
+rows than their laws have clauses (execution 44 rows vs 57 clauses; analyst 34 vs 46). That predates
+this sprint — the scope permits rows *for new clauses only* — but it means "all three files agree"
+holds for the **counters**, not for row-per-clause completeness. Worth its own pass.
+
+**`git diff --stat` — no production source changed:**
+
+```text
+ agents/analyst/laws/laws.md        |  36 ++++++++++++-
+ agents/analyst/laws/test-plan.md   |   3 ++
+ agents/execution/laws/laws.md      | 100 +++++++++++++++++++++++++++++++++++--
+ agents/execution/laws/test-plan.md |   8 +++
+ docs/laws/INDEX.md                 |   4 +-
+ docs/laws/drift-register.md        |  12 ++---
+ docs/laws/ledger.md                |   4 +-
+ 7 files changed, 153 insertions(+), 14 deletions(-)
+```
+
+Asserted by `git diff --name-only` filtered for source extensions returning nothing.
+
+**`make ci`:** exit 0 — **2001 passed, 6 skipped, 100.00% coverage**; import-linter `4 kept, 0
+broken`; pip-audit `No known vulnerabilities found`; detect-secrets tracked + untracked clean.
+
+**No version bump.** `pyproject.toml` is untouched: this sprint ships no code, so neither a MINOR nor
+a PATCH applies. The law files carry their own `v1 → v1.1`, which is the change that actually
+happened.
+
+**Remote gate run IDs, and the assertion that runs exist for the merge SHA:** recorded below in
+*Return notes* after the push.
+
+---
+
+## The standing convention (success factor 6)
+
+> **A law-gap drift row is closed by amendment when the capability was *decided* — in an ADR or a
+> design-log entry written before the code — and the constitution merely failed to declare it.**
+> [conventions §4](../laws/conventions.md) forbids amending a law *to match whatever the code
+> currently does*; it does not forbid declaring a capability the project already decided to build.
+> The test is **provenance, not chronology of the file**: did a decision precede the code?
+>
+> - **Decided → amend**, with a new clause ID, the deciding ADR/DL named in the changelog, and the
+>   clause starting ⬜.
+> - **Appeared → do not amend.** It stays a drift row and becomes a *code* fix. Blessing accidental
+>   behaviour into law is exactly what §4 exists to prevent.
+> - **Declaring is never proving.** A newly declared clause is ⬜ until a functional test cites its
+>   ID. Expect denominators to rise while greens stay flat, and say so rather than presenting the
+>   worse ratio as a regression.
+> - **Prefer a new ID over widening a green clause.** Extending an existing clause silently extends
+>   what an already-passing test is claimed to prove.
+> - **State a weak warrant instead of hiding it.** DRIFT-029 was declared on a sprint spec plus a
+>   design-log entry rather than an ADR; that is recorded in the row.
+>
+> Six consecutive sprints deferred under the opposite reading. This precedent is what stops a
+> seventh.
+
+---
+
+## Return notes
+
+**Remote gates, verified by SHA rather than by quoted run ID.** Branch tip `737f779`:
+
+| Workflow | Job | Run ID | Conclusion |
+| --- | --- | --- | --- |
+| CI | `quality` | `30684671619` | success |
+| CI | `test` | `30684671619` | success |
+| CI | `security` | `30684671619` | success |
+| Security Findings | `gate` | `30684671621` | success |
+
+Both runs were confirmed to carry `headSha=737f779` — a run **exists** for the merge SHA, which is
+the hardening-backlog assertion, not merely that some run was green.
+
+**Executed by the planning agent, not handed to a coding agent.** S152 ships no production code and
+its subject is the law book, which is planning-owned; the usual *"never edit `laws.md`"* instruction
+exists to stop a coding agent doing this unsupervised, and inverting it for a coding agent would have
+been the riskier arrangement.
+
+**What I would flag for the next reader.** The `partial` case named inside DRIFT-029 is the one live
+loose end: it is a *read-model* problem (derive current status from `BrokerOrderStatus` facts) that
+no law edit can close, and it will re-surface the moment a partial fill occurs in production. Zero
+fills are in that state today, which is the only reason it is not urgent.
 - The standing convention as written into the return notes:

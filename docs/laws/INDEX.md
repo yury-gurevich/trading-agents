@@ -38,10 +38,10 @@ Each agent's law files live at `agents/<name>/laws/`:
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
 | provider | ✅ LOCKED v1 (S69) | 23 / 43 | Template stress-test complete; pattern is now the reference copy |
-| analyst | ✅ LOCKED v1 (S70) | 26 / 43 | S150 proved stop/target determinism and type bounds |
+| analyst | ✅ LOCKED **v1.1** (S152) | 26 / 46 | S152 declared ANLZ-OUT-07/08 + OBS-03 (ADR-0013 stop scaling); the 3 new clauses start ⬜ |
 | scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
-| execution | ✅ LOCKED v1 (S70) | 30 / 49 | |
+| execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S152 declared 8 clauses across IDN/TRG/OUT/STA/OBS/DEP (ADR-0015 §3, ADR-0018, ADR-0013, DL-44); all 8 start ⬜ |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | reporter | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | forecaster | ✅ LOCKED v1 (S71) | 15 / 46 | |

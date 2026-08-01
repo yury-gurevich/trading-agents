@@ -29,6 +29,8 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-OUT-04 | Provider degraded → empty RecommendationSet + incident_refs + fault. | degraded | `test_analyst_agent.py::test_degraded_market_data_returns_explained_rejection` | 🟩 |
 | ANLZ-OUT-05 | Pub/sub event carries claim-check ref only, not RecommendationSet payload. | pub/sub | `test_analyst_pubsub.py::test_candidates_ready_triggers_recommendations_ready` | 🟩 |
 | ANLZ-OUT-06 | SentimentReading node persisted for every scored ticker. | append-only | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
+| ANLZ-OUT-07 | scaled mode scales stop and target in lockstep so target_pct/stop_pct is invariant; a candidate with no usable ATR degrades to flat. | boundary | _tbd_ | ⬜ |
+| ANLZ-OUT-08 | Every stop/target proposal records applied and counterfactual mode, stop and target; the counterfactual never reaches the PM. | happy | _tbd_ | ⬜ |
 
 ## Prohibitions
 
@@ -83,3 +85,4 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | ANLZ-OBS-01 | AnalystRun node contains full score breakdown and is reconstructable. | audit | `test_analyst_pubsub.py::test_recommendation_result_node_in_graph` | 🟩 |
 | ANLZ-OBS-02 | Faults routed to central channel; degraded path not silent. | observable | `test_analyst_agent.py::test_degraded_market_data_returns_explained_rejection` | 🟩 |
+| ANLZ-OBS-03 | The proposal is reconstructable from the graph alone, including the ATR used or its documented absence. | happy | _tbd_ | ⬜ |

@@ -37,10 +37,10 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | --- | --- | --- | --- |
 | provider | ✅ v1 (LOCKED) | 23 / 43 | 🟨 partial — 23 clauses green (S69 citation pass); 20 gap-tests remain ⬜ (written in later sprints); template now locked for copying to other agents |
 | scanner | ✅ v1 (LOCKED) | 18 / 39 | 🟨 partial — 18 clauses green (S70 citation pass); 21 gap-tests remain ⬜ |
-| analyst | ✅ v1 (LOCKED) | 26 / 43 | 🟨 partial — 26 clauses green (S150 stop/target citation pass); 17 gap-tests remain ⬜ |
+| analyst | ✅ v1.1 (LOCKED) | 26 / 46 | 🟨 partial — 26 clauses green (S150 stop/target citation pass); 17 gap-tests remain ⬜ · **S152 declared 3 new clauses (ANLZ-OUT-07/08, OBS-03); denominator 43→46, greens unchanged — new clauses start ⬜.** |
 | forecaster | ✅ v1 (LOCKED) | 16 / 46 | 🟨 partial — 16 clauses green (S99 served-entrypoint pass); 30 gap-tests remain ⬜ |
 | portfolio_manager | ✅ v1 (LOCKED) | 24 / 43 | 🟨 partial — 24 clauses green (S150 RR-invariance citation pass); 19 gap-tests remain ⬜ |
-| execution | ✅ v1 (LOCKED) | 30 / 49 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ |
+| execution | ✅ v1.1 (LOCKED) | 30 / 57 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ · **S152 declared 8 new clauses (EXEC-IDN-03, TRG-07, OUT-07/08, STA-05/06, OBS-03, DEP-04); denominator 49→57, greens unchanged — new clauses start ⬜.** |
 | monitor | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S71 citation pass); 21 gap-tests remain ⬜ |
 | reporter | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S151 citation pass); 21 gap-tests remain ⬜ |
 | researcher | ✅ v1 (LOCKED) | 19 / 44 | 🟨 partial — 19 clauses green (S99 served-entrypoint pass); 25 gap-tests remain ⬜ |

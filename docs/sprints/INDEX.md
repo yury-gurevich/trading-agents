@@ -90,6 +90,11 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
    signatures were found and fixed first. Still open: whether to declare properties for the
    other 51 labels, the 46 `add_edge` sites the static scan cannot resolve, and reconciling
    the 8 `labels_owned` declarations to enable `owners` enforcement.
+   **[S154](sprint-154-fill-refresh-terminal.md) is queued ahead of both** (fix outranks
+   capability): `refresh_pending_fills` selects on the write-once `Fill.status`, so 39
+   broker-settled fills are re-refreshed every run — 2,742 `BrokerOrderStatus` nodes across 59
+   fills, up to 73 for one — and one unresolvable ABT sell fill re-emits the same fault nightly.
+   Found by tracing the clean `sched-2026-07-31` run; invisible to the acceptance gate.
 2. Create `sprint-NN-<slug>.md` using the standard header block from [README.md](README.md).
 3. Add a row to the `README.md` index table immediately.
 4. Update the phase map above when the sprint belongs to a defined phase.

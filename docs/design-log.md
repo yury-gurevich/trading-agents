@@ -3917,7 +3917,7 @@ it to cost money is how the ADR-0018 gap went unnoticed for months.
 
 ---
 
-## DL-78 - After S150, the risk cap binds the volatile names, not the stop formula · status: OPEN (successor undecided)
+## DL-78 - After S150, the risk cap binds the volatile names, not the stop formula · status: CLOSED by [ADR-0019](decisions/0019-risk-cap-binds-position-size-not-stop-distance.md) (2026-08-01) — the cap holds; position size gives
 
 **Trigger.** Verifying S150 at handback. The sprint shipped exactly as specified - `k=2.0`, floor
 2.5 %, ceiling **8 %**, with the ceiling bounded `le=0.08` so a scaled stop can never exceed the
@@ -4229,5 +4229,54 @@ realized PnL is due until they do, and `_needs_realized_pnl` correctly requires 
 `filled`/`partial`. They are live protection, not unresolved history.
 
 Lifetime realized PnL remains understated by exactly one trade, now **queryable** rather than silent.
+
+---
+
+## DL-82 · The four decisions owed were taken, under delegated authority · status: DECIDED (2026-08-01)
+
+The operator reviewed the outstanding-debt survey, said of the *Decisions owed* section *"I do not
+understand it enough to comment — do what is appropriate to the spirit and letter of this project"*,
+and prioritised S152. Recording the four calls here so none is treated as not-yet-made (LAW-06), and
+so a later reader can see the reasoning rather than only the outcome.
+
+**1 · The 8 % risk cap vs. volatility-scaled stops → [ADR-0019](decisions/0019-risk-cap-binds-position-size-not-stop-distance.md).**
+The cap is a capital-safety bound and does not move; **position size** shrinks so a correct stop fits
+inside it. Raising the cap is the change that makes the challenger look better, which is exactly why
+it is the wrong instrument — the repo already holds that safety/capital caps are ADR-only and never
+experiments. Closes DL-78. **Consequence worth flagging: the S150 stop challenger cannot be fairly
+promoted until the sizing change lands**, because any promotion report before then compares the
+scaled stop against the clamp rather than against the flat champion.
+
+**2 · Property enforcement for the other 51 labels → shadow first, declare second.** The guard
+currently enforces properties for 2 of 71 labels; 49 of the remaining 51 resolve totally under the
+static scan, so a pack *could* be generated today. Declining to, for now, on the project's own
+evidence: S143/S144 established that a pack built from observed writes is a **trailing indicator**,
+the guard is **fail-closed** and a raise lands inside the caller's fault boundary (the S148 stall
+pattern), and **46 `add_edge` sites** remain unresolvable to the scan. Generating 49 more enforced
+labels multiplies the surface on which a never-executed path can raise at 22:30 UTC, to protect
+against a class of defect that has not yet occurred. **The sanctioned path is warn-only shadow mode**
+— log what *would* have raised, observe for a bounded period, then promote the labels that came back
+clean. That converts an open-ended static-analysis job into a bounded observation, and it is the same
+instrument already recommended for the 46 blind edge sites, so the two should ship as one sprint.
+*Ruled out:* declaring all 49 now (untested fail-closed surface); declaring none ever (leaves the
+guard at 3 % of its labels indefinitely).
+
+**3 · DL-46 option A, a deploy step in CI → stays deferred, and now with a named precondition.**
+Auto-deploy on merge would remove the operator-approval gate that the deploy procedure deliberately
+encodes. [DL-80](design-log.md) is the argument against removing it: five deployed agents and the LLM
+veto rotted undetected precisely because *deployment succeeding* was never the same thing as *the
+thing working*. **Precondition for revisiting: an acceptance check that fails when a declared stage
+produces nothing** — already scoped as item 1 of S153. Until that exists, automating deploy would
+automate the propagation of green-but-inert releases. Not rejected; sequenced behind S153.
+
+**4 · DL-50, ADR-0007 still names DockerHub → amend, do not silently rewrite.** The pipeline has
+shipped to GHCR since the container split. The fix is a proper amendment cycle with the supersession
+recorded, exactly as S152 is establishing for agent laws — not an edit that makes the old text
+disappear. Queued as a small chore; deliberately **not** folded into S152, whose scope table is
+exhaustive by design and covers agent constitutions rather than ADRs.
+
+**Sequencing note:** `chore-wsl2-dev-env` stays behind S152. Its `.gitattributes` LF renormalisation
+touches nearly every text file, and S152 is a docs-heavy sprint — running them concurrently would
+manufacture conflicts across the whole law book.
 
 ---

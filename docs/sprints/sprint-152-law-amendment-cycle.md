@@ -17,7 +17,7 @@ read it first)** · [LAW-02](../../ops/laws/LAW-02-successful-execution.md) succ
 
 ## Why this is one sprint and not five register rows
 
-Five consecutive sprints each opened exactly one law-gap drift row and each deferred the amendment:
+Six consecutive sprints each opened exactly one law-gap drift row and each deferred the amendment:
 
 | ID | Agent | What the LOCKED law does not declare | Opened by |
 | --- | --- | --- | --- |
@@ -26,11 +26,12 @@ Five consecutive sprints each opened exactly one law-gap drift row and each defe
 | DRIFT-026 | execution | order-price tolerance tunable, dropped-decision output, drop evidence | S148 / S151 |
 | DRIFT-027 | execution | selectable tolerance *mode*, scaled tunables, counterfactual evidence | S149 |
 | DRIFT-028 | **analyst** | stop-scaling mode, scaled stop/target tunables, experiment evidence | S150 |
+| DRIFT-029 | execution | terminal-status refresh boundary + the unresolved-PnL marker | S154 |
 
-Four are execution; DRIFT-028 crossed into the analyst. **That crossing is the reason this is a
+Five are execution; DRIFT-028 crossed into the analyst. **That crossing is the reason this is a
 sprint.** While every row sat in one agent it read as one constitution lagging its code. Spanning
-two agents, the same pattern in five straight sprints is evidence about **how laws are maintained**,
-not about any single law. A sixth register row would record the symptom again and fix nothing.
+two agents, the same pattern in six straight sprints is evidence about **how laws are maintained**,
+not about any single law. DRIFT-029 (S154, 2026-08-01) is the sixth and was opened *after* this sprint was packaged — the rate did not change while the sprint sat queued, which is the argument for it. A seventh row would record the symptom again and fix nothing.
 
 ## The trap that actually caused this — read before planning
 
@@ -39,7 +40,7 @@ not about any single law. A sixth register row would record the symptom again an
 > Amend a law only when functionality is genuinely *lacking* (discovered during reconciliation or
 > testing) — **not to match whatever the code currently does.**
 
-Every one of the five rows proposes, in its own words, "a later law amendment should declare
+Every one of the six rows proposes, in its own words, "a later law amendment should declare
 \<what the code already does\>". Read literally, §4 forbids exactly that, and each sprint doc hands
 its coding agent the instruction **"LOCKED v1. Read-only. Never edit."**
 
@@ -49,16 +50,16 @@ why the debt accrued at a fixed rate of one row per sprint.
 
 **The resolution, and it must be stated in the sprint's own return notes so it stops being
 re-litigated:** §4 exists to stop *code drift* being rubber-stamped into law — a behaviour that
-appeared by accident, then got blessed after the fact. None of these five are that. Each is a
+appeared by accident, then got blessed after the fact. None of these six are that. Each is a
 capability that was **deliberately decided in an ADR, then built** (ADR-0015 §3, ADR-0018,
 ADR-0013), where only the constitutional declaration was skipped. The law is genuinely *lacking* a
 declaration of a decided capability. That is inside §4, not around it.
 
 **The distinction to apply per clause:** was this behaviour *decided* (ADR/DL, before the code) or
 did it *appear* (code first, rationalised after)? Decided → amend. Appeared → it stays a drift row
-and becomes a code fix, not a law edit. **Do not assume all five pass this test — apply it to each
+and becomes a code fix, not a law edit. **Do not assume all six pass this test — apply it to each
 clause and report any that fail.** An honest "this one is code drift, not a lacking declaration" is
-a better outcome than five tidy amendments.
+a better outcome than six tidy amendments.
 
 ## 🔴 MUST RULE — this sprint inverts the usual one
 
@@ -71,7 +72,7 @@ within this scope:**
 | `agents/analyst/laws/laws.md` | read-only | **may be amended** — same |
 | `agents/*/laws/laws.md` (any other) | read-only | **still read-only.** Out of scope |
 | `agents/*/laws/test-plan.md` | read-only | may gain clause rows for new clauses only |
-| `docs/laws/drift-register.md` | append-only | rows 024–028 move to **CORRECTED** with the amendment cited |
+| `docs/laws/drift-register.md` | append-only | rows 024–029 move to **CORRECTED** with the amendment cited |
 | `docs/laws/ledger.md`, `docs/laws/INDEX.md` | — | clause **totals** change if clauses are added; counts must stay consistent across all three |
 
 **ID stability is absolute ([conventions §2](../laws/conventions.md), "the most important rule").**
@@ -89,9 +90,13 @@ ID kept and the change recorded in the changelog.
    S151 settled (`Fill.drop_reason` / `Fill.dropped_at` plus an append-only `BrokerOrderStatus`
    drop fact, **with no raw terminal reason written into `Fill.broker_status`** — that collision was
    the outage).
+   Also from S154: **when broker-status refresh terminates** (a `Fill` whose `broker_status` is
+   `filled`/`rejected` is settled and must not be re-read or re-written) and the **unresolved-PnL
+   marker** `Fill.pnl_unresolved_at` that makes an unresolvable realized-PnL conclusion durable
+   rather than retried forever.
 2. **Amend `agents/analyst/laws/laws.md`** for the stop-scaling mode, the scaled stop/target
    tunables, and durable applied-vs-counterfactual proposal evidence.
-3. **Close DRIFT-024…028** as CORRECTED, each citing the amended clause IDs and the law version.
+3. **Close DRIFT-024…029** as CORRECTED, each citing the amended clause IDs and the law version.
 4. **Reconcile the three clause counters** — `ledger.md`, `laws/INDEX.md`, and each agent's
    `test-plan.md` — so they agree. They disagreed once already this month (S151's `EXEC-FAIL-03`).
 
@@ -113,7 +118,7 @@ ID kept and the change recorded in the changelog.
 
 1. Both `laws.md` files carry a bumped version and a changelog line per change, stating *what
    changed and why*, naming the ADR that decided the capability.
-2. Every one of DRIFT-024…028 is **CORRECTED** with its amending clause IDs cited — or is
+2. Every one of DRIFT-024…029 is **CORRECTED** with its amending clause IDs cited — or is
    explicitly **kept OPEN with a written reason** (the "this one is code drift" outcome).
 3. `ledger.md`, `laws/INDEX.md` and both `test-plan.md` files agree on clause counts, and the
    arithmetic is shown in the return notes.

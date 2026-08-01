@@ -4327,3 +4327,49 @@ which is the failure mode S151 taught. A second test pins the exclusion and was 
 a planted revert (DL-70).
 
 ---
+
+## DL-84 · The DHI gate fired for the first time, and waiting is the designed response · status: OPEN (blocked on an upstream rebuild, 2026-08-01)
+
+**`Build and push agent images` has failed on every merge since 03:53 UTC today** — S154, the DL-81
+docs commit, S152 and `chore-llmcall-substrate`, four consecutive runs. **No new images exist, so the
+fleet cannot be deployed off `:s152` at all.** Everything else was green: CI and Security Findings
+passed on each merge, verified by `headSha`.
+
+**Cause is upstream, not ours.** Trivy reports `Total: 8 (HIGH: 8, CRITICAL: 0)`, every one a
+`linux-libc-dev` kernel CVE in the `dhi.io/python:3.13` base (CVE-2026-63970, -64287, -64364, -64375,
+-64434, -64534, -64552, -64558). The gate is `exit-code: 1`, `severity: HIGH,CRITICAL`,
+`ignore-unfixed: true` — so these are **fixable upstream**, which is exactly why they now fail: a
+patched `linux-libc-dev` was published and the base has not yet been rebuilt against it.
+
+**A plain re-run does not fix it** (run `30686057170`, re-run 05:48 UTC — identical 8 findings), so
+the refreshed DHI image had not landed at that point. Recorded so the next reader does not repeat the
+experiment.
+
+**The ruled-out option, and why it is ruled out.** Adding the eight CVEs to `.trivyignore` is the
+obvious unblock and it is **wrong here** — it would undo the reason [R005/S130](research/base-image/INDEX.md)
+migrated off `python:3.13-slim` in the first place. That migration's whole point was to move from a
+base where 22 HIGH/CRITICAL findings were *permanent structural noise* to one where the gate enforces
+against a **near-zero baseline and `.trivyignore` stays empty** — so that any finding is a real
+signal. The file's own header says entries need a sprint/design-log link, scope, owner and expiry.
+Spending the first entry on a class of CVE the base is *designed to fix within hours* trades a
+durable property for a few hours of waiting.
+
+**Also worth naming: `linux-libc-dev` is kernel *headers*.** A container runs the host kernel, so
+this class is usually non-exploitable inside the image — the standard argument for ignoring it. It is
+still not the right call, because the point of the DHI baseline is that we *never need to make that
+argument*; the upstream rebuild removes the finding rather than us reasoning past it.
+
+**Decision: wait for the DHI rebuild, then re-run.** R005 records DHI as *"near zero, continuously
+rebuilt from source"*. The next scheduled pipeline run is Monday 2026-08-03 22:30 UTC, so there is
+roughly two and a half days of slack against a rebuild measured in hours.
+
+**Escalation path if it has not cleared by Monday morning AEST** — in preference order: pin a
+known-good DHI digest for the base; or a time-boxed `.trivyignore` entry with an expiry date and this
+entry as its evidence link, opened as a hardening row so it cannot become permanent.
+
+**Process finding, separately.** Four merges were declared green today on CI + Security Findings
+without anyone checking `build-images`. That is the DL-46 shape in a new costume: **a green CI proves
+mergeable, not shippable.** The merge routine should assert the image build too before a change is
+called done.
+
+---

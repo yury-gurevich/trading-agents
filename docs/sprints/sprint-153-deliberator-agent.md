@@ -248,12 +248,12 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `agents/deliberator/laws/laws.md` (new, from `_TEMPLATE.md`) | | | |
-| `agents/operator/laws/laws.md` (v1.1 — read `OPR-IDN-01/02` and ADR-0020) | | | |
-| `orchestration/veto.py` / `kernel/deliberation.py` callers | | | |
-| `docs/laws/conventions.md` | | | |
-| `docs/laws/dependencies.md` (`DEP-LLM`, `DEP-BUS`) | | | |
-| `docs/laws/drift-register.md` | | | |
+| `agents/deliberator/laws/laws.md` (new, from `_TEMPLATE.md`) | `docs/laws/_TEMPLATE.md`; `ops/agent-genesis.md`; S153 scope item 3; S152 convention from `docs/laws/conventions.md` | Template categories `IDN/IN/TRG/OUT/NEV/STA/IDM/ORD/FAIL/TYP/SEC/DEP/OBS/PERF/CAP/PARAM`; conventions sections 2, 3, 5, 10; agent-genesis "one source of truth" and "nothing blind" invariants | Yes - author a new `DLIB` law from first principles, leave every clause gray, add a test-plan row for every clause, and do not copy another agent's constitution. |
+| `agents/operator/laws/laws.md` (v1.1 — read `OPR-IDN-01/02` and ADR-0020) | `agents/operator/laws/laws.md`; `docs/decisions/0020-llmcall-is-substrate-not-the-operators.md` | `OPR-IDN-01`; `OPR-IDN-02`; `OPR-STA-03`; `OPR-DEP-01`; ADR-0020 decision/consequences | Yes - the deliberator may write shared `LLMCall` nodes directly, but must not invent `DeliberationLLMCall` or re-amend operator ownership. |
+| `orchestration/veto.py` / `kernel/deliberation.py` callers | `ops/laws/LAW-02-successful-execution.md`; `ops/laws/LAW-06-capture.md`; `docs/design-log.md` DL-80/DL-57/DL-70/DL-82; `docs/sprints/sprint-109-heterogeneous-deliberation-models.md`; current `orchestration/veto.py`, `kernel/deliberation.py`, `orchestration/local_pipeline.py`, `agents/execution/poll.py` | LAW-02 `SE-02/SE-05`; LAW-06 `CP-01..05`; S109 "two judges" decision; S153 non-goals; execution fail-open contract documented in `_drop_vetoed` | Yes - demote the old runner into shared/core-adjacent helpers, keep prompts/rounds/verdict parsing byte-identical, and keep fail-open visible instead of making deliberation mandatory. |
+| `docs/laws/conventions.md` | `docs/laws/conventions.md`; `docs/laws/INDEX.md` | Sections 2, 3, 4, 5, 7, 10 | Yes - new IDs are append-only, independence means no named peer-agent behaviour inside the law, and no clause turns green without a citing functional test. |
+| `docs/laws/dependencies.md` (`DEP-LLM`, `DEP-BUS`) | `docs/laws/dependencies.md`; DL-53 | `DEP-LLM-01/02`; `DEP-BUS-01/02/03/04`; `DEP-POSTGRES-04`; `DEP-CONFIG-02` | Yes - peer turn request/reply stays on the existing bus pattern, LLM failures degrade/fail-open, and three identities must fit scoped bus/Postgres delivery rather than a shared credential. |
+| `docs/laws/drift-register.md` | `docs/laws/drift-register.md`; DL-80/DL-82/DL-83 | Conventions section 9; no open deliberator row exists; S152-corrected rows establish "declaring is not proving" | No contradiction found after ADR-0020; record any newly discovered law/code mismatch instead of silently widening S153. |
 
 ---
 

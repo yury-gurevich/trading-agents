@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -20,6 +20,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-IDN-02** — The execution agent exclusively owns the `Fill`, `Reconciliation`,
   `StageTransition`, and `ExecutionResultEvent` graph labels. No other agent writes to these
   labels.
+- **EXEC-IDN-03** — The execution agent also exclusively owns the broker-boundary evidence
+  labels `BrokerStopOrder` (ADR-0015 §3 resting protective stops), `BrokerPositionSnapshot`
+  (the run-start holdings snapshot, DL-44) and `BrokerOrderStatus` (append-only broker
+  order-status reads). No other agent writes to these labels. *(Declares capability decided in
+  ADR-0015 §3 and DL-44; see changelog v1.1.)*
 
 ---
 
@@ -55,6 +60,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   effects. Safe to call from any authorised caller.
 - **EXEC-TRG-06** — RPC `promote_stage`: invoked on demand by the supervisor to advance the
   execution stage. Requires `confirmed=True`; writes a `StageTransition` node.
+- **EXEC-TRG-07** — Run-start reconciliation (`position_sync`): on an unconsumed `RunRequest`
+  the execution agent reconciles holdings against the broker and writes exactly one
+  `BrokerPositionSnapshot` for the run **before** downstream scoring is released. The snapshot
+  is the run's foundation: any cleanup performed alongside it is separately contained and may
+  never prevent it (DL-79). *(Declares capability decided in DL-44; see changelog v1.1.)*
 
 ---
 
@@ -76,6 +86,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-OUT-06** — `execution.fills.ready` pub/sub event carries only a claim-check
   reference, not the `ExecutionResult` payload. `pm_run_id` is included in the event envelope
   for downstream routing.
+- **EXEC-OUT-07** — A decision that did not fill in the session it was decided for is
+  **dropped**, and `dropped` is an outcome distinct from `rejected` (broker or stage refusal)
+  and `skipped` (never submitted). Drop evidence is append-safe: `Fill.drop_reason` and
+  `Fill.dropped_at` plus an append-only `BrokerOrderStatus` drop fact. The broker's normalised
+  account of the order stays in `Fill.broker_status` and a **raw terminal reason is never
+  written into it** — two vocabularies in that one property is what stalled the fleet on
+  2026-07-30. *(Declares capability decided in ADR-0018; shape settled by S151/DL-79.)*
+- **EXEC-OUT-08** — Every submitted order records its price-tolerance evidence durably: the
+  selected mode, the decided price, the **applied** tolerance and limit price, and the
+  **counterfactual** mode, tolerance and limit price for the band that was not used. The
+  counterfactual is evidence only and never reaches the broker. *(Declares capability decided
+  in ADR-0013 champion–challenger; shipped off by default in S149.)*
 
 ---
 
@@ -108,6 +130,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `StageTransition`, and `ExecutionResultEvent` nodes are never modified after creation.
 - **EXEC-STA-04** — A `StageTransition` node is the only record of a stage promotion. It
   includes `from_stage`, `to_stage`, `promoted_by`, `promoted_at`, and `evidence_summary`.
+- **EXEC-STA-05** — **Broker-status refresh terminates.** `Fill.status` is written once at
+  submit and, under the append-only store, can never change; the broker's account lives in
+  `Fill.broker_status`. A `Fill` whose `broker_status` is **terminal** (`filled` or `rejected`)
+  is settled: it is not re-read from the broker and no further `BrokerOrderStatus` fact is
+  appended for it. `partial` is **not** terminal and continues to refresh. Selecting settled
+  fills as pending work is unbounded write growth, not idempotence. *(Declares the boundary
+  implied by ADR-0014 and left open by DL-44; closed by S154.)*
+- **EXEC-STA-06** — A realized-PnL conclusion the agent **cannot** resolve is durable, not
+  repeated: `Fill.pnl_unresolved_at` is written once, and the accompanying fault is emitted on
+  that pass only. A marked fill is never re-evaluated for realized PnL, and the marker never
+  asserts a PnL figure. *(Declares the evidence shape decided in the S154 spec and DL-81.)*
 
 ---
 
@@ -188,6 +221,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-DEP-03** — `DEP-BROKER` (Alpaca paper API): the execution agent's core I/O boundary.
   Alpaca timeout is bounded by `alpaca_timeout` (default 15 s). Broker unavailability causes
   fill failures, not a crash.
+- **EXEC-DEP-04** — `DEP-POSTGRES`: graph append-write for the broker-boundary evidence labels
+  `BrokerStopOrder`, `BrokerPositionSnapshot` and `BrokerOrderStatus`; read for stop liveness
+  and holdings reconciliation. `DEP-BROKER` additionally requires order cancellation and
+  stop-order placement, not submission alone. *(Declares capability decided in ADR-0015 §3,
+  ADR-0018 and DL-44.)*
 
 ---
 
@@ -199,6 +237,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-OBS-02** — Broker rejections, timeouts, and stage-gate rejections are all routed to
   the central fault channel. No broker interaction is silent: all outcomes (filled, partial,
   rejected) are recorded.
+- **EXEC-OBS-03** — The protective-stop lifecycle is fully reconstructable: placement is an
+  immutable `BrokerStopOrder` fact, cancellation is a `cancelled_at` marker (never a deletion),
+  and the broker remains truth for liveness. A held position that ends a run with **no live
+  broker stop** is surfaced as an `UnprotectedPosition` fault and retried on the next run — a
+  refusal is never recorded once and then forgotten. *(Declares capability decided in
+  ADR-0015 §3; the silence it forbids is the defect S146 fixed.)*
 
 ---
 
@@ -225,11 +269,25 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   },
   "graph": {
     "operations": ["append_write", "read"],
-    "labels": ["Fill", "Reconciliation", "StageTransition", "ExecutionResultEvent"],
+    "labels": [
+      "Fill",
+      "Reconciliation",
+      "StageTransition",
+      "ExecutionResultEvent",
+      "BrokerStopOrder",
+      "BrokerPositionSnapshot",
+      "BrokerOrderStatus"
+    ],
     "access": "write_own_labels_only"
   },
   "broker": {
-    "operations": ["submit_order", "list_fills"],
+    "operations": [
+      "submit_order",
+      "list_fills",
+      "list_positions",
+      "place_stop_order",
+      "cancel_order"
+    ],
     "provider": "alpaca",
     "schema_version": "alpaca_v2",
     "auth": "api_key_secret_from_settings"
@@ -259,6 +317,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `alpaca_secret_key` | — | `SecretStr` | NO (secret) | Alpaca paper secret key; never logged or returned |
 | `alpaca_base_url` | `"https://paper-api.alpaca.markets"` | `str` | YES (environment) | Alpaca base URL; switch to live URL only when stage=live* and operator-approved |
 | `alpaca_timeout` | `15` | `int ≥ 1, ≤ 120` (seconds) | YES | Per-order broker call timeout; bounded latency budget per submission |
+| `order_price_tolerance_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — switching it changes which formula runs, not a value within one |
+| `order_price_tolerance_bps` | `50` | `int ≥ 0, ≤ 500` (bps) | YES | Bounds entry and discretionary-exit orders near the PM's decided price so after-close decisions do not trade at an unevaluated open (ADR-0018) |
+| `scaled_order_price_tolerance_atr_multiplier` | `0.50` | `float ≥ 0.0, ≤ 2.0` (ratio) | YES | Challenger band near half of decision-time daily ATR; observed overnight gaps cluster at 0.3–0.6× ATR |
+| `scaled_order_price_tolerance_floor_bps` | `25` | `int ≥ 0, ≤ 500` (bps) | YES | Stops the scaled challenger becoming so narrow that quiet names cannot trade at all |
+| `scaled_order_price_tolerance_ceiling_bps` | `250` | `int ≥ 0, ≤ 500` (bps) | YES | Keeps the challenger narrow enough that ADR-0018 still rejects a materially unevaluated open |
+| `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for broker-adopted positions with no PM stop lineage (ADR-0015 §3); matches the monitor-reconciliation paper-stage floor |
 
 ---
 
@@ -273,3 +337,33 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v0 — drafted (ideal-design, S70). Not yet locked.
+- **v1.1 — S152 law-amendment cycle (2026-08-01).** Declares capabilities that ADRs decided and
+  later sprints built, where only the constitutional declaration was skipped. **No behaviour
+  changed and no production source was edited**; every clause below is new (IDs are append-only,
+  conventions §2) and starts ⬜ unproven — the green totals deliberately do **not** move.
+  Closes DRIFT-024…029.
+  - `EXEC-IDN-03` — owns `BrokerStopOrder`, `BrokerPositionSnapshot`, `BrokerOrderStatus`.
+    *Why:* ADR-0015 §3 + DL-44 decided these; `EXEC-IDN-02` listed only the original four.
+    (DRIFT-024, DRIFT-025)
+  - `EXEC-TRG-07` — run-start `position_sync` writes one `BrokerPositionSnapshot` before
+    downstream scoring. *Why:* DL-44 decided broker-truth-for-holdings; S120 built it and S147
+    gated the analyst on it, undeclared. (DRIFT-025)
+  - `EXEC-OUT-07` — `dropped` as an outcome distinct from `rejected`/`skipped`, with the
+    append-safe evidence shape. *Why:* ADR-0018 decided the drop; S151/DL-79 settled the shape
+    after the collision stalled the fleet. (DRIFT-026)
+  - `EXEC-OUT-08` — durable applied + counterfactual tolerance evidence on submitted orders.
+    *Why:* ADR-0013 decided champion–challenger; S149 shipped it off by default. (DRIFT-027)
+  - `EXEC-STA-05` — broker-status refresh terminates on a terminal `broker_status`; `partial`
+    still refreshes. *Why:* implied by ADR-0014's append-only model and left open by DL-44;
+    S154 closed it. (DRIFT-029)
+  - `EXEC-STA-06` — an unresolvable realized-PnL conclusion is recorded once via
+    `Fill.pnl_unresolved_at`. *Why:* decided in the S154 spec and DL-81. (DRIFT-029)
+  - `EXEC-OBS-03` — protective-stop lifecycle reconstructable; `UnprotectedPosition` surfaced
+    and retried. *Why:* ADR-0015 §3; the silence is what S146 fixed. (DRIFT-024)
+  - `EXEC-DEP-04` — graph append-write for the three new labels; broker cancel + stop placement.
+    *Why:* the dependency surface the above capabilities actually use. (DRIFT-024/025/026)
+  - `CAP` block — graph `labels` and broker `operations` widened to match the clauses above.
+  - `PARAM` — declares `order_price_tolerance_mode` (a **mode selector, not a tunable**),
+    `order_price_tolerance_bps`, the three `scaled_order_price_tolerance_*` bounds, and
+    `broker_stop_fallback_stop_pct`. Values and bounds copied from the `tunable()` declarations
+    in `agents/execution/settings.py`, not restated from memory.

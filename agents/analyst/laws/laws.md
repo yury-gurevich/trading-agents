@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -70,6 +70,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   both the lexicon champion reading and the provider-sentiment shadow reading (when the
   provider returns a sentiment score for that ticker). These nodes are the input substrate for
   the forecaster's `sentiment_scorecard`.
+- **ANLZ-OUT-07** — The stop/target proposal runs in a selectable **mode**. `flat` proposes the
+  regime's single stop percent (the champion). `scaled` proposes a bounded ATR-scaled stop and
+  scales the target **in lockstep**, so `target_pct / stop_pct` is algebraically invariant and
+  the portfolio manager's reward-risk gate sees the same ratio in either mode. A candidate with
+  no usable decision-time ATR degrades to `flat` rather than failing. *(Declares capability
+  decided in ADR-0013 champion–challenger; shipped off by default in S150.)*
+- **ANLZ-OUT-08** — Every recommendation carrying a stop/target proposal records durable
+  applied-vs-counterfactual evidence: the selected mode, the applied stop and target, and the
+  counterfactual mode, stop and target for the proposal that was not used. The counterfactual is
+  evidence for later operator comparison and never reaches the portfolio manager as a proposal.
+  *(Declares capability decided in ADR-0013; shipped in S150.)*
 
 ---
 
@@ -182,6 +193,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **ANLZ-OBS-02** — Faults (provider degradation, per-candidate errors) are routed to the
   central fault channel. The degraded path is never silent: it produces attributed
   `incident_refs` and a fault record.
+- **ANLZ-OBS-03** — A stop/target proposal is reconstructable from the graph alone: the mode
+  that ran, the ATR the scaling used (or the fact that it was absent and the proposal degraded
+  to `flat`), and both the applied and counterfactual values. An operator must be able to answer
+  *"what would the other mode have proposed here?"* without re-running the analyst.
+  *(Declares capability decided in ADR-0013; shipped in S150.)*
 
 ---
 
@@ -237,6 +253,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `relative_strength_weight` | `0.20` | `float ≥ 0.0, ≤ 1.0` | YES | Weight of relative strength within the technical pillar (alongside 0.80 core) |
 | `signal_diversity_slack` | `5.0` | `float ≥ 0.0, ≤ 50.0` | YES | Slack allowing a lower-scoring signal from an unused pillar to surface in the rationale |
 | `max_top_signals` | `5` | `int ≥ 1, ≤ 20` | YES | Maximum explanatory signals surfaced per recommendation rationale |
+| `stop_target_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — it selects which formula runs, not a value within one |
+| `scaled_stop_atr_multiplier` | `2.0` | `float` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
+| `scaled_stop_floor_pct` | `0.025` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Stops volatility-scaled stops becoming too tight on very quiet or tiny-ATR names while still allowing a narrower-than-flat challenger |
+| `scaled_stop_ceiling_pct` | `0.08` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Respects the PRD/regime maximum stop risk; the challenger must not silently widen a stop past the declared risk cap. **The cap binds position size, not stop distance — [ADR-0019](../../../docs/decisions/0019-risk-cap-binds-position-size-not-stop-distance.md)** |
 
 *Indicator-specific tunables (MACD spans, Bollinger window, EMA periods, etc.) are declared
 in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` justifications.*
@@ -254,3 +274,17 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
 ## Changelog
 
 - v0 — drafted (ideal-design, S70). Not yet locked.
+- **v1.1 — S152 law-amendment cycle (2026-08-01).** Declares the stop-scaling capability that
+  ADR-0013 decided and S150 built, where only the constitutional declaration was skipped. **No
+  behaviour changed and no production source was edited**; all three clauses are new (IDs are
+  append-only, conventions §2) and start ⬜ unproven — the green total deliberately does **not**
+  move. Closes DRIFT-028.
+  - `ANLZ-OUT-07` — selectable `flat`/`scaled` stop-target mode, target scaled in lockstep so
+    the reward-risk ratio is invariant, degrading to `flat` without a usable ATR.
+  - `ANLZ-OUT-08` — durable applied-vs-counterfactual proposal evidence; the counterfactual
+    never reaches the portfolio manager.
+  - `ANLZ-OBS-03` — the proposal is reconstructable from the graph without re-running the agent.
+  - `PARAM` — declares `stop_target_mode` (a **mode selector, not a tunable**) and the three
+    `scaled_stop_*` bounds, copied from the `tunable()` declarations in
+    `agents/analyst/settings.py`. The ceiling row cites ADR-0019, which settled that the risk cap
+    binds position size rather than stop distance.

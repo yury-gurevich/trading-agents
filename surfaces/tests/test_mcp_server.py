@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import asyncio
 
+from mcp import types
+
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from surfaces.context import SurfaceContext
 from surfaces.context import test_context as build_context
-from surfaces.mcp_server import TOOLS, list_tools
+from surfaces.mcp_server import TOOLS, list_tools, server
 from surfaces.mcp_tools import dispatch_tool
 
 
@@ -93,7 +95,23 @@ def test_error_paths_and_tool_catalog() -> None:
         "incidents",
         "explain",
     }
-    assert asyncio.run(list_tools()) == TOOLS
+    assert asyncio.run(list_tools()).tools == TOOLS
+
+
+def test_tool_request_handlers_are_registered_on_the_server() -> None:
+    """mcp 2.0 replaced the decorators with explicit handler registration.
+
+    The 1.x `@server.list_tools()` / `@server.call_tool()` decorators no longer
+    exist, so a silently unregistered method would leave the surface answering
+    nothing at runtime while every other test still passed.
+    """
+    listing = server.get_request_handler("tools/list")
+    calling = server.get_request_handler("tools/call")
+
+    assert listing is not None
+    assert calling is not None
+    assert listing.params_type is types.PaginatedRequestParams
+    assert calling.params_type is types.CallToolRequestParams
 
 
 def _seed_fault(graph: InMemoryGraphStore) -> None:

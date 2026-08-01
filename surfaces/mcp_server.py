@@ -9,12 +9,16 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import TYPE_CHECKING
 
 from mcp import types
 from mcp.server import Server
 
 from surfaces.context import SurfaceContext, paper_context
 from surfaces.mcp_tools import dispatch_tool as _dispatch_tool
+
+if TYPE_CHECKING:
+    from mcp.server.context import ServerRequestContext
 
 TOOLS: list[types.Tool] = [
     types.Tool(
@@ -23,7 +27,7 @@ TOOLS: list[types.Tool] = [
             "Send a natural-language command through the operator and supervisor. "
             "If confirmation is required, call again with confirmed=true."
         ),
-        inputSchema={
+        input_schema={
             "type": "object",
             "properties": {
                 "text": {"type": "string", "description": "Plain-language command."},
@@ -38,12 +42,12 @@ TOOLS: list[types.Tool] = [
     types.Tool(
         name="status",
         description="Return health, open incidents, pending flags, and last run.",
-        inputSchema={"type": "object", "properties": {}},
+        input_schema={"type": "object", "properties": {}},
     ),
     types.Tool(
         name="runs",
         description="List recent dispatcher runs, newest first.",
-        inputSchema={
+        input_schema={
             "type": "object",
             "properties": {
                 "limit": {
@@ -57,12 +61,12 @@ TOOLS: list[types.Tool] = [
     types.Tool(
         name="incidents",
         description="List all open fault incidents.",
-        inputSchema={"type": "object", "properties": {}},
+        input_schema={"type": "object", "properties": {}},
     ),
     types.Tool(
         name="explain",
         description="Generate or retrieve the trade narrative for a position.",
-        inputSchema={
+        input_schema={
             "type": "object",
             "properties": {
                 "position_id": {
@@ -86,19 +90,29 @@ def _context() -> SurfaceContext:  # pragma: no cover
     return _ctx
 
 
-@server.list_tools()  # type: ignore[no-untyped-call,untyped-decorator]
-async def list_tools() -> list[types.Tool]:
+async def list_tools(
+    _ctx: ServerRequestContext[object, object] | None = None,
+    _params: types.PaginatedRequestParams | None = None,
+) -> types.ListToolsResult:
     """Return the static tool catalog."""
-    return TOOLS
+    return types.ListToolsResult(tools=TOOLS)
 
 
-@server.call_tool()  # type: ignore[untyped-decorator]
 async def call_tool(
-    name: str, arguments: dict[str, object] | None
-) -> list[types.TextContent]:  # pragma: no cover
+    _ctx: ServerRequestContext[object, object],
+    params: types.CallToolRequestParams,
+) -> types.CallToolResult:  # pragma: no cover
     """Bridge async MCP calls to the synchronous surface dispatch."""
-    result = await asyncio.to_thread(_dispatch_tool, _context(), name, arguments or {})
-    return [types.TextContent(type="text", text=json.dumps(result, default=str))]
+    result = await asyncio.to_thread(
+        _dispatch_tool, _context(), params.name, params.arguments or {}
+    )
+    return types.CallToolResult(
+        content=[types.TextContent(type="text", text=json.dumps(result, default=str))]
+    )
+
+
+server.add_request_handler("tools/list", types.PaginatedRequestParams, list_tools)
+server.add_request_handler("tools/call", types.CallToolRequestParams, call_tool)
 
 
 async def _amain() -> None:  # pragma: no cover

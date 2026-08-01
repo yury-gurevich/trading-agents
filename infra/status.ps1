@@ -134,10 +134,10 @@ function Show-Board {
   # Columns are grouped by what they describe, left to right:
   #   identity (APP) | what is deployed (DEPLOY, IMAGE) | what is running now (PODS, POWER, WAKE)
   $suffix = if ($Replicas) { '' } else { '   (-Replicas adds the PODS column)' }
-  # 14 deploy targets, not 13: the dispatcher-cron job is retagged with the apps and is
+  # 17 deploy targets, not 16: the dispatcher-cron job is retagged with the apps and is
   # just as able to be left behind on an old image, so it is counted here too (DL-46).
   $targets = @($apps).Count + @(@($jobInfo) | Where-Object { $_ }).Count
-  Write-Host ("`n  FLEET ({0} of expected 14 targets = 13 apps + 1 job){1}" -f $targets, $suffix) -ForegroundColor Yellow
+  Write-Host ("`n  FLEET ({0} of expected 17 targets = 16 apps + 1 job){1}" -f $targets, $suffix) -ForegroundColor Yellow
   $podHead = if ($Replicas) { '{0,-6}' -f 'PODS' } else { '' }
   Write-Host ("    {0,-19}{1,-11}{2,-7}{3}{4,-8}{5}" -f
     'APP', 'DEPLOY', 'IMAGE', $podHead, 'POWER', 'WAKE (UTC)') -ForegroundColor DarkGray

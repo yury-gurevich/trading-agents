@@ -15,7 +15,7 @@ import surfaces.dashboard.projections as proj
 from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
+from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.observatory import Breach
 from orchestration.packs.trading_acceptance import TradingAcceptanceResult
@@ -36,7 +36,16 @@ def cascade_graph(run_id: str = "dash-ok") -> InMemoryGraphStore:
         settings=ProviderSettings(max_staleness_days=7),
     )
     place_run_request(graph, run_id=run_id, tickers=("AAPL", "MSFT"))
-    list(cascade_once(graph, provider_agent=agent, broker=PaperBroker()))
+    list(
+        cascade_once(
+            graph,
+            provider_agent=agent,
+            broker=PaperBroker(),
+            deliberation_llm=FakeLLMClient(
+                {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
+            ),
+        )
+    )
     return graph
 
 
@@ -82,6 +91,7 @@ def test_stages_shape_on_clean_cascade() -> None:
         "scanner",
         "analyst",
         "pm",
+        "deliberation",
         "execution",
         "monitor",
         "reporter",

@@ -25,6 +25,8 @@ CHAIN = (
     ("MONITORED_BY", "MonitorRun"),
     ("REPORTED_BY", "Snapshot"),
 )
+DELIBERATION_EDGE = "DELIBERATED_BY"
+DELIBERATION_KEY = "DeliberationRun"
 
 
 def walk_chain(graph: GraphStore, run_id: str) -> dict[str, Node]:
@@ -44,6 +46,10 @@ def walk_chain(graph: GraphStore, run_id: str) -> dict[str, Node]:
         if child is None:
             break
         nodes[label] = child
+        if label == "PMRun":
+            deliberation = _deliberation_marker(graph, child)
+            if deliberation is not None:
+                nodes[DELIBERATION_KEY] = deliberation
         current = child
     return nodes
 
@@ -58,5 +64,12 @@ def _position_sync_marker(graph: GraphStore, run_request: Node) -> Node | None:
             if node.label == "MonitorRun"
             and node.props.get("phase") == POSITION_SYNC_PHASE
         ),
+        None,
+    )
+
+
+def _deliberation_marker(graph: GraphStore, pm_run: Node) -> Node | None:
+    return next(
+        iter(graph.descendants(pm_run, max_depth=1, edge_types={DELIBERATION_EDGE})),
         None,
     )

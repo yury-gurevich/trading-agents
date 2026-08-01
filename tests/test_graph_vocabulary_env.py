@@ -5,7 +5,7 @@ Role: cover how build_graph_from_env resolves a declared vocabulary — base64
       content first, file path second, unguarded when neither is set.
 External I/O: none (tmp_path only).
 
-Base64 exists because none of the 14 images copies orchestration/packs, so
+Base64 exists because none of the 15 images copies orchestration/packs, so
 GRAPH_VOCABULARY_PATH can only ever resolve in local dev (S144 / DL-68). It is
 the same delivery shape the master uses for grants and the secret map.
 """

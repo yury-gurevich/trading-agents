@@ -15,7 +15,7 @@ from kernel import (
     InMemoryGraphStore,
 )
 from kernel.serve_loop import LocalRequestConsumer
-from kernel.serve_transport import consumer_from_env, request_topic
+from kernel.serve_transport import consumer_from_env, reply_topic, request_topic
 
 
 def _settings(connection_string: str | None) -> AzureServiceBusSettings:
@@ -75,3 +75,7 @@ def test_consumer_from_env_uses_servicebus_topic_bundle() -> None:
 
 def test_request_topic_names_agent_inbox_topic() -> None:
     assert request_topic("operator") == "operator.requests"
+
+
+def test_reply_topic_names_requester_inbox_topic() -> None:
+    assert reply_topic("deliberator-manager") == "deliberator-manager.reply"

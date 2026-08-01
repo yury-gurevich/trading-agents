@@ -74,7 +74,7 @@ def test_master_verdict_route_uses_run_query() -> None:
     missing = json.loads(invoke(app, "/api/verdict?run=ghost")[2])
     assert missing["light"] == "RED"
     assert "position_sync" in missing["summary"]
-    assert "0/8 stages completed" in missing["summary"]
+    assert "0/9 stages completed" in missing["summary"]
     empty_status, _, empty_body = invoke(
         build_app(InMemoryGraphStore()), "/api/verdict"
     )

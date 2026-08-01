@@ -171,6 +171,11 @@
       "Intent"
     ],
     [
+      "DeliberationRun",
+      "PRODUCED_BY",
+      "LLMCall"
+    ],
+    [
       "ExecutionRun",
       "LINKED_FROM",
       "ExecutionRun"
@@ -338,6 +343,17 @@
   ],
   "owners": {},
   "properties": {
+    "DeliberationRun": [
+      "created_at",
+      "debates",
+      "max_rounds",
+      "narrative",
+      "role_models",
+      "source_pm_run_id",
+      "transcript",
+      "verdicts",
+      "vetoed_tickers"
+    ],
     "Fill": [
       "attempt_ordinal",
       "actual_open_price_cents",
@@ -385,6 +401,17 @@
       "submitted_at",
       "ticker",
       "time_in_force"
+    ],
+    "LLMCall": [
+      "calling_agent",
+      "correlation_id",
+      "created_at",
+      "latency_ms",
+      "model",
+      "prompt_hash",
+      "response_hash",
+      "tokens_in",
+      "tokens_out"
     ],
     "Recommendation": [
       "action",

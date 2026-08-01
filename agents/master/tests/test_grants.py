@@ -22,6 +22,9 @@ _EXPECTED_TYPES = {
     "scanner",
     "analyst",
     "portfolio_manager",
+    "deliberator-manager",
+    "deliberator-proponent",
+    "deliberator-opponent",
     "execution",
     "monitor",
     "reporter",
@@ -35,12 +38,13 @@ _EXPECTED_TYPES = {
 
 
 def test_load_grant_policy_reads_trading_pack() -> None:
-    """The real trading pack file loads with all 12 agent types and their caps."""
+    """The real trading pack file loads with all 15 app identities and their caps."""
     policy = load_grant_policy(TRADING_GRANTS_PATH)
     assert set(policy) == _EXPECTED_TYPES
     assert "broker" in policy["execution"]
     assert "data_feeds" in policy["provider"]
     assert "llm" in policy["operator"]
+    assert "llm" in policy["deliberator-manager"]
 
 
 def test_load_grant_policy_rejects_non_object_json(tmp_path: Path) -> None:

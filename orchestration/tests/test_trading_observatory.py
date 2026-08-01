@@ -16,7 +16,7 @@ from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import DataSource, FakeDataSource
 from contracts.provider import OHLCVBar
-from kernel import InMemoryGraphStore, InProcessBus
+from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.packs.trading_observatory import inspect, observe_run
 from orchestration.start import place_run_request
@@ -38,7 +38,16 @@ def _cascade(
         settings=settings or ProviderSettings(max_staleness_days=7),
     )
     place_run_request(graph, run_id=run_id, tickers=tickers)
-    list(cascade_once(graph, provider_agent=agent, broker=PaperBroker()))
+    list(
+        cascade_once(
+            graph,
+            provider_agent=agent,
+            broker=PaperBroker(),
+            deliberation_llm=FakeLLMClient(
+                {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
+            ),
+        )
+    )
     return graph
 
 
@@ -51,6 +60,7 @@ def test_clean_run_holds_all_invariants() -> None:
         "[scanner]",
         "[analyst]",
         "[pm]",
+        "[deliberation]",
         "[execution]",
         "[monitor]",
         "[reporter]",
@@ -62,6 +72,8 @@ def test_clean_run_holds_all_invariants() -> None:
     assert "tickers   AAPL MSFT" in out
     assert "conf=" in out  # an analyst recommendation row
     assert "qty=" in out  # a PM order row
+    assert "reviewed=" in out  # deliberation
+    assert "narrative " in out  # deliberation rationale
     assert "submitted=" in out  # execution
     assert "checked=" in out  # monitor
     assert "summary" in out  # reporter
@@ -137,5 +149,6 @@ def test_partial_run_marks_every_stage_not_reached() -> None:
     out = inspect(graph, "obs-partial")
     assert "[position_sync]  <- RunRequest   ... NOT REACHED" in out
     assert "[provider]  <- RunRequest   ... NOT REACHED" in out
+    assert "[deliberation]  <- PMRun(pm)   ... NOT REACHED" in out
     assert "[reporter]  <- MonitorRun(monitor)   ... NOT REACHED" in out
-    assert "8 WARN - inspect above" in out
+    assert "9 WARN - inspect above" in out

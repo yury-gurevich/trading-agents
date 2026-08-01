@@ -48,6 +48,10 @@
     var models = (llm.models || []).map(function (r) {
       return esc(r.model) + " " + (r.status === "untracked" ? "untracked" : money(r.cost, llm.currency));
     }).join(" · ") || "No ledger calls this month";
+    var agents = (llm.agents || []).map(function (r) {
+      return esc(r.calling_agent) + " " + money(r.cost, llm.currency);
+    }).join(" · ");
+    if (agents) models += "<br>" + agents;
     models += "<br>CBA Send IMT · 1 USD = A$" + esc(llm.fx.aud_per_usd) + " · " + esc(llm.fx.rate_as_of);
     $("infracards").innerHTML = [
       card("Container Apps env", env.app_count == null ? "unavailable" : env.app_count + " apps",

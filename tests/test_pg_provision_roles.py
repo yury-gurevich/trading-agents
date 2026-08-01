@@ -16,11 +16,14 @@ import pytest
 from scripts import pg_role_plan as roles
 
 
-def test_role_catalogue_contains_15_permanent_roles() -> None:
+def test_role_catalogue_contains_18_permanent_roles() -> None:
     assert roles.agent_role_names() == (
         "ta_scanner",
         "ta_analyst",
         "ta_portfolio_manager",
+        "ta_deliberator_manager",
+        "ta_deliberator_proponent",
+        "ta_deliberator_opponent",
         "ta_execution",
         "ta_monitor",
         "ta_reporter",
@@ -95,6 +98,7 @@ def test_agent_argument_normalization_accepts_role_and_app_shapes() -> None:
     assert roles.key_vault_secret_name("portfolio_manager") == (
         "postgres-dsn-portfolio-manager"
     )
+    assert roles.db_role("deliberator-proponent") == "ta_deliberator_proponent"
 
     with pytest.raises(ValueError, match="unknown Postgres role target"):
         roles.normalize_agent("all")

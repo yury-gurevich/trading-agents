@@ -1,7 +1,7 @@
 # deploy-agents.ps1 — One-command fleet deploy/teardown for Azure Container Apps.
 #
 #   pwsh infra/deploy-agents.ps1 preflight   # just the readiness checks
-#   pwsh infra/deploy-agents.ps1 up -Tag s103 # preflight → schema → master → 12 agents + cron job
+#   pwsh infra/deploy-agents.ps1 up -Tag s103 # preflight → schema → master → 15 agents + cron job
 #   pwsh infra/deploy-agents.ps1 down         # delete apps + dispatcher job
 #
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
@@ -37,6 +37,8 @@ $SERVICEBUS_BUNDLE_SECRET = "servicebus-connection-strings" # pragma: allowlist 
 # Container App name → GHCR image suffix (app names can't contain underscores).
 $AGENTS = [ordered]@{
   scanner = "scanner"; analyst = "analyst"; "portfolio-manager" = "portfolio_manager"
+  "deliberator-manager" = "deliberator"; "deliberator-proponent" = "deliberator"
+  "deliberator-opponent" = "deliberator"
   execution = "execution"; monitor = "monitor"; reporter = "reporter"
   forecaster = "forecaster"; operator = "operator"; supervisor = "supervisor"
   curator = "curator"; researcher = "researcher"; provider = "provider"
@@ -358,8 +360,8 @@ function Preflight {
       $imgs = @($resp | Where-Object { $_.name -like "trading-agents-*" })
     } catch {}
     $have = $imgs.Count
-    Check ($have -ge 14) "GHCR images present: $have/14"
-    $ok = $ok -and ($have -ge 14)
+    Check ($have -ge 15) "GHCR images present: $have/15"
+    $ok = $ok -and ($have -ge 15)
   }
 
   Bot
@@ -384,7 +386,7 @@ function Get-MasterKeypair {
 function Get-VocabularyEnv {
   # The graph write-guard vocabulary is pack data, injected as base64 the same way
   # the master's grants and secret map are (S86 / DL-12, S144 / DL-68). None of the
-  # 14 images copies orchestration/packs, so GRAPH_VOCABULARY_PATH can only ever
+  # 15 images copies orchestration/packs, so GRAPH_VOCABULARY_PATH can only ever
   # resolve in local dev — base64 is the only deployable form.
   $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_graph_vocabulary.json"
   return "GRAPH_VOCABULARY_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
@@ -438,11 +440,18 @@ function Up {
   $masterUrl = "https://$fqdn"
 
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
+  $deliberatorPrefix = "deliberator-"
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
     $agentGraph = Get-GraphConfig $name
     $agentServiceBus = Get-ServiceBusConfig $name
     $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars) + @((Get-VocabularyEnv))
+    if ($name.StartsWith($deliberatorPrefix)) {
+      $agentEnv += @(
+        "DELIBERATOR_ROLE=$($name.Substring($deliberatorPrefix.Length))",
+        "DELIBERATOR_INSTANCE_NAME=$name"
+      )
+    }
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,

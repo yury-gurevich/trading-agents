@@ -41,6 +41,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | analyst | ✅ LOCKED **v1.1** (S152) | 26 / 46 | S152 declared ANLZ-OUT-07/08 + OBS-03 (ADR-0013 stop scaling); the 3 new clauses start ⬜ |
 | scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
+| deliberator | ✅ LOCKED v1 (S153) | 0 / 48 | New DL-80/ADR-0020 agent; all clauses start ⬜ |
 | execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S152 declared 8 clauses across IDN/TRG/OUT/STA/OBS/DEP (ADR-0015 §3, ADR-0018, ADR-0013, DL-44); all 8 start ⬜ |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | reporter | ✅ LOCKED v1 (S71) | 19 / 40 | |

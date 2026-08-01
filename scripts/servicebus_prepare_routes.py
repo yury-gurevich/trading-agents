@@ -20,7 +20,12 @@ if str(_ROOT) not in sys.path:
 from dotenv import load_dotenv  # noqa: E402
 
 from kernel.bus_azure_config import AzureServiceBusSettings  # noqa: E402
-from kernel.serve_transport import SERVED_AGENT_TYPES, request_topic  # noqa: E402
+from kernel.serve_transport import (  # noqa: E402
+    DELIBERATOR_REPLY_AGENT_TYPES,
+    SERVED_AGENT_TYPES,
+    reply_topic,
+    request_topic,
+)
 
 
 class ServiceBusAdmin(Protocol):
@@ -67,8 +72,9 @@ def prepare_routes(
     *,
     subscription_name: str,
     agent_types: tuple[str, ...] = SERVED_AGENT_TYPES,
+    reply_agent_types: tuple[str, ...] = DELIBERATOR_REPLY_AGENT_TYPES,
 ) -> dict[str, list[str]]:
-    """Ensure every served agent has a request topic and subscription."""
+    """Ensure served request topics and requester reply topics exist."""
     created_topics: list[str] = []
     created_subscriptions: list[str] = []
     for agent_type in agent_types:
@@ -77,10 +83,19 @@ def prepare_routes(
             created_topics.append(topic)
         if ensure_subscription(admin, topic, subscription_name):
             created_subscriptions.append(f"{topic}/{subscription_name}")
+    for agent_type in reply_agent_types:
+        topic = reply_topic(agent_type)
+        if ensure_topic(admin, topic):
+            created_topics.append(topic)
+        if ensure_subscription(admin, topic, subscription_name):
+            created_subscriptions.append(f"{topic}/{subscription_name}")
     return {
         "created_topics": created_topics,
         "created_subscriptions": created_subscriptions,
-        "routes": [request_topic(agent_type) for agent_type in agent_types],
+        "routes": [
+            *(request_topic(agent_type) for agent_type in agent_types),
+            *(reply_topic(agent_type) for agent_type in reply_agent_types),
+        ],
     }
 
 

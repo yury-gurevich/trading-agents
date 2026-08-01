@@ -4373,3 +4373,22 @@ mergeable, not shippable.** The merge routine should assert the image build too 
 called done.
 
 ---
+
+## DL-85 · LLMCall attribution is a node property, not only an edge · status: DECIDED (S153, 2026-08-01)
+
+**Question.** S153 is the first non-operator writer of the shared `LLMCall` ledger after ADR-0020.
+How should cost consumers identify who made a call?
+
+**Decision.** Add a declared `calling_agent` property to every `LLMCall` write, while keeping
+producer edges as lineage. `kernel.llm_ledger.write_llm_call` owns the shared shape; operator and
+deliberator callers pass their identity into that substrate helper.
+
+**Ruled out.** Edge-only attribution. It is audit-useful, but it forces `/audit-costs` and
+`surfaces/dashboard/llm_costs.py` to infer spend through graph shapes that differ by caller and can
+be absent during partial/fail-open writes. A direct property keeps the cost ledger complete and
+cheap to group while preserving edges for provenance.
+
+**Status.** Implemented in S153 with `LLMCall` property declarations and dashboard per-agent spend
+breakdown.
+
+---

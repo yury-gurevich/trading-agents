@@ -11,6 +11,8 @@ import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from kernel.llm_ledger import write_llm_call as _write_llm_call
+
 if TYPE_CHECKING:
     from contracts.operator import TypedIntent
     from kernel import GraphStore, Node
@@ -27,24 +29,17 @@ def write_llm_call(
     tokens_out: int,
     latency_ms: int,
 ) -> Node:
-    """Write one idempotent LLM call ledger node."""
-    key = f"llmcall:{correlation_id}"
-    current = graph.get_node("LLMCall", key)
-    if current is not None:
-        return current
-    return graph.merge_node(
-        "LLMCall",
-        key,
-        {
-            "correlation_id": correlation_id,
-            "model": model,
-            "prompt_hash": prompt_hash,
-            "response_hash": response_hash,
-            "tokens_in": tokens_in,
-            "tokens_out": tokens_out,
-            "latency_ms": latency_ms,
-            "created_at": datetime.now(tz=UTC).isoformat(),
-        },
+    """Write one idempotent operator LLM call ledger node."""
+    return _write_llm_call(
+        graph,
+        calling_agent="operator",
+        correlation_id=correlation_id,
+        model=model,
+        prompt_hash=prompt_hash,
+        response_hash=response_hash,
+        tokens_in=tokens_in,
+        tokens_out=tokens_out,
+        latency_ms=latency_ms,
     )
 
 

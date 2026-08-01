@@ -29,11 +29,13 @@ from scripts.cred_audit_plan import (
 ALL_PRIVILEGES = REQUIRED_PRIVILEGES
 
 
-def test_fleet_is_the_fourteen_delivery_targets() -> None:
+def test_fleet_is_the_seventeen_delivery_targets() -> None:
     """The audit covers every deployed target and excludes the ops-only role."""
-    assert len(FLEET_TARGETS) == 14
+    assert len(FLEET_TARGETS) == 17
     assert "ops" not in FLEET_TARGETS
-    assert {"master", "dispatcher", "analyst"} <= set(FLEET_TARGETS)
+    assert {"master", "dispatcher", "analyst", "deliberator_manager"} <= set(
+        FLEET_TARGETS
+    )
 
 
 def test_container_name_maps_underscores_and_the_job() -> None:
@@ -113,7 +115,7 @@ def test_summarize_of_all_scoped_is_ok() -> None:
     result = summarize(audits)
     assert result["ok"] is True
     assert result["failing"] == []
-    assert result["targets"] == 14
+    assert result["targets"] == 17
 
 
 def test_empty_audit_is_not_ok() -> None:

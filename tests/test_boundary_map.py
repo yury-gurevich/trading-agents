@@ -19,7 +19,7 @@ REG = registry()
 
 def test_all_agents_present():
     assert set(REG) == set(AGENT_MODULES)
-    assert len(REG) == 12
+    assert len(REG) == 13
 
 
 @pytest.mark.parametrize("name", AGENT_MODULES)

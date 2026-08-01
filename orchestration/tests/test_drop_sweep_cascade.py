@@ -14,7 +14,7 @@ from agents.execution.paper_broker import PaperBroker
 from agents.execution.tests.drop_sweep_helpers import broker_order, seed_fill_lineage
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
+from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.packs.trading_acceptance import accept_run
 from orchestration.start import place_run_request
@@ -43,10 +43,16 @@ def _provider(graph: InMemoryGraphStore) -> ProviderAgent:
     )
 
 
+def _deliberation_llm() -> FakeLLMClient:
+    return FakeLLMClient(
+        {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
+    )
+
+
 def test_poisoned_drop_sweep_still_reaches_reporter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """EXEC-FAIL-02 / DL-79: planted sweep failure still reaches 8/8."""
+    """EXEC-FAIL-02 / DL-79: planted sweep failure still reaches 9/9."""
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="s151-poisoned", tickers=("AAPL", "MSFT"))
 
@@ -55,7 +61,12 @@ def test_poisoned_drop_sweep_still_reaches_reporter(
 
     monkeypatch.setattr(execution_poll, "sweep_unfilled_orders", poison_sweep)
 
-    results = cascade_once(graph, provider_agent=_provider(graph), broker=PaperBroker())
+    results = cascade_once(
+        graph,
+        provider_agent=_provider(graph),
+        broker=PaperBroker(),
+        deliberation_llm=_deliberation_llm(),
+    )
     acceptance = accept_run(graph, "s151-poisoned")
 
     assert {result.name: result.processed for result in results} == {
@@ -65,6 +76,7 @@ def test_poisoned_drop_sweep_still_reaches_reporter(
         "analyst": 1,
         "forecaster": 1,
         "portfolio_manager": 1,
+        "deliberation": 1,
         "execution": 1,
         "monitor": 1,
         "reporter": 1,
@@ -85,7 +97,12 @@ def test_legacy_colliding_fill_runs_end_to_end_and_records_drop() -> None:
     stale = broker_order(key, "ABT", status="rejected", reason="canceled")
     place_run_request(graph, run_id="s151-legacy", tickers=("AAPL", "MSFT"))
 
-    cascade_once(graph, provider_agent=_provider(graph), broker=SeededDropBroker(stale))
+    cascade_once(
+        graph,
+        provider_agent=_provider(graph),
+        broker=SeededDropBroker(stale),
+        deliberation_llm=_deliberation_llm(),
+    )
     acceptance = accept_run(graph, "s151-legacy")
 
     fill = graph.get_node("Fill", key)

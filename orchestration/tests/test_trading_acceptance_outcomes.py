@@ -11,7 +11,7 @@ from __future__ import annotations
 from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
+from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.observatory import StageView
 from orchestration.packs.trading_acceptance import (
@@ -92,6 +92,9 @@ def test_broker_refusing_every_order_fails_end_to_end() -> None:
             graph,
             provider_agent=agent,
             broker=PaperBroker(reject_tickers={"AAPL", "MSFT"}),
+            deliberation_llm=FakeLLMClient(
+                {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
+            ),
         )
     )
 

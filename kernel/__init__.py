@@ -23,11 +23,14 @@ from kernel.deliberation import (
     DEFENDER_SYSTEM,
     JUDGE_SYSTEM,
     DebateResult,
+    DebateRole,
     DeliberationPrompts,
     Proposition,
     Turn,
     Verdict,
+    debate_turn,
     deliberate,
+    judge_verdict,
 )
 from kernel.deliberation_eval import (
     EvalCase,
@@ -79,6 +82,7 @@ from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_postgres import PostgresGraphStore
 from kernel.graph_postgres_config import PostgresGraphSettings
 from kernel.llm import FakeLLMClient, LLMClient
+from kernel.llm_ledger import LLMCallCapture, record_llm_call, write_llm_call
 from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
 from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
@@ -106,6 +110,7 @@ __all__ = [
     "CeleryBusSettings",
     "CollectingFaultSink",
     "DebateResult",
+    "DebateRole",
     "DeliberationPrompts",
     "Edge",
     "EvalCase",
@@ -118,6 +123,7 @@ __all__ = [
     "GraphStore",
     "InMemoryGraphStore",
     "InProcessBus",
+    "LLMCallCapture",
     "LLMClient",
     "LLMJudgeScorer",
     "MarketPack",
@@ -146,11 +152,13 @@ __all__ = [
     "check_robust",
     "claim_check_read",
     "claim_check_write",
+    "debate_turn",
     "deliberate",
     "describe",
     "ensure_deliberation_artifact",
     "fault_boundary",
     "fault_from_exception",
+    "judge_verdict",
     "load_deliberation_prompt_artifact",
     "load_deliberation_prompt_artifacts",
     "load_prompt_artifact",
@@ -160,6 +168,7 @@ __all__ = [
     "pass_rate",
     "passing_names",
     "prompts_from_artifacts",
+    "record_llm_call",
     "robust_passing",
     "run_debates",
     "run_eval",
@@ -167,4 +176,5 @@ __all__ = [
     "score_understanding",
     "tunable",
     "understanding_rate",
+    "write_llm_call",
 ]

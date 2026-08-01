@@ -27,7 +27,13 @@ from scripts.sb_sas_scan import (  # noqa: E402
     source_paths,
 )
 
-from kernel.serve_transport import SERVED_AGENT_TYPES, request_topic  # noqa: E402
+from kernel.serve_transport import (  # noqa: E402
+    DELIBERATOR_MANAGER_TYPE,
+    DELIBERATOR_PEER_AGENT_TYPES,
+    SERVED_AGENT_TYPES,
+    reply_topic,
+    request_topic,
+)
 
 SERVICEBUS_TARGETS = tuple(agent for agent in ROLE_TARGETS if agent != "ops")
 DEFAULT_REPLY_TOPIC_SUFFIX = ".reply"
@@ -59,6 +65,7 @@ def plan_from_sources(sources: tuple[SourceText, ...]) -> tuple[SasGrant, ...]:
     grants: dict[tuple[str, str], set[str]] = defaultdict(set)
     for served in SERVED_AGENT_TYPES:
         _add(grants, served, request_topic(served), "Listen")
+    _add_deliberator_peer_grants(grants)
     for source in sources:
         owner = owner_for_path(source.path)
         if owner is None:
@@ -70,10 +77,10 @@ def plan_from_sources(sources: tuple[SourceText, ...]) -> tuple[SasGrant, ...]:
             if recipient not in SERVED_AGENT_TYPES:
                 continue
             caller = _sender_target(sender, owner)
-            reply_topic = f"{sender}{DEFAULT_REPLY_TOPIC_SUFFIX}"
+            reply = reply_topic(sender, DEFAULT_REPLY_TOPIC_SUFFIX)
             _add(grants, caller, request_topic(recipient), "Send")
-            _add(grants, caller, reply_topic, "Listen")
-            _add(grants, recipient, reply_topic, "Send")
+            _add(grants, caller, reply, "Listen")
+            _add(grants, recipient, reply, "Send")
     return tuple(
         SasGrant(target, topic, _ordered_rights(rights))
         for (target, topic), rights in sorted(grants.items())
@@ -125,7 +132,7 @@ def primary_grant_for_target(
     """Pick the target's single-string compatibility grant, if any."""
     normalized = _normalize_target(target)
     owned = tuple(grant for grant in grants if grant.target == normalized)
-    own_request = request_topic(normalized) if normalized in SERVED_AGENT_TYPES else ""
+    own_request = _own_request_topic(normalized)
     for grant in owned:
         if grant.topic == own_request and "Listen" in grant.rights:
             return grant
@@ -158,6 +165,23 @@ def _add(
     if not _TOPIC_RE.fullmatch(topic):
         raise ValueError(f"unsafe Service Bus topic: {topic}")
     grants[(normalized, topic)].add(right)
+
+
+def _add_deliberator_peer_grants(
+    grants: dict[tuple[str, str], set[str]],
+) -> None:
+    reply = reply_topic(DELIBERATOR_MANAGER_TYPE, DEFAULT_REPLY_TOPIC_SUFFIX)
+    for peer in DELIBERATOR_PEER_AGENT_TYPES:
+        _add(grants, DELIBERATOR_MANAGER_TYPE, request_topic(peer), "Send")
+        _add(grants, DELIBERATOR_MANAGER_TYPE, reply, "Listen")
+        _add(grants, peer, reply, "Send")
+
+
+def _own_request_topic(normalized: str) -> str:
+    for served in SERVED_AGENT_TYPES:
+        if _normalize_target(served) == normalized:
+            return request_topic(served)
+    return ""
 
 
 def _normalize_target(raw: str) -> str:

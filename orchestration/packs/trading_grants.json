@@ -11,6 +11,21 @@
     "messaging": { "operations": ["subscribe", "publish"] },
     "graph": { "operations": ["append_write"], "access": "own_labels_only" }
   },
+  "deliberator-manager": {
+    "messaging": { "operations": ["request"] },
+    "graph": { "operations": ["read", "append_write"] },
+    "llm": { "operations": ["complete"] }
+  },
+  "deliberator-proponent": {
+    "messaging": { "operations": ["request"] },
+    "graph": { "operations": ["append_write"] },
+    "llm": { "operations": ["complete"] }
+  },
+  "deliberator-opponent": {
+    "messaging": { "operations": ["request"] },
+    "graph": { "operations": ["append_write"] },
+    "llm": { "operations": ["complete"] }
+  },
   "execution": {
     "messaging": { "operations": ["subscribe", "publish"] },
     "graph": { "operations": ["append_write"], "access": "own_labels_only" },

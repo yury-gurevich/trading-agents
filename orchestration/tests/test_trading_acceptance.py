@@ -8,13 +8,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from agents.execution.paper_broker import PaperBroker
-from agents.provider import ProviderAgent
-from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
-from orchestration.local_pipeline import cascade_once
+from kernel import InMemoryGraphStore
 from orchestration.observatory import Breach, Check, StageView, accept
 from orchestration.packs.trading_acceptance import (
     _explains_floor,
@@ -24,37 +18,7 @@ from orchestration.packs.trading_acceptance import (
     render_acceptance,
 )
 from orchestration.packs.trading_boundaries import _CONSERVATION, _conserves
-from orchestration.packs.trading_observatory import observe_run
 from orchestration.start import place_run_request
-from orchestration.tests.helpers import source
-
-if TYPE_CHECKING:
-    from agents.provider.sources import DataSource
-
-
-def _cascade(
-    data_source: DataSource, tickers: tuple[str, ...], run_id: str
-) -> InMemoryGraphStore:
-    graph = InMemoryGraphStore()
-    agent = ProviderAgent(
-        InProcessBus(),
-        graph=graph,
-        source=data_source,
-        settings=ProviderSettings(max_staleness_days=7),
-    )
-    place_run_request(graph, run_id=run_id, tickers=tickers)
-    list(cascade_once(graph, provider_agent=agent, broker=PaperBroker()))
-    return graph
-
-
-def test_clean_cascade_is_accepted() -> None:
-    """SUP-OBS-01 / DL-70: full cascade is accepted with the sync stage present."""
-    graph = _cascade(source(), ("AAPL", "MSFT"), "acc-ok")
-    result = accept_run(graph, "acc-ok")
-    assert result.passed
-    assert result.verdict == "PASS"
-    assert len(observe_run(graph, "acc-ok")) == 8
-    assert "PASS" in render_acceptance(result)
 
 
 def test_broken_chain_is_rejected() -> None:
@@ -96,6 +60,13 @@ def _complete_stages(
             {"approved": scored, "evaluated": scored},
             reached=True,
             checks=(Check("evaluated", "floor", 1.0),),
+        ),
+        StageView(
+            "deliberation",
+            "x",
+            {"reviewed": scored, "debates": scored},
+            reached=True,
+            checks=(Check("reviewed", "required"), Check("debates", "required")),
         ),
         StageView(
             "execution",

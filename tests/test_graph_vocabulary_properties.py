@@ -117,6 +117,18 @@ def test_the_fill_attempt_passthrough_is_resolved() -> None:
     assert {"drop_reason", "stop_pct_source"} <= recovered
 
 
+def test_deliberation_and_llmcall_props_are_recovered() -> None:
+    """DL-57: S153 property superset is not a presence-only assertion."""
+    recovered = properties(ROOT).properties
+
+    assert {"verdicts", "vetoed_tickers", "transcript", "narrative"} <= recovered[
+        "DeliberationRun"
+    ]
+    assert {"calling_agent", "prompt_hash", "tokens_in", "latency_ms"} <= recovered[
+        "LLMCall"
+    ]
+
+
 def test_the_property_scan_detects_a_prop_no_pack_declares(tmp_path: Path) -> None:
     written = properties(_plant(tmp_path, _PLANTED_PROP), packages=("planted",))
     assert "planted_undeclared_prop" in written.properties["Fill"]

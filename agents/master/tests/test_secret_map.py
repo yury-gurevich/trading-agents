@@ -27,7 +27,10 @@ _MAP = trading_secret_map()
 # ── resolve_config unit tests ─────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("agent_type", ["provider", "execution", "operator"])
+@pytest.mark.parametrize(
+    "agent_type",
+    ["provider", "execution", "operator", "deliberator-manager"],
+)
 def test_resolve_config_null_store_returns_empty(agent_type: str) -> None:
     assert resolve_config(agent_type, NullSecretStore(), _MAP) == {}
 
@@ -59,6 +62,15 @@ def test_resolve_config_operator_uses_bare_anthropic_key(
     assert config["ANTHROPIC_API_KEY"] == "sk-ant-test"  # pragma: allowlist secret
 
 
+def test_resolve_config_deliberator_uses_bare_anthropic_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Deliberator instances receive the same SDK-readable Anthropic key name."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    config = resolve_config("deliberator-manager", EnvVarSecretStore(), _MAP)
+    assert config["ANTHROPIC_API_KEY"] == "sk-ant-test"  # pragma: allowlist secret
+
+
 def test_resolve_config_skips_empty_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
     """Secrets whose env var is unset are not included in config."""
     monkeypatch.delenv("ALPACA_KEY_ID", raising=False)
@@ -72,7 +84,14 @@ def test_resolve_config_skips_empty_secrets(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_secret_map_covers_external_credential_agents() -> None:
-    assert {"provider", "execution", "operator"} <= set(_MAP)
+    assert {
+        "provider",
+        "execution",
+        "operator",
+        "deliberator-manager",
+        "deliberator-proponent",
+        "deliberator-opponent",
+    } <= set(_MAP)
 
 
 def test_secret_map_entries_are_kv_env_pairs() -> None:

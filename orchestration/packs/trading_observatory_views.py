@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, cast
 
 from orchestration.batch_chain import POSITION_SYNC_KEY
 from orchestration.observatory import Check, StageView
+from orchestration.packs.trading_deliberation_view import deliberation
 from orchestration.packs.trading_fill_outcomes import execution_view
 
 if TYPE_CHECKING:
@@ -189,6 +190,7 @@ SPEC = (
     ("scanner", "ScanRun", "MarketData(provider)", scanner),
     ("analyst", "AnalystRun", "CandidateSet(scanner)", analyst),
     ("pm", "PMRun", "RecommendationSet(analyst)", pm),
+    ("deliberation", "DeliberationRun", "PMRun(pm)", deliberation),
     ("execution", "ExecutionRun", "OrderIntentSet(pm)", execution_view),
     ("monitor", "MonitorRun", "ExecutionRun(execution)", monitor),
     ("reporter", "Snapshot", "MonitorRun(monitor)", reporter),

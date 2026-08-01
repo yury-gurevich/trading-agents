@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from kernel.deliberation_prompts import (
     CHALLENGER_SYSTEM as CHALLENGER_SYSTEM,
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from kernel.llm import LLMClient
 
 _RULINGS = ("uphold", "overturn", "revise")
+DebateRole = Literal["defender", "challenger"]
 
 
 @dataclass(frozen=True)
@@ -38,7 +39,7 @@ class DeliberationPrompts:
     challenger: str
     judge: str
 
-    def round_roles(self) -> tuple[tuple[str, str], ...]:
+    def round_roles(self) -> tuple[tuple[DebateRole, str], ...]:
         """Return the speaking roles for one debate round."""
         return (("defender", self.defender), ("challenger", self.challenger))
 
@@ -111,6 +112,41 @@ def _parse_verdict(raw: str) -> Verdict:
     return Verdict(ruling, rationale)
 
 
+def debate_turn(
+    llm: LLMClient,
+    proposition: Proposition,
+    *,
+    role: DebateRole,
+    round_number: int,
+    transcript: tuple[Turn, ...],
+    prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
+) -> Turn:
+    """Ask one arguing role for its next turn using the shared prompt context."""
+    system = prompts.defender if role == "defender" else prompts.challenger
+    text = llm.complete(
+        system=system,
+        user=_render(proposition, transcript),
+        tool_schema={},
+    ).strip()
+    return Turn(role, round_number, text)
+
+
+def judge_verdict(
+    llm: LLMClient,
+    proposition: Proposition,
+    *,
+    transcript: tuple[Turn, ...],
+    prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
+) -> Verdict:
+    """Ask the debate Judge to rule using the same parser as ``deliberate``."""
+    raw = llm.complete(
+        system=prompts.judge,
+        user=_render(proposition, transcript),
+        tool_schema={},
+    )
+    return _parse_verdict(raw)
+
+
 def deliberate(
     llm: LLMClient,
     proposition: Proposition,
@@ -131,17 +167,22 @@ def deliberate(
     rounds = max(1, max_rounds)
     transcript: list[Turn] = []
     for r in range(1, rounds + 1):
-        for role, system in prompts.round_roles():
-            text = llm.complete(
-                system=system,
-                user=_render(proposition, tuple(transcript)),
-                tool_schema={},
-            ).strip()
-            transcript.append(Turn(role, r, text))
+        for role, _system in prompts.round_roles():
+            transcript.append(
+                debate_turn(
+                    llm,
+                    proposition,
+                    role=role,
+                    round_number=r,
+                    transcript=tuple(transcript),
+                    prompts=prompts,
+                )
+            )
     ruling_llm = judge_llm if judge_llm is not None else llm
-    raw = ruling_llm.complete(
-        system=prompts.judge,
-        user=_render(proposition, tuple(transcript)),
-        tool_schema={},
+    return DebateResult(
+        proposition,
+        tuple(transcript),
+        judge_verdict(
+            ruling_llm, proposition, transcript=tuple(transcript), prompts=prompts
+        ),
     )
-    return DebateResult(proposition, tuple(transcript), _parse_verdict(raw))

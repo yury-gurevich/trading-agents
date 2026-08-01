@@ -23,6 +23,7 @@ AGENT_MODULES = (
     "analyst",
     "forecaster",
     "portfolio_manager",
+    "deliberator",
     "execution",
     "monitor",
     "reporter",

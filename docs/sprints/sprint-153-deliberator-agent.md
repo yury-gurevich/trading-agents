@@ -107,12 +107,22 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    > automate the propagation of green-but-inert releases. So item 1 is not only this sprint's
    > guardrail — it is what unblocks a separate deferred decision. Build it accordingly.
 
-   **Result:** _fill at handback_
+   **Result:** Implemented. The declared run chain now includes `DeliberationRun` between `PMRun`
+   and execution in `orchestration/batch_chain.py`, and
+   `orchestration/packs/trading_observatory_views.py` renders a `deliberation` stage whose missing
+   artifact fails acceptance. Controlled planted proof: removing the deliberation stage from the
+   declared observatory spec made
+   `test_declared_deliberation_stage_absence_fails_acceptance` fail with `AssertionError: assert
+   'PASS' == 'FAIL'`; restoring the stage made the same test pass. I did not re-query the live spine
+   from this worktree because the sprint explicitly says no credentials/live graph work here.
 
 2. **`contracts/deliberator.py`** — typed request/reply for one debate turn and one verdict.
    Substrate/pack discipline (ADR-0012): the *mechanism* is domain-free; the trading proposition is
    the payload.
-   **Result:** _fill at handback_
+   **Result:** Implemented in `contracts/deliberator.py`: typed `DebateTurnRequest/Reply`,
+   `VerdictRequest/Reply`, `DebateTurnRecord`, `DebateProposition`, role-specific contracts, and a
+   generic deliberator contract. `contracts/__init__.py` now includes the agent in the contract
+   inventory.
 
 3. **The bundle**, to [agent-genesis](../../ops/agent-genesis.md): `agents/deliberator/` with
    `mission.md`, `laws/laws.md` copied from **`docs/laws/_TEMPLATE.md`** (never from provider's),
@@ -127,13 +137,19 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    > `test-plan.md` **row for every clause**, not only for the ones you write tests for:
    > hardening-backlog row **O** exists because the older law books have clauses with no row at all,
    > which makes them invisible rather than unproven. Do not reproduce that in a new bundle.
-   **Result:** _fill at handback_
+   **Result:** Implemented `agents/deliberator/` with mission, Dockerfile, role settings,
+   Anthropic adapter, graph store, graph-pull poller, served peer client, entrypoint, tests, and
+   laws/test-plan. The law book is LOCKED v1 with 48 clauses and `0 / 48` green, intentionally:
+   every clause starts gray until a future test cites its ID.
 
 4. **`kernel/deliberation.py` is demoted, not rewritten** — it becomes the shared reasoning core the
    three instances call. **No change to debate behaviour**: same rounds, same prompts byte-for-byte,
    same verdict parsing. `orchestration/veto_context.py` keeps building the evidence packet.
    `orchestration/veto.py` stops being the runner; `local_pipeline.py` keeps working.
-   **Result:** _fill at handback_
+   **Result:** Implemented. `kernel/deliberation.py` now exposes shared `debate_turn` and
+   `judge_verdict` helpers while keeping the existing prompt rendering, bounded rounds and verdict
+   parser intact. The old orchestration modules are compatibility wrappers/adapters so
+   `local_pipeline.py` keeps working without making orchestration the production runner.
 
 5. **Fleet wiring** — this is the long tail and it is where the sprint will actually be spent:
    three app names in `$AGENTS` (`infra/deploy-agents.ps1`) sharing one image suffix; grants in
@@ -142,7 +158,11 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    `ta_deliberator_*` Postgres roles (S131); three scoped Service Bus SAS identities (S133);
    KEDA scale windows; import-linter (agents are islands — the deliberator must not import
    `orchestration` or another agent).
-   **Result:** _fill at handback_
+   **Result:** Implemented branch-side wiring for the three fleet identities:
+   `deliberator-manager`, `deliberator-proponent`, and `deliberator-opponent` share the deliberator
+   image suffix; grants, secret delivery, Postgres role planning, Service Bus SAS planning, reply
+   routes, served-agent image discovery, status counts, and deploy env injection are all covered by
+   tests. No live Azure deploy was attempted per the scope boundary.
 
 6. **Vocabulary** — `DeliberationRun` is a declared label and `PMRun -DELIBERATED_BY->
    DeliberationRun` was declared in 0.84.04, but `DeliberationRun` has **no declared property
@@ -158,11 +178,15 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    (`surfaces/dashboard/llm_costs.py`, `/audit-costs`) must still be able to attribute spend per
    agent, because attributing the new spend is the entire reason the label stayed shared.
 
-   **Result:** _fill at handback_
+   **Result:** Implemented. `DeliberationRun` and shared `LLMCall` properties are declared in the
+   vocabulary pack, including `calling_agent` for spend attribution. I chose a direct
+   `calling_agent` property over edge-only derivation and recorded that choice in DL-85; the
+   dashboard cost projection now groups LLM spend by model and agent.
 
 7. **Ledger + INDEX rows** for the new agent in `docs/laws/ledger.md` and `docs/laws/INDEX.md`.
 
-   **Result:** _fill at handback_
+   **Result:** Implemented. `docs/laws/INDEX.md` and `docs/laws/ledger.md` both include
+   `deliberator` as LOCKED v1 with `0 / 48`.
 
 ## Non-goals — do not do these
 
@@ -261,35 +285,57 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | What it proves | Test | Status | Planted-failure observed? |
 | --- | --- | --- | --- | --- |
-| 1 | Acceptance fails when a declared stage produces no artifact | | | |
-| 2 | Acceptance passes once a `DeliberationRun` exists | | | |
-| 3 | Manager pulls `PMRun`s with no `DeliberationRun` | | | |
-| 4 | Peers answer one turn per request (served) | | | |
-| 5 | Debate behaviour unchanged (rounds/prompts/verdict parsing) | | | |
-| 6 | Fail-open holds: LLM failure never blocks trading | | | |
-| 7 | Vocabulary: `DeliberationRun` properties declared, superset proven | | | |
-| 8 | `LLMCall` written by a non-operator agent, spend attributable | | | |
-| 9 | import-linter: deliberator imports neither `orchestration` nor another agent | | | |
+| 1 | Acceptance fails when a declared stage produces no artifact | `orchestration/tests/test_trading_acceptance_deliberation.py::test_declared_deliberation_stage_absence_fails_acceptance` | PASS | Yes - planted removal of the declared deliberation view made the assertion fail `PASS` vs `FAIL`; restored row passed. |
+| 2 | Acceptance passes once a `DeliberationRun` exists | `orchestration/tests/test_trading_acceptance_deliberation.py::test_clean_cascade_is_accepted_with_deliberation_present`; `orchestration/tests/test_trading_observatory.py::test_clean_run_holds_all_invariants` | PASS | No separate planted run; the presence/absence pair is covered by row 1. |
+| 3 | Manager pulls `PMRun`s with no `DeliberationRun` | `agents/deliberator/tests/test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs`; `orchestration/tests/test_veto_stage.py::test_find_pending_gates_on_the_deliberation_marker` | PASS | No. |
+| 4 | Peers answer one turn per request (served) | `agents/deliberator/tests/test_deliberator_agent.py::test_peer_served_turn_writes_attributable_llm_call`; `tests/test_deliberator_servicebus_peer.py` | PASS | No. |
+| 5 | Debate behaviour unchanged (rounds/prompts/verdict parsing) | Existing deliberation suite in `tests/test_deliberation*.py`; compatibility coverage in `orchestration/tests/test_veto_stage.py` and `tests/test_veto_context.py` | PASS under `make ci` | No. |
+| 6 | Fail-open holds: LLM failure never blocks trading | `agents/deliberator/tests/test_deliberator_agent.py::test_manager_fail_open_records_visible_rationale`; `orchestration/tests/test_veto_stage.py::test_veto_is_fail_open_on_llm_outage` | PASS | No. |
+| 7 | Vocabulary: `DeliberationRun` properties declared, superset proven | `tests/test_graph_vocabulary_deliberation.py`; `tests/test_graph_vocabulary_properties.py`; `uv run python scripts/vocabulary_properties.py` | PASS / exit 0 | No. |
+| 8 | `LLMCall` written by a non-operator agent, spend attributable | `agents/deliberator/tests/test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs`; `surfaces/tests/test_dashboard_llm_costs.py`; `agents/operator/tests/test_operator_store.py` | PASS | No. |
+| 9 | import-linter: deliberator imports neither `orchestration` nor another agent | `agents/deliberator/tests/test_deliberator_imports.py`; `uv run lint-imports` | PASS | No. |
 
 ---
 
 ## Closeout — evidence
 
-> **Fill this in at handback. Do not return the sprint with this block unedited.**
-
-- Files changed:
-- Version bump (`pyproject.toml`, and `uv.lock` restaged):
-- `make ci` result — pass count, skips, coverage:
-- Planted-failure observations (scope item 1 especially):
+- Files changed: new `agents/deliberator/` bundle; new `contracts/deliberator.py`; shared
+  `kernel/llm_ledger.py`; demoted deliberation helpers; acceptance/observatory/vocabulary/fleet
+  wiring; dashboard LLM cost attribution; operator ledger/store delegation; focused tests.
+- Version bump (`pyproject.toml`, and `uv.lock` restaged): `0.84.07` -> `0.85.00`; `uv lock`
+  completed with `Updated trading-agents v0.84.7 -> v0.85.0`.
+- `make ci` result — pass count, skips, coverage: PASS locally on 2026-08-01 after rebasing the
+  branch to `origin/main` docs drift: `2030 passed, 6 skipped in 69.81s`; `TOTAL 13460 0 2830 0
+  100.00%`; `Required test coverage of 100.0% reached`; `pip-audit` reported `No known
+  vulnerabilities found`; tracked and untracked `detect-secrets` both passed.
+- Planted-failure observations (scope item 1 especially): PASS/FAIL proof observed. With the
+  deliberation stage row temporarily removed from `trading_observatory_views.SPEC`,
+  `uv run pytest orchestration/tests/test_trading_acceptance_deliberation.py::test_declared_deliberation_stage_absence_fails_acceptance --no-cov`
+  failed with `AssertionError: assert 'PASS' == 'FAIL'`; restoring the row made the same command
+  pass: `1 passed in 1.09s`.
 - Remote gate run IDs **and job conclusions**, with the assertion that a run exists for the head SHA:
-- New agent's clause count (`0 / N` is the correct honest number):
-- Not met / operator sequencing:
+  pending branch push at this point in the handback. Current `origin/main` also records DL-84:
+  `build-images` is known blocked by upstream DHI `linux-libc-dev` CVEs, so if branch image gates
+  fail the cause must be recorded as DL-84 unless the logs show a new S153-specific failure.
+- New agent's clause count (`0 / N` is the correct honest number): deliberator LOCKED v1, `0 / 48`;
+  all clauses stay gray and every clause has a `laws/test-plan.md` row.
+- Not met / operator sequencing: Success factors 3, 4, 5 and 6 are not done in this worktree:
+  no tag deploy, no live `DeliberationRun`, no post-deploy `claude-opus-5` `LLMCall`, and no
+  functionality-check row/teardown. The sprint explicitly assigns those to operator sequencing
+  after merge because this worktree has no live credentials.
 
 ---
 
 ## Return notes
 
-- Branch and base commit:
-- Every red remote run hit on the way (run ID + cause + fix):
-- Anything the laws or this spec contradicted:
-- Anything found and deliberately not fixed:
+- Branch and base commit: `sprint-153-deliberator-agent`, rebased/fast-forwarded to current
+  `origin/main` at `46d4e14` before closeout edits; implementation version `0.85.00`.
+- Every red remote run hit on the way (run ID + cause + fix): none yet; branch not pushed when this
+  section was first filled. If `build-images` fails after push with the same Trivy `linux-libc-dev`
+  findings, that is DL-84/upstream DHI, not an S153 code defect.
+- Anything the laws or this spec contradicted: no new contradiction after ADR-0020. The sprint's
+  historical-live replay wording and no-credentials scope boundary point in different directions;
+  I used controlled local/planted acceptance proof and did not query the live spine.
+- Anything found and deliberately not fixed: `docs/laws/conventions.md` still does not list the new
+  `DLIB` prefix. I left it untouched because that conventions file says amendments require their own
+  ADR/RFC-level cycle, while S153 only asked for `docs/laws/INDEX.md` and `docs/laws/ledger.md`.

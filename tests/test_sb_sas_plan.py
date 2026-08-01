@@ -20,6 +20,30 @@ def test_repo_plan_derives_expected_topics_without_cap_violations() -> None:
     assert plan.SasGrant("dispatcher", "run.trigger", ("Send",)) in grants
     assert plan.SasGrant("supervisor", "supervisor.requests", ("Listen",)) in grants
     assert plan.SasGrant("researcher", "supervisor.requests", ("Send",)) in grants
+    assert (
+        plan.SasGrant(
+            "deliberator_manager",
+            "deliberator-proponent.requests",
+            ("Send",),
+        )
+        in grants
+    )
+    assert (
+        plan.SasGrant(
+            "deliberator_manager",
+            "deliberator-manager.reply",
+            ("Listen",),
+        )
+        in grants
+    )
+    assert (
+        plan.SasGrant(
+            "deliberator_proponent",
+            "deliberator-manager.reply",
+            ("Send",),
+        )
+        in grants
+    )
     assert "master" not in plan.grants_by_target(grants)
     assert plan.cap_violations(grants) == {}
 
@@ -67,6 +91,9 @@ def test_names_normalize_app_shapes_and_reject_ops() -> None:
     )
     assert plan.target_bundle_secret_name("portfolio_manager") == (
         "servicebus-connection-strings-portfolio-manager"
+    )
+    assert plan.target_secret_name("deliberator-proponent") == (
+        "servicebus-connection-string-deliberator-proponent"
     )
 
     with pytest.raises(ValueError, match="ops is not a Service Bus fleet target"):

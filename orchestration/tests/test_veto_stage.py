@@ -177,7 +177,8 @@ def test_no_llm_means_no_veto_stage() -> None:
 
 def test_find_pending_gates_on_the_deliberation_marker() -> None:
     graph = InMemoryGraphStore()
-    pm_run = graph.merge_node("PMRun", "pm-1", {})
+    graph.merge_node("PMRun", "legacy", {})
+    pm_run = graph.merge_node("PMRun", "pm-1", {"order_intent_set": {"run_id": "pm-1"}})
     assert [n.key for n in veto.find_pending(graph)] == ["pm-1"]
     marker = graph.merge_node(veto.DELIBERATION_RUN_LABEL, "pm-1", {})
     graph.add_edge(pm_run, marker, veto.DELIBERATED_EDGE)

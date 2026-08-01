@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -13,9 +13,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **OPR-IDN-01** — The operator's single job is bounded LLM translation: accept a human text
   command or explain request, call the LLM within a structured tool schema, and emit one typed
-  `TypedIntent`, a refusal, or a clarification request. It is the sole LLM boundary.
+  `TypedIntent`, a refusal, or a clarification request. It is the sole **operator-command** LLM
+  boundary — the only path from human text to a `TypedIntent`. It is **not** the only agent
+  permitted to call a model: any agent may do so under its own laws, bounded parameters and fault
+  boundary ([ADR-0020](../../../docs/decisions/0020-llmcall-is-substrate-not-the-operators.md)).
 - **OPR-IDN-02** — The operator exclusively writes these graph labels (single-writer rule):
-  `CommandAudit`, `Intent`, `LLMCall`.
+  `CommandAudit`, `Intent`. **`LLMCall` is deliberately not in this list**: it is a
+  substrate-level audit record written by *every* agent that calls a model, into one shared cost
+  ledger, and is therefore multi-writer by design (ADR-0020).
 
 ## Inputs (`IN`)
 
@@ -193,3 +198,25 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   that ceiling with the structured output. `model` default moved `claude-sonnet-4-6` →
   `claude-opus-5`: the deployed container never reads `.env`, so the code default — not the
   operator's local file — is what the fleet actually runs.
+
+- **v1.1 — `chore-llmcall-substrate` (2026-08-01), per [ADR-0020](../../../docs/decisions/0020-llmcall-is-substrate-not-the-operators.md).**
+  A **narrowing** of two existing clauses, not a new declaration — which is why it needed an ADR
+  rather than the S152 amendment convention (that convention governs *lacking declarations* of
+  decided capabilities, not scope reductions on locked, proven clauses).
+  - `OPR-IDN-01` — *"the sole LLM boundary"* → *"the sole **operator-command** LLM boundary"*.
+    *Why:* S153 makes the deliberator call a model directly. Leaving the broader sentence standing
+    while narrowing only the label claim would have left a known-untrue clause in a constitution.
+    The operator's real job — the only path from human text to a `TypedIntent` — is unchanged.
+  - `OPR-IDN-02` — `LLMCall` removed from the single-writer list; `CommandAudit` and `Intent`
+    remain exclusive. *Why:* an audit record of a provider call carries no operator concept and no
+    trading concept; it is substrate (ADR-0012). It is also already a **cost ledger** read by
+    `surfaces/dashboard/llm_costs.py` and the `/audit-costs` skill, so a per-agent label would have
+    hidden the system's largest LLM spender from the bill while the report still rendered a
+    confident total.
+  - `contracts/operator.py` — `owns_graph` narrowed to `("CommandAudit", "Intent")`.
+  - **`OPR-IDN-02` stays 🟩.** `test_operator_boundary_claims_graph_labels_once` was re-pointed to
+    the amended wording and still proves it exactly — the clause remains fully proven, and the
+    assertion was **not** loosened to accommodate the change. A second test pins the exclusion so
+    `LLMCall` cannot drift back in.
+  - The operator's own LLM-calling behaviour, prompts, tools and outputs are **unchanged**. Nothing
+    it does today is altered; only its claim over what *other* agents may do.

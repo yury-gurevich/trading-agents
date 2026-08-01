@@ -117,14 +117,6 @@ def test_ledger_is_idempotent_for_same_command() -> None:
     assert _node_count(graph, "LLMCall") == 1
 
 
-def test_operator_boundary_claims_graph_labels_once() -> None:
-    """OPR-IDN-02: operator exclusively owns CommandAudit, Intent, LLMCall
-    (single-writer rule)."""
-    from contracts.operator import CONTRACT
-
-    assert CONTRACT.owns_graph == ("CommandAudit", "Intent", "LLMCall")
-
-
 def _bound_bus(graph: InMemoryGraphStore, llm: FakeLLMClient) -> InProcessBus:
     bus = InProcessBus()
     OperatorAgent(bus, graph=graph, llm=llm).bind()

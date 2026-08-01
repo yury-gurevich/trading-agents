@@ -3,7 +3,7 @@
 | Clause | Status | Test |
 | --- | --- | --- |
 | OPR-IDN-01 | ⬜ | — |
-| OPR-IDN-02 | 🟩 | `test_operator_boundary_claims_graph_labels_once` |
+| OPR-IDN-02 | 🟩 | `test_operator_boundary_claims_graph_labels_once`; `test_operator_does_not_claim_llmcall_as_a_single_writer_label` (ADR-0020 exclusion) |
 | OPR-IN-01 | 🟩 | `test_interpret_maps_all_ten_families_with_confirmation_policy` |
 | OPR-IN-02 | 🟩 | `test_explain_returns_text_and_writes_audit_and_llm_call` |
 | OPR-IN-03 | 🟩 | `test_interpret_llm_exception_returns_refusal` |

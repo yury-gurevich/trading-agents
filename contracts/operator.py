@@ -80,7 +80,9 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("intent_parsed", "command_refused"),
-    owns_graph=("CommandAudit", "Intent", "LLMCall"),
+    # LLMCall is deliberately absent: it is a substrate-level audit record written by
+    # every agent that calls a model, into one shared cost ledger (ADR-0020).
+    owns_graph=("CommandAudit", "Intent"),
     external_io=("llm_provider",),
     depends_on=("supervisor",),
     mcp_tools=("interpret", "explain"),

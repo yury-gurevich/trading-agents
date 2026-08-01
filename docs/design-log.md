@@ -4168,7 +4168,7 @@ other two, because that part is settled — it simply had never been written dow
 
 ---
 
-## DL-81 · The marker never lands on the fills that motivated it: skip-before-mark on pre-existing state · status: OPEN (decision owed — planning agent)
+## DL-81 · The marker never lands on the fills that motivated it: skip-before-mark on pre-existing state · status: RESOLVED (option 3 approved and executed 2026-08-01)
 
 **Found in review of S154, after merge-quality was already established.** The sprint shipped exactly
 what it specified and the gates are green; this is a consequence of *my* spec's ordering that is only
@@ -4208,5 +4208,26 @@ Marking is correct for every *future* unresolvable fill. The gap is bounded to t
 append-only spine makes it irreversible. Until then the state is recorded here and in `STATE.md`:
 lifetime realized PnL is understated by exactly one trade, and the two attributed exits
 (AMD −$3,515.60, MRVL −$1,330.12) are unaffected.
+
+---
+
+**RESOLVED 2026-08-01 — option 3 executed with operator approval, and proven.** The one-time marker
+was written to `pm-run-927de0c7…:ABT:sell` **through an armed `GuardedGraphStore`** (the pack
+base64-injected exactly as the fleet receives it), so the new declaration was validated on the real
+write path rather than assumed: `pnl_unresolved_at = 2026-08-01T04:03:39.898023+00:00`.
+
+**No PnL was asserted.** `realized_pnl_cents` remains `None`, `broker_status` remains `filled`, and
+`quantity` remains 98 — the write added exactly one property and touched nothing else.
+
+**Permanence proven, not assumed:** a second write with a *different* value was refused by the
+append-only store — `ValueError: property 'pnl_unresolved_at' cannot be overwritten` — so the marker
+cannot drift and the conclusion is now durable. Exactly **one** `Fill` carries the marker.
+
+**One thing the audit surfaced and it is not a gap:** 12 further `side="sell"` fills carry no PnL,
+but every one is a `stop:*` resting broker stop that has **not filled** (`broker_status` unset). No
+realized PnL is due until they do, and `_needs_realized_pnl` correctly requires a broker status of
+`filled`/`partial`. They are live protection, not unresolved history.
+
+Lifetime realized PnL remains understated by exactly one trade, now **queryable** rather than silent.
 
 ---

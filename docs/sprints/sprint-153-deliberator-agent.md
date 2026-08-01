@@ -3,8 +3,11 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-153-deliberator-agent`
-**Status:** SPEC — packaged 2026-07-31, **not yet handed to a coding agent**
-**Version:** feat → **0.85.00** (MINOR: two middle digits — a new agent is a new capability)
+**Status:** SPEC — packaged 2026-07-31, **refreshed 2026-08-01** against the live spine and the
+S152/S154 merges; ready to hand to a coding agent
+**Version:** feat → **0.85.00** (MINOR: two middle digits — a new agent is a new capability).
+Base is **0.84.06** at time of writing; if `main` has moved, bump from wherever it actually is —
+a MINOR zeroes the patch group either way
 **Effort:** L
 **Decisions:** [DL-80](../design-log.md) **(read this first — it is the whole reason)** ·
 [sprint-109](sprint-109-heterogeneous-deliberation-models.md) the Defender/Challenger/Judge
@@ -72,9 +75,16 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    `trading_acceptance.py`, `trading_boundaries.py` and `trading_observatory.py` reference neither
    deliberation nor the forecaster, which is why every run scored `ACCEPTANCE PASS` with both
    missing. Add a check that **fails when a declared stage produces no artifact**, and prove it
-   fails by replaying a historical run (all 22 lack a `DeliberationRun`). Without this, the new
-   agent can rot exactly as the old one did, with the same green verdict. **It must be observed
+   fails by replaying a historical run — **all 23 lack a `DeliberationRun`** (re-verified against the
+   live spine 2026-08-01: 23 `PMRun`, 23 `RunRequest`, **0** `DeliberationRun`). Without this, the
+   new agent can rot exactly as the old one did, with the same green verdict. **It must be observed
    failing (DL-57/DL-70).**
+
+   > **This check has a second consumer, added after packaging.** [DL-82](../design-log.md) made it
+   > the **named precondition for revisiting DL-46 option A** (a deploy step in CI). Automating
+   > deploy while a declared stage can produce nothing and still score `ACCEPTANCE PASS` would
+   > automate the propagation of green-but-inert releases. So item 1 is not only this sprint's
+   > guardrail — it is what unblocks a separate deferred decision. Build it accordingly.
 2. **`contracts/deliberator.py`** — typed request/reply for one debate turn and one verdict.
    Substrate/pack discipline (ADR-0012): the *mechanism* is domain-free; the trading proposition is
    the payload.
@@ -83,6 +93,14 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    `laws/test-plan.md`, `settings.py` (role + `max_rounds` + per-role model as `tunable()`),
    `poll.py`, `store.py`, `agent.py`, `entrypoint.py`, `Dockerfile`, `tests/`. Every clause starts
    ⬜ and earns 🟩 only with a test citing its ID.
+
+   > **Follow the S152 standing convention when writing the new law** (merged 2026-08-01, in
+   > [sprint-152](sprint-152-law-amendment-cycle.md)): declare the capability this sprint *decides*,
+   > name the deciding ADR/DL in the changelog, and leave every clause ⬜ — **declaring is never
+   > proving**. A brand-new agent starts at `0 / N`, and that is the honest number. Also add a
+   > `test-plan.md` **row for every clause**, not only for the ones you write tests for:
+   > hardening-backlog row **O** exists because the older law books have clauses with no row at all,
+   > which makes them invisible rather than unproven. Do not reproduce that in a new bundle.
 4. **`kernel/deliberation.py` is demoted, not rewritten** — it becomes the shared reasoning core the
    three instances call. **No change to debate behaviour**: same rounds, same prompts byte-for-byte,
    same verdict parsing. `orchestration/veto_context.py` keeps building the evidence packet.

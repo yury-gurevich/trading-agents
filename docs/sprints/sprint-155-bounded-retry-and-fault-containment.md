@@ -427,8 +427,22 @@ ImportError: cannot import name 'FAULT_SUPPRESSION_LABEL'
 ModuleNotFoundError: No module named 'kernel.fault_collapse'
 ```
 
-- Remote gate run IDs **and job conclusions**, with a run asserted to exist for the head SHA: pending
-  push/poll; to be appended after branch CI creates the run for the pushed head SHA.
+- Remote gate run IDs **and job conclusions**, with a run asserted to exist for the head SHA:
+
+```text
+gh run list --branch sprint-155-bounded-retry-and-fault-containment --limit 5 --json databaseId,headSha,status,conclusion,workflowName,createdAt
+[{"conclusion":"success","databaseId":30706459592,"headSha":"67ba248...","status":"completed","workflowName":"Security Findings"},{"conclusion":"success","databaseId":30706459644,"headSha":"67ba248...","status":"completed","workflowName":"CI"}]
+
+gh run view 30706459644 --json databaseId,headSha,status,conclusion,workflowName,jobs
+CI run 30706459644, headSha 67ba248..., conclusion success:
+  quality job 91386325330 — success
+  test job 91386383071 — success
+  security job 91386325307 — success
+
+gh run view 30706459592 --json databaseId,headSha,status,conclusion,workflowName,jobs
+Security Findings run 30706459592, headSha 67ba248..., conclusion success:
+  gate job 91386325306 — success
+```
 - Not met / deliberately deferred: no live graph, Azure, broker, or credentialed proof attempted;
   this sprint is local-only by brief. Existing >150 line warnings remain warnings and were not
   refactored outside S155 scope.
@@ -444,7 +458,8 @@ ModuleNotFoundError: No module named 'kernel.fault_collapse'
   `FaultSuppression` node, and makes the suppressed volume queryable by surfaces. The trade-off is
   needing `flush()` or a later same-signature event after the window; that is better here than bucket
   keys that would perturb first-fault identity.
-- Every red remote run hit on the way (run ID + cause + fix): pending push/poll.
+- Every red remote run hit on the way (run ID + cause + fix): none. First pushed implementation-head
+  runs were green: CI `30706459644`, Security Findings `30706459592`.
 - Anything the laws or this spec contradicted: no contradiction found. The law set was silent on
   system-level graph-pull retry bounds, quarantine visibility, and duplicate fault emission volume,
   so I recorded `DRIFT-030` rather than amending locked laws.

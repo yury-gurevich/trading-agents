@@ -255,4 +255,26 @@ happened.
 ---
 
 ## Return notes
+
+**Remote gates, verified by SHA rather than by quoted run ID.** Branch tip `737f779`:
+
+| Workflow | Job | Run ID | Conclusion |
+| --- | --- | --- | --- |
+| CI | `quality` | `30684671619` | success |
+| CI | `test` | `30684671619` | success |
+| CI | `security` | `30684671619` | success |
+| Security Findings | `gate` | `30684671621` | success |
+
+Both runs were confirmed to carry `headSha=737f779` — a run **exists** for the merge SHA, which is
+the hardening-backlog assertion, not merely that some run was green.
+
+**Executed by the planning agent, not handed to a coding agent.** S152 ships no production code and
+its subject is the law book, which is planning-owned; the usual *"never edit `laws.md`"* instruction
+exists to stop a coding agent doing this unsupervised, and inverting it for a coding agent would have
+been the riskier arrangement.
+
+**What I would flag for the next reader.** The `partial` case named inside DRIFT-029 is the one live
+loose end: it is a *read-model* problem (derive current status from `BrokerOrderStatus` facts) that
+no law edit can close, and it will re-surface the moment a partial fill occurs in production. Zero
+fills are in that state today, which is the only reason it is not urgent.
 - The standing convention as written into the return notes:

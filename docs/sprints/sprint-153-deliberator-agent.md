@@ -69,6 +69,25 @@ rounds by requesting a turn from each peer in order, then rules. Both patterns a
 repo — graph-pull (the seven pipeline agents) and served request/reply (proven over Service Bus in
 S102) — so **no new transport and no new orchestration concept is introduced.**
 
+> ## ⚠️ Resolved before you start: the operator's LLM claim
+>
+> The first delegated attempt at this sprint stopped and reported a genuine contradiction — correctly,
+> and before writing any code. `OPR-IDN-01` claimed the operator was *"the sole LLM boundary"* and
+> `OPR-IDN-02` claimed single-writer ownership of `LLMCall` (a **green** clause), which this sprint's
+> `ANTHROPIC_API_KEY` and success factor 5 would both have broken.
+>
+> **It is now settled and merged — you are not blocked.**
+> [ADR-0020](../decisions/0020-llmcall-is-substrate-not-the-operators.md) makes `LLMCall` a
+> **substrate-level audit record**: any agent may call a model under its own laws, and every LLM
+> caller writes its own `LLMCall` into the one shared cost ledger. `chore-llmcall-substrate` shipped
+> the amendment (operator laws **v1 → v1.1**, `owns_graph` narrowed, `v0.84.07`).
+>
+> **What this means for you:** write `LLMCall` nodes directly from the deliberator — that is now the
+> declared design, not a violation. Do **not** invent a `DeliberationLLMCall`; a per-agent label was
+> considered and rejected because `surfaces/dashboard/llm_costs.py` and the `/audit-costs` skill both
+> enumerate `LLMCall` only, and fragmenting it would hide the system's largest LLM spender from the
+> bill. Do **not** re-amend the operator law; that work is done.
+
 ## Scope
 
 1. **The acceptance gate learns to fail on an absent stage — do this FIRST.**
@@ -117,6 +136,14 @@ S102) — so **no new transport and no new orchestration concept is introduced.*
    list**, and the S144 guard is now **live on the fleet**. Declare its properties (including the
    transcript/narrative shape) and prove the superset with `scripts/vocabulary_properties.py`,
    or the first real write fails closed.
+
+   **Also decide `LLMCall`'s shape here** — [ADR-0020](../decisions/0020-llmcall-is-substrate-not-the-operators.md)
+   deliberately left it to this sprint, as the first non-operator writer. Two questions: whether
+   `LLMCall` gains a declared property list under the guard (it is not property-enforced today —
+   only `Fill` and `Recommendation` are), and **how the calling agent is identified** — a new
+   property, or derivable from edges. Whichever you choose, the cost consumers
+   (`surfaces/dashboard/llm_costs.py`, `/audit-costs`) must still be able to attribute spend per
+   agent, because attributing the new spend is the entire reason the label stayed shared.
 7. **Ledger + INDEX rows** for the new agent in `docs/laws/ledger.md` and `docs/laws/INDEX.md`.
 
 ## Non-goals — do not do these

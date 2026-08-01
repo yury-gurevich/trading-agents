@@ -4280,3 +4280,50 @@ touches nearly every text file, and S152 is a docs-heavy sprint — running them
 manufacture conflicts across the whole law book.
 
 ---
+
+## DL-83 · The delegated agent stopped and reported a law contradiction instead of coding around it · status: RESOLVED (ADR-0020 + chore merged, 2026-08-01)
+
+**The process worked, and that is the record worth keeping.** S153's delegated prompt said *"if a
+law, an ADR, or the brief itself contradicts what you find, STOP and report it — a contradiction you
+surface is a success, not a delay."* The coding agent did exactly that, **before editing a single
+file**, and its recommendation (decide the ownership question first, then implement) was the right
+sequencing. Worth noting because the cheap failure mode was available and not taken: it could have
+invented `DeliberationLLMCall`, satisfied every gate, and shipped a silent hole.
+
+**The contradiction.** S153 hands the deliberator an `ANTHROPIC_API_KEY` and makes an `LLMCall` node
+a success factor. `OPR-IDN-01` said the operator *"is the sole LLM boundary"*; `OPR-IDN-02` said it
+exclusively writes `CommandAudit`, `Intent`, `LLMCall`, and `contracts/operator.py` encoded it.
+
+**On verification the conflict was sharper than reported** — two things the agent had not surfaced:
+
+1. **`OPR-IDN-02` is 🟩 green**, pinned by `test_operator_boundary_claims_graph_labels_once`. S153
+   would have broken a *proven* clause, not merely an asserted one.
+2. **`LLMCall` is already a cost ledger with two consumers** — `surfaces/dashboard/llm_costs.py` and
+   the `/audit-costs` skill both enumerate it, and the skill names `agents/operator/store.py` as
+   *the* writer. The deliberator is about to become the system's **largest** LLM consumer.
+
+That second fact is what decided it. The tempting fix — a deliberator-owned label — breaks no law and
+passes every gate, and would have made the biggest spender **invisible to the bill while the cost
+report still rendered a confident total**: DL-57 landing on the instrument used to watch spend.
+
+**Also checked, and it mattered:** only `operator/store.py` writes `LLMCall` today, so there was
+**no code drift**. The law was being honoured exactly. This was a genuine forward-looking conflict,
+caught before implementation rather than rationalised after it.
+
+**Resolved** by [ADR-0020](decisions/0020-llmcall-is-substrate-not-the-operators.md) — `LLMCall` is
+substrate; any agent may call a model and writes its own audit node into the one ledger; the operator
+keeps `CommandAudit` and `Intent` and remains the sole *operator-command* LLM boundary — then
+`chore-llmcall-substrate` (`v0.84.07`, operator laws **v1 → v1.1**).
+
+**Why an ADR and not the S152 convention.** S152's standing convention covers a *lacking declaration*
+of a decided capability. This was a **scope reduction on a locked, proven clause** — a different act,
+and a bigger one. Recording the distinction so the convention is not stretched to cover narrowings
+by precedent.
+
+**Two process notes for next time.** The chore was kept **separate from S153** so no law amendment
+rides inside a feature implementation. And `OPR-IDN-02` **stays green**: the test was re-pointed to
+the amended wording and still proves it exactly — it was *not* loosened to accommodate the change,
+which is the failure mode S151 taught. A second test pins the exclusion and was observed failing on
+a planted revert (DL-70).
+
+---

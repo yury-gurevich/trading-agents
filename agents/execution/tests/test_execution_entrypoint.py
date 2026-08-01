@@ -33,21 +33,28 @@ def test_main_uses_settings_broker_factory(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(ep, "find_pending_work", lambda graph_arg: ["work-item"])
 
     def fake_process(
-        item: object, *, graph: object, broker: object, settings: object
+        item: object, *, graph: object, broker: object, settings: object, sink: object
     ) -> None:
         seen["item"] = item
         seen["graph"] = graph
         seen["broker"] = broker
         seen["settings"] = settings
+        seen["sink"] = sink
 
     def fake_work_loop(
         find_pending: Callable[[], list[str]],
         process_one: Callable[[str], None],
         *,
-        poll_interval: int,
+        poll_interval: float,
+        graph: object,
+        agent: str,
+        flush_faults: Callable[[], None],
     ) -> None:
         seen["pending"] = find_pending()
         seen["poll_interval"] = poll_interval
+        seen["loop_graph"] = graph
+        seen["agent"] = agent
+        seen["flush_faults"] = flush_faults
         process_one("work-item")
 
     monkeypatch.setattr(ep, "process_work_item", fake_process)
@@ -59,5 +66,9 @@ def test_main_uses_settings_broker_factory(monkeypatch: pytest.MonkeyPatch) -> N
     assert seen["pending"] == ["work-item"]
     assert seen["item"] == "work-item"
     assert seen["graph"] is graph
+    assert seen["loop_graph"] is graph
     assert seen["broker"] is broker
     assert seen["poll_interval"] == 7
+    assert seen["agent"] == "execution"
+    assert seen["sink"] is not None
+    assert callable(seen["flush_faults"])

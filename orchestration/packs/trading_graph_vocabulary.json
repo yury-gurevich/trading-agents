@@ -1,6 +1,6 @@
 {
   "_comment": "Pack graph vocabulary (R007). Mechanism lives in kernel/graph_vocabulary.py; these names are trading-pack data (ADR-0012). Constraints only - no inference.",
-  "_sources": "live graph (36 labels / 25 edge types) + code literals and constants + laws labels_owned/read + code-only paths not yet observed live (S144: broker-native stop edges)",
+  "_sources": "live graph (36 labels / 25 edge types) + code literals and constants + laws labels_owned/read + code-only paths not yet observed live (S144: broker-native stop edges; S155: fault suppression/quarantine labels)",
   "labels": [
     "Agent",
     "AgentDefinition",
@@ -25,6 +25,7 @@
     "ExecutionRun",
     "Experiment",
     "Fault",
+    "FaultSuppression",
     "Fill",
     "Flag",
     "FlagResolution",
@@ -72,6 +73,7 @@
     "Ticker",
     "TradeNarrative",
     "TrainingExample",
+    "WorkItemQuarantine",
     "_Reachability"
   ],
   "edge_types": [

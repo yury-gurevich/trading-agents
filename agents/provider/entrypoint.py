@@ -16,6 +16,7 @@ from agents.provider.settings import ProviderSettings
 from kernel import InProcessBus
 from kernel.bootstrap import activate_agent, master_public_key_from_env
 from kernel.graph_env import build_graph_from_env
+from kernel.work_loop_policy import poll_interval_from_env
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
@@ -51,7 +52,9 @@ def main() -> None:  # pragma: no cover
     work_loop(
         lambda: find_pending(graph),
         lambda node: ingest_run_node(node, agent=agent),
-        poll_interval=int(os.environ.get("PROVIDER_POLL_INTERVAL", "60")),
+        poll_interval=poll_interval_from_env("PROVIDER_POLL_INTERVAL"),
+        graph=graph,
+        agent="provider",
     )
 
 

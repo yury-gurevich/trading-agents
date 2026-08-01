@@ -81,6 +81,8 @@ def _cmd_incidents(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
                 "capability": fault.capability,
                 "severity": fault.severity,
                 "message": fault.message,
+                "occurrence_count": fault.occurrence_count,
+                "suppressed_count": fault.suppressed_count,
             }
             for fault in open_faults(ctx.graph)
         ]

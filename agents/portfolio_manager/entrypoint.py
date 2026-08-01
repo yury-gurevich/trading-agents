@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from agents.portfolio_manager.poll import evaluate_analyst_node, find_pending
 from agents.portfolio_manager.settings import PortfolioManagerSettings
+from kernel import CollectingFaultSink
 from kernel.bootstrap import activate_agent, master_public_key_from_env
+from kernel.fault_graph import GraphFaultSink
 from kernel.graph_env import build_graph_from_env
 from kernel.work_loop import work_loop
+from kernel.work_loop_policy import poll_interval_from_env
 
 
 def main() -> None:  # pragma: no cover
@@ -25,10 +28,16 @@ def main() -> None:  # pragma: no cover
 
     graph = build_graph_from_env()
     settings = PortfolioManagerSettings()
+    fault_sink = GraphFaultSink(graph, CollectingFaultSink())
     work_loop(
         lambda: find_pending(graph),
-        lambda node: evaluate_analyst_node(node, graph=graph, settings=settings),
-        poll_interval=int(os.environ.get("PM_POLL_INTERVAL", "60")),
+        lambda node: evaluate_analyst_node(
+            node, graph=graph, settings=settings, sink=fault_sink
+        ),
+        poll_interval=poll_interval_from_env("PM_POLL_INTERVAL"),
+        graph=graph,
+        agent="portfolio_manager",
+        flush_faults=fault_sink.flush,
     )
 
 

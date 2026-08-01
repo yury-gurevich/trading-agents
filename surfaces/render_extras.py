@@ -22,6 +22,12 @@ def render_incidents(faults: tuple[FaultView, ...]) -> str:
         return "no open incidents"
     lines = [f"Open incidents: {len(faults)}"]
     for fault in faults:
+        occurrence = (
+            f"  occurrences: {fault.occurrence_count} "
+            f"(suppressed {fault.suppressed_count})"
+            if fault.occurrence_count > 1
+            else ""
+        )
         lines.extend(
             (
                 f"\n  [{fault.fault_id}] {fault.source_agent} - {fault.capability}",
@@ -30,6 +36,8 @@ def render_incidents(faults: tuple[FaultView, ...]) -> str:
                 f"  {fault.occurred_at}",
             )
         )
+        if occurrence:
+            lines.append(occurrence)
     return "\n".join(lines)
 
 

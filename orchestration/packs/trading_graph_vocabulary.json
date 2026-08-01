@@ -369,6 +369,7 @@
       "order_type",
       "order_volatility_fallback",
       "order_volatility_present",
+      "pnl_unresolved_at",
       "position_ref",
       "price_cents",
       "price_currency",

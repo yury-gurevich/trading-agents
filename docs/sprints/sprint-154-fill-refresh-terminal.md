@@ -528,13 +528,13 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 
 | Law file | Read? | Clauses that bind this sprint | Anything contradictory or silent |
 | --- | --- | --- | --- |
-| `agents/execution/laws/laws.md` | ⬜ | | |
-| `agents/execution/laws/test-plan.md` | ⬜ | | |
-| `agents/reporter/laws/laws.md` | ⬜ | | |
-| `agents/reporter/laws/test-plan.md` | ⬜ | | |
-| `docs/laws/conventions.md` | ⬜ | | |
-| `docs/laws/dependencies.md` | ⬜ | | |
-| `docs/laws/drift-register.md` | ⬜ | | |
+| `agents/execution/laws/laws.md` | yes | `EXEC-IDN-01`, `EXEC-IDN-02`, `EXEC-STA-03`, `EXEC-IDM-01`, `EXEC-FAIL-03`, `EXEC-TYP-02`, `EXEC-DEP-02`, `EXEC-DEP-03`, `EXEC-OBS-01`, `EXEC-OBS-02` | No contradiction. Silent on the terminal broker-status refresh boundary and on a durable unresolved-PnL marker; record as DRIFT-029 rather than editing locked law. |
+| `agents/execution/laws/test-plan.md` | yes | Existing cited coverage for append-only fills, idempotency, status types, and broker/fault observability; `EXEC-FAIL-03` remains partial/gray. | No contradiction. `EXEC-FAIL-03` is explicitly partial and out of scope for this sprint's chore branch; S154 tests may cite it only for the governed fault/idempotency behaviour they exercise. |
+| `agents/reporter/laws/laws.md` | yes | `RPT-NEV-02`, `RPT-OUT-02`, `RPT-NEV-03`, `RPT-STA-01`, `RPT-OBS-01` | No contradiction. Reporter law confirms item 3 should be verification/read-only unless code proves a change is required. |
+| `agents/reporter/laws/test-plan.md` | yes | Existing outcome metric tests cite `RPT-OUT-02`/`RPT-NEV-03`; `RPT-NEV-02` is already green via import-boundary evidence. | No contradiction. Add the marked-Fill reporter regression without mutating execution-owned nodes. |
+| `docs/laws/conventions.md` | yes | Clause IDs are append-only; locked laws are amended only deliberately; gray to green requires a passing functional test citing the clause ID; drift is recorded centrally. | No contradiction. Supports adding DRIFT-029 and not touching locked execution/reporter law text. |
+| `docs/laws/dependencies.md` | yes | `DEP-POSTGRES-03` append-only graph parity, `DEP-BROKER-01`, `DEP-BROKER-02`. | No contradiction. Reducing repeat broker lookups/writes for terminal fills preserves the broker boundary and does not alter broker semantics. |
+| `docs/laws/drift-register.md` | yes | Existing execution rows DRIFT-024..027 show the current row format and the pattern for implemented-but-undeclared execution semantics. | No contradiction. DRIFT-029 should include both the terminal refresh boundary/unresolved-PnL marker and the deferred `partial` current-status read-model gap. |
 
 ---
 
@@ -542,24 +542,29 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 
 | # | Test | File::name | Result | Planted-failure observed? |
 | --- | --- | --- | --- | --- |
-| A1 | filled not re-selected | | | |
-| A2 | rejected not re-selected | | | |
-| A3 | partial still refreshed | | | |
-| A4 | first refresh unchanged | | | |
-| A5 | five passes, count stable | | | |
-| B6 | one fault, one marker | | | |
-| B7 | entry-basis-unresolved marked | | | |
-| B8 | healthy path unmarked | | | |
-| C9 | resolvable PnL unchanged | | | |
-| C10 | reporter excludes marked fill | | | |
-| C11 | stop path untouched | | | |
-| D12 | vocabulary planted removal | | | |
+| A1 | filled not re-selected | `agents/execution/tests/test_fill_refresh_terminal.py::test_filled_broker_status_is_not_reselected_for_order_status_writes` | PASS — final focused set `67 passed`; full `make ci` `2000 passed, 6 skipped`, coverage `100.00%` | Yes — pre-fix focused run failed because the old selector wrote one `BrokerOrderStatus` node. |
+| A2 | rejected not re-selected | `agents/execution/tests/test_fill_refresh_terminal.py::test_rejected_broker_status_is_not_reselected_for_order_status_writes` | PASS — same focused and full gates | Yes — pre-fix focused run failed because the old selector wrote one `BrokerOrderStatus` node. |
+| A3 | partial still refreshed | `agents/execution/tests/test_fill_refresh_terminal.py::test_partial_broker_status_still_refreshes_status_evidence` | PASS — same focused and full gates | Yes — planted `partial` into the terminal set and the test failed with `0 == 1`; restored and it passed. |
+| A4 | first refresh unchanged | `agents/execution/tests/test_fill_refresh_terminal.py::test_first_refresh_without_broker_status_still_records_terminal_evidence` | PASS — same focused and full gates | No — regression guard for behaviour the old code already had. |
+| A5 | five passes, count stable | `agents/execution/tests/test_fill_refresh_terminal.py::test_terminal_fill_refresh_is_idempotent_across_five_passes` | PASS — same focused and full gates | Yes — pre-fix focused run failed with 5 status facts instead of 1. |
+| B6 | one fault, one marker | `agents/execution/tests/test_fill_refresh_unresolved_pnl.py::test_missing_position_ref_records_one_unresolved_pnl_marker` | PASS — same focused and full gates | Yes — pre-fix focused run failed with missing `pnl_unresolved_at`. |
+| B7 | entry-basis-unresolved marked | `agents/execution/tests/test_fill_refresh_unresolved_pnl.py::test_unresolved_entry_basis_records_one_marker_and_fault` | PASS — same focused and full gates | Yes — pre-fix focused run failed with missing `pnl_unresolved_at`. |
+| B8 | healthy path unmarked | `agents/execution/tests/test_fill_refresh_unresolved_pnl.py::test_amd_exit_shape_still_realizes_pnl_without_unresolved_marker` | PASS — same focused and full gates | No — healthy-path regression guard; old code already realized PnL. |
+| C9 | resolvable PnL unchanged | `agents/execution/tests/test_fill_refresh_unresolved_pnl.py::test_amd_exit_shape_still_realizes_pnl_without_unresolved_marker` | PASS — AMD-shaped `exit:{ref}:AMD:sell` recovers `position_ref` through `EXECUTES` and writes `-351560` cents | No — healthy-path regression guard. |
+| C10 | reporter excludes marked fill | `agents/reporter/tests/test_trade_outcomes.py::test_unresolved_pnl_marker_is_not_counted_as_realized_loss` | PASS — reporter returns only `closed_trades_with_pnl: 0.0` | No — reporter was already correct; this verifies the marker is not PnL evidence. |
+| C11 | stop path untouched | `agents/execution/tests/test_broker_stops.py::test_execute_pm_node_places_one_weighted_broker_stop_idempotently` | PASS — existing broker-native stop placement/idempotency test stayed green | No — stop path was intentionally untouched. |
+| D12 | vocabulary planted removal | `tests/test_graph_vocabulary_completeness.py::test_fill_unresolved_pnl_marker_is_declared_and_guarded`; `tests/test_graph_vocabulary_properties.py::test_every_property_the_code_can_write_is_declared` | PASS — restored declaration gives `2 passed`; full vocabulary set `33 passed` | Yes — temporarily removing `pnl_unresolved_at` failed both tests naming the undeclared `Fill` property. |
 
 ---
 
 ## Tests changed because they encoded the old spec
 
-<!-- list them here with a one-line reason each; "none" is an acceptable answer -->
+- `agents/execution/tests/test_realized_pnl_refresh.py::test_existing_broker_price_is_used_when_backfilling_realized_pnl`
+  was renamed to `test_existing_broker_price_is_used_on_first_realized_pnl_refresh` and narrowed.
+  The old fixture pre-seeded `broker_status="filled"` and expected realized PnL recomputation; S154
+  makes terminal `broker_status` a hard refresh boundary, so the retained invariant is that an
+  existing `broker_price_cents` is respected on the first terminal refresh before `broker_status`
+  exists.
 
 ---
 
@@ -567,18 +572,88 @@ raise it in your return notes. **Do not silently pick option 1 because it makes 
 
 **Files changed:**
 
-<!-- fill -->
+- `agents/execution/reconciliation_store.py`
+- `agents/execution/realized_pnl.py`
+- `agents/execution/tests/test_fill_refresh_terminal.py`
+- `agents/execution/tests/test_fill_refresh_unresolved_pnl.py`
+- `agents/execution/tests/test_realized_pnl_refresh.py`
+- `agents/execution/tests/test_broker_stops.py`
+- `agents/reporter/tests/test_trade_outcomes.py`
+- `tests/test_graph_vocabulary_completeness.py`
+- `orchestration/packs/trading_graph_vocabulary.json`
+- `docs/laws/drift-register.md`
+- `docs/sprints/sprint-154-fill-refresh-terminal.md`
+- `pyproject.toml`
+- `uv.lock`
 
 **Proven (LAW-02):**
 
-<!-- version bump, focused runs, make ci output, remote run IDs -->
+- Version bump: `pyproject.toml` is `0.84.05`; `uv lock` completed with `Resolved 170 packages in
+  3ms`, and `uv.lock` records the local package as normalized `0.84.5`.
+- Law reading record was filled in this file before the first code change. No law contradiction was
+  found; law silence was recorded as DRIFT-029.
+- Pre-fix planted regression run:
+  `uv run pytest agents/execution/tests/test_fill_refresh_terminal.py agents/execution/tests/test_fill_refresh_unresolved_pnl.py agents/reporter/tests/test_trade_outcomes.py::test_unresolved_pnl_marker_is_not_counted_as_realized_loss agents/execution/tests/test_broker_stops.py::test_execute_pm_node_places_one_weighted_broker_stop_idempotently --no-cov`
+  -> `5 failed, 5 passed`. The failures were the old terminal selector writing new status facts, the
+  five-pass count growing to 5, and the absent `pnl_unresolved_at` marker.
+- Partial planted violation:
+  temporarily adding `"partial"` to `_TERMINAL_BROKER_STATUSES`, then
+  `uv run pytest agents/execution/tests/test_fill_refresh_terminal.py::test_partial_broker_status_still_refreshes_status_evidence --no-cov`
+  -> failed with `assert 0 == 1`; after restoring the terminal set to `{"filled", "rejected"}`,
+  the same command -> `1 passed`.
+- Vocabulary planted omission:
+  temporarily removing `pnl_unresolved_at` from the pack, then
+  `uv run pytest tests/test_graph_vocabulary_completeness.py::test_fill_unresolved_pnl_marker_is_declared_and_guarded tests/test_graph_vocabulary_properties.py::test_every_property_the_code_can_write_is_declared --no-cov`
+  -> `2 failed`, both naming undeclared `pnl_unresolved_at`; after restoring the declaration, the
+  same command -> `2 passed`.
+- Vocabulary recovery scripts and guard suite:
+  `uv run python scripts\vocabulary_coverage.py` -> exit 0, no stdout.
+  `uv run python scripts\vocabulary_signatures.py` -> exit 0, no stdout.
+  `uv run pytest tests/test_graph_vocabulary_completeness.py tests/test_graph_vocabulary.py tests/test_graph_vocabulary_properties.py --no-cov`
+  -> `33 passed`.
+- Focused post-fix behaviour/vocabulary run:
+  `uv run pytest agents/execution/tests/test_reconciliation.py agents/execution/tests/test_realized_pnl_refresh.py agents/execution/tests/test_realized_pnl_multilot.py agents/execution/tests/test_fill_refresh_terminal.py agents/execution/tests/test_fill_refresh_unresolved_pnl.py agents/reporter/tests/test_trade_outcomes.py agents/execution/tests/test_broker_stops.py tests/test_graph_vocabulary_completeness.py tests/test_graph_vocabulary.py tests/test_graph_vocabulary_properties.py --no-cov`
+  -> `67 passed`.
+- First local `make ci` attempt exposed one missing coverage branch in
+  `agents/execution/reconciliation_store.py:47` and failed at `99.99%`; adding
+  `test_pending_fill_without_broker_match_writes_no_status_evidence` covered the existing no-match
+  no-op branch.
+- Full local gate:
+  `make ci` -> exit 0. Key output: Ruff passed; format check `868 files already formatted`; mypy
+  `Success: no issues found in 725 source files`; import-linter `4 kept, 0 broken`; module-size
+  warnings only, no hard blocks; module-header passed; pytest `2000 passed, 6 skipped`, total
+  coverage `100.00%`; `pip-audit` `No known vulnerabilities found`; detect-secrets tracked and
+  untracked scans passed.
+- Remote gate: pending branch push and GitHub run completion; fill the table above after the run IDs
+  exist.
 
 **Not met / verified failing:**
 
-<!-- state plainly; deploy + live proof are operator sequencing after merge -->
+- Fleet redeploy carrying the new vocabulary pack is operator sequencing after merge, not performed.
+- Live production proof on `sched-*` is operator sequencing after merge/deploy, not performed.
+- ABT PnL/lineage backfill was explicitly out of scope and not performed.
+- Existing production terminal fills that already have `broker_status` will not be re-selected by
+  this code path; newly terminal unresolved sells get the durable marker at first terminal refresh.
+- Remote GitHub gate evidence is not yet filled until the branch is pushed and all four jobs finish.
 
 ---
 
 ## Return notes
 
-<!-- fill -->
+- Partial-upgrade judgment: reading the laws did not change the deferral decision, but it did make
+  the gap worth naming in DRIFT-029. Adding `"partial"` to the terminal set is wrong because it
+  freezes in-flight evidence, and rewriting `Fill.broker_status` is still forbidden by the
+  append-only model. The right end-state is a read model that derives current broker status from
+  append-only `BrokerOrderStatus` facts; with zero production partial fills affected, that is not a
+  PATCH-sized change.
+- Law contradictions: none found. Law silence: execution law does not declare the terminal refresh
+  boundary or unresolved-PnL marker; DRIFT-029 opened.
+- Reporter judgment: no reporter source change was needed. `_pnl_cents` already excludes nodes
+  without integer `realized_pnl_cents`; the new reporter test verifies `pnl_unresolved_at` is not
+  treated as PnL evidence and does not inflate `closed_trades_with_pnl`.
+- Scope held: no `write_order_status` dedupe, no store mutability, no reporter per-run scoping
+  change, no ABT PnL backfill, and no stop-path source change.
+- Local red on the way: first `make ci` failed only on coverage (`99.99%`, missed
+  `reconciliation_store.py:47`); fixed by adding the no-matching-broker-fill no-op test, then
+  `make ci` passed.
+- Remote red runs on the way: pending; record any after the branch push.

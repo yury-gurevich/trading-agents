@@ -28,6 +28,7 @@ from kernel import CollectingFaultSink, InMemoryGraphStore
 
 
 def test_execute_pm_node_places_one_weighted_broker_stop_idempotently() -> None:
+    """EXEC-IDN-01 / EXEC-OBS-01: broker-native stop path remains intact."""
     graph = InMemoryGraphStore()
     broker = PaperBroker()
     sink = CollectingFaultSink()

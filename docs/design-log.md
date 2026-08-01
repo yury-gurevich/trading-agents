@@ -4167,3 +4167,46 @@ Either way the debate roles stay one image with a distributed role, and one inst
 other two, because that part is settled — it simply had never been written down.
 
 ---
+
+## DL-81 · The marker never lands on the fills that motivated it: skip-before-mark on pre-existing state · status: OPEN (decision owed — planning agent)
+
+**Found in review of S154, after merge-quality was already established.** The sprint shipped exactly
+what it specified and the gates are green; this is a consequence of *my* spec's ordering that is only
+visible against production state, not a defect in the implementation.
+
+S154 ships two things deliberately: **item 1** stops selecting fills whose `broker_status` is
+terminal, and **item 2** records an unresolvable realized-PnL conclusion once via
+`Fill.pnl_unresolved_at`. The spec argued for both on the grounds that item 1 alone would stop the
+ABT fault *by accident of scheduling* while item 2 stops it *because the system recorded what it
+concluded* — and that a silent skip is the DL-57 failure mode.
+
+**The ordering defeats that argument for every fill that is already terminal.** The new guard sits
+before the broker lookup and before `realized_pnl_props`, so a fill that already carries
+`broker_status="filled"` is skipped before the marker can ever be written. Verified against the live
+spine: **39 fills are already terminal**, and exactly **one** of them is a sell fill still needing a
+PnL conclusion — `pm-run-927de0c7…:ABT:sell`, the 98-share exit filled at $101.35 on 2026-07-24 that
+motivated the whole sprint. It will now be silently skipped forever: no fault (the win), and no
+marker (the DL-57 shape, preserved in the one instance the marker existed for).
+
+Marking is correct for every *future* unresolvable fill. The gap is bounded to the historical set.
+
+**The road not taken, and why the decision is owed rather than taken.**
+
+1. **Reorder so the marker is evaluated before the terminal skip** — rejected. It would re-open the
+   full scan over all 39 settled fills on every run to serve one historical row, which is the exact
+   cost the sprint exists to remove.
+2. **Backfill the real PnL** by reconstructing which `Position` that exit closed — rejected for now.
+   The key encodes no `position_ref` and there is no `EXECUTES` order; any reconstruction is
+   inference, and on an append-only store a wrong number can never be withdrawn. Fabricating lineage
+   to make a metric appear is the worst available outcome (S154 non-goals).
+3. **One-time marker write** on that single node — **recommended.** `pnl_unresolved_at` is now a
+   declared `Fill` property, the node does not carry it, so the write is append-safe by construction
+   and idempotent thereafter. It converts a silent historical skip into a queryable known gap without
+   asserting any PnL figure.
+
+**Owed:** operator sign-off on option 3, because it is a write to the production graph and the
+append-only spine makes it irreversible. Until then the state is recorded here and in `STATE.md`:
+lifetime realized PnL is understated by exactly one trade, and the two attributed exits
+(AMD −$3,515.60, MRVL −$1,330.12) are unaffected.
+
+---

@@ -23,6 +23,60 @@ drop semantics (adjacent, not changed) · [ADR-0015](../decisions/0015-exit-life
 
 ---
 
+## Handover note — planning agent → coding agent, 2026-08-01
+
+**You are getting a small, well-diagnosed sprint. The diagnosis is done; do not redo it.** Everything
+below the fold is evidence I gathered from the live production spine this morning, and the numbers in
+it are real, not illustrative. Your job is the fix, the tests, and the gate — not the investigation.
+
+**Where this came from.** Nobody reported a bug. `sched-2026-07-31` ran **8/8 stages, clean**, and I
+was tracing it to close out S144's functionality check. The defect was sitting inside a green run —
+which is the whole reason it lasted this long, and the reason the test plan leans so hard on counting
+writes rather than asserting absence of errors. There is no exception to catch here. **The symptom is
+a number that keeps going up.**
+
+**Read in this order.** The doc is long because it is a cold-start handover; it is not all equally
+urgent.
+
+1. **DEFINITION OF DONE** and **the vocabulary guard warning** — the two ways this sprint can go
+   wrong in production rather than in review. Both are immediately below.
+2. **The defect, precisely** — the four-line explanation of why `status` can never change. If that
+   part does not click, stop and ask; everything else follows from it.
+3. **What ships**, items 1–5, in order. Item 1 is the root cause and is roughly a two-line change.
+   Items 2–5 are what stop it recurring silently.
+4. The test plan, non-goals, and the road not taken.
+
+**The three ways I expect this to go wrong**, in likelihood order:
+
+- **You "fix" the wrong layer.** The store is right, `write_order_status` is right, the reporter is
+  right. Only the *selector* is wrong. Every tempting fix that touches the other three is listed
+  under non-goals with a reason — read them before you decide you have a better idea. If you still
+  think you do, say so in the return notes; a challenge I can read is worth more than silent
+  compliance.
+- **You add the `Fill` property and forget to declare it.** That is a production `VocabularyError` at
+  22:30 UTC, not a test failure. Item 4 exists for this and is not optional.
+- **You stop at local green.** See DEFINITION OF DONE. Four remote runs went red unattended just
+  before this sprint was written, which is why that section is a gate and not a footnote.
+
+**What I want back that is not code.** Two judgement calls are genuinely yours to report on, and I
+would rather have your opinion than your compliance:
+
+- the **partial-upgrade gap** (road not taken) — I deferred it deliberately with zero production
+  fills affected; tell me if reading the laws changes that;
+- anything in the **law reading** that contradicts this spec. The constitution outranks me. **A
+  contradiction you surface is a success, not a delay.**
+
+**What is explicitly not yours:** the ABT PnL backfill (mine — production lineage), the `mcp` 2.0.0
+Dependabot breakage (separate chore branch), `EXEC-FAIL-03` coverage (`chore-exec-fail-03-coverage`),
+and the fleet redeploy that carries the new vocabulary pack (operator sequencing after merge).
+
+**Scale check so you can size this honestly:** the production change is a selector condition, a
+marker property, and a guard clause — I would expect well under 50 lines of source across three
+files. If your diff is growing past that, something has gone wrong in the reading, and the right move
+is to stop and report rather than to keep going.
+
+---
+
 ## 🔴 READ THIS FIRST — the vocabulary guard is ARMED in production as of 2026-07-31
 
 This is the **first sprint to ship under a live write guard.** S144 was enabled on the fleet last

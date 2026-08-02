@@ -99,7 +99,7 @@ def test_run_once_continues_after_poisoned_intent_and_anchors_execution(
     statuses = {
         node.props["ticker"]: node.props["status"] for node in graph.list_nodes("Fill")
     }
-    assert processed == 1
+    assert processed.advanced == 1
     assert broker.submitted == [
         "pm-run-fixture:AAA:buy",
         "pm-run-fixture:BAD:buy",

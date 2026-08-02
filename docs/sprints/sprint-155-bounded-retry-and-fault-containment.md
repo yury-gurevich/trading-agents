@@ -120,7 +120,10 @@ sleep exactly as an empty pass is.
 `orchestration/local_pipeline.py`. This is a kernel change with fleet-wide reach; that is the point,
 and it is also the risk (see Risks).
 
-**Result:** _fill at handback_
+**Result:** Shipped. `run_once` now returns `RunOnceResult` progress detail instead of a found-count,
+and `work_loop` sleeps on both empty and no-progress passes. Backoff is per item through
+`WorkLoopPolicy` tunables (`poll_interval_seconds`, base, multiplier, ceiling, attempt cap), and the
+eight graph-pull entrypoints plus `orchestration/local_pipeline.py` now use the bounded contract.
 
 ### 2 · A poison item is quarantined, visibly
 
@@ -135,7 +138,9 @@ an absence.
 - **Never silently drop.** A quarantined item that nothing can see is worse than a retry storm,
   because the storm at least announces itself.
 
-**Result:** _fill at handback_
+**Result:** Shipped. `WorkLoopState` tracks retry eligibility and quarantine state; graph-backed
+loops write an append-safe `WorkItemQuarantine` marker through `GraphQuarantineSink`, and later
+passes skip that visible marker without blocking healthy siblings.
 
 ### 3 · Identical faults are collapsed, without losing the recurrence signal
 
@@ -152,7 +157,11 @@ The sink stops writing N identical nodes for one ongoing failure, **while preser
 - Do **not** change `fault_node_key`'s existing contract for the *first* occurrence — the 26 distinct
   messages already in production must keep behaving exactly as now.
 
-**Result:** _fill at handback_
+**Result:** Shipped. Chose shape 2, **first + summary**: the first `Fault` keeps the existing
+`fault_node_key` shape, same-signature repeats inside the tunable window are suppressed, and
+`GraphFaultSink.flush()` writes one append-only `FaultSuppression` summary with recoverable
+`occurrence_count` / `suppressed_count`; sink-aware entrypoints now reuse one graph fault sink per
+process and `work_loop` flushes summaries when quarantine closes a poison item.
 
 ### 4 · The infinite loop gets a test
 
@@ -164,7 +173,9 @@ Removing a `pragma: no cover` from the one function whose failure mode caused an
 part of this sprint's value. If you conclude it genuinely cannot be covered, that is a finding to
 report, not a line to leave as-is.
 
-**Result:** _fill at handback_
+**Result:** Shipped. `work_loop` is bounded under test with injectable `sleep`, `clock`, and
+`max_iterations`; the previous forever-loop coverage gap is covered with 100.00 % branch coverage on
+`kernel/work_loop.py` in the focused work-loop suite and full `make ci`.
 
 ### 5 · Prove the containment on the real shape (DL-70)
 
@@ -176,7 +187,10 @@ Then plant the regression: revert the backoff and watch the same test fail with 
 **Both observations go in the closeout.** A containment you have not seen fail to contain is not
 proven.
 
-**Result:** _fill at handback_
+**Result:** Shipped. The pre-fix planted probe reproduced the no-sleep/no-progress shape
+(`attempts=25 sleeps=0`) and duplicate fault writes (`fault_nodes=5`). The committed regression test
+`tests/test_work_loop_storm.py::test_real_fault_storm_shape_is_bounded_and_visible` proves bounded
+attempts, one first `Fault`, one quarantine marker, and one suppression summary.
 
 ### 6 · Record the drift you find (do not fix it here)
 
@@ -185,7 +199,9 @@ If the kernel's laws do not declare loop-termination or fault-emission bounds, o
 appeared → it stays a drift row and becomes a code fix* — and do not amend any `laws.md` in this
 sprint.
 
-**Result:** _fill at handback_
+**Result:** Shipped. Added `DRIFT-030` to `docs/laws/drift-register.md` for missing system-level
+graph-pull retry, poison-quarantine, and duplicate-fault emission bounds. No locked `laws.md` was
+amended.
 
 ## Test plan — every test I want, and why
 
@@ -309,10 +325,10 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `kernel/work_loop.py` | `docs/laws/conventions.md` | | |
-| `kernel/fault_graph.py` / `kernel/errors.py` | | | |
-| Affected agents' `laws.md` (`FAIL` / `OBS` sections) | | | |
-| `docs/laws/drift-register.md` | | | |
+| `kernel/work_loop.py` | `docs/laws/conventions.md`; affected agent `FAIL` sections in `provider`, `scanner`, `analyst`, `portfolio_manager`, `execution`, `monitor`, `reporter`, `deliberator` | No direct kernel clause declares loop retry bounds. Agent clauses bind containment beside sibling work: `SCAN-FAIL-02`, `ANLZ-FAIL-03`, `PM-FAIL-02`, `EXEC-FAIL-01`, `MON-FAIL-01/02`, `RPT-FAIL-03`, `DLIB-FAIL-01/03`. | Yes - make retry/backoff per item, not per loop, and continue siblings after one item fails. |
+| `kernel/fault_graph.py` / `kernel/errors.py` | `docs/laws/conventions.md`; `ops/laws/LAW-02-successful-execution.md`; affected agent `OBS` sections | Fault visibility/reconstructability clauses bind the sink: `PROV-OBS-02/03`, `SCAN-OBS-02`, `ANLZ-OBS-02`, `PM-OBS-02`, `EXEC-OBS-02`, `MON-OBS-02`, `RPT-OBS-02`, `DLIB-OBS-03`. No clause bounds duplicate emission volume. | Yes - collapse must be visible as data, not silence, and the first `Fault` occurrence key must stay unchanged. |
+| Affected agents' `laws.md` (`FAIL` / `OBS` sections) | `agents/provider/laws/laws.md`; `agents/scanner/laws/laws.md`; `agents/analyst/laws/laws.md`; `agents/portfolio_manager/laws/laws.md`; `agents/execution/laws/laws.md`; `agents/monitor/laws/laws.md`; `agents/reporter/laws/laws.md`; `agents/deliberator/laws/laws.md` | `FAIL` clauses require contained/partial failure and sibling continuation; `OBS` clauses require central, queryable, attributed faults. | Yes - quarantine cannot be an absence; it must write a distinct marker that later passes can skip. |
+| `docs/laws/drift-register.md` | `docs/laws/drift-register.md` | No existing drift row covered system-level graph-pull retry bounds or ongoing-fault collapse bounds before S155. | Yes - added `DRIFT-030` as a law-surface gap and did not amend locked laws in this sprint. |
 
 ---
 
@@ -320,19 +336,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | What it proves | Test | Status | Planted-failure observed? |
 | --- | --- | --- | --- | --- |
-| A1 | no-progress pass sleeps | | | |
-| A2 | empty pass sleeps (unchanged) | | | |
-| A3 | productive pass does not sleep (unchanged) | | | |
-| B4 | backoff grows to a ceiling | | | |
-| B5 | poison item quarantined | | | |
-| B6 | quarantine is findable | | | |
-| B7 | healthy sibling still processes | | | |
-| C8 | repeated signature writes one node | | | |
-| C9 | suppressed volume recoverable | | | |
-| C10 | distinct signatures both write | | | |
-| C11 | cross-run recurrence still reads as recurrence | | | |
-| D12 | 2026-07-30 shape bounded | | | |
-| D13 | planted regression unbounded | | | |
+| A1 | no-progress pass sleeps | `tests/test_work_loop.py::test_work_loop_sleeps_after_no_progress_pass` | Pass | Yes — planted probe before implementation reported `PLANTED work_loop_no_progress: attempts=25 sleeps=0`. |
+| A2 | empty pass sleeps (unchanged) | `tests/test_work_loop.py::test_work_loop_sleeps_after_empty_pass` | Pass | No — unchanged healthy-idle behavior. |
+| A3 | productive pass does not sleep (unchanged) | `tests/test_work_loop.py::test_work_loop_does_not_sleep_after_productive_pass` | Pass | No — unchanged productive behavior. |
+| B4 | backoff grows to a ceiling | `tests/test_work_loop_quarantine.py::test_backoff_grows_to_the_ceiling` | Pass | Yes — same planted no-progress probe showed the old loop made 25 immediate attempts with no sleeps. |
+| B5 | poison item quarantined | `tests/test_work_loop_quarantine.py::test_poison_item_is_quarantined_and_later_skipped`; `tests/test_work_loop.py::test_exception_can_quarantine_without_retry_delay` | Pass | No separate planted failure; covered by the old no-progress loop probe and committed positive tests. |
+| B6 | quarantine is findable | `tests/test_work_loop_quarantine.py::test_work_loop_creates_graph_quarantine_state_when_wired`; `tests/test_work_loop_quarantine.py::test_duplicate_quarantine_write_is_append_safe`; `tests/test_work_loop_quarantine.py::test_work_loop_flushes_fault_summaries_when_quarantine_closes_item` | Pass | No — positive tests assert the visible `WorkItemQuarantine` node and flush path, not absence of retries. |
+| B7 | healthy sibling still processes | `tests/test_work_loop_storm.py::test_poison_item_does_not_block_healthy_sibling`; `tests/test_work_loop.py::test_run_once_contains_exception_and_continues_siblings` | Pass | No — law-governed sibling-containment regression covered directly. |
+| C8 | repeated signature writes one node | `tests/test_fault_graph.py::test_identical_faults_within_window_write_one_fault_node` | Pass | Yes — planted fault probe before implementation reported `PLANTED fault_duplicate_writes: fault_nodes=5`. |
+| C9 | suppressed volume recoverable | `tests/test_fault_graph.py::test_suppressed_fault_volume_is_recoverable`; `surfaces/tests/test_faults.py::test_render_incidents_continues_after_unsuppressed_fault` | Pass | Yes — same planted fault probe showed the old ledger had N nodes and no summary. |
+| C10 | distinct signatures both write | `tests/test_fault_graph.py::test_distinct_fault_signatures_both_write` | Pass | No — positive regression proves collapse does not swallow distinct failures. |
+| C11 | cross-run recurrence still reads as recurrence | `tests/test_fault_graph.py::test_fault_recurring_after_window_still_appends`; `tests/test_fault_graph.py::test_recurring_fault_appends_rather_than_overwrites` | Pass | No — preserves existing `fault_node_key` first-occurrence/cross-window contract. |
+| D12 | 2026-07-30 shape bounded | `tests/test_work_loop_storm.py::test_real_fault_storm_shape_is_bounded_and_visible` | Pass | Yes — pre-fix planted probe reproduced the storm shape. |
+| D13 | planted regression unbounded | Pre-implementation planted probe and pre-implementation red focused tests | Pass | Yes — planted probe: `attempts=25 sleeps=0`, `fault_nodes=5`; red tests failed before runtime existed with missing fault-collapse imports. |
 
 ---
 
@@ -340,20 +356,114 @@ An incomplete handback is returned, not repaired (DL-48).
 
 > **Fill this in at handback. Do not return the sprint with this block unedited.**
 
-- Files changed:
+- Files changed: kernel retry/fault modules (`kernel/work_loop.py`, `kernel/work_loop_policy.py`,
+  `kernel/work_loop_state.py`, `kernel/work_loop_quarantine.py`, `kernel/fault_collapse.py`,
+  `kernel/fault_graph.py`); eight graph-pull entrypoints; `orchestration/local_pipeline.py`;
+  fault surfaces and MCP output; graph vocabulary pack; focused tests split under 200 lines; sprint
+  doc and drift register.
 - Version bump (`pyproject.toml`, `uv.lock` restaged):
+
+```text
+uv lock
+Resolved 174 packages in 1.80s
+Updated trading-agents v0.85.0 -> v0.85.1
+```
+
+- Focused proof before full CI:
+
+```text
+uv run pytest tests/test_work_loop.py tests/test_work_loop_quarantine.py tests/test_work_loop_storm.py tests/test_fault_graph.py agents/execution/tests/test_position_sync_poll.py agents/execution/tests/test_execution_poll.py agents/execution/tests/test_execution_entrypoint.py surfaces/tests/test_faults.py --no-cov
+collected 43 items
+43 passed in 2.11s
+
+uv run coverage run --branch -m pytest tests/test_work_loop.py tests/test_work_loop_quarantine.py tests/test_work_loop_storm.py --no-cov
+20 passed in 2.00s
+Name                             Stmts   Miss Branch BrPart    Cover
+kernel/work_loop.py                 67      0     24      0  100.00%
+kernel/work_loop_policy.py          22      0      2      0  100.00%
+kernel/work_loop_quarantine.py      23      0      2      0  100.00%
+kernel/work_loop_state.py           82      0     18      0  100.00%
+TOTAL                              194      0     46      0  100.00%
+```
+
 - `make ci` — pass count, skips, coverage:
-- Coverage change on `kernel/work_loop.py` (the `pragma: no cover` question):
+
+```text
+make ci
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+900 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 749 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run pytest
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2054 passed, 6 skipped in 93.69s (0:01:33) ==================
+uv run pip-audit
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+No known vulnerabilities found
+```
+
+- Coverage change on `kernel/work_loop.py` (the `pragma: no cover` question): `kernel/work_loop.py`
+  now reports `67 stmts / 0 miss / 24 branches / 0 partial / 100.00%` in the focused work-loop
+  coverage proof above and in full `make ci`.
 - Planted-failure observations (items 5 and 13 especially):
+
+```text
+uv run python <planted pre-fix probe>
+PLANTED work_loop_no_progress: attempts=25 sleeps=0
+PLANTED fault_duplicate_writes: fault_nodes=5
+
+uv run pytest tests/test_work_loop.py tests/test_fault_graph.py --no-cov
+collected 0 items / 2 errors
+ImportError: cannot import name 'FAULT_SUPPRESSION_LABEL'
+ModuleNotFoundError: No module named 'kernel.fault_collapse'
+```
+
 - Remote gate run IDs **and job conclusions**, with a run asserted to exist for the head SHA:
-- Not met / deliberately deferred:
+
+```text
+gh run list --branch sprint-155-bounded-retry-and-fault-containment --limit 5 --json databaseId,headSha,status,conclusion,workflowName,createdAt
+[{"conclusion":"success","databaseId":30706459592,"headSha":"67ba248...","status":"completed","workflowName":"Security Findings"},{"conclusion":"success","databaseId":30706459644,"headSha":"67ba248...","status":"completed","workflowName":"CI"}]
+
+gh run view 30706459644 --json databaseId,headSha,status,conclusion,workflowName,jobs
+CI run 30706459644, headSha 67ba248..., conclusion success:
+  quality job 91386325330 — success
+  test job 91386383071 — success
+  security job 91386325307 — success
+
+gh run view 30706459592 --json databaseId,headSha,status,conclusion,workflowName,jobs
+Security Findings run 30706459592, headSha 67ba248..., conclusion success:
+  gate job 91386325306 — success
+```
+- Not met / deliberately deferred: no live graph, Azure, broker, or credentialed proof attempted;
+  this sprint is local-only by brief. Existing >150 line warnings remain warnings and were not
+  refactored outside S155 scope.
 
 ---
 
 ## Return notes
 
-- Branch and base commit:
-- **Which collapse shape you chose (1, 2 or 3) and why:**
-- Every red remote run hit on the way (run ID + cause + fix):
-- Anything the laws or this spec contradicted:
-- Anything found and deliberately not fixed:
+- Branch and base commit: `sprint-155-bounded-retry-and-fault-containment`, cut from `2d6f62e`;
+  stayed in the dedicated worktree and did not merge to `main`.
+- **Which collapse shape you chose (1, 2 or 3) and why:** shape 2, **first + summary**. It preserves
+  the exact first-fault timestamp/key contract, keeps append-only semantics by writing a separate
+  `FaultSuppression` node, and makes the suppressed volume queryable by surfaces. The trade-off is
+  needing `flush()` or a later same-signature event after the window; that is better here than bucket
+  keys that would perturb first-fault identity.
+- Every red remote run hit on the way (run ID + cause + fix): none. First pushed implementation-head
+  runs were green: CI `30706459644`, Security Findings `30706459592`.
+- Anything the laws or this spec contradicted: no contradiction found. The law set was silent on
+  system-level graph-pull retry bounds, quarantine visibility, and duplicate fault emission volume,
+  so I recorded `DRIFT-030` rather than amending locked laws.
+- Anything found and deliberately not fixed: graph vocabulary property declarations remain absent
+  for `FaultSuppression` and `WorkItemQuarantine` because the current guard only enforces labels with
+  explicit property blocks; adding property governance for these labels is a separate vocabulary
+  hardening question, not required to stop the storm.

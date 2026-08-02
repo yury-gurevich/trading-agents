@@ -10,6 +10,7 @@ from __future__ import annotations
 from io import StringIO
 
 from kernel import InMemoryGraphStore, InProcessBus
+from kernel.fault_graph import FAULT_SUPPRESSION_LABEL
 from surfaces.cli import main
 from surfaces.context import SurfaceContext
 from surfaces.context import test_context as build_context
@@ -30,12 +31,22 @@ def test_cli_incidents_renders_empty_or_seeded_fault() -> None:
             "occurred_at": "2026-06-11T00:00:00+00:00",
         },
     )
+    graph.merge_node(
+        FAULT_SUPPRESSION_LABEL,
+        "fault-suppression:analyst:boom",
+        {
+            "first_fault_key": "fault:analyst:boom",
+            "occurrence_count": 3,
+            "suppressed_count": 2,
+        },
+    )
     output = StringIO()
     main(["incidents"], context=build_context(graph=graph), stdout=output)
 
     assert "no open incidents" in empty.getvalue()
     assert "analyst" in output.getvalue()
     assert "analysis failed" in output.getvalue()
+    assert "occurrences: 3 (suppressed 2)" in output.getvalue()
 
 
 def test_cli_explain_renders_reporter_narrative_summary() -> None:

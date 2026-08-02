@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from kernel.fault_graph import FAULT_SUPPRESSION_LABEL
+
 if TYPE_CHECKING:
     from kernel import GraphStore
 
@@ -24,10 +26,13 @@ class FaultView:
     severity: str
     message: str
     occurred_at: str
+    occurrence_count: int = 1
+    suppressed_count: int = 0
 
 
 def open_faults(graph: GraphStore) -> tuple[FaultView, ...]:
     """Return all Fault nodes newest first; P6 has no fault resolution state."""
+    suppressions = _suppression_counts(graph)
     faults = [
         FaultView(
             fault_id=node.key[:12],
@@ -36,7 +41,22 @@ def open_faults(graph: GraphStore) -> tuple[FaultView, ...]:
             severity=str(node.props.get("severity", "")),
             message=str(node.props.get("message", "")),
             occurred_at=str(node.props.get("occurred_at", "")),
+            occurrence_count=suppressions.get(node.key, (1, 0))[0],
+            suppressed_count=suppressions.get(node.key, (1, 0))[1],
         )
         for node in graph.list_nodes("Fault")
     ]
     return tuple(sorted(faults, key=lambda fault: fault.occurred_at, reverse=True))
+
+
+def _suppression_counts(graph: GraphStore) -> dict[str, tuple[int, int]]:
+    counts: dict[str, tuple[int, int]] = {}
+    for node in graph.list_nodes(FAULT_SUPPRESSION_LABEL):
+        key = str(node.props.get("first_fault_key", ""))
+        if not key:
+            continue
+        counts[key] = (
+            int(node.props.get("occurrence_count", 1)),
+            int(node.props.get("suppressed_count", 0)),
+        )
+    return counts

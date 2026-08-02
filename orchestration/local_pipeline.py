@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class StageResult:
-    """How many pending items one agent processed in a cascade pass."""
+    """How many pending items one agent advanced in a cascade pass."""
 
     name: str
     processed: int
@@ -149,7 +149,10 @@ def cascade_once(
     )
     return (
         StageResult("position_sync", sync_processed),
-        *(StageResult(name, run_once(find, process)) for name, find, process in stages),
+        *(
+            StageResult(name, run_once(find, process).advanced)
+            for name, find, process in stages
+        ),
     )
 
 
@@ -161,4 +164,4 @@ def _position_sync_once(graph: GraphStore, *, broker: Broker) -> int:
     return run_once(
         partial(monitor_position_sync.find_pending_position_sync, graph),
         partial(monitor_position_sync.sync_positions_snapshot, graph=graph),
-    )
+    ).advanced

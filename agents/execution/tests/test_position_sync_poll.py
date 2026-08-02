@@ -118,7 +118,7 @@ def test_sync_is_idempotent_per_run() -> None:
         lambda node: sync_run_request(node, graph=graph, broker=broker),
     )
 
-    assert (first, second) == (1, 0)
+    assert (first.advanced, second.advanced) == (1, 0)
     assert len(graph.list_nodes(SNAPSHOT_LABEL)) == 1
 
 
@@ -138,7 +138,7 @@ def test_sync_failure_for_one_run_does_not_stop_next_run() -> None:
 
     first_snapshot = linked_snapshot(graph, first)
     second_snapshot = linked_snapshot(graph, second)
-    assert processed == 2
+    assert processed.advanced == 2
     assert first_snapshot is not None
     assert second_snapshot is not None
     assert first_snapshot.props["status"] == "stale"

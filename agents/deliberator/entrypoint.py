@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING
 from agents.deliberator.agent import DeliberatorAgent
 from agents.deliberator.peer_client import BusPeerClient, ServiceBusPeerClient
 from agents.deliberator.settings import DeliberatorSettings
-from kernel import AzureServiceBusSettings, InProcessBus
+from kernel import AzureServiceBusSettings, CollectingFaultSink, InProcessBus
 from kernel.bootstrap import activate_agent, master_public_key_from_env
+from kernel.fault_graph import GraphFaultSink
 from kernel.serve_loop import serve_loop
 from kernel.serve_transport import consumer_from_env
 
@@ -77,6 +78,7 @@ def main() -> None:  # pragma: no cover
     )
     if settings.role == "manager":
         manager, peer_client = build_manager(graph, settings, llm=llm)
+        fault_sink = GraphFaultSink(graph, CollectingFaultSink())
         work_loop(
             lambda: find_pending(graph),
             lambda node: review_pm_node(
@@ -85,8 +87,12 @@ def main() -> None:  # pragma: no cover
                 manager=manager,
                 peer_client=peer_client,
                 settings=settings,
+                sink=fault_sink,
             ),
             poll_interval=settings.poll_interval_seconds,
+            graph=graph,
+            agent=settings.identity,
+            flush_faults=fault_sink.flush,
         )
         return
     bus = InProcessBus()

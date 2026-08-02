@@ -11,9 +11,12 @@ from __future__ import annotations
 from agents.execution.broker_factory import broker_from_settings
 from agents.execution.poll import find_pending_work, process_work_item
 from agents.execution.settings import ExecutionSettings
+from kernel import CollectingFaultSink
 from kernel.bootstrap import activate_agent, master_public_key_from_env
+from kernel.fault_graph import GraphFaultSink
 from kernel.graph_env import build_graph_from_env
 from kernel.work_loop import work_loop
+from kernel.work_loop_policy import poll_interval_from_env
 
 
 def main() -> None:  # pragma: no cover
@@ -27,12 +30,16 @@ def main() -> None:  # pragma: no cover
     graph = build_graph_from_env()
     settings = ExecutionSettings()
     broker = broker_from_settings(settings)
+    fault_sink = GraphFaultSink(graph, CollectingFaultSink())
     work_loop(
         lambda: find_pending_work(graph),
         lambda item: process_work_item(
-            item, graph=graph, broker=broker, settings=settings
+            item, graph=graph, broker=broker, settings=settings, sink=fault_sink
         ),
-        poll_interval=int(os.environ.get("EXECUTION_POLL_INTERVAL", "60")),
+        poll_interval=poll_interval_from_env("EXECUTION_POLL_INTERVAL"),
+        graph=graph,
+        agent="execution",
+        flush_faults=fault_sink.flush,
     )
 
 

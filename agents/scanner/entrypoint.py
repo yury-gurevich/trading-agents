@@ -13,6 +13,7 @@ from agents.scanner.settings import ScannerSettings
 from kernel.bootstrap import activate_agent, master_public_key_from_env
 from kernel.graph_env import build_graph_from_env
 from kernel.work_loop import work_loop
+from kernel.work_loop_policy import poll_interval_from_env
 
 
 def main() -> None:  # pragma: no cover
@@ -28,7 +29,9 @@ def main() -> None:  # pragma: no cover
     work_loop(
         lambda: find_pending(graph),
         lambda node: scan_market_node(node, graph=graph, settings=settings),
-        poll_interval=int(os.environ.get("SCAN_POLL_INTERVAL", "60")),
+        poll_interval=poll_interval_from_env("SCAN_POLL_INTERVAL"),
+        graph=graph,
+        agent="scanner",
     )
 
 

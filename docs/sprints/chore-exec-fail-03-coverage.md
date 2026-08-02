@@ -100,12 +100,28 @@ Also fixed in passing: ADR-0019 and ADR-0020 were missing their Tags cell in
 | Each observed failing before being trusted | Planted-failure table above; three distinct failure modes |
 | Execution ledger reconciled | 30 → **31 / 57** in `ledger.md` + `laws/INDEX.md`, matching the 🟩 count in `test-plan.md` |
 | The clause summary matches `laws.md` | Row widened to all three conjuncts; rule fixed in ADR-0021 + conventions §7a |
-| `make ci` green, all 9 steps | _filled below_ |
-| Remote gates green on the branch tip, by `headSha` | _filled below_ |
+| `make ci` green, all 9 steps | **2067 passed / 5 skipped / 100.00 % coverage**, exit 0 — ruff, format, mypy (750 files), import-linter (4 kept / 0 broken), module size, module header, pytest, pip-audit, detect-secrets |
+| Remote gates green on the branch tip, by `headSha` | 4/4 on `50418c2` — table below |
 
-**`make ci`:** _(filled at handback)_
+**Remote gates, verified by SHA rather than by quoted run ID.** Implementation commit `50418c2`:
 
-**Remote gates:** _(filled at handback)_
+| Workflow | Job | Run ID | Job ID | Conclusion |
+| --- | --- | --- | --- | --- |
+| CI | `quality` | `30744641758` | `91488051450` | success |
+| CI | `test` | `30744641758` | `91488103066` | success |
+| CI | `security` | `30744641758` | `91488051471` | success |
+| Security Findings | `gate` | `30744641752` | `91488051589` | success |
+
+Both runs carry `headSha=50418c2` — a run **exists** for the SHA, which is
+[hardening row M](../hardening-backlog.md)'s assertion, not merely that some run was green.
+
+**A local-only environment gap, recorded because it will recur.** The first `make ci` in a fresh
+worktree failed `tests/test_deliberator_servicebus_peer.py` with `ModuleNotFoundError: No module
+named 'azure'`. Not a defect: `azure` is an optional extra, a new worktree gets its own `.venv`, and
+`uv sync` does not install it. Same commit passed in the main checkout and on CI (2063 passed).
+Fixed with `uv sync --extra azure`; the extra also un-skips
+`test_bus_azure_receiver_integration.py`, which is why the local count is 2067 / 5 skipped where CI
+reads 2066 / 6.
 
 **Not in scope, deliberately:** hardening row R (the 8-agent counter drift), hardening row O (clauses
 with no test-plan row at all), and the 13 execution clauses that still carry no row.

@@ -35,6 +35,23 @@ polling `gh run list` after pushing to confirm GitHub CI also passes.
 The gate has 9 steps: ruff, format, mypy, import-linter, module size, module header,
 pytest (100 % coverage floor), pip-audit, detect-secrets.
 
+### The one carve-out: read-only tooling and docs
+
+The gate reads Python. It cannot read PowerShell, so running it on a `.ps1`-only change
+proves nothing — it only looks like diligence. For changes touching **only** docs or
+**read-only** tooling (a status board, a report renderer): commit straight to `main`,
+**no branch, no remote gate, no version bump**. Verify the artifact the way the artifact is
+actually verified — render the output and look at it, parse-check the script.
+
+The line is **blast radius, not file extension**:
+
+- **Full cycle, always** — anything that can change production state (`infra/deploy-agents.ps1`,
+  provisioning, secrets, workflows), regardless of language, and **anything that adds or edits a
+  Python file**, because then CI genuinely is testing something.
+- **Light path** — docs, and tooling that only reads and prints.
+
+If you are unsure which side a change sits on, it is the full cycle.
+
 ---
 
 ## Version scheme — HARD RULE
@@ -44,6 +61,9 @@ pytest (100 % coverage floor), pip-audit, detect-secrets.
 - **feat** (new capability, new agent, new endpoint) → bump the **two middle digits** (MINOR).
 - **fix** (bug, CVE patch, refactor) → bump the **last two digits** (PATCH).
 - A higher bump zeroes all lower groups: `0.11.00` not `0.11.04`.
+- **The version tracks the Python package.** A change that ships no package behaviour —
+  docs, or a read-only script's rendering — takes **no bump at all**. Bumping for those
+  inflates the history and makes a real fix indistinguishable from a cosmetic one.
 
 Breaking this rule is a blocker — do not merge.
 

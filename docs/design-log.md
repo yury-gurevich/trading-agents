@@ -4516,3 +4516,41 @@ broken fleet as done — but a deploy whose report cannot be trusted either way 
 `show` rather than parsing a merged stdout/stderr stream.
 
 ---
+
+## DL-86 · Ceremony proportional to blast radius, not applied uniformly · status: DECIDED (2026-08-02, operator)
+
+**Operator challenge, twice in one exchange:** *"this is not a bump and it does not warrant a version
+bump if you are doing it just for the .ps1 file"*, then *"why do we need a CI??"* — both on a change
+that widened a column in `infra/status.ps1` because `deliberator-proponent` (21 chars) overran a
+hardcoded width of 19.
+
+**The challenge was right, and the reason is worth keeping.** `make ci` runs ruff, mypy, pytest,
+import-linter and coverage. **None of them read PowerShell.** Running the full gate on a `.ps1`-only
+change proves nothing about that change — it *looks* like diligence while verifying nothing. The run
+was green only because of a Python test added alongside; the actual verification that mattered was
+rendering the table and looking at the columns.
+
+Same for the version: `0.85.06` for a column width would sit in the history beside `0.85.05`, which
+was the fix that made the fleet deployable at all. **Bumping for cosmetics makes a real fix
+indistinguishable from a rendering tweak.**
+
+**Decided, now in CLAUDE.md:** docs and **read-only** tooling take the light path — straight to
+`main`, no branch, no remote gate, no version bump — verified the way the artifact is actually
+verified (render it, parse-check it).
+
+**The line is blast radius, not file extension**, and that distinction is the whole decision.
+`infra/deploy-agents.ps1` is also PowerShell and also invisible to `make ci`, but it **changes
+production** — it keeps the full cycle. So does anything adding or editing a Python file, because
+then CI genuinely is testing something. Unsure → full cycle.
+
+**The road not taken.** The tempting rule was *"non-Python changes skip the gate"*, which is simpler
+and wrong: it would have exempted the five deploy-script chores shipped earlier the same day, one of
+which briefly left the fleet running new code with the write guard **off**. A file-extension rule
+optimises for the wrong property.
+
+**Honest accounting of what this costs.** The light path removes the remote gate from changes CI
+never covered, so nothing real is lost — but it does remove the *habit* of pushing before merging,
+and habits are what caught the S131/S132/S134 ungated merges. Mitigated by keeping the carve-out
+narrow and the default ("unsure → full cycle") biased toward the gate.
+
+---

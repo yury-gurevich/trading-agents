@@ -64,15 +64,42 @@ function Check($ok, $label) {
 
 function Reset-Failures { $script:Failures = @() }
 
+# `az` on Windows is az.cmd, a cmd.exe batch wrapper, so every invocation
+# inherits cmd's ~8,191-character command-line ceiling. GRAPH_VOCABULARY_B64
+# alone is >12,000 characters, so it cannot be passed at all through that
+# wrapper — not even in a call carrying nothing else (measured: 12,053 chars →
+# "The command line is too long.", exit 1). Invoking the CLI's own Python
+# entry point goes through CreateProcess instead, whose limit is 32,767.
+# Resolved once; falls back to `az` where the interpreter is not found (Linux,
+# CI, a differently-packaged install), which is safe because those paths do not
+# have cmd's ceiling. See DL-85.
+$script:AzPython = $null
+function Get-AzPython {
+  if ($null -ne $script:AzPython) { return $script:AzPython }
+  $script:AzPython = ""
+  $cmd = Get-Command az -ErrorAction SilentlyContinue
+  if ($cmd -and $cmd.Source -and $cmd.Source.EndsWith(".cmd")) {
+    # …\CLI2\wbin\az.cmd → …\CLI2\python.exe
+    $candidate = Join-Path (Split-Path (Split-Path $cmd.Source -Parent) -Parent) "python.exe"
+    if (Test-Path $candidate) { $script:AzPython = $candidate }
+  }
+  return $script:AzPython
+}
+
 # Run an az command, surfacing stderr when it fails. The old `2>$null` hid
 # "The command line is too long." fifteen times over (DL-85).
 function Invoke-Az([string[]]$azArgs) {
-  $out = az @azArgs 2>&1
+  $py = Get-AzPython
+  if ($py) { $out = & $py -m azure.cli @azArgs 2>&1 }
+  else { $out = az @azArgs 2>&1 }
   if ($LASTEXITCODE -ne 0) {
     foreach ($line in @($out)) { Write-Host "      $line" -ForegroundColor DarkYellow }
     return $null
   }
-  return ($out | Select-Object -Last 1)
+  # The containerapp extension writes a warning banner to stderr; 2>&1 merges it
+  # into the stream, so pick the last non-empty line rather than trusting order.
+  $clean = @($out) | ForEach-Object { "$_".Trim() } | Where-Object { $_ -and $_ -notmatch '^WARNING:' }
+  return ($clean | Select-Object -Last 1)
 }
 
 # ── Cred loaders ──────────────────────────────────────────────────────────────

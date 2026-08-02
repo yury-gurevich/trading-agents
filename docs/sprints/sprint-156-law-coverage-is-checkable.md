@@ -586,8 +586,26 @@ git diff --name-only | <locked-law/conventions/production-agent-source filter>
 <no output>
 ```
 
-- Remote gate run IDs and job conclusions: pending until the first implementation push; fill before
-  final handback commit.
+- Remote gate run IDs and job conclusions, with a run asserted to exist for the implementation SHA:
+
+```text
+gh run list --branch sprint-156-law-coverage-is-checkable --limit 5 --json databaseId,headSha,status,conclusion,workflowName,createdAt,event
+[{"conclusion":"success","createdAt":"2026-08-02T12:11:42Z","databaseId":30747312432,"event":"push","headSha":"7b255075...","status":"completed","workflowName":"Security Findings"},{"conclusion":"success","createdAt":"2026-08-02T12:11:42Z","databaseId":30747312431,"event":"push","headSha":"7b255075...","status":"completed","workflowName":"CI"}]
+
+gh run view 30747312431 --json databaseId,headSha,status,conclusion,workflowName,jobs
+CI run 30747312431, headSha 7b255075..., conclusion success:
+  quality job 91494991649 — success
+  test job 91495049300 — success
+  security job 91494991634 — success
+
+gh run view 30747312432 --json databaseId,headSha,status,conclusion,workflowName,jobs
+Security Findings run 30747312432, headSha 7b255075..., conclusion success:
+  gate job 91494991627 — success
+```
+
+- This final remote-evidence edit is Markdown-only. No extra full local `make ci` was rerun after
+  this evidence line; the already-green local `make ci`, focused post-closeout secret/law checks, and
+  final branch-tip remote gates are the proof handoff.
 
 **Green count before → after (book-wide, and per agent that moved):**
 
@@ -613,8 +631,8 @@ the ledger got less flattering because it got checkable.
   still have no test-plan row; S157 owns those rows and the flip to hard fail.
 - No deploy, fleet retag, live-spine proof, broker proof, functionality check, or production
   credentialed work was attempted. This sprint changes law-book/checker behavior only.
-- Remote branch gates are not yet proven at this local closeout checkpoint; they will be recorded
-  after the implementation push.
+- Remote gates for implementation SHA `7b255075...` are proven green
+  above. The final evidence commit also needs branch-tip remote verification after push.
 
 ---
 
@@ -623,6 +641,9 @@ the ledger got less flattering because it got checkable.
 - Branch/worktree: `sprint-156-law-coverage-is-checkable` in
   `.claude/worktrees/sprint-156-law-coverage-is-checkable`, base `30b2dde`; no branch switch, no
   merge, no `main` edits.
+- Implementation commit: `7b255075...`
+  (`feat: make law coverage checkable`), with CI `30747312431` and Security Findings `30747312432`
+  both success. A following Markdown-only evidence commit records those run IDs.
 - The dangerous status flips were handled with a gray bias: 23 of the 29 named rows demoted, 6 kept
   green only where the live test genuinely covered the clause and the docstring now cites the ID.
 - Extra finding: `SCAN-OUT-05` was not in the 29, but the new checker exposed it as wrong/stale; it

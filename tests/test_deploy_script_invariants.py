@@ -92,3 +92,16 @@ def test_long_commands_bypass_the_cmd_wrapper() -> None:
 
     assert "function Get-AzPython" in text
     assert "-m azure.cli" in text
+
+
+def test_status_board_column_width_is_derived_not_hardcoded() -> None:
+    """A new agent must not be able to break the status board's alignment.
+
+    S153's `deliberator-proponent` is 21 characters and ran straight into the
+    DEPLOY column under the previous hardcoded width of 19. Same shape as the
+    build-matrix gap: a literal that silently stops matching the fleet.
+    """
+    text = Path("infra/status.ps1").read_text(encoding="utf-8")
+
+    assert "$appW" in text, "the APP column width must be computed"
+    assert "{0,-19}" not in text, "hardcoded APP column width reintroduced"

@@ -139,11 +139,17 @@ function Show-Board {
   $targets = @($apps).Count + @(@($jobInfo) | Where-Object { $_ }).Count
   Write-Host ("`n  FLEET ({0} of expected 17 targets = 16 apps + 1 job){1}" -f $targets, $suffix) -ForegroundColor Yellow
   $podHead = if ($Replicas) { '{0,-6}' -f 'PODS' } else { '' }
-  Write-Host ("    {0,-19}{1,-11}{2,-7}{3}{4,-8}{5}" -f
+  # Width comes from the data, never a literal: S153's `deliberator-proponent` is 21
+  # characters and silently ran into the DEPLOY column under the old hardcoded 19.
+  # Adding an agent must not be able to break the board again.
+  $nameLengths = @(@($apps).name) + @($JobName) |
+    Where-Object { $_ } | ForEach-Object { "$_".Length }
+  $appW = [Math]::Max(19, (($nameLengths | Measure-Object -Maximum).Maximum + 2))
+  Write-Host ("    {0,-$appW}{1,-11}{2,-7}{3}{4,-8}{5}" -f
     'APP', 'DEPLOY', 'IMAGE', $podHead, 'POWER', 'WAKE (UTC)') -ForegroundColor DarkGray
   foreach ($a in @($apps) | Sort-Object name) {
     $c = if ($a.state -eq 'Succeeded') { 'Green' } else { 'Red' }
-    Write-Host ("    {0,-19}" -f $a.name) -NoNewline
+    Write-Host ("    {0,-$appW}" -f $a.name) -NoNewline
     Write-Host ("{0,-11}" -f $a.state) -ForegroundColor $c -NoNewline
     Write-Host ("{0,-7}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
     $inWin = Test-InWindow $a.winStart $a.winEnd
@@ -166,7 +172,7 @@ function Show-Board {
   }
   if ($jobInfo) {
     $jc = if ($jobInfo.image) { 'DarkGray' } else { 'Red' }
-    Write-Host ("    {0,-19}{1,-11}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor $jc
+    Write-Host ("    {0,-$appW}{1,-11}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor $jc
   }
   Write-Host ""
   return $problems.Count

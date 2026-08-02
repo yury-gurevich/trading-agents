@@ -4422,3 +4422,57 @@ called done. Tracked separately from this entry's resolution.
 that has been blocked since 2026-08-01 03:53 UTC is unblocked.
 
 ---
+
+## DL-85 · The deploy failed on all 15 agents, reported success, and exited 0 · status: OPEN (chore packaged 2026-08-02)
+
+**The `:s155` deploy did not happen.** Every agent printed `[XX]`, the script then printed
+`Fleet deployed with cron scale windows and dispatcher job.` and returned exit code **0**. The fleet
+was left untouched on `:s152` — a clean failure — but nothing in the output said so, and an automated
+caller would have recorded a successful deploy.
+
+**The error was suppressed.** `az @agentArgs 2>$null` (`infra/deploy-agents.ps1` ~line 466) hid it
+fifteen times. Recovered by running a copy of the script with the redirect removed:
+`The command line is too long.`
+
+**The measurement.** `az` resolves to `az.cmd`, a cmd.exe batch wrapper, so every invocation inherits
+cmd's line ceiling. `GRAPH_VOCABULARY_B64` alone is **12,032 characters** — and `up` splices it into a
+`containerapp create` that also carries every Container App secret, the GHCR PAT,
+`MASTER_PUBLIC_KEY_PEM_B64` and the cron scale args.
+
+**Why `:s152` worked on 2026-07-31 and this did not.** That was an image *retag* plus a narrow
+`--set-env-vars` call — short commands. This is full `create`. The pack growing 11,228 → 12,032 across
+S153/S154/S155 was not the cause on its own; the wider command was. The fix is therefore not to
+shrink the pack but to stop carrying it on that line — **and the precedent is already in the same
+file**: `Set-AppPostgresDsn` does `secret set` then `update --set-env-vars`. Vocabulary injection
+never adopted that shape.
+
+**Two defects, and the second is the one that will bite again.** The length limit is a bounded
+infrastructure problem. **A deploy tool that cannot report its own failure is the DL-57 pattern
+living inside the thing we use to verify everything else** — `Check` only prints, nothing
+accumulates, and the success banner is unconditional. That is what turned a five-minute fix into a
+diagnosis cycle, and what would have let a half-deploy pass as done.
+
+**Ruled out:** minifying the pack (8,128 chars leaves no headroom, and it grew twice in one week);
+moving it to a Container App secret (`--secrets name=value` is inline too, same line); trimming
+declarations to fit (trades the guard's correctness for a shell limit). **Deferred, recorded as a
+decision not an oversight:** migrating the script to `az containerapp create --yaml`, which removes
+the limit class entirely but is a rewrite of every create/update path.
+
+**Found on the way, all fixed before this point:** the deliberator was absent from
+`build-images.yml` so its image was never built (`0.85.02`); its Dockerfile was off the S130
+hardened pattern — `python:3.13-slim`, single-stage, `uv run` as CMD against a shell-less runtime
+(`0.85.03`); and it lacked `--extra llm`, so the agent would have deployed, activated, polled and
+produced **no `DeliberationRun`** — DL-80's exact shape inside the agent built to end it. **None of
+these could surface earlier because the image was never built**, and none were caught in review:
+S153 was checked for laws, clause counts, ADR conformance and its acceptance gate, and nobody asked
+whether the image builds and runs.
+
+**Provisioning done on 2026-08-02 and safe to keep:** three deliberator Postgres roles + DSNs, three
+SAS identities, six rules, three topics/subscriptions; `alembic upgrade head` was a no-op (no new
+migrations). Existing agents' SAS keys were **not** rotated — verified by comparing the Key Vault
+connection string against the live rule key, because the running fleet holds those values baked in
+at deploy time and a rotation would have broken the bus at the next run.
+
+Chore: [chore-deploy-pack-off-the-command-line](sprints/chore-deploy-pack-off-the-command-line.md).
+
+---

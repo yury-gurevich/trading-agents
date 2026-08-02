@@ -66,6 +66,8 @@ jobs:
             dockerfile: agents/researcher/Dockerfile
           - image: provider
             dockerfile: agents/provider/Dockerfile
+          - image: deliberator
+            dockerfile: agents/deliberator/Dockerfile
           - image: dispatcher
             dockerfile: orchestration/Dockerfile
 

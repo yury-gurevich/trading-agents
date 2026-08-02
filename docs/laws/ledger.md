@@ -41,7 +41,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | forecaster | ✅ v1 (LOCKED) | 16 / 46 | 🟨 partial — 16 clauses green (S99 served-entrypoint pass); 30 gap-tests remain ⬜ |
 | portfolio_manager | ✅ v1 (LOCKED) | 24 / 43 | 🟨 partial — 24 clauses green (S150 RR-invariance citation pass); 19 gap-tests remain ⬜ |
 | deliberator | ✅ v1 (LOCKED) | 0 / 48 | 🟨 partial — S153 declared the DL-80/ADR-0020 fleet-native deliberator; all 48 clauses start ⬜ |
-| execution | ✅ v1.1 (LOCKED) | 30 / 57 | 🟨 partial — 30 clauses green (S70 citation pass); 19 gap-tests remain ⬜ · **S152 declared 8 new clauses (EXEC-IDN-03, TRG-07, OUT-07/08, STA-05/06, OBS-03, DEP-04); denominator 49→57, greens unchanged — new clauses start ⬜.** |
+| execution | ✅ v1.1 (LOCKED) | 31 / 57 | 🟨 partial — 31 green of 44 test-plan rows; the other 13 clauses carry **no row at all** (hardening row O) · **S152 declared 8 new clauses (EXEC-IDN-03, TRG-07, OUT-07/08, STA-05/06, OBS-03, DEP-04); denominator 49→57, greens unchanged — new clauses start ⬜.** · **`chore-exec-fail-03-coverage` proved EXEC-FAIL-03 in full** (fault recorded + idempotency key + repeated-append), 30→31. |
 | monitor | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S71 citation pass); 21 gap-tests remain ⬜ |
 | reporter | ✅ v1 (LOCKED) | 19 / 40 | 🟨 partial — 19 clauses green (S151 citation pass); 21 gap-tests remain ⬜ |
 | researcher | ✅ v1 (LOCKED) | 19 / 44 | 🟨 partial — 19 clauses green (S99 served-entrypoint pass); 25 gap-tests remain ⬜ |

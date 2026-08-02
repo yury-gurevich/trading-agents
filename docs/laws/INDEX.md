@@ -11,7 +11,7 @@ a new ADR. See [conventions.md](conventions.md) for the full rules.
 | File | Purpose | Change procedure |
 | --- | --- | --- |
 | [README.md](README.md) | Law book philosophy: why laws exist, independence rule, relation to PRD | Edit freely; no ADR required |
-| [conventions.md](conventions.md) | Clause-ID scheme, stability levels, gray→green definition, lock rules, independence rule | Amend only via a new ADR or RFC; log the change |
+| [conventions.md](conventions.md) | Clause-ID scheme, stability levels, gray→green definition, lock rules, independence rule, clause-summary fidelity (§7a) | Amend only via a new ADR or RFC; log the change |
 | [_TEMPLATE.md](_TEMPLATE.md) | Law schema every agent follows — **LOCKED v1 (S69)** | Do not edit without completing a new full author→reconcile→test→green cycle on `provider/laws/laws.md` first |
 | [flow.md](flow.md) | The inter-agent choreography — the **only** place `A → B` relationships are recorded | Edit only when the message contract between two agents changes; update `ledger.md` |
 | [dependencies.md](dependencies.md) | Layer-0 dependency charter: `DEP-POSTGRES`, `DEP-BUS`, `DEP-FEED`, `DEP-BROKER`; the "green bill of health" that must pass before any agent can be green | Amend when a new external dependency is added or retired |
@@ -42,7 +42,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | scanner | ✅ LOCKED v1 (S70) | 18 / 39 | |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 24 / 43 | S150 proved RR invariance determinism |
 | deliberator | ✅ LOCKED v1 (S153) | 0 / 48 | New DL-80/ADR-0020 agent; all clauses start ⬜ |
-| execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S152 declared 8 clauses across IDN/TRG/OUT/STA/OBS/DEP (ADR-0015 §3, ADR-0018, ADR-0013, DL-44); all 8 start ⬜ |
+| execution | ✅ LOCKED **v1.1** (S152) | 31 / 57 | S152 declared 8 clauses across IDN/TRG/OUT/STA/OBS/DEP (ADR-0015 §3, ADR-0018, ADR-0013, DL-44); all 8 start ⬜. EXEC-FAIL-03 proven in full by `chore-exec-fail-03-coverage` (30→31) |
 | monitor | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | reporter | ✅ LOCKED v1 (S71) | 19 / 40 | |
 | forecaster | ✅ LOCKED v1 (S71) | 15 / 46 | |

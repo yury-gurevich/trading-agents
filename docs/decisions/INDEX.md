@@ -24,8 +24,9 @@ for the rationale instead of re-deriving it.
 | [0016](0016-one-run-one-evidence-both-directions.md) | One run, one evidence set, both directions | ✅ Accepted | Are buy and sell decided together on the same evidence, or by separate mechanisms? How does a sell reach execution? | `exits` `analyst` `portfolio-manager` `execution` `monitor` `decisions` |
 | [0017](0017-exit-authority-alpha-proposes-risk-disposes.md) | Exit authority: alpha proposes, risk disposes | ✅ Accepted | When the monitor's mechanical exit and the analyst's thesis disagree on a held position, which decider wins? What happens to target and time exits? | `exits` `analyst` `monitor` `execution` `stops` `risk` |
 | [0018](0018-decision-validity-same-session-or-dropped.md) | A decision is valid for one session: fill it or drop it | ✅ Accepted | How long is a trading decision valid? What happens to an order that does not fill in the session it was decided for — does it carry to the next open, or is it dropped? | `execution` `exits` `entries` `orders` `slippage` `stops` `alpaca` |
-| [0019](0019-risk-cap-binds-position-size-not-stop-distance.md) | The risk cap binds position size, never stop distance | ✅ Accepted | When a volatility-scaled stop wants more room than the per-position risk cap allows, which gives — the cap or the stop? And how does a high-ATR name get a correct stop without breaching the cap? |
-| [0020](0020-llmcall-is-substrate-not-the-operators.md) | `LLMCall` is substrate, not the operator's | ✅ Accepted | Is the operator the only agent allowed to call an LLM, and does it exclusively own the `LLMCall` audit label? When a second agent needs to reason with a model, does it write `LLMCall` too, or its own label? |
+| [0019](0019-risk-cap-binds-position-size-not-stop-distance.md) | The risk cap binds position size, never stop distance | ✅ Accepted | When a volatility-scaled stop wants more room than the per-position risk cap allows, which gives — the cap or the stop? And how does a high-ATR name get a correct stop without breaching the cap? | `portfolio-manager` `analyst` `risk` `sizing` `stops` `volatility` `atr` |
+| [0020](0020-llmcall-is-substrate-not-the-operators.md) | `LLMCall` is substrate, not the operator's | ✅ Accepted | Is the operator the only agent allowed to call an LLM, and does it exclusively own the `LLMCall` audit label? When a second agent needs to reason with a model, does it write `LLMCall` too, or its own label? | `operator` `deliberator` `llm` `audit` `cost` `substrate` |
+| [0021](0021-clause-summary-mirrors-the-law.md) | A clause summary mirrors the law, never the test | ✅ Accepted | When a test proves only part of a law clause, may the clause summary in `test-plan.md` be narrowed to describe what the test actually covers? Which document wins when `laws.md` and `test-plan.md` disagree? | `laws` `conventions` `test-plan` `coverage` `honesty` |
 
 ## Status legend
 
@@ -35,7 +36,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0021`.
+1. Next number is `0022`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

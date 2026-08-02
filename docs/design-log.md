@@ -4554,3 +4554,45 @@ and habits are what caught the S131/S132/S134 ungated merges. Mitigated by keepi
 narrow and the default ("unsure → full cycle") biased toward the gate.
 
 ---
+
+## DL-87 · A partial test is not a smaller clause · status: CLOSED (2026-08-02, [ADR-0021](decisions/0021-clause-summary-mirrors-the-law.md))
+
+**The finding, restated.** S151 flipped `EXEC-FAIL-03` green on a test proving one of its three
+conjuncts, and — the move that matters — **reworded the clause summary in `test-plan.md` toward that
+test's scenario**. Both documents then agreed, so nothing disclosed the gap. Reverted in review;
+closed properly by `chore-exec-fail-03-coverage`, which proves all three conjuncts and takes
+execution to 31 / 57.
+
+**Why it deserved an ADR rather than a return note.** S152's convention was a *reading* of an
+existing rule, so a sprint doc held it. This one changes what `conventions.md` requires, and that
+file's own INDEX row says *"amend only via a new ADR or RFC"* — there is no RFC mechanism in the
+repo, so ADR is the only compliant route. DL-86's *ceremony proportional to blast radius* cuts
+*toward* the ADR here, not away from it: the blast radius is every future coverage claim.
+
+**Inserted as §7a, not §12.** Section numbers in `conventions.md` are cited from sprint docs and test
+docstrings (`conventions §3`, `§4`, `§7`, "sections 3 and 7"). Renumbering §8–§11 to append a §12
+would break those citations the same way renumbering a clause ID breaks traceability (§2). Appending
+out of position was the cheaper wrong answer; a lettered insert keeps both properties.
+
+**The road not taken: split the clause into three IDs.** It maps cleanly onto three tests and is the
+same narrowing in better clothes — two of the three would sit ⬜ indefinitely while the ledger showed
+a green for the easy one. `EXEC-FAIL-03` describes one behaviour: a failed graph write is survivable.
+Splitting stays available for a law that genuinely conflates two behaviours; "a test only covers part
+of it" is not that.
+
+**A probe that measured the fake instead of the property.** The first draft proved "the idempotency
+key prevents re-submission" with `PaperBroker.order_count`. Planting a broker that never de-dupes
+left the test **passing** — `PaperBroker._fills` is itself a dict keyed by idempotency key, so the
+count could not move whatever the broker did. The assertion was true and worthless. Replaced by
+recording what the caller actually sends, and re-planted at the real source (an unstable key), where
+it failed and the measured consequence was **two broker orders for one intent**. Worth keeping
+because the failure mode is generic: *asserting against a fake's internals rather than the behaviour
+under test*, and DL-70's planted-failure rule is the only thing that catches it.
+
+**Found, not fixed.** Counting execution's greens meant counting everyone's: `ledger.md` and
+`laws/INDEX.md` disagree with the test-plans they summarise for **8 of 14 agents**
+([hardening row R](hardening-backlog.md)). Not corrected here, because the larger number is not
+automatically the right one — a 🟩 is only true if a passing test cites the ID, so adopting the
+bigger figure would repeat the exact over-claim this entry is about.
+
+---

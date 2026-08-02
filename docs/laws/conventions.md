@@ -91,6 +91,23 @@ Every functional test names the law-ID(s) it proves in its docstring, e.g.
 test that has no law → **add the law to `laws.md` first** (new ID), then write the test. The plan is
 the master; tests are the proof.
 
+## 7a. The clause summary mirrors the law ([ADR-0021](../decisions/0021-clause-summary-mirrors-the-law.md))
+
+`test-plan.md`'s summary column is a faithful restatement of the clause in `laws.md`. Abbreviating is
+allowed; **dropping a conjunct is not** — if the clause asserts three things, the summary asserts
+three things.
+
+- **Never reword a clause summary to fit an available test.** A test covering part of a clause leaves
+  it ⬜, with the covered and uncovered halves named in the Test column. Keep the partial test; it is
+  evidence of something, just not of that clause.
+- **When the two documents disagree, `laws.md` wins** and the summary is widened back — even though
+  that lowers apparent coverage.
+- Changing what a clause *asserts* is an amendment under §4, never a side effect of editing a row.
+
+Narrowing a clause does not merely mis-mark one row: it shrinks what every green means while the
+greens/total ratio still reads as honest. `EXEC-FAIL-03` was flipped green this way in S151 and
+reverted in review.
+
 ## 8. The PRD relationship
 
 The PRD (`docs/PRD.md`) is a **"wish-to-have"** document — recognise it as such. But it is also what

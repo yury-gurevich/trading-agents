@@ -42,6 +42,45 @@ def test_every_agent_dockerfile_is_in_the_build_matrix() -> None:
     assert not missing, f"agent Dockerfiles absent from the build matrix: {missing}"
 
 
+def test_every_agent_image_follows_the_s130_hardened_pattern() -> None:
+    """R005/S130: every agent image is two-stage DHI with no runtime uv or shell.
+
+    S153's deliberator Dockerfile shipped on `python:3.13-slim` — the base S130
+    deliberately migrated away from — single-stage, and running `uv run` at
+    runtime, which cannot work because the DHI runtime image has no shell. It
+    was never built, so nothing caught it. S130 bought a near-zero CVE baseline
+    with an empty `.trivyignore`; one off-pattern image quietly gives that back.
+    """
+    offenders: dict[str, list[str]] = {}
+    for dockerfile in sorted(Path("agents").glob("*/Dockerfile")):
+        text = dockerfile.read_text(encoding="utf-8")
+        problems = []
+        if "dhi.io/python" not in text:
+            problems.append("not on the DHI base")
+        if "AS build" not in text:
+            problems.append("not a two-stage build")
+        if '"uv"' in text or 'CMD ["uv' in text:
+            problems.append("runs uv at runtime (DHI runtime has no shell)")
+        if problems:
+            offenders[dockerfile.parent.name] = problems
+
+    assert not offenders, f"agent images off the S130 pattern: {offenders}"
+
+
+def test_deliberator_image_installs_the_llm_extra() -> None:
+    """DL-80: the deliberator resolves the Anthropic SDK lazily, via importlib.
+
+    A missing `anthropic` therefore fails at the first debate turn, not at
+    import — the agent would deploy, activate, poll, and produce no
+    `DeliberationRun`, which is indistinguishable from the stranded harness this
+    agent was built to replace. Pinned because no other agent image needs it and
+    the omission is invisible until a live debate runs.
+    """
+    text = Path("agents/deliberator/Dockerfile").read_text(encoding="utf-8")
+
+    assert "--extra llm" in text
+
+
 def test_served_agent_request_routes_are_stable() -> None:
     assert [request_topic(agent) for agent in SERVED_AGENT_TYPES] == [
         "curator.requests",

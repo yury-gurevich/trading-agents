@@ -77,3 +77,18 @@ def test_agent_deploy_does_not_swallow_stderr() -> None:
 
     assert "az @agentArgs 2>$null" not in text
     assert "function Invoke-Az" in text
+
+
+def test_long_commands_bypass_the_cmd_wrapper() -> None:
+    """DL-85: `az` is az.cmd, so cmd's ~8,191-char ceiling applies to every call.
+
+    The vocabulary pack is >12,000 characters, so it cannot travel through that
+    wrapper even alone — measured at 12,053 chars, exit 1, "The command line is
+    too long.". Invoking the CLI's own Python entry point uses CreateProcess
+    (32,767) instead. Pinned because reverting to bare `az` silently reinstates
+    a limit that only shows up against the real fleet.
+    """
+    text = _script_text()
+
+    assert "function Get-AzPython" in text
+    assert "-m azure.cli" in text

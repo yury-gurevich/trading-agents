@@ -49,9 +49,30 @@ function Line($t) { Write-Host "│ $t" }
 function Head($t) { Write-Host "│" ; Write-Host "│ $t" -ForegroundColor Yellow }
 function Top($t) { Write-Host ("┌─ $t " + ("─" * [Math]::Max(0, 54 - $t.Length))) -ForegroundColor Cyan }
 function Bot { Write-Host "└────────────────────────────────────────────────────────────" -ForegroundColor Cyan }
+# Every [XX] is recorded, not just printed. A deploy that cannot report its own
+# failure is the defect that let the 2026-08-02 :s155 attempt print "Fleet
+# deployed" and exit 0 after all 15 agents failed (DL-85).
+$script:Failures = @()
+
 function Check($ok, $label) {
   if ($ok) { Write-Host "│   " -NoNewline; Write-Host "[OK] " -ForegroundColor Green -NoNewline; Write-Host $label }
-  else { Write-Host "│   " -NoNewline; Write-Host "[XX] " -ForegroundColor Red -NoNewline; Write-Host $label }
+  else {
+    $script:Failures += $label
+    Write-Host "│   " -NoNewline; Write-Host "[XX] " -ForegroundColor Red -NoNewline; Write-Host $label
+  }
+}
+
+function Reset-Failures { $script:Failures = @() }
+
+# Run an az command, surfacing stderr when it fails. The old `2>$null` hid
+# "The command line is too long." fifteen times over (DL-85).
+function Invoke-Az([string[]]$azArgs) {
+  $out = az @azArgs 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    foreach ($line in @($out)) { Write-Host "      $line" -ForegroundColor DarkYellow }
+    return $null
+  }
+  return ($out | Select-Object -Last 1)
 }
 
 # ── Cred loaders ──────────────────────────────────────────────────────────────
@@ -255,7 +276,8 @@ function Get-FleetServiceBusTargets {
 
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
   Top "DEPLOY DISPATCHER JOB"
-  $envv = @("POSTGRES_DSN=secretref:postgres-dsn", (Get-VocabularyEnv)) + @($serviceBus.envVars)
+  # Vocabulary is set separately below, never on this line (DL-85).
+  $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
   $secrets = @($graph.secrets) + @($serviceBus.secrets)
   $image = "$REGISTRY/$OWNER/trading-agents-dispatcher:$Tag"
   $exists = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
@@ -274,7 +296,8 @@ function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
       --replica-timeout 1800 --replica-retry-limit 0 --parallelism 1 `
       --replica-completion-count 1 --set-env-vars $envv `
       --query properties.provisioningState -o tsv 2>$null
-    Check ($secretOk -and $state -eq "Succeeded") "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
+    $vocabOk = ($state -eq "Succeeded") -and (Set-JobVocabulary)
+    Check ($secretOk -and $state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
   }
   else {
     $state = az containerapp job create --name $DISPATCHER_JOB --resource-group $RG `
@@ -285,7 +308,8 @@ function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
       --replica-retry-limit 0 --parallelism 1 --replica-completion-count 1 `
       --cpu 0.5 --memory 1.0Gi --secrets $secrets --env-vars $envv `
       --query properties.provisioningState -o tsv 2>$null
-    Check ($state -eq "Succeeded") "$DISPATCHER_JOB created ($DispatcherCron UTC)"
+    $vocabOk = ($state -eq "Succeeded") -and (Set-JobVocabulary)
+    Check ($state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB created ($DispatcherCron UTC)"
   }
   Bot
 }
@@ -392,6 +416,31 @@ function Get-VocabularyEnv {
   return "GRAPH_VOCABULARY_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
 }
 
+# The pack must NOT ride on a create/update that also carries secrets, the GHCR
+# PAT and the master key: `az` is az.cmd, so every invocation inherits cmd's
+# command-line ceiling, and the base64 pack alone is >12,000 characters. Set it
+# in its own narrow call — the same two-step Set-AppPostgresDsn already uses.
+# Shrinking the pack is not an option: its completeness is what makes the guard
+# trustworthy (S143/S144). See DL-85.
+function Set-AppVocabulary($name) {
+  $state = Invoke-Az @(
+    "containerapp", "update", "--name", $name, "--resource-group", $RG,
+    "--subscription", $SUB, "--set-env-vars", (Get-VocabularyEnv),
+    "--query", "properties.provisioningState", "-o", "tsv"
+  )
+  return $state -eq "Succeeded"
+}
+
+function Set-JobVocabulary {
+  $state = Invoke-Az @(
+    "containerapp", "job", "update", "--name", $DISPATCHER_JOB,
+    "--resource-group", $RG, "--subscription", $SUB,
+    "--set-env-vars", (Get-VocabularyEnv),
+    "--query", "properties.provisioningState", "-o", "tsv"
+  )
+  return $state -eq "Succeeded"
+}
+
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   $ghcr = Load-Json "ghcr.local.json"
@@ -410,8 +459,7 @@ function Up {
   $envv = @(
     "MASTER_GRAPH=auto",
     "MASTER_PRIVATE_KEY_PEM_B64=secretref:master-key-b64",
-    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64",
-    (Get-VocabularyEnv)
+    "MASTER_GRANT_POLICY_B64=$grantB64", "MASTER_SECRET_MAP_B64=$secretB64"
   )
   $masterGraph = Get-GraphConfig "master"
   $envv += @($masterGraph.envVars)
@@ -433,9 +481,12 @@ function Up {
   }
   else { Line "no Key Vault — master uses env-var secrets" }
   $mArgs += @("--env-vars") + $envv + (Get-CronScaleArgs "daily-master-window" $MasterScaleStart)
-  az @mArgs 2>$null | Out-Null
+  $masterState = Invoke-Az $mArgs
+  $vocabOk = Set-AppVocabulary "master"
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
-  Check ([bool]$fqdn) "master @ https://$fqdn"
+  # The old check tested only [bool]$fqdn, which an already-existing app satisfies
+  # whether or not this deploy did anything (DL-85).
+  Check (($masterState -eq "Succeeded") -and $vocabOk -and [bool]$fqdn) "master @ https://$fqdn"
   Bot
   $masterUrl = "https://$fqdn"
 
@@ -445,7 +496,7 @@ function Up {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
     $agentGraph = Get-GraphConfig $name
     $agentServiceBus = Get-ServiceBusConfig $name
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars) + @((Get-VocabularyEnv))
+    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars)
     if ($name.StartsWith($deliberatorPrefix)) {
       $agentEnv += @(
         "DELIBERATOR_ROLE=$($name.Substring($deliberatorPrefix.Length))",
@@ -463,11 +514,21 @@ function Up {
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
     ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart)
-    $state = az @agentArgs 2>$null
-    Check ($state -eq "Succeeded") $name
+    $state = Invoke-Az $agentArgs
+    # Image and pack are one unit: a target on new code with a stale vocabulary
+    # raises VocabularyError fail-closed on its first write (the S148 stall).
+    $vocabOk = ($state -eq "Succeeded") -and (Set-AppVocabulary $name)
+    Check (($state -eq "Succeeded") -and $vocabOk) $name
   }
   Bot
   Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") (Get-ServiceBusConfig "dispatcher")
+
+  if ($script:Failures.Count -gt 0) {
+    Write-Host "`nDeploy FAILED for $($script:Failures.Count) target(s):" -ForegroundColor Red
+    foreach ($f in $script:Failures) { Write-Host "  - $f" -ForegroundColor Red }
+    Write-Host "The fleet may be partially updated. Re-run after fixing, or roll back to the previous tag." -ForegroundColor Red
+    exit 1
+  }
   Write-Host "`nFleet deployed with cron scale windows and dispatcher job. Watch:  pwsh infra/status.ps1 -Watch" -ForegroundColor Green
 }
 

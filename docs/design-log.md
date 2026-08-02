@@ -4328,7 +4328,7 @@ a planted revert (DL-70).
 
 ---
 
-## DL-84 · The DHI gate fired for the first time, and waiting is the designed response · status: OPEN (blocked on an upstream rebuild, 2026-08-01)
+## DL-84 · The DHI gate fired for the first time, and waiting is the designed response · status: RESOLVED (upstream rebuild landed 2026-08-01, confirmed 2026-08-02)
 
 **`Build and push agent images` has failed on every merge since 03:53 UTC today** — S154, the DL-81
 docs commit, S152 and `chore-llmcall-substrate`, four consecutive runs. **No new images exist, so the
@@ -4390,5 +4390,35 @@ cheap to group while preserving edges for provenance.
 
 **Status.** Implemented in S153 with `LLMCall` property declarations and dashboard per-agent spend
 breakdown.
+
+---
+
+**RESOLVED — the base was rebuilt and the gate went green on its own, exactly as R005 predicted.**
+
+| Run | Commit | Time (UTC) | Result |
+| --- | --- | --- | --- |
+| `30686057170` | `b0e6b0e` | 2026-08-01 05:33 | ✗ 8 HIGH `linux-libc-dev` |
+| `30686057170` (re-run) | `b0e6b0e` | 2026-08-01 05:48 | ✗ identical 8 |
+| `30698986298` | `f32581a` | 2026-08-01 12:05 | ✓ success |
+| `30730000621` | `4091d6c` | 2026-08-02 03:05 | ✓ **14/14 jobs, 0 failed** |
+
+**Recovery took roughly six and a half hours**, entirely upstream — no repo change, no `.trivyignore`
+entry, no digest pin. R005's claim that DHI is *"near zero, continuously rebuilt from source"* was
+load-bearing rather than marketing copy, and the decision to wait rather than accept the CVEs is the
+one that turned out cheap.
+
+**What would have happened under the rejected option.** Adding the eight CVEs to `.trivyignore` would
+have unblocked the build at 05:48 — and left eight permanent entries in a file that has been empty
+since S130, for findings that fixed themselves six hours later. The first entry in that file would
+have been pure noise, and the next reader would have inherited both the entries and the precedent.
+
+**The process finding stands and is not resolved by this.** Four merges were declared green on CI +
+Security Findings without anyone checking `build-images`. The image build recovered on its own, so
+nothing was lost this time — but *nothing was lost* is luck, not process. **A green CI proves
+mergeable, not shippable**, and the merge routine should assert the image build before a change is
+called done. Tracked separately from this entry's resolution.
+
+**Images now exist for `4091d6c`**, which carries S153, S154, S155 and both chores — so the deploy
+that has been blocked since 2026-08-01 03:53 UTC is unblocked.
 
 ---

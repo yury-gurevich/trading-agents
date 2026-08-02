@@ -4423,7 +4423,7 @@ that has been blocked since 2026-08-01 03:53 UTC is unblocked.
 
 ---
 
-## DL-85 · The deploy failed on all 15 agents, reported success, and exited 0 · status: OPEN (chore packaged 2026-08-02)
+## DL-85 · The deploy failed on all 15 agents, reported success, and exited 0 · status: RESOLVED (fleet on :s155, 2026-08-02) — one follow-up open
 
 **The `:s155` deploy did not happen.** Every agent printed `[XX]`, the script then printed
 `Fleet deployed with cron scale windows and dispatcher job.` and returned exit code **0**. The fleet
@@ -4474,5 +4474,45 @@ connection string against the live rule key, because the running fleet holds tho
 at deploy time and a rotation would have broken the bus at the next run.
 
 Chore: [chore-deploy-pack-off-the-command-line](sprints/chore-deploy-pack-off-the-command-line.md).
+
+---
+
+**RESOLVED — fleet deployed at `:s155`, and the first fix was not enough.**
+
+**The two-step was necessary but insufficient.** Moving the pack into its own narrow
+`--set-env-vars` call (`0.85.04`) still failed: **`az` is `az.cmd`, so cmd's ~8,191-character
+ceiling applies to the *whole invocation*, and the pack alone is 12,053 characters.** Measured
+directly rather than inferred: `LASTEXITCODE: 1`, `The command line is too long.`, with nothing
+else on the line. The fix therefore could not be *staying under* the limit — it had to be *leaving
+the wrapper*.
+
+**What actually works:** invoking the CLI's own interpreter, `python.exe -m azure.cli`, which goes
+through `CreateProcess` (32,767) instead of cmd. Verified live before adopting it: the identical
+call that failed via `az.cmd` returned `0`, and the pack read back off the deployed `execution`
+app decoded **byte-identical** to the repo pack. Shipped `0.85.05`, with a fallback to bare `az`
+where the interpreter is absent — safe, because non-Windows paths have no such ceiling.
+
+**A window where the fleet was worse off than before.** Between the two runs, all 16 apps were on
+`:s155` **with `GRAPH_VOCABULARY_B64` absent entirely** — image updates had succeeded while the
+vocabulary step failed. That is not the fail-closed stall the guard is designed around; an absent
+variable means `build_graph_from_env` returns an *unguarded* store, so S144's protection was simply
+**off** on new code. Less dangerous than a stale pack, and strictly worse than `:s152`. Worth naming
+because "the deploy half-worked" had a specific safety meaning that neither the script nor the
+operator would have inferred from the tag alone.
+
+**Verified after the second run**, not assumed: 16/16 apps on `:s155`; **16/16 carrying a
+byte-identical pack** (`sha256 aec5ce55f789…`, checked per app rather than sampled); 16/16
+`provisioningState=Succeeded`; every app `minReplicas=0` with 1 KEDA rule; `dispatcher-cron` on
+`:s155` with cron `30 22 * * *` and the pack present. `DeployRecord
+deploy:2026-08-02T08:38:00Z:s155:1a17236` written only after all of that.
+
+**The follow-up, and it is the same class in the opposite direction.** The second run reported
+`[XX]` for all 15 agents and the job while *actually succeeding* — `az` exited 0, so no stderr was
+surfaced, but the value read back from `--query properties.provisioningState` was not the string
+`Succeeded`. So the tool now under-reports instead of over-reporting. That is the **safe** direction
+— a false negative costs a verification pass; the false positive it replaced would have shipped a
+broken fleet as done — but a deploy whose report cannot be trusted either way is still not finished.
+`Invoke-Az`'s success detection needs a proper look, probably reading the state from a separate
+`show` rather than parsing a merged stdout/stderr stream.
 
 ---

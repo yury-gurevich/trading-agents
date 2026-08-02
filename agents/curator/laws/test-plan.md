@@ -31,9 +31,9 @@
 | CUR-ORD-01 | ⬜ | — |
 | CUR-ORD-02 | ⬜ | — |
 | CUR-ORD-03 | ⬜ | — |
-| CUR-FAIL-01 | 🟩 | `test_build_dataset_degrades_on_graph_fault` |
+| CUR-FAIL-01 | ⬜ | Demoted S156: `test_build_dataset_degrades_on_graph_fault` covers degraded manifest and fault emission, but not the full no-Dataset-node clause. |
 | CUR-FAIL-02 | ⬜ | — |
-| CUR-FAIL-03 | 🟩 | `test_train_predictor_degrades_on_graph_fault` |
+| CUR-FAIL-03 | ⬜ | Demoted S156: `test_train_predictor_degrades_on_graph_fault` covers degraded predictor manifest and fault emission, but not the full no-Predictor-node clause. |
 | CUR-FAIL-04 | 🟩 | `test_low_accuracy_rejected_without_flag` |
 | CUR-FAIL-05 | 🟩 | `test_empty_corpus_degrades_without_crash` |
 | CUR-TYP-01 | ⬜ | — |

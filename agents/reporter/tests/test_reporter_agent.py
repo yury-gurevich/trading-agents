@@ -113,7 +113,7 @@ def test_snapshot_reports_profit_factor_and_expectancy() -> None:
 
 
 def test_degraded_snapshot_omits_uncomputed_outcome_keys() -> None:
-    """RPT-OUT-06: degraded snapshot does not present absent PnL as measured zero."""
+    """Degraded snapshot does not present absent PnL as measured zero."""
     graph = InMemoryGraphStore()
     snapshot = degraded_snapshot(graph, "missing-run", "no data")
     metrics = snapshot.portfolio_metrics

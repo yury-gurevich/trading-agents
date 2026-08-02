@@ -117,7 +117,7 @@ def test_run_scan_calls_provider_and_returns_ranked_candidates() -> None:
 
 
 def test_scan_provenance_links_candidates_to_provider_snapshot() -> None:
-    """SCAN-TYP-01 / SCAN-TYP-02 / SCAN-STA-02 / SCAN-OBS-01: ScanRun written to graph;
+    """SCAN-TYP-01 / SCAN-STA-02 / SCAN-OBS-01: ScanRun written to graph;
     Candidate ancestors link back to MarketSnapshot via DERIVED_FROM."""
     bus, graph, _scanner_sink = _wire(bars=_fixture_bars())
 

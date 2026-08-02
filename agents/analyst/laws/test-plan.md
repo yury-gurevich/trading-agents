@@ -39,7 +39,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-NEV-01 | No quantity, price, or dollar amount in any Recommendation field. | schema | `test_analyst_agent.py::test_empty_candidate_set_returns_explainable_silence` | 🟩 |
 | ANLZ-NEV-02 | Analyst never calls a data API directly; all via provider bus call. | boundary | `test_analyst_agent.py::test_analyze_returns_recommendation_with_rationale_and_provenance` | 🟩 |
 | ANLZ-NEV-03 | Candidate below regime floor always rejected; never recommended. | gate | `test_analyst_agent.py::test_low_confidence_candidate_becomes_rejection` | 🟩 |
-| ANLZ-NEV-05 | SentimentReading.scorer ∈ {"lexicon", "provider"}; never omitted. | schema | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
+| ANLZ-NEV-05 | SentimentReading shadow scorer is never promoted to champion; promotion stays behind the scorecard gate. | boundary | Demoted S156: `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` proves shadow sentiment is present, not that promotion is impossible. | ⬜ |
 
 ## State & effects
 
@@ -84,5 +84,5 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | ANLZ-OBS-01 | AnalystRun node contains full score breakdown and is reconstructable. | audit | `test_analyst_pubsub.py::test_recommendation_result_node_in_graph` | 🟩 |
-| ANLZ-OBS-02 | Faults routed to central channel; degraded path not silent. | observable | `test_analyst_agent.py::test_degraded_market_data_returns_explained_rejection` | 🟩 |
+| ANLZ-OBS-02 | Provider degradation and per-candidate errors route to the central fault channel; degraded paths include attributed incident_refs and a fault record. | observable | Demoted S156: `test_analyst_agent.py::test_degraded_market_data_returns_explained_rejection` covers provider degradation, not the full provider-degradation plus per-candidate fault clause. | ⬜ |
 | ANLZ-OBS-03 | The proposal is reconstructable from the graph alone, including the ATR used or its documented absence. | happy | _tbd_ | ⬜ |

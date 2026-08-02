@@ -44,6 +44,7 @@ def sweep_stale_probes(root: Path) -> list[str]:
             continue
         path.unlink()
         removed.append(str(path.relative_to(root)))
+    _remove_empty_probe_dirs(root)
     return removed
 
 
@@ -69,6 +70,7 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
     finally:
         for target in written:
             target.unlink(missing_ok=True)
+        _remove_empty_probe_dirs(root)
     if completed.returncode == 0:
         return False, "gate exited 0 on a planted violation — it does not catch this"
     output = f"{completed.stdout}\n{completed.stderr}"
@@ -76,6 +78,28 @@ def run_failure_case(case: FailureCase, root: Path) -> tuple[bool, str]:
     if missing:
         return False, f"gate failed without proving: {', '.join(missing)}"
     return True, f"rejected (exit {completed.returncode})"
+
+
+def _remove_empty_probe_dirs(root: Path) -> None:
+    """Remove empty probe directories left by nested self-test fixtures."""
+    for path in sorted(
+        root.rglob(f"{PROBE_PREFIX}*"), key=lambda item: len(item.parts), reverse=True
+    ):
+        if ".git" in path.parts or not path.is_dir():
+            continue
+        for child in sorted(
+            path.rglob("*"), key=lambda item: len(item.parts), reverse=True
+        ):
+            if child.is_dir():
+                _rmdir_if_empty(child)
+        _rmdir_if_empty(path)
+
+
+def _rmdir_if_empty(path: Path) -> None:
+    try:
+        path.rmdir()
+    except OSError:
+        return
 
 
 def check_invariant(inv: Invariant, root: Path) -> tuple[bool, str]:

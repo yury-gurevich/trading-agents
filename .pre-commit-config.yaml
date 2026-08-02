@@ -71,6 +71,13 @@ repos:
         files: ^(kernel|contracts|agents|scripts)/
         exclude: (/__init__\.py$|alembic/versions/)
 
+      - id: check-law-coverage
+        name: law coverage ledger
+        language: system
+        entry: uv run python scripts/check_law_coverage.py
+        pass_filenames: false
+        files: ^(agents/.*/laws/(laws|test-plan)\.md|agents/.*/tests/.*\.py|docs/laws/(ledger|INDEX)\.md|scripts/check_law_coverage\.py|scripts/law_coverage_.*\.py)$
+
       - id: import-linter
         name: import-linter (agents are islands)
         language: system

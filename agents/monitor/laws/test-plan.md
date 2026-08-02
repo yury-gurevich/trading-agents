@@ -12,13 +12,13 @@
 | MON-TRG-03 | 🟩 | `test_explain_hold_returns_non_empty_explanation` |
 | MON-TRG-04 | ⬜ | — |
 | MON-OUT-01 | 🟩 | `test_check_positions_opens_position_idempotently` |
-| MON-OUT-02 | 🟩 | `test_stop_rule_writes_check_close_and_dispatches_execution`, `test_hold_writes_check_without_close_decision` |
-| MON-OUT-03 | 🟩 | `test_stop_rule_writes_check_close_and_dispatches_execution`, `test_target_rule_triggers_close`, `test_time_rule_triggers_close` |
+| MON-OUT-02 | ⬜ | Demoted S156: `test_stop_rule_writes_check_close_and_dispatches_execution` and `test_hold_writes_check_without_close_decision` no longer exist after ADR-0017 retired monitor exit authoring. |
+| MON-OUT-03 | ⬜ | Demoted S156: `test_stop_rule_writes_check_close_and_dispatches_execution`, `test_target_rule_triggers_close`, and `test_time_rule_triggers_close` no longer exist after ADR-0017 retired monitor exit authoring. |
 | MON-OUT-04 | ⬜ | — |
-| MON-OUT-05 | 🟩 | `test_hold_writes_check_without_close_decision` |
+| MON-OUT-05 | ⬜ | Demoted S156: `test_hold_writes_check_without_close_decision` no longer exists after ADR-0017 retired monitor exit authoring. |
 | MON-OUT-06 | 🟩 | `test_fills_ready_triggers_decisions_ready` |
 | MON-OUT-07 | 🟩 | `test_provider_failure_skips_position_and_records_fault` |
-| MON-NEV-01 | 🟩 | `test_stop_rule_writes_check_close_and_dispatches_execution` |
+| MON-NEV-01 | ⬜ | Demoted S156: `test_stop_rule_writes_check_close_and_dispatches_execution` no longer exists after ADR-0017 retired monitor exit authoring. |
 | MON-NEV-02 | ⬜ | — |
 | MON-NEV-03 | 🟩 | `test_provider_failure_skips_position_and_records_fault`, `test_missing_provider_handler_skips_position_and_records_fault` |
 | MON-NEV-04 | 🟩 | `test_missing_current_price_skips_position_and_records_fault` |

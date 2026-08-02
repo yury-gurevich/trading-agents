@@ -34,8 +34,8 @@
 | SUP-ORD-02 | ⬜ | — |
 | SUP-FAIL-01 | 🟩 | `test_failure_paths_return_degraded_responses` |
 | SUP-FAIL-02 | 🟩 | `test_failure_paths_return_degraded_responses` |
-| SUP-FAIL-03 | 🟩 | `test_record_dispatch_run_returns_rejection_when_graph_write_fails` |
-| SUP-FAIL-04 | 🟩 | `test_report_fault_returns_rejection_when_graph_write_fails` |
+| SUP-FAIL-03 | ⬜ | Demoted S156: `test_record_dispatch_run_returns_rejection_when_graph_write_fails` asserts rejection only, not emitted fault or pipeline-continuation evidence. |
+| SUP-FAIL-04 | ⬜ | Demoted S156: `test_report_fault_returns_rejection_when_graph_write_fails` asserts rejection only, not the distinct emitted fault required by the clause. |
 | SUP-TYP-01 | ⬜ | — |
 | SUP-TYP-02 | ⬜ | — |
 | SUP-TYP-03 | ⬜ | — |

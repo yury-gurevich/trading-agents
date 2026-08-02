@@ -5,7 +5,7 @@
 | FORE-IDN-01 | ⬜ | — |
 | FORE-IDN-02 | ⬜ | — |
 | FORE-IN-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
-| FORE-IN-02 | 🟩 | `test_forecast_return_persists_and_returns_a_shadow_prediction` |
+| FORE-IN-02 | ⬜ | Demoted S156: `test_forecast_return_persists_and_returns_a_shadow_prediction` proves a shadow prediction is returned and persisted, not that forecast_return ignores request features while fetching OHLCV via the provider bus. |
 | FORE-IN-03 | 🟩 | `test_scorecard_reports_samples_and_never_promotes` |
 | FORE-IN-04 | ⬜ | — |
 | FORE-IN-05 | ⬜ | — |
@@ -31,7 +31,7 @@
 | FORE-ORD-02 | ⬜ | — |
 | FORE-FAIL-01 | 🟩 | `test_forecast_falls_back_to_neutral_on_a_model_fault` |
 | FORE-FAIL-02 | 🟩 | `test_forecast_survives_a_provider_fault` |
-| FORE-FAIL-03 | 🟩 | `test_forecast_return_falls_back_to_neutral_on_a_model_fault` |
+| FORE-FAIL-03 | ⬜ | Demoted S156: `test_forecast_return_falls_back_to_neutral_on_a_model_fault` covers a generic injected model exception, not the specific missing-LightGBM-file clause. |
 | FORE-TYP-01 | ⬜ | — |
 | FORE-TYP-02 | ⬜ | — |
 | FORE-TYP-03 | ⬜ | — |

@@ -27,7 +27,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | SCAN-OUT-02 | FilterTrace accounts for every ticker (universe_size == evaluated + dropped). | accounting | `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` | 🟩 |
 | SCAN-OUT-03 | Provider degraded → empty CandidateSet + fault recorded; no crash. | degraded | `test_scanner_agent.py::test_degraded_provider_path_returns_empty_explained_result` | 🟩 |
 | SCAN-OUT-04 | Pub/sub event carries claim-check ref only, not CandidateSet payload. | pub/sub | `test_scanner_pubsub.py::test_run_trigger_publishes_candidates_ready` | 🟩 |
-| SCAN-OUT-05 | explain_filter returns Explanation; no provider call, no graph write. | read-only | `test_scanner_agent.py::test_explain_filter_returns_grounded_explanation` | 🟩 |
+| SCAN-OUT-05 | explain_filter returns Explanation; no provider call, no graph write. | read-only | Demoted S156: the live `test_scanner_explain.py::test_explain_filter_returns_grounded_explanation` asserts the explanation payload but not no provider call/no graph write. | ⬜ |
 
 ## Prohibitions
 
@@ -69,7 +69,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | SCAN-TYP-01 | CandidateSet validates against contracts/scanner.py CONTRACT schema. | schema | `test_scanner_pubsub.py::test_scan_result_node_candidates_are_deserializable` | 🟩 |
-| SCAN-TYP-02 | Candidate.rank ≥ 1; FilterTrace counts are non-negative integers. | schema | `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` | 🟩 |
+| SCAN-TYP-02 | Candidate.score is a dimensionless float; Candidate.rank is a positive int; FilterTrace counts are exact non-negative integers summing to universe_size. | schema | Demoted S156: `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` asserts rank and filter counts, but not Candidate.score's dimensionless float contract. | ⬜ |
 
 ## Security
 

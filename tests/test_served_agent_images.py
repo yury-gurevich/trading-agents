@@ -23,6 +23,25 @@ def test_served_agent_images_install_azure_extra() -> None:
         assert "--extra azure" in text
 
 
+def test_every_agent_dockerfile_is_in_the_build_matrix() -> None:
+    """DL-46 family: a Dockerfile nothing builds is an image that never ships.
+
+    S153 added `agents/deliberator/Dockerfile` and taught `deploy-agents.ps1` to
+    expect 15 images, but never added the deliberator to `build-images.yml`. The
+    image was therefore never built, and the gap surfaced only when a deploy was
+    already underway. Nothing tied "a Dockerfile exists" to "it gets built" --
+    this test is that tie.
+    """
+    workflow = Path(".github/workflows/build-images.yml").read_text(encoding="utf-8")
+    missing = [
+        dockerfile.parent.name
+        for dockerfile in sorted(Path("agents").glob("*/Dockerfile"))
+        if f"dockerfile: {dockerfile.as_posix()}" not in workflow
+    ]
+
+    assert not missing, f"agent Dockerfiles absent from the build matrix: {missing}"
+
+
 def test_served_agent_request_routes_are_stable() -> None:
     assert [request_topic(agent) for agent in SERVED_AGENT_TYPES] == [
         "curator.requests",

@@ -28,6 +28,9 @@ from kernel import AzureServiceBusSettings, FakeLLMClient, InMemoryGraphStore
 
 
 class _NoKeyPeer:
+    def preflight(self, recipients: tuple[str, ...]) -> None:
+        del recipients
+
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest
     ) -> DebateTurnReply:
@@ -118,6 +121,9 @@ def test_store_reuses_existing_run_and_ignores_missing_llm_key() -> None:
         transcript=[],
         role_models={},
         max_rounds=1,
+        real_debate_count=0,
+        failed_open_count=0,
+        failed_open_tickers=[],
         llm_call_keys=["existing-call", "missing-call"],
     )
     second = write_deliberation_run(
@@ -131,6 +137,9 @@ def test_store_reuses_existing_run_and_ignores_missing_llm_key() -> None:
         transcript=[],
         role_models={},
         max_rounds=1,
+        real_debate_count=0,
+        failed_open_count=0,
+        failed_open_tickers=[],
         llm_call_keys=[],
     )
 

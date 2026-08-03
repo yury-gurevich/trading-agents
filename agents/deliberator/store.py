@@ -45,6 +45,9 @@ def write_deliberation_run(
     transcript: list[dict[str, object]],
     role_models: dict[str, str],
     max_rounds: int,
+    real_debate_count: int,
+    failed_open_count: int,
+    failed_open_tickers: list[str],
     llm_call_keys: list[str],
 ) -> Node:
     """Write one idempotent DeliberationRun and link LLM audit calls."""
@@ -63,6 +66,9 @@ def write_deliberation_run(
                 "transcript": transcript,
                 "role_models": role_models,
                 "max_rounds": max_rounds,
+                "real_debate_count": real_debate_count,
+                "failed_open_count": failed_open_count,
+                "failed_open_tickers": failed_open_tickers,
                 "created_at": datetime.now(tz=UTC).isoformat(),
             },
         )

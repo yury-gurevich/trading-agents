@@ -7,10 +7,17 @@ External I/O: GraphStore and peer-client calls through injected ports.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from agents.deliberator.context import build_veto_context
+from agents.deliberator.review_record import (
+    OrderReview,
+    debate_record,
+    fail_open_review,
+    narrative,
+    role_models,
+    transcript_records,
+)
 from agents.deliberator.store import find_pending as find_pending
 from agents.deliberator.store import write_deliberation_run
 from contracts.deliberator import (
@@ -31,16 +38,6 @@ if TYPE_CHECKING:
     from kernel import FaultSink, GraphStore, Node
 
 
-@dataclass(frozen=True)
-class OrderReview:
-    """One order's recorded debate outcome."""
-
-    verdict: str
-    rationale: str
-    turns: tuple[DebateTurnRecord, ...]
-    llm_call_keys: tuple[str, ...]
-
-
 def review_pm_node(
     node: Node,
     *,
@@ -52,20 +49,28 @@ def review_pm_node(
 ) -> None:
     """Review each approved PM order and write one DeliberationRun."""
     sink = sink if sink is not None else CollectingFaultSink()
+    if not _preflight_peers(peer_client, settings, sink):
+        return
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
     verdicts: dict[str, str] = {}
     vetoed: list[str] = []
     debates: dict[str, object] = {}
     transcript: list[dict[str, object]] = []
     llm_call_keys: list[str] = []
+    real_debate_count = 0
+    failed_open_tickers: list[str] = []
     for intent in order_set.approved:
         review = _review_one(
             graph, node, order_set, intent, manager, peer_client, settings, sink
         )
         verdicts[intent.ticker] = review.verdict
-        debates[intent.ticker] = _debate_record(review)
-        transcript.extend(_transcript_records(intent.ticker, review.turns))
+        debates[intent.ticker] = debate_record(review)
+        transcript.extend(transcript_records(intent.ticker, review.turns))
         llm_call_keys.extend(review.llm_call_keys)
+        if review.turns:
+            real_debate_count += 1
+        if review.failed_open:
+            failed_open_tickers.append(intent.ticker)
         if review.verdict != "uphold":
             vetoed.append(intent.ticker)
     write_deliberation_run(
@@ -75,12 +80,30 @@ def review_pm_node(
         verdicts=verdicts,
         vetoed_tickers=vetoed,
         debates=debates,
-        narrative=_narrative(debates),
+        narrative=narrative(debates),
         transcript=transcript,
-        role_models=_role_models(settings),
+        role_models=role_models(settings),
         max_rounds=settings.max_rounds,
+        real_debate_count=real_debate_count,
+        failed_open_count=len(failed_open_tickers),
+        failed_open_tickers=failed_open_tickers,
         llm_call_keys=llm_call_keys,
     )
+
+
+def _preflight_peers(
+    peer_client: PeerClient, settings: DeliberatorSettings, sink: FaultSink
+) -> bool:
+    """Return false when configured peers cannot be addressed."""
+    with fault_boundary(
+        sink,
+        agent="deliberator-manager",
+        module="agents.deliberator.poll",
+        capability="peer_preflight",
+        reraise=False,
+    ) as capture:
+        peer_client.preflight((settings.proponent_identity, settings.opponent_identity))
+    return capture.fault is None
 
 
 def _review_one(
@@ -94,7 +117,7 @@ def _review_one(
     sink: FaultSink,
 ) -> OrderReview:
     """Run all peer turns plus the manager verdict; fail open on faults."""
-    result = _fail_open()
+    result = fail_open_review()
     with fault_boundary(
         sink,
         agent="deliberator-manager",
@@ -109,7 +132,7 @@ def _review_one(
         result = _debate(
             order_set.run_id, intent.ticker, proposition, manager, peer_client, settings
         )
-    return _fail_open() if capture.fault is not None else result
+    return fail_open_review() if capture.fault is not None else result
 
 
 def _debate(
@@ -154,45 +177,3 @@ def _debate(
         tuple(transcript),
         tuple(llm_call_keys),
     )
-
-
-def _fail_open() -> OrderReview:
-    return OrderReview("uphold", "llm unavailable (fail-open)", (), ())
-
-
-def _debate_record(review: OrderReview) -> dict[str, object]:
-    return {
-        "verdict": review.verdict,
-        "rationale": review.rationale,
-        "turns": [
-            {"role": turn.role, "round": turn.round, "text": turn.text}
-            for turn in review.turns
-        ],
-    }
-
-
-def _transcript_records(
-    ticker: str, turns: tuple[DebateTurnRecord, ...]
-) -> list[dict[str, object]]:
-    return [
-        {"ticker": ticker, "role": turn.role, "round": turn.round, "text": turn.text}
-        for turn in turns
-    ]
-
-
-def _narrative(debates: dict[str, object]) -> str:
-    if not debates:
-        return "No PM-approved orders required deliberation."
-    return "; ".join(
-        f"{ticker}: {record['verdict']} - {record['rationale']}"
-        for ticker, record in sorted(debates.items())
-        if isinstance(record, dict)
-    )
-
-
-def _role_models(settings: DeliberatorSettings) -> dict[str, str]:
-    return {
-        "defender": settings.defender_model,
-        "challenger": settings.challenger_model,
-        "judge": settings.judge_model,
-    }

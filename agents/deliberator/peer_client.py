@@ -30,6 +30,10 @@ _MESSAGE_LABEL = "AgentMessage"
 class PeerClient(Protocol):
     """Transport-neutral manager port for one debate-turn request."""
 
+    def preflight(self, recipients: tuple[str, ...]) -> None:
+        """Raise if a peer cannot be addressed before PM work is consumed."""
+        ...  # pragma: no cover - protocol declaration only.
+
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest
     ) -> DebateTurnReply:
@@ -44,6 +48,10 @@ class BusPeerClient:
         """Create a request client using a concrete manager sender identity."""
         self._bus = bus
         self._sender = sender
+
+    def preflight(self, recipients: tuple[str, ...]) -> None:
+        """Local in-process peers are addressable through the injected bus."""
+        del recipients
 
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest
@@ -82,6 +90,12 @@ class ServiceBusPeerClient:
         self._sender = sender
         self._reply_subscription = reply_subscription
         self._timeout_seconds = timeout_seconds
+
+    def preflight(self, recipients: tuple[str, ...]) -> None:
+        """Resolve every peer request topic before consuming append-only work."""
+        for recipient in recipients:
+            topic = request_topic(recipient)
+            self._settings.connection_string_for_topic(topic)
 
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest

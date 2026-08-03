@@ -41,7 +41,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | analyst | ✅ LOCKED **v1.1** (S152) | 24 / 46 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
 | scanner | ✅ LOCKED v1 (S70) | 16 / 39 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 25 / 44 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
-| deliberator | ✅ LOCKED v1 (S153) | 0 / 48 | New DL-80/ADR-0020 agent; all clauses start ⬜ |
+| deliberator | ✅ LOCKED v1 (S153) | 4 / 48 | S158 made the first four clauses green: append-only deliberation artifact shape, fail-open recording, and failed peer/debate visibility |
 | execution | ✅ LOCKED **v1.1** (S152) | 28 / 57 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |
 | reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |

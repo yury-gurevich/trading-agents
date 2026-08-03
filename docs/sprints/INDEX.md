@@ -62,7 +62,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | S127 (fixpack) | Batch confirmed rows 4/9/10/11/12 in [s127-fixpack-backlog.md](s127-fixpack-backlog.md) | **Shipped** (0.71.00, merged `32c73cc`) |
 | S43 (monitor realized PnL) | Monitor real `pnl_cents` → reporter re-point to $ | S55 already re-pointed; revisit when live broker wired |
 | P12/P13 DSPy harness | `PromptOptimizer` port + golden eval set + DSPy first impl | Plumbing complete first (build-plan P11/P14 exit) |
-| [sprint-156](sprint-156-law-coverage-is-checkable.md) | Make the law book's own proof checkable: a `make ci` gate for conventions §3 (green = a test cites the ID), the 29 unbacked greens adjudicated, roll-ups derived not hand-kept | Ready — branch + worktree prepared; row-per-clause stays warn-only until S157 |
+| [sprint-156](sprint-156-law-coverage-is-checkable.md) | Make the law book's own proof checkable: a `make ci` gate for conventions §3 (green = a test cites the ID), the 29 unbacked greens adjudicated, roll-ups derived not hand-kept | **SHIPPED** `23ae35f` / `v0.86.00` — roll-ups now derived clause-denominated (252 / 653); row-per-clause warn-only at 101 until S157 |
 | [chore-wsl2-dev-env](chore-wsl2-dev-env.md) | Move the dev loop to WSL2 (native-ext4 `mutmut`/`pytest`, CI/prod parity); keep `.ps1` under `pwsh`, no rewrite; `.gitattributes` LF normalisation | Sprint queue empty (after S134 0.71.06 + S133 0.71.07) — renormalisation must not overlap an in-flight branch |
 
 ---

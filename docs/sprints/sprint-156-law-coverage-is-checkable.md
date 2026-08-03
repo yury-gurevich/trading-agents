@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-156-law-coverage-is-checkable`
-**Status:** SPEC — closes hardening rows **R** and **R²**, puts **O** into warn-only shadow
+**Status:** SHIPPED — merged `23ae35f`, `v0.86.00`; closes hardening rows **R** and **R²**, puts **O** into warn-only shadow
 **Version:** feat → **0.86.00** (MINOR: two middle digits, zeroing the patch group)
 **Effort:** M–L
 **Decisions:** [ADR-0021](../decisions/0021-clause-summary-mirrors-the-law.md) a clause summary

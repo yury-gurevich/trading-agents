@@ -348,8 +348,11 @@
     "DeliberationRun": [
       "created_at",
       "debates",
+      "failed_open_count",
+      "failed_open_tickers",
       "max_rounds",
       "narrative",
+      "real_debate_count",
       "role_models",
       "source_pm_run_id",
       "transcript",

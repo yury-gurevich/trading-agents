@@ -121,9 +121,15 @@ def test_deliberation_and_llmcall_props_are_recovered() -> None:
     """DL-57: S153 property superset is not a presence-only assertion."""
     recovered = properties(ROOT).properties
 
-    assert {"verdicts", "vetoed_tickers", "transcript", "narrative"} <= recovered[
-        "DeliberationRun"
-    ]
+    assert {
+        "verdicts",
+        "vetoed_tickers",
+        "transcript",
+        "narrative",
+        "real_debate_count",
+        "failed_open_count",
+        "failed_open_tickers",
+    } <= recovered["DeliberationRun"]
     assert {"calling_agent", "prompt_hash", "tokens_in", "latency_ms"} <= recovered[
         "LLMCall"
     ]

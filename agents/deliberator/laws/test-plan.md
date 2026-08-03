@@ -14,8 +14,8 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-TRG-01 | Manager pulls PMRun nodes lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
 | DLIB-TRG-02 | Peers serve request/reply. | functional | _tbd_ | ⬜ |
 | DLIB-TRG-03 | No self-trigger or external feed polling. | functional | _tbd_ | ⬜ |
-| DLIB-OUT-01 | One append-only `DeliberationRun` per PMRun. | functional | _tbd_ | ⬜ |
-| DLIB-OUT-02 | Run records verdicts, vetoes, debates, models, narrative, time. | functional | _tbd_ | ⬜ |
+| DLIB-OUT-01 | One append-only `DeliberationRun` per PMRun. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
+| DLIB-OUT-02 | Run records verdicts, vetoes, debates, models, narrative, time. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
 | DLIB-OUT-03 | LLM calls write attributable shared `LLMCall`. | functional | _tbd_ | ⬜ |
 | DLIB-OUT-04 | Non-uphold only subtracts PM-approved orders. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-01 | Never originates an order. | functional | _tbd_ | ⬜ |
@@ -23,7 +23,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-NEV-03 | Never talks to broker. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-04 | Never fetches market data directly. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-05 | Never imports another agent or orchestration. | functional | _tbd_ | ⬜ |
-| DLIB-NEV-06 | Never hides failed debate as clean veto. | functional | _tbd_ | ⬜ |
+| DLIB-NEV-06 | Never hides failed debate or peer call as clean veto. | functional | `test_deliberator_agent.py::test_manager_fail_open_records_visible_rationale`; `test_manager_preflight.py::test_unreachable_peer_preflight_leaves_pmrun_unconsumed`; `test_manager_preflight.py::test_one_bad_peer_preflight_records_no_half_debate` | 🟩 |
 | DLIB-STA-01 | Manager is stateless between polls. | functional | _tbd_ | ⬜ |
 | DLIB-STA-02 | Graph effects append-only and idempotent by PM run id. | functional | _tbd_ | ⬜ |
 | DLIB-STA-03 | Peers write only shared LLM call audit nodes. | functional | _tbd_ | ⬜ |
@@ -33,7 +33,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-ORD-01 | Defender then challenger order is preserved per round. | functional | _tbd_ | ⬜ |
 | DLIB-ORD-02 | Independent PMRun nodes process independently. | functional | _tbd_ | ⬜ |
 | DLIB-ORD-03 | Duplicate peer replies are ignored by idempotent write semantics. | functional | _tbd_ | ⬜ |
-| DLIB-FAIL-01 | LLM or peer-call failure is fail-open and recorded. | functional | _tbd_ | ⬜ |
+| DLIB-FAIL-01 | LLM or peer-call failure is fail-open and recorded. | functional | `test_deliberator_agent.py::test_manager_fail_open_records_visible_rationale` | 🟩 |
 | DLIB-FAIL-02 | Graph-write failure records fault, no delete. | functional | _tbd_ | ⬜ |
 | DLIB-FAIL-03 | Crash recovery retries runs lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-01 | Bus payloads match `contracts/deliberator.py`. | functional | _tbd_ | ⬜ |

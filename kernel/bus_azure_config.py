@@ -15,6 +15,10 @@ from pydantic_settings import SettingsConfigDict
 from kernel.config import AgentSettings, tunable
 
 
+class BusConfigError(ValueError):
+    """Raised when Service Bus routing configuration is unusable."""
+
+
 class AzureServiceBusSettings(AgentSettings):
     """Infrastructure settings for the Azure Service Bus message backend.
 
@@ -86,15 +90,28 @@ class AzureServiceBusSettings(AgentSettings):
     )
 
     def connection_string_for_topic(self, topic: str) -> str | None:
-        """Return a topic-scoped connection string, falling back to the primary."""
-        if not self.connection_strings_json:
+        """Return the configured connection string for a Service Bus topic."""
+        if self.connection_strings_json is None:
             return self.connection_string
         try:
             mapping = json.loads(self.connection_strings_json)
-        except json.JSONDecodeError:
-            return self.connection_string
-        topic_entry = mapping.get(topic) if isinstance(mapping, dict) else None
+        except json.JSONDecodeError as exc:
+            raise BusConfigError(
+                f"Service Bus connection string bundle is malformed JSON: {exc.msg}"
+            ) from exc
+        if not isinstance(mapping, dict):
+            raise BusConfigError(
+                "Service Bus connection string bundle must be a JSON object"
+            )
+        topic_entry = mapping.get(topic)
         if not isinstance(topic_entry, dict):
-            return self.connection_string
+            raise BusConfigError(
+                "Service Bus connection string bundle has no entry for "
+                f"{topic!r}; configured topics: {sorted(str(key) for key in mapping)}"
+            )
         value = topic_entry.get("connection_string")
-        return value if isinstance(value, str) and value else self.connection_string
+        if isinstance(value, str) and value:
+            return value
+        raise BusConfigError(
+            f"Service Bus topic {topic!r} has no non-empty connection_string"
+        )

@@ -10,7 +10,7 @@ External I/O: none
 from kernel.agent import AgentBase
 from kernel.bus import EventHandler, InProcessBus, MessageBus
 from kernel.bus_azure import AzureServiceBusBus
-from kernel.bus_azure_config import AzureServiceBusSettings
+from kernel.bus_azure_config import AzureServiceBusSettings, BusConfigError
 from kernel.bus_azure_receiver import AzureServiceBusRequestConsumer
 from kernel.bus_celery import CeleryBus
 from kernel.bus_celery_config import CeleryBusSettings
@@ -105,6 +105,7 @@ __all__ = [
     "AzureServiceBusRequestConsumer",
     "AzureServiceBusSettings",
     "BaselineCheck",
+    "BusConfigError",
     "Capability",
     "CeleryBus",
     "CeleryBusSettings",

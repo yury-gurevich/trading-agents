@@ -36,10 +36,21 @@ def test_deliberation_run_props_are_declared_and_unknown_prop_fails() -> None:
         "transcript": [{"ticker": "AAPL", "role": "defender"}],
         "role_models": {"defender": "claude-opus-5"},
         "max_rounds": 2,
+        "real_debate_count": 1,
+        "failed_open_count": 0,
+        "failed_open_tickers": [],
         "created_at": "2026-08-01T00:00:00+00:00",
     }
 
     vocabulary.check_node("DeliberationRun", props=props)
+    planted = _declaration()
+    properties = planted["properties"]
+    assert isinstance(properties, dict)
+    declared = properties["DeliberationRun"]
+    assert isinstance(declared, list)
+    declared.remove("failed_open_count")
+    with pytest.raises(VocabularyError, match="failed_open_count"):
+        Vocabulary.from_mapping(planted).check_node("DeliberationRun", props=props)
     with pytest.raises(VocabularyError, match="undeclared properties"):
         vocabulary.check_node("DeliberationRun", props={**props, "vetoed_tikcers": []})
 

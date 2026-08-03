@@ -24,6 +24,9 @@ _UPHOLD = '{"ruling": "uphold", "rationale": "clears review"}'
 
 
 class _FailingPeerClient:
+    def preflight(self, recipients: tuple[str, ...]) -> None:
+        del recipients
+
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest
     ) -> DebateTurnReply:
@@ -103,7 +106,7 @@ def test_peer_served_turn_writes_attributable_llm_call() -> None:
 
 
 def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> None:
-    """DL-80 / ADR-0020: manager writes DeliberationRun and shared LLMCall costs."""
+    """DLIB-OUT-01 / DLIB-OUT-02 / DL-80: manager writes one audit run."""
     graph = InMemoryGraphStore()
     pm = _pm_node(graph)
     bus = InProcessBus()
@@ -142,7 +145,13 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
     (run,) = graph.list_nodes(DELIBERATION_RUN_LABEL)
     assert run.props["verdicts"] == {"AAPL": "uphold"}
     assert run.props["vetoed_tickers"] == ()
+    assert run.props["real_debate_count"] == 1
+    assert run.props["failed_open_count"] == 0
+    assert run.props["failed_open_tickers"] == ()
     assert len(run.props["transcript"]) == 4
+    assert run.props["debates"]["AAPL"]["failed_open"] is False
+    assert "AAPL: uphold" in run.props["narrative"]
+    assert run.props["created_at"]
     assert run.props["role_models"]["judge"] == "claude-opus-5"
     callers = {node.props["calling_agent"] for node in graph.list_nodes("LLMCall")}
     assert callers == {
@@ -155,7 +164,7 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
 
 
 def test_manager_fail_open_records_visible_rationale() -> None:
-    """DL-80: peer failure records fail-open and never produces a clean veto."""
+    """DLIB-FAIL-01 / DLIB-NEV-06: peer failure is queryable fail-open."""
     graph = InMemoryGraphStore()
     pm = _pm_node(graph, "pm-fail")
     bus = InProcessBus()
@@ -178,4 +187,9 @@ def test_manager_fail_open_records_visible_rationale() -> None:
     (run,) = graph.list_nodes(DELIBERATION_RUN_LABEL)
     assert run.props["verdicts"] == {"AAPL": "uphold"}
     assert run.props["vetoed_tickers"] == ()
+    assert run.props["real_debate_count"] == 0
+    assert run.props["failed_open_count"] == 1
+    assert run.props["failed_open_tickers"] == ("AAPL",)
+    assert run.props["debates"]["AAPL"]["failed_open"] is True
+    assert run.props["debates"]["AAPL"]["rationale"] == "llm unavailable (fail-open)"
     assert "fail-open" in run.props["narrative"]

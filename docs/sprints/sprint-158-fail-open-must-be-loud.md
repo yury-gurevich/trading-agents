@@ -139,7 +139,7 @@ Choose the exception type deliberately and say why in the return notes — a `Va
 Azure SDK's own shape, or a named `BusConfigError`. **Do not** reuse a generic exception that a
 caller's `except Exception` would swallow indistinguishably from a transport blip.
 
-**Result:**
+**Result:** Implemented `BusConfigError(ValueError)` and made `connection_string_for_topic()` distinguish no bundle (`None`, keep primary) from a configured-but-bad bundle. A configured bundle now raises on absent topics, malformed JSON, non-object JSON, and entries without a non-empty `connection_string`; the absent-topic error names both the requested topic and configured keys. A1-A5 pass.
 
 ### 2 · The manager checks it can address its peers *before* consuming work
 
@@ -154,7 +154,7 @@ cannot reach its peers must become *inert and loud*, never *productive and wrong
 unconsumed is correct here precisely because the store is append-only — an unconsumed `PMRun` can be
 deliberated tomorrow; a fail-open record cannot be withdrawn.
 
-**Result:**
+**Result:** Implemented peer addressability preflight in the first poll pass, before `review_pm_node()` reads and consumes the `PMRun` into a `DeliberationRun`. `PeerClient.preflight()` is now part of the manager port, `ServiceBusPeerClient.preflight()` resolves both peer request topics, and preflight failures are captured as `peer_preflight` faults while leaving the `PMRun` pending and writing no half-clean deliberation record. Fail-open remains for LLM/debate failures after a successful preflight.
 
 ### 3 · A `DeliberationRun` records whether a debate actually happened
 
@@ -169,7 +169,7 @@ shape — take a better one if you find it, and record why:
 guard raises fail-closed on the first real write. That guard is **armed on the fleet**. Re-run
 `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py` and paste the output.
 
-**Result:**
+**Result:** Added first-class `DeliberationRun` fields `real_debate_count`, `failed_open_count`, and `failed_open_tickers`; per-ticker debate payloads also carry `failed_open`. Human `narrative` and the exact `llm unavailable (fail-open)` rationale are preserved. The new props are declared in `trading_graph_vocabulary.json`; both vocabulary scripts exit 0 with no stdout, and C1-C3 pass including the planted missing-declaration failure.
 
 ### 4 · The acceptance gate stops calling an inert veto a pass
 
@@ -187,13 +187,13 @@ ignore the light. This RED is not false — it is a real, live, unvetoed-order c
 bounded, because the underlying cause is a config fix, not a standing state. A gate that goes green
 on "the veto did not run" is worth far less than one that goes red honestly.
 
-**Result:**
+**Result:** Implemented the planned FAIL verdict: the deliberation view now observes `debate_coverage` and `failed_open_count`, requires full real-debate coverage, and requires zero failed-open reviews. All-fail-open and mixed fail-open runs fail acceptance; a real deliberation still passes; the old 2026-08-02 empty-transcript artifact shape cannot pass.
 
 ### 5 · Prove every check can fail (DL-70)
 
 No presence assertions. See the test plan; every test plants its violation.
 
-**Result:**
+**Result:** Proved failure paths with planted violations: absent/malformed bundle entries raise, peer preflight leaves work unconsumed and faults, fail-open records are queryable without string matching, missing vocabulary declaration raises `VocabularyError`, and a controlled mutation removing the new acceptance checks makes the 2026-08-02 regression test fail with `PASS` instead of `FAIL`.
 
 ---
 
@@ -330,18 +330,24 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `kernel/bus_azure_config.py` | | | |
-| `agents/deliberator/poll.py` + `entrypoint.py` | | | |
-| `agents/deliberator/store.py` (the record) | | | |
-| `orchestration/packs/trading_deliberation_view.py` | | | |
-| `trading_graph_vocabulary.json` | | | |
+| `kernel/bus_azure_config.py` | `docs/INDEX.md`, `docs/laws/INDEX.md`, `docs/laws/dependencies.md`, `docs/laws/conventions.md` | `DEP-BUS-04`, `DEP-CONFIG-01`, `DEP-CONFIG-02`, dependency pre-flight sequencing, conventions section 3 | yes - a configured per-topic SAS bundle is authoritative config, so a missing topic or malformed JSON must fail loudly before a send path can hide it as transport noise |
+| `agents/deliberator/poll.py` + `entrypoint.py` | `agents/deliberator/laws/laws.md`, `agents/deliberator/laws/test-plan.md`, `docs/laws/dependencies.md`, `docs/laws/conventions.md` | `DLIB-TRG-01`, `DLIB-DEP-02`, `DLIB-DEP-04`, `DLIB-FAIL-01`, `DLIB-FAIL-03`, `DLIB-NEV-06`, `DEP-BUS-04`, `DEP-CONFIG-01` | yes - the peer-addressability check belongs before any `PMRun` is marked deliberated; on bad config the manager should be inert and fault-loud so the append-only backlog remains retryable |
+| `agents/deliberator/store.py` (the record) | `agents/deliberator/laws/laws.md`, `agents/deliberator/laws/test-plan.md`, `docs/laws/conventions.md` | `DLIB-OUT-01`, `DLIB-OUT-02`, `DLIB-STA-02`, `DLIB-FAIL-01`, `DLIB-NEV-06`, `DLIB-OBS-01`, `DLIB-OBS-03` | yes - keep the human rationale/narrative intact, but add first-class queryable fail-open counts and tickers so a failed debate is not hidden inside prose |
+| `orchestration/packs/trading_deliberation_view.py` | `docs/INDEX.md`, `docs/laws/INDEX.md`, `docs/laws/conventions.md`, `docs/laws/functionality-checks.md`, `docs/design-log.md` (`DL-57`, `DL-59`, `DL-70`, `DL-80`) | conventions section 3, LAW-02 proof discipline, DL-57/DL-59 distinction between "did not look" and "looked and found nothing" | no contradiction; implement the sprint's planned FAIL verdict for all-fail-open or mixed fail-open runs rather than reclassifying the completed inert veto as `UNPROVEN` |
+| `trading_graph_vocabulary.json` | `docs/sprints/INDEX.md`, `docs/sprints/sprint-143-graph-vocabulary.md`, `docs/sprints/sprint-144-vocabulary-live.md`, `docs/laws/functionality-checks.md`, `docs/design-log.md` (`DL-68`, `DL-70`) | S143 closed vocabulary, S144 deployable guard/property discipline, DL-70 planted-failure requirement | yes - new `DeliberationRun` props must be declared in the pack and proven with the vocabulary scripts plus a planted missing-declaration failure |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
+
+None found.
 
 **Clauses that were ⬜ and are now proven by this sprint's tests** (the deliberator is 0 / 48 — if
 you prove any, add the row and let `check_law_coverage.py` confirm it):
+
+`DLIB-OUT-01`, `DLIB-OUT-02`, `DLIB-NEV-06`, and `DLIB-FAIL-01` are now green in `agents/deliberator/laws/test-plan.md`. `scripts/check_law_coverage.py` exits 0; the remaining warnings are the pre-existing non-deliberator missing-row backlog.
 
 ---
 
@@ -349,8 +355,27 @@ you prove any, add the row and let `check_law_coverage.py` confirm it):
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
+| A1 | `test_settings_no_bundle_uses_primary_connection_string` | `tests/test_bus_azure_config.py` | passed | n/a |
+| A2 | `test_settings_bundle_topic_absent_raises_with_configured_keys` | `tests/test_bus_azure_config.py` | passed | n/a |
+| A3 | `test_settings_resolves_topic_scoped_connection_string` | `tests/test_bus_azure_config.py` | passed | n/a |
+| A4 | `test_settings_malformed_topic_bundle_raises_parse_error`; `test_settings_topic_bundle_must_be_json_object` | `tests/test_bus_azure_config.py` | passed | n/a |
+| A5 | `test_2026_08_02_manager_bundle_missing_peer_topic_fails_config` | `tests/test_bus_azure_config.py` | passed | n/a |
+| B1 | `test_unreachable_peer_preflight_leaves_pmrun_unconsumed` | `agents/deliberator/tests/test_manager_preflight.py` | passed | `DLIB-NEV-06` |
+| B2 | `test_healthy_peer_preflight_still_records_real_debate`; `test_servicebus_peer_client_preflight_resolves_peer_topics` | `agents/deliberator/tests/test_manager_preflight.py` | passed | `DLIB-OUT-01`, `DLIB-NEV-06` |
+| B3 | `test_one_bad_peer_preflight_records_no_half_debate` | `agents/deliberator/tests/test_manager_preflight.py` | passed | `DLIB-NEV-06` |
+| C1 | `test_manager_fail_open_records_visible_rationale` | `agents/deliberator/tests/test_deliberator_agent.py` | passed | `DLIB-FAIL-01`, `DLIB-NEV-06` |
+| C2 | `test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | `agents/deliberator/tests/test_deliberator_agent.py` | passed | `DLIB-OUT-01`, `DLIB-OUT-02` |
+| C3 | `test_deliberation_run_props_are_declared_and_unknown_prop_fails` | `tests/test_graph_vocabulary_deliberation.py` | passed | `DL-80`, `DL-70` |
+| D1 | `test_all_fail_open_deliberation_run_fails_acceptance` | `orchestration/tests/test_trading_acceptance_deliberation.py` | passed | `DLIB-NEV-06`, `DL-70` |
+| D2 | `test_clean_cascade_is_accepted_with_deliberation_present` | `orchestration/tests/test_trading_acceptance_deliberation.py` | passed | `SUP-OBS-01`, `DL-70` |
+| D3 | `test_mixed_fail_open_deliberation_run_fails_acceptance` | `orchestration/tests/test_trading_acceptance_deliberation.py` | passed | `DLIB-NEV-06`, `DL-70` |
+| D4 | `test_old_empty_transcript_shape_fails_deliberation_checks`; controlled mutation of `trading_deliberation_view.py` removing the two new checks | `orchestration/tests/test_trading_deliberation_view.py`; mutation run against `orchestration/tests/test_trading_acceptance_deliberation.py::test_all_fail_open_deliberation_run_fails_acceptance` | passed; mutation verified failing | `DL-70` |
 
 **Tests added beyond the plan:**
+
+- `test_settings_topic_bundle_must_be_json_object` covers configured bundle JSON that parses but has the wrong shape; it closed the 100% coverage gap on `BusConfigError`.
+- `test_servicebus_peer_client_preflight_resolves_peer_topics` covers the live `ServiceBusPeerClient.preflight()` resolver path without opening a network connection.
+- Existing runtime/veto tests were extended to assert the new deliberation fields on idempotent writes, upheld real debates, and LLM-outage fail-open records.
 
 ---
 
@@ -358,10 +383,138 @@ you prove any, add the row and let `check_law_coverage.py` confirm it):
 
 **Files changed:**
 
+- `kernel/bus_azure_config.py`, `kernel/__init__.py`
+- `agents/deliberator/peer_client.py`, `agents/deliberator/poll.py`, `agents/deliberator/review_record.py`, `agents/deliberator/store.py`
+- `orchestration/packs/trading_deliberation_view.py`, `orchestration/packs/trading_graph_vocabulary.json`
+- Tests under `tests/`, `agents/deliberator/tests/`, and `orchestration/tests/`
+- Law/test-plan docs: `agents/deliberator/laws/test-plan.md`, `docs/laws/INDEX.md`, `docs/laws/ledger.md`
+- Sprint handback plus version files: this document, `pyproject.toml`, `uv.lock`
+
 **Proven (LAW-02):**
 
+- Initial worktree setup:
+
+```text
+> uv sync --extra azure
+completed successfully before code changes; .venv included optional Azure dependencies
+```
+
+- Focused sprint suite:
+
+```text
+> uv run pytest tests\test_bus_azure_config.py agents\deliberator\tests\test_manager_preflight.py agents\deliberator\tests\test_deliberator_agent.py tests\test_deliberator_runtime.py tests\test_graph_vocabulary_deliberation.py tests\test_graph_vocabulary_properties.py orchestration\tests\test_trading_deliberation_view.py orchestration\tests\test_trading_acceptance_deliberation.py orchestration\tests\test_veto_stage.py --no-cov
+collected 44 items
+tests\test_bus_azure_config.py ..........                                [ 22%]
+agents\deliberator\tests\test_manager_preflight.py ....                  [ 31%]
+agents\deliberator\tests\test_deliberator_agent.py ...                   [ 38%]
+tests\test_deliberator_runtime.py .....                                  [ 50%]
+tests\test_graph_vocabulary_deliberation.py ..                           [ 54%]
+tests\test_graph_vocabulary_properties.py ......                         [ 68%]
+orchestration\tests\test_trading_deliberation_view.py ..                 [ 72%]
+orchestration\tests\test_trading_acceptance_deliberation.py ....         [ 81%]
+orchestration\tests\test_veto_stage.py ........                          [100%]
+44 passed in 6.86s
+```
+
+- Planted acceptance mutation (removed `debate_coverage` and `failed_open_count` checks, then restored them):
+
+```text
+> uv run pytest orchestration\tests\test_trading_acceptance_deliberation.py::test_all_fail_open_deliberation_run_fails_acceptance --no-cov
+collected 1 item
+orchestration\tests\test_trading_acceptance_deliberation.py F            [100%]
+FAILED orchestration/tests/test_trading_acceptance_deliberation.py::test_all_fail_open_deliberation_run_fails_acceptance
+E   AssertionError: assert 'PASS' == 'FAIL'
+```
+
+```text
+> uv run pytest orchestration\tests\test_trading_acceptance_deliberation.py::test_all_fail_open_deliberation_run_fails_acceptance --no-cov
+collected 1 item
+orchestration\tests\test_trading_acceptance_deliberation.py .            [100%]
+1 passed in 1.19s
+```
+
+- Vocabulary scripts:
+
+```text
+> uv run python scripts\vocabulary_coverage.py
+exit 0; stdout was empty
+
+> uv run python scripts\vocabulary_signatures.py
+exit 0; stdout was empty
+```
+
+- Law coverage:
+
+```text
+> uv run python scripts\check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+[WARN] agents/analyst/laws/test-plan.md: 12 missing row(s): ANLZ-DEP-01, ANLZ-DEP-02, ANLZ-DEP-03, ANLZ-IDN-01, ANLZ-IDN-02, ANLZ-IN-04, ANLZ-NEV-04, ANLZ-ORD-01, ANLZ-ORD-02, ANLZ-PERF-01, ANLZ-SEC-01, ANLZ-SEC-03
+[WARN] agents/execution/laws/test-plan.md: 13 missing row(s): EXEC-DEP-01, EXEC-DEP-02, EXEC-DEP-03, EXEC-FAIL-04, EXEC-IDN-01, EXEC-IDN-02, EXEC-ORD-01, EXEC-ORD-02, EXEC-PERF-01, EXEC-SEC-02, EXEC-SEC-05, EXEC-STA-04, EXEC-TRG-04
+[WARN] agents/master/laws/test-plan.md: 21 missing row(s): MST-DEP-03, MST-FAIL-01, MST-FAIL-02, MST-FAIL-03, MST-IDM-02, MST-IN-01, MST-IN-02, MST-NEV-05, MST-OBS-01, MST-OBS-02, MST-OBS-03, MST-ORD-01, MST-ORD-02, MST-OUT-03, MST-PERF-01, MST-SEC-02, MST-SEC-03, MST-TRG-01, MST-TRG-02, MST-TYP-01, MST-TYP-02
+[WARN] agents/monitor/laws/test-plan.md: 7 missing row(s): MON-IN-04, MON-NEV-05, MON-OBS-03, MON-ORD-02, MON-PERF-02, MON-SEC-02, MON-SEC-03
+[WARN] agents/portfolio_manager/laws/test-plan.md: 12 missing row(s): PM-DEP-01, PM-DEP-02, PM-DEP-03, PM-FAIL-03, PM-IDN-01, PM-IDN-02, PM-ORD-01, PM-ORD-02, PM-PERF-01, PM-SEC-01, PM-SEC-03, PM-STA-04
+[WARN] agents/provider/laws/test-plan.md: 22 missing row(s): PROV-DEP-01, PROV-DEP-02, PROV-DEP-03, PROV-DEP-04, PROV-DEP-05, PROV-FAIL-04, PROV-IDN-01, PROV-IDN-02, PROV-IDN-03, PROV-IN-02, PROV-NEV-02, PROV-OBS-01, PROV-ORD-01, PROV-ORD-03, PROV-OUT-03, PROV-PERF-02, PROV-SEC-03, PROV-SEC-06, PROV-SEC-08, PROV-STA-02, PROV-STA-05, PROV-TRG-03
+[WARN] agents/reporter/laws/test-plan.md: 1 missing row(s): RPT-TYP-03
+[WARN] agents/scanner/laws/test-plan.md: 13 missing row(s): SCAN-DEP-01, SCAN-DEP-02, SCAN-DEP-03, SCAN-FAIL-03, SCAN-IDN-01, SCAN-IDN-02, SCAN-NEV-04, SCAN-NEV-05, SCAN-ORD-02, SCAN-PERF-01, SCAN-SEC-01, SCAN-SEC-03
+```
+
+- Local `make ci`:
+
+```text
+> make ci
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+911 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 752 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+[WARN] agents\deliberator\tests\test_manager_preflight.py: 198 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run pytest
+TOTAL                                                13787      0   2908      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+2097 passed, 5 skipped in 81.96s
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
+```
+
+- Version/lock:
+
+```text
+> Select-String -Path pyproject.toml -Pattern '^version = '
+pyproject.toml:3:version = "0.86.01"
+
+> uv lock
+Resolved 174 packages in 2.93s
+Updated trading-agents v0.86.0 -> v0.86.1
+```
+
+- Remote gate job results:
+
+```text
+Pending until the branch is committed and pushed after this handback edit.
+```
+
 **Not met / verified failing:**
+
+- Azure, Key Vault, SAS-bundle repair, deployment, fleet retag, live-spine proof, functionality check, and re-deliberation of the 23 consumed `PMRun`s: not done by explicit sprint non-goal.
+- Remote gate evidence: not done yet at this edit point; will be filled after branch push.
 
 ---
 
 ## Return notes
+
+- Exception type choice: chose `BusConfigError`, subclassing `ValueError`. It keeps the Azure SDK's config-error shape while giving callers and tests a specific type that is not indistinguishable from a transport blip.
+- Preflight placement: first poll pass in `agents/deliberator/poll.py::review_pm_node`, before the `PMRun` is converted into a `DeliberationRun`. I did not put it only in `build_manager()` because the first poll pass records a durable `peer_preflight` fault through the injected sink and guarantees the append-only `PMRun` remains retryable.
+- Fail-open policy preserved: LLM/debate failure still writes an uphold/fail-open record after a healthy peer preflight; unreachable peers make the manager inert and loud before consumption.
+- Item 4 verdict implemented as `FAIL`, not `UNPROVEN`: all-fail-open and mixed fail-open deliberation runs now breach acceptance.
+- Deliberator law coverage moved from 0 / 48 to 4 / 48. I left broader dependency clauses gray rather than overstating partial evidence.
+- No secrets were printed or written. No Azure, Key Vault, deploy, retag, live proof, functionality check, or re-deliberation was attempted.

@@ -87,6 +87,9 @@ def test_uphold_all_submits_normally_and_records_no_vetoes() -> None:
     _run(graph, FakeLLMClient({"review": _UPHOLD}))
     (delib,) = graph.list_nodes("DeliberationRun")
     assert not delib.props["vetoed_tickers"]
+    assert delib.props["failed_open_count"] == 0
+    assert delib.props["failed_open_tickers"] == ()
+    assert delib.props["real_debate_count"] >= 1
     assert _submitted(graph) >= 1  # orders still executed
 
 
@@ -164,6 +167,9 @@ def test_veto_is_fail_open_on_llm_outage() -> None:
     _run(graph, _RaisingLLM())
     (delib,) = graph.list_nodes("DeliberationRun")
     assert not delib.props["vetoed_tickers"]
+    assert delib.props["failed_open_count"] >= 1
+    assert delib.props["failed_open_tickers"]
+    assert delib.props["real_debate_count"] == 0
     assert _submitted(graph) >= 1
 
 

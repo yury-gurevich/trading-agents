@@ -4423,7 +4423,9 @@ that has been blocked since 2026-08-01 03:53 UTC is unblocked.
 
 ---
 
-## DL-85 · The deploy failed on all 15 agents, reported success, and exited 0 · status: RESOLVED (fleet on :s155, 2026-08-02) — one follow-up open
+## DL-88 · The deploy failed on all 15 agents, reported success, and exited 0 · status: RESOLVED (fleet on :s155, 2026-08-02) — one follow-up open
+
+> **Renumbered 2026-08-03.** This entry was written as DL-85, which [DL-85](#dl-85--llmcall-attribution-is-a-node-property-not-only-an-edge--status-decided-s153-2026-08-01) already held. IDs are append-only and never reused (the `conventions.md` §2 rule, applied to the design log), so the **later** claimant moved. References in `STATE.md` and hardening row Q were updated with it.
 
 **The `:s155` deploy did not happen.** Every agent printed `[XX]`, the script then printed
 `Fleet deployed with cron scale windows and dispatcher job.` and returned exit code **0**. The fleet

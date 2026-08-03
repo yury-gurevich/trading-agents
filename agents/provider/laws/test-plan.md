@@ -50,7 +50,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-STA-01 | Cached vs. fresh fetch of the same data produce the same validated result. | invariance | `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` | 🟩 |
-| PROV-IDM-01 | Same request + same stubbed feed ⇒ byte-identical validated output. | determinism | `test_domain.py::test_integrity_nonzero_sigma_without_anomaly_stays_clean` | 🟩 |
+| PROV-IDM-01 | Same request and same recorded external inputs produce identical validated facts and quality classification with provenance. | determinism | Demoted S156: `test_domain.py::test_integrity_nonzero_sigma_without_anomaly_stays_clean` proves a non-anomalous sigma path stays clean, not deterministic replay. | ⬜ |
 | PROV-IDM-02 | Re-running a request yields a fresh valid record, no corruption/dupe-meaning. | idempotency | _tbd_ | ⬜ |
 | PROV-ORD-02 | Two concurrent requests each produce their own correct record. | concurrency | _tbd_ | ⬜ |
 
@@ -59,7 +59,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-FAIL-01 | Unreachable/garbled source → degraded/fault, never crash, never bad-as-good. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |
-| PROV-FAIL-02 | Mixed availability → partial response, missing parts flagged per-item. | partial | `test_provider_fundamentals.py::test_fundamentals_failure_degrades_without_affecting_ohlcv` | 🟩 |
+| PROV-FAIL-02 | Mixed availability → partial response, missing parts flagged per-item. | partial | `test_provider_fundamentals.py::test_fundamentals_failure_notes_without_tainting_ohlcv` | 🟩 |
 | PROV-FAIL-03 | After a failed request, a retry succeeds; no corrupt state remained. | recovery | _tbd_ | ⬜ |
 | PROV-FAIL-05 | DEP-FEED red ⇒ fail-loud (degraded/fault), no fabrication. | dep-red | _tbd_ | ⬜ |
 
@@ -67,7 +67,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| PROV-TYP-01 | Output types equal the consumer contracts' expected types (no drift). | contract | `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` | 🟩 |
+| PROV-TYP-01 | Output types equal the consumer contracts' expected types (no drift). | contract | Demoted S156: `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` proves a clean response shape and provenance node, not the full consumer-contract type surface. | ⬜ |
 | PROV-TYP-02 | Money/prices are exact (no lossy float); units explicit. | precision | _tbd_ | ⬜ |
 | PROV-TYP-03 | Unsupported request shape → typed rejection, not a guess. | boundary | `test_sector_source.py::test_parse_sector_non_dict_or_malformed_yields_none` | 🟩 |
 
@@ -86,7 +86,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-OBS-02 | A boundary fault appears on the central fault channel with provenance. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |
-| PROV-OBS-03 | Degradation is queryable from the graph, not buried. | degraded | `test_provider_fundamentals.py::test_fundamentals_failure_degrades_without_affecting_ohlcv` | 🟩 |
+| PROV-OBS-03 | Degradation is queryable from the graph, not buried. | degraded | Demoted S156: `test_provider_fundamentals.py::test_fundamentals_failure_degrades_without_affecting_ohlcv` no longer exists; the live renamed fundamentals test asserts response notes, not queryable graph degradation. | ⬜ |
 | PROV-PERF-01 | A hanging source is cut off at the timeout, not waited on indefinitely. | timeout | _tbd_ | ⬜ |
 
 ## Historical store & PRD-reconciled clauses (added v0.1)

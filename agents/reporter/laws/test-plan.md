@@ -17,7 +17,7 @@
 | RPT-OUT-03 | 🟩 | `test_reporter_trims_long_narratives_at_configured_limit` |
 | RPT-OUT-04 | 🟩 | `test_report_snapshot_result_node_in_graph`, `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-OUT-05 | 🟩 | `test_decisions_ready_triggers_snapshot_ready` |
-| RPT-OUT-06 | 🟩 | `test_reporter_fault_boundary_returns_degraded_payloads`, `test_degraded_snapshot_carries_zero_outcome_keys` |
+| RPT-OUT-06 | ⬜ | Demoted S156: `test_reporter_fault_boundary_returns_degraded_payloads` and the renamed degraded-snapshot test cover partial degraded payload behavior, not the full graph-fault/minimal-provenance/empty-metrics/fault-recorded clause. |
 | RPT-NEV-01 | 🟩 | `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-NEV-02 | 🟩 | `test_reporter_does_not_import_other_agent_code` |
 | RPT-NEV-03 | 🟩 | `test_snapshot_reports_profit_factor_and_expectancy` |
@@ -38,7 +38,6 @@
 | RPT-DEP-02 | ⬜ | — |
 | RPT-OBS-01 | 🟩 | `test_report_snapshot_result_node_in_graph` |
 | RPT-OBS-02 | ⬜ | — |
-| RPT-OBS-03 | ⬜ | — |
 | RPT-PERF-01 | 🟩 | `test_reporter_trims_long_narratives_at_configured_limit` |
 | RPT-PERF-02 | ⬜ | — |
 | RPT-CAP | ⬜ | — |

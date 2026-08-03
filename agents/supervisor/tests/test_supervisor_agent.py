@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
 
 def test_record_dispatch_run_writes_one_message_per_step() -> None:
+    """SUP-IN-04 / SUP-OUT-04: record_dispatch_run accepts a record and
+    writes one Message per step."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     response = bus.request(
@@ -74,6 +76,7 @@ def test_record_dispatch_run_writes_fault_nodes() -> None:
 
 
 def test_report_fault_writes_one_fault_node() -> None:
+    """SUP-IN-05 / SUP-OUT-05: report_fault accepts AgentFault and writes one Fault."""
     graph = InMemoryGraphStore()
     bus = _bound_bus(graph)
     response = bus.request(_message("report_fault", _fault("provider exploded")))

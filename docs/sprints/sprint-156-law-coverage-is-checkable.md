@@ -170,6 +170,7 @@ Wire it into `make ci` after the module-header step, and into `.pre-commit-confi
 checkers are there.
 
 **Result:**
+Added `scripts/check_law_coverage.py` plus parser/resolver helpers. It parses all four test-plan table schemas, bold/backtick clause markers, live AST docstrings, bare and `file.py::test_name` citations, ignores `mutants/`, hard-fails A/B/C/D, and prints assertion E as a warn-only missing-row report. Wired into `make ci`, `.pre-commit-config.yaml`, and the GitHub `quality` workflow.
 
 ### 2 · A gate that has never failed is not known to work
 
@@ -183,6 +184,7 @@ Plant at least: a 🟩 row citing a test that does not exist, and a 🟩 row who
 whose docstring omits the ID. Run `make gate-selftest` and paste the output in the closeout.
 
 **Result:**
+Added a `law-coverage` can-fail case to `scripts/gate_selftest_cases.py` that plants both a dead green citation and a live uncited green test. Updated `scripts/gate_selftest.py` cleanup so nested probe fixtures leave no directories behind. Focused run: `make gate-selftest` → `gate self-test: 15/15 passed`.
 
 ### 3 · Work the 29 down to zero — bias to ⬜
 
@@ -211,6 +213,7 @@ stop — you have found a second instance of the S151 defect and it is a finding
 in the closeout, not smoothed over. A ratio that gets worse because it got honest is the point.
 
 **Result:**
+Adjudicated all 29 named rows in the table below: 23 demoted to ⬜, 6 kept 🟩 with an existing or newly added honest docstring citation. Also fixed one extra live-book defect found by the new checker: `SCAN-OUT-05` pointed at the wrong file and its live test still did not assert the no-provider-call/no-graph-write halves, so it was demoted. `RPT-OBS-03` was removed as an orphan row; `RPT-TYP-03` remains a warn-only missing row for S157.
 
 ### 4 · Reconcile the roll-ups from the derived counts
 
@@ -223,6 +226,7 @@ several. Do not assume either is right: derive, then write. Note in the closeout
 and by how much.
 
 **Result:**
+Reconciled `docs/laws/ledger.md` and `docs/laws/INDEX.md` to the checker-derived counts after adjudication. Book-wide green count moved **284 → 260**; derived row total moved **563 → 562** after deleting the `RPT-OBS-03` orphan. Per-agent movements are recorded in Closeout.
 
 ### 5 · Report the schema divergence — do not fix it here
 
@@ -236,6 +240,7 @@ ADR-0021 becomes mechanically true instead of remembered. That is S157's questio
 it by hand here would create exactly the hand-maintained duplication this sprint is removing.
 
 **Result:**
+Added one drift row, `DRIFT-031`, for the schema divergence pattern: four test-plan schemas, seven agents without a summary column, two clause-marker styles, and the `RPT-OBS-03` / `RPT-TYP-03` mismatch. No table normalization was done.
 
 ### 6 · Close the hardening rows with evidence
 
@@ -244,6 +249,7 @@ Move **R** and **R²** from *Open* to *Done* in
 that keeps them shut. Leave **O** open, and update its trigger to name S157 and the warn-only mode.
 
 **Result:**
+Moved hardening rows **R** and **R²** to Done with before/after numbers and the new gate evidence. Left **O** open, updated to name S157 and assertion E's warn-only mode with the current 101 missing rows.
 
 ---
 
@@ -380,14 +386,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses/sections that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `scripts/check_law_coverage.py` | | conventions §2, §3, §7, §7a | |
-| `agents/*/laws/test-plan.md` edits | | conventions §3 (green definition), ADR-0021 | |
-| `docs/laws/ledger.md` + `laws/INDEX.md` | | conventions §3 rollup | |
-| `scripts/gate_selftest_cases.py` | | DL-70 | |
+| `scripts/check_law_coverage.py` | `docs/laws/conventions.md`; `docs/decisions/0021-clause-summary-mirrors-the-law.md`; `docs/design-log.md` DL-87; `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md` | conventions §2, §3, §7, §7a; ADR-0021; DL-87 | yes — implement the mechanical definition only: row/ID existence, cited test resolution, and `ast.get_docstring` citation; leave partial-clause judgement to the 19-row adjudication |
+| `agents/*/laws/test-plan.md` edits | `docs/laws/conventions.md`; `docs/decisions/0021-clause-summary-mirrors-the-law.md`; `docs/design-log.md` DL-87; `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md` | conventions §3 (green definition), ADR-0021 | yes — bias every doubtful green to ⬜ and do not alter summaries to make tests fit |
+| `docs/laws/ledger.md` + `laws/INDEX.md` | `docs/laws/conventions.md`; `docs/laws/INDEX.md`; `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md` | conventions §3 rollup | no — derive counters from the corrected test-plans, then reconcile both roll-up docs to those values |
+| `scripts/gate_selftest_cases.py` | `docs/design-log.md` DL-70; `docs/laws/conventions.md`; `docs/decisions/0021-clause-summary-mirrors-the-law.md` | DL-70 | yes — plant actual bad law-book rows (dead citation and uncited docstring) and require the checker to fail |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found before code changes.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
+
+None found before code changes.
 
 ---
 
@@ -395,35 +405,35 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | Clause | Cited test | Decision | Evidence (one line) |
 | --- | --- | --- | --- | --- |
-| 1 | `EXEC-IN-02` | `test_execute_close_stage_status_and_reconcile` | | |
-| 2 | `EXEC-TRG-03` | `test_execute_close_stage_status_and_reconcile` | | |
-| 3 | `EXEC-TRG-05` | `test_execute_close_stage_status_and_reconcile` | | |
-| 4 | `MON-OUT-02` | `test_stop_rule_writes_check_close_and_dispatches_execution` | | |
-| 5 | `MON-OUT-03` | `test_stop_rule_writes_check_close_and_dispatches_execution` | | |
-| 6 | `MON-OUT-05` | `test_hold_writes_check_without_close_decision` | | |
-| 7 | `MON-NEV-01` | `test_stop_rule_writes_check_close_and_dispatches_execution` | | |
-| 8 | `PM-TYP-03` | `test_order_intent_gate_report_is_additive_and_round_trips` | | |
-| 9 | `PROV-FAIL-02` | `test_fundamentals_failure_degrades_without_affecting_ohlcv` | | |
-| 10 | `PROV-OBS-03` | `test_fundamentals_failure_degrades_without_affecting_ohlcv` | | |
-| 11 | `ANLZ-NEV-05` | `test_recommendation_carries_sentiment_score_when_present` | | |
-| 12 | `ANLZ-OBS-02` | `test_degraded_market_data_returns_explained_rejection` | | |
-| 13 | `CUR-FAIL-01` | `test_build_dataset_degrades_on_graph_fault` | | |
-| 14 | `CUR-FAIL-03` | `test_train_predictor_degrades_on_graph_fault` | | |
-| 15 | `FORE-IN-02` | `test_forecast_return_persists_and_returns_a_shadow_prediction` | | |
-| 16 | `FORE-FAIL-03` | `test_forecast_return_falls_back_to_neutral_on_a_model_fault` | | |
-| 17 | `PM-OUT-06` | `test_order_intent_emits_pm_gate_report` | | |
-| 18 | `PM-OBS-01` | `test_evaluate_orders_sizes_order_and_stores_money_as_cents` | | |
-| 19 | `PROV-IDM-01` | `test_integrity_nonzero_sigma_without_anomaly_stays_clean` | | |
-| 20 | `PROV-TYP-01` | `test_get_market_data_round_trips_and_writes_provenance` | | |
-| 21 | `RPT-OUT-06` | `test_reporter_fault_boundary_returns_degraded_payloads` | | |
-| 22 | `RES-OUT-06` | `test_propose_insufficient_evidence_writes_no_flag` | | |
-| 23 | `SCAN-TYP-02` | `test_run_scan_calls_provider_and_returns_ranked_candidates` | | |
-| 24 | `SUP-IN-04` | `test_record_dispatch_run_writes_one_message_per_step` | | |
-| 25 | `SUP-IN-05` | `test_report_fault_writes_one_fault_node` | | |
-| 26 | `SUP-OUT-04` | `test_record_dispatch_run_writes_one_message_per_step` | | |
-| 27 | `SUP-OUT-05` | `test_report_fault_writes_one_fault_node` | | |
-| 28 | `SUP-FAIL-03` | `test_record_dispatch_run_returns_rejection_when_graph_write_fails` | | |
-| 29 | `SUP-FAIL-04` | `test_report_fault_returns_rejection_when_graph_write_fails` | | |
+| 1 | `EXEC-IN-02` | `test_execute_close_stage_status_and_reconcile` | ⬜ demoted | Test no longer exists in `agents/execution/tests`; row names ADR-0017 `execute_close` retirement. |
+| 2 | `EXEC-TRG-03` | `test_execute_close_stage_status_and_reconcile` | ⬜ demoted | Same deleted execution test; no replacement citation adjudicated in this sprint. |
+| 3 | `EXEC-TRG-05` | `test_execute_close_stage_status_and_reconcile` | ⬜ demoted | Same deleted combined execution test; stage-status replacement was not hunted. |
+| 4 | `MON-OUT-02` | `test_stop_rule_writes_check_close_and_dispatches_execution` | ⬜ demoted | Stop/hold close-decision tests no longer exist after ADR-0017 monitor exit-authoring retirement. |
+| 5 | `MON-OUT-03` | `test_stop_rule_writes_check_close_and_dispatches_execution` | ⬜ demoted | Stop/target/time close-trigger tests no longer exist after ADR-0017. |
+| 6 | `MON-OUT-05` | `test_hold_writes_check_without_close_decision` | ⬜ demoted | Hold-without-close test no longer exists after ADR-0017. |
+| 7 | `MON-NEV-01` | `test_stop_rule_writes_check_close_and_dispatches_execution` | ⬜ demoted | Deleted stop-rule test provided no live citation. |
+| 8 | `PM-TYP-03` | `test_order_intent_gate_report_is_additive_and_round_trips` | ⬜ demoted | Central test exists but covers only additive `gate_report`; the separate `test_order_intent_result_is_deserializable` row remains the green schema proof. |
+| 9 | `PROV-FAIL-02` | `test_fundamentals_failure_degrades_without_affecting_ohlcv` | 🟩 kept | Old function name was stale; same-file live test `test_fundamentals_failure_notes_without_tainting_ohlcv` already cites `PROV-FAIL-02` and asserts note/no-taint/OHLCV/fault. |
+| 10 | `PROV-OBS-03` | `test_fundamentals_failure_degrades_without_affecting_ohlcv` | ⬜ demoted | Old test name is gone; renamed fundamentals test asserts response notes, not queryable graph degradation. |
+| 11 | `ANLZ-NEV-05` | `test_recommendation_carries_sentiment_score_when_present` | ⬜ demoted | Test proves shadow sentiment is present/scored, not that shadow scorer promotion is impossible; summary widened back to law. |
+| 12 | `ANLZ-OBS-02` | `test_degraded_market_data_returns_explained_rejection` | ⬜ demoted | Test covers provider degradation incident refs/fault only, not per-candidate error routing. |
+| 13 | `CUR-FAIL-01` | `test_build_dataset_degrades_on_graph_fault` | ⬜ demoted | Test asserts degraded manifest and one fault, but not the no-`Dataset`-node half. |
+| 14 | `CUR-FAIL-03` | `test_train_predictor_degrades_on_graph_fault` | ⬜ demoted | Test asserts degraded predictor manifest and one fault, but not the no-`Predictor`-node half. |
+| 15 | `FORE-IN-02` | `test_forecast_return_persists_and_returns_a_shadow_prediction` | ⬜ demoted | Test proves returned/persisted prediction, not ignored features plus provider-bus OHLCV fetch. |
+| 16 | `FORE-FAIL-03` | `test_forecast_return_falls_back_to_neutral_on_a_model_fault` | ⬜ demoted | Test injects a generic model exception, not a missing LightGBM model file. |
+| 17 | `PM-OUT-06` | `test_order_intent_emits_pm_gate_report` | ⬜ demoted | Test proves `gate_report` emission, not `portfolio_state_snapshot` cash/positions/sector weights. |
+| 18 | `PM-OBS-01` | `test_evaluate_orders_sizes_order_and_stores_money_as_cents` | ⬜ demoted | Test proves OrderIntent money/gate_report storage only, not full PMRun reconstructability. |
+| 19 | `PROV-IDM-01` | `test_integrity_nonzero_sigma_without_anomaly_stays_clean` | ⬜ demoted | Test proves clean non-anomalous sigma classification, not deterministic replay from same inputs. |
+| 20 | `PROV-TYP-01` | `test_get_market_data_round_trips_and_writes_provenance` | ⬜ demoted | Test proves one clean response/provenance shape, not the full consumer-contract type surface. |
+| 21 | `RPT-OUT-06` | `test_reporter_fault_boundary_returns_degraded_payloads` | ⬜ demoted | Reporter degraded tests cover partial payload behavior, not the full graph-fault/minimal-provenance/empty-metrics/fault-recorded clause. |
+| 22 | `RES-OUT-06` | `test_propose_insufficient_evidence_writes_no_flag` | 🟩 kept | Added `RES-OUT-06` to docstring; test returns a valid proposal with zero changes and no `Flag`. |
+| 23 | `SCAN-TYP-02` | `test_run_scan_calls_provider_and_returns_ranked_candidates` | ⬜ demoted | Test asserts rank and filter counts, but not `Candidate.score` as dimensionless float; unsupported docstring citation removed elsewhere. |
+| 24 | `SUP-IN-04` | `test_record_dispatch_run_writes_one_message_per_step` | 🟩 kept | Added docstring ID; test sends `DispatchRunRecord` through bus and accepts it. |
+| 25 | `SUP-IN-05` | `test_report_fault_writes_one_fault_node` | 🟩 kept | Added docstring ID; test sends `AgentFault` through bus and accepts it. |
+| 26 | `SUP-OUT-04` | `test_record_dispatch_run_writes_one_message_per_step` | 🟩 kept | Same docstring now cites `SUP-OUT-04`; test asserts one `Message` node per step. |
+| 27 | `SUP-OUT-05` | `test_report_fault_writes_one_fault_node` | 🟩 kept | Same docstring now cites `SUP-OUT-05`; test asserts exactly one `Fault` node. |
+| 28 | `SUP-FAIL-03` | `test_record_dispatch_run_returns_rejection_when_graph_write_fails` | ⬜ demoted | Test asserts rejection only, not emitted fault or pipeline-continuation evidence. |
+| 29 | `SUP-FAIL-04` | `test_report_fault_returns_rejection_when_graph_write_fails` | ⬜ demoted | Test asserts rejection only, not the distinct fault emitted to the sink. |
 
 > Rows 1–10 are the dead citations — expected decision **⬜ demote**, but verify each yourself; my
 > resolution ignored `mutants/` and searched only `agents/<agent>/tests/**`, so a test that legitimately
@@ -436,8 +446,25 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s)/assertion covered |
 | --- | --- | --- | --- | --- |
+| A1 | `test_clean_book_passes` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Baseline valid fixture: all cited green rows resolve and docstrings cite their clause IDs. |
+| A2 | `test_dead_citation_is_caught` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion A: a green row citing a missing test fails. |
+| A3 | `test_uncited_docstring_is_caught` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion B: a green row fails when the cited test docstring omits the clause ID. |
+| A4 | `test_comment_is_not_a_citation` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion B uses `ast.get_docstring`; comments/assertion strings do not count as citations. |
+| A5 | `test_gray_rows_are_not_checked` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Gray rows are allowed to carry non-live notes without failing A/B. |
+| A6 | `test_ambiguous_bare_name_fails` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Bare-name resolution fails when two live tests share the cited name. |
+| A7 | `test_orphan_row_is_caught` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion C: a test-plan row whose clause ID is absent from `laws.md` fails. |
+| A8 | `test_rollup_drift_is_caught` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion D: `ledger.md`/`docs/laws/INDEX.md` counts must match derived totals. |
+| A9 | `test_missing_row_warns_without_failing` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Assertion E: missing law rows warn with IDs and do not fail in S156. |
+| A10 | `test_mutants_snapshot_is_ignored` | `tests/test_law_coverage_assertions.py` | Passed in focused pytest; covered again by `make ci` | Live test resolution ignores `mutants/` snapshots. |
+| B1 | `test_all_table_schemas_parse` | `tests/test_law_coverage_formats.py` | Passed in focused pytest; covered again by `make ci` | Parses the four live law test-plan schemas. |
+| B2 | `test_backtick_clause_markers_parse` | `tests/test_law_coverage_formats.py` | Passed in focused pytest; covered again by `make ci` | Parses backtick clause markers as well as bold markers. |
+| B3 | `test_file_and_bare_citations_both_resolve` | `tests/test_law_coverage_formats.py` | Passed in focused pytest; covered again by `make ci` | Resolves both `file.py::test_name` and bare `test_name` citations. |
+| C1 | `check_law_coverage.py` real-book gate | `scripts/check_law_coverage.py` | Passed focused; covered again by `make ci` | Assertions A/B/C/D are hard-fail on the real book; E warns with current missing rows. |
+| C2 | `law-coverage` can-fail selftest | `scripts/gate_selftest_cases.py` | Passed focused via `make gate-selftest` | Plants both a dead green citation and a live uncited green test; gate rejects them. |
 
 **Tests added beyond the plan:**
+
+`tests/law_coverage_fixtures.py` provides synthetic law-book fixtures for the planned tests. No extra real-book assertion tests were added beyond the sprint plan; the additional `law-coverage` gate selftest is the item 2 can-fail proof.
 
 ---
 
@@ -445,12 +472,232 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:**
 
+- Law coverage gate: `scripts/check_law_coverage.py`, `scripts/law_coverage_docs.py`,
+  `scripts/law_coverage_model.py`, `scripts/law_coverage_tests.py`.
+- Gate wiring: `Makefile`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`,
+  `scripts/gate_selftest.py`, `scripts/gate_selftest_cases.py`.
+- Checker tests: `tests/law_coverage_fixtures.py`, `tests/test_law_coverage_assertions.py`,
+  `tests/test_law_coverage_formats.py`.
+- Law-book adjudication: `agents/*/laws/test-plan.md` only; no `agents/*/laws/laws.md` edits.
+- Test docstrings touched only where adjudication kept a row green:
+  `agents/researcher/tests/test_propose.py`,
+  `agents/supervisor/tests/test_supervisor_agent.py`; unsupported stale citations removed from
+  `agents/reporter/tests/test_reporter_agent.py` and `agents/scanner/tests/test_scanner_agent.py`.
+- Roll-ups and backlog: `docs/laws/ledger.md`, `docs/laws/INDEX.md`,
+  `docs/laws/drift-register.md`, `docs/hardening-backlog.md`.
+- Version bump: `pyproject.toml`, `uv.lock` (`0.85.06` -> `0.86.00`; uv normalizes this as
+  `0.85.6` -> `0.86.0`).
+- Sprint evidence: this file.
+
 **Proven (LAW-02):**
+
+- First command in the dedicated worktree:
+
+```text
+uv sync --extra azure
+Resolved 174 packages
+```
+
+- Version lock:
+
+```text
+uv lock
+Resolved 174 packages in 1.93s
+Updated trading-agents v0.85.6 -> v0.86.0
+```
+
+- Focused checker tests:
+
+```text
+uv run pytest tests/test_law_coverage_assertions.py tests/test_law_coverage_formats.py --no-cov
+16 passed in 0.79s
+```
+
+- Standalone real-book checker:
+
+```text
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+[WARN] agents/analyst/laws/test-plan.md: 12 missing row(s): ANLZ-DEP-01, ANLZ-DEP-02, ANLZ-DEP-03, ANLZ-IDN-01, ANLZ-IDN-02, ANLZ-IN-04, ANLZ-NEV-04, ANLZ-ORD-01, ANLZ-ORD-02, ANLZ-PERF-01, ANLZ-SEC-01, ANLZ-SEC-03
+[WARN] agents/execution/laws/test-plan.md: 13 missing row(s): EXEC-DEP-01, EXEC-DEP-02, EXEC-DEP-03, EXEC-FAIL-04, EXEC-IDN-01, EXEC-IDN-02, EXEC-ORD-01, EXEC-ORD-02, EXEC-PERF-01, EXEC-SEC-02, EXEC-SEC-05, EXEC-STA-04, EXEC-TRG-04
+[WARN] agents/master/laws/test-plan.md: 21 missing row(s): MST-DEP-03, MST-FAIL-01, MST-FAIL-02, MST-FAIL-03, MST-IDM-02, MST-IN-01, MST-IN-02, MST-NEV-05, MST-OBS-01, MST-OBS-02, MST-OBS-03, MST-ORD-01, MST-ORD-02, MST-OUT-03, MST-PERF-01, MST-SEC-02, MST-SEC-03, MST-TRG-01, MST-TRG-02, MST-TYP-01, MST-TYP-02
+[WARN] agents/monitor/laws/test-plan.md: 7 missing row(s): MON-IN-04, MON-NEV-05, MON-OBS-03, MON-ORD-02, MON-PERF-02, MON-SEC-02, MON-SEC-03
+[WARN] agents/portfolio_manager/laws/test-plan.md: 12 missing row(s): PM-DEP-01, PM-DEP-02, PM-DEP-03, PM-FAIL-03, PM-IDN-01, PM-IDN-02, PM-ORD-01, PM-ORD-02, PM-PERF-01, PM-SEC-01, PM-SEC-03, PM-STA-04
+[WARN] agents/provider/laws/test-plan.md: 22 missing row(s): PROV-DEP-01, PROV-DEP-02, PROV-DEP-03, PROV-DEP-04, PROV-DEP-05, PROV-FAIL-04, PROV-IDN-01, PROV-IDN-02, PROV-IDN-03, PROV-IN-02, PROV-NEV-02, PROV-OBS-01, PROV-ORD-01, PROV-ORD-03, PROV-OUT-03, PROV-PERF-02, PROV-SEC-03, PROV-SEC-06, PROV-SEC-08, PROV-STA-02, PROV-STA-05, PROV-TRG-03
+[WARN] agents/reporter/laws/test-plan.md: 1 missing row(s): RPT-TYP-03
+[WARN] agents/scanner/laws/test-plan.md: 13 missing row(s): SCAN-DEP-01, SCAN-DEP-02, SCAN-DEP-03, SCAN-FAIL-03, SCAN-IDN-01, SCAN-IDN-02, SCAN-NEV-04, SCAN-NEV-05, SCAN-ORD-02, SCAN-PERF-01, SCAN-SEC-01, SCAN-SEC-03, SCAN-STA-03
+```
+
+- Full local gate:
+
+```text
+make ci
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+909 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 750 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+uv run pytest
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2083 passed, 5 skipped in 114.38s (0:01:54) =================
+uv run pip-audit
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 7 new file(s)
+No known vulnerabilities found
+```
+
+- Planted-failure gate selftest:
+
+```text
+make gate-selftest
+uv run python scripts/gate_selftest.py
+PASS  can-fail: ruff — rejected (exit 1)
+PASS  can-fail: module-size — rejected (exit 1)
+PASS  can-fail: module-header — rejected (exit 1)
+PASS  can-fail: law-coverage — rejected (exit 1)
+PASS  can-fail: untracked-secrets — rejected (exit 1)
+PASS  can-fail: pip-audit-cve — rejected (exit 1)
+PASS  invariant: security-gate-runs-on-push — present
+PASS  invariant: ci-runs-on-push — present
+PASS  invariant: untracked-scan-wired-into-ci — present
+PASS  invariant: pip-audit-not-ignored-by-ci — present
+PASS  invariant: dependabot-pins-python-to-3-13 — present
+PASS  invariant: graph-vocabulary-guard-wired — present
+PASS  invariant: graph-vocabulary-injected-at-deploy — present
+PASS  invariant: codeql-custom-query-referenced — present
+PASS  invariant: codeql-config-queries-not-overridden — present
+
+gate self-test: 15/15 passed
+```
+
+- Forbidden-file boundary:
+
+```text
+git diff --name-only | <locked-law/conventions/production-agent-source filter>
+<no output>
+```
+
+- Remote gate run IDs and job conclusions, with a run asserted to exist for the implementation SHA:
+
+```text
+gh run list --branch sprint-156-law-coverage-is-checkable --limit 5 --json databaseId,headSha,status,conclusion,workflowName,createdAt,event
+[{"conclusion":"success","createdAt":"2026-08-02T12:11:42Z","databaseId":30747312432,"event":"push","headSha":"7b255075...","status":"completed","workflowName":"Security Findings"},{"conclusion":"success","createdAt":"2026-08-02T12:11:42Z","databaseId":30747312431,"event":"push","headSha":"7b255075...","status":"completed","workflowName":"CI"}]
+
+gh run view 30747312431 --json databaseId,headSha,status,conclusion,workflowName,jobs
+CI run 30747312431, headSha 7b255075..., conclusion success:
+  quality job 91494991649 — success
+  test job 91495049300 — success
+  security job 91494991634 — success
+
+gh run view 30747312432 --json databaseId,headSha,status,conclusion,workflowName,jobs
+Security Findings run 30747312432, headSha 7b255075..., conclusion success:
+  gate job 91494991627 — success
+```
+
+- This final remote-evidence edit is Markdown-only. No extra full local `make ci` was rerun after
+  this evidence line; the already-green local `make ci`, focused post-closeout secret/law checks, and
+  final branch-tip remote gates are the proof handoff.
 
 **Green count before → after (book-wide, and per agent that moved):**
 
+> **Superseded by the planning review — see *Review finding* below.** The counts in this section are
+> **row**-denominated, which is what the review rejected. The corrected, clause-denominated figures
+> are in the review section; this table is kept as the record of what was handed back.
+
+Book-wide derived test-plan count fell **284 / 563 -> 260 / 562**. The fall is expected and correct:
+the ledger got less flattering because it got checkable.
+
+| Agent | Before | After | Movement |
+| --- | --- | --- | --- |
+| analyst | 26 / 34 | 24 / 34 | green -2, rows +0 |
+| curator | 24 / 47 | 22 / 47 | green -2, rows +0 |
+| execution | 31 / 44 | 28 / 44 | green -3, rows +0 |
+| forecaster | 18 / 45 | 16 / 45 | green -2, rows +0 |
+| monitor | 24 / 39 | 20 / 39 | green -4, rows +0 |
+| portfolio_manager | 33 / 39 | 30 / 39 | green -3, rows +0 |
+| provider | 23 / 43 | 20 / 43 | green -3, rows +0 |
+| reporter | 21 / 39 | 20 / 38 | green -1, rows -1 |
+| scanner | 18 / 26 | 16 / 26 | green -2, rows +0 |
+| supervisor | 22 / 48 | 20 / 48 | green -2, rows +0 |
+
+### Review finding (planning, 2026-08-03) — the denominator measured the wrong thing
+
+**Verified first, independently of the handback:** `make ci` re-run at **2083 passed / 5 skipped /
+100.00 %**; `make gate-selftest` **15/15** including `can-fail: law-coverage`; all four remote jobs
+green on tip `10614db` **by `headSha`**; and all three hard-fail assertions observed rejecting
+violations I planted myself (dead citation, docstring stripped of the ID, falsified ledger count).
+Scope was respected — no `laws.md`, no `conventions.md`, no production agent source.
+
+**The defect.** `_derived_counter` returned `(green rows, len(rows))`, so both roll-ups switched from
+counting **clauses** to counting **test-plan rows** — while their column headers still read *"Clauses
+green / total"* and *"Green clauses"*. Twelve of fourteen Status cells disclosed the change in prose,
+so it was not concealed; `master` did not, and it is the worst case in the book.
+
+The consequence is the same defect this sprint exists to close, one level up: the **101 clauses with
+no row were removed from the denominator** rather than counted as unproven. A clause nobody ever
+wrote a row for stopped being unproven and simply stopped being counted, and several agents' ratios
+*improved* in a change headlined "the green count fell honestly".
+
+A second, smaller error rode along: **10 clauses carry more than one row** (portfolio_manager 7,
+provider 3), so counting green *rows* let a single clause count up to three times.
+
+**The fix.** `_derived_counter` now returns *distinct clauses with ≥1 green row* over *clauses
+declared in `laws.md`*. Both roll-ups regenerated; `master`'s stale cell rewritten; the INDEX note
+now states what the counter measures. Two tests pin it — `test_rollup_denominator_is_clauses_never_rows`
+and `test_clause_with_two_rows_counts_once` — **both observed failing** on the row-based derivation
+(DL-70), along with `test_missing_row_warns_without_failing`, whose fixture had to start declaring
+`1 / 2` because the unwritten row now correctly stays in the denominator.
+
+**Corrected counts — clause-denominated:**
+
+| | row-denominated (handback) | clause-denominated (merged) |
+| --- | --- | --- |
+| Book-wide | 260 / 562 — **46 %** | **252 / 653 — 39 %** |
+| master | 10 / 18 — 56 % | **10 / 39 — 26 %** |
+| provider | 20 / 43 — 47 % | **17 / 62 — 27 %** |
+| scanner | 16 / 26 — 62 % | **16 / 39 — 41 %** |
+| execution | 28 / 44 — 64 % | **28 / 57 — 49 %** |
+| analyst | 24 / 34 — 71 % | **24 / 46 — 52 %** |
+| portfolio_manager | 30 / 39 — 77 % | **25 / 44 — 57 %** |
+| monitor | 20 / 39 — 51 % | **20 / 46 — 43 %** |
+| reporter | 20 / 38 — 53 % | **20 / 39 — 51 %** |
+
+Book-wide the honest figure is **252 / 653**. Against the pre-sprint claim of 284 greens on a 653
+clause book, real proven coverage went **43 % → 39 %** — the sprint's thesis, now measured against
+the constitution instead of against its own bookkeeping.
+
 **Not met / verified failing:**
+
+- Assertion E is intentionally not a hard failure in S156. Verified current warning: 101 law clauses
+  still have no test-plan row; S157 owns those rows and the flip to hard fail.
+- No deploy, fleet retag, live-spine proof, broker proof, functionality check, or production
+  credentialed work was attempted. This sprint changes law-book/checker behavior only.
+- Remote gates for implementation SHA `7b255075...` are proven green
+  above. The final evidence commit also needs branch-tip remote verification after push.
 
 ---
 
 ## Return notes
+
+- Branch/worktree: `sprint-156-law-coverage-is-checkable` in
+  `.claude/worktrees/sprint-156-law-coverage-is-checkable`, base `30b2dde`; no branch switch, no
+  merge, no `main` edits.
+- Implementation commit: `7b255075...`
+  (`feat: make law coverage checkable`), with CI `30747312431` and Security Findings `30747312432`
+  both success. A following Markdown-only evidence commit records those run IDs.
+- The dangerous status flips were handled with a gray bias: 23 of the 29 named rows demoted, 6 kept
+  green only where the live test genuinely covered the clause and the docstring now cites the ID.
+- Extra finding: `SCAN-OUT-05` was not in the 29, but the new checker exposed it as wrong/stale; it
+  was demoted. `RPT-OBS-03` was removed as an orphan row; `RPT-TYP-03` remains in the S157 missing-row
+  warning.
+- `DRIFT-031` records schema divergence and the reporter row mismatch. Hardening rows R and R² are
+  closed; row O remains open for S157 with the 101 missing rows.

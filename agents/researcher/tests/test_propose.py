@@ -43,7 +43,8 @@ def test_propose_writes_graph_nodes_and_flag() -> None:
 
 
 def test_propose_insufficient_evidence_writes_no_flag() -> None:
-    """RES-NEV-02 / RES-OUT-05: insufficient data → zero changes; no Flag."""
+    """RES-NEV-02 / RES-OUT-05 / RES-OUT-06: insufficient data returns
+    valid zero changes; no Flag."""
     graph = InMemoryGraphStore()
     proposal = propose(bound_bus(graph))
 

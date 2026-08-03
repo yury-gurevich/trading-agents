@@ -14,13 +14,13 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | EXEC-IN-01 | Valid OrderIntentSet accepted; approved entries are submitted. | happy | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
-| EXEC-IN-02 | execute_close accepts a CloseDecisionSet; close entries submitted. | happy | `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` | 🟩 |
+| EXEC-IN-02 | execute_close accepts a CloseDecisionSet; close entries submitted. | happy | Demoted S156: `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` no longer exists after ADR-0017 retired execute_close. | ⬜ |
 | EXEC-IN-03 | portfolio.orders.ready claim-check resolved before submit. | pub/sub | `test_execution_pubsub.py::test_orders_ready_triggers_fills_ready` | 🟩 |
 | EXEC-IN-04 | promote_stage confirmed=False is dry-run; no StageTransition written. | boundary | _tbd_ | ⬜ |
 | EXEC-TRG-01 | RPC submit returns an ExecutionResult with stage, fills, submitted count. | happy | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
 | EXEC-TRG-02 | portfolio.orders.ready → submit → execution.fills.ready emitted. | pub/sub | `test_execution_pubsub.py::test_orders_ready_triggers_fills_ready` | 🟩 |
-| EXEC-TRG-03 | RPC execute_close returns ExecutionResult from monitor-sourced closes. | happy | `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` | 🟩 |
-| EXEC-TRG-05 | RPC stage_status returns current stage without side effects. | read-only | `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` | 🟩 |
+| EXEC-TRG-03 | RPC execute_close returns ExecutionResult from monitor-sourced closes. | happy | Demoted S156: `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` no longer exists after ADR-0017 retired execute_close. | ⬜ |
+| EXEC-TRG-05 | RPC stage_status returns current stage without side effects. | read-only | Demoted S156: `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` no longer exists; no replacement citation adjudicated in this sprint. | ⬜ |
 | EXEC-TRG-06 | promote_stage with confirmed=True writes StageTransition. | gate | `test_promote_stage.py::test_promote_stage_confirmed_writes_transition_and_status_reads_graph` | 🟩 |
 | EXEC-TRG-07 | Run-start position_sync writes exactly one BrokerPositionSnapshot before downstream scoring is released. | happy | _tbd_ | ⬜ |
 

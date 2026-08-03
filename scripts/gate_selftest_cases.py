@@ -48,6 +48,33 @@ _FAKE_DSN = (
     "postgresql://someuser:"  # pragma: allowlist secret
     "notarealpassword@example.invalid/db"
 )
+_LAW_PROBE_ROOT = f"scripts/{PROBE_PREFIX}_law_coverage"
+_LAW_PROBE_LAWS = """# Probe laws
+
+- **PRB-IDN-01** — Dead citations do not prove green rows.
+- **PRB-IDN-02** — A live test must name the clause ID in its docstring.
+"""
+_LAW_PROBE_PLAN = (
+    "# Probe test plan\n\n"
+    "| Law | What the test must prove | Scenario | Test | Status |\n"
+    "| --- | --- | --- | --- | --- |\n"
+    "| PRB-IDN-01 | A deleted test fails the gate. | dead | "
+    "`test_probe.py::test_gone` | 🟩 |\n"
+    "| PRB-IDN-02 | A docstring must cite the ID. | uncited | "
+    "`test_probe.py::test_uncited` | 🟩 |\n"
+)
+_LAW_PROBE_TEST = '''def test_uncited():
+    """A live test whose docstring omits the clause ID."""
+    assert True
+'''
+_LAW_PROBE_LEDGER = """| Agent | Laws authored? | Clauses green / total | Status |
+| --- | --- | --- | --- |
+| probe | yes | 2 / 2 | partial |
+"""
+_LAW_PROBE_INDEX = """| Agent | `laws.md` | Green clauses | Notes |
+| --- | --- | --- | --- |
+| probe | locked | 2 / 2 | partial |
+"""
 
 FAILURE_CASES: tuple[FailureCase, ...] = (
     FailureCase(
@@ -79,6 +106,28 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
             "scripts/check_module_header.py",
             "scripts",
         ],
+    ),
+    FailureCase(
+        name="law-coverage",
+        why=(
+            "S156: a law row is not green unless its cited test exists and "
+            "the test docstring names the clause ID"
+        ),
+        files={
+            f"{_LAW_PROBE_ROOT}/agents/probe/laws/laws.md": _LAW_PROBE_LAWS,
+            f"{_LAW_PROBE_ROOT}/agents/probe/laws/test-plan.md": _LAW_PROBE_PLAN,
+            f"{_LAW_PROBE_ROOT}/agents/probe/tests/test_probe.py": _LAW_PROBE_TEST,
+            f"{_LAW_PROBE_ROOT}/docs/laws/ledger.md": _LAW_PROBE_LEDGER,
+            f"{_LAW_PROBE_ROOT}/docs/laws/INDEX.md": _LAW_PROBE_INDEX,
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_law_coverage.py",
+            _LAW_PROBE_ROOT,
+        ],
+        must_output=("PRB-IDN-01", "test_gone", "PRB-IDN-02", "test_uncited"),
     ),
     FailureCase(
         name="untracked-secrets",

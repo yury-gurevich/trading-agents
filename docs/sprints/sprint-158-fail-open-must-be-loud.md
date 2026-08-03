@@ -476,7 +476,7 @@ uv run python scripts/check_law_coverage.py
 uv run pytest
 TOTAL                                                13787      0   2908      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-2097 passed, 5 skipped in 81.96s
+2097 passed, 5 skipped in 81.99s
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files
@@ -497,16 +497,27 @@ Resolved 174 packages in 2.93s
 Updated trading-agents v0.86.0 -> v0.86.1
 ```
 
-- Remote gate job results:
+- Remote gate job results for pushed commit `717caf4e2145e0f55daae2ecde193a56410dc9e1`:
 
 ```text
-Pending until the branch is committed and pushed after this handback edit.
+> git push -u origin sprint-158-fail-open-must-be-loud
+branch 'sprint-158-fail-open-must-be-loud' set up to track 'origin/sprint-158-fail-open-must-be-loud'.
+To https://github.com/yury-gurevich/trading-agents.git
+ * [new branch]      sprint-158-fail-open-must-be-loud -> sprint-158-fail-open-must-be-loud
+
+> gh run watch 30792465337 --exit-status
+✓ sprint-158-fail-open-must-be-loud CI · 30792465337
+✓ quality in 36s (ID 91618718103)
+✓ security in 2m42s (ID 91618718113)
+✓ test in 1m1s (ID 91618834561)
+
+> gh run watch 30792465339 --exit-status
+Run Security Findings (30792465339) has already completed with 'success'
 ```
 
 **Not met / verified failing:**
 
 - Azure, Key Vault, SAS-bundle repair, deployment, fleet retag, live-spine proof, functionality check, and re-deliberation of the 23 consumed `PMRun`s: not done by explicit sprint non-goal.
-- Remote gate evidence: not done yet at this edit point; will be filled after branch push.
 
 ---
 

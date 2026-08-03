@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-158-fail-open-must-be-loud`
-**Status:** SPEC — packaged 2026-08-03 from a live finding on the `:s155` fleet
+**Status:** SHIPPED — merged `8be1570`, `v0.86.01`. **NOT DEPLOYED** — the fleet is on `:s155`, so none of this is protecting a live run yet
 **Version:** fix → **0.86.01** (PATCH: last two digits)
 **Effort:** M
 **Decisions:** [DL-80](../design-log.md) the LLM veto has never run · [DL-57](../design-log.md)/[DL-59](../design-log.md)

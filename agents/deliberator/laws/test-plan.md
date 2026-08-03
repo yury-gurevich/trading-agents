@@ -14,7 +14,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-TRG-01 | Manager pulls PMRun nodes lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
 | DLIB-TRG-02 | Peers serve request/reply. | functional | _tbd_ | ⬜ |
 | DLIB-TRG-03 | No self-trigger or external feed polling. | functional | _tbd_ | ⬜ |
-| DLIB-OUT-01 | One append-only `DeliberationRun` per PMRun. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
+| DLIB-OUT-01 | Exactly one append-only `DeliberationRun` per processed PMRun, linked by `PMRun -DELIBERATED_BY-> DeliberationRun`. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
 | DLIB-OUT-02 | Run records verdicts, vetoes, debates, models, narrative, time. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
 | DLIB-OUT-03 | LLM calls write attributable shared `LLMCall`. | functional | _tbd_ | ⬜ |
 | DLIB-OUT-04 | Non-uphold only subtracts PM-approved orders. | functional | _tbd_ | ⬜ |

@@ -521,6 +521,34 @@ Run Security Findings (30792465339) has already completed with 'success'
 
 ---
 
+## Review finding (planning, 2026-08-03) — ADR-0021, caught on the first sprint after the ADR
+
+**Verified independently before merge, not taken on report:** `make ci` re-run at **2097 passed /
+5 skipped / 100.00 %** (exit measured with `> file`, not through a pipe — hardening row S); all four
+remote jobs green on tip `ab1e54f` by `headSha`; and each of the four shipped behaviours watched
+rejecting a violation I planted by hand — the silent bundle fallback restored (2 tests failed), the
+acceptance checks removed (3 failed), the preflight disabled (2 failed), and `failed_open_count`
+falsified to `0` (3 failed). Scope respected: no `laws.md`, no Azure, no secrets.
+
+**One finding, small but exactly on point.** `DLIB-OUT-01` reads *"Each processed `PMRun` gets
+exactly one append-only `DeliberationRun` **linked by `PMRun -DELIBERATED_BY-> DeliberationRun`**"*.
+The test-plan summary was written as *"One append-only `DeliberationRun` per PMRun"* — the linkage
+conjunct dropped — and the cited test asserted the count but **never the edge**.
+
+That is [ADR-0021](../decisions/0021-clause-summary-mirrors-the-law.md)'s exact shape, found on the
+first sprint to land after the ADR, and it is the half the S156 gate structurally *cannot* see: the
+checker verifies a citation exists and names the ID, never that the test covers the clause as
+written. The gate passed this row.
+
+The behaviour was correct — `agents/deliberator/store.py` does write the edge — so the fix was to
+make the proof match the claim rather than demote: the summary now carries the linkage conjunct, and
+the test asserts the `DELIBERATED_BY` descendant explicitly. **Observed failing** on a planted
+removal of the edge write (DL-70).
+
+**The durable lesson:** an automated citation gate raises the floor, it does not close the question.
+Summary-vs-clause fidelity stays a human review step, and this row is the evidence that it is still
+load-bearing.
+
 ## Return notes
 
 - Exception type choice: chose `BusConfigError`, subclassing `ValueError`. It keeps the Azure SDK's config-error shape while giving callers and tests a specific type that is not indistinguishable from a transport blip.

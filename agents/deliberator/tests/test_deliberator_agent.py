@@ -143,6 +143,10 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
 
     assert find_pending(graph) == []
     (run,) = graph.list_nodes(DELIBERATION_RUN_LABEL)
+    # DLIB-OUT-01 asserts the linkage, not just the count: exactly one run,
+    # reachable from its PMRun by PMRun -DELIBERATED_BY-> DeliberationRun.
+    linked = list(graph.descendants(pm, max_depth=1, edge_types={"DELIBERATED_BY"}))
+    assert [node.key for node in linked] == [run.key]
     assert run.props["verdicts"] == {"AAPL": "uphold"}
     assert run.props["vetoed_tickers"] == ()
     assert run.props["real_debate_count"] == 1

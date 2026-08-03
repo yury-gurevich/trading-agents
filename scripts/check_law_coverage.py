@@ -178,7 +178,18 @@ def _add_missing_row_warnings(
 
 
 def _derived_counter(book: AgentBook) -> tuple[int, int]:
-    return sum(row.green for row in book.rows), len(book.rows)
+    """Return proven clauses over declared clauses — never test-plan rows.
+
+    The roll-up column is headed "Clauses green / total", so the denominator is
+    the constitution (`laws.md`), not the bookkeeping that tracks it. Counting
+    rows instead would drop every clause that has no row out of the denominator
+    entirely — the defect this checker exists to surface: a clause with no row
+    would stop being unproven and simply stop being counted.
+
+    The numerator is distinct *clauses* with at least one green row, because a
+    clause may carry several rows and must not be able to count more than once.
+    """
+    return len({row.clause_id for row in book.rows if row.green}), len(book.law_ids)
 
 
 def _docstring_cites(docstring: str, clause_id: str) -> bool:

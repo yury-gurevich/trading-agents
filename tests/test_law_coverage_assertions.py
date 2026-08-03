@@ -110,12 +110,45 @@ def test_rollup_drift_is_caught(tmp_path, capsys):
 
 
 def test_missing_row_warns_without_failing(tmp_path, capsys):
-    write_book(tmp_path, laws=("PRB-IDN-01", "PRB-IDN-02"))
+    # The rollup must already say 1 / 2: a clause with no row still counts
+    # against the denominator, it is simply unproven.
+    write_book(tmp_path, laws=("PRB-IDN-01", "PRB-IDN-02"), rollup=(1, 2))
 
     assert main([str(tmp_path)]) == 0
     output = capsys.readouterr().out
     assert "1 clause(s) have no test-plan row" in output
     assert "PRB-IDN-02" in output
+
+
+def test_rollup_denominator_is_clauses_never_rows(tmp_path, capsys):
+    """A clause with no row must stay in the denominator, not drop out of it.
+
+    Counting rows instead would let an unwritten row shrink the total and make
+    coverage read better the less of the constitution was ever considered.
+    """
+    write_book(
+        tmp_path,
+        laws=("PRB-IDN-01", "PRB-IDN-02", "PRB-IDN-03"),
+        rollup=(1, 1),
+    )
+
+    assert main([str(tmp_path)]) == 1
+    assert "probe claims 1 / 1; derived 1 / 3" in capsys.readouterr().out
+
+
+def test_clause_with_two_rows_counts_once(tmp_path, capsys):
+    """One clause, two rows: the numerator counts clauses, not green rows."""
+    write_book(
+        tmp_path,
+        rows=(
+            ("PRB-IDN-01", "`test_probe.py::test_good`", GREEN),
+            ("PRB-IDN-01", "`test_probe.py::test_good`", GREEN),
+        ),
+        rollup=(2, 2),
+    )
+
+    assert main([str(tmp_path)]) == 1
+    assert "probe claims 2 / 2; derived 1 / 1" in capsys.readouterr().out
 
 
 def test_mutants_snapshot_is_ignored(tmp_path, capsys):

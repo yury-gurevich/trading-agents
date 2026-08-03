@@ -37,20 +37,20 @@ Each agent's law files live at `agents/<name>/laws/`:
 
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
-| provider | ✅ LOCKED v1 (S69) | 20 / 43 | S156 citation check reconciled to test-plan rows; 22 law clauses still have no row (S157 warn-only backlog) |
-| analyst | ✅ LOCKED **v1.1** (S152) | 24 / 34 | S156 citation check reconciled to test-plan rows; 12 law clauses still have no row (S157 warn-only backlog) |
-| scanner | ✅ LOCKED v1 (S70) | 16 / 26 | S156 citation check reconciled to test-plan rows; 13 law clauses still have no row (S157 warn-only backlog) |
-| portfolio_manager | ✅ LOCKED v1 (S70) | 30 / 39 | S156 citation check reconciled to test-plan rows; 12 law clauses still have no row (S157 warn-only backlog) |
+| provider | ✅ LOCKED v1 (S69) | 17 / 62 | S156 citation check; counters are clauses proven / clauses declared — 22 law clauses still have no row (S157 warn-only backlog) |
+| analyst | ✅ LOCKED **v1.1** (S152) | 24 / 46 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
+| scanner | ✅ LOCKED v1 (S70) | 16 / 39 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
+| portfolio_manager | ✅ LOCKED v1 (S70) | 25 / 44 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
 | deliberator | ✅ LOCKED v1 (S153) | 0 / 48 | New DL-80/ADR-0020 agent; all clauses start ⬜ |
-| execution | ✅ LOCKED **v1.1** (S152) | 28 / 44 | S156 citation check reconciled to test-plan rows; 13 law clauses still have no row (S157 warn-only backlog) |
-| monitor | ✅ LOCKED v1 (S71) | 20 / 39 | S156 citation check reconciled to test-plan rows; 7 law clauses still have no row (S157 warn-only backlog) |
-| reporter | ✅ LOCKED v1 (S71) | 20 / 38 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |
-| forecaster | ✅ LOCKED v1 (S71) | 16 / 45 | S156 citation check reconciled to test-plan rows |
-| operator | ✅ LOCKED v1 (S71) | 15 / 50 | S156 citation check reconciled to test-plan rows |
-| supervisor | ✅ LOCKED v1 (S71) | 20 / 48 | S156 citation check reconciled to test-plan rows |
-| curator | ✅ LOCKED v1 (S71) | 22 / 47 | S156 citation check reconciled to test-plan rows |
-| researcher | ✅ LOCKED v1 (S71) | 19 / 43 | S156 citation check reconciled to test-plan rows |
-| master | ✅ LOCKED v1 (S73) | 10 / 18 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74 |
+| execution | ✅ LOCKED **v1.1** (S152) | 28 / 57 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
+| monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |
+| reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |
+| forecaster | ✅ LOCKED v1 (S71) | 16 / 45 | S156 citation check; counters are clauses proven / clauses declared |
+| operator | ✅ LOCKED v1 (S71) | 15 / 50 | S156 citation check; counters are clauses proven / clauses declared |
+| supervisor | ✅ LOCKED v1 (S71) | 20 / 48 | S156 citation check; counters are clauses proven / clauses declared |
+| curator | ✅ LOCKED v1 (S71) | 22 / 47 | S156 citation check; counters are clauses proven / clauses declared |
+| researcher | ✅ LOCKED v1 (S71) | 19 / 43 | S156 citation check; counters are clauses proven / clauses declared |
+| master | ✅ LOCKED v1 (S73) | 10 / 39 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74; **21 of its 39 clauses have no test-plan row** (S157 warn-only backlog) |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

@@ -35,20 +35,20 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 
 | Agent | Laws authored? | Clauses green / total | Status |
 | --- | --- | --- | --- |
-| provider | ✅ v1 (LOCKED) | 20 / 43 | 🟨 partial — 20 green test-plan rows after S156 citation check; 23 gray rows remain and 22 law clauses still have no row (S157 warn-only backlog) |
-| scanner | ✅ v1 (LOCKED) | 16 / 26 | 🟨 partial — 16 green test-plan rows after S156 citation check; 10 gray rows remain and 13 law clauses still have no row (S157 warn-only backlog) |
-| analyst | ✅ v1.1 (LOCKED) | 24 / 34 | 🟨 partial — 24 green test-plan rows after S156 citation check; 10 gray rows remain and 12 law clauses still have no row (S157 warn-only backlog) |
-| forecaster | ✅ v1 (LOCKED) | 16 / 45 | 🟨 partial — 16 green test-plan rows after S156 citation check; 29 gray rows remain |
-| portfolio_manager | ✅ v1 (LOCKED) | 30 / 39 | 🟨 partial — 30 green test-plan rows after S156 citation check; 9 gray rows remain and 12 law clauses still have no row (S157 warn-only backlog) |
-| deliberator | ✅ v1 (LOCKED) | 0 / 48 | 🟨 partial — S153 declared the DL-80/ADR-0020 fleet-native deliberator; all 48 clauses start ⬜ |
-| execution | ✅ v1.1 (LOCKED) | 28 / 44 | 🟨 partial — 28 green test-plan rows after S156 citation check; 16 gray rows remain and 13 law clauses still have no row (S157 warn-only backlog) |
-| monitor | ✅ v1 (LOCKED) | 20 / 39 | 🟨 partial — 20 green test-plan rows after S156 citation check; 19 gray rows remain and 7 law clauses still have no row (S157 warn-only backlog) |
-| reporter | ✅ v1 (LOCKED) | 20 / 38 | 🟨 partial — 20 green test-plan rows after S156 citation check; 18 gray rows remain and `RPT-TYP-03` still has no row (S157 warn-only backlog) |
-| researcher | ✅ v1 (LOCKED) | 19 / 43 | 🟨 partial — 19 green test-plan rows after S156 citation check; 24 gray rows remain |
-| curator | ✅ v1 (LOCKED) | 22 / 47 | 🟨 partial — 22 green test-plan rows after S156 citation check; 25 gray rows remain |
-| operator | ✅ v1 (LOCKED) | 15 / 50 | 🟨 partial — 15 green test-plan rows after S156 citation check; 35 gray rows remain |
-| supervisor | ✅ v1 (LOCKED) | 20 / 48 | 🟨 partial — 20 green test-plan rows after S156 citation check; 28 gray rows remain |
-| master | ✅ v1 (LOCKED) | 10 / 18 | 🟨 partial — 10 clauses green (S73); 8 deferred (RSA signing + Key Vault + integration) |
+| provider | ✅ v1 (LOCKED) | 17 / 62 | 🟨 partial — **17 of 62 clauses proven** after the S156 citation check; 23 have a gray row and 22 have no row at all (S157 warn-only backlog) |
+| scanner | ✅ v1 (LOCKED) | 16 / 39 | 🟨 partial — **16 of 39 clauses proven** after the S156 citation check; 10 have a gray row and 13 have no row at all (S157 warn-only backlog) |
+| analyst | ✅ v1.1 (LOCKED) | 24 / 46 | 🟨 partial — **24 of 46 clauses proven** after the S156 citation check; 10 have a gray row and 12 have no row at all (S157 warn-only backlog) · S152 declared 3 new clauses (43→46) |
+| forecaster | ✅ v1 (LOCKED) | 16 / 45 | 🟨 partial — **16 of 45 clauses proven** after the S156 citation check; 29 have a gray row |
+| portfolio_manager | ✅ v1 (LOCKED) | 25 / 44 | 🟨 partial — **25 of 44 clauses proven** after the S156 citation check; 7 have a gray row and 12 have no row at all (S157 warn-only backlog) |
+| deliberator | ✅ v1 (LOCKED) | 0 / 48 | 🟨 partial — **0 of 48 clauses proven** after the S156 citation check; 48 have a gray row · S153 declared the DL-80/ADR-0020 fleet-native deliberator; all 48 start ⬜ |
+| execution | ✅ v1.1 (LOCKED) | 28 / 57 | 🟨 partial — **28 of 57 clauses proven** after the S156 citation check; 16 have a gray row and 13 have no row at all (S157 warn-only backlog) · S152 declared 8 new clauses (49→57); `chore-exec-fail-03-coverage` proved EXEC-FAIL-03 |
+| monitor | ✅ v1 (LOCKED) | 20 / 46 | 🟨 partial — **20 of 46 clauses proven** after the S156 citation check; 19 have a gray row and 7 have no row at all (S157 warn-only backlog) |
+| reporter | ✅ v1 (LOCKED) | 20 / 39 | 🟨 partial — **20 of 39 clauses proven** after the S156 citation check; 18 have a gray row and 1 have no row at all (S157 warn-only backlog) |
+| researcher | ✅ v1 (LOCKED) | 19 / 43 | 🟨 partial — **19 of 43 clauses proven** after the S156 citation check; 24 have a gray row |
+| curator | ✅ v1 (LOCKED) | 22 / 47 | 🟨 partial — **22 of 47 clauses proven** after the S156 citation check; 25 have a gray row |
+| operator | ✅ v1 (LOCKED) | 15 / 50 | 🟨 partial — **15 of 50 clauses proven** after the S156 citation check; 35 have a gray row |
+| supervisor | ✅ v1 (LOCKED) | 20 / 48 | 🟨 partial — **20 of 48 clauses proven** after the S156 citation check; 28 have a gray row |
+| master | ✅ v1 (LOCKED) | 10 / 39 | 🟨 partial — **10 of 39 clauses proven** after the S156 citation check; 8 have a gray row and 21 have no row at all (S157 warn-only backlog) · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
 
 ## Layer 2 — Choreography
 

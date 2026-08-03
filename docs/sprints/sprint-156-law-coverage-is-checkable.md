@@ -609,6 +609,10 @@ Security Findings run 30747312432, headSha 7b255075..., conclusion success:
 
 **Green count before → after (book-wide, and per agent that moved):**
 
+> **Superseded by the planning review — see *Review finding* below.** The counts in this section are
+> **row**-denominated, which is what the review rejected. The corrected, clause-denominated figures
+> are in the review section; this table is kept as the record of what was handed back.
+
 Book-wide derived test-plan count fell **284 / 563 -> 260 / 562**. The fall is expected and correct:
 the ledger got less flattering because it got checkable.
 
@@ -624,6 +628,52 @@ the ledger got less flattering because it got checkable.
 | reporter | 21 / 39 | 20 / 38 | green -1, rows -1 |
 | scanner | 18 / 26 | 16 / 26 | green -2, rows +0 |
 | supervisor | 22 / 48 | 20 / 48 | green -2, rows +0 |
+
+### Review finding (planning, 2026-08-03) — the denominator measured the wrong thing
+
+**Verified first, independently of the handback:** `make ci` re-run at **2083 passed / 5 skipped /
+100.00 %**; `make gate-selftest` **15/15** including `can-fail: law-coverage`; all four remote jobs
+green on tip `10614db` **by `headSha`**; and all three hard-fail assertions observed rejecting
+violations I planted myself (dead citation, docstring stripped of the ID, falsified ledger count).
+Scope was respected — no `laws.md`, no `conventions.md`, no production agent source.
+
+**The defect.** `_derived_counter` returned `(green rows, len(rows))`, so both roll-ups switched from
+counting **clauses** to counting **test-plan rows** — while their column headers still read *"Clauses
+green / total"* and *"Green clauses"*. Twelve of fourteen Status cells disclosed the change in prose,
+so it was not concealed; `master` did not, and it is the worst case in the book.
+
+The consequence is the same defect this sprint exists to close, one level up: the **101 clauses with
+no row were removed from the denominator** rather than counted as unproven. A clause nobody ever
+wrote a row for stopped being unproven and simply stopped being counted, and several agents' ratios
+*improved* in a change headlined "the green count fell honestly".
+
+A second, smaller error rode along: **10 clauses carry more than one row** (portfolio_manager 7,
+provider 3), so counting green *rows* let a single clause count up to three times.
+
+**The fix.** `_derived_counter` now returns *distinct clauses with ≥1 green row* over *clauses
+declared in `laws.md`*. Both roll-ups regenerated; `master`'s stale cell rewritten; the INDEX note
+now states what the counter measures. Two tests pin it — `test_rollup_denominator_is_clauses_never_rows`
+and `test_clause_with_two_rows_counts_once` — **both observed failing** on the row-based derivation
+(DL-70), along with `test_missing_row_warns_without_failing`, whose fixture had to start declaring
+`1 / 2` because the unwritten row now correctly stays in the denominator.
+
+**Corrected counts — clause-denominated:**
+
+| | row-denominated (handback) | clause-denominated (merged) |
+| --- | --- | --- |
+| Book-wide | 260 / 562 — **46 %** | **252 / 653 — 39 %** |
+| master | 10 / 18 — 56 % | **10 / 39 — 26 %** |
+| provider | 20 / 43 — 47 % | **17 / 62 — 27 %** |
+| scanner | 16 / 26 — 62 % | **16 / 39 — 41 %** |
+| execution | 28 / 44 — 64 % | **28 / 57 — 49 %** |
+| analyst | 24 / 34 — 71 % | **24 / 46 — 52 %** |
+| portfolio_manager | 30 / 39 — 77 % | **25 / 44 — 57 %** |
+| monitor | 20 / 39 — 51 % | **20 / 46 — 43 %** |
+| reporter | 20 / 38 — 53 % | **20 / 39 — 51 %** |
+
+Book-wide the honest figure is **252 / 653**. Against the pre-sprint claim of 284 greens on a 653
+clause book, real proven coverage went **43 % → 39 %** — the sprint's thesis, now measured against
+the constitution instead of against its own bookkeeping.
 
 **Not met / verified failing:**
 

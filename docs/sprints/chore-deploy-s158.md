@@ -7,7 +7,11 @@
 **Version:** **no bump.** A retag ships no package behaviour; the code was versioned at `0.86.01`
 when S158 merged. Bumping for a deploy would make a real fix indistinguishable from a cosmetic one
 (CLAUDE.md, *Version scheme*).
-**Tag:** `s158` · **Built from:** `main` (S158 merge `8be1570`; the two commits since are docs-only)
+**Tag:** `s158` · **Built from:** `main` at **`4bb6a29`** — S158 (`8be1570`) plus two fixes that
+landed while this was packaged: the `make ci` exit-code fix (`44ae1f2`, hardening row S) and
+**cryptography 50.0.0 for CVE-2026-69247** (`244f1d9`, `v0.86.02`). The CVE fix is a reason to
+prefer this SHA over `8be1570`, not a complication: the fleet picks up the patched dependency in
+the same deploy.
 **Effort:** S — one workflow run, one script invocation, and a verification pass that is most of it
 **Decisions:** [DL-46](../design-log.md) merge-to-main does not redeploy ·
 [DL-68](../design-log.md) the pack is deployable only as base64 ·
@@ -53,10 +57,11 @@ letting the retag look like the fix for DL-80.
 
 ## Preconditions — check before starting
 
-- [ ] **Images exist and are green.** `build-images` succeeded on `8be1570`
-      (2026-08-03 07:46 UTC). Re-confirm nothing has gone red since:
-      `gh run list --workflow build-images.yml --limit 3`. **This is the DL-84 check** — four
-      merges were once called green on CI + Security Findings while `build-images` was failing.
+- [x] **Images exist and are green.** `build-images` succeeded on **`4bb6a29`**
+      (run `30872940346`), alongside CI (`30872940342`) and Security Findings (`30872940348`) —
+      6/6 workflows green on that SHA. **This is the DL-84 check** — four merges were once called
+      green on CI + Security Findings while `build-images` was failing, so it is checked by name
+      rather than inferred from a green CI.
 - [ ] **No run in flight.** The cron fires 22:30 UTC. Do not deploy inside the 22:25–00:30 UTC
       scale window; a mid-run image swap is not a tested path.
 - [ ] `az` reachable, `.env` and `infra/*.local.json` present.

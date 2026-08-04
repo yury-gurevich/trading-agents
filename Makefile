@@ -4,6 +4,19 @@
 PKGS = kernel contracts agents orchestration surfaces
 STACK = trading-agents
 
+# Windows/Git-Bash: `/dev/null` resolves to `NUL`, a *character device*, so
+# `sys.stdout.isatty()` is TRUE when stdout is redirected there. rich then takes
+# its legacy-Windows terminal path and writes import-linter's ":brick:" spinner
+# through this host's cp1252 stdio, raising UnicodeEncodeError in the spinner's
+# teardown — *after* the contracts have already been checked and printed
+# "4 kept, 0 broken". `make ci >/dev/null` therefore reported a false RED on a
+# green gate (hardening row S). Forcing UTF-8 stdio fixes it and also makes local
+# runs match CI, which is UTF-8 on Linux.
+#
+# Never measure this gate through a pipe: `make ci | tail` reports tail's exit
+# code, not make's. Redirect to a file and read it.
+export PYTHONUTF8 = 1
+
 install:        ## Install all dependencies (incl. dev group)
 	uv sync
 

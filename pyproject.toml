@@ -1,10 +1,10 @@
 [project]
 name = "trading-agents"
-version = "0.86.01"
+version = "0.86.02"
 description = "An operator-controlled, single-user, agent-based trading system. Domain logic lives only in agents; the kernel is plumbing; contracts are the shared boundary."
 requires-python = ">=3.13"
 dependencies = [
-    "cryptography>=44.0",
+    "cryptography>=50.0",
     "msgpack>=1.2.1",
     "pydantic>=2.7",
     "pydantic-settings>=2.14.2",

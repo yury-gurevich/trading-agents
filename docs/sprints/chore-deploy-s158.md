@@ -210,14 +210,42 @@ out.
 
 ## Closeout — evidence
 
-> **Fill this in at execution. Do not close this chore with the block unedited.**
+**EXECUTED 2026-08-04 03:01–03:24 UTC. Status: DONE — structurally proven, functionally pending.**
 
-- `build-images` run ID + all 15 images pushed at `s158`:
-- Preflight result (`N/N`), and anything it wanted to create:
-- `up -Tag s158` exit code, and what the per-target report claimed (expect untrustworthy `[XX]`):
-- **Step 4a/b/c** — 16 apps + job on tag, provisioning state, config intact:
-- **Step 4d** — pack sha256 read back **per app**, matched against the repo pack:
-- `DeployRecord` tag + SHA written, and the timestamp it was written **after** verification:
-- `/check-fleet` result:
-- Functionality-check row:
-- Not met / deliberately out of scope:
+- **`build-images` run ID + all 15 images pushed at `s158`:** run `30873559222` on `d80e438`,
+  **15/15 jobs `success`, 0 failed** — Trivy HIGH/CRITICAL scan and entrypoint smoke inside each
+  job. The `deliberator` image serves all three deliberator apps.
+- **Preflight result, and anything it wanted to create:** **10/10 `[OK]`** — per-target Postgres
+  DSNs **17/17**, Service Bus SAS strings **16/16**, GHCR images **15/15**. **Nothing new was
+  created:** `alembic upgrade head` a no-op, Service Bus routes returned `created_topics: []` and
+  `created_subscriptions: []`. The no-re-provisioning non-goal held.
+- **`up -Tag s158` exit code, and what the per-target report claimed:** **exit 1**, printing
+  `Deploy FAILED for 17 target(s)` and listing every target. **All of it was wrong** — row Q, as
+  predicted, and the reason the runbook said not to trust it. The 12 `[OK]` in the log are all
+  *pre-deploy* steps (10 preflight + alembic + routes); **all 17 deploy targets printed `[XX]`**,
+  so the misreport is confined to the per-target result parse.
+- **Step 4a/b/c:** **16/16 apps on `:s158`**, **16/16 `provisioningState=Succeeded`**, dispatcher
+  job on `:s158` with cron `30 22 * * *`. Config intact: every app `minReplicas=0` with exactly one
+  KEDA rule (`daily-master-window` on master, `daily-agent-window` on the 15 agents), 3 `secretRef`s
+  per agent and 2 on master.
+- **Step 4d — pack sha256 read back per app:** **17/17 byte-identical** to the repo pack
+  (`sha256 dab0623bb37c19114f9257909cd75f6fe301dc6eb6b5228f861dd3713a45f116`), pulled from each
+  deployed target's `GRAPH_VOCABULARY_B64`, base64-decoded and hashed. **Per target, never sampled**
+  — this is the step that de-risked the deploy, and it is why the `VocabularyError` fail-closed
+  stall did not happen.
+- **`DeployRecord` written after verification:** `deploy:2026-08-04T03:24:15.936263+00:00:s158:
+  d80e438bb97205373bd13e76380bd1395f87ef1a`, actor `claude`, written **after** 4a–4d passed and read
+  back from the spine to confirm.
+- **`/check-fleet` result:** **not run, and deliberately so.** Every app is `minReplicas=0` outside
+  the 22:25–00:30 UTC window, so a health/activation probe at 03:24 UTC would report scaled-to-zero
+  apps and prove nothing. Spine reachability *is* proven — the `DeployRecord` write went to Neon and
+  read back. Activation and bus round trip are proven by tonight's run, not before.
+- **Functionality-check row:** appended to
+  [`docs/laws/functionality-checks.md`](../laws/functionality-checks.md), 2026-08-04.
+- **Not met / deliberately out of scope:**
+  1. **DL-80 is not closed and this deploy could not close it.** It needs a day the PM approves an
+     order. Tonight's run may again be a no-op.
+  2. **`sched-2026-08-03` stays `ACCEPTANCE FAIL` permanently** — its `DeliberationRun` was written
+     by `:s155` code on an append-only spine, so the missing properties can never be added. The gate
+     can only pass from the next run onward. Do not read that failure as a deploy problem.
+  3. **Row Q was reproduced, not fixed** — out of scope by the runbook's own non-goals.

@@ -86,20 +86,56 @@ function Get-AzPython {
   return $script:AzPython
 }
 
-# Run an az command, surfacing stderr when it fails. The old `2>$null` hid
-# "The command line is too long." fifteen times over (DL-85).
+# Run an az command and return its STDOUT. stderr goes to a file and never into
+# the returned value.
+#
+# The old shape merged with `2>&1` and took "the last non-empty line that does
+# not start with WARNING:". Its own comment admitted it could not trust order —
+# and that is exactly the defect (row Q). The containerapp extension writes more
+# than the WARNING banner to stderr, and **any** such line arriving *after* the
+# tsv value becomes "the state". Reproduced 2026-08-05 with a stub emitting
+# `Succeeded` on stdout and a deprecation notice on stderr afterwards: the old
+# heuristic returns the notice text, so `$state -eq "Succeeded"` is false and
+# every target prints [XX] while the deploy actually succeeded — the :s155 run,
+# and again on 2026-08-05 with "Deploy FAILED for 17 target(s)", exit 1, all of
+# it wrong. Separating the streams returns `Succeeded` and needs no filtering.
+#
+# stderr is still surfaced on failure: the old `2>$null` hid "The command line is
+# too long." fifteen times over (DL-85), and that must not come back.
 function Invoke-Az([string[]]$azArgs) {
   $py = Get-AzPython
-  if ($py) { $out = & $py -m azure.cli @azArgs 2>&1 }
-  else { $out = az @azArgs 2>&1 }
-  if ($LASTEXITCODE -ne 0) {
-    foreach ($line in @($out)) { Write-Host "      $line" -ForegroundColor DarkYellow }
-    return $null
+  $errFile = [System.IO.Path]::GetTempFileName()
+  try {
+    if ($py) { $out = & $py -m azure.cli @azArgs 2>$errFile }
+    else { $out = az @azArgs 2>$errFile }
+    if ($LASTEXITCODE -ne 0) {
+      foreach ($line in @(Get-Content -LiteralPath $errFile -ErrorAction SilentlyContinue)) {
+        Write-Host "      $line" -ForegroundColor DarkYellow
+      }
+      foreach ($line in @($out)) { Write-Host "      $line" -ForegroundColor DarkYellow }
+      return $null
+    }
+    return (@($out) | ForEach-Object { "$_".Trim() } | Where-Object { $_ } | Select-Object -Last 1)
   }
-  # The containerapp extension writes a warning banner to stderr; 2>&1 merges it
-  # into the stream, so pick the last non-empty line rather than trusting order.
-  $clean = @($out) | ForEach-Object { "$_".Trim() } | Where-Object { $_ -and $_ -notmatch '^WARNING:' }
-  return ($clean | Select-Object -Last 1)
+  finally { Remove-Item -LiteralPath $errFile -ErrorAction SilentlyContinue }
+}
+
+# Read provisioning state from the resource itself, not from the output of the
+# call that changed it. Row Q's recommended fix: a mutating call's stream carries
+# banners and notices, while `show` answers one question with one value. A deploy
+# is the one operation with no cheap undo, so its report is worth a second call.
+function Get-AppState([string]$name) {
+  return Invoke-Az @(
+    "containerapp", "show", "--name", $name, "--resource-group", $RG,
+    "--subscription", $SUB, "--query", "properties.provisioningState", "-o", "tsv"
+  )
+}
+
+function Get-JobState([string]$name) {
+  return Invoke-Az @(
+    "containerapp", "job", "show", "--name", $name, "--resource-group", $RG,
+    "--subscription", $SUB, "--query", "properties.provisioningState", "-o", "tsv"
+  )
 }
 
 # ── Cred loaders ──────────────────────────────────────────────────────────────
@@ -455,7 +491,10 @@ function Set-AppVocabulary($name) {
     "--subscription", $SUB, "--set-env-vars", (Get-VocabularyEnv),
     "--query", "properties.provisioningState", "-o", "tsv"
   )
-  return $state -eq "Succeeded"
+  # $null means the call itself failed (non-zero exit, stderr already printed).
+  # Otherwise ask the resource, not the call that changed it.
+  if ($null -eq $state) { return $false }
+  return (Get-AppState $name) -eq "Succeeded"
 }
 
 function Set-JobVocabulary {
@@ -465,7 +504,8 @@ function Set-JobVocabulary {
     "--set-env-vars", (Get-VocabularyEnv),
     "--query", "properties.provisioningState", "-o", "tsv"
   )
-  return $state -eq "Succeeded"
+  if ($null -eq $state) { return $false }
+  return (Get-JobState $DISPATCHER_JOB) -eq "Succeeded"
 }
 
 function Up {
@@ -512,8 +552,10 @@ function Up {
   $vocabOk = Set-AppVocabulary "master"
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   # The old check tested only [bool]$fqdn, which an already-existing app satisfies
-  # whether or not this deploy did anything (DL-85).
-  Check (($masterState -eq "Succeeded") -and $vocabOk -and [bool]$fqdn) "master @ https://$fqdn"
+  # whether or not this deploy did anything (DL-85). The state now comes from the
+  # resource rather than from the deploying call's stream (row Q).
+  $masterOk = ($null -ne $masterState) -and ((Get-AppState "master") -eq "Succeeded")
+  Check ($masterOk -and $vocabOk -and [bool]$fqdn) "master @ https://$fqdn"
   Bot
   $masterUrl = "https://$fqdn"
 
@@ -542,10 +584,12 @@ function Up {
       "--query", "properties.provisioningState", "-o", "tsv"
     ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart)
     $state = Invoke-Az $agentArgs
+    # State comes from the resource, not from the deploying call's stream (row Q).
+    $appOk = ($null -ne $state) -and ((Get-AppState $name) -eq "Succeeded")
     # Image and pack are one unit: a target on new code with a stale vocabulary
     # raises VocabularyError fail-closed on its first write (the S148 stall).
-    $vocabOk = ($state -eq "Succeeded") -and (Set-AppVocabulary $name)
-    Check (($state -eq "Succeeded") -and $vocabOk) $name
+    $vocabOk = $appOk -and (Set-AppVocabulary $name)
+    Check ($appOk -and $vocabOk) $name
   }
   Bot
   Deploy-DispatcherJob $ghcr (Get-GraphConfig "dispatcher") (Get-ServiceBusConfig "dispatcher")

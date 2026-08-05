@@ -709,7 +709,7 @@ out of scope until needed; flagged so they are not mistaken for already-working.
 
 ---
 
-## DL-15 · DB placement — substrate registry should not use Neo4j  ·  status: OPEN (2026-06-23)
+## DL-15 · DB placement — substrate registry should not use Neo4j  ·  status: SUPERSEDED (2026-08-05) by [ADR-0014](decisions/0014-postgresql-system-of-record.md) — the premise is gone: there is no Neo4j runtime to move the registry off. Verified 2026-08-05: zero `neo4j` references in `kernel/`, `agents/`, `orchestration/`; the single survivor is a stale capability declaration in `contracts/master.py:99` (DRIFT-033), not a live dependency.
 
 **Trigger.** ADR-0012 platform/pack wall + DL-12 (S84–S86) separated master grant/secret policy
 from the trading pack. The next step in the split: the substrate registry (AgentInstance, Session,
@@ -2780,7 +2780,7 @@ the implementation is trusted.
 
 ---
 
-## DL-61 · Broker-native stops (ADR-0015 §3): stop-only, on the same rail, reconciled with ADR-0017 · status: OPEN
+## DL-61 · Broker-native stops (ADR-0015 §3): stop-only, on the same rail, reconciled with ADR-0017 · status: CLOSED (shipped S138; ADR-0015 §3 amendment finally recorded 2026-08-05)
 
 **Question.** ADR-0015 §3 accepted "the broker enforces stops and targets" but never shipped. ADR-0017
 then made the analyst the sole exit decider and forced a breached stop onto the daily rail as the
@@ -3364,7 +3364,7 @@ scope and let the expansion be argued on its own. If Markdown snippets should be
 its own chore with its own diff - not a side effect of upgrading a linter.
 
 ---
-## DL-70 - Arresting artifact/claim drift: stop asserting presence, start planting violations · status: OPEN
+## DL-70 - Arresting artifact/claim drift: stop asserting presence, start planting violations · status: DECIDED (standing practice; `scripts/gate_selftest.py` 19/19 as of 2026-08-05)
 
 Six entries this month record the same failure (DL-52/54/55, DL-65, DL-66, DL-67, DL-68). It is not
 six accidents. It is one structural weakness, and it follows from a deliberate choice.
@@ -3729,7 +3729,7 @@ must import the predicates from `contracts/` rather than re-deriving them from r
 
 ---
 
-## DL-74 - Trial: make the coding agent read the governing laws before writing code · status: OPEN (running on S146)
+## DL-74 - Trial: make the coding agent read the governing laws before writing code · status: DECIDED (trial concluded on S146; rule RETAINED on evidence and standard in every sprint handover since S147)
 
 **Question.** The law book is authored, locked, and cited by tests - but nothing makes the coding
 agent *read* it before implementing. Does law-first reading change what gets built, or is the law
@@ -3794,7 +3794,7 @@ state, and a 403 refusal never creates a live broker stop.
 
 ---
 
-## DL-76 - A flat price tolerance is not a neutral parameter; it silently picks winners · status: OPEN (challenger packaged as S149)
+## DL-76 - A flat price tolerance is not a neutral parameter; it silently picks winners · status: PARTLY (challenger SHIPPED S149 `eee68d1`/0.83.00, off by default; promotion still pending)
 
 **Trigger.** S148 shipped ADR-0018's order-price tolerance as a flat **50 bps**. Before merging, I
 measured that number against 60 sessions of real overnight gaps (Alpaca daily bars, 2026-05-01
@@ -3853,7 +3853,7 @@ Recorded here deliberately rather than folded into S149.
 
 ---
 
-## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: OPEN (challenger packaged as S150)
+## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: PARTLY (challenger SHIPPED S150 `ca97797`/0.84.00, off by default; promotion still pending)
 
 **Trigger.** DL-76 recorded, as a finding left unfixed, that `suggested_stop_pct` is
 `regime.base_stop_loss_pct` for every buy - one global number, currently 5 %, for the whole book. I

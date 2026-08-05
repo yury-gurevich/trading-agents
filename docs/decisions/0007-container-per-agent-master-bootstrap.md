@@ -1,13 +1,26 @@
 ---
 type: Architecture Decision
-status: accepted
+status: amended
 closes: "How do we deploy each agent? Who manages secrets? How do agents get their identity at startup?"
-tags: [docker, azure, container-apps, master, key-vault, p14]
+tags: [docker, azure, container-apps, master, key-vault, p15, ghcr]
 ---
 
 # ADR 0007 — Container-per-agent deployment + Master bootstrap agent
 
-**Status:** Accepted · **Date:** 2026-06-18 · **Decider:** Yury Gurevich (product owner)
+**Status:** Amended · **Date:** 2026-06-18 · **Amended:** 2026-08-05 · **Decider:** Yury Gurevich (product owner)
+
+> **Amendment (2026-08-05) — the registry is GHCR, not DockerHub.** Everything below about
+> container-per-agent, the master bootstrap, and Azure Container Apps stands. The **registry
+> choice does not**: this ADR names **DockerHub** in six places, and that was superseded three days
+> later by [ADR-0011 — Container registry: GHCR](0011-container-registry-ghcr.md) (accepted
+> 2026-06-21). Verified 2026-08-05: `.github/workflows/build-images.yml` builds and pushes to
+> `ghcr.io/<owner>/trading-agents-<image>` and Trivy scans the GHCR digest — no DockerHub anywhere
+> in the pipeline.
+>
+> Read every "DockerHub" below as **GHCR**. The supply-chain mitigations in §Risks change
+> accordingly: MFA and repository privacy are GitHub account and package settings, not DockerHub
+> ones. [DL-50](../design-log.md) queued this amendment rather than silently rewriting an accepted
+> ADR; recording it here closes that item.
 
 ## Context
 

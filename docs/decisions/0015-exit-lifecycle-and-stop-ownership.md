@@ -196,11 +196,34 @@ open `Position` node keys. Note `order_from_close` still carries the original ru
 is harmless only because those closes reach no broker (DL-60), and it must be fixed if that path
 is ever wired.
 
-### §3 — broker-native stops are still **not built**
+### §3 — broker-native stops: **not built as written; shipped stop-only in S138**
 
-`bracket` at entry and `oco` for held positions remain designed-only. Until they exist, no stop is
-broker-enforced, and ADR-0016 §5's "the monitor narrows to a safety net **of broker-enforced
-stop/target**" describes an end state rather than the current system.
+> **Superseding update, 2026-08-05.** The paragraph below was accurate on 2026-07-24 and went
+> stale when S138 shipped. [DL-61](../design-log.md) worked out the design and said it "amends
+> ADR-0015 §3 (bracket/oco → stop-only) and will be recorded there under *what shipped*" — this is
+> that record, written late. The gap is why this ADR spent ten sprints telling readers that no stop
+> was broker-enforced while the fleet was in fact carrying resting stops.
+
+**Written:** new entry → `bracket` (entry + take-profit + stop-loss); held position → `oco`
+(a take-profit / stop-loss pair). **Both legs assume a `target`.**
+
+**Shipped (S138): the stop leg only, and deliberately so.** ADR-0017 §4 retired `target`/`time`
+as mechanics — "let winners run; exit on thesis" — so a fixed take-profit leg would have
+re-introduced exactly the mechanical profit-taking ADR-0017 had just deleted. `bracket` and `oco`
+were therefore **not** built; every un-breached held position gets a resting `gtc` **stop** and
+nothing else. Verified 2026-08-05: `agents/execution/broker_stops.py::place_broker_stops` and the
+execution-owned `BrokerStopOrder` fact exist, and `agents/execution/` contains **zero** references
+to `take_profit`, `bracket` or `oco`.
+
+**What this makes true elsewhere.** The resting broker stop is the floor that keeps working while
+everything else degrades, which is why it is exempt from ADR-0018's fill-it-or-drop-it rule and why
+S147 could choose fail-visible over fail-closed for a stale position book. ADR-0016 §5's
+"broker-enforced stop/target" is **half** live: the stop is real, the target is retired, not
+pending.
+
+**Still not covered by §3:** a position already *through* its stop never gets a resting order —
+`place_broker_stops` skips tickers being sold this run — so breached exits still leave by the daily
+rail. That split is [DL-62](../design-log.md)'s question and it remains open.
 
 ### The consequence nobody predicted
 

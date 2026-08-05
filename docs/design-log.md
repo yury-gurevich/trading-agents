@@ -4697,3 +4697,53 @@ guarantee); keeping the live tests behind a `RUN_LIVE_INTEGRATION=1` opt-in (rej
 would still point at the production namespace, so it moves the risk without removing it).
 
 ---
+
+## DL-91 · "No workflow runs appeared" had a mundane candidate cause all along · status: DECIDED (2026-08-05)
+
+Hardening row M recorded that on 2026-07-23 a pushed branch produced **no runs at all**
+(`total_count: 0`, confirmed twice a minute apart), that `workflow_dispatch` resolved it, and that
+the **cause was never established**. It was carried as an infrastructure miss that could silently
+defeat the branch-is-the-gate rule.
+
+**Measured 2026-08-05.** The GitHub API's `head_sha` filter matches only the full 40-character SHA.
+Handed an abbreviated one it returns zero — no error, no warning, no hint the query was malformed:
+
+```text
+head_sha=c145e5e79a3a3aa7435897d5ec80800167884892  ->  total_count: 2   (both green)
+head_sha=c145e5e                                   ->  total_count: 0
+```
+
+That reproduces row M's exact symptom on demand with no platform fault involved, and the row's own
+detail — *"confirmed twice a minute apart"* — fits a deterministic query bug better than a transient
+infrastructure miss, which would more likely have cleared on the second look.
+
+**Stated honestly: this is a strong candidate, not a finding.** Which SHA form the 2026-07-23 query
+used cannot be recovered, so the row is closed on its *fix trigger* being satisfied, not on the cause
+being proven. Row M's Done entry says so explicitly rather than quietly upgrading a hypothesis into
+a conclusion — the same discipline hardening row S needed when its stated diagnosis turned out to be
+wrong.
+
+**Decided:** the check becomes a command, not a glance. `make gate-ran`
+(`scripts/assert_gate_ran.py`) resolves the full SHA itself via `git rev-parse`, **refuses an
+abbreviated SHA outright** rather than querying with it, and fails unless both `CI` and
+`Security Findings` exist for the commit and both concluded `success`. `CLAUDE.md`'s merge sequence
+now names it as a required step.
+
+**The fix had to not inherit the bug it catches.** A wrapper that simply re-ran the same query would
+report "no run exists" with total confidence for a short SHA — converting a silent wrong answer into
+a loud wrong answer, which is worse. Refusing the abbreviated input is the whole point.
+
+**Proven able to fail (DL-70).** Two `gate_selftest` cases: `gate-ran-rejects-abbreviated-sha`
+(plants `--sha c145e5e`) and `gate-ran-rejects-zero-runs` (plants a `{"total_count": 0}` payload
+through the script's `--runs-json` seam, so the zero-runs branch is provable without network).
+Two invariants stop the procedure drifting back: `CLAUDE.md` must contain `make gate-ran`, and the
+`Makefile` must define it. Self-test 15/15 → **19/19**.
+
+**A wait window, because an assertion that cries wolf gets ignored.** Found while using the tool on its own push: a query issued immediately after `git push` returns zero, then `total_count: 2` by t+15s — GitHub creates runs a few seconds after the push, not synchronously with it. Without a wait the assertion would fail on every ordinary merge and be trained away within a week, which is the DL-52 failure mode in a new costume. It now polls for up to 120 s (`--wait-seconds`). **The wait is also what gives the assertion its meaning**: *never created* only becomes distinguishable from *not created yet* once you have waited, which is precisely the distinction row M could not make by eye.
+
+**Road not taken.** Asserting inside `make ci` (wrong lane — `make ci` runs before the push, when no
+run can exist yet); polling until runs appear (turns a missing run into a long wait rather than a
+failure); requiring a PR again to get the checks UI (DL-52's reversal stands — the gate runs on push
+to every branch, so pushing *is* the gate).
+
+---

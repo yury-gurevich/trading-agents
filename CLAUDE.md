@@ -103,15 +103,22 @@ Every sprint or chore on its own branch named `sprint-NN-<slug>` or `chore-<slug
 Merge to `main` is the deploy trigger. Never commit sprint work directly to `main`.
 
 **Work in a worktree; push the branch and wait for green before merging locally.**
-Sequence: worktree per sprint/chore → `make ci` locally → **push the branch** → confirm
-`quality` / `test` / `security` / `gate` all pass on that branch → then merge to `main`
-locally and push. **PRs are not required** — this repo has one developer, so a PR buys no
-review (DL-52 reversal, 2026-07-22).
+Sequence: worktree per sprint/chore → `make ci` locally → **push the branch** → **`make gate-ran`
+must exit 0** → then merge to `main` locally and push. **PRs are not required** — this repo has
+one developer, so a PR buys no review (DL-52 reversal, 2026-07-22).
 
 **Never merge a branch you have not seen go green on the remote.** The point was never the
 PR; it was that the security-findings `gate` used to be `pull_request`-triggered, so direct
 merges bypassed it — S131/S132/S134 each merged ungated that way. The gate now runs on push
 to every branch, so pushing *is* the gate. Skipping the wait is what reopens the hole.
+
+**`make gate-ran` replaces the eyeball check** (hardening row M). It resolves the full SHA
+itself, refuses an abbreviated one, and fails unless `CI` *and* `Security Findings` both exist
+for that commit and both concluded `success`. Reading a run list by eye cannot do this: the
+GitHub API's `head_sha` filter silently returns `total_count: 0` for a short SHA — measured,
+`c145e5e` → **0** while the full SHA → **2**, both green. So "no runs appeared" can mean the
+query was wrong, the push never landed, or the run was genuinely never created, and all three
+look identical at a glance. Do not hand-roll the query; run the target.
 
 ---
 

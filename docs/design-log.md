@@ -4598,3 +4598,41 @@ automatically the right one — a 🟩 is only true if a passing test cites the 
 bigger figure would repeat the exact over-claim this entry is about.
 
 ---
+
+## DL-89 · Pytest must never transact with production Service Bus · status: DECIDED (2026-08-05)
+
+**Question answered.** Hardening row T's open question resolved to the worse answer: the
+deliberator peer tests did not merely resolve a live endpoint, they published to the production
+Service Bus namespace. The operator-observed evidence was 40 dead-lettered messages on
+`deliberator-proponent.requests/agent`, all carrying the fixture `run_id` value `"turn-1"`, and the
+`S100ReceiverFailure` reason proves the live consumer received and retried them.
+
+**Decision.** Local pytest may not cross the Azure Service Bus send boundary. Tests that need the
+Service Bus-shaped peer client must inject offline settings
+`AzureServiceBusSettings(connection_string=None, connection_strings_json=None)`, and the root pytest
+configuration unconditionally patches `AzureServiceBusBus._azure_send` to raise if any test reaches
+that boundary. The guard sits at the send boundary because that is the last point where the defect
+is observable without relying on SDK internals or the presence of the Azure extra.
+
+**The `.env` trap.** Removing only the direct `env_file=".env"` declaration would not have been
+enough while `conftest.py` loads `.env` into `os.environ`; a no-argument settings object would still
+resolve the credential from process env. S159 therefore does both: the peer tests construct offline
+settings explicitly, and the send-boundary guard rejects the next accidental resolved credential.
+`AzureServiceBusSettings` also overrides inherited `.env` loading with `env_file=None` so ordinary
+env-clearing isolation works for this boundary. The base `AgentSettings` and dashboard settings
+still load `.env`; changing those was rejected as the broad test-harness refactor this sprint
+explicitly avoided.
+
+**Roads not taken.** Rejected: stopping root `conftest.py` from loading `.env` (too much blast
+radius for tests that legitimately read local config), adding the Azure extra to the default install
+(would make accidental production sends more reliable), guarding the vendor SDK import path (fails
+when the SDK is absent), or adding an opt-out marker for future live tests. Existing live Service
+Bus pytest entry points are skipped by default; live Service Bus proof belongs in explicit operator
+scripts, not in `make ci`.
+
+**Verification instrument.** The 40 messages were purged with operator approval before S159 so the
+dead-letter baseline could become zero. A final local gate in a tree with `.env` present must leave
+`deliberator-proponent.requests/agent` at dead: 0; that production-side count is stronger evidence
+than a unit assertion because it observes the namespace directly.
+
+---

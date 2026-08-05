@@ -30,8 +30,7 @@ class AzureServiceBusSettings(AgentSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
+        env_file=None,
         extra="ignore",
         frozen=True,
         env_prefix="AZURE_SERVICEBUS_",

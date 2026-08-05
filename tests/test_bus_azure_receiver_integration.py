@@ -89,6 +89,7 @@ def _delete_topic(admin: Any, topic: str) -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="S159: pytest must never transact with production Service Bus")
 @pytest.mark.skipif(
     not _CONNECTION,
     reason="AZURE_SERVICEBUS_CONNECTION_STRING/SERVICEBUS_CONNECTION_STRING is not set",

@@ -8,11 +8,18 @@ External I/O: none.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from kernel import AzureServiceBusSettings
 from kernel.bus_azure_config import BusConfigError
+
+
+def _require_dotenv_file() -> None:
+    if not Path(".env").is_file():
+        pytest.skip("Service Bus dotenv isolation proof requires local .env")
+    assert Path(".env").is_file()
 
 
 def test_settings_connection_string_read_from_env(monkeypatch) -> None:
@@ -24,12 +31,30 @@ def test_settings_connection_string_read_from_env(monkeypatch) -> None:
 
 
 def test_settings_accepts_servicebus_connection_string_alias(monkeypatch) -> None:
+    """A5 / DEP-CONFIG-01: os.environ-only Service Bus config still resolves."""
     monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
     monkeypatch.setenv("SERVICEBUS_CONNECTION_STRING", "Endpoint=sb://alias/")
 
     settings = AzureServiceBusSettings()
 
     assert settings.connection_string == "Endpoint=sb://alias/"
+
+
+def test_settings_do_not_read_dotenv_after_process_env_is_cleared(
+    monkeypatch,
+) -> None:
+    """DEP-CONFIG-02: AzureServiceBusSettings does not read .env directly."""
+    _require_dotenv_file()
+    monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRING", raising=False)
+    monkeypatch.delenv("SERVICEBUS_CONNECTION_STRING", raising=False)
+    monkeypatch.delenv("AZURE_SERVICEBUS_CONNECTION_STRINGS_JSON", raising=False)
+
+    settings = AzureServiceBusSettings()
+
+    assert settings.connection_string is None
+    assert (
+        settings.connection_string_for_topic("deliberator-proponent.requests") is None
+    )
 
 
 def test_settings_no_bundle_uses_primary_connection_string() -> None:

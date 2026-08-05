@@ -187,6 +187,11 @@ Defaults (`receive_timeout_seconds`, `reply_topic_suffix`, `subscription_name`) 
 If you find a cleaner construction that is equally explicit, take it and record why.
 
 **Result:**
+Implemented. The two `ServiceBusPeerClient` tests now construct
+`AzureServiceBusSettings(connection_string=None, connection_strings_json=None)` through a local
+helper, so `connection_string_for_topic()` returns `None` for the deliberator peer request topic
+even with `.env` present and a fake Service Bus env var planted. The original reply/error intents
+still pass on the in-memory path.
 
 ### 2 · A live send during a test is a loud failure, not a transaction
 
@@ -206,6 +211,12 @@ message that tells the author what to inject.
   defect is still observable and the first where it is unambiguous.
 
 **Result:**
+Implemented. Root `conftest.py` keeps `load_dotenv(override=False)` and adds an unconditional
+autouse fixture that patches `AzureServiceBusBus._azure_send` for every pytest test. The patch raises
+`PytestAzureServiceBusSendError`, naming the topic and telling the test author to inject
+`AzureServiceBusSettings(connection_string=None, connection_strings_json=None)` or use an in-process
+bus. Existing live Service Bus pytest entry points are skipped by default so `make ci` cannot create
+topics or publish messages when `.env` and the Azure extra are present.
 
 ### 3 · Prove the guard can fail (DL-70)
 
@@ -216,6 +227,9 @@ and publishes, and requires the guard's error. Never a real credential, never a 
 a string that resolves is enough to select the branch.
 
 **Result:**
+Implemented. `tests/test_pytest_servicebus_guard.py::test_pytest_guard_rejects_live_servicebus_send`
+plants a fake non-`None` connection string and publishes to `deliberator-proponent.requests`; the
+autouse guard raises `PytestAzureServiceBusSendError` before any Azure SDK import or network send.
 
 ### 4 · Answer the `env_file` question explicitly — do not leave it implicit
 
@@ -233,6 +247,13 @@ a string that resolves is enough to select the branch.
   must still resolve a connection string. If you keep it, say why in the return notes.
 
 **Result:**
+Implemented with the explicit override `env_file=None` on `AzureServiceBusSettings`; simply deleting
+the subclass line would risk inheriting `AgentSettings`' `.env` behaviour. The direct search found
+two other `.env` declarations: base `kernel.config.AgentSettings` and
+`surfaces.dashboard.settings.DashboardSettings`. They are named here and intentionally not widened
+into this sprint. `test_settings_accepts_servicebus_connection_string_alias` proves process-env
+production resolution still works; `test_settings_do_not_read_dotenv_after_process_env_is_cleared`
+proves this settings object no longer reads `.env` directly after process env is cleared.
 
 ### 5 · A clean checkout must be able to pass the gate
 
@@ -244,6 +265,10 @@ If something *other* than these two tests still needs `azure` at import time, th
 name it, and either fix it here if it is one line, or record it rather than widening the sprint.
 
 **Result:**
+Proven. A throwaway venv outside the repo was created with a bare `uv sync`
+(`UV_PROJECT_ENVIRONMENT=C:\Users\yury_\AppData\Local\Temp\ta-s159-clean-3f9ee220bcde49e18ed46925d8c0308b`).
+`azure_servicebus_importable=False`, and `uv run pytest --no-cov` passed with `2100 passed,
+6 skipped` while this checkout's `.env` was present.
 
 ### 6 · Record the finding (LAW-06) and close the row
 
@@ -256,6 +281,10 @@ name it, and either fix it here if it is one line, or record it rather than wide
   **DRIFT-032** row. Do not edit any `laws.md`.
 
 **Result:**
+Implemented. Added [DL-89](../design-log.md), moved hardening row T to Done with the worse-answer
+evidence, and added `DRIFT-032` to [docs/laws/drift-register.md](../laws/drift-register.md) for the
+missing law declaration that pytest must never transact with production Service Bus. No `laws.md`
+file was edited.
 
 ---
 
@@ -391,15 +420,23 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `agents/deliberator/peer_client.py` + tests | | | |
-| `kernel/bus_azure_config.py` / `bus_azure.py` | | | |
-| `conftest.py` (root) | | | |
+| `agents/deliberator/peer_client.py` + tests | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md`; context also read: `docs/sprints/sprint-133-servicebus-sas.md`, `docs/sprints/sprint-158-fail-open-must-be-loud.md` | `DLIB-SEC-01`, `DLIB-SEC-03`, `DLIB-DEP-02`, `DLIB-DEP-04`, `DLIB-NEV-06`, plus `DEP-BUS-04` | yes - the peer client should stay production-capable, and tests must inject offline settings rather than weakening the manager/peer behaviour |
+| `kernel/bus_azure_config.py` / `bus_azure.py` | `docs/laws/dependencies.md`; `docs/laws/conventions.md`; context also read: `docs/sprints/sprint-133-servicebus-sas.md`, `docs/sprints/sprint-158-fail-open-must-be-loud.md` | `DEP-BUS-01`, `DEP-BUS-03`, `DEP-BUS-04`, `DEP-CONFIG-01`, `DEP-CONFIG-02`; conventions section 3 | yes - the guard belongs at the send boundary so a resolved test credential becomes a loud proof failure, while production env-var resolution remains intact |
+| `conftest.py` (root) | `docs/laws/conventions.md`; `docs/laws/dependencies.md`; `docs/laws/drift-register.md` | conventions section 3; `DEP-CONFIG-02`; `DEP-BUS-04` | yes - keep `load_dotenv(override=False)` intact and add an unconditional pytest guard instead of making `.env` presence itself a test failure |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+None found.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+The laws declare production bus scoping and secret non-disclosure, but no agent or umbrella law explicitly declares the test-harness invariant that local pytest must never transact with production Service Bus. Record as `DRIFT-032`.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+None. This sprint's tests cite the governing clauses as partial boundary evidence, but no gray
+deliberator clause was flipped green because the tests do not prove an entire deliberator law clause
+without narrowing it.
 
 ---
 
@@ -407,13 +444,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
+| A1 | `test_servicebus_peer_tests_inject_offline_settings` | `tests/test_deliberator_servicebus_peer.py` | passed locally with `.env` present; skips rather than passes when `.env` is absent | `DEP-BUS-04` |
+| A2 | `test_servicebus_peer_client_reads_claim_checked_reply`; `test_servicebus_peer_client_raises_on_error_reply` | `tests/test_deliberator_servicebus_peer.py` | passed | `DLIB-DEP-02`, `DLIB-NEV-06` |
+| A3 | `test_pytest_guard_rejects_live_servicebus_send` | `tests/test_pytest_servicebus_guard.py` | passed | `DEP-BUS-04` |
+| A4 | `test_pytest_guard_is_autouse_for_servicebus_sends` | `tests/test_pytest_servicebus_guard.py` | passed | `DEP-BUS-04` |
+| A5 | `test_settings_accepts_servicebus_connection_string_alias` | `tests/test_bus_azure_config.py` | passed | `DEP-CONFIG-01` |
 
 **Tests added beyond the plan:**
+
+- `test_settings_do_not_read_dotenv_after_process_env_is_cleared` proves the Service Bus settings
+  class does not directly reread `.env` after process env is cleared; it is the regression for the
+  inherited/base-settings trap.
 
 ---
 
@@ -421,12 +462,144 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Tree the proofs ran in (and `.env` present?):**
 
+Main working tree, not a sibling worktree:
+
+```text
+C:\Users\yury_\Downloads\project\trading-agents
+branch: sprint-159-tests-never-transact
+env_present=yes
+```
+
+Baseline before the first proof run, after reading the amended spec and before any closeout purge:
+
+```text
+deliberator-proponent.requests/agent: active 0 / dead 0 / transferDead 0
+deliberator-opponent.requests/agent: active 0 / dead 0 / transferDead 0
+```
+
 **Files changed:**
+
+- `conftest.py`
+- `kernel/bus_azure_config.py`
+- `tests/test_deliberator_servicebus_peer.py`
+- `tests/test_pytest_servicebus_guard.py`
+- `tests/test_bus_azure_config.py`
+- `tests/test_bus_azure_receiver_integration.py`
+- `pyproject.toml`
+- `uv.lock`
+- `docs/design-log.md`
+- `docs/hardening-backlog.md`
+- `docs/laws/drift-register.md`
+- `docs/sprints/sprint-159-tests-never-transact.md`
 
 **Proven (LAW-02):**
 
+Focused S159 proof, with the repo `.env` present:
+
+```text
+uv run pytest tests\test_deliberator_servicebus_peer.py tests\test_pytest_servicebus_guard.py tests\test_bus_azure_config.py tests\test_bus_azure.py tests\test_bus_azure_receiver_integration.py --no-cov
+23 passed, 2 skipped in 1.09s
+```
+
+Post-focused-run production-side count:
+
+```text
+deliberator-proponent.requests/agent: active 0 / dead 0 / transferDead 0
+deliberator-opponent.requests/agent: active 0 / dead 0 / transferDead 0
+```
+
+Clean-checkout dependency proof, with a throwaway venv outside the repo and the repo `.env`
+present:
+
+```text
+UV_PROJECT_ENVIRONMENT=C:\Users\yury_\AppData\Local\Temp\ta-s159-clean-3f9ee220bcde49e18ed46925d8c0308b
+uv sync
+azure_servicebus_importable=False
+uv run pytest --no-cov
+2100 passed, 6 skipped in 71.56s
+```
+
+Closeout pre-purge count:
+
+```text
+deliberator-proponent.requests/agent: active 0 / dead 0 / transferDead 0
+deliberator-opponent.requests/agent: active 0 / dead 0 / transferDead 0
+```
+
+Operator-approved closeout purge:
+
+```text
+deliberator-proponent.requests: purged_dead=0
+deliberator-opponent.requests: purged_dead=0
+```
+
+Full local gate, measured by redirecting `make ci` to a file and preserving the command exit code:
+
+```text
+CI_OUTPUT_FILE=C:\Users\yury_\AppData\Local\Temp\s159-make-ci-dd42abc8ba3d479293ca71fd2f812d39.txt
+MAKE_CI_EXIT_CODE=0
+```
+
+Key pasted output from that file:
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+912 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 752 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+uv run pytest
+TOTAL                                                13787      0   2908      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2100 passed, 6 skipped in 159.22s (0:02:39) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 1 new file(s)
+```
+
+Post-`make ci` production-side count:
+
+```text
+deliberator-proponent.requests/agent: active 0 / dead 0 / transferDead 0
+deliberator-opponent.requests/agent: active 0 / dead 0 / transferDead 0
+```
+
 **Not met / verified failing:**
+
+No sprint success factor is left not done.
+
+Incidental command failures encountered and recovered:
+
+- verified failing: the first purge helper failed before any Azure connection because
+  `python-dotenv` could not auto-detect `.env` when the script was run from stdin; rerun with an
+  explicit `.env` path succeeded and purged `0`.
+- verified failing: the first `make ci` wrapper was rejected before execution because it tried to
+  delete a temporary log file; rerun without that delete succeeded with `MAKE_CI_EXIT_CODE=0`.
 
 ---
 
 ## Return notes
+
+- No fleet retag is required. This sprint changes only pytest/test-harness behavior and
+  `AzureServiceBusSettings` local-file resolution, not production agent behavior.
+- `AzureServiceBusSettings` uses `env_file=None` explicitly because the base `AgentSettings`
+  declares `.env`; deleting the subclass setting alone would risk inheriting the same direct file
+  read.
+- The direct `.env` search found `kernel.config.AgentSettings` and
+  `surfaces.dashboard.settings.DashboardSettings` as other `.env` declarations. They were named and
+  intentionally not widened into this sprint.
+- `DRIFT-032` remains OPEN: the system needs an explicit law/test-plan home for "pytest never
+  transacts with production Service Bus."
+- The A1 `.env`-presence regression skips in `.env`-less CI rather than passing vacuously; it passed
+  in this local main working tree with `.env` present.
+- No functionality-check row is owed because there is no production behavior change.

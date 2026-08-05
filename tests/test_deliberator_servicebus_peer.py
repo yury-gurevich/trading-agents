@@ -8,6 +8,7 @@ External I/O: none.
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 import pytest
 
@@ -19,6 +20,20 @@ from contracts.deliberator import (
     DebateTurnRequest,
 )
 from kernel import AgentMessage, AzureServiceBusSettings, InMemoryGraphStore
+from kernel.serve_transport import request_topic
+
+
+def _offline_servicebus_settings() -> AzureServiceBusSettings:
+    return AzureServiceBusSettings(
+        connection_string=None,
+        connection_strings_json=None,
+    )
+
+
+def _require_dotenv_file() -> None:
+    if not Path(".env").is_file():
+        pytest.skip("A1 proof requires .env present; CI has no local secrets file")
+    assert Path(".env").is_file()
 
 
 def _turn_request(role: str = "defender") -> DebateTurnRequest:
@@ -30,12 +45,29 @@ def _turn_request(role: str = "defender") -> DebateTurnRequest:
     )
 
 
+def test_servicebus_peer_tests_inject_offline_settings(monkeypatch) -> None:
+    """A1 / DEP-BUS-04: offline settings override loaded Service Bus env."""
+    _require_dotenv_file()
+    monkeypatch.setenv(
+        "SERVICEBUS_CONNECTION_STRING",
+        "Endpoint=sb://example/;SharedAccessKeyName=fake;SharedAccessKey=fake",
+    )
+
+    settings = _offline_servicebus_settings()
+
+    assert (
+        settings.connection_string_for_topic(request_topic("deliberator-proponent"))
+        is None
+    )
+
+
 def test_servicebus_peer_client_reads_claim_checked_reply(monkeypatch) -> None:
+    """A2 / DLIB-DEP-02: offline settings keep peer requests in-process."""
     graph = InMemoryGraphStore()
     client = ServiceBusPeerClient(
         graph,
         sender="deliberator-manager",
-        settings=AzureServiceBusSettings(),
+        settings=_offline_servicebus_settings(),
     )
     reply = AgentMessage(
         sender="deliberator-proponent",
@@ -61,11 +93,12 @@ def test_servicebus_peer_client_reads_claim_checked_reply(monkeypatch) -> None:
 
 
 def test_servicebus_peer_client_raises_on_error_reply(monkeypatch) -> None:
+    """A2 / DLIB-NEV-06: an error reply stays loud on the offline path."""
     graph = InMemoryGraphStore()
     client = ServiceBusPeerClient(
         graph,
         sender="deliberator-manager",
-        settings=AzureServiceBusSettings(),
+        settings=_offline_servicebus_settings(),
     )
     reply = AgentMessage(
         sender="deliberator-proponent",

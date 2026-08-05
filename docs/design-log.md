@@ -4747,3 +4747,64 @@ failure); requiring a PR again to get the checks UI (DL-52's reversal stands —
 to every branch, so pushing *is* the gate).
 
 ---
+
+## DL-92 · The deploy report was wrong about ordering, not about content · status: DECIDED (2026-08-05)
+
+Hardening row Q: after DL-88 stopped the deploy script *over*-reporting, it began **under**-reporting
+— the `:s155` run printed `[XX]` for all 15 agents and the job while every target had actually
+deployed, and it happened again 2026-08-05 with *"Deploy FAILED for 17 target(s)"*, exit 1, entirely
+wrong. The row recorded the symptom precisely and guessed at the cause: *"the value parsed from
+`--query properties.provisioningState` out of a merged stdout/stderr stream simply is not the string
+`Succeeded`."*
+
+**The guess was right about where and wrong about why.** `Invoke-Az` merged the streams with `2>&1`
+and returned *"the last non-empty line that does not start with `WARNING:`"*. My first hypothesis was
+that the extension emits a **non-WARNING** stderr line the filter misses — measured, and that alone
+is harmless: with the notice emitted *before* the value, the heuristic still returns `Succeeded`.
+The defect is **ordering**. Any stderr line arriving **after** the tsv value becomes the answer,
+whatever it says. The old code's own comment admitted the weakness — *"pick the last non-empty line
+rather than trusting order"* — and taking the last line is precisely what makes trailing stderr
+fatal. All four `Invoke-Az` call sites parse `provisioningState` (master, each agent,
+`Set-AppVocabulary`, `Set-JobVocabulary`), which is why *every* target flipped to `[XX]` at once
+rather than a random few.
+
+**Measured 2026-08-05** against a stub `az.cmd` — a real external process, because a PowerShell
+function writing through `[Console]::Error` bypasses stream redirection and silently invalidates the
+test (that mistake was made first and caught):
+
+```text
+stub emits: WARNING banner (stderr) -> "Succeeded" (stdout) -> deprecation notice (stderr)
+  old heuristic -> 'Deprecation: containerapp update will change default behavior...'  Succeeded? False
+  new Invoke-Az -> 'Succeeded'                                                          Succeeded? True
+stub exits 1 with "ERROR: The command line is too long." on stderr
+  new Invoke-Az -> $null, stderr printed   (DL-85 stays fixed)
+```
+
+**Decided.** (1) `Invoke-Az` sends stderr to a temp file instead of merging, so the returned value is
+stdout and needs no filtering heuristic at all; stderr is still printed on non-zero exit, because the
+old `2>$null` hid *"The command line is too long."* fifteen times over (DL-85) and that must not come
+back. (2) Success detection reads `properties.provisioningState` from a **separate
+`az containerapp show`** (`Get-AppState` / `Get-JobState`) rather than from the output of the call
+that changed the resource — row Q's own recommendation. A deploy is the one operation with no cheap
+undo, so its report is worth a second round trip.
+
+**Stated boundary, not discovered residue.** The remaining raw `az ... 2>$null` call sites
+(`Deploy-DispatcherJob`, the secret-set helpers) discard stderr and do not check `$LASTEXITCODE`. They
+were deliberately left alone: a failed call there yields an empty `$state`, so the comparison is false
+and the target reports `[XX]`. They **fail closed** and cannot produce a false green, which is a
+different and much lower severity than what this entry fixes.
+
+**Not proven, and it should not be claimed.** The exact stderr line the containerapp extension emits
+*after* the value in production was **not** captured — doing so requires a real deploy, which is
+operator-gated. The trailing notice above is synthesised to reproduce the *class*. What is proven is
+the mechanism: trailing stderr defeats the old parser, and the new one is immune to it regardless of
+what the line says. **The end-to-end confirmation is owed at the next deploy** — expect `[OK]` for
+all 17 targets, and if any `[XX]` appears it should now be a real failure with its stderr printed
+above it.
+
+**Road not taken.** Filtering more stderr patterns (an arms race against a vendor's output);
+`--output json` and parsing (same stream problem, more parsing); checking only `$LASTEXITCODE` and
+dropping the state read (loses the DL-85 lesson that exit codes alone were what made a broken deploy
+look done).
+
+---

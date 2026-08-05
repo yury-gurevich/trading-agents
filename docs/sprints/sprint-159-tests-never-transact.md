@@ -284,8 +284,11 @@ that tests do not do that.
   do; the defect is that a test invoked it with production credentials.
 - **No change to the S133 entity-level SAS design** or to S158's bundle-miss fix. Read them; do not
   revise them.
-- **No purge of the 40 dead-lettered messages.** That is production state and it needs operator
-  approval — see Sequencing. Leave them; they are also the evidence.
+- **No purge of the dead-letter queue — it is already at zero, and that zero is your instrument.**
+  The 40 messages were purged 2026-08-05 with operator approval (see Sequencing 3). All 40 carried
+  `run_id: "turn-1"`, so nothing real was discarded, and `az` independently confirms
+  `active 0 / dead 0 / transferDead 0`. **Do not purge again during implementation** — if the count
+  is non-zero when you check it, that is a finding to report, not a queue to tidy.
 - **No credential rotation.** Nothing was leaked; the credential was used by the machine that owns
   it. If you disagree, say so rather than acting.
 - **No widening into other settings classes** unless item 4 finds one with the same `env_file`
@@ -321,9 +324,27 @@ Options weighed and **ruled out** — add any you rule out during implementation
    green **before** merging locally (DL-56 — pushing is the gate; no PR required).
 2. **No fleet retag is required.** This sprint changes test-harness behaviour, not agent behaviour.
    Say so explicitly rather than leaving the fleet question open.
-3. **Operator decision, not the coding agent's:** purge the 40 dead-lettered messages from
-   `deliberator-proponent.requests/agent`. They are inert (dead-lettered, not deliverable) and they
-   are the evidence for DL-89, so the default is to leave them until the operator says otherwise.
+3. **The dead-letter queue is the closeout's verification instrument.** The 40 messages were purged
+   **2026-08-05 with operator approval**, after confirming all 40 carried `run_id: "turn-1"` (a
+   `run_id` histogram of `{'turn-1': 40}` — no real production message was discarded). Verified
+   independently afterwards: `active 0 / dead 0 / transferDead 0`, and the sibling
+   `deliberator-opponent.requests` also 0/0. **Purging destroyed no evidence** — the record is this
+   document plus DL-89, not the messages.
+
+   The baseline of **zero** is what makes the closeout provable, and it is why the purge happened
+   before the fix rather than after: at zero, *any* message appearing after a `pytest` run is
+   unambiguous proof the fix failed. At 40 you would be comparing 40 against 42 and trusting your
+   own earlier reading.
+
+   ⚠️ **The baseline decays.** Every `pytest` run against an unfixed tree with `.env` present adds
+   two more — including your own runs while implementing. So:
+
+   - **Before** your first proof run, re-check the count and **state it in the closeout**. Non-zero
+     is expected if you have already run the suite; report the number, do not purge it.
+   - **At closeout**, purge once more (operator-approved for this sprint), then run the full suite
+     one final time in a tree **with `.env` present**, and paste the post-run count. **`dead: 0`
+     after a full suite run is the single strongest piece of evidence this sprint can produce** —
+     stronger than any unit test, because it observes the production side directly.
 4. No functionality-check row is owed — there is no production behaviour change to check. If you
    believe one is owed, say why.
 

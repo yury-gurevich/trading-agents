@@ -14,8 +14,18 @@ from dotenv import load_dotenv
 load_dotenv(override=False)
 
 
-class PytestAzureServiceBusSendError(RuntimeError):
-    """Raised when pytest reaches a live Azure Service Bus send boundary."""
+class PytestAzureServiceBusSendError(BaseException):
+    """Raised when pytest reaches a live Azure Service Bus send boundary.
+
+    Derives from ``BaseException``, not ``Exception``, for the same reason
+    ``KeyboardInterrupt`` does: ``kernel.errors.fault_boundary`` catches bare
+    ``Exception`` and, with ``reraise=False``, converts it into a ``Fault`` and
+    continues. A guard that can be swallowed still blocks the send, but the test
+    passes green and the author never learns the test tried to transact — and the
+    code under test silently takes a degraded path it would never take in
+    production. Measured before this change: the error became a ``Fault`` of type
+    ``PytestAzureServiceBusSendError`` and the probe test reported ``1 passed``.
+    """
 
     def __init__(self, topic: str) -> None:
         """Name the blocked topic and the local-test remedy."""

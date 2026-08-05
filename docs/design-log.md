@@ -4636,3 +4636,64 @@ dead-letter baseline could become zero. A final local gate in a tree with `.env`
 than a unit assertion because it observes the namespace directly.
 
 ---
+
+## DL-90 · S159's residue: a swallowable guard, and a suite doing DDL on production · status: DECIDED (2026-08-05)
+
+Three items surfaced at S159's handback rather than in its spec. [[DL-89]] stands; this entry
+corrects its blast-radius statement and closes the residue in one chore instead of three backlog
+rows.
+
+**1. The guard could be swallowed.** `PytestAzureServiceBusSendError` derived from `RuntimeError`,
+and `kernel.errors.fault_boundary` catches bare `Exception`; with `reraise=False` it converts the
+error into a `Fault` and continues. Measured with a throwaway probe: the guard error became a
+`Fault` of type `PytestAzureServiceBusSendError` and the probe reported `1 passed`. The *protection*
+held either way — the raise happens before any Azure I/O — but the *loudness* did not: a test
+exercising an agent path that publishes inside a degraded-but-continue boundary passes green, the
+author never learns the test tried to transact, and the code under test silently takes a fault path
+it would never take in production, so the assertions may be measuring the wrong thing. This is
+S158's own lesson (*fail-open must be loud*) recurring inside the fix for a different problem.
+**Decided:** the guard derives from `BaseException`, for the same reason `KeyboardInterrupt` does.
+Pinned by `test_pytest_guard_is_not_swallowed_by_a_fault_boundary`, which was watched failing on the
+planted `RuntimeError` (`DID NOT RAISE`) before being trusted.
+
+**2. The blast radius included topic DDL, not only published messages.** DL-89 and hardening row T
+both describe messages reaching the namespace. Measured 2026-08-05:
+`tests/test_bus_azure_receiver_integration.py` gated on `_CONNECTION`, which reads **both**
+`AZURE_SERVICEBUS_CONNECTION_STRING` **and** `SERVICEBUS_CONNECTION_STRING`; `.env` supplies the
+second name, so its `skipif` never fired, `integration` is not deselected (`addopts` carries no
+`-m "not integration"`), and the credential has Manage rights (`list_topics` returned 22 topics).
+That test creates two topics and two subscriptions per run via `ServiceBusAdministrationClient`,
+sends, receives, and deletes them. A green `make ci` therefore implies it ran to completion — the
+suite was performing create/delete DDL against the production namespace on every local gate, not
+merely publishing. No leftovers exist (`s100-*` topics: none), so its cleanup worked.
+**Correction to DL-89:** its sentence *"existing live Service Bus pytest entry points are skipped by
+default"* became true only when S159 added an unconditional `@pytest.mark.skip`; it was not true
+before.
+
+**3. Two live entry points deleted rather than left skipped.** `test_bus_azure.py`'s parity test was
+skipping **by accident**: its `skipif` checks only the `AZURE_`-prefixed name while `.env` supplies
+the un-prefixed alias, so a single env-var rename would have started it publishing to a
+`parity.topic` that does not exist in the namespace. **Decided:** delete both it and the live
+receiver test. A permanently-skipped test is worse than no test — it reads as coverage while proving
+nothing, which is the DL-57/DL-59 shape at test level. **To restore either one, the precondition is
+a dedicated non-production Service Bus namespace**; until that exists, live-bus proof belongs in an
+explicit operator script, never in `make ci`. The provider integration tests
+(`test_sources.py`, `test_stooq.py`) are deliberately **kept**: they gate on purpose-named opt-in
+variables (`FINNHUB_TEST_NETWORK=1`, `STOOQ_TEST_NETWORK=1`) that nothing sets by accident, and they
+read public data rather than touching owned infrastructure. That difference is the rule — an opt-in
+named for its own purpose is safe; a gate that keys off *the production credential being present* is
+not, because the credential is always present.
+
+**Stated boundary, not a new open row.** `kernel/config.py`'s `AgentSettings` base declares
+`env_file=".env"`, so every settings class in the repo still reads the file directly;
+`surfaces/dashboard/settings.py` declares it too. S159 overrode only `AzureServiceBusSettings`.
+Changing the base changes local config resolution for every agent and deserves its own decision, so
+it is **deliberately out of scope and recorded here as a known boundary** rather than filed as debt.
+The send-boundary guard, not the settings change, is what makes the dangerous half safe.
+
+**Road not taken.** Making `fault_boundary` refuse to catch the guard type (couples kernel error
+handling to a test fixture); a pytest plugin instead of a conftest fixture (more machinery, same
+guarantee); keeping the live tests behind a `RUN_LIVE_INTEGRATION=1` opt-in (rejected — the opt-in
+would still point at the production namespace, so it moves the risk without removing it).
+
+---

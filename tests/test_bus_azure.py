@@ -2,15 +2,12 @@
 
 Agent: kernel
 Role: verify AzureServiceBusBus subscribe/publish/request/register work in dev mode
-      (no Azure creds); integration tests skip if creds are absent.
-External I/O: azure.servicebus SDK (integration path only, skipped without creds).
+      (no Azure creds). The live-namespace parity test was deleted in
+      chore-s159-residue; see DL-90 for the restoration precondition.
+External I/O: none - the pytest send-boundary guard blocks live Service Bus sends.
 """
 
 from __future__ import annotations
-
-import os
-
-import pytest
 
 from kernel import (
     AgentMessage,
@@ -125,25 +122,3 @@ def test_request_handler_fault_returns_error_and_records_to_sink() -> None:
 
     assert response.message_type == "error"
     assert sink.faults
-
-
-# ── Integration tests (skipped without Azure creds) ────────────────────────
-
-
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not os.getenv("AZURE_SERVICEBUS_CONNECTION_STRING"),
-    reason="AZURE_SERVICEBUS_CONNECTION_STRING is not set",
-)
-def test_azure_and_in_process_produce_same_pub_sub_outcome() -> None:
-    """Parity test: same chain on both backends produces the same outcome."""
-    from kernel import InProcessBus
-
-    settings = AzureServiceBusSettings()
-
-    for bus in (InProcessBus(), AzureServiceBusBus(settings=settings)):
-        received: list[dict[str, object]] = []
-        bus.subscribe("parity.topic", received.append)
-        bus.publish("parity.topic", {"ping": True})
-        assert len(received) == 1
-        assert received[0]["ping"] is True

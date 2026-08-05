@@ -29,11 +29,15 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # The workflows whose absence means the commit was never really gated. `gate`
 # lives in Security Findings; `quality`/`test`/`security` live in CI.
 REQUIRED_WORKFLOWS = ("CI", "Security Findings")
+# GitHub creates runs a few seconds after the push, not synchronously with it.
+WAIT_SECONDS = 120
+POLL_SECONDS = 10
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 TERMINAL_SUCCESS = "success"
 
@@ -67,10 +71,8 @@ def resolve_sha(explicit: str | None) -> str:
     return sha
 
 
-def fetch_runs(sha: str, runs_json: Path | None) -> dict[str, object]:
-    """Return the runs payload for one SHA, from `gh` or a planted file."""
-    if runs_json is not None:
-        return json.loads(runs_json.read_text(encoding="utf-8"))
+def _query_once(sha: str) -> dict[str, object]:
+    """Ask GitHub for the runs attached to one full SHA."""
     endpoint = f"repos/:owner/:repo/actions/runs?head_sha={sha}"
     result = subprocess.run(  # noqa: S603 - fixed gh executable, no shell.
         ["gh", "api", endpoint],  # noqa: S607 - gh resolved from PATH by design.
@@ -83,6 +85,28 @@ def fetch_runs(sha: str, runs_json: Path | None) -> dict[str, object]:
             f"`gh api` failed for {sha}: {result.stderr.strip() or 'no stderr'}"
         )
     return json.loads(result.stdout)
+
+
+def fetch_runs(
+    sha: str, runs_json: Path | None, wait_seconds: int = WAIT_SECONDS
+) -> dict[str, object]:
+    """Return the runs payload for one SHA, waiting for GitHub to create them.
+
+    A query issued immediately after `git push` returns zero — measured
+    2026-08-05: zero at t+0, then `total_count: 2` by t+15s. Without this wait the
+    assertion would fail on every ordinary push, and an assertion that cries wolf
+    is one people learn to ignore, which is worse than not having it. The wait is
+    also what makes *never created* distinguishable from *not created yet* — the
+    distinction row M could not make by eye.
+    """
+    if runs_json is not None:
+        return json.loads(runs_json.read_text(encoding="utf-8"))
+    deadline = time.monotonic() + wait_seconds
+    payload = _query_once(sha)
+    while not payload.get("workflow_runs") and time.monotonic() < deadline:
+        time.sleep(POLL_SECONDS)
+        payload = _query_once(sha)
+    return payload
 
 
 def check(sha: str, payload: dict[str, object]) -> list[str]:
@@ -122,10 +146,16 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="read the runs payload from a file instead of calling gh (self-test)",
     )
+    parser.add_argument(
+        "--wait-seconds",
+        type=int,
+        default=WAIT_SECONDS,
+        help=f"how long to wait for GitHub to create the runs (default {WAIT_SECONDS})",
+    )
     args = parser.parse_args(argv)
 
     sha = resolve_sha(args.sha)
-    payload = fetch_runs(sha, args.runs_json)
+    payload = fetch_runs(sha, args.runs_json, args.wait_seconds)
     reasons = check(sha, payload)
     if reasons:
         raise GateNotProven("; ".join(reasons))

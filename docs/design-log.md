@@ -4739,6 +4739,8 @@ through the script's `--runs-json` seam, so the zero-runs branch is provable wit
 Two invariants stop the procedure drifting back: `CLAUDE.md` must contain `make gate-ran`, and the
 `Makefile` must define it. Self-test 15/15 → **19/19**.
 
+**A wait window, because an assertion that cries wolf gets ignored.** Found while using the tool on its own push: a query issued immediately after `git push` returns zero, then `total_count: 2` by t+15s — GitHub creates runs a few seconds after the push, not synchronously with it. Without a wait the assertion would fail on every ordinary merge and be trained away within a week, which is the DL-52 failure mode in a new costume. It now polls for up to 120 s (`--wait-seconds`). **The wait is also what gives the assertion its meaning**: *never created* only becomes distinguishable from *not created yet* once you have waited, which is precisely the distinction row M could not make by eye.
+
 **Road not taken.** Asserting inside `make ci` (wrong lane — `make ci` runs before the push, when no
 run can exist yet); polling until runs appear (turns a missing run into a long wait rather than a
 failure); requiring a PR again to get the checks UI (DL-52's reversal stands — the gate runs on push

@@ -66,12 +66,17 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | [sprint-158](sprint-158-fail-open-must-be-loud.md) | Make the deliberator's fail-open loud: a missing SAS-bundle topic raises instead of falling back, the manager preflights its peers before consuming work, fail-open becomes a queryable fact, and acceptance stops passing an inert veto | **SHIPPED** `8be1570` / `v0.86.01` — **not deployed** (fleet `:s155`). No Key Vault repair is owed: the bundle carries all three topics and the transport was verified live (the 08-02 trigger was the half-failed deploy). Retag packaged as [chore-deploy-s158](chore-deploy-s158.md) |
 | [chore-deploy-s158](chore-deploy-s158.md) | Retag the fleet `:s155` → `:s158` so the deliberation acceptance checks can see their own facts — **`up`, not an image-only retag**: S158 added three properties to a property-enforced label, so image and vocabulary pack must move together | **SPEC** — packaged 2026-08-04, awaiting operator approval; images green on `8be1570`. Does not close DL-80 |
 | [chore-wsl2-dev-env](chore-wsl2-dev-env.md) | Move the dev loop to WSL2 (native-ext4 `mutmut`/`pytest`, CI/prod parity); keep `.ps1` under `pwsh`, no rewrite; `.gitattributes` LF normalisation | Sprint queue empty (after S134 0.71.06 + S133 0.71.07) — renormalisation must not overlap an in-flight branch |
+| [sprint-159](sprint-159-tests-never-transact.md) | Stop the unit suite transacting with production Service Bus: offline settings by construction, an autouse send-boundary guard proven able to reject, and the clean-checkout half of row T (`uv sync` omits the `azure` extra) | **SPEC** — packaged 2026-08-05. Answers row T's open question: **40 dead-lettered test messages** on `deliberator-proponent.requests`, `run_id: "turn-1"`, received and retried by the live consumer |
 
 ---
 
 ## Adding a sprint
 
-1. Next number: **S152** (S143 SHIPPED `798bfd4`/0.79.00 — graph vocabulary guard, DL-66;
+1. Next number: **S160**. **S157 is reserved** for the law-clause row backfill (the 101 clauses with
+   no test-plan row, hardening row O) and is not yet written; S158 SHIPPED and S159 is packaged.
+   The rest of this item is a **history note frozen at 2026-07-29** — read it for what shipped, not
+   for what is next; live direction is [../STATE.md](../STATE.md).
+   (S143 SHIPPED `798bfd4`/0.79.00 — graph vocabulary guard, DL-66;
    S144 / 0.80.00 — the guard made deployable and its pack proven complete, DL-68; S145 SHIPPED
    `2c49f88`/0.80.02 — exit replay append-safe, DL-71; **S146 SHIPPED** `7b06662`/0.80.03 — the
    unprotected ABT position and the DL-73 retraction; **S147 SHIPPED** `2989acb`/0.81.00 —

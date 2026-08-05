@@ -155,9 +155,66 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         ],
         must_output=("urllib3",),
     ),
+    FailureCase(
+        name="gate-ran-rejects-abbreviated-sha",
+        why=(
+            "row M: the GitHub API's head_sha filter returns total_count: 0 for an "
+            "abbreviated SHA with no error, so an abbreviated query cannot tell "
+            "'no runs' from 'wrong question' (measured: c145e5e -> 0, full -> 2)"
+        ),
+        files={},
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/assert_gate_ran.py",
+            "--sha",
+            "c145e5e",
+        ],
+        must_output=("not a full 40-character SHA",),
+    ),
+    FailureCase(
+        name="gate-ran-rejects-zero-runs",
+        why=(
+            "row M: a pushed branch produced no runs at all on 2026-07-23 and the "
+            "merge procedure could not tell that from 'not pushed yet'"
+        ),
+        files={
+            f"scripts/{PROBE_PREFIX}_no_runs.json": (
+                '{"total_count": 0, "workflow_runs": []}\n'
+            )
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/assert_gate_ran.py",
+            "--sha",
+            "0000000000000000000000000000000000000000",
+            "--runs-json",
+            f"scripts/{PROBE_PREFIX}_no_runs.json",
+        ],
+        must_output=("no workflow run exists",),
+    ),
 )
 
 INVARIANTS: tuple[Invariant, ...] = (
+    Invariant(
+        name="merge-procedure-asserts-a-run-exists",
+        why=(
+            "row M: the assertion is only real while the merge procedure calls "
+            "it; a procedure that drifts back to eyeballing `gh run list` "
+            "restores the defect without changing a line of code"
+        ),
+        path="CLAUDE.md",
+        must_contain=("make gate-ran",),
+    ),
+    Invariant(
+        name="gate-ran-target-exists",
+        why="the procedure names a target that must actually be defined",
+        path="Makefile",
+        must_contain=("gate-ran:", "scripts/assert_gate_ran.py"),
+    ),
     Invariant(
         name="security-gate-runs-on-push",
         why=(

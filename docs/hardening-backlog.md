@@ -158,6 +158,18 @@ at sprint boundaries; referenced from `docs/STATE.md` Pointers.
   `AzureServiceBusSettings` direct `.env` file loading with `env_file=None` while preserving
   process-env production resolution, and skips live Service Bus pytest entries by default. Evidence:
   [S159 handback](sprints/sprint-159-tests-never-transact.md) and [DL-89](design-log.md).
+  **Corrected and completed 2026-08-05 (`chore-s159-residue`, `0.86.04`) — the row and S159 both
+  understated the blast radius, and the fix was quieter than it looked.** (1) The suite was also
+  performing **topic DDL on the production namespace**, not only publishing:
+  `test_bus_azure_receiver_integration.py` gated on a `_CONNECTION` that reads *both* env-var names,
+  `.env` supplies the un-prefixed one, `integration` is not deselected, and the credential has Manage
+  rights — so it created, used and deleted two topics per local `make ci`. (2) The S159 guard derived
+  from `RuntimeError` and `fault_boundary` catches bare `Exception`, so a publish inside
+  `reraise=False` was silently converted into a `Fault` and the test still passed — measured, then
+  fixed by deriving from `BaseException` and pinned by a planted-violation test. (3) Both live
+  Service Bus entry points are now **deleted rather than skipped**; restoring either requires a
+  dedicated non-production namespace. Full reasoning, including the deliberately out-of-scope
+  `AgentSettings` base-class boundary: [DL-90](design-log.md).
 
 ## Open — with unblock triggers
 

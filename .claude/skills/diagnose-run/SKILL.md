@@ -18,14 +18,14 @@ UTC today, else UTC today>`. All commands run from the repo root with `.env` pre
 ### 1 · Does the run exist, and how far did it get?
 
 ```bash
-PYTHONPATH=. uv run python scripts/trace_run.py --run-id <run_id>   # 7 stages, per-stage numbers
+PYTHONPATH=. uv run python scripts/trace_run.py --run-id <run_id>   # 8 stages, per-stage numbers
 PYTHONPATH=. uv run python scripts/accept.py    --run-id <run_id>   # gate PASS/FAIL + breaches
 ```
 
 - **Run id not found at all** → go to step 2 (scheduler).
-- **Stops at stage N** (< 7/7) → note which agent owns stage N+1; go to step 3.
-- **7/7 but ACCEPTANCE FAIL** → check the breach list against the known signatures (step 6).
-- **7/7 PASS but "something smells"** → steps 4–5 (data quality, deploy currency) still apply.
+- **Stops at stage N** (< 8/8) → note which agent owns stage N+1; go to step 3.
+- **8/8 but ACCEPTANCE FAIL** → check the breach list against the known signatures (step 6).
+- **8/8 PASS but "something smells"** → steps 4–5 (data quality, deploy currency) still apply.
 
 ### 2 · Scheduler: did the cron fire, and was it supposed to?
 

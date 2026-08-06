@@ -82,6 +82,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-010 | PM laws.md changelog | `INDEX.md` + `CLAUDE.md` + memory record PM as **LOCKED v1 (S70)**. | PM `laws.md` changelog footer still read *"v0 — drafted… Not yet locked"* (stale; never updated at the S70 lock). | stale-doc | **CORRECTED** (cage audit, 2026-06-25): footer reconciled to v1 + the PM-NEV-06 amendment (v1.1). |
 
+## Reporter (`RPT`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-034 | `RPT-IDN-01` / `RPT-IDN-02` / `RPT-NEV-02` | Reporter traverses upstream graph facts and projects them into its owned durable report labels; it may only write its own labels, currently enumerated as `Snapshot`, `TradeNarrative`, and `ReportSnapshotResult`. | S160 needs a new append-only `RecommendationOutcome` fact per `(Recommendation, horizon)` to measure selection quality. Reporter is the closest conceptual owner, but no locked agent law enumerates that label, and the sprint explicitly forbids inventing an owner or editing `laws.md`. | law gap | **OPEN (S160 law-first stop, 2026-08-06)** — decide and amend ownership before implementation. Likely amendment shape: reporter owns the derived outcome/scorecard projection, but only after a law-amendment cycle updates `RPT-IDN-02`, capability labels, tests, and vocabulary together. |
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

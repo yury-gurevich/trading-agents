@@ -3,7 +3,12 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-160-shadow-book`
-**Status:** SPEC — makes selection quality measurable without spending capital
+**Status:** SPEC **revision 2** — makes selection quality measurable without spending capital.
+🛑 **Revision 1 was stopped at the law-first gate and the stop was correct** — no locked
+constitution owns a `RecommendationOutcome` label. Revision 2 removes the label entirely: the
+scorecard is a **read-only derivation that persists nothing**, joining `accept.py` /
+`trace_run.py` / `observatory.py`, which write zero nodes and are governed by no agent law.
+**Items 2 and 6 and tests B1/B3 changed. Re-read them before starting.**
 **Version:** feat → **0.87.00** (MINOR: two middle digits, zeroing the patch group)
 **Effort:** M
 **Decisions:** [DL-93](../design-log.md) sizing/cap/sell-policy · [DL-09](../design-log.md) filter
@@ -56,7 +61,7 @@ over other agents' outputs, so **ownership is the question that decides the desi
 
 | Element you will touch | Law file(s) to read first | Why it binds |
 | --- | --- | --- |
-| Wherever the new outcome fact is written (**you must decide the owner — see item 2**) | The owning agent's `laws.md` + `test-plan.md` | `*-IDN-*` enumerates what each agent may write. **A new label written by the wrong agent is a law violation, not a style question** |
+| ~~Wherever the new outcome fact is written~~ — **removed in revision 2: nothing is written** | `agents/reporter/laws/laws.md` (read anyway, to understand *why* the label was refused) | `RPT-IDN-02` enumerates exactly `Snapshot`, `TradeNarrative`, `ReportSnapshotResult`; `RPT-NEV-02` restricts the reporter to its own labels. **Verified 2026-08-06.** This is the clause pair that blocked revision 1 and produced the better design |
 | `Recommendation` / `AnalystRun` (read-only here) | `agents/analyst/laws/laws.md` + `test-plan.md` | `ANLZ-IDN-*` — the analyst owns these. You are **reading** them; nothing in this sprint may mutate them |
 | `PMRun` / `order_intent_set` (read-only here) | `agents/portfolio_manager/laws/laws.md` + `test-plan.md` | `PM-IDN-*` — the PM owns rejection reasons. Read-only |
 | `MarketData` (read-only here) | `agents/provider/laws/laws.md` + `test-plan.md` | `PROV-IDN-*`, `PROV-OUT-*`. **Provider `laws.md` is LOCKED v1 (S69)** |
@@ -150,25 +155,67 @@ close of the last bar at or before the analyst run's as-of date.
   must be counted and reported as such — **never silently dropped**. A scorecard that quietly
   excludes rows it could not price is a scorecard that flatters itself.
 
-**Result:**
+**Result:** Not done — stopped before implementation at the law-first ownership gate. No pricing
+code was written.
 
-### 2 · One outcome fact per recommendation per horizon — and decide its owner from the law
+### 2 · ~~One outcome fact per recommendation per horizon~~ → **a read-only derivation that persists nothing** (REVISED 2026-08-06)
 
-Write a new derived fact carrying: the recommendation it scores, its reference price, the horizon,
-the forward price, the forward return, and its **disposition** (item 3).
+> **🛑 This item was rewritten after the law-first gate blocked the original.** The blocked handback
+> below is correct and is kept verbatim — it is the evidence for the revision, not a failure to
+> repair. **Revision 2 supersedes it: there is no new label, no owner to decide, and no law
+> amendment needed.** Read *"Why the label was wrong"* below before implementing.
 
-- **You must decide which agent owns this label and justify it from `*-IDN-*` clauses**, then record
-  the reasoning in the Law reading record. The reporter is the obvious candidate (it already projects
-  completed runs), but **verify against `RPT-IDN-*` rather than assuming** — if the reporter's
-  constitution does not admit the label, say so and propose the owner that does. **If no existing
-  agent may lawfully write it, that is a finding: stop and report, do not invent an owner.**
-- **Append-only, one immutable fact per (recommendation, horizon).** Re-running must merge to the
-  same node with identical values, never overwrite. A horizon that has not elapsed yet writes
-  **nothing** — absence is the honest representation of "not yet knowable".
+**What ships instead:** a **read-only derivation** — a domain module plus a script — that computes
+each recommendation's reference price, forward price, forward return and **disposition** (item 3) on
+demand, and **writes nothing to the graph**.
+
+- **No `merge_node`, no `add_edge`, no new label, no vocabulary change.** Verified 2026-08-06:
+  `scripts/accept.py`, `scripts/trace_run.py` and `scripts/observatory.py` each contain **zero**
+  `merge_node`/`add_edge` calls. The acceptance verdict and the 8-stage trace — both load-bearing
+  artifacts — are already derived this way and governed by no agent law. This sprint joins that
+  pattern rather than inventing a new one.
+- **The derivation is reproducible by construction**, which is why persisting it would add nothing:
+  every input is already an immutable graph fact (`MarketData.snapshot` for both prices,
+  `PMRun.order_intent_set` for the disposition). A stored outcome could only ever *disagree* with
+  the facts it was derived from — a stale copy is a liability, not lineage.
+- A horizon that has not elapsed yet is **reported as such and excluded from statistics** — never
+  imputed, never zero-filled.
 - Horizons are `tunable(..., why=...)`, not bare literals. Suggested 1, 5 and 20 trading days; take a
   better set if you can justify it.
 
-**Result:**
+**Result (revision 1 — BLOCKED, kept as evidence):** Verified failing — no existing locked agent
+constitution lawfully owns the required new outcome label. Reporter is the closest conceptual owner
+(`RPT-IDN-01`), but `RPT-IDN-02` enumerates only `Snapshot`, `TradeNarrative`, and
+`ReportSnapshotResult`, and `RPT-NEV-02` allows only reporter owned-label writes. Forecaster,
+researcher, and curator were also read; their `*-IDN-02` owned-label lists do not include this
+derived recommendation-outcome fact. `DRIFT-034` filed; no fact writer implemented.
+
+**Result (revision 2):**
+
+#### Why the label was wrong — the blocker was the law catching a design error
+
+Independently verified 2026-08-06: `RPT-IDN-02` does enumerate exactly `Snapshot`,
+`TradeNarrative`, `ReportSnapshotResult`, and `RPT-NEV-02` does restrict the reporter to its own
+labels. **The stop was correct and the spec was wrong**, in a way worth naming because it is the
+second time in two days that a spec of mine asserted its way past something it had not checked:
+revision 1 told the implementer to *"decide which agent owns this label"* while taking for granted
+that **some** agent should. Nobody should — because **the fact should never have been persisted at
+all.**
+
+Every input to the outcome is already an immutable graph fact. The forward return is a *computation
+over* those facts, not a new observation about the world. Storing it creates a second copy that can
+go stale and disagree with its own inputs, which is precisely the failure ADR-0015 §1's amendment
+recorded when the monitor was writing `pnl_cents`: *"this graph records facts, it does not hold
+mutable records."*
+
+**This is the law book doing the job DL-74's trial claims it does** — a law-first read stopped a
+design error before any code was written, and the error was in the spec, not in the law. That is a
+success for the rule, and it is recorded as one.
+
+**DRIFT-034 stays open**, deliberately. Routing around the gap does not close it: the law book has
+no home for a *durable* cross-agent derived artifact, and the next thing that genuinely needs to
+persist one will hit the same wall. It belongs in the next law-amendment cycle (the S152 shape), not
+smuggled into this sprint.
 
 ### 3 · Disposition: why the pick did or did not become a position
 
@@ -185,7 +232,8 @@ Source the reason from `PMRun.order_intent_set.rejected[].reason` — **measured
 `PMRun.source_analyst_run_id == AnalystRun.run_id`. Do not re-derive the reason by re-running PM
 logic; read the recorded fact.
 
-**Result:**
+**Result:** Not done — disposition derivation depends on the blocked `RecommendationOutcome` writer.
+No PM history was rewritten or re-derived.
 
 ### 4 · Backfill the 26 runs that already exist
 
@@ -197,7 +245,8 @@ already elapsed.
   elapsed.
 - This is what makes the sprint pay off immediately instead of in twenty trading days.
 
-**Result:**
+**Result:** Not done — backfill was not implemented or run because there is no lawful owner for the
+new outcome label.
 
 ### 5 · The scorecard — and the one cut that matters
 
@@ -214,27 +263,36 @@ A read-only report (script + a `RecommendationOutcome`-driven projection) showin
   recommendations the buckets will be small; a scorecard that hides its sample size invites exactly
   the over-reading this sprint exists to prevent.
 
-**Result:**
+**Result (revision 1):** Not done — scorecard was not implemented or run because the underlying
+outcome facts could not be lawfully written.
 
-### 6 · Declare every new label, edge and prop in the vocabulary
+**Result (revision 2):**
 
-S143 built the write-time guard; S144 found enabling it would have thrown on the first real write
-because two edges were undeclared. The guard is **enabled on the fleet** and fails closed.
+### 6 · ~~Declare every new label, edge and prop in the vocabulary~~ → **assert that nothing is written** (REVISED 2026-08-06)
 
-- Add the new label, its edges and its property shape to
-  [`orchestration/packs/trading_graph_vocabulary.json`](../../orchestration/packs/trading_graph_vocabulary.json).
-- Re-run `scripts/vocabulary_coverage.py` and `scripts/vocabulary_signatures.py`; paste the output
-  into the closeout.
+> Revision 1 required a vocabulary declaration because it wrote a new label. **Revision 2 writes
+> nothing, so there is no declaration to make** — and the useful work is proving that claim rather
+> than asserting it.
+
+- **Do not touch** [`orchestration/packs/trading_graph_vocabulary.json`](../../orchestration/packs/trading_graph_vocabulary.json).
+  A pack change would force image and pack to move together at deploy (the S148 stall, DL-85) for a
+  sprint that ships no runtime behaviour at all.
+- Instead ship the assertion that keeps this true: a test that runs the full derivation against a
+  fixture graph and requires the node and edge counts to be **identical before and after**, per
+  label. Plant the violation — add a write, watch it fail — then remove it (test B4/D4).
+- **State in the closeout that no fleet retag is required, and why.** A sprint that adds only a
+  read-only script changes nothing the fleet runs.
 - ⚠️ **The pack and the image must move together at deploy** — a target on new code with a stale pack
   raises `VocabularyError` on its first write (the S148 stall, DL-85).
 
-**Result:**
+**Result:** Not done — vocabulary was not changed because declaring a label before a lawful owner
+would create a deployable write path the law book does not allow.
 
 ### 7 · Prove the checks can fail (DL-70)
 
 No presence assertions. Every test plants the violation and requires the failure — see the test plan.
 
-**Result:**
+**Result:** Not done — no tests were written because the sprint stopped at the pre-code law gate.
 
 ---
 
@@ -252,14 +310,14 @@ do not silently drop it.
 | A2 | a ticker missing from the snapshot is `unpriceable`, not dropped | a recommendation whose ticker has no bar | it is counted as `unpriceable` and **appears in the report**; assert the count is non-zero before asserting the behaviour |
 | A3 | the as-of boundary is respected | bars on both sides of the run's as-of date | the bar chosen is the last at-or-before as-of; a later bar is never used |
 
-### B · Outcome facts
+### B · The derivation writes nothing (REVISED 2026-08-06 — B1/B3 are gone with the label)
 
 | # | Test | Plants | Must prove |
 | --- | --- | --- | --- |
-| B1 | one immutable fact per (recommendation, horizon) | write the same outcome twice | second write merges to the same node, no duplicate, **no `ValueError`** |
-| B2 | 🪤 an un-elapsed horizon writes nothing | a recommendation 2 days old with a 20-day horizon | **zero** outcome nodes for that horizon — absence, not a zero-valued row |
-| B3 | the fact stays inside declared labels | run the backfill | the set of labels written is a subset of the owning agent's `*-IDN-*` enumeration. **Cite the clause.** This is the test that catches an accidental law violation |
-| B4 | nothing upstream is mutated | run the backfill over a fixture graph | `Recommendation`, `AnalystRun`, `PMRun` and `MarketData` are **byte-identical** afterwards |
+| B1 | ~~one immutable fact per (recommendation, horizon)~~ | — | **Dropped in revision 2.** No fact is written, so there is nothing to de-duplicate |
+| B2 | 🪤 an un-elapsed horizon is excluded, not imputed | a recommendation 2 days old with a 20-day horizon | it is **reported as not-yet-elapsed and excluded from the statistics** — never zero-filled, never counted as a 0% return. Assert the exclusion count is non-zero before asserting the statistics |
+| B3 | ~~the fact stays inside declared labels~~ | — | **Dropped in revision 2.** Replaced by B4, which is the stronger claim: *no* label is written at all |
+| B4 | 🎯 **the derivation writes nothing whatsoever** | run the full derivation over a fixture graph, then **plant a write and require the test to fail** | node **and** edge counts identical before/after, per label — `Recommendation`, `AnalystRun`, `PMRun`, `MarketData` and every other label unchanged. **This is the test that replaces the whole ownership question**, and it is worthless until it has been watched failing |
 
 ### C · Disposition
 
@@ -317,6 +375,17 @@ Options weighed and **ruled out** — record any further ones you rule out:
 - **Re-pricing history from a fresh vendor call** instead of the run's own snapshot. Rejected: it
   would silently re-price decisions against evidence that did not exist when they were made, and
   would burn Tiingo's 50 req/hr budget re-deriving what is already stored.
+- **Persisting the outcome as a graph fact** (revision 1's design). **Ruled out 2026-08-06 after the
+  law-first gate refused it.** Two independent reasons, and the second is the real one:
+  **(a)** no locked constitution owns such a label — `RPT-IDN-02` enumerates three labels and
+  `RPT-NEV-02` forbids the rest, so it would have required a law-amendment cycle;
+  **(b)** *it should not be stored regardless.* Every input is already an immutable fact, so the
+  outcome is a computation, not an observation — and a stored copy can only ever drift from the
+  facts it came from. That is the mistake ADR-0015 §1's amendment already recorded when the monitor
+  was writing `pnl_cents`. **The law stopped a design error, not just a paperwork gap.**
+- **Amending a locked `laws.md` to create an owner.** Rejected for this sprint: it is a
+  law-amendment cycle (the S152 shape) in its own right, and doing it here would have bought a
+  worse design at a higher price. DRIFT-034 keeps the underlying gap visible for that cycle.
 
 ---
 
@@ -411,17 +480,27 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| Owner of the new outcome label | | | |
-| `Recommendation` / `AnalystRun` (read-only) | | | |
-| `PMRun` / `order_intent_set` (read-only) | | | |
-| `MarketData` (read-only) | | | |
-| `trading_graph_vocabulary.json` | | | |
+| Owner of the new outcome label | `agents/reporter/laws/laws.md` + `test-plan.md`; also read `agents/forecaster/laws/laws.md` + `test-plan.md`, `agents/researcher/laws/laws.md` + `test-plan.md`, `agents/curator/laws/laws.md` + `test-plan.md` as alternate measurement owners | `RPT-IDN-01`, `RPT-IDN-02`, `RPT-NEV-02`, `RPT-OBS-01`; `FORE-IDN-01`, `FORE-IDN-02`; `RES-IDN-01`, `RES-IDN-02`; `CUR-IDN-01`, `CUR-IDN-02` | Yes — stopped before code. Reporter is conceptually closest, but no locked `*-IDN-02` owned-label enumeration includes `RecommendationOutcome`. |
+| `Recommendation` / `AnalystRun` (read-only) | `agents/analyst/laws/laws.md` + `test-plan.md` | `ANLZ-IDN-01`, `ANLZ-IDN-02`, `ANLZ-NEV-04`, `ANLZ-STA-02`, `ANLZ-OBS-01` | No — confirms these nodes are read-only for this sprint and must not gain price/time properties. |
+| `PMRun` / `order_intent_set` (read-only) | `agents/portfolio_manager/laws/laws.md` + `test-plan.md` | `PM-IDN-01`, `PM-IDN-02`, `PM-OUT-03`, `PM-NEV-01`, `PM-NEV-04`, `PM-OBS-01` | No — confirms rejection reasons are PM-owned facts to read, not re-run or reinterpret. |
+| `MarketData` (read-only) | `agents/provider/laws/laws.md` + `test-plan.md` | `PROV-IDN-01`, `PROV-IDN-03`, `PROV-OUT-01`, `PROV-OUT-04`, `PROV-OUT-05`, `PROV-NEV-06`, `PROV-NEV-07`, `PROV-OBS-01`, `PROV-OBS-03` | No — confirms the run snapshot is the evidence source and missing prices must remain explicit, not fabricated. |
+| `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | conventions §2, §3, §7, §9; `DRIFT-034` | Yes — vocabulary must not be widened until the owning law is amended, otherwise the first write path would be deployable but unlawful. |
 
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
+Implementing S160 as written would contradict the current locked ownership enumerations: `RPT-IDN-02`
+does not list `RecommendationOutcome`, and `RPT-NEV-02` allows the reporter to write only its own
+labels. The other plausible measurement agents also have closed owned-label lists that exclude this
+fact. Per the MUST RULE, implementation stopped before code.
+
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
+No law assigns ownership for an append-only recommendation-outcome fact. `DRIFT-034` added in
+`docs/laws/drift-register.md`.
+
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
+
+None — no tests were added because the sprint stopped at the law gate.
 
 ---
 
@@ -429,23 +508,25 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| B3 | | | | |
-| B4 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
-| C4 | | | | |
-| D1 | | | | |
-| D2 | | | | |
-| D3 | | | | |
-| D4 | | | | |
+| A1 | not written — law gate stopped before pricing implementation | n/a | not done | n/a |
+| A2 | not written — law gate stopped before pricing implementation | n/a | not done | n/a |
+| A3 | not written — law gate stopped before pricing implementation | n/a | not done | n/a |
+| B1 | not written — law gate stopped before outcome writer implementation | n/a | not done | n/a |
+| B2 | not written — law gate stopped before outcome writer implementation | n/a | not done | n/a |
+| B3 | law ownership check failed before implementation | n/a | verified failing | `RPT-IDN-02`, `RPT-NEV-02`, `FORE-IDN-02`, `RES-IDN-02`, `CUR-IDN-02` |
+| B4 | not written — law gate stopped before backfill implementation | n/a | not done | n/a |
+| C1 | not written — law gate stopped before disposition implementation | n/a | not done | n/a |
+| C2 | not written — law gate stopped before disposition implementation | n/a | not done | n/a |
+| C3 | not written — law gate stopped before disposition implementation | n/a | not done | n/a |
+| C4 | not written — law gate stopped before disposition implementation | n/a | not done | n/a |
+| D1 | not written — law gate stopped before backfill implementation | n/a | not done | n/a |
+| D2 | not written — law gate stopped before scorecard implementation | n/a | not done | n/a |
+| D3 | not written — law gate stopped before scorecard implementation | n/a | not done | n/a |
+| D4 | not written — law gate stopped before vocabulary implementation | n/a | not done | n/a |
 
 **Tests added beyond the plan:**
+
+None.
 
 ---
 
@@ -453,14 +534,57 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Tree the proofs ran in (and `.env` present?):**
 
+`C:\Users\yury_\Downloads\project\trading-agents`, branch `sprint-160-shadow-book`.
+`.env` present (`Test-Path .env` -> `True`) but not used; no live graph command was run because the
+law-first owner gate stopped implementation.
+
 **Files changed:**
+
+- `docs/sprints/sprint-160-shadow-book.md`
+- `docs/laws/drift-register.md`
 
 **Proven (LAW-02):**
 
+```text
+git rev-parse --short HEAD
+5d9014d
+
+git branch --show-current
+sprint-160-shadow-book
+
+Test-Path .env
+True
+```
+
+Law files read before any code change: reporter, analyst, portfolio_manager, provider, forecaster,
+researcher, curator constitutions and test plans; `docs/laws/conventions.md`;
+`docs/laws/drift-register.md`; DL-73 and DL-93; ADR-0013, ADR-0016, ADR-0017.
+
+Ownership result: no existing locked agent law currently enumerates the required
+`RecommendationOutcome` label. `DRIFT-034` was added as the required drift row.
+
 **The first scorecard (paste it):**
 
+Not done — no scorecard was generated because no lawful outcome writer exists yet.
+
 **Not met / verified failing:**
+
+- Verified failing: lawful owner for the new outcome label is absent from the locked law book.
+- Not done: pricing derivation, outcome writer, disposition mapping, backfill, scorecard,
+  vocabulary declaration, planted-violation tests, version bump, `uv.lock`, `make ci`, push,
+  `make gate-ran`, local merge to `main`.
 
 ---
 
 ## Return notes
+
+S160 stopped at the MUST RULE before implementation. Ownership decision: the reporter is the likely
+future owner because `RPT-IDN-01` covers graph traversal and projection, but it is not lawful today:
+`RPT-IDN-02` does not enumerate `RecommendationOutcome`, and `RPT-NEV-02` permits only reporter-owned
+labels. Forecaster/researcher/curator were checked as alternate measurement owners and also do not
+own this fact shape.
+
+Fleet retag required: no, not from this blocked branch. No code, vocabulary pack, image, or version
+changed. A future implementation will require image and vocabulary pack to move together if the fact
+writer is deployed; if it remains a local backfill/reporting script only, state that separately in
+that sprint's return notes.

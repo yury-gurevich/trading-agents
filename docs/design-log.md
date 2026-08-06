@@ -4861,8 +4861,7 @@ positions instead of ten large ones. No change was made pending that investigati
 this exact `why` as its own motivation). The cap is therefore being enforced by a justification that
 lapsed eight sprints ago. Nobody chose to keep 10; it was never revisited.
 
-**Consequence, measured three nights running (`sched-2026-08-03/04/05`):** the analyst's single
-`buy` is rejected `SKIP max_positions` every night, PM approves **0**, and therefore the deliberator
+**Consequence, measured on `sched-2026-08-04/05` (corrected 2026-08-06 — this entry first said three nights; `sched-2026-08-03` produced **zero** buys, so there were **2** `blocked_capacity` dispositions, not 3, as the S160 shadow book then confirmed):** the analyst's single `buy` is rejected `SKIP max_positions`, PM approves **0** on all three nights, and therefore the deliberator
 has **nothing to debate** - `debates: 0, verdicts: {}`. **The cap is what is starving
 [[DL-80]]**, which cannot close until the PM approves an order.
 

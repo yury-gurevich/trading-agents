@@ -73,8 +73,7 @@ over other agents' outputs, so **ownership is the question that decides the desi
 
 **Every `SKIP max_positions` is a discarded experiment, and we have been discarding them nightly.**
 
-Measured 2026-08-06 on `sched-2026-08-03/04/05`: the analyst produced a `buy` for **MSFT** on three
-consecutive nights. The PM rejected all three on `max_positions` because the book is full at ten.
+Measured 2026-08-06 on `sched-2026-08-04/05`: the analyst produced a `buy` for **MSFT** on **two** consecutive nights (confidence 0.611 and 0.619) and the PM rejected **both** on `max_positions`. **Correction (2026-08-06):** revision 1 of this doc said *three* nights, `sched-2026-08-03/04/05`. That was wrong and the shadow book's own output caught it — the live graph holds **2** `blocked_capacity` dispositions, not 3. Verified directly: on `sched-2026-08-03` the analyst produced **zero** buys and MSFT was not in the recommendation set at all, so there was nothing to block. Two nights of that claim were traced; the third was extrapolated and never checked. The PM rejects because the book is full at ten.
 **There is no record anywhere of whether MSFT would have been a good pick.** The information the
 project most needs — *is the selection any good?* — is being thrown away by a capital constraint that
 has nothing to do with selection quality.

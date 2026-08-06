@@ -4808,3 +4808,112 @@ dropping the state read (loses the DL-85 lesson that exit codes alone were what 
 look done).
 
 ---
+
+## DL-93 · Sizing, the 10-slot cap, and "sell what is losing" · status: OPEN (operator raised 2026-08-06; decision deferred pending the sizing/margin question)
+
+**Operator framing, recorded because it reframes what the pipeline is currently for.** *"We are not
+at the trading stage. Far from it. We are still in development."* The object under test is the
+**selection process** - can the system predict? - not profit. Therefore **position size is not a
+variable we care about right now**: *"I do not care HOW MANY SHARES I PURCHASED... even 1 share of a
+profitable stock is better than 10 fully exhausted purchase power."* Profit is the ultimate goal but
+not the current measurement; the current measurement is whether the picks are right. This entry
+records the discussion, the measurements taken, and the one question that is genuinely an ADR
+reversal rather than a parameter change.
+
+### Measured 2026-08-06 (Alpaca paper, read-only)
+
+Eight of ten held parcels are profitable; total unrealized **+$8,832.76**.
+
+| Ticker | Qty | Avg entry | Last | Unrealized $ | Unrealized % |
+| --- | --- | --- | --- | --- | --- |
+| BMY | 153 | 65.63 | 63.76 | **-286.11** | **-2.85%** |
+| MDT | 233 | 86.59 | 85.99 | **-139.02** | **-0.69%** |
+| ABT | 191 | 105.52 | 105.71 | +37.12 | +0.18% |
+| USB | 478 | 62.60 | 64.21 | +767.87 | +2.57% |
+| WFC | 348 | 86.39 | 89.50 | +1,080.99 | +3.60% |
+| PYPL | 175 | 56.65 | 58.70 | +358.89 | +3.62% |
+| SCHW | 196 | 102.22 | 108.02 | +1,136.10 | +5.67% |
+| BAC | 503 | 59.64 | 63.40 | +1,892.63 | +6.31% |
+| CSCO | 177 | 112.41 | 122.70 | +1,820.52 | +9.15% |
+| HPE | 229 | 43.55 | 53.00 | +2,163.77 | +21.70% |
+
+The two losers total **-$425** against **+$9,258** of winners.
+
+### The finding that outranks the cap: the book is on ~2x margin
+
+```text
+equity        104,042.69
+cash         -104,966.77   <- negative
+market value  209,009.46   <- 2.01x equity
+```
+
+`cash_buffer_pct = tunable(0.05, why="Hold back cash so sizing does not consume the full paper
+account.")` **is not achieving its stated purpose** - the account did not merely spend its cash, it
+borrowed roughly the same amount again. **This is a defect, not a tuning question, and it must be
+understood before any resize**: resizing on top of it would produce a hundred small wrongly-sized
+positions instead of ten large ones. No change was made pending that investigation.
+
+### Where the 10-slot cap came from, and why it is not a decision anyone made
+
+`agents/portfolio_manager/settings.py:35` -
+`max_positions = tunable(10, why="Keep portfolio concentration bounded before sector caps exist.")`.
+**Sector caps now exist** (`max_sector_pct`, `settings.py:73`, shipped S52 - whose sprint doc quotes
+this exact `why` as its own motivation). The cap is therefore being enforced by a justification that
+lapsed eight sprints ago. Nobody chose to keep 10; it was never revisited.
+
+**Consequence, measured three nights running (`sched-2026-08-03/04/05`):** the analyst's single
+`buy` is rejected `SKIP max_positions` every night, PM approves **0**, and therefore the deliberator
+has **nothing to debate** - `debates: 0, verdicts: {}`. **The cap is what is starving
+[[DL-80]]**, which cannot close until the PM approves an order.
+
+### Why nothing is sold today (this part is working as designed)
+
+Not a missing feature - a deliberately removed one. [ADR-0017](decisions/0017-exit-authority-alpha-proposes-risk-disposes.md)
+§4 retired `target`/`time` as mechanics ("let winners run; exit on thesis"), leaving the **stop** as
+the only mechanical exit. Measured 2026-08-06: every position carries `opened_price_cents` and
+`stop_pct=0.05`, so a stop threshold **is** computable for all ten, and **none is breached** - the
+closest is BMY at 63.76 against a 62.35 stop (2.3% of headroom). The analyst returned `hold` on all
+eleven names. So: no breach, no mechanical exit, no discretionary exit, nothing closes.
+
+> **A correction worth keeping.** The investigation was first reported as *"every active Position
+> carries `entry_price_cents=None`, so exits cannot be measured."* **That property does not exist.**
+> The entry price is stored as `opened_price_cents` and is populated on all ten. The `None` was a
+> query against a guessed name, not missing data - the same shape as the retracted [[DL-73]] audit.
+> The real gap is narrower and is stated below.
+
+### The real measurement gap: realized PnL is never derived
+
+`pnl_cents` **is** genuinely `None`, and [ADR-0015](decisions/0015-exit-lifecycle-and-stop-ownership.md)
+§1's amendment already names it: *"the monitor stopped writing `pnl_cents` altogether... Nothing yet
+computes PnL at fill time"*, and *"that blocker is now gone - ABT 98 @ $101.35 filled on 2026-07-23 -
+so the derivation is unblocked and outstanding."* Meanwhile **unrealized** PnL is fully available at
+the broker (+$8,832.76 above), so the reporter prints `open=0.0` while the account is up $8.8k. It
+reads a graph property nobody writes.
+
+### The open question - an ADR reversal, not a parameter
+
+Operator's proposed rule: **"If it is profitable keep, if not sell."** That is a *mechanical* exit
+rule, and it reverses ADR-0017 §4, which deleted mechanical exits on purpose. It is therefore an
+**ADR amendment with evidence**, not a tunable change, and it is deliberately **not** actioned here.
+
+**Two candidate directions, both recorded rather than chosen:**
+
+- **A - resize for observation (no policy change).** Cut `max_position_pct` 0.10 -> ~0.005 (~$500 a
+  pick) and raise `max_positions` 10 -> 50-100. Serves the operator's stated goal directly: many
+  small parcels keep the selection process sampled, the account stops being exhausted, and the veto
+  is un-starved. **Requires the margin defect to be understood first.** Touches only parameters
+  whose justification has already lapsed.
+- **B - reintroduce a mechanical loss exit** ("sell what is losing"). Frees slots and matches the
+  operator's instinct, but reverses an accepted ADR and re-introduces exactly the mechanical
+  decision-making ADR-0017 removed. Needs an ADR amendment stating what changed in the evidence
+  since 2026-07-24.
+
+**Road not taken (so far):** selling the two losers by hand to free slots - rejected as a *mechanism*
+because `EXEC-IDN-01` makes execution the sole broker interface and a hand-fired order writes no
+lineage, which is precisely the evidence this testing phase exists to produce. If the positions
+should go, they should go through the pipeline.
+
+**Status is OPEN on purpose.** The sequence agreed with the operator: understand the sizing/margin
+defect first, then decide A vs B. Nothing was changed on the account, the parameters, or the ADRs.
+
+---

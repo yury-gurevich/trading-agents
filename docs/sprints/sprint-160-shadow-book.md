@@ -792,11 +792,27 @@ coverage n=163 scored=4 unpriceable=0 not_yet_elapsed=159
 This is an instrument reading, not a conclusion. The `blocked_capacity` performance cut has only
 one elapsed observation, and the 20-day horizon has only four scored recommendations in total.
 
-**Not met / verified failing at this pre-push checkpoint:**
+**Remote gates and hardening row M:**
 
-- Verified failing and then repaired: B4 caught the planted write exactly as required.
-- Not done yet: branch commit/push, remote gate confirmation, `make gate-ran`, and local merge. These
-  are completed and replaced with final evidence below before handback.
+```text
+implementation commit 2865c5e931e928071fdb3f17f098822f09abb1e4
+Security Findings run 31074162666: success (gate job success)
+CI run 31074162687: success
+  quality: success
+  security: success
+  test: success (100.00% coverage floor enforced)
+
+make gate-ran
+GATE PROVEN for 2865c5e931e928071fdb3f17f098822f09abb1e4:
+  Security Findings: success
+  CI: success
+gate_ran_exit=0
+```
+
+Verified failing and then repaired: B4 caught the planted write exactly as required. No success
+factor remains unmet. The final handback-only documentation commit is pushed and remotely gated
+again before the required local fast-forward merge; that latest-HEAD result is returned with the
+merged revision because changing this block afterward would itself create a new un-gated HEAD.
 
 ---
 

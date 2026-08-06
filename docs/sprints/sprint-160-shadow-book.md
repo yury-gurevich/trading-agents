@@ -155,8 +155,14 @@ close of the last bar at or before the analyst run's as-of date.
   must be counted and reported as such — **never silently dropped**. A scorecard that quietly
   excludes rows it could not price is a scorecard that flatters itself.
 
-**Result:** Not done — stopped before implementation at the law-first ownership gate. No pricing
-code was written.
+**Result (revision 1 — BLOCKED, kept as evidence):** Not done — stopped before implementation at
+the law-first ownership gate. No pricing code was written.
+
+**Result (revision 2):** Implemented in `orchestration/shadow_book_prices.py`. Each of the 163 live
+`Recommendation` facts joins to its own `AnalystRun` and that run's `MarketData`; the reference is
+the final close at or before `AnalystRun.created_at`. Missing reference or forward bars produce an
+explicit `unpriceable` row. Live result: 163/163 reference-priced; five horizon rows were
+unpriceable rather than dropped.
 
 ### 2 · ~~One outcome fact per recommendation per horizon~~ → **a read-only derivation that persists nothing** (REVISED 2026-08-06)
 
@@ -190,7 +196,11 @@ constitution lawfully owns the required new outcome label. Reporter is the close
 researcher, and curator were also read; their `*-IDN-02` owned-label lists do not include this
 derived recommendation-outcome fact. `DRIFT-034` filed; no fact writer implemented.
 
-**Result (revision 2):**
+**Result (revision 2):** Implemented as a read-only orchestration derivation plus
+`scripts/shadow_book.py`. It returns one in-memory row per `(Recommendation, horizon)` with
+reference price, forward price/return, disposition and explicit status. It calls no graph write
+method and persists no derived copy. Default horizons are justified tunables at 1, 5 and 20 trading
+days; confidence uses a justified 0.05 scorecard bucket width.
 
 #### Why the label was wrong — the blocker was the law catching a design error
 
@@ -232,8 +242,14 @@ Source the reason from `PMRun.order_intent_set.rejected[].reason` — **measured
 `PMRun.source_analyst_run_id == AnalystRun.run_id`. Do not re-derive the reason by re-running PM
 logic; read the recorded fact.
 
-**Result:** Not done — disposition derivation depends on the blocked `RecommendationOutcome` writer.
-No PM history was rewritten or re-derived.
+**Result (revision 1 — BLOCKED, kept as evidence):** Not done — disposition derivation depends on
+the blocked `RecommendationOutcome` writer. No PM history was rewritten or re-derived.
+
+**Result (revision 2):** Implemented from recorded `PMRun.order_intent_set` only:
+`taken`, `blocked_capacity`, `blocked_other` with its reason, or `not_actionable`. The current live
+graph contains `taken=46`, `blocked_capacity=2`, `blocked_other=115`, `not_actionable=0` across 163
+recommendations. The earlier handover narrative said three MSFT capacity blocks; the current graph
+contains two, on analyst as-of dates 2026-08-04 and 2026-08-05. No PM logic was re-run.
 
 ### 4 · Backfill the 26 runs that already exist
 
@@ -245,8 +261,14 @@ already elapsed.
   elapsed.
 - This is what makes the sprint pay off immediately instead of in twenty trading days.
 
-**Result:** Not done — backfill was not implemented or run because there is no lawful owner for the
-new outcome label.
+**Result (revision 1 — BLOCKED, kept as evidence):** Not done — backfill was not implemented or run
+because there is no lawful owner for the new outcome label.
+
+**Result (revision 2):** The read-only derivation was run from
+`C:\Users\yury_\Downloads\project\trading-agents` against `PostgresGraphStore`: 163 recommendations
+produced 489 horizon rows, of which 263 were scored, five were unpriceable and 221 had not elapsed.
+Repeated fixture derivation returned byte-equal rows and identical per-label node/edge censuses;
+there is no outcome-writer count because revision 2 writes zero facts.
 
 ### 5 · The scorecard — and the one cut that matters
 
@@ -266,7 +288,10 @@ A read-only report (script + a `RecommendationOutcome`-driven projection) showin
 **Result (revision 1):** Not done — scorecard was not implemented or run because the underlying
 outcome facts could not be lawfully written.
 
-**Result (revision 2):**
+**Result (revision 2):** Implemented action, 0.05-wide confidence, and disposition cuts per horizon.
+Every statistic carries `n`; every horizon carries total, scored, unpriceable and not-yet-elapsed
+counts. The first live scorecard is pasted in Closeout. The `taken` versus `blocked_capacity` cut is
+present, but the only elapsed capacity sample is 1-day `n=1`; no conclusion is drawn.
 
 ### 6 · ~~Declare every new label, edge and prop in the vocabulary~~ → **assert that nothing is written** (REVISED 2026-08-06)
 
@@ -285,14 +310,27 @@ outcome facts could not be lawfully written.
 - ⚠️ **The pack and the image must move together at deploy** — a target on new code with a stale pack
   raises `VocabularyError` on its first write (the S148 stall, DL-85).
 
-**Result:** Not done — vocabulary was not changed because declaring a label before a lawful owner
-would create a deployable write path the law book does not allow.
+**Result (revision 1 — BLOCKED, kept as evidence):** Not done — vocabulary was not changed because
+declaring a label before a lawful owner would create a deployable write path the law book does not
+allow.
+
+**Result (revision 2):** `trading_graph_vocabulary.json` is untouched. B4 runs the full derivation
+and renderer over a fixture carrying every joined label plus an unrelated label, then requires
+per-label node and per-signature edge counts to be identical. A planted `merge_node` added
+`PlantedShadowWrite=1` and made B4 fail; after removal B4 passed. No fleet retag is required because
+the delivered capability is an operator-run read-only script and changes no deployed agent.
 
 ### 7 · Prove the checks can fail (DL-70)
 
 No presence assertions. Every test plants the violation and requires the failure — see the test plan.
 
-**Result:** Not done — no tests were written because the sprint stopped at the pre-code law gate.
+**Result (revision 1 — BLOCKED, kept as evidence):** Not done — no tests were written because the
+sprint stopped at the pre-code law gate.
+
+**Result (revision 2):** Added 23 focused test cases at 100.00% branch coverage. The B4 planted write
+was observed failing on the exact added label count before removal; malformed/orphan recommendation
+joins, invalid horizons, invalid confidence width, missing bars and differing disposition returns
+also plant the violations they are meant to catch.
 
 ---
 
@@ -486,12 +524,30 @@ An incomplete handback is returned, not repaired (DL-48).
 | `MarketData` (read-only) | `agents/provider/laws/laws.md` + `test-plan.md` | `PROV-IDN-01`, `PROV-IDN-03`, `PROV-OUT-01`, `PROV-OUT-04`, `PROV-OUT-05`, `PROV-NEV-06`, `PROV-NEV-07`, `PROV-OBS-01`, `PROV-OBS-03` | No — confirms the run snapshot is the evidence source and missing prices must remain explicit, not fabricated. |
 | `trading_graph_vocabulary.json` | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | conventions §2, §3, §7, §9; `DRIFT-034` | Yes — vocabulary must not be widened until the owning law is amended, otherwise the first write path would be deployable but unlawful. |
 
+**Revision 2 continuation — recorded before the first source-code change (2026-08-06):**
+
+| Element | Law file(s) re-read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
+| --- | --- | --- | --- |
+| Read-only outcome derivation | `agents/reporter/laws/laws.md`; revision-2 items 2 and 6 | `RPT-IDN-02`, `RPT-NEV-02` | Yes — the derivation is orchestration/tooling like `accept.py`, `trace_run.py`, and `observatory.py`: it owns no label and calls no graph write method. |
+| `Recommendation` / `AnalystRun`, `PMRun`, `MarketData` inputs | analyst, portfolio-manager, and provider `laws.md` + `test-plan.md` files listed above | clauses listed above remain binding | No — all four inputs remain read-only; pricing and disposition are reconstructed only from their recorded payloads and lineage. |
+| Vocabulary and fleet delivery | `docs/laws/conventions.md`; revision-2 item 6 and tests B1/B3/B4 | conventions §2, §3, §7, §9; `DRIFT-034` | Yes — B1 and B3 are dropped, B4 proves zero writes by requiring per-label node and edge censuses to remain identical. The vocabulary pack must not change and no fleet retag is required. |
+
+Revision 2 resolves the implementation contradiction by removing the durable artifact. Stale
+revision-1 phrases elsewhere in this handover that say "outcome fact", "writes", or "vocabulary"
+are superseded by revised items 2 and 6 and B4; they do not authorize persistence. `DRIFT-034`
+remains open because the general durable cross-agent-artifact ownership gap still exists, even
+though this sprint no longer needs to decide it.
+
 **Contradictions found between a law and this spec** (a contradiction is a success — name it):
 
 Implementing S160 as written would contradict the current locked ownership enumerations: `RPT-IDN-02`
 does not list `RecommendationOutcome`, and `RPT-NEV-02` allows the reporter to write only its own
 labels. The other plausible measurement agents also have closed owned-label lists that exclude this
 fact. Per the MUST RULE, implementation stopped before code.
+
+Revision 2 removed that implementation contradiction by removing the write. The retained
+revision-1 phrases that still describe an outcome fact or vocabulary write are historical text and
+are superseded by revised items 2 and 6; no runtime contradiction remains for the read-only tool.
 
 **Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
 
@@ -501,6 +557,9 @@ No law assigns ownership for an append-only recommendation-outcome fact. `DRIFT-
 **Clauses that were ⬜ unproven in `test-plan.md` and are now proven by this sprint's tests:**
 
 None — no tests were added because the sprint stopped at the law gate.
+
+Revision 2 proves no previously-unproven agent clause: these are orchestration/tooling tests over
+injected read-only graph facts. They deliberately do not claim agent-law coverage.
 
 ---
 
@@ -527,6 +586,37 @@ None — no tests were added because the sprint stopped at the law gate.
 **Tests added beyond the plan:**
 
 None.
+
+### Revision 2 test results
+
+The revision-1 table above is retained as the blocked handback. These are the resumed results.
+
+| Plan # | Final test name | File | Status | Clause(s) cited |
+| --- | --- | --- | --- | --- |
+| A1 | `test_a1_reference_price_comes_from_the_run_snapshot` | `orchestration/tests/test_shadow_book_derivation.py` | passed | n/a — read-only tooling |
+| A2 | `test_a2_missing_ticker_is_reported_unpriceable` | same | passed | n/a — read-only tooling |
+| A3 | `test_a3_reference_price_respects_the_as_of_boundary` | same | passed | n/a — read-only tooling |
+| B1 | dropped by revision 2 — no persisted fact exists to deduplicate | n/a | superseded | n/a |
+| B2 | `test_b2_unelapsed_horizon_is_excluded_not_imputed` | `orchestration/tests/test_shadow_book_derivation.py` | passed | n/a — read-only tooling |
+| B3 | dropped by revision 2 — replaced by the stronger zero-write B4 | n/a | superseded | n/a |
+| B4 | `test_b4_full_derivation_preserves_every_node_and_edge_count` | `orchestration/tests/test_shadow_book_scorecard.py` | passed after planted failure | n/a — no agent owns or writes this derivation |
+| C1 | `test_c1_max_positions_is_blocked_capacity` | `orchestration/tests/test_shadow_book_disposition.py` | passed | n/a — reads recorded PM fact |
+| C2 | `test_c2_other_rejection_is_blocked_other_with_reason` | same | passed | n/a — reads recorded PM fact |
+| C3 | `test_c3_approved_recommendation_is_taken` | same | passed | n/a — reads recorded PM fact |
+| C4 | `test_c4_recorded_reason_wins_over_current_context` | same | passed | n/a — deliberately does not invoke PM behavior |
+| D1 | `test_d1_repeated_derivation_is_identical_and_write_free` | `orchestration/tests/test_shadow_book_scorecard.py` | passed | n/a — read-only tooling |
+| D2 | `test_d2_scorecard_reports_n_and_unpriceable` | same | passed | n/a — read-only tooling |
+| D3 | `test_d3_taken_and_capacity_buckets_keep_their_own_means` | same | passed | n/a — read-only tooling |
+| D4 | revision-1 vocabulary test is inapplicable; revised item 6 is proven by B4 | same as B4 | superseded by passed B4 | n/a — zero new labels/edges |
+
+**Revision 2 tests added beyond the plan:**
+
+- elapsed target date with a missing ticker close is `unpriceable`, not unelapsed;
+- empty/non-positive horizon configuration is rejected;
+- malformed and orphan `Recommendation` keys fail loudly instead of disappearing from the join;
+- missing scan/market lineage remains visible as unpriceable while empty AnalystRuns are ignored;
+- PM-absent and PM-unmatched recommendations are `not_actionable`;
+- invalid confidence bucket widths are rejected and configured horizons are sorted/de-duplicated.
 
 ---
 
@@ -574,6 +664,140 @@ Not done — no scorecard was generated because no lawful outcome writer exists 
   vocabulary declaration, planted-violation tests, version bump, `uv.lock`, `make ci`, push,
   `make gate-ran`, local merge to `main`.
 
+### Revision 2 closeout
+
+The revision-1 evidence above remains the correct record of the law-first stop. Revision 2 resumed
+in the same checkout after `main` was pulled, with the revised spec commit `f7d2680` on the sprint
+branch.
+
+**Tree the revision-2 proofs ran in (and `.env` present?):**
+
+`C:\Users\yury_\Downloads\project\trading-agents`, branch `sprint-160-shadow-book`.
+`.env` was present and used only for the read-only live Postgres proof. No DSN or credential was
+printed. The store was asserted as `PostgresGraphStore`, not the in-memory fallback.
+
+**Files changed by the revision-2 implementation:**
+
+- `orchestration/shadow_book.py`
+- `orchestration/shadow_book_join.py`
+- `orchestration/shadow_book_prices.py`
+- `orchestration/shadow_book_scorecard.py`
+- `orchestration/shadow_book_settings.py`
+- `scripts/shadow_book.py`
+- `orchestration/tests/shadow_book_helpers.py`
+- `orchestration/tests/test_shadow_book_derivation.py`
+- `orchestration/tests/test_shadow_book_disposition.py`
+- `orchestration/tests/test_shadow_book_scorecard.py`
+- `pyproject.toml` and `uv.lock`
+- this handback and `docs/laws/functionality-checks.md`
+
+The earlier `f7d2680` revision also retains `DRIFT-034` in `docs/laws/drift-register.md`; it remains
+open and was not edited by the resumed implementation. No `laws.md` or vocabulary file changed.
+
+**Proven (LAW-02):**
+
+```text
+git switch main
+git pull --ff-only origin main
+Already up to date.
+main = 5d9014d
+
+git switch sprint-160-shadow-book
+sprint branch = f7d2680 before implementation
+
+live store proof (repo-root .env; DSN not printed)
+proof_exit=0
+store=PostgresGraphStore
+Recommendation=163
+AnalystRun=26
+PMRun=26
+MarketData=26
+
+focused revision-2 suite
+23 passed
+TOTAL 196 statements, 44 branches, 100.00%
+
+B4 with planted graph.merge_node("PlantedShadowWrite", "s160-b4", {})
+FAILED test_b4_full_derivation_preserves_every_node_and_edge_count
+node-count difference: PlantedShadowWrite=1
+
+B4 after removing the planted write
+1 passed
+
+uv lock
+Updated trading-agents v0.86.5 -> v0.87.0
+
+make ci > %TEMP%\s160-make-ci-final.txt 2>&1
+make_ci_exit=0
+elapsed=211.2s
+ruff: passed; format: 922 files already formatted
+mypy: Success, 761 source files
+import-linter: 4 kept, 0 broken
+module size: passed; module headers: passed; law coverage: passed
+pytest: 2124 passed, 4 skipped; TOTAL 13983 statements / 2952 branches = 100.00%
+pip-audit: No known vulnerabilities found
+detect-secrets tracked: Passed
+detect-secrets untracked: Passed (10 new files scanned)
+```
+
+**The first scorecard (live Postgres, pasted in full):**
+
+```text
+SHADOW BOOK SCORECARD
+recommendations_seen=163 reference_priced=163 reference_unpriceable=0
+outcomes_scored=263 outcomes_unpriceable=5 horizons_not_yet_elapsed=221
+dispositions taken=46 blocked_capacity=2 blocked_other=115 not_actionable=0
+
+HORIZON 1 TRADING DAYS
+coverage n=163 scored=151 unpriceable=1 not_yet_elapsed=11
+| cut | bucket | n | hit_rate | mean_return | median_return |
+| --- | --- | ---: | ---: | ---: | ---: |
+| all | all | 151 | 61.59% | -0.04% | 0.65% |
+| disposition | blocked_capacity | 1 | 0.00% | -1.09% | -1.09% |
+| disposition | blocked_other | 105 | 60.00% | 0.03% | 0.46% |
+| disposition | taken | 45 | 66.67% | -0.18% | 0.91% |
+| action | buy | 40 | 72.50% | 0.79% | 1.19% |
+| action | hold | 105 | 60.00% | 0.03% | 0.46% |
+| action | sell | 6 | 16.67% | -6.75% | -6.87% |
+| confidence | 0.55-0.60 | 4 | 25.00% | -3.55% | -2.62% |
+| confidence | 0.60-0.65 | 99 | 64.65% | 0.28% | 0.70% |
+| confidence | 0.65-0.70 | 46 | 60.87% | -0.39% | 0.50% |
+| confidence | 0.70-0.75 | 2 | 0.00% | -1.06% | -1.06% |
+
+HORIZON 5 TRADING DAYS
+coverage n=163 scored=108 unpriceable=4 not_yet_elapsed=51
+| cut | bucket | n | hit_rate | mean_return | median_return |
+| --- | --- | ---: | ---: | ---: | ---: |
+| all | all | 108 | 75.93% | 1.89% | 1.56% |
+| disposition | blocked_other | 65 | 76.92% | 1.85% | 1.16% |
+| disposition | taken | 43 | 74.42% | 1.94% | 2.50% |
+| action | buy | 38 | 73.68% | 1.38% | 2.43% |
+| action | hold | 65 | 76.92% | 1.85% | 1.16% |
+| action | sell | 5 | 80.00% | 6.17% | 6.19% |
+| confidence | 0.55-0.60 | 2 | 100.00% | 3.69% | 3.69% |
+| confidence | 0.60-0.65 | 72 | 79.17% | 2.20% | 1.62% |
+| confidence | 0.65-0.70 | 32 | 65.62% | 1.11% | 1.18% |
+| confidence | 0.70-0.75 | 2 | 100.00% | 1.16% | 1.16% |
+
+HORIZON 20 TRADING DAYS
+coverage n=163 scored=4 unpriceable=0 not_yet_elapsed=159
+| cut | bucket | n | hit_rate | mean_return | median_return |
+| --- | --- | ---: | ---: | ---: | ---: |
+| all | all | 4 | 100.00% | 7.09% | 7.59% |
+| disposition | taken | 4 | 100.00% | 7.09% | 7.59% |
+| action | buy | 4 | 100.00% | 7.09% | 7.59% |
+| confidence | 0.60-0.65 | 4 | 100.00% | 7.09% | 7.59% |
+```
+
+This is an instrument reading, not a conclusion. The `blocked_capacity` performance cut has only
+one elapsed observation, and the 20-day horizon has only four scored recommendations in total.
+
+**Not met / verified failing at this pre-push checkpoint:**
+
+- Verified failing and then repaired: B4 caught the planted write exactly as required.
+- Not done yet: branch commit/push, remote gate confirmation, `make gate-ran`, and local merge. These
+  are completed and replaced with final evidence below before handback.
+
 ---
 
 ## Return notes
@@ -588,3 +812,18 @@ Fleet retag required: no, not from this blocked branch. No code, vocabulary pack
 changed. A future implementation will require image and vocabulary pack to move together if the fact
 writer is deployed; if it remains a local backfill/reporting script only, state that separately in
 that sprint's return notes.
+
+### Revision 2 return notes
+
+There is no new label and therefore no owner decision. The scorecard is a read-only orchestration
+derivation, not an agent artifact. `DRIFT-034` stays open exactly as requested: avoiding a durable
+cross-agent artifact does not solve the general ownership gap, and no `laws.md` was amended.
+
+Fleet retag required: **no**. The fleet does not run this operator script, the graph vocabulary is
+unchanged, and the script makes no graph or broker write. There is therefore no image/pack movement
+to coordinate.
+
+The live graph at closeout has 163 actual `Recommendation` nodes and only two recorded
+`max_positions` dispositions for MSFT, despite the earlier three-night narrative. One has a scored
+1-day return and one is not yet elapsed. The discrepancy is reported rather than repaired because
+this sprint is read-only and the sample is too small for a selection-quality conclusion.

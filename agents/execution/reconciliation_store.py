@@ -14,10 +14,11 @@ from typing import TYPE_CHECKING, Literal
 from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
 from agents.execution.realized_pnl import realized_pnl_props
+from agents.execution.snapshot_account import account_snapshot_props
 from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
-    from agents.execution.broker import BrokerFill, BrokerPosition
+    from agents.execution.broker import BrokerAccount, BrokerFill, BrokerPosition
     from kernel import FaultSink, GraphStore, Node
 
 SnapshotStatus = Literal["fresh", "stale"]
@@ -87,6 +88,7 @@ def write_snapshot(
     *,
     run_id: str,
     holdings: tuple[BrokerPosition, ...],
+    account: BrokerAccount | None,
     status: SnapshotStatus,
     stale_reason: str | None,
 ) -> Node:
@@ -99,6 +101,7 @@ def write_snapshot(
         "holding_count": len(holdings),
         "holdings": [_holding_props(position) for position in holdings],
     }
+    props.update(account_snapshot_props(account, stale_reason))
     if stale_reason is not None:
         props["stale_reason"] = stale_reason
     return graph.merge_node(

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Literal
 from agents.execution import ExecutionAgent
 from agents.execution.broker import BrokerFill, BrokerPosition
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from agents.execution.tests.stage_helpers import flag_handler
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
@@ -103,7 +104,7 @@ def fill_node_count(graph: InMemoryGraphStore) -> int:
     return len(graph.list_nodes("Fill"))
 
 
-class PositionBroker:
+class PositionBroker(NoStopBrokerMixin):
     """Broker fake that returns configured positions."""
 
     def __init__(self, positions: tuple[BrokerPosition, ...]) -> None:
@@ -125,20 +126,6 @@ class PositionBroker:
         tolerance_bps: int | None = None,
     ) -> BrokerFill:
         raise AssertionError("position-sync test should not submit orders")
-
-    def submit_stop(
-        self,
-        idempotency_key: str,
-        ticker: str,
-        side: Literal["buy", "sell"],
-        quantity: int,
-        stop_price: Money,
-        tif: str = "gtc",
-    ) -> BrokerFill:
-        raise AssertionError("position-sync test should not submit stops")
-
-    def cancel(self, broker_order_id: str) -> None:
-        raise AssertionError("position-sync test should not cancel orders")
 
 
 class FailingBroker(PositionBroker):

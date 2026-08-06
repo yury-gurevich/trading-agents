@@ -57,6 +57,15 @@ class BrokerPosition:
     market_value_cents: int
 
 
+@dataclass(frozen=True)
+class BrokerAccount:
+    """Broker-side account snapshot, with money normalized to integer cents."""
+
+    cash_cents: int
+    equity_cents: int
+    buying_power_cents: int
+
+
 class BrokerRejectedError(RuntimeError):
     """Raised when the broker rejects while still returning an auditable outcome."""
 
@@ -108,6 +117,7 @@ class Broker(Protocol):
 
 __all__ = [
     "Broker",
+    "BrokerAccount",
     "BrokerFill",
     "BrokerPosition",
     "BrokerRejectedError",

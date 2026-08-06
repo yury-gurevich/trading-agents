@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 def test_sync_work_source_finds_only_unsynced_runs() -> None:
-    """EXEC-TRG-01 / EXEC-IDN-01: planted synced run is not pending again."""
+    """EXEC-TRG-07 / EXEC-IDN-01: planted synced run is not pending again."""
     graph = InMemoryGraphStore()
     first = _run_request(graph, "needs-sync")
     second = _run_request(graph, "already-synced")
@@ -46,7 +46,8 @@ def test_sync_work_source_finds_only_unsynced_runs() -> None:
 
 
 def test_sync_writes_fresh_snapshot_from_broker_truth() -> None:
-    """EXEC-IDN-01 / EXEC-OBS-02: broker holdings become a fresh snapshot."""
+    """EXEC-IDN-01 / EXEC-TRG-07 / EXEC-OBS-02: broker holdings become a fresh
+    run-start snapshot."""
     graph = InMemoryGraphStore()
     request = _run_request(graph, "fresh-run")
     broker = PositionBroker(
@@ -104,7 +105,7 @@ def test_sync_broker_failure_degrades_without_raising() -> None:
 
 
 def test_sync_is_idempotent_per_run() -> None:
-    """EXEC-IDM-02 / EXEC-TRG-01: second poll pass finds no duplicate snapshot."""
+    """EXEC-IDM-02 / EXEC-TRG-07: second poll pass finds no duplicate snapshot."""
     graph = InMemoryGraphStore()
     _run_request(graph, "one-pass")
     broker = PositionBroker((BrokerPosition("AAPL", 3, 10000, 30000),))

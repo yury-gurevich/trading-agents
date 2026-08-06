@@ -16,8 +16,14 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution import alpaca_orders
+from agents.execution.alpaca_account import account_from_payload
 from agents.execution.alpaca_positions import positions_from_payload
-from agents.execution.broker import BrokerFill, BrokerPosition, BrokerRejectedError
+from agents.execution.broker import (
+    BrokerAccount,
+    BrokerFill,
+    BrokerPosition,
+    BrokerRejectedError,
+)
 from contracts.common import Money
 
 if TYPE_CHECKING:
@@ -26,6 +32,7 @@ if TYPE_CHECKING:
 _ORDERS_PATH = "/v2/orders"
 _BY_CLIENT_PATH = "/v2/orders:by_client_order_id"
 _POSITIONS_PATH = "/v2/positions"
+_ACCOUNT_PATH = "/v2/account"
 
 BrokerSide = alpaca_orders.BrokerSide
 
@@ -112,6 +119,10 @@ class AlpacaBroker:
     def positions(self) -> tuple[BrokerPosition, ...]:
         """Return read-only Alpaca paper holdings for reconciliation."""
         return positions_from_payload(self._request("GET", _POSITIONS_PATH, None))
+
+    def account(self) -> BrokerAccount:
+        """Return read-only Alpaca paper account state for PM sizing facts."""
+        return account_from_payload(self._request("GET", _ACCOUNT_PATH, None))
 
     def cancel(self, broker_order_id: str) -> None:  # pragma: no cover - real HTTPS
         """Cancel one open order by its broker id (lifecycle/cleanup; ignores body)."""

@@ -38,6 +38,19 @@ def test_paper_broker_positions_track_the_in_memory_book() -> None:
     assert broker.positions() == ()
 
 
+def test_paper_broker_account_tracks_cash_equity_and_buying_power() -> None:
+    broker = PaperBroker(starting_cash=Money(amount=Decimal("1000.00")))
+    broker.submit("b1", "AAPL", "buy", 2, Money(amount=Decimal("100.00")))
+    broker.submit("s1", "AAPL", "sell", 1, Money(amount=Decimal("110.00")))
+    broker.submit_stop("stop:AAPL", "AAPL", "sell", 1, Money(amount=Decimal("95.00")))
+
+    account = broker.account()
+
+    assert account.cash_cents == 91000
+    assert account.equity_cents == 101000
+    assert account.buying_power_cents == 91000
+
+
 def test_paper_broker_stop_rests_pending_and_does_not_move_book() -> None:
     broker = PaperBroker()
     broker.submit("b1", "AAPL", "buy", 2, Money(amount=Decimal("100.00")))

@@ -54,11 +54,13 @@ def evaluate_analyst_node(
     """Evaluate one AnalystRun node from the graph and link the PMRun back to it."""
     settings = settings or PortfolioManagerSettings()
     sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
-    portfolio = portfolio or portfolio_from_graph(graph, settings.starting_cash)
     recommendation_set = RecommendationSet.model_validate(
         node.props["recommendation_set"]
     )
-    market, regime = _market_and_regime(graph, node)
+    market, regime, source_run_id = _market_and_regime(graph, node)
+    portfolio = portfolio or portfolio_from_graph(
+        graph, settings.starting_cash, run_id=source_run_id
+    )
     result = run_evaluation(
         graph,
         recommendation_set=recommendation_set,
@@ -78,7 +80,7 @@ def evaluate_analyst_node(
 
 def _market_and_regime(
     graph: GraphStore, analyst_run: Node
-) -> tuple[MarketData | None, RegimeContext | None]:
+) -> tuple[MarketData | None, RegimeContext | None, str | None]:
     # write_analysis links (scan)-[:ANALYZED_BY]->(analyst), and write_scan links
     # (scan)-[:DERIVED_FROM]->(market), so the MarketData the analyst consumed is the
     # ANALYZED_BY ancestor's DERIVED_FROM descendant. Regime is keyed by window_end.
@@ -87,14 +89,15 @@ def _market_and_regime(
         None,
     )
     if scan_run is None:
-        return None, None
+        return None, None, None
     market_node = next(
         iter(graph.descendants(scan_run, max_depth=1, edge_types={_DERIVED_FROM})),
         None,
     )
     if market_node is None:
-        return None, None
+        return None, None, None
     market = MarketData.model_validate(market_node.props["snapshot"])
+    source_run_id = str(market_node.props.get("run_id", ""))
     regime_node = graph.get_node(
         REGIME_CONTEXT_LABEL, f"regime-context:{market_node.props['run_id']}"
     )
@@ -103,4 +106,4 @@ def _market_and_regime(
         if regime_node
         else None
     )
-    return market, regime
+    return market, regime, source_run_id

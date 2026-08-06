@@ -162,6 +162,8 @@ def _precheck(
         return RejectedOrder(ticker=item.ticker, reason="unsupported_action")
     if item.action == "sell" and item.ticker not in portfolio.positions:
         return RejectedOrder(ticker=item.ticker, reason="position_unavailable")
+    if item.action == "buy" and not portfolio.account_is_fresh:
+        return RejectedOrder(ticker=item.ticker, reason="account_unavailable")
     if price is None or price.amount <= 0:
         return RejectedOrder(ticker=item.ticker, reason="price_unavailable")
     return None

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
-from agents.execution.broker import BrokerFill, BrokerPosition
+from agents.execution.broker import BrokerAccount, BrokerFill, BrokerPosition
 from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.reconciliation_store import (
     position_divergences,
@@ -20,6 +20,12 @@ from agents.execution.reconciliation_store import (
 from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from contracts.common import Money
 from kernel import CollectingFaultSink, InMemoryGraphStore, Node
+
+_DEFAULT_ACCOUNT = BrokerAccount(
+    cash_cents=10000000,
+    equity_cents=10000000,
+    buying_power_cents=10000000,
+)
 
 
 def test_reconcile_run_start_snapshots_flags_and_refreshes_pending_fills() -> None:
@@ -105,6 +111,7 @@ def test_position_divergences_is_empty_when_books_match() -> None:
 class _StaticBroker(NoStopBrokerMixin):
     broker_fills: tuple[BrokerFill, ...]
     broker_positions: tuple[BrokerPosition, ...]
+    broker_account: BrokerAccount = _DEFAULT_ACCOUNT
 
     def submit(self, *_args: object, **_kwargs: object) -> BrokerFill:
         raise AssertionError("reconciliation must not submit")
@@ -114,6 +121,9 @@ class _StaticBroker(NoStopBrokerMixin):
 
     def positions(self) -> tuple[BrokerPosition, ...]:
         return self.broker_positions
+
+    def account(self) -> BrokerAccount:
+        return self.broker_account
 
 
 class _FailingBroker(NoStopBrokerMixin):

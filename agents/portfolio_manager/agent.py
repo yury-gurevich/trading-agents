@@ -110,6 +110,8 @@ class PortfolioManagerAgent(AgentBase):
     def _current_portfolio(self) -> PortfolioState:
         if self._portfolio is not None:
             return self._portfolio
-        if self._graph.list_nodes("Position"):
+        if self._graph.list_nodes("Position") or self._graph.list_nodes(
+            "BrokerPositionSnapshot"
+        ):
             return portfolio_from_graph(self._graph, self._settings.starting_cash)
         return default_portfolio(self._settings.starting_cash)

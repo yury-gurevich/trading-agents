@@ -15,6 +15,7 @@ from agents.execution.broker import BrokerFill
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.poll import execute_pm_node, find_pending
 from agents.execution.store import write_fills as store_write_fills
+from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from agents.execution.tests.helpers import order, order_set
 from kernel import CollectingFaultSink, GraphFaultSink, InMemoryGraphStore
 from kernel.work_loop import run_once
@@ -113,7 +114,7 @@ def test_run_once_continues_after_poisoned_intent_and_anchors_execution(
     assert find_pending(graph) == []
 
 
-class RecordingBroker:
+class RecordingBroker(NoStopBrokerMixin):
     """Broker fake that records every market submission."""
 
     def __init__(self) -> None:
@@ -138,20 +139,6 @@ class RecordingBroker:
             broker_order_id=f"paper:{idempotency_key}",
             status="filled",
         )
-
-    def submit_stop(
-        self,
-        idempotency_key: str,
-        ticker: str,
-        side: Literal["buy", "sell"],
-        quantity: int,
-        stop_price: Money,
-        tif: str = "gtc",
-    ) -> BrokerFill:
-        raise AssertionError("test broker should not submit stops")
-
-    def cancel(self, broker_order_id: str) -> None:
-        raise AssertionError("test broker should not cancel stops")
 
     def fills(self) -> tuple[BrokerFill, ...]:
         return ()

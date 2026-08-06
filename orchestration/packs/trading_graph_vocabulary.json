@@ -359,6 +359,19 @@
       "verdicts",
       "vetoed_tickers"
     ],
+    "BrokerPositionSnapshot": [
+      "account_buying_power_cents",
+      "account_cash_cents",
+      "account_equity_cents",
+      "account_stale_reason",
+      "account_status",
+      "created_at",
+      "holding_count",
+      "holdings",
+      "run_id",
+      "stale_reason",
+      "status"
+    ],
     "Fill": [
       "attempt_ordinal",
       "actual_open_price_cents",

@@ -9,9 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+from agents.execution.broker import BrokerAccount
+
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill
     from contracts.common import Money
+
+_DEFAULT_CENTS = 10000000
 
 
 class NoStopBrokerMixin:
@@ -32,3 +36,11 @@ class NoStopBrokerMixin:
     def cancel(self, broker_order_id: str) -> None:
         """Fail loudly if a test unexpectedly cancels a broker stop."""
         raise AssertionError("test broker should not cancel stop orders")
+
+    def account(self) -> BrokerAccount:
+        """Return a deterministic fresh account unless a test overrides it."""
+        return BrokerAccount(
+            cash_cents=_DEFAULT_CENTS,
+            equity_cents=_DEFAULT_CENTS,
+            buying_power_cents=_DEFAULT_CENTS,
+        )

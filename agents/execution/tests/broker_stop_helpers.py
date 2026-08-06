@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
 
 from agents.execution.broker import BrokerFill
+from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from contracts.positions import PositionStopThreshold
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class TrackingBroker:
+class TrackingBroker(NoStopBrokerMixin):
     """Broker fixture with explicit fills/positions and cancel recording."""
 
     broker_fills: tuple[BrokerFill, ...] = ()

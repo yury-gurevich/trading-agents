@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 def test_work_items_prioritize_sync_before_submit() -> None:
-    """EXEC-TRG-01 / EXEC-IDN-01: sync work is before order submission work."""
+    """EXEC-TRG-07 / EXEC-IDN-01: sync work is before order submission work."""
     graph = InMemoryGraphStore()
     run = graph.merge_node("RunRequest", run_request_key("mixed"), {"run_id": "mixed"})
     pm = graph.merge_node("PMRun", "pm-run:mixed", {})
@@ -42,7 +42,7 @@ def test_work_items_prioritize_sync_before_submit() -> None:
 def test_process_work_item_dispatches_both_kinds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """EXEC-TRG-01 / EXEC-IDN-01: planted work items hit both dispatch arms."""
+    """EXEC-TRG-07 / EXEC-IDN-01: planted work items hit both dispatch arms."""
     graph = InMemoryGraphStore()
     run = graph.merge_node("RunRequest", run_request_key("sync"), {"run_id": "sync"})
     pm = graph.merge_node("PMRun", "pm-run:submit", {})

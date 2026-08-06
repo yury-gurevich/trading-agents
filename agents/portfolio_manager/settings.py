@@ -21,7 +21,10 @@ class PortfolioManagerSettings(AgentSettings):
 
     starting_cash: Decimal = tunable(
         Decimal("100000.00"),
-        why="Seed the first PM slice with a paper portfolio before execution lands.",
+        why=(
+            "Bootstrap a genuinely fresh paper graph before any execution account "
+            "snapshot exists; normal sizing uses execution-recorded account equity."
+        ),
         ge=0.0,
         le=1000000000.0,
         unit="USD",

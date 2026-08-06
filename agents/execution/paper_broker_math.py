@@ -10,7 +10,7 @@ from __future__ import annotations
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
-from agents.execution.broker import BrokerFill, BrokerPosition
+from agents.execution.broker import BrokerAccount, BrokerFill, BrokerPosition
 from contracts.common import Money, Ticker
 
 BASIS_POINTS_PER_UNIT = Decimal("10000")
@@ -67,6 +67,26 @@ def positions_from_fills(fills: tuple[BrokerFill, ...]) -> tuple[BrokerPosition,
             market_value_cents=cost_cents,
         )
         for ticker, (qty, cost_cents) in sorted(book.items())
+    )
+
+
+def account_from_fills(
+    fills: tuple[BrokerFill, ...], initial_cash_cents: int
+) -> BrokerAccount:
+    """Return deterministic account state implied by paper fills."""
+    cash_cents = initial_cash_cents
+    for fill in fills:
+        if fill.status not in ("filled", "partial") or fill.quantity <= 0:
+            continue
+        delta = money_to_cents(fill.price) * fill.quantity
+        cash_cents += delta if fill.side == "sell" else -delta
+    market_value_cents = sum(
+        position.market_value_cents for position in positions_from_fills(fills)
+    )
+    return BrokerAccount(
+        cash_cents=cash_cents,
+        equity_cents=cash_cents + market_value_cents,
+        buying_power_cents=max(cash_cents, 0),
     )
 
 

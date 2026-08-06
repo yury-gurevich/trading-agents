@@ -8,17 +8,28 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import replace
+from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
 
-from agents.execution.broker import BrokerFill, BrokerPosition, BrokerRejectedError
+from agents.execution.broker import (
+    BrokerAccount,
+    BrokerFill,
+    BrokerPosition,
+    BrokerRejectedError,
+)
 from agents.execution.paper_broker_math import (
+    account_from_fills,
+    money_to_cents,
     paper_price,
     positions_from_fills,
     within_tolerance,
 )
+from contracts.common import Money
 
 if TYPE_CHECKING:
-    from contracts.common import Money, Ticker
+    from contracts.common import Ticker
+
+_DEFAULT_ACCOUNT_CASH = Money(amount=Decimal("100000.00"))
 
 
 class PaperBroker:
@@ -30,11 +41,13 @@ class PaperBroker:
         slippage_bps: int = 0,
         order_price_tolerance_bps: int = 0,
         reject_tickers: set[Ticker] | None = None,
+        starting_cash: Money = _DEFAULT_ACCOUNT_CASH,
     ) -> None:
         """Create a broker that de-dupes by idempotency key."""
         self._slippage_bps = slippage_bps
         self._order_price_tolerance_bps = order_price_tolerance_bps
         self._reject_tickers = reject_tickers or set()
+        self._initial_cash_cents = money_to_cents(starting_cash)
         self._fills: dict[str, BrokerFill] = {}
         self.cancelled: list[str] = []
 
@@ -135,6 +148,10 @@ class PaperBroker:
     def positions(self) -> tuple[BrokerPosition, ...]:
         """Return the in-memory book implied by filled paper outcomes."""
         return positions_from_fills(tuple(self._fills.values()))
+
+    def account(self) -> BrokerAccount:
+        """Return deterministic paper account state for run-start sizing facts."""
+        return account_from_fills(tuple(self._fills.values()), self._initial_cash_cents)
 
     def _reject(
         self,

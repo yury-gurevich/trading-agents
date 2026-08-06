@@ -22,7 +22,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | EXEC-TRG-03 | RPC execute_close returns ExecutionResult from monitor-sourced closes. | happy | Demoted S156: `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` no longer exists after ADR-0017 retired execute_close. | ⬜ |
 | EXEC-TRG-05 | RPC stage_status returns current stage without side effects. | read-only | Demoted S156: `test_execution_agent.py::test_execute_close_stage_status_and_reconcile` no longer exists; no replacement citation adjudicated in this sprint. | ⬜ |
 | EXEC-TRG-06 | promote_stage with confirmed=True writes StageTransition. | gate | `test_promote_stage.py::test_promote_stage_confirmed_writes_transition_and_status_reads_graph` | 🟩 |
-| EXEC-TRG-07 | Run-start position_sync writes exactly one BrokerPositionSnapshot before downstream scoring is released. | happy | _tbd_ | ⬜ |
+| EXEC-TRG-07 | Run-start position_sync writes exactly one BrokerPositionSnapshot before downstream scoring is released. | happy | `test_position_sync_work_items.py::test_work_items_prioritize_sync_before_submit`; `test_position_sync_poll.py::test_sync_is_idempotent_per_run` | 🟩 |
 
 ## Outputs
 
@@ -94,6 +94,6 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | EXEC-OBS-01 | Fill, Reconciliation, and StageTransition nodes reconstructable from graph. | audit | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
 | EXEC-OBS-02 | Broker rejections and stage-gate rejections routed to central channel. | observable | `test_execution_agent.py::test_broker_rejection_records_rejected_fill_and_fault` | 🟩 |
-| EXEC-IDN-03 | BrokerStopOrder, BrokerPositionSnapshot and BrokerOrderStatus are written only by execution. | boundary | _tbd_ | ⬜ |
+| EXEC-IDN-03 | BrokerStopOrder, BrokerPositionSnapshot and BrokerOrderStatus are written only by execution. | boundary | `test_broker_evidence_ownership.py::test_broker_evidence_labels_have_execution_only_writers` | 🟩 |
 | EXEC-DEP-04 | Graph append-write for the three broker-evidence labels and broker cancel/stop-placement are exercised. | happy | _tbd_ | ⬜ |
 | EXEC-OBS-03 | Stop placement is an immutable fact, cancellation a cancelled_at marker, and a held position with no live stop raises UnprotectedPosition and is retried. | failure | _tbd_ | ⬜ |

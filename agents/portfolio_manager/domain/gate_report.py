@@ -44,7 +44,7 @@ def position_outcomes(
 ) -> tuple[GateOutcome, ...]:
     """Report the PM sizing, quantity, name-count, and cash gates."""
     cost = Decimal(quantity) * price.amount
-    available = portfolio.cash.amount * (Decimal("1") - cash_buffer_pct) - reserved_cash
+    available = portfolio.available_for_buys(cash_buffer_pct, reserved_cash)
     is_new = item.ticker not in open_tickers
     open_after = len(open_tickers) + int(is_new)
     return (
@@ -82,7 +82,8 @@ def position_outcomes(
             threshold=float(available),
             passed=cost <= available,
             detail=(
-                f"cash={_money(portfolio.cash.amount)}; "
+                f"portfolio_value={_money(portfolio.value)}; "
+                f"deployed={_money(portfolio.deployed_value)}; "
                 f"cash_buffer_pct={float(cash_buffer_pct):.4f}; "
                 f"reserved_cash={_money(reserved_cash)}"
             ),

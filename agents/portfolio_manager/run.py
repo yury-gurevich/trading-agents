@@ -40,6 +40,12 @@ def run_evaluation(
         return reject_all(
             graph, recommendation_set=recommendation_set, reason="no_recommendations"
         )
+    if _has_buy(recommendation_set) and not portfolio.account_is_fresh:
+        _record_fault(
+            sink,
+            "account state stale: "
+            f"{portfolio.account_stale_reason or 'missing fresh account snapshot'}",
+        )
     refs = incident_refs(market, regime)
     rejection = _provider_rejection(sink, market, regime)
     if rejection is not None:
@@ -104,6 +110,10 @@ def _provider_rejection(
         _record_fault(sink, "provider returned degraded regime data")
         return "provider_degraded"
     return None
+
+
+def _has_buy(recommendation_set: RecommendationSet) -> bool:
+    return any(item.action == "buy" for item in recommendation_set.recommendations)
 
 
 def _record_fault(sink: FaultSink, message: str) -> None:

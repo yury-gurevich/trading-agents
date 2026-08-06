@@ -41,7 +41,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | forecaster | ✅ v1 (LOCKED) | 16 / 45 | 🟨 partial — **16 of 45 clauses proven** after the S156 citation check; 29 have a gray row |
 | portfolio_manager | ✅ v1 (LOCKED) | 25 / 44 | 🟨 partial — **25 of 44 clauses proven** after the S156 citation check; 7 have a gray row and 12 have no row at all (S157 warn-only backlog) |
 | deliberator | ✅ v1 (LOCKED) | 4 / 48 | 🟨 partial — **4 of 48 clauses proven** after S158; first greens cover append-only `DeliberationRun` output shape, fail-open recording, and failed peer/debate visibility |
-| execution | ✅ v1.1 (LOCKED) | 28 / 57 | 🟨 partial — **28 of 57 clauses proven** after the S156 citation check; 16 have a gray row and 13 have no row at all (S157 warn-only backlog) · S152 declared 8 new clauses (49→57); `chore-exec-fail-03-coverage` proved EXEC-FAIL-03 |
+| execution | ✅ v1.1 (LOCKED) | 30 / 57 | 🟨 partial — **30 of 57 clauses proven** after S161 proved run-start position_sync ordering/idempotency and broker-evidence label ownership; 14 have a gray row and 13 have no row at all (S157 warn-only backlog) · S152 declared 8 new clauses (49→57); `chore-exec-fail-03-coverage` proved EXEC-FAIL-03 |
 | monitor | ✅ v1 (LOCKED) | 20 / 46 | 🟨 partial — **20 of 46 clauses proven** after the S156 citation check; 19 have a gray row and 7 have no row at all (S157 warn-only backlog) |
 | reporter | ✅ v1 (LOCKED) | 20 / 39 | 🟨 partial — **20 of 39 clauses proven** after the S156 citation check; 18 have a gray row and 1 have no row at all (S157 warn-only backlog) |
 | researcher | ✅ v1 (LOCKED) | 19 / 43 | 🟨 partial — **19 of 43 clauses proven** after the S156 citation check; 24 have a gray row |

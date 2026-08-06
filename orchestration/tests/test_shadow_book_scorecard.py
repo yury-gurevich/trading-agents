@@ -13,7 +13,8 @@ import pytest
 
 from kernel import InMemoryGraphStore
 from orchestration.shadow_book import derive_shadow_book
-from orchestration.shadow_book_scorecard import render_scorecard, score_rows
+from orchestration.shadow_book_render import render_scorecard
+from orchestration.shadow_book_scorecard import score_rows
 from orchestration.shadow_book_settings import ShadowBookSettings
 from orchestration.tests.shadow_book_helpers import (
     add_market,
@@ -91,7 +92,7 @@ def test_empty_complete_cases_render_n_zero_instead_of_statistics() -> None:
     report = render_scorecard(outcomes, (20,), confidence_bucket_width=0.05)
 
     assert "not_yet_elapsed=2" in report
-    assert "| all | no complete outcomes | 0 | N/A | N/A | N/A |" in report
+    assert "| all | no complete outcomes | 0 | 0 | n/a | n/a | n/a |" in report
 
 
 def test_shadow_book_horizons_are_justified_sorted_tunables() -> None:

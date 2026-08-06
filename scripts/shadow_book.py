@@ -27,7 +27,7 @@ def main() -> None:
 
     from kernel.graph_env import build_graph_from_env
     from orchestration.shadow_book import derive_shadow_book
-    from orchestration.shadow_book_scorecard import render_scorecard
+    from orchestration.shadow_book_render import render_scorecard
     from orchestration.shadow_book_settings import ShadowBookSettings
 
     settings = ShadowBookSettings()

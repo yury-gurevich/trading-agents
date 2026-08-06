@@ -476,7 +476,20 @@ detect-secrets (untracked): scanning 9 new file(s)
 Remote gate / gate-ran / merge:
 
 ```text
-PENDING until the branch is pushed and `make gate-ran` exits 0.
+git push -u origin sprint-161-pm-knows-what-it-paid
+created origin/sprint-161-pm-knows-what-it-paid at 802b1c6
+
+gh run watch 31085921455 --exit-status
+CI success: quality passed in 39s; security passed in 2m13s; test passed in 1m8s.
+
+gh run list --branch sprint-161-pm-knows-what-it-paid --limit 10
+completed success Security Findings sprint-161-pm-knows-what-it-paid push 31085919993
+completed success CI                sprint-161-pm-knows-what-it-paid push 31085921455
+
+make gate-ran
+GATE PROVEN for 802b1c64344e0899fb32aa827da4434ec720a53d:
+  CI: success
+  Security Findings: success
 ```
 
 **Expected post-fix approval count, and why that is correct:**
@@ -487,9 +500,9 @@ PM should stop adding until the book shrinks; that is the fix working, not a del
 
 **Not met / verified failing:**
 
-Pending at this handback-edit point: pushed branch remote gates, `make gate-ran`, local merge to
-`main`, fleet retag/deploy, and first scheduled-run functionality check. These entries must be
-replaced with real results before merge closeout.
+Not done in this branch-local sprint execution: fleet retag/deploy and first scheduled-run
+functionality check. Those are post-merge/fleet steps in the sequencing block above. The closeout-doc
+commit is pushed after the code gate evidence, and `make gate-ran` is rerun before the local merge.
 
 ---
 

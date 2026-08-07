@@ -4925,3 +4925,55 @@ should go, they should go through the pipeline.
 defect first, then decide A vs B. Nothing was changed on the account, the parameters, or the ADRs.
 
 ---
+
+## DL-94 · `pg_teardown.py --run-id` leaves orphans, because its label list predates half the graph · status: DECIDED (2026-08-07)
+
+**Found while tearing down the S162 end-to-end check** (`sched-2026-07-17`, a synthetic backdated
+run fired to exercise the deployed `:s162` fleet). `--run-id` reported `deleted_edges=50
+deleted_nodes=21` and read as complete. It was not: **41 further nodes survived**, all stamped with
+the same run's identifiers.
+
+**Why.** `_RUN_ARTIFACT_LABELS` enumerates 16 labels and is the filter on the recursive neighbour
+walk. Four labels the pipeline now writes are absent from it, so the walk refuses to traverse into
+them:
+
+| Label | Orphans left behind | Written by |
+| --- | --- | --- |
+| `Rejection` | 11 | PM `store.write_order_decision` |
+| `SentimentReading` | 11 | analyst |
+| `PositionCheck` | 10 | monitor |
+| `DeliberationRun` | 1 | deliberator |
+| `BrokerPositionSnapshot` (PM-keyed) | 1 | execution at submit |
+
+Plus **6 `Recommendation` nodes**: those *are* in the list, but the only path the walk had into them
+was via `Candidate`, and the run scored 11 recommendations against 5 scanner survivors. The five
+reachable ones were deleted and the other six were not — **a partially-deleted lineage, which is
+worse than an untouched one**, because the surviving rows look like real history.
+
+**The failure mode is the point.** The script prints a count and exits 0. Nothing about
+`deleted_nodes=21` says "and 41 more matched your stamp and were left". Teardown is the step that
+makes a functionality check honest (`functionality-checks.md`: *"Return stamped rows to zero after
+each check"*), so a teardown that silently under-deletes quietly corrupts the register's central
+claim. Cleared here only because the residue was **verified by stamp afterwards rather than
+inferred from the exit code** — three further `--prefix … --contains` sweeps, then a re-count to
+zero across all five of the run's identifiers.
+
+**Decision: fix the script, do not fix it inline.** `scripts/pg_teardown.py` is Python, so
+CLAUDE.md puts it on the **full cycle** (branch, `make ci`, remote gate, merge) — not the docs light
+path. Doing it as an untested edit during a functionality check would be the same class of mistake
+the entry describes. Filed for its own chore.
+
+**What the fix should be, and what it must not be.** Add the four missing labels and give
+`Recommendation` a path that does not depend on `Candidate` (walk from `AnalystRun`, or match the
+analyst-run stamp directly). 🪤 **The label list cannot simply become "every label":**
+`_RUN_ARTIFACT_LABELS` already contains `Position` and `Fill`, which the standing broker-state note
+(DL-44 / S120) calls **production state, not disposable proof artifacts**. The dry run for this
+teardown was checked precisely for that — it reached neither, but it reached them only by luck of
+the edge topology, not by design. The real fix should make that safety explicit rather than
+incidental.
+
+**Road not taken.** Deleting by raw SQL against the run id without the label filter — rejected for
+exactly the reason above: it would have taken the 27 live `Position` rows mirroring the Alpaca book
+with it, manufacturing the broker↔graph divergence DL-44 exists to prevent.
+
+---

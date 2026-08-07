@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 BROKER_STOP_ORDER_LABEL = "BrokerStopOrder"
+_ATTEMPT_SEPARATOR = "#"
+_BASE_ATTEMPT_ORDINAL = 0
 
 
 @dataclass(frozen=True)
@@ -33,6 +35,21 @@ class BrokerStopOrder:
 def broker_stop_order_key(position_ref: str, ticker: Ticker) -> str:
     """Return the shared graph key and broker client_order_id for a stop."""
     return f"stop:{position_ref}:{ticker}"
+
+
+def next_broker_stop_order_key(
+    graph: GraphStore, position_ref: str, ticker: Ticker
+) -> str | None:
+    """Return the free key to place under, or None while one is still active."""
+    ordinal = _BASE_ATTEMPT_ORDINAL
+    while True:
+        key = _broker_stop_order_attempt_key(position_ref, ticker, ordinal)
+        node = graph.get_node(BROKER_STOP_ORDER_LABEL, key)
+        if node is None:
+            return key
+        if _broker_stop_order(node).cancelled_at is None:
+            return None
+        ordinal += 1
 
 
 def active_broker_stop_refs(graph: GraphStore) -> frozenset[str]:
@@ -68,6 +85,15 @@ def _broker_stop_order(node: Node) -> BrokerStopOrder:
         placed_at=str(props["placed_at"]),
         cancelled_at=_optional_str(props.get("cancelled_at")),
     )
+
+
+def _broker_stop_order_attempt_key(
+    position_ref: str, ticker: Ticker, ordinal: int
+) -> str:
+    base_key = broker_stop_order_key(position_ref, ticker)
+    if ordinal == _BASE_ATTEMPT_ORDINAL:
+        return base_key
+    return f"{base_key}{_ATTEMPT_SEPARATOR}{ordinal}"
 
 
 def _optional_str(value: object) -> str | None:

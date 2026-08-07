@@ -137,7 +137,7 @@ def test_place_stop_tolerates_position_that_vanishes_before_linking() -> None:
     assert list(graph.ancestors(stop, max_depth=1, edge_types={"PROTECTED_BY"})) == []
 
 
-def test_place_broker_stops_skips_missing_snapshot_and_existing_key() -> None:
+def test_place_broker_stops_skips_missing_snapshot_and_active_key() -> None:
     graph = InMemoryGraphStore()
     broker = PendingStopBroker()
     position(graph, "held:AAPL", "AAPL", 2, opened_price_cents=10000)
@@ -155,7 +155,6 @@ def test_place_broker_stops_skips_missing_snapshot_and_existing_key() -> None:
             "stop_price_cents": 9500,
             "broker_order_id": "broker-stop-1",
             "placed_at": "2026-07-25T00:00:00+00:00",
-            "cancelled_at": "2026-07-25T00:01:00+00:00",
         },
     )
     snapshot = _snapshot(graph, ({"ticker": "AAPL", "quantity": 2},))

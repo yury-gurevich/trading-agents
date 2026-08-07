@@ -17,10 +17,9 @@ from agents.execution.broker_stop_thresholds import (
 )
 from agents.execution.settings import ExecutionSettings
 from contracts.broker_stops import (
-    BROKER_STOP_ORDER_LABEL,
     active_broker_stop_orders,
     active_broker_stop_refs,
-    broker_stop_order_key,
+    next_broker_stop_order_key,
 )
 from contracts.positions import PositionStopThreshold, open_positions
 from kernel import AgentFault
@@ -100,7 +99,7 @@ def place_broker_stops(
                 sink,
                 ticker,
                 quantity,
-                "existing inactive BrokerStopOrder fact blocks retry",
+                "active BrokerStopOrder fact blocks duplicate stop placement",
                 position_ref=threshold.position_ref,
             )
         elif fill.status == "rejected":
@@ -120,8 +119,8 @@ def _place_stop(
     plan: BrokerStopThresholdPlan,
 ) -> BrokerFill | None:
     threshold = plan.threshold
-    key = broker_stop_order_key(threshold.position_ref, threshold.ticker)
-    if graph.get_node(BROKER_STOP_ORDER_LABEL, key) is not None:
+    key = next_broker_stop_order_key(graph, threshold.position_ref, threshold.ticker)
+    if key is None:
         return None
     return place_stop(
         graph,

@@ -111,14 +111,14 @@ def test_active_stop_fact_skips_duplicate_submission() -> None:
     assert sink.faults == []
 
 
-def test_cancelled_stop_fact_blocks_retry_loudly() -> None:
-    """EXEC-FAIL-01 / EXEC-OBS-02: inactive stop facts do not hide exposure."""
+def test_active_stop_key_mismatch_blocks_duplicate_loudly() -> None:
+    """EXEC-FAIL-01 / EXEC-OBS-02: active stop key drift is loud."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     broker = PendingStopBroker()
     _position(graph, "held:AAPL", "AAPL", 4)
     ref = open_positions(graph)[0].position_ref
-    _stop_fact(graph, ref, cancelled_at="2026-07-28T00:00:00Z")
+    _stop_fact(graph, ref, position_ref="other-ref")
 
     place_broker_stops(
         graph,
@@ -131,7 +131,7 @@ def test_cancelled_stop_fact_blocks_retry_loudly() -> None:
 
     assert broker.submitted == []
     assert sink.faults[-1].context["reason"] == (
-        "existing inactive BrokerStopOrder fact blocks retry"
+        "active BrokerStopOrder fact blocks duplicate stop placement"
     )
 
 
@@ -169,15 +169,19 @@ def _snapshot(graph: InMemoryGraphStore, holdings: tuple[object, ...]) -> Node:
 
 
 def _stop_fact(
-    graph: InMemoryGraphStore, position_ref: str, *, cancelled_at: str | None = None
+    graph: InMemoryGraphStore,
+    key_ref: str,
+    *,
+    position_ref: str | None = None,
+    cancelled_at: str | None = None,
 ) -> None:
     props: dict[str, object] = {
         "ticker": "AAPL",
-        "position_ref": position_ref,
+        "position_ref": position_ref or key_ref,
         "stop_price_cents": 9500,
         "broker_order_id": "broker-stop-1",
         "placed_at": "2026-07-28T00:00:00Z",
     }
     if cancelled_at is not None:
         props["cancelled_at"] = cancelled_at
-    graph.merge_node("BrokerStopOrder", f"stop:{position_ref}:AAPL", props)
+    graph.merge_node("BrokerStopOrder", f"stop:{key_ref}:AAPL", props)

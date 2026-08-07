@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** none — **config-only, no code change** (see "Why this needs no code")
-**Status:** SPEC — packaged 2026-08-07, awaiting operator go
+**Status:** 🔴 **BLOCKED** — operator said go 2026-08-07; the baseline step found the flatten cannot execute. See **[DL-95](../design-log.md)**: all ten positions have `qty_available = 0` because each is fully reserved by its own resting `gtc` stop, and nothing in `execute_pm_node` cancels a stop for a ticker being sold. **Nothing was changed** — no env var set, no run fired, no order placed. Unblocks after the exit-cancels-its-stop fix
 **Version:** **no bump** — no package behaviour changes
 **Effort:** S (two env-var moves, two runs, two restores)
 **Decisions:** [DL-93](../design-log.md) sizing / cap / sell-policy — **this executes option A, unblocked** ·

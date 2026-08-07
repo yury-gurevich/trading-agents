@@ -4977,3 +4977,98 @@ exactly the reason above: it would have taken the 27 live `Position` rows mirror
 with it, manufacturing the broker↔graph divergence DL-44 exists to prevent.
 
 ---
+
+## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: OPEN (found 2026-08-07 while executing the flatten chore)
+
+**Found at the baseline step of [chore-flatten-and-resize](sprints/chore-flatten-and-resize.md), before
+anything was changed.** The chore was packaged to flatten the book by raising
+`exit_confidence_floor` above the highest held confidence. Measured against the live Alpaca paper
+account first — and the flatten cannot execute.
+
+### Measured 2026-08-07 04:45 UTC (read-only)
+
+Ten positions, and **ten resting `gtc` sell stops, one per position, each for the full quantity**:
+
+| | qty | `qty_available` | resting stop |
+| --- | --- | --- | --- |
+| ABT | 191 | **0** | sell 191 @ 100.24 |
+| BAC | 503 | **0** | sell 503 @ 56.65 |
+| BMY | 153 | **0** | sell 153 @ 62.34 |
+| CSCO | 177 | **0** | sell 177 @ 106.78 |
+| HPE | 229 | **0** | sell 229 @ 41.37 |
+| MDT | 233 | **0** | sell 233 @ 82.26 |
+| PYPL | 175 | **0** | sell 175 @ 53.81 |
+| SCHW | 196 | **0** | sell 196 @ 97.10 |
+| USB | 478 | **0** | sell 478 @ 59.47 |
+| WFC | 348 | **0** | sell 348 @ 82.07 |
+
+**`qty_available = 0` on all ten.** Alpaca reserves shares against open sell orders, so a full-exit
+sell has no shares to sell. `shorting_enabled: True`, which is why this matters twice over.
+
+### Why the pipeline does not handle it
+
+`execute_pm_node` ([`poll.py:169-180`](../agents/execution/poll.py#L169)) runs in this order:
+
+1. `reconcile_run_start` — snapshot
+2. `reconcile_broker_stops` — **cancels only stops whose `position_ref` is no longer active**. The
+   positions being sold are still active at this moment, so nothing is cancelled.
+3. `place_broker_stops` — computes `sold_tickers` and **skips placing new** stops for them. It never
+   cancels the existing one.
+4. `run_submit` — submits the exits into a position with zero available shares.
+
+**The gap is precise: `place_broker_stops` already knows exactly which tickers are being sold, and
+uses that knowledge only to decline placing a stop — never to cancel the stop already resting.**
+
+### This is not hypothetical, and it is not only about the flatten
+
+The graph already carries the failure signature. Five `Fill` rows are `status=rejected` with
+`HTTP Error 403`, three of them explicit:
+
+```text
+{"code":40310000,
+ "existing_order_id":"fd1f1c2c-4911-4df5-b7a1-e2e9929a7341",
+ "message":"potential wash trade detected. use complex orders",
+ "reject_reason":"opposite side market/stop order exists"}
+```
+
+That instance is a *stop placement* colliding with an opposite-side order, not an exit — a different
+path to the same root cause: **the system places resting stops and then does not account for them
+when it next wants to trade the same name.** Two SCHW **buy** fills were rejected 403 the same way.
+
+**Scope it honestly:** the exit-blocked-by-`qty_available` case is an inference from
+`qty_available = 0`, not yet an observed rejection — no exit has been attempted since the stops were
+placed (2026-07-28 → 08-04), because the analyst has returned `hold` throughout. The wash-trade
+rejections above are observed. Both follow from the same unaccounted resting stop.
+
+### Consequence: the pipeline is blocked in *both* directions
+
+[DL-93](design-log.md)/S162 established it cannot **buy** — `available_for_buys = -105,748.50`, so
+`cash_available` fails on every order. This entry establishes it cannot **sell** either: every share
+is reserved. The deadlock is therefore not merely "the book is full"; it is **closed at both ends**,
+and the flatten that was supposed to open it runs straight into the second wall.
+
+### Decision
+
+**The chore is blocked on a code fix; do not hand-cancel the stops.** Cancelling the ten stops
+directly against the broker would clear `qty_available`, but the graph's `BrokerStopOrder` facts stay
+active, and `place_broker_stops` skips any ticker in `active_broker_stop_refs(graph)` — so the
+positions would be **unprotected while the graph believes they are protected**, which is worse than
+the blockage. If the flatten then partly failed, we would hold unstopped positions and not know it.
+
+**Fix shape (its own sprint, full cycle — this is Python):** in `execute_pm_node`, cancel the resting
+stop for each `sold_ticker` *before* `run_submit`, recording the cancellation fact the way
+`cancel_stop` already does, so broker and graph move together. `place_broker_stops` already computes
+`sold_tickers`; the change is to act on it in both directions rather than one.
+
+### Road not taken
+
+- **`DELETE /v2/positions?cancel_orders=true`** — Alpaca will flatten and cancel related orders in one
+  call. Rejected: it writes no lineage and bypasses `EXEC-IDN-01`, which is exactly the mechanism
+  DL-93 already ruled out for hand-fired exits.
+- **Hand-cancel the stops, then run the flatten through the pipeline.** Rejected above — it
+  manufactures a graph/broker divergence in the *protection* layer, the one place where a silent
+  divergence can cost real money.
+- **Lower the stop thresholds out of the way instead of cancelling.** Rejected: it neither frees
+  `qty_available` nor removes the opposite-side conflict, and it quietly disarms risk control.
+
+---

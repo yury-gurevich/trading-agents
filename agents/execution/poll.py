@@ -12,11 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from agents.execution.broker_stops import (
-    place_broker_stops,
-    reconcile_broker_stops,
-)
 from agents.execution.drop_sweep import sweep_unfilled_orders
+from agents.execution.exit_stops import report_unprotected_exits, settle_stops
 from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.run import run_submit
 from agents.execution.settings import ExecutionSettings
@@ -168,8 +165,7 @@ def execute_pm_node(
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
     order_set = _drop_vetoed(graph, node, order_set)
     snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
-    reconcile_broker_stops(graph, broker, sink)
-    place_broker_stops(
+    freed = settle_stops(
         graph,
         broker,
         sink,
@@ -178,6 +174,7 @@ def execute_pm_node(
         fallback_stop_pct=settings.broker_stop_fallback_stop_pct,
     )
     result = run_submit(graph, broker, sink, {}, order_set, settings=settings)
+    report_unprotected_exits(sink, result, freed)
     execution_run = graph.merge_node(
         "ExecutionRun",
         result.run_id,

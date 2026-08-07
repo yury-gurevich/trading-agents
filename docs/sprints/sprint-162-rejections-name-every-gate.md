@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-162-rejections-name-every-gate`
-**Status:** LOCAL CI GREEN — branch handback pending remote gates
+**Status:** BRANCH GREEN — remote gate proven on implementation tip; docs-evidence tip recheck pending
 **Version:** feat → **0.89.00** (MINOR: new evidence carried on an existing contract)
 **Effort:** M
 **Decisions:** [S161](sprint-161-pm-knows-what-it-paid.md) the sizing fix this makes provable ·
@@ -565,8 +565,27 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 6 new file(s)
 ```
 
-**Remote gate / gate-ran / merge:** Pending branch commit/push. Branch-only handback unless Yury
-explicitly asks for a merge.
+**Remote gate / gate-ran / merge:** Branch `sprint-162-rejections-name-every-gate` pushed to
+`origin`. First `make gate-ran` immediately after push failed as expected while checks were still
+running:
+
+```text
+GATE NOT PROVEN: Security Findings is in_progress, not completed — wait, do not merge; CI is in_progress, not completed — wait, do not merge
+```
+
+`gh run watch 31138986207 --exit-status` then exited 0 for head
+`6159a1f00be68e26a8444fd8b061c705d326b62a`; CI jobs were green: `quality in 52s`,
+`security in 2m13s`, `test in 1m8s`. Final repo gate assertion:
+
+```text
+GATE PROVEN for 6159a1f00be68e26a8444fd8b061c705d326b62a:
+  Security Findings: success
+  CI: success
+```
+
+No merge performed; this is a branch-only handback unless Yury explicitly asks for merge. This
+remote-evidence paragraph is a docs-only follow-up, so the final pushed docs-evidence tip is rechecked
+after push rather than recursively editing this file again.
 
 **Confirmation that no approval decision moved:** Focused tests assert existing primary reasons and
 approved/rejected shapes: the 2026-08-07 regression still rejects MSFT on `max_positions`, the

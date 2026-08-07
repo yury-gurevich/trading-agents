@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 def test_2026_07_30_collision_records_drop_without_status_rewrite() -> None:
-    """EXEC-STA-03 / EXEC-OBS-02: 2026-07-30 rejected/canceled collision heals."""
+    """EXEC-STA-03 / EXEC-OBS-02 / EXEC-DEP-04: drop status is appended."""
     graph = InMemoryGraphStore()
     key = "old-run:ABT:buy"
     seed_fill_lineage(graph, "old-run", key, "ABT")

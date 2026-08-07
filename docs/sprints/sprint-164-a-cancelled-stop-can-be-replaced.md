@@ -120,7 +120,7 @@ Then `_place_stop` asks for that key instead of testing the base key for existen
 `cancelled_at` off whatever nodes exist, so chained facts should be picked up automatically. **Verify
 that rather than assuming it** — say so in the return notes either way.
 
-**Result:**
+**Result:** Done. `contracts/broker_stops.py` now exposes `next_broker_stop_order_key`, a pure read that walks `stop:{position_ref}:{ticker}`, then `#1`, `#2`, ... . It returns the first missing key only after every prior `BrokerStopOrder` fact in the chain has `cancelled_at`; it returns `None` immediately for an active fact, so ADR-0015 §3's active-stop guard remains intact. `_place_stop` uses that selected key, and `active_broker_stop_orders` / `active_broker_stop_refs` needed no code change because they already scan every `BrokerStopOrder` node and derive liveness from `cancelled_at`.
 
 ### 2 · The unprotected fault stops lying
 
@@ -129,7 +129,7 @@ the cancelled case. Decide what that branch now means — a still-**active** sto
 absent from `protected_refs` is a real inconsistency and should still fault. **Do not delete the
 branch without saying what now reaches it**; if nothing can, say that and remove it.
 
-**Result:**
+**Result:** Done. The old *"existing inactive BrokerStopOrder fact blocks retry"* branch is gone. The remaining `fill is None` path now means an **active** stop fact blocked duplicate placement after the earlier `protected_refs` read did not skip it, which is an inconsistency or race worth faulting. The fault reason is now *"active BrokerStopOrder fact blocks duplicate stop placement"*; cancelled facts no longer reach it.
 
 ### 3 · Prove the checks can fail (DL-70)
 
@@ -137,7 +137,7 @@ Plant the violation and require the failure. **Watch each test fail before trust
 sprint-defining test passed for the wrong reason because a fixture *constructed* an identifier
 instead of reading it back.
 
-**Result:**
+**Result:** Done. Six tests were added in `agents/execution/tests/test_broker_stop_replacement.py`, and the existing edge tests were adjusted so the former cancelled-stop blocking behavior is no longer expected. Planted failures were watched: restoring the old base-key guard produced **5 failed, 1 passed** in the new test module; disabling the active `protected_refs` skip failed A3; adding a write inside `next_broker_stop_order_key` failed A5's node/edge census. Restored tree: focused slice **35 passed**.
 
 ---
 
@@ -190,7 +190,7 @@ instead of reading it back.
 
 - No agent imports another agent; kernel imports nothing above it (`import-linter`).
 - Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa`.
-  📌 Current sizes: `contracts/broker_stops.py` **74**, `agents/execution/broker_stops.py` **180**.
+  📌 Current sizes: `contracts/broker_stops.py` **100**, `agents/execution/broker_stops.py` **179**.
 - Module docstring declares `Agent:` / `Role:` / `External I/O:`.
 - No magic numbers — `kernel.tunable(..., why=...)` with bounds.
 - Faults, not silent failure — `kernel.fault_boundary`.
@@ -220,14 +220,14 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| Key selection in `contracts/broker_stops.py` | | | |
-| `_place_stop` | | | |
+| Key selection in `contracts/broker_stops.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `docs/decisions/0015-exit-lifecycle-and-stop-ownership.md` | `EXEC-IDN-03`; `EXEC-IDM-02`; `EXEC-NEV-03`; `EXEC-OBS-03`; ADR-0015 §3 | Yes. The key is both graph identity and broker `client_order_id`, so a cancelled fact can only be extended with a new attempt suffix; the base key must not be reused, and an active fact must still block placement. |
+| `_place_stop` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `docs/decisions/0015-exit-lifecycle-and-stop-ownership.md` | `EXEC-IDN-01`; `EXEC-IDN-03`; `EXEC-DEP-04`; `EXEC-OBS-02`; `EXEC-OBS-03`; `EXEC-NEV-03` | Yes. DRIFT-038 is a code gap, not a law gap: `EXEC-OBS-03` already promises retry, and the implementation must make that retry land without mutating or deleting the cancelled evidence. |
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:**
+**Laws found silent where a decision was needed:** None. The law is explicit about retry and append-only stop lifecycle; the only gap is the current code's inability to select a fresh broker stop key after cancellation.
 
-**Clauses that were ⬜ and are now proven:**
+**Clauses that were ⬜ and are now proven:** `EXEC-OBS-03` and `EXEC-DEP-04` moved ⬜ → 🟩 in `agents/execution/laws/test-plan.md`; `docs/laws/ledger.md` and `docs/laws/INDEX.md` now show execution at **32 / 57**.
 
 ---
 
@@ -235,35 +235,53 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_cancelled_stop_is_replaced_on_next_run` | `agents/execution/tests/test_broker_stop_replacement.py` | PASS | `EXEC-OBS-03`; `EXEC-IDN-03`; `EXEC-DEP-04` |
+| A2 | `test_replacement_reaches_broker_under_new_client_order_id` | `agents/execution/tests/test_broker_stop_replacement.py` | PASS | `EXEC-NEV-03`; `EXEC-IDM-02` |
+| A3 | `test_active_stop_still_blocks_duplicate_submission` | `agents/execution/tests/test_broker_stop_replacement.py` | PASS | `EXEC-OBS-03`; `EXEC-IDM-02`; ADR-0015 §3 |
+| A4 | `test_replacement_chain_extends_past_first_suffix` | `agents/execution/tests/test_broker_stop_replacement.py` | PASS | `EXEC-OBS-03`; `EXEC-IDN-03` |
+| A5 | `test_next_broker_stop_order_key_is_read_only` | `agents/execution/tests/test_broker_stop_replacement.py` | PASS | `EXEC-OBS-03`; `EXEC-IDN-03` |
+| A6 | `test_rejected_exit_reprotects_on_later_hold_run` | `agents/execution/tests/test_broker_stop_replacement_e2e.py` | PASS | `EXEC-OBS-03`; `EXEC-DEP-04` |
 
-**Tests added beyond the plan:**
+**Tests added beyond the plan:** None. Existing edge tests were reconciled to the new behavior, and `test_drop_sweep_append_safe.py::test_2026_07_30_collision_records_drop_without_status_rewrite` now cites `EXEC-DEP-04` for the `BrokerOrderStatus` half of that broad dependency clause.
 
 ---
 
 ## Closeout — evidence
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** Worktree `C:\Users\yury_\Downloads\project\trading-agents-sprint-164-a-cancelled-stop-can-be-replaced`, branch `sprint-164-a-cancelled-stop-can-be-replaced`. **`.env` absent** in this worktree; no live broker/graph proof was attempted here.
 
-**Item 2 decision — what still reaches the "blocks retry" branch:**
+**Item 2 decision — what still reaches the "blocks retry" branch:** A cancelled fact no longer reaches it. The remaining `fill is None` branch means an **active** `BrokerStopOrder` fact blocked placement even though the earlier active-ref set did not skip the position — a stale read, concurrent placement, or corrupt key/props mismatch. It remains loud as an `UnprotectedPosition` fault because execution must not double-place an active stop.
 
-**Module line counts:**
+**Module line counts:** `contracts/broker_stops.py` **100**; `agents/execution/broker_stops.py` **179**; `agents/execution/tests/test_broker_stop_replacement.py` **195**, `agents/execution/tests/test_broker_stop_replacement_e2e.py` **59** after `ruff format`; touched existing test files all remain below 200 (`test_broker_stop_branch_edges.py` **187**, `test_broker_stop_edges.py` **196**, `test_drop_sweep_append_safe.py` **141**).
 
-**Did `active_broker_stop_orders` / `active_broker_stop_refs` need changing? (verified how):**
+**Did `active_broker_stop_orders` / `active_broker_stop_refs` need changing? (verified how):** No. Verified by A1/A3/A4/A6: active refs include the replacement suffix, exclude cancelled base facts, and still prevent active duplicate placement. The functions already scan all `BrokerStopOrder` nodes and filter solely on `cancelled_at`.
 
-**Planted violations watched fail:**
+**Planted violations watched fail:** Old base-key guard restored in `next_broker_stop_order_key` -> `uv run pytest agents/execution/tests/test_broker_stop_replacement.py agents/execution/tests/test_broker_stop_replacement_e2e.py --no-cov` produced **5 failed, 1 passed** (A1, A2, A4, A5, A6 failed; A3 passed). Disabling the `protected_refs` skip -> A3 failed on an unexpected `UnprotectedPosition` fault. Planting a write inside `next_broker_stop_order_key` -> A5 failed on the graph census.
 
-**Final full gate:**
+**Final full gate:** `make ci` redirected to `%TEMP%\s164-make-ci-final.txt`, **`MAKE_CI_EXIT=0`**:
 
-**Remote gate / gate-ran / merge:**
+```text
+MAKE_CI_EXIT=0
+TOTAL                                                14205      0   3018      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2164 passed, 6 skipped in 69.49s (0:01:09) ==================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
+```
 
-**Not met / verified failing:**
+Earlier full gate failure was useful and fixed: **`MAKE_CI_EXIT=2`** at module size with `[FAIL] agents\execution\tests\test_broker_stop_replacement.py: 237 lines - exceeds the 200-line hard block`. The file was split into `test_broker_stop_replacement.py` (**195**) and `test_broker_stop_replacement_e2e.py` (**59**), then the full gate passed.
+
+**Remote gate / gate-ran / merge:** Pending.
+
+**Not met / verified failing:** No live-environment proof in this worktree (`.env` absent). The behavior is locally proven against in-memory graph/broker fixtures; fleet retag/live scheduled proof remains after merge/deploy.
 
 ---
 
 ## Return notes
+
+- Scope held: no stop threshold, placement policy, fallback percent, flatten, resize, ADR, or `laws.md` change.
+- `DRIFT-038` is marked **CORRECTED (S164)**. The law was already right; the code now makes the retry land by using a fresh broker `client_order_id` for a cancelled stop chain.
+- The road not taken still stands. Reusing the base key would collide with the broker's `client_order_id`; deleting cancelled facts would violate append-only stop lifecycle; generalising `fill_attempts.py` is still wider than this deadlock-adjacent fix needs.
+- A second-run re-protect is proven for the later **hold** run. If the later run approves another sell, stop placement still skips that ticker because the run is trying to take risk to zero; a second sell rejection remains loud rather than pretending the position is protected.

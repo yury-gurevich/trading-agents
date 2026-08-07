@@ -3,13 +3,15 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-162-rejections-name-every-gate`
-**Status:** BRANCH HANDOFF — local CI green; remote gates asserted after each push
+**Status:** SHIPPED — merged to `main` 2026-08-07 after independent re-verification of `376fb6b`
 **Version:** feat → **0.89.00** (MINOR: new evidence carried on an existing contract)
 **Effort:** M
 **Decisions:** [S161](sprint-161-pm-knows-what-it-paid.md) the sizing fix this makes provable ·
 [S160](sprint-160-shadow-book.md) the shadow book that reads these reasons ·
 [DL-93](../design-log.md) sizing/cap/sell-policy · [DL-70](../design-log.md) plant the violation ·
-[LAW-02](../../ops/laws/LAW-02-proof.md) success is proven, never assumed
+[LAW-02](../../ops/laws/LAW-02-successful-execution.md) success is proven, never assumed
+(**corrected at merge** — this spec originally linked a non-existent `LAW-02-proof.md`; the
+implementer caught it and read the right file)
 
 > **Why MINOR.** This is a fix in motivation — the system could not prove its own gate — but the
 > mechanism is **new evidence recorded on an existing contract**, which is new capability by the

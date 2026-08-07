@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-165-score-every-name-not-five`
-**Status:** SPEC — packaged 2026-08-07
+**Status:** SPEC — packaged 2026-08-07. 🟢 **Item 3 is already DONE and live** — `SCANNER_CANDIDATE_CAP` set to **25** on the deployed scanner 2026-08-07 (env var, no code, no deploy, no pack move; `env_prefix="SCANNER_"`). Verified: cap=25, `minReplicas=0`, `daily-agent-window` start `30 22 * * 1-5`, image `:s164` — all unchanged. **The remaining sprint is items 1, 2, 4, 5**, and item 1 is the S160 wall
 **Version:** feat → **0.90.00** (MINOR: decision evidence that does not exist today)
 **Effort:** M
 **Decisions:** [DL-09](../design-log.md) filter decisions as a training source ·
@@ -110,6 +110,8 @@ pack then move together at deploy.
 
 `candidate_cap` 5 → higher (bound `le=50`). Rewrite its `why`: the current one describes a first
 vertical slice that no longer exists.
+
+🟢 **The value move is already applied:** `SCANNER_CANDIDATE_CAP=25` on the deployed scanner (2026-08-07). **25 was chosen against the measurement, not picked**: the filters pass **22** of 100 today (100 − 60 `min_average_volume` − 18 `min_relative_strength`), so 25 admits everything that currently survives, with headroom, and stays well under the `le=50` bound. Cost is bounded: analyst scoring is deterministic, and the `LLMCall` ledger has been frozen at 25 calls since 2026-07-15, so the LLM cost rides on *approved orders* (deliberation), not on scored candidates. **What remains for this item is the code half** — move the default and rewrite the lapsed `why`, so the deployed value stops being an override of a justification that no longer holds.
 
 🪤 **Check the blast radius before choosing a number** — this multiplies analyst work per run, and
 the analyst calls the LLM. State the measured cost delta per run (`LLMCall` ledger) rather than

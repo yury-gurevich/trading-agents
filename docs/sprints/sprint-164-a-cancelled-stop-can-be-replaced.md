@@ -273,7 +273,16 @@ detect-secrets (untracked): scanning 2 new file(s)
 
 Earlier full gate failure was useful and fixed: **`MAKE_CI_EXIT=2`** at module size with `[FAIL] agents\execution\tests\test_broker_stop_replacement.py: 237 lines - exceeds the 200-line hard block`. The file was split into `test_broker_stop_replacement.py` (**195**) and `test_broker_stop_replacement_e2e.py` (**59**), then the full gate passed.
 
-**Remote gate / gate-ran / merge:** Pending.
+**Remote gate / gate-ran / merge:** Branch pushed to `origin/sprint-164-a-cancelled-stop-can-be-replaced` at `3d93589a31090cb522da983af5964c5f14c8be49`; `make gate-ran` redirected to `%TEMP%\s164-gate-ran-3.txt`, **`MAKE_GATE_RAN_EXIT=0`**:
+
+```text
+GATE PROVEN for 3d93589a31090cb522da983af5964c5f14c8be49:
+  Security Findings: success
+  CI: success
+MAKE_GATE_RAN_EXIT=0
+```
+
+Merge was not performed; it remains pending operator authorization because merge is the deploy trigger.
 
 **Not met / verified failing:** No live-environment proof in this worktree (`.env` absent). The behavior is locally proven against in-memory graph/broker fixtures; fleet retag/live scheduled proof remains after merge/deploy.
 

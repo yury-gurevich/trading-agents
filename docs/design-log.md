@@ -4865,6 +4865,15 @@ lapsed eight sprints ago. Nobody chose to keep 10; it was never revisited.
 has **nothing to debate** - `debates: 0, verdicts: {}`. **The cap is what is starving
 [[DL-80]]**, which cannot close until the PM approves an order.
 
+**S162 caveat for the shadow book (recorded 2026-08-07):** S160's `blocked_capacity` disposition is
+read from the single rejected-order `reason`, so a buy that fails both `max_positions` and
+`cash_available` is labelled as capacity-blocked even though it was unaffordable too. The two
+measured `sched-2026-08-04/05` dispositions remain clean: they ran on `:s158`, where the PM still
+used the fictional cash book and `cash_available` genuinely passed. From `sched-2026-08-06`
+onward, after S161 deployed account-backed sizing, the cut must be read with this caveat. S162 adds
+the rejected-order gate report so future runs show when the `reason` was not the only blocker; it
+does **not** reclassify old dispositions or change the S160 scorecard.
+
 ### Why nothing is sold today (this part is working as designed)
 
 Not a missing feature - a deliberately removed one. [ADR-0017](decisions/0017-exit-authority-alpha-proposes-risk-disposes.md)

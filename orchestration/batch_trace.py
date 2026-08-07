@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from orchestration.batch_chain import CHAIN, POSITION_SYNC_KEY
 from orchestration.batch_chain import walk_chain as walk_chain
+from orchestration.pm_rejections import format_pm_rejection
 from orchestration.trace_format import metric_text as mt
 
 if TYPE_CHECKING:
@@ -141,7 +142,7 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
                 f"  qty={o.quantity}  est=${o.est_price.amount:.2f}"
             )
         for rej in ois.rejected:
-            print(f"  {rej.ticker:<6} SKIP  {rej.reason}")
+            print(f"  {format_pm_rejection(rej)}")
         print()
 
     exec_node = nodes.get("ExecutionRun")

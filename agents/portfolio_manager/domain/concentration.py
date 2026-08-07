@@ -46,19 +46,30 @@ class SectorBook:
         *,
         max_sector_pct: Decimal,
         max_names_per_sector: int,
+        prior_outcomes: tuple[GateOutcome, ...] = (),
     ) -> RejectedOrder | None:
         """Reject when this order breaches the name-count or the dollar cap."""
-        for outcome in self.outcomes(
+        outcomes = self.outcomes(
             item,
             cost,
             portfolio_value,
             max_sector_pct=max_sector_pct,
             max_names_per_sector=max_names_per_sector,
-        ):
+        )
+        gate_report = (*prior_outcomes, *outcomes)
+        for outcome in outcomes:
             if outcome.name == "max_names_per_sector" and not outcome.passed:
-                return RejectedOrder(ticker=item.ticker, reason="sector_name_count")
+                return RejectedOrder(
+                    ticker=item.ticker,
+                    reason="sector_name_count",
+                    gate_report=gate_report,
+                )
             if outcome.name == "max_sector_pct" and not outcome.passed:
-                return RejectedOrder(ticker=item.ticker, reason="sector_concentration")
+                return RejectedOrder(
+                    ticker=item.ticker,
+                    reason="sector_concentration",
+                    gate_report=gate_report,
+                )
         return None
 
     def outcomes(

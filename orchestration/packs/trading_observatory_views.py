@@ -13,6 +13,7 @@ from orchestration.batch_chain import POSITION_SYNC_KEY
 from orchestration.observatory import Check, StageView
 from orchestration.packs.trading_deliberation_view import deliberation
 from orchestration.packs.trading_fill_outcomes import execution_view
+from orchestration.pm_rejections import format_pm_rejection
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -146,7 +147,7 @@ def pm(graph: GraphStore, node: Node) -> StageView:
         f"{o.ticker:<6} {o.action}  qty={o.quantity}  est=${o.est_price.amount:.2f}"
         for o in intents.approved
     )
-    outputs += tuple(f"{o.ticker:<6} SKIP  {o.reason}" for o in intents.rejected)
+    outputs += tuple(format_pm_rejection(item) for item in intents.rejected)
     observed: dict[str, object] = {
         "approved": len(intents.approved),
         "evaluated": evaluated,

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-162-rejections-name-every-gate`
-**Status:** SPEC — makes the S161 sizing gate provable in production
+**Status:** LOCAL CI GREEN — branch handback pending remote gates
 **Version:** feat → **0.89.00** (MINOR: new evidence carried on an existing contract)
 **Effort:** M
 **Decisions:** [S161](sprint-161-pm-knows-what-it-paid.md) the sizing fix this makes provable ·
@@ -240,7 +240,11 @@ Add `gate_report: tuple[GateOutcome, ...] = ()` to
 - **Defaulted, additive, never required** — trap 5.
 - Give it a docstring that states the semantics decided in item 3 and the caveat in trap 2.
 
-**Result:**
+**Result:** Added `RejectedOrder.gate_report: tuple[GateOutcome, ...] = ()` with a class docstring
+stating that rejection reports are partial-by-design evidence: only `passed=False` blocks, absent
+later gates are unknown rather than passed, and some passing entries are observations. The PM
+contract version moved `0.2.2` -> `0.2.3`; project version moved `0.88.00` -> `0.89.00` and
+`uv.lock` was refreshed.
 
 ### 2 · Every rejection site attaches what it actually computed
 
@@ -256,7 +260,12 @@ Add `gate_report: tuple[GateOutcome, ...] = ()` to
 two reason strings** from two places. Reconcile or deliberately leave both — but say which, and why,
 in the return notes.
 
-**Result:**
+**Result:** Attached the evaluated report at every PM rejection shape. Position and exit rejections
+carry their already-computed outcomes; reward/risk rejections carry prior position outcomes plus
+`reward_risk`; sector rejections carry position + reward/risk + sector outcomes; pre-gate hold and
+portfolio-level provider-degraded rejections remain `()` through the new default. I deliberately
+left the two sector reason emitters in place because `risk.py` owns the integrated path with prior
+gates, while `SectorBook.rejection` remains the isolated sector-book helper.
 
 ### 3 · 🎯 Decide the reporting semantics explicitly, and write down why
 
@@ -276,7 +285,10 @@ definition, not part of the decision.
 **Non-negotiable:** whichever you choose, an absent gate must not be readable as a passing gate
 (trap 3), and the decision must be stated in the contract docstring — not only in this file.
 
-**Result:**
+**Result:** Chose "report what was evaluated" and preserved the existing short-circuit order. This
+answers the 2026-08-07 MSFT shape because `position_outcomes` already evaluates both
+`max_positions` and `cash_available`, while avoiding the rejected option of evaluating later gates
+on inputs an earlier gate had already rejected.
 
 ### 4 · The evidence is visible where the question is actually asked
 
@@ -293,7 +305,10 @@ of the shape `MSFT SKIP max_positions (also failed: cash_available)` — the exa
 
 ⚠️ `trading_observatory_views.py` has **3 lines** of headroom (trap 1). Split first.
 
-**Result:**
+**Result:** Added `orchestration/pm_rejections.py` and routed both `batch_trace` and the observatory
+PM view through it. A multi-failure rejection renders as
+`MSFT   SKIP  max_positions (also failed: cash_available)`, while single-failure rows keep the old
+shape.
 
 ### 5 · Record what this means for the shadow book — do not change it
 
@@ -307,7 +322,9 @@ second consumer*).
 - **Do not re-classify dispositions and do not touch the scorecard.** That is a shadow-book change
   with its own evidence question; this sprint records the finding so it is not lost (LAW-06).
 
-**Result:**
+**Result:** Added a DL-93/S162 caveat to `docs/design-log.md`: from `sched-2026-08-06` onward, a
+single `blocked_capacity` reason can hide `cash_available`; `sched-2026-08-04/05` remain clean
+because they ran on `:s158`; no S160 dispositions or scorecards were reclassified.
 
 ### 6 · Prove the checks can fail (DL-70)
 
@@ -315,7 +332,10 @@ Every test plants the violation and requires the failure. **Watch each one fail 
 an S160 test passed its own planted violation because the fixture was symmetric and proved nothing,
 and an S151 assertion measured the fake's own storage rather than the behaviour.
 
-**Result:**
+**Result:** Watched the planned focused slice fail before implementation (`10 failed, 1 passed`),
+then pass after implementation (`17 passed in 1.93s`). The first full `make ci` also failed on the
+module-size gate when `gate_report.py` reached exactly 200 lines, proving the split/size gate was
+live; after trimming to 198 lines, full `make ci` exited 0.
 
 ---
 
@@ -423,20 +443,31 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? (yes + what / no) |
 | --- | --- | --- | --- |
-| `RejectedOrder` contract | | | |
-| PM rejection sites | | | |
-| `PMRun` persistence | | | |
-| Read-only renderers | | | |
+| `RejectedOrder` contract | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `ops/laws/LAW-02-successful-execution.md` (the sprint's `LAW-02-proof.md` link is stale/missing) | `PM-OUT-01`, `PM-OUT-03`, `PM-TYP-03`, `PM-OBS-01`, conventions sections 3 and 7 | Yes: treat `gate_report` as additive/defaulted evidence that completes the existing "Silence is always attributed" requirement; keep old payloads valid. |
+| PM rejection sites | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-IDN-01`, `PM-OUT-03`, `PM-NEV-04`, `PM-NEV-06`, `PM-STA-03`, `PM-ORD-01`, `PM-OBS-01`, `PM-OBS-02` | Yes: preserve current short-circuit behaviour and attach only outcomes already evaluated up to the rejection point; absent outcomes remain unknown, not passed. |
+| `PMRun` persistence | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `ops/laws/LAW-02-successful-execution.md` | `PM-IDN-02`, `PM-STA-02`, `PM-STA-04`, `PM-IDM-02`, `PM-TYP-03`, `PM-OBS-01` | Yes: no backfill or rewrite of stored `order_intent_set`; prove old JSON validates by defaulting rejection `gate_report` to `()`. |
+| Read-only renderers | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `ops/laws/LAW-02-successful-execution.md` | Conventions sections 3 and 7; LAW-02 `SE-02`/`SE-05`; no agent law owns these read-only views | No: render evidence from the contract only, compactly, with no graph writes or vocabulary changes. |
 
-**Do you agree this sprint completes `PM-OUT-03` rather than extending it?** (see the 🚨 block)
+**Do you agree this sprint completes `PM-OUT-03` rather than extending it?** Yes. `PM-OUT-03`
+requires a `RejectedOrder` reason naming the blocking gate and says silence is always attributed;
+`PM-OBS-01` already requires per-recommendation `gate_report` outcomes. Adding a defaulted report to
+rejections makes the existing attribution/reconstructability law true for the rejected path, and
+`PM-OUT-03` does not declare a closed field list that would forbid additive evidence.
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** None found. The sprint's LAW-02 link points to
+missing `ops/laws/LAW-02-proof.md`; the current file read was
+`ops/laws/LAW-02-successful-execution.md`.
 
-**Laws found silent where a decision was needed** (each needs a `drift-register.md` row):
+**Laws found silent where a decision was needed** (each needs a `drift-register.md` row): None.
+`PM-OBS-01` already speaks to per-recommendation gate reports, while `PM-OUT-03` is open enough for
+an additive defaulted field.
 
-**Drift row filed for the `PM-OUT-03` reason-string mismatch** (row ID):
+**Drift row filed for the `PM-OUT-03` reason-string mismatch** (row ID): `DRIFT-037`
 
-**Clauses that were ⬜ and are now proven by this sprint's tests:**
+**Clauses that were ⬜ and are now proven by this sprint's tests:** Added narrow green rows for the
+S162 slices without flipping the broader S156 gray rows: `PM-TYP-03` historical `RejectedOrder`
+defaulting/round-trip compatibility, and `PM-OBS-01` rejected-path gate_report persistence on
+`Rejection` nodes. The broad full-PMRun reconstructability row remains ⬜.
 
 ---
 
@@ -444,44 +475,121 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| B1 | | | | |
-| B2 | | | | |
-| C1 | | | | |
-| C2 | | | | |
-| C3 | | | | |
+| A1 | `test_2026_08_07_max_positions_rejection_keeps_cash_gate_failure` | `agents/portfolio_manager/tests/test_rejection_gate_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01`, `PM-NEV-04` |
+| A2 | `test_min_quantity_rejection_reports_only_position_gates` | `agents/portfolio_manager/tests/test_rejection_gate_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01` |
+| A3 | `test_reward_risk_rejection_carries_passing_position_gates` | `agents/portfolio_manager/tests/test_rejection_gate_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01`, `PM-NEV-04` |
+| A4 | `test_sector_rejection_carries_every_prior_gate` | `agents/portfolio_manager/tests/test_rejection_gate_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01`, `PM-NEV-06` |
+| A5 | `test_precheck_rejection_carries_empty_gate_report` | `agents/portfolio_manager/tests/test_rejection_empty_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01` |
+| A6 | `test_reject_all_keeps_portfolio_level_report_empty` | `agents/portfolio_manager/tests/test_rejection_empty_reports.py` | PASS | `PM-OUT-04`, `PM-FAIL-01`, `PM-OBS-02` |
+| B1 | `test_rejected_order_gate_report_is_additive_for_historical_payloads` | `tests/test_rejected_order_contract.py` | PASS | `PM-TYP-03`, `PM-OBS-01` |
+| B2 | `test_sell_min_quantity_rejection_keeps_exit_gate_report` | `agents/portfolio_manager/tests/test_rejection_empty_reports.py` | PASS | `PM-OUT-03`, `PM-OBS-01`, `PM-NEV-04` |
+| C1 | `test_batch_trace_renders_secondary_failed_rejection_gates` | `orchestration/tests/test_pm_rejection_rendering.py` | PASS | `PM-OBS-01`, `LAW-02` |
+| C2 | `test_batch_trace_stays_quiet_on_one_rejection_gate` | `orchestration/tests/test_pm_rejection_rendering.py` | PASS | `PM-OBS-01`, `LAW-02` |
+| C3 | `test_observatory_pm_view_matches_trace_rejection_suffix` | `orchestration/tests/test_pm_rejection_rendering.py` | PASS | `PM-OBS-01`, `LAW-02` |
 
-**Tests added beyond the plan:**
+**Tests added beyond the plan:** `test_store_writes_queryable_rejection_gate_report` in
+`agents/portfolio_manager/tests/test_rejection_store.py` proves rejected-node `gate_report`
+persistence for `PM-OUT-03` / `PM-OBS-01`.
 
 ---
 
 ## Closeout — evidence
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** Worktree
+`C:\Users\yury_\Downloads\project\trading-agents-s162`, branch
+`sprint-162-rejections-name-every-gate`, starting `HEAD=db86ddb`, `origin/main=f7c3cd6`.
+`Test-Path .env` returned `False`; live/provider proof was therefore not attempted.
 
-**Item 3 decision — reporting semantics chosen, and why:**
+**Item 3 decision — reporting semantics chosen, and why:** Report what was evaluated. This keeps
+approval/rejection behavior byte-for-byte in decision order, makes absent gates explicitly unknown,
+and avoids inventing late-gate failures after an earlier gate has already rejected the recommendation.
+Rejected option: evaluate every gate always.
 
-**Module splits made, with before/after line counts:**
+**Module splits made, with before/after line counts:** Added `orchestration/pm_rejections.py` (43
+lines) so both read-only renderers share one compact formatter; split the new PM rejection tests into
+three focused modules and moved the persistence assertion out of
+`test_portfolio_manager_audit.py`. Relevant after-counts: `gate_report.py` 192 -> 198,
+`concentration.py` 163 -> 174, `risk.py` 180 -> 193, `batch_trace.py` 187 -> 188,
+`trading_observatory_views.py` 197 -> 198, `test_portfolio_manager_audit.py` failed at 211 during
+iteration then finished at 169, new `test_rejection_store.py` 56, new
+`test_rejection_empty_reports.py` 96, new `test_rejection_gate_reports.py` 161, new
+`test_pm_rejection_rendering.py` 140, new `test_rejected_order_contract.py` 48. First full `make ci`
+proved `200` lines is a hard block by failing on `gate_report.py`; final count is 198.
 
-**Files changed:**
+**Files changed:** `contracts/portfolio_manager.py`;
+`agents/portfolio_manager/domain/{gate_report,risk,concentration}.py`;
+`agents/portfolio_manager/store.py`; `agents/portfolio_manager/laws/test-plan.md`;
+`agents/portfolio_manager/tests/test_portfolio_manager_audit.py`;
+`agents/portfolio_manager/tests/test_rejection_{gate_reports,empty_reports,store}.py`;
+`tests/test_rejected_order_contract.py`; `orchestration/pm_rejections.py`;
+`orchestration/batch_trace.py`; `orchestration/packs/trading_observatory_views.py`;
+`orchestration/tests/test_pm_rejection_rendering.py`; `docs/design-log.md`;
+`docs/laws/drift-register.md`; `docs/STATE.md`; this sprint file; `pyproject.toml`; `uv.lock`.
 
-**Proven (LAW-02):**
+**Proven (LAW-02):** Rejected orders now carry defaulted additive gate reports; the 2026-08-07 MSFT
+fixture keeps reason `max_positions` and records `cash_available passed=False`; min-quantity,
+reward/risk, sector, pre-gate, provider-wide, sell, historical-JSON, store persistence, batch trace,
+and observatory cases all pass. No production/history backfill proof exists.
 
-**Planted violations watched fail:**
+**Planted violations watched fail:** Before implementation, the focused planned slice failed
+`10 failed, 1 passed` because `RejectedOrder` had no `gate_report` and renderers did not show the
+secondary gate. First full `make ci` failed with `MAKE_CI_EXIT_CODE=2`:
+`[FAIL] agents\portfolio_manager\domain\gate_report.py: 200 lines - exceeds the 200-line hard block`.
+After trimming to 198 lines, full `make ci` passed.
 
-**Final full gate:**
+**Final full gate:** `MAKE_CI_EXIT_CODE=0` from redirected `make ci`
+(`C:\Users\yury_\AppData\Local\Temp\trading-agents-s162-make-ci-rerun.log`). Key lines:
 
-**Remote gate / gate-ran / merge:**
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+939 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 776 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+[WARN] agents\portfolio_manager\domain\gate_report.py: 198 lines (warn 150, hard block 200)
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+uv run pytest
+TOTAL                                                14156      0   3000      0  100.00%
+================= 2151 passed, 6 skipped in 122.29s (0:02:02) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+```
 
-**Confirmation that no approval decision moved:**
+**Remote gate / gate-ran / merge:** Pending branch commit/push. Branch-only handback unless Yury
+explicitly asks for a merge.
 
-**Not met / verified failing:**
+**Confirmation that no approval decision moved:** Focused tests assert existing primary reasons and
+approved/rejected shapes: the 2026-08-07 regression still rejects MSFT on `max_positions`, the
+single-failure trace stays quiet, approved fixtures still produce `rejected == ()`, and provider/hold
+paths keep the same rejection reasons. No live scheduled run was executed in this credential-free
+worktree.
+
+**Not met / verified failing:** No backfill, no recomputation of old `PMRun.order_intent_set`, no
+S160 scorecard/disposition change, no fleet retag, no production scheduled-run proof, and no merge to
+`main` in this handback.
 
 ---
 
 ## Return notes
+
+- Reporting semantics: chosen option is "report what was evaluated"; rejected option is "evaluate
+  every gate always" because it would run later gates on already-rejected inputs and could introduce
+  new failure modes inside an evidence sprint.
+- Sector reason emitters were deliberately left in both `risk.py` and `concentration.py`. The
+  integrated PM path needs prior outcomes; the isolated sector-book helper remains useful for
+  focused tests without widening this sprint into a reason-vocabulary refactor.
+- `DRIFT-037` records the PM-OUT-03 illustrative reason mismatch; locked `laws.md` files were not
+  edited.
+- `PM-TYP-03` and `PM-OBS-01` gained narrow S162 green rows; broader S156 gray rows remain gray.
+- The implementation makes future rejections answerable. It does not answer `sched-2026-08-06`
+  retroactively.

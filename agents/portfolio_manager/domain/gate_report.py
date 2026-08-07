@@ -103,7 +103,7 @@ def position_rejection(
     for outcome in outcomes:
         reason = reasons.get(outcome.name)
         if reason is not None and not outcome.passed:
-            return RejectedOrder(ticker=ticker, reason=reason)
+            return RejectedOrder(ticker=ticker, reason=reason, gate_report=outcomes)
     return None
 
 
@@ -141,13 +141,21 @@ def stop_target_report(
     )
 
 
-def reward_risk_rejection(ticker: str, report: StopTarget) -> RejectedOrder | None:
-    """Return the existing reward-risk rejection reason, if any."""
+def reward_risk_rejection(
+    ticker: str,
+    report: StopTarget,
+    prior_outcomes: tuple[GateOutcome, ...] = (),
+) -> RejectedOrder | None:
+    """Return the existing reward-risk rejection reason with evaluated gates."""
+    gate_report = (*prior_outcomes, report.outcome)
+    reason = None
     if report.stop_pct <= 0.0:
-        return RejectedOrder(ticker=ticker, reason="invalid_stop_loss")
-    if not report.outcome.passed:
-        return RejectedOrder(ticker=ticker, reason="reward_risk_below_min")
-    return None
+        reason = "invalid_stop_loss"
+    elif not report.outcome.passed:
+        reason = "reward_risk_below_min"
+    if reason is None:
+        return None
+    return RejectedOrder(ticker=ticker, reason=reason, gate_report=gate_report)
 
 
 def order_intent(
@@ -175,9 +183,7 @@ def order_intent(
 
 
 def _ratio(numerator: Decimal, denominator: Decimal) -> float:
-    if denominator <= 0:
-        return 0.0
-    return float(numerator / denominator)
+    return 0.0 if denominator <= 0 else float(numerator / denominator)
 
 
 def _money(value: Decimal) -> str:

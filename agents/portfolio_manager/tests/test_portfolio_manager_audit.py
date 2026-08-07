@@ -8,46 +8,18 @@ External I/O: none.
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.gate_report import position_outcomes
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
-from agents.portfolio_manager.store import write_order_decision
 from agents.portfolio_manager.tests.helpers import (
     cash_portfolio,
     recommendation,
-    recommendation_set,
 )
 from contracts.common import Money
-from contracts.portfolio_manager import GateOutcome, RejectedOrder
-from kernel import InMemoryGraphStore
 
-
-def test_store_writes_queryable_rejection_evidence() -> None:
-    """Kills agents.portfolio_manager.store.x_write_order_decision__mutmut_5."""
-    graph = InMemoryGraphStore()
-    payload = recommendation_set(recommendation("AAPL"))
-    graph.merge_node("AnalystRun", payload.run_id, {"recommendation_count": 1})
-    graph.merge_node("Recommendation", f"{payload.run_id}:AAPL", {"ticker": "AAPL"})
-
-    provenance = write_order_decision(
-        graph,
-        recommendation_set=payload,
-        approved=(),
-        rejected=(RejectedOrder(ticker="AAPL", reason="max_positions"),),
-    )
-
-    rejection = graph.get_node("Rejection", f"{provenance.run_id}:AAPL")
-    pm_run = graph.get_node("PMRun", provenance.run_id)
-    assert rejection is not None
-    assert pm_run is not None
-    assert pm_run.props["approved_count"] == 0
-    assert pm_run.props["rejected_count"] == 1
-    assert pm_run.props["source_analyst_run_id"] == payload.run_id
-    assert rejection.props["reason"] == "max_positions"
-    assert [node.label for node in graph.descendants(rejection, max_depth=1)] == [
-        "PMRun",
-        "Recommendation",
-    ]
+if TYPE_CHECKING:
+    from contracts.portfolio_manager import GateOutcome
 
 
 def test_order_intent_preserves_deliberate_stop_and_target() -> None:

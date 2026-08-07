@@ -68,7 +68,13 @@ def write_order_decision(
         node = graph.merge_node(
             "Rejection",
             f"{run_id}:{rejection.ticker}",
-            {"ticker": rejection.ticker, "reason": rejection.reason},
+            {
+                "ticker": rejection.ticker,
+                "reason": rejection.reason,
+                "gate_report": [
+                    item.model_dump(mode="json") for item in rejection.gate_report
+                ],
+            },
         )
         graph.add_edge(node, run, "REJECTED_IN")
         _link_recommendation(graph, node, analyst_key, rejection.ticker, "REJECTS")

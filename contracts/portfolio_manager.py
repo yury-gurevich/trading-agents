@@ -43,9 +43,17 @@ class OrderIntent(_Frozen):
 
 
 class RejectedOrder(_Frozen):
+    """Portfolio-level rejection with only evaluated gate outcomes.
+
+    ``gate_report`` is partial by design: it contains gates evaluated before the
+    rejection short-circuited. Absent gates are unknown, not passed. Some entries
+    are observations rather than blocking gates; only ``passed=False`` means the
+    gate blocked the recommendation.
+    """
+
     ticker: Ticker
     reason: str
-    """Portfolio-level reason: risk cap, exposure, correlation, policy, cash."""
+    gate_report: tuple[GateOutcome, ...] = ()
 
 
 class OrderIntentSet(_Frozen):
@@ -58,7 +66,7 @@ class OrderIntentSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="portfolio_manager",
-    version="0.2.2",
+    version="0.2.3",
     mission=(
         "Decide which recommendations become sized, risk-checked orders under "
         "current policy and portfolio state, and record exactly why each was "

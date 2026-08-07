@@ -110,7 +110,7 @@ def evaluate_recommendations(
         stop_target = stop_target_report(
             item, default_stop_pct, default_target_pct, min_reward_risk_ratio
         )
-        rejection = reward_risk_rejection(item.ticker, stop_target)
+        rejection = reward_risk_rejection(item.ticker, stop_target, gates)
         if rejection is not None:
             rejected.append(rejection)
             continue
@@ -122,7 +122,9 @@ def evaluate_recommendations(
             max_sector_pct=max_sector_pct,
             max_names_per_sector=max_names_per_sector,
         )
-        rejection = _sector_rejection(item.ticker, sector_gates)
+        rejection = _sector_rejection(
+            item.ticker, sector_gates, (*gates, stop_target.outcome)
+        )
         if rejection is not None:
             rejected.append(rejection)
             continue
@@ -170,11 +172,22 @@ def _precheck(
 
 
 def _sector_rejection(
-    ticker: str, outcomes: tuple[GateOutcome, ...]
+    ticker: str,
+    outcomes: tuple[GateOutcome, ...],
+    prior_outcomes: tuple[GateOutcome, ...],
 ) -> RejectedOrder | None:
+    gate_report = (*prior_outcomes, *outcomes)
     for outcome in outcomes:
         if outcome.name == "max_names_per_sector" and not outcome.passed:
-            return RejectedOrder(ticker=ticker, reason="sector_name_count")
+            return RejectedOrder(
+                ticker=ticker,
+                reason="sector_name_count",
+                gate_report=gate_report,
+            )
         if outcome.name == "max_sector_pct" and not outcome.passed:
-            return RejectedOrder(ticker=ticker, reason="sector_concentration")
+            return RejectedOrder(
+                ticker=ticker,
+                reason="sector_concentration",
+                gate_report=gate_report,
+            )
     return None

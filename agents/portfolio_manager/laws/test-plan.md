@@ -27,6 +27,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-OUT-01 | OrderIntentSet always returned; every recommendation accounted for. | happy | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-OUT-02 | OrderIntent has quantity ≥ 1, est_price (Decimal), stop_pct, target_pct, pm_run_id. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-OUT-03 | RejectedOrder carries a reason string naming the blocking gate. | schema | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
+| PM-OUT-03 | RejectedOrder gate_report names evaluated secondary failed gates without moving the primary rejection reason. | regression | `test_rejection_gate_reports.py::test_2026_08_07_max_positions_rejection_keeps_cash_gate_failure` | 🟩 |
 | PM-OUT-04 | Provider unavailable → all rejected with "provider_degraded" + fault recorded. | degraded | `test_portfolio_manager_agent.py::test_degraded_provider_rejects_honestly_and_records_fault` | 🟩 |
 | PM-OUT-05 | Pub/sub event carries claim-check ref only, not OrderIntentSet payload. | pub/sub | `test_pm_pubsub.py::test_recommendations_ready_triggers_orders_ready` | 🟩 |
 | PM-OUT-06 | portfolio_state_snapshot captures post-evaluation cash, open positions, and sector weights without a live broker query. | audit | Demoted S156: `test_portfolio_manager_audit.py::test_order_intent_emits_pm_gate_report` proves gate_report emission, not the portfolio_state_snapshot clause. | ⬜ |
@@ -82,6 +83,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-TYP-02 | quantity ≥ 1; stop_pct < target_pct when both present. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-TYP-03 | OrderIntentSet deserialises from graph node per contract schema. | schema | `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | 🟩 |
 | PM-TYP-03 | OrderIntentSet, OrderIntent, RejectedOrder, and GateOutcome match the contract schema; CONTRACT.version is authoritative; gate_report is additive and defaults empty for older payloads. | schema | Demoted S156: `tests/test_contract_values.py::test_order_intent_gate_report_is_additive_and_round_trips` covers only the additive gate_report compatibility slice; `test_pm_pubsub.py::test_order_intent_result_is_deserializable` remains the green schema proof above. | ⬜ |
+| PM-TYP-03 | Historical RejectedOrder JSON without gate_report deserializes with an empty report, while current payloads round-trip populated gate_report. | schema | `tests/test_rejected_order_contract.py::test_rejected_order_gate_report_is_additive_for_historical_payloads` | 🟩 |
 
 ## Security
 
@@ -95,4 +97,5 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | PM-OBS-01 | PMRun node contains all gate outcomes and portfolio snapshot. | audit | `test_pm_pubsub.py::test_order_intent_result_node_in_graph` | 🟩 |
 | PM-OBS-01 | PMRun reconstructs recommendations, gate outcomes, reasons, estimated prices, final intents, and pre/post portfolio snapshots. | audit | Demoted S156: `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` proves OrderIntent money/gate_report storage only, not full PMRun reconstructability. | ⬜ |
+| PM-OBS-01 | Rejection nodes persist rejected-path gate_report evidence for graph reconstruction. | audit | `test_rejection_store.py::test_store_writes_queryable_rejection_gate_report` | 🟩 |
 | PM-OBS-02 | Faults routed to central channel; every rejection has a reason. | observable | `test_portfolio_manager_agent.py::test_degraded_provider_rejects_honestly_and_records_fault` | 🟩 |

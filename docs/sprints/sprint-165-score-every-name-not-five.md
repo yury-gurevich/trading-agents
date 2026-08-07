@@ -4,7 +4,10 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-165-score-every-name-not-five`
 **Status:** SPEC — packaged 2026-08-07. 🟢 **Item 3 is already DONE and live** — `SCANNER_CANDIDATE_CAP` set to **25** on the deployed scanner 2026-08-07 (env var, no code, no deploy, no pack move; `env_prefix="SCANNER_"`). Verified: cap=25, `minReplicas=0`, `daily-agent-window` start `30 22 * * 1-5`, image `:s164` — all unchanged. **The remaining sprint is items 1, 2, 4, 5**, and item 1 is the S160 wall
-**Version:** feat → **0.90.00** (MINOR: decision evidence that does not exist today)
+**Version:** fix → **0.89.03** (PATCH — **changed during the sprint**: the law-first read showed
+`SCAN-OBS-01` *already* requires the `ScanRun` to be reconstructable **including the `FilterTrace`**,
+so this makes an existing clause true rather than adding capability. Same call S164 made. If you
+disagree after reading the rule, say so.)
 **Effort:** M
 **Decisions:** [DL-09](../design-log.md) filter decisions as a training source ·
 [DL-93](../design-log.md) the object under test is the **selection process** ·
@@ -92,19 +95,39 @@ still has no home for such a case.
 
 Per the block above. State the decision, the clause you relied on, and the rejected option.
 
-**Result:**
+**Result:** Done — **and neither option in the spec was the right one.**
+
+`SCAN-IDN-02` is a **closed enumeration**: *“The scanner exclusively owns the `ScanRun` and
+`Candidate` graph labels”*, and `SCAN-NEV-04` adds *“Never writes to graph labels it does not own”*.
+So a `FilterVerdict` **label is unlawful** — the S160 wall, confirmed.
+
+But the derivation fallback was not needed either, because the verdicts belong on a label the
+scanner **already owns**. `SCAN-OBS-01` requires every `ScanRun` to be *“fully reconstructable into
+the `CandidateSet` that was returned, **including the `FilterTrace`**”*, and
+`FilterTrace.verdicts: tuple[FilterVerdict, ...]` has been in the contract since S88. **The law
+already demanded this and the code silently dropped it.** The fix is to persist the trace on the
+`ScanRun`, exactly as the PM persists `order_intent_set` on `PMRun`.
+
+Rejected: a new `FilterVerdict` label (unlawful under `SCAN-IDN-02`/`SCAN-NEV-04`), and a read-only
+derivation (unnecessary, and it would have been **wrong** — a verdict depends on the settings in
+force at scan time, which are not persisted per run, so a later re-derivation using today's
+thresholds would silently rewrite history).
 
 ### 2 · A filter decision survives the run
 
 Every evaluated ticker's verdict becomes queryable after the run — by whichever mechanism item 1
 chose. Must carry: ticker, decision, which filter bound, the features behind it, and `bypassed`.
 
-If a new label is lawful, **declare it in
-[`trading_graph_vocabulary.json`](../../orchestration/packs/trading_graph_vocabulary.json)** — the
-write guard is fail-closed and a stale pack stalls the run on first write (S148/DL-85). Image and
-pack then move together at deploy.
+**Result:** Done in **one line** of `agents/scanner/store.py` — `"filter_trace":
+trace.model_dump(mode="json")` on the `ScanRun` node, beside the existing scalars (which stay, so
+`batch_trace` and every other reader is unaffected). The trace carries `universe_size`,
+`evaluated`, `dropped_by_filter` **and** the per-ticker `verdicts` with `decision`,
+`filter_fired`, `features` and `bypassed`.
 
-**Result:**
+📌 **No vocabulary change and no pack move.** Measured: `ScanRun` is **not** one of the five
+property-enforced labels (`DeliberationRun`, `BrokerPositionSnapshot`, `Fill`, `LLMCall`,
+`Recommendation`), so nested props are unguarded and the S148 fail-closed stall cannot apply. The
+deploy is an **image-only retag**.
 
 ### 3 · Raise the cap, with a stated justification to replace the lapsed one
 
@@ -125,11 +148,19 @@ They are different questions. The cap controls *how many survivors reach the ana
 controls *whether losers flow through at all*. **Do not turn both on in one step** — you would not
 be able to attribute the change. Recommend the cap first, bypass second, and say why.
 
-**Result:**
+**Result:** Decided — **`bypass_scanner_filter` stays OFF.** The cap moved to 25 today; flipping
+bypass in the same window would make the two changes indistinguishable in the first data we get,
+and the whole point is attribution. It is also now **cheaper to defer**: with the trace persisted,
+every drop already leaves a scoreable record, so the value of bypass (letting a would-be drop
+actually trade so its *realised* outcome is observed) can be judged against real filter-quality
+evidence instead of guessed at. Revisit once the cap change has a few runs behind it.
 
 ### 5 · Prove the checks can fail (DL-70)
 
-**Result:**
+**Result:** Done. Removing the `filter_trace` write gave **3 failed, 1 passed**. The one that kept
+passing is the ownership test — correctly, because it asserts no unowned label is written, which is
+true whether or not the trace persists. A plant that fails *everything* usually means the tests are
+measuring one thing; this one splits along the right seam.
 
 ---
 
@@ -196,14 +227,18 @@ be able to attribute the change. Recommend the cap first, bypass second, and say
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| Where a filter decision lives | | | |
-| `candidate_cap` / `bypass_scanner_filter` | | | |
+| Where a filter decision lives | `agents/scanner/laws/laws.md`; `agents/scanner/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `SCAN-IDN-02`; `SCAN-NEV-04`; `SCAN-OBS-01`; `SCAN-OUT-02`; `SCAN-STA-02` | **Yes, decisively.** The spec offered a new label or a derivation. Reading `SCAN-OBS-01` showed the law already requires the `FilterTrace` to be reconstructable from the `ScanRun`, so the right home was a label the scanner already owns — neither of the spec's options. |
+| `candidate_cap` / `bypass_scanner_filter` | same | `SCAN-IDN-01`; `SCAN-NEV-02`; `SCAN-STA-02` | No. Ranking and filter semantics are untouched; only how many survivors are handed on, and that is a declared tunable with a bound. |
 
-**Does any locked constitution own a filter-decision label? (cite the clause):**
+**Does any locked constitution own a filter-decision label? (cite the clause):** **No — and none needs
+to.** `SCAN-IDN-02` closes the enumeration at `ScanRun` and `Candidate`; `SCAN-NEV-04` forbids writing
+anything else. The verdicts live inside the `ScanRun` payload, which `SCAN-OBS-01` already governs.
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** One, and the law won. The spec assumed a filter
+decision needed a *new* home. `SCAN-OBS-01` already gave it one.
 
-**Laws found silent where a decision was needed:**
+**Laws found silent where a decision was needed:** None. `DRIFT-034` (no home for an unowned label)
+was **not** reached — worth noting, because the spec expected to hit it.
 
 ---
 
@@ -211,33 +246,68 @@ be able to attribute the change. Recommend the cap first, bypass second, and say
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_scan_run_keeps_a_verdict_for_every_evaluated_ticker` | `agents/scanner/tests/test_scan_verdict_persistence.py` | PASS | `SCAN-OBS-01`; `SCAN-OUT-02` |
+| A2 | `test_a_dropped_ticker_records_which_filter_bound_it` | same | PASS | `SCAN-OUT-02` |
+| A3 | `test_a_bypassed_drop_is_not_laundered_into_a_survivor` | same | PASS | `SCAN-OUT-02`; DL-09 |
+| A4 | — | — | **not written** | The cap move is config (`SCANNER_CANDIDATE_CAP=25`), not code; there is no new branch to test. The existing scanner suite already covers ranking and the cap. |
+| A5 | `test_persisting_the_trace_writes_no_label_the_scanner_does_not_own` | same | PASS | `SCAN-NEV-04`; `SCAN-IDN-02` |
+| A6 | — | — | **not applicable** | No vocabulary change: `ScanRun` is not property-enforced, so there is no guard to plant against. |
 
 ---
 
 ## Closeout — evidence
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** Worktree `ta-s165`, branch
+`sprint-165-score-every-name-not-five` off `ec71b9e`. **`.env` absent** — no live proof attempted here.
 
-**Item 1 decision — derivation or owned label, and the clause relied on:**
+**Item 1 decision — derivation or owned label, and the clause relied on:** Neither. The verdicts ride
+on the scanner's **own `ScanRun`** label, which `SCAN-OBS-01` already requires to reconstruct the
+`FilterTrace`. See item 1.
 
-**Cap chosen, and the measured cost delta per run:**
+**Cap chosen, and the measured cost delta per run:** `SCANNER_CANDIDATE_CAP` **5 → 25**, applied as an
+env var on the deployed scanner before this sprint. 25 admits all **22** names that currently pass the
+filters, with headroom, under the `le=50` bound. Cost delta is bounded and **not** LLM-driven: analyst
+scoring is deterministic, and the `LLMCall` ledger has been frozen at 25 calls since 2026-07-15, so LLM
+spend rides on *approved orders* via deliberation, not on scored candidates. The spec's own warning
+(*“the analyst calls the LLM”*) was **wrong and is corrected here**.
 
-**Module line counts:**
+**Module line counts:** `agents/scanner/store.py` **69 → 74**; new
+`agents/scanner/tests/test_scan_verdict_persistence.py` **134**. Nothing near the 200 block; no split needed.
 
-**Planted violations watched fail:**
+**Planted violations watched fail:** removing the `filter_trace` write → **3 failed, 1 passed** (A1, A2,
+A3 failed; A5 correctly unaffected). Restored → 4 passed.
 
-**Final full gate:**
+**Final full gate:** `make ci` redirected to a file, **`MAKE_CI_EXIT=0`**:
 
-**Remote gate / gate-ran / merge:**
+```text
+Contracts: 4 kept, 0 broken.
+TOTAL                                                14205      0   3018      0  100.00%
+================= 2168 passed, 6 skipped in 104.06s (0:01:44) =================
+No known vulnerabilities found
+```
 
-**Not met / verified failing:**
+One earlier run failed at `MAKE_CI_EXIT=2` on two `E501` long lines and is recorded rather than hidden.
+
+**Remote gate / gate-ran / merge:** see the merge commit.
+
+**Not met / verified failing:** 🟠 **`SCAN-OBS-01` was marked 🟩 while the clause was false.** Its
+cited test proves provenance links, not `FilterTrace` reconstructability, and the trace was never
+persisted — so the green was real for part of the clause and hollow for the rest. This is the
+S156/ADR-0021 shape: a citation gate cannot see whether a test covers the clause *as written*. The row
+now cites the new test alongside the old one, and the clause is true. **No historical backfill:** the 28
+existing `ScanRun` nodes have no `filter_trace`, so every drop before today remains unattributable.
+Filter-quality evidence starts accumulating from the next run.
 
 ---
 
 ## Return notes
+
+- **The spec framed the question too narrowly and the law-first read fixed it.** “New label or
+  derivation?” had a third answer — the clause that already required the data — and it turned an
+  M-sized sprint with a pack move into a one-line change with no deploy coupling.
+- **The version dropped from MINOR to PATCH for the same reason.** Once `SCAN-OBS-01` is read, this is
+  a defect, not a capability.
+- **A green law row was hiding a false clause.** `SCAN-OBS-01` cited a test that proves provenance, not
+  trace reconstructability. Worth a look at the other `audit`-type rows for the same shape.
+- **Bypass deliberately left off** so the cap change stays attributable.
+- Nothing is backfilled: filter-quality evidence starts from the next run.

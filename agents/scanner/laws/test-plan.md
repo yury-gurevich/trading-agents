@@ -81,5 +81,5 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| SCAN-OBS-01 | ScanRun node in graph is reconstructable into the CandidateSet. | audit | `test_scanner_agent.py::test_scan_provenance_links_candidates_to_provider_snapshot` | 🟩 |
+| SCAN-OBS-01 | ScanRun node in graph is reconstructable into the CandidateSet, **including the FilterTrace**. | audit | `test_scanner_agent.py::test_scan_provenance_links_candidates_to_provider_snapshot`; `test_scan_verdict_persistence.py::test_scan_run_keeps_a_verdict_for_every_evaluated_ticker` | 🟩 |
 | SCAN-OBS-02 | Fault recorded to sink on provider degradation; not silent. | observable | `test_scanner_agent.py::test_degraded_provider_path_returns_empty_explained_result` | 🟩 |

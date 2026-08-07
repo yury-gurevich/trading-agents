@@ -36,6 +36,11 @@ def write_scan(
             "candidate_count": len(candidates),
             "universe_size": trace.universe_size,
             "evaluated": trace.evaluated,
+            "filter_trace": trace.model_dump(mode="json"),
+            # SCAN-OBS-01 requires the ScanRun to be reconstructable into the
+            # CandidateSet *including the FilterTrace*. The scalars above are a
+            # summary; the trace carries the per-ticker FilterVerdicts (DL-09),
+            # which were built every run and then discarded at process exit.
             "created_at": datetime.now(tz=UTC).isoformat(),
         },
     )

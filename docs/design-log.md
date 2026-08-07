@@ -5072,3 +5072,15 @@ stop for each `sold_ticker` *before* `run_submit`, recording the cancellation fa
   `qty_available` nor removes the opposite-side conflict, and it quietly disarms risk control.
 
 ---
+
+## DL-96 · I cited Fill keys as broker keys, and the real risk was the one I skipped · status: DECIDED (2026-08-07)
+
+**The S164 spec claimed production evidence it did not have.** It argued the attempt-chained stop key was safe because *“the rejected ABT stops are keyed `stop:5244d9de63d93691:ABT`, `#1`, `#2`”*. Those are **`Fill` node keys**. Measured on the graph, every one of them carries `broker_idempotency_key = stop:5244d9de63d93691:ABT` — the **base** key, no `#`. The graph-side attempt chain never reached Alpaca. **Alpaca had never seen a `#`-suffixed `client_order_id`.**
+
+That mattered, because S164's `_place_stop` passes the chained key straight into `broker.submit_stop(key, ...)` as the `client_order_id`. Had Alpaca rejected the format, the replacement would have failed silently and the position stayed unprotected — exactly the defect S164 exists to fix, reintroduced one layer down.
+
+**Resolved by measurement, not by watching.** The operator refused a “wait for it to break” plan: *“I do not know how to manage a KNOWN BUG.”* A bounded probe against the live paper account submitted a 1-share limit buy far from market with `client_order_id = stop:probe-s164:T#1` on a symbol outside the book (avoiding the wash-trade rule): **HTTP 200, `client_order_id` echoed verbatim, cancelled 204, zero residue.** The format is accepted. Precedent for a broker probe: the S97 functionality check.
+
+**The lesson is narrower than “check your evidence”.** Both keys are called *the key* in conversation, and `broker_stop_order_key`’s own docstring says *“the shared graph key **and** broker client_order_id”* — which is true for stops and **false for the `Fill` attempt chain beside it**. Two identifiers, one name, one of them not what it appears. When a spec cites production evidence, cite the **field** that carries it, not the node key that resembles it.
+
+---

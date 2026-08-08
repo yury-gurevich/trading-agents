@@ -78,6 +78,13 @@ def cascade_once(
     provider_agent.bind()  # so the forecaster's advisory RPC can reach the provider
     forecaster_agent = forecaster_agent or ForecasterAgent(bus, graph=graph)
     forecaster_agent.bind()
+    if deliberation_llm is None:
+        # No deliberator in this cascade, so there is no veto to wait for. Making
+        # it explicit beats letting execution time out against an absent stage
+        # (ADR-0022).
+        execution_settings = execution_settings.model_copy(
+            update={"deliberation_grace_seconds": 0}
+        )
     sync_processed = _position_sync_once(graph, broker=broker)
     veto_stages = (
         (
@@ -128,7 +135,7 @@ def cascade_once(
         *veto_stages,
         (
             "execution",
-            partial(execution_poll.find_pending, graph),
+            partial(execution_poll.find_pending, graph, settings=execution_settings),
             partial(
                 execution_poll.execute_pm_node,
                 graph=graph,

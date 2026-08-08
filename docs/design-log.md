@@ -5027,7 +5027,7 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
-## DL-98 · The LLM veto finally ran — eleven minutes after the orders were already at the broker · status: OPEN (found 2026-08-08, run `check-s166-flat-book`)
+## DL-98 · The LLM veto finally ran — eleven minutes after the orders were already at the broker · status: FIXED (2026-08-08, S166 / [ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), 0.89.07)
 
 **The first production run in which the PM approved orders AND the deliberator reached a model.**
 [DL-80](#) is **closed** by it: `LLMCall` went **25 → 164**, the 139 new calls all `claude-opus-5`
@@ -5066,6 +5066,34 @@ S147 rejected: an LLM outage stalling exits. Candidate directions, none chosen: 
 applies to **buys only** (exits proceed, matching ADR-0017's asymmetry); the deliberator writing an
 *intent-to-deliberate* marker at PMRun time so absence and not-yet become distinguishable; or moving
 the veto ahead of the PM. Wants an ADR, not an inline patch.
+
+
+### Fixed 2026-08-08 — the veto gates buys, never exits
+
+[ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md) settles the policy; S166 implements it.
+A PMRun carrying a `buy` is **left unconsumed** while its grace window is open, so the next poll
+retries — no new state, and a restart resumes because the window is measured from the PMRun's own
+`created_at`. A **sell-only** run never waits, which keeps S147's constraint exactly: an LLM outage
+must never block an exit. Bound is `deliberation_grace_seconds` (default **900**, `0–3600`); at `0`
+the old race is restored deliberately.
+
+Fail-open survives — the grace expires and the run submits — but no longer silently: the
+`ExecutionRun` carries `deliberation_status` (`applied`/`not_required`/`waiting`/`proceeded_unvetoed`)
+as a queryable fact, and `proceeded_unvetoed` raises a `DeliberationGraceExpired` fault.
+
+**Both plants observed failing first (DL-70):** restoring the race failed 3 tests; making exits wait
+too — the S147 violation — failed 2, one of them a broker-stops test, so the exit path is guarded
+from more than one direction.
+
+🚨 **The in-process cascade needed an explicit opt-out, and finding that was the useful part.**
+`orchestration/local_pipeline.py` runs the deliberation stage only when an LLM is configured, so with
+none the harness would have waited for a veto that never comes — 18 tests failed until it was made
+explicit. That is harness-only: production runs the deliberator as three container apps polling
+independently, always deployed, which is exactly why the race was real rather than theoretical.
+
+**No pack coupling:** `ExecutionRun` is **not** one of the five property-enforced labels
+(`DeliberationRun`, `BrokerPositionSnapshot`, `Fill`, `LLMCall`, `Recommendation`), so
+`deliberation_status` cannot trigger the S148 fail-closed stall and a deploy is an image-only retag.
 
 ---
 

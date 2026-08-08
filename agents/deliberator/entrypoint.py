@@ -18,9 +18,11 @@ from kernel.fault_graph import GraphFaultSink
 from kernel.serve_loop import serve_loop
 from kernel.serve_transport import consumer_from_env
 
+PEER_SERVE_IDLE_SLEEP_SECONDS = 0
+
 if TYPE_CHECKING:
     from agents.deliberator.peer_client import PeerClient
-    from kernel import GraphStore, LLMClient, MessageBus
+    from kernel import FaultSink, GraphStore, LLMClient, MessageBus
 
 
 def build_served_bus(
@@ -37,6 +39,7 @@ def build_manager(
     graph: GraphStore,
     settings: DeliberatorSettings | None = None,
     llm: LLMClient | None = None,
+    sink: FaultSink | None = None,
 ) -> tuple[DeliberatorAgent, PeerClient]:
     """Build the manager and its production peer-client port."""
     resolved = settings if settings is not None else DeliberatorSettings()
@@ -53,6 +56,20 @@ def build_manager(
         sender=resolved.identity,
         settings=sb_settings,
         timeout_seconds=resolved.request_timeout_seconds,
+        sink=sink,
+    )
+
+
+def serve_peer(
+    graph: GraphStore, settings: DeliberatorSettings, llm: LLMClient | None
+) -> None:
+    """Serve a peer without sleeping beyond the Service Bus receive wait."""
+    bus = InProcessBus()
+    DeliberatorAgent(bus, graph=graph, llm=llm, settings=settings).bind()
+    serve_loop(
+        consumer_from_env(settings.identity, graph),
+        bus,
+        poll_interval=PEER_SERVE_IDLE_SLEEP_SECONDS,
     )
 
 
@@ -78,8 +95,8 @@ def main() -> None:  # pragma: no cover
         effort=settings.effort,
     )
     if settings.role == "manager":
-        manager, peer_client = build_manager(graph, settings, llm=llm)
         fault_sink = GraphFaultSink(graph, CollectingFaultSink())
+        manager, peer_client = build_manager(graph, settings, llm=llm, sink=fault_sink)
         work_loop(
             lambda: find_pending(graph),
             lambda node: review_pm_node(
@@ -96,9 +113,7 @@ def main() -> None:  # pragma: no cover
             flush_faults=fault_sink.flush,
         )
         return
-    bus = InProcessBus()
-    DeliberatorAgent(bus, graph=graph, llm=llm, settings=settings).bind()
-    serve_loop(consumer_from_env(settings.identity, graph), bus)
+    serve_peer(graph, settings, llm)
 
 
 if __name__ == "__main__":  # pragma: no cover

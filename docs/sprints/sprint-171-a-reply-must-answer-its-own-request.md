@@ -120,18 +120,43 @@ one Monday's scheduled run actually hits, since the fleet sits at `minReplicas=0
 
 ## Success factors
 
-- [ ] **The core proof:** a stale reply is placed in the subscription *ahead* of the genuine one;
+- [x] **The core proof:** a stale reply is placed in the subscription *ahead* of the genuine one;
       `debate_turn` returns the **genuine** reply, and the stale one is dead-lettered. Assert on the
       returned turn's content, not merely that no exception was raised.
-- [ ] A stale **success** reply for a different ticker is **not** accepted as this order's turn —
+      **Result:** `tests/test_deliberator_correlated_peer.py::test_debate_turn_skips_stale_ahead_of_genuine_reply_and_faults`
+      returns `pm-new:AAPL:defender:r1` / `"fresh AAPL reply"`, dead-letters the stale MSFT reply
+      with reason `S171OrphanedReply`, and writes an `OrphanedPeerReply` fault. Planted violation
+      (`run_id` ignored) failed red: the result became `pm-old:MSFT:defender:r1`.
+- [x] A stale **success** reply for a different ticker is **not** accepted as this order's turn —
       the specific silent-corruption case, tested separately from the error case.
-- [ ] With an empty queue and a prompt peer, behaviour is unchanged: one request, one reply, no
+      **Result:** `tests/test_deliberator_correlated_peer.py::test_stale_success_for_different_ticker_is_not_accepted`
+      raises `RuntimeError("no deliberator peer reply received")`, completes no stale message, and
+      dead-letters the stale success. Planted violation (`run_id` ignored) failed red: no exception
+      was raised.
+- [x] With an empty queue and a prompt peer, behaviour is unchanged: one request, one reply, no
       dead-letters, no extra receives.
-- [ ] No matching reply within the deadline still raises and fails open — fail-open policy is
+      **Result:** `tests/test_deliberator_correlated_peer.py::test_prompt_peer_reply_is_one_receive_no_dead_letter`
+      proves one receive, one completed genuine reply, zero dead-letters, zero orphan count, and no
+      fault. Planted violation (reject every ready event) failed red with `no deliberator peer reply
+      received`.
+- [x] No matching reply within the deadline still raises and fails open — fail-open policy is
       **unchanged** (S147 item 2: an LLM outage must never block exits).
-- [ ] Orphan count is queryable after a run in which orphans were skipped, and a fault is written.
-- [ ] `make ci` exit 0, **unpiped, redirected to a file**; each new behaviour watched failing a
+      **Result:** `tests/test_bus_azure_correlated_ready.py::test_correlated_ready_event_timeout_reports_skipped_orphans`
+      and `tests/test_deliberator_correlated_peer.py::test_no_matching_reply_still_raises_for_manager_fail_open`
+      prove timeout/no-match stays loud; `agents/deliberator/tests/test_fail_open_reason.py` proves
+      a peer exception still records `failed_open_count=1`. Planted false-ready-event violation
+      failed red: the helper did not raise, and the client raised a wrong claim-check error.
+- [x] Orphan count is queryable after a run in which orphans were skipped, and a fault is written.
+      **Result:** `ServiceBusPeerClient.orphaned_reply_count` is asserted at `1`; `GraphFaultSink`
+      writes a `Fault` with `error_type="OrphanedPeerReply"` and the in-process sink keeps
+      `context["orphan_count"] == 1`. Planted no-op orphan recording failed red at
+      `orphaned_reply_count == 0`.
+- [x] `make ci` exit 0, **unpiped, redirected to a file**; each new behaviour watched failing a
       planted violation before restoration (DL-70).
+      **Result:** `make ci *> $env:TEMP\s171-ci-final.txt; $LASTEXITCODE` returned `0`;
+      pytest reported `2225 passed, 6 skipped`, and coverage reported `100.00%`. Planted violations
+      were observed red for stale correlation, orphan surfacing, prompt-peer over-filtering,
+      no-match timeout handling, and the cold-peer idle-sleep bound before restoration.
 
 ## Traps
 
@@ -155,10 +180,37 @@ one Monday's scheduled run actually hits, since the fleet sits at `minReplicas=0
 
 ## Closeout — evidence
 
-_To be filled before handback; a handback with placeholders unfilled is not accepted._
+**Correlation.**
 
-**Correlation.** _The stale-ahead-of-genuine test, and the dead-lettered orphan._
+`uv run pytest tests/test_bus_azure_correlated_ready.py tests/test_deliberator_correlated_peer.py
+tests/test_deliberator_servicebus_peer.py tests/test_bus_azure_receiver.py tests/test_deliberator_runtime.py
+tests/test_deliberator_cold_peer_timing.py agents/deliberator/tests/test_fail_open_reason.py
+agents/deliberator/tests/test_manager_preflight.py --no-cov` -> **30 passed, 1 skipped**. The
+stale-ahead test returned the genuine AAPL reply and dead-lettered the stale MSFT reply with
+`S171OrphanedReply`; the `ServiceBusPeerClient` exposed `orphaned_reply_count == 1`; the fault sink
+wrote `OrphanedPeerReply`.
 
-**Unchanged.** _Proof that fail-open still fails open when no reply arrives._
+**Unchanged.**
 
-**Not proven.** _State plainly what this does NOT establish._
+No matching reply still raises `RuntimeError("no deliberator peer reply received")`, and the existing
+manager fail-open path remains covered by `agents/deliberator/tests/test_fail_open_reason.py`:
+`failed_open_count=1`, `failed_open_tickers=("AAPL",)`, and the captured exception text is recorded
+as `failed_open_reason`. The normal prompt-peer Service Bus path remains one receive, one completed
+reply, no dead-letters, no fault.
+
+**Cold peer timing.** The second half of the spec was handled without raising
+`request_timeout_seconds`: served deliberator peers now call `serve_loop(..., poll_interval=0)`, so
+the default Service Bus receive wait is the pickup bound. `tests/test_deliberator_cold_peer_timing.py`
+asserts the measured numbers are now `receive_timeout_seconds=5.0`, extra idle sleep `0`, manager
+`request_timeout_seconds=30.0`; planted old sleep `60` failed red.
+
+**Gate.** `make ci` was run unpiped and redirected to
+`$env:TEMP\s171-ci-final.txt`; exit `0`; pytest `2225 passed, 6 skipped`; coverage `100.00%`;
+`pip-audit` reported no known vulnerabilities; detect-secrets passed.
+
+**Not proven.**
+
+No fleet deployment was performed. No live Azure dead-letter queue was inspected after this branch.
+No scaled-from-zero production debate has yet proven `failed_open_count=0`; the cold-peer fix is
+unit-proven by the served-peer timing bound, not by a live scheduled run. Remote branch gate proof
+is reported in the handback after push; merge/deploy remain operator decisions.

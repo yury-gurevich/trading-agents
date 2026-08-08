@@ -9,17 +9,17 @@ External I/O: azure.servicebus SDK when a connection string is configured.
 
 from __future__ import annotations
 
-import json
-from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import ValidationError
 
 from kernel.bus_azure_config import AzureServiceBusSettings
+from kernel.bus_azure_ready import ready_event_from_raw
 from kernel.claim_check import claim_check_read, claim_check_write
 from kernel.envelope import AgentMessage
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from uuid import UUID
 
     from kernel.bus import MessageBus
@@ -78,7 +78,7 @@ class AzureServiceBusRequestConsumer:
         requests: list[AgentMessage] = []
         for raw in self._receive_messages():
             try:
-                event = _ready_event(raw)
+                event = ready_event_from_raw(raw)
                 node = claim_check_read(self._graph, event)
                 request = AgentMessage.model_validate(dict(node.props))
             except (RuntimeError, TypeError, ValueError, ValidationError):
@@ -164,30 +164,6 @@ class AzureServiceBusRequestConsumer:
             self._receiver.dead_letter_message(raw, reason="S100ReceiverFailure")
             return
         self._receiver.abandon_message(raw)
-
-
-def _ready_event(raw: object) -> dict[str, Any]:
-    """Decode a raw Service Bus message body into a ready-event dict."""
-    data = json.loads(_body_text(raw))
-    if not isinstance(data, dict):
-        raise ValueError("Service Bus ready event must be a JSON object")
-    return data
-
-
-def _body_text(raw: object) -> str:
-    """Return the JSON body text from SDK messages and lightweight fakes."""
-    body = getattr(raw, "body", raw)
-    if isinstance(body, bytes):
-        return body.decode("utf-8")
-    if isinstance(body, str):
-        return body
-    if isinstance(body, Iterable):
-        return "".join(_chunk_text(chunk) for chunk in body)
-    return str(body)
-
-
-def _chunk_text(chunk: object) -> str:
-    return chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
 
 
 def _delivery_count(raw: object) -> int:

@@ -4,6 +4,11 @@ Agent: tooling
 Role: clean live Postgres functionality-check rows without adding destructive ops to
       the GraphStore port.
 External I/O: PostgreSQL database.
+
+`--run-id` verifies itself: it re-reads the run's stamps after deleting and exits
+non-zero if any deletable row survived. Printing a count and exiting 0 while orphans
+remained is the defect DL-94 records — a teardown that silently under-deletes quietly
+corrupts the functionality-check register's central claim.
 """
 
 from __future__ import annotations
@@ -15,24 +20,13 @@ from typing import Any
 
 import psycopg
 from dotenv import load_dotenv
-
-_RUN_ARTIFACT_LABELS = (
-    "RunRequest",
-    "MarketData",
-    "RegimeContext",
-    "ScanRun",
-    "Candidate",
-    "AnalystRun",
-    "Recommendation",
-    "PMRun",
-    "OrderIntent",
-    "ExecutionRun",
-    "Fill",
-    "Position",
-    "MonitorRun",
-    "CloseDecision",
-    "Snapshot",
-    "TradeNarrative",
+from scripts.pg_teardown_targets import (
+    PROTECTED_LABELS,
+    collect,
+    like_pattern,
+    protected_matches,
+    protected_neighbours,
+    survivors,
 )
 
 
@@ -71,13 +65,32 @@ def main(argv: list[str] | None = None) -> int:
         connection.cursor() as cursor,
     ):
         if args.run_id is not None:
-            edges, nodes = _delete_run_artifacts(cursor, args.run_id)
-        else:
-            edges, nodes = _delete_by_key_pattern(
-                cursor,
-                _like_pattern(str(args.prefix), contains=args.contains),
-            )
+            return _run_id_teardown(cursor, str(args.run_id))
+        pattern = like_pattern(str(args.prefix), contains=args.contains)
+        broker_rows = protected_matches(cursor, [pattern])
+        edges, nodes = _delete_by_key_pattern(cursor, pattern)
     print(f"deleted_edges={edges} deleted_nodes={nodes}")
+    if broker_rows:
+        print(
+            f"warning: {broker_rows} deleted row(s) carry a broker-state label "
+            f"({', '.join(PROTECTED_LABELS)}) — see DL-44 before trusting the book"
+        )
+    return 0
+
+
+def _run_id_teardown(cursor: Any, run_id: str) -> int:  # noqa: ANN401
+    """Delete a run's artifacts, then prove none of its stamps survived."""
+    targets = collect(cursor, run_id)
+    kept = protected_neighbours(cursor, targets)
+    edges, nodes = _delete_targets(cursor, targets)
+    print(f"deleted_edges={edges} deleted_nodes={nodes} protected_kept={kept}")
+
+    remaining = survivors(cursor, run_id, targets)
+    if remaining:
+        print(f"ORPHANS REMAIN for {run_id}: {len(remaining)} row(s) still stamped")
+        for label, key in remaining:
+            print(f"  {label} {key}")
+        return 1
     return 0
 
 
@@ -96,45 +109,20 @@ def _delete_by_key_pattern(cursor: Any, pattern: str) -> tuple[int, int]:  # noq
     return edges, int(cursor.rowcount)
 
 
-def _delete_run_artifacts(cursor: Any, run_id: str) -> tuple[int, int]:  # noqa: ANN401
-    pattern = _like_pattern(run_id, contains=True)
-    cursor.execute(
-        """
-        WITH RECURSIVE target(label, key) AS (
-            SELECT label, key
-            FROM nodes
-            WHERE key LIKE %s ESCAPE '\\'
-            UNION
-            SELECT neighbor.label, neighbor.key
-            FROM target t
-            JOIN LATERAL (
-                SELECT e.child_label AS label, e.child_key AS key
-                FROM edges e
-                WHERE e.parent_label = t.label AND e.parent_key = t.key
-                UNION
-                SELECT e.parent_label AS label, e.parent_key AS key
-                FROM edges e
-                WHERE e.child_label = t.label AND e.child_key = t.key
-            ) neighbor ON true
-            JOIN nodes n ON n.label = neighbor.label AND n.key = neighbor.key
-            WHERE n.label = ANY(%s)
-        )
-        SELECT label, key
-        FROM target
-        """,
-        (pattern, list(_RUN_ARTIFACT_LABELS)),
-    )
-    rows = [(str(label), str(key)) for label, key in cursor.fetchall()]
-    if not rows:
+def _delete_targets(
+    cursor: Any,  # noqa: ANN401
+    targets: list[tuple[str, str]],
+) -> tuple[int, int]:
+    """Delete exactly the enumerated rows, edges first."""
+    if not targets:
         return (0, 0)
-
     cursor.execute(
         "CREATE TEMP TABLE pg_teardown_target "
         "(label text NOT NULL, key text NOT NULL) ON COMMIT DROP"
     )
     cursor.executemany(
         "INSERT INTO pg_teardown_target (label, key) VALUES (%s, %s)",
-        rows,
+        targets,
     )
     cursor.execute(
         "DELETE FROM edges e "
@@ -155,11 +143,6 @@ def _delete_run_artifacts(cursor: Any, run_id: str) -> tuple[int, int]:  # noqa:
         ")"
     )
     return edges, int(cursor.rowcount)
-
-
-def _like_pattern(prefix: str, *, contains: bool) -> str:
-    escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    return f"%{escaped}%" if contains else f"{escaped}%"
 
 
 if __name__ == "__main__":

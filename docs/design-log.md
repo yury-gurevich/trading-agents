@@ -4926,7 +4926,7 @@ defect first, then decide A vs B. Nothing was changed on the account, the parame
 
 ---
 
-## DL-94 · `pg_teardown.py --run-id` leaves orphans, because its label list predates half the graph · status: DECIDED (2026-08-07)
+## DL-94 · `pg_teardown.py --run-id` leaves orphans, because its label list predates half the graph · status: CLOSED (2026-08-08, `chore-teardown-leaves-no-orphans`, 0.89.04)
 
 **Found while tearing down the S162 end-to-end check** (`sched-2026-07-17`, a synthetic backdated
 run fired to exercise the deployed `:s162` fleet). `--run-id` reported `deleted_edges=50
@@ -4975,6 +4975,55 @@ incidental.
 **Road not taken.** Deleting by raw SQL against the run id without the label filter — rejected for
 exactly the reason above: it would have taken the 27 live `Position` rows mirroring the Alpaca book
 with it, manufacturing the broker↔graph divergence DL-44 exists to prevent.
+
+### Resolved 2026-08-08 — and the fix above was **not** the fix that worked
+
+Measured against the live spine before writing any code. Three of this entry's own claims were wrong,
+and the third is the one that would have caused harm.
+
+**1. `PositionCheck` cannot be fixed by adding the label.** Its *only* edge type in the entire graph is
+`PositionCheck -> Position` (191 of them). `Position` is production state, so no walk that respects
+DL-44 may traverse it — which means **no walk can ever reach a `PositionCheck`.** Measured: widening the
+label list exactly as this entry proposed reaches **0** of them. The fix is a second enumerator — the key
+convention `<owning-run-key>:<suffix>`, e.g. `monitor-run-<id>:broker:WFC:348:8639:check` — which
+collects them by prefix without traversing anything. `CloseDecision` has the same single-edge shape and
+was equally unreachable while sitting in the list looking covered.
+
+**2. `Recommendation` is not reached via `Candidate`.** Its inbound edges are `Rejection -> Recommendation`
+(129) and `OrderIntent -> Recommendation` (56); there is no `Candidate -> Recommendation` edge at all. That
+sharpens the diagnosis rather than changing it: the S162 run approved **zero** orders, so it had no
+`OrderIntent`s, and with `Rejection` missing from the list the recommendations were orphaned *transitively*.
+Adding `Rejection` closes it.
+
+**3. 🚨 The label list was a load-bearing traversal barrier and nothing said so.** This entry warned the
+list "cannot simply become every label". The real hazard is sharper: `Position`'s only bridge from the
+reached set is `Fill -> BrokerStopOrder -> Position`, and it held **solely because `BrokerStopOrder`
+happened to be absent**. `BrokerStopOrder` reads exactly like a run artifact — it is created during a run —
+so the obvious next edit to that tuple would have deleted the 27 live `Position` rows mirroring the Alpaca
+book. The one tuple was answering two different questions.
+
+**The shipped shape.** `scripts/pg_teardown_targets.py` splits them: `PROTECTED_LABELS`
+(`Position`, `Fill`, `BrokerStopOrder`, `BrokerOrderStatus`) is broker-mirroring production state, never
+deleted and never traversed *through*; `RUN_ARTIFACT_LABELS` is disposable proof, and can now grow safely.
+`--run-id` **verifies itself**: it re-reads the run's stamps after deleting and **exits 1** naming every
+survivor, so the defect this entry records — a count printed, exit 0, 41 rows still stamped — cannot
+recur silently.
+
+**Proven read-only on `sched-2026-08-07`:** 23 former orphans now collected (11 `SentimentReading`,
+**10 `PositionCheck`**, 1 `DeliberationRun`, 1 `Rejection`), and **10 `Fill` rows no longer deleted** —
+`exit:…:sell`, the ten live flatten exits. The old code would have deleted the graph's record of ten
+orders open at the broker. `protected_kept` reports **20** (10 `Fill` + 10 `Position`); a stamp-based
+count reported **0**, because a spared `Fill` keyed `exit:<ref>:WFC:sell` carries no run stamp — so the
+count was changed to mean *what the walk stopped at*, not *what matched the stamp*.
+
+**Road not taken (this time).** Removing the allowlist so the walk traverses everything except protected
+labels — rejected: it inverts a silent under-delete into a possible over-delete across runs through hub
+nodes, and the measurement that mattered (widening adds only 13 rows, no cross-run escape) was taken on
+*one* run and is not a guarantee.
+
+🪤 **The live check earned its place.** All 12 unit tests passed while the SQL was invalid: `ESCAPE` is a
+syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. Unit-green really is not
+"works".
 
 ---
 

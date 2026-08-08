@@ -140,6 +140,38 @@ except config and the probe function):
 
 1. **Celery/Redis** — deferred to P14 (ratified). Retires when `ServiceBusBus` ships. No further hygiene decisions pending.
 
+## Version tags — where they point, and how to find gaps
+
+Backfilled 2026-08-08: **78 versions on `main` had no tag**, a continuous run from `0.1.0`
+to `0.65.00`. The tag list looked twelve behind; it had a multi-month hole in the middle.
+All 155 `v*` tags now exist locally and on the remote, and the gap check returns **0**.
+
+**A tag is annotated and points at the commit where the version landed on `main`'s
+first-parent line** — the merge commit for a branch merged with `--no-ff`, and the bump
+commit itself for one that was fast-forwarded. Three of the twelve most recent
+(`v0.86.03`, `v0.87.00`, `v0.88.00`) were fast-forwarded and have no merge commit at all.
+
+**Find gaps with the first-parent line, not `git log -- pyproject.toml`.**
+
+```bash
+git log --first-parent --reverse --format=%H main -- pyproject.toml
+```
+
+🚨 Without `--first-parent`, `git log -- pyproject.toml` interleaves commits from
+merged branches, so the same version is reported at several points and reads as a
+**version regression that never happened** — measured: four false regressions, which
+disappeared entirely on the first-parent line.
+
+Two further traps, both hit and both silent:
+
+- **`comm` needs lexicographic input.** Comparing a `sort -V` version list against the tag
+  list with `comm` prints nonsense — it listed as "untagged" the very versions just tagged.
+  Sort both with plain `sort -u`, and use `sort -V` only for display.
+- **Decode git output as UTF-8 explicitly.** `subprocess.run(..., text=True)` uses the
+  Windows locale (cp1252), so an em-dash in a historic commit subject becomes `â€”` and the
+  mojibake is baked into the tag message. Pass `encoding="utf-8"`. Caught before pushing;
+  the fix is to delete and recreate, which is only cheap while the tags are still local.
+
 ## Local dev tools
 
 Tools installed on the dev machine (outside `pyproject.toml`) and approved for Claude Code so

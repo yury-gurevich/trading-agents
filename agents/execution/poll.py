@@ -10,8 +10,15 @@ External I/O: injected Broker and GraphStore backends.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
+from agents.execution.deliberation_gate import (
+    deliberation_status,
+    drop_vetoed,
+    is_waiting,
+    record_unvetoed_submit,
+)
 from agents.execution.drop_sweep import sweep_unfilled_orders
 from agents.execution.exit_stops import report_unprotected_exits, settle_stops
 from agents.execution.reconciliation import reconcile_run_start
@@ -33,11 +40,6 @@ if TYPE_CHECKING:
 
 PM_RUN_LABEL = "PMRun"
 EXECUTED_EDGE = "EXECUTED_BY"
-# A deliberation challenger-veto (orchestration) may narrow the approved set before
-# execution. Execution honours that upstream block — it still only executes the intents
-# it is given (EXEC-NEV-01), never deciding what to trade. Read by graph label so the
-# agent imports nothing from orchestration.
-_DELIBERATED_EDGE = "DELIBERATED_BY"
 
 
 @dataclass(frozen=True)
@@ -46,28 +48,6 @@ class ExecutionWorkItem:
 
     kind: Literal["position_sync", "submit"]
     node: Node
-
-
-def _drop_vetoed(
-    graph: GraphStore, pm_run: Node, order_set: OrderIntentSet
-) -> OrderIntentSet:
-    """Remove any deliberation-vetoed tickers from the approved set (fail-open).
-
-    When a DeliberationRun is linked to the PMRun, its ``vetoed_tickers`` are dropped
-    before submission. No DeliberationRun (the veto stage did not run) → the full set
-    executes, so an absent or failed review never blocks trading.
-    """
-    delib = next(
-        iter(graph.descendants(pm_run, max_depth=1, edge_types={_DELIBERATED_EDGE})),
-        None,
-    )
-    if delib is None:
-        return order_set
-    vetoed = set(delib.props.get("vetoed_tickers", ()))
-    if not vetoed:
-        return order_set
-    survivors = tuple(i for i in order_set.approved if i.ticker not in vetoed)
-    return order_set.model_copy(update={"approved": survivors})
 
 
 def find_pending_position_sync(graph: GraphStore) -> list[Node]:
@@ -79,15 +59,27 @@ def find_pending_position_sync(graph: GraphStore) -> list[Node]:
     return pending
 
 
-def find_pending(graph: GraphStore) -> list[Node]:
-    """Return PMRun nodes with no downstream ExecutionRun (unprocessed work)."""
+def find_pending(
+    graph: GraphStore, *, settings: ExecutionSettings | None = None
+) -> list[Node]:
+    """Return PMRun nodes ready to submit: unexecuted, and not awaiting a veto.
+
+    A buy-carrying PMRun stays *unconsumed* while its grace window is open, so the
+    next poll retries it — no new state, and a restart resumes correctly because the
+    window is measured from the PMRun's own `created_at` (DL-98).
+    """
+    active = settings or ExecutionSettings()
+    now = datetime.now(tz=UTC)
     pending: list[Node] = []
     for node in graph.list_nodes(PM_RUN_LABEL):
         executed = list(
             graph.descendants(node, max_depth=1, edge_types={EXECUTED_EDGE})
         )
-        if not executed:
-            pending.append(node)
+        if executed:
+            continue
+        if is_waiting(graph, node, now=now, settings=active):
+            continue
+        pending.append(node)
     return pending
 
 
@@ -163,7 +155,14 @@ def execute_pm_node(
     settings = settings or ExecutionSettings()
     sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
-    order_set = _drop_vetoed(graph, node, order_set)
+    status = deliberation_status(
+        graph,
+        node,
+        order_set,
+        now=datetime.now(tz=UTC),
+        grace_seconds=settings.deliberation_grace_seconds,
+    )
+    order_set = drop_vetoed(graph, node, order_set)
     snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
     freed = settle_stops(
         graph,
@@ -183,6 +182,9 @@ def execute_pm_node(
             "submitted": result.submitted,
             "rejected": result.rejected,
             "skipped": result.skipped,
+            "deliberation_status": status,
         },
     )
+    if status == "proceeded_unvetoed":
+        record_unvetoed_submit(sink, order_set.run_id, result.submitted, settings)
     graph.add_edge(node, execution_run, EXECUTED_EDGE)

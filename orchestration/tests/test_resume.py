@@ -12,6 +12,7 @@ import pytest
 from agents.analyst import poll as analyst_poll
 from agents.execution import poll as execution_poll
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.settings import ExecutionSettings
 from agents.monitor import poll as monitor_poll
 from agents.portfolio_manager import poll as pm_poll
 from agents.provider import ProviderAgent
@@ -120,7 +121,10 @@ def test_execution_resume_mints_new_order_identity() -> None:
     pm_run = walk_chain(graph, result.child_run_id)["PMRun"]
     order_set = pm_run.props["order_intent_set"]
     assert order_set["run_id"] == pm_run.key
-    assert pm_run in execution_poll.find_pending(graph)
+    # This test is about resume identity, not the veto: opt out of the ADR-0022
+    # grace so the PMRun is pending on its own merits.
+    no_wait = ExecutionSettings(deliberation_grace_seconds=0)
+    assert pm_run in execution_poll.find_pending(graph, settings=no_wait)
 
 
 def test_child_of_child_and_double_resume_are_deterministic() -> None:

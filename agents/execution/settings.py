@@ -119,6 +119,16 @@ class ExecutionSettings(AgentSettings):
         le=60,
         unit="seconds",
     )
+    deliberation_grace_seconds: int = tunable(
+        default=900,
+        ge=0,
+        le=3600,
+        why=(
+            "How long a BUY-carrying PMRun waits for its DeliberationRun before "
+            "submitting anyway. 0 restores the pre-DL-98 race. Exits never wait "
+            "(S147 / ADR-0017): a sell-only run ignores this entirely."
+        ),
+    )
     broker_stop_fallback_stop_pct: float = tunable(
         0.05,
         why=(

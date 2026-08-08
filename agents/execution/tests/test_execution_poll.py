@@ -110,7 +110,13 @@ def test_run_once_continues_after_poisoned_intent_and_anchors_execution(
     assert execution_node.props["rejected"] == 0
     assert execution_node.props["skipped"] == 0
     assert statuses == {"AAA": "filled", "CCC": "filled"}
-    assert len(graph.list_nodes("Fault")) == 1
+    # One fault for the poisoned intent, one because this buy-carrying PMRun was
+    # submitted with no DeliberationRun (DL-98). Asserted by type, not by count, so a
+    # future fault cannot silently satisfy the old `== 1`.
+    fault_types = sorted(
+        str(node.props["error_type"]) for node in graph.list_nodes("Fault")
+    )
+    assert fault_types == ["DeliberationGraceExpired", "RuntimeError"]
     assert find_pending(graph) == []
 
 

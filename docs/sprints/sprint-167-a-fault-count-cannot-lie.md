@@ -92,7 +92,7 @@ the instrument certifying the system clean before a trading run.
 - [x] `make ci` exit 0, 100 % coverage, **measured unpiped to a file**
       (`make ci > /tmp/ci.txt 2>&1 ; echo $?` then read the file — a pipe reports the pipe's exit
       code, hardening row S).
-- [ ] Remote `make gate-ran` exit 0 before merge.
+- [x] Remote `make gate-ran` exit 0 before merge.
 
 ## Process
 
@@ -119,7 +119,9 @@ untracked-secret scan both passed.
 | Temporarily returned the fixed string `llm unavailable` from the fail-open reason formatter. | `uv run pytest agents/deliberator/tests/test_fail_open_reason.py --no-cov` exited `1`; 3 failed / 0 passed, rejecting the false fixed cause and the missing truncation behavior. |
 | Temporarily removed `failed_open_reason` from `trading_graph_vocabulary.json`. | `uv run pytest tests/test_graph_vocabulary_deliberation.py tests/test_graph_vocabulary_properties.py --no-cov` exited `1`; 2 failed / 6 passed, both naming the undeclared `DeliberationRun` property. |
 
-**Remote gate.** Pending branch push; fill with `make gate-ran` output and full SHA before merge.
+**Remote gate.** `make gate-ran` exited `0` for
+`488d5a2cfbcf58f109f931214a0994ef7b904af9`:
+`GATE PROVEN`; `Security Findings: success`; `CI: success`.
 
 **Deploy note.** The vocabulary pack moved: SHA256 `B8D1A30FDC4928D248BECFFAD5EC4171FDAE15D6A482509595EAC7A9F060B287`
 on `main` became `13C0E3A0EF38EED61019C35CECF252F5729967979011BDFBF0146D8C907AD3FF`.

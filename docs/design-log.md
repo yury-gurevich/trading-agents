@@ -5027,6 +5027,55 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
+## DL-99 · The debate is inert until 2026-09-01, and my audit said zero faults while 18 were being written · status: OPEN (found 2026-08-08)
+
+**Two findings from one investigation.**
+
+### 1. The Anthropic API usage limit is exhausted
+
+The `:s166` veto-gate run recorded `real_debate_count=0, failed_open_count=18` with the rationale
+*"llm unavailable (fail-open)"*. That rationale is **almost right for the wrong reason**: 58
+`LLMCall`s were logged across all three roles in the window (proponent 28, opponent 20, manager 10),
+so the peers *were* reachable. The 18 Faults say what actually happened:
+
+```
+Error code: 400 - invalid_request_error
+"You have reached your specified API usage limits.
+ You will regain access on 2026-09-01 at 00:00 UTC."
+```
+
+`_review_one` pre-seeds `fail_open_review()` and runs the debate inside
+`fault_boundary(reraise=False)`, so any exception leaves the fail-open verdict standing. That is the
+designed behaviour (S147) and it worked — but it means **the veto is inert until 2026-09-01**, on
+every run including Monday's.
+
+🟢 **S166 handles this correctly, and that is worth stating.** The gate waits for a
+`DeliberationRun`, not for a *good* one. The fail-open run is written within ~2 minutes, execution
+applies it and submits. No deadlock, no stall — exactly the S147 constraint the ADR was built around.
+**What is lost is the review, not the trading.**
+
+The comparison that isolates it: the `:s165` run 80 minutes earlier reached the model for real
+(`real_debate_count=18`, 73 calls). The limit was crossed between the two runs — plausibly *by* the
+first run, which spent 139 Opus calls.
+
+### 2. 🚨 My own audit reported "Faults today = 0" while 18 were being written
+
+`Fault` nodes stamp **`occurred_at`**, not `created_at`. My pre-Monday audit queried
+`props->>'created_at' > '2026-08-08'`, which is `NULL` on every Fault node, so it returned **0** —
+three times, and I reported it as a PASS each time. Measured after the correction:
+`occurred_at > 06:50` → **18**, `created_at > 06:50` → **0**.
+
+**This is the same defect class this session has been finding all day** — DL-94's teardown counting
+the wrong rows, my own watcher blind to `ScanRun` keys — and it is worse here, because it was the
+instrument being used to certify the system clean for Monday. A green that comes from querying a
+field that does not exist is indistinguishable from a real green.
+
+**Owed:** a fault-count helper that asserts the field it reads exists, rather than every caller
+hand-rolling the property name. Until then, no audit should report a Fault count without showing a
+non-zero control.
+
+---
+
 ## DL-98 · The LLM veto finally ran — eleven minutes after the orders were already at the broker · status: FIXED (2026-08-08, S166 / [ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), 0.89.07)
 
 **The first production run in which the PM approved orders AND the deliberator reached a model.**

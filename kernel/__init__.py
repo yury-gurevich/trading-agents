@@ -77,6 +77,13 @@ from kernel.errors import (
     fault_from_exception,
 )
 from kernel.fault_graph import GraphFaultSink
+from kernel.fault_query import (
+    FaultOccurrence,
+    MissingFaultTimestampPropertyError,
+    fault_count_in_window,
+    fault_occurrences,
+    faults_occurred_in_window,
+)
 from kernel.graph import Edge, GraphStore, Node
 from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_postgres import PostgresGraphStore
@@ -119,6 +126,7 @@ __all__ = [
     "EventHandler",
     "FakeLLMClient",
     "FaultCapture",
+    "FaultOccurrence",
     "FaultSink",
     "GraphFaultSink",
     "GraphStore",
@@ -134,6 +142,7 @@ __all__ = [
     "MeteredFaultSink",
     "Metrics",
     "MetricsSettings",
+    "MissingFaultTimestampPropertyError",
     "Node",
     "NullMetrics",
     "ParameterTruth",
@@ -158,7 +167,10 @@ __all__ = [
     "describe",
     "ensure_deliberation_artifact",
     "fault_boundary",
+    "fault_count_in_window",
     "fault_from_exception",
+    "fault_occurrences",
+    "faults_occurred_in_window",
     "judge_verdict",
     "load_deliberation_prompt_artifact",
     "load_deliberation_prompt_artifacts",

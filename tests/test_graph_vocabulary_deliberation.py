@@ -39,6 +39,7 @@ def test_deliberation_run_props_are_declared_and_unknown_prop_fails() -> None:
         "real_debate_count": 1,
         "failed_open_count": 0,
         "failed_open_tickers": [],
+        "failed_open_reason": "",
         "created_at": "2026-08-01T00:00:00+00:00",
     }
 

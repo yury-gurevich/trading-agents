@@ -124,6 +124,7 @@ def test_store_reuses_existing_run_and_ignores_missing_llm_key() -> None:
         real_debate_count=0,
         failed_open_count=0,
         failed_open_tickers=[],
+        failed_open_reason="",
         llm_call_keys=["existing-call", "missing-call"],
     )
     second = write_deliberation_run(
@@ -140,6 +141,7 @@ def test_store_reuses_existing_run_and_ignores_missing_llm_key() -> None:
         real_debate_count=0,
         failed_open_count=0,
         failed_open_tickers=[],
+        failed_open_reason="",
         llm_call_keys=[],
     )
 

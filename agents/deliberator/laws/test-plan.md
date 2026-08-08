@@ -23,7 +23,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-NEV-03 | Never talks to broker. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-04 | Never fetches market data directly. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-05 | Never imports another agent or orchestration. | functional | _tbd_ | ⬜ |
-| DLIB-NEV-06 | Never hides failed debate or peer call as clean veto. | functional | `test_deliberator_agent.py::test_manager_fail_open_records_visible_rationale`; `test_manager_preflight.py::test_unreachable_peer_preflight_leaves_pmrun_unconsumed`; `test_manager_preflight.py::test_one_bad_peer_preflight_records_no_half_debate` | 🟩 |
+| DLIB-NEV-06 | Never hides failed debate or peer call as clean veto. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_manager_preflight.py::test_unreachable_peer_preflight_leaves_pmrun_unconsumed`; `test_manager_preflight.py::test_one_bad_peer_preflight_records_no_half_debate` | 🟩 |
 | DLIB-STA-01 | Manager is stateless between polls. | functional | _tbd_ | ⬜ |
 | DLIB-STA-02 | Graph effects append-only and idempotent by PM run id. | functional | _tbd_ | ⬜ |
 | DLIB-STA-03 | Peers write only shared LLM call audit nodes. | functional | _tbd_ | ⬜ |
@@ -33,7 +33,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-ORD-01 | Defender then challenger order is preserved per round. | functional | _tbd_ | ⬜ |
 | DLIB-ORD-02 | Independent PMRun nodes process independently. | functional | _tbd_ | ⬜ |
 | DLIB-ORD-03 | Duplicate peer replies are ignored by idempotent write semantics. | functional | _tbd_ | ⬜ |
-| DLIB-FAIL-01 | LLM or peer-call failure is fail-open and recorded. | functional | `test_deliberator_agent.py::test_manager_fail_open_records_visible_rationale` | 🟩 |
+| DLIB-FAIL-01 | LLM or peer-call failure is fail-open and recorded. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_fail_open_reason.py::test_manager_fail_open_records_usage_limit_reason` | 🟩 |
 | DLIB-FAIL-02 | Graph-write failure records fault, no delete. | functional | _tbd_ | ⬜ |
 | DLIB-FAIL-03 | Crash recovery retries runs lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-01 | Bus payloads match `contracts/deliberator.py`. | functional | _tbd_ | ⬜ |
@@ -49,6 +49,6 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-DEP-04 | Uses `DEP-CONFIG` correctly. | functional | _tbd_ | ⬜ |
 | DLIB-OBS-01 | Debate audit reconstructable from `DeliberationRun`. | functional | _tbd_ | ⬜ |
 | DLIB-OBS-02 | LLM spend attributable per calling agent. | functional | _tbd_ | ⬜ |
-| DLIB-OBS-03 | Fail-open outcomes visible in rationale. | functional | _tbd_ | ⬜ |
+| DLIB-OBS-03 | Fail-open outcomes visible in rationale. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_fail_open_reason.py::test_manager_fail_open_records_usage_limit_reason` | 🟩 |
 | DLIB-PERF-01 | `max_rounds` bounds peer turns. | functional | _tbd_ | ⬜ |
 | DLIB-PERF-02 | Peer wait time is bounded. | functional | _tbd_ | ⬜ |

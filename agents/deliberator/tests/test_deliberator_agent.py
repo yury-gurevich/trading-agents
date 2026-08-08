@@ -23,17 +23,6 @@ from kernel.serve_loop import LocalRequestConsumer, serve_once
 _UPHOLD = '{"ruling": "uphold", "rationale": "clears review"}'
 
 
-class _FailingPeerClient:
-    def preflight(self, recipients: tuple[str, ...]) -> None:
-        del recipients
-
-    def debate_turn(
-        self, recipient: str, request: DebateTurnRequest
-    ) -> DebateTurnReply:
-        del recipient, request
-        raise RuntimeError("peer unavailable")
-
-
 def _settings(role: str, *, rounds: int = 2) -> DeliberatorSettings:
     return DeliberatorSettings(
         role=role,  # type: ignore[arg-type]
@@ -152,6 +141,7 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
     assert run.props["real_debate_count"] == 1
     assert run.props["failed_open_count"] == 0
     assert run.props["failed_open_tickers"] == ()
+    assert run.props["failed_open_reason"] == ""
     assert len(run.props["transcript"]) == 4
     assert run.props["debates"]["AAPL"]["failed_open"] is False
     assert "AAPL: uphold" in run.props["narrative"]
@@ -165,35 +155,3 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
     }
     linked = list(graph.descendants(pm, max_depth=1, edge_types={DELIBERATED_EDGE}))
     assert linked == [run]
-
-
-def test_manager_fail_open_records_visible_rationale() -> None:
-    """DLIB-FAIL-01 / DLIB-NEV-06: peer failure is queryable fail-open."""
-    graph = InMemoryGraphStore()
-    pm = _pm_node(graph, "pm-fail")
-    bus = InProcessBus()
-    settings = _settings("manager")
-    manager = DeliberatorAgent(
-        bus,
-        graph=graph,
-        llm=FakeLLMClient({"DECISION UNDER TEST": _UPHOLD}),
-        settings=settings,
-    )
-
-    review_pm_node(
-        pm,
-        graph=graph,
-        manager=manager,
-        peer_client=_FailingPeerClient(),
-        settings=settings,
-    )
-
-    (run,) = graph.list_nodes(DELIBERATION_RUN_LABEL)
-    assert run.props["verdicts"] == {"AAPL": "uphold"}
-    assert run.props["vetoed_tickers"] == ()
-    assert run.props["real_debate_count"] == 0
-    assert run.props["failed_open_count"] == 1
-    assert run.props["failed_open_tickers"] == ("AAPL",)
-    assert run.props["debates"]["AAPL"]["failed_open"] is True
-    assert run.props["debates"]["AAPL"]["rationale"] == "llm unavailable (fail-open)"
-    assert "fail-open" in run.props["narrative"]

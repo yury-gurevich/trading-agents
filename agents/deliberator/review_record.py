@@ -14,7 +14,8 @@ if TYPE_CHECKING:
     from agents.deliberator.settings import DeliberatorSettings
     from contracts.deliberator import DebateTurnRecord
 
-FAIL_OPEN_RATIONALE = "llm unavailable (fail-open)"
+_FAILED_OPEN_REASON_LIMIT = 500
+_UNKNOWN_FAIL_OPEN_REASON = "UnknownError: reason unavailable"
 
 
 @dataclass(frozen=True)
@@ -26,11 +27,28 @@ class OrderReview:
     turns: tuple[DebateTurnRecord, ...]
     llm_call_keys: tuple[str, ...]
     failed_open: bool = False
+    failed_open_reason: str = ""
 
 
-def fail_open_review() -> OrderReview:
+def failed_open_reason(error_type: str, message: str) -> str:
+    """Return the queryable fail-open cause stamped on DeliberationRun."""
+    reason = f"{error_type}: {message}"
+    if len(reason) <= _FAILED_OPEN_REASON_LIMIT:
+        return reason
+    return reason[: _FAILED_OPEN_REASON_LIMIT - 3] + "..."
+
+
+def fail_open_review(reason: str | None = None) -> OrderReview:
     """Return the lawful fail-open review marker for one affected order."""
-    return OrderReview("uphold", FAIL_OPEN_RATIONALE, (), (), failed_open=True)
+    recorded_reason = reason or _UNKNOWN_FAIL_OPEN_REASON
+    return OrderReview(
+        "uphold",
+        f"fail-open: {recorded_reason}",
+        (),
+        (),
+        failed_open=True,
+        failed_open_reason=recorded_reason,
+    )
 
 
 def debate_record(review: OrderReview) -> dict[str, object]:
@@ -39,6 +57,7 @@ def debate_record(review: OrderReview) -> dict[str, object]:
         "verdict": review.verdict,
         "rationale": review.rationale,
         "failed_open": review.failed_open,
+        "failed_open_reason": review.failed_open_reason,
         "turns": [
             {"role": turn.role, "round": turn.round, "text": turn.text}
             for turn in review.turns

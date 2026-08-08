@@ -82,14 +82,14 @@ the instrument certifying the system clean before a trading run.
 
 ## Success factors
 
-- [ ] Exactly one code path reads `Fault` timestamps; a repo-wide grep finds no inline property name.
-- [ ] Querying a non-existent Fault property **raises**, proven by a test that expects the raise.
-- [ ] A fail-open `DeliberationRun` carries a `failed_open_reason` naming the real error, with the
+- [x] Exactly one code path reads `Fault` timestamps; a repo-wide grep finds no inline property name.
+- [x] Querying a non-existent Fault property **raises**, proven by a test that expects the raise.
+- [x] A fail-open `DeliberationRun` carries a `failed_open_reason` naming the real error, with the
       400-usage-limit case covered by a test.
-- [ ] `failed_open_reason` is declared in the vocabulary pack.
-- [ ] Every new behaviour observed failing on a **planted defect first** (DL-70) — including one that
+- [x] `failed_open_reason` is declared in the vocabulary pack.
+- [x] Every new behaviour observed failing on a **planted defect first** (DL-70) — including one that
       reproduces the exact `created_at`/`occurred_at` mistake and shows the helper catching it.
-- [ ] `make ci` exit 0, 100 % coverage, **measured unpiped to a file**
+- [x] `make ci` exit 0, 100 % coverage, **measured unpiped to a file**
       (`make ci > /tmp/ci.txt 2>&1 ; echo $?` then read the file — a pipe reports the pipe's exit
       code, hardening row S).
 - [ ] Remote `make gate-ran` exit 0 before merge.
@@ -102,15 +102,30 @@ Full cycle: worktree → own branch → `make ci` locally → push → `make gat
 
 ## Closeout — evidence
 
-_To be filled by the implementer before handback. A handback with this section unfilled is not
-accepted._
+*To be filled by the implementer before handback. A handback with this section unfilled is not
+accepted.*
 
-**Local gate.** _`make ci` exit code, pass/skip counts, coverage %._
+**Local gate.** `make ci` was measured unpiped to `$env:TEMP\s167-make-ci-final-before-push.txt`;
+PowerShell printed exit code `0`. Pytest reported `2203 passed, 4 skipped` and coverage
+`100.00%`. `pip-audit` reported `No known vulnerabilities found`; detect-secrets and the
+untracked-secret scan both passed.
 
-**Planted defects (DL-70).** _Table: what was planted → which tests failed._
+**Planted defects (DL-70).**
 
-**Remote gate.** _`make gate-ran` output and the full SHA._
+| Plant | Observed failure |
+| --- | --- |
+| Added the S167 tests before implementation. | `uv run pytest tests/test_fault_query.py agents/deliberator/tests/test_deliberator_agent.py tests/test_graph_vocabulary_deliberation.py --no-cov` exited `2`; collection failed because `kernel.fault_query` and `failed_open_reason` did not exist yet. |
+| Temporarily set `FAULT_TIMESTAMP_PROPERTY = "created_at"`. | `uv run pytest tests/test_fault_query.py --no-cov` exited `1`; 3 failed / 1 passed, including the exact missing-`created_at` timestamp path. |
+| Temporarily returned the fixed string `llm unavailable` from the fail-open reason formatter. | `uv run pytest agents/deliberator/tests/test_fail_open_reason.py --no-cov` exited `1`; 3 failed / 0 passed, rejecting the false fixed cause and the missing truncation behavior. |
+| Temporarily removed `failed_open_reason` from `trading_graph_vocabulary.json`. | `uv run pytest tests/test_graph_vocabulary_deliberation.py tests/test_graph_vocabulary_properties.py --no-cov` exited `1`; 2 failed / 6 passed, both naming the undeclared `DeliberationRun` property. |
 
-**Deploy note.** _Confirm whether the pack hash moved, and therefore which deploy path applies._
+**Remote gate.** Pending branch push; fill with `make gate-ran` output and full SHA before merge.
 
-**Not proven.** _State plainly what this sprint does NOT establish._
+**Deploy note.** The vocabulary pack moved: SHA256 `B8D1A30FDC4928D248BECFFAD5EC4171FDAE15D6A482509595EAC7A9F060B287`
+on `main` became `13C0E3A0EF38EED61019C35CECF252F5729967979011BDFBF0146D8C907AD3FF`.
+Deployment must use full `pwsh infra/deploy-agents.ps1 up -Tag <tag>` so the image and vocabulary
+pack move together; an image-only retag is not safe for `DeliberationRun`.
+
+**Not proven.** No live/deployed run has written `failed_open_reason` yet. This sprint does not
+repair or work around the Anthropic account usage limit, does not prove a real debate before
+2026-09-01, and does not change or re-prove the S166 execution grace gate.

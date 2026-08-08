@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from kernel.fault_graph import FAULT_SUPPRESSION_LABEL
+from kernel.fault_query import fault_occurrences
 
 if TYPE_CHECKING:
     from kernel import GraphStore
@@ -32,31 +32,17 @@ class FaultView:
 
 def open_faults(graph: GraphStore) -> tuple[FaultView, ...]:
     """Return all Fault nodes newest first; P6 has no fault resolution state."""
-    suppressions = _suppression_counts(graph)
     faults = [
         FaultView(
-            fault_id=node.key[:12],
-            source_agent=str(node.props.get("source_agent", "")),
-            capability=str(node.props.get("capability", "")),
-            severity=str(node.props.get("severity", "")),
-            message=str(node.props.get("message", "")),
-            occurred_at=str(node.props.get("occurred_at", "")),
-            occurrence_count=suppressions.get(node.key, (1, 0))[0],
-            suppressed_count=suppressions.get(node.key, (1, 0))[1],
+            fault_id=occurrence.node.key[:12],
+            source_agent=str(occurrence.node.props.get("source_agent", "")),
+            capability=str(occurrence.node.props.get("capability", "")),
+            severity=str(occurrence.node.props.get("severity", "")),
+            message=str(occurrence.node.props.get("message", "")),
+            occurred_at=occurrence.occurred_at.isoformat(),
+            occurrence_count=occurrence.occurrence_count,
+            suppressed_count=occurrence.suppressed_count,
         )
-        for node in graph.list_nodes("Fault")
+        for occurrence in fault_occurrences(graph)
     ]
-    return tuple(sorted(faults, key=lambda fault: fault.occurred_at, reverse=True))
-
-
-def _suppression_counts(graph: GraphStore) -> dict[str, tuple[int, int]]:
-    counts: dict[str, tuple[int, int]] = {}
-    for node in graph.list_nodes(FAULT_SUPPRESSION_LABEL):
-        key = str(node.props.get("first_fault_key", ""))
-        if not key:
-            continue
-        counts[key] = (
-            int(node.props.get("occurrence_count", 1)),
-            int(node.props.get("suppressed_count", 0)),
-        )
-    return counts
+    return tuple(faults)

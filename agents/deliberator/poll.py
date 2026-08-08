@@ -14,6 +14,7 @@ from agents.deliberator.review_record import (
     OrderReview,
     debate_record,
     fail_open_review,
+    failed_open_reason,
     narrative,
     role_models,
     transcript_records,
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
     from agents.deliberator.agent import DeliberatorAgent
     from agents.deliberator.peer_client import PeerClient
     from agents.deliberator.settings import DeliberatorSettings
-    from kernel import FaultSink, GraphStore, Node
+    from kernel import AgentFault, FaultSink, GraphStore, Node
 
 
 def review_pm_node(
@@ -59,6 +60,7 @@ def review_pm_node(
     llm_call_keys: list[str] = []
     real_debate_count = 0
     failed_open_tickers: list[str] = []
+    failed_open_reasons: list[str] = []
     for intent in order_set.approved:
         review = _review_one(
             graph, node, order_set, intent, manager, peer_client, settings, sink
@@ -71,6 +73,7 @@ def review_pm_node(
             real_debate_count += 1
         if review.failed_open:
             failed_open_tickers.append(intent.ticker)
+            failed_open_reasons.append(review.failed_open_reason)
         if review.verdict != "uphold":
             vetoed.append(intent.ticker)
     write_deliberation_run(
@@ -87,6 +90,7 @@ def review_pm_node(
         real_debate_count=real_debate_count,
         failed_open_count=len(failed_open_tickers),
         failed_open_tickers=failed_open_tickers,
+        failed_open_reason=_combined_failed_open_reason(failed_open_reasons),
         llm_call_keys=llm_call_keys,
     )
 
@@ -132,7 +136,17 @@ def _review_one(
         result = _debate(
             order_set.run_id, intent.ticker, proposition, manager, peer_client, settings
         )
-    return fail_open_review() if capture.fault is not None else result
+    if capture.fault is not None:
+        return fail_open_review(_reason_from_fault(capture.fault))
+    return result
+
+
+def _reason_from_fault(fault: AgentFault) -> str:
+    return failed_open_reason(fault.error_type, fault.message)
+
+
+def _combined_failed_open_reason(reasons: list[str]) -> str:
+    return "; ".join(dict.fromkeys(reasons))
 
 
 def _debate(

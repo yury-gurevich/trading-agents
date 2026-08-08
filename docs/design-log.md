@@ -5027,7 +5027,7 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
-## DL-99 · The debate is inert until 2026-09-01, and my audit said zero faults while 18 were being written · status: OPEN (found 2026-08-08)
+## DL-99 · The debate is inert until 2026-09-01, and my audit said zero faults while 18 were being written · status: CODE FIXED (S167; account limit remains until 2026-09-01)
 
 **Two findings from one investigation.**
 
@@ -5073,6 +5073,15 @@ field that does not exist is indistinguishable from a real green.
 **Owed:** a fault-count helper that asserts the field it reads exists, rather than every caller
 hand-rolling the property name. Until then, no audit should report a Fault count without showing a
 non-zero control.
+
+### Code-shaped fix packaged in S167
+
+S167 adds `kernel.fault_query` as the single Fault timestamp read path; it reads
+`occurred_at`, counts `FaultSuppression` volume, and raises if the timestamp property is missing
+instead of returning zero. The deliberator fail-open path still upholds the affected order, but
+`DeliberationRun.failed_open_reason` now records the captured exception class plus message, and the
+new property is declared in the vocabulary pack. This does **not** change the fail-open policy, the
+S166 buy gate, or the Anthropic account usage limit.
 
 ---
 

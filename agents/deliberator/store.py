@@ -48,6 +48,7 @@ def write_deliberation_run(
     real_debate_count: int,
     failed_open_count: int,
     failed_open_tickers: list[str],
+    failed_open_reason: str,
     llm_call_keys: list[str],
 ) -> Node:
     """Write one idempotent DeliberationRun and link LLM audit calls."""
@@ -69,6 +70,7 @@ def write_deliberation_run(
                 "real_debate_count": real_debate_count,
                 "failed_open_count": failed_open_count,
                 "failed_open_tickers": failed_open_tickers,
+                "failed_open_reason": failed_open_reason,
                 "created_at": datetime.now(tz=UTC).isoformat(),
             },
         )

@@ -349,6 +349,7 @@
       "created_at",
       "debates",
       "failed_open_count",
+      "failed_open_reason",
       "failed_open_tickers",
       "max_rounds",
       "narrative",

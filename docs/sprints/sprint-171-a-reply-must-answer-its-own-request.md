@@ -62,6 +62,41 @@ looks at it.
 that no other agent performs Service Bus request/reply today. Grep before choosing where the fix
 lives.
 
+## The second half: what *manufactures* the backlog
+
+🚨 **Correlation alone will not make the veto work.** Measured on the same fleet, run
+`check-s169-debate-2`, with the reply queue **empty**:
+
+| Side | Setting | Value |
+| --- | --- | --- |
+| Peer | `receive_timeout_seconds` ([`bus_azure_config.py:67`](../../kernel/bus_azure_config.py#L67)) | **5 s** blocking receive |
+| Peer | `serve_loop` idle sleep ([`serve_loop.py:23`](../../kernel/serve_loop.py#L23)) | **60 s** |
+| Manager | `request_timeout_seconds` (`DeliberatorSettings`) | **30 s** |
+
+A peer that has gone idle is awake for ~5 s in every ~65 s. **The manager gives up after 30 s, so a
+cold peer cannot answer inside the window.** Observed exactly: the first turn faulted at **11:50:07**
+with `no deliberator peer reply received`; the peers then woke, and from **11:50:41** the debate ran
+normally through all three roles including the judge (`deliberator-manager`, 11:51:20).
+
+**This is the mechanism that produced the 84-message backlog.** Every timed-out turn leaves the
+peer's late reply in the subscription as an orphan, which is then read as the answer to a *later*
+request. The two defects feed each other: the timing mismatch manufactures orphans, and the missing
+correlation converts them into wrong verdicts. Fixing only correlation yields a manager that
+correctly dead-letters orphans and **still fails open on every cold start**.
+
+**Additional steps required, therefore:**
+
+- Make the manager's reply budget exceed the peer's worst-case pickup latency, or make an idle peer
+  pick up promptly (a long-poll receive rather than a short receive plus a long sleep). State which
+  you chose and why; do not simply enlarge `request_timeout_seconds` until it happens to pass —
+  bound it against the measured peer wake-up, and record the numbers.
+- The `le=` bound on `request_timeout_seconds` is **120 s**; if the chosen budget needs more, that
+  bound is part of the change, not an obstacle to route around.
+
+**Additional success factor:** a debate started against **cold** peers (both scaled from idle, no
+recent traffic) completes with `failed_open_count = 0`. This is the case that fails today and the
+one Monday's scheduled run actually hits, since the fleet sits at `minReplicas=0` until 22:25 UTC.
+
 ## Steps, in order
 
 1. **Put the correlated receive in `kernel/`,** not in the deliberator. This is transport plumbing,

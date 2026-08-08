@@ -5424,7 +5424,23 @@ long-dead requests; the manager is the only consumer). With an empty queue a str
 manager pairs correctly *by accident*. The bug reopens the moment a backlog exists again — a timeout,
 a crash mid-debate, a restart, or two managers.
 
-**Ruled out:** raising `request_timeout_seconds`. The manager was not timing out; it was reading
-promptly and reading the wrong thing.
+**Ruled out:** raising `request_timeout_seconds` *as the fix*. In the poisoned run the manager was
+not timing out; it was reading promptly and reading the wrong thing.
+
+**The second half, found on the clean re-run — and it is what manufactures the backlog.** With the
+queue empty (`check-s169-debate-2`), the first turn faulted at **11:50:07** with `no deliberator peer
+reply received`. An idle peer blocks **5 s** in `receive` (`receive_timeout_seconds`) and then sleeps
+**60 s** (`serve_loop.py:23`), while the manager waits **30 s** (`request_timeout_seconds`) — so a
+**cold peer cannot answer inside the manager's window**. Once the peers were warm the debate ran
+normally through all three roles, judge included (`deliberator-manager`, 11:51:20, `gpt-5.5`).
+
+So the two defects feed each other: **every timed-out turn leaves the peer's late reply in the
+subscription as an orphan**, and the missing correlation converts that orphan into the answer to a
+later request. The 84 stale messages were not a historical accident — they were being produced
+continuously, one per timeout. Fixing correlation alone yields a manager that correctly dead-letters
+orphans and **still fails open on every cold start**, which is precisely the case the scheduled
+22:30 UTC run hits, because the fleet sits at `minReplicas=0` until 22:25.
+
+Both halves are packaged as [S171](sprints/sprint-171-a-reply-must-answer-its-own-request.md).
 
 ---

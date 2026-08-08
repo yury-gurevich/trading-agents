@@ -21,10 +21,21 @@ stale Anthropic error as the reason. The error path merely fails open, but a sta
 is accepted as a debate turn **for a different ticker's order** — a verdict attributed to the wrong
 decision, with no fault raised and a green acceptance gate.
 
-**The fix is small: the correlation key is already on the wire.** `kernel/bus.py:136,158` sets
+**Half one is small: the correlation key is already on the wire.** `kernel/bus.py:136,158` sets
 `correlation_id = message.id` on every response and error; `kernel/bus_azure_receiver.py:135-146`
 publishes the reply's ready event with `run_id = str(correlation_id)`. The caller simply never looks
 at it. Match on it, and dispose of orphans loudly (dead-letter with a reason) rather than silently.
+
+**Half two is what makes the veto actually work, and you must not skip it.** An idle peer blocks
+5 s in `receive` then sleeps **60 s** (`serve_loop.py:23`), while the manager waits only **30 s**
+(`request_timeout_seconds`). A cold peer therefore cannot answer inside the window — measured
+2026-08-08: the first turn faulted `no deliberator peer reply received`, then the warmed peers ran
+the debate normally through all three roles. **This timing mismatch is what manufactures the
+backlog**: every timed-out turn leaves the peer's late reply in the queue as an orphan, which the
+missing correlation then converts into a wrong verdict. Fix correlation alone and you get a manager
+that correctly dead-letters orphans and **still fails open on every cold start** — which is exactly
+the case the scheduled 22:30 UTC run hits, because the fleet sits at `minReplicas=0` until 22:25.
+The spec's "second half" section has the measured numbers.
 
 ## Hard rules you must follow
 

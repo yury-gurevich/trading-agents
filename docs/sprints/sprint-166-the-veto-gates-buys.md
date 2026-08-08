@@ -62,7 +62,7 @@ trimmed — the gate's helpers moved to their natural home. Now `poll.py` **190*
 **No pack coupling.** `ExecutionRun` is not one of the five property-enforced labels, so
 `deliberation_status` cannot cause the S148 fail-closed stall; a deploy is an image-only retag.
 
-**Remote gate.** _Filled at merge time._
+**Remote gate.** `make gate-ran` **exit 0** — GATE PROVEN for `1c014af4800567780964ae56a43a09ca9c6efc40`, **CI: success** and **Security Findings: success**. Merged as `afc5088`, tagged `v0.89.07`.
 
 **Not proven.** No run has executed this code. The guard is the suite plus two planted defects. The
 first real test is the next run in which the PM approves a buy.

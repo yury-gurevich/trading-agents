@@ -10,7 +10,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.domain.gate_report import position_outcomes
+from agents.portfolio_manager.domain.position_gates import position_outcomes
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.tests.helpers import (
     cash_portfolio,

@@ -20,7 +20,7 @@ from contracts.portfolio_manager import GateOutcome, OrderIntentSet, RejectedOrd
 from kernel import InMemoryGraphStore, InProcessBus, Node
 from orchestration.batch_trace import print_trace
 from orchestration.local_pipeline import cascade_once
-from orchestration.packs.trading_observatory_views import pm
+from orchestration.packs.trading_observatory_chain import pm
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import bar
 

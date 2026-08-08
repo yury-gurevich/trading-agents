@@ -43,7 +43,7 @@ DL-94 proposed adding five missing labels to `_RUN_ARTIFACT_LABELS`. Measured ag
 - [x] A surviving stamped row makes the script exit non-zero and name it.
 - [x] Each behaviour observed failing on a planted defect first (DL-70).
 - [x] `make ci` green, measured unpiped to a file.
-- [ ] Remote `make gate-ran` green — *see closeout*.
+- [x] Remote `make gate-ran` green.
 
 ## Closeout — evidence
 
@@ -73,7 +73,7 @@ delete path was never called; connection opened `read_only`.
 The `.env` copied into the worktree during setup was deleted before any `git add` and never reached the
 index, verified with `git status --porcelain`.
 
-**Remote gate.** _Filled at merge time._
+**Remote gate.** `make gate-ran` **exit 0** — GATE PROVEN for `70426300b09c0797f1d80cf383f3c1a1f2135d42`, with **CI: success** and **Security Findings: success**. The target resolves the full SHA itself and refuses an abbreviated one (hardening row M). Merged to `main` as `9d6243c`.
 
 **Not proven.** The delete path has **not** been exercised against live data — only its collection and
 verification queries were. The first real `--run-id` teardown is the remaining proof, and it should be

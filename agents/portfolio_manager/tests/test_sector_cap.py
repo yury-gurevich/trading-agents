@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.concentration import SectorBook
+from agents.portfolio_manager.domain.position_gates import sector_rejection
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from agents.portfolio_manager.tests.helpers import (
@@ -91,31 +92,29 @@ def test_max_sector_pct_of_one_disables_the_cap() -> None:
     assert rejected == ()
 
 
-def test_sector_book_rejection_uses_explicit_outcomes() -> None:
+def test_sector_rejection_maps_each_failing_outcome_to_its_reason() -> None:
+    """PM-OUT-03: the book reports outcomes; `sector_rejection` names the reason.
+
+    Was `SectorBook.rejection`, a second copy of this mapping that only tests ever
+    called (DL-97). Exercising the live function over `book.outcomes(...)` tests the
+    composition the PM actually runs.
+    """
     book = SectorBook({"AAPL": "Tech", "MSFT": "Tech"}, ("AAPL",))
     item = recommendation("MSFT")
 
-    name_count = book.rejection(
-        item,
-        Decimal("100.00"),
-        Decimal("1000.00"),
-        max_sector_pct=Decimal("1"),
-        max_names_per_sector=1,
-    )
-    sector_cap = book.rejection(
-        item,
-        Decimal("400.00"),
-        Decimal("1000.00"),
-        max_sector_pct=Decimal("0.30"),
-        max_names_per_sector=3,
-    )
-    ok = book.rejection(
-        item,
-        Decimal("100.00"),
-        Decimal("1000.00"),
-        max_sector_pct=Decimal("0.30"),
-        max_names_per_sector=3,
-    )
+    def _reject(cost: str, pct: str, names: int) -> RejectedOrder | None:
+        outcomes = book.outcomes(
+            item,
+            Decimal(cost),
+            Decimal("1000.00"),
+            max_sector_pct=Decimal(pct),
+            max_names_per_sector=names,
+        )
+        return sector_rejection(item.ticker, outcomes, ())
+
+    name_count = _reject("100.00", "1", 1)
+    sector_cap = _reject("400.00", "0.30", 3)
+    ok = _reject("100.00", "0.30", 3)
     zero_value = book.outcomes(
         item,
         Decimal("100.00"),

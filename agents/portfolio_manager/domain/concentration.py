@@ -9,6 +9,10 @@ Role: bound correlated-name concentration per sector — both the dollar weight
       four correlated semiconductors; this is the "name-correlation penalty" in
       deterministic form.
 External I/O: none.
+
+This book reports gate *outcomes* only. Mapping a failing outcome to a rejection
+reason belongs to `position_gates.sector_rejection`, so the reason strings exist
+in exactly one place (DL-97).
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from contracts.portfolio_manager import GateOutcome, RejectedOrder
+from contracts.portfolio_manager import GateOutcome
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -37,40 +41,6 @@ class SectorBook:
             sector = sectors.get(ticker)
             if sector is not None:
                 self._names[sector] = self._names.get(sector, 0) + 1
-
-    def rejection(
-        self,
-        item: Recommendation,
-        cost: Decimal,
-        portfolio_value: Decimal,
-        *,
-        max_sector_pct: Decimal,
-        max_names_per_sector: int,
-        prior_outcomes: tuple[GateOutcome, ...] = (),
-    ) -> RejectedOrder | None:
-        """Reject when this order breaches the name-count or the dollar cap."""
-        outcomes = self.outcomes(
-            item,
-            cost,
-            portfolio_value,
-            max_sector_pct=max_sector_pct,
-            max_names_per_sector=max_names_per_sector,
-        )
-        gate_report = (*prior_outcomes, *outcomes)
-        for outcome in outcomes:
-            if outcome.name == "max_names_per_sector" and not outcome.passed:
-                return RejectedOrder(
-                    ticker=item.ticker,
-                    reason="sector_name_count",
-                    gate_report=gate_report,
-                )
-            if outcome.name == "max_sector_pct" and not outcome.passed:
-                return RejectedOrder(
-                    ticker=item.ticker,
-                    reason="sector_concentration",
-                    gate_report=gate_report,
-                )
-        return None
 
     def outcomes(
         self,

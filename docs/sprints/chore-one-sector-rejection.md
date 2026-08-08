@@ -51,7 +51,7 @@ test — which is the measure of how little the duplicate was guarding.
 **Size proof.** `concentration.py` no longer appears in the gate's `[WARN] … (warn 150, hard block
 200)` output; grep of the CI log returns **0** matches for it.
 
-**Remote gate.** _Filled at merge time._
+**Remote gate.** `make gate-ran` **exit 0** — GATE PROVEN for `c92b9c50b66bd7d820552964d51fd5bc578bbfa9`, **CI: success** and **Security Findings: success**. Merged to `main` as `9417df3`.
 
 **Not proven.** Nothing was deployed and no pipeline run has executed this code. The guard is the
 suite plus the planted defect, not production. The behaviour is unchanged by construction — the

@@ -5444,3 +5444,46 @@ orphans and **still fails open on every cold start**, which is precisely the cas
 Both halves are packaged as [S171](sprints/sprint-171-a-reply-must-answer-its-own-request.md).
 
 ---
+
+## DL-103 · The veto now works, and finishing takes longer than it is allowed · status: MITIGATED (grace 900 → 1800 s, 2026-08-08); the scaling problem is open
+
+**Measured on `:s171`, run `check-s171-cold-start`, cold peers.** [S171](sprints/sprint-171-a-reply-must-answer-its-own-request.md)
+did what it promised: `real_debate_count=**18**`, `failed_open_count=**0**`, `failed_open_reason`
+empty, **zero deliberator faults, zero orphans dead-lettered** — against peers scaled from
+`minReplicas=0`, the case that produced two fail-opens on `:s169` and the case the scheduled run
+hits. The reply subscription ended at **0 active / 0 dead-letter**: the backlog no longer
+regenerates.
+
+🚨 **And the verdicts were still not applied.** `ExecutionRun.deliberation_status =
+**proceeded_unvetoed**`, `submitted=18` — including the **15 tickers the veto had just decided to
+veto**. The debate ran **15:13:34 → 15:29:17 = 943 s** against
+`execution.deliberation_grace_seconds = **900 s**`. It overran by 43 s, `DeliberationGraceExpired`
+fired, and execution proceeded. The gate behaved exactly as S166 designed it; the debate is simply
+slower than its allowance.
+
+**The cost is linear and now measurable:** 90 `LLMCall`s for 18 orders — `max_rounds=2` × 2 peers +
+1 judge = **5 calls per order** — at a mean **10.6 s** per call, so **~53 s per approved order**.
+
+**Why the earlier runs never showed this.** The poisoned run answered every turn instantly from the
+stale backlog, so it "finished" in seconds; the `:s169` run reached only 16 real debates. Correct
+correlation is what made the debate take its true duration. **Fixing the veto is what exposed that
+the veto does not fit.**
+
+**Mitigated, not fixed:** `deliberation_grace_seconds` raised **900 → 1800** on the `execution` app
+(`le=3600`, so no code change), read back and verified. That buys ~2× headroom at 18 orders.
+
+🚨 **It does not scale, and the numbers say so.** `PORTFOLIO_MANAGER_MAX_POSITIONS=60`, so a
+run may approve far more than 18. At ~53 s per order the grace ceiling of **3600 s** is exhausted at
+about **68 orders**, and 60 approvals would need **~3180 s** — inside the ceiling but only just, with
+no margin for a slow vendor. Raising the grace also delays every buy by that long. The real options
+are **parallelising peer turns** (they are issued strictly sequentially today), **cutting
+`max_rounds` 2 → 1** (halves peer calls to 3 per order), or **deliberating only a bounded subset**.
+Not chosen here — each changes what the veto *is*, so it wants its own sprint.
+
+🟠 **Second thing the operator should know: the veto is aggressive.** It vetoed **15 of 18**
+(`revise`) on this run and **10 of 18** on the previous one. Had the grace held, this run would have
+placed **3 orders, not 18**. That is the veto working as designed, but it is a large behavioural
+change and nobody has yet judged whether those `revise` verdicts are *right* — only that they are
+real and attributable.
+
+---

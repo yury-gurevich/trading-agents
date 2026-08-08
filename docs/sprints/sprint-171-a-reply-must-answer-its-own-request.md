@@ -208,6 +208,12 @@ asserts the measured numbers are now `receive_timeout_seconds=5.0`, extra idle s
 `$env:TEMP\s171-ci-final.txt`; exit `0`; pytest `2225 passed, 6 skipped`; coverage `100.00%`;
 `pip-audit` reported no known vulnerabilities; detect-secrets passed.
 
+**PROVEN IN PRODUCTION 2026-08-08** (`:s171`, `check-s171-cold-start`, peers scaled from `minReplicas=0`). Deployed **image-only** — vocabulary pack byte-identical `13c0e3a0…` both sides, `orphaned_reply_count` is in-memory, no property-enforced label moved. Verified per target: 16/16 on `:s171`, `Succeeded`, `minReplicas=0`, one KEDA rule; tunables and OpenAI provider config survived the retag, read back not assumed; `DeployRecord` written after verification.
+
+The cold-peer success factor, which could not be proven at handback, **now holds**: `real_debate_count=**18**`, `failed_open_count=**0**`, `failed_open_reason` empty, `role_models` all `gpt-5.5`, **zero deliberator faults**, **zero orphans dead-lettered**, and the reply subscription ended **0 active / 0 dead-letter** — the backlog no longer regenerates. The same cold case on `:s169` gave 16 real debates and 2 fail-opens.
+
+🚨 **Fixing this exposed the next defect, [DL-103](../design-log.md).** With correlation correct, the debate takes its true duration: **943 s** for 18 orders (90 `LLMCall`s, 5 per order, ~10.6 s each) against a **900 s** `deliberation_grace_seconds`. It overran, `DeliberationGraceExpired` fired, and `ExecutionRun.deliberation_status = **proceeded_unvetoed**` submitted all 18 — including the 15 the veto had decided to veto. Mitigated by raising the grace **900 → 1800** (`le=3600`, no code change), read back and verified. **Not fixed:** at `MAX_POSITIONS=60` the cost is ~3180 s against a 3600 s ceiling.
+
 **Not proven.**
 
 No fleet deployment was performed. No live Azure dead-letter queue was inspected after this branch.

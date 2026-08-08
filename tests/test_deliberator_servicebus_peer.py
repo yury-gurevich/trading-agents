@@ -20,6 +20,7 @@ from contracts.deliberator import (
     DebateTurnRequest,
 )
 from kernel import AgentMessage, AzureServiceBusSettings, InMemoryGraphStore
+from kernel.bus_azure_ready import CorrelatedReadyEvent
 from kernel.serve_transport import request_topic
 
 
@@ -84,7 +85,10 @@ def test_servicebus_peer_client_reads_claim_checked_reply(monkeypatch) -> None:
     monkeypatch.setattr(
         client,
         "_read_ready_event",
-        lambda: {"topic": "t", "label": "AgentMessage", "ref": "reply-ok"},
+        lambda _correlation_id: CorrelatedReadyEvent(
+            {"topic": "t", "label": "AgentMessage", "ref": "reply-ok"},
+            orphan_count=0,
+        ),
     )
 
     result = client.debate_turn("deliberator-proponent", _turn_request())
@@ -112,7 +116,10 @@ def test_servicebus_peer_client_raises_on_error_reply(monkeypatch) -> None:
     monkeypatch.setattr(
         client,
         "_read_ready_event",
-        lambda: {"topic": "t", "label": "AgentMessage", "ref": "reply-error"},
+        lambda _correlation_id: CorrelatedReadyEvent(
+            {"topic": "t", "label": "AgentMessage", "ref": "reply-error"},
+            orphan_count=0,
+        ),
     )
 
     with pytest.raises(RuntimeError, match="peer unavailable"):

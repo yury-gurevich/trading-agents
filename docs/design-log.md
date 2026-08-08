@@ -5027,6 +5027,48 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
+## DL-98 · The LLM veto finally ran — eleven minutes after the orders were already at the broker · status: OPEN (found 2026-08-08, run `check-s166-flat-book`)
+
+**The first production run in which the PM approved orders AND the deliberator reached a model.**
+[DL-80](#) is **closed** by it: `LLMCall` went **25 → 164**, the 139 new calls all `claude-opus-5`
+from `deliberator-proponent`/`-opponent`, and the `DeliberationRun` records
+**`real_debate_count=18`, `failed_open_count=0`** with a real narrative (*"ABT: revise — both sides
+argue figures absent from this packet…"*). The debate works.
+
+🚨 **And it could not have vetoed anything.** Measured timestamps from the run's own lineage:
+
+| | time (UTC) |
+| --- | --- |
+| `PMRun` written, 18 approved | 05:35:56 |
+| **execution submitted 18 orders to the broker** | **05:36:22–05:36:32** |
+| `DeliberationRun` written | **05:47:32** |
+| last `LLMCall` of the debate | 05:51:53 |
+
+The orders were accepted at Alpaca **~11 minutes before the deliberator finished**, and ~15 before
+its last model call. The `DeliberationRun` that says *revise* refers to orders that were already
+live.
+
+**Why, and it is by design rather than by accident.** `_drop_vetoed`
+([`agents/execution/poll.py:51-69`](../agents/execution/poll.py#L51)) drops `vetoed_tickers` when a
+`DeliberationRun` is linked to the `PMRun`, and its own docstring states the fallback: *"No
+DeliberationRun (the veto stage did not run) → the full set."* **Fail-open on absence.** In
+graph-pull both agents poll independently, so "the veto has not run **yet**" and "the veto is not
+deployed" are indistinguishable to execution — DL-57's shape, on the control path. The deliberator
+is slow precisely because it is doing real work: 18 debates × multi-turn Opus.
+
+**Why this was never seen before.** The fail-open policy is deliberate (S147 item 2: blocking a run
+on an LLM outage blocks *exits*). It has been invisible because the PM approved **zero** orders on
+every scheduled run since 07-31 — no orders to submit, nothing to debate, no race to lose. The
+deadlock was hiding it.
+
+**Not fixed here, and the fix is not obvious.** Making execution wait re-introduces exactly what
+S147 rejected: an LLM outage stalling exits. Candidate directions, none chosen: a bounded wait that
+applies to **buys only** (exits proceed, matching ADR-0017's asymmetry); the deliberator writing an
+*intent-to-deliberate* marker at PMRun time so absence and not-yet become distinguishable; or moving
+the veto ahead of the PM. Wants an ADR, not an inline patch.
+
+---
+
 ## DL-97 · A second copy of the sector reason strings, kept alive only by the test that called it · status: FIXED (2026-08-08, `chore-one-sector-rejection`, 0.89.06)
 
 **Found while splitting `risk.py`** ([DL-96](#)), reported then rather than folded in silently, and

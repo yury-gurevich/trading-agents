@@ -5027,6 +5027,42 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
+## DL-97 · A second copy of the sector reason strings, kept alive only by the test that called it · status: FIXED (2026-08-08, `chore-one-sector-rejection`, 0.89.06)
+
+**Found while splitting `risk.py`** ([DL-96](#)), reported then rather than folded in silently, and
+fixed here on the operator's call.
+
+`SectorBook.rejection` mapped a failing sector gate to `sector_name_count` /
+`sector_concentration` — **an exact duplicate** of the mapping `risk.py` used via its own
+`_sector_rejection` (now `position_gates.sector_rejection`). Two copies of the same reason strings,
+either of which could be changed without the other.
+
+🚨 **Nothing in production ever called it.** The only three call sites were in
+`test_sector_cap.py`, which invoked it directly. So it was dead production code, and the coverage
+gate could not tell: the method was **100 % covered** and had a passing test named after it. A
+100 % floor measures whether a line ran, not whether anything but a test made it run — the DL-57
+shape again (*didn't look* and *looked and found nothing* render identically).
+
+**Why the duplicate existed rather than the caller using the method.** `risk.py` needs the sector
+`GateOutcome`s *separately*, because an **approved** order carries them in its additive gate report.
+`SectorBook.rejection` computed the outcomes internally and returned only the rejection, so the
+caller could not reuse them — it called `book.outcomes(...)` and mapped the result itself. The
+method was structurally unusable by its only real would-be caller.
+
+**Fixed** by deleting it. The mapping now exists once, in `position_gates.sector_rejection`, and
+`SectorBook` reports outcomes only — stated in its module docstring so the split does not re-merge.
+`concentration.py` **174 → 144**, out of the 150-line warn band as a side effect.
+
+**The test was re-pointed, not deleted.** `test_sector_rejection_maps_each_failing_outcome_to_its_reason`
+keeps every prior assertion but runs them through `sector_rejection(book.outcomes(...))` — the
+composition the PM actually executes. Proven live: swapping one reason string in `sector_rejection`
+fails **5 tests**, where the same swap in the deleted method would have failed only its own.
+
+**Road not taken.** Keeping the method and having `sector_rejection` delegate to it — rejected: it
+would recompute `outcomes` a second time per order purely to preserve an API nothing uses.
+
+---
+
 ## DL-96 · The PM's rejection precedence was unpinned, and a refactor is exactly when that changes · status: FIXED (2026-08-08, `chore-split-modules-before-the-block`, 0.89.05)
 
 **Found while splitting `risk.py`** to clear the 200-line hard block. The split moved the

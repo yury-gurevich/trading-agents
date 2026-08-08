@@ -44,6 +44,14 @@ class DeliberatorSettings(AgentSettings):
         ge=1,
         le=5,
     )
+    llm_provider: str = tunable(
+        default="anthropic",
+        why=(
+            "Which vendor answers deliberation calls. A tunable, not an automatic "
+            "fallback: a silent switch would make 'which model reviewed this order' "
+            "unanswerable afterwards. Switching is an operator act (DL-99)."
+        ),
+    )
     defender_model: str = tunable(
         "claude-opus-5",
         why="Default model for the proponent/defender turn role.",

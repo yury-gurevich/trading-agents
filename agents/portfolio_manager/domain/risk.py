@@ -3,6 +3,10 @@
 Agent: portfolio_manager
 Role: approve or reject sized recommendations against portfolio constraints.
 External I/O: none.
+
+The per-recommendation exit and entry decisions live in `order_decision`; this
+module owns the deterministic ordering, the precheck, and the running book state
+carried across recommendations.
 """
 
 from __future__ import annotations
@@ -11,22 +15,13 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.concentration import SectorBook
-from agents.portfolio_manager.domain.exits import exit_order_intent, exit_outcomes
-from agents.portfolio_manager.domain.gate_report import (
-    order_intent,
-    position_outcomes,
-    position_rejection,
-    reward_risk_rejection,
-    stop_target_report,
-)
-from agents.portfolio_manager.domain.sizing import size_quantity
-from contracts.portfolio_manager import GateOutcome, RejectedOrder
+from agents.portfolio_manager.domain.order_decision import decide_entry, decide_exit
+from contracts.portfolio_manager import OrderIntent, RejectedOrder
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.portfolio import PortfolioState
     from contracts.analyst import Recommendation
     from contracts.common import Money
-    from contracts.portfolio_manager import OrderIntent
 
 
 def evaluate_recommendations(
@@ -60,76 +55,43 @@ def evaluate_recommendations(
             continue
         assert price is not None
         if item.action == "sell":
-            quantity = portfolio.positions[item.ticker]
-            gates = exit_outcomes(
-                item=item,
-                quantity=quantity,
-                price=price,
-                portfolio=portfolio,
+            decision = decide_exit(
+                item,
+                price,
+                portfolio,
+                book,
                 min_order_quantity=min_order_quantity,
                 max_positions=max_positions,
+                max_names_per_sector=max_names_per_sector,
             )
-            rejection = position_rejection(item.ticker, gates)
-            if rejection is not None:
-                rejected.append(rejection)
+            if isinstance(decision, RejectedOrder):
+                rejected.append(decision)
                 continue
-            sector_gates = book.exit_outcomes(item, max_names_per_sector)
-            approved.append(
-                exit_order_intent(
-                    item,
-                    quantity,
-                    price,
-                    (*gates, *sector_gates),
-                    portfolio.position_refs.get(item.ticker),
-                )
-            )
+            approved.append(decision)
             open_tickers.discard(item.ticker)
             book.record_exit(item.ticker)
             continue
-        quantity = size_quantity(
-            portfolio_value=portfolio.value,
-            max_position_pct=max_position_pct,
-            est_price=price.amount,
-        )
-        gates = position_outcomes(
-            item=item,
-            quantity=quantity,
-            price=price,
-            portfolio=portfolio,
+        decision, cost = decide_entry(
+            item,
+            price,
+            portfolio,
+            book,
             reserved_cash=reserved_cash,
             open_tickers=open_tickers,
             max_position_pct=max_position_pct,
             max_positions=max_positions,
             cash_buffer_pct=cash_buffer_pct,
             min_order_quantity=min_order_quantity,
-        )
-        rejection = position_rejection(item.ticker, gates)
-        if rejection is not None:
-            rejected.append(rejection)
-            continue
-        stop_target = stop_target_report(
-            item, default_stop_pct, default_target_pct, min_reward_risk_ratio
-        )
-        rejection = reward_risk_rejection(item.ticker, stop_target, gates)
-        if rejection is not None:
-            rejected.append(rejection)
-            continue
-        cost = Decimal(quantity) * price.amount
-        sector_gates = book.outcomes(
-            item,
-            cost,
-            portfolio.value,
+            default_stop_pct=default_stop_pct,
+            default_target_pct=default_target_pct,
+            min_reward_risk_ratio=min_reward_risk_ratio,
             max_sector_pct=max_sector_pct,
             max_names_per_sector=max_names_per_sector,
         )
-        rejection = _sector_rejection(
-            item.ticker, sector_gates, (*gates, stop_target.outcome)
-        )
-        if rejection is not None:
-            rejected.append(rejection)
+        if isinstance(decision, RejectedOrder):
+            rejected.append(decision)
             continue
-        gate_report = (*gates, stop_target.outcome, *sector_gates)
-        approved.append(order_intent(item, quantity, price, stop_target, gate_report))
+        approved.append(decision)
         reserved_cash += cost
         open_tickers.add(item.ticker)
         book.record(item, cost)
@@ -168,26 +130,4 @@ def _precheck(
         return RejectedOrder(ticker=item.ticker, reason="account_unavailable")
     if price is None or price.amount <= 0:
         return RejectedOrder(ticker=item.ticker, reason="price_unavailable")
-    return None
-
-
-def _sector_rejection(
-    ticker: str,
-    outcomes: tuple[GateOutcome, ...],
-    prior_outcomes: tuple[GateOutcome, ...],
-) -> RejectedOrder | None:
-    gate_report = (*prior_outcomes, *outcomes)
-    for outcome in outcomes:
-        if outcome.name == "max_names_per_sector" and not outcome.passed:
-            return RejectedOrder(
-                ticker=ticker,
-                reason="sector_name_count",
-                gate_report=gate_report,
-            )
-        if outcome.name == "max_sector_pct" and not outcome.passed:
-            return RejectedOrder(
-                ticker=ticker,
-                reason="sector_concentration",
-                gate_report=gate_report,
-            )
     return None

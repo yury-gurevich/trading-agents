@@ -5027,6 +5027,38 @@ syntax error on the `LIKE ANY(...)` form, and a fake cursor does not parse SQL. 
 
 ---
 
+## DL-96 · The PM's rejection precedence was unpinned, and a refactor is exactly when that changes · status: FIXED (2026-08-08, `chore-split-modules-before-the-block`, 0.89.05)
+
+**Found while splitting `risk.py`** to clear the 200-line hard block. The split moved the
+per-recommendation decision into `order_decision.py` unchanged, and the whole PM suite stayed green
+— which proves less than it looks.
+
+🚨 **A planted reorder — evaluating `reward_risk` *before* the sizing gates — passed all 86 PM
+tests.** Under that reorder a recommendation failing both `max_positions` and `reward_risk` is
+rejected as `reward_risk_below_min` instead of `max_positions`. Nothing objected.
+
+**Why it matters more here than it would elsewhere.** The reason string is the operator-visible
+output: it is the word on every `SKIP` line in the batch trace, and it is what S161 and S162 were
+*about* — `max_positions` shadowing `cash_available` is the reason S161's sizing gate could not be
+shown to have fired, and S162 exists to attach the rest of the evidence. The precedence is load-
+bearing, and it was held only by the order two statements happened to appear in.
+
+**The existing test that looked like coverage.** `test_2026_08_07_max_positions_rejection_keeps_cash_gate_failure`
+pins `max_positions` over `cash_available` — but both live *inside* `position_rejection`'s own loop,
+so it constrains that function's internal ordering and says nothing about the ordering of the
+*stages* around it. A gate test one level too low reads exactly like one at the right level.
+
+**Fixed** by `agents/portfolio_manager/tests/test_rejection_precedence.py`: sizing gates outrank
+reward-risk, reward-risk outranks the sector cap, and the reason names one gate while the report
+stays additive. The same planted reorder now fails 2 of 89.
+
+**Road not taken.** Encoding the precedence as data (an ordered tuple of stages) — rejected for now:
+it would make the order explicit but is a behaviour-shaped change to the decision path, and this
+chore was scoped to move code without changing it. The tests pin the order either way, so the
+refactor can be done later against a guard that already exists.
+
+---
+
 ## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: OPEN (found 2026-08-07 while executing the flatten chore)
 
 **Found at the baseline step of [chore-flatten-and-resize](sprints/chore-flatten-and-resize.md), before

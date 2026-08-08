@@ -5318,7 +5318,7 @@ stop for each `sold_ticker` *before* `run_submit`, recording the cancellation fa
 
 ---
 
-## DL-96 · I cited Fill keys as broker keys, and the real risk was the one I skipped · status: DECIDED (2026-08-07)
+## DL-95b · I cited Fill keys as broker keys, and the real risk was the one I skipped · status: DECIDED (2026-08-07)
 
 **The S164 spec claimed production evidence it did not have.** It argued the attempt-chained stop key was safe because *“the rejected ABT stops are keyed `stop:5244d9de63d93691:ABT`, `#1`, `#2`”*. Those are **`Fill` node keys**. Measured on the graph, every one of them carries `broker_idempotency_key = stop:5244d9de63d93691:ABT` — the **base** key, no `#`. The graph-side attempt chain never reached Alpaca. **Alpaca had never seen a `#`-suffixed `client_order_id`.**
 
@@ -5327,5 +5327,104 @@ That mattered, because S164's `_place_stop` passes the chained key straight into
 **Resolved by measurement, not by watching.** The operator refused a “wait for it to break” plan: *“I do not know how to manage a KNOWN BUG.”* A bounded probe against the live paper account submitted a 1-share limit buy far from market with `client_order_id = stop:probe-s164:T#1` on a symbol outside the book (avoiding the wash-trade rule): **HTTP 200, `client_order_id` echoed verbatim, cancelled 204, zero residue.** The format is accepted. Precedent for a broker probe: the S97 functionality check.
 
 **The lesson is narrower than “check your evidence”.** Both keys are called *the key* in conversation, and `broker_stop_order_key`’s own docstring says *“the shared graph key **and** broker client_order_id”* — which is true for stops and **false for the `Fill` attempt chain beside it**. Two identifiers, one name, one of them not what it appears. When a spec cites production evidence, cite the **field** that carries it, not the node key that resembles it.
+
+---
+
+## DL-100 · A provider switch that is four switches, and a deploy that silently unsets them · status: OPEN (S169 packaged)
+
+Both halves found by hand while executing `chore-openai-cutover` on 2026-08-08. Same defect class:
+**configuration that silently does not do what the operator believes it does.** Neither raises.
+
+**A — the switch is four switches.** `DELIBERATOR_LLM_PROVIDER=openai` alone is not a working
+switch. `entrypoint.py:76` passes `model=settings.model_for_role(...)` explicitly, and
+`defender_model` / `challenger_model` / `judge_model` each default to **`claude-opus-5`** — so
+flipping only the provider sends an Anthropic model name to OpenAI. The cutover needed **four** env
+vars on each of three containers. Worse than inconvenient: `role_models` is written onto the
+`DeliberationRun` from those same tunables, so left unset the audit record would claim the order was
+reviewed by `claude-opus-5` while the call went to OpenAI — the provenance claim DL-99 exists to
+protect, quietly false.
+
+**B — a full `up` discards operator-set configuration.** `deploy-agents.ps1` passes `--env-vars` on
+`containerapp create`, which **replaces** the env set. Measured across one deploy, with a green
+`[OK]` on every target:
+
+| Setting | Before `up -Tag s169` | After | Default if unset |
+| --- | --- | --- | --- |
+| `SCANNER_CANDIDATE_CAP` | 25 | wiped | 5 |
+| `PORTFOLIO_MANAGER_MAX_POSITION_PCT` | 0.01 | wiped | 0.10 |
+| `PORTFOLIO_MANAGER_MAX_POSITIONS` | 60 | wiped | 10 |
+| dispatcher cron | `30 22 * * 1-5` | `30 22 * * *` | script default |
+
+The cron is the same bug twice: `$DispatcherCron` defaults to the daily literal, so S166's
+weekday-only schedule silently reverted and would have fired an unintended weekend run that night.
+
+**Why it is dangerous rather than annoying.** A run with defaults restored still *succeeds* — it
+scans 5 candidates instead of 25 and sizes 10 % across 10 slots instead of 1 % across 60. A
+materially different trading system, reporting `ACCEPTANCE PASS`. The only thing that caught it was
+snapshotting the env by hand before deploying, because S161's closeout happened to mention a manual
+restore. **Ruled out:** "remember to restore afterwards" — that is the process that already failed.
+
+---
+
+## DL-101 · The LLM layer is half in the substrate · status: OPEN (S170 packaged)
+
+The **port and the ledger** are kernel: `kernel/llm.py` (the `LLMClient` protocol) and
+`kernel/llm_ledger.py` (the append-only `LLMCall` node). Both model-calling agents genuinely route
+through the ledger, so the *audit* path is already plumbing.
+
+The **vendor adapters and provider selection are not**, and they are duplicated:
+`agents/deliberator/llm_anthropic.py`, `llm_openai.py`, `llm_factory.py`, and a second
+`AnthropicLLMClient` in `agents/operator/llm_anthropic.py`. The two Anthropic clients share a name,
+a `ConfigurationError`, a constructor, the `importlib` SDK load and the empty-key guard, and differ
+in **one method**: `complete()` is free-text for the deliberator, tool-use for the operator.
+
+**The consequence that makes it a defect rather than untidiness.** S168 added the OpenAI fallback to
+`llm_factory`, which only the deliberator has. The operator has no factory, no `llm_provider` and no
+OpenAI client, so it can call Anthropic and nothing else — while the Anthropic key is usage-limited
+until **2026-09-01**. "We have a vendor fallback" is true for one of two model-calling agents. And
+`surfaces/dashboard/chat_binding.py:13` imports `agents.operator.llm_anthropic` directly, so a
+surface is wired to a specific agent's vendor adapter and inherits the same single-vendor exposure.
+
+**Not a pure file move:** free-text vs tool-use is a real difference in what the caller needs back.
+Collapsing both under one name without preserving it would silently change what the operator
+receives.
+
+---
+
+## DL-102 · The veto pairs a request with whatever reply is at the head of the queue · status: OPEN (mitigated 2026-08-08, not fixed)
+
+**Measured on the deployed fleet**, `check-s169-openai-cutover`, 2026-08-08. The OpenAI cutover was
+working — the proponent made **18 real `gpt-5.5` completions** and `role_models` correctly recorded
+`gpt-5.5` for all three roles — yet the `DeliberationRun` came out `real_debate_count=0,
+failed_open_count=18`, with a **Anthropic** usage-limit error as the fail-open reason.
+
+The manager never read the proponent's answers. `peer_client.py:143` resolves a peer reply as:
+
+```python
+messages = receiver.receive_messages(max_message_count=1, ...)
+raw = messages[0]
+receiver.complete_message(raw)
+```
+
+**There is no `request_id` correlation.** It takes the head of the `deliberator-manager.reply`
+subscription and treats it as the answer to the request it just sent. The subscription held **84
+active messages**, oldest enqueued **05:51 UTC** (the earlier `check-s166` run, which failed all 18
+orders on the Anthropic limit), newest **11:20 UTC** — this run's own proponent replies, which went
+in and were never consumed. So the manager drained 5.5-hour-old error replies, one per ticker, ~2 s
+apart, and failed open on every order while the live debate succeeded beside it.
+
+🚨 **The error case is the benign one.** It raises and fails open. A stale *success* reply takes the
+other branch — `DebateTurnReply.model_validate(reply.payload)` — and is accepted as a debate turn
+**for a different ticker's order**. That is precisely the provenance guarantee the veto exists to
+provide: "which model reviewed this order, and about what". A queue backlog turns it into a lie
+without a fault, an error, or a failing gate.
+
+**Mitigated, not fixed:** the 84 stale replies were drained after inspection (all were answers to
+long-dead requests; the manager is the only consumer). With an empty queue a strictly sequential
+manager pairs correctly *by accident*. The bug reopens the moment a backlog exists again — a timeout,
+a crash mid-debate, a restart, or two managers.
+
+**Ruled out:** raising `request_timeout_seconds`. The manager was not timing out; it was reading
+promptly and reading the wrong thing.
 
 ---

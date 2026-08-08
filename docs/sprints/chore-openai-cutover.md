@@ -37,9 +37,18 @@ works on a laptop and dies on the fleet — the exact gap this chore closes.
 2. **Seed Key Vault** with `openai-api-key`. The value is already in `.env` — 🪤 **never** copy it
    into a tree file; pass it straight to the seeding script (CLAUDE.md: credentials never exist as
    files in the worktree).
-3. **Set the provider** — `DELIBERATOR_LLM_PROVIDER=openai` on `deliberator-manager`, `-proponent`,
-   `-opponent`. **Assumed, unverified:** that the env prefix is `DELIBERATOR_`; confirm against
-   `agents/deliberator/settings.py` before relying on it.
+3. **Set the provider — and the models with it.** `DELIBERATOR_LLM_PROVIDER=openai` on
+   `deliberator-manager`, `-proponent`, `-opponent`. ✅ **Measured 2026-08-08:** the env prefix
+   *is* `DELIBERATOR_` (`agents/deliberator/settings.py:101`).
+   🪤 **The provider alone is not the switch.** `entrypoint.py:76` passes
+   `model=settings.model_for_role(...)` explicitly, and `defender_model` / `challenger_model` /
+   `judge_model` each default to **`claude-opus-5`** — so flipping only the provider sends an
+   Anthropic model name to OpenAI. Set all three as well:
+   `DELIBERATOR_DEFENDER_MODEL` / `_CHALLENGER_MODEL` / `_JUDGE_MODEL` = `gpt-5.5`. This is also
+   what makes success factor 2 true rather than accidentally false, since `role_models` is written
+   straight from these tunables. Fixing the coupling so one env var suffices is
+   [S169](sprint-169-one-switch-and-a-deploy-that-keeps-it.md); **remove these three overrides
+   when it ships.**
 4. **Deploy `pwsh infra/deploy-agents.ps1 up -Tag s169`** — 🪤 **full `up`, not an image-only
    retag.** S167 added `failed_open_reason` to `DeliberationRun`, a **property-enforced** label, so
    the vocabulary pack has moved since `:s166`. A stale pack raises `VocabularyError` fail-closed on

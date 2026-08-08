@@ -53,7 +53,7 @@ existing test that looked like coverage pins `max_positions` over `cash_availabl
 ordering of the stages around it. Closed by `test_rejection_precedence.py`; the same planted reorder
 now **fails 2 of 89**. Full reasoning: [DL-96](../design-log.md).
 
-**Remote gate.** _Filled at merge time._
+**Remote gate.** `make gate-ran` **exit 0** — GATE PROVEN for `9818fd4f4c590f5e0bd56edaafc71a4612d15938`, **CI: success** and **Security Findings: success**. Merged to `main` as `63cba7a`.
 
 **Found and deliberately not fixed.** `SectorBook.rejection` is an exact duplicate of the sector
 gate-to-reason mapping and is **called only by tests** — dead production code kept green by a test

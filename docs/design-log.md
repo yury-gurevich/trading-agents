@@ -5487,3 +5487,101 @@ change and nobody has yet judged whether those `revise` verdicts are *right* —
 real and attributable.
 
 ---
+
+## DL-104 · The veto's verdicts were read for the first time: it is a good auditor and a bad gate · status: DECIDED (2026-08-10 — grace returned to 900 s for `sched-2026-08-10`)
+
+[DL-103](#dl-103--the-veto-now-works-and-finishing-takes-longer-than-it-is-allowed) closed noting
+that the veto's *quality* was unassessed — "only that they are real and attributable". This entry
+assesses it, before the first run on which the veto could actually bind.
+
+**The dataset is larger than STATE recorded.** Four `DeliberationRun`s carry real verdicts, not two.
+Read directly off the live spine, read-only:
+
+| Run | Vendor | Real debates | `revise` |
+| --- | --- | --- | --- |
+| `pm-run-3388c4f6…` 2026-08-08 05:47 | `claude-opus-5` | 18 | 15 |
+| `pm-run-0c3c9324…` 2026-08-08 12:03 | `gpt-5.5` | 16 (+2 fail-open) | 10 |
+| `pm-run-cbd26639…` 2026-08-08 15:29 | `gpt-5.5` | 18 | 15 |
+| `pm-run-9b2a931e…` 2026-08-07 22:39 | `claude-opus-5` | 6 (+4 fail-open) | 5 |
+
+**45 `revise` of 58 real debates — 78 %.** 🪤 The raw counts overstate agreement: a fail-open is
+stored with `verdict: "uphold"` (`review_record.fail_open_review`), so the two contaminated runs
+must have their fail-open tickers excluded before any rate is computed. Run D is 5 of **6**, not
+5 of 10.
+
+🚨 **The veto does not agree with itself.** `pm-run-0c3c9324` and `pm-run-cbd26639` are the **same
+model, same prompt, same eighteen tickers, 3.5 hours apart**. They agree on **9 of 16** comparable
+verdicts — **56 %**, on a binary verdict, so barely distinguishable from chance. Cross-vendor
+agreement is *better* than same-vendor self-agreement: `claude-opus-5` vs `gpt-5.5` agree on
+**12 of 17** shared tickers (**71 %**). Stated as measured-vs-assumed: the two `gpt-5.5` runs are
+distinct PM runs, so their inputs are near-identical rather than provably identical.
+
+**The grounds were checked against the code, not taken at face value. Three classes:**
+
+🚨 **(1) The most-repeated objection is manufactured by the deliberator's own context builder.**
+Six vetoes across *both* vendors cite an ATR contradiction — AMZN `3.07` vs `3.603`, BMY `2.50` vs
+`2.939`, MSFT `2.74` vs `3.466`, T `2.91` vs `3.27`, KHC `2.93` vs `3.349`. There is no
+contradiction. The analyst's `atr_pct` is a **14-period** ATR (`analyst/settings_indicators.py`,
+`atr_period=14`); the figure in the gate line is computed by
+`deliberator/context_pm.py::_atr_pct` over **every bar it was handed** — 42 bars, a 41-period ATR.
+Two windows of the same series; they can never agree. Worse, `_atr_fragment` prints
+`stop_pct vs ATR% -> PASSED/FAILED` **inside the `stop_vs_regime_volatility gate:` line**, while
+the real gate is only `stop_pct <= base_stop_loss_pct` and `target_pct >= base_take_profit_pct`.
+**The veto is shown a pass/fail no gate ever computed, on an input no gate ever used**, and reads
+it as proof the risk check is unsound. The inversion is exact: it accuses the system of validating
+stops against an understated volatility, using its own understated figure.
+
+🚨 **(2) The sector-state objection is false.** SCHW: *"Financial Services deployed=0 and
+existing_sector_names=0 even though the book already holds USB and WFC."* The book was **flat** —
+USB and WFC were later approvals in the *same batch*, and `risk.py` does call
+`book.record(item, cost)`, so the running `SectorBook` works as designed. `names=0` is correct for
+whichever name is evaluated first. The deliberator receives one order's packet with no batch
+context and **cannot distinguish "first in the deterministic order" from "the book is broken"**.
+The related BAC/AVGO objection — *"the gates apply no name-correlation penalty"* — is a design
+disagreement, not a defect: `max_names_per_sector` is exactly that penalty, and
+`concentration.py`'s own docstring says so. The veto is arguing the cap should be tighter.
+
+✅ **(3) One class is correct, and our gates cannot see it.** Both vendors, on ~7 tickers: *the
+rationale cites SMA-200 distance while `history_bars=42`*. Verified — the summary string in
+`analyst/domain/recommend.py` is **hardcoded** and always names SMA-200, while
+`indicators.sma_distance` returns `None` below its period, so the leg is silently skipped. The
+*scoring* is correct; the *stated rationale asserts an input that could not exist*. Underneath it
+sits a real data gap: `lookback_days=260` exists explicitly *"so SMA200 can compute"*, we are
+getting 42 bars, and `min_history_bars=2` waves that through without a murmur. USB's `$1.84`
+sizing-headroom point (a market order clearing the 1 % cap only at the estimated price) is likewise
+specific and fair.
+
+**Conclusion: the veto is a genuinely useful auditor and a bad gate.** Roughly 2 of 15 grounds
+survive checking, one whole class is self-inflicted by its own context builder, and it disagrees
+with itself on 44 % of verdicts. Letting it bind would have cut ~18 orders to ~3 on mostly unsound
+reasoning, and cost another night of the selection data [DL-93](#dl-93) names as the object under
+test.
+
+**DECISION (operator, 2026-08-10): `EXECUTION_DELIBERATION_GRACE_SECONDS` returned 1800 → 900** on
+the `execution` app. At a measured 943 s the debate overruns, `DeliberationGraceExpired` fires, and
+buys proceed — the veto stays advisory for `sched-2026-08-10` while its grounds are repaired.
+**Verified, not assumed:** grace read back at `900`; **7/7 env vars survived** the update
+(diffed before/after — the DL-100 trap); image still `:s171`; `minReplicas=0` with 1 KEDA rule;
+`execution--0000069` the sole active revision, `Healthy`, Single revision mode; and the tunables
+DL-100 previously wiped re-checked untouched on their own apps — `SCANNER_CANDIDATE_CAP=25`,
+`MAX_POSITION_PCT=0.01`, `MAX_POSITIONS=60`, `dispatcher-cron` `30 22 * * 1-5` on `:s171`.
+
+🟠 **The road not taken, and why.** *Let it bind for one more sample* — rejected: it spends a
+night of selection data to re-measure grounds already measured unsound. *Add a real advisory
+switch* — the honest fix, but it is code in `execution`, the highest-risk agent, hours before a
+run; `deliberation_grace_seconds` is the **only** lever that exists today
+(`execution/settings.py`), so a grace that expires is the sole no-code path. 🚨 **Name the cost
+plainly: this uses a fault as a feature.** Every run in this state writes a
+`DeliberationGraceExpired` fault that is truthful but not *informative* — it says the debate was
+slow, not that we chose to ignore it. That is acceptable for one run and corrosive as a standing
+posture, because it trains the operator to read a real fault as noise.
+
+**Owed, in priority order:** (a) delete the invented ATR fragment from the deliberator's context,
+or label it honestly as the deliberator's own long-window figure and stop rendering a `PASSED`;
+(b) give the veto batch context, or stop it reasoning about portfolio state it cannot see;
+(c) fix the analyst's hardcoded SMA-200 rationale and decide whether 42 bars is acceptable when
+`lookback_days=260` promises ~180; (d) a real advisory/binding switch, so *advisory* is a declared
+posture rather than a grace that happens to expire; (e) reproducibility is the open question a
+verdict-quality gate would have to answer — 56 % self-agreement is the number to beat.
+
+---

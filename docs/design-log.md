@@ -5667,6 +5667,28 @@ three change the lever list.
    full prefix at full price, and both adapters do `del tool_schema` — the verdict is parsed out of
    free text rather than schema-guaranteed.
 
+**Amendment, same day — the lever order, once `effort` was made to exist.** Wiring the tunable
+(`0.90.02`) made the two free levers measurable for the first time, which changes the ranking. Try
+them in ascending order of what they cost, and stop at the first that fits:
+
+| Lever | What it costs | 100 orders, serial |
+| --- | --- | --- |
+| **`effort` down from `max`** | nothing — no semantic change, tunable only | unmeasurable until `0.90.02`; **this is the open question** |
+| **`max_rounds` 2 → 1** | 🚨 **the second round of the debate** | ~3,420 s — fits the 3,600 s ceiling with 5 % headroom, too tight to rely on |
+| **S172 concurrency** | a sprint, a new tunable, a thread pool, deterministic reassembly, a replica bump, a deploy | ≈ N/K |
+
+🚨 **`max_rounds` is not the free lever it looks like.** Its own `why` reads *"Manager-driven debate
+must show more than one round in live proof"* (DL-42/S166). One round is one assertion, one rebuttal,
+one verdict — **cutting the artefact under test to buy wall clock.** Defensible while the veto is
+advisory and its grounds are unsound; it is a recorded decision, not a knob.
+
+🟠 **S172 should therefore be specced-and-unstarted, not queued.** Its trigger, written down: *build
+it when the measured serial cost at the target funnel width still exceeds the grace after the two
+tunables have been swept.* Building it first buys concurrency machinery for the *"may bind"* branch
+of a fork this entry deliberately defers — see the fork table above. 🪤 The sweep needs the fleet
+retagged off `:s171` to pick up `0.90.02`, and a full `up` still discards operator env until S169
+lands ([DL-100](#dl-100)).
+
 🟠 **The road not taken.**
 
 - *Batch the live debate for the cost saving* — rejected on the measurement: $0.41 a run, while

@@ -120,6 +120,12 @@ GitHub API's `head_sha` filter silently returns `total_count: 0` for a short SHA
 query was wrong, the push never landed, or the run was genuinely never created, and all three
 look identical at a glance. Do not hand-roll the query; run the target.
 
+🪤 **Run it from the worktree whose `HEAD` is the commit you are proving.** It resolves the SHA from
+the working directory, not from an argument — a `SHA=` on the command line is ignored. Run from the
+main worktree while the branch lives in another and it prints `GATE PROVEN` for **`main`**: green,
+truthful, and about a different commit. Measured 2026-08-11, caught only because the printed SHA was
+read. Always check the SHA in the output against `git rev-parse HEAD`.
+
 ---
 
 ## Law conventions (when working on agent laws)

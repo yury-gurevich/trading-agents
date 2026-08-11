@@ -16,6 +16,7 @@ canonical chronological list of every sprint, use [`../sprints/README.md`](../sp
 | [STATE-04.md](STATE-04.md) | S99–S118 + chores | Fleet-serve receive half (S99/S100), the qlib workflow adoption (S110–S115), the DL-36 credential arc close (S106–S108), and the DL-43 Postgres migration trilogy (S116–S118) | 2026-07-08 |
 | [STATE-05.md](STATE-05.md) | S102–S126 | Fleet arc close (S102 distributed run-through, S103 dispatcher cron), DL-42 deliberation prompts (S119/S121), DL-44 broker reconciliation (S120), and the **whole DL-47 dashboard arc** (S123–S126) | 2026-07-22 |
 | [STATE-06.md](STATE-06.md) | S128–S146 | Feed resilience (S128), the blast-radius hardening run (S130–S134), ADR-0017 exit authority (S137), broker-native stops (S138), the graph-vocabulary pair (S143/S144), and the **exit-replay outage and its two-sprint recovery** (S145/S146). Contains two claims later corrected in place — **DL-73 was retracted in full** and the first S146 packet was superseded | 2026-07-29 |
+| [STATE-07.md](STATE-07.md) | S146→S171 (banners) + S127–S164 (*Recent*) | Two things: the **54 headline banner clauses** that had accreted on STATE.md's `**Last updated:**` line, and the *Recent* entries at `0.89` and below. The banners are the **only narrative record in this series for the S147–S164 arc (`0.81`–`0.86`)** — those versions never received *Recent* entries at all. Covers the LLM veto's first production run and first real block, the two-ended sell-side deadlock, the DL-93 margin discovery, and the S171/DL-103/DL-104 veto arc | 2026-08-11 |
 
 ## A note on the overlapping ranges
 
@@ -28,8 +29,17 @@ entries themselves are unique to one file. If you cannot find a sprint, search a
 
 ## When to split again
 
-Trigger: STATE.md's *Recent* section becomes the bulk of the file (~50 %+) or the file passes
-roughly 400 lines. Procedure: move the oldest *Recent* entries verbatim into the next
+Trigger: **STATE.md passes 200 lines** (operator rule, 2026-08-11 — it replaces the old "~50 % or
+roughly 400 lines", which was blown by 174 lines before anyone noticed, because nothing measured it).
+
+🪤 **Measure the header line, not just the section count.** At the 2026-08-11 split STATE.md was 574
+lines and 164 KB, and **one line held 112,149 characters of it** — the `**Last updated:**` header had
+been prepended to once per session since ~2026-07-27 and never pruned, reaching **57 clauses**, two of
+them exact duplicates. It was invisible to every session that edited it, because the stamp being
+edited sits at the front. STATE.md now carries a size rule in its own *How to read* block: under 200
+lines, and a **three-clause header — stamp, version, one headline**, replaced rather than appended.
+
+Procedure: move the oldest *Recent* entries verbatim into the next
 `STATE-NN.md`, give it a header naming its range and the arcs it covers, chain it to the previous
 archive, add a row above, and update the *Older sprints* pointer in STATE.md plus the row in
 [`../INDEX.md`](../INDEX.md). Check at the same time that the newest sprints actually have *Recent*

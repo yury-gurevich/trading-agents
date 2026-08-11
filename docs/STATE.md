@@ -22,6 +22,72 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **The veto reached production, was read for the first time, and was demoted to advisory (feat + fix,
+  0.89.07–0.90.01, 2026-08-08→10 — ADR-0022, DL-98/99/101/102/103/104).** **S166** closed the race the
+  veto had always lost: execution reached the broker at 05:36:22 while the `DeliberationRun` saying
+  *revise* landed at 05:47:32, and `_drop_vetoed` read an absent veto as *execute everything* — so *not
+  finished yet* and *not deployed* were indistinguishable. A buy-carrying `PMRun` is now held for a
+  bounded grace (`deliberation_grace_seconds`, default 900); **exits never wait** (ADR-0017). **S167**
+  fixed an audit reporting *"Faults today = 0"* while 18 were being written — `Fault` stamps
+  `occurred_at`, the query read `created_at`, which is `NULL` on every Fault node (measured both ways at
+  the same moment: **18** vs **0**) — and made `failed_open_reason` record the captured cause instead of
+  asserting one. **S168** (`0.90.00`) gave the veto a second vendor after the Anthropic key hit its limit
+  to 2026-09-01: an `OpenAILLMClient` behind the same port plus an `llm_provider` **tunable, deliberately
+  not an automatic fallback chain**, because a silent switch makes *which model reviewed this order*
+  unanswerable after the fact. **chore-openai-cutover** granted the key and found the vault and `.env`
+  holding **different** OpenAI keys — both authenticated, so nothing was broken, but the fleet would have
+  billed a five-week-old key nobody tracked. **S171** (`0.90.01`) fixed a peer client taking `messages[0]`
+  with no correlation; cold peers now measure `real_debate_count=18`, `failed_open_count=0`, reply
+  subscription **0 active / 0 dead-letter**. 🚨 **Each fix exposed the next.** Correlation revealed the
+  debate's true cost — **943 s** against a 900 s grace (DL-103) — so the grace went 900 → 1800; then
+  DL-104 read the verdicts and returned it to **900 deliberately**: **45 `revise` of 58** real debates,
+  **56 %** self-agreement on the same model and prompt 3.5 h apart, and roughly **2 of 15** grounds
+  surviving a check against the code. The veto is a good auditor and a bad gate.
+
+- **The system stopped discarding its own decisions (fix + chores, 0.89.00 and 0.89.03–0.89.06,
+  2026-08-07/08 — DL-94/96/97).** **S162:** a rejection now carries the gates it evaluated.
+  `position_rejection` returned on the **first** failure and threw the rest away, so MSFT recorded
+  `max_positions` while the `cash_available` outcome S161 exists to produce was computed and discarded.
+  Proven live: `MSFT   SKIP  max_positions (also failed: cash_available)`, no approval decision moved.
+  **S165:** the throttle on selection was a **cap of 5**, not the filters — 100 evaluated → 22 passed →
+  **5** reached the analyst, and a `FilterVerdict` was built for every evaluated ticker and thrown away.
+  Now `filter_trace` carries **100 verdicts for 100 evaluated**, `candidate_count=22`. 🚨 Its law-first
+  read produced a third option the spec had not considered, dropping the bump MINOR → PATCH. Three chores
+  followed: **teardown** — a teardown that under-deletes exits 0 (`deleted_nodes=21` while **41 rows**
+  carrying the same run's stamps survived; DL-94's own prescription measured insufficient, and adding
+  `BrokerStopOrder` to the label list would have deleted **27 live `Position` rows**); **module splits** —
+  the three modules S162 trimmed to 198/198/193 rather than split, where a planted reorder of the sizing
+  and reward-risk stages **passed all 86 PM tests** (DL-96); and **one sector rejection** — dead
+  production code at **100 % coverage**, kept alive by the single test that called it (DL-97).
+
+- **The book could not be sold, and then it was flattened and resized (fix + config, 0.89.01-0.89.02 plus
+  `chore-flatten-and-resize`, 2026-08-07 — DL-95, DRIFT-038).** **S163:** all ten positions showed
+  `qty_available = 0`, each fully reserved by its own resting `gtc` stop, and `execute_pm_node` never
+  cancelled the stop of a ticker it was about to sell. Cancel-before-submit shipped and was **proven in
+  production** — `submitted=10 rejected=0`, the broker confirming 10 open `limit sell` orders and **zero**
+  stop orders. **S164** closed **DRIFT-038**: `_place_stop` returned `None` whenever *any*
+  `BrokerStopOrder` fact existed at the key, **including a cancelled one**, so a still-held position whose
+  stop was cancelled faulted truthfully every run and was never re-protected. 🟠 Proven by tests only —
+  no exit was rejected during the flatten, so the replacement path has still never run in production.
+  With both landed, the flatten cleared the deadlock through the **designed ADR-0017 rail** rather than by
+  hand: all 10 emitted `sell`, `max_position_pct` **0.10 → 0.01**, `max_positions` **10 → 60**.
+
+- **The PM learned what it paid, and recommendations got a shadow book (feat, 0.87.00-0.88.00, 2026-08-06
+  — DL-93).** **S161:** the PM believed it had $100,000 of untouched cash at the start of every run while
+  the live account read equity **$104,042**, cash **−$104,967**, market value **$209,009** — the book was
+  on **~2× margin**. Three individually harmless lines did it: `portfolio_from_graph` set
+  `cash=Money(starting_cash)`, `PortfolioState.value` returned that, and `starting_cash` was still a
+  `tunable` whose own *why* said "before execution lands". Sizing now runs against execution's run-start
+  account snapshot (`EXEC-IDN-01` — the PM must not touch the broker), with `account_equity_cents`
+  **proven fresh** at `$103,149.91` on `sched-2026-08-06` (8/8, `ACCEPTANCE PASS`, zero faults).
+  🟠 The sizing gate itself has still never been shown to fire, because `max_positions` is checked first.
+  **S160** shipped the read-only shadow book so a `SKIP max_positions` stops being a discarded experiment
+  — one append-only outcome fact per (recommendation, horizon) with a disposition, backfilled over the 26
+  runs already on disk. The direction fix (`0.87.01`) followed because `hit_rate` was direction-agnostic
+  and **every sell scored inverted**. ⚠️ Its 🎯 `taken` vs `blocked_capacity` cut is **contaminated from
+  2026-08-06 onward**: once the S161 account gate went live a buy can fail `max_positions` *and*
+  `cash_available`, and the disposition reads only the first.
+
 - **Three hardening rows closed, and a unit test was found transacting with production (fix,
   0.86.03-0.86.05, 2026-08-05 - DL-89/90/91/92).** **Row T:** the deliberator peer tests had been
   publishing into the **production** Service Bus since at least 08-02 - 40 dead-lettered messages

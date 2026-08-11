@@ -5585,3 +5585,100 @@ posture rather than a grace that happens to expire; (e) reproducibility is the o
 verdict-quality gate would have to answer — 56 % self-agreement is the number to beat.
 
 ---
+
+## DL-105 · The deliberation system does not scale, and the constraint is wall clock, not cost · status: OPEN (S172/S173 packaged; the advisory-vs-binding fork deferred to an ADR)
+
+Opened 2026-08-11 by the operator, asking whether two Anthropic APIs — a multi-agent conversation
+surface and the Message Batches API — address the deliberator's scaling problem. Answering it first
+required establishing *which* resource the system is actually short of.
+
+**The constraint was measured, not assumed.** Read off the `LLMCall` ledger for `sched-2026-08-10`:
+
+| | |
+| --- | --- |
+| Calls | **90** — 18 manager + 36 proponent + 36 opponent, i.e. 5 per order × 18 orders |
+| Tokens | **91,201 in / 14,820 out** |
+| Per-call latency | mean **11.4 s**, p90 **16.4 s**, max **23.0 s** |
+| Span, first call → last | **1,136 s** (22:41:00 → 22:59:56 UTC) |
+| Sum of per-call latency | **1,022 s** |
+
+🚨 **Sum-of-latency ÷ span = 0.90.** For ninety per cent of the wall clock there is exactly one call
+in flight. The debate is serial end to end and the remaining ~114 s is bus round-trip plus graph
+writes. Three independent serializations, each confirmed against the code or the live fleet rather
+than inferred:
+
+1. [`agents/deliberator/poll.py:64`](../agents/deliberator/poll.py#L64) is a plain synchronous
+   `for intent in order_set.approved:`.
+2. Rounds within one order are inherently sequential (proponent → opponent → … → judge).
+3. All three deliberator apps run `minReplicas=0, maxReplicas=1` — so even a concurrent manager
+   could not fan out.
+
+🟠 **Cost is not the constraint, by two orders of magnitude.** 91 k in / 15 k out priced at Claude
+Opus 5 list rates is **$0.83 per run**, ~$216/yr at 260 sessions. The Batch API's 50 % discount would
+save **$0.41 a run**. Any argument for batching that rests on price is arguing about $107 a year.
+
+**The fork this exposes.** The two candidate answers are not competing implementations of one plan;
+they follow from opposite decisions about what the veto *is*:
+
+| If the veto is… | The answer is | Because |
+| --- | --- | --- |
+| **an auditor, permanently** ([DL-104](#dl-104)'s own finding) | the **Batch API** | An auditor never has to finish before orders go out. Submitting the day's debates as one batch does not optimise the scaling table — it **deletes it**: no grace window, no `le=3600` ceiling, no `DeliberationGraceExpired` fault-used-as-a-feature, and identical behaviour at 18 orders or 500 |
+| **something that may bind** | **concurrency** (S172) | A batch cannot gate what has already been submitted. Fan-out across independent orders is the only path to a veto that finishes inside a grace |
+
+🪤 **The fork cannot be decided today, and deciding it early is the trap.** DL-104 (a)–(c) established
+that the veto's grounds are partly manufactured by its own context builder, so a decision to make it
+advisory *forever* would be taken on a contaminated sample. Sequence: repair the grounds → measure
+reproducibility (S173) → then write the ADR. Recorded here so the fork is not silently resolved by
+whichever sprint lands first.
+
+**Where each API actually lands.**
+
+- **Message Batches** — the right tool for a *different* problem than the one it was proposed for.
+  Up to 100 k requests per batch, results keyed by `custom_id`, most complete inside an hour, 50 %
+  off. That is a precise fit for the **verdict-quality gate** DL-104 (e) leaves open: thousands of
+  replayed debates, no latency budget at all, and the same machinery serves the ADR-0010 prompt eval
+  set. Packaged as **S173**. It is *not* a fix for the live path unless the fork above resolves to
+  auditor-forever.
+- **Multi-agent conversation (Managed Agents)** — a genuine architectural option and an **ADR, not a
+  sprint**. The mapping is clean (coordinator = manager, roster = proponent/opponent, threads run
+  parallel in one session with caching and compaction built in), but Anthropic hosts the agent loop
+  and the container, which collides with three locked decisions: container-per-agent (LOCKED
+  2026-06-18), [ADR-0012](decisions/0012-platform-substrate-and-trading-pack.md)'s
+  platform/pack wall, and DL-36's master-as-sole-Key-Vault-accessor. The parallelism it buys is
+  available in-process for a fraction of the change.
+- 🪤 **Both are Anthropic-only, and the deliberator is deliberately on `gpt-5.5` until 2026-09-01**
+  ([DL-99](#dl-99)). Either path is gated on that date or on resolving the key limit — the same
+  date S170 already carries.
+
+**Three adapter findings, discovered while checking the above.** None were being looked for; all
+three change the lever list.
+
+1. 🚨 **`effort` is inert on the deployed fleet.**
+   [`llm_openai.py:43`](../agents/deliberator/llm_openai.py#L43) assigns `self.effort` and
+   `complete()` never sends it. The tunable is registered, is visible to the operator, reads as live,
+   and does nothing on `gpt-5.5`. Same class as DL-63's inert reasoning knob.
+2. 🚨 **`effort="max"` with `max_tokens=4096` is a documented misconfiguration on Claude Opus 5.**
+   Thinking and answer share that one budget, and Anthropic's guidance at `max` effort is to start at
+   **64 K**. The tunable is hard-capped `le=4096`, so it cannot be raised without a code change.
+   **Stated as a candidate, not a finding:** a verdict truncated or rushed under that cap is a
+   plausible contributor to the **56 %** self-agreement DL-104 (e) wants explained — S173 is what
+   would settle it.
+3. 🟠 **No prompt caching and no structured outputs.** Every one of the 5 calls per order re-sends the
+   full prefix at full price, and both adapters do `del tool_schema` — the verdict is parsed out of
+   free text rather than schema-guaranteed.
+
+🟠 **The road not taken.**
+
+- *Batch the live debate for the cost saving* — rejected on the measurement: $0.41 a run, while
+  trading away the only resource that is actually scarce. If batching is adopted it must be for the
+  architectural reason (the veto is declared advisory), never the price.
+- *Adopt Managed Agents multiagent to get parallelism* — rejected as the **first** move, not on
+  merit. It buys concurrency we can have with `asyncio.gather` plus a replica bump, and pays for it
+  by reopening three locked architectural decisions. Revisit as an ADR if the deliberator ever needs
+  hosted orchestration for its own sake.
+- *A single batched verdict — one call scoring all orders at once* — previously ruled out and still
+  ruled out: 5 calls total, but it stops being a debate, and the debate is the artefact under test.
+- *Deliberate only marginal orders* — ruled out: the veto's one genuinely sound catch (the SMA-200
+  rationale, DL-104 class 3) landed on an ordinary order, not a marginal one.
+
+---

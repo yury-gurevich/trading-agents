@@ -2,7 +2,7 @@
 # S169 — a provider switch is one switch, and a deploy cannot silently unset it
 
 **Closes:** [DL-100](../design-log.md) · **Type:** fix ·
-**Target version:** 0.90.01 (PATCH — two defect fixes, no new capability) ·
+**Target version:** 0.90.02 (PATCH — two defect fixes, no new capability; retargeted 2026-08-11, S171 shipped as `0.90.01`) ·
 **Branch:** `sprint-169-one-switch-and-a-deploy-that-keeps-it`
 
 > Handover to a delegated coding agent. Everything under **Measured** was observed on the live

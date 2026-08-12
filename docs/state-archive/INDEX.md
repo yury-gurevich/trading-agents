@@ -17,6 +17,7 @@ canonical chronological list of every sprint, use [`../sprints/README.md`](../sp
 | [STATE-05.md](STATE-05.md) | S102–S126 | Fleet arc close (S102 distributed run-through, S103 dispatcher cron), DL-42 deliberation prompts (S119/S121), DL-44 broker reconciliation (S120), and the **whole DL-47 dashboard arc** (S123–S126) | 2026-07-22 |
 | [STATE-06.md](STATE-06.md) | S128–S146 | Feed resilience (S128), the blast-radius hardening run (S130–S134), ADR-0017 exit authority (S137), broker-native stops (S138), the graph-vocabulary pair (S143/S144), and the **exit-replay outage and its two-sprint recovery** (S145/S146). Contains two claims later corrected in place — **DL-73 was retracted in full** and the first S146 packet was superseded | 2026-07-29 |
 | [STATE-07.md](STATE-07.md) | S146→S171 (banners) + S127–S164 (*Recent*) | Two things: the **54 headline banner clauses** that had accreted on STATE.md's `**Last updated:**` line, and the *Recent* entries at `0.89` and below. The banners are the **only narrative record in this series for the S147–S164 arc (`0.81`–`0.86`)** — those versions never received *Recent* entries at all. Covers the LLM veto's first production run and first real block, the two-ended sell-side deadlock, the DL-93 margin discovery, and the S171/DL-103/DL-104 veto arc | 2026-08-11 |
+| [STATE-08.md](STATE-08.md) | S166–S171 + `chore-openai-cutover` | The **veto arc** at `0.89.07`–`0.90.01`: the race the veto had always lost (S166), the audit reporting *"Faults today = 0"* while 18 were written (S167), the second vendor after the Anthropic key hit its limit (S168), the uncorrelated peer client (S171), and DL-104's reading of the verdicts — **56 % self-agreement**, ~2 of 15 grounds surviving a check — which demoted the veto to advisory | 2026-08-12 |
 
 ## A note on the overlapping ranges
 
@@ -29,7 +30,9 @@ entries themselves are unique to one file. If you cannot find a sprint, search a
 
 ## When to split again
 
-Trigger: **STATE.md passes 200 lines** (operator rule, 2026-08-11 — it replaces the old "~50 % or
+Trigger: **STATE.md passes 200 lines** (operator rule, 2026-08-11; the 2026-08-12 split ran at
+**192** — splitting on approach rather than on breach, because the session that closed DL-106
+would have crossed it — it replaces the old "~50 % or
 roughly 400 lines", which was blown by 174 lines before anyone noticed, because nothing measured it).
 
 🪤 **Measure the header line, not just the section count.** At the 2026-08-11 split STATE.md was 574

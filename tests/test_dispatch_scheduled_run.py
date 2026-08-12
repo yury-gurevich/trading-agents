@@ -2,7 +2,7 @@
 
 Agent: tooling
 Role: keep the Container Apps Job entrypoint importable when run as a script.
-External I/O: subprocess only.
+External I/O: subprocess and local Dockerfile reads only.
 """
 
 from __future__ import annotations
@@ -63,3 +63,21 @@ def test_script_direct_execution_skips_weekend_without_postgres() -> None:
     assert completed.returncode == 0
     assert "skipped sched-2026-07-04" in completed.stdout
     assert "POSTGRES_DSN" not in completed.stderr
+
+
+def test_dispatcher_image_copies_run_request_history_dependencies() -> None:
+    """ANLZ-IDN-01: the slim dispatcher image carries S174 history stamp modules."""
+    dockerfile = Path("orchestration/Dockerfile").read_text(encoding="utf-8")
+    required_copies = (
+        "agents/analyst/history_requirements.py",
+        "agents/analyst/settings.py",
+        "agents/analyst/settings_indicators.py",
+        "agents/provider/settings.py",
+        "agents/provider/settings_feeds.py",
+    )
+
+    missing = [
+        path for path in required_copies if f"COPY {path} {path}" not in dockerfile
+    ]
+
+    assert not missing, f"dispatcher image omits RunRequest history modules: {missing}"

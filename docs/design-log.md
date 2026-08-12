@@ -5758,6 +5758,12 @@ Short-history evidence rides inside the existing `Recommendation.quant_metrics` 
 property allow-list, so S174 does not add a new top-level `Recommendation` property and does not
 move the pack.
 
+**Image follow-up.** The RunRequest carrier means the scheduled dispatcher image must carry the
+same minimal analyst/provider settings modules used by `orchestration.start` to derive the stamped
+window. Copying those settings modules into the slim dispatcher image was chosen over moving the
+history calculation into provider-owned defaults: the latter would reintroduce duplicated indicator
+policy, while the former keeps the Dockerfile aligned with the chosen contract.
+
 **Rejected routes.**
 
 - *Put required history in the pack* - rejected because it creates a second durable place for the

@@ -177,8 +177,9 @@ WHEN TO STOP AND ASK
 `orchestration/tests/test_history_window.py`, plus focused edits in
 `agents/analyst/{agent.py,settings.py,domain/recommend.py,domain/technical_rules.py}`,
 `agents/provider/{ingest.py,ingest_chunked.py,poll.py}`,
-`contracts/provider.py`, `orchestration/start.py`, matching tests, `docs/design-log.md`,
-`docs/STATE.md`, `pyproject.toml`, and `uv.lock`.
+`contracts/provider.py`, `orchestration/start.py`, `orchestration/Dockerfile`, matching tests,
+`tests/test_dispatch_scheduled_run.py`, `docs/design-log.md`, `docs/STATE.md`, `pyproject.toml`,
+and `uv.lock`.
 
 **Route chosen:** [DL-107](../design-log.md#dl-107---s174-carries-declared-indicator-history-on-the-runrequest---status-decided-2026-08-12)
 uses `RunRequest.lookback_days` plus `RunRequest.required_history_bars`. The dispatcher derives the
@@ -297,6 +298,14 @@ enrichment was not remeasured in the after probe; the safe proof intentionally u
 avoid injecting live work or spending per-ticker enrichment quota. That unmeasured part is called out
 here rather than assumed.
 
+**Dispatcher image follow-up:** after the first merge attempt, GitHub's `Build and push agent
+images` workflow failed at the dispatcher calendar-skip smoke. The dispatcher Dockerfile was still a
+slim image and did not copy the analyst/provider settings modules that `orchestration.start` now
+imports to stamp `RunRequest.lookback_days`. Version `0.90.04` copies those modules and adds
+`test_dispatcher_image_copies_run_request_history_dependencies`. Local Docker was not available on
+this workstation (`Cannot connect to the Docker daemon`), so container-smoke proof is deferred to
+the remote image workflow rather than asserted locally.
+
 **`make ci` evidence:** ran unpiped as `make ci > ci.txt 2>&1; $exit = $LASTEXITCODE; Write-Output
 $exit` from the S174 worktree; exit code `0`.
 
@@ -314,14 +323,14 @@ uv run python scripts/check_law_coverage.py
 uv run pytest
 TOTAL                                                14519      0   3078      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 2234 passed, 6 skipped in 70.80s (0:01:10) ==================
+================= 2235 passed, 6 skipped in 71.88s (0:01:11) ==================
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files
 Detect secrets...........................................................Passed
 uv run python scripts/check_untracked_secrets.py
 Detect secrets...........................................................Passed
-detect-secrets (untracked): scanning 5 new file(s)
+detect-secrets (untracked): scanning 1 new file(s)
 ```
 
 **Remote gate:** `make gate-ran` must be run after the final commit is pushed from the worktree

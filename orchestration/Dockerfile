@@ -8,9 +8,15 @@ RUN uv sync --frozen --extra runtime --no-dev
 COPY kernel/ kernel/
 COPY contracts/ contracts/
 COPY agents/__init__.py agents/__init__.py
+COPY agents/analyst/__init__.py agents/analyst/__init__.py
+COPY agents/analyst/history_requirements.py agents/analyst/history_requirements.py
+COPY agents/analyst/settings.py agents/analyst/settings.py
+COPY agents/analyst/settings_indicators.py agents/analyst/settings_indicators.py
 COPY agents/provider/__init__.py agents/provider/__init__.py
 COPY agents/provider/domain/__init__.py agents/provider/domain/__init__.py
 COPY agents/provider/domain/market_calendar.py agents/provider/domain/market_calendar.py
+COPY agents/provider/settings.py agents/provider/settings.py
+COPY agents/provider/settings_feeds.py agents/provider/settings_feeds.py
 COPY agents/scanner/__init__.py agents/scanner/__init__.py
 COPY agents/scanner/universe.py agents/scanner/universe.py
 COPY orchestration/__init__.py orchestration/__init__.py

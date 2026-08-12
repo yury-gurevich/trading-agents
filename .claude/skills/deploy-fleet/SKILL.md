@@ -12,7 +12,12 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
 ## Procedure
 
 1. **Pick the tag** — repo convention is the sprint-style name (`s121`, `s122`, …), immutable
-   and human-readable. Never deploy `latest`.
+   and human-readable. Never deploy `latest`. 🪤 **A chore has no sprint number — suffix the
+   sprint it follows (`s171a`), never the version and never the next sprint's number**
+   ([DL-106](../../../docs/design-log.md)). Tagging a deploy `v0.90.02` on 2026-08-12 put an image
+   and a *different* git tag under one name (`ffdbaf1` vs `de3c071`); `s172` would have made the
+   board assert a sprint had shipped. The `DeployRecord` SHA stays authoritative either way — the
+   name has to be right because the board is read at a glance, not looked up.
 
    **Then decide the path, and prove the decision — image-only retag or full `up`?** The
    deciding question is whether the **vocabulary pack** moved since the currently deployed

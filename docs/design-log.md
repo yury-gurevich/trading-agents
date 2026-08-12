@@ -5704,3 +5704,35 @@ lands ([DL-100](#dl-100)).
   rationale, DL-104 class 3) landed on an ordinary order, not a marginal one.
 
 ---
+
+## DL-106 · The image tag left the `sNNN` scheme, and a name stopped identifying a commit · status: DECIDED (2026-08-12)
+
+**What happened.** The 2026-08-12 deploy of `0.90.02` was tagged **`v0.90.02`** rather than `sNNN`,
+because the change was a **chore** with no sprint number of its own and `s172` is packaged but
+unbuilt. The cost showed up within the hour: `v0.90.02` names **two different commits** — the git
+tag `v0.90.02` points at `de3c071`, while the image was built from `ffdbaf1`, two docs commits
+later. `sNNN` had never been able to collide that way, because it was only ever an image tag.
+
+**Decision — image tags stay sprint-shaped.** A deploy that carries no sprint of its own
+**suffixes the sprint it follows**: `s171a`, `s171b`. That sorts after its parent, cannot be
+misread as a sprint that has not shipped, and shares no namespace with git tags. Never a version
+string, never `latest`. Redeployed the same day as **`s171a`** from `e49349c` — 17 targets
+verified, `DeployRecord deploy:2026-08-12T07:52:49…:s171a:e49349cb`.
+
+**Why the `DeployRecord` SHA is not a sufficient answer.** It carries the full SHA and stays
+authoritative, so traceability was never actually lost — that is exactly why this is easy to wave
+through. But the *name* is what a human reads on the status board and in `az` output, and a name
+that needs a graph lookup to disambiguate is [DL-46](#dl-46)'s currency failure in slow motion:
+the entire point of the tag is that *being behind* is visible **at a glance**.
+
+🟠 **The road not taken.**
+
+- *Keep version-shaped tags and lean on the SHA* — rejected on the glance test above. It shipped
+  for one afternoon and worked; it also put two different objects under one name across two
+  systems that are read side by side.
+- *Use the next sprint number (`s172`)* — rejected as a traceability lie. S172 is packaged and
+  unbuilt; naming an image after it makes the board assert a sprint has shipped.
+- *Tag by commit SHA* — rejected: unambiguous and unreadable. The board is the artefact, and
+  `s171a` tells an operator where they are without a lookup.
+
+---

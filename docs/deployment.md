@@ -141,6 +141,15 @@ redeploy. Previous GHCR images remain available for image-level rollback.
 
 The normal scheduled posture is a standing fleet scaled to zero outside the daily paper-run window:
 
+**The window activates, it does not lock (operator decision, restated 2026-08-12).** Each app carries
+exactly **one** KEDA rule — a `cron` rule with `desiredReplicas: 1`, against `minReplicas: 0` /
+`maxReplicas: 1`. A cron rule only *demands* replicas inside its window; nothing forbids them outside
+it. So anything that demands a replica — a request to master's internal ingress, a manual
+`--min-replicas` bump, a new revision coming up after a retag — starts the app at any hour and it
+returns to zero after the 300 s cooldown. That is deliberate while the project is in active
+development: **testing a run outside the window must never require rewiring cron.** A replica seen
+outside the window is therefore not evidence of a fault; check what demanded it.
+
 ```powershell
 pwsh infra/deploy-agents.ps1 up -Tag latest
 ```

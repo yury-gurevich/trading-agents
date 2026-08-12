@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-12 17:35 AEST · **Version:** 0.90.02 · **The veto bound for the first time: on `sched-2026-08-11` a `revise` verdict reached execution 118 s after the PM run and stopped the day's only buy — `deliberation_status='applied'`, 0 submitted.**
+**Last updated:** 2026-08-12 18:05 AEST · **Version:** 0.90.02 · **The veto bound for the first time: on `sched-2026-08-11` a `revise` verdict reached execution 118 s after the PM run and stopped the day's only buy — `deliberation_status='applied'`, 0 submitted.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -74,9 +74,9 @@ in [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprin
 ## Now
 
 **The veto bound for the first time, and the fleet is current again.** Version `0.90.02` now runs
-on **all 17 deploy targets** (16 apps + `dispatcher-cron`), retagged 2026-08-12 —
-`DeployRecord deploy:2026-08-12T07:27:25…:v0.90.02:ffdbaf1b`. *Proven at the fleet, not assumed:*
-16/16 images `v0.90.02`, 16/16 `Succeeded`, KEDA intact on **all** sixteen (`min=0`, 1 rule each),
+on **all 17 deploy targets** (16 apps + `dispatcher-cron`) at tag **`s171a`**, retagged 2026-08-12 —
+`DeployRecord deploy:2026-08-12T07:52:49…:s171a:e49349cb`. *Proven at the fleet, not assumed:*
+16/16 images `s171a`, 16/16 `Succeeded`, KEDA intact on **all** sixteen (`min=0`, 1 rule each),
 job cron still weekday-only `30 22 * * 1-5`, and the switches S169 exists to protect survived the
 image-only path — `SCANNER_CANDIDATE_CAP=25`, `PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01`,
 `PORTFOLIO_MANAGER_MAX_POSITIONS=60`. The vocabulary pack hashed **identical** across
@@ -99,21 +99,29 @@ broker snapshot at 22:32:46Z on 08-11, matching the broker one-for-one, with `Fi
 keyed `pm-run-74dc…:TICKER:buy`. The `critical` divergence Flag that run raised is reconciliation
 reporting its own adoption — not a fault. **51** flags now unacknowledged, still climbing.
 
-🚨 **`effort` is live at `max` for the first time, and that is untested in production.** Until
-`0.90.02` the value was assigned and dropped, so every debate ever run — including the clean 118 s
-bind above — used the vendor default. `DELIBERATOR_EFFORT` is **unset** on all three deliberators, so
-`settings.py`'s `"max"` applies from the next fire, against `max_tokens=4096` (hard-capped, `le=4096`)
-on `DELIBERATOR_LLM_PROVIDER=openai`. Two exposures, **neither measured**: reasoning latency pushes
-straight into the 900 s grace [DL-105](design-log.md) already calls the scarce resource, and reasoning
-tokens count against the 4096 completion budget — an exhausted budget returns empty content that
-`_text()` renders as `""`. Env-overridable without a rebuild, so backing it off is one `az` call.
+🚨 **`effort` was live at `max` for one afternoon, and is now `high` — the first sweep point.**
+Until `0.90.02` the value was assigned and dropped, so every debate ever run — including the clean
+118 s bind above — used the vendor default. Leaving it at `max` would have shipped an unmeasured
+setting into a 900 s grace: reasoning latency pushes straight at the constraint
+[DL-105](design-log.md) calls scarce, and reasoning tokens count against `max_tokens=4096`
+(hard-capped, `le=4096`), where an exhausted budget returns empty content that `_text()` renders as
+`""`. **Set 2026-08-12: `DELIBERATOR_EFFORT=high` on all three deliberators**, env-var only — no
+rebuild — and the env name diff before/after shows **3 additions, 0 deletions**, so the S169 wipe
+did not fire. *Still unmeasured:* what `high` costs in wall clock against the grace. The next
+scheduled run is the measurement, and `max` remains one `az` call away if it is wanted back.
 
-🪤 **The image tag scheme changed, and the decision is not yet recorded.** This deploy is tagged
-`v0.90.02`, not `sNNN`: the change was a **chore** with no sprint number, and `s172` is packaged but
-unbuilt. Traceability holds through the `DeployRecord`'s full SHA — but the *name* alone no longer
-identifies a commit, because git tag `v0.90.02` points at `de3c071` while the image was built from
-`ffdbaf1`, two docs commits later. `sNNN` never collided that way. **Open:** adopt a chore-suffix
-convention (`s171a`) and rebuild, or keep version-shaped tags and lean on the SHA.
+**The image tag is back on the `sNNN` scheme, and the rule is written down — [DL-106](design-log.md),
+DECIDED.** A chore has no sprint number, so it **suffixes the sprint it follows** (`s171a`), never a
+version string and never the next sprint's number. `v0.90.02` had put an image and a *different* git
+tag under one name (`ffdbaf1` vs `de3c071`); `s172` would have made the board assert an unshipped
+sprint. Recorded in `deploy-fleet`'s step 1 as well, which is where the next deploy will read it.
+
+**The wake window activates; it does not lock (operator decision, restated 2026-08-12).** Each app
+carries exactly one KEDA rule — `cron`, `desiredReplicas: 1`, against `min 0 / max 1` — and a cron
+rule only *demands* replicas inside its window. Anything else that demands one (master's internal
+ingress, a manual `--min-replicas`, a new revision after a retag) starts an app at any hour, which
+is deliberate while the project is in active development: **testing a run outside the window must
+never require rewiring cron.** Written into `docs/deployment.md`; it had never been recorded.
 
 ## Next
 
@@ -127,8 +135,8 @@ not enough**: 🚨 its own `why` says *"debate must show more than one round in 
 round is **cutting the artefact under test to buy wall clock**, a recorded decision rather than a
 knob. Build [S172](sprints/sprint-172-independent-debates-run-independently.md) **only if both
 together still miss** — full ordering and the arithmetic in [DL-105](design-log.md)'s amendment.
-The fleet runs `0.90.02` as of 2026-08-12, so the sweep is **unblocked** — and `effort` is
-already live at `max`, which makes the first sweep point a measurement of the status quo.
+The fleet runs `s171a` as of 2026-08-12, so the sweep is **unblocked**, and its first point is
+already set: `effort` `max` → `high`. What remains is measuring it against the grace.
 
 **Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
 **(i)** amend S172 — its stated reason for excluding `max_rounds` is unsound (the sum-of-latency ÷

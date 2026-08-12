@@ -7,6 +7,7 @@ External I/O: subprocess and local Dockerfile reads only.
 
 from __future__ import annotations
 
+import ast
 import os
 import subprocess
 import sys
@@ -74,6 +75,7 @@ def test_dispatcher_image_copies_run_request_history_dependencies() -> None:
         "agents/analyst/settings_indicators.py",
         "agents/provider/settings.py",
         "agents/provider/settings_feeds.py",
+        "orchestration/history_window.py",
     )
 
     missing = [
@@ -81,3 +83,15 @@ def test_dispatcher_image_copies_run_request_history_dependencies() -> None:
     ]
 
     assert not missing, f"dispatcher image omits RunRequest history modules: {missing}"
+
+
+def test_analyst_package_export_stays_lazy_for_slim_dispatcher_image() -> None:
+    """ANLZ-IDN-01: importing analyst history helpers must not load AnalystAgent."""
+    module = ast.parse(Path("agents/analyst/__init__.py").read_text(encoding="utf-8"))
+    eager_imports = [
+        node
+        for node in module.body
+        if isinstance(node, ast.ImportFrom) and node.module == "agents.analyst.agent"
+    ]
+
+    assert eager_imports == []

@@ -20,6 +20,7 @@ COPY agents/provider/settings_feeds.py agents/provider/settings_feeds.py
 COPY agents/scanner/__init__.py agents/scanner/__init__.py
 COPY agents/scanner/universe.py agents/scanner/universe.py
 COPY orchestration/__init__.py orchestration/__init__.py
+COPY orchestration/history_window.py orchestration/history_window.py
 COPY orchestration/scheduled_dispatch.py orchestration/scheduled_dispatch.py
 COPY orchestration/settings.py orchestration/settings.py
 COPY orchestration/start.py orchestration/start.py

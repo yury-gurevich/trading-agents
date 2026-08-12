@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-12 21:01 AEST · **Version:** 0.90.05 · **S174 local proof green: declared history crosses on RunRequest and the image/security follow-ups are fixed.**
+**Last updated:** 2026-08-12 21:44 AEST · **Version:** 0.90.06 · **S174 local proof green: declared history crosses on RunRequest and the dispatcher image imports the full path.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -64,7 +64,10 @@ anomalous-ticker guard in the all-99 probe. Vocabulary pack unchanged; short-ser
 `*_missing_bars` inside existing `Recommendation.quant_metrics`. The first post-merge image build
 exposed the slim dispatcher image missing the analyst/provider settings modules now imported by
 `orchestration.start`; `0.90.04` copies those modules and adds a Dockerfile regression test. The
-first S174 remote security gate then caught a CodeQL `py/unsafe-cyclic-import` shape between
+first corrective main image build then exposed the same slim image missing the new
+`orchestration/history_window.py` module, plus the analyst package initializer eagerly loading the
+full agent tree; `0.90.06` copies the helper and makes the analyst convenience export lazy instead
+of bloating the dispatcher image. The first S174 remote security gate also caught a CodeQL `py/unsafe-cyclic-import` shape between
 `history_requirements.py` and `settings.py`; `0.90.05` removes the back-reference by typing the
 history helper with a structural protocol. Local Docker was unavailable (`Cannot connect to the
 Docker daemon`), so the rebuilt image smoke is a GitHub Actions proof item after push. Local

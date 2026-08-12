@@ -302,9 +302,14 @@ here rather than assumed.
 images` workflow failed at the dispatcher calendar-skip smoke. The dispatcher Dockerfile was still a
 slim image and did not copy the analyst/provider settings modules that `orchestration.start` now
 imports to stamp `RunRequest.lookback_days`. Version `0.90.04` copies those modules and adds
-`test_dispatcher_image_copies_run_request_history_dependencies`. Local Docker was not available on
-this workstation (`Cannot connect to the Docker daemon`), so container-smoke proof is deferred to
-the remote image workflow rather than asserted locally.
+`test_dispatcher_image_copies_run_request_history_dependencies`. The first corrective main image
+build still failed the same smoke because `orchestration/start.py` also imports the new
+`orchestration/history_window.py`, which the slim image did not copy; the same path also exposed
+`agents/analyst/__init__.py` eagerly importing the full `AnalystAgent` tree when the dispatcher only
+needed analyst history helpers. Version `0.90.06` copies `history_window.py`, keeps the analyst
+package convenience export lazy, and pins both with dispatcher-script tests. Local Docker was not
+available on this workstation (`Cannot connect to the Docker daemon`), so container-smoke proof is
+deferred to the remote image workflow rather than asserted locally.
 
 **Security-gate follow-up:** the first pushed S174 follow-up SHA
 `8f954adf905d0d0fac38b536baf6179bafe8ef05` failed `Security Findings` because CodeQL reported
@@ -328,9 +333,9 @@ uv run python scripts/check_module_size.py kernel contracts agents orchestration
 uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
 uv run python scripts/check_law_coverage.py
 uv run pytest
-TOTAL                                                14532      0   3078      0  100.00%
+TOTAL                                                14537      0   3078      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 2235 passed, 6 skipped in 77.27s (0:01:17) ==================
+================= 2236 passed, 6 skipped in 72.53s (0:01:12) ==================
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files

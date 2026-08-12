@@ -5762,7 +5762,11 @@ move the pack.
 same minimal analyst/provider settings modules used by `orchestration.start` to derive the stamped
 window. Copying those settings modules into the slim dispatcher image was chosen over moving the
 history calculation into provider-owned defaults: the latter would reintroduce duplicated indicator
-policy, while the former keeps the Dockerfile aligned with the chosen contract.
+policy, while the former keeps the Dockerfile aligned with the chosen contract. The follow-up also
+copies `orchestration/history_window.py`, because `start.py` imports the new calendar conversion
+helper and the dispatcher image deliberately does not copy the full orchestration package. It also
+keeps `agents.analyst` package exports lazy so importing `agents.analyst.history_requirements` does
+not load the full boundary agent tree in the dispatcher image.
 
 **Security follow-up.** The first pushed S174 follow-up failed the remote Security Findings gate
 because CodeQL reported `py/unsafe-cyclic-import` across `history_requirements.py` and

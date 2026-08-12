@@ -5766,7 +5766,9 @@ policy, while the former keeps the Dockerfile aligned with the chosen contract. 
 copies `orchestration/history_window.py`, because `start.py` imports the new calendar conversion
 helper and the dispatcher image deliberately does not copy the full orchestration package. It also
 keeps `agents.analyst` package exports lazy so importing `agents.analyst.history_requirements` does
-not load the full boundary agent tree in the dispatcher image.
+not load the full boundary agent tree in the dispatcher image. The lazy initializer deliberately has
+no `__all__`; CodeQL treats a lazy `__all__ = ["AnalystAgent"]` as `py/undefined-export`, while
+explicit `from agents.analyst import AnalystAgent` still resolves through `__getattr__`.
 
 **Security follow-up.** The first pushed S174 follow-up failed the remote Security Findings gate
 because CodeQL reported `py/unsafe-cyclic-import` across `history_requirements.py` and

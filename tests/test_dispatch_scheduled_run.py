@@ -93,5 +93,13 @@ def test_analyst_package_export_stays_lazy_for_slim_dispatcher_image() -> None:
         for node in module.body
         if isinstance(node, ast.ImportFrom) and node.module == "agents.analyst.agent"
     ]
+    all_exports = [
+        target
+        for node in module.body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == "__all__"
+    ]
 
     assert eager_imports == []
+    assert all_exports == []

@@ -307,9 +307,12 @@ build still failed the same smoke because `orchestration/start.py` also imports 
 `orchestration/history_window.py`, which the slim image did not copy; the same path also exposed
 `agents/analyst/__init__.py` eagerly importing the full `AnalystAgent` tree when the dispatcher only
 needed analyst history helpers. Version `0.90.06` copies `history_window.py`, keeps the analyst
-package convenience export lazy, and pins both with dispatcher-script tests. Local Docker was not
-available on this workstation (`Cannot connect to the Docker daemon`), so container-smoke proof is
-deferred to the remote image workflow rather than asserted locally.
+package convenience export lazy, and pins both with dispatcher-script tests. The next main CodeQL
+run opened `py/undefined-export` on that lazy initializer because `__all__` named `AnalystAgent`
+without defining it eagerly; version `0.90.07` removes that `__all__` list and pins the no-`__all__`
+lazy-export shape in the same test. Local Docker was not available on this workstation (`Cannot
+connect to the Docker daemon`), so container-smoke proof is deferred to the remote image workflow
+rather than asserted locally.
 
 **Security-gate follow-up:** the first pushed S174 follow-up SHA
 `8f954adf905d0d0fac38b536baf6179bafe8ef05` failed `Security Findings` because CodeQL reported
@@ -333,9 +336,9 @@ uv run python scripts/check_module_size.py kernel contracts agents orchestration
 uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
 uv run python scripts/check_law_coverage.py
 uv run pytest
-TOTAL                                                14537      0   3078      0  100.00%
+TOTAL                                                14536      0   3078      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 2236 passed, 6 skipped in 72.53s (0:01:12) ==================
+================= 2236 passed, 6 skipped in 79.74s (0:01:19) ==================
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files

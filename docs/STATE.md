@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-11 16:52 AEST · **Version:** 0.90.02 · **The advisory posture was exercised live on `sched-2026-08-10`: the grace expired, 18 buys went out, and the veto's verdicts arrived four minutes too late to bind — see Now.**
+**Last updated:** 2026-08-12 17:35 AEST · **Version:** 0.90.02 · **The veto bound for the first time: on `sched-2026-08-11` a `revise` verdict reached execution 118 s after the PM run and stopped the day's only buy — `deliberation_status='applied'`, 0 submitted.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -73,37 +73,47 @@ in [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprin
 
 ## Now
 
-**The veto is advisory by an expiring grace, and the first run under that posture is half-proven.**
-Version `0.90.02`. Fleet **all 16 apps on `:s171`** (measured 2026-08-11). 🪤 **`main` is now one
-PATCH ahead of the fleet:** `0.90.02` wired the `effort` tunable and is **not deployed**, so the
-latency sweep [DL-105](design-log.md) calls for cannot run until the fleet is retagged.
+**The veto bound for the first time, and the fleet is current again.** Version `0.90.02` now runs
+on **all 17 deploy targets** (16 apps + `dispatcher-cron`), retagged 2026-08-12 —
+`DeployRecord deploy:2026-08-12T07:27:25…:v0.90.02:ffdbaf1b`. *Proven at the fleet, not assumed:*
+16/16 images `v0.90.02`, 16/16 `Succeeded`, KEDA intact on **all** sixteen (`min=0`, 1 rule each),
+job cron still weekday-only `30 22 * * 1-5`, and the switches S169 exists to protect survived the
+image-only path — `SCANNER_CANDIDATE_CAP=25`, `PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01`,
+`PORTFOLIO_MANAGER_MAX_POSITIONS=60`. The vocabulary pack hashed **identical** across
+`9a22102`→`ffdbaf1` (`13c0e3a0…`), which is why image-only was the legal path and not an S148 stall.
 
-**`sched-2026-08-10` — 8/8 stages, `ACCEPTANCE UNPROVEN`.** *Proven:* provider **99/99** tickers with
-**zero `*_degraded` notes** (4059 bars, 1857 headlines, regime `neutral`); scanner 99 → **22** survivors;
-analyst **18 scored / 4 rejected**, all four within 0.020 of the 0.600 regime floor (NOW 0.580, PFE 0.585,
-META 0.593, XOM 0.597); PM **18 approved / 0 rejected**; execution **18 submitted / 0 rejected**; monitor
-and reporter both 0 on a flat book. *Not proven, and the reason acceptance reads `UNPROVEN` rather than
-`PASS`:* all 18 sit at Alpaca `accepted` with `filled_qty 0`, queued for the 2026-08-11 open — equity
-**$102,464.21**, **0 positions**, ≈ **$17.3 k** committed at ≈ 1 % per name. Whether the resized book
-actually refills is decided at that open, not by this run.
+**`sched-2026-08-11` — 8/8 stages, `ACCEPTANCE PASS`, and 0 orders submitted on purpose.** Provider
+**99/99** with **zero `*_degraded` notes** (4059 bars, 1825 headlines, regime `neutral`); scanner
+99 → 20; analyst **19 scored / 2 rejected** (NOW 0.584, META 0.583, both under the 0.600 floor); PM
+**1 approved** — XOM ×6, est. $159.78. Then the thing that had never happened: `PMRun` 22:38:49Z →
+`DeliberationRun` **22:40:47Z**, `verdicts={'XOM': 'revise'}`, `vetoed_tickers=('XOM',)`,
+`real_debate_count=1`, `failed_open_count=0`, and `ExecutionRun … deliberation_status='applied'`
+with **submitted=0**. **118 seconds against a 900 s grace.** The verdict was *read and bound*, not
+defaulted past. DL-104's owed item (d) is still owed — but the machinery under it is now proven to
+work whenever the debate finishes in time.
 
-🚨 **[DL-104](design-log.md)'s posture worked exactly as written, and charged exactly the cost it named.**
-The grace expired and the buys proceeded: `submitted 18 order(s) carrying a buy with no DeliberationRun
-after 900s`, severity **error**, 22:55:57 UTC. The `DeliberationRun` landed **22:59:56 — four minutes after
-the orders were already at the broker** — carrying **3 `uphold`** (AAPL, ABT, DIS), **14 `revise`**,
-**1 `overturn`** (BMY) and **15 tickers in `vetoed_tickers`**. **Had it bound, 18 orders would have been 3.**
-DL-104 called this fault-used-as-a-feature acceptable for one run and corrosive as a standing posture; that
-one run has now happened, so owed item **(d) — a real advisory/binding switch — stops being theoretical.**
+**`sched-2026-08-10`'s open question is closed: the 18 orders filled.** They sat `accepted` with
+`filled_qty 0` at that run's close, which is the whole reason acceptance read `UNPROVEN`. Measured
+2026-08-12: **18 active positions** (`is_active_position_node`, never raw `status`), adopted from the
+broker snapshot at 22:32:46Z on 08-11, matching the broker one-for-one, with `Fill` nodes already
+keyed `pm-run-74dc…:TICKER:buy`. The `critical` divergence Flag that run raised is reconciliation
+reporting its own adoption — not a fault. **51** flags now unacknowledged, still climbing.
 
-**Everything else on the day is a known.** 28 `drop_unfilled_orders` **warnings** clearing the 08-08
-cutover-test batch (the S148 sweep working as designed), plus one **error** — `stop:probe-s164:T#1` has no
-Fill chain, the same row `audit_broker_graph.py` reports as its single `A3 FAIL`. **Zero `Escalation`s**;
-**no new divergence Flag** (the latest is still 2026-08-03); 50 unacknowledged flags outstanding, unchanged.
+🚨 **`effort` is live at `max` for the first time, and that is untested in production.** Until
+`0.90.02` the value was assigned and dropped, so every debate ever run — including the clean 118 s
+bind above — used the vendor default. `DELIBERATOR_EFFORT` is **unset** on all three deliberators, so
+`settings.py`'s `"max"` applies from the next fire, against `max_tokens=4096` (hard-capped, `le=4096`)
+on `DELIBERATOR_LLM_PROVIDER=openai`. Two exposures, **neither measured**: reasoning latency pushes
+straight into the 900 s grace [DL-105](design-log.md) already calls the scarce resource, and reasoning
+tokens count against the 4096 completion budget — an exhausted budget returns empty content that
+`_text()` renders as `""`. Env-overridable without a rebuild, so backing it off is one `az` call.
 
-**The fill check is scheduled, not remembered.** One-shot cloud routine `trig_01YG4Es36pFPwAMhx5qofJ2d`
-fires **2026-08-11 21:00 UTC** (07:00 Wed AEST) — after the close, and ≈ 90 min before the next run's drop
-sweep clears any leftovers. 🪤 It **emails a reminder and nothing more**: a cloud session gets a bare
-checkout with no `.env`, so it cannot reach the spine or the broker. `accept.py` is re-run locally.
+🪤 **The image tag scheme changed, and the decision is not yet recorded.** This deploy is tagged
+`v0.90.02`, not `sNNN`: the change was a **chore** with no sprint number, and `s172` is packaged but
+unbuilt. Traceability holds through the `DeployRecord`'s full SHA — but the *name* alone no longer
+identifies a commit, because git tag `v0.90.02` points at `de3c071` while the image was built from
+`ffdbaf1`, two docs commits later. `sNNN` never collided that way. **Open:** adopt a chore-suffix
+convention (`s171a`) and rebuild, or keep version-shaped tags and lean on the SHA.
 
 ## Next
 
@@ -117,7 +127,8 @@ not enough**: 🚨 its own `why` says *"debate must show more than one round in 
 round is **cutting the artefact under test to buy wall clock**, a recorded decision rather than a
 knob. Build [S172](sprints/sprint-172-independent-debates-run-independently.md) **only if both
 together still miss** — full ordering and the arithmetic in [DL-105](design-log.md)'s amendment.
-🪤 The sweep needs the fleet retagged off `:s171` to pick up `0.90.02`, which wants S169 first.
+The fleet runs `0.90.02` as of 2026-08-12, so the sweep is **unblocked** — and `effort` is
+already live at `max`, which makes the first sweep point a measurement of the status quo.
 
 **Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
 **(i)** amend S172 — its stated reason for excluding `max_rounds` is unsound (the sum-of-latency ÷
@@ -162,7 +173,8 @@ specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in 
    which is the only reason it is not urgent.
 8. **DRIFT-033** — drop `"neo4j"` from master's `external_io` declaration. One token, full CI cycle because
    it is Python; still worth bundling with the next Python chore rather than a branch of its own.
-9. **Row Q's live confirmation, still owed at the next deploy.** Expect `[OK]` on all 17 targets; any `[XX]`
+9. **Row Q's live confirmation, still owed.** 🪤 The 2026-08-12 retag went through `az`
+   image-only, not `deploy-agents.ps1`, so it did **not** supply it. Expect `[OK]` on all 17 targets; any `[XX]`
    should now be a genuine failure carrying its stderr. Item 1 is the deploy that would supply it.
 
 ## Pointers

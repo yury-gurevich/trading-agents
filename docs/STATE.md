@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-12 20:48 AEST · **Version:** 0.90.04 · **S174 local proof green: declared history crosses on RunRequest and the dispatcher image carries it.**
+**Last updated:** 2026-08-12 21:01 AEST · **Version:** 0.90.05 · **S174 local proof green: declared history crosses on RunRequest and the image/security follow-ups are fixed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -63,11 +63,14 @@ tickers × 202 bars**, XOM scored all five core indicators, and a real AAPL reco
 anomalous-ticker guard in the all-99 probe. Vocabulary pack unchanged; short-series gaps ride as
 `*_missing_bars` inside existing `Recommendation.quant_metrics`. The first post-merge image build
 exposed the slim dispatcher image missing the analyst/provider settings modules now imported by
-`orchestration.start`; `0.90.04` copies those modules and adds a Dockerfile regression test. Local
-Docker was unavailable (`Cannot connect to the Docker daemon`), so the rebuilt image smoke is a
-GitHub Actions proof item after push. Local `make ci` was green: **2235 passed / 6 skipped /
-100.00 %**, pip-audit clean, detect-secrets passed. Remote gate evidence belongs to the final
-handback after the branch SHA is pushed and proved with `make gate-ran`.
+`orchestration.start`; `0.90.04` copies those modules and adds a Dockerfile regression test. The
+first S174 remote security gate then caught a CodeQL `py/unsafe-cyclic-import` shape between
+`history_requirements.py` and `settings.py`; `0.90.05` removes the back-reference by typing the
+history helper with a structural protocol. Local Docker was unavailable (`Cannot connect to the
+Docker daemon`), so the rebuilt image smoke is a GitHub Actions proof item after push. Local
+`make ci` was green: **2235 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets
+passed. Remote gate evidence belongs to the final handback after the branch SHA is pushed and
+proved with `make gate-ran`.
 
 **The veto bound for the first time, and the fleet is current again.** Version `0.90.02` now runs
 on **all 17 deploy targets** (16 apps + `dispatcher-cron`) at tag **`s171a`**, retagged 2026-08-12 —

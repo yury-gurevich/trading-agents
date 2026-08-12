@@ -306,6 +306,13 @@ imports to stamp `RunRequest.lookback_days`. Version `0.90.04` copies those modu
 this workstation (`Cannot connect to the Docker daemon`), so container-smoke proof is deferred to
 the remote image workflow rather than asserted locally.
 
+**Security-gate follow-up:** the first pushed S174 follow-up SHA
+`8f954adf905d0d0fac38b536baf6179bafe8ef05` failed `Security Findings` because CodeQL reported
+`py/unsafe-cyclic-import` on `agents/analyst/history_requirements.py` and
+`agents/analyst/settings.py`. Version `0.90.05` removes the analyzer-visible back-reference by
+typing the history helper against a local `IndicatorHistorySettings` protocol instead of importing
+`AnalystSettings` under `TYPE_CHECKING`.
+
 **`make ci` evidence:** ran unpiped as `make ci > ci.txt 2>&1; $exit = $LASTEXITCODE; Write-Output
 $exit` from the S174 worktree; exit code `0`.
 
@@ -321,9 +328,9 @@ uv run python scripts/check_module_size.py kernel contracts agents orchestration
 uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
 uv run python scripts/check_law_coverage.py
 uv run pytest
-TOTAL                                                14519      0   3078      0  100.00%
+TOTAL                                                14532      0   3078      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 2235 passed, 6 skipped in 71.88s (0:01:11) ==================
+================= 2235 passed, 6 skipped in 77.27s (0:01:17) ==================
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files

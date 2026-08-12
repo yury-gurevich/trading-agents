@@ -5764,6 +5764,11 @@ window. Copying those settings modules into the slim dispatcher image was chosen
 history calculation into provider-owned defaults: the latter would reintroduce duplicated indicator
 policy, while the former keeps the Dockerfile aligned with the chosen contract.
 
+**Security follow-up.** The first pushed S174 follow-up failed the remote Security Findings gate
+because CodeQL reported `py/unsafe-cyclic-import` across `history_requirements.py` and
+`settings.py`. Replacing the `TYPE_CHECKING` import of `AnalystSettings` with a local structural
+protocol preserves type precision without creating an analyzer-visible cycle.
+
 **Rejected routes.**
 
 - *Put required history in the pack* - rejected because it creates a second durable place for the

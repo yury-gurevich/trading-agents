@@ -8,10 +8,41 @@ External I/O: none.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import Protocol
 
-if TYPE_CHECKING:
-    from agents.analyst.settings import AnalystSettings
+
+class IndicatorHistorySettings(Protocol):
+    """Settings fields required to declare the core indicator history window."""
+
+    @property
+    def rsi_period(self) -> int:
+        """RSI lookback period."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def macd_slow(self) -> int:
+        """MACD slow EMA span."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def macd_signal(self) -> int:
+        """MACD signal EMA span."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def bollinger_window(self) -> int:
+        """Bollinger-band SMA window."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def sma_long_period(self) -> int:
+        """Long SMA period."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    @property
+    def ema_long_period(self) -> int:
+        """Long EMA period."""
+        ...  # pragma: no cover - protocol declaration only.
 
 
 @dataclass(frozen=True)
@@ -24,7 +55,7 @@ class IndicatorRequirement:
 
 
 def momentum_indicator_requirements(
-    settings: AnalystSettings,
+    settings: IndicatorHistorySettings,
 ) -> tuple[IndicatorRequirement, ...]:
     """Return the five core momentum/trend indicators and their declared windows."""
     return (
@@ -52,7 +83,7 @@ def momentum_indicator_requirements(
     )
 
 
-def required_history_bars(settings: AnalystSettings) -> int:
+def required_history_bars(settings: IndicatorHistorySettings) -> int:
     """Return the largest bar requirement among the declared core indicators."""
     return max(
         requirement.required_bars

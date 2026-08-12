@@ -8,9 +8,18 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import TYPE_CHECKING, cast
 
-from contracts.provider import RUN_REQUEST_LABEL
+from agents.analyst.history_requirements import required_history_bars
+from agents.analyst.settings import AnalystSettings
+from agents.provider.domain.market_calendar import trading_sessions_between
+from agents.provider.settings import ProviderSettings
+from contracts.provider import (
+    RUN_REQUEST_LABEL,
+    RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
+)
 from kernel import InMemoryGraphStore
 from orchestration.start import all_passed, place_run_request, preflight
 
@@ -50,9 +59,21 @@ def test_preflight_flags_missing_source_and_empty_universe() -> None:
 
 
 def test_place_run_request_writes_trigger_node() -> None:
+    """ANLZ-IDN-01: the run trigger carries enough history for declared indicators."""
     graph = InMemoryGraphStore()
-    place_run_request(graph, run_id="r1", tickers=("AAPL", "MSFT"))
+    as_of = date(2026, 8, 11)
+    place_run_request(graph, run_id="r1", tickers=("AAPL", "MSFT"), as_of=as_of)
     node = graph.get_node(RUN_REQUEST_LABEL, "run-request:r1")
     assert node is not None
     assert list(node.props["tickers"]) == ["AAPL", "MSFT"]
     assert node.props["run_id"] == "r1"
+    lookback = int(node.props[RUN_REQUEST_LOOKBACK_DAYS_PROP])
+    required_bars = required_history_bars(AnalystSettings())
+    buffer_sessions = ProviderSettings().max_staleness_days
+    start = as_of - timedelta(days=lookback)
+    assert node.props[RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP] == required_bars
+    assert lookback > AnalystSettings().lookback_days
+    assert (
+        trading_sessions_between(start - timedelta(days=1), as_of)
+        >= required_bars + buffer_sessions
+    )

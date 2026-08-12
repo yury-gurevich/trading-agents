@@ -103,6 +103,7 @@ def ingest_chunked(
     *,
     chunk_size: int,
     delay_seconds: float,
+    lookback_days: int,
     fields: tuple[str, ...] = MARKET_FIELDS,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str | None:
@@ -116,7 +117,7 @@ def ingest_chunked(
     """
     if not universe:
         return None
-    window = _today_window()
+    window = _today_window(lookback_days)
     chunks = _chunks(universe, chunk_size)
     parts: list[MarketData] = []
     for index, chunk in enumerate(chunks):

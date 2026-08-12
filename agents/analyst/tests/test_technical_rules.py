@@ -118,6 +118,8 @@ def test_score_technical_partial_history_averages_available_only() -> None:
     assert metrics["macd_histogram"] == pytest.approx(0.059810341477100515, abs=1e-12)
     assert metrics["bollinger_position"] == pytest.approx(0.9154532910262163, abs=1e-12)
     assert metrics["nw_deviation_pct"] == pytest.approx(4.8228510175484125, abs=1e-12)
+    assert metrics["sma_distance_pct_missing_bars"] == 160.0
+    assert metrics["ema_spread_pct_missing_bars"] == 10.0
     assert raw == pytest.approx(450.0 / 11.0, abs=1e-9)
 
 
@@ -139,7 +141,8 @@ def test_momentum_scores_use_macd_line_for_macd_score(
 def test_score_technical_neutral_when_no_indicator_available() -> None:
     # Two bars is below every window (RSI-2 alone needs three closes), so the
     # composite fully degrades to the neutral 50 with no indicators available.
-    assert rules.score_technical(_ramp_bars(2), AnalystSettings()) == (
-        50.0,
-        {"indicators_available": 0.0},
-    )
+    raw, metrics = rules.score_technical(_ramp_bars(2), AnalystSettings())
+    assert raw == 50.0
+    assert metrics["indicators_available"] == 0.0
+    assert metrics["rsi_missing_bars"] == 13.0
+    assert metrics["macd_histogram_missing_bars"] == 33.0

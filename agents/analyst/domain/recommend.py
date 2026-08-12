@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from agents.analyst.domain.recommend_summary import buy_summary
 from agents.analyst.domain.recommend_text import held_recommendation_context
 from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
 from agents.analyst.domain.stop_target import resolve_stop_target
@@ -95,11 +96,7 @@ def decide(
             ),
             sentiment_reading=reading,
         )
-    summary = (
-        f"{candidate.ticker} cleared the {regime.label} confidence "
-        "gate on its composite technical score (RSI, MACD, Bollinger, "
-        "SMA-200 distance, and EMA crossover)."
-    )
+    summary = buy_summary(candidate, score, regime, settings)
     evidence_refs: tuple[str, ...] = (
         "analyst.technical_score",
         "provider.market_data",

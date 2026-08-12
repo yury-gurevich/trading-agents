@@ -28,6 +28,8 @@ from contracts.provider import (
 )
 from kernel import InMemoryGraphStore, InProcessBus
 
+_TEST_LOOKBACK_DAYS = 30
+
 if TYPE_CHECKING:
     import pytest
 
@@ -69,34 +71,27 @@ def test_today_window_span_is_lookback_days() -> None:
     assert window.start == today - timedelta(days=30)
 
 
-def test_today_window_default_span() -> None:
-    today = datetime.now(tz=UTC).date()
-    window = _today_window()
-    assert window.end == today
-    assert window.start == today - timedelta(days=60)
-
-
 def test_ingest_once_noop_on_empty_universe() -> None:
     agent = _make_agent()
-    ingest_once(agent, ())
+    ingest_once(agent, (), lookback_days=_TEST_LOOKBACK_DAYS)
     assert agent._graph.list_nodes("MarketSnapshot") == ()
 
 
 def test_ingest_once_writes_market_snapshot_to_graph() -> None:
     agent = _make_agent()
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     assert len(agent._graph.list_nodes("MarketSnapshot")) == 1
 
 
 def test_ingest_once_writes_regime_to_graph() -> None:
     agent = _make_agent()
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     assert len(agent._graph.list_nodes("Regime")) == 1
 
 
 def test_ingest_once_writes_full_market_data_node() -> None:
     agent = _make_agent()
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     nodes = agent._graph.list_nodes(MARKET_DATA_LABEL)
     assert len(nodes) == 1
     assert list(nodes[0].props["tickers"]) == ["AAPL"]
@@ -106,7 +101,7 @@ def test_ingest_once_writes_full_market_data_node() -> None:
 
 def test_ingest_once_writes_full_regime_context_node() -> None:
     agent = _make_agent()
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     nodes = agent._graph.list_nodes(REGIME_CONTEXT_LABEL)
     assert len(nodes) == 1
     assert "snapshot" in nodes[0].props
@@ -157,7 +152,7 @@ def _snapshot(agent: ProviderAgent) -> MarketData:
 def test_ingest_full_mode_populates_enrichment() -> None:
     """Baseline: the default ingest requests + persists the optional pillars."""
     agent = _agent_with(_enriching_source(), ProviderSettings())
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     market = _snapshot(agent)
     assert market.bars  # OHLCV delivered
     assert market.sectors == {"AAPL": "Tech"}
@@ -168,7 +163,7 @@ def test_ingest_ohlcv_only_skips_enrichment_keeps_bars() -> None:
     """DL-29: OHLCV-only ingest delivers bars but no enrichment, even when the
     source could provide it — the cost the acceptance gate doesn't need is not paid."""
     agent = _agent_with(_enriching_source(), ProviderSettings(ingest_ohlcv_only=True))
-    ingest_once(agent, ("AAPL",))
+    ingest_once(agent, ("AAPL",), lookback_days=_TEST_LOOKBACK_DAYS)
     market = _snapshot(agent)
     assert market.bars  # OHLCV still delivered
     assert market.sectors == {}  # enrichment skipped

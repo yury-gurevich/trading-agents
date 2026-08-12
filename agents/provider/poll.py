@@ -10,11 +10,18 @@ External I/O: delegates to ProviderAgent which calls the injected DataSource.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from agents.provider.domain.market_calendar import trading_sessions_between
 from agents.provider.ingest import ingest_once
 from contracts.positions import open_position_tickers
-from contracts.provider import MARKET_DATA_LABEL, RUN_REQUEST_LABEL
+from contracts.provider import (
+    MARKET_DATA_LABEL,
+    RUN_REQUEST_LABEL,
+    RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
+)
 
 if TYPE_CHECKING:
     from agents.provider.agent import ProviderAgent
@@ -42,6 +49,7 @@ def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
         agent,
         _union(tickers, open_position_tickers(agent._graph)),
         run_id=str(node.props["run_id"]),
+        lookback_days=_lookback_days(node),
     )
     assert market_key is not None  # the dispatcher always places a non-empty universe
     market_node = agent._graph.get_node(MARKET_DATA_LABEL, market_key)
@@ -51,3 +59,27 @@ def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
 
 def _union(left: tuple[str, ...], right: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(dict.fromkeys((*left, *right)))
+
+
+def _lookback_days(node: Node) -> int:
+    raw = node.props.get(RUN_REQUEST_LOOKBACK_DAYS_PROP)
+    required = node.props.get(RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP)
+    if (
+        not isinstance(raw, int)
+        or raw < 1
+        or not isinstance(required, int)
+        or required < 1
+    ):
+        raise ValueError(
+            "RunRequest.lookback_days and required_history_bars must be positive "
+            "integers"
+        )
+    if _covered_sessions(raw) < required:
+        raise ValueError("RunRequest.lookback_days does not cover required history")
+    return raw
+
+
+def _covered_sessions(lookback_days: int) -> int:
+    end = datetime.now(tz=UTC).date()
+    start = end - timedelta(days=lookback_days)
+    return trading_sessions_between(start - timedelta(days=1), end)

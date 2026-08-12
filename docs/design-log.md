@@ -5736,3 +5736,42 @@ the entire point of the tag is that *being behind* is visible **at a glance**.
   `s171a` tells an operator where they are without a lookup.
 
 ---
+
+## DL-107 - S174 carries declared indicator history on the RunRequest - status: DECIDED (2026-08-12)
+
+**Decision.** The dispatcher stamps `RunRequest.lookback_days` from the analyst's declared
+indicator settings, plus `RunRequest.required_history_bars` from the same declarations. The
+calendar window is derived from the NYSE session calendar for the run date, plus the provider's
+existing `max_staleness_days` session buffer, so the value is large enough to contain the declared
+bar count even when today's daily bar is not yet published. It is not a copy of the old 260-day
+analyst lookback. The provider graph-pull path refuses to ingest a run request whose stamped
+lookback cannot cover the stamped bar requirement.
+
+This keeps the cross-agent contract on the existing typed queue item: the dispatcher already chooses
+the run universe, the provider already reads the run request, and the analyst's settings remain the
+single source that declares the indicator windows. The route is still the recommended RunRequest
+carrier; the self-maintaining calculation is local to the dispatcher so the provider does not import
+analyst policy.
+
+Short-history evidence rides inside the existing `Recommendation.quant_metrics` map as
+`*_missing_bars` entries. `Recommendation.quant_metrics` is already in the vocabulary pack's
+property allow-list, so S174 does not add a new top-level `Recommendation` property and does not
+move the pack.
+
+**Rejected routes.**
+
+- *Put required history in the pack* - rejected because it creates a second durable place for the
+  same number. The pack should validate graph shape, not become a copy of analyst indicator policy.
+- *Add a provider `tunable()` set to 260* - rejected because it duplicates the analyst value by
+  construction. It would fix today's SMA-200 miss while preserving the drift mechanism that caused
+  the bug.
+- *Have the provider derive lookback from the largest indicator period* - rejected because the
+  provider does not own indicator policy. The dispatcher can perform the session-calendar
+  calculation before the run crosses the agent boundary; provider-side derivation would either
+  import analyst code or recreate analyst policy in provider.
+- *Add a new top-level `Recommendation` property for missing indicators* - rejected because
+  `Recommendation` is property-enforced. That would move
+  `orchestration/packs/trading_graph_vocabulary.json` and force a full deploy path still blocked by
+  the S169 operator-env gap.
+
+---

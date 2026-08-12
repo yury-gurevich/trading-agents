@@ -14,7 +14,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from contracts.provider import RUN_REQUEST_LABEL
+from agents.analyst.history_requirements import required_history_bars
+from agents.analyst.settings import AnalystSettings
+from agents.provider.settings import ProviderSettings
+from contracts.provider import (
+    RUN_REQUEST_LABEL,
+    RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
+)
+from orchestration.history_window import declared_lookback_days
 
 if TYPE_CHECKING:
     from datetime import date
@@ -57,9 +65,17 @@ def place_run_request(
     run_id: str,
     tickers: tuple[str, ...],
     as_of: date | None = None,
+    lookback_days: int | None = None,
 ) -> Node:
     """Write the single RunRequest node that triggers a run (the provider polls it)."""
     requested = as_of or datetime.now(tz=UTC).date()
+    settings = AnalystSettings()
+    provider_settings = ProviderSettings()
+    active_lookback = lookback_days or declared_lookback_days(
+        settings,
+        as_of=requested,
+        staleness_buffer_sessions=provider_settings.max_staleness_days,
+    )
     return graph.merge_node(
         RUN_REQUEST_LABEL,
         f"run-request:{run_id}",
@@ -67,6 +83,8 @@ def place_run_request(
             "run_id": run_id,
             "tickers": list(tickers),
             "requested_at": requested.isoformat(),
+            RUN_REQUEST_LOOKBACK_DAYS_PROP: active_lookback,
+            RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: required_history_bars(settings),
         },
     )
 

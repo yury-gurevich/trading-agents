@@ -190,6 +190,8 @@ def test_explain_recommendation_returns_grounded_explanation() -> None:
 
     assert response.message_type == "response"
     assert "Analyst confidence blends" in response.payload["summary"]
+    assert "SMA-200" not in response.payload["summary"]
+    assert "EMA crossover" not in response.payload["summary"]
     assert response.payload["evidence_refs"] == [
         "analyst.technical_score",
         "provider.regime",

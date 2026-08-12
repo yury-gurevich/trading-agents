@@ -170,11 +170,160 @@ WHEN TO STOP AND ASK
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: files changed, the route
-     chosen and the routes rejected (with the design-log entry), before/after bars per ticker
-     measured off the graph, the before/after scored-indicator list for one named ticker, proof that
-     sma_distance_pct and ema_spread_pct appear in a real recommendation, the MarketData node size
-     and ingest duration before and after, whether the vocabulary pack moved (and if so, that you
-     stopped), the exact `make ci` summary (unpiped, redirected to a file), and `make gate-ran`
-     output for the final tip. Do not merge until every success factor is answered with a
-     measurement. -->
+**Result:** implemented on branch `sprint-174-an-indicator-gets-the-history-it-declares`.
+
+**Files changed:** `agents/analyst/history_requirements.py`,
+`agents/analyst/domain/recommend_summary.py`, `orchestration/history_window.py`,
+`orchestration/tests/test_history_window.py`, plus focused edits in
+`agents/analyst/{agent.py,settings.py,domain/recommend.py,domain/technical_rules.py}`,
+`agents/provider/{ingest.py,ingest_chunked.py,poll.py}`,
+`contracts/provider.py`, `orchestration/start.py`, matching tests, `docs/design-log.md`,
+`docs/STATE.md`, `pyproject.toml`, and `uv.lock`.
+
+**Route chosen:** [DL-107](../design-log.md#dl-107---s174-carries-declared-indicator-history-on-the-runrequest---status-decided-2026-08-12)
+uses `RunRequest.lookback_days` plus `RunRequest.required_history_bars`. The dispatcher derives the
+calendar lookback from analyst-declared bar requirements and the NYSE session calendar, with the
+provider `max_staleness_days` buffer so a same-day unpublished bar does not drop the retained series
+below the required bar count. The provider graph-pull path rejects missing, non-positive, or too
+short declarations before ingest.
+
+**Routes rejected:** pack-level history was rejected because it would duplicate analyst policy;
+provider-owned `tunable(260)` was rejected because it recreates the drift bug; provider-side
+derivation was rejected because provider does not own indicator policy; a new top-level
+`Recommendation` property for missing indicators was rejected because `Recommendation` is
+property-enforced. Short-series evidence is carried inside existing `Recommendation.quant_metrics`
+as `*_missing_bars`.
+
+**Before measurement, production graph (`sched-2026-08-11`):**
+
+```text
+before_run_id=sched-2026-08-11
+before_tickers=99
+before_total_bars=4059
+before_bars_min=41
+before_bars_max=41
+before_snapshot_json_bytes=635151
+before_ingest_duration_recorded=False
+before_named_ticker=XOM
+before_named_bars=41
+before_named_scored=rsi,macd_histogram,bollinger_position
+before_named_missing=sma_distance_pct,ema_spread_pct
+```
+
+The graph node had no ingest-duration property, so production before duration is **not recorded**.
+For an apples-to-apples local live-source graph probe of the same 60-day OHLCV window:
+
+```text
+local_before_60d_duration_seconds=2.037
+local_before_60d_total_bars=3960
+local_before_60d_bars_min=40
+local_before_60d_bars_max=40
+local_before_60d_snapshot_json_bytes=447617
+local_before_60d_alpaca_pages=1
+```
+
+**After measurement, local live-source graph probe:** no live production work item was enqueued,
+because an unscanned `MarketData` node is consumed by the deployed graph-pull fleet. The probe used
+`InMemoryGraphStore` plus the live Alpaca OHLCV source and the same provider/analyst contracts.
+
+```text
+after_as_of=2026-08-12
+after_lookback_days=295
+after_duration_seconds=5.381
+after_total_bars=19796
+after_bars_min=0
+after_bars_max=202
+after_snapshot_json_bytes=2231143
+after_alpaca_pages=2
+after_quality_used_fallback=False
+after_quality_notes=
+after_named_ticker=XOM
+after_named_bars=202
+after_named_scored=rsi,macd_histogram,bollinger_position,sma_distance_pct,ema_spread_pct
+after_named_missing=
+after_recommendations=60
+after_rejections=39
+after_real_rec_ticker=AAPL
+after_real_rec_metrics=bollinger_position,ema_spread_pct,macd_histogram,rsi,sma_distance_pct
+after_real_rec_summary=AAPL cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover).
+after_rationale_ok=True
+```
+
+The all-99 after probe retained 98 tickers: `CHTR` was excluded by the existing anomalous-ticker
+guard, not by short history:
+
+```text
+lookback_days=295
+requested=99
+total_bars=19796
+bars_min=0
+bars_max=202
+zeros=CHTR
+short=
+quality_requested=99
+quality_returned=98
+quality_used_fallback=False
+quality_anomalous=CHTR
+```
+
+A clean retained-universe probe excluding that anomalous ticker proved `>= 200` bars per ticker:
+
+```text
+clean_after_tickers=98
+clean_after_lookback_days=295
+clean_after_duration_seconds=5.519
+clean_after_total_bars=19796
+clean_after_bars_min=202
+clean_after_bars_max=202
+clean_after_snapshot_json_bytes=2231137
+clean_after_alpaca_pages=2
+clean_after_quality_used_fallback=False
+clean_after_quality_anomalous=
+clean_after_recommendations=60
+clean_after_rejections=38
+clean_after_real_rec_ticker=AAPL
+clean_after_real_rec_metrics=bollinger_position,ema_spread_pct,macd_histogram,rsi,sma_distance_pct
+clean_after_real_rec_summary=AAPL cleared the neutral confidence gate on its composite technical score (RSI, MACD, Bollinger, SMA-200 distance, and EMA crossover).
+clean_after_rationale_ok=True
+```
+
+**Vocabulary pack:** did **not** move. `orchestration/packs/trading_graph_vocabulary.json` is
+unchanged. The verified pack assumption holds because `Recommendation.quant_metrics` is already an
+allowed property; no new top-level `Recommendation` property was added.
+
+**Vendor/limit measurement:** Alpaca OHLCV pages changed from 1 page for the 60-day probe to 2 pages
+for the 295-day S174 probe. Tiingo fallback was not called because Alpaca succeeded. Full Finnhub/AV
+enrichment was not remeasured in the after probe; the safe proof intentionally used OHLCV-only to
+avoid injecting live work or spending per-ticker enrichment quota. That unmeasured part is called out
+here rather than assumed.
+
+**`make ci` evidence:** ran unpiped as `make ci > ci.txt 2>&1; $exit = $LASTEXITCODE; Write-Output
+$exit` from the S174 worktree; exit code `0`.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+973 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 802 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run pytest
+TOTAL                                                14519      0   3078      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2234 passed, 6 skipped in 70.80s (0:01:10) ==================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 5 new file(s)
+```
+
+**Remote gate:** `make gate-ran` must be run after the final commit is pushed from the worktree
+whose `HEAD` is being proved. Its output is intentionally not pre-pasted into this committed
+closeout, because editing this file after the gate would change the SHA the gate proved.

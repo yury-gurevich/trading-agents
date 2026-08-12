@@ -32,10 +32,10 @@ from contracts.provider import (
 from kernel import InMemoryGraphStore, InProcessBus
 
 _UNIVERSE = ("AAA", "BBB", "CCC", "DDD", "EEE")
+_TEST_LOOKBACK_DAYS = 30
 
 
 def _bar(ticker: str, days_ago: int) -> OHLCVBar:
-    # Recent dates so bars fall inside ingest's rolling _today_window().
     return OHLCVBar(
         ticker=ticker,
         bar_date=datetime.now(tz=UTC).date() - timedelta(days=days_ago),
@@ -80,7 +80,11 @@ def test_chunks_splits_into_consecutive_subbatches() -> None:
 
 def _part_with_notes(agent: ProviderAgent, notes: tuple[str, ...]) -> MarketData:
     base = agent._get_market_data(
-        DataRequest(tickers=_UNIVERSE, window=_today_window(), fields=MARKET_FIELDS)
+        DataRequest(
+            tickers=_UNIVERSE,
+            window=_today_window(_TEST_LOOKBACK_DAYS),
+            fields=MARKET_FIELDS,
+        )
     )
     return base.model_copy(
         update={"quality": base.quality.model_copy(update={"notes": notes})}
@@ -106,16 +110,12 @@ def test_optional_notes_keeps_only_degraded() -> None:
 def test_merge_parts_revalidates_full_batch_dropping_per_chunk_ohlcv_notes() -> None:
     graph = InMemoryGraphStore()
     agent = _agent(graph)
-    window = _today_window()
-    # per-chunk quality carries an OHLCV-side note + a real optional fault
+    window = _today_window(_TEST_LOOKBACK_DAYS)
     part = _part_with_notes(
         agent, ("inconsistent_ohlcv_rejected", "news_degraded:1:AAPL:429")
     )
     merged = _merge_parts(agent, (part,), _UNIVERSE, window)
-    # OHLCV recomputed on the full (clean) batch -> spurious per-chunk note gone
     assert "inconsistent_ohlcv_rejected" not in merged.quality.notes
-    # the real optional-field fault is carried over as a NOTE, but no longer taints
-    # the batch (DRIFT-012); the recomputed OHLCV is clean, so used_fallback is False
     assert "news_degraded:1:AAPL:429" in merged.quality.notes
     assert merged.quality.used_fallback is False
 
@@ -131,28 +131,33 @@ def test_ingest_chunked_paces_and_reassembles_one_batch() -> None:
         "run-1",
         chunk_size=2,
         delay_seconds=7.0,
+        lookback_days=_TEST_LOOKBACK_DAYS,
         sleep=slept.append,
     )
 
-    # 3 chunks -> 2 inter-chunk pauses of the configured delay.
     assert slept == [7.0, 7.0]
     batch = graph.list_nodes(MARKET_DATA_LABEL)
     assert key == f"market-data:{batch[0].props['run_id']}"
     assert key == "market-data:run-1"
-    # One reassembled MarketData batch over the full universe.
     assert len(batch) == 1
     assert sorted(batch[0].props["tickers"]) == sorted(_UNIVERSE)
     snapshot = batch[0].props["snapshot"]
     assert {b["ticker"] for b in snapshot["bars"]} == set(_UNIVERSE)
     assert set(snapshot["fundamentals"]) == set(_UNIVERSE)
-    # 3 per-chunk parts + 1 reassembled batch snapshot.
     assert len(graph.list_nodes("MarketSnapshot")) == 4
 
 
 def test_ingest_chunked_empty_universe_is_noop() -> None:
     graph = InMemoryGraphStore()
     assert (
-        ingest_chunked(_agent(graph), (), "run-1", chunk_size=2, delay_seconds=1.0)
+        ingest_chunked(
+            _agent(graph),
+            (),
+            "run-1",
+            chunk_size=2,
+            delay_seconds=1.0,
+            lookback_days=_TEST_LOOKBACK_DAYS,
+        )
         is None
     )
     assert graph.list_nodes(MARKET_DATA_LABEL) == ()
@@ -169,22 +174,25 @@ def test_merge_parts_keeps_first_non_empty_benchmark() -> None:
         )
     )
     with_bench = base.model_copy(update={"benchmark": (_bar("SPY", 1),)})
-    merged = _merge_parts(agent, (base, with_bench), _UNIVERSE, _today_window())
+    merged = _merge_parts(
+        agent,
+        (base, with_bench),
+        _UNIVERSE,
+        _today_window(_TEST_LOOKBACK_DAYS),
+    )
     assert merged.benchmark[0].ticker == "SPY"
 
 
 def test_ingest_once_dispatches_to_chunked_when_configured() -> None:
     graph = InMemoryGraphStore()
     agent = _agent(graph, chunk_size=2, chunk_delay=0.0)
-    key = ingest_once(agent, _UNIVERSE)
+    key = ingest_once(agent, _UNIVERSE, lookback_days=_TEST_LOOKBACK_DAYS)
     assert key is not None
-    # Chunked path wrote multiple MarketSnapshot parts (3 chunks) + 1 batch.
     assert len(graph.list_nodes("MarketSnapshot")) == 4
 
 
 def test_ingest_once_single_shot_when_chunking_disabled() -> None:
     graph = InMemoryGraphStore()
     agent = _agent(graph, chunk_size=0)
-    ingest_once(agent, _UNIVERSE)
-    # Single-shot path: exactly one MarketSnapshot for the whole universe.
+    ingest_once(agent, _UNIVERSE, lookback_days=_TEST_LOOKBACK_DAYS)
     assert len(graph.list_nodes("MarketSnapshot")) == 1

@@ -88,6 +88,8 @@ REGIME_CONTEXT_LABEL = "RegimeContext"
 # queue"); the provider polls it (DL-08) and ingests, so the provider is graph-pull
 # like every other agent and the dispatcher is the single trigger source.
 RUN_REQUEST_LABEL = "RunRequest"
+RUN_REQUEST_LOOKBACK_DAYS_PROP = "lookback_days"
+RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP = "required_history_bars"
 
 
 class RegimeContext(_Frozen):

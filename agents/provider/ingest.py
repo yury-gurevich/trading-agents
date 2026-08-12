@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from contracts.provider import MarketData, RegimeContext
     from kernel import GraphStore
 
-_DEFAULT_LOOKBACK_DAYS = 60
 MARKET_FIELDS = ("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar")
 
 
@@ -52,7 +51,7 @@ def universe_from_env() -> tuple[str, ...]:
     return tuple(t.strip().upper() for t in raw.split(",") if t.strip())
 
 
-def _today_window(lookback_days: int = _DEFAULT_LOOKBACK_DAYS) -> Window:
+def _today_window(lookback_days: int) -> Window:
     """Return a Window from (today - lookback_days) to today."""
     today = datetime.now(tz=UTC).date()
     return Window(start=today - timedelta(days=lookback_days), end=today)
@@ -113,7 +112,11 @@ def _with_cached_sectors(
 
 
 def ingest_once(
-    agent: ProviderAgent, universe: tuple[str, ...], run_id: str | None = None
+    agent: ProviderAgent,
+    universe: tuple[str, ...],
+    run_id: str | None = None,
+    *,
+    lookback_days: int,
 ) -> str | None:
     """Fetch all data fields for *universe*, write them to the graph, return the key.
 
@@ -139,8 +142,9 @@ def ingest_once(
             chunk_size=chunk_size,
             delay_seconds=agent._settings.ingest_chunk_delay_seconds,
             fields=fields,
+            lookback_days=lookback_days,
         )
-    window = _today_window()
+    window = _today_window(lookback_days)
     market_request = DataRequest(
         tickers=universe,
         window=window,

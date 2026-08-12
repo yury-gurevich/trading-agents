@@ -12,6 +12,7 @@ from typing import Literal, Self
 from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
 
+from agents.analyst.history_requirements import required_history_bars
 from agents.analyst.settings_indicators import _IndicatorSettings
 from kernel import tunable
 
@@ -35,7 +36,10 @@ class AnalystSettings(_IndicatorSettings):
     )
     min_history_bars: int = tunable(
         2,
-        why="At least two closes are required before any indicator is meaningful.",
+        why=(
+            "Absolute lower bound only: enough for a price direction, while "
+            "per-indicator history gaps are visible as *_missing_bars metrics."
+        ),
         ge=2,
         le=60,
         unit="bars",
@@ -175,4 +179,8 @@ class AnalystSettings(_IndicatorSettings):
             raise ValueError("ema_short_period must be below ema_long_period")
         if self.scaled_stop_floor_pct > self.scaled_stop_ceiling_pct:
             raise ValueError("scaled_stop_floor_pct must be <= scaled_stop_ceiling_pct")
+        if self.lookback_days < required_history_bars(self):
+            raise ValueError(
+                "lookback_days must cover the largest declared indicator period"
+            )
         return self

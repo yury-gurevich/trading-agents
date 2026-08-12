@@ -13,6 +13,7 @@ from agents.analyst.domain import indicators
 from agents.analyst.domain.technical_rules_event import event_indicator_scores
 from agents.analyst.domain.technical_rules_pattern import pattern_indicator_scores
 from agents.analyst.domain.technical_rules_range import range_indicator_scores
+from agents.analyst.history_requirements import momentum_indicator_requirements
 
 if TYPE_CHECKING:
     from agents.analyst.settings import AnalystSettings
@@ -112,10 +113,25 @@ def score_technical(
     for name, value, score in triples:
         metrics[name], metrics[f"{name}_score"] = value, score
         sub_scores.append(score)
+    _record_missing_momentum(metrics, len(closes), settings)
     if not sub_scores:
-        return _NEUTRAL, {"indicators_available": 0.0}
+        metrics["indicators_available"] = 0.0
+        return _NEUTRAL, metrics
     metrics["indicators_available"] = float(len(sub_scores))
     return sum(sub_scores) / len(sub_scores), metrics
+
+
+def _record_missing_momentum(
+    metrics: dict[str, float], available_bars: int, settings: AnalystSettings
+) -> None:
+    """Record core indicators that could not score because the series was short."""
+    for requirement in momentum_indicator_requirements(settings):
+        if (
+            requirement.metric_name not in metrics
+            and available_bars < requirement.required_bars
+        ):
+            missing = requirement.required_bars - available_bars
+            metrics[f"{requirement.metric_name}_missing_bars"] = float(missing)
 
 
 def _momentum_scores(

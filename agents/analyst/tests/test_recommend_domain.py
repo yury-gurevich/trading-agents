@@ -68,6 +68,45 @@ def test_decide_emits_exact_recommendation_payload_contract() -> None:
     assert rec.exit_trigger is None
 
 
+def test_buy_rationale_names_only_scored_indicators() -> None:
+    """ANLZ-OBS-01: rendered rationale follows scored metrics, not configuration."""
+    score = ScoreBreakdown(
+        technical_score=0.72,
+        confidence=0.81,
+        metrics={
+            "rsi": 55.0,
+            "macd_histogram": 0.2,
+            "bollinger_position": 0.4,
+            "sma_distance_pct_missing_bars": 159.0,
+            "ema_spread_pct_missing_bars": 9.0,
+        },
+    )
+
+    decision = decide(candidate("AAPL"), score, _regime())
+
+    assert decision.recommendation is not None
+    summary = decision.recommendation.rationale.summary
+    assert "RSI, MACD, and Bollinger" in summary
+    assert "SMA-200" not in summary
+    assert "EMA crossover" not in summary
+
+
+def test_buy_rationale_names_single_scored_indicator() -> None:
+    """ANLZ-OBS-01: one scored indicator renders without configured extras."""
+    score = ScoreBreakdown(
+        technical_score=0.72,
+        confidence=0.81,
+        metrics={"rsi": 55.0},
+    )
+
+    decision = decide(candidate("AAPL"), score, _regime())
+
+    assert decision.recommendation is not None
+    summary = decision.recommendation.rationale.summary
+    assert "(RSI)" in summary
+    assert "MACD" not in summary
+
+
 def test_decide_forces_stop_sell_even_above_exit_floor() -> None:
     score = ScoreBreakdown(technical_score=0.72, confidence=0.81, metrics={})
 

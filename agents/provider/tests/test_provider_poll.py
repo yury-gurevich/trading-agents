@@ -10,10 +10,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from agents.provider import ProviderAgent
 from agents.provider.poll import find_pending, ingest_run_node
 from agents.provider.sources import FakeDataSource
-from contracts.provider import MARKET_DATA_LABEL, RUN_REQUEST_LABEL
+from contracts.provider import (
+    MARKET_DATA_LABEL,
+    RUN_REQUEST_LABEL,
+    RUN_REQUEST_LOOKBACK_DAYS_PROP,
+    RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
+)
 from kernel import InMemoryGraphStore, InProcessBus
 
 if TYPE_CHECKING:
@@ -26,7 +33,14 @@ def _agent(graph: InMemoryGraphStore) -> ProviderAgent:
 
 def _run_request(graph: InMemoryGraphStore, tickers: tuple[str, ...]) -> Node:
     return graph.merge_node(
-        RUN_REQUEST_LABEL, "run-request:r1", {"run_id": "r1", "tickers": list(tickers)}
+        RUN_REQUEST_LABEL,
+        "run-request:r1",
+        {
+            "run_id": "r1",
+            "tickers": list(tickers),
+            RUN_REQUEST_LOOKBACK_DAYS_PROP: 365,
+            RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: 200,
+        },
     )
 
 
@@ -47,3 +61,34 @@ def test_ingest_run_node_writes_market_data_and_marks_processed() -> None:
     ingest_run_node(node, agent=agent)
     assert len(graph.list_nodes(MARKET_DATA_LABEL)) == 1
     assert find_pending(graph) == []
+
+
+def test_ingest_run_node_requires_declared_lookback() -> None:
+    """PROV-OUT-03: absent history metadata is a visible provider rejection."""
+    graph = InMemoryGraphStore()
+    agent = _agent(graph)
+    node = graph.merge_node(
+        RUN_REQUEST_LABEL, "run-request:r1", {"run_id": "r1", "tickers": ["AAPL"]}
+    )
+
+    with pytest.raises(ValueError, match="lookback_days"):
+        ingest_run_node(node, agent=agent)
+
+
+def test_ingest_run_node_rejects_short_declared_lookback() -> None:
+    """PROV-OUT-03: a run request cannot declare fewer sessions than needed."""
+    graph = InMemoryGraphStore()
+    agent = _agent(graph)
+    node = graph.merge_node(
+        RUN_REQUEST_LABEL,
+        "run-request:r1",
+        {
+            "run_id": "r1",
+            "tickers": ["AAPL"],
+            RUN_REQUEST_LOOKBACK_DAYS_PROP: 1,
+            RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: 200,
+        },
+    )
+
+    with pytest.raises(ValueError, match="required history"):
+        ingest_run_node(node, agent=agent)

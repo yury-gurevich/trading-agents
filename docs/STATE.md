@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-12 18:05 AEST · **Version:** 0.90.02 · **The veto bound for the first time: on `sched-2026-08-11` a `revise` verdict reached execution 118 s after the PM run and stopped the day's only buy — `deliberation_status='applied'`, 0 submitted.**
+**Last updated:** 2026-08-12 20:02 AEST · **Version:** 0.90.03 · **S174 local proof green: declared indicator history now crosses on RunRequest and skipped inputs are visible.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -51,6 +51,19 @@ Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
+
+**S174 local result — graph-pull history now follows declared indicator depth.** The dispatcher
+stamps `RunRequest.lookback_days` plus `required_history_bars` from analyst indicator settings and
+the NYSE session calendar; provider refuses missing/too-short history declarations. The old
+production node `sched-2026-08-11` had **99 tickers × 41 bars** and XOM scored only
+`rsi,macd_histogram,bollinger_position`, with `sma_distance_pct`/`ema_spread_pct` absent. The S174
+live-source local graph probe used a **295-day** request; the clean retained universe had **98
+tickers × 202 bars**, XOM scored all five core indicators, and a real AAPL recommendation carried
+`sma_distance_pct` and `ema_spread_pct` in `quant_metrics`. `CHTR` was excluded by the existing
+anomalous-ticker guard in the all-99 probe. Vocabulary pack unchanged; short-series gaps ride as
+`*_missing_bars` inside existing `Recommendation.quant_metrics`. Local `make ci` was green:
+**2234 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets passed. Pending after
+commit: push branch and run `make gate-ran` from the S174 worktree against the final SHA.
 
 **The veto bound for the first time, and the fleet is current again.** Version `0.90.02` now runs
 on **all 17 deploy targets** (16 apps + `dispatcher-cron`) at tag **`s171a`**, retagged 2026-08-12 —

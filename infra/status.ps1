@@ -145,13 +145,23 @@ function Show-Board {
   $nameLengths = @(@($apps).name) + @($JobName) |
     Where-Object { $_ } | ForEach-Object { "$_".Length }
   $appW = [Math]::Max(19, (($nameLengths | Measure-Object -Maximum).Maximum + 2))
-  Write-Host ("    {0,-$appW}{1,-11}{2,-7}{3}{4,-8}{5}" -f
+  # Same rule for DEPLOY and IMAGE, and for the same reason: a literal width is a
+  # guess about data that changes. `v0.90.02` is 8 characters and ran straight into
+  # the PODS column under the old hardcoded 7, rendering `v0.90.020` - an image tag
+  # and a replica count fused into one unreadable token (2026-08-12).
+  $tagLengths = @(@($apps).image | ForEach-Object { (& $tag $_) }) + @(& $tag $jobInfo.image) |
+    Where-Object { $_ } | ForEach-Object { "$_".Length }
+  $imgW = [Math]::Max(7, (($tagLengths | Measure-Object -Maximum).Maximum + 2))
+  $stateLengths = @(@($apps).state) + @('job') |
+    Where-Object { $_ } | ForEach-Object { "$_".Length }
+  $depW = [Math]::Max(11, (($stateLengths | Measure-Object -Maximum).Maximum + 2))
+  Write-Host ("    {0,-$appW}{1,-$depW}{2,-$imgW}{3}{4,-8}{5}" -f
     'APP', 'DEPLOY', 'IMAGE', $podHead, 'POWER', 'WAKE (UTC)') -ForegroundColor DarkGray
   foreach ($a in @($apps) | Sort-Object name) {
     $c = if ($a.state -eq 'Succeeded') { 'Green' } else { 'Red' }
     Write-Host ("    {0,-$appW}" -f $a.name) -NoNewline
-    Write-Host ("{0,-11}" -f $a.state) -ForegroundColor $c -NoNewline
-    Write-Host ("{0,-7}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
+    Write-Host ("{0,-$depW}" -f $a.state) -ForegroundColor $c -NoNewline
+    Write-Host ("{0,-$imgW}" -f (& $tag $a.image)) -ForegroundColor DarkGray -NoNewline
     $inWin = Test-InWindow $a.winStart $a.winEnd
     if ($Replicas) {
       $n = Get-ReplicaCount $a.name
@@ -172,7 +182,7 @@ function Show-Board {
   }
   if ($jobInfo) {
     $jc = if ($jobInfo.image) { 'DarkGray' } else { 'Red' }
-    Write-Host ("    {0,-$appW}{1,-11}{2,-7}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor $jc
+    Write-Host ("    {0,-$appW}{1,-$depW}{2,-$imgW}" -f $JobName, 'job', (& $tag $jobInfo.image)) -ForegroundColor $jc
   }
   Write-Host ""
   return $problems.Count

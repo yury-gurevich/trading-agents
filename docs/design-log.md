@@ -5391,7 +5391,7 @@ receives.
 
 ---
 
-## DL-102 · The veto pairs a request with whatever reply is at the head of the queue · status: OPEN (mitigated 2026-08-08, not fixed)
+## DL-102 · The veto pairs a request with whatever reply is at the head of the queue · status: FIXED (S171, `0.90.01`, 2026-08-08 — correlation shipped and proven on cold peers)
 
 **Measured on the deployed fleet**, `check-s169-openai-cutover`, 2026-08-08. The OpenAI cutover was
 working — the proponent made **18 real `gpt-5.5` completions** and `role_models` correctly recorded

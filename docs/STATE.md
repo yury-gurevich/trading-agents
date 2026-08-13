@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-13 19:05 AEST · **Version:** 0.90.08 · **S175 removes the invented ATR veto wording and makes fail-open submissions visible without changing the fail-open posture or moving the vocabulary pack.**
+**Last updated:** 2026-08-13 19:05 AEST · **Version:** 0.90.08 · **S174 is proven in production and S175 is merged but undeployed — the fleet sits one PATCH behind on purpose, so tomorrow's run stays a clean single-variable readout for the 60 s peer timeout.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -52,66 +52,50 @@ Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-
 
 ## Now
 
-**S175 branch proof complete locally; remote branch gate is the post-commit merge gate.** Worktree:
-`C:\Users\yury_\Downloads\project\trading-agents-s175`, branch
-`sprint-175-the-veto-says-only-what-it-can-prove`, version `0.90.08`. The PM packet no longer
-renders the invented `stop_pct vs ATR% -> PASSED/FAILED` comparison, and the AMD replay off
-`market-data:sched-2026-08-13` now leaves the `stop_vs_regime_volatility gate:` line to the actual
-base stop/target comparisons. The veto packet explicitly says portfolio/batch context is
-unavailable, so reviewers must not infer holdings, open positions, sibling orders, or dual-class
-exposure beyond rendered PM gate outcomes. Execution now reads existing
-`DeliberationRun.failed_open_tickers` and records `applied_failed_open` plus a
-`DeliberationFailedOpenSubmit` fault while still submitting the order, preserving S147 fail-open
-posture. No new `DeliberationRun` property was added; `orchestration/packs/trading_graph_vocabulary.json`
-has no diff. Local proof: focused red-before-green, focused green (`25 passed` expanded target), and
-redirected `make ci` exit `0` at `2238 passed, 6 skipped, 100.00%`. Final handoff still owes the
-post-push `make gate-ran` output for the pushed branch HEAD before merge; do not retag or deploy the
-fleet before the 2026-08-14 readout.
+**Read this first if you are picking the project up.** `main` is `0.90.08` at `b90c09f`, gate proven
+and independently re-verified. The **fleet is on `s174` = `0.90.07`, one PATCH behind, deliberately.**
 
-**S174 shipped, deployed and proven live; the same run failed acceptance for an unrelated reason.**
-Version `0.90.07`, fleet **17/17 on `s174`** (`DeployRecord …:s174:68c3db6f`), pack hash `13c0e3a0…`
-verified identical both sides so the retag was image-only. *Proven on `sched-2026-08-13`, measured
-not inferred:* the **deployed dispatcher** wrote `lookback_days=295` / `required_history_bars=200`
-(matching a derivation made independently before the deploy); `MarketData` carried **98 tickers × 202
-bars, 0 under 200, 19,796 total** against 41 each the day before; and real production
-`Recommendation`s for AMD and XOM carry **all five** core indicators with **no `*_missing_bars`** —
-`sma_distance_pct` and `ema_spread_pct` had never once computed in production before today. PM
-approved **8** buys against 1 on 08-11. 8/8 stages. Full evidence in
-[functionality-checks.md](laws/functionality-checks.md).
+**S174 — shipped, deployed, proven live (2026-08-13).** The deployed dispatcher wrote
+`lookback_days=295` / `required_history_bars=200`; `MarketData` carried **98 tickers × 202 bars, 0
+under 200** against 41 each the day before; real `Recommendation`s for AMD and XOM carry all five
+core indicators with no `*_missing_bars`. `sma_distance_pct` and `ema_spread_pct` had **never once
+computed in production** before that run. PM approved **8** buys against 1 on 08-11. 8/8 stages.
+Evidence: [functionality-checks.md](laws/functionality-checks.md).
 
-🚨 **`ACCEPTANCE FAIL` — `debate_coverage 0.625 < 1.0`, `failed_open_count 3 > 0`.** Not S174:
-`DELIBERATOR_EFFORT=high` (set 2026-08-12) moves the **tail**, not the median, past the 30 s
-`request_timeout_seconds`. Measured off the `LLMCall` ledger:
+🚨 **That same run failed acceptance, and not on S174.** `debate_coverage 0.625 < 1.0`,
+`failed_open_count 3 > 0`. `DELIBERATOR_EFFORT=high` moves the **tail**, not the median, past the
+30 s `request_timeout_seconds`:
 
 | run | n | median | p90 | max | > 30 s |
 | --- | --- | --- | --- | --- | --- |
 | `sched-2026-08-10` (pre-`effort` control) | 90 | 11.4 | 16.4 | **23.0** | **0** |
-| `sched-2026-08-11` | 5 | 10.2 | 14.2 | 14.2 | 0 |
 | `sched-2026-08-12` (`effort=high`) | 5 | 14.8 | 15.9 | 15.9 | 0 |
 | `sched-2026-08-13` (`effort=high`) | 32 | 15.1 | 30.1 | **39.1** | **4** |
 
-Median +32 %, max **+70 %**. Ninety pre-`effort` calls never breached 30 s; thirty-two after it
-breached four times. 08-12 is an **underpowered sample, not a counter-example** — five draws rarely
-sample a ~12 % tail. Peers timed out → `no deliberator peer reply received` → 3 fail-opens → execution
-submitted 3 of 8, and **2 of those 3 (AMD, DOW) reached the broker on fail-open verdicts, unreviewed**.
-The veto correctly blocked the other 5. **Mitigation applied:** `request_timeout_seconds` **30 → 60**
-on all three deliberators, env-var only (3 additions / 0 deletions). **Prediction, stated so it can
-fail:** at 60 s the next run should show `failed_open_count 0` / `debate_coverage 1.0`; if not, the
-timeout was not the cause. 🪤 Tails grow with call count — 60 s is comfortable at 8 orders
-and may be marginal at 20+; the durable answer is S172 concurrency, not a bigger timeout.
+Ninety pre-`effort` calls never breached 30 s; thirty-two after it breached four times. 08-12 is an
+**underpowered sample, not a counter-example**. Three fail-opens → execution submitted 3 of 8, and
+**2 of those 3 (AMD, DOW) reached the broker unreviewed**. **Mitigation applied:**
+`request_timeout_seconds` **30 → 60**, env-var only. **Prediction, stated so it can fail:** the next
+run should show `failed_open_count 0` / `debate_coverage 1.0`. If not, the timeout was not the cause.
 
-🪤 **`sched-2026-08-13` is consumed, so tonight's 22:30 UTC cron dedupes and does not run.**
-Next scheduled run **2026-08-14** — and it is a clean single-variable readout, because the timeout is
-the only thing that moved since the failing run.
+**S175 — merged, NOT deployed** ([spec](sprints/sprint-175-the-veto-says-only-what-it-can-prove.md)).
+Independently verified: the invented `stop_pct vs ATR%` fragment is gone from the PM packet;
+`drop_vetoed` is **unchanged**, so a fail-open still submits — it is now *loud and distinguishable*
+(`applied_failed_open` + an `error` fault), never *blocking*, which was the hard constraint. Pack
+hash unmoved. 🪤 **It does not change acceptance** — `trading_acceptance` reads
+`DeliberationRun` props, not `Fault` nodes, so a run with fail-opens still reads FAIL. The 60 s
+timeout is what fixes that, not S175.
 
-🚨 **The functionality-check register had lost 97 rows and nobody noticed — restored today.**
-`a668173` (2026-08-08) overwrote [functionality-checks.md](laws/functionality-checks.md) with a
-single row: **1 insertion, 99 deletions**, taking it from 118,081 bytes to 1,740. It sat at two rows
-for five days. Restored from `d66c3c7` with the two later rows re-applied and today's appended —
-**69 rows, and every line of the pre-loss version verified present**. This is the LAW-02 evidence
-ledger; it is the one file whose loss is invisible precisely because nobody re-reads it.
-🪤 Two other docs were appended to in that same window without the restore-and-byte-write
-procedure — worth a `git log --stat` sweep for the same 1-insertion/N-deletion shape.
+## The sequence from here — in order, and the order matters
+
+1. **Read `sched-2026-08-14`.** It runs on `s174`, so nothing S175 changed is under it: the timeout
+   is the only variable that moved since the failing run. `trace_run.py` + `accept.py`, then the
+   `LLMCall` latency table above for a fourth row. 🪤 **Do not retag before reading it** —
+   deploying into the experiment destroys the only clean comparison available.
+2. **Hand [S176](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md) to Codex** (paste block
+   is in the spec). Independent of the run; touches `reconciliation_store.py` only.
+3. **Then one deploy carrying S175 + S176 together** — one retag, one live check, both proven at
+   once. Tag sprint-shaped per [DL-106](design-log.md).
 
 ## Next
 
@@ -125,8 +109,10 @@ not enough**: 🚨 its own `why` says *"debate must show more than one round in 
 round is **cutting the artefact under test to buy wall clock**, a recorded decision rather than a
 knob. Build [S172](sprints/sprint-172-independent-debates-run-independently.md) **only if both
 together still miss** — full ordering and the arithmetic in [DL-105](design-log.md)'s amendment.
-The fleet runs `s171a` as of 2026-08-12, so the sweep is **unblocked**, and its first point is
-already set: `effort` `max` → `high`. What remains is measuring it against the grace.
+The sweep's first point is **done** — `effort` `max` → `high`, live since 2026-08-12 — and it
+cost three fail-opens before `request_timeout_seconds` went 30 → 60. The two levers are
+**coupled**: raising effort lengthens the peer-call tail into a fixed timeout. Measure both
+together or not at all.
 
 **Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
 **(i)** amend S172 — its stated reason for excluding `max_rounds` is unsound (the sum-of-latency ÷

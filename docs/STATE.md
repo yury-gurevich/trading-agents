@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-13 20:06 AEST · **Version:** 0.90.09 · **S176 is code-proven and branch-gated, not deployed; no live partial-fill proof exists because production has zero partial fills.**
+**Last updated:** 2026-08-13 20:33 AEST · **Version:** 0.90.09 · **S174 is proven in production; S175 and S176 are merged and undeployed — the fleet sits two PATCHes behind on purpose, so `sched-2026-08-14` stays a clean single-variable readout for the 60 s peer timeout.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -52,8 +52,9 @@ Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-
 
 ## Now
 
-**Read this first if you are picking the project up.** `main` is `0.90.08` at `b90c09f`, gate proven
-and independently re-verified. The **fleet is on `s174` = `0.90.07`, one PATCH behind, deliberately.**
+**Read this first if you are picking the project up.** `main` is `0.90.09` at `71377f2e`, gate proven
+and independently re-verified. The **fleet is on `s174` = `0.90.07`, two PATCHes behind, deliberately** —
+S175 and S176 are both merged and both undeployed, waiting on one run.
 
 **S174 — shipped, deployed, proven live (2026-08-13).** The deployed dispatcher wrote
 `lookback_days=295` / `required_history_bars=200`; `MarketData` carried **98 tickers × 202 bars, 0
@@ -94,6 +95,16 @@ adding `"postgres"`. Local `make ci`: **2243 passed / 6 skipped / 100.00 %**; re
 proved `57f540f`. Pack hash unmoved. **No live functionality proof is claimed**: the live spine has
 never produced a partial fill.
 
+**S176 — merged, NOT deployed** ([spec](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md)).
+Independently verified: `completes_partial_fill` permits **only** `partial` → `filled`, terminal
+statuses stay immutable, and `exit_price_cents` switches to the current price only when a partial
+completes — a narrowed guard, not a deleted one. `DRIFT-033` **CORRECTED** (`b17ff5fd`): the stale
+`neo4j` declaration is gone and `postgres` was correctly *not* added, matching the convention that
+analyst/forecaster/monitor declare `external_io=()` despite using the graph. Pack unmoved.
+🪤 **No live proof exists or can exist** — zero of 188 production `Fill`s have ever been
+`partial`, so the fixed path has never been exercised outside tests. Stated plainly rather than
+implied.
+
 ## The sequence from here — in order, and the order matters
 
 1. **Read `sched-2026-08-14`.** It runs on `s174`, so nothing S175 changed is under it: the timeout
@@ -102,8 +113,12 @@ never produced a partial fill.
    deploying into the experiment destroys the only clean comparison available.
 2. **Merge S176 after the evidence commit is branch-gated.** It is independent of the 08-14 run and
    remains undeployed after merge.
-3. **Then one deploy carrying S175 + S176 together** — one retag, one live check, both proven at
-   once. Tag sprint-shaped per [DL-106](design-log.md).
+3. **Then one deploy carrying S175 + S176** — both are merged and waiting; one retag, one live
+   check, two fixes proven at once. Tag sprint-shaped per [DL-106](design-log.md).
+4. 🪤 **A quoted hash that matches no file is still a false claim.** S176's handback cited a
+   pack hash (`40bd1b10…`) matching neither the file's sha1 nor its sha256 nor any tracked file;
+   the conclusion was right, verified independently. Second instance today after `debt.md`'s
+   *"50.9 s"* tail, which also does not reproduce. **Re-derive cited numbers; do not adopt them.**
 
 ## Next
 

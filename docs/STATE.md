@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-12 22:04 AEST · **Version:** 0.90.07 · **S174 local proof green: declared history crosses on RunRequest and CodeQL image follow-ups are clear.**
+**Last updated:** 2026-08-13 14:32 AEST · **Version:** 0.90.07 · **S174 is proven in production — 98 tickers × 202 bars, and `sma_distance_pct`/`ema_spread_pct` computed for the first time ever — but the run failed acceptance on three deliberation fail-opens traced to `effort=high` lengthening the latency tail past a 30 s peer timeout.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -52,80 +52,50 @@ Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-
 
 ## Now
 
-**S174 local result — graph-pull history now follows declared indicator depth.** The dispatcher
-stamps `RunRequest.lookback_days` plus `required_history_bars` from analyst indicator settings and
-the NYSE session calendar; provider refuses missing/too-short history declarations. The old
-production node `sched-2026-08-11` had **99 tickers × 41 bars** and XOM scored only
-`rsi,macd_histogram,bollinger_position`, with `sma_distance_pct`/`ema_spread_pct` absent. The S174
-live-source local graph probe used a **295-day** request; the clean retained universe had **98
-tickers × 202 bars**, XOM scored all five core indicators, and a real AAPL recommendation carried
-`sma_distance_pct` and `ema_spread_pct` in `quant_metrics`. `CHTR` was excluded by the existing
-anomalous-ticker guard in the all-99 probe. Vocabulary pack unchanged; short-series gaps ride as
-`*_missing_bars` inside existing `Recommendation.quant_metrics`. The first post-merge image build
-exposed the slim dispatcher image missing the analyst/provider settings modules now imported by
-`orchestration.start`; `0.90.04` copies those modules and adds a Dockerfile regression test. The
-first corrective main image build then exposed the same slim image missing the new
-`orchestration/history_window.py` module, plus the analyst package initializer eagerly loading the
-full agent tree; `0.90.06` copies the helper and makes the analyst convenience export lazy instead
-of bloating the dispatcher image. The next main CodeQL run flagged the lazy package `__all__` as
-`py/undefined-export`; `0.90.07` removes that list and pins the no-`__all__` shape in the same
-dispatcher regression. The first S174 remote security gate also caught a CodeQL `py/unsafe-cyclic-import` shape between
-`history_requirements.py` and `settings.py`; `0.90.05` removes the back-reference by typing the
-history helper with a structural protocol. Local Docker was unavailable (`Cannot connect to the
-Docker daemon`), so the rebuilt image smoke is a GitHub Actions proof item after push. Local
-`make ci` was green: **2235 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets
-passed. Remote gate evidence belongs to the final handback after the branch SHA is pushed and
-proved with `make gate-ran`.
+**S174 shipped, deployed and proven live; the same run failed acceptance for an unrelated reason.**
+Version `0.90.07`, fleet **17/17 on `s174`** (`DeployRecord …:s174:68c3db6f`), pack hash `13c0e3a0…`
+verified identical both sides so the retag was image-only. *Proven on `sched-2026-08-13`, measured
+not inferred:* the **deployed dispatcher** wrote `lookback_days=295` / `required_history_bars=200`
+(matching a derivation made independently before the deploy); `MarketData` carried **98 tickers × 202
+bars, 0 under 200, 19,796 total** against 41 each the day before; and real production
+`Recommendation`s for AMD and XOM carry **all five** core indicators with **no `*_missing_bars`** —
+`sma_distance_pct` and `ema_spread_pct` had never once computed in production before today. PM
+approved **8** buys against 1 on 08-11. 8/8 stages. Full evidence in
+[functionality-checks.md](laws/functionality-checks.md).
 
-**The veto bound for the first time, and the fleet is current again.** Version `0.90.02` now runs
-on **all 17 deploy targets** (16 apps + `dispatcher-cron`) at tag **`s171a`**, retagged 2026-08-12 —
-`DeployRecord deploy:2026-08-12T07:52:49…:s171a:e49349cb`. *Proven at the fleet, not assumed:*
-16/16 images `s171a`, 16/16 `Succeeded`, KEDA intact on **all** sixteen (`min=0`, 1 rule each),
-job cron still weekday-only `30 22 * * 1-5`, and the switches S169 exists to protect survived the
-image-only path — `SCANNER_CANDIDATE_CAP=25`, `PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01`,
-`PORTFOLIO_MANAGER_MAX_POSITIONS=60`. The vocabulary pack hashed **identical** across
-`9a22102`→`ffdbaf1` (`13c0e3a0…`), which is why image-only was the legal path and not an S148 stall.
+🚨 **`ACCEPTANCE FAIL` — `debate_coverage 0.625 < 1.0`, `failed_open_count 3 > 0`.** Not S174:
+`DELIBERATOR_EFFORT=high` (set 2026-08-12) moves the **tail**, not the median, past the 30 s
+`request_timeout_seconds`. Measured off the `LLMCall` ledger:
 
-**`sched-2026-08-11` — 8/8 stages, `ACCEPTANCE PASS`, and 0 orders submitted on purpose.** Provider
-**99/99** with **zero `*_degraded` notes** (4059 bars, 1825 headlines, regime `neutral`); scanner
-99 → 20; analyst **19 scored / 2 rejected** (NOW 0.584, META 0.583, both under the 0.600 floor); PM
-**1 approved** — XOM ×6, est. $159.78. Then the thing that had never happened: `PMRun` 22:38:49Z →
-`DeliberationRun` **22:40:47Z**, `verdicts={'XOM': 'revise'}`, `vetoed_tickers=('XOM',)`,
-`real_debate_count=1`, `failed_open_count=0`, and `ExecutionRun … deliberation_status='applied'`
-with **submitted=0**. **118 seconds against a 900 s grace.** The verdict was *read and bound*, not
-defaulted past. DL-104's owed item (d) is still owed — but the machinery under it is now proven to
-work whenever the debate finishes in time.
+| run | n | median | p90 | max | > 30 s |
+| --- | --- | --- | --- | --- | --- |
+| `sched-2026-08-10` (pre-`effort` control) | 90 | 11.4 | 16.4 | **23.0** | **0** |
+| `sched-2026-08-11` | 5 | 10.2 | 14.2 | 14.2 | 0 |
+| `sched-2026-08-12` (`effort=high`) | 5 | 14.8 | 15.9 | 15.9 | 0 |
+| `sched-2026-08-13` (`effort=high`) | 32 | 15.1 | 30.1 | **39.1** | **4** |
 
-**`sched-2026-08-10`'s open question is closed: the 18 orders filled.** They sat `accepted` with
-`filled_qty 0` at that run's close, which is the whole reason acceptance read `UNPROVEN`. Measured
-2026-08-12: **18 active positions** (`is_active_position_node`, never raw `status`), adopted from the
-broker snapshot at 22:32:46Z on 08-11, matching the broker one-for-one, with `Fill` nodes already
-keyed `pm-run-74dc…:TICKER:buy`. The `critical` divergence Flag that run raised is reconciliation
-reporting its own adoption — not a fault. **51** flags now unacknowledged, still climbing.
+Median +32 %, max **+70 %**. Ninety pre-`effort` calls never breached 30 s; thirty-two after it
+breached four times. 08-12 is an **underpowered sample, not a counter-example** — five draws rarely
+sample a ~12 % tail. Peers timed out → `no deliberator peer reply received` → 3 fail-opens → execution
+submitted 3 of 8, and **2 of those 3 (AMD, DOW) reached the broker on fail-open verdicts, unreviewed**.
+The veto correctly blocked the other 5. **Mitigation applied:** `request_timeout_seconds` **30 → 60**
+on all three deliberators, env-var only (3 additions / 0 deletions). **Prediction, stated so it can
+fail:** at 60 s the next run should show `failed_open_count 0` / `debate_coverage 1.0`; if not, the
+timeout was not the cause. 🪤 Tails grow with call count — 60 s is comfortable at 8 orders
+and may be marginal at 20+; the durable answer is S172 concurrency, not a bigger timeout.
 
-🚨 **`effort` was live at `max` for one afternoon, and is now `high` — the first sweep point.**
-Until `0.90.02` the value was assigned and dropped, so every debate ever run — including the clean
-118 s bind above — used the vendor default. Leaving it at `max` would have shipped an unmeasured
-setting into a 900 s grace: reasoning latency pushes straight at the constraint
-[DL-105](design-log.md) calls scarce, and reasoning tokens count against `max_tokens=4096`
-(hard-capped, `le=4096`), where an exhausted budget returns empty content that `_text()` renders as
-`""`. **Set 2026-08-12: `DELIBERATOR_EFFORT=high` on all three deliberators**, env-var only — no
-rebuild — and the env name diff before/after shows **3 additions, 0 deletions**, so the S169 wipe
-did not fire. *Still unmeasured:* what `high` costs in wall clock against the grace. The next
-scheduled run is the measurement, and `max` remains one `az` call away if it is wanted back.
+🪤 **`sched-2026-08-13` is consumed, so tonight's 22:30 UTC cron dedupes and does not run.**
+Next scheduled run **2026-08-14** — and it is a clean single-variable readout, because the timeout is
+the only thing that moved since the failing run.
 
-**The image tag is back on the `sNNN` scheme, and the rule is written down — [DL-106](design-log.md),
-DECIDED.** A chore has no sprint number, so it **suffixes the sprint it follows** (`s171a`), never a
-version string and never the next sprint's number. `v0.90.02` had put an image and a *different* git
-tag under one name (`ffdbaf1` vs `de3c071`); `s172` would have made the board assert an unshipped
-sprint. Recorded in `deploy-fleet`'s step 1 as well, which is where the next deploy will read it.
-
-**The wake window activates; it does not lock (operator decision, restated 2026-08-12).** Each app
-carries exactly one KEDA rule — `cron`, `desiredReplicas: 1`, against `min 0 / max 1` — and a cron
-rule only *demands* replicas inside its window. Anything else that demands one (master's internal
-ingress, a manual `--min-replicas`, a new revision after a retag) starts an app at any hour, which
-is deliberate while the project is in active development: **testing a run outside the window must
-never require rewiring cron.** Written into `docs/deployment.md`; it had never been recorded.
+🚨 **The functionality-check register had lost 97 rows and nobody noticed — restored today.**
+`a668173` (2026-08-08) overwrote [functionality-checks.md](laws/functionality-checks.md) with a
+single row: **1 insertion, 99 deletions**, taking it from 118,081 bytes to 1,740. It sat at two rows
+for five days. Restored from `d66c3c7` with the two later rows re-applied and today's appended —
+**69 rows, and every line of the pre-loss version verified present**. This is the LAW-02 evidence
+ledger; it is the one file whose loss is invisible precisely because nobody re-reads it.
+🪤 Two other docs were appended to in that same window without the restore-and-byte-write
+procedure — worth a `git log --stat` sweep for the same 1-insertion/N-deletion shape.
 
 ## Next
 

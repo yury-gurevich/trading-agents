@@ -235,7 +235,7 @@ observes a partial at `10135`, then completes at `10200` for quantity `10`. The 
 is `(10200 - 10000) * 10 = 2000` cents, and the test asserts `realized_pnl_cents == 2000`.
 
 **DRIFT-033:** closed in `docs/laws/drift-register.md` with merge SHA
-`57f540f78b307dc4e0c94041b90121a0b88bb76f`. Verification:
+`b17ff5fd1037052e4ff163d026c91fa72119892b`. Verification:
 
 ```text
 grep -rn neo4j kernel/ agents/ orchestration/ contracts/
@@ -275,7 +275,21 @@ untracked secret scan: scanning 4 new file(s), Passed
 `sprint-176-a-partial-fill-must-be-able-to-finish`:
 
 ```text
-GATE PROVEN for 57f540f78b307dc4e0c94041b90121a0b88bb76f:
+GATE PROVEN for b17ff5fd1037052e4ff163d026c91fa72119892b:
+  Security Findings: success
+  CI: success
+```
+
+Main was then fast-forwarded and pushed with checkpoint tag
+`checkpoint-20260813-s176-partial-fill-finish` plus backup branch
+`backup/main-after-20260813-s176-partial-fill-finish`. Post-merge `make gate-ran` from `main`:
+
+```text
+GATE PROVEN for b17ff5fd1037052e4ff163d026c91fa72119892b:
+  Security Findings: success
+  CI: success
+  CodeQL: success
+  Build and push agent images: success
   Security Findings: success
   CI: success
 ```

@@ -2,7 +2,7 @@
 
 Agent: master
 Role: contract — typed boundary (capabilities, owned data, never-do).
-External I/O: Azure Key Vault (secrets), Neo4j (operational registry).
+External I/O: Azure Key Vault (secrets).
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ CONTRACT = AgentContract(
     mission=(
         "Bootstrap and lifecycle-manage every trading-system agent container: "
         "receive EHLO, verify capability declarations, distribute minimum-privilege "
-        "secrets via ACTIVATE, and maintain the Neo4j operational fleet registry."
+        "secrets via ACTIVATE, and maintain the operational fleet registry."
     ),
     consumes=(
         Capability(
@@ -96,7 +96,7 @@ CONTRACT = AgentContract(
         "RemediationPlan",
         "RemediationAttempt",
     ),
-    external_io=("key_vault", "neo4j"),
+    external_io=("key_vault",),
     depends_on=(),
     never=(
         "distribute secrets that exceed an agent's declared capability needs",

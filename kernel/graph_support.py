@@ -15,6 +15,17 @@ type NodeKey = tuple[str, str]
 type EdgeKey = tuple[NodeKey, NodeKey, str]
 type Props = Mapping[str, Any]
 
+_PARTIAL_STATUS = "partial"
+_FILLED_STATUS = "filled"
+_PARTIAL_COMPLETION_PROPS = frozenset(
+    {
+        "broker_status",
+        "broker_price_cents",
+        "broker_status_refreshed_at",
+        "realized_pnl_cents",
+    }
+)
+
 
 class _GraphNode(Protocol):
     @property
@@ -67,10 +78,22 @@ def _append_props(existing: Props, new_props: Props) -> dict[str, Any]:
         frozen = _frozen_value(value)
         # Freeze both sides before comparing so JSON-backed lists and incoming
         # sequences normalize before append-only conflict detection.
-        if name in merged and _frozen_value(merged[name]) != frozen:
+        if (
+            name in merged
+            and _frozen_value(merged[name]) != frozen
+            and not _is_partial_completion(existing, new_props, name)
+        ):
             raise ValueError(f"property {name!r} cannot be overwritten")
         merged[name] = frozen
     return merged
+
+
+def _is_partial_completion(existing: Props, new_props: Props, prop_name: str) -> bool:
+    return (
+        prop_name in _PARTIAL_COMPLETION_PROPS
+        and existing.get("broker_status") == _PARTIAL_STATUS
+        and new_props.get("broker_status") == _FILLED_STATUS
+    )
 
 
 def _edge_allowed(edge: _GraphEdge, edge_types: set[str] | None) -> bool:

@@ -8,9 +8,13 @@ External I/O: GraphStore writes via the injected backend.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Literal
 
+from agents.execution.broker_status_refresh import (
+    broker_price_cents,
+    broker_status_props,
+    exit_price_cents,
+)
 from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
 from agents.execution.realized_pnl import realized_pnl_props
@@ -23,8 +27,6 @@ if TYPE_CHECKING:
 
 SnapshotStatus = Literal["fresh", "stale"]
 
-_CENTS = Decimal("100")
-_ONE = Decimal("1")
 _TERMINAL_BROKER_STATUSES = frozenset({"filled", "rejected"})
 
 
@@ -49,38 +51,20 @@ def refresh_pending_fills(
         write_order_status(graph, fill_node=node, broker_fill=broker_fill)
         if broker_fill.status == "pending":
             continue
-        broker_price_cents = _money_to_cents(broker_fill)
-        exit_price_cents = int(node.props.get("broker_price_cents", broker_price_cents))
-        props = _broker_status_props(node, broker_fill, broker_price_cents)
+        current_price_cents = broker_price_cents(broker_fill)
+        exit_cents = exit_price_cents(node, broker_fill, current_price_cents)
+        props = broker_status_props(node, broker_fill, current_price_cents)
         props.update(
             realized_pnl_props(
                 graph,
                 node,
                 broker_fill,
                 sink,
-                exit_price_cents=exit_price_cents,
+                exit_price_cents=exit_cents,
             )
         )
         if props:
             graph.merge_node("Fill", node.key, props)
-
-
-def _broker_status_props(
-    node: Node, broker_fill: BrokerFill, broker_price_cents: int
-) -> dict[str, object]:
-    props: dict[str, object] = {}
-    if "broker_status" not in node.props:
-        props = {
-            "broker_status": broker_fill.status,
-            "broker_status_broker_order_id": broker_fill.broker_order_id,
-            "broker_status_refreshed_at": datetime.now(tz=UTC).isoformat(),
-        }
-    if (
-        broker_fill.status in ("filled", "partial")
-        and "broker_price_cents" not in node.props
-    ):
-        props["broker_price_cents"] = broker_price_cents
-    return props
 
 
 def write_snapshot(
@@ -183,8 +167,3 @@ def _is_active_position(graph: GraphStore, node: Node) -> bool:
 def _flag_reason(snapshot: Node, divergences: tuple[str, ...]) -> str:
     lines = "\n".join(f"- {item}" for item in divergences)
     return f"Broker position divergence at run start ({snapshot.key}):\n{lines}"
-
-
-def _money_to_cents(fill: BrokerFill) -> int:
-    cents = (fill.price.amount * _CENTS).quantize(_ONE, rounding=ROUND_HALF_UP)
-    return int(cents)

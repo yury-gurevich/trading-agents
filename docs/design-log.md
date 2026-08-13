@@ -5831,3 +5831,32 @@ protocol preserves type precision without creating an analyzer-visible cycle.
   the S169 operator-env gap.
 
 ---
+
+## DL-108 - S176 lets only partial broker fills complete - status: DECIDED (2026-08-13)
+
+**Decision.** A broker-observed `Fill.broker_status` may advance only from `partial` to `filled`.
+That single transition also lets the broker completion replace the tied `broker_price_cents`,
+`broker_status_refreshed_at`, and `realized_pnl_cents` values, because the first two describe the
+current broker fact and the PnL conclusion for a completed-after-partial sell must be based on the
+final completed price. The ordinary graph merge rule remains append-only; the exception is a
+property conflict allowlist gated by `existing.broker_status == "partial"` and
+`incoming.broker_status == "filled"`.
+
+This keeps S154's terminal-refresh boundary intact: `filled` and `rejected` fills are still skipped
+before a broker read can append another status fact or rewrite the `Fill`. The completion still
+appends a `BrokerOrderStatus` observation, so the observation history remains reconstructable while
+the current `Fill` fields stop lying.
+
+**Rejected routes.**
+
+- *Terminal-status guard* - rejected as the implementation rule because it is broader than the
+  measured defect. It says every non-terminal state can update; S176 needs exactly
+  `partial -> filled`, and an explicit transition set is easier to plant against.
+- *Append a new node per observation and derive a read model* - rejected for this sprint because it
+  changes every downstream reader that currently consumes `Fill.broker_status` and
+  `Fill.broker_price_cents`. It remains the purer long-term model if more broker-state transitions
+  need to become current-state projections.
+- *Remove the write-once guard wholesale* - rejected because `Fill` is protected production broker
+  evidence. Terminal rewrites (`filled -> partial`, `rejected -> filled`) must stay refused.
+
+---

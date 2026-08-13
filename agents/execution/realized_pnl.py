@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.execution.broker_status_refresh import completes_partial_fill
 from contracts.pnl import realized_pnl_cents
 from contracts.positions import PositionBasis, position_basis_for_ref
 from kernel import AgentFault
@@ -53,7 +54,10 @@ def _needs_realized_pnl(fill_node: Node, broker_fill: BrokerFill) -> bool:
     return (
         broker_fill.side == "sell"
         and broker_fill.status in _REALIZED_STATUSES
-        and REALIZED_PNL_PROP not in fill_node.props
+        and (
+            REALIZED_PNL_PROP not in fill_node.props
+            or completes_partial_fill(fill_node, broker_fill)
+        )
         and PNL_UNRESOLVED_AT_PROP not in fill_node.props
     )
 

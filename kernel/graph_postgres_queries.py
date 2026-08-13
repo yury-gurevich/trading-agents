@@ -19,7 +19,7 @@ MERGE_NODE_SQL = """
 INSERT INTO nodes (label, key, props, schema_version)
 VALUES (%s, %s, %s, %s)
 ON CONFLICT (label, key) DO UPDATE
-SET props = EXCLUDED.props || nodes.props,
+SET props = nodes.props || EXCLUDED.props,
     schema_version = nodes.schema_version
 WHERE nodes.schema_version = EXCLUDED.schema_version
   AND NOT EXISTS (
@@ -27,6 +27,16 @@ WHERE nodes.schema_version = EXCLUDED.schema_version
       FROM jsonb_each(EXCLUDED.props) AS incoming(key, value)
       WHERE nodes.props ? incoming.key
         AND nodes.props -> incoming.key <> incoming.value
+        AND NOT (
+            nodes.props ->> 'broker_status' = 'partial'
+            AND EXCLUDED.props ->> 'broker_status' = 'filled'
+            AND incoming.key IN (
+                'broker_status',
+                'broker_price_cents',
+                'broker_status_refreshed_at',
+                'realized_pnl_cents'
+            )
+        )
   )
 RETURNING label, key, props, schema_version
 """

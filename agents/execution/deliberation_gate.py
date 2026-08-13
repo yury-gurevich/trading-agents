@@ -23,18 +23,20 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from contracts.portfolio_manager import OrderIntentSet
-from kernel import AgentFault
 
 if TYPE_CHECKING:
     from agents.execution.settings import ExecutionSettings
-    from kernel import FaultSink, GraphStore, Node
+    from kernel import GraphStore, Node
 
 DELIBERATED_EDGE = "DELIBERATED_BY"
 
-#: `applied` a veto was present; `not_required` nothing to veto or sells only;
-#: `waiting` a buy is held inside the grace window; `proceeded_unvetoed` the grace
-#: expired and the run was submitted without a veto — the only loud case.
-DeliberationStatus = Literal["applied", "not_required", "waiting", "proceeded_unvetoed"]
+#: `applied` a real veto was present; `applied_failed_open` a DeliberationRun
+#: exists but one or more ticker reviews failed open; `not_required` nothing to
+#: veto or sells only; `waiting` a buy is held inside the grace window;
+#: `proceeded_unvetoed` the grace expired and the run submitted without a veto.
+DeliberationStatus = Literal[
+    "applied", "applied_failed_open", "not_required", "waiting", "proceeded_unvetoed"
+]
 
 
 def linked_deliberation(graph: GraphStore, pm_run: Node) -> Node | None:
@@ -43,6 +45,14 @@ def linked_deliberation(graph: GraphStore, pm_run: Node) -> Node | None:
         iter(graph.descendants(pm_run, max_depth=1, edge_types={DELIBERATED_EDGE})),
         None,
     )
+
+
+def failed_open_tickers(graph: GraphStore, pm_run: Node) -> tuple[str, ...]:
+    """Return tickers whose linked deliberation failed open."""
+    delib = linked_deliberation(graph, pm_run)
+    if delib is None:
+        return ()
+    return _failed_open_tickers(delib)
 
 
 def has_buy(order_set: OrderIntentSet) -> bool:
@@ -59,7 +69,10 @@ def deliberation_status(
     grace_seconds: int,
 ) -> DeliberationStatus:
     """Classify this PMRun against its veto, without side effects."""
-    if linked_deliberation(graph, pm_run) is not None:
+    delib = linked_deliberation(graph, pm_run)
+    if delib is not None:
+        if _failed_open_tickers(delib):
+            return "applied_failed_open"
         return "applied"
     if not has_buy(order_set):
         return "not_required"
@@ -85,6 +98,13 @@ def drop_vetoed(
         return order_set
     survivors = tuple(i for i in order_set.approved if i.ticker not in vetoed)
     return order_set.model_copy(update={"approved": survivors})
+
+
+def _failed_open_tickers(delib: Node) -> tuple[str, ...]:
+    raw = delib.props.get("failed_open_tickers", ())
+    if not isinstance(raw, (list, tuple, set)):
+        return ()
+    return tuple(item for item in raw if isinstance(item, str))
 
 
 def _age_seconds(pm_run: Node, *, now: datetime) -> float | None:
@@ -125,35 +145,3 @@ def is_waiting(
         grace_seconds=settings.deliberation_grace_seconds,
     )
     return status == "waiting"
-
-
-def record_unvetoed_submit(
-    sink: FaultSink,
-    pm_run_id: str,
-    submitted: int,
-    settings: ExecutionSettings,
-) -> None:
-    """Fault when a buy-carrying run submitted with no veto (DL-98).
-
-    Fail-open is still the policy — the run is never blocked — but it must leave a
-    record, so an absent veto can never again look like a clean run.
-    """
-    grace = settings.deliberation_grace_seconds
-    sink.submit(
-        AgentFault(
-            source_agent="execution",
-            source_module="agents.execution.deliberation_gate",
-            capability="execute_pm_node",
-            severity="error",
-            error_type="DeliberationGraceExpired",
-            message=(
-                f"{pm_run_id}: submitted {submitted} order(s) carrying a buy with no "
-                f"DeliberationRun after {grace}s"
-            ),
-            context={
-                "pm_run_id": pm_run_id,
-                "submitted": submitted,
-                "grace_seconds": grace,
-            },
-        )
-    )

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-13 14:32 AEST · **Version:** 0.90.07 · **S174 is proven in production — 98 tickers × 202 bars, and `sma_distance_pct`/`ema_spread_pct` computed for the first time ever — but the run failed acceptance on three deliberation fail-opens traced to `effort=high` lengthening the latency tail past a 30 s peer timeout.**
+**Last updated:** 2026-08-13 19:05 AEST · **Version:** 0.90.08 · **S175 removes the invented ATR veto wording and makes fail-open submissions visible without changing the fail-open posture or moving the vocabulary pack.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -51,6 +51,22 @@ Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
+
+**S175 branch proof complete locally; remote branch gate is the post-commit merge gate.** Worktree:
+`C:\Users\yury_\Downloads\project\trading-agents-s175`, branch
+`sprint-175-the-veto-says-only-what-it-can-prove`, version `0.90.08`. The PM packet no longer
+renders the invented `stop_pct vs ATR% -> PASSED/FAILED` comparison, and the AMD replay off
+`market-data:sched-2026-08-13` now leaves the `stop_vs_regime_volatility gate:` line to the actual
+base stop/target comparisons. The veto packet explicitly says portfolio/batch context is
+unavailable, so reviewers must not infer holdings, open positions, sibling orders, or dual-class
+exposure beyond rendered PM gate outcomes. Execution now reads existing
+`DeliberationRun.failed_open_tickers` and records `applied_failed_open` plus a
+`DeliberationFailedOpenSubmit` fault while still submitting the order, preserving S147 fail-open
+posture. No new `DeliberationRun` property was added; `orchestration/packs/trading_graph_vocabulary.json`
+has no diff. Local proof: focused red-before-green, focused green (`25 passed` expanded target), and
+redirected `make ci` exit `0` at `2238 passed, 6 skipped, 100.00%`. Final handoff still owes the
+post-push `make gate-ran` output for the pushed branch HEAD before merge; do not retag or deploy the
+fleet before the 2026-08-14 readout.
 
 **S174 shipped, deployed and proven live; the same run failed acceptance for an unrelated reason.**
 Version `0.90.07`, fleet **17/17 on `s174`** (`DeployRecord …:s174:68c3db6f`), pack hash `13c0e3a0…`

@@ -1,6 +1,6 @@
 ---
 type: decision
-status: accepted
+status: amended
 date: 2026-08-08
 closes:
   - "Does the deliberation veto block execution, and if so what does it block?"
@@ -11,6 +11,8 @@ amends: [ADR-0017]
 ---
 
 # ADR-0022 — The veto gates buys, never exits
+
+**Status:** Amended · **Date:** 2026-08-08 · **Amended:** 2026-08-13 · **Decider:** Yury Gurevich
 
 ## Context
 
@@ -53,8 +55,19 @@ bounded grace period. A sell-only PMRun never waits.**
   unchanged — but records `deliberation_status="proceeded_unvetoed"` on the
   `ExecutionRun` **and** raises a `DeliberationGraceExpired` fault. An absent veto can
   never again look like a clean run.
-- `ExecutionRun.deliberation_status` is one of `applied` / `not_required` / `waiting` /
-  `proceeded_unvetoed` — a queryable fact, not a rationale substring (the S158 lesson).
+- `ExecutionRun.deliberation_status` is one of `applied` / `applied_failed_open` /
+  `not_required` / `waiting` / `proceeded_unvetoed` — a queryable fact, not a rationale substring
+  (the S158 lesson). `applied_failed_open` means a `DeliberationRun` exists, but at least one
+  ticker's debate failed open.
+
+## Amendment 2026-08-13 — fail-open is not a clean uphold
+
+S175 found the missing second distinction. ADR-0022 separated *absent veto* from *present veto*, but
+execution still treated a present `DeliberationRun` with `failed_open_tickers` as a clean `applied`
+uphold. The posture does not change: a failed-open review still permits the order, because S147's
+outage reasoning stands. The evidence changes: execution reads the existing `failed_open_tickers`
+property, stamps `deliberation_status="applied_failed_open"`, and records a
+`DeliberationFailedOpenSubmit` fault. No `DeliberationRun` property is added.
 
 ## Why buys and not exits
 

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Literal
 
 import agents.execution.run as execution_run
 from agents.execution.broker import BrokerFill
+from agents.execution.deliberation_gate import failed_open_tickers
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.poll import execute_pm_node, find_pending
 from agents.execution.store import write_fills as store_write_fills
@@ -63,6 +64,41 @@ def test_execute_pm_node_empty_orders_still_anchors() -> None:
     assert not graph.list_nodes("Fill")
     assert len(graph.list_nodes("ExecutionRun")) == 1
     assert find_pending(graph) == []
+
+
+def test_execute_pm_node_marks_failed_open_deliberation_without_blocking() -> None:
+    """EXEC-NEV-01 / DLIB-FAIL-01: fail-open is permitted but distinguishable."""
+    graph = InMemoryGraphStore()
+    node = _seed_pm_run(graph, order_set(order("AAPL")))
+    delib = graph.merge_node(
+        "DeliberationRun",
+        "pm-run-fixture",
+        {"vetoed_tickers": [], "failed_open_tickers": ["AAPL"]},
+    )
+    graph.add_edge(node, delib, "DELIBERATED_BY")
+
+    execute_pm_node(node, graph=graph, broker=PaperBroker())
+
+    (fill,) = graph.list_nodes("Fill")
+    (execution,) = graph.list_nodes("ExecutionRun")
+    (fault,) = graph.list_nodes("Fault")
+    assert fill.props["ticker"] == "AAPL"
+    assert execution.props["deliberation_status"] == "applied_failed_open"
+    assert fault.props["error_type"] == "DeliberationFailedOpenSubmit"
+
+
+def test_malformed_failed_open_tickers_does_not_fabricate_a_veto() -> None:
+    """EXEC-NEV-01: malformed fail-open evidence is not a trading decision."""
+    graph = InMemoryGraphStore()
+    node = _seed_pm_run(graph, order_set(order("AAPL")))
+    delib = graph.merge_node(
+        "DeliberationRun",
+        "pm-run-fixture",
+        {"failed_open_tickers": "AAPL"},
+    )
+    graph.add_edge(node, delib, "DELIBERATED_BY")
+
+    assert failed_open_tickers(graph, node) == ()
 
 
 def test_run_once_continues_after_poisoned_intent_and_anchors_execution(

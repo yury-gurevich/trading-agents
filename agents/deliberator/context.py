@@ -28,6 +28,11 @@ if TYPE_CHECKING:
 _ANALYZED_EDGE = "ANALYZED_BY"
 _DERIVED_FROM = "DERIVED_FROM"
 _EVALUATED_EDGE = "EVALUATED_BY"
+_PORTFOLIO_BATCH_BOUNDARY = (
+    "Portfolio/batch context: unavailable; this packet contains no holdings, "
+    "open positions, sibling orders, or dual-class exposure facts. Reviewers must "
+    "not infer them beyond the explicit PM gate outcomes rendered below."
+)
 
 
 def build_veto_context(
@@ -36,6 +41,7 @@ def build_veto_context(
     """Render all available upstream evidence for one PM-approved order."""
     lines = [
         f"Run {order_set.run_id}: PM-approved order under challenger-veto review.",
+        _PORTFOLIO_BATCH_BOUNDARY,
         *order_lines(intent),
         f"PM run: {_explain(order_set.explanation)}",
     ]

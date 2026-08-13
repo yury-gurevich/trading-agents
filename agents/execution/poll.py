@@ -13,11 +13,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
+from agents.execution.deliberation_faults import (
+    record_failed_open_submit,
+    record_unvetoed_submit,
+)
 from agents.execution.deliberation_gate import (
     deliberation_status,
     drop_vetoed,
+    failed_open_tickers,
     is_waiting,
-    record_unvetoed_submit,
 )
 from agents.execution.drop_sweep import sweep_unfilled_orders
 from agents.execution.exit_stops import report_unprotected_exits, settle_stops
@@ -162,6 +166,7 @@ def execute_pm_node(
         now=datetime.now(tz=UTC),
         grace_seconds=settings.deliberation_grace_seconds,
     )
+    failed_open = failed_open_tickers(graph, node)
     order_set = drop_vetoed(graph, node, order_set)
     snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
     freed = settle_stops(
@@ -187,4 +192,6 @@ def execute_pm_node(
     )
     if status == "proceeded_unvetoed":
         record_unvetoed_submit(sink, order_set.run_id, result.submitted, settings)
+    if status == "applied_failed_open":
+        record_failed_open_submit(sink, order_set.run_id, result.submitted, failed_open)
     graph.add_edge(node, execution_run, EXECUTED_EDGE)

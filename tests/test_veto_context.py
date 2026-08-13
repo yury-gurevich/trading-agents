@@ -57,11 +57,12 @@ def test_full_context_includes_all_available_upstream_evidence() -> None:
     assert "Next earnings for AAPL: 2026-07-30" in context
     assert "News for AAPL: raises guidance | buyback expanded" in context
     assert "Regime: label=neutral; vix=14.2" in context
+    assert "Portfolio/batch context: unavailable" in context
     assert (
         "confidence_floor gate: confidence=0.620 vs base_min_confidence=0.570 -> PASSED"
     ) in context
     assert "stop_vs_regime_volatility gate:" in context
-    assert "stop_pct=3.00% vs ATR%=" in context
+    assert "stop_pct=3.00% vs ATR%=" not in context
 
 
 def test_context_completeness_renders_every_enforced_gate_with_outcome() -> None:
@@ -104,7 +105,8 @@ def test_context_renders_failed_gate_outcomes_plainly() -> None:
     assert "base_take_profit_pct=8.00% -> FAILED" in context
 
 
-def test_regime_present_without_ticker_atr_is_reported_plainly() -> None:
+def test_regime_context_does_not_invent_an_atr_gate_outcome() -> None:
+    """DLIB-NEV-06 / DL-104: PM context may not fabricate a gate verdict."""
     item = intent()
     rec = RecommendationSet.model_validate(recs()).recommendations[0]
     market = MarketData.model_validate(market_data(full=False))
@@ -112,7 +114,9 @@ def test_regime_present_without_ticker_atr_is_reported_plainly() -> None:
 
     stop_line = regime_gate_lines(regime_context, rec, item, market.bars)[2]
 
-    assert "ATR%=unavailable (need at least 2 OHLCV bars)" in stop_line
+    assert "stop_vs_regime_volatility gate:" in stop_line
+    assert "ATR%" not in stop_line
+    assert "stop_pct=3.00% vs base_stop_loss_pct=3.00%" in stop_line
 
 
 def test_sparse_context_omits_missing_optional_evidence() -> None:

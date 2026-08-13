@@ -182,10 +182,98 @@ HOW TO PROVE IT
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: files changed; the four
-     design decisions taken and the options rejected (with the design-log entry); the AMD fragment
-     before and after, replayed off sched-2026-08-13; proof that execution distinguishes a fail-open
-     from an uphold, asserted in a test; confirmation the vocabulary pack did NOT move; a statement
-     of what this does to S173's self-agreement baseline; the exact `make ci` summary (unpiped,
-     redirected to a file); and `make gate-ran` output for the final tip. Do not merge until every
-     success factor is answered with a measurement. -->
+**Result:** implemented on branch `sprint-175-the-veto-says-only-what-it-can-prove`.
+
+**Files changed:** `agents/deliberator/context.py`, `agents/deliberator/context_pm.py`,
+`agents/execution/deliberation_gate.py`, `agents/execution/deliberation_faults.py`,
+`agents/execution/poll.py`, `agents/execution/tests/test_execution_poll.py`,
+`tests/test_veto_context.py`, [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md),
+`docs/decisions/INDEX.md`, `docs/design-log.md`, `docs/STATE.md`, `pyproject.toml`, and `uv.lock`.
+
+**Design decisions:** recorded as
+[DL-108](../design-log.md#dl-108---s175-makes-the-veto-say-only-what-it-can-prove---status-decided-2026-08-13).
+
+1. Removed the invented ATR pass/fail fragment instead of relabelling it advisory. Rejected:
+   retaining `stop_pct vs ATR% -> PASSED/FAILED`, because no PM gate performs that comparison;
+   adding a new volatility gate, because that is a new posture rather than a correction.
+2. Added execution's `applied_failed_open` status using existing `DeliberationRun.failed_open_tickers`.
+   Rejected: a new graph property, because `DeliberationRun` is property-enforced and the needed
+   property already exists; treating fail-open as `uphold`, because it hides an unreviewed order.
+3. Kept S147's fail-open posture and made it loud. Rejected: fail-closed execution, because vendor
+   outage blocking is an operator posture decision; an experiment tunable, because veto binding
+   mode is governance, not a forecast parameter.
+4. Declared portfolio and batch context absent in the packet. Rejected: adding book/batch facts in
+   this sprint, because the immediate defect is a false claim, and adding portfolio state would be a
+   larger prompt/data-contract change.
+
+**AMD packet replay, production graph source `market-data:sched-2026-08-13`:**
+
+```text
+pmrun=pm-run-50de809f427247af8e1ed7f806a6ef39
+market=market-data:sched-2026-08-13
+before: stop_vs_regime_volatility gate: stop_pct=5.00% vs base_stop_loss_pct=5.00% -> PASSED; target_pct=10.00% vs base_take_profit_pct=10.00% -> PASSED; stop_pct=5.00% vs ATR%=4.07% -> PASSED
+after:  stop_vs_regime_volatility gate: stop_pct=5.00% vs base_stop_loss_pct=5.00% -> PASSED; target_pct=10.00% vs base_take_profit_pct=10.00% -> PASSED
+```
+
+The after packet also states the boundary explicitly:
+
+```text
+Portfolio/batch context: unavailable; this packet contains no holdings, open positions, sibling orders, or dual-class exposure facts. Reviewers must not infer them beyond the explicit PM gate outcomes rendered below.
+```
+
+**Fail-open proof:** `test_execute_pm_node_marks_failed_open_deliberation_without_blocking` builds a
+`DeliberationRun` with `failed_open_tickers=["AAPL"]`, then asserts all three outcomes: the order is
+still submitted, the `ExecutionRun.deliberation_status` is `applied_failed_open` rather than
+`uphold`, and a `DeliberationFailedOpenSubmit` fault is recorded. The malformed-payload regression
+test proves execution does not fabricate a fail-open or veto from an invalid
+`failed_open_tickers` value.
+
+**Vocabulary pack:** did **not** move. `orchestration/packs/trading_graph_vocabulary.json` has no
+diff; this change uses `failed_open_tickers`, which is already allowed on `DeliberationRun`.
+
+**S173 baseline impact:** S173's 56 % self-agreement baseline is no longer comparable after this
+lands. Fewer veto objections are expected because the packet no longer presents an invented
+`stop_pct vs ATR%` pass/fail result that DL-104 tied to 6 of 15 objections. S173 must re-baseline
+after S175 is merged and, later, deployed.
+
+**Focused tests:** red-before-green was captured with
+`uv run pytest tests/test_veto_context.py agents/execution/tests/test_execution_poll.py --no-cov`;
+it failed on the missing portfolio boundary, the still-present ATR wording, and the absent
+`DeliberationFailedOpenSubmit` fault (`3 failed, 9 passed`). After the fix, the same target passed
+(`12 passed in 1.20s`), and the expanded focused target
+`uv run pytest tests/test_veto_context.py agents/execution/tests/test_execution_poll.py agents/execution/tests/test_execution_deliberation_gate.py --no-cov`
+passed (`25 passed in 1.24s`).
+
+**`make ci` evidence:** ran unpiped and redirected as
+`make ci > ci.txt 2>&1; $exit=$LASTEXITCODE; Write-Output "MAKE_CI_EXIT_CODE=$exit"` from the S175
+worktree; exit code `0`.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+974 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 803 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run pytest
+TOTAL                                                14540      0   3080      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2238 passed, 6 skipped in 97.39s (0:01:37) ==================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
+```
+
+**Remote gate:** `make gate-ran` must be run after the final commit is pushed from the worktree
+whose `HEAD` is being proved. Its output is intentionally not pre-pasted into this committed
+closeout, because editing this file after the gate would change the SHA the gate proved. The final
+handoff must quote the `make gate-ran` output and compare its printed SHA to `git rev-parse HEAD`
+before merge.

@@ -107,23 +107,16 @@ def _confidence_floor_line(
 
 
 def _stop_regime_line(
-    regime: RegimeContext | None, intent: OrderIntent, bars: tuple[OHLCVBar, ...]
+    regime: RegimeContext | None, intent: OrderIntent, _bars: tuple[OHLCVBar, ...]
 ) -> str:
-    atr = _atr_pct(bars, intent.ticker)
-    atr_note = (
-        f"ATR%={_pct(atr)}"
-        if atr is not None
-        else "ATR%=unavailable (need at least 2 OHLCV bars)"
-    )
     if regime is None or intent.stop_pct is None or intent.target_pct is None:
         return (
             "stop_vs_regime_volatility gate unavailable: "
-            f"stop_pct={_pct(intent.stop_pct)}; target_pct={_pct(intent.target_pct)}; "
-            f"{atr_note}."
+            f"stop_pct={_pct(intent.stop_pct)}; "
+            f"target_pct={_pct(intent.target_pct)}."
         )
     stop_base_passed = intent.stop_pct <= regime.base_stop_loss_pct
     target_base_passed = intent.target_pct >= regime.base_take_profit_pct
-    atr_fragment = _atr_fragment(intent.stop_pct, atr)
     return (
         "stop_vs_regime_volatility gate: "
         f"stop_pct={_pct(intent.stop_pct)} vs "
@@ -131,35 +124,8 @@ def _stop_regime_line(
         f"-> {_outcome(stop_base_passed)}; "
         f"target_pct={_pct(intent.target_pct)} vs "
         f"base_take_profit_pct={_pct(regime.base_take_profit_pct)} "
-        f"-> {_outcome(target_base_passed)}; {atr_fragment}"
+        f"-> {_outcome(target_base_passed)}"
     )
-
-
-def _atr_fragment(stop_pct: float, atr: float | None) -> str:
-    if atr is None:
-        return "ATR%=unavailable (need at least 2 OHLCV bars)"
-    return (
-        f"stop_pct={_pct(stop_pct)} vs ATR%={_pct(atr)} -> {_outcome(stop_pct >= atr)}"
-    )
-
-
-def _atr_pct(bars: tuple[OHLCVBar, ...], ticker: str) -> float | None:
-    ticker_bars = sorted(
-        (bar for bar in bars if bar.ticker == ticker), key=lambda bar: bar.bar_date
-    )
-    if len(ticker_bars) < 2:
-        return None
-    ranges: list[float] = []
-    previous_close = ticker_bars[0].close
-    for bar in ticker_bars[1:]:
-        true_range = max(
-            bar.high - bar.low,
-            abs(bar.high - previous_close),
-            abs(bar.low - previous_close),
-        )
-        ranges.append(true_range)
-        previous_close = bar.close
-    return (sum(ranges) / len(ranges)) / ticker_bars[-1].close
 
 
 def _outcome(passed: bool) -> str:

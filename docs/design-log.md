@@ -8,6 +8,45 @@ and is marked CLOSED here.
 
 ---
 
+## DL-108 - S175 makes the veto say only what it can prove - status: DECIDED (2026-08-13)
+
+**Decision.** S175 repairs DL-104 classes (a), (b), and (d) without changing the fail-open posture
+or the `DeliberationRun` vocabulary. The four choices:
+
+1. **Delete the ATR fragment.** The PM packet no longer renders `stop_pct vs ATR% -> PASSED/FAILED`
+   inside `stop_vs_regime_volatility gate:` because no PM gate performs that comparison. The live
+   AMD replay from `market-data:sched-2026-08-13` changed from
+   `stop_pct=5.00% vs ATR%=4.07% -> PASSED` to no ATR clause at all.
+2. **Fail-open remains permissive, but no longer clean.** Execution reads the existing
+   `failed_open_tickers` field, stamps `ExecutionRun.deliberation_status="applied_failed_open"`,
+   and emits `DeliberationFailedOpenSubmit`. It still submits the order, preserving S147.
+3. **The posture is declared in ADR-0022, not as a tunable.** `applied_failed_open` is an evidence
+   status under the existing fail-open policy; turning the veto advisory/binding as a mode remains
+   an operator posture decision for a later ADR.
+4. **Do not supply portfolio/batch context in this sprint.** The packet now states that holdings,
+   open positions, sibling orders, and dual-class exposure facts are unavailable and must not be
+   inferred beyond explicit PM gate outcomes.
+
+**Rejected routes.**
+
+- *Relabel the ATR fragment honestly* - rejected because a non-gate ATR number remains an extra
+  prompt input that can move with unrelated data-window changes. Deleting it leaves only performed
+  gate outcomes in a gate line.
+- *Add failed-open tickers to `vetoed_tickers`* - rejected because that makes the fail-open path
+  block like a veto, reversing S147 as an implementation side effect.
+- *Add a new `DeliberationRun` property* - rejected because `failed_open_tickers` already exists and
+  is pack-declared; a new property would force a full deploy while S169's env-wipe gap is open.
+- *Add a tunable advisory/binding switch* - rejected because this is safety posture, not an
+  experiment parameter.
+- *Supply full portfolio and batch context now* - rejected on blast radius and latency. It requires
+  a broader packet contract and more tokens; S175 only makes the current packet honest.
+
+**Consequences.** Fewer veto objections after S175 are expected, not a regression: the largest
+self-manufactured objection class is gone. S173's self-agreement baseline must be remeasured after
+this lands because verdicts before and after S175 are not comparable.
+
+---
+
 ## DL-01 · Primary organizing lens for `ops/`  ·  status: OPEN
 
 **Question.** A filesystem is one tree, so the `ops/` realm can show only one organizing lens

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-13 19:05 AEST · **Version:** 0.90.08 · **S174 is proven in production and S175 is merged but undeployed — the fleet sits one PATCH behind on purpose, so tomorrow's run stays a clean single-variable readout for the 60 s peer timeout.**
+**Last updated:** 2026-08-13 20:06 AEST · **Version:** 0.90.09 · **S176 is code-proven and branch-gated, not deployed; no live partial-fill proof exists because production has zero partial fills.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -86,14 +86,22 @@ hash unmoved. 🪤 **It does not change acceptance** — `trading_acceptance` re
 `DeliberationRun` props, not `Fault` nodes, so a run with fail-opens still reads FAIL. The 60 s
 timeout is what fixes that, not S175.
 
+**S176 — code-proven, branch-gated, NOT deployed** ([spec](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md)).
+`partial -> filled` is now the only mutable broker-status transition on `Fill`; the completed
+broker price and realized-PnL conclusion move with that transition, while terminal statuses remain
+immutable. DRIFT-033 is closed by dropping master's stale `"neo4j"` external I/O declaration without
+adding `"postgres"`. Local `make ci`: **2243 passed / 6 skipped / 100.00 %**; remote branch gate
+proved `57f540f`. Pack hash unmoved. **No live functionality proof is claimed**: the live spine has
+never produced a partial fill.
+
 ## The sequence from here — in order, and the order matters
 
 1. **Read `sched-2026-08-14`.** It runs on `s174`, so nothing S175 changed is under it: the timeout
    is the only variable that moved since the failing run. `trace_run.py` + `accept.py`, then the
    `LLMCall` latency table above for a fourth row. 🪤 **Do not retag before reading it** —
    deploying into the experiment destroys the only clean comparison available.
-2. **Hand [S176](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md) to Codex** (paste block
-   is in the spec). Independent of the run; touches `reconciliation_store.py` only.
+2. **Merge S176 after the evidence commit is branch-gated.** It is independent of the 08-14 run and
+   remains undeployed after merge.
 3. **Then one deploy carrying S175 + S176 together** — one retag, one live check, both proven at
    once. Tag sprint-shaped per [DL-106](design-log.md).
 

@@ -185,12 +185,101 @@ HOW TO PROVE IT
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: files changed; the
-     transition rule chosen and the options rejected (with the design-log entry); the before test
-     showing status and price both stuck; proof that partial -> filled now lands with the final
-     price; proof that filled -> partial and rejected -> anything are refused; the realized-PnL
-     arithmetic for a completed-after-partial fill; `grep -rn neo4j` output; the DRIFT-033 row
-     flipped with its SHA; confirmation the vocabulary pack hash is unchanged both sides; the exact
-     `make ci` summary (unpiped, redirected to a file); and `make gate-ran` output for the final
-     tip. State plainly that no live check was possible because no production fill has ever been
-     partial. -->
+**Result:** Implemented as a narrow monotonic transition allowlist: only
+`Fill.broker_status` `partial -> filled` may replace existing `Fill` broker refresh values. The
+allowed replacement set is limited to `broker_status`, `broker_price_cents`,
+`broker_status_refreshed_at`, and `realized_pnl_cents`; terminal `filled` and `rejected` fills are
+still skipped before a refresh write. The ordinary graph merge remains append-only outside that
+specific completion. Version bumped `0.90.08 -> 0.90.09`.
+
+**Files changed:** `agents/execution/broker_status_refresh.py`,
+`agents/execution/reconciliation_store.py`, `agents/execution/realized_pnl.py`,
+`kernel/graph_support.py`, `kernel/graph_postgres_queries.py`, `contracts/master.py`,
+`agents/execution/tests/test_partial_fill_completion.py`, `tests/test_graph_partial_completion.py`,
+`docs/design-log.md`, `docs/laws/drift-register.md`, `pyproject.toml`, `uv.lock`.
+
+**Design decision:** chose the recommended monotonic transition allowlist. Recorded as
+[DL-108](../design-log.md#dl-108---s176-lets-only-partial-broker-fills-complete---status-decided-2026-08-13).
+Rejected: terminal-status guard (broader than the measured defect), append-new-node/read-model
+rewrite (larger downstream reader change), and removing the write-once guard wholesale (would permit
+terminal rewrites).
+
+**Before test:** after planting `agents/execution/tests/test_partial_fill_completion.py`, the focused
+pre-fix run was red:
+
+```text
+uv run pytest agents/execution/tests/test_partial_fill_completion.py --no-cov
+2 failed, 1 passed
+test_partial_broker_status_can_finish_with_final_price:
+  assert 'partial' == 'filled'
+test_completed_after_partial_sell_uses_final_price_for_realized_pnl:
+  assert 'partial' == 'filled'
+```
+
+The seeded partial node carried `broker_price_cents=10135` and the expected completed price was
+`10200`; because the status never advanced, the price remained the partial observation too.
+
+**After tests:** focused/related tests passed:
+
+```text
+uv run pytest agents/execution/tests/test_partial_fill_completion.py tests/test_graph_partial_completion.py agents/execution/tests/test_fill_refresh_terminal.py agents/execution/tests/test_realized_pnl_refresh.py tests/test_graph.py tests/test_graph_postgres.py --no-cov
+32 passed, 1 skipped
+```
+
+`partial -> filled` now lands with `broker_price_cents=10200`. `filled -> partial` and
+`rejected -> filled` are refused by the terminal-refresh skip and leave no `BrokerOrderStatus`
+refresh rows.
+
+**Realized PnL arithmetic:** the completed-after-partial sell test opens ABT at `10000` cents,
+observes a partial at `10135`, then completes at `10200` for quantity `10`. The final realized PnL
+is `(10200 - 10000) * 10 = 2000` cents, and the test asserts `realized_pnl_cents == 2000`.
+
+**DRIFT-033:** closed in `docs/laws/drift-register.md` with merge SHA
+`57f540f78b307dc4e0c94041b90121a0b88bb76f`. Verification:
+
+```text
+grep -rn neo4j kernel/ agents/ orchestration/ contracts/
+# no output; exit 1
+```
+
+**Vocabulary pack:** unchanged. `git hash-object orchestration/packs/trading_graph_vocabulary.json`
+on the S176 tree and on `57f540f^` both returned:
+
+```text
+40bd1b108e3338bd002ca7cf0dacb7133efbd371
+```
+
+**Local CI:** ran unpiped and redirected:
+
+```text
+make ci > ci.txt 2>&1
+$LASTEXITCODE
+0
+```
+
+Readback summary:
+
+```text
+ruff check: passed
+ruff format --check: 977 files already formatted
+mypy: Success: no issues found in 805 source files
+import-linter: Contracts: 4 kept, 0 broken
+pytest: 2243 passed, 6 skipped in 90.14s
+coverage: TOTAL 14566 stmts, 0 missing, 100.00%; required 100.0% reached
+pip-audit: No known vulnerabilities found
+detect-secrets: Passed
+untracked secret scan: scanning 4 new file(s), Passed
+```
+
+**Remote gate:** ran `make gate-ran` from this worktree after pushing branch
+`sprint-176-a-partial-fill-must-be-able-to-finish`:
+
+```text
+GATE PROVEN for 57f540f78b307dc4e0c94041b90121a0b88bb76f:
+  Security Findings: success
+  CI: success
+```
+
+**Live proof:** not claimed. The live spine measurement in the spec found zero production
+`partial` fills, so this path cannot be exercised on the real fleet yet. Unit and graph-backend
+tests are the only functionality proof for S176.

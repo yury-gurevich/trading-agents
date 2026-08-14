@@ -8,6 +8,48 @@ and is marked CLOSED here.
 
 ---
 
+## DL-111 - The audit-clause sweep: nine green rows read, five demoted, two clauses false - status: MEASURED (2026-08-14)
+
+S165 closed asking for this: `SCAN-OBS-01` had been green while its clause was false, because the
+cited test proved *provenance links* rather than *FilterTrace reconstructability*. The work queue
+carried the follow-up as **"17 audit-type rows"**. **Measured: there are 9 `audit` rows and 4
+`observable` rows, 13 in total** - and 4 were already gray from the S156 citation check, so **9
+green rows** were actually in scope. The 17 was a carried, unmeasured number.
+
+**Read one at a time, clause against cited test. Five demoted, four stand.**
+
+| Row | Verdict |
+| --- | --- |
+| `ANLZ-OBS-01` | ⬜ cited test asserts a pub/sub node exists with a `recommendations` key |
+| `EXEC-OBS-01` | ⬜ proves one `Fill`; `Reconciliation` is asserted in no test at all |
+| `EXEC-OBS-02` | ⬜ proves broker rejection; timeouts and stage-gate faults untested |
+| `PM-OBS-01` (the "gate outcomes and portfolio snapshot" row) | ⬜ weaker than the two sibling rows S156 already demoted |
+| `PROV-OUT-04` | ⬜ proves `graph_node_id` resolves, not source or transformation |
+| `PM-OBS-01` (rejection `gate_report`), `PM-OBS-02`, `SCAN-OBS-01`, `SCAN-OBS-02` | 🟩 clause and cited test match |
+
+**Two of the five are worse than a citation gap - the clause is false in code**, and both are now in
+the drift register rather than the test plans. **DRIFT-039:** `portfolio_state_snapshot` appears
+**nowhere in the codebase**; `OrderIntentSet` has no snapshot field and `PMRun` carries
+`order_intent_set` alone. **DRIFT-040:** `Provenance` has no source or transformation field, and
+`MarketSnapshot` records `created_at` plus a boolean `used_fallback` - so under ADR-0006's
+three-vendor OHLCV arrangement, *which feed produced this bar* is unanswerable from the graph.
+
+**The pattern under the pattern, worth more than the five rows.** Four of the five demoted rows cite
+a test on the **pub/sub path**, which production does not use - `test_analyst_pubsub`,
+`test_pm_pubsub`, `test_execution_pubsub`. That is the S174 shape (a parameter that travelled
+correctly on the request/response path while the graph-pull path took a bare default) showing up in
+the *ledger* rather than in the code. A row proven only on the pub/sub path says nothing about the
+fleet. Not swept for here; **candidate for the next sweep** - and a cheaper filter than reading
+clauses, because it is greppable.
+
+🪤 **A green row can also be green for the wrong reason and still be true.** `ANLZ-OBS-01`'s
+clause **is** satisfied in production - the graph-pull path persists the whole `RecommendationSet`
+as `AnalystRun.recommendation_set` - it is the *test* that proves none of it. Demoting the row is
+correct; concluding the analyst loses its scores would have been a false red (the DL-73 lesson).
+
+**Not decided:** DRIFT-039 and DRIFT-040 each need a forced choice - build the thing, or narrow the
+law to what the code actually carries. Both are law amendments, not test-citation fixes.
+
 ## DL-110 - A manual dispatch consumes that night's scheduled run id - status: MEASURED (2026-08-14)
 
 **The scheduled run for 2026-08-14 does not exist, and nothing failed.** `dispatcher-cron` fired at

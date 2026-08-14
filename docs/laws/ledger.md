@@ -35,13 +35,13 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 
 | Agent | Laws authored? | Clauses green / total | Status |
 | --- | --- | --- | --- |
-| provider | ✅ v1 (LOCKED) | 17 / 62 | 🟨 partial — **17 of 62 clauses proven** after the S156 citation check; 23 have a gray row and 22 have no row at all (S157 warn-only backlog) |
+| provider | ✅ v1 (LOCKED) | 16 / 62 | 🟨 partial — **16 of 62 clauses proven** after the S156 citation check; 24 have a gray row and 22 have no row at all (S157 warn-only backlog) · S169-sweep demoted `PROV-OUT-04` |
 | scanner | ✅ v1 (LOCKED) | 16 / 39 | 🟨 partial — **16 of 39 clauses proven** after the S156 citation check; 10 have a gray row and 13 have no row at all (S157 warn-only backlog) |
-| analyst | ✅ v1.1 (LOCKED) | 24 / 46 | 🟨 partial — **24 of 46 clauses proven** after the S156 citation check; 10 have a gray row and 12 have no row at all (S157 warn-only backlog) · S152 declared 3 new clauses (43→46) |
+| analyst | ✅ v1.1 (LOCKED) | 23 / 46 | 🟨 partial — **23 of 46 clauses proven** after the S156 citation check; 10 have a gray row and 12 have no row at all (S157 warn-only backlog) · S152 declared 3 new clauses (43→46) · S169-sweep demoted `ANLZ-OBS-01` |
 | forecaster | ✅ v1 (LOCKED) | 16 / 45 | 🟨 partial — **16 of 45 clauses proven** after the S156 citation check; 29 have a gray row |
 | portfolio_manager | ✅ v1 (LOCKED) | 25 / 44 | 🟨 partial — **25 of 44 clauses proven** after the S156 citation check; 7 have a gray row and 12 have no row at all (S157 warn-only backlog) |
 | deliberator | ✅ v1 (LOCKED) | 5 / 48 | 🟨 partial — **5 of 48 clauses proven** after S167; S158 covered append-only `DeliberationRun` output shape, fail-open recording, and failed peer/debate visibility; S167 proves queryable fail-open causes (`DLIB-OBS-03`) |
-| execution | ✅ v1.1 (LOCKED) | 32 / 57 | 🟨 partial — **32 of 57 clauses proven** after S164 proved broker stop dependency exercise and cancelled-stop retry; 12 have a gray row and 13 have no row at all (S157 warn-only backlog) · S152 declared 8 new clauses (49→57); `chore-exec-fail-03-coverage` proved EXEC-FAIL-03 |
+| execution | ✅ v1.1 (LOCKED) | 30 / 57 | 🟨 partial — **30 of 57 clauses proven** after S164 proved broker stop dependency exercise and cancelled-stop retry; 12 have a gray row and 13 have no row at all (S157 warn-only backlog) · S152 declared 8 new clauses (49→57); `chore-exec-fail-03-coverage` proved EXEC-FAIL-03 · S169-sweep demoted `EXEC-OBS-01` and `EXEC-OBS-02` |
 | monitor | ✅ v1 (LOCKED) | 20 / 46 | 🟨 partial — **20 of 46 clauses proven** after the S156 citation check; 19 have a gray row and 7 have no row at all (S157 warn-only backlog) |
 | reporter | ✅ v1 (LOCKED) | 20 / 39 | 🟨 partial — **20 of 39 clauses proven** after the S156 citation check; 18 have a gray row and 1 have no row at all (S157 warn-only backlog) |
 | researcher | ✅ v1 (LOCKED) | 19 / 43 | 🟨 partial — **19 of 43 clauses proven** after the S156 citation check; 24 have a gray row |

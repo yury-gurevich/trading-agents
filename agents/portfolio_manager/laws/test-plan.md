@@ -95,7 +95,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| PM-OBS-01 | PMRun node contains all gate outcomes and portfolio snapshot. | audit | `test_pm_pubsub.py::test_order_intent_result_node_in_graph` | 🟩 |
+| PM-OBS-01 | PMRun node contains all gate outcomes and portfolio snapshot. | audit | Demoted S169-sweep: the cited test asserts a pub/sub `OrderIntentResult` node exists with an `orders` key - weaker than the two sibling PM-OBS-01 rows S156 already demoted for the same clause. 🚨 `portfolio_state_snapshot` exists **nowhere in the codebase** and `OrderIntentSet` has no snapshot field, so this half of the clause is false, not merely untested (DRIFT-039). | ⬜ |
 | PM-OBS-01 | PMRun reconstructs recommendations, gate outcomes, reasons, estimated prices, final intents, and pre/post portfolio snapshots. | audit | Demoted S156: `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` proves OrderIntent money/gate_report storage only, not full PMRun reconstructability. | ⬜ |
 | PM-OBS-01 | Rejection nodes persist rejected-path gate_report evidence for graph reconstruction. | audit | `test_rejection_store.py::test_store_writes_queryable_rejection_gate_report` | 🟩 |
 | PM-OBS-02 | Faults routed to central channel; every rejection has a reason. | observable | `test_portfolio_manager_agent.py::test_degraded_provider_rejects_honestly_and_records_fault` | 🟩 |

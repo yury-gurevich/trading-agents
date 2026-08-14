@@ -92,6 +92,18 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-034 | `RPT-IDN-01` / `RPT-IDN-02` / `RPT-NEV-02` | Reporter traverses upstream graph facts and projects them into its owned durable report labels; it may only write its own labels, currently enumerated as `Snapshot`, `TradeNarrative`, and `ReportSnapshotResult`. | S160 needs a new append-only `RecommendationOutcome` fact per `(Recommendation, horizon)` to measure selection quality. Reporter is the closest conceptual owner, but no locked agent law enumerates that label, and the sprint explicitly forbids inventing an owner or editing `laws.md`. | law gap | **OPEN (S160 law-first stop, 2026-08-06)** — decide and amend ownership before implementation. Likely amendment shape: reporter owns the derived outcome/scorecard projection, but only after a law-amendment cycle updates `RPT-IDN-02`, capability labels, tests, and vocabulary together. |
 
+## Audit-clause sweep (S169 follow-up, 2026-08-14)
+
+Both rows below came out of the `audit`/`observable` shape sweep that S165 asked for: a green law
+row whose cited test proves something adjacent to its clause. These two are the ones where the
+clause is **false in code**, not merely untested — the rest were demoted in each agent's test-plan.
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-039 | `PM-OBS-01` / `PM-OUT-06` | *"The `portfolio_state_snapshot` captures pre- and post-run state on the `OrderIntentResult` node"* — pre/post cash, open positions and sector weights, reconstructable without a live broker query. | `portfolio_state_snapshot` appears **nowhere in the codebase** (0 non-mutant hits). `OrderIntentSet` has no snapshot field, and the graph-pull path writes `PMRun` with `order_intent_set` alone (`poll.py:75`). The `OrderIntentResult` node the clause names is written only on the pub/sub path, which production does not use. S156 already demoted **two** PM-OBS-01 rows and PM-OUT-06 for insufficient proof; a third row stayed green on a weaker test until this sweep. | gap (intent not built) | **OPEN (2026-08-14)** — forced decision: build the snapshot, or amend `PM-OBS-01`/`PM-OUT-06` to claim only what `PMRun` actually carries. Not a test-citation fix either way. |
+| DRIFT-040 | `PROV-OUT-04` | *"Every served fact carries provenance (source, fetch-time, transformation) so any downstream output is reconstructable."* | `Provenance` (`contracts/common.py`) carries `run_id`, `source_agent`, `correlation_id`, `graph_node_id`, `incident_refs` — no vendor source, no transformation. `MarketSnapshot` records `created_at` (so fetch-time holds) and a **boolean** `used_fallback`, never which vendor answered. Under ADR-0006 the OHLCV source is Alpaca *or* Tiingo *or* FMP, so "which feed produced this bar" is unanswerable from the graph. | gap (intent not built) | **OPEN (2026-08-14)** — forced decision: record the serving source (and drop or define "transformation"), or narrow `PROV-OUT-04` to fetch-time plus the fallback flag. Note it also weakens DL-37 lineage claims. |
+
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

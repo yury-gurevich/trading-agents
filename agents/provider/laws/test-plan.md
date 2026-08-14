@@ -30,7 +30,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PROV-OUT-03a | Clean feed → SUCCESS quality. | success | `test_domain.py::test_integrity_clean_short_window_has_no_notes` | 🟩 |
 | PROV-OUT-03b | Stale/missing feed → DEGRADED, flagged, still a valid (non-empty-silent) response. | degraded | `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing` | 🟩 |
 | PROV-OUT-03c | Boundary failure → typed FAULT, recorded. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |
-| PROV-OUT-04 | A served fact's provenance lets you reconstruct source + fetch-time. | audit | `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` | 🟩 |
+| PROV-OUT-04 | A served fact's provenance lets you reconstruct source + fetch-time. | audit | Demoted S169-sweep: the cited test proves only that `provenance.graph_node_id` resolves to a `MarketSnapshot`. 🚨 `Provenance` has no source or transformation field and `MarketSnapshot` records `created_at` plus a boolean `used_fallback` - so fetch-time is reconstructable but **which vendor served the fact is not** (DRIFT-040). | ⬜ |
 | PROV-OUT-05 | A second request appends a new record; the prior record is unchanged. | append-only | _tbd_ | ⬜ |
 
 ## Prohibitions

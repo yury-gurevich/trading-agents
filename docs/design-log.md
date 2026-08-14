@@ -5444,7 +5444,7 @@ cron move into `orchestration/packs/trading_tunables.json`; `up` reads the live 
 and the job **before its first create** and refuses, naming every key it would drop, unless
 `-DropEnv` acknowledges the removal. The `$DispatcherCron` literal is gone.
 
-🪟 **What this does not establish.** No `up` has run. The refusal, the pack values and the
+🪤 **What this does not establish.** No `up` has run. The refusal, the pack values and the
 resolution are proven by unit tests and a parse-level harness against the committed pack — the live
 half (tunables surviving a real `up`, re-read off the app rather than believed from the deploy's own
 report — hardening row Q) is owed at the next full deploy. The three temporary

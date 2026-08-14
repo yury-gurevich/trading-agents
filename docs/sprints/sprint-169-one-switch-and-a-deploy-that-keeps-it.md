@@ -158,7 +158,7 @@ returns **false** and names the key in its refusal; once the pack carries it, th
 never reported as a drop. `Up` runs the sweep across all 15 agents plus the job **before its first
 create**, so a refusal leaves the fleet untouched rather than half-deployed.
 
-**Not proven.** 🪟 **No deploy has run.** Success factors 4–6 of part B — a planted `up`
+**Not proven.** 🪤 **No deploy has run.** Success factors 4–6 of part B — a planted `up`
 failing against a live app, and the tunables surviving a real `up` **re-read off the app** rather
 than believed from the deploy's own report (hardening row Q) — are **owed at the next full `up`**.
 Nothing here proves the guard's live `az` reads, only its logic against supplied name lists. Part A

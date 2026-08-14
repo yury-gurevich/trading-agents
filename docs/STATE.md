@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-14 11:05 AEST · **Version:** 0.90.10 · **This morning's run never existed — yesterday's manual fire had already taken its UTC-dated key, so the 60 s timeout is still unread; tonight's 22:30 UTC fire takes `sched-2026-08-14` uncontested.**
+**Last updated:** 2026-08-14 13:20 AEST · **Version:** 0.90.10 · **This morning's run never existed — yesterday's manual fire had already taken its UTC-dated key (DL-110), so the 60 s timeout is still unread; tonight's 22:30 UTC fire takes `sched-2026-08-14` uncontested.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -25,21 +25,28 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **The audit-clause sweep, and one guard that had never been exercised (docs + test-only,
+  2026-08-14 — [DL-111](design-log.md)).** The queue's *"17 audit-type rows"* measured **13**; **9**
+  were green and in scope and **5 were demoted**, the cited test proving something adjacent to the
+  clause each time. Ledger reconciled (analyst 24→23, execution 32→30, provider 17→16). Two are
+  **false in code**, now drift rows: **DRIFT-039** `portfolio_state_snapshot` exists nowhere in the
+  codebase; **DRIFT-040** nothing records which vendor served a fact. 🪤 Four of the
+  five cite a test on the **pub/sub path production does not use** — the S174 shape in the ledger,
+  and greppable, so the next sweep is cheap. The gate then caught the same disease in a test:
+  `test_a_missing_sdk_raises_configuration_error` patched `builtins.__import__` while the adapter
+  calls `importlib.import_module`, which **does not consult it** — so it passed only where the SDK was
+  absent. Fixed, parametrised over both vendors, proven **with the SDKs installed** and planted out.
+  **No bump** (test-only). New **row R**: three more guards are covered only by CI lacking the extras.
+
 - **A deploy now keeps the switches it was given (fix, `0.90.10`, 2026-08-14 — closes
   [DL-100](design-log.md), [S169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
-  **A:** the three deliberator model tunables default to empty and resolve from `DEFAULT_MODEL` next
-  to `KEY_ENV`, so `DELIBERATOR_LLM_PROVIDER` is the whole switch; `role_models` reads through
-  `model_for_role`, so the `DeliberationRun` records the **resolved** model and never the sentinel —
-  asserted on the written node, because a green settings object is what let this ship. **B:**
-  operator tunables and the dispatcher cron move into `orchestration/packs/trading_tunables.json`
-  (a snapshot read off the live fleet), and `up` sweeps all 15 agents plus the job **before its
-  first create**, refusing and naming any live env key it would drop (`-DropEnv` to drop one
-  deliberately). `make ci` **2299 passed / 6 skipped / 100.00 %**; both planted failures watched
-  before restoration. 🪤 **Not deployed, and the live half is owed** — no `up` has run, so
-  "tunables survive a real `up`, re-read off the app" (row Q) is unproven, and the fleet still
-  carries the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides that must be dropped in that deploy or
-  it keeps masking the new default path. Fixed in passing: two different entries were both numbered
-  **DL-108**; S176's is now DL-109.
+  The three model tunables resolve from the **provider**, so `DELIBERATOR_LLM_PROVIDER` is the whole
+  switch, and `role_models` records the resolved name — asserted on the written node. Operator
+  tunables and the cron move into `orchestration/packs/trading_tunables.json`; `up` sweeps every
+  agent **before its first create** and refuses, naming any live env key it would drop (`-DropEnv`
+  to drop one deliberately). `make ci` **2299 passed / 100.00 %**, both planted failures watched.
+  🪤 **Not deployed** — the live half (row Q) is owed at the next full `up`, which must also
+  `-DropEnv` the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides or the fleet keeps masking the new path.
 
 Older sprints — **the deliberation-constraint measurement (`0.90.02`, DL-105) and the S166→S171
 veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
@@ -171,21 +178,17 @@ specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in 
 4. **DL-104 (d) — a real advisory/binding switch**, so *advisory* is a declared posture rather than a grace
    that happens to expire. Every run in the current state writes a truthful but uninformative `error` fault,
    which trains the operator to read a real fault as noise.
-5. **~~S169~~ — shipped `0.90.10`, 2026-08-14** (see *Recent*); its live proof rides the next
-   full `up`, not a retag.
-6. **S170 — one LLM adapter in `kernel/`**
+5. **S170 — one LLM adapter in `kernel/`**
    ([sprint-170](sprints/sprint-170-one-llm-adapter-in-the-plumbing.md)). Ranked **below** the fixes above
    because it is capability rather than repair — but it is what gives the operator the same provider switch
    the deliberator already has, while the Anthropic key is usage-limited to 2026-09-01. Retargeted `0.90.02` → `0.90.03` on
    2026-08-11.
-7. **Remaining hardening rows: N, O, P.** **N** — delegated coding agents default to `danger-full-access`
+6. **Remaining hardening rows: N, O, P, R.** **N** — delegated coding agents default to `danger-full-access`
    with no approval prompt; the protection is the operator remembering a CLI flag. **O** — S157's 101
    missing law-clause test-plan rows, then flip assertion E in `scripts/check_law_coverage.py` to hard fail.
    **P** — a `partial` fill can never upgrade to `filled`; still **zero** production fills in that state,
    which is the only reason it is not urgent.
-8. **DRIFT-033** — drop `"neo4j"` from master's `external_io` declaration. One token, full CI cycle because
-   it is Python; still worth bundling with the next Python chore rather than a branch of its own.
-9. **Row Q's live confirmation, still owed.** 🪤 The 2026-08-12 retag went through `az`
+7. **Row Q's live confirmation, still owed.** 🪤 The 2026-08-12 retag went through `az`
    image-only, not `deploy-agents.ps1`, so it did **not** supply it. Expect `[OK]` on all 17 targets; any `[XX]`
    should now be a genuine failure carrying its stderr. Item 1 is the deploy that would supply it.
 

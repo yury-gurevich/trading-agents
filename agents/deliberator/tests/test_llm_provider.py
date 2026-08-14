@@ -8,6 +8,7 @@ External I/O: none — no client is constructed against a real vendor.
 
 from __future__ import annotations
 
+import importlib
 import sys
 import types
 from typing import Any
@@ -107,21 +108,35 @@ def test_openai_returns_the_assistant_text(monkeypatch: pytest.MonkeyPatch) -> N
     assert client.max_tokens == 4096
 
 
+def _hide_sdk(monkeypatch: pytest.MonkeyPatch, missing: str) -> None:
+    """Make one vendor SDK unimportable *through the path the adapter uses*.
+
+    Both adapters call `importlib.import_module`, which does **not** route
+    through `builtins.__import__` (measured 2026-08-14). Patching builtins left
+    the guard unexercised: the assertion passed only in environments where the
+    package genuinely was not installed, which is CI and a fresh worktree but
+    not a developer machine carrying the extra. There the same test failed and
+    the `except ModuleNotFoundError` lines read 93.94 % — the branch was being
+    covered by the environment, never by the test.
+    """
+    real_import_module = importlib.import_module
+
+    def _absent(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == missing:
+            raise ModuleNotFoundError(name)
+        return real_import_module(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib, "import_module", _absent)
+
+
+@pytest.mark.parametrize(
+    ("provider", "package"), [("openai", "openai"), ("anthropic", "anthropic")]
+)
 def test_a_missing_sdk_raises_configuration_error(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, provider: str, package: str
 ) -> None:
     """An absent package is a configuration fault, not an import crash mid-debate."""
-    import builtins
+    _hide_sdk(monkeypatch, package)
 
-    real_import = builtins.__import__
-
-    def _no_openai(name: str, *args: Any, **kwargs: Any) -> Any:
-        if name == "openai":
-            raise ModuleNotFoundError(name)
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.delitem(sys.modules, "openai", raising=False)
-    monkeypatch.setattr(builtins, "__import__", _no_openai)
-
-    with pytest.raises(RuntimeError, match="openai package is not installed"):
-        _build("openai")
+    with pytest.raises(RuntimeError, match=f"{package} package is not installed"):
+        _build(provider)

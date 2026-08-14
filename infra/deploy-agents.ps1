@@ -4,6 +4,12 @@
 #   pwsh infra/deploy-agents.ps1 up -Tag s103 # preflight → schema → master → 15 agents + cron job
 #   pwsh infra/deploy-agents.ps1 down         # delete apps + dispatcher job
 #
+# Operator tunables and the dispatcher cron come from the pack
+# (orchestration/packs/trading_tunables.json), never from live cluster state: a
+# full `up` REPLACES each app's env set, so anything set by hand was silently
+# reverted to its code default (DL-100). `up` refuses if it would drop a live env
+# key the pack does not carry; -DropEnv KEY1,KEY2 acknowledges an intended removal.
+#
 # Creds (all gitignored): infra/ghcr.local.json and infra/key-vault.local.json.
 # POSTGRES_DSN is the schema/admin DSN; fleet roles use per-target DSNs.
 
@@ -16,7 +22,8 @@ param(
   [string]$ScaleEnd = '30 00 * * *',
   [string]$ScaleTimezone = 'UTC',
   [int]$ScaleDesiredReplicas = 1,
-  [string]$DispatcherCron = '30 22 * * *',
+  [string]$DispatcherCron = '',
+  [string[]]$DropEnv = @(),
   [switch]$UseSharedPostgresDsn,
   [switch]$UseSharedServiceBusDsn
 )
@@ -329,6 +336,91 @@ function Get-CronScaleArgs($ruleName, $start) {
   )
 }
 
+# ── Operator tunables: the pack is the source of truth, not the cluster ───────
+# A `containerapp create` against an existing app REPLACES its env set. Measured
+# 2026-08-08: one `up` wiped SCANNER_CANDIDATE_CAP=25, MAX_POSITION_PCT=0.01
+# (a silent 10x position size), MAX_POSITIONS=60 and reverted the weekday-only
+# dispatcher cron — every one of them under a green [OK]. The values now live in
+# the pack, and the guard below refuses to deploy over anything the pack forgot.
+function Load-Tunables {
+  $p = Join-Path $PSScriptRoot '..\orchestration\packs\trading_tunables.json'
+  # Absence is a broken checkout, not an empty config: proceeding would deploy
+  # code defaults over the operator's fleet, which is the defect itself.
+  if (-not (Test-Path $p)) { throw "tunables pack missing: $p" }
+  return Get-Content $p -Raw | ConvertFrom-Json
+}
+
+function Get-AppTunables($name) {
+  $apps = (Load-Tunables).apps
+  if (@($apps.PSObject.Properties.Name) -notcontains $name) { return @() }
+  return @($apps.$name.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)" })
+}
+
+function Resolve-DispatcherCron {
+  # An explicit -DispatcherCron still wins; the script literal no longer exists,
+  # because a literal default is what reverted `30 22 * * 1-5` to daily.
+  if ($DispatcherCron) { return $DispatcherCron }
+  return (Load-Tunables).dispatcher.cron
+}
+
+function Get-AgentEnv($name, $masterUrl, $pubB64) {
+  $agentGraph = Get-GraphConfig $name
+  $agentServiceBus = Get-ServiceBusConfig $name
+  $envv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$pubB64") +
+  @($agentGraph.envVars) + @($agentServiceBus.envVars)
+  if ($name.StartsWith("deliberator-")) {
+    $envv += @(
+      "DELIBERATOR_ROLE=$($name.Substring('deliberator-'.Length))",
+      "DELIBERATOR_INSTANCE_NAME=$name"
+    )
+  }
+  return $envv + (Get-AppTunables $name)
+}
+
+function Get-LiveEnvNames($name) {
+  $raw = az containerapp show --name $name --resource-group $RG --subscription $SUB `
+    --query "properties.template.containers[0].env[].name" -o tsv 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $raw) { return @() }
+  return @($raw -split "`r?`n" | Where-Object { $_ })
+}
+
+function Get-LiveJobEnvNames($name) {
+  $raw = az containerapp job show --name $name --resource-group $RG --subscription $SUB `
+    --query "properties.template.containers[0].env[].name" -o tsv 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $raw) { return @() }
+  return @($raw -split "`r?`n" | Where-Object { $_ })
+}
+
+function Assert-EnvPreserved($name, [string[]]$liveNames, [string[]]$plannedNames) {
+  # GRAPH_VOCABULARY_B64 is set by its own narrow call after create (DL-85), so
+  # it is planned even though it never appears in the create line.
+  $planned = @($plannedNames) + @("GRAPH_VOCABULARY_B64")
+  $dropped = @($liveNames | Where-Object { $planned -notcontains $_ -and $DropEnv -notcontains $_ })
+  $label = "$name env preserved"
+  if ($dropped.Count -gt 0) {
+    $label = "$name would DROP: $($dropped -join ', ') — add to the tunables pack, or pass -DropEnv"
+  }
+  Check ($dropped.Count -eq 0) $label
+  return $dropped.Count -eq 0
+}
+
+function Assert-FleetEnvPreserved {
+  # Runs BEFORE the first create, so a refusal leaves the fleet untouched rather
+  # than half-deployed. Master is not checked: its env is wholly deploy-built
+  # (grants, secret map, Key Vault) and carries no operator tunable.
+  Top "ENV PRESERVATION"
+  $ok = $true
+  foreach ($name in $AGENTS.Keys) {
+    $planned = @(Get-AgentEnv $name "url" "pub" | ForEach-Object { ($_ -split "=", 2)[0] })
+    $ok = (Assert-EnvPreserved $name (Get-LiveEnvNames $name) $planned) -and $ok
+  }
+  $dispatcherPlanned = @("POSTGRES_DSN") +
+  @((Get-ServiceBusConfig "dispatcher").envVars | ForEach-Object { ($_ -split "=", 2)[0] })
+  $ok = (Assert-EnvPreserved $DISPATCHER_JOB (Get-LiveJobEnvNames $DISPATCHER_JOB) $dispatcherPlanned) -and $ok
+  Bot
+  return $ok
+}
+
 function Get-FleetPostgresTargets {
   return @("master") + @($AGENTS.Keys) + @("dispatcher")
 }
@@ -339,6 +431,7 @@ function Get-FleetServiceBusTargets {
 
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
   Top "DEPLOY DISPATCHER JOB"
+  $cron = Resolve-DispatcherCron
   # Vocabulary is set separately below, never on this line (DL-85).
   $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
   $secrets = @($graph.secrets) + @($serviceBus.secrets)
@@ -349,30 +442,30 @@ function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
     $jobId = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
       --subscription $SUB --query id -o tsv 2>$null
     az resource update --ids $jobId --set properties.configuration.triggerType=Schedule `
-      properties.configuration.scheduleTriggerConfig.cronExpression="$DispatcherCron" `
+      properties.configuration.scheduleTriggerConfig.cronExpression="$cron" `
       2>$null | Out-Null
     az containerapp job secret set --name $DISPATCHER_JOB --resource-group $RG `
       --subscription $SUB --secrets $secrets -o none 2>$null | Out-Null
     $secretOk = $LASTEXITCODE -eq 0
     $state = az containerapp job update --name $DISPATCHER_JOB --resource-group $RG `
-      --subscription $SUB --image $image --cron-expression $DispatcherCron `
+      --subscription $SUB --image $image --cron-expression $cron `
       --replica-timeout 1800 --replica-retry-limit 0 --parallelism 1 `
       --replica-completion-count 1 --set-env-vars $envv `
       --query properties.provisioningState -o tsv 2>$null
     $vocabOk = ($state -eq "Succeeded") -and (Set-JobVocabulary)
-    Check ($secretOk -and $state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB updated ($DispatcherCron UTC)"
+    Check ($secretOk -and $state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB updated ($cron UTC)"
   }
   else {
     $state = az containerapp job create --name $DISPATCHER_JOB --resource-group $RG `
       --environment $ENV_NAME --subscription $SUB --trigger-type Schedule `
-      --cron-expression $DispatcherCron --image $image `
+      --cron-expression $cron --image $image `
       --registry-server $REGISTRY --registry-username $ghcr.username `
       --registry-password $ghcr.pat --replica-timeout 1800 `
       --replica-retry-limit 0 --parallelism 1 --replica-completion-count 1 `
       --cpu 0.5 --memory 1.0Gi --secrets $secrets --env-vars $envv `
       --query properties.provisioningState -o tsv 2>$null
     $vocabOk = ($state -eq "Succeeded") -and (Set-JobVocabulary)
-    Check ($state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB created ($DispatcherCron UTC)"
+    Check ($state -eq "Succeeded" -and $vocabOk) "$DISPATCHER_JOB created ($cron UTC)"
   }
   Bot
 }
@@ -510,6 +603,13 @@ function Set-JobVocabulary {
 
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
+  # Refuse before the first create, not after the ninth: a deploy that discards
+  # operator config must fail whole rather than leave a half-configured fleet.
+  if (-not (Assert-FleetEnvPreserved)) {
+    Write-Host "`nDeploy refused — it would discard live configuration listed above." -ForegroundColor Red
+    Write-Host "Carry each key in orchestration/packs/trading_tunables.json, or pass -DropEnv to drop it deliberately." -ForegroundColor Red
+    return
+  }
   $ghcr = Load-Json "ghcr.local.json"
 
   Upgrade-PostgresSchema
@@ -560,18 +660,11 @@ function Up {
   $masterUrl = "https://$fqdn"
 
   Top "DEPLOY AGENTS ($($AGENTS.Count))"
-  $deliberatorPrefix = "deliberator-"
   foreach ($name in $AGENTS.Keys) {
     $img = "$REGISTRY/$OWNER/trading-agents-$($AGENTS[$name]):$Tag"
     $agentGraph = Get-GraphConfig $name
     $agentServiceBus = Get-ServiceBusConfig $name
-    $agentEnv = @("MASTER_URL=$masterUrl", "MASTER_PUBLIC_KEY_PEM_B64=$($kp.pub_b64)") + @($agentGraph.envVars) + @($agentServiceBus.envVars)
-    if ($name.StartsWith($deliberatorPrefix)) {
-      $agentEnv += @(
-        "DELIBERATOR_ROLE=$($name.Substring($deliberatorPrefix.Length))",
-        "DELIBERATOR_INSTANCE_NAME=$name"
-      )
-    }
+    $agentEnv = Get-AgentEnv $name $masterUrl $kp.pub_b64
     $agentArgs = @(
       "containerapp", "create", "--name", $name, "--resource-group", $RG,
       "--environment", $ENV_NAME, "--subscription", $SUB,

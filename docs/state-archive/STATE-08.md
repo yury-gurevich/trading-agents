@@ -4,6 +4,10 @@
 **Split out of [`../STATE.md`](../STATE.md) on 2026-08-12.** Nothing here is live. Chains from
 [STATE-07.md](STATE-07.md).
 
+**Second entry appended 2026-08-14**, covering the measurement that priced the veto's scaling
+problem (`0.90.02`, [DL-105](../design-log.md)) — moved so *Recent* stayed under the 200-line rule
+when S169 landed.
+
 One *Recent* entry moved, covering **S166–S171 + `chore-openai-cutover`, versions `0.89.07`–`0.90.01`,
 2026-08-08→10**. It is the whole arc in which the LLM veto stopped being a component and became a
 posture: the race it had always lost (S166), the audit that reported *"Faults today = 0"* while 18
@@ -47,3 +51,28 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   DL-104 read the verdicts and returned it to **900 deliberately**: **45 `revise` of 58** real debates,
   **56 %** self-agreement on the same model and prompt 3.5 h apart, and roughly **2 of 15** grounds
   surviving a check against the code. The veto is a good auditor and a bad gate.
+
+---
+
+## Moved 2026-08-14 — the deliberation constraint, measured (`0.90.02`)
+
+- **The deliberation constraint was measured, and one of its two free levers did not exist (fix,
+  0.90.02, 2026-08-11 — DL-105).** Asked whether two Anthropic APIs fix the deliberator's scaling
+  problem, the constraint was established first: 90 calls on `sched-2026-08-10`, span first→last
+  **1,136 s**, sum of per-call latency **1,022 s** — **ratio 0.90**, so ninety per cent of the wall
+  clock has exactly one call in flight. Serial end to end, proven rather than inferred. Cost is
+  **$0.83 per run**, so the Batch API's 50 % is worth $0.41 — **wall clock is the scarce resource,
+  not money.** That splits the answer rather than settling it: batching is the right substrate for an
+  auditor (it *deletes* the grace window rather than optimising it) and useless for a gate, and the
+  multi-agent session API is an ADR that reopens three locked decisions, not a sprint. 🚨 **Three
+  adapter findings surfaced while checking, none of them looked for.** `effort` was assigned and
+  never sent, so the tunable read as live and did nothing on the deployed `gpt-5.5` fleet —
+  **fixed** (`0.90.02`: `reasoning_effort`, planted-failure proven at `KeyError`, `make ci` **2228
+  passed / 4 skipped / 100.00 %**, gate proven on the full SHA). `effort="max"` with
+  `max_tokens=4096` is a documented misconfiguration on Claude Opus 5 and a *candidate* contributor
+  to the 56 % self-agreement — **still open**. Neither adapter uses prompt caching or structured
+  outputs. 🪤 **The `effort` defect survived at 100 % coverage because the test asserted the stored
+  attribute rather than what reached the wire** — the DL-97 shape again, and the reason the new test
+  pins the request, not the object. Packaged
+  [S172](sprints/sprint-172-independent-debates-run-independently.md) (concurrency) and
+  [S173](sprints/sprint-173-a-verdict-must-be-reproducible.md) (verdict reproducibility on Batches).

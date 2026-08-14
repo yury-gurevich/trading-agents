@@ -157,9 +157,9 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `role` | `manager` | enum | YES | Selects one of the three image identities |
 | `instance_name` | empty | string | YES | Allows an explicit fleet app identity |
 | `max_rounds` | `2` | int >= 1 <= 5 | YES | More than one live round while bounded |
-| `defender_model` | `claude-opus-5` | string | YES | Proponent role model |
-| `challenger_model` | `claude-opus-5` | string | YES | Opponent role model |
-| `judge_model` | `claude-opus-5` | string | YES | Manager verdict model |
+| `defender_model` | empty | string | YES | Proponent role model; empty resolves the provider default |
+| `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
+| `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
 | `max_tokens` | `4096` | int >= 64 <= 4096 | YES | Per-call response cap |
 | `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |

@@ -26,6 +26,17 @@ KEY_ENV: dict[str, str] = {
     "openai": "OPENAI_API_KEY",
 }
 
+#: Model each provider answers with when the operator names no model.
+#:
+#: A provider switch that still carries the other vendor's model name is not a
+#: switch: it sends `claude-opus-5` to OpenAI, and — worse — stamps that name on
+#: the DeliberationRun as the model that reviewed the order (DL-100). The default
+#: therefore belongs to the provider, next to its key, not to the role tunable.
+DEFAULT_MODEL: dict[str, str] = {
+    "anthropic": "claude-opus-5",
+    "openai": "gpt-5.5",
+}
+
 
 class UnknownProviderError(RuntimeError):
     """Raised when configuration names a provider that does not exist."""
@@ -60,6 +71,14 @@ def build_llm(
     raise UnknownProviderError(
         f"unknown llm_provider {provider!r}; expected one of {sorted(KEY_ENV)}"
     )
+
+
+def default_model_for(provider: str) -> str:
+    """Return the model this provider answers with when none is configured."""
+    try:
+        return DEFAULT_MODEL[provider]
+    except KeyError as exc:
+        raise UnknownProviderError(f"unknown llm_provider {provider!r}") from exc
 
 
 def key_env_var(provider: str) -> str:

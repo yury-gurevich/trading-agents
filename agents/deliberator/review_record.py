@@ -87,9 +87,14 @@ def narrative(debates: dict[str, object]) -> str:
 
 
 def role_models(settings: DeliberatorSettings) -> dict[str, str]:
-    """Return the three models stamped on a DeliberationRun."""
+    """Return the three *resolved* models stamped on a DeliberationRun.
+
+    Reads through `model_for_role` rather than the tunables, so the audit record
+    names the model that actually answered — never the empty sentinel, and never
+    the other vendor's name after a provider switch (DL-100).
+    """
     return {
-        "defender": settings.defender_model,
-        "challenger": settings.challenger_model,
-        "judge": settings.judge_model,
+        "defender": settings.model_for_role("defender"),
+        "challenger": settings.model_for_role("challenger"),
+        "judge": settings.model_for_role("judge"),
     }

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-13 20:33 AEST · **Version:** 0.90.09 · **S174 is proven in production; S175 and S176 are merged and undeployed — the fleet sits two PATCHes behind on purpose, so `sched-2026-08-14` stays a clean single-variable readout for the 60 s peer timeout.**
+**Last updated:** 2026-08-14 11:05 AEST · **Version:** 0.90.10 · **This morning's run never existed — yesterday's manual fire had already taken its UTC-dated key, so the 60 s timeout is still unread; tonight's 22:30 UTC fire takes `sched-2026-08-14` uncontested.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -25,36 +25,41 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-- **The deliberation constraint was measured, and one of its two free levers did not exist (fix,
-  0.90.02, 2026-08-11 — DL-105).** Asked whether two Anthropic APIs fix the deliberator's scaling
-  problem, the constraint was established first: 90 calls on `sched-2026-08-10`, span first→last
-  **1,136 s**, sum of per-call latency **1,022 s** — **ratio 0.90**, so ninety per cent of the wall
-  clock has exactly one call in flight. Serial end to end, proven rather than inferred. Cost is
-  **$0.83 per run**, so the Batch API's 50 % is worth $0.41 — **wall clock is the scarce resource,
-  not money.** That splits the answer rather than settling it: batching is the right substrate for an
-  auditor (it *deletes* the grace window rather than optimising it) and useless for a gate, and the
-  multi-agent session API is an ADR that reopens three locked decisions, not a sprint. 🚨 **Three
-  adapter findings surfaced while checking, none of them looked for.** `effort` was assigned and
-  never sent, so the tunable read as live and did nothing on the deployed `gpt-5.5` fleet —
-  **fixed** (`0.90.02`: `reasoning_effort`, planted-failure proven at `KeyError`, `make ci` **2228
-  passed / 4 skipped / 100.00 %**, gate proven on the full SHA). `effort="max"` with
-  `max_tokens=4096` is a documented misconfiguration on Claude Opus 5 and a *candidate* contributor
-  to the 56 % self-agreement — **still open**. Neither adapter uses prompt caching or structured
-  outputs. 🪤 **The `effort` defect survived at 100 % coverage because the test asserted the stored
-  attribute rather than what reached the wire** — the DL-97 shape again, and the reason the new test
-  pins the request, not the object. Packaged
-  [S172](sprints/sprint-172-independent-debates-run-independently.md) (concurrency) and
-  [S173](sprints/sprint-173-a-verdict-must-be-reproducible.md) (verdict reproducibility on Batches).
+- **A deploy now keeps the switches it was given (fix, `0.90.10`, 2026-08-14 — closes
+  [DL-100](design-log.md), [S169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
+  **A:** the three deliberator model tunables default to empty and resolve from `DEFAULT_MODEL` next
+  to `KEY_ENV`, so `DELIBERATOR_LLM_PROVIDER` is the whole switch; `role_models` reads through
+  `model_for_role`, so the `DeliberationRun` records the **resolved** model and never the sentinel —
+  asserted on the written node, because a green settings object is what let this ship. **B:**
+  operator tunables and the dispatcher cron move into `orchestration/packs/trading_tunables.json`
+  (a snapshot read off the live fleet), and `up` sweeps all 15 agents plus the job **before its
+  first create**, refusing and naming any live env key it would drop (`-DropEnv` to drop one
+  deliberately). `make ci` **2299 passed / 6 skipped / 100.00 %**; both planted failures watched
+  before restoration. 🪤 **Not deployed, and the live half is owed** — no `up` has run, so
+  "tunables survive a real `up`, re-read off the app" (row Q) is unproven, and the fleet still
+  carries the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides that must be dropped in that deploy or
+  it keeps masking the new default path. Fixed in passing: two different entries were both numbered
+  **DL-108**; S176's is now DL-109.
 
-Older sprints — **the S166→S171 veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
+Older sprints — **the deliberation-constraint measurement (`0.90.02`, DL-105) and the S166→S171
+veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 `0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
 
-**Read this first if you are picking the project up.** `main` is `0.90.09` at `71377f2e`, gate proven
-and independently re-verified. The **fleet is on `s174` = `0.90.07`, two PATCHes behind, deliberately** —
-S175 and S176 are both merged and both undeployed, waiting on one run.
+**Read this first if you are picking the project up.** The **fleet is on `s174` = `0.90.07`, three
+PATCHes behind, deliberately** — S175, S176 and S169 are all merged and all undeployed, waiting on
+one run.
+
+🚨 **`sched-2026-08-14` does not exist, and nothing failed** ([DL-110](design-log.md)). The cron
+fired at `2026-08-13T22:30:00Z` and **Succeeded**, logging `placed sched-2026-08-13` — yesterday's
+manual S174 proof fire ran at `02:28Z` the **same UTC day**, and `as_of` is the UTC date, so the key
+was already taken and the merge was a no-op onto a finished 8/8 run. Newest graph write of any kind:
+`2026-08-13T02:48:54Z`. **So the 60 s timeout prediction below is untested, not failed.** Tonight's
+22:30 UTC fire takes `sched-2026-08-14` uncontested. 🪤 **Do not fire manually to catch up** — the
+KEDA agent window is `22:30–00:30 UTC` and the comparable run takes ~21 minutes; a run started late
+in the window is cut off mid-cascade and **still burns the key**.
 
 **S174 — shipped, deployed, proven live (2026-08-13).** The deployed dispatcher wrote
 `lookback_days=295` / `required_history_bars=200`; `MarketData` carried **98 tickers × 202 bars, 0
@@ -111,10 +116,13 @@ implied.
    is the only variable that moved since the failing run. `trace_run.py` + `accept.py`, then the
    `LLMCall` latency table above for a fourth row. 🪤 **Do not retag before reading it** —
    deploying into the experiment destroys the only clean comparison available.
-2. **Merge S176 after the evidence commit is branch-gated.** It is independent of the 08-14 run and
-   remains undeployed after merge.
-3. **Then one deploy carrying S175 + S176** — both are merged and waiting; one retag, one live
-   check, two fixes proven at once. Tag sprint-shaped per [DL-106](design-log.md).
+2. **~~Merge S176~~ — done** (`0.90.09`), and S169 after it (`0.90.10`); both remain undeployed.
+3. **Then one deploy carrying S175 + S176 + S169** — all three merged and waiting; one retag, one
+   live check, three fixes proven at once. Tag sprint-shaped per [DL-106](design-log.md).
+   🚨 **S169 changes `up`, not the retag path**, so its own live proof needs a full
+   `pwsh infra/deploy-agents.ps1 up` — and that deploy must pass `-DropEnv
+   DELIBERATOR_DEFENDER_MODEL,DELIBERATOR_CHALLENGER_MODEL,DELIBERATOR_JUDGE_MODEL`, which is the
+   act that makes the fleet prove the new provider-default path instead of masking it.
 4. 🪤 **A quoted hash that matches no file is still a false claim.** S176's handback cited a
    pack hash (`40bd1b10…`) matching neither the file's sha1 nor its sha256 nor any tracked file;
    the conclusion was right, verified independently. Second instance today after `debt.md`'s
@@ -163,11 +171,8 @@ specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in 
 4. **DL-104 (d) — a real advisory/binding switch**, so *advisory* is a declared posture rather than a grace
    that happens to expire. Every run in the current state writes a truthful but uninformative `error` fault,
    which trains the operator to read a real fault as noise.
-5. **S169 — a deploy that keeps the switches it was given**
-   ([sprint-169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)). A **fix**, and one that has
-   already cost a silent wipe of `SCANNER_CANDIDATE_CAP`, `MAX_POSITION_PCT`, `MAX_POSITIONS` and the
-   weekday-only dispatcher cron — all under a green `[OK]`. 🪤 Its spec targeted `0.90.01`, which **S171 had
-   already taken**; retargeted to `0.90.02` on 2026-08-11.
+5. **~~S169~~ — shipped `0.90.10`, 2026-08-14** (see *Recent*); its live proof rides the next
+   full `up`, not a retag.
 6. **S170 — one LLM adapter in `kernel/`**
    ([sprint-170](sprints/sprint-170-one-llm-adapter-in-the-plumbing.md)). Ranked **below** the fixes above
    because it is capability rather than repair — but it is what gives the operator the same provider switch

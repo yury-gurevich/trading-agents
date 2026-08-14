@@ -2,7 +2,7 @@
 # S169 — a provider switch is one switch, and a deploy cannot silently unset it
 
 **Closes:** [DL-100](../design-log.md) · **Type:** fix ·
-**Target version:** 0.90.02 (PATCH — two defect fixes, no new capability; retargeted 2026-08-11, S171 shipped as `0.90.01`) ·
+**Target version:** the next available PATCH at merge — two defect fixes, no new capability. Shipped as **`0.90.10`** (the pinned `0.90.01`, then `0.90.02`, were both taken while this sat in the queue; pinning a number in a spec is what caused three renumberings in one day) ·
 **Branch:** `sprint-169-one-switch-and-a-deploy-that-keeps-it`
 
 > Handover to a delegated coding agent. Everything under **Measured** was observed on the live
@@ -118,10 +118,51 @@ restoring a tunable.
 
 ## Closeout — evidence
 
-_To be filled before handback; a handback with placeholders unfilled is not accepted._
+**Shipped `0.90.10`, 2026-08-14.** `make ci` exit **0**, unpiped to a file: **2299 passed / 6
+skipped / 100.00 % coverage**, all 11 steps.
 
-**A.** _The `role_models` written under each provider, with no model env var set._
+**A — the provider is the whole switch, and the record names what answered.** `DEFAULT_MODEL`
+sits next to `KEY_ENV` in `llm_factory.py`; the three role tunables default to `""` and resolve
+through it. Asserted on the **written `DeliberationRun`**, never on settings
+(`test_provider_default_model.py`): with only `llm_provider=openai`, `role_models` reads
+`{defender, challenger, judge} = gpt-5.5`; unset, all three read `claude-opus-5`, so the Anthropic
+path is not quietly re-pointed; an explicit `*_model` still wins across both providers × all three
+roles; and no role is ever recorded as the empty sentinel. **Planted failure watched** — resolution
+forced back to the literal `claude-opus-5`, `test_the_provider_alone_switches_every_role_model`
+**failed**, restored green (DL-70).
 
-**B.** _The planted-drop deploy failure, and the post-`up` re-read of every tunable in the table._
+**Measured, not assumed:** the spec's "Assumed, unverified" — that nothing outside the deliberator
+reads those tunables — checked out. `model_for_role` / `role_models` have exactly five call sites
+(`agent.py:64,87`, `entrypoint.py:93`, `poll.py:88`, `review_record.py:89`), all in
+`agents/deliberator/`.
 
-**Not proven.** _State plainly what this does NOT establish._
+**B — a deploy that keeps the switches it was given.** The operator tunables and the dispatcher
+cron now live in `orchestration/packs/trading_tunables.json`, a snapshot **read off the live fleet
+on 2026-08-14**: `SCANNER_CANDIDATE_CAP=25`, `ANALYST_EXIT_CONFIDENCE_FLOOR=0.50`,
+`PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01`, `PORTFOLIO_MANAGER_MAX_POSITIONS=60`,
+`EXECUTION_DELIBERATION_GRACE_SECONDS=900`, the three deliberators' `LLM_PROVIDER=openai` /
+`EFFORT=high` / `REQUEST_TIMEOUT_SECONDS=60`, and cron `30 22 * * 1-5`. `$DispatcherCron`'s literal
+default is deleted — it resolves from the pack, and an explicit flag still wins.
+
+`make ci` cannot read PowerShell, so the pack is bound to the fleet in Python
+(`tests/test_deploy_tunables_pack.py`, 45 cases): every app name exists in the deploy's `$AGENTS`
+map, every key carries that agent's env prefix **and names a real field on its settings class**,
+every value validates against that field's bounds, values are strings, and no credential-shaped key
+is committed. **Planted failure watched** — `scanner` → `scannr` in the pack, four assertions
+**failed**, restored green.
+
+The guard itself is proven at the script level (`Parser::ParseFile` clean, functions extracted and
+exercised): with `SCANNER_CANDIDATE_CAP` live and absent from the plan, `Assert-EnvPreserved`
+returns **false** and names the key in its refusal; once the pack carries it, the same call returns
+**true**; `-DropEnv SCANNER_CANDIDATE_CAP` allows a deliberate removal; `GRAPH_VOCABULARY_B64` is
+never reported as a drop. `Up` runs the sweep across all 15 agents plus the job **before its first
+create**, so a refusal leaves the fleet untouched rather than half-deployed.
+
+**Not proven.** 🪟 **No deploy has run.** Success factors 4–6 of part B — a planted `up`
+failing against a live app, and the tunables surviving a real `up` **re-read off the app** rather
+than believed from the deploy's own report (hardening row Q) — are **owed at the next full `up`**.
+Nothing here proves the guard's live `az` reads, only its logic against supplied name lists. Part A
+is proven in tests but has **never answered a live order**: the fleet still carries the three
+`DELIBERATOR_*_MODEL=gpt-5.5` overrides, which must be dropped in that same deploy (`-DropEnv`), or
+the fleet keeps masking the new default path. Master's env is deliberately **not** swept — it is
+wholly deploy-built and carries no operator tunable.

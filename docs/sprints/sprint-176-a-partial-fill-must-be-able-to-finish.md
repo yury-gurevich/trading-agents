@@ -199,7 +199,7 @@ specific completion. Version bumped `0.90.08 -> 0.90.09`.
 `docs/design-log.md`, `docs/laws/drift-register.md`, `pyproject.toml`, `uv.lock`.
 
 **Design decision:** chose the recommended monotonic transition allowlist. Recorded as
-[DL-108](../design-log.md#dl-108---s176-lets-only-partial-broker-fills-complete---status-decided-2026-08-13).
+[DL-109](../design-log.md#dl-109---s176-lets-only-partial-broker-fills-complete---status-decided-2026-08-13).
 Rejected: terminal-status guard (broader than the measured defect), append-new-node/read-model
 rewrite (larger downstream reader change), and removing the write-once guard wholesale (would permit
 terminal rewrites).

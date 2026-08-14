@@ -8,6 +8,37 @@ and is marked CLOSED here.
 
 ---
 
+## DL-110 - A manual dispatch consumes that night's scheduled run id - status: MEASURED (2026-08-14)
+
+**The scheduled run for 2026-08-14 does not exist, and nothing failed.** `dispatcher-cron` fired at
+`2026-08-13T22:30:00Z` and **Succeeded**, logging `placed sched-2026-08-13 reason=NYSE trading
+session`. No `sched-2026-08-14` `RunRequest` was ever created, and the newest graph write of any
+kind is **2026-08-13T02:48:54Z** - no `LLMCall`, `DeliberationRun` or `Fault` after it. `master` was
+up 22:25-22:30:40 and went quiet; on 08-12, a night that did work, it stayed up to 23:37.
+
+**Mechanism.** `as_of` is *today's UTC date* (`scripts/dispatch_scheduled_run.py`) and
+`place_run_request` is a `merge_node` on `run-request:sched-<date>` (`orchestration/start.py:79`).
+Yesterday's manual S174 proof fire ran at **02:28 UTC on 08-13** - the same UTC day as the 22:30
+scheduled fire - so it had already taken the key. The scheduled fire re-merged onto a complete 8/8
+node, and the graph-pull fleet found nothing unconsumed to pull. Day-keyed dedupe worked exactly as
+designed; the collision is that a manual fire and the scheduled fire **share one key per UTC day**.
+
+**Consequence.** The 60 s `request_timeout_seconds` readout (`failed_open_count 0` /
+`debate_coverage 1.0`, predicted in STATE) is **untested**, not failed. Tonight's 22:30 UTC fire
+takes `sched-2026-08-14` uncontested and produces it.
+
+**Ruled out: firing manually to recover the day.** Every agent's KEDA rule is a cron window
+`22:30 -> 00:30 UTC`; at the time of the decision **27 minutes remained**, against **~21 minutes**
+end to end for the comparable run (dispatcher 02:28 -> last write 02:48:54 on 08-13). A run cut off
+mid-cascade at 00:30 would still burn the key, destroying the only clean single-variable comparison
+available. Extending the window across 16 apps to buy ~22 hours was rejected as a live config write
+for no proportionate gain - the [DL-100](#dl-100) shape.
+
+**Open, not decided:** whether the run id should key off the *session* date rather than the UTC
+date, which would let a pre-open manual run and the post-close scheduled run coexist. Not urgent -
+the collision only bites on a day with a manual fire - and it moves a key format the whole graph is
+keyed on. Filed here so it is not re-derived.
+
 ## DL-108 - S175 makes the veto say only what it can prove - status: DECIDED (2026-08-13)
 
 **Decision.** S175 repairs DL-104 classes (a), (b), and (d) without changing the fail-open posture
@@ -5369,7 +5400,7 @@ That mattered, because S164's `_place_stop` passes the chained key straight into
 
 ---
 
-## DL-100 · A provider switch that is four switches, and a deploy that silently unsets them · status: OPEN (S169 packaged)
+## DL-100 · A provider switch that is four switches, and a deploy that silently unsets them · status: CLOSED by S169 (code-proven 2026-08-14; live proof owed at the next full `up`)
 
 Both halves found by hand while executing `chore-openai-cutover` on 2026-08-08. Same defect class:
 **configuration that silently does not do what the operator believes it does.** Neither raises.
@@ -5402,6 +5433,23 @@ scans 5 candidates instead of 25 and sizes 10 % across 10 slots instead of 1 % a
 materially different trading system, reporting `ACCEPTANCE PASS`. The only thing that caught it was
 snapshotting the env by hand before deploying, because S161's closeout happened to mention a manual
 restore. **Ruled out:** "remember to restore afterwards" — that is the process that already failed.
+
+**Resolved by S169 (`0.90.10`, 2026-08-14).** **A** — the three model tunables now default to an
+empty sentinel and resolve from `DEFAULT_MODEL` in `llm_factory.py`, next to `KEY_ENV`, so the
+provider owns its own default and `DELIBERATOR_LLM_PROVIDER` is the whole switch; an explicit model
+still wins. `role_models` reads through `model_for_role`, so the audit record names the **resolved**
+model and can never be the sentinel — asserted on the written `DeliberationRun`, not on settings,
+because a green settings object is what let this ship. **B** — operator tunables and the dispatcher
+cron move into `orchestration/packs/trading_tunables.json`; `up` reads the live env of all 15 agents
+and the job **before its first create** and refuses, naming every key it would drop, unless
+`-DropEnv` acknowledges the removal. The `$DispatcherCron` literal is gone.
+
+🪟 **What this does not establish.** No `up` has run. The refusal, the pack values and the
+resolution are proven by unit tests and a parse-level harness against the committed pack — the live
+half (tunables surviving a real `up`, re-read off the app rather than believed from the deploy's own
+report — hardening row Q) is owed at the next full deploy. The three temporary
+`DELIBERATOR_*_MODEL=gpt-5.5` overrides on the live deliberators must be dropped in that same deploy
+(`-DropEnv`), or the fleet keeps proving the old path.
 
 ---
 
@@ -5832,7 +5880,7 @@ protocol preserves type precision without creating an analyzer-visible cycle.
 
 ---
 
-## DL-108 - S176 lets only partial broker fills complete - status: DECIDED (2026-08-13)
+## DL-109 - S176 lets only partial broker fills complete - status: DECIDED (2026-08-13)
 
 **Decision.** A broker-observed `Fill.broker_status` may advance only from `partial` to `filled`.
 That single transition also lets the broker completion replace the tied `broker_price_cents`,

@@ -11,6 +11,7 @@ from typing import Literal
 
 from pydantic_settings import SettingsConfigDict
 
+from agents.deliberator.llm_factory import default_model_for
 from kernel import AgentSettings, tunable
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
@@ -53,16 +54,25 @@ class DeliberatorSettings(AgentSettings):
         ),
     )
     defender_model: str = tunable(
-        "claude-opus-5",
-        why="Default model for the proponent/defender turn role.",
+        "",
+        why=(
+            "Model for the proponent/defender turn role. Empty resolves the "
+            "provider's own default, so switching provider is one switch."
+        ),
     )
     challenger_model: str = tunable(
-        "claude-opus-5",
-        why="Default model for the opponent/challenger turn role.",
+        "",
+        why=(
+            "Model for the opponent/challenger turn role. Empty resolves the "
+            "provider's own default, so switching provider is one switch."
+        ),
     )
     judge_model: str = tunable(
-        "claude-opus-5",
-        why="Default model for the manager/judge verdict role.",
+        "",
+        why=(
+            "Model for the manager/judge verdict role. Empty resolves the "
+            "provider's own default, so switching provider is one switch."
+        ),
     )
     effort: Effort = tunable(
         "max",
@@ -115,9 +125,18 @@ class DeliberatorSettings(AgentSettings):
         return None
 
     def model_for_role(self, role: DebateRole | Literal["judge"]) -> str:
-        """Return the configured model for one debate role."""
+        """Return the resolved model for one debate role.
+
+        An unset tunable resolves the *provider's* default rather than a literal
+        vendor name, so `llm_provider` is the whole switch (DL-100). An explicit
+        setting still wins. Callers must record what this returns, never the
+        tunable: a `role_models` entry reading `""` is a worse audit record than
+        the wrong-but-populated one it replaces.
+        """
         if role == "defender":
-            return self.defender_model
-        if role == "challenger":
-            return self.challenger_model
-        return self.judge_model
+            configured = self.defender_model
+        elif role == "challenger":
+            configured = self.challenger_model
+        else:
+            configured = self.judge_model
+        return configured or default_model_for(self.llm_provider)

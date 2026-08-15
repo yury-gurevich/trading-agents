@@ -177,7 +177,7 @@ def test_sentiment_blends_three_pillars_into_confidence() -> None:
     assert score.metrics["sentiment_score"] == pytest.approx(1.0, abs=1e-9)
     assert score.metrics["fundamental_score"] == pytest.approx(0.80, abs=1e-9)
     assert score.metrics["sentiment_articles"] == 1.0
-    assert score.metrics["sentiment_positive"] == 4.0
+    assert score.metrics["sentiment_positive_words"] == 4.0
     assert score.confidence == pytest.approx(expected, abs=1e-9)
     assert decision.recommendation is not None
     rec = decision.recommendation
@@ -195,5 +195,5 @@ def test_sentiment_without_fundamentals_two_pillar_blend() -> None:
     score = score_candidate(candidate(), _rising_bars(40), {}, (), news, settings)
 
     assert score.sentiment_score == pytest.approx(0.5, abs=1e-9)
-    assert score.metrics["sentiment_negative"] == 1.0
+    assert score.metrics["sentiment_negative_words"] == 1.0
     assert score.confidence == pytest.approx(0.561038961038961, abs=1e-9)

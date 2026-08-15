@@ -8,6 +8,56 @@ and is marked CLOSED here.
 
 ---
 
+## DL-112 - Two counts, two units, one prefix: the veto read word counts as article counts - status: DECIDED (2026-08-15)
+
+**What happened.** The `sched-2026-08-14` run put 9 PM-approved buys to the deliberator and 8 came
+back vetoed; 1 order reached the broker. Reading the verdicts, **XOM was vetoed for a defect that
+does not exist**: *"the sentiment feed is internally inconsistent (10 articles but 11 positive and 3
+negative classifications)"*. AMZN's `revise` cites the same shape.
+
+The feed was fine. `score_sentiment` returned three metrics under one prefix and **two different
+units**:
+
+| Metric | Counted | Unit |
+| --- | --- | --- |
+| `sentiment_articles` | headlines that carried >= 1 lexicon word | articles |
+| `sentiment_positive` | positive lexicon **word occurrences**, summed | words |
+| `sentiment_negative` | negative lexicon **word occurrences**, summed | words |
+
+`Recommendation.quant_metrics` carries these verbatim into the debate context
+(`context_pm._quant_metrics` renders `name=value`), so the judge saw
+`sentiment_articles=9, sentiment_positive=11, sentiment_negative=2` and concluded 11 > 9 was
+impossible. One headline routinely carries several lexicon words, so word counts exceeding the
+article count is the **normal** case, not a corrupt one.
+
+**Decision - the names carry the unit.** `sentiment_positive` -> `sentiment_positive_words`,
+`sentiment_negative` -> `sentiment_negative_words`. No computed value changes; nothing is removed
+from the context. Shipped `0.90.11`, guard planted (old names -> `KeyError`) and restored.
+
+**Rejected routes.**
+
+- *Drop the counts from the veto context* - rejected. Volume and tone strength are real evidence for
+  the debate; the trap was the label, not the data.
+- *Rename the `SentimentReading.positive` / `.negative` fields and their graph props too* - rejected
+  for this change. Those are not LLM-facing, and renaming them splits 433 existing
+  `SentimentReading` nodes across two prop vocabularies for no gain. The fields now carry a comment
+  naming the unit instead.
+- *Teach the deliberator prompt that the units differ* - rejected as the primary fix: it makes every
+  future reader of `quant_metrics` depend on prompt text to avoid a wrong conclusion. The metric
+  name is the durable place for a unit.
+
+🪤 **This is DL-104's disease, third instance.** DL-104a was an ATR fragment the context invented;
+DL-104b was portfolio/batch absence read as zero exposure; this is a unit read from a name. All
+three cost real orders, and all three are the veto context asserting something it could not prove.
+The class is *"the context said something the reader could only misread"* - worth a sweep of every
+value rendered into the debate, not three more point fixes.
+
+**Measured, not assumed:** `analyst-run-f38452d1...:XOM` carries
+`sentiment_articles=9, sentiment_positive=11, sentiment_negative=2` in `quant_metrics` - read from
+the production spine on 2026-08-15, and the shape the judge quoted.
+
+---
+
 ## DL-111 - The audit-clause sweep: nine green rows read, five demoted, two clauses false - status: MEASURED (2026-08-14)
 
 S165 closed asking for this: `SCAN-OBS-01` had been green while its clause was false, because the

@@ -40,8 +40,8 @@ def test_lexicon_reading_from_a_scored_candidate() -> None:
         confidence=0.6,
         metrics={
             "sentiment_articles": 2.0,
-            "sentiment_positive": 3.0,
-            "sentiment_negative": 1.0,
+            "sentiment_positive_words": 3.0,
+            "sentiment_negative_words": 1.0,
         },
         sentiment_score=0.75,
     )
@@ -63,7 +63,7 @@ def test_decide_preserves_sentiment_reading_on_rejections() -> None:
     score = ScoreBreakdown(
         technical_score=0.5,
         confidence=0.0,
-        metrics={"sentiment_articles": 1.0, "sentiment_positive": 1.0},
+        metrics={"sentiment_articles": 1.0, "sentiment_positive_words": 1.0},
         sentiment_score=1.0,
         rejection_reason="insufficient_market_history",
     )
@@ -88,7 +88,7 @@ def test_decide_preserves_sentiment_reading_on_rejections() -> None:
     floor_score = ScoreBreakdown(
         technical_score=0.5,
         confidence=0.5,
-        metrics={"sentiment_articles": 1.0, "sentiment_positive": 1.0},
+        metrics={"sentiment_articles": 1.0, "sentiment_positive_words": 1.0},
         sentiment_score=1.0,
     )
     floor_decision = decide(candidate(), floor_score, regime)

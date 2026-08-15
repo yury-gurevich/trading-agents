@@ -21,8 +21,8 @@ def test_all_positive_headline_scores_100() -> None:
     assert score == pytest.approx(100.0)
     assert metrics == {
         "sentiment_articles": 1.0,
-        "sentiment_positive": 4.0,
-        "sentiment_negative": 0.0,
+        "sentiment_positive_words": 4.0,
+        "sentiment_negative_words": 0.0,
     }
 
 
@@ -34,8 +34,8 @@ def test_all_negative_headline_scores_0() -> None:
 def test_balanced_headline_scores_50() -> None:
     score, metrics = score_sentiment(("Profit gains offset by loss warning",))
     assert score == pytest.approx(50.0)
-    assert metrics["sentiment_positive"] == 2.0
-    assert metrics["sentiment_negative"] == 2.0
+    assert metrics["sentiment_positive_words"] == 2.0
+    assert metrics["sentiment_negative_words"] == 2.0
 
 
 def test_headline_without_lexicon_word_is_skipped() -> None:
@@ -61,8 +61,8 @@ def test_mixed_headlines_average_only_the_scored() -> None:
     )
     assert score == pytest.approx(50.0)
     assert metrics["sentiment_articles"] == 2.0
-    assert metrics["sentiment_positive"] == 4.0
-    assert metrics["sentiment_negative"] == 4.0
+    assert metrics["sentiment_positive_words"] == 4.0
+    assert metrics["sentiment_negative_words"] == 4.0
 
 
 def test_case_insensitive_and_punctuation_tokenised() -> None:
@@ -75,7 +75,7 @@ def test_lm_only_positive_words_score_positive() -> None:
     # headline list never had -> the dictionary upgrade now scores them.
     score, metrics = score_sentiment(("Firm reports excellent and innovative results",))
     assert score == pytest.approx(100.0)
-    assert metrics["sentiment_positive"] == 2.0
+    assert metrics["sentiment_positive_words"] == 2.0
 
 
 def test_lm_only_negative_words_score_negative() -> None:
@@ -83,7 +83,7 @@ def test_lm_only_negative_words_score_negative() -> None:
         ("Auditor flags fraudulent and adverse accounting",)
     )
     assert score == pytest.approx(0.0)
-    assert metrics["sentiment_negative"] == 2.0
+    assert metrics["sentiment_negative_words"] == 2.0
 
 
 def test_lm_master_dictionary_and_headline_terms_loaded() -> None:
@@ -101,3 +101,20 @@ def test_positive_and_negative_lexicons_are_disjoint() -> None:
     # the union needs no conflict resolution only because the two sources never
     # disagree on polarity; guard that invariant against future LM refreshes.
     assert _POSITIVE.isdisjoint(_NEGATIVE)
+
+
+def test_word_counts_exceed_article_count_and_say_so_in_their_names() -> None:
+    """DL-112: the two count units are distinguishable from their names alone.
+
+    One headline carrying four positive lexicon words yields
+    ``sentiment_positive_words=4`` beside ``sentiment_articles=1``. Read as
+    article counts -- which the old ``sentiment_positive`` name invited -- 4 > 1
+    looks like a corrupt feed; the deliberator drew exactly that conclusion and
+    vetoed real orders. The name is the fix, so the name is what is asserted.
+    """
+    _, metrics = score_sentiment(("Profit surges to record as sales beat",))
+    assert metrics["sentiment_articles"] == 1.0
+    assert metrics["sentiment_positive_words"] == 4.0
+    assert metrics["sentiment_positive_words"] > metrics["sentiment_articles"]
+    assert "sentiment_positive" not in metrics
+    assert "sentiment_negative" not in metrics

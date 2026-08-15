@@ -26,6 +26,7 @@ class SentimentReading:
     scorer: str
     score: float
     articles: int
+    # Lexicon word occurrences, not articles -- see score_sentiment (DL-112).
     positive: int
     negative: int
 
@@ -40,8 +41,8 @@ def lexicon_reading(ticker: str, score: ScoreBreakdown) -> SentimentReading | No
         scorer=LEXICON_SCORER,
         score=score.sentiment_score,
         articles=int(metrics.get("sentiment_articles", 0.0)),
-        positive=int(metrics.get("sentiment_positive", 0.0)),
-        negative=int(metrics.get("sentiment_negative", 0.0)),
+        positive=int(metrics.get("sentiment_positive_words", 0.0)),
+        negative=int(metrics.get("sentiment_negative_words", 0.0)),
     )
 
 

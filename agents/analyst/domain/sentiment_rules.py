@@ -75,6 +75,15 @@ def score_sentiment(
     -> 100, balanced -> 50, all-negative -> 0). Headlines with no lexicon word carry
     no signal and are skipped (never diluted toward neutral). Returns ``(None, {})``
     when the input is empty or no headline is scored. Never raises.
+
+    The returned metrics are two different units, so they say so in their names:
+    ``sentiment_articles`` counts *headlines* that scored, while
+    ``sentiment_positive_words`` / ``sentiment_negative_words`` count *lexicon word
+    occurrences* summed across those headlines. Word counts routinely exceed the
+    article count -- one headline can carry several lexicon words. They were once
+    named ``sentiment_positive`` / ``sentiment_negative``, which read as article
+    counts beside ``sentiment_articles``; the deliberator reported the pair as an
+    inconsistent feed and vetoed real orders on it (DL-112).
     """
     sub_scores: list[float] = []
     total_pos = 0
@@ -93,6 +102,6 @@ def score_sentiment(
     mean = sum(sub_scores) / len(sub_scores)
     return mean, {
         "sentiment_articles": float(len(sub_scores)),
-        "sentiment_positive": float(total_pos),
-        "sentiment_negative": float(total_neg),
+        "sentiment_positive_words": float(total_pos),
+        "sentiment_negative_words": float(total_neg),
     }

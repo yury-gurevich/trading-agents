@@ -50,19 +50,6 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   `…:s176b:439111b7`. 🪤 **`pwsh script.ps1 -DropEnv A,B,C` silently passes one literal string**
   (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.
 
-- **The audit-clause sweep, and one guard that had never been exercised (docs + test-only,
-  2026-08-14 — [DL-111](design-log.md)).** The queue's *"17 audit-type rows"* measured **13**; **9**
-  were green and in scope and **5 were demoted**, the cited test proving something adjacent to the
-  clause each time. Ledger reconciled (analyst 24→23, execution 32→30, provider 17→16). Two are
-  **false in code**, now drift rows: **DRIFT-039** `portfolio_state_snapshot` exists nowhere in the
-  codebase; **DRIFT-040** nothing records which vendor served a fact. 🪤 Four of the
-  five cite a test on the **pub/sub path production does not use** — the S174 shape in the ledger,
-  and greppable, so the next sweep is cheap. The gate then caught the same disease in a test:
-  `test_a_missing_sdk_raises_configuration_error` patched `builtins.__import__` while the adapter
-  calls `importlib.import_module`, which **does not consult it** — so it passed only where the SDK was
-  absent. Fixed, parametrised over both vendors, proven **with the SDKs installed** and planted out.
-  **No bump** (test-only). New **row R**: three more guards are covered only by CI lacking the extras.
-
 Older sprints — **the deliberation-constraint measurement (`0.90.02`, DL-105) and the S166→S171
 veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 `0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in

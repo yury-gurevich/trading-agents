@@ -148,7 +148,7 @@ specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in 
    backlog needs a one-off sweep behind that. 🪤 **Retracted, 2026-08-15:** this item previously
    claimed the graph had the book wrong and ranked #1 for that reason. It did not — graph and broker
    matched 19/19. The AVGO `overturn` was a **false premise**, not a data defect (see item 2).
-2. 🪤 **Sweep the rest of the debate context for the same class — now FOUR instances.** The fourth
+2. 🪤 **Sweep the debate context for the same class — now FOUR instances, packaged as [S177](sprints/sprint-177-every-number-names-its-unit.md)** (2026-08-15). The fourth
    is `max_sector_pct`'s `deployed`: `SectorBook.__init__` seeds `_names` from held positions but
    **never seeds `_deployed`**, so `deployed` counts only *this batch* (GOOGL's `deployed=687.05` is
    exactly GOOG's `order_cost` moments earlier). `deployed=0.00` beside `existing_sector_names=2`

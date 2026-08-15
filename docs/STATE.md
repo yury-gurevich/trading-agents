@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-15 18:05 AEST · **Version:** 0.90.12 · **S177 merged and independently re-verified: debate-packet numbers name their unit and scope, PM gate behaviour untouched.**
+**Last updated:** 2026-08-15 18:22 AEST · **Version:** 0.90.12 · **Fleet on `s177` = `0.90.12` — S177 deployed and verified; Monday's run is the first with all four veto-context fixes live.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -69,6 +69,18 @@ veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
+
+**S177 deployed — `s177` = `0.90.12` (`bc2a1ee`), 2026-08-15.** Image-only retag; pack unmoved
+(`13c0e3a0…` both sides), no `up` needed. Verified: **16/16** apps + the dispatcher job on tag,
+16/16 `Succeeded`, KEDA `min=0`/1 rule on every app, cron `30 22 * * 1-5`, the three
+`DELIBERATOR_*_MODEL` overrides still dropped, and `SCANNER_CANDIDATE_CAP=25` /
+`PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01` / `EXECUTION_DELIBERATION_GRACE_SECONDS=900` intact.
+`DeployRecord …:s177:bc2a1ee5`.
+
+🚨 **Monday `sched-2026-08-17` 22:30 UTC is the first run carrying all four veto-context fixes.**
+Read it against `sched-2026-08-14`'s baseline: **9 PM approvals → 8 vetoed → 1 order**. Six of
+those eight were false. If the veto count does not fall, the label class was not the cause and
+DL-113's premise needs re-examining — say so plainly rather than re-explaining the same theory.
 
 **PROVEN RESULT — S177 (`sprint-177-every-number-names-its-unit`, local).** Debate-packet values
 now render with unit/scope labels or an explicit source-owned unknown-units boundary; `SectorBook`

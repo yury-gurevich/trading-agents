@@ -176,16 +176,16 @@ CONSTRAINTS
 
 <!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
 
-**Result:** _not yet implemented._
+**Result:** *not yet implemented.*
 
-**Files changed:** _..._
+**Files changed:** *...*
 
-**Design decisions:** _record the convention + rejected alternatives as a DL entry, and link it._
+**Design decisions:** *record the convention + rejected alternatives as a DL entry, and link it.*
 
-**Audit table verdicts:** _every row: correct as-is / fixed / cannot be fixed here + why._
+**Audit table verdicts:** *every row: correct as-is / fixed / cannot be fixed here + why.*
 
-**Guards planted:** _per guard: what was planted, that it failed, that it was restored._
+**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
 
-**`make ci`:** _exit code, passed/skipped counts, coverage %._
+**`make ci`:** *exit code, passed/skipped counts, coverage %.*
 
-**Behaviour question filed as:** _..._
+**Behaviour question filed as:** *...*

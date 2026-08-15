@@ -126,8 +126,7 @@ machinery is *not* broken — **2 critical flags have been resolved** and all 7 
 
 ## Next
 
-**Ranked queue of record: [work-queue.md](work-queue.md)** (moved in-repo 2026-08-15). This
-section is the narrative around it, not a second ranking — 🪤 collapsing the two is item (ii).
+**Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking (🪤 collapsing the two is item (ii)).
 
 **Ahead of the numbered list — one measurement now unblocked, and three questions raised and not yet
 answered.**

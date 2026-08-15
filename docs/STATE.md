@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-14 13:20 AEST · **Version:** 0.90.10 · **This morning's run never existed — yesterday's manual fire had already taken its UTC-dated key (DL-110), so the 60 s timeout is still unread; tonight's 22:30 UTC fire takes `sched-2026-08-14` uncontested.**
+**Last updated:** 2026-08-15 15:22 AEST · **Version:** 0.90.11 · **The fleet is current for the first time since 08-13 — `s176b` = `0.90.11`, all 16 apps + the job, nothing merged-but-undeployed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -24,6 +24,31 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+- **The veto read word counts as article counts, and the fleet caught up (fix, `0.90.11`,
+  2026-08-15 — [DL-112](design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
+  approvals to the deliberator; **8 came back vetoed and 1 order reached the broker**. Reading the
+  verdicts: **5 of the 8 cite defects S175 had already fixed but which were not deployed** (the
+  invented ATR fragment on AMZN/MDLZ; sector/batch absence read as zero exposure on AVGO/CSCO/GOOGL).
+  A sixth was **new and false in code** — XOM vetoed for a *"sentiment feed internally
+  inconsistent (10 articles but 11 positive and 3 negative)"*, when `sentiment_positive` counted
+  lexicon **word occurrences** and `sentiment_articles` counted **headlines**: two units, one prefix,
+  carried verbatim into the debate by `quant_metrics`. Renamed to `sentiment_positive_words` /
+  `sentiment_negative_words`; no computed value changed. `make ci` **2301 passed / 100.00 %**, guard
+  planted (old keys → `KeyError`) and restored. Only WMT (earnings-gap-aware stop) and GOOG
+  (correlation penalty) were substantive objections. 🪤 **Third instance of DL-104's disease** —
+  invented fragment, absence-as-zero, unit-in-a-name — all three cost real orders; the class is
+  worth one sweep of every value rendered into the debate, not three more point fixes.
+
+- **Two deploys, and S169's guard proved itself by refusing (2026-08-15).** `s176a` = `0.90.10` via
+  full `up` (env change), then `s176b` = `0.90.11` via image-only retag (pack unmoved). **Row Q
+  closed:** the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides are gone, so the models resolve from
+  `DELIBERATOR_LLM_PROVIDER=openai` and S169's switch is the live path instead of a masked one.
+  The first `up` **refused** and named all three keys — DL-100's defect is now closed by
+  demonstration, not only by test. Verified both times: 16/16 on tag, 16/16 `Succeeded`, KEDA
+  `min=0`/1 rule on every app, cron `30 22 * * 1-5`, other tunables intact. `DeployRecord`
+  `…:s176b:439111b7`. 🪤 **`pwsh script.ps1 -DropEnv A,B,C` silently passes one literal string**
+  (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.
 
 - **The audit-clause sweep, and one guard that had never been exercised (docs + test-only,
   2026-08-14 — [DL-111](design-log.md)).** The queue's *"17 audit-type rows"* measured **13**; **9**
@@ -55,89 +80,40 @@ veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 
 ## Now
 
-**Read this first if you are picking the project up.** The **fleet is on `s174` = `0.90.07`, three
-PATCHes behind, deliberately** — S175, S176 and S169 are all merged and all undeployed, waiting on
-one run.
+**Read this first if you are picking the project up.** The fleet is on **`s176b` = `0.90.11`**
+(`439111b7`, 2026-08-15) — **16/16 apps + the dispatcher job, nothing merged-but-undeployed**.
+S175, S176, S169 and DL-112 are all live. The next scheduled fire is **Monday 22:30 UTC**
+(`sched-2026-08-17`); 08-15 is a Saturday and the cron is `30 22 * * 1-5`.
 
-🚨 **`sched-2026-08-14` does not exist, and nothing failed** ([DL-110](design-log.md)). The cron
-fired at `2026-08-13T22:30:00Z` and **Succeeded**, logging `placed sched-2026-08-13` — yesterday's
-manual S174 proof fire ran at `02:28Z` the **same UTC day**, and `as_of` is the UTC date, so the key
-was already taken and the merge was a no-op onto a finished 8/8 run. Newest graph write of any kind:
-`2026-08-13T02:48:54Z`. **So the 60 s timeout prediction below is untested, not failed.** Tonight's
-22:30 UTC fire takes `sched-2026-08-14` uncontested. 🪤 **Do not fire manually to catch up** — the
-KEDA agent window is `22:30–00:30 UTC` and the comparable run takes ~21 minutes; a run started late
-in the window is cut off mid-cascade and **still burns the key**.
+**The 60 s timeout mitigation is PROVEN, not predicted.** `sched-2026-08-14`, measured on the spine:
 
-**S174 — shipped, deployed, proven live (2026-08-13).** The deployed dispatcher wrote
-`lookback_days=295` / `required_history_bars=200`; `MarketData` carried **98 tickers × 202 bars, 0
-under 200** against 41 each the day before; real `Recommendation`s for AMD and XOM carry all five
-core indicators with no `*_missing_bars`. `sma_distance_pct` and `ema_spread_pct` had **never once
-computed in production** before that run. PM approved **8** buys against 1 on 08-11. 8/8 stages.
-Evidence: [functionality-checks.md](laws/functionality-checks.md).
-
-🚨 **That same run failed acceptance, and not on S174.** `debate_coverage 0.625 < 1.0`,
-`failed_open_count 3 > 0`. `DELIBERATOR_EFFORT=high` moves the **tail**, not the median, past the
-30 s `request_timeout_seconds`:
-
-| run | n | median | p90 | max | > 30 s |
+| run | n | median | p90 | max | > timeout |
 | --- | --- | --- | --- | --- | --- |
-| `sched-2026-08-10` (pre-`effort` control) | 90 | 11.4 | 16.4 | **23.0** | **0** |
-| `sched-2026-08-12` (`effort=high`) | 5 | 14.8 | 15.9 | 15.9 | 0 |
-| `sched-2026-08-13` (`effort=high`) | 32 | 15.1 | 30.1 | **39.1** | **4** |
+| `sched-2026-08-10` (pre-`effort`, 30 s) | 90 | 11.4 | 16.4 | 23.0 | 0 |
+| `sched-2026-08-13` (`effort=high`, 30 s) | 32 | 15.1 | 30.1 | 39.1 | **4** |
+| `sched-2026-08-14` (`effort=high`, **60 s**) | 45 | 12.8 | 34.6 | **46.2** | **0** |
 
-Ninety pre-`effort` calls never breached 30 s; thirty-two after it breached four times. 08-12 is an
-**underpowered sample, not a counter-example**. Three fail-opens → execution submitted 3 of 8, and
-**2 of those 3 (AMD, DOW) reached the broker unreviewed**. **Mitigation applied:**
-`request_timeout_seconds` **30 → 60**, env-var only. **Prediction, stated so it can fail:** the next
-run should show `failed_open_count 0` / `debate_coverage 1.0`. If not, the timeout was not the cause.
+`failed_open_count 0`, `debate_coverage 1.0` (9 verdicts / 9 approvals), zero `llm unavailable`.
+The prediction held. 🪤 **The margin is thin** — max 46.2 s against a 60 s ceiling, and 46.2 s would
+have failed open under the old 30 s. `effort=high` moves the tail, so the tail is what to watch.
 
-**S175 — merged, NOT deployed** ([spec](sprints/sprint-175-the-veto-says-only-what-it-can-prove.md)).
-Independently verified: the invented `stop_pct vs ATR%` fragment is gone from the PM packet;
-`drop_vetoed` is **unchanged**, so a fail-open still submits — it is now *loud and distinguishable*
-(`applied_failed_open` + an `error` fault), never *blocking*, which was the hard constraint. Pack
-hash unmoved. 🪤 **It does not change acceptance** — `trading_acceptance` reads
-`DeliberationRun` props, not `Fault` nodes, so a run with fail-opens still reads FAIL. The 60 s
-timeout is what fixes that, not S175.
+**`sched-2026-08-14` — 8/8 stages, ACCEPTANCE UNPROVEN, and the funnel closed at the veto.**
+99 tickers × **203 bars** (S174 holding in production), 23 survived the scanner, 30 scored,
+9 PM-approved, **1 order submitted**. Acceptance reads UNPROVEN rather than FAIL because the PFE
+order (38 sh @ $26.79) is still `pending`, correctly queued for Monday's open. **The 8 vetoes are
+the story, and 6 of them were false** — see the DL-112 entry above. Monday is the first run where
+the veto-context fixes are actually under the fleet.
 
-**S176 — code-proven, branch-gated, NOT deployed** ([spec](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md)).
-`partial -> filled` is now the only mutable broker-status transition on `Fill`; the completed
-broker price and realized-PnL conclusion move with that transition, while terminal statuses remain
-immutable. DRIFT-033 is closed by dropping master's stale `"neo4j"` external I/O declaration without
-adding `"postgres"`. Local `make ci`: **2243 passed / 6 skipped / 100.00 %**; remote branch gate
-proved `57f540f`. Pack hash unmoved. **No live functionality proof is claimed**: the live spine has
-never produced a partial fill.
-
-**S176 — merged, NOT deployed** ([spec](sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md)).
-Independently verified: `completes_partial_fill` permits **only** `partial` → `filled`, terminal
-statuses stay immutable, and `exit_price_cents` switches to the current price only when a partial
-completes — a narrowed guard, not a deleted one. `DRIFT-033` **CORRECTED** (`b17ff5fd`): the stale
-`neo4j` declaration is gone and `postgres` was correctly *not* added, matching the convention that
-analyst/forecaster/monitor declare `external_io=()` despite using the graph. Pack unmoved.
-🪤 **No live proof exists or can exist** — zero of 188 production `Fill`s have ever been
-`partial`, so the fixed path has never been exercised outside tests. Stated plainly rather than
-implied.
-
-## The sequence from here — in order, and the order matters
-
-1. **Read `sched-2026-08-14`.** It runs on `s174`, so nothing S175 changed is under it: the timeout
-   is the only variable that moved since the failing run. `trace_run.py` + `accept.py`, then the
-   `LLMCall` latency table above for a fourth row. 🪤 **Do not retag before reading it** —
-   deploying into the experiment destroys the only clean comparison available.
-2. **~~Merge S176~~ — done** (`0.90.09`), and S169 after it (`0.90.10`); both remain undeployed.
-3. **Then one deploy carrying S175 + S176 + S169** — all three merged and waiting; one retag, one
-   live check, three fixes proven at once. Tag sprint-shaped per [DL-106](design-log.md).
-   🚨 **S169 changes `up`, not the retag path**, so its own live proof needs a full
-   `pwsh infra/deploy-agents.ps1 up` — and that deploy must pass `-DropEnv
-   DELIBERATOR_DEFENDER_MODEL,DELIBERATOR_CHALLENGER_MODEL,DELIBERATOR_JUDGE_MODEL`, which is the
-   act that makes the fleet prove the new provider-default path instead of masking it.
-4. 🪤 **A quoted hash that matches no file is still a false claim.** S176's handback cited a
-   pack hash (`40bd1b10…`) matching neither the file's sha1 nor its sha256 nor any tracked file;
-   the conclusion was right, verified independently. Second instance today after `debt.md`'s
-   *"50.9 s"* tail, which also does not reproduce. **Re-derive cited numbers; do not adopt them.**
+🚨 **Pending `critical` divergence Flag, unresolved.** At `sched-2026-08-14` run start: graph holds
+**AMZN×3, AVGO×2** the broker does not; broker holds **AMD×2, DOW×33, VZ×21** the graph does not.
+Broker is truth for holdings (DL-44), so the graph is wrong in both directions. This feeds the same
+portfolio context the deliberator reasons over — the AVGO `overturn` cited *"Semiconductors
+deployed=0.00 despite AMD/NVDA already held"*, which is **partly a real graph defect**, not only a
+context bug. **Not diagnosed.** `/reconcile-broker` is the entry point.
 
 ## Next
 
-**Ahead of the numbered list — one deploy-gated measurement, and three questions raised and not yet
+**Ahead of the numbered list — one measurement now unblocked, and three questions raised and not yet
 answered.**
 
 **The measurement that reorders everything below it.** `0.90.02` made the `effort` tunable reach the
@@ -148,7 +124,8 @@ round is **cutting the artefact under test to buy wall clock**, a recorded decis
 knob. Build [S172](sprints/sprint-172-independent-debates-run-independently.md) **only if both
 together still miss** — full ordering and the arithmetic in [DL-105](design-log.md)'s amendment.
 The sweep's first point is **done** — `effort` `max` → `high`, live since 2026-08-12 — and it
-cost three fail-opens before `request_timeout_seconds` went 30 → 60. The two levers are
+cost three fail-opens before `request_timeout_seconds` went 30 → 60, **now proven at 0 fail-opens**
+(table under *Now*). The two levers are
 **coupled**: raising effort lengthens the peer-call tail into a fixed timeout. Measure both
 together or not at all.
 
@@ -160,37 +137,39 @@ span ratio is invariant to call count), and its build-trigger belongs in the spe
 section would delete a tracker rather than add one; **(iii)** stop pinning version numbers in sprint
 specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day.
 
-1. 🚨 **DL-104 (a) — delete or honestly relabel the deliberator's invented ATR fragment.** A **fix**, and it
-   manufactures the single most-repeated veto objection across **both** vendors: six vetoes cite an ATR
-   contradiction that does not exist. `context_pm._atr_pct` averages **every bar handed in** (42 → a
-   41-period ATR) while the analyst's `atr_pct` is **14-period**, and `_atr_fragment` renders
-   `PASSED`/`FAILED` **inside the `stop_vs_regime_volatility gate:` line** for a comparison **no gate ever
-   performs**. Python, so the full CI cycle **and a deploy** before it reaches the fleet.
-2. **DL-104 (b) — give the veto batch context, or stop it reasoning about portfolio state it cannot see.**
-   The SCHW *"deployed=0 despite holding USB and WFC"* objection is false on a flat book: the deliberator
-   sees one order's packet and cannot tell *first in the deterministic order* from *the book is broken*.
-3. **DL-104 (c) — the analyst's hardcoded SMA-200 rationale, and the bars gap underneath it.** The summary
-   string always names SMA-200 while `indicators.sma_distance` silently returns `None` below its period, so
-   the *rationale asserts an input that could not exist* (the scoring itself is unaffected). Underneath sits
-   the real gap: `lookback_days=260` exists explicitly *"so SMA200 can compute"*, we receive **42** bars, and
-   `min_history_bars=2` waves that through without a murmur. This is the one veto class that **checked out
-   correct**.
-4. **DL-104 (d) — a real advisory/binding switch**, so *advisory* is a declared posture rather than a grace
-   that happens to expire. Every run in the current state writes a truthful but uninformative `error` fault,
-   which trains the operator to read a real fault as noise.
-5. **S170 — one LLM adapter in `kernel/`**
-   ([sprint-170](sprints/sprint-170-one-llm-adapter-in-the-plumbing.md)). Ranked **below** the fixes above
-   because it is capability rather than repair — but it is what gives the operator the same provider switch
-   the deliberator already has, while the Anthropic key is usage-limited to 2026-09-01. Retargeted `0.90.02` → `0.90.03` on
-   2026-08-11.
-6. **Remaining hardening rows: N, O, P, R.** **N** — delegated coding agents default to `danger-full-access`
-   with no approval prompt; the protection is the operator remembering a CLI flag. **O** — S157's 101
-   missing law-clause test-plan rows, then flip assertion E in `scripts/check_law_coverage.py` to hard fail.
-   **P** — a `partial` fill can never upgrade to `filled`; still **zero** production fills in that state,
-   which is the only reason it is not urgent.
-7. **Row Q's live confirmation, still owed.** 🪤 The 2026-08-12 retag went through `az`
-   image-only, not `deploy-agents.ps1`, so it did **not** supply it. Expect `[OK]` on all 17 targets; any `[XX]`
-   should now be a genuine failure carrying its stderr. Item 1 is the deploy that would supply it.
+1. 🚨 **Reconcile the broker↔graph divergence, then re-read Monday's vetoes.** The pending
+   `critical` Flag above is a **fix** and it is upstream of the veto: the AVGO `overturn` cited
+   sector exposure the graph got wrong, so some of Monday's remaining vetoes may still be
+   context-correct-but-data-wrong. `/reconcile-broker` first; do not tune the veto against a book
+   that disagrees with the broker.
+2. **~~DL-104 (a) — the invented ATR fragment~~ — DONE.** S175, `0.90.08`, **deployed `s176a`
+   2026-08-15**. `_atr_pct`/`_atr_fragment` deleted. Cost, measured before the fix landed: the AMZN
+   and MDLZ vetoes on `sched-2026-08-14`.
+3. **~~DL-104 (b) — batch/portfolio absence~~ — DONE.** S175, same deploy. Cost, measured: the AVGO
+   `overturn` plus the CSCO and GOOGL `revise`s on `sched-2026-08-14`.
+4. **~~DL-112 — sentiment counts name their unit~~ — DONE.** `0.90.11`, **deployed `s176b`**.
+   Cost, measured: the XOM veto and part of AMZN's.
+5. 🪤 **Sweep the rest of the debate context for the same class** — the DL-112 entry argues this is
+   one disease with three instances, not three bugs. Every value rendered into the packet should be
+   checkable against what the reader will assume it means: right unit, right period, right scope.
+   **Not yet a spec.** This is the highest-value item once the divergence is settled.
+6. **DL-104 (c) — the analyst's hardcoded SMA-200 rationale.** The summary string always names
+   SMA-200 while `indicators.sma_distance` returns `None` below its period. 🪤 **The bars gap
+   underneath it is CLOSED** — S174 ships 203 bars, so SMA-200 now computes; what survives is the
+   rationale asserting an input without checking it exists. Same class as item 5.
+7. **DL-104 (d) — a real advisory/binding switch**, so *advisory* is a declared posture rather than a
+   grace that happens to expire. Every run writes a truthful but uninformative `error` fault, which
+   trains the operator to read a real fault as noise.
+8. **S170 — one LLM adapter in `kernel/`**
+   ([sprint-170](sprints/sprint-170-one-llm-adapter-in-the-plumbing.md)). Capability, not repair, so
+   it ranks below the fixes — but it gives the operator the same provider switch the deliberator has,
+   while the Anthropic key is usage-limited to 2026-09-01.
+9. **Remaining hardening rows: N, O, R.** **N** — delegated coding agents default to
+   `danger-full-access` with no approval prompt; the protection is the operator remembering a CLI
+   flag. **O** — S157's 101 missing law-clause test-plan rows, then flip assertion E in
+   `scripts/check_law_coverage.py` to hard fail. **R** — three guards covered only by CI lacking the
+   extras. 🪤 **Row P is closed** (S176, deployed); **row Q is closed** (the `s176a` full `up`
+   returned `[OK]` on all 16 env-preservation checks after refusing once — see Recent).
 
 ## Pointers
 

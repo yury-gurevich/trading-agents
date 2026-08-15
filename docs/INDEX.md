@@ -10,6 +10,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | File | Answers |
 | --- | --- |
 | [STATE.md](STATE.md) | Where are we right now? What is the active sprint? What is next? |
+| [work-queue.md](work-queue.md) | What should we do next, in ranked order, and why does each item sit there? |
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
 | [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
 | [state-archive/](state-archive/INDEX.md) | Frozen older STATE history, split out to keep STATE.md scannable (S36→P0 … S171 across eight files) — read its INDEX first |

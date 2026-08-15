@@ -28,6 +28,16 @@ itself, [DL-98…DL-104](../design-log.md) for the reasoning, and
 [chore-openai-cutover](../sprints/chore-openai-cutover.md) for per-sprint detail. 🪤 **S168 has no
 sprint doc of its own** — the second-vendor work is recorded in `chore-openai-cutover.md` and DL-99.
 
+- **A deploy now keeps the switches it was given (fix, `0.90.10`, 2026-08-14 — closes
+  [DL-100](design-log.md), [S169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
+  The three model tunables resolve from the **provider**, so `DELIBERATOR_LLM_PROVIDER` is the whole
+  switch, and `role_models` records the resolved name — asserted on the written node. Operator
+  tunables and the cron move into `orchestration/packs/trading_tunables.json`; `up` sweeps every
+  agent **before its first create** and refuses, naming any live env key it would drop (`-DropEnv`
+  to drop one deliberately). `make ci` **2299 passed / 100.00 %**, both planted failures watched.
+  🪤 **Not deployed** — the live half (row Q) is owed at the next full `up`, which must also
+  `-DropEnv` the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides or the fleet keeps masking the new path.
+
 ## Recent (verbatim, as it stood in STATE.md)
 
 - **The veto reached production, was read for the first time, and was demoted to advisory (feat + fix,

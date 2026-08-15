@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-15 16:53 AEST · **Version:** 0.90.11 · **Active sprint S177 on `sprint-177-every-number-names-its-unit`: make debate-packet numbers name their unit and scope.**
+**Last updated:** 2026-08-15 18:05 AEST · **Version:** 0.90.12 · **S177 merged and independently re-verified: debate-packet numbers name their unit and scope, PM gate behaviour untouched.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -63,16 +63,6 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   absent. Fixed, parametrised over both vendors, proven **with the SDKs installed** and planted out.
   **No bump** (test-only). New **row R**: three more guards are covered only by CI lacking the extras.
 
-- **A deploy now keeps the switches it was given (fix, `0.90.10`, 2026-08-14 — closes
-  [DL-100](design-log.md), [S169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
-  The three model tunables resolve from the **provider**, so `DELIBERATOR_LLM_PROVIDER` is the whole
-  switch, and `role_models` records the resolved name — asserted on the written node. Operator
-  tunables and the cron move into `orchestration/packs/trading_tunables.json`; `up` sweeps every
-  agent **before its first create** and refuses, naming any live env key it would drop (`-DropEnv`
-  to drop one deliberately). `make ci` **2299 passed / 100.00 %**, both planted failures watched.
-  🪤 **Not deployed** — the live half (row Q) is owed at the next full `up`, which must also
-  `-DropEnv` the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides or the fleet keeps masking the new path.
-
 Older sprints — **the deliberation-constraint measurement (`0.90.02`, DL-105) and the S166→S171
 veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 `0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
@@ -80,12 +70,23 @@ veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 
 ## Now
 
-**INTENT — S177 (`sprint-177-every-number-names-its-unit`).** Make every value rendered into the
-deliberator debate packet state a readable unit/scope, starting with PM `max_sector_pct`
-`deployed` detail that currently means batch-only deployed dollars. Success factors: planted
-mislabel guards fail before restoration, `SectorBook` approval behaviour remains unchanged, the
-audit table in the sprint doc gets a row-by-row verdict, the convention and rejected alternatives
-are recorded in `docs/design-log.md`, and `make ci` exits 0 with 100.00 % coverage.
+**PROVEN RESULT — S177 (`sprint-177-every-number-names-its-unit`, local).** Debate-packet values
+now render with unit/scope labels or an explicit source-owned unknown-units boundary; `SectorBook`
+approval behaviour stayed unchanged. Proof: three planted label-boundary defects failed and were
+restored; final redirected `make ci` exited `0` with **2304 passed / 4 skipped / 100.00 %**,
+pip-audit clean, detect-secrets clean; graph vocabulary pack unchanged (`13c0e3a0ef38...`). **Not
+fixed by design:** whether `max_sector_pct` should include held portfolio sector dollars; filed in
+DL-113 rather than folded into this label sweep.
+
+**Re-derived independently, not adopted (2026-08-15).** Gate confirmed for `35dbe40` (CI +
+Security Findings both `success`); the cited pack hash `13c0e3a0…` **reproduces** and matches
+deployed `s176b`; `SectorBook`'s diff is five lines entirely inside an f-string, so `passed`,
+`value` and `threshold` are untouched; no prompt file was changed. 🪤 **The two `make ci` counts
+differ and both are right** — Codex measured **2304 / 4 skipped** with `.env` present, a fresh
+worktree measures **2302 / 6**, because two tests skip explicitly without a local `.env`. Same 2308
+tests, exit 0, 100.00 % either way. **Codex found three sites my audit table missed**, including
+`deployed` meaning *opposite scopes* in adjacent packet lines (`SectorBook` batch vs
+`position_gates` portfolio-wide) — now `deployed_this_batch_usd` and `deployed_portfolio_usd`.
 
 **Read this first if you are picking the project up.** The fleet is on **`s176b` = `0.90.11`**
 (`439111b7`, 2026-08-15) — **16/16 apps + the dispatcher job, nothing merged-but-undeployed**.

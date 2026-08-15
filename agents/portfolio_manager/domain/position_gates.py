@@ -45,9 +45,9 @@ def position_outcomes(
             threshold=float(max_position_pct),
             passed=cost <= max_position_pct * portfolio.value,
             detail=(
-                f"quantity={quantity}; est_price={_money(price.amount)}; "
-                f"position_value={_money(cost)}; "
-                f"portfolio_value={_money(portfolio.value)}"
+                f"quantity_shares={quantity}; est_price_usd={_money(price.amount)}; "
+                f"position_value_usd={_money(cost)}; "
+                f"portfolio_value_usd={_money(portfolio.value)}"
             ),
         ),
         GateOutcome(
@@ -73,10 +73,10 @@ def position_outcomes(
             threshold=float(available),
             passed=cost <= available,
             detail=(
-                f"portfolio_value={_money(portfolio.value)}; "
-                f"deployed={_money(portfolio.deployed_value)}; "
+                f"portfolio_value_usd={_money(portfolio.value)}; "
+                f"deployed_portfolio_usd={_money(portfolio.deployed_value)}; "
                 f"cash_buffer_pct={float(cash_buffer_pct):.4f}; "
-                f"reserved_cash={_money(reserved_cash)}"
+                f"reserved_cash_this_batch_usd={_money(reserved_cash)}"
             ),
         ),
     )

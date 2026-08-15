@@ -38,7 +38,7 @@ def exit_outcomes(
             value=float(value / portfolio.value) if portfolio.value > 0 else 0.0,
             threshold=1.0,
             passed=True,
-            detail=f"full_exit_quantity={quantity}; exit_value={value:.2f}",
+            detail=f"full_exit_quantity_shares={quantity}; exit_value_usd={value:.2f}",
         ),
         GateOutcome(
             name="min_order_quantity",

@@ -25,46 +25,6 @@ from orchestration.veto_context import build_veto_context
 from orchestration.veto_context_pm import regime_gate_lines
 
 
-def test_full_context_includes_all_available_upstream_evidence() -> None:
-    graph = InMemoryGraphStore()
-    item = intent(stop=0.03, target=0.08)
-    orders = order_set(item, refs=("pm-ref",))
-    pm = linked_graph(graph, full=True)
-
-    context = build_veto_context(graph, pm, orders, item)
-
-    assert "PM order: action=buy; ticker=AAPL; quantity=7" in context
-    assert (
-        "PM gate outcome: name=sizing value=0.0812 threshold=0.1 -> PASSED"
-    ) in context
-    assert "PM gate outcome: name=max_sector_pct" in context
-    assert "PM gate outcome: name=max_names_per_sector" in context
-    assert "refs=['pm-ref']" in context
-    assert "Analyst recommendation for AAPL" in context
-    assert "sentiment_score=0.700" in context
-    assert "fundamental_score=0.650" in context
-    assert "quant_metrics={composite_score=0.61" in context
-    assert "history_bars=40" in context
-    assert "relative_strength=0.08}" in context
-    assert "Analyst rejected AAPL: duplicate exposure" in context
-    assert "Scanner candidate for AAPL: rank=1; score=0.810" in context
-    assert "Scanner verdict for AAPL: decision=survived" in context
-    assert "features={beta=1.1, return_5d=0.08}" in context
-    assert "Latest OHLCV for AAPL: date=2026-07-03" in context
-    assert "Fundamentals for AAPL: {pe=28.5, roe=0.21}" in context
-    assert "Provider sentiment for AAPL: 0.730" in context
-    assert "Sector for AAPL: Technology" in context
-    assert "Next earnings for AAPL: 2026-07-30" in context
-    assert "News for AAPL: raises guidance | buyback expanded" in context
-    assert "Regime: label=neutral; vix=14.2" in context
-    assert "Portfolio/batch context: unavailable" in context
-    assert (
-        "confidence_floor gate: confidence=0.620 vs base_min_confidence=0.570 -> PASSED"
-    ) in context
-    assert "stop_vs_regime_volatility gate:" in context
-    assert "stop_pct=3.00% vs ATR%=" not in context
-
-
 def test_context_completeness_renders_every_enforced_gate_with_outcome() -> None:
     graph = InMemoryGraphStore()
     item = intent(stop=0.03, target=0.08)
@@ -100,7 +60,10 @@ def test_context_renders_failed_gate_outcomes_plainly() -> None:
 
     context = build_veto_context(graph, pm, orders, item)
 
-    assert "name=max_sector_pct value=0.41 threshold=0.3 -> FAILED" in context
+    assert (
+        "name=max_sector_pct value_batch_sector_ratio=0.41 "
+        "threshold_sector_ratio=0.3 -> FAILED"
+    ) in context
     assert "base_stop_loss_pct=3.00% -> FAILED" in context
     assert "base_take_profit_pct=8.00% -> FAILED" in context
 
@@ -129,7 +92,7 @@ def test_sparse_context_omits_missing_optional_evidence() -> None:
 
     assert "stop_pct=n/a; target_pct=n/a" in context
     assert "PM gate report unavailable" in context
-    assert "sentiment_score=n/a" in context
+    assert "analyst_sentiment_score=n/a" in context
     assert "suggested_stop_pct=n/a" in context
     assert "Scanner candidate for AAPL" not in context
     assert "Scanner verdict for AAPL" not in context

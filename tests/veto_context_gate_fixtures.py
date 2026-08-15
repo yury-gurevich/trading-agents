@@ -18,14 +18,19 @@ def pm_gate_report() -> tuple[GateOutcome, ...]:
             value=0.0812,
             threshold=0.10,
             passed=True,
-            detail="quantity=7; position_value=812.00; portfolio_value=10000.00",
+            detail=(
+                "quantity_shares=7; position_value_usd=812.00; "
+                "portfolio_value_usd=10000.00"
+            ),
         ),
         GateOutcome(
             name="max_sector_pct",
             value=0.0812,
             threshold=0.30,
             passed=True,
-            detail="sector=Technology; deployed=0.00; order_cost=812.00",
+            detail=(
+                "sector=Technology; deployed_this_batch_usd=0.00; order_cost_usd=812.00"
+            ),
         ),
         GateOutcome(
             name="max_names_per_sector",

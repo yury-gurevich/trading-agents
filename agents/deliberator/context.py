@@ -9,19 +9,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.deliberator.context_market import market_lines, regime_context
 from agents.deliberator.context_pm import (
     order_lines,
     recommendation_line,
     regime_gate_lines,
 )
+from agents.deliberator.context_values import (
+    SOURCE_VALUE_BOUNDARY,
+    explain,
+    source_metric_map,
+)
 from contracts.analyst import Recommendation, RecommendationSet
-from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, OHLCVBar, RegimeContext
+from contracts.provider import MarketData
 from contracts.scanner import Candidate, CandidateSet, FilterVerdict
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from contracts.common import Explanation
     from contracts.portfolio_manager import OrderIntent, OrderIntentSet
     from kernel import GraphStore, Node
 
@@ -42,8 +47,9 @@ def build_veto_context(
     lines = [
         f"Run {order_set.run_id}: PM-approved order under challenger-veto review.",
         _PORTFOLIO_BATCH_BOUNDARY,
+        SOURCE_VALUE_BOUNDARY,
         *order_lines(intent),
-        f"PM run: {_explain(order_set.explanation)}",
+        f"PM run: {explain(order_set.explanation)}",
     ]
     analyst = _first(
         graph.ancestors(pm_node, max_depth=1, edge_types={_EVALUATED_EDGE})
@@ -64,15 +70,15 @@ def build_veto_context(
     if market_node is None:
         return "\n".join((*lines, "Lineage: no MarketData linked to this ScanRun."))
     market = MarketData.model_validate(market_node.props["snapshot"])
-    lines.extend(_market_lines(market, intent.ticker))
-    regime = _regime(graph, market_node)
+    lines.extend(market_lines(market, intent.ticker))
+    regime = regime_context(graph, market_node)
     lines.extend(regime_gate_lines(regime, rec, intent, market.bars))
     return "\n".join(lines)
 
 
 def _analyst_lines(recs: RecommendationSet, ticker: str) -> list[str]:
     rec = _recommendation(recs, ticker)
-    lines = [f"Analyst run: {_explain(recs.explanation)}"]
+    lines = [f"Analyst run: {explain(recs.explanation)}"]
     if rec is not None:
         lines.append(recommendation_line(rec))
     for rejection in recs.rejections:
@@ -86,11 +92,11 @@ def _scanner_lines(candidates: CandidateSet, ticker: str) -> list[str]:
         (item for item in candidates.candidates if item.ticker == ticker), None
     )
     lines = [
-        f"Scanner run: {_explain(candidates.explanation)}",
+        f"Scanner run: {explain(candidates.explanation)}",
         "Scanner filter trace: "
-        f"universe_size={candidates.filter_trace.universe_size}; "
-        f"evaluated={candidates.filter_trace.evaluated}; "
-        f"dropped_by_filter={dict(candidates.filter_trace.dropped_by_filter)}",
+        f"universe_tickers={candidates.filter_trace.universe_size}; "
+        f"evaluated_tickers={candidates.filter_trace.evaluated}; "
+        f"dropped_tickers_by_filter={dict(candidates.filter_trace.dropped_by_filter)}",
     ]
     if candidate is not None:
         lines.append(_candidate_line(candidate))
@@ -99,53 +105,18 @@ def _scanner_lines(candidates: CandidateSet, ticker: str) -> list[str]:
         lines.append(
             f"Scanner verdict for {ticker}: decision={verdict.decision}; "
             f"filter_fired={verdict.filter_fired}; bypassed={verdict.bypassed}; "
-            f"features={_dict(verdict.features)}"
+            f"features={source_metric_map(verdict.features)}"
         )
-    return lines
-
-
-def _market_lines(market: MarketData, ticker: str) -> list[str]:
-    lines = [
-        "Market data quality: "
-        f"requested={market.quality.requested}; returned={market.quality.returned}; "
-        f"used_fallback={market.quality.used_fallback}; "
-        f"stale_tickers={list(market.quality.stale_tickers)}; "
-        f"anomalous_tickers={list(market.quality.anomalous_tickers)}; "
-        f"notes={list(market.quality.notes)}",
-    ]
-    bar = _latest_bar(market.bars, ticker)
-    if bar is not None:
-        lines.append(
-            f"Latest OHLCV for {ticker}: date={bar.bar_date}; open={bar.open:.4g}; "
-            f"high={bar.high:.4g}; low={bar.low:.4g}; close={bar.close:.4g}; "
-            f"volume={bar.volume}"
-        )
-    if ticker in market.fundamentals:
-        lines.append(f"Fundamentals for {ticker}: {_dict(market.fundamentals[ticker])}")
-    if ticker in market.sentiment:
-        lines.append(f"Provider sentiment for {ticker}: {market.sentiment[ticker]:.3f}")
-    if ticker in market.sectors:
-        lines.append(f"Sector for {ticker}: {market.sectors[ticker]}")
-    if ticker in market.earnings:
-        lines.append(f"Next earnings for {ticker}: {market.earnings[ticker]}")
-    if ticker in market.news:
-        lines.append(f"News for {ticker}: {' | '.join(market.news[ticker])}")
     return lines
 
 
 def _candidate_line(candidate: Candidate) -> str:
     return (
-        f"Scanner candidate for {candidate.ticker}: rank={candidate.rank}; "
-        f"score={candidate.score:.3f}; "
+        f"Scanner candidate for {candidate.ticker}: rank_ordinal={candidate.rank}; "
+        f"scanner_score={candidate.score:.3f}; "
         f"survived_filters={list(candidate.survived_filters)}; "
-        f"metrics={_dict(candidate.metrics)}"
+        f"metrics={source_metric_map(candidate.metrics)}"
     )
-
-
-def _regime(graph: GraphStore, market_node: Node) -> RegimeContext | None:
-    key = f"regime-context:{market_node.props['run_id']}"
-    node = graph.get_node(REGIME_CONTEXT_LABEL, key)
-    return RegimeContext.model_validate(node.props["snapshot"]) if node else None
 
 
 def _recommendation(recs: RecommendationSet, ticker: str) -> Recommendation | None:
@@ -156,19 +127,5 @@ def _verdict(items: tuple[FilterVerdict, ...], ticker: str) -> FilterVerdict | N
     return next((item for item in items if item.ticker == ticker), None)
 
 
-def _latest_bar(items: tuple[OHLCVBar, ...], ticker: str) -> OHLCVBar | None:
-    bars = [item for item in items if item.ticker == ticker]
-    return max(bars, key=lambda item: item.bar_date) if bars else None
-
-
 def _first(items: Iterable[Node]) -> Node | None:
     return next(iter(items), None)
-
-
-def _explain(value: Explanation) -> str:
-    refs = f" refs={list(value.evidence_refs)}" if value.evidence_refs else ""
-    return f"{value.summary}{refs}"
-
-
-def _dict(values: dict[str, float]) -> str:
-    return "{" + ", ".join(f"{key}={values[key]:.4g}" for key in sorted(values)) + "}"

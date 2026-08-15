@@ -11,8 +11,6 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.domain.concentration import SectorBook
-from agents.portfolio_manager.domain.position_gates import sector_rejection
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from agents.portfolio_manager.tests.helpers import (
@@ -90,65 +88,6 @@ def test_max_sector_pct_of_one_disables_the_cap() -> None:
     approved, rejected = _two_tech_buys({"AAPL": "Tech", "MSFT": "Tech"}, Decimal("1"))
     assert {o.ticker for o in approved} == {"AAPL", "MSFT"}
     assert rejected == ()
-
-
-def test_sector_rejection_maps_each_failing_outcome_to_its_reason() -> None:
-    """PM-OUT-03: the book reports outcomes; `sector_rejection` names the reason.
-
-    Was `SectorBook.rejection`, a second copy of this mapping that only tests ever
-    called (DL-97). Exercising the live function over `book.outcomes(...)` tests the
-    composition the PM actually runs.
-    """
-    book = SectorBook({"AAPL": "Tech", "MSFT": "Tech"}, ("AAPL",))
-    item = recommendation("MSFT")
-
-    def _reject(cost: str, pct: str, names: int) -> RejectedOrder | None:
-        outcomes = book.outcomes(
-            item,
-            Decimal(cost),
-            Decimal("1000.00"),
-            max_sector_pct=Decimal(pct),
-            max_names_per_sector=names,
-        )
-        return sector_rejection(item.ticker, outcomes, ())
-
-    name_count = _reject("100.00", "1", 1)
-    sector_cap = _reject("400.00", "0.30", 3)
-    ok = _reject("100.00", "0.30", 3)
-    zero_value = book.outcomes(
-        item,
-        Decimal("100.00"),
-        Decimal("0"),
-        max_sector_pct=Decimal("0.30"),
-        max_names_per_sector=3,
-    )
-
-    assert name_count is not None
-    assert name_count.reason == "sector_name_count"
-    assert sector_cap is not None
-    assert sector_cap.reason == "sector_concentration"
-    assert ok is None
-    assert zero_value[0].value == 0.0
-
-
-def test_sector_book_holds_dollar_cap_boundary() -> None:
-    """Kills
-    agents.portfolio_manager.domain.concentration.xǁSectorBookǁoutcomes__mutmut_11.
-    """
-    book = SectorBook({"AAPL": "Tech"}, ())
-    item = recommendation("AAPL")
-    observed = []
-    for cost in (Decimal("299.00"), Decimal("300.00"), Decimal("301.00")):
-        outcome = book.outcomes(
-            item,
-            cost,
-            Decimal("1000.00"),
-            max_sector_pct=Decimal("0.30"),
-            max_names_per_sector=0,
-        )[0]
-        observed.append((round(outcome.value, 3), outcome.threshold, outcome.passed))
-
-    assert observed == [(0.299, 0.3, True), (0.3, 0.3, True), (0.301, 0.3, False)]
 
 
 def test_agent_applies_the_sector_cap_over_the_bus() -> None:

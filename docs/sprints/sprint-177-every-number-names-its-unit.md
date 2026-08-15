@@ -174,18 +174,63 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Result:** implemented on branch `sprint-177-every-number-names-its-unit` as `0.90.12`.
+`SectorBook` approval behaviour was not changed: the old sector-cap and sector-name tests still
+pass, and the new tests assert only evidence labels/rendering. The graph vocabulary pack is
+unchanged versus `HEAD`; current SHA-256:
+`13c0e3a0ef38eed61019c35cecf252f5729967979011bdfbf0146d8c907ad3ff`.
 
-**Result:** *not yet implemented.*
+**Files changed:** `agents/portfolio_manager/domain/concentration.py`,
+`agents/portfolio_manager/domain/position_gates.py`,
+`agents/portfolio_manager/domain/exits.py`, `agents/deliberator/context.py`,
+`agents/deliberator/context_pm.py`, new `agents/deliberator/context_values.py`,
+new `agents/deliberator/context_market.py`, `tests/test_veto_context.py`,
+new `tests/test_veto_context_value_labels.py`, `tests/veto_context_gate_fixtures.py`,
+`orchestration/tests/test_veto_stage.py`, `agents/portfolio_manager/tests/test_sector_cap.py`,
+new `agents/portfolio_manager/tests/test_sector_evidence_labels.py`, `docs/design-log.md`,
+`docs/STATE.md`, `pyproject.toml`, `uv.lock`.
 
-**Files changed:** *...*
+**Design decisions:** recorded as [DL-113](../design-log.md): producer-owned rendered values put
+unit/scope in the key; open-name producer/vendor dictionaries render with an explicit
+`source-owned-units-scope-unknown{...}` boundary; S177 is labels only and does not seed
+`SectorBook._deployed` from held positions. Rejected: prompt-only explanation, behaviour change in
+this sprint, renderer-side unit inference for source-owned dictionaries, and dropping the evidence.
 
-**Design decisions:** *record the convention + rejected alternatives as a DL entry, and link it.*
+**Audit table verdicts:**
 
-**Audit table verdicts:** *every row: correct as-is / fixed / cannot be fixed here + why.*
+| Site | Verdict |
+| --- | --- |
+| `_gate_line` `detail=` free text | **fixed.** PM-produced detail keys now name shares, USD, portfolio scope, and batch scope; `deployed` is now `deployed_this_batch_usd`. Generic gate `value`/`threshold` render with gate-specific labels such as `value_batch_sector_ratio`. |
+| `_quant_metrics` | **fixed at this site by boundary.** Rendered as `source-owned-units-scope-unknown{...}`. `sentiment_*_words` was already fixed by DL-112; `atr_pct` is source-owned and tunable-period-sensitive, so S177 does not rename it at the deliberator render site. |
+| `_dict(market.fundamentals[t])` | **fixed.** Vendor/free-form fundamentals render under the source-owned unknown-units boundary. |
+| `_dict(candidate.metrics)` | **fixed.** Scanner metric maps render under the source-owned unknown-units boundary. |
+| `_dict(verdict.features)` | **fixed.** Filter feature maps render under the source-owned unknown-units boundary. |
+| `market.quality.requested/returned` | **fixed.** Now `requested_tickers` / `returned_tickers`; stale/anomalous fields already named tickers. |
+| `Provider sentiment` vs `sentiment_score` | **fixed.** Provider value is `provider_sentiment_score`; analyst value is `analyst_sentiment_score`. |
+| `_pct` vs `_num` | **fixed for current rendered fields.** Shared `percent()` / `number()` helpers sit in `context_values.py`, and existing owned labels now say score/pct where relevant. |
+| `est_price={amount} {currency}` | **fixed.** PM order renders `est_price_usd=...`; PM gate details render `est_price_usd`, `position_value_usd`, and `portfolio_value_usd`. |
+| `_PORTFOLIO_BATCH_BOUNDARY` | **correct as-is and extended.** The portfolio/batch absence boundary remains, and a separate source-owned metric dictionary boundary was added. |
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+**Guards planted:**
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+- Producer detail guard: changed `deployed_this_batch_usd` back to `deployed`; `uv run pytest
+  agents/portfolio_manager/tests/test_sector_evidence_labels.py::test_sector_deployment_detail_names_batch_scope_and_unit --no-cov`
+  failed on the missing `deployed_this_batch_usd=0.00`; restored and the test passed.
+- Source-owned dictionary boundary guard: changed `source-owned-units-scope-unknown{...}` back to
+  plain `{...}`; `uv run pytest
+  tests/test_veto_context_value_labels.py::test_full_context_names_available_value_units_and_boundaries --no-cov`
+  failed on the missing quant-metric boundary; restored and the test passed.
+- Gate value label guard: changed `max_sector_pct` labels back to generic `value`/`threshold`;
+  `uv run pytest tests/test_veto_context.py::test_context_renders_failed_gate_outcomes_plainly
+  --no-cov` failed on the missing `value_batch_sector_ratio` / `threshold_sector_ratio`; restored
+  and the test passed.
 
-**Behaviour question filed as:** *...*
+**`make ci`:** final redirected run `C:\Users\yury_\AppData\Local\Temp\s177-make-ci.log`, exit
+code `0`; `2304 passed, 4 skipped`, `100.00 %` coverage; `pip-audit` found no known
+vulnerabilities; detect-secrets and untracked-secret scan passed. Earlier full-gate attempts failed
+first on ruff-format wrapping, then on two stale orchestration prompt assertions; both were fixed
+before the final green run.
+
+**Behaviour question filed as:** [DL-113](../design-log.md), labels-only decision: separately
+decide whether `max_sector_pct` should include held portfolio sector dollars instead of only prior
+approvals in the current PM run.

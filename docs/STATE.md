@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-15 15:22 AEST · **Version:** 0.90.11 · **The fleet is current for the first time since 08-13 — `s176b` = `0.90.11`, all 16 apps + the job, nothing merged-but-undeployed.**
+**Last updated:** 2026-08-15 16:53 AEST · **Version:** 0.90.11 · **Active sprint S177 on `sprint-177-every-number-names-its-unit`: make debate-packet numbers name their unit and scope.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -80,6 +80,13 @@ veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 
 ## Now
 
+**INTENT — S177 (`sprint-177-every-number-names-its-unit`).** Make every value rendered into the
+deliberator debate packet state a readable unit/scope, starting with PM `max_sector_pct`
+`deployed` detail that currently means batch-only deployed dollars. Success factors: planted
+mislabel guards fail before restoration, `SectorBook` approval behaviour remains unchanged, the
+audit table in the sprint doc gets a row-by-row verdict, the convention and rejected alternatives
+are recorded in `docs/design-log.md`, and `make ci` exits 0 with 100.00 % coverage.
+
 **Read this first if you are picking the project up.** The fleet is on **`s176b` = `0.90.11`**
 (`439111b7`, 2026-08-15) — **16/16 apps + the dispatcher job, nothing merged-but-undeployed**.
 S175, S176, S169 and DL-112 are all live. The next scheduled fire is **Monday 22:30 UTC**
@@ -109,12 +116,13 @@ the veto-context fixes are actually under the fleet.
 **adopted** from broker truth mid-run and each got a protective stop at 22:54; AMZN/AVGO are
 correctly marked `broker_absent`. 19 stops cover 19 positions. **No broker action was needed.**
 
-🚨 **`healthy` has been permanently false since 2026-07-08, and that is the real finding.**
-`compute_health` is `open_incidents == 0 and critical_flags == 0`; there are **47 unresolved
-`critical` Flags** — every run raises one at start and nothing ever resolves it (only `warn` flags
-have ever been resolved, 7, all mid-July). `pending_human_flags=47`. The signal carries no
-information: a genuinely new critical condition cannot move it. Reconciliation auto-adopts broker
-truth but never closes the loop on the Flag it raised.
+🚨 **`healthy` has been false every day since 2026-07-08 — packaged as
+[S178](sprints/sprint-178-the-health-signal-must-be-able-to-go-green.md).** Measured 2026-08-15:
+52 Flags, 7 resolutions, **45 critical unresolved** → `pending_human_flags=45`. 🪤 **Corrected:** the
+machinery is *not* broken — **2 critical flags have been resolved** and all 7 join correctly on
+`(subject_ref, severity)`. The backlog can only *grow*: `subject_ref` embeds `snapshot.key`
+(run id + ISO timestamp), so every run mints a unique flag and the dedupe guard never fires, while
+`resolve_flag` is reachable only through the human `approve` capability.
 
 ## Next
 

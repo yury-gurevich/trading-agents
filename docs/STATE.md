@@ -104,12 +104,17 @@ order (38 sh @ $26.79) is still `pending`, correctly queued for Monday's open. *
 the story, and 6 of them were false** — see the DL-112 entry above. Monday is the first run where
 the veto-context fixes are actually under the fleet.
 
-🚨 **Pending `critical` divergence Flag, unresolved.** At `sched-2026-08-14` run start: graph holds
-**AMZN×3, AVGO×2** the broker does not; broker holds **AMD×2, DOW×33, VZ×21** the graph does not.
-Broker is truth for holdings (DL-44), so the graph is wrong in both directions. This feeds the same
-portfolio context the deliberator reasons over — the AVGO `overturn` cited *"Semiconductors
-deployed=0.00 despite AMD/NVDA already held"*, which is **partly a real graph defect**, not only a
-context bug. **Not diagnosed.** `/reconcile-broker` is the entry point.
+**The `sched-2026-08-14` divergence is RESOLVED — reconciliation worked** (`/reconcile-broker`,
+2026-08-15). Graph active positions and broker holdings agree **exactly, 19/19**: AMD/DOW/VZ were
+**adopted** from broker truth mid-run and each got a protective stop at 22:54; AMZN/AVGO are
+correctly marked `broker_absent`. 19 stops cover 19 positions. **No broker action was needed.**
+
+🚨 **`healthy` has been permanently false since 2026-07-08, and that is the real finding.**
+`compute_health` is `open_incidents == 0 and critical_flags == 0`; there are **47 unresolved
+`critical` Flags** — every run raises one at start and nothing ever resolves it (only `warn` flags
+have ever been resolved, 7, all mid-July). `pending_human_flags=47`. The signal carries no
+information: a genuinely new critical condition cannot move it. Reconciliation auto-adopts broker
+truth but never closes the loop on the Flag it raised.
 
 ## Next
 
@@ -137,22 +142,28 @@ span ratio is invariant to call count), and its build-trigger belongs in the spe
 section would delete a tracker rather than add one; **(iii)** stop pinning version numbers in sprint
 specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day.
 
-1. 🚨 **Reconcile the broker↔graph divergence, then re-read Monday's vetoes.** The pending
-   `critical` Flag above is a **fix** and it is upstream of the veto: the AVGO `overturn` cited
-   sector exposure the graph got wrong, so some of Monday's remaining vetoes may still be
-   context-correct-but-data-wrong. `/reconcile-broker` first; do not tune the veto against a book
-   that disagrees with the broker.
-2. **~~DL-104 (a) — the invented ATR fragment~~ — DONE.** S175, `0.90.08`, **deployed `s176a`
-   2026-08-15**. `_atr_pct`/`_atr_fragment` deleted. Cost, measured before the fix landed: the AMZN
-   and MDLZ vetoes on `sched-2026-08-14`.
-3. **~~DL-104 (b) — batch/portfolio absence~~ — DONE.** S175, same deploy. Cost, measured: the AVGO
-   `overturn` plus the CSCO and GOOGL `revise`s on `sched-2026-08-14`.
-4. **~~DL-112 — sentiment counts name their unit~~ — DONE.** `0.90.11`, **deployed `s176b`**.
-   Cost, measured: the XOM veto and part of AMZN's.
-5. 🪤 **Sweep the rest of the debate context for the same class** — the DL-112 entry argues this is
-   one disease with three instances, not three bugs. Every value rendered into the packet should be
+1. 🚨 **Close the loop on `critical` Flags, so `healthy` can mean something again.** A **fix**.
+   47 unresolved critical Flags since 2026-07-08 pin `healthy=false` and `pending_human_flags=47`
+   forever. A divergence that reconciliation has already adopted should resolve its own Flag; the
+   backlog needs a one-off sweep behind that. 🪤 **Retracted, 2026-08-15:** this item previously
+   claimed the graph had the book wrong and ranked #1 for that reason. It did not — graph and broker
+   matched 19/19. The AVGO `overturn` was a **false premise**, not a data defect (see item 2).
+2. 🪤 **Sweep the rest of the debate context for the same class — now FOUR instances.** The fourth
+   is `max_sector_pct`'s `deployed`: `SectorBook.__init__` seeds `_names` from held positions but
+   **never seeds `_deployed`**, so `deployed` counts only *this batch* (GOOGL's `deployed=687.05` is
+   exactly GOOG's `order_cost` moments earlier). `deployed=0.00` beside `existing_sector_names=2`
+   is correct and unreadable, and it cost the AVGO overturn. 🚨 **Same code is also a latent gate
+   defect** — the dollar sector cap never sees held positions, so across days sector exposure can
+   pass 30 % unnoticed; masked today only because `max_names_per_sector=3` binds first. Every value rendered into the packet should be
    checkable against what the reader will assume it means: right unit, right period, right scope.
    **Not yet a spec.** This is the highest-value item once the divergence is settled.
+3. **~~DL-104 (a) — the invented ATR fragment~~ — DONE.** S175, `0.90.08`, **deployed `s176a`
+   2026-08-15**. `_atr_pct`/`_atr_fragment` deleted. Cost, measured before the fix landed: the AMZN
+   and MDLZ vetoes on `sched-2026-08-14`.
+4. **~~DL-104 (b) — batch/portfolio absence~~ — DONE.** S175, same deploy. Cost, measured: the AVGO
+   `overturn` plus the CSCO and GOOGL `revise`s on `sched-2026-08-14`.
+5. **~~DL-112 — sentiment counts name their unit~~ — DONE.** `0.90.11`, **deployed `s176b`**.
+   Cost, measured: the XOM veto and part of AMZN's.
 6. **DL-104 (c) — the analyst's hardcoded SMA-200 rationale.** The summary string always names
    SMA-200 while `indicators.sma_distance` returns `None` below its period. 🪤 **The bars gap
    underneath it is CLOSED** — S174 ships 203 bars, so SMA-200 now computes; what survives is the

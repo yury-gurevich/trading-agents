@@ -130,13 +130,13 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
 
     assert "PM order: action=buy; ticker=AAPL" in prompt
     assert "Analyst recommendation for AAPL" in prompt
-    assert "confidence=0.600" in prompt
+    assert "confidence_score=0.600" in prompt
     assert "Scanner filter trace:" in prompt
     assert "Scanner candidate for AAPL" in prompt
     assert "Market data quality:" in prompt
     assert "Latest OHLCV for AAPL:" in prompt
-    assert "close=116" in prompt
-    assert "base_min_confidence=" in prompt
+    assert "close_usd=116" in prompt
+    assert "base_min_confidence_score=" in prompt
     assert "PM gate outcome: name=sizing" in prompt
     assert "PM gate outcome: name=reward_risk" in prompt
     assert "confidence_floor gate:" in prompt
@@ -155,10 +155,10 @@ def test_veto_context_renders_quant_signals_to_all_three_roles() -> None:
     assert set(by_role) == {"defender", "challenger", "judge"}
     for role in ("defender", "challenger", "judge"):
         context = by_role[role]
-        assert "quant_metrics={" in context
+        assert "quant_metrics=source-owned-units-scope-unknown{" in context
         assert "composite_score=0.5" in context
         assert "history_bars=2" in context
-        assert "confidence=0.6" in context
+        assert "confidence_score=0.6" in context
 
 
 def test_veto_is_fail_open_on_llm_outage() -> None:

@@ -8,6 +8,43 @@ and is marked CLOSED here.
 
 ---
 
+## DL-113 - Debate-packet numbers name their unit and scope - status: DECIDED (2026-08-15)
+
+**Question.** S177 sweeps the values rendered into the deliberator debate packet after four real
+vetoes were traced to correct numbers under unreadable labels. The immediate defect is PM
+`max_sector_pct` detail rendering `deployed=0.00`, where the value means "deployed by earlier
+approved orders in this PM batch", not portfolio-wide sector exposure.
+
+**Decision - producer-owned names carry the unit and scope.** PM gate `detail=` strings and the
+deliberator's own shell labels must name the unit/scope in the key: examples are
+`deployed_this_batch_usd`, `order_cost_usd`, `quantity_shares`, `requested_tickers`, and
+`provider_sentiment_score`. Generic `GateOutcome.value` / `threshold` render as gate-specific
+labels such as `value_batch_sector_ratio` and `threshold_sector_ratio`.
+
+**Decision - source-owned dictionaries get an explicit boundary.** `market.fundamentals`,
+`candidate.metrics`, `verdict.features`, and analyst `quant_metrics` are open-name dictionaries
+whose keys are producer/vendor owned. The deliberator must not invent units for those keys. It
+renders them with a source-owned units/scope boundary; a value whose key does not name a unit is
+explicitly unknown to the deliberator rather than inferred.
+
+**Decision - labels only for S177.** `SectorBook._deployed` stays batch-scoped. Seeding it from held
+positions would change approval behaviour, not just packet wording. That dollar-cap behaviour
+question is filed separately: decide whether `max_sector_pct` should include held portfolio sector
+dollars instead of only prior approvals in the current PM run.
+
+**Rejected routes.**
+
+- *Teach the prompt how to read `deployed` and other values* - rejected for the DL-112 reason: every
+  future reader would need the same prompt text to avoid the same wrong conclusion.
+- *Seed `SectorBook._deployed` from held positions in S177* - rejected. That changes which orders the
+  PM approves and needs its own ADR-backed behaviour change.
+- *Infer units for vendor/scanner dictionaries at the deliberator render site* - rejected. A renderer
+  cannot know whether `pe`, `beta`, or a future vendor key is a ratio, currency, count, or score.
+- *Drop ambiguous dictionaries from the packet* - rejected. The values are still useful evidence;
+  the correct boundary is "source owned / unknown here", not silence.
+
+---
+
 ## DL-112 - Two counts, two units, one prefix: the veto read word counts as article counts - status: DECIDED (2026-08-15)
 
 **What happened.** The `sched-2026-08-14` run put 9 PM-approved buys to the deliberator and 8 came

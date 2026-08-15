@@ -65,8 +65,9 @@ class SectorBook:
                 threshold=float(max_sector_pct),
                 passed=deployed + cost <= max_sector_pct * portfolio_value,
                 detail=(
-                    f"sector={sector}; deployed={deployed:.2f}; "
-                    f"order_cost={cost:.2f}; portfolio_value={portfolio_value:.2f}"
+                    f"sector={sector}; deployed_this_batch_usd={deployed:.2f}; "
+                    f"order_cost_usd={cost:.2f}; "
+                    f"portfolio_value_usd={portfolio_value:.2f}"
                 ),
             )
         ]

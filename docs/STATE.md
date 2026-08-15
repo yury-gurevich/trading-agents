@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-15 15:22 AEST · **Version:** 0.90.11 · **The fleet is current for the first time since 08-13 — `s176b` = `0.90.11`, all 16 apps + the job, nothing merged-but-undeployed.**
+**Last updated:** 2026-08-15 17:27 AEST · **Version:** 0.90.12 · **S177 local proof green: debate-packet numbers now name unit/scope, without changing PM sector-gate behaviour.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -79,6 +79,14 @@ veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
+
+**PROVEN RESULT — S177 (`sprint-177-every-number-names-its-unit`, local).** Debate-packet values
+now render with unit/scope labels or an explicit source-owned unknown-units boundary; `SectorBook`
+approval behaviour stayed unchanged. Proof: three planted label-boundary defects failed and were
+restored; final redirected `make ci` exited `0` with **2304 passed / 4 skipped / 100.00 %**,
+pip-audit clean, detect-secrets clean; graph vocabulary pack unchanged (`13c0e3a0ef38...`). **Not
+fixed by design:** whether `max_sector_pct` should include held portfolio sector dollars; filed in
+DL-113 rather than folded into this label sweep.
 
 **Read this first if you are picking the project up.** The fleet is on **`s176b` = `0.90.11`**
 (`439111b7`, 2026-08-15) — **16/16 apps + the dispatcher job, nothing merged-but-undeployed**.

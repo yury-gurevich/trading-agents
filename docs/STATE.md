@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-15 18:22 AEST · **Version:** 0.90.12 · **Fleet on `s177` = `0.90.12` — S177 deployed and verified; Monday's run is the first with all four veto-context fixes live.**
+**Last updated:** 2026-08-17 14:57 AEST · **Version:** 0.90.12 · **The `Security Findings` gate is green again — one CodeQL error alert had failed every push since S177 merged (DL-110).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -25,6 +25,15 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+- **The gate was red for two days over one test line (fix, no bump, 2026-08-17 —
+  [DL-110](design-log.md)).** Four straight `Security Findings` runs failed — three on docs-only
+  commits — on CodeQL `py/mismatched-multiple-assignment` **#177**, the only error-level alert of 76
+  open: a PM test unpacked `SectorBook.outcomes()` into two names, and that call returns `()` when
+  the ticker has no sector. Length now asserted, then indexed. `make ci` **2302 passed / 100.00 %**;
+  #177 reads `fixed`; `GATE PROVEN` for `21a5e81`. 🪤 **A branch cannot clear an alert raised on
+  `main`** — `codeql.yml` runs only there, so the fix branch failed its own gate on the same alert;
+  merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
+
 - **The veto read word counts as article counts, and the fleet caught up (fix, `0.90.11`,
   2026-08-15 — [DL-112](design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
   approvals to the deliberator; **8 came back vetoed and 1 order reached the broker**. Reading the
@@ -40,18 +49,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   invented fragment, absence-as-zero, unit-in-a-name — all three cost real orders; the class is
   worth one sweep of every value rendered into the debate, not three more point fixes.
 
-- **Two deploys, and S169's guard proved itself by refusing (2026-08-15).** `s176a` = `0.90.10` via
-  full `up` (env change), then `s176b` = `0.90.11` via image-only retag (pack unmoved). **Row Q
-  closed:** the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides are gone, so the models resolve from
-  `DELIBERATOR_LLM_PROVIDER=openai` and S169's switch is the live path instead of a masked one.
-  The first `up` **refused** and named all three keys — DL-100's defect is now closed by
-  demonstration, not only by test. Verified both times: 16/16 on tag, 16/16 `Succeeded`, KEDA
-  `min=0`/1 rule on every app, cron `30 22 * * 1-5`, other tunables intact. `DeployRecord`
-  `…:s176b:439111b7`. 🪤 **`pwsh script.ps1 -DropEnv A,B,C` silently passes one literal string**
-  (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.
-
-Older sprints — **the deliberation-constraint measurement (`0.90.02`, DL-105) and the S166→S171
-veto arc (`0.89.07`–`0.90.01`) → [STATE-08.md](state-archive/STATE-08.md)**;
+Older sprints — **the two S176 deploys (`0.90.10`/`0.90.11`), the deliberation-constraint
+measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.01`) →
+[STATE-08.md](state-archive/STATE-08.md)**;
 `0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 

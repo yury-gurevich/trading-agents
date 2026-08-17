@@ -6067,6 +6067,16 @@ dismissing the alert. Merge-then-verify was chosen, with the proof deferred to `
 re-analyses `main`, alert #177 closes, and a `Security Findings` run on `main` is confirmed green
 afterwards. The green claim belongs to that run, not to the merge.
 
+**Why it took two days to name.** The gate step writes its report to the job summary and prints
+**nothing** to stdout, so all four failed runs showed a bare `Process completed with exit code 1`.
+The alert was identified by running the toolset locally against the live alert list, which printed
+`New policy violations: 1` and the offending row. A failure that names nothing in its own log is
+why a red gate can sit unexplained; worth a follow-up step that echoes the violating rows.
+
+**Proven, not assumed.** `make ci` exit 0 (2302 passed / 6 skipped / 100.00 %); remote CI green on
+the branch; alert #177 state `fixed` after CodeQL ran on `main`; `Security Findings` re-run green on
+`21a5e81`; `make gate-ran` `GATE PROVEN` for `21a5e81`, matching `git rev-parse HEAD`.
+
 **Rejected routes.**
 
 - *Dismiss alert #177 with a reason* - rejected. It is the sanctioned acceptance path, but this

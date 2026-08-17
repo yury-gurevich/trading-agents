@@ -99,3 +99,17 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   pins the request, not the object. Packaged
   [S172](sprints/sprint-172-independent-debates-run-independently.md) (concurrency) and
   [S173](sprints/sprint-173-a-verdict-must-be-reproducible.md) (verdict reproducibility on Batches).
+
+---
+
+## The two S176 deploys (moved from *Recent* 2026-08-17)
+
+- **Two deploys, and S169's guard proved itself by refusing (2026-08-15).** `s176a` = `0.90.10` via
+  full `up` (env change), then `s176b` = `0.90.11` via image-only retag (pack unmoved). **Row Q
+  closed:** the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides are gone, so the models resolve from
+  `DELIBERATOR_LLM_PROVIDER=openai` and S169's switch is the live path instead of a masked one.
+  The first `up` **refused** and named all three keys — DL-100's defect is now closed by
+  demonstration, not only by test. Verified both times: 16/16 on tag, 16/16 `Succeeded`, KEDA
+  `min=0`/1 rule on every app, cron `30 22 * * 1-5`, other tunables intact. `DeployRecord`
+  `…:s176b:439111b7`. 🪤 **`pwsh script.ps1 -DropEnv A,B,C` silently passes one literal string**
+  (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.

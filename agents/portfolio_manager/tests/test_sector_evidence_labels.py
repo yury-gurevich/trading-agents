@@ -84,13 +84,16 @@ def test_sector_deployment_detail_names_batch_scope_and_unit() -> None:
         ("AMD", "NVDA"),
     )
 
-    sector_pct, sector_names = book.outcomes(
+    outcomes = book.outcomes(
         recommendation("AVGO"),
         Decimal("786.04"),
         Decimal("102777.00"),
         max_sector_pct=Decimal("0.30"),
         max_names_per_sector=3,
     )
+
+    assert len(outcomes) == 2
+    sector_pct, sector_names = outcomes[0], outcomes[1]
 
     assert sector_pct.passed is True
     assert "deployed_this_batch_usd=0.00" in sector_pct.detail

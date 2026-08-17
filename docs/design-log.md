@@ -6037,3 +6037,49 @@ the current `Fill` fields stop lying.
   evidence. Terminal rewrites (`filled -> partial`, `rejected -> filled`) must stay refused.
 
 ---
+
+## DL-110 - A code-scanning alert raised on `main` cannot be cleared from a branch - status: DECIDED (2026-08-17)
+
+**The failure.** Four consecutive `Security Findings` runs on `main` failed (`31874097513`,
+`31874121784`, `31874756644`, `31874771431`), all on the gate step, all for one alert: CodeQL
+`py/mismatched-multiple-assignment` #177, error severity, raised on `main` at 07:38 UTC on
+2026-08-15 against `agents/portfolio_manager/tests/test_sector_evidence_labels.py:87`. Error-level
+is exactly what `--fail-on-code-scanning-error` blocks, and it was not in the baseline, so every
+push after S177 merged failed - including four docs-only commits that touched no Python at all.
+
+**Why it fired.** `SectorBook.outcomes()` returns `()` when the ticker has no sector, so its return
+type spans lengths 0 and 2. The test unpacked the call directly into two names, and CodeQL reports
+the empty-tuple branch as a runtime unpack error. The test is not actually reachable on that branch
+(its `SectorBook` knows `AVGO`), but the analyzer cannot see that, and the shape it objects to is
+genuinely fragile.
+
+**Decision.** Fix the test: bind the call to `outcomes`, assert `len(outcomes) == 2`, then take the
+two elements by index. The length is now proven in the test rather than assumed by its syntax, and
+the analyzer sees a two-element right-hand side. Test-only, so **no version bump** - it ships no
+package behaviour (precedent: `74bdd7c`).
+
+**The discovered constraint that matters.** `codeql.yml` runs on push to `main` and on PRs to
+`main`; `security-findings.yml` runs on push to **every** branch. So an alert raised on `main` stays
+open, and fails the gate on every branch, until the fix is analysed **on `main`**. A branch cannot
+turn it green - the fix branch's own gate run fails on the same stale alert. The rule "never merge a
+branch you have not seen go green" has no path through this: the only exits are merge-then-verify or
+dismissing the alert. Merge-then-verify was chosen, with the proof deferred to `main`: CodeQL
+re-analyses `main`, alert #177 closes, and a `Security Findings` run on `main` is confirmed green
+afterwards. The green claim belongs to that run, not to the merge.
+
+**Rejected routes.**
+
+- *Dismiss alert #177 with a reason* - rejected. It is the sanctioned acceptance path, but this
+  finding points at a real fragility in the test, and accepting it would have left the pattern in
+  place for the next unpack of a variable-length return.
+- *Re-baseline* - rejected for the same reason, and because the baseline exists for accepted
+  standing findings, not for clearing today's inbox.
+- *Make `outcomes()` always return two outcomes* - rejected. The empty return is the meaningful
+  "this ticker has no sector, there is nothing to gate" answer; widening it to satisfy an analyzer
+  would put a fake gate outcome into production evidence.
+- *Give `collect` a `--ref` so the gate measures the pushed branch* - rejected here, and noted as a
+  real option for later. It would have let this branch go green on its own, but CodeQL does not run
+  on branches at all, so a ref-scoped query would find no alerts and the gate would pass by absence
+  of data - a weaker gate, not an earlier one.
+
+---

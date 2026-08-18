@@ -8,7 +8,7 @@ External I/O: GraphStore writes via the injected backend.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, NamedTuple
 
 from agents.execution.broker_status_refresh import (
     broker_price_cents,
@@ -95,49 +95,46 @@ def write_snapshot(
     )
 
 
+class Divergence(NamedTuple):
+    """One graph-vs-broker disagreement, with an identity stable across runs."""
+
+    kind: str
+    ticker: str
+    detail: str
+
+    @property
+    def text(self) -> str:
+        """Human-readable one-line form used in Flag reasons."""
+        return f"{self.kind} {self.ticker} {self.detail}"
+
+
 def position_divergences(
     graph: GraphStore, positions: tuple[BrokerPosition, ...]
-) -> tuple[str, ...]:
+) -> tuple[Divergence, ...]:
     """Compare active graph positions with broker holdings by ticker quantity."""
     broker_qty = {position.ticker: position.quantity for position in positions}
     graph_qty = _graph_position_quantities(graph)
-    divergences: list[str] = []
+    divergences: list[Divergence] = []
     for ticker in sorted(set(broker_qty) - set(graph_qty)):
         divergences.append(
-            f"missing_graph_position {ticker} broker_qty={broker_qty[ticker]}"
+            Divergence(
+                "missing_graph_position", ticker, f"broker_qty={broker_qty[ticker]}"
+            )
         )
     for ticker in sorted(set(graph_qty) - set(broker_qty)):
         divergences.append(
-            f"extra_graph_position {ticker} graph_qty={graph_qty[ticker]}"
+            Divergence("extra_graph_position", ticker, f"graph_qty={graph_qty[ticker]}")
         )
     for ticker in sorted(set(broker_qty) & set(graph_qty)):
         if graph_qty[ticker] != broker_qty[ticker]:
             divergences.append(
-                f"qty_mismatch {ticker} "
-                f"graph_qty={graph_qty[ticker]} broker_qty={broker_qty[ticker]}"
+                Divergence(
+                    "qty_mismatch",
+                    ticker,
+                    f"graph_qty={graph_qty[ticker]} broker_qty={broker_qty[ticker]}",
+                )
             )
     return tuple(divergences)
-
-
-def write_divergence_flag(
-    graph: GraphStore, *, snapshot: Node, divergences: tuple[str, ...]
-) -> None:
-    """Write the supervisor-shaped Flag requested by DL-44."""
-    subject_ref = f"broker-position-divergence:{snapshot.key}"
-    key = f"flag:{subject_ref}:critical"
-    if graph.get_node("Flag", key) is not None:
-        return
-    graph.merge_node(
-        "Flag",
-        key,
-        {
-            "subject_ref": subject_ref,
-            "severity": "critical",
-            "reason": _flag_reason(snapshot, divergences),
-            "status": "pending",
-            "created_at": datetime.now(tz=UTC).isoformat(),
-        },
-    )
 
 
 def _holding_props(position: BrokerPosition) -> dict[str, object]:
@@ -162,8 +159,3 @@ def _graph_position_quantities(graph: GraphStore) -> dict[str, int]:
 def _is_active_position(graph: GraphStore, node: Node) -> bool:
     del graph
     return is_active_position_node(node)
-
-
-def _flag_reason(snapshot: Node, divergences: tuple[str, ...]) -> str:
-    lines = "\n".join(f"- {item}" for item in divergences)
-    return f"Broker position divergence at run start ({snapshot.key}):\n{lines}"

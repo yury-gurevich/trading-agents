@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-18 16:55 AEST · **Version:** 0.90.14 · **Fleet: `s178`** (16 apps + job, verified) · **S179 branch/local + live sweep proven:** `healthy` can be true again; S179 code/pack is not deployed yet.
+**Last updated:** 2026-08-18 17:57 AEST · **Version:** 0.90.14 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **`healthy` is `true` on the live spine for the first time since 2026-07-08 — S178 + S179 both shipped.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when

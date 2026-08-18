@@ -224,10 +224,18 @@ run-stable, which is what makes both dedupe and the persistence check possible.
 
 Restored: **9 passed**.
 
-**Backlog sweep:** *pending — `--apply` writes to the live spine and is held for operator
-approval.* Measured on the spine 2026-08-18 via `compute_health` from the main worktree:
-`pending_human_flags` = **46**, `healthy` = **false**, `open_incidents` = **6104**. This is the one
-success factor `make ci` cannot prove.
+**Backlog sweep: RUN AND PROVEN** on the live spine 2026-08-18 13:27 AEST, operator-approved.
+
+```
+BEFORE  healthy=False   pending_human_flags=46
+RESOLVED 46 legacy divergence flags
+AFTER   healthy=False   pending_human_flags=0
+```
+
+**Only `FlagResolution` nodes were appended** — verified after the fact: `Flag` nodes **53 → 53**,
+every one still `status=pending` (none mutated), active `Position` nodes **19 → 19**,
+`FlagResolution` **7 → 53** (+46). **`healthy` is still `false`, as predicted:** `open_incidents` =
+**6104** gates the same boolean and is a separate defect this sprint does not touch.
 
 🪤 **The sweep's own `--dry-run` from this worktree returned `healthy=True, pending_human_flags=0`
 — a lie.** A git worktree has no `.env` (gitignored), so `build_graph_from_env()` silently resolved
@@ -242,9 +250,9 @@ existing as files inside the repo tree, untracked or not.
       `test_repeating_a_divergence_never_mints_a_second_unresolvable_flag`: four runs, 2 flags.
 - [x] An **adopted** divergence no longer produces a `critical`; an **unadopted** one still does.
 - [x] The DL-44 lineage record still exists for every divergence — nothing stopped being recorded.
-- [ ] Backlog swept on the live spine — **held for operator approval** (see above). `healthy` will
-      **not** reach `true` on this alone: `open_incidents` = 6104 also gates it, and that is a
-      separate defect this sprint does not touch.
+- [x] Backlog swept on the live spine — `pending_human_flags` **46 → 0**, both numbers quoted above.
+      `healthy` did **not** reach `true`, and could not: `open_incidents` = 6104 also gates it.
+      That half is now the *only* thing holding the signal red, and is filed as queue item 19.
 - [x] Only `FlagResolution` nodes are appended — no `Flag`, `Position` or broker mutation;
       `test_an_adopted_divergence_is_retired_on_the_next_run` asserts the Flag is unchanged.
 - [x] Severity convention recorded in `docs/design-log.md` with rejected alternatives — DL-111.

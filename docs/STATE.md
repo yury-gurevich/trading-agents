@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-18 10:51 AEST · **Version:** 0.90.13 · **S178 shipped: divergence-flag severity now follows persistence, so an adopted divergence never reads `critical` (DL-111). The 46-flag backlog sweep awaits approval.**
+**Last updated:** 2026-08-18 13:27 AEST · **Version:** 0.90.13 · **S178 shipped and swept: `pending_human_flags` 46 → 0 on the spine. `healthy` is still false — `open_incidents`=6104 is now the sole blocker (queue item 19).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -120,10 +120,10 @@ next run start escalates to `critical`, a gone one is retired by an appended `Fl
 `subject_ref` is now `{kind}:{ticker}`, so the dedupe guard fires across runs. 🪤 **S178's own
 recommendation was unimplementable** — adoption happens in the *monitor*, so the outcome is
 unknowable where execution writes the flag ([DL-111](design-log.md)). **PROVEN:** `make ci` exit 0,
-2311 passed, 100.00 %; all four new guards planted, watched to fail, restored. **NOT yet proven:** the backlog sweep
-(`scripts/sweep_divergence_flags.py --apply`) writes to the live spine and is **held for operator
-approval** — measured there today: `pending_human_flags` **46**, `healthy` **false**. `healthy` will
-not go green on the sweep alone; `open_incidents`=**6104** also gates it, a separate defect.
+2311 passed, 100.00 %; all four new guards planted, watched to fail, restored. **Sweep PROVEN on the spine:** `pending_human_flags`
+**46 → 0**; Flags 53 → 53, every one still `pending` (none mutated); Positions 19 → 19. `healthy` is
+**still false** and could not have gone green — `open_incidents`=**6104** gates the same boolean and
+is now the *sole* blocker, filed as queue item 19.
 
 ## Next
 

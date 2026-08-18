@@ -6093,3 +6093,50 @@ the branch; alert #177 state `fixed` after CodeQL ran on `main`; `Security Findi
   of data - a weaker gate, not an earlier one.
 
 ---
+
+---
+
+## DL-111 - Divergence-flag severity follows persistence, not the adoption outcome - status: DECIDED (2026-08-18)
+
+**The problem.** `healthy` had been `false` continuously since 2026-07-08. Measured 2026-08-18 on
+the live spine: 46 unresolved `critical` Flags, 45 of them `Broker position divergence at run
+start`. The flag is written at run start, *before* reconciliation adopts broker truth, so it
+describes an operation that is about to succeed and then demands human attention for it. A signal
+that cannot change carries no information.
+
+**What S178 recommended, and why it does not work.** The spec's decision 1 was **severity follows
+the adoption outcome**: adopted -> `info`/`warn`, unadopted -> `critical`. Measured while
+implementing: **the outcome is not knowable where the flag is written.** Run-start reconciliation
+lives in the execution agent (`agents/execution/reconciliation.py`); adoption of broker truth into
+`Position` nodes happens in the **monitor** (`agents/monitor/reconcile.py:117`), a different agent
+and a later stage. Agents never import agents, so execution cannot ask whether adoption succeeded
+at the moment it writes the flag. The recommendation was unimplementable as written.
+
+**Decision. Persistence is the observable proxy for the outcome.** A divergence seen for the first
+time is a `warn` - reconciliation is about to adopt it, and it must not pin `healthy` to false. The
+**same divergence still present at the next run start** was demonstrably not adopted, and is
+escalated to `critical`. A divergence that has gone is retired by appending a `FlagResolution`. All
+of it is decidable inside the execution agent, from graph state alone.
+
+This requires the `subject_ref` to identify the *divergence*, not the snapshot. It was
+`broker-position-divergence:{snapshot.key}` - and `snapshot.key` embeds a per-run ISO timestamp, so
+the dedupe guard never fired across runs and each day minted a unique unresolvable flag. It is now
+`broker-position-divergence:{kind}:{ticker}`, stable across runs, which is what makes both the
+dedupe and the persistence check possible.
+
+**Ruled out.**
+
+- *Auto-resolve after adoption* (raise `critical`, clear it on the next clean run) - built first,
+  then discarded. It is S178's own rejected option and the rejection is right: an adopted
+  divergence still reads `critical` for a full day, so `healthy` stays false for normal operation.
+- *Severity follows the adoption outcome* - S178's recommendation. Ruled out as **unimplementable**
+  at the flag's write site, per the measurement above. Moving the flag write into the monitor was
+  considered and rejected: DL-44 lineage belongs with the broker boundary, which is execution's
+  (EXEC-IDN-03).
+- *Stop raising the flag* - destroys the DL-44 lineage record, which is the point of having it.
+
+**The legacy backlog is swept separately, not by a run.** Pre-S178 flags carry snapshot-keyed
+subjects that can never match a live divergence. `_retire_absent` deliberately skips them, and
+`scripts/sweep_divergence_flags.py` retires them as one audited, append-only action with
+before/after counts. Letting a run silently clear 45 historical flags as a side effect would have
+been the same "fix it by editing the graph" move DL-44 prohibits, one level removed.

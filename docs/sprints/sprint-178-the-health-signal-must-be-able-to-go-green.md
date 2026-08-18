@@ -186,17 +186,71 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Result:** shipped as `0.90.13` on `sprint-178-the-health-signal-must-be-able-to-go-green`.
+`make ci` **exit 0**, 2311 passed / 6 skipped, coverage **100.00 %**.
 
-**Result:** *not yet implemented.*
+**Design decision 1 was changed, and the spec's recommendation was ruled out as unimplementable.**
+The spec recommended *severity follows the adoption outcome*. Measured while building: **the outcome
+is not knowable where the flag is written.** Run-start reconciliation is in the execution agent;
+adoption into `Position` nodes happens in the **monitor** (`agents/monitor/reconcile.py:117`), a
+different agent and a later stage, and agents never import agents. Shipped instead:
+**persistence is the observable proxy** — first sight is `warn`, the *same* divergence still present
+at the next run start was not adopted and escalates to `critical`, a divergence that is gone is
+retired. Full reasoning and the three ruled-out options: [DL-111](../design-log.md).
 
-**Files changed:** *...*
+**Files changed:**
 
-**Design decisions:** *severity convention + rejected alternatives as a DL entry, linked.*
+- `agents/execution/reconciliation_flags.py` — **new**, the whole flag lifecycle (138 lines).
+- `agents/execution/reconciliation_store.py` — `Divergence` NamedTuple gives a divergence an
+  identity stable across runs; flag-writing moved out (169 → 161 lines, back under the warn line).
+- `agents/execution/reconciliation.py` — calls `record_divergences` unconditionally.
+- `scripts/sweep_divergence_flags.py` — **new**, the append-only backlog sweep.
+- `agents/execution/tests/test_reconciliation_flags.py` + `test_reconciliation_flag_sweep.py` —
+  **new** (split at the 200-line hard block, which the first version hit at 201).
 
-**Backlog sweep:** *`pending_human_flags` before and after, measured on the live spine; `healthy`
-observed `true`; confirmation that only `FlagResolution` nodes were appended.*
+**The root cause the spec identified is fixed.** `subject_ref` was
+`broker-position-divergence:{snapshot.key}` and `snapshot.key` embeds a per-run ISO timestamp, so
+the dedupe guard never fired across runs. It is now `broker-position-divergence:{kind}:{ticker}` —
+run-stable, which is what makes both dedupe and the persistence check possible.
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+**Guards planted, watched to fail, restored** — all four, targeted suite of 9:
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+| Guard | Planted as | Result |
+| --- | --- | --- |
+| First sight is `warn`, not `critical` | write `critical` on first sight | **5 failed** |
+| Persistence escalates to `critical` | escalation branch → `pass` | **2 failed** |
+| A run never touches legacy flags | drop the `_LEGACY_PREFIX` skip | **2 failed** |
+| A gone divergence is retired | `_retire_absent` call → `pass` | **1 failed** |
+
+Restored: **9 passed**.
+
+**Backlog sweep:** *pending — `--apply` writes to the live spine and is held for operator
+approval.* Measured on the spine 2026-08-18 via `compute_health` from the main worktree:
+`pending_human_flags` = **46**, `healthy` = **false**, `open_incidents` = **6104**. This is the one
+success factor `make ci` cannot prove.
+
+🪤 **The sweep's own `--dry-run` from this worktree returned `healthy=True, pending_human_flags=0`
+— a lie.** A git worktree has no `.env` (gitignored), so `build_graph_from_env()` silently resolved
+to the in-memory store: the exact trap `/diagnose-run` documents. The script now **refuses and exits
+2** rather than report a zero it cannot stand behind, and the sweep must be run from the main
+worktree. `.env` was deliberately *not* copied into the worktree — CLAUDE.md forbids credentials
+existing as files inside the repo tree, untracked or not.
+
+**Success factors:**
+
+- [x] A repeated divergence does not mint a second unresolvable `critical` —
+      `test_repeating_a_divergence_never_mints_a_second_unresolvable_flag`: four runs, 2 flags.
+- [x] An **adopted** divergence no longer produces a `critical`; an **unadopted** one still does.
+- [x] The DL-44 lineage record still exists for every divergence — nothing stopped being recorded.
+- [ ] Backlog swept on the live spine — **held for operator approval** (see above). `healthy` will
+      **not** reach `true` on this alone: `open_incidents` = 6104 also gates it, and that is a
+      separate defect this sprint does not touch.
+- [x] Only `FlagResolution` nodes are appended — no `Flag`, `Position` or broker mutation;
+      `test_an_adopted_divergence_is_retired_on_the_next_run` asserts the Flag is unchanged.
+- [x] Severity convention recorded in `docs/design-log.md` with rejected alternatives — DL-111.
+- [x] Each new guard planted, watched to fail, restored — table above.
+- [x] `make ci` exit 0, 100.00 % coverage.
+
+**Trap that fired:** the spec warned both files were past the 150-line warn line. The one that
+actually hit the **200-line hard block** was the *new test file* (201 lines), which the spec did not
+anticipate. Split into lifecycle + sweep.

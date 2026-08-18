@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-17 14:57 AEST · **Version:** 0.90.12 · **The `Security Findings` gate is green again — one CodeQL error alert had failed every push since S177 merged (DL-110).**
+**Last updated:** 2026-08-18 10:51 AEST · **Version:** 0.90.13 · **S178 shipped: divergence-flag severity now follows persistence, so an adopted divergence never reads `critical` (DL-111). The 46-flag backlog sweep awaits approval.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -111,18 +111,19 @@ order (38 sh @ $26.79) is still `pending`, correctly queued for Monday's open. *
 the story, and 6 of them were false** — see the DL-112 entry above. Monday is the first run where
 the veto-context fixes are actually under the fleet.
 
-**The `sched-2026-08-14` divergence is RESOLVED — reconciliation worked** (`/reconcile-broker`,
-2026-08-15). Graph active positions and broker holdings agree **exactly, 19/19**: AMD/DOW/VZ were
-**adopted** from broker truth mid-run and each got a protective stop at 22:54; AMZN/AVGO are
-correctly marked `broker_absent`. 19 stops cover 19 positions. **No broker action was needed.**
+**Broker and graph agree exactly, 19/19** (`/reconcile-broker`, re-measured 2026-08-18): 19 stops
+cover 19 positions, no broker action needed. Divergences are being adopted mid-run as designed.
 
-🚨 **`healthy` has been false every day since 2026-07-08 — packaged as
-[S178](sprints/sprint-178-the-health-signal-must-be-able-to-go-green.md).** Measured 2026-08-15:
-52 Flags, 7 resolutions, **45 critical unresolved** → `pending_human_flags=45`. 🪤 **Corrected:** the
-machinery is *not* broken — **2 critical flags have been resolved** and all 7 join correctly on
-`(subject_ref, severity)`. The backlog can only *grow*: `subject_ref` embeds `snapshot.key`
-(run id + ISO timestamp), so every run mints a unique flag and the dedupe guard never fires, while
-`resolve_flag` is reachable only through the human `approve` capability.
+**S178 shipped (`0.90.13`, 2026-08-18) — the health signal can move again.** Severity now follows
+**persistence**: first sight of a divergence is `warn`, the *same* divergence still present at the
+next run start escalates to `critical`, a gone one is retired by an appended `FlagResolution`.
+`subject_ref` is now `{kind}:{ticker}`, so the dedupe guard fires across runs. 🪤 **S178's own
+recommendation was unimplementable** — adoption happens in the *monitor*, so the outcome is
+unknowable where execution writes the flag ([DL-111](design-log.md)). **PROVEN:** `make ci` exit 0,
+2311 passed, 100.00 %; all four new guards planted, watched to fail, restored. **NOT yet proven:** the backlog sweep
+(`scripts/sweep_divergence_flags.py --apply`) writes to the live spine and is **held for operator
+approval** — measured there today: `pending_human_flags` **46**, `healthy` **false**. `healthy` will
+not go green on the sweep alone; `open_incidents`=**6104** also gates it, a separate defect.
 
 ## Next
 

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, cast
 
+from agents.execution.reconciliation_flags import record_divergences
 from agents.execution.reconciliation_store import (
     position_divergences,
     refresh_pending_fills,
-    write_divergence_flag,
     write_snapshot,
 )
 from kernel import fault_boundary
@@ -71,8 +71,7 @@ def reconcile_run_start(
         stale_reason=None,
     )
     divergences = position_divergences(graph, positions)
-    if divergences:
-        write_divergence_flag(graph, snapshot=snapshot, divergences=divergences)
+    record_divergences(graph, snapshot=snapshot, divergences=divergences)
     return snapshot
 
 

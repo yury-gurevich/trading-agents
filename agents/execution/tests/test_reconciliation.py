@@ -13,10 +13,7 @@ from typing import Literal
 
 from agents.execution.broker import BrokerAccount, BrokerFill, BrokerPosition
 from agents.execution.reconciliation import reconcile_run_start
-from agents.execution.reconciliation_store import (
-    position_divergences,
-    write_divergence_flag,
-)
+from agents.execution.reconciliation_store import position_divergences
 from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from contracts.common import Money
 from kernel import CollectingFaultSink, InMemoryGraphStore, Node
@@ -59,17 +56,12 @@ def test_reconcile_run_start_snapshots_flags_and_refreshes_pending_fills() -> No
 
     snapshot = reconcile_run_start(graph, broker, sink, run_id="pm-run")
     assert snapshot is not None
-    write_divergence_flag(
-        graph,
-        snapshot=snapshot,
-        divergences=("extra_graph_position MSFT graph_qty=1",),
-    )
 
     refreshed = graph.get_node("Fill", "run:CSCO:buy")
     rejected = graph.get_node("Fill", "external:NVDA:buy")
     hpe = graph.get_node("Fill", "run:HPE:buy")
     mrvl = graph.get_node("Fill", "run:MRVL:buy")
-    flag = graph.list_nodes("Flag")[0]
+    reasons = " ".join(str(node.props["reason"]) for node in graph.list_nodes("Flag"))
     assert refreshed is not None
     assert hpe is not None
     assert mrvl is not None
@@ -83,9 +75,10 @@ def test_reconcile_run_start_snapshots_flags_and_refreshes_pending_fills() -> No
     assert mrvl.props["broker_status"] == "filled"
     assert snapshot.props["status"] == "fresh"
     assert snapshot.props["holding_count"] == 3
-    assert "missing_graph_position NVDA broker_qty=3" in flag.props["reason"]
-    assert "extra_graph_position MSFT graph_qty=1" in flag.props["reason"]
-    assert "qty_mismatch TSLA graph_qty=4 broker_qty=5" in flag.props["reason"]
+    assert "missing_graph_position NVDA broker_qty=3" in reasons
+    assert "extra_graph_position MSFT graph_qty=1" in reasons
+    assert "qty_mismatch TSLA graph_qty=4 broker_qty=5" in reasons
+    assert {node.props["severity"] for node in graph.list_nodes("Flag")} == {"warn"}
 
 
 def test_reconcile_run_start_writes_stale_snapshot_on_broker_read_error() -> None:

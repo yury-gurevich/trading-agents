@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-18 13:27 AEST · **Version:** 0.90.13 · **S178 shipped and swept: `pending_human_flags` 46 → 0 on the spine. `healthy` is still false — `open_incidents`=6104 is now the sole blocker (queue item 19).**
+**Last updated:** 2026-08-18 14:00 AEST · **Version:** 0.90.13 · **Fleet: `s178`** (16 apps + job, verified) · **S178 shipped and swept: `pending_human_flags` 46 → 0. `healthy` still false — `open_incidents`=6104 is the sole blocker, and 94 % of it is one closed July incident (queue item 19).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when

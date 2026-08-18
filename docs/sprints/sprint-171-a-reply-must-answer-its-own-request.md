@@ -212,7 +212,11 @@ The cold-peer success factor, which could not be proven at handback, **now holds
 
 🚨 **Fixing this exposed the next defect, [DL-103](../design-log.md).** With correlation correct, the debate takes its true duration: **943 s** for 18 orders (90 `LLMCall`s, 5 per order, ~10.6 s each) against a **900 s** `deliberation_grace_seconds`. It overran, `DeliberationGraceExpired` fired, and `ExecutionRun.deliberation_status = **proceeded_unvetoed**` submitted all 18 — including the 15 the veto had decided to veto. Mitigated by raising the grace **900 → 1800** (`le=3600`, no code change), read back and verified. **Not fixed:** at `MAX_POSITIONS=60` the cost is ~3180 s against a 3600 s ceiling.
 
-**Not proven.**
+**Not proven — as at handback, and superseded by the production proof above.**
+
+> Kept as the honest record of what was and was not known at handback on 2026-08-08. **Every item
+> below was subsequently proven** by the `:s171` / `check-s171-cold-start` run recorded above — this
+> is history, not current status.
 
 No fleet deployment was performed. No live Azure dead-letter queue was inspected after this branch.
 No scaled-from-zero production debate has yet proven `failed_open_count=0`; the cold-peer fix is

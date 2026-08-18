@@ -25,6 +25,7 @@
     "ExecutionRun",
     "Experiment",
     "Fault",
+    "FaultResolution",
     "FaultSuppression",
     "Fill",
     "Flag",
@@ -206,6 +207,11 @@
       "Fill",
       "STOPS_WITH",
       "BrokerStopOrder"
+    ],
+    [
+      "FaultResolution",
+      "RESOLVES",
+      "Fault"
     ],
     [
       "FlagResolution",

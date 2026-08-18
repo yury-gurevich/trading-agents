@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
+from kernel.fault_incidents import live_fault_incidents
+
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
@@ -25,11 +27,10 @@ class HealthFields(TypedDict):
 def compute_health(graph: GraphStore, run_id: str | None) -> HealthFields:
     """Return raw health fields for a MasterReport."""
     del run_id
-    faults = graph.list_nodes("Fault")
     flags = graph.list_nodes("Flag")
     resolutions = graph.list_nodes("FlagResolution")
     snapshots = graph.list_nodes("Snapshot")
-    open_incidents = sum(1 for node in faults if node.props.get("status") != "resolved")
+    open_incidents = len(live_fault_incidents(graph))
     resolved_keys = {_resolution_key(node) for node in resolutions}
     critical_flags = sum(
         1

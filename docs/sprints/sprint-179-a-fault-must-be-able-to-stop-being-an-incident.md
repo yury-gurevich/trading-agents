@@ -246,21 +246,55 @@ CRITICAL CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Result:** Implemented. `open_incidents` is now a live incident count instead of an all-time Fault
+count. `Fault` remains immutable and per-occurrence; retirement is represented by appended
+`FaultResolution` nodes.
 
-**Result:** *not yet implemented.*
+**Files changed:** `kernel/fault_incidents.py`; `agents/supervisor/domain/health.py`;
+`surfaces/queries/health.py`; `agents/supervisor/fault_resolution.py`;
+`scripts/sweep_fault_incidents.py`; S179 tests in supervisor/surfaces/kernel; graph vocabulary;
+supervisor law citation docs; `pyproject.toml` / `uv.lock` (`0.90.14`); `docs/STATE.md`,
+`docs/design-log.md`, `docs/laws/functionality-checks.md`.
 
-**Files changed:** *...*
+**Design decisions:** [DL-114](../design-log.md) records the model and rejected alternatives. A
+live incident is an unresolved `error`/`critical` Fault in the latest graph-run day (latest
+`BrokerPositionSnapshot.created_at`, falling back to latest Fault day). `warning` Faults stay
+queryable but do not pin `healthy=false`. `FaultResolution -RESOLVES-> Fault` is the append-only
+retirement evidence. Rejected: mutating `Fault.status`, deleting Faults, wall-clock age, all-time
+counting, and warning Faults as health incidents.
 
-**Design decisions:** *retirement/scoping model + rejected alternatives as a DL entry, linked.*
+**Live-spine proof:** Run from the main worktree against Postgres, with branch code on the import
+path and `.env` loaded from the main checkout. Dry-run before apply:
+`healthy=False`, `open_incidents=2`, `pending_human_flags=0`, `fault_count=6119`,
+`fault_resolution_count=0`; live incidents were `HTTP Error 422: Unprocessable Entity` and
+`open order stop:probe-s164:T#1 for T has no Fill chain; durable drop lineage was not recorded`.
+Apply appended 2 `FaultResolution` nodes and reported `healthy=True`, `open_incidents=0`,
+`pending_human_flags=0`, `fault_count=6119`, `fault_resolution_count=2`. Independent read-back:
+`status_counts=[('pending', 6119)]`, supervisor `healthy=True/open_incidents=0`, surface
+`healthy=True/open_faults=0`, `live_incidents=0`, and each of the two resolutions had
+`linked_faults=1`.
 
-**Live-spine proof:** *`open_incidents` and `healthy` before and after; `healthy` observed `true`;
-confirmation that no `Fault` was deleted or mutated.*
+**Both predicates:** `agents/supervisor/domain/health.py` and `surfaces/queries/health.py` both call
+`kernel.fault_incidents.live_fault_incidents`. Guard:
+`surfaces/tests/test_health_incidents.py::test_system_health_agrees_with_supervisor_fault_incident_scope`.
+Live read-back also showed supervisor and surface both true/zero. `rg -n "healthy|open_incidents"
+orchestration\packs\trading_acceptance.py` returned no matches, so acceptance still reads neither
+field.
 
-**Both predicates:** *evidence that `health.py` and `surfaces/queries/health.py` agree.*
+**Stop-identity question:** Answered as deferred, not silenced. Live evidence showed recurring
+warning-level `stop identity mismatch ... broker_stop=True graph_stop=False` Faults across
+2026-08-08, 08-10 through 08-14, 08-17, and 08-18 (112 total; 12 on 2026-08-18). They remain in the
+Fault log and incident surface, but because they are warnings they do not pin the health boolean.
+DL-114 records this as a separate execution/drop-sweep evidence defect.
 
-**Stop-identity question:** *answered or explicitly deferred, with the reason.*
+**Guards planted:** Initial red tests before implementation: scoped supervisor health failed
+`2 == 1`, and the cross-surface seed failed `3 == 1`. Post-implementation planted defects:
+old-Fault scoping broken in `_in_scope` -> scoped-health test failed `2 == 1`; surface drifted back
+to counting all Faults -> agreement test failed `3 == 1`; `FaultResolution` ignored -> scoped-health
+test failed `healthy False` / `open_incidents=1`; warnings counted as incidents -> agreement test
+failed `2 == 1`. Each plant was restored, and the focused guard set then passed (`6 passed`).
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
-
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+**`make ci`:** Final redirected gate
+`C:\Users\yury_\AppData\Local\Temp\s179-make-ci-final-tree.txt` exited `0`: `2317 passed, 6 skipped`,
+`100.00%` coverage, `pip-audit` no known vulnerabilities, detect-secrets tracked/untracked checks
+passed.

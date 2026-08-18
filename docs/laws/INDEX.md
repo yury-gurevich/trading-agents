@@ -47,7 +47,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |
 | forecaster | ✅ LOCKED v1 (S71) | 16 / 45 | S156 citation check; counters are clauses proven / clauses declared |
 | operator | ✅ LOCKED v1 (S71) | 15 / 50 | S156 citation check; counters are clauses proven / clauses declared |
-| supervisor | ✅ LOCKED v1 (S71) | 20 / 48 | S156 citation check; counters are clauses proven / clauses declared |
+| supervisor | ✅ LOCKED v1 (S71) | 21 / 48 | S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); counters are clauses proven / clauses declared |
 | curator | ✅ LOCKED v1 (S71) | 22 / 47 | S156 citation check; counters are clauses proven / clauses declared |
 | researcher | ✅ LOCKED v1 (S71) | 19 / 43 | S156 citation check; counters are clauses proven / clauses declared |
 | master | ✅ LOCKED v1 (S73) | 10 / 39 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74; **21 of its 39 clauses have no test-plan row** (S157 warn-only backlog) |

@@ -8,6 +8,51 @@ and is marked CLOSED here.
 
 ---
 
+## DL-114 - Fault incidents are live-scoped, not the immutable Fault log - status: DECIDED (2026-08-18)
+
+**Problem.** S178 cleared `pending_human_flags`, but `healthy` still reads false because
+`open_incidents` counts every `Fault` whose status is not `resolved`. Live re-check on 2026-08-18:
+Postgres spine, 6119 `Fault` nodes, 0 `FaultResolution`, 0 pending human flags, every Fault
+`status=pending`. The largest contributor is closed history: 5762 nodes from the July
+`property 'broker_status' cannot be overwritten` incident.
+
+**Decision - separate incident health from the Fault log.** `Fault` remains an immutable
+per-occurrence audit log; `fault_node_key` stays timestamp-keyed so recurrence appends. A live
+incident is an unresolved `Fault` with severity `error` or `critical` in the latest graph-run day.
+The day is derived from graph evidence, not wall clock: latest `BrokerPositionSnapshot.created_at`,
+falling back to the latest Fault occurrence date when no snapshot exists. `warning` Faults remain
+queryable evidence, but they do not pin `healthy` false.
+
+**Decision - explicit retirement is append-only.** A `FaultResolution` node joined to the Fault by
+`RESOLVES` is the retirement evidence. The health predicate treats either a matching
+`FaultResolution` or legacy `status="resolved"` as resolved, but S179 writes new resolutions rather
+than mutating the Fault. The initial live sweep may retire current `error`/`critical` incidents after
+operator inspection; older closed history stops counting by scope without being deleted.
+
+**Decision - one predicate implementation.** The supervisor `MasterReport` path and the dashboard
+`system_health()` path both call the same helper. Their names may remain `open_incidents` /
+`open_faults` for compatibility, but the value is the shared live-incident count.
+
+**Stop-identity faults.** The recurring `stop identity mismatch ... broker_stop=True
+graph_stop=False` rows are real warning-level Fault evidence from `drop_unfilled_orders`, recurring
+across 2026-08-08, 08-10 through 08-14, 08-17, and 08-18. They are not silenced or fixed here. The
+question is deferred as a separate execution/drop-sweep evidence defect because S179 changes health
+reporting only; the fault log and incident surface still expose them.
+
+**Rejected routes.**
+
+- *Set `Fault.status="resolved"`* - rejected. It mutates append-only evidence and would trip the
+  same `_append_props` overwrite guard that produced most of the backlog.
+- *Delete old Faults* - rejected. The log exists precisely so old failures remain auditable.
+- *Keep counting every unresolved Fault forever* - rejected. It makes `healthy` a statement that the
+  system once had trouble, not a live health signal.
+- *Use wall-clock age* - rejected. `system_status` must be deterministic for the same graph state;
+  the scoping anchor is graph evidence instead.
+- *Count warnings as health incidents* - rejected for the same reason S178 made first-sight
+  divergence a warn: warning evidence can be important without demanding `healthy=false`.
+
+---
+
 ## DL-113 - Debate-packet numbers name their unit and scope - status: DECIDED (2026-08-15)
 
 **Question.** S177 sweeps the values rendered into the deliberator debate packet after four real

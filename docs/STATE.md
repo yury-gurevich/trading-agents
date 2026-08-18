@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-18 14:00 AEST · **Version:** 0.90.13 · **Fleet: `s178`** (16 apps + job, verified) · **S178 shipped and swept: `pending_human_flags` 46 → 0. `healthy` still false — `open_incidents`=6104 is the sole blocker, and 94 % of it is one closed July incident (queue item 19).**
+**Last updated:** 2026-08-18 16:55 AEST · **Version:** 0.90.14 · **Fleet: `s178`** (16 apps + job, verified) · **S179 branch/local + live sweep proven:** `healthy` can be true again; S179 code/pack is not deployed yet.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -57,73 +57,18 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
 
 ## Now
 
-**S177 deployed — `s177` = `0.90.12` (`bc2a1ee`), 2026-08-15.** Image-only retag; pack unmoved
-(`13c0e3a0…` both sides), no `up` needed. Verified: **16/16** apps + the dispatcher job on tag,
-16/16 `Succeeded`, KEDA `min=0`/1 rule on every app, cron `30 22 * * 1-5`, the three
-`DELIBERATOR_*_MODEL` overrides still dropped, and `SCANNER_CANDIDATE_CAP=25` /
-`PORTFOLIO_MANAGER_MAX_POSITION_PCT=0.01` / `EXECUTION_DELIBERATION_GRACE_SECONDS=900` intact.
-`DeployRecord …:s177:bc2a1ee5`.
-
-🚨 **Monday `sched-2026-08-17` 22:30 UTC is the first run carrying all four veto-context fixes.**
-Read it against `sched-2026-08-14`'s baseline: **9 PM approvals → 8 vetoed → 1 order**. Six of
-those eight were false. If the veto count does not fall, the label class was not the cause and
-DL-113's premise needs re-examining — say so plainly rather than re-explaining the same theory.
-
-**PROVEN RESULT — S177 (`sprint-177-every-number-names-its-unit`, local).** Debate-packet values
-now render with unit/scope labels or an explicit source-owned unknown-units boundary; `SectorBook`
-approval behaviour stayed unchanged. Proof: three planted label-boundary defects failed and were
-restored; final redirected `make ci` exited `0` with **2304 passed / 4 skipped / 100.00 %**,
-pip-audit clean, detect-secrets clean; graph vocabulary pack unchanged (`13c0e3a0ef38...`). **Not
-fixed by design:** whether `max_sector_pct` should include held portfolio sector dollars; filed in
-DL-113 rather than folded into this label sweep.
-
-**Re-derived independently, not adopted (2026-08-15).** Gate confirmed for `35dbe40` (CI +
-Security Findings both `success`); the cited pack hash `13c0e3a0…` **reproduces** and matches
-deployed `s176b`; `SectorBook`'s diff is five lines entirely inside an f-string, so `passed`,
-`value` and `threshold` are untouched; no prompt file was changed. 🪤 **The two `make ci` counts
-differ and both are right** — Codex measured **2304 / 4 skipped** with `.env` present, a fresh
-worktree measures **2302 / 6**, because two tests skip explicitly without a local `.env`. Same 2308
-tests, exit 0, 100.00 % either way. **Codex found three sites my audit table missed**, including
-`deployed` meaning *opposite scopes* in adjacent packet lines (`SectorBook` batch vs
-`position_gates` portfolio-wide) — now `deployed_this_batch_usd` and `deployed_portfolio_usd`.
-
-**Read this first if you are picking the project up.** The fleet is on **`s176b` = `0.90.11`**
-(`439111b7`, 2026-08-15) — **16/16 apps + the dispatcher job, nothing merged-but-undeployed**.
-S175, S176, S169 and DL-112 are all live. The next scheduled fire is **Monday 22:30 UTC**
-(`sched-2026-08-17`); 08-15 is a Saturday and the cron is `30 22 * * 1-5`.
-
-**The 60 s timeout mitigation is PROVEN, not predicted.** `sched-2026-08-14`, measured on the spine:
-
-| run | n | median | p90 | max | > timeout |
-| --- | --- | --- | --- | --- | --- |
-| `sched-2026-08-10` (pre-`effort`, 30 s) | 90 | 11.4 | 16.4 | 23.0 | 0 |
-| `sched-2026-08-13` (`effort=high`, 30 s) | 32 | 15.1 | 30.1 | 39.1 | **4** |
-| `sched-2026-08-14` (`effort=high`, **60 s**) | 45 | 12.8 | 34.6 | **46.2** | **0** |
-
-`failed_open_count 0`, `debate_coverage 1.0` (9 verdicts / 9 approvals), zero `llm unavailable`.
-The prediction held. 🪤 **The margin is thin** — max 46.2 s against a 60 s ceiling, and 46.2 s would
-have failed open under the old 30 s. `effort=high` moves the tail, so the tail is what to watch.
-
-**`sched-2026-08-14` — 8/8 stages, ACCEPTANCE UNPROVEN, and the funnel closed at the veto.**
-99 tickers × **203 bars** (S174 holding in production), 23 survived the scanner, 30 scored,
-9 PM-approved, **1 order submitted**. Acceptance reads UNPROVEN rather than FAIL because the PFE
-order (38 sh @ $26.79) is still `pending`, correctly queued for Monday's open. **The 8 vetoes are
-the story, and 6 of them were false** — see the DL-112 entry above. Monday is the first run where
-the veto-context fixes are actually under the fleet.
-
-**Broker and graph agree exactly, 19/19** (`/reconcile-broker`, re-measured 2026-08-18): 19 stops
-cover 19 positions, no broker action needed. Divergences are being adopted mid-run as designed.
-
-**S178 shipped (`0.90.13`, 2026-08-18) — the health signal can move again.** Severity now follows
-**persistence**: first sight of a divergence is `warn`, the *same* divergence still present at the
-next run start escalates to `critical`, a gone one is retired by an appended `FlagResolution`.
-`subject_ref` is now `{kind}:{ticker}`, so the dedupe guard fires across runs. 🪤 **S178's own
-recommendation was unimplementable** — adoption happens in the *monitor*, so the outcome is
-unknowable where execution writes the flag ([DL-111](design-log.md)). **PROVEN:** `make ci` exit 0,
-2311 passed, 100.00 %; all four new guards planted, watched to fail, restored. **Sweep PROVEN on the spine:** `pending_human_flags`
-**46 → 0**; Flags 53 → 53, every one still `pending` (none mutated); Positions 19 → 19. `healthy` is
-**still false** and could not have gone green — `open_incidents`=**6104** gates the same boolean and
-is now the *sole* blocker, filed as queue item 19.
+**PROVEN RESULT - S179 (`sprint-179-a-fault-must-be-able-to-stop-being-an-incident`, branch/local).**
+`open_incidents` now means unresolved `error`/`critical` Faults in the latest graph-run day, with
+explicit append-only `FaultResolution` retirement; warning Faults remain queryable but do not pin
+`healthy=false`. Both supervisor and dashboard paths call `kernel.fault_incidents`. Live proof on
+the spine: before `healthy=False`, `open_incidents=2`, `pending_human_flags=0`, `Fault=6119`,
+`FaultResolution=0`; after the audited sweep `healthy=True`, `open_incidents=0`, `Fault=6119`,
+`FaultResolution=2`, all Fault statuses still `pending`, and both resolutions linked to one Fault.
+Guards were planted and restored; final redirected `make ci` exited `0` with **2317 passed / 6
+skipped / 100.00 %**, pip-audit clean, detect-secrets clean. **Not deployed:** fleet remains `s178`;
+S179 changes the graph vocabulary pack by adding `FaultResolution`, so a deploy must carry code and
+pack together. **Deferred, not hidden:** recurring stop-identity mismatch Faults are real
+warning-level drop-sweep evidence and need their own execution fix.
 
 ## Next
 

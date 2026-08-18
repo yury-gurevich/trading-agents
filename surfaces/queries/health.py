@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from kernel.fault_incidents import live_fault_incidents
 from surfaces.queries._graph import nodes_by_label
 
 if TYPE_CHECKING:
@@ -28,11 +29,7 @@ class HealthSummary:
 
 def system_health(graph: GraphStore) -> HealthSummary:
     """Project graph state into a health summary without calling the bus."""
-    open_faults = sum(
-        1
-        for node in nodes_by_label(graph, "Fault")
-        if node.props.get("status") != "resolved"
-    )
+    open_faults = len(live_fault_incidents(graph))
     pending_flags = _pending_flag_count(graph)
     critical_flags = _pending_flag_count(graph, severity="critical")
     return HealthSummary(

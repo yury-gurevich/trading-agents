@@ -47,9 +47,9 @@
 | SUP-DEP-02 | ⬜ | — |
 | SUP-OBS-01 | ⬜ | — |
 | SUP-OBS-02 | ⬜ | — |
-| SUP-OBS-03 | ⬜ | — |
+| SUP-OBS-03 | 🟩 | `test_resolve_fault_appends_resolution_without_mutating_fault` |
 | SUP-PERF-01 | ⬜ | — |
 | SUP-PERF-02 | ⬜ | — |
 | SUP-CAP | ⬜ | — |
 
-**Green: 21 / 49**
+**Green: 21 / 48**

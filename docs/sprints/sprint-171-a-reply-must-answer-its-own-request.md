@@ -2,9 +2,7 @@
 # S171 — a reply must answer its own request
 
 **Closes:** [DL-102](../design-log.md) · **Type:** fix ·
-**Target version:** next available PATCH (`0.90.01` if this ships before
-[S169](sprint-169-one-switch-and-a-deploy-that-keeps-it.md)/[S170](sprint-170-one-llm-adapter-in-the-plumbing.md);
-this sprint depends on neither and should go first) ·
+**Target version:** next available **PATCH** at merge — **do not pin it in this file** ·
 **Branch:** `sprint-171-a-reply-must-answer-its-own-request`
 
 > Handover to a delegated coding agent. Everything under **Measured** was observed on the live

@@ -3,9 +3,7 @@
 
 **Closes:** the scaling half of [DL-103](../design-log.md) · **Opens from:**
 [DL-105](../design-log.md) · **Type:** feat ·
-**Target version:** next available MINOR (`0.91.00` if this ships after
-[S169](sprint-169-one-switch-and-a-deploy-that-keeps-it.md)/[S170](sprint-170-one-llm-adapter-in-the-plumbing.md);
-renumber if it goes first) ·
+**Target version:** next available **MINOR** at merge — **do not pin it in this file** ·
 **Branch:** `sprint-172-independent-debates-run-independently`
 
 > Handover to a delegated coding agent. Everything under **Measured** was read off the live spine or

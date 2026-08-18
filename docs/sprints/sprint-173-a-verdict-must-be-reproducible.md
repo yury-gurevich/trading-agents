@@ -3,9 +3,7 @@
 
 **Closes:** [DL-104](../design-log.md) (e) · **Opens from:** [DL-105](../design-log.md) ·
 **Type:** feat ·
-**Target version:** next available MINOR after
-[S172](sprint-172-independent-debates-run-independently.md) (`0.91.00` or `0.92.00` depending on
-order) · **Branch:** `sprint-173-a-verdict-must-be-reproducible`
+**Target version:** next available **MINOR** at merge — **do not pin it in this file** · **Branch:** `sprint-173-a-verdict-must-be-reproducible`
 
 > Handover to a delegated coding agent. Everything under **Measured** was read off the live spine on
 > 2026-08-10/11. Everything marked **Assumed** has **not** been verified — check it before building

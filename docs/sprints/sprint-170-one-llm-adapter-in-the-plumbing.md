@@ -2,7 +2,7 @@
 # S170 — one LLM adapter set, in the plumbing, for every agent that calls a model
 
 **Closes:** [DL-101](../design-log.md) · **Type:** fix (consolidation; no new capability) ·
-**Target version:** 0.90.03 (PATCH; retargeted 2026-08-11) ·
+**Target version:** next available **PATCH** at merge — **do not pin it in this file** ·
 **Branch:** `sprint-170-one-llm-adapter-in-the-plumbing`
 
 > Handover to a delegated coding agent. Everything under **Measured** was observed on

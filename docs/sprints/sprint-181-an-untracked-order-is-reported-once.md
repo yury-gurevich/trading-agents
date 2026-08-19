@@ -190,7 +190,9 @@ reconciliation and both repair scripts.
 - [ ] An acked order is still **not** counted as dropped — `record_drop` returns `False` today and
       `remember_execution_run` is skipped; `ExecutionRun.dropped` must not change.
 - [ ] Decisions 1–4 recorded in `docs/design-log.md` with rejected alternatives.
-- [ ] Both edited modules land **under 150 lines**, or the split that keeps them there is in the diff.
+- [~] Both edited modules land **under 150 lines**, or the split that keeps them there is in the
+      diff. **NOT MET** — the split shipped, but `drop_sweep.py` **167**, `drop_sweep_records.py`
+      **163** and `test_drop_sweep_edges.py` **154** remain over the warn line. See the closeout.
 - [ ] `live_fault_incidents` on the spine: before/after quoted, `Fault` total unchanged.
 - [ ] One `FaultResolution` appended for the existing fault; no Fault mutated, none deleted.
 - [ ] Each new guard **planted, watched to fail, restored** — stated per guard.
@@ -344,9 +346,18 @@ no-Fill orders from `_pipeline_owned`, a new `UntrackedOrderAck` label for this 
 focused proof: `uv run pytest agents/execution/tests/test_drop_sweep.py
 agents/execution/tests/test_drop_sweep_append_safe.py agents/execution/tests/test_drop_sweep_edges.py
 agents/execution/tests/test_drop_sweep_ack.py orchestration/tests/test_drop_sweep_cascade.py --no-cov
--q` passed `25 passed`. Edited module sizes: `drop_sweep.py` 137 lines,
-`drop_sweep_records.py` 139, `drop_sweep_ack.py` 60, `test_drop_sweep_edges.py` 127,
-`test_drop_sweep_ack.py` 120.
+-q` passed `25 passed`.
+
+**Module sizes — corrected at merge, 2026-08-19.** The counts first recorded here (137 / 139 /
+60 / 127 / 120) were **non-blank** lines. `scripts/check_module_size.py:38` counts
+`len(read_text().splitlines())` — total lines — so measured the way the gate measures:
+`drop_sweep.py` **167**, `drop_sweep_records.py` **163**, `drop_sweep_ack.py` **74**,
+`test_drop_sweep_edges.py` **154**, `test_drop_sweep_ack.py` **146**. 🪤 **Three sit over the 150
+warn line**, and `drop_sweep.py` went *up* (164 → 167): the split moved 15 lines out of
+`drop_sweep_records.py` and added 3 to `drop_sweep.py`. No gate failure — the hard block is 200
+and `make ci` exited `0` — but the success factor *"both edited modules land under 150 lines"* is
+**not met**, and the original figures obscured that. Left as debt rather than fixed here, so the
+proven tree is the tree that was gated.
 
 **Live-spine read-only proof:** run from the main worktree with `.env` in the gitignored main
 checkout and the S181 worktree on `PYTHONPATH`; the guarded script refused in-memory fallback if

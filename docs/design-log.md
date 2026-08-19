@@ -8,6 +8,45 @@ and is marked CLOSED here.
 
 ---
 
+## DL-115 - Untracked broker orders report once via broker-status ack - status: DECIDED (2026-08-19)
+
+**Problem.** S181 found one canceled S164 Alpaca probe (`stop:probe-s164:T#1`) with no `Fill`
+chain. The drop sweep has no durable memory for the no-Fill branch: it records an
+`UntrackedOpenOrder` error and returns `False`, so the same terminal broker order re-emits a fresh
+error on every run. S179 made one unresolved current-day error enough to turn `healthy=false`.
+
+**Decision - remember first sight durably.** The sweep records an append-only acknowledgement for a
+pipeline-owned broker order whose `Fill` is still missing after a successful cancel attempt or after
+the broker already reports a terminal canceled/expired status. First sight remains an `error`
+because a missing `Fill` for a broker order shaped like pipeline output is a real lineage defect.
+Later sightings of that exact broker order are skipped before a new fault is emitted.
+
+**Decision - use `BrokerOrderStatus`, without an edge.** The ack is a `BrokerOrderStatus` node keyed
+from the broker idempotency key and broker order id, with explicit properties naming it as
+`lineage_status="missing_fill_ack"`. It has no `REFRESHES` edge because there is no `Fill` to point
+at, and the existing vocabulary only declares `BrokerOrderStatus -REFRESHES-> Fill`. This keeps the
+evidence inside execution-owned broker-boundary status facts and avoids a vocabulary-pack move.
+
+**Decision - revocation is by precedence, not deletion.** The sweep looks for a `Fill` first and
+consults the ack only when no `Fill` exists. If a later repair creates the `Fill`, normal drop
+evidence can be recorded and the old ack remains as history rather than being removed.
+
+**Rejected routes.**
+
+- *Demote `UntrackedOpenOrder` to warning* - rejected. It would make health green while silencing
+  every future missing-Fill lineage hole.
+- *Skip terminal orders after an age cutoff* - rejected. The same defect would disappear based on
+  time or order volume, not based on corrected evidence.
+- *Exclude no-Fill orders from `_pipeline_owned`* - rejected. That deletes the check instead of
+  giving it memory.
+- *Add a new `UntrackedOrderAck` label* - rejected for this sprint. It is self-describing, but it
+  would require a trading graph vocabulary pack change, deployment coupling, and an execution law
+  ownership follow-up for one acknowledgement bit.
+- *Reuse `BrokerOrderStatus` with a fake `REFRESHES` edge* - rejected. A reader should not see a
+  fabricated Fill relationship. The absence of the edge is the point.
+
+---
+
 ## DL-114 - Fault incidents are live-scoped, not the immutable Fault log - status: DECIDED (2026-08-18)
 
 **Problem.** S178 cleared `pending_human_flags`, but `healthy` still reads false because

@@ -8,6 +8,10 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.execution.drop_sweep import sweep_unfilled_orders
+from agents.execution.drop_sweep_ack import (
+    ACK_LINEAGE_STATUS,
+    untracked_order_ack_key,
+)
 from agents.execution.drop_sweep_records import (
     mark_execution_runs,
     remember_execution_run,
@@ -64,8 +68,11 @@ def test_untracked_pipeline_order_is_faulted_after_cancel_attempt() -> None:
 
     assert dropped == 0
     assert broker.cancelled == [f"broker:{key}"]
-    assert graph.list_nodes("BrokerOrderStatus") == ()
-    assert graph.list_nodes("Fault")[0].props["error_type"] == "UntrackedOpenOrder"
+    status = graph.list_nodes("BrokerOrderStatus")[0]
+    assert status.props["lineage_status"] == ACK_LINEAGE_STATUS
+    fault = graph.list_nodes("Fault")[0]
+    assert fault.props["error_type"] == "UntrackedOpenOrder"
+    assert fault.props["severity"] == "error"
 
 
 def test_resolved_untracked_order_is_faulted_without_cancel() -> None:
@@ -81,8 +88,12 @@ def test_resolved_untracked_order_is_faulted_without_cancel() -> None:
 
     assert dropped == 0
     assert broker.cancelled == []
-    assert graph.list_nodes("BrokerOrderStatus") == ()
-    assert graph.list_nodes("Fault")[0].props["error_type"] == "UntrackedOpenOrder"
+    status = graph.list_nodes("BrokerOrderStatus")[0]
+    assert status.key == untracked_order_ack_key(broker.broker_fills[0])
+    assert status.props["lineage_status"] == ACK_LINEAGE_STATUS
+    fault = graph.list_nodes("Fault")[0]
+    assert fault.props["error_type"] == "UntrackedOpenOrder"
+    assert fault.props["severity"] == "error"
 
 
 def test_graph_tracked_stop_mismatch_is_faulted_and_exempted() -> None:

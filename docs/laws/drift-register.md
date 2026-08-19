@@ -60,6 +60,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 > broker adapter. Postgres `price_cache` stays the raw historical backtest fallback. Confirms decision
 > **D1**; Stooq retired as default; no scraping.
 
+## Deliberator (`DLIB`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-041 | `DLIB-PARAM` / `DLIB-PERF-01..02` | The locked deliberator law declares the bounded role/model/round/timeout settings, and performance is bounded only by per-order rounds and peer wait time. | S172 adds `debate_concurrency`, a manager-side bound on how many independent PM-approved orders are debated at once. It does not change intra-order turn order, but it is a new tunable performance envelope the locked parameter table does not name. | law gap | **DECIDED (S172, 2026-08-19)** — ship bounded order fan-out at default 4 (`ge=1`, `le=25`) and carry the operator value in the tunables pack. A future law-amendment cycle should declare the parameter and the independent-order concurrency bound without weakening `DLIB-ORD-01`. |
+
 ## Analyst (`ANLZ`)
 
 | ID | Law | Intent says | Reality says | Kind | Status / decision |

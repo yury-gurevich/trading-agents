@@ -8,8 +8,9 @@ External I/O: Azure Service Bus only when live SDK receiver is opened.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from agents.deliberator.servicebus_reply_inbox import ServiceBusReplyInbox
 from contracts.deliberator import DebateTurnReply, DebateTurnRequest
 from kernel import (
     AgentFault,
@@ -24,7 +25,6 @@ from kernel.bus_azure_ready import (
     CorrelatedReadyEvent,
     CorrelatedReadyEventTimeoutError,
     ReadyEventReceiver,
-    receive_correlated_ready_event,
 )
 from kernel.serve_transport import request_topic
 
@@ -45,7 +45,7 @@ class ServiceBusPeerClient:
         settings: AzureServiceBusSettings | None = None,
         reply_subscription: str = "agent",
         timeout_seconds: float | None = None,
-        reply_receiver: ReadyEventReceiver | None = None,
+        reply_receiver: ReadyEventReceiver[Any] | None = None,
         sink: FaultSink | None = None,
     ) -> None:
         """Create a live Service Bus request client for the manager."""
@@ -58,6 +58,7 @@ class ServiceBusPeerClient:
         self._reply_receiver = reply_receiver
         self._sink = sink if sink is not None else CollectingFaultSink()
         self._orphaned_reply_count = 0
+        self._reply_inbox = ServiceBusReplyInbox()
 
     @property
     def orphaned_reply_count(self) -> int:
@@ -81,12 +82,13 @@ class ServiceBusPeerClient:
             capability="debate_turn",
             payload=request.model_dump(mode="json"),
         )
-        self._publish_request(recipient, request, message)
-        try:
-            matched = self._read_ready_event(str(message.id))
-        except CorrelatedReadyEventTimeoutError as exc:
-            self._record_orphans(exc.orphan_count, message, request, recipient)
-            raise RuntimeError("no deliberator peer reply received") from exc
+        with self._reply_inbox.expecting(str(message.id)):
+            self._publish_request(recipient, request, message)
+            try:
+                matched = self._read_ready_event(str(message.id))
+            except CorrelatedReadyEventTimeoutError as exc:
+                self._record_orphans(exc.orphan_count, message, request, recipient)
+                raise RuntimeError("no deliberator peer reply received") from exc
         self._record_orphans(matched.orphan_count, message, request, recipient)
         node = claim_check_read(self._graph, matched.event)
         reply = AgentMessage.model_validate(dict(node.props))
@@ -109,7 +111,7 @@ class ServiceBusPeerClient:
 
     def _read_ready_event(self, correlation_id: str) -> CorrelatedReadyEvent:
         if self._reply_receiver is not None:
-            return receive_correlated_ready_event(
+            return self._reply_inbox.receive(
                 self._reply_receiver,
                 correlation_id=correlation_id,
                 deadline=self._reply_deadline(),
@@ -133,7 +135,7 @@ class ServiceBusPeerClient:
                 subscription_name=self._reply_subscription,
             ) as receiver,
         ):
-            return receive_correlated_ready_event(
+            return self._reply_inbox.receive(
                 receiver,
                 correlation_id=correlation_id,
                 deadline=self._reply_deadline(),

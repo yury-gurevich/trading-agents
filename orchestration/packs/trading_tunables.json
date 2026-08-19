@@ -18,7 +18,8 @@
     "deliberator-manager": {
       "DELIBERATOR_LLM_PROVIDER": "openai",
       "DELIBERATOR_EFFORT": "high",
-      "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120"
+      "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120",
+      "DELIBERATOR_DEBATE_CONCURRENCY": "4"
     },
     "deliberator-proponent": {
       "DELIBERATOR_LLM_PROVIDER": "openai",

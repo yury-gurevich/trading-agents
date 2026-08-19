@@ -103,3 +103,8 @@ def test_the_settings_a_pack_app_resolves_accept_the_values_it_carries() -> None
 def test_the_dispatcher_cron_is_a_five_field_expression() -> None:
     """The cron is carried too: its script default reverted a weekday-only job."""
     assert len(str(_PACK["dispatcher"]["cron"]).split()) == 5
+
+
+def test_deliberator_manager_carries_debate_concurrency() -> None:
+    """DRIFT-041 / DL-100: full up must preserve the manager fan-out value."""
+    assert _APPS["deliberator-manager"]["DELIBERATOR_DEBATE_CONCURRENCY"] == "4"

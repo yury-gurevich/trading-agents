@@ -105,3 +105,14 @@ def test_status_board_column_width_is_derived_not_hardcoded() -> None:
 
     assert "$appW" in text, "the APP column width must be computed"
     assert "{0,-19}" not in text, "hardcoded APP column width reintroduced"
+
+
+def test_deliberator_served_peers_can_scale_past_one_replica() -> None:
+    """S172: proponent/opponent scale out, while the manager stays singular."""
+    text = _script_text()
+
+    assert "function Get-AppMaxReplicas" in text
+    assert '"deliberator-proponent", "deliberator-opponent"' in text
+    assert '"--max-replicas", $maxReplicas' in text
+    assert "(Get-AppMaxReplicas $name)" in text
+    assert re.search(r'"deliberator-manager".*return 1', text, re.DOTALL)

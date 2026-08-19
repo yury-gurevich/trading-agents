@@ -41,7 +41,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | analyst | ✅ LOCKED **v1.1** (S152) | 23 / 46 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
 | scanner | ✅ LOCKED v1 (S70) | 16 / 39 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | portfolio_manager | ✅ LOCKED v1 (S70) | 25 / 44 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
-| deliberator | ✅ LOCKED v1 (S153) | 5 / 48 | S158 made the first four clauses green; S167 added `DLIB-OBS-03` proof for queryable fail-open causes |
+| deliberator | ✅ LOCKED v1 (S153) | 10 / 48 | S158 made the first four clauses green; S167 added `DLIB-OBS-03` proof for queryable fail-open causes; S172 proved concurrent-order record order, bounded pending-reply waits, and pending sibling reply handling |
 | execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S164 proved broker stop dependency exercise and cancelled-stop retry (`EXEC-DEP-04`, `EXEC-OBS-03`); counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |
 | reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |

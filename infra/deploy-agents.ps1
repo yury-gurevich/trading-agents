@@ -323,9 +323,15 @@ function Prepare-ServiceBusRoutes {
   if (-not $ok) { throw "Service Bus route preparation failed" }
 }
 
-function Get-CronScaleArgs($ruleName, $start) {
+function Get-AppMaxReplicas($name) {
+  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }
+  if ($name -eq "deliberator-manager") { return 1 }
+  return 1
+}
+
+function Get-CronScaleArgs($ruleName, $start, $maxReplicas = 1) {
   return @(
-    "--min-replicas", "0", "--max-replicas", "1",
+    "--min-replicas", "0", "--max-replicas", $maxReplicas,
     "--scale-rule-name", $ruleName,
     "--scale-rule-type", "cron",
     "--scale-rule-metadata",
@@ -675,7 +681,7 @@ function Up {
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
-    ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart)
+    ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart (Get-AppMaxReplicas $name))
     $state = Invoke-Az $agentArgs
     # State comes from the resource, not from the deploying call's stream (row Q).
     $appOk = ($null -ne $state) -and ((Get-AppState $name) -eq "Succeeded")

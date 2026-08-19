@@ -81,6 +81,15 @@ each other's replies — a stale *success* reply accepted as a verdict about a d
 no fault and a green gate. Correlation is now enforced, so concurrent in-flight requests are safe.
 **That guarantee is this sprint's first-class regression risk: prove it still holds under load.**
 
+## Law-reading record
+
+Read before code on branch `sprint-172-independent-debates-run-independently`:
+`agents/deliberator/laws/laws.md` locked v1. Relevant clauses are `DLIB-IDN-03`
+(three bounded identities), `DLIB-OUT-02` and `DLIB-OBS-01` (recorded debate shape and
+reconstructable transcript), `DLIB-NEV-05` (no cross-agent/orchestration imports),
+`DLIB-ORD-01` (turn order inside one order remains sequential), `DLIB-FAIL-01` (per-order
+fail-open), and `DLIB-PERF-02` (peer wait bounded by request timeout).
+
 ## Steps, in order
 
 1. **Add `debate_concurrency` as a `tunable()`** on `DeliberatorSettings` — the number of orders

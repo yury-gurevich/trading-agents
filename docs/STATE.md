@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 19:50 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **ONE CLEAN RUN: `verify-2026-08-19-clean-2` returned 9/9 real debates, 0 fail-opens and `deliberation_status=applied` — the veto bound fully for the first time. S181 closed and proven.**
+**Last updated:** 2026-08-19 19:36 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **ACTIVE: S172 on branch `sprint-172-independent-debates-run-independently` is implementing bounded independent order debates with deterministic handback proof.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,6 +35,13 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
 
 ## Now
+
+**INTENT — S172 independent debates run independently.** Success factors: bounded
+`debate_concurrency` defaults to 4 and is present in the tunables pack; K=1 preserves today's
+serial behaviour; K=4 rebuilds `verdicts`, `vetoed_tickers`, `debates`, `transcript`, and
+`llm_call_keys` in PM order; a planted single-order failure leaves the other orders intact; peer
+replica caps are raised only for proponent/opponent; `make ci` and remote `make gate-ran` prove the
+final branch tip before merge.
 
 **PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
 OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:

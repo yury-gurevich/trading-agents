@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 19:36 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **ACTIVE: S172 on branch `sprint-172-independent-debates-run-independently` is implementing bounded independent order debates with deterministic handback proof.**
+**Last updated:** 2026-08-19 23:08 AEST · **Version:** 0.91.00 branch · **Fleet: `s172` deployed, not merged** · **ACTIVE: S172 is built and branch-gated, but the required K=4 live proof is blocked by exhausted OpenAI credits.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,34 +36,21 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-**INTENT — S172 independent debates run independently.** Success factors: bounded
-`debate_concurrency` defaults to 4 and is present in the tunables pack; K=1 preserves today's
-serial behaviour; K=4 rebuilds `verdicts`, `vetoed_tickers`, `debates`, `transcript`, and
-`llm_call_keys` in PM order; a planted single-order failure leaves the other orders intact; peer
-replica caps are raised only for proponent/opponent; `make ci` and remote `make gate-ran` prove the
-final branch tip before merge.
+**BUILT, DEPLOYED, NOT MERGEABLE — S172 independent debates run independently.** Branch
+`sprint-172-independent-debates-run-independently` adds bounded `debate_concurrency=4`, deterministic
+PM-order reassembly, isolated per-order fail-open, a shared reply inbox for concurrent S171 replies,
+and proponent/opponent `maxReplicas=4` with `desiredReplicas=4`. Local `make ci` was redirected to
+`..\s172-make-ci.log` and returned exit 0 (`2336 passed, 6 skipped`, 100.00 % coverage). Remote
+`make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350` proved CI, Security Findings, and image
+build for the branch tip.
 
-**PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
-OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:
-**8/8 stages · `real_debate_count` 9 of 9 (`debate_coverage` = 1.0) · `failed_open_count` **0** ·
-`deliberation_status` = **`applied`**, plain — not `applied_failed_open`, not `proceeded_unvetoed` ·
-`ACCEPTANCE UNPROVEN` with **no breach lines**, the only missing element being the 13:30 UTC open.**
-Verdicts: **6 vetoed** (AMZN, GOOGL, GOOG, XOM, INTC, NEE), **3 upheld and submitted** (MO, CSCO,
-MDLZ) — every one genuinely debated. 45 `LLMCall` rows = exactly 9 x 5. Cost **$0.46**.
-🪤 **The timeout raise was load-bearing after all, for a different reason than it was made for:**
-this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling would have cut.
-DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
-🚨 **The blocker was real and is now lifted only by the operator's $5 top-up**: OpenAI reads
-`HTTP 200`; **Anthropic is still capped until 2026-09-01**, so there is no working fallback provider
-and a second credit exhaustion stops the fleet again — now a **standing operational note** in the
-work queue rather than a work item, because it is an outage condition, not something to build.
-
-🚨🚨 **BLOCKER, since LIFTED — the deliberator had no working LLM provider.** Probed directly
-2026-08-19: OpenAI **`HTTP 429` "You have no credits remaining"**; Anthropic **`HTTP 400` "You have
-reached your specified API usage limits. You will regain access on 2026-09-01"**. Every debate fails
-open, and `failed_open_count > 0` fails acceptance on its own, so **no run can come back clean until
-credits are added or 1 September**. 🟢 Nothing else is broken: the pipeline runs 8/8 and the veto now
-binds. **Operator action, not a code fix.**
+🚨 **Live success factors are still not proven.** Deployed `s172` preflight and `up` returned exit 0,
+then the 15-order K=4 proof run `verify-2026-08-19-s172-k4-15-racefix-a7e7ad1` failed open on all 15
+orders: `real_debate_count=0`, `failed_open_count=15`, `LLMCall=0`, reason `429 credit_balance_exhausted`
+("You have no credits remaining"). Service Bus was clean before and after (0 active / 0 dead-letter on
+manager reply, proponent requests, opponent requests), and temporary proof scale was restored to
+`minReplicas=0`. Do not merge S172 until OpenAI credits are restored and the same 15-order K=4 ratio,
+grace-headroom, and orphan-count measurements are rerun cleanly.
 
 **PROVEN RESULT — S181 closed, fully proven on the fleet.** Sweep #1 (06:37:57) wrote the ack and one
 fault; **sweep #2 (07:45:33) wrote neither** — `UntrackedOpenOrder` **13 → 13**, acks **1 → 1**.

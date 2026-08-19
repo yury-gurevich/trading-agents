@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.execution.drop_sweep_ack import has_untracked_order_ack
 from agents.execution.drop_sweep_records import (
     DROP_REASON,
     mark_execution_runs,
@@ -105,6 +106,8 @@ def _skip_order(
     if _already_dropped(fill):
         return True
     if _is_current_run(order, fill, run_id):
+        return True
+    if fill is None and has_untracked_order_ack(graph, order):
         return True
     return _is_stop_order(graph, order, sink)
 

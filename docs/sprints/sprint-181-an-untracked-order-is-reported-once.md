@@ -317,20 +317,66 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Status:** implemented on branch `sprint-181-an-untracked-order-is-reported-once` as `0.90.15`.
+Branch push / remote gate proof happens after this closeout commit; merge, deploy, and the
+post-deploy `FaultResolution` are not claimed here.
 
-**Status:** SPEC
+**Result:** the drop sweep now writes a durable first-sight acknowledgement for a pipeline-owned
+broker order whose `Fill` is missing. The ack is consulted only when no `Fill` exists, so the same
+broker order swept twice yields one `UntrackedOpenOrder` error, a different untracked order still
+errors on first sight, and a later repaired `Fill` records normal drop evidence. Ack-only orders
+still return `False`, so `ExecutionRun.dropped` does not change.
 
-**Result:** *not yet implemented.*
+**Files changed:** `agents/execution/drop_sweep.py`; new
+`agents/execution/drop_sweep_ack.py`; `agents/execution/drop_sweep_records.py`; new
+`agents/execution/tests/test_drop_sweep_ack.py`; `agents/execution/tests/test_drop_sweep_edges.py`;
+`docs/design-log.md`; `docs/STATE.md`; `pyproject.toml`; `uv.lock`.
 
-**Files changed:** *...*
+**Design decisions:** recorded as [DL-115](../design-log.md). The sprint keeps first-sight severity
+as `error`, uses an edge-less `BrokerOrderStatus` ack with
+`lineage_status="missing_fill_ack"` instead of a new vocabulary label, and makes revocation
+structural: `Fill` lookup wins before ack lookup. Rejected: warning demotion, age cutoffs, excluding
+no-Fill orders from `_pipeline_owned`, a new `UntrackedOrderAck` label for this sprint, and a fake
+`REFRESHES` edge to a nonexistent `Fill`.
 
-**Design decisions:** *stop-condition, ack storage vs the vocabulary pack, first-sight severity, and
-revocability — as a DL entry with rejected alternatives.*
+**Proof:** initial failing test before implementation:
+`test_untracked_terminal_order_faults_once_across_sweeps` failed with `2 == 1` Fault nodes. Restored
+focused proof: `uv run pytest agents/execution/tests/test_drop_sweep.py
+agents/execution/tests/test_drop_sweep_append_safe.py agents/execution/tests/test_drop_sweep_edges.py
+agents/execution/tests/test_drop_sweep_ack.py orchestration/tests/test_drop_sweep_cascade.py --no-cov
+-q` passed `25 passed`. Edited module sizes: `drop_sweep.py` 137 lines,
+`drop_sweep_records.py` 139, `drop_sweep_ack.py` 60, `test_drop_sweep_edges.py` 127,
+`test_drop_sweep_ack.py` 120.
 
-**Proof:** *one fault across two sweeps; `live_fault_incidents` before/after on the spine; `Fault`
-total unchanged.*
+**Live-spine read-only proof:** run from the main worktree with `.env` in the gitignored main
+checkout and the S181 worktree on `PYTHONPATH`; the guarded script refused in-memory fallback if
+`POSTGRES_DSN` was absent. Before dry-run:
+`healthy=False`, `open_incidents=1`, `pending_human_flags=0`, `fault_count=6132`,
+`fault_resolution_count=2`, one incident: `open order stop:probe-s164:T#1 for T has no Fill chain;
+durable drop lineage was not recorded`. After independent read-back:
+`healthy=False`, `open_incidents=1`, `pending_human_flags=0`, `fault_count=6132`,
+`fault_resolution_count=2`, `live_incident_count=1`, same incident. Nothing was mutated or deleted.
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+**Post-deploy cleanup:** not done in this branch. The existing live Fault still needs one
+append-only `FaultResolution` with `resolved_by=s181-untracked-order-ack` after the fixed code is
+deployed; doing it before deploy would let the next run re-emit the incident.
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+**Reporting-only check:** `rg -n "healthy|open_incidents|live_fault_incidents|compute_health"
+scripts/accept.py orchestration agents/execution agents/supervisor/domain/health.py
+surfaces/queries/health.py` showed health reads only in supervisor/dashboard health paths, not in
+acceptance or execution acceptance flow. `pyproject.toml` coverage source is
+`["kernel", "contracts", "agents", "orchestration", "surfaces"]`, so `scripts/` is excluded; no
+new script logic was added.
+
+**Guards planted:** repeat-suppression disabled in `_skip_order` -> two-sweep test failed `2 == 1`;
+ack key collapsed to a constant -> new-order test failed `1 == 2`; first-sight severity demoted to
+warning -> severity test failed `warning == error`; ack allowed to suppress a later `Fill` -> repair
+test failed `(0, 0) == (0, 1)`; no-Fill `record_drop` returned `True` -> ack-only dropped assertion
+failed `(1, 0) == (0, 0)`; ordinary Fill path forced to write an ack -> Fill-first test failed
+`2 == 1`; helper replay forced to rewrite the ack -> append-only guard raised
+`ValueError: property 'created_at' cannot be overwritten`. Each plant was restored.
+
+**`make ci`:** final-tree redirected gate
+`C:\Users\yury_\AppData\Local\Temp\s181-make-ci-final-tree.txt` exited `0`: `2322 passed, 6
+skipped`, `100.00%` coverage, `pip-audit` no known vulnerabilities, detect-secrets tracked and
+untracked checks passed.

@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from agents.execution.drop_sweep_ack import record_untracked_order_ack
 from kernel import AgentFault
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ def record_drop(
 ) -> bool:
     """Append drop evidence for one broker order if its Fill chain exists."""
     if fill is None:
-        _record_untracked_drop(sink, order)
+        record_untracked_order_ack(graph, sink, order, drop_status)
         return False
     dropped_at = datetime.now(tz=UTC).isoformat()
     graph.merge_node(
@@ -113,22 +114,6 @@ def _record_dropped_fault(sink: FaultSink, order: BrokerFill) -> None:
                 f"qty={order.quantity} decided_price={order.price.amount} "
                 f"reason={DROP_REASON} broker_order_id={order.broker_order_id} "
                 f"client_order_id={order.idempotency_key}"
-            ),
-        )
-    )
-
-
-def _record_untracked_drop(sink: FaultSink, order: BrokerFill) -> None:
-    sink.submit(
-        AgentFault(
-            source_agent="execution",
-            source_module="agents.execution.drop_sweep",
-            capability="drop_unfilled_orders",
-            severity="error",
-            error_type="UntrackedOpenOrder",
-            message=(
-                f"open order {order.idempotency_key} for {order.ticker} "
-                "has no Fill chain; durable drop lineage was not recorded"
             ),
         )
     )

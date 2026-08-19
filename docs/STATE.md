@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 14:40 AEST · **Version:** 0.90.14 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **`sched-2026-08-18` ran 8/8 with 0 fail-opens and 2 orders at the broker; `healthy` was `true` for fifteen hours and one leftover S164 probe order turned it red again — packaged as S181.**
+**Last updated:** 2026-08-19 15:35 AEST · **Version:** 0.90.15 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **S181 branch-local fix is ready for remote gate; deploy and post-deploy FaultResolution remain pending.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -56,6 +56,18 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ## Now
+
+**PROVEN RESULT - S181 (`sprint-181-an-untracked-order-is-reported-once`, branch/local).** The drop
+sweep now writes a durable, edge-less `BrokerOrderStatus` acknowledgement for first-sight no-Fill
+broker orders and consults it only while the `Fill` is still absent. Proven locally: the same
+untracked terminal order swept twice yields one `UntrackedOpenOrder` error; a different untracked
+order still errors on first sight; a later repaired `Fill` records normal drop evidence; ack-only
+orders still return `False` and do not change `ExecutionRun.dropped`. DL-115 records the rejected
+alternatives. Live-spine read-only proof stayed unchanged before/after (`Fault=6132`,
+`FaultResolution=2`, one live incident for `stop:probe-s164:T#1`). Final redirected `make ci`
+exited `0` with **2322 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets clean.
+Pending: branch-tip remote gate, merge/deploy, then one append-only FaultResolution for the existing
+incident after fixed code is live.
 
 **PROVEN RESULT - S179 (`sprint-179-a-fault-must-be-able-to-stop-being-an-incident`, branch/local).**
 `open_incidents` now means unresolved `error`/`critical` Faults in the latest graph-run day, with

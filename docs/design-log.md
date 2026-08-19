@@ -8,6 +8,59 @@ and is marked CLOSED here.
 
 ---
 
+## DL-116 - The veto becomes binding by arithmetic, not by a switch - status: DECIDED (2026-08-19)
+
+**Problem.** `sched-2026-08-19` submitted **all 9** PM-approved orders with
+`deliberation_status=proceeded_unvetoed` at 07:02:17-22; the `DeliberationRun` landed **07:03:33**,
+about **71 s** too late, and then returned **6 vetoes**. Acceptance failed on
+`debate_coverage 0.778 < 1.0` and `failed_open_count 2 > 0`. Two independent causes, both measured:
+
+- **Grace.** The debate spanned roughly **990 s** against `EXECUTION_DELIBERATION_GRACE_SECONDS=900`.
+- **Per-call timeout.** 41 `LLMCall` rows in the window: median **15.0 s**, but the tail ran
+  **65.3 / 59.3 / 58.2 s** against `DELIBERATOR_REQUEST_TIMEOUT_SECONDS=60`. One call exceeded the
+  ceiling and two were within 2 s of it, producing the two
+  `RuntimeError: no deliberator peer reply received` fail-opens (MO, CSCO). When this timeout was
+  last measured (n=45) the max was **46.2 s**; the tail has grown since.
+
+**Decision - grace 900 -> 1800, timeout 60 -> 120.** Both are `tunable()`s, no code and no image
+rebuild. 1800 clears the observed 990 s span with 810 s of headroom; 120 is the declared ceiling
+(`le=120.0`) and gives ~1.8x margin over the 65.3 s tail. Written to
+`orchestration/packs/trading_tunables.json` as well as the live env, because a full `up` replaces
+each app's env set and would silently revert an env-only change (DL-100 / S169).
+
+**What this actually changes, named plainly.** 🚨 **The veto stops being advisory.** DL-104 returned
+the grace 1800 -> 900 *deliberately*, because at the time the veto was "a good auditor and a bad
+gate" and a grace that expires was recorded as **the sole no-code path** to keep it permissive. That
+premise no longer holds: across `sched-2026-08-18` and `sched-2026-08-19` every verdict cited a real
+structural gap (dual-class GOOG/GOOGL aggregation, absent sector-correlation penalty, market-order
+sizing against an estimated price) and **none** was a DL-104-class defect. So this is a posture
+change made by arithmetic rather than by the explicit switch that work-queue **item 6** still calls
+for. Item 6 is not closed by this entry - the switch remains unbuilt, and the posture is now held in
+place by two numbers that a busier night could overturn.
+
+**The two levers are coupled.** Raising the per-call timeout lengthens the worst-case debate, which
+pushes back against the grace: three slow calls at 120 s instead of failing at 60 s adds ~180 s.
+9 orders would land near 1170 s, still inside 1800. 🪤 **At roughly 15 orders the two collide again**
+(~1650 s), and `deliberation_grace_seconds` is capped `le=3600`, so this buys headroom - it does not
+remove the constraint. **S172 is still the fix**; this is the mitigation that makes a clean run
+possible today.
+
+**Rejected routes.**
+
+- *`max_rounds` 2 -> 1* - rejected. Worth ~40 % of the wall clock, but S172's own `why` requires the
+  debate to show more than one round in live proof. Cutting the artefact under test to buy time is a
+  decision to record, not a knob to turn, and it would contaminate S172's before/after measurement.
+- *Lower `effort` back from `high`* - rejected. It shortens the tail, but `effort` reaching the wire
+  at all was the `0.90.02` fix, and reverting it re-opens the inert-knob question DL-63 already cost
+  us once.
+- *Leave the grace at 900 and accept fail-opens* - rejected. It is precisely the state where an
+  unreviewed order is indistinguishable in outcome from an approved one, and the whole point of the
+  veto is to bind.
+- *Raise the grace only* - rejected as insufficient. `failed_open_count > 0` fails acceptance on its
+  own, so the timeout had to move too or the run could not come back clean.
+
+---
+
 ## DL-115 - Untracked broker orders report once via broker-status ack - status: DECIDED (2026-08-19)
 
 **Problem.** S181 found one canceled S164 Alpaca probe (`stop:probe-s164:T#1`) with no `Fill`

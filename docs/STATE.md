@@ -126,8 +126,7 @@ cost three fail-opens before `request_timeout_seconds` went 30 → 60, **now pro
 together or not at all.
 
 **Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
-**(i)** amend S172 — its stated reason for excluding `max_rounds` is unsound (the sum-of-latency ÷
-span ratio is invariant to call count), and its build-trigger belongs in the spec;
+**(i)** ~~amend S172~~ **DONE 2026-08-19** — the unsound `max_rounds` reason is replaced (a 1-round debate is a different artefact, not a faster one), the build-trigger is now **measured** and in the spec (**15 orders breaches the 1800 s grace**), the stale `effort`/S169 traps are corrected, and a Codex handover block is written;
 **(ii)** collapse to one ranked queue — the operator's out-of-repo `debt.md` table is the best
 "what next" artefact in the project and is a third live tracker; folding its *shape* into this
 section would delete a tracker rather than add one; **(iii)** stop pinning version numbers in sprint

@@ -99,15 +99,32 @@ def test_reply_inbox_poll_slice_observes_late_stashed_sibling() -> None:
     assert sibling_receiver.dead_lettered == []
 
 
+def test_reply_inbox_empty_slice_keeps_waiting_until_deadline() -> None:
+    """DLIB-PERF-02: empty short receives do not consume the full deadline."""
+    inbox = ServiceBusReplyInbox()
+    mine = raw_ready("reply-a", "request-a")
+    receiver = _EmptyThenMessageReceiver([mine])
+
+    with inbox.expecting("request-a"):
+        result = inbox.receive(
+            receiver,
+            correlation_id="request-a",
+            deadline=5.0,
+            now=lambda: 0.0,
+        )
+
+    assert result.event["ref"] == "reply-a"
+    assert receiver.max_wait_times == [REPLY_RECEIVE_SLICE_SECONDS] * 2
+    assert receiver.completed == [mine]
+    assert receiver.dead_lettered == []
+
+
 def test_reply_inbox_deadline_expires_before_receive() -> None:
     """DLIB-PERF-02: expired peer reply waits fail without bus mutation."""
     inbox = ServiceBusReplyInbox()
     receiver = FakeReceiver([])
 
-    with (
-        inbox.expecting("request-a"),
-        pytest.raises(CorrelatedReadyEventTimeoutError),
-    ):
+    with inbox.expecting("request-a"), pytest.raises(CorrelatedReadyEventTimeoutError):
         inbox.receive(
             receiver,
             correlation_id="request-a",
@@ -161,3 +178,22 @@ class _BlockingEmptyReceiver:
 
     def dead_letter_message(self, message: RawMessage, *, reason: str) -> None:
         del message, reason
+
+
+class _EmptyThenMessageReceiver(FakeReceiver):
+    def __init__(self, messages: list[RawMessage]) -> None:
+        super().__init__(messages)
+        self._sent_empty = False
+        self.max_wait_times: list[float] = []
+
+    def receive_messages(
+        self, *, max_message_count: int, max_wait_time: float
+    ) -> list[RawMessage]:
+        self.max_wait_times.append(max_wait_time)
+        if not self._sent_empty:
+            self._sent_empty = True
+            return []
+        return super().receive_messages(
+            max_message_count=max_message_count,
+            max_wait_time=max_wait_time,
+        )

@@ -48,9 +48,10 @@ this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling 
 DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
 🚨 **The blocker was real and is now lifted only by the operator's $5 top-up**: OpenAI reads
 `HTTP 200`; **Anthropic is still capped until 2026-09-01**, so there is no working fallback provider
-and a second credit exhaustion stops the fleet again. Work-queue item 25 stays open for that reason.
+and a second credit exhaustion stops the fleet again — now a **standing operational note** in the
+work queue rather than a work item, because it is an outage condition, not something to build.
 
-🚨🚨 **BLOCKER — the deliberator has no working LLM provider (work-queue item 25).** Probed directly
+🚨🚨 **BLOCKER, since LIFTED — the deliberator had no working LLM provider.** Probed directly
 2026-08-19: OpenAI **`HTTP 429` "You have no credits remaining"**; Anthropic **`HTTP 400` "You have
 reached your specified API usage limits. You will regain access on 2026-09-01"**. Every debate fails
 open, and `failed_open_count > 0` fails acceptance on its own, so **no run can come back clean until
@@ -107,7 +108,7 @@ a candidate, not a defect, and it is adjacent to work-queue item 18.
 
 ## Next
 
-**Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking (🪤 collapsing the two is item (ii)).
+**Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
 **Ahead of the numbered list — one measurement now unblocked, and three questions raised and not yet
 answered.**
@@ -127,9 +128,7 @@ together or not at all.
 
 **Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
 **(i)** ~~amend S172~~ **DONE 2026-08-19** — the unsound `max_rounds` reason is replaced (a 1-round debate is a different artefact, not a faster one), the build-trigger is now **measured** and in the spec (**15 orders breaches the 1800 s grace**), the stale `effort`/S169 traps are corrected, and a Codex handover block is written;
-**(ii)** collapse to one ranked queue — the operator's out-of-repo `debt.md` table is the best
-"what next" artefact in the project and is a third live tracker; folding its *shape* into this
-section would delete a tracker rather than add one; **(iii)** stop pinning version numbers in sprint
+**(ii)** ~~collapse to one ranked queue~~ **DONE 2026-08-19** — the out-of-repo `debt.md` was **deleted**, not reconciled: it was a 2026-08-14 ancestor of `work-queue.md` and all 8 of its unique references were fragments of closed items. The queue was pruned 255 → 99 lines (11 closed rows removed, 2 folded into parents, every carried number re-measured); **(iii)** stop pinning version numbers in sprint
 specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day.
 
 1. 🚨 **Close the loop on `critical` Flags, so `healthy` can mean something again.** A **fix**.

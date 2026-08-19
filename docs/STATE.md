@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 15:35 AEST · **Version:** 0.90.15 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **S181 branch-local fix is ready for remote gate; deploy and post-deploy FaultResolution remain pending.**
+**Last updated:** 2026-08-19 18:05 AEST · **Version:** 0.90.15 · **Fleet: `s181`** (image-only retag, 16 apps + job, scale config diffed identical after the test) · **S181 deployed and its first-sight ack proven live; suppression waits on `sched-2026-08-20`. The same run overran its veto grace and submitted 9 orders unvetoed — cancelled, book restored.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -34,28 +34,46 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   `main`** — `codeql.yml` runs only there, so the fix branch failed its own gate on the same alert;
   merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
 
-- **The veto read word counts as article counts, and the fleet caught up (fix, `0.90.11`,
-  2026-08-15 — [DL-112](design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
-  approvals to the deliberator; **8 came back vetoed and 1 order reached the broker**. Reading the
-  verdicts: **5 of the 8 cite defects S175 had already fixed but which were not deployed** (the
-  invented ATR fragment on AMZN/MDLZ; sector/batch absence read as zero exposure on AVGO/CSCO/GOOGL).
-  A sixth was **new and false in code** — XOM vetoed for a *"sentiment feed internally
-  inconsistent (10 articles but 11 positive and 3 negative)"*, when `sentiment_positive` counted
-  lexicon **word occurrences** and `sentiment_articles` counted **headlines**: two units, one prefix,
-  carried verbatim into the debate by `quant_metrics`. Renamed to `sentiment_positive_words` /
-  `sentiment_negative_words`; no computed value changed. `make ci` **2301 passed / 100.00 %**, guard
-  planted (old keys → `KeyError`) and restored. Only WMT (earnings-gap-aware stop) and GOOG
-  (correlation penalty) were substantive objections. 🪤 **Third instance of DL-104's disease** —
-  invented fragment, absence-as-zero, unit-in-a-name — all three cost real orders; the class is
-  worth one sweep of every value rendered into the debate, not three more point fixes.
-
-Older sprints — **the two S176 deploys (`0.90.10`/`0.90.11`), the deliberation-constraint
-measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.01`) →
-[STATE-08.md](state-archive/STATE-08.md)**;
-`0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
-[STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
-
 ## Now
+
+**PROVEN RESULT — S181 deployed `s181`, 2026-08-19.** Image-only retag was the right path: the
+vocabulary pack hash is identical (`8777b907…`) between the deployed `s179` commit and `bcf3a2b`.
+16/16 apps + `dispatcher-cron` on `s181`, all `Succeeded`, tag count == inventory count, cron still
+`30 22 * * 1-5`, KEDA rules unchanged. `GATE PROVEN` for `bcf3a2b` (CI, Security Findings, CodeQL,
+image build) with the printed SHA checked against `git rev-parse HEAD`. `DeployRecord` written with
+the **build's own head SHA**, not a live `git rev-parse` — the S180 defect is unbuilt, so that trap
+was avoided by hand.
+
+**PROVEN RESULT — the S181 ack, live.** Sweep fired 06:37:57, 13 s after dispatch. Ack node
+`broker-order-status:untracked:stop:probe-s164:T#1:e5e6edcc-…` created with
+`lineage_status=missing_fill_ack` — a node only S181 code writes, so this also confirms the deployed
+image really is `s181` — and **exactly one** new `UntrackedOpenOrder` fault (12 → 13).
+`FaultResolution` untouched at 2. **NOT PROVEN: suppression.** Sweep #2 is what shows zero new
+faults, and it has not run: the manual dispatch consumed `sched-2026-08-19` (DL-110), so tonight's
+job no-ops and sweep #2 is `sched-2026-08-20`. The `FaultResolution` cleanup is held until then —
+retiring it now would be undone by the next run.
+
+🚨 **The test run overran its own veto grace — new measured evidence for work-queue item 3, not an
+S181 regression.** `sched-2026-08-19` completed 8/8 but `ACCEPTANCE FAIL`: `debate_coverage`
+**0.778 < 1.0**, `failed_open_count` **2 > 0**. PM approved **9**; execution's grace expired and it
+submitted **all 9** at 07:02:17–22 with `deliberation_status=proceeded_unvetoed`; the deliberation
+completed **07:03:33, 71 s too late**, and then returned **6 vetoes** (AMZN, GOOGL, GOOG, XOM, INTC,
+NEE) plus 2 fail-opens (`no deliberator peer reply received`, MO and CSCO). Yesterday's 7-order run
+cleared the same grace comfortably; **9 orders plus two peer timeouts did not**. 🟢 S175 worked as
+designed — the unvetoed submission raised its own distinct, queryable error fault rather than being
+indistinguishable from an approved one.
+
+**Torn down.** All 9 orders cancelled at the broker (client-order-id prefix, with an assertion
+refusing to match any stop); book verified back to **19 open orders, all protective stops, 0
+non-stop**, cash unchanged `$83,776.22` — nothing filled — 19 positions, equity `$102,692.79`. All
+16 apps returned to `minReplicas 0`; scale config diffs **identical** to the pre-test snapshot.
+🪤 **Operator-accepted cost:** the sweep runs *before* everything else, so firing a run at 06:37 UTC
+cancelled the AMZN + MO orders from `sched-2026-08-18` seven hours before the open. ADR-0018 working
+as designed, flagged in advance and chosen.
+
+**`healthy` is `false` with 3 live incidents** — one is S181's expected first sight, two are the
+deliberation overrun above. Health cannot go green until sweep #2 lands and the incidents are
+retired.
 
 **PROVEN RESULT - S181 (`sprint-181-an-untracked-order-is-reported-once`, branch/local).** The drop
 sweep now writes a durable, edge-less `BrokerOrderStatus` acknowledgement for first-sight no-Fill
@@ -66,24 +84,17 @@ orders still return `False` and do not change `ExecutionRun.dropped`. DL-115 rec
 alternatives. Live-spine read-only proof stayed unchanged before/after (`Fault=6132`,
 `FaultResolution=2`, one live incident for `stop:probe-s164:T#1`). Final redirected `make ci`
 exited `0` with **2322 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets clean.
-Pending: branch-tip remote gate, merge/deploy, then one append-only FaultResolution for the existing
-incident after fixed code is live.
+Merged `7ffc730`, `GATE PROVEN` for `bcf3a2b`, deployed `s181` — see the deploy block above.
 
-**PROVEN RESULT - S179 (`sprint-179-a-fault-must-be-able-to-stop-being-an-incident`, branch/local).**
-`open_incidents` now means unresolved `error`/`critical` Faults in the latest graph-run day, with
-explicit append-only `FaultResolution` retirement; warning Faults remain queryable but do not pin
-`healthy=false`. Both supervisor and dashboard paths call `kernel.fault_incidents`. Live proof on
-the spine: before `healthy=False`, `open_incidents=2`, `pending_human_flags=0`, `Fault=6119`,
-`FaultResolution=0`; after the audited sweep `healthy=True`, `open_incidents=0`, `Fault=6119`,
-`FaultResolution=2`, all Fault statuses still `pending`, and both resolutions linked to one Fault.
-Guards were planted and restored; final redirected `make ci` exited `0` with **2317 passed / 6
-skipped / 100.00 %**, pip-audit clean, detect-secrets clean. **Deployed `s179`** 2026-08-18, code and
-vocabulary pack together (the `FaultResolution` label required it).
+**S179 (`0.90.14`) shipped 2026-08-18 and is deployed** — `open_incidents` is a live incident
+count scoped to the latest graph-run day, with append-only `FaultResolution` retirement. Detail in
+its sprint doc and [STATE-08.md](state-archive/STATE-08.md).
 
 **PROVEN RESULT — `sched-2026-08-18`, read 2026-08-19.** The run completed **8/8**: 99 tickers at **203
 bars** each, 20 scanner survivors, 28 scored, **7 PM approvals**, **7 real debates with 0 fail-opens**,
 **5 vetoed** (GOOG, GOOGL, AVGO, XOM, CSCO) and **2 submitted** (AMZN 3, MO 15) — both `accepted` at the
-broker, queued for the open, so `accept.py` reads `UNPROVEN` by design rather than by fault. Equity
+broker. 🪤 **Neither reached the open** — both were cancelled by the 2026-08-19 test run's head-of-run
+sweep (ADR-0018), so this run never resolved past `UNPROVEN`. Equity
 **$102,680.53** (last_equity $102,572.78), 19 positions, **+$351.23 unrealized**. 🚨 **No DL-104-class
 defect in any verdict this time** — all five cite real gaps in what the PM aggregates (dual-class
 GOOG/GOOGL as independent names, no sector-correlation penalty, market-order sizing against an

@@ -113,3 +113,24 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   `min=0`/1 rule on every app, cron `30 22 * * 1-5`, other tunables intact. `DeployRecord`
   `…:s176b:439111b7`. 🪤 **`pwsh script.ps1 -DropEnv A,B,C` silently passes one literal string**
   (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.
+
+- **The veto read word counts as article counts, and the fleet caught up (fix, `0.90.11`,
+  2026-08-15 — [DL-112](design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
+  approvals to the deliberator; **8 came back vetoed and 1 order reached the broker**. Reading the
+  verdicts: **5 of the 8 cite defects S175 had already fixed but which were not deployed** (the
+  invented ATR fragment on AMZN/MDLZ; sector/batch absence read as zero exposure on AVGO/CSCO/GOOGL).
+  A sixth was **new and false in code** — XOM vetoed for a *"sentiment feed internally
+  inconsistent (10 articles but 11 positive and 3 negative)"*, when `sentiment_positive` counted
+  lexicon **word occurrences** and `sentiment_articles` counted **headlines**: two units, one prefix,
+  carried verbatim into the debate by `quant_metrics`. Renamed to `sentiment_positive_words` /
+  `sentiment_negative_words`; no computed value changed. `make ci` **2301 passed / 100.00 %**, guard
+  planted (old keys → `KeyError`) and restored. Only WMT (earnings-gap-aware stop) and GOOG
+  (correlation penalty) were substantive objections. 🪤 **Third instance of DL-104's disease** —
+  invented fragment, absence-as-zero, unit-in-a-name — all three cost real orders; the class is
+  worth one sweep of every value rendered into the debate, not three more point fixes.
+
+Older sprints — **the two S176 deploys (`0.90.10`/`0.90.11`), the deliberation-constraint
+measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.01`) →
+[STATE-08.md](state-archive/STATE-08.md)**;
+`0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
+[STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.

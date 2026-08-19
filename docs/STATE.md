@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-18 17:57 AEST · **Version:** 0.90.14 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **`healthy` is `true` on the live spine for the first time since 2026-07-08 — S178 + S179 both shipped.**
+**Last updated:** 2026-08-19 14:40 AEST · **Version:** 0.90.14 · **Fleet: `s179`** (full `up`, 16 apps + job, pack verified on the containers) · **`sched-2026-08-18` ran 8/8 with 0 fail-opens and 2 orders at the broker; `healthy` was `true` for fifteen hours and one leftover S164 probe order turned it red again — packaged as S181.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -65,10 +65,29 @@ the spine: before `healthy=False`, `open_incidents=2`, `pending_human_flags=0`, 
 `FaultResolution=0`; after the audited sweep `healthy=True`, `open_incidents=0`, `Fault=6119`,
 `FaultResolution=2`, all Fault statuses still `pending`, and both resolutions linked to one Fault.
 Guards were planted and restored; final redirected `make ci` exited `0` with **2317 passed / 6
-skipped / 100.00 %**, pip-audit clean, detect-secrets clean. **Not deployed:** fleet remains `s178`;
-S179 changes the graph vocabulary pack by adding `FaultResolution`, so a deploy must carry code and
-pack together. **Deferred, not hidden:** recurring stop-identity mismatch Faults are real
-warning-level drop-sweep evidence and need their own execution fix.
+skipped / 100.00 %**, pip-audit clean, detect-secrets clean. **Deployed `s179`** 2026-08-18, code and
+vocabulary pack together (the `FaultResolution` label required it).
+
+**PROVEN RESULT — `sched-2026-08-18`, read 2026-08-19.** The run completed **8/8**: 99 tickers at **203
+bars** each, 20 scanner survivors, 28 scored, **7 PM approvals**, **7 real debates with 0 fail-opens**,
+**5 vetoed** (GOOG, GOOGL, AVGO, XOM, CSCO) and **2 submitted** (AMZN 3, MO 15) — both `accepted` at the
+broker, queued for the open, so `accept.py` reads `UNPROVEN` by design rather than by fault. Equity
+**$102,680.53** (last_equity $102,572.78), 19 positions, **+$351.23 unrealized**. 🚨 **No DL-104-class
+defect in any verdict this time** — all five cite real gaps in what the PM aggregates (dual-class
+GOOG/GOOGL as independent names, no sector-correlation penalty, market-order sizing against an
+estimated price). Two nights running, the theme is **exposure aggregation the PM does not do**; that is
+a candidate, not a defect, and it is adjacent to work-queue item 18.
+
+🚨 **`healthy` is `false` again, and the cause is one canceled test order.** Measured 2026-08-19:
+`live_fault_incidents` returns exactly **one** node — `UntrackedOpenOrder`, `error`, raised by the drop
+sweep at 22:30:33 for `stop:probe-s164:T#1`, a **1-share S164 probe** submitted 2026-08-07 and canceled
+0.7 s later with no `Fill` node. It has fired **12 times, once per run, since 2026-08-08**, and it
+cannot stop: `_already_dropped` reads `fill.props["drop_reason"]`, so the sweep's only memory lives on
+a node that does not exist. 🪤 **The artifact cannot be torn down** — the order is terminal and
+immutable at Alpaca. Packaged as
+**[S181](sprints/sprint-181-an-untracked-order-is-reported-once.md)** (work-queue item 23).
+**Deferred, not hidden:** recurring stop-identity mismatch Faults are real warning-level drop-sweep
+evidence and need their own execution fix (item 20).
 
 ## Next
 

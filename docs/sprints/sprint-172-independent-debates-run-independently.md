@@ -286,7 +286,7 @@ law-plan/ledger/drift docs, `docs/STATE.md`, and the version bump to `0.91.00` w
 `verify-2026-08-19-clean-2`: 9 orders, 45 `LLMCall` rows, first-to-last span `1113 s`, summed
 per-call latency `1059 s`, `sum/span = 0.95`, projected 15-order serial wall clock `1854 s`.
 
-**Live K=4 measurement attempt:** deployed tag `s172` from branch tip
+**Live K=4 measurement attempt:** deployed tag `s172` from code/deploy proof commit
 `a7e7ad12911ca2dd76be51c6ef5bba0f6344e350`. `preflight -Tag s172` exit `0`; `up -Tag s172` exit
 `0`. Azure config after deploy: manager image `trading-agents-deliberator:s172`, `max=1`,
 cron `desiredReplicas=1`; proponent/opponent image `trading-agents-deliberator:s172`, `max=4`,
@@ -314,7 +314,7 @@ because the LLM calls never started.
 `make_ci_exit=0`; tail summary `2336 passed, 6 skipped in 121.37s`; total coverage `100.00 %`;
 `pip-audit` reported no known vulnerabilities; detect-secrets and untracked-secret checks passed.
 
-**Remote gate at branch tip:**
+**Remote gate at the code/deploy proof commit:**
 ```
 make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350
 GATE PROVEN for a7e7ad12911ca2dd76be51c6ef5bba0f6344e350:

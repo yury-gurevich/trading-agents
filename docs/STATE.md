@@ -42,7 +42,7 @@ PM-order reassembly, isolated per-order fail-open, a shared reply inbox for conc
 and proponent/opponent `maxReplicas=4` with `desiredReplicas=4`. Local `make ci` was redirected to
 `..\s172-make-ci.log` and returned exit 0 (`2336 passed, 6 skipped`, 100.00 % coverage). Remote
 `make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350` proved CI, Security Findings, and image
-build for the branch tip.
+build for the code/deploy proof commit; the final doc-only tip was re-proven after this closeout.
 
 🚨 **Live success factors are still not proven.** Deployed `s172` preflight and `up` returned exit 0,
 then the 15-order K=4 proof run `verify-2026-08-19-s172-k4-15-racefix-a7e7ad1` failed open on all 15

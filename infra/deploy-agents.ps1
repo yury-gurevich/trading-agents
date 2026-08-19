@@ -148,8 +148,16 @@ function Get-JobState([string]$name) {
 # ── Cred loaders ──────────────────────────────────────────────────────────────
 function Load-Json($name) {
   $p = Join-Path $PSScriptRoot $name
-  if (-not (Test-Path $p)) { return $null }
-  Get-Content $p -Raw | ConvertFrom-Json
+  if (Test-Path $p) { return Get-Content $p -Raw | ConvertFrom-Json }
+  $envName = switch ($name) {
+    "ghcr.local.json" { "GHCR_LOCAL_JSON" }
+    "key-vault.local.json" { "KEY_VAULT_LOCAL_JSON" }
+    default { "" }
+  }
+  if (-not $envName) { return $null }
+  $raw = [Environment]::GetEnvironmentVariable($envName, "Process")
+  if (-not $raw) { return $null }
+  $raw | ConvertFrom-Json
 }
 
 function Load-DotEnv {
@@ -329,7 +337,12 @@ function Get-AppMaxReplicas($name) {
   return 1
 }
 
-function Get-CronScaleArgs($ruleName, $start, $maxReplicas = 1) {
+function Get-AppDesiredReplicas($name) {
+  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }
+  return $ScaleDesiredReplicas
+}
+
+function Get-CronScaleArgs($ruleName, $start, $maxReplicas = 1, $desiredReplicas = $ScaleDesiredReplicas) {
   return @(
     "--min-replicas", "0", "--max-replicas", $maxReplicas,
     "--scale-rule-name", $ruleName,
@@ -338,7 +351,7 @@ function Get-CronScaleArgs($ruleName, $start, $maxReplicas = 1) {
     "timezone=$ScaleTimezone",
     "start=$start",
     "end=$ScaleEnd",
-    "desiredReplicas=$ScaleDesiredReplicas"
+    "desiredReplicas=$desiredReplicas"
   )
 }
 
@@ -681,7 +694,7 @@ function Up {
       "--env-vars"
     ) + $agentEnv + @(
       "--query", "properties.provisioningState", "-o", "tsv"
-    ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart (Get-AppMaxReplicas $name))
+    ) + (Get-CronScaleArgs "daily-agent-window" $AgentScaleStart (Get-AppMaxReplicas $name) (Get-AppDesiredReplicas $name))
     $state = Invoke-Az $agentArgs
     # State comes from the resource, not from the deploying call's stream (row Q).
     $appOk = ($null -ne $state) -and ((Get-AppState $name) -eq "Succeeded")

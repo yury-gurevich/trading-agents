@@ -20,6 +20,8 @@ from kernel.bus_azure_ready import (
     ready_event_from_raw,
 )
 
+REPLY_RECEIVE_SLICE_SECONDS = 1.0
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
@@ -62,12 +64,18 @@ class ServiceBusReplyInbox:
             remaining = deadline - now()
             if remaining <= 0:
                 raise CorrelatedReadyEventTimeoutError(correlation_id, orphan_count)
+            wait_time = min(remaining, REPLY_RECEIVE_SLICE_SECONDS)
             messages = receiver.receive_messages(
                 max_message_count=1,
-                max_wait_time=remaining,
+                max_wait_time=wait_time,
             )
             if not messages:
-                raise CorrelatedReadyEventTimeoutError(correlation_id, orphan_count)
+                stashed = self._pop(correlation_id)
+                if stashed is not None:
+                    return CorrelatedReadyEvent(stashed, orphan_count)
+                if wait_time >= remaining:
+                    raise CorrelatedReadyEventTimeoutError(correlation_id, orphan_count)
+                continue
             raw = messages[0]
             event = _event_or_none(raw)
             if event is None:

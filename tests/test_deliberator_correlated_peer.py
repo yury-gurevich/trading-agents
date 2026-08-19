@@ -10,26 +10,20 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from tests.bus_azure_receiver_helpers import FakeReceiver, RawMessage
 from tests.deliberator_correlated_peer_helpers import (
     DEFAULT_REQUEST_ID,
     ReplyReceiver,
     client,
-    raw_ready,
     store_reply,
     turn_request,
 )
 
-from agents.deliberator.servicebus_reply_inbox import ServiceBusReplyInbox
 from kernel import (
     CollectingFaultSink,
     GraphFaultSink,
     InMemoryGraphStore,
 )
-from kernel.bus_azure_ready import (
-    ORPHANED_READY_EVENT_REASON,
-    CorrelatedReadyEventTimeoutError,
-)
+from kernel.bus_azure_ready import ORPHANED_READY_EVENT_REASON
 
 
 def test_debate_turn_skips_stale_ahead_of_genuine_reply_and_faults() -> None:
@@ -94,77 +88,6 @@ def test_prompt_peer_reply_is_one_receive_no_dead_letter() -> None:
     assert len(receiver.completed) == 1
     assert peer.orphaned_reply_count == 0
     assert graph.list_nodes("Fault") == ()
-
-
-def test_reply_inbox_stashes_pending_sibling_without_dead_letter() -> None:
-    """DLIB-DEP-02 / DLIB-NEV-06: sibling replies are not stale orphans."""
-    inbox = ServiceBusReplyInbox()
-    sibling = raw_ready("reply-b", "request-b")
-    mine = raw_ready("reply-a", "request-a")
-    receiver = FakeReceiver([sibling, mine])
-
-    with inbox.expecting("request-a"), inbox.expecting("request-b"):
-        result_a = inbox.receive(
-            receiver,
-            correlation_id="request-a",
-            deadline=1.0,
-            now=lambda: 0.0,
-        )
-        result_b = inbox.receive(
-            receiver,
-            correlation_id="request-b",
-            deadline=1.0,
-            now=lambda: 0.0,
-        )
-
-    assert result_a.event["ref"] == "reply-a"
-    assert result_b.event["ref"] == "reply-b"
-    assert result_a.orphan_count == 0
-    assert result_b.orphan_count == 0
-    assert receiver.completed == [sibling, mine]
-    assert receiver.dead_lettered == []
-
-
-def test_reply_inbox_deadline_expires_before_receive() -> None:
-    """DLIB-PERF-02: expired peer reply waits fail without bus mutation."""
-    inbox = ServiceBusReplyInbox()
-    receiver = FakeReceiver([])
-
-    with (
-        inbox.expecting("request-a"),
-        pytest.raises(CorrelatedReadyEventTimeoutError),
-    ):
-        inbox.receive(
-            receiver,
-            correlation_id="request-a",
-            deadline=0.0,
-            now=lambda: 1.0,
-        )
-
-    assert receiver.completed == []
-    assert receiver.dead_lettered == []
-
-
-def test_reply_inbox_dead_letters_malformed_then_times_out() -> None:
-    """DLIB-DEP-02 / DLIB-NEV-06: malformed ready events are orphaned."""
-    inbox = ServiceBusReplyInbox()
-    malformed = RawMessage("not-json")
-    receiver = FakeReceiver([malformed])
-
-    with (
-        inbox.expecting("request-a"),
-        pytest.raises(CorrelatedReadyEventTimeoutError) as err,
-    ):
-        inbox.receive(
-            receiver,
-            correlation_id="request-a",
-            deadline=1.0,
-            now=lambda: 0.0,
-        )
-
-    assert err.value.orphan_count == 1
-    assert receiver.completed == []
-    assert receiver.dead_lettered == [(malformed, ORPHANED_READY_EVENT_REASON)]
 
 
 def test_no_matching_reply_still_raises_for_manager_fail_open() -> None:

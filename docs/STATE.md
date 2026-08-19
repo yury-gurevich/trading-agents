@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 19:20 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **S181 fully proven live and closed. The veto now binds (grace 1800). 🚨 BLOCKER: both LLM providers are down — OpenAI out of credits, Anthropic capped until 2026-09-01 — so no run can pass acceptance.**
+**Last updated:** 2026-08-19 19:50 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **ONE CLEAN RUN: `verify-2026-08-19-clean-2` returned 9/9 real debates, 0 fail-opens and `deliberation_status=applied` — the veto bound fully for the first time. S181 closed and proven.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,6 +35,20 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
 
 ## Now
+
+**PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
+OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:
+**8/8 stages · `real_debate_count` 9 of 9 (`debate_coverage` = 1.0) · `failed_open_count` **0** ·
+`deliberation_status` = **`applied`**, plain — not `applied_failed_open`, not `proceeded_unvetoed` ·
+`ACCEPTANCE UNPROVEN` with **no breach lines**, the only missing element being the 13:30 UTC open.**
+Verdicts: **6 vetoed** (AMZN, GOOGL, GOOG, XOM, INTC, NEE), **3 upheld and submitted** (MO, CSCO,
+MDLZ) — every one genuinely debated. 45 `LLMCall` rows = exactly 9 x 5. Cost **$0.46**.
+🪤 **The timeout raise was load-bearing after all, for a different reason than it was made for:**
+this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling would have cut.
+DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
+🚨 **The blocker was real and is now lifted only by the operator's $5 top-up**: OpenAI reads
+`HTTP 200`; **Anthropic is still capped until 2026-09-01**, so there is no working fallback provider
+and a second credit exhaustion stops the fleet again. Work-queue item 25 stays open for that reason.
 
 🚨🚨 **BLOCKER — the deliberator has no working LLM provider (work-queue item 25).** Probed directly
 2026-08-19: OpenAI **`HTTP 429` "You have no credits remaining"**; Anthropic **`HTTP 400` "You have

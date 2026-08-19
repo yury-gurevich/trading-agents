@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 18:05 AEST · **Version:** 0.90.15 · **Fleet: `s181`** (image-only retag, 16 apps + job, scale config diffed identical after the test) · **S181 deployed and its first-sight ack proven live; suppression waits on `sched-2026-08-20`. The same run overran its veto grace and submitted 9 orders unvetoed — cancelled, book restored.**
+**Last updated:** 2026-08-19 19:20 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **S181 fully proven live and closed. The veto now binds (grace 1800). 🚨 BLOCKER: both LLM providers are down — OpenAI out of credits, Anthropic capped until 2026-09-01 — so no run can pass acceptance.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,38 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🚨🚨 **BLOCKER — the deliberator has no working LLM provider (work-queue item 25).** Probed directly
+2026-08-19: OpenAI **`HTTP 429` "You have no credits remaining"**; Anthropic **`HTTP 400` "You have
+reached your specified API usage limits. You will regain access on 2026-09-01"**. Every debate fails
+open, and `failed_open_count > 0` fails acceptance on its own, so **no run can come back clean until
+credits are added or 1 September**. 🟢 Nothing else is broken: the pipeline runs 8/8 and the veto now
+binds. **Operator action, not a code fix.**
+
+**PROVEN RESULT — S181 closed, fully proven on the fleet.** Sweep #1 (06:37:57) wrote the ack and one
+fault; **sweep #2 (07:45:33) wrote neither** — `UntrackedOpenOrder` **13 → 13**, acks **1 → 1**.
+Twelve consecutive runs had each raised that fault. Retired with **one targeted** `FaultResolution`
+(`Fault` 6178 → 6178 unchanged, resolutions 2 → 3, live incidents 5 → 4, all statuses still
+`pending`). 🪤 Deliberately **not** the blanket sweep — the other four live incidents are the LLM
+outage and retiring them would mark a live failure resolved.
+
+**PROVEN RESULT — the veto binds, first time (DL-116).** Grace 900 → 1800 and per-call timeout
+60 → 120, in the tunables pack as well as live env (DL-100). `verify-2026-08-19-clean` returned
+`deliberation_status=applied_failed_open`, **not** `proceeded_unvetoed`: 6 of 9 orders blocked, **3
+submitted instead of 9**. 🚨 **This is a posture change made by arithmetic** — DL-104 set the grace to
+900 precisely to keep the veto advisory. Work-queue **item 6** (a real advisory/binding switch)
+stays open; the posture is now held by two numbers a busier night could overturn.
+
+🪤 **I got half the diagnosis wrong and it cost a run.** The fail-opens were read as a 60 s timeout
+because the latency tail sat exactly at that ceiling. They were `HTTP 429`s. The reason string was
+in `DeliberationRun.failed_open_reason` the whole time. Third instance of taking a number that
+*correlates* with the boundary as the cause — after the `record_deploy` SHA and the module-size
+counts. **Read the reason field before the metrics.**
+
+**Both test runs torn down.** 9 + 3 orders cancelled; book at **19 open orders, all protective stops,
+0 non-stop**, cash unchanged `$83,776.22`, 19 positions, equity `$102,694.96`. Fleet at
+`minReplicas 0`, scale config diffs identical to the pre-test snapshot. 🪤 `sched-2026-08-19` was
+consumed by the first test, so tonight's job no-ops; the next scheduled run is `sched-2026-08-20`.
+
 **PROVEN RESULT — S181 deployed `s181`, 2026-08-19.** Image-only retag was the right path: the
 vocabulary pack hash is identical (`8777b907…`) between the deployed `s179` commit and `bcf3a2b`.
 16/16 apps + `dispatcher-cron` on `s181`, all `Succeeded`, tag count == inventory count, cron still
@@ -43,48 +75,6 @@ vocabulary pack hash is identical (`8777b907…`) between the deployed `s179` co
 image build) with the printed SHA checked against `git rev-parse HEAD`. `DeployRecord` written with
 the **build's own head SHA**, not a live `git rev-parse` — the S180 defect is unbuilt, so that trap
 was avoided by hand.
-
-**PROVEN RESULT — the S181 ack, live.** Sweep fired 06:37:57, 13 s after dispatch. Ack node
-`broker-order-status:untracked:stop:probe-s164:T#1:e5e6edcc-…` created with
-`lineage_status=missing_fill_ack` — a node only S181 code writes, so this also confirms the deployed
-image really is `s181` — and **exactly one** new `UntrackedOpenOrder` fault (12 → 13).
-`FaultResolution` untouched at 2. **NOT PROVEN: suppression.** Sweep #2 is what shows zero new
-faults, and it has not run: the manual dispatch consumed `sched-2026-08-19` (DL-110), so tonight's
-job no-ops and sweep #2 is `sched-2026-08-20`. The `FaultResolution` cleanup is held until then —
-retiring it now would be undone by the next run.
-
-🚨 **The test run overran its own veto grace — new measured evidence for work-queue item 3, not an
-S181 regression.** `sched-2026-08-19` completed 8/8 but `ACCEPTANCE FAIL`: `debate_coverage`
-**0.778 < 1.0**, `failed_open_count` **2 > 0**. PM approved **9**; execution's grace expired and it
-submitted **all 9** at 07:02:17–22 with `deliberation_status=proceeded_unvetoed`; the deliberation
-completed **07:03:33, 71 s too late**, and then returned **6 vetoes** (AMZN, GOOGL, GOOG, XOM, INTC,
-NEE) plus 2 fail-opens (`no deliberator peer reply received`, MO and CSCO). Yesterday's 7-order run
-cleared the same grace comfortably; **9 orders plus two peer timeouts did not**. 🟢 S175 worked as
-designed — the unvetoed submission raised its own distinct, queryable error fault rather than being
-indistinguishable from an approved one.
-
-**Torn down.** All 9 orders cancelled at the broker (client-order-id prefix, with an assertion
-refusing to match any stop); book verified back to **19 open orders, all protective stops, 0
-non-stop**, cash unchanged `$83,776.22` — nothing filled — 19 positions, equity `$102,692.79`. All
-16 apps returned to `minReplicas 0`; scale config diffs **identical** to the pre-test snapshot.
-🪤 **Operator-accepted cost:** the sweep runs *before* everything else, so firing a run at 06:37 UTC
-cancelled the AMZN + MO orders from `sched-2026-08-18` seven hours before the open. ADR-0018 working
-as designed, flagged in advance and chosen.
-
-**`healthy` is `false` with 3 live incidents** — one is S181's expected first sight, two are the
-deliberation overrun above. Health cannot go green until sweep #2 lands and the incidents are
-retired.
-
-**PROVEN RESULT - S181 (`sprint-181-an-untracked-order-is-reported-once`, branch/local).** The drop
-sweep now writes a durable, edge-less `BrokerOrderStatus` acknowledgement for first-sight no-Fill
-broker orders and consults it only while the `Fill` is still absent. Proven locally: the same
-untracked terminal order swept twice yields one `UntrackedOpenOrder` error; a different untracked
-order still errors on first sight; a later repaired `Fill` records normal drop evidence; ack-only
-orders still return `False` and do not change `ExecutionRun.dropped`. DL-115 records the rejected
-alternatives. Live-spine read-only proof stayed unchanged before/after (`Fault=6132`,
-`FaultResolution=2`, one live incident for `stop:probe-s164:T#1`). Final redirected `make ci`
-exited `0` with **2322 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets clean.
-Merged `7ffc730`, `GATE PROVEN` for `bcf3a2b`, deployed `s181` — see the deploy block above.
 
 **S179 (`0.90.14`) shipped 2026-08-18 and is deployed** — `open_incidents` is a live incident
 count scoped to the latest graph-run day, with append-only `FaultResolution` retirement. Detail in
@@ -100,17 +90,6 @@ defect in any verdict this time** — all five cite real gaps in what the PM agg
 GOOG/GOOGL as independent names, no sector-correlation penalty, market-order sizing against an
 estimated price). Two nights running, the theme is **exposure aggregation the PM does not do**; that is
 a candidate, not a defect, and it is adjacent to work-queue item 18.
-
-🚨 **`healthy` is `false` again, and the cause is one canceled test order.** Measured 2026-08-19:
-`live_fault_incidents` returns exactly **one** node — `UntrackedOpenOrder`, `error`, raised by the drop
-sweep at 22:30:33 for `stop:probe-s164:T#1`, a **1-share S164 probe** submitted 2026-08-07 and canceled
-0.7 s later with no `Fill` node. It has fired **12 times, once per run, since 2026-08-08**, and it
-cannot stop: `_already_dropped` reads `fill.props["drop_reason"]`, so the sweep's only memory lives on
-a node that does not exist. 🪤 **The artifact cannot be torn down** — the order is terminal and
-immutable at Alpaca. Packaged as
-**[S181](sprints/sprint-181-an-untracked-order-is-reported-once.md)** (work-queue item 23).
-**Deferred, not hidden:** recurring stop-identity mismatch Faults are real warning-level drop-sweep
-evidence and need their own execution fix (item 20).
 
 ## Next
 

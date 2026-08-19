@@ -8,7 +8,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-116 - The veto becomes binding by arithmetic, not by a switch - status: DECIDED (2026-08-19)
+## DL-116 - The veto becomes binding by arithmetic, not by a switch - status: DECIDED (2026-08-19), AMENDED same day (half the diagnosis was wrong)
 
 **Problem.** `sched-2026-08-19` submitted **all 9** PM-approved orders with
 `deliberation_status=proceeded_unvetoed` at 07:02:17-22; the `DeliberationRun` landed **07:03:33**,
@@ -44,6 +44,34 @@ pushes back against the grace: three slow calls at 120 s instead of failing at 6
 (~1650 s), and `deliberation_grace_seconds` is capped `le=3600`, so this buys headroom - it does not
 remove the constraint. **S172 is still the fix**; this is the mitigation that makes a clean run
 possible today.
+
+**AMENDMENT, 2026-08-19, after `verify-2026-08-19-clean`. The timeout half of the diagnosis above
+is wrong.** Raising the grace worked exactly as predicted: the debate finished inside 1800 s and
+`deliberation_status` came back **`applied_failed_open`**, not `proceeded_unvetoed` — the veto bound
+for the first time, 6 of 9 orders blocked, **3 submitted instead of 9**.
+
+But fail-opens went **up**, 2 -> 3, and coverage **down**, 0.778 -> 0.667. The real
+`failed_open_reason` is not a timeout at all:
+
+```text
+RuntimeError: Error code: 429 - {'error': {'message': 'You have no credits remaining.
+Add credits to continue using the API at https://platform.openai.com/...'}}
+```
+
+🪤 **The 60 s ceiling was a coincidence, and I read it as a cause.** The latency tail (65.3 / 59.3 /
+58.2 s) sat right at the configured ceiling, which made timeout the obvious story; the calls were in
+fact being *refused*. Probed directly: OpenAI **HTTP 429 no credits**, Anthropic **HTTP 400 usage
+limit, access returns 2026-09-01**. **The deliberator has no working LLM provider**, so no tunable
+produces a clean run and none of this was ever a latency problem.
+
+**The timeout raise stays**, but on different evidence than it was made on: `verify-2026-08-19-clean`
+logged calls at **75.4 s and 61.9 s**, so a 60 s ceiling would genuinely have cut two live calls. It
+is defensible on its own; it simply was not the fix for this.
+
+🚨 **Standing lesson, third instance of the same shape** (after the `record_deploy` SHA and the
+module-size counts): a number that *correlates* with the failure boundary was taken as the cause
+without reading the error text that was sitting in the graph the whole time. Read the reason field
+first, then the metrics.
 
 **Rejected routes.**
 

@@ -8,6 +8,52 @@ and is marked CLOSED here.
 
 ---
 
+## DL-119 - The veto rejects 73% of approved orders, and it keeps citing one missing gate - status: MEASURED (2026-08-20)
+
+**What changed.** DL-116 raised the grace so the veto actually binds. Four real runs later the
+question is no longer *"does the veto work"* but *"can the system still trade"*.
+
+**Measured across the four real binding runs** (Codex's synthetic S172 test runs are excluded - they
+were 1-share fixtures, not trading decisions):
+
+| Run | PM-approved | Vetoed | Submitted |
+| --- | --- | --- | --- |
+| `verify-2026-08-19-clean` | 9 | 6 | 3 (all fail-opens, never reviewed) |
+| `verify-2026-08-19-clean-2` | 9 | 6 | 3 |
+| `verify-2026-08-20-opus` | 4 | 3 | 1 |
+| `verify-2026-08-20-s182-a` | 4 | **4** | **0** |
+| **total** | **26** | **19** | **7** |
+
+**73 % vetoed**, and 2026-08-20 produced the first run that approved four orders and traded none.
+Only **2** of the 7 submitted ever filled (MO, CSCO).
+
+**The rejections are not noise, and they are not varied.** Across four consecutive nights the same
+complaint dominates: the PM has no issuer or correlation dimension. On the clean run **4 of 6**
+vetoes were this. On 2026-08-20, AMZN: *"the sector gates are label-based counts with no
+name-correlation penalty, so 'Retail' lets AMZN pass at 1 name while the book already carries
+correlated mega-cap tech beta (AAPL, NVDA, AMD, CSCO, NFLX, PYPL)"*.
+
+**Reading.** 🚨 **The veto rate is a measurement of work-queue item 18's cost, not a veto problem.**
+The PM keeps producing orders the deliberator keeps rejecting for a structural reason the PM cannot
+see, because it has no correlation or issuer view of its own book. That reframes item 18 from
+"highest-value open item" to **the binding constraint on the system trading at all**.
+
+**Explicitly rejected: soften the veto.** Lowering the bar, or returning the grace to 900 so it
+expires again, would restore throughput by making the objections stop binding rather than stop being
+true. That is DL-104's advisory posture reintroduced by the back door, and every objection above
+would still be correct. **Fix the PM, not the referee.**
+
+🪤 **A number I published and had to scope down.** I first quoted this as 76 % from three runs; that
+tally silently included Codex's synthetic 13-order S172 fixtures. Excluding them and adding the
+fourth real run gives 73 % over 26 orders. Same conclusion, honest denominator.
+
+**Not yet decided:** whether a 73 % veto rate is *correct behaviour for a book this concentrated* -
+22 positions, heavily mega-cap tech - or evidence the deliberator over-weights correlation. Item 18
+will answer it: once the PM aggregates exposure itself, the orders it emits should stop attracting
+this objection, and any residue is the deliberator's own bias.
+
+---
+
 ## DL-118 - S182 protects freshly filled entries from Fill lineage, not Position writes - status: DECIDED (2026-08-20)
 
 **Question.** A broker holding can appear from a buy Fill before the monitor has written its

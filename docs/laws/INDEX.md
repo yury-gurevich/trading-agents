@@ -40,7 +40,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | provider | ✅ LOCKED v1 (S69) | 16 / 62 | S156 citation check; counters are clauses proven / clauses declared — 22 law clauses still have no row (S157 warn-only backlog) |
 | analyst | ✅ LOCKED **v1.1** (S152) | 23 / 46 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
 | scanner | ✅ LOCKED v1 (S70) | 16 / 39 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
-| portfolio_manager | ✅ LOCKED v1 (S70) | 25 / 44 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
+| portfolio_manager | ✅ LOCKED v1 (S70), amended v1.3 | 25 / 47 | Denominator grew by the v1.3 amendment (ADR-0023): three new clauses, all ⬜ until a test cites them — 12 law clauses still have no row (S157 warn-only backlog) |
 | deliberator | ✅ LOCKED v1 (S153) | 5 / 48 | S158 made the first four clauses green; S167 added `DLIB-OBS-03` proof for queryable fail-open causes |
 | execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S164 proved broker stop dependency exercise and cancelled-stop retry (`EXEC-DEP-04`, `EXEC-OBS-03`); counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |

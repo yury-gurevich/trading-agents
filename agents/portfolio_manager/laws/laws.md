@@ -85,11 +85,30 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   gate. Partial gate bypasses are not possible — all gates are applied before approval.
 - **PM-NEV-05** — Never outputs fractional shares. `quantity` is always a whole-number
   integer ≥ `min_order_quantity` (default 1). Fractional math is truncated, not rounded.
-- **PM-NEV-06** — Never opens more than `max_names_per_sector` distinct names in any one
-  sector (GICS level 1), independent of the dollar cap. A basket of small correlated names is
-  still one bet; the count cap is the name-correlation penalty the dollar-weight cap misses
-  (deliberation firewall finding, EXP-004..006). `0` disables the gate; already-held names in
-  the sector count toward the limit.
+- **PM-NEV-06** — Never opens more than `max_names_per_sector` distinct **issuers** in any one
+  sector label, independent of the dollar cap. The label is whatever classification the sector
+  source supplies; it is **not** guaranteed to be GICS level 1, and the cap must be set for the
+  granularity actually received — finer labels scatter one bet across more buckets and make a fixed
+  count cap weaker, not stronger. This is a **label-bucket cap, not the correlation penalty**:
+  correlation is measured, not labelled, and is enforced by `PM-NEV-08`. `0` disables the gate;
+  already-held issuers in the label count toward the limit.
+- **PM-NEV-07** — Never counts two share classes of one issuer as two names or two exposures.
+  Every concentration gate — position count, sector-label count, sector weight, correlated-cluster
+  weight — aggregates by issuer key before it counts or weighs. The issuer key comes from the
+  trading pack's issuer map; a ticker absent from the map is its own issuer, which is the correct
+  default for a single-class name and is **not** a not-evaluated outcome. The map's completeness is
+  a pack-data concern, not an agent one.
+- **PM-NEV-08** — Never approves an order that would push the weight of one **correlated cluster**
+  above `max_correlated_cluster_pct`. A cluster is the candidate issuer plus every held issuer whose
+  pairwise return correlation with it, over `correlation_lookback_days`, is at least
+  `correlation_threshold`. Correlation is computed from bars the run already carries; the PM never
+  fetches market data to obtain it (`PM-NEV-02`). This clause is the correlation penalty; the
+  label-bucket count of `PM-NEV-06` is not.
+- **PM-NEV-09** — Never records a concentration gate it could not evaluate as passed. When the
+  sector label is missing, or fewer than `min_correlation_bars` overlapping bars exist for a pair,
+  the gate emits an explicit **not-evaluated** outcome naming the missing input. An absent outcome
+  and a passing outcome are never the same value. Every not-evaluated outcome appears in
+  `gate_report` (`PM-OBS-01`) so a reader can tell a gate that passed from a gate that never ran.
 
 ---
 
@@ -150,10 +169,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   max). Never a `float`. This prevents rounding errors in downstream sizing math.
 - **PM-TYP-02** — `OrderIntent.quantity` is a positive `int ≥ 1`; `stop_pct` and `target_pct`
   are `float ∈ [0.0, 1.0]`; stop is always strictly less than target.
-- **PM-TYP-03** — `OrderIntentSet`, `OrderIntent`, `RejectedOrder`, and `GateOutcome`
-  match `contracts/portfolio_manager.py` exactly; `CONTRACT.version` is the
-  authoritative version string. `OrderIntent.gate_report` is additive and defaults
-  to empty for older payloads.
+- **PM-TYP-03** — The PM's payload types carry, at minimum, the fields its own clauses require.
+  They are *defined* in `contracts/portfolio_manager.py`, but **the clause, not the file, is the
+  authority on what must be present** — "matches the file" is unfalsifiable, because the file would
+  then be both the claim and the oracle. `OrderIntentSet` carries `run_id`, `approved`, `rejected`,
+  `portfolio_state_snapshot`, `explanation`, `provenance` (`PM-OUT-01`). `OrderIntent` carries
+  `ticker`, `action`, `quantity`, `est_price`, `stop_pct`, `target_pct`, `pm_run_id`, `provenance`,
+  and `gate_report` (`PM-OUT-02`). `RejectedOrder` carries the originating recommendation, a
+  `reason`, and `gate_report` (`PM-OUT-03`). `GateOutcome` carries the gate name, the value, the
+  threshold, the detail, and an outcome that can express **passed, failed, and not-evaluated as
+  three distinct values** (`PM-NEV-09`) — a two-state boolean cannot satisfy this clause.
+  `CONTRACT.version` is the authoritative version string; `gate_report` is additive and defaults to
+  empty for older payloads.
 
 ---
 
@@ -239,8 +266,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `min_order_quantity` | `1` | `int ≥ 1` (shares) | YES | Minimum order size; prevents sub-1-share intents |
 | `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
 | `min_reward_risk_ratio` | `1.5` | `float ≥ 0.0, ≤ 20.0` | YES | Minimum R/R ratio; target pct ÷ stop pct must exceed this or reject |
-| `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum portfolio weight in any single sector (GICS level 1) |
-| `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct names per sector (GICS-1); name-correlation cap the dollar cap misses; 0 disables |
+| `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum portfolio weight in any single sector label, counted over held **and** in-run issuers |
+| `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
+| `correlation_lookback_days` | `120` | `int ≥ 20, ≤ 250` (days) | YES | Bars used for the pairwise return correlation — long enough to be stable, short enough to track the current regime; runs already carry ~200 bars, so this costs no fetch |
+| `correlation_threshold` | `0.70` | `float ≥ 0.0, ≤ 1.0` | YES | Pairwise return correlation at or above which two issuers are treated as one bet |
+| `max_correlated_cluster_pct` | `0.25` | `float ≥ 0.0, ≤ 1.0` | YES | Max portfolio weight in one correlated cluster; tighter than `max_sector_pct` because a measured cluster is a truer bet boundary than a label |
+| `min_correlation_bars` | `60` | `int ≥ 20, ≤ 250` (bars) | YES | Minimum overlapping bars for a usable estimate; below it the pair is **not evaluated** (`PM-NEV-09`), never silently passed |
+| `issuer_map` | pack data | `mapping ticker → issuer key` | NO (pack data) | Owned by the trading pack (ADR-0012), not the agent; collapses share classes of one issuer to one key. Absence means single-class, which is the common case |
 
 ---
 
@@ -248,7 +280,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | PRD / code says | Decision needed |
 | --- | --- | --- | --- |
-| — | — | — | No divergences at DRAFT v0 |
+| D-PM-1 | `PM-NEV-06` counts distinct **issuers**; `PM-NEV-07` aggregates share classes. | No issuer mapping exists anywhere in the repo; GOOG and GOOGL consume two of three slots as if they were two independent bets. | **DECIDED (ADR-0023)** — issuer map ships as trading-pack data. Central: DRIFT-042. |
+| D-PM-2 | `PM-NEV-08` enforces a measured correlation cap against the held book. | The PM receives tickers, quantities, sector labels, cash and portfolio value — and nothing else. `beta` is computed by the scanner and never forwarded. There is no correlation input of any kind. | **DECIDED (ADR-0023)** — computed from the ~200 bars each run already carries; no new feed. Central: DRIFT-043. |
+| D-PM-3 | `PM-NEV-09` forbids recording an unevaluable gate as passed. | `concentration.py:55-57` returns an empty outcome tuple when a ticker has no sector label, and an empty tuple is indistinguishable from a passed gate. | **DECIDED (ADR-0023)** — explicit not-evaluated outcome. Central: DRIFT-044. |
+| D-PM-4 | `max_sector_pct` caps portfolio weight in a sector label. | `SectorBook.__init__` seeds `_names` from held positions but never `_deployed`, so the dollar cap sees only the current batch. Masked today because the name count binds first. | **DECIDED (ADR-0023)** — must land with the name-count fix or the dollar cap silently becomes the weak gate. Central: DRIFT-045. |
+| D-PM-5 | `PM-TYP-03` requires `GateOutcome` to express passed, failed and not-evaluated as three distinct values. | `contracts/portfolio_manager.py` declares `passed: bool` — two states. The clause is unexpressible in the contract that carries its evidence, and no test fails. | **DECIDED (DL-121)** — contract gains a third state in the same sprint as `PM-NEV-09`. Central: DRIFT-046. |
 
 ---
 
@@ -264,3 +300,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   outcomes for deliberation evidence completeness (DL-41 / S114). Cited tests:
   `test_portfolio_manager_audit.py::test_order_intent_emits_pm_gate_report` and
   `tests/test_veto_context.py::test_context_completeness_renders_every_enforced_gate_with_outcome`.
+- v1.3 — amendment (ADR-0023 / DL-121, 2026-08-20). **Two claims in `PM-NEV-06` were measured
+  false and are withdrawn**: the labels are not GICS level 1 (the source returns 30
+  industry-granularity labels, and 11 was assumed), and the count cap is **not** the
+  name-correlation penalty (the mega-cap cluster scatters across five labels, so the cap admits
+  3 × 5 = 15 correlated names before firing once). The duty those claims asserted does not
+  disappear — it moves to new clauses that start ⬜ unproven, so the amendment adds asserted truth
+  rather than removing it. Added `PM-NEV-07` (aggregate by issuer before counting), `PM-NEV-08`
+  (measured correlated-cluster cap — this is the correlation penalty), `PM-NEV-09` (a gate that
+  could not evaluate says so, never a silent pass). **`PM-TYP-03` rewritten** from *"matches
+  `contracts/portfolio_manager.py` exactly"* — unfalsifiable, since the file was both claim and
+  oracle — to an enumeration of the fields each payload must carry, including a `GateOutcome`
+  able to express **not-evaluated** as a third value. New PARAM rows:
+  `correlation_lookback_days`, `correlation_threshold`, `max_correlated_cluster_pct`,
+  `min_correlation_bars`, `issuer_map` (NO — pack data). All new clauses are ⬜ until a functional
+  test cites them; no green was moved by this amendment.

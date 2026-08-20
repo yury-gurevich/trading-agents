@@ -8,6 +8,92 @@ and is marked CLOSED here.
 
 ---
 
+## DL-121 - The contracts leg of laws/contracts/tests was never load-bearing - status: DECIDED (2026-08-20)
+
+**The question (operator, mid-amendment).** *"CONTRACTS should reflect LAWS and tested by TESTS, but
+laws are central to my picture of it."* Raised while the PM law-amendment for ADR-0023 was being
+drafted. It is right, and the measurement below shows which leg of that triangle is missing.
+
+**Measured, 2026-08-20.**
+
+- `laws -> test-plan -> tests` is real and CI-enforced. `scripts/check_law_coverage.py` fails the
+  build when a green row cites a test that does not exist or whose docstring does not name the
+  clause. 686 clauses across 14 books are bound this way.
+- **Contracts are outside that loop.** `grep` for a clause ID across all 24 files in `contracts/`
+  returns **zero**. The only link is prose running the other way: **16 clauses** say a variant of
+  *"X matches `contracts/<agent>.py` exactly"*.
+- **That phrasing is unfalsifiable.** `PM-TYP-03` asserts the payloads match
+  `contracts/portfolio_manager.py` exactly; the test proving it imports that contract and round-trips
+  it. **The contract is both the claim and the oracle** - change the contract and the test still
+  passes. S156 half-caught this and demoted the wide row to gray, leaving a narrow deserialisation
+  slice green.
+- Contrast `PM-OUT-02`, which enumerates `ticker`, `action`, `quantity >= 1`, `est_price` Decimal,
+  `stop_pct`, `target_pct`, `pm_run_id`, `provenance`. That clause **constrains** the contract.
+  `PM-TYP-03` **delegates** to it.
+
+**So the defect is not "contracts drift from laws". It is "the laws are vague enough that any
+contract satisfies them".**
+
+**The instance that proves it, found while drafting the amendment.** `PM-NEV-09` (new, this
+amendment) requires that a concentration gate which cannot evaluate says so and never silently
+passes. The contract that must carry that evidence is `contracts/portfolio_manager.py:18-23`:
+
+```python
+class GateOutcome(_Frozen):
+    name: str
+    value: float
+    threshold: float
+    passed: bool      # two states
+    detail: str = ""
+```
+
+**A boolean has no third state.** The clause is *unexpressible* in the contract that carries its
+evidence, and nothing in the repo says so: no test fails, no gate goes red. It was found only by
+opening the file by hand.
+
+🪤 **The scanner has the identical defect in a different encoding.** `FilterVerdict` carries
+`filter_fired` plus a `passed` tuple, so *"the earnings gate did not run"* and *"the earnings gate
+passed"* are the same bytes. **That is the bug S183 is out fixing right now** - the same
+contract-expressiveness hole, in a second agent, that neither law book prevented.
+
+**The sharpening.** A law is an assertion that can be **false** (`PM-NEV-06` claimed GICS level 1 and
+was measurably wrong). A contract is a **definition**, and a definition cannot be falsified. So
+"contracts reflect laws" cannot mean mechanical derivation. It means two checkable properties:
+
+1. Every clause asserting a payload shape **enumerates the fields it requires** - never "matches the
+   file exactly".
+2. Every field in a contract is **traceable to a clause that requires it**. An unclaimed field is
+   either dead, or an undocumented law.
+
+**Decision - fold the first instance into work already in flight, do not open a programme.** The PM
+amendment needs `GateOutcome` to gain a third state regardless. `PM-TYP-03` is therefore rewritten
+from *"matches the file"* to an enumeration that names the required fields and requires
+`GateOutcome` to be able to express *not evaluated*. One clause, one contract, real cost measured -
+then decide whether to sweep the other 15.
+
+**Cost, stated up front.** Rewriting a tautological `TYP` clause into an enumeration will demote
+greens; apparent coverage drops. That is the trade conventions 7a already accepted: *"when the two
+documents disagree, `laws.md` wins - even though that lowers apparent coverage."*
+
+**Rejected routes.**
+
+- *A fourth document layer mapping contracts to clauses* - rejected. The mapping belongs **inside**
+  the clause text, where it is already read during every amendment. A separate map is one more
+  surface to drift, and the operator has asked for less tracking surface, not more.
+- *Sweep all 16 `TYP` clauses now* - rejected as sequencing, not as an idea. The cost of one honest
+  enumeration is unmeasured; measuring it on PM first is cheap and the sweep is unblocked either way.
+- *Generate contracts from the law text* - rejected. The law is prose written in ideal-design mode
+  (conventions 6); generating types from it would invert the authoring direction and make the law
+  answerable to what the generator can parse.
+- *Leave it and rely on review* - rejected. Two agents already carry the same silent-pass defect,
+  and review is what missed both.
+
+**Follow-through.** Contract enumeration for the remaining 15 `TYP` clauses is a work-queue item, not
+a sprint yet. Related: ADR-0023 (the amendment that surfaced it), S183 (the scanner half of the same
+defect), conventions 7a (the coverage-vs-truth trade).
+
+---
+
 ## DL-120 - Tunable sweep: the headline finding was wrong, and the law book said so - status: RETRACTED then CORRECTED (2026-08-20)
 
 🚨 **RETRACTION, same day, before any code was written.** The original headline of this entry was
@@ -3854,6 +3940,7 @@ file existing was not the same as it being referenced. Three layers of the same 
 afternoon, and only the last one was caught by *checking the artifact rather than the status*.
 
 ---
+
 ## DL-68 - The vocabulary guard was undeployable, and its pack was a trailing indicator · status: CLOSED (0.80.00)
 
 S143 shipped the write-time vocabulary guard and closed honestly: `GRAPH_VOCABULARY_PATH` was unset
@@ -3937,6 +4024,7 @@ against what the code *can* do, or it silently rots into a trap that fires on th
 which is, by definition, the path nobody has tested.
 
 ---
+
 ## DL-69 - ruff 0.16 wanted to reformat 36 docs; a dependency bump is not the place · status: CLOSED (0.80.01)
 
 The first monthly batched Dependabot PR under DL-64 (#75: ruff 0.15.22 -> 0.16.0,
@@ -3987,6 +4075,7 @@ scope and let the expansion be argued on its own. If Markdown snippets should be
 its own chore with its own diff - not a side effect of upgrading a linter.
 
 ---
+
 ## DL-70 - Arresting artifact/claim drift: stop asserting presence, start planting violations · status: DECIDED (standing practice; `scripts/gate_selftest.py` 19/19 as of 2026-08-05)
 
 Six entries this month record the same failure (DL-52/54/55, DL-65, DL-66, DL-67, DL-68). It is not

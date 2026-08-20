@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 17:35 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **S182 merged and deployed; deliberator now on `claude-opus-5`. Live proof of S182 waits on the next between-runs fill.**
+**Last updated:** 2026-08-20 20:05 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **PM `laws.md` amended to v1.3 for ADR-0023 — and drafting it exposed that the contracts leg of laws/contracts/tests was never load-bearing ([DL-121](design-log.md)).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,13 +35,11 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Recent (most recent first — detail in each sprint doc)
 
 - **The gate was red for two days over one test line (fix, no bump, 2026-08-17 —
-  [DL-110](design-log.md)).** Four straight `Security Findings` runs failed — three on docs-only
-  commits — on CodeQL `py/mismatched-multiple-assignment` **#177**, the only error-level alert of 76
-  open: a PM test unpacked `SectorBook.outcomes()` into two names, and that call returns `()` when
-  the ticker has no sector. Length now asserted, then indexed. `make ci` **2302 passed / 100.00 %**;
-  #177 reads `fixed`; `GATE PROVEN` for `21a5e81`. 🪤 **A branch cannot clear an alert raised on
-  `main`** — `codeql.yml` runs only there, so the fix branch failed its own gate on the same alert;
-  merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
+  [DL-110](design-log.md)).** Four straight `Security Findings` failures — three on docs-only commits
+  — on CodeQL #177, the only error-level alert of 76: a PM test unpacked `SectorBook.outcomes()` into
+  two names, and that call returns `()` with no sector. `GATE PROVEN` for `21a5e81`. 🪤 **A branch
+  cannot clear an alert raised on `main`** (`codeql.yml` runs only there), and 🪤 **the step prints
+  nothing on failure** — read the report, not the log.
 
 ## Now
 
@@ -54,11 +52,32 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 - **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
   gate-proven at `5bf72c9`, unmerged. Its blocker was the dead LLM provider; Anthropic is live. All
   that remains is the 15-order K=4 measurement.
-- **[ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md) is
-  accepted and needs a law-amendment cycle next**, not a sprint — PM `laws.md` is LOCKED v1 and
-  `PM-NEV-06` changes on two counts (it names GICS level 1, and claims the count cap *is* the
-  correlation penalty). 🪤 Do the law cycle first; S183 just showed what happens when a spec
-  contradicts a locked law mid-build.
+
+**PROVEN RESULT — PM `laws.md` amended to v1.3 for
+[ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md), 2026-08-20.**
+`PM-NEV-06`'s **two measured-false claims are withdrawn** — the labels are not GICS level 1 (30
+industry labels, not 11) and the count cap is **not** the correlation penalty (the AI complex spans
+five labels, so 15 correlated names pass before it fires once). The duty moved rather than
+vanished: `PM-NEV-07` (aggregate by issuer), `PM-NEV-08` (measured correlated-cluster cap),
+`PM-NEV-09` (an unevaluable gate declares itself), five PARAM rows, DRIFT-041..046,
+five local divergence rows. **Success factors, all verified:** `check_law_coverage.py` exits **0**;
+clause IDs **44 → 47**, all `PM-`-prefixed with no leakage into another agent's book; rollups in
+`ledger.md` *and* `INDEX.md` both read **25 / 47** and match the derived count; **no green was
+moved** — every new clause is ⬜ and the two widened clauses kept their narrow green rows with the
+uncovered half named (conventions §7a).
+
+🚨 **The amendment found a hole nothing in the repo could have reported.** Drafting `PM-NEV-09`
+("a gate that could not evaluate says so") ran into `GateOutcome.passed: bool` — **two states, no
+way to say *not evaluated***. The clause is unexpressible in the contract that carries its evidence,
+**and no test fails**, because `PM-TYP-03` only said the payloads *"match `contracts/…` exactly"* —
+the file as both claim and oracle. `PM-TYP-03` is rewritten to enumerate. 🪤 **The scanner has the
+same defect in a different encoding** (`FilterVerdict`: "did not run" and "passed" are the same
+bytes) — **that is the S183 bug**, in a second agent. 15 clauses still say "matches the file"
+([DL-121](design-log.md), queue item 30).
+
+**Next: the item 18 code sprint**, spec'd against `laws.md` v1.3. 🪤 Land DRIFT-045 (the dollar cap
+never sees held positions) **with** the name-count fix, or fixing the count un-masks it and the
+dollar cap silently becomes the weak gate.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet
@@ -72,32 +91,25 @@ via a split into `pm_execution.py`. `make ci` **2331 passed / 100.00 %**; `GATE 
 `2fc0672`; image-only retag (vocabulary pack hash unchanged), 16/16 apps + job on `s182`, scale
 config diffed **identical** to baseline, tunables intact.
 
-🪤 **Two things the verification caught that a glance would not.** The working directory was left on
-Codex's branch, so the first `git merge` reported *"Already up to date"* — it was merging the branch
-into itself and would have pushed nothing. And the post-deploy scale diff showed `minReplicas=1` on
-all 16 — **my own leftover** from the morning's Opus run, never scaled back. Both were found by
-diffing against a recorded baseline rather than by reading the output.
+🪤 **Two traps a glance would miss.** The working directory was left on Codex's branch, so the first
+`git merge` said *"Already up to date"* — merging the branch into itself. And the post-deploy scale
+diff showed `minReplicas=1` on all 16, **my own leftover** from the morning. Both caught by diffing
+against a recorded baseline, not by reading output.
 
-**NOT PROVEN: S182 live.** The defect only appears for a position filled *between* runs, so a
-synthetic fixture cannot exhibit it. MO and CSCO are already protected; proof needs a **new** entry
-to fill. Tonight's 22:30 UTC run is the first on `s182` with Opus and is the natural occasion.
+**NOT PROVEN: S182 live.** The defect needs a position filled *between* runs, so no synthetic fixture
+can exhibit it — proof waits on a **new** entry filling. Opportunistic.
 
-**Test residue cleared, 2026-08-20.** Codex's S172 K=4 attempts left **13 synthetic 1-share orders**
-open (`verify-2026-08-19-s172-k4-15-racefix-*`), queued for today's open — cancelled, book back to 19
-open orders, all protective stops, 0 non-stop. 🪤 **Two earlier attempts already filled**: 1-share
-NFLX at 13:30 on 08-19 from `…-k4-15` and `…-k4-15-clean`, so the book now carries **2 NFLX shares
-created by a test harness**, never vetoed. Still held — selling is a real trade and needs a decision.
-MO and CSCO also filled and are legitimate: they are the clean run's debated, upheld orders the
-operator chose to let trade.
+**Test residue cleared, 2026-08-20.** Codex's 13 synthetic 1-share S172 orders cancelled; book back
+to all-protective-stops, 0 non-stop. 🪤 **Two earlier attempts already filled** — the book carries
+**2 NFLX shares created by a test harness**, never vetoed, still held: selling is a real trade and
+needs a decision. MO and CSCO also filled and are legitimate (the clean run's upheld orders).
 
-**S172 handed back unmerged, 2026-08-20 — correctly.** Codex built bounded `debate_concurrency=4`,
-deterministic PM-order reassembly, per-order fail-open isolation, a shared correlated reply inbox
-and peer `maxReplicas=4`. Branch tip `5bf72c9`, `make ci` **2336 passed / 6 skipped / 100.00 %**,
-and **`GATE PROVEN`** (CI, Security Findings, Build images) — I verified all three independently.
-**Not merged, and that is the right call:** the required live K=4 measurement could not run. The
-synthetic 15-order attempt wrote `real_debate_count=0`, `failed_open_count=15`, `LLMCall=0` on an
-OpenAI `429 credit_balance_exhausted`. 🟢 Service Bus stayed clean before and after (0 active /
-0 dead-letter), so S171's correlation guarantee is not implicated.
+**S172 handed back unmerged, 2026-08-20 — correctly.** Bounded `debate_concurrency=4`, deterministic
+PM-order reassembly, per-order fail-open isolation, shared correlated reply inbox, peer
+`maxReplicas=4`. Tip `5bf72c9`, `make ci` **2336 / 100.00 %**, **`GATE PROVEN`** on all three
+workflows (verified independently). Unmerged because the live K=4 measurement could not run — the
+synthetic attempt wrote `LLMCall=0` on an OpenAI `429`. 🟢 Service Bus clean throughout, so S171's
+correlation guarantee is not implicated. **Now unblocked** (queue item 3).
 
 **PROVEN RESULT — the veto binds, first time (DL-116).** Grace 900 → 1800 and per-call timeout
 60 → 120, in the tunables pack as well as live env (DL-100). `verify-2026-08-19-clean` returned

@@ -74,14 +74,13 @@ image retry — it carries no pack tunables, so only the image differed. 🪤 Th
 to run off-window was **restored to 0 and re-diffed**; that leftover was the S182 deploy's defect.
 
 🚨 **A test run was abandoned, and the first teardown reported false success** ([DL-124](design-log.md)).
-`verify-2026-08-20-s184-a` read `MarketData=0` at 14:05, which was taken for *"nothing happened"* when it
-meant *"nothing yet"* — the paced ingest was in flight. The provider finished at ~14:09 and the scanner
+`verify-2026-08-20-s184-a` read `MarketData=0` at 14:05 — taken for *"nothing happened"* when it meant
+*"nothing yet"*: the paced ingest was in flight. The provider finished at ~14:09 and the scanner
 consumed it (99 evaluated, **23 candidates**) whose `AnalystRun` was missing, i.e. **live pending work that
 would have run a second cascade tonight**. 🪤 The teardown could not see it: `ScanRun` is keyed
-`scanner-run-<uuid>` with `run_id=None`, and **the verification query used the same run-id filter**, so it
+`scanner-run-<uuid>` with `run_id=None`, and **the verification query used the same filter**, so it
 confirmed the teardown instead of testing it. A second pass on the uuid removed **24 nodes + 25 edges**.
-Now proven with the pollers' own predicates: **provider 0 / scanner 0 / analyst 0 / pm 0 pending**, 22
-positions intact. 🪤 A long-running watcher caught this after the point check said clean.
+Now proven with the pollers' own predicates: **provider 0 / scanner 0 / analyst 0 / pm 0 pending**, 22 positions intact. 🪤 A watcher caught this after the point check said clean.
 
 🚨 **The measurement is tonight's 22:30 UTC scheduled run — unattended, on the production path**, which
 is a better test than the one abandoned: no operator in the loop is the actual bar.

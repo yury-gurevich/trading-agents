@@ -45,6 +45,21 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+**In flight, 2026-08-20 evening.**
+- **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — the scanner
+  attestation work. 🪤 **The spec was corrected mid-build** (`d859746`): it had told Codex to register
+  `stop_target_mode` as a `tunable()`, which the locked analyst law forbids on purpose
+  (`NO (mode selector)`, ADR-0013). Codex was right to stop; the law was right; **my spec was wrong**.
+  Confirm it picked up the correction before accepting a handback.
+- **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
+  gate-proven at `5bf72c9`, unmerged. Its blocker was the dead LLM provider; Anthropic is live. All
+  that remains is the 15-order K=4 measurement.
+- **[ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md) is
+  accepted and needs a law-amendment cycle next**, not a sprint — PM `laws.md` is LOCKED v1 and
+  `PM-NEV-06` changes on two counts (it names GICS level 1, and claims the count cap *is* the
+  correlation penalty). 🪤 Do the law cycle first; S183 just showed what happens when a spec
+  contradicts a locked law mid-build.
+
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet
 written the `Position`. 🟢 **Monitor keeps ownership** — `filled_entry_stops.py:73` only *reads*
@@ -83,25 +98,6 @@ and **`GATE PROVEN`** (CI, Security Findings, Build images) — I verified all t
 synthetic 15-order attempt wrote `real_debate_count=0`, `failed_open_count=15`, `LLMCall=0` on an
 OpenAI `429 credit_balance_exhausted`. 🟢 Service Bus stayed clean before and after (0 active /
 0 dead-letter), so S171's correlation guarantee is not implicated.
-
-**PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
-OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:
-**8/8 stages · `real_debate_count` 9 of 9 (`debate_coverage` = 1.0) · `failed_open_count` **0** ·
-`deliberation_status` = **`applied`**, plain — not `applied_failed_open`, not `proceeded_unvetoed` ·
-`ACCEPTANCE UNPROVEN` with **no breach lines**, the only missing element being the 13:30 UTC open.**
-Verdicts: **6 vetoed** (AMZN, GOOGL, GOOG, XOM, INTC, NEE), **3 upheld and submitted** (MO, CSCO,
-MDLZ) — every one genuinely debated. 45 `LLMCall` rows = exactly 9 x 5. Cost **$0.46**.
-🪤 **The timeout raise was load-bearing after all, for a different reason than it was made for:**
-this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling would have cut.
-DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
-🚨 **The prediction made here came true within a day** — "a second credit exhaustion stops the fleet again". It did, on 2026-08-20. **Resolved by moving provider, not by topping up**: the operator raised the Anthropic spend cap and the deliberator now runs `claude-opus-5`. **OpenAI remains at zero credits**, so there is still no fallback in the other direction. Kept as a **standing operational note** in the work queue rather than a work item, because it is an outage condition, not something to build.
-
-**PROVEN RESULT — S181 closed, fully proven on the fleet.** Sweep #1 (06:37:57) wrote the ack and one
-fault; **sweep #2 (07:45:33) wrote neither** — `UntrackedOpenOrder` **13 → 13**, acks **1 → 1**.
-Twelve consecutive runs had each raised that fault. Retired with **one targeted** `FaultResolution`
-(`Fault` 6178 → 6178 unchanged, resolutions 2 → 3, live incidents 5 → 4, all statuses still
-`pending`). 🪤 Deliberately **not** the blanket sweep — the other four live incidents are the LLM
-outage and retiring them would mark a live failure resolved.
 
 **PROVEN RESULT — the veto binds, first time (DL-116).** Grace 900 → 1800 and per-call timeout
 60 → 120, in the tunables pack as well as live env (DL-100). `verify-2026-08-19-clean` returned

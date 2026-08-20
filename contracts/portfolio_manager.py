@@ -7,7 +7,10 @@ External I/O: none.
 
 from __future__ import annotations
 
-from pydantic import Field
+from enum import StrEnum
+from typing import Any
+
+from pydantic import Field, model_validator
 
 from contracts.analyst import RecommendationSet
 from contracts.common import Action, Explanation, Money, Provenance, Ticker, _Frozen
@@ -15,12 +18,39 @@ from kernel.contract import AgentContract, Capability
 
 
 # ── Outbound payloads ───────────────────────────────────────────────────────
+class GateStatus(StrEnum):
+    """Three-state risk-gate outcome carried in PM evidence."""
+
+    PASSED = "passed"
+    FAILED = "failed"
+    NOT_EVALUATED = "not_evaluated"
+
+
 class GateOutcome(_Frozen):
     name: str
     value: float
     threshold: float
-    passed: bool
+    outcome: GateStatus
     detail: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_historical_passed(cls, data: Any) -> Any:  # noqa: ANN401
+        """Normalize pre-S184 ``passed`` payloads into the tri-state field."""
+        if not isinstance(data, dict) or "outcome" in data or "passed" not in data:
+            return data
+        normalized = dict(data)
+        normalized["outcome"] = (
+            GateStatus.PASSED
+            if _truthy_passed(normalized["passed"])
+            else GateStatus.FAILED
+        )
+        return normalized
+
+    @property
+    def passed(self) -> bool:
+        """Compatibility view for older tests; serialized evidence uses outcome."""
+        return self.outcome == GateStatus.PASSED
 
 
 class OrderIntent(_Frozen):
@@ -99,3 +129,9 @@ CONTRACT = AgentContract(
         "promote an execution stage (that is execution's gated authority)",
     ),
 )
+
+
+def _truthy_passed(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "passed"}

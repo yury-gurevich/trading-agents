@@ -41,6 +41,7 @@ _RUN_ID = "run-1"
 def _market_data() -> MarketData:
     return MarketData(
         bars=(bar("AAPL", 0, 100.0),),
+        sectors={"AAPL": "Technology"},
         quality=DataQualityTrace(requested=1, returned=1),
         provenance=Provenance(run_id="provider-md", source_agent="provider"),
     )

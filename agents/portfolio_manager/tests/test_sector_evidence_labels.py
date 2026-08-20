@@ -100,4 +100,4 @@ def test_sector_deployment_detail_names_batch_scope_and_unit() -> None:
     assert "deployed=" not in sector_pct.detail
     assert "order_cost_usd=786.04" in sector_pct.detail
     assert "portfolio_value_usd=102777.00" in sector_pct.detail
-    assert "existing_sector_names=2" in sector_names.detail
+    assert "existing_sector_issuers=2" in sector_names.detail

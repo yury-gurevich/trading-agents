@@ -20,6 +20,9 @@ _REASON_GATE = {
     "reward_risk_below_min": "reward_risk",
     "sector_name_count": "max_names_per_sector",
     "sector_concentration": "max_sector_pct",
+    "sector_not_evaluated": "max_sector_pct",
+    "correlated_cluster_concentration": "correlated_cluster_pct",
+    "correlation_not_evaluated": "correlated_cluster_pct",
 }
 
 
@@ -36,7 +39,7 @@ def _secondary_failure_suffix(rejection: RejectedOrder) -> str:
     failed = tuple(
         outcome.name
         for outcome in rejection.gate_report
-        if not outcome.passed and outcome.name != primary_gate
+        if outcome.outcome != "passed" and outcome.name != primary_gate
     )
     if not failed:
         return ""

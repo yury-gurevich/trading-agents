@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 21:10 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **PM `laws.md` amended to v1.3 for ADR-0023 — and drafting it exposed that the contracts leg of laws/contracts/tests was never load-bearing ([DL-121](design-log.md)).**
+**Last updated:** 2026-08-20 22:15 AEST · **Version:** 0.91.00 candidate (fleet still `s182` / `0.90.16`) · **S184 built locally on `sprint-184-one-issuer-is-one-bet`: issuer aggregation, measured correlation, and explicit not-evaluated PM gates.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -44,6 +44,20 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 **In flight, 2026-08-20 evening.**
+- **PROVEN RESULT — S184 built locally on `sprint-184-one-issuer-is-one-bet`.** PM now aggregates
+  concentration by issuer (`GOOG` + `GOOGL` as Alphabet), rejects measured correlated clusters
+  against the held book, emits `not_evaluated` for missing sector labels and short correlation
+  history, counts held position dollars in `max_sector_pct`, and carries `GateOutcome.outcome` as
+  `passed | failed | not_evaluated` while accepting legacy `passed` payloads. Local guard proof:
+  the planted pre-implementation run
+  `uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`
+  failed 5/5; final `make ci` redirected to `.tmp\make-ci-s184-final.log` exited 0 with
+  **2360 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets clean. Before/after:
+  the same `GOOG`/`AMZN` set changed from both approved to `GOOG:sizing` and
+  `AMZN:correlated_cluster_concentration`; provider calls for correlation added **0** held-name
+  requests. Law rows/drift/counters are reconciled (`PM 28 / 47`; DRIFT-042..046 corrected).
+  **Remote branch gate remains post-push proof:** run `make gate-ran` from this worktree after the
+  final commit is pushed and compare its printed SHA to `git rev-parse HEAD` before merge.
 - **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
   attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as a
   `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was right.**

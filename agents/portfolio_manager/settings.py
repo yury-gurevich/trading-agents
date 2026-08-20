@@ -85,11 +85,48 @@ class PortfolioManagerSettings(AgentSettings):
     max_names_per_sector: int = tunable(
         3,
         why=(
-            "Cap the NUMBER of names held in any one sector — the name-correlation "
-            "penalty the dollar cap misses (small correlated names are still one bet; "
-            "EXP-004..006). 0 disables the gate."
+            "Cap the NUMBER of issuers held in any one sector label; this is a "
+            "label-bucket cap, while measured correlation is enforced separately."
         ),
         ge=0,
         le=500,
         unit="positions",
+    )
+    correlation_lookback_days: int = tunable(
+        120,
+        why=(
+            "Bars used for pairwise return correlation; runs already carry this "
+            "history, so the gate costs no market-data fetch."
+        ),
+        ge=20,
+        le=250,
+        unit="days",
+    )
+    correlation_threshold: float = tunable(
+        0.70,
+        why=(
+            "Pairwise close-return correlation at or above which two issuers are "
+            "treated as one correlated bet."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
+    max_correlated_cluster_pct: float = tunable(
+        0.25,
+        why=(
+            "Cap one measured correlated issuer cluster as a fraction of portfolio "
+            "value; tighter than sector labels because it measures the bet."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
+    min_correlation_bars: int = tunable(
+        60,
+        why=(
+            "Minimum overlapping close-to-close returns for a usable pairwise "
+            "correlation; below this the gate is not evaluated, never passed."
+        ),
+        ge=20,
+        le=250,
+        unit="bars",
     )

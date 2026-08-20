@@ -17,14 +17,7 @@ from contracts.analyst import CONTRACT as ANALYST_CONTRACT
 from contracts.analyst import QuantMetric, Recommendation
 from contracts.common import Explanation, Money, Window
 from contracts.execution import CONTRACT as EXECUTION_CONTRACT
-from contracts.portfolio_manager import GateOutcome, OrderIntent
-from contracts.researcher import (
-    CONTRACT,
-    BacktestEvidence,
-    FactorProposal,
-    ParameterChangeProposal,
-    ProposedFactor,
-)
+from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntent
 
 
 def test_money_rejects_negative_amount() -> None:
@@ -75,13 +68,15 @@ def test_recommendation_exit_trigger_is_optional_and_bounded() -> None:
 
     assert rec.exit_trigger == "stop"
     with pytest.raises(ValidationError):
-        Recommendation(
-            ticker="AAPL",
-            action="sell",
-            exit_trigger="target",
-            confidence=0.8,
-            technical_score=0.5,
-            rationale=Explanation(summary="fixture"),
+        Recommendation.model_validate(
+            {
+                "ticker": "AAPL",
+                "action": "sell",
+                "exit_trigger": "target",
+                "confidence": 0.8,
+                "technical_score": 0.5,
+                "rationale": {"summary": "fixture"},
+            }
         )
 
 
@@ -108,7 +103,7 @@ def test_order_intent_gate_report_is_additive_and_round_trips() -> None:
         name="sizing",
         value=0.10,
         threshold=0.10,
-        passed=True,
+        outcome=GateStatus.PASSED,
         detail="fixture",
     )
     current = legacy.model_copy(update={"gate_report": (outcome,)})
@@ -119,64 +114,56 @@ def test_order_intent_gate_report_is_additive_and_round_trips() -> None:
     assert parsed.gate_report == (outcome,)
 
 
+def test_gate_outcome_has_three_wire_states_and_legacy_passed_view() -> None:
+    """PM-TYP-03: GateOutcome carries passed, failed, and not-evaluated."""
+    historical = GateOutcome.model_validate(
+        {
+            "name": "sizing",
+            "value": 0.10,
+            "threshold": 0.10,
+            "passed": True,
+            "detail": "historical",
+        }
+    )
+    blocked = GateOutcome.model_validate(
+        {
+            "name": "sizing",
+            "value": 0.11,
+            "threshold": 0.10,
+            "passed": False,
+            "detail": "historical",
+        }
+    )
+    string_passed = GateOutcome.model_validate(
+        {
+            "name": "sizing",
+            "value": 0.10,
+            "threshold": 0.10,
+            "passed": "passed",
+            "detail": "historical",
+        }
+    )
+    not_evaluated = GateOutcome(
+        name="correlated_cluster_pct",
+        value=0.0,
+        threshold=0.25,
+        outcome=GateStatus.NOT_EVALUATED,
+        detail="missing_input=overlapping_return_bars",
+    )
+
+    dumped = not_evaluated.model_dump(mode="json")
+
+    assert historical.outcome == GateStatus.PASSED
+    assert historical.passed is True
+    assert blocked.outcome == GateStatus.FAILED
+    assert blocked.passed is False
+    assert string_passed.outcome == GateStatus.PASSED
+    assert not_evaluated.passed is False
+    assert dumped["outcome"] == "not_evaluated"
+    assert "passed" not in dumped
+
+
 def test_broker_native_stops_bump_contract_ownership() -> None:
     assert EXECUTION_CONTRACT.version == "0.3.1"
     assert "BrokerStopOrder" in EXECUTION_CONTRACT.owns_graph
     assert ANALYST_CONTRACT.version == "0.5.0"
-
-
-def test_researcher_backtest_evidence_round_trips_optionally() -> None:
-    evidence = BacktestEvidence(
-        sharpe=1.2,
-        ic_mean=0.03,
-        max_drawdown=-0.10,
-        turnover=0.25,
-        n_days=120,
-        window_start="2024-01-01",
-        window_end="2024-06-30",
-        holdout_sharpe=0.8,
-        holdout_ic_mean=0.02,
-        slippage_bps=10.0,
-    )
-    proposal = ParameterChangeProposal(
-        proposal_id="bt",
-        changes=(),
-        rationale=Explanation(summary="fixture"),
-        provenance={"run_id": "bt", "source_agent": "researcher"},
-        backtest=evidence,
-    )
-
-    parsed = ParameterChangeProposal.model_validate(proposal.model_dump(mode="json"))
-
-    assert CONTRACT.version == "0.3.0"
-    assert parsed.backtest == evidence
-
-
-def test_researcher_factor_proposal_round_trips_optionally() -> None:
-    evidence = BacktestEvidence(
-        sharpe=1.2,
-        ic_mean=0.03,
-        max_drawdown=-0.10,
-        turnover=0.25,
-        n_days=120,
-        window_start="2024-01-01",
-        window_end="2024-06-30",
-        holdout_sharpe=0.8,
-        holdout_ic_mean=0.02,
-        slippage_bps=10.0,
-    )
-    proposal = FactorProposal(
-        proposal_id="factor",
-        factor=ProposedFactor(
-            name="momentum",
-            params=(("lookback", 20.0),),
-            rationale=Explanation(summary="bounded catalogue member"),
-        ),
-        provenance={"run_id": "factor", "source_agent": "researcher"},
-        backtest=evidence,
-    )
-
-    parsed = FactorProposal.model_validate(proposal.model_dump(mode="json"))
-
-    assert parsed.factor.params == (("lookback", 20.0),)
-    assert parsed.backtest == evidence

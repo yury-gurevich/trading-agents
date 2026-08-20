@@ -16,7 +16,12 @@ from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.volatility import decision_atr_pct
 from contracts.common import Explanation
-from contracts.portfolio_manager import GateOutcome, OrderIntent, RejectedOrder
+from contracts.portfolio_manager import (
+    GateOutcome,
+    GateStatus,
+    OrderIntent,
+    RejectedOrder,
+)
 
 if TYPE_CHECKING:
     from contracts.analyst import Recommendation
@@ -57,7 +62,11 @@ def stop_target_report(
             name="reward_risk",
             value=ratio,
             threshold=min_ratio,
-            passed=stop_pct > 0.0 and ratio >= min_ratio,
+            outcome=(
+                GateStatus.PASSED
+                if stop_pct > 0.0 and ratio >= min_ratio
+                else GateStatus.FAILED
+            ),
             detail=(
                 f"target_pct={target_pct:.4f}; stop_pct={stop_pct:.4f}; "
                 f"source={_stop_target_source(item)}"
@@ -76,7 +85,7 @@ def reward_risk_rejection(
     reason = None
     if report.stop_pct <= 0.0:
         reason = "invalid_stop_loss"
-    elif not report.outcome.passed:
+    elif report.outcome.outcome == GateStatus.FAILED:
         reason = "reward_risk_below_min"
     if reason is None:
         return None

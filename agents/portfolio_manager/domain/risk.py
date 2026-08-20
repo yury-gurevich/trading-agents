@@ -14,14 +14,18 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.domain.concentration import SectorBook
+from agents.portfolio_manager.domain.correlation import CorrelationBook
 from agents.portfolio_manager.domain.order_decision import decide_entry, decide_exit
+from agents.portfolio_manager.domain.sector_book import SectorBook
 from contracts.portfolio_manager import OrderIntent, RejectedOrder
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from agents.portfolio_manager.portfolio import PortfolioState
     from contracts.analyst import Recommendation
     from contracts.common import Money
+    from contracts.provider import OHLCVBar
 
 
 def evaluate_recommendations(
@@ -39,14 +43,35 @@ def evaluate_recommendations(
     sectors: dict[str, str] | None = None,
     max_sector_pct: Decimal = Decimal("1"),
     max_names_per_sector: int = 0,
+    issuer_map: Mapping[str, str] | None = None,
+    correlation_bars: tuple[OHLCVBar, ...] = (),
+    correlation_lookback_days: int = 120,
+    correlation_threshold: float = 0.70,
+    max_correlated_cluster_pct: float | None = None,
+    min_correlation_bars: int = 60,
 ) -> tuple[tuple[OrderIntent, ...], tuple[RejectedOrder, ...]]:
     """Apply sizing and risk checks in deterministic recommendation order."""
     sectors_map = sectors or {}
+    issuer_map = issuer_map or {}
     approved: list[OrderIntent] = []
     rejected: list[RejectedOrder] = []
     reserved_cash = Decimal("0")
-    book = SectorBook(sectors_map, portfolio.positions)
-    open_tickers = set(portfolio.positions)
+    book = SectorBook(
+        sectors_map,
+        portfolio.positions,
+        held_values=portfolio.position_values,
+        issuer_map=issuer_map,
+    )
+    correlations = CorrelationBook(
+        correlation_bars,
+        issuer_map,
+        correlation_lookback_days,
+        correlation_threshold,
+        max_correlated_cluster_pct,
+        min_correlation_bars,
+    )
+    open_tickers = {ticker.upper() for ticker in portfolio.positions}
+    open_issuers = {book.issuer_for(ticker) for ticker in open_tickers}
     for item in _ordered(recommendations):
         price = prices.get(item.ticker)
         rejection = _precheck(item, price, portfolio)
@@ -68,7 +93,8 @@ def evaluate_recommendations(
                 rejected.append(decision)
                 continue
             approved.append(decision)
-            open_tickers.discard(item.ticker)
+            open_tickers.discard(item.ticker.upper())
+            open_issuers = {book.issuer_for(ticker) for ticker in open_tickers}
             book.record_exit(item.ticker)
             continue
         decision, cost = decide_entry(
@@ -77,7 +103,7 @@ def evaluate_recommendations(
             portfolio,
             book,
             reserved_cash=reserved_cash,
-            open_tickers=open_tickers,
+            open_issuers=open_issuers,
             max_position_pct=max_position_pct,
             max_positions=max_positions,
             cash_buffer_pct=cash_buffer_pct,
@@ -87,13 +113,15 @@ def evaluate_recommendations(
             min_reward_risk_ratio=min_reward_risk_ratio,
             max_sector_pct=max_sector_pct,
             max_names_per_sector=max_names_per_sector,
+            correlations=correlations,
         )
         if isinstance(decision, RejectedOrder):
             rejected.append(decision)
             continue
         approved.append(decision)
         reserved_cash += cost
-        open_tickers.add(item.ticker)
+        open_tickers.add(item.ticker.upper())
+        open_issuers.add(book.issuer_for(item.ticker))
         book.record(item, cost)
     return tuple(approved), tuple(rejected)
 

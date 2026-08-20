@@ -107,6 +107,8 @@ def wire_pm(
     bus = InProcessBus()
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
+    if sectors is None:
+        sectors = {item.ticker: "Fixture" for item in source_bars}
     ProviderAgent(
         bus,
         graph=graph,
@@ -133,9 +135,11 @@ def cash_portfolio(
     amount: str,
     positions: dict[str, int] | None = None,
     position_refs: dict[str, str] | None = None,
+    position_values: dict[str, Money] | None = None,
 ) -> PortfolioState:
     return PortfolioState(
         cash=Money(amount=Decimal(amount)),
         positions=positions or {},
         position_refs=position_refs or {},
+        position_values=position_values or {},
     )

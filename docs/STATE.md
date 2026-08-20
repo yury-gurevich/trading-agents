@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 20:05 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **PM `laws.md` amended to v1.3 for ADR-0023 — and drafting it exposed that the contracts leg of laws/contracts/tests was never load-bearing ([DL-121](design-log.md)).**
+**Last updated:** 2026-08-20 21:10 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **PM `laws.md` amended to v1.3 for ADR-0023 — and drafting it exposed that the contracts leg of laws/contracts/tests was never load-bearing ([DL-121](design-log.md)).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -44,14 +44,12 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 **In flight, 2026-08-20 evening.**
-- **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — the scanner
-  attestation work. 🪤 **The spec was corrected mid-build** (`d859746`): it had told Codex to register
-  `stop_target_mode` as a `tunable()`, which the locked analyst law forbids on purpose
-  (`NO (mode selector)`, ADR-0013). Codex was right to stop; the law was right; **my spec was wrong**.
-  Confirm it picked up the correction before accepting a handback.
+- **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
+  attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as a
+  `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was right.**
+  Confirm the correction was picked up before accepting a handback.
 - **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
-  gate-proven at `5bf72c9`, unmerged. Its blocker was the dead LLM provider; Anthropic is live. All
-  that remains is the 15-order K=4 measurement.
+  gate-proven at `5bf72c9`, unmerged; only the 15-order K=4 measurement remains.
 
 **PROVEN RESULT — PM `laws.md` amended to v1.3 for
 [ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md), 2026-08-20.**
@@ -59,25 +57,27 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 industry labels, not 11) and the count cap is **not** the correlation penalty (the AI complex spans
 five labels, so 15 correlated names pass before it fires once). The duty moved rather than
 vanished: `PM-NEV-07` (aggregate by issuer), `PM-NEV-08` (measured correlated-cluster cap),
-`PM-NEV-09` (an unevaluable gate declares itself), five PARAM rows, DRIFT-041..046,
-five local divergence rows. **Success factors, all verified:** `check_law_coverage.py` exits **0**;
+`PM-NEV-09` (an unevaluable gate declares itself), five PARAM rows, DRIFT-041..046. **Verified:** `check_law_coverage.py` exits **0**;
 clause IDs **44 → 47**, all `PM-`-prefixed with no leakage into another agent's book; rollups in
 `ledger.md` *and* `INDEX.md` both read **25 / 47** and match the derived count; **no green was
 moved** — every new clause is ⬜ and the two widened clauses kept their narrow green rows with the
 uncovered half named (conventions §7a).
 
-🚨 **The amendment found a hole nothing in the repo could have reported.** Drafting `PM-NEV-09`
-("a gate that could not evaluate says so") ran into `GateOutcome.passed: bool` — **two states, no
-way to say *not evaluated***. The clause is unexpressible in the contract that carries its evidence,
-**and no test fails**, because `PM-TYP-03` only said the payloads *"match `contracts/…` exactly"* —
-the file as both claim and oracle. `PM-TYP-03` is rewritten to enumerate. 🪤 **The scanner has the
-same defect in a different encoding** (`FilterVerdict`: "did not run" and "passed" are the same
-bytes) — **that is the S183 bug**, in a second agent. 15 clauses still say "matches the file"
-([DL-121](design-log.md), queue item 30).
+🚨 **The amendment found a hole nothing in the repo could have reported.** `PM-NEV-09` ran into
+`GateOutcome.passed: bool` — **two states, no way to say *not evaluated***. The clause is
+unexpressible in the contract carrying its evidence **and no test fails**, because `PM-TYP-03` only
+said the payloads *"match `contracts/…` exactly"* — the file as both claim and oracle. Rewritten to
+enumerate. 🪤 **The scanner has the same defect in another encoding** (`FilterVerdict`: "did not run"
+and "passed" are the same bytes) — **that is the S183 bug**, in a second agent. 15 clauses still say
+"matches the file" ([DL-121](design-log.md), queue item 30).
 
-**Next: the item 18 code sprint**, spec'd against `laws.md` v1.3. 🪤 Land DRIFT-045 (the dollar cap
-never sees held positions) **with** the name-count fix, or fixing the count un-masks it and the
-dollar cap silently becomes the weak gate.
+**Packaged as [S184](sprints/sprint-184-one-issuer-is-one-bet.md), with Codex.** Premises verified on
+the live spine before writing: 🪤 the `Bar` label has **zero** nodes, but the run's
+`MarketData.snapshot` holds **exactly 202 bars × 98 tickers** and **all 22 held names are in it** — so
+correlation costs no API calls, exactly as ADR-0023 assumed. 🪤 The PM's own provider call is 7 days
+of recommendation tickers only and must **not** be widened. `Sector` holds 101 real rows over **30**
+labels plus **5 junk rows parsed from prose**. 🚨 DRIFT-045 is in scope and non-deferrable — fixing
+the name count un-masks a dollar cap that never sees held positions.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet

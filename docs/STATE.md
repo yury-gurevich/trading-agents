@@ -108,17 +108,13 @@ against a recorded baseline, not by reading output.**
 **NOT PROVEN: S182 live.** The defect needs a position filled *between* runs, so no synthetic fixture
 can exhibit it — proof waits on a **new** entry filling. Opportunistic.
 
-**Test residue cleared, 2026-08-20.** Codex's 13 synthetic 1-share S172 orders cancelled; book back
-to all-protective-stops, 0 non-stop. 🪤 **Two earlier attempts already filled** — the book carries
-**2 NFLX shares created by a test harness**, never vetoed, still held: selling is a real trade and
-needs a decision. MO and CSCO also filled and are legitimate (the clean run's upheld orders).
+**Test residue cleared, 2026-08-20.** Codex's 13 synthetic 1-share S172 orders cancelled. 🪤 Two
+earlier attempts already filled, so the book carries **2 NFLX shares created by a test harness**,
+never vetoed, still held — selling is a real trade and needs a decision.
 
 **S172 handed back unmerged, 2026-08-20 — correctly.** Bounded `debate_concurrency=4`, deterministic
-PM-order reassembly, per-order fail-open isolation, shared correlated reply inbox, peer
-`maxReplicas=4`. Tip `5bf72c9`, `make ci` **2336 / 100.00 %**, **`GATE PROVEN`** on all three
-workflows (verified independently). Unmerged because the live K=4 measurement could not run — the
-synthetic attempt wrote `LLMCall=0` on an OpenAI `429`. 🟢 Service Bus clean throughout, so S171's
-correlation guarantee is not implicated. **Now unblocked** (queue item 3).
+PM-order reassembly, per-order fail-open isolation. Tip `5bf72c9`, **`GATE PROVEN`**. Unmerged because
+the live K=4 measurement could not run (OpenAI `429`). **Now unblocked** (queue item 3).
 
 **PROVEN RESULT — the veto binds, first time (DL-116).** Grace 900 → 1800 and per-call timeout
 60 → 120, in the tunables pack as well as live env (DL-100). `verify-2026-08-19-clean` returned

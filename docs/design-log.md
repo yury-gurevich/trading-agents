@@ -8,7 +8,60 @@ and is marked CLOSED here.
 
 ---
 
-## DL-120 - Tunable sweep: 236 of 246 settings fields are declared; the ten that are not include two dormant switches - status: MEASURED (2026-08-20)
+## DL-120 - Tunable sweep: the headline finding was wrong, and the law book said so - status: RETRACTED then CORRECTED (2026-08-20)
+
+🚨 **RETRACTION, same day, before any code was written.** The original headline of this entry was
+*"two agents, two sprints, the same mistake"* - `analyst.stop_target_mode` and
+`execution.order_price_tolerance_mode` both left as bare defaults. **That is exactly backwards.**
+Both are declared in their agents' locked laws, in identical deliberate wording:
+
+```text
+| stop_target_mode            | ... | NO (mode selector) | ADR-0013 champion-challenger selector;
+                                      `flat` is the champion. Not a tunable - it selects which
+                                      formula runs, not a value within one |
+| order_price_tolerance_mode  | ... | NO (mode selector) | ...identical reasoning... |
+```
+
+It is **one convention, applied consistently twice**, recorded through the S149/S152 law-amendment
+cycles and citing ADR-0013. A tunable is *a value within* a formula; a mode selector chooses *which
+formula runs*. Both are documented in their PARAM tables with default, type and rationale, so
+neither was ever "invisible to the operator" as I claimed. The law book carries a whole taxonomy for
+this - `YES`, `NO`, `NO (config)`, `NO (mode selector)`, `NO (secret)`, 16 rows marked NO in some
+form - and my audit was blind to all of it.
+
+🪤 **Root cause of the error, and it is a process failure, not bad luck.** The sweep classified
+fields by *code shape* (`tunable()` sets `description`; a bare default does not) and **never opened
+`agents/<name>/laws/laws.md`, which is the specification.** CLAUDE.md requires exactly that check
+when a law question is involved. Had I read the law first, there would have been no finding to
+retract. **Fourth unmeasured direction claim in two days** - after DL-116's timeout, DL-117's
+sentiment direction, and a veto-rate denominator that silently included synthetic fixtures.
+
+**Corrected finding.** Of the ten suspects, **six are correct as they stand**:
+
+| Field | Law says | Verdict |
+| --- | --- | --- |
+| `analyst.stop_target_mode` | `NO (mode selector)` | **correct as-is** |
+| `execution.order_price_tolerance_mode` | `NO (mode selector)` | **correct as-is** |
+| `curator.predictor_strategy` | `NO` - "training algorithm identity; structural" | **correct as-is** |
+| `curator.schema_ref` | - | version identity, fine |
+| `ProviderFeedSettings.*` (2) | - | duplicates of the provider rows below |
+
+**What survives as real, and it is smaller and differently shaped:**
+
+- 🚨 **`scanner.benchmark_ticker` is genuine law-vs-code drift.** The scanner law
+  (`laws.md:219`) declares it **`YES`** - a tunable - and the code has it as a bare default. The
+  analyst law says `YES` at line 251 and the analyst code *does* declare it. So one agent honours
+  the law and the other does not, for the same parameter.
+- **`provider.alpaca_data_feed` and `provider.ingest_ohlcv_only` appear in no law at all.** The
+  provider `laws.md` is **LOCKED v1 (S69)**, so these were added after the lock and never declared.
+  🪤 Fixing that needs a law cycle, not a code edit.
+- **`execution.stage` is absent from the execution PARAM table**, appearing only inside `EXEC-OUT-01`
+  as an output field. Possibly a genuine gap; **not verified** whether the law intends PARAM to
+  cover it.
+
+**The `execution.stage` severity note below stands** and was measured correctly.
+
+---
 
 **Why swept.** S183 found `stop_target_mode` written as a bare default rather than a `tunable()`,
 hiding S150's fully-built volatility-scaled stop. The question was whether it was alone.

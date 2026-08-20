@@ -58,16 +58,24 @@ path: [`stop_target.py`](../../agents/analyst/domain/stop_target.py) has `resolv
 `_scaled_stop`, `volatility_present` / `volatility_fallback`, with
 `scaled_stop_atr_multiplier=2.0`, `scaled_stop_floor_pct=0.025`, `scaled_stop_ceiling_pct=0.08`.
 
-🚨 **But the switch is not a `tunable()`.**
-[`agents/analyst/settings.py:140`](../../agents/analyst/settings.py#L140):
+🚨 **RETRACTED 2026-08-20, before any code was written — this spec was wrong.** It originally
+claimed `stop_target_mode` should be registered as a `tunable()` because it is a bare default at
+[`analyst/settings.py:140`](../../agents/analyst/settings.py#L140). **The locked analyst law says
+otherwise, deliberately**, and the law is right:
 
-```python
-stop_target_mode: StopTargetMode = "flat"
+```text
+| stop_target_mode | "flat" | Literal["flat","scaled"] — config | NO (mode selector) |
+  ADR-0013 champion–challenger selector; `flat` is the champion.
+  Not a tunable — it selects which formula runs, not a value within one |
 ```
 
-A bare default sitting between two properly registered tunables. It is therefore **invisible to the
-parameter catalogue and to the operator**, and nothing sets it on the fleet. Same shape as S174's
-bare `_DEFAULT_LOOKBACK_DAYS = 60`, which hid a defect for weeks.
+S152's amendment log records the same call in words. The execution law carries **identical** wording
+for `order_price_tolerance_mode`. So "not a tunable" is a first-class, reasoned category here — a
+tunable is *a value within* a formula; a mode selector chooses *which formula runs* — and both
+switches are documented in their PARAM tables with default, type and rationale. **They were never
+invisible.** 🪤 **Do not register it, and do not file law drift against these rows.** The remaining,
+real point stands: **the deliberator cannot see which mode produced the stop**, which is decision 4
+below and needs no law change at all.
 
 ## Scope — and what is deliberately NOT here
 
@@ -116,7 +124,7 @@ ATR was available. `resolve_stop_target` **already computes** `volatility_presen
 | `agents/deliberator/context.py` | 131 | renders `survived_filters` |
 | `contracts/scanner.py` | 95 | `Survivor` / `FilterVerdict` shapes |
 | `agents/analyst/domain/stop_target.py` | 96 | already computes the attestation values |
-| `agents/analyst/settings.py` | — | `stop_target_mode` needs `tunable()` registration |
+| `agents/analyst/settings.py` | — | 🪤 **Do not touch** — `stop_target_mode` is correctly a mode selector, not a tunable |
 
 🟢 **No trade decision changes if this is done right.** Attestation is additive: the same tickers
 survive, the same stops are chosen. **If your diff changes which orders are approved, you have gone
@@ -132,8 +140,9 @@ sailing through. **Say so explicitly if it does.**
    implementing. LAW-06. Take the next free DL number — 🪤 the log has duplicates (two `DL-110`, two
    `DL-111`) and entries are prepended at the top *and* appended at the bottom; check first.
 3. **Implement the scanner attestation** (both `earnings_window` and `max_beta`).
-4. **Register `stop_target_mode` as a `tunable()`** with a `why`, leaving the default **`"flat"`** —
-   this sprint makes it visible, it does not flip it.
+4. **~~Register `stop_target_mode` as a `tunable()`~~ — REMOVED 2026-08-20.** The locked analyst law
+   declares it **`NO (mode selector)`** on purpose (ADR-0013, S152). Registering it would violate the
+   law, and filing drift against the law would be filing drift against a correct rule. **Do neither.**
 5. **Make the stop attest its basis**, reusing `volatility_present` / `volatility_fallback` if they
    already reach the recommendation.
 6. **Check the debate packet actually improves.** The point is that the deliberator stops having to
@@ -147,7 +156,7 @@ sailing through. **Say so explicitly if it does.**
       distinct from one that passed it. Same for `max_beta`.
 - [ ] Decision 2 applied: "no data" and "no upcoming earnings" are distinguishable, or the reason
       they are not is recorded.
-- [ ] `stop_target_mode` is a registered `tunable()`, default unchanged at `"flat"`.
+- [ ] `stop_target_mode` is **left exactly as it is** — not registered, no law drift filed.
 - [ ] The stop's basis (mode + ATR availability) reaches the debate packet.
 - [ ] **No change to which orders are approved**, or the change is named and justified.
 - [ ] Decisions 1–4 recorded with rejected alternatives.
@@ -201,11 +210,17 @@ verify-2026-08-20-s182-a and vetoed orders over them.
 2. THE STOP CANNOT SAY WHAT IT IS BASED ON.
    S150 already built the volatility-scaled stop: stop_target.py has resolve_stop_target,
    _scaled_stop, volatility_present/volatility_fallback, scaled_stop_atr_multiplier=2.0,
-   floor 0.025, ceiling 0.08. But agents/analyst/settings.py:140 is
-     stop_target_mode: StopTargetMode = "flat"
-   a BARE DEFAULT, not a tunable(), sitting between two registered tunables - so the switch is
-   invisible to the parameter catalogue and nothing sets it on the fleet. Same shape as S174's bare
-   _DEFAULT_LOOKBACK_DAYS = 60.
+   floor 0.025, ceiling 0.08, and stop_target_mode selects it.
+
+   CORRECTION 2026-08-20 - AN EARLIER VERSION OF THIS SPEC WAS WRONG. It told you to register
+   stop_target_mode as a tunable(). DO NOT. The locked analyst law declares it
+   "NO (mode selector)" deliberately: "ADR-0013 champion-challenger selector; flat is the champion.
+   Not a tunable - it selects which formula runs, not a value within one." The execution law says
+   the identical thing about order_price_tolerance_mode. This is a reasoned category, not an
+   oversight, and both switches ARE documented in their PARAM tables.
+   DO NOT register it. DO NOT file law drift against those rows - the law is correct and the spec
+   was not. The real defect is only that the DEBATE PACKET cannot see which mode produced the stop,
+   which needs no law change.
 
 SCOPE - AND WHAT IS NOT IN IT
 IN: make both gates attest. A gate must report evaluated-and-passed, evaluated-and-failed, or
@@ -228,7 +243,7 @@ WHAT TO DO
 5. Decide whether the provider should flag thin earnings coverage as degraded, or record why not.
    Do not leave it undecided; the analyst already has a *_degraded vocabulary and this feed alone
    does not use it.
-6. Register stop_target_mode as a tunable() with a why. LEAVE THE DEFAULT AT "flat".
+6. Leave stop_target_mode exactly as it is. No registration, no law drift row.
 7. Make the stop attest its basis (mode + whether ATR was available). resolve_stop_target ALREADY
    computes volatility_present and volatility_fallback - check whether they are persisted before
    adding new fields.
@@ -239,6 +254,9 @@ CONSTRAINTS
   diff changes which orders are approved you have gone out of scope - EXCEPT via decision 4, which
   may legitimately drop tickers that were silently sailing through. Say so explicitly if it does.
 - Do NOT turn scaled stops on. The machinery is built and tempting.
+- Do NOT edit any laws.md, and do NOT add a drift row for the mode-selector PARAM rows. Before
+  treating any parameter question as drift, READ agents/<name>/laws/laws.md first - CLAUDE.md
+  requires it, and skipping it is exactly how this spec got the instruction wrong.
 - 10% earnings coverage is the NORMAL case, not an outage. Any fix that assumes earnings data is
   usually present will be wrong for ~88 of 98 tickers per run.
 - agents/scanner/domain/filters.py is 154 lines, just over the 150 warn line. Do not cross 200.

@@ -13,6 +13,15 @@ headline each session; never append a fourth. Oldest *Recent* entries split to t
 
 ## Current focus
 
+**The bar, set by the operator 2026-08-20.** The etalon is done when **the pack trades unattended
+for a sustained stretch and the evidence discipline catches its own defects without the operator in
+the loop.** Not "trading is finished" — but far above where it is. 🚨 **Consequence for ranking:**
+whatever currently prevents unattended operation *is* etalon work, not a detour from it. Today that
+is the **73 % veto rate** ([DL-119](design-log.md)) — a system that rejects its own orders and trades
+nothing cannot demonstrate that the method produces working systems. 🪤 **Generality is a separate
+unproven axis:** ADR-0012's platform/pack wall stays *de jure* until a second pack exists, and
+clearing this bar does not close that.
+
 Since P14 the project runs as **etalon-first continuous improvement** (DL-19).
 **The platform is self-driving in paper mode**: the DEPLOYED, STANDING fleet (16 Container Apps +
 `dispatcher-cron` job, KEDA scale-to-zero windows, idle ≈ $0) places a calendar-gated `RunRequest`

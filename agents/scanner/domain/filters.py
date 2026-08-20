@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from agents.scanner.domain.beta import compute_beta
+from agents.scanner.domain.filter_attestation import evaluate_filters
 from contracts.scanner import FilterTrace, FilterVerdict
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ class Survivor:
 
     ticker: str
     survived_filters: tuple[str, ...]
+    skipped_filters: tuple[str, ...]
     metrics: dict[str, float]
 
 
@@ -56,12 +58,17 @@ def apply_filters(
             )
             continue  # no bars to compute features from — bypass cannot rescue it
         features = _features(ticker_bars, benchmark_bars, earnings, as_of, settings)
-        fired, passed = _evaluate(features, settings)
+        fired, passed, skipped = evaluate_filters(features, settings)
         if fired is None:
             verdicts.append(
-                FilterVerdict(ticker=ticker, decision="survived", features=features)
+                FilterVerdict(
+                    ticker=ticker,
+                    decision="survived",
+                    skipped_filters=skipped,
+                    features=features,
+                )
             )
-            survivors.append(Survivor(ticker, passed, features))
+            survivors.append(Survivor(ticker, passed, skipped, features))
         else:
             drops[fired] += 1
             verdicts.append(
@@ -69,12 +76,13 @@ def apply_filters(
                     ticker=ticker,
                     decision="dropped",
                     filter_fired=fired,
+                    skipped_filters=skipped,
                     features=features,
                     bypassed=bypass,
                 )
             )
             if bypass:
-                survivors.append(Survivor(ticker, passed, features))
+                survivors.append(Survivor(ticker, passed, skipped, features))
     trace = FilterTrace(
         universe_size=len(tickers),
         evaluated=len(tickers),
@@ -111,40 +119,14 @@ def _features(
     return features
 
 
-def _evaluate(
-    features: dict[str, float], settings: ScannerSettings
-) -> tuple[str | None, tuple[str, ...]]:
-    """Return (first filter that drops the ticker | None, gates it passed in order)."""
-    passed: list[str] = []
-    if features["latest_close"] < settings.min_price:
-        return "min_price", tuple(passed)
-    passed.append("min_price")
-    if features["average_volume"] < settings.min_average_volume:
-        return "min_average_volume", tuple(passed)
-    passed.append("min_average_volume")
-    if features["relative_strength"] < settings.min_relative_strength:
-        return "min_relative_strength", tuple(passed)
-    passed.append("min_relative_strength")
-    if "beta" in features:
-        if features["beta"] > settings.max_beta:
-            return "max_beta", tuple(passed)
-        passed.append("max_beta")
-    if "days_to_earnings" in features:
-        if features["days_to_earnings"] <= settings.earnings_exclusion_days:
-            return "earnings_window", tuple(passed)
-        passed.append("earnings_window")
-    return None, tuple(passed)
-
-
 def _days_to_earnings(
     ticker: str, earnings: dict[str, date], as_of: date
 ) -> int | None:
-    """Whole days until ``ticker``'s next earnings; None if unknown or already past."""
+    """Whole days until ``ticker``'s earnings; negative if known date is past."""
     next_date = earnings.get(ticker)
     if next_date is None:
         return None
-    days = (next_date - as_of).days
-    return days if days >= 0 else None
+    return (next_date - as_of).days
 
 
 def _group_bars(bars: tuple[OHLCVBar, ...]) -> dict[str, tuple[OHLCVBar, ...]]:

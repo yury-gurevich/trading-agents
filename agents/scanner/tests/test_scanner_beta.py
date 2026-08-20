@@ -76,6 +76,7 @@ def _beta_settings() -> ScannerSettings:
 
 
 def test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history() -> None:
+    """SCAN-OUT-02 / SCAN-OBS-01: beta pass/fail/skip are distinguishable."""
     bars = (*_ONE_X, *_TWO_X, *_series("THIN", [100.0, 110.0]))
     survivors, trace = apply_filters(
         ("LOWB", "HIGHB", "THIN"),
@@ -91,6 +92,9 @@ def test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history() -> None:
     assert trace.dropped_by_filter == {"max_beta": 1}
     assert round(by_ticker["LOWB"].metrics["beta"], 6) == 1.0
     assert "max_beta" in by_ticker["LOWB"].survived_filters
-    # Thin history: beta skipped, so no beta metric and no beta gate recorded.
+    # Thin history: beta skipped, so no beta metric and no beta pass recorded.
     assert "beta" not in by_ticker["THIN"].metrics
     assert "max_beta" not in by_ticker["THIN"].survived_filters
+    assert "max_beta" in by_ticker["THIN"].skipped_filters
+    verdict = next(item for item in trace.verdicts if item.ticker == "THIN")
+    assert "max_beta" in verdict.skipped_filters

@@ -55,7 +55,7 @@ def _settings() -> ScannerSettings:
 def test_days_to_earnings_handles_unknown_upcoming_and_past() -> None:
     earnings = {"SOON": date(2024, 6, 4), "PAST": date(2024, 5, 20)}
     assert _days_to_earnings("SOON", earnings, _AS_OF) == 3
-    assert _days_to_earnings("PAST", earnings, _AS_OF) is None  # already reported
+    assert _days_to_earnings("PAST", earnings, _AS_OF) == -12
     assert _days_to_earnings("UNKNOWN", earnings, _AS_OF) is None
 
 
@@ -84,20 +84,69 @@ def test_earnings_beyond_window_keeps_candidate_and_records_metric() -> None:
     assert "earnings_window" in survivors[0].survived_filters
 
 
+def test_no_earnings_data_records_earnings_gate_not_evaluated() -> None:
+    """SCAN-OUT-02 / SCAN-OBS-01: absent earnings is attested, not silent."""
+    bars = (
+        *_series("NONE", [100.0, 110.0, 132.0]),
+        *_series("FAR", [100.0, 110.0, 132.0]),
+    )
+    earnings = {"FAR": date(2024, 7, 1)}
+
+    survivors, trace = apply_filters(
+        ("NONE", "FAR"), bars, (), earnings, _AS_OF, _settings()
+    )
+
+    by_ticker = {survivor.ticker: survivor for survivor in survivors}
+    none = by_ticker["NONE"]
+    far = by_ticker["FAR"]
+    assert "earnings_window" in none.skipped_filters
+    assert "earnings_window" not in none.survived_filters
+    assert "earnings_window" in far.survived_filters
+    assert "earnings_window" not in far.skipped_filters
+    verdict = next(item for item in trace.verdicts if item.ticker == "NONE")
+    assert "earnings_window" in verdict.skipped_filters
+
+
 def test_no_earnings_data_keeps_candidate_dormant() -> None:
     bars = _series("NONE", [100.0, 110.0, 132.0])
     survivors, trace = apply_filters(("NONE",), bars, (), {}, _AS_OF, _settings())
     assert trace.dropped_by_filter == {}
     assert "days_to_earnings" not in survivors[0].metrics
     assert "earnings_window" not in survivors[0].survived_filters
+    assert "earnings_window" in survivors[0].skipped_filters
 
 
 def test_past_earnings_date_does_not_exclude() -> None:
     bars = _series("PAST", [100.0, 110.0, 132.0])
-    earnings = {"PAST": date(2024, 5, 20)}  # before as-of -> treated as unknown
+    earnings = {"PAST": date(2024, 5, 20)}  # before as-of -> no upcoming event
     survivors, trace = apply_filters(("PAST",), bars, (), earnings, _AS_OF, _settings())
     assert trace.dropped_by_filter == {}
-    assert "days_to_earnings" not in survivors[0].metrics
+    assert survivors[0].metrics["days_to_earnings"] == -12.0
+    assert "earnings_window" in survivors[0].survived_filters
+    assert "earnings_window" not in survivors[0].skipped_filters
+
+
+def test_past_earnings_date_records_evaluated_pass_not_missing_data() -> None:
+    """SCAN-TYP-01 / SCAN-OBS-01: known past earnings differs from no data."""
+    bars = (
+        *_series("PAST", [100.0, 110.0, 132.0]),
+        *_series("UNKNOWN", [100.0, 110.0, 132.0]),
+    )
+    earnings = {"PAST": date(2024, 5, 20)}
+
+    survivors, trace = apply_filters(
+        ("PAST", "UNKNOWN"), bars, (), earnings, _AS_OF, _settings()
+    )
+
+    by_ticker = {survivor.ticker: survivor for survivor in survivors}
+    assert by_ticker["PAST"].metrics["days_to_earnings"] == -12.0
+    assert "earnings_window" in by_ticker["PAST"].survived_filters
+    assert "earnings_window" not in by_ticker["PAST"].skipped_filters
+    assert "earnings_window" in by_ticker["UNKNOWN"].skipped_filters
+    past = next(item for item in trace.verdicts if item.ticker == "PAST")
+    unknown = next(item for item in trace.verdicts if item.ticker == "UNKNOWN")
+    assert "earnings_window" not in past.skipped_filters
+    assert "earnings_window" in unknown.skipped_filters
 
 
 def _request() -> AgentMessage:

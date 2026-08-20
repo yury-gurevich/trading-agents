@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 17:35 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **S182 merged and deployed; deliberator now on `claude-opus-5`. Live proof of S182 waits on the next between-runs fill.**
+**Last updated:** 2026-08-20 19:19 AEST · **Version:** 0.90.17 · **S183 local green on fleet baseline `s182`; remote gate pending.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,6 +35,17 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
 
 ## Now
+
+**LOCAL RESULT — S183 active on `sprint-183-a-gate-that-did-not-run-says-so`, 2026-08-20.** Scanner
+`Candidate` and `FilterVerdict` now carry `skipped_filters`, so `earnings_window` and `max_beta`
+distinguish evaluated pass/fail from not evaluated. Earnings no-data is distinct from a known past
+date, which records a negative `days_to_earnings` and an evaluated pass. The debate packet renders
+the stop-target basis from existing analyst evidence: selected mode, ATR availability, ATR value,
+applied stop/target, and counterfactual mode. `stop_target_mode` stayed exactly as locked-law
+declares it: a non-tunable mode selector; no law drift row was filed. No approval predicate changed:
+unknown earnings remains a skipped attestation rather than a drop, near-future earnings still drops,
+and the flat stop champion remains selected. Focused guards failed first and then passed; redirected
+`make ci` exited 0 with **2332 passed / 6 skipped / 100.00 %**. Remote branch gate is still pending.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet

@@ -77,12 +77,12 @@ checked against `HEAD`), tree clean, `s184` images **built and pushed to GHCR**,
    `scratchpad/fleet-baseline-pre-s184.json` + `job-baseline-pre-s184.json`: **16 apps + job, all
    `s182`, min 0 / max 1, cron `30 22 * * 1-5`.** 🪤 Both previous deploys hid a scale-config drift
    that only a baseline diff caught.
-3. Fire a **test run now** rather than waiting for 22:30 UTC (pre-prod; widen the KEDA window, then
-   restore it). No CLI exists for a custom `verify-*` id — `orchestration/start.py::place_run_request`
-   is the library call; write a scratch script with the refuse-on-in-memory guard.
-4. Measure with `scratchpad/measure_veto.py`. **The "before" is already recorded** in
-   `scratchpad/veto-baseline-pre-s184.txt`: **25 of 35 vetoed = 71 %** across five real binding runs,
-   and **every one** carries an exposure-aggregation objection.
+3. Fire a **test run now**, not at 22:30 UTC (pre-prod; widen the KEDA window, then restore it). No
+   CLI exists for a custom `verify-*` id — `orchestration/start.py::place_run_request` is the library
+   call; write a scratch script with the refuse-on-in-memory guard.
+4. Measure with `scratchpad/measure_veto.py`. **The "before" is recorded** in
+   `scratchpad/veto-baseline-pre-s184.txt`: **25 of 35 vetoed = 71 %** over five real binding runs,
+   **every one** carrying an exposure-aggregation objection.
 
 🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's
 exposure-aggregation objections disappear and the **73 % veto rate falls materially**. Unit fixtures
@@ -90,20 +90,18 @@ cannot show that; only a live run can. **If the objections persist now that the 
 properly, the finding moves to the referee** — the separation the ADR was written to make possible.
 
 - **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
-  attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as a
-  `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was right.**
-  Confirm the correction was picked up before accepting a handback.
+  attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as
+  a `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was
+  right.** Confirm the correction was picked up before accepting a handback.
 - **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
   gate-proven at `5bf72c9`, unmerged; only the 15-order K=4 measurement remains.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution
-derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet written
-the `Position`; monitor keeps ownership, and the shared `contracts/position_refs.py` makes the
-no-double-place guarantee structural. `make ci` **2331 passed / 100.00 %**; `GATE PROVEN` for
-`2fc0672`. 🪤 **Two traps a glance would miss:** the working directory was left on Codex's branch so
-the first `git merge` said *"Already up to date"* — merging the branch into itself; and the
-post-deploy scale diff showed `minReplicas=1` on all 16, my own leftover. **Both caught by diffing
-against a recorded baseline, not by reading output.**
+derives a protective stop from `Fill` + `OrderIntent` lineage when the monitor has not yet written the
+`Position`; `contracts/position_refs.py` makes the no-double-place guarantee structural. 🪤 **Two traps
+a glance would miss:** the working directory was left on Codex's branch, so the first `git merge` said
+*"Already up to date"* — merging the branch into itself; and the post-deploy scale diff showed
+`minReplicas=1` on all 16, my own leftover. **Both caught by diffing against a recorded baseline.**
 
 **NOT PROVEN: S182 live.** The defect needs a position filled *between* runs, so no synthetic fixture
 can exhibit it — proof waits on a **new** entry filling. Opportunistic.
@@ -128,10 +126,6 @@ because the latency tail sat exactly at that ceiling. They were `HTTP 429`s. The
 in `DeliberationRun.failed_open_reason` the whole time. Third instance of taking a number that
 *correlates* with the boundary as the cause — after the `record_deploy` SHA and the module-size
 counts. **Read the reason field before the metrics.**
-
-**S179 (`0.90.14`) shipped 2026-08-18 and is deployed** — `open_incidents` is a live incident
-count scoped to the latest graph-run day, with append-only `FaultResolution` retirement. Detail in
-its sprint doc and [STATE-08.md](state-archive/STATE-08.md).
 
 ## Next
 

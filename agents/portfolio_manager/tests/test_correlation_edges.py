@@ -43,13 +43,19 @@ def test_candidate_already_held_counts_same_issuer_without_pairing() -> None:
     """PM-NEV-07 / PM-NEV-08: an existing issuer adds exposure, not a new pair."""
     book = CorrelationBook(_bars(("AAPL",), days=66), {}, 120, 0.70, 0.25, 60)
 
-    (outcome,) = book.outcomes(
+    outcomes = book.outcomes(
         buy("AAPL"),
         Decimal("500.00"),
         Decimal("10000.00"),
         issuer_values={"AAPL": Decimal("1000.00")},
         issuer_tickers={"AAPL": ("AAPL",)},
     )
+
+    # outcomes() returns () or a 1-tuple, so assert the length before indexing
+    # rather than unpacking a variable-arity return (CodeQL #187, same rule as
+    # #177 in DL-110).
+    assert len(outcomes) == 1
+    outcome = outcomes[0]
 
     assert outcome.outcome == "passed"
     assert outcome.value == 0.15

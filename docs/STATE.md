@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 16:10 AEST · **Version:** 0.90.16 · **S182:** local gate green; branch ready for push/gate, live-fill proof not claimed.
+**Last updated:** 2026-08-20 17:35 AEST · **Version:** 0.90.16 · **Fleet: `s182`** · **S182 merged and deployed; deliberator now on `claude-opus-5`. Live proof of S182 waits on the next between-runs fill.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,14 +36,27 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🚨 **PAUSED — `dispatcher-cron` will not fire.** Operator call, 2026-08-20: with no LLM provider every
-debate fails open and orders reach the broker unvetoed. 🪤 **`deployment.md`'s documented pause is
-broken** — `az resource update --set properties.configuration.triggerType=Manual` does a full PUT and
-Azure rejects it, because secret values are write-only
-(`ContainerAppSecretInvalid: ghcrio-yury-gurevich, postgres-dsn, servicebus-*`). `job update` has no
-`--trigger-type` either. **What worked:** `--cron-expression "0 0 30 2 *"` — 30 February, a date that
-never occurs. 🪤 **The tunables pack still holds the real cron**, so a full `up` silently un-pauses;
-that is deliberate (the pause cannot be forgotten forever) but must be remembered.
+**PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
+derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet
+written the `Position`. 🟢 **Monitor keeps ownership** — `filled_entry_stops.py:73` only *reads*
+`Position` and returns early if it exists; execution writes no `Position` anywhere. The
+no-double-place guarantee holds **by construction**: the private `_position_ref` was extracted into
+`contracts/position_refs.py`, so all four call sites compute identically, and execution's
+`f"{source_run_id}:{ticker}"` is exactly the key the monitor will later create. `403 potential wash
+trade` now stays loud and keeps faulting until a live stop exists (DL-118). `poll.py` **197 → 136**
+via a split into `pm_execution.py`. `make ci` **2331 passed / 100.00 %**; `GATE PROVEN` for
+`2fc0672`; image-only retag (vocabulary pack hash unchanged), 16/16 apps + job on `s182`, scale
+config diffed **identical** to baseline, tunables intact.
+
+🪤 **Two things the verification caught that a glance would not.** The working directory was left on
+Codex's branch, so the first `git merge` reported *"Already up to date"* — it was merging the branch
+into itself and would have pushed nothing. And the post-deploy scale diff showed `minReplicas=1` on
+all 16 — **my own leftover** from the morning's Opus run, never scaled back. Both were found by
+diffing against a recorded baseline rather than by reading the output.
+
+**NOT PROVEN: S182 live.** The defect only appears for a position filled *between* runs, so a
+synthetic fixture cannot exhibit it. MO and CSCO are already protected; proof needs a **new** entry
+to fill. Tonight's 22:30 UTC run is the first on `s182` with Opus and is the natural occasion.
 
 🚨 **3 of 22 positions have no protective stop — $2,147.76** (CSCO 9, MO 15, NFLX 2), and the pause
 means nothing will place them. **Root cause measured, filed as item 27:** at 22:30 on 08-19 the fleet

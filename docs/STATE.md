@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 13:30 AEST · **Version:** 0.90.15 · **Fleet: `s181`** (rolled back from an unmerged `s172`) · **S172 is built and gate-proven but NOT merged — its live K=4 proof is blocked on OpenAI credits, which are exhausted again.**
+**Last updated:** 2026-08-20 15:10 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **Scheduled runs PAUSED (never-firing cron) while both LLM providers are down. 🚨 3 positions are unprotected — stops need one run to place.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,6 +35,33 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   merge-then-verify was the only exit. 🪤 **The step prints nothing on failure** (report → summary).
 
 ## Now
+
+🚨 **PAUSED — `dispatcher-cron` will not fire.** Operator call, 2026-08-20: with no LLM provider every
+debate fails open and orders reach the broker unvetoed. 🪤 **`deployment.md`'s documented pause is
+broken** — `az resource update --set properties.configuration.triggerType=Manual` does a full PUT and
+Azure rejects it, because secret values are write-only
+(`ContainerAppSecretInvalid: ghcrio-yury-gurevich, postgres-dsn, servicebus-*`). `job update` has no
+`--trigger-type` either. **What worked:** `--cron-expression "0 0 30 2 *"` — 30 February, a date that
+never occurs. 🪤 **The tunables pack still holds the real cron**, so a full `up` silently un-pauses;
+that is deliberate (the pause cannot be forgotten forever) but must be remembered.
+
+🚨 **3 of 22 positions have no protective stop — $2,147.76** (CSCO 9, MO 15, NFLX 2), and the pause
+means nothing will place them. **Root cause measured, filed as item 27:** at 22:30 on 08-19 the fleet
+raised *"unprotected held position CSCO qty=9: no active graph position"* for all three — yet by the
+end of that same run all three **were** active `Position` nodes. `place_broker_stops` runs **before**
+reconciliation adopts the run's new fills, so a position adopted this run can only be protected on
+the next. 🪤 **A second blocker was stacked on it:** Alpaca rejected two stops with `403 potential
+wash trade detected` because a test run's buy limits were open on the same symbols — **test orders
+can block protective stops.** That half is cleared. 🟢 Graph and broker agree, 22 active positions
+each — this is an ordering defect, not divergence.
+
+**Test residue cleared, 2026-08-20.** Codex's S172 K=4 attempts left **13 synthetic 1-share orders**
+open (`verify-2026-08-19-s172-k4-15-racefix-*`), queued for today's open — cancelled, book back to 19
+open orders, all protective stops, 0 non-stop. 🪤 **Two earlier attempts already filled**: 1-share
+NFLX at 13:30 on 08-19 from `…-k4-15` and `…-k4-15-clean`, so the book now carries **2 NFLX shares
+created by a test harness**, never vetoed. Still held — selling is a real trade and needs a decision.
+MO and CSCO also filled and are legitimate: they are the clean run's debated, upheld orders the
+operator chose to let trade.
 
 **S172 handed back unmerged, 2026-08-20 — correctly.** Codex built bounded `debate_concurrency=4`,
 deterministic PM-order reassembly, per-order fail-open isolation, a shared correlated reply inbox
@@ -94,11 +121,6 @@ because the latency tail sat exactly at that ceiling. They were `HTTP 429`s. The
 in `DeliberationRun.failed_open_reason` the whole time. Third instance of taking a number that
 *correlates* with the boundary as the cause — after the `record_deploy` SHA and the module-size
 counts. **Read the reason field before the metrics.**
-
-**Both test runs torn down.** 9 + 3 orders cancelled; book at **19 open orders, all protective stops,
-0 non-stop**, cash unchanged `$83,776.22`, 19 positions, equity `$102,694.96`. Fleet at
-`minReplicas 0`, scale config diffs identical to the pre-test snapshot. 🪤 `sched-2026-08-19` was
-consumed by the first test, so tonight's job no-ops; the next scheduled run is `sched-2026-08-20`.
 
 **S179 (`0.90.14`) shipped 2026-08-18 and is deployed** — `open_incidents` is a live incident
 count scoped to the latest graph-run day, with append-only `FaultResolution` retirement. Detail in

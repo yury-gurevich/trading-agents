@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-21 00:05 AEST · **Version:** 0.91.01 · **Fleet still `s182`; `s184` images built and waiting.** · **PAUSED mid-deploy — main is gate-proven, the next action is `up -Tag s184`.**
+**Last updated:** 2026-08-21 00:20 AEST · **Version:** 0.91.01 · **Fleet `s184`, asleep.** · **S184 is deployed and drift-free; the 71 % veto rate it must move is measured tonight, unattended.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -64,25 +64,24 @@ four days earlier** ([DL-123](design-log.md)). 🪤 **A green branch gate does n
 went green. Merge-then-verify is again the only exit — a trap that fires twice in four days is a
 missing check, filed as queue item 31.
 
-⏸️ **PAUSED 2026-08-21 00:05 AEST, deliberately between steps.** Nothing is half-applied: `main`
-is `7af1583`, **`GATE PROVEN`** (CI + Security Findings + CodeQL + Build images all success, SHA
-checked against `HEAD`), tree clean, `s184` images **built and pushed to GHCR**, fleet **still on
-`s182`** and untouched. **Resume at step 1.**
+🟢 **DEPLOYED `s184` and put back to sleep, 2026-08-21.** Full `up` (not a retag — S184 adds the
+issuer-map pack, `PORTFOLIO_MANAGER_ISSUER_MAP_B64` and four tunables). `ENV PRESERVATION` **16/16**,
+so the DL-100 guard confirmed the `up` would drop no live env key. **16/16 apps on `s184`; scale *and*
+KEDA-rule metadata diffed to zero drift** against the recorded baseline; `dispatcher-cron` `s184`,
+cron `30 22 * * 1-5`. PM env carries all five S184 keys, each verified PRESENT. 🪤 `curator` failed once
+on an Azure `InternalServerError`, was left cleanly on `s182` (`Succeeded`, not broken), and took a
+**targeted image retry** rather than a 20-minute re-`up` — it carries no pack tunables, so only the
+image differed. 🪤 The `min-replicas 1` bump used to run off-window was **restored to 0 and re-diffed**;
+that leftover was the S182 deploy's defect.
 
-1. `pwsh infra/deploy-agents.ps1 up -Tag s184` — 🚨 a **full `up`**, not an image retag: S184 adds
-   the `trading_issuer_map.json` pack, a new `PORTFOLIO_MANAGER_ISSUER_MAP_B64` env var, and four
-   tunables. 🪤 A full `up` **replaces each app's env set** (DL-100), so anything set by hand is
-   reverted — the pack carries the tunables and the cron (`30 22 * * 1-5`), so this is safe.
-2. Diff the result against the recorded baseline —
-   `scratchpad/fleet-baseline-pre-s184.json` + `job-baseline-pre-s184.json`: **16 apps + job, all
-   `s182`, min 0 / max 1, cron `30 22 * * 1-5`.** 🪤 Both previous deploys hid a scale-config drift
-   that only a baseline diff caught.
-3. Fire a **test run now**, not at 22:30 UTC (pre-prod; widen the KEDA window, then restore it). No
-   CLI exists for a custom `verify-*` id — `orchestration/start.py::place_run_request` is the library
-   call; write a scratch script with the refuse-on-in-memory guard.
-4. Measure with `scratchpad/measure_veto.py`. **The "before" is recorded** in
-   `scratchpad/veto-baseline-pre-s184.txt`: **25 of 35 vetoed = 71 %** over five real binding runs,
-   **every one** carrying an exposure-aggregation objection.
+**A test run was placed and deliberately abandoned.** `verify-2026-08-20-s184-a` (99 tickers, 13:59:39
+UTC) still had `MarketData=0` at 14:05 — the paced ingest had produced nothing, so no scan, order or
+fill existed to strand. Torn down (`pg_teardown`: 3 nodes, 3 edges; residue re-queried as **none**),
+leaving **0 unconsumed `RunRequest`s**. 🪤 That last check matters: an unconsumed request is picked up
+on the *next* wake, so leaving it would have double-ingested alongside tonight's scheduled run.
+
+🚨 **The measurement is tonight's 22:30 UTC scheduled run — unattended, on the production path.** That
+is a better test than the one abandoned: no operator in the loop is the actual bar.
 
 🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's
 exposure-aggregation objections disappear and the **73 % veto rate falls materially**. Unit fixtures

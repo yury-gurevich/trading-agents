@@ -68,19 +68,22 @@ missing check, filed as queue item 31.
 issuer-map pack, `PORTFOLIO_MANAGER_ISSUER_MAP_B64` and four tunables). `ENV PRESERVATION` **16/16**,
 so the DL-100 guard confirmed the `up` would drop no live env key. **16/16 apps on `s184`; scale *and*
 KEDA-rule metadata diffed to zero drift** against the recorded baseline; `dispatcher-cron` `s184`,
-cron `30 22 * * 1-5`. PM env carries all five S184 keys, each verified PRESENT. 🪤 `curator` failed once
-on an Azure `InternalServerError`, was left cleanly on `s182` (`Succeeded`, not broken), and took a
-**targeted image retry** rather than a 20-minute re-`up` — it carries no pack tunables, so only the
-image differed. 🪤 The `min-replicas 1` bump used to run off-window was **restored to 0 and re-diffed**;
-that leftover was the S182 deploy's defect.
+cron `30 22 * * 1-5`. PM env carries all five S184 keys, each verified PRESENT. 🪤 `curator` failed once on an
+Azure `InternalServerError`, was left cleanly on `s182` (`Succeeded`, not broken) and took a targeted
+image retry — it carries no pack tunables, so only the image differed. 🪤 The `min-replicas 1` bump used
+to run off-window was **restored to 0 and re-diffed**; that leftover was the S182 deploy's defect.
 
-**A test run was placed and deliberately abandoned.** `verify-2026-08-20-s184-a` (99 tickers, 13:59:39
-UTC) still had `MarketData=0` at 14:05 — the paced ingest had produced nothing, so no scan, order or
-fill existed to strand. Torn down (`pg_teardown`: 3 nodes, 3 edges; residue re-queried as **none**),
-leaving **0 unconsumed `RunRequest`s**. 🪤 That last check matters: an unconsumed request is picked up
-on the *next* wake, so leaving it would have double-ingested alongside tonight's scheduled run.
+🚨 **A test run was abandoned, and the first teardown reported false success** ([DL-124](design-log.md)).
+`verify-2026-08-20-s184-a` read `MarketData=0` at 14:05, which was taken for *"nothing happened"* when it
+meant *"nothing yet"* — the paced ingest was in flight. The provider finished at ~14:09 and the scanner
+consumed it (99 evaluated, **23 candidates**) whose `AnalystRun` was missing, i.e. **live pending work that
+would have run a second cascade tonight**. 🪤 The teardown could not see it: `ScanRun` is keyed
+`scanner-run-<uuid>` with `run_id=None`, and **the verification query used the same run-id filter**, so it
+confirmed the teardown instead of testing it. A second pass on the uuid removed **24 nodes + 25 edges**.
+Now proven with the pollers' own predicates: **provider 0 / scanner 0 / analyst 0 / pm 0 pending**, 22
+positions intact. 🪤 A long-running watcher caught this after the point check said clean.
 
-🚨 **The measurement is tonight's 22:30 UTC scheduled run — unattended, on the production path.** That
+🚨 **The measurement is tonight's 22:30 UTC scheduled run — unattended, on the production path**, which
 is a better test than the one abandoned: no operator in the loop is the actual bar.
 
 🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's

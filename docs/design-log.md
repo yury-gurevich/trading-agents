@@ -8,6 +8,77 @@ and is marked CLOSED here.
 
 ---
 
+## DL-124 - Teardown by run-id misses every downstream artifact that is uuid-keyed - status: MEASURED (2026-08-21)
+
+🚨 **A "zero residue" claim was wrong within two minutes of being made, and the standard teardown
+idiom is why.**
+
+**What happened.** The S184 deploy check placed `verify-2026-08-20-s184-a`, then abandoned it. At
+**14:05:38** a direct query showed `MarketData=0` - nothing ingested - so it was recorded as safe to
+drop: *"no scan, order or fill existed to strand."* `pg_teardown --prefix verify-2026-08-20-s184-a
+--contains` deleted 3 nodes and 3 edges, a follow-up query returned **residue: none**, and the fleet
+was scaled to zero.
+
+**A background watcher, still running, contradicted all of it.** The provider was mid-ingest at
+14:05 and finished afterwards:
+
+```text
+00:07:27  MarketData=0   <- immediately after teardown
+00:09:30  MarketData=1   <- provider completed and wrote the node anyway
+```
+
+By 14:09:04 the **scanner had already consumed it** - `scanner-run-83d0562b…`, 99 evaluated,
+**23 candidates** - and its `AnalystRun` was still missing. That `ScanRun` was live pending work: the
+analyst polls `ScanRun` nodes with no downstream `AnalystRun`, so on the next wake it would have run
+a **second full cascade alongside the scheduled run** - the exact outcome the teardown was performed
+to prevent, displaced one stage down the pipeline.
+
+**Root cause - the idiom cannot see the artifacts.** Teardown matches graph *keys*. Provider nodes
+are keyed by run id (`market-data:<run_id>`, `regime-context:<run_id>`) and are caught. But
+**`ScanRun` is keyed `scanner-run-<uuid>` and carries `run_id=None`**; `AnalystRun` and `PMRun` are
+the same shape. So `--contains <run-id>` is **structurally incapable** of reaching anything past the
+provider, and it reports success while doing so. Measured: the second teardown, aimed at the uuid,
+removed **24 nodes and 25 edges** the first had left behind.
+
+🪤 **Two compounding traps, both of which fired.**
+
+- **A stage count of 0 is not "nothing happened", it is "nothing has happened *yet*".** A paced
+  99-ticker ingest takes ~7 minutes; the check was made at ~6. Reading an in-flight pipeline as an
+  idle one is the same absence-as-silence error `PM-NEV-09` and S183 exist to fix, made by hand.
+- **The verification query used the same wrong filter as the teardown**, so it confirmed the teardown
+  rather than testing it. `ScanRun` has no `run_id`, so filtering by run id found nothing and printed
+  *"residue: none"* - a green that could not have gone red.
+
+**The check that actually works.** Not "is the residue gone" but **"is any work pending for the next
+wake"**, asked in the pollers' own terms - the same predicates the agents use:
+
+```text
+RunRequest  with no INGESTED_BY   -> provider will run
+MarketData  with no SCANNED_BY    -> scanner will run
+ScanRun     with no ANALYZED_BY   -> analyst will run
+AnalystRun  with no EVALUATED_BY  -> pm will run
+```
+
+All four now read **0**, with 22 active positions intact. This predicate is key-agnostic, so it
+cannot be defeated by a uuid, and it answers the question that actually matters.
+
+**Rejected routes.**
+
+- *Stamp a run id onto every downstream node* - the honest structural fix, deferred not rejected. It
+  touches four agents' writers and their locked laws, and the pending-work predicate closes the
+  operational hole today without any of that.
+- *Wait out the pipeline before tearing down* - rejected as the general rule. It works only when
+  someone is watching, and the point of this system is that nobody is.
+- *Treat the watcher as noise* - it was very nearly dismissed as "no output yet". **It was the only
+  thing in the session that caught this.** Long-running observers earn their keep precisely when the
+  point measurement says everything is fine.
+
+**Consequence.** The S184 deploy row in `functionality-checks.md` and the `STATE.md` entry both
+carried the false "no scan existed / zero residue" claim and are corrected in the same commit that
+records this.
+
+---
+
 ## DL-123 - The same CodeQL rule landed twice in four days, and the branch gate structurally cannot catch it - status: MEASURED (2026-08-20)
 
 **What happened.** Merging S184 raised CodeQL **#187**,

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-19 19:50 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **ONE CLEAN RUN: `verify-2026-08-19-clean-2` returned 9/9 real debates, 0 fail-opens and `deliberation_status=applied` — the veto bound fully for the first time. S181 closed and proven.**
+**Last updated:** 2026-08-20 13:30 AEST · **Version:** 0.90.15 · **Fleet: `s181`** (rolled back from an unmerged `s172`) · **S172 is built and gate-proven but NOT merged — its live K=4 proof is blocked on OpenAI credits, which are exhausted again.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,33 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+**S172 handed back unmerged, 2026-08-20 — correctly.** Codex built bounded `debate_concurrency=4`,
+deterministic PM-order reassembly, per-order fail-open isolation, a shared correlated reply inbox
+and peer `maxReplicas=4`. Branch tip `5bf72c9`, `make ci` **2336 passed / 6 skipped / 100.00 %**,
+and **`GATE PROVEN`** (CI, Security Findings, Build images) — I verified all three independently.
+**Not merged, and that is the right call:** the required live K=4 measurement could not run. The
+synthetic 15-order attempt wrote `real_debate_count=0`, `failed_open_count=15`, `LLMCall=0` on an
+OpenAI `429 credit_balance_exhausted`. 🟢 Service Bus stayed clean before and after (0 active /
+0 dead-letter), so S171's correlation guarantee is not implicated.
+
+**PROVEN RESULT — fleet rolled back to `s181`, 2026-08-20.** Proving a deploy requires deploying, so
+`up -Tag s172` left **all 16 apps + the job running unmerged code** while `main` sat at `37d44a9`,
+and the `DeployRecord` still said `s181` — meaning the dashboard would have read the fleet
+**current while it was not**, the exact DL-46 error the record exists to prevent. Rolled back by
+image-only retag: 16/16 on `s181`, all `Succeeded`, tunables intact (grace **1800**, timeout **120**,
+effort `high`), and scale config **diffs identical** to the pre-S172 baseline. 🪤 **The first diff
+caught residual drift** — `maxReplicas` was restored to 1 but the KEDA rule's `desiredReplicas` was
+still `4`; both peers corrected. **No new `DeployRecord` written** — the existing `s181`/`bcf3a2b`
+row is true again, and a duplicate would only add noise to an append-only log.
+
+🚨 **Open decision — tonight's 22:30 UTC run.** OpenAI reads `no credits remaining` again and
+Anthropic is capped until 2026-09-01. **With no provider, every debate fails open and orders reach
+the broker unvetoed** — regardless of which tag is deployed. Either top up credits (which also
+unblocks the S172 proof) or disable `dispatcher-cron` for tonight. 🪤 **Our own metering does not
+reconcile:** the `LLMCall` ledger accounts for **$2.12** of the $5 added on 2026-08-19, so
+`/audit-costs`, which prices from that ledger, is currently understating real spend by an unknown
+margin.
+
 **PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
 OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:
 **8/8 stages · `real_debate_count` 9 of 9 (`debate_coverage` = 1.0) · `failed_open_count` **0** ·
@@ -46,17 +73,7 @@ MDLZ) — every one genuinely debated. 45 `LLMCall` rows = exactly 9 x 5. Cost *
 🪤 **The timeout raise was load-bearing after all, for a different reason than it was made for:**
 this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling would have cut.
 DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
-🚨 **The blocker was real and is now lifted only by the operator's $5 top-up**: OpenAI reads
-`HTTP 200`; **Anthropic is still capped until 2026-09-01**, so there is no working fallback provider
-and a second credit exhaustion stops the fleet again — now a **standing operational note** in the
-work queue rather than a work item, because it is an outage condition, not something to build.
-
-🚨🚨 **BLOCKER, since LIFTED — the deliberator had no working LLM provider.** Probed directly
-2026-08-19: OpenAI **`HTTP 429` "You have no credits remaining"**; Anthropic **`HTTP 400` "You have
-reached your specified API usage limits. You will regain access on 2026-09-01"**. Every debate fails
-open, and `failed_open_count > 0` fails acceptance on its own, so **no run can come back clean until
-credits are added or 1 September**. 🟢 Nothing else is broken: the pipeline runs 8/8 and the veto now
-binds. **Operator action, not a code fix.**
+🚨 **That run was only possible because of a $5 top-up, and the prediction made here came true within a day**: "a second credit exhaustion stops the fleet again". It did — see the open decision above. Anthropic remains capped until **2026-09-01**, so there is still no fallback provider. Kept as a **standing operational note** in the work queue rather than a work item, because it is an outage condition, not something to build.
 
 **PROVEN RESULT — S181 closed, fully proven on the fleet.** Sweep #1 (06:37:57) wrote the ack and one
 fault; **sweep #2 (07:45:33) wrote neither** — `UntrackedOpenOrder` **13 → 13**, acks **1 → 1**.
@@ -83,28 +100,9 @@ counts. **Read the reason field before the metrics.**
 `minReplicas 0`, scale config diffs identical to the pre-test snapshot. 🪤 `sched-2026-08-19` was
 consumed by the first test, so tonight's job no-ops; the next scheduled run is `sched-2026-08-20`.
 
-**PROVEN RESULT — S181 deployed `s181`, 2026-08-19.** Image-only retag was the right path: the
-vocabulary pack hash is identical (`8777b907…`) between the deployed `s179` commit and `bcf3a2b`.
-16/16 apps + `dispatcher-cron` on `s181`, all `Succeeded`, tag count == inventory count, cron still
-`30 22 * * 1-5`, KEDA rules unchanged. `GATE PROVEN` for `bcf3a2b` (CI, Security Findings, CodeQL,
-image build) with the printed SHA checked against `git rev-parse HEAD`. `DeployRecord` written with
-the **build's own head SHA**, not a live `git rev-parse` — the S180 defect is unbuilt, so that trap
-was avoided by hand.
-
 **S179 (`0.90.14`) shipped 2026-08-18 and is deployed** — `open_incidents` is a live incident
 count scoped to the latest graph-run day, with append-only `FaultResolution` retirement. Detail in
 its sprint doc and [STATE-08.md](state-archive/STATE-08.md).
-
-**PROVEN RESULT — `sched-2026-08-18`, read 2026-08-19.** The run completed **8/8**: 99 tickers at **203
-bars** each, 20 scanner survivors, 28 scored, **7 PM approvals**, **7 real debates with 0 fail-opens**,
-**5 vetoed** (GOOG, GOOGL, AVGO, XOM, CSCO) and **2 submitted** (AMZN 3, MO 15) — both `accepted` at the
-broker. 🪤 **Neither reached the open** — both were cancelled by the 2026-08-19 test run's head-of-run
-sweep (ADR-0018), so this run never resolved past `UNPROVEN`. Equity
-**$102,680.53** (last_equity $102,572.78), 19 positions, **+$351.23 unrealized**. 🚨 **No DL-104-class
-defect in any verdict this time** — all five cite real gaps in what the PM aggregates (dual-class
-GOOG/GOOGL as independent names, no sector-correlation penalty, market-order sizing against an
-estimated price). Two nights running, the theme is **exposure aggregation the PM does not do**; that is
-a candidate, not a defect, and it is adjacent to work-queue item 18.
 
 ## Next
 

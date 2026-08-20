@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 23:05 AEST · **Version:** 0.91.00 (fleet still `s182`, deploy in flight) · **S184 merged: concentration is now issuer + measured correlation. The 73 % veto rate is the thing it must move, and only a live run can show that.**
+**Last updated:** 2026-08-21 00:05 AEST · **Version:** 0.91.01 · **Fleet still `s182`; `s184` images built and waiting.** · **PAUSED mid-deploy — main is gate-proven, the next action is `up -Tag s184`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -64,6 +64,26 @@ four days earlier** ([DL-123](design-log.md)). 🪤 **A green branch gate does n
 went green. Merge-then-verify is again the only exit — a trap that fires twice in four days is a
 missing check, filed as queue item 31.
 
+⏸️ **PAUSED 2026-08-21 00:05 AEST, deliberately between steps.** Nothing is half-applied: `main`
+is `7af1583`, **`GATE PROVEN`** (CI + Security Findings + CodeQL + Build images all success, SHA
+checked against `HEAD`), tree clean, `s184` images **built and pushed to GHCR**, fleet **still on
+`s182`** and untouched. **Resume at step 1.**
+
+1. `pwsh infra/deploy-agents.ps1 up -Tag s184` — 🚨 a **full `up`**, not an image retag: S184 adds
+   the `trading_issuer_map.json` pack, a new `PORTFOLIO_MANAGER_ISSUER_MAP_B64` env var, and four
+   tunables. 🪤 A full `up` **replaces each app's env set** (DL-100), so anything set by hand is
+   reverted — the pack carries the tunables and the cron (`30 22 * * 1-5`), so this is safe.
+2. Diff the result against the recorded baseline —
+   `scratchpad/fleet-baseline-pre-s184.json` + `job-baseline-pre-s184.json`: **16 apps + job, all
+   `s182`, min 0 / max 1, cron `30 22 * * 1-5`.** 🪤 Both previous deploys hid a scale-config drift
+   that only a baseline diff caught.
+3. Fire a **test run now** rather than waiting for 22:30 UTC (pre-prod; widen the KEDA window, then
+   restore it). No CLI exists for a custom `verify-*` id — `orchestration/start.py::place_run_request`
+   is the library call; write a scratch script with the refuse-on-in-memory guard.
+4. Measure with `scratchpad/measure_veto.py`. **The "before" is already recorded** in
+   `scratchpad/veto-baseline-pre-s184.txt`: **25 of 35 vetoed = 71 %** across five real binding runs,
+   and **every one** carries an exposure-aggregation objection.
+
 🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's
 exposure-aggregation objections disappear and the **73 % veto rate falls materially**. Unit fixtures
 cannot show that; only a live run can. **If the objections persist now that the PM aggregates
@@ -76,22 +96,14 @@ properly, the finding moves to the referee** — the separation the ADR was writ
 - **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
   gate-proven at `5bf72c9`, unmerged; only the 15-order K=4 measurement remains.
 
-**PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
-derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet
-written the `Position`. 🟢 **Monitor keeps ownership** — `filled_entry_stops.py:73` only *reads*
-`Position` and returns early if it exists; execution writes no `Position` anywhere. The
-no-double-place guarantee holds **by construction**: the private `_position_ref` was extracted into
-`contracts/position_refs.py`, so all four call sites compute identically, and execution's
-`f"{source_run_id}:{ticker}"` is exactly the key the monitor will later create. `403 potential wash
-trade` now stays loud and keeps faulting until a live stop exists (DL-118). `poll.py` **197 → 136**
-via a split into `pm_execution.py`. `make ci` **2331 passed / 100.00 %**; `GATE PROVEN` for
-`2fc0672`; image-only retag (vocabulary pack hash unchanged), 16/16 apps + job on `s182`, scale
-config diffed **identical** to baseline, tunables intact.
-
-🪤 **Two traps a glance would miss.** The working directory was left on Codex's branch, so the first
-`git merge` said *"Already up to date"* — merging the branch into itself. And the post-deploy scale
-diff showed `minReplicas=1` on all 16, **my own leftover** from the morning. Both caught by diffing
-against a recorded baseline, not by reading output.
+**PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution
+derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet written
+the `Position`; monitor keeps ownership, and the shared `contracts/position_refs.py` makes the
+no-double-place guarantee structural. `make ci` **2331 passed / 100.00 %**; `GATE PROVEN` for
+`2fc0672`. 🪤 **Two traps a glance would miss:** the working directory was left on Codex's branch so
+the first `git merge` said *"Already up to date"* — merging the branch into itself; and the
+post-deploy scale diff showed `minReplicas=1` on all 16, my own leftover. **Both caught by diffing
+against a recorded baseline, not by reading output.**
 
 **NOT PROVEN: S182 live.** The defect needs a position filled *between* runs, so no synthetic fixture
 can exhibit it — proof waits on a **new** entry filling. Opportunistic.

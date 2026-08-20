@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 19:19 AEST · **Version:** 0.90.17 · **S183 local green on fleet baseline `s182`; remote gate pending.**
+**Last updated:** 2026-08-20 19:25 AEST · **Version:** 0.90.17 · **S183 complete on branch; fleet remains `s182`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -45,7 +45,9 @@ applied stop/target, and counterfactual mode. `stop_target_mode` stayed exactly 
 declares it: a non-tunable mode selector; no law drift row was filed. No approval predicate changed:
 unknown earnings remains a skipped attestation rather than a drop, near-future earnings still drops,
 and the flat stop champion remains selected. Focused guards failed first and then passed; redirected
-`make ci` exited 0 with **2332 passed / 6 skipped / 100.00 %**. Remote branch gate is still pending.
+`make ci` exited 0 with **2332 passed / 6 skipped / 100.00 %**. `make gate-ran` proved the first
+pushed implementation tip `50086f3a5231223104732fa4fee80df23bd34338`; final handback must cite the
+docs-only branch-tip proof too.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet

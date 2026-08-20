@@ -152,18 +152,18 @@ sailing through. **Say so explicitly if it does.**
 
 ## Success factors
 
-- [ ] A ticker with no earnings date is recorded as **`earnings_window` not evaluated**, provably
+- [x] A ticker with no earnings date is recorded as **`earnings_window` not evaluated**, provably
       distinct from one that passed it. Same for `max_beta`.
-- [ ] Decision 2 applied: "no data" and "no upcoming earnings" are distinguishable, or the reason
+- [x] Decision 2 applied: "no data" and "no upcoming earnings" are distinguishable, or the reason
       they are not is recorded.
-- [ ] `stop_target_mode` is **left exactly as it is** — not registered, no law drift filed.
-- [ ] The stop's basis (mode + ATR availability) reaches the debate packet.
-- [ ] **No change to which orders are approved**, or the change is named and justified.
-- [ ] Decisions 1–4 recorded with rejected alternatives.
-- [ ] `filters.py` does not cross 200; ideally back under 150.
-- [ ] Each new guard planted, watched to fail, restored — stated per guard.
-- [ ] `make ci` exit 0, 100.00 % coverage.
-- [ ] `make gate-ran` **GATE PROVEN**, run from the worktree whose `HEAD` is the commit, SHA checked.
+- [x] `stop_target_mode` is **left exactly as it is** — not registered, no law drift filed.
+- [x] The stop's basis (mode + ATR availability) reaches the debate packet.
+- [x] **No change to which orders are approved**, or the change is named and justified.
+- [x] Decisions 1–4 recorded with rejected alternatives.
+- [x] `filters.py` does not cross 200; ideally back under 150.
+- [x] Each new guard planted, watched to fail, restored — stated per guard.
+- [x] `make ci` exit 0, 100.00 % coverage.
+- [x] `make gate-ran` **GATE PROVEN**, run from the worktree whose `HEAD` is the commit, SHA checked.
 
 ## Traps
 
@@ -271,7 +271,7 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Status:** IMPLEMENTED — local proof complete; remote branch gate pending after first push.
+**Status:** IMPLEMENTED — local proof complete; first pushed implementation tip remote-gated.
 
 **Result:** Scanner filter evidence is now three-state. `Candidate` and `FilterVerdict` carry
 `skipped_filters`, and the debate packet renders the skipped list beside the survived list. A ticker
@@ -344,4 +344,15 @@ above, and restored green in the focused run and full gate.
 Exit code 0. Pytest reported `2332 passed, 6 skipped`, required coverage reached at `100.00 %`.
 `pip-audit` reported no known vulnerabilities. `detect-secrets` passed.
 
-**`make gate-ran`:** pending after branch push.
+**`make gate-ran`:** run from
+`C:\Users\yury_\Downloads\project\trading-agents-s183` at
+`50086f3a5231223104732fa4fee80df23bd34338`.
+
+```text
+GATE PROVEN for 50086f3a5231223104732fa4fee80df23bd34338:
+  Security Findings: success
+  CI: success
+```
+
+This closeout update is docs-only; the final handback must also cite `make gate-ran` for the pushed
+docs-only branch tip.

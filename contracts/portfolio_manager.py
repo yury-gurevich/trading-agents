@@ -49,8 +49,21 @@ class GateOutcome(_Frozen):
 
     @property
     def passed(self) -> bool:
-        """Compatibility view for older tests; serialized evidence uses outcome."""
-        return self.outcome == GateStatus.PASSED
+        """Two-state view, valid only for a gate that was actually evaluated.
+
+        PM-NEV-09 forbids reading an unevaluated gate as passed. A boolean has
+        nowhere to put ``not_evaluated``, so asking for one here is a question
+        with no honest answer and raises instead of silently returning False --
+        which would report "the gate found a breach" when the truth is "the gate
+        never ran". Branch on ``outcome`` when the third state is possible.
+        """
+        if self.outcome is GateStatus.NOT_EVALUATED:
+            message = (
+                f"gate {self.name!r} was not evaluated; read .outcome, not "
+                ".passed (PM-NEV-09)"
+            )
+            raise ValueError(message)
+        return self.outcome is GateStatus.PASSED
 
 
 class OrderIntent(_Frozen):

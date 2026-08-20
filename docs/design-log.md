@@ -8,6 +8,60 @@ and is marked CLOSED here.
 
 ---
 
+## DL-123 - The same CodeQL rule landed twice in four days, and the branch gate structurally cannot catch it - status: MEASURED (2026-08-20)
+
+**What happened.** Merging S184 raised CodeQL **#187**,
+`py/mismatched-multiple-assignment`, at `agents/portfolio_manager/tests/test_correlation_edges.py:46`:
+
+```python
+(outcome,) = book.outcomes(...)     # outcomes() returns () OR a 1-tuple
+```
+
+`CorrelationBook.outcomes` returns `()` when there is nothing to assess and a 1-tuple otherwise, so
+a fixed-arity unpack raises whenever the empty branch is taken. **This is the identical rule, in the
+identical package, that produced #177 four days earlier** ([DL-110](design-log.md)) - where a PM test
+unpacked `SectorBook.outcomes()` the same way, and that call also returns `()` with no sector.
+
+**The structural part, and the reason it will happen again.** `codeql.yml` runs **only on `main`**.
+S184's branch gate was genuinely green - CI, Security Findings and Build images all `success` at
+`8613d72`, verified independently from a worktree at that SHA - because **the analysis that finds
+this class had not run yet**. The alert appeared the moment the merge landed, and then failed the
+*next* branch's Security Findings gate, which is how it surfaced.
+
+🪤 **So "branch green" does not mean "CodeQL clean".** The gate proves CI and the findings baseline;
+it cannot prove a scan that only main triggers. DL-110 recorded this as a trap and prescribed
+merge-then-verify as the exit. That worked twice. **A trap that fires twice in four days is not a
+trap, it is a missing check** - and both instances are the same one-line shape.
+
+**Immediate fix.** Assert the length, then index:
+
+```python
+outcomes = book.outcomes(...)
+assert len(outcomes) == 1
+outcome = outcomes[0]
+```
+
+**Rejected routes.**
+
+- *Make `outcomes()` always return exactly one outcome* - rejected. The empty return is meaningful:
+  there is genuinely nothing to assess. Padding it with a filler outcome would reintroduce the
+  absence-as-silence confusion `PM-NEV-09` exists to remove.
+- *Wait for the next occurrence and fix it too* - rejected. That is the current policy by default,
+  and it has now cost two red gates.
+- *Move `codeql.yml` to run on branches* - **the obvious fix, deferred not rejected.** It would catch
+  this before merge. Cost and blast radius are unmeasured (scan minutes per push, and the
+  branch-vs-main alert-state semantics that DL-110 already found confusing). Queue item 31.
+- *A local grep guard in `make ci` for fixed-arity unpacks of a variable-arity return* - deferred.
+  Cheaper than CodeQL-on-branches and catches exactly this shape, but it is a new CI step and needs
+  its own `gate_selftest` case so it cannot regress.
+
+**Consequence for this merge.** A branch cannot clear an alert raised on `main`, so
+`chore-gate-outcome-refuses-ambiguity` carries the fix but **cannot go green on its own gate** -
+merge-then-verify on `main` is again the only exit, exactly as DL-110 prescribed. Recorded here so
+the third occurrence is measured against a decision rather than rediscovered.
+
+---
+
 ## DL-122 - S184 concentration gates: issuer, correlation, and not-evaluated evidence - status: DECIDED (2026-08-20)
 
 **Context.** S184 implements ADR-0023 and PM laws v1.3. The sprint brief requires five design
@@ -20,6 +74,17 @@ implementation.
 readers must branch on the three-state value. Rejected: adding `evaluated: bool` beside `passed`.
 That is additive, but it permits `evaluated=false, passed=true`, exactly the impossible state
 `PM-NEV-09` forbids.
+
+> **Amendment, 2026-08-20 (post-merge review).** The shipped `GateOutcome` kept a `passed` property
+> as a two-state convenience view, and it **re-collapsed the three states it had just separated**:
+> `not_evaluated` read as `False`, i.e. *"the gate found a breach"* when the truth is *"the gate
+> never ran"*. No production reader used it — all five were migrated — but it left the exact
+> conflation this sprint removed reachable by the next one. **`passed` now raises on
+> `NOT_EVALUATED`.** Rejected: deleting the property, which is equally safe but churns 31 test
+> assertions in a just-verified sprint for no added protection. Rejected: leaving it, on the
+> grounds that no caller uses it today — the defect class this whole thread is about
+> ([DL-121](design-log.md)) is precisely *a hazard nothing currently trips over*. A boolean view of
+> a tri-state fact is fine where the third state is impossible, and must refuse where it is not.
 
 **Decision 2 - issuer identity is trading-pack data delivered to PM, not imported by PM.** The map
 lives as `orchestration/packs/trading_issuer_map.json`; PM loads it from base64 env content in the

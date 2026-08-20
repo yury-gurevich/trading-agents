@@ -8,6 +8,54 @@ and is marked CLOSED here.
 
 ---
 
+## DL-118 - S182 protects freshly filled entries from Fill lineage, not Position writes - status: DECIDED (2026-08-20)
+
+**Question.** A broker holding can appear from a buy Fill before the monitor has written its
+monitor-owned `Position`. Execution places broker stops one stage earlier than monitor adoption, so
+`place_broker_stops` currently sees the holding but no position-derived stop plan and records
+`UnprotectedPosition` instead of placing protection.
+
+**Law reading record before implementation.** Read `agents/monitor/laws/laws.md`,
+`agents/monitor/laws/test-plan.md`, `agents/execution/laws/laws.md`, and
+`agents/execution/laws/test-plan.md`. `MON-IDN-02` declares `Position` as a monitor-owned label.
+`EXEC-IDN-03` declares execution's broker-boundary evidence labels, including `BrokerStopOrder`.
+`EXEC-OBS-03` requires a held position with no live broker stop to be loud and retried. Execution's
+law has no `Position` ownership grant. Therefore S182 must not have execution create `Position`
+unless it runs a law cycle; this sprint does not.
+
+**Decision - execution may protect from filled-entry lineage, but may not create `Position`.** The
+new stop plan is derived from execution-owned `Fill` nodes and their `OrderIntent` lineage only when
+there is a fresh broker holding for the same ticker and no active `Position` plan yet. The
+`position_ref` is the same deterministic reference the monitor will produce for the future
+`Position` key, so after the monitor later writes `Position`, the existing `BrokerStopOrder` still
+blocks duplicates. The stop fact remains execution-owned; the eventual `Position` remains
+monitor-owned.
+
+**Decision - wash-trade stop rejection stays loud and repeats.** A broker `403 potential wash trade`
+on stop submission is recorded as the rejected stop `Fill` plus an `UnprotectedPosition` fault. S182
+does not cancel the opposing buy automatically: the current broker port cannot identify the
+conflicting order, and blindly cancelling entry orders would change trading intent to hide a
+protection failure. The naked position must stay visible until the conflicting order is gone or a
+future broker-order-discovery sprint can cancel the exact blocker and retry the stop.
+
+**Decision - repeated unprotected faults are correct here.** S181's durable acknowledgement pattern
+is rejected for this case. An untracked terminal test order was immutable residue; an unprotected
+live holding is changing risk. Until an active broker stop exists, each run should keep emitting the
+fault rather than remembering first sight and going quiet.
+
+**Rejected routes.**
+
+- *Move stop placement after monitor* - rejected for S182. It is semantically clean but requires a
+  second execution pass or new orchestration edge, widening the stage contract.
+- *Have monitor request stop placement* - rejected for S182. It preserves ownership, but adds a new
+  cross-agent message and contract where existing Fill lineage already contains the needed facts.
+- *Have execution create `Position`* - rejected. It violates `MON-IDN-02` and would require a law
+  cycle before code.
+- *Use a Fill-key-derived `position_ref`* - rejected. It would protect the first run but double-place
+  after monitor adoption because the later `Position` reference would differ.
+- *Automatically cancel any buy after a wash-trade 403* - rejected. Without broker-order discovery,
+  execution cannot prove which order blocks the stop.
+
 ## DL-117 - The news feed is market-wide, and the sentiment score is an unweighted mean of it - status: MEASURED (2026-08-20)
 
 **Question (work-queue item 26, filed diagnose-first).** The deliberator rejected sentiment as

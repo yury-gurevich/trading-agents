@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 15:10 AEST · **Version:** 0.90.15 · **Fleet: `s181`** · **Scheduled runs PAUSED (never-firing cron) while both LLM providers are down. 🚨 3 positions are unprotected — stops need one run to place.**
+**Last updated:** 2026-08-20 16:10 AEST · **Version:** 0.90.16 · **S182:** local gate green; branch ready for push/gate, live-fill proof not claimed.
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when

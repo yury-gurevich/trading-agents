@@ -15,6 +15,7 @@ from agents.execution.broker_stop_thresholds import (
     BrokerStopThresholdPlan,
     broker_stop_thresholds,
 )
+from agents.execution.filled_entry_stops import filled_entry_stop_thresholds
 from agents.execution.settings import ExecutionSettings
 from contracts.broker_stops import (
     active_broker_stop_orders,
@@ -70,18 +71,25 @@ def place_broker_stops(
                 broker_quantities.get(error.ticker, 0),
                 f"no stop threshold: {error.reason}",
             )
+    for entry_plan in filled_entry_stop_thresholds(
+        graph,
+        broker_quantities=broker_quantities,
+        blocked_tickers=frozenset({*plans, *error_tickers}),
+        fallback_stop_pct=fallback,
+    ):
+        plans[entry_plan.threshold.ticker] = entry_plan
     for ticker, quantity in sorted(broker_quantities.items()):
         if ticker in sold_tickers:
             continue
         if ticker in error_tickers:
             continue
-        plan = plans.get(ticker)
-        if plan is None:
+        active_plan = plans.get(ticker)
+        if active_plan is None:
             _record_unprotected_fault(
                 sink, ticker, quantity, "no active graph position"
             )
             continue
-        threshold = plan.threshold
+        threshold = active_plan.threshold
         if not _broker_quantity_matches(threshold, broker_quantities):
             _record_unprotected_fault(
                 sink,
@@ -93,7 +101,7 @@ def place_broker_stops(
             continue
         if threshold.position_ref in protected_refs:
             continue
-        fill = _place_stop(graph, broker, sink, plan)
+        fill = _place_stop(graph, broker, sink, active_plan)
         if fill is None:
             _record_unprotected_fault(
                 sink,

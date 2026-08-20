@@ -7,10 +7,11 @@ External I/O: none.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
+
+from contracts.position_refs import position_ref_for_keys
 
 if TYPE_CHECKING:
     from contracts.common import Ticker
@@ -79,7 +80,7 @@ def open_positions(graph: GraphStore) -> tuple[OpenPosition, ...]:
         OpenPosition(
             ticker=ticker,
             quantity=sum(int(node.props["quantity"]) for node in nodes),
-            position_ref=_position_ref(tuple(node.key for node in nodes)),
+            position_ref=position_ref_for_keys(tuple(node.key for node in nodes)),
         )
         for ticker, nodes in sorted(nodes_by_ticker.items())
     )
@@ -108,7 +109,8 @@ def position_basis_for_ref(
         if current_ticker != ticker:
             continue
         sorted_nodes = tuple(sorted(nodes, key=lambda node: node.key))
-        if _position_ref(tuple(node.key for node in sorted_nodes)) != position_ref:
+        current_ref = position_ref_for_keys(tuple(node.key for node in sorted_nodes))
+        if current_ref != position_ref:
             return None
         lots = tuple(_basis_lot(node) for node in sorted_nodes)
         if any(lot is None for lot in lots):
@@ -167,7 +169,7 @@ def _stop_threshold(ticker: Ticker, nodes: tuple[Node, ...]) -> PositionStopThre
     return PositionStopThreshold(
         ticker=ticker,
         quantity=quantity,
-        position_ref=_position_ref(tuple(node.key for node in nodes)),
+        position_ref=position_ref_for_keys(tuple(node.key for node in nodes)),
         opened_price_cents=opened,
         stop_pct=next(iter(stop_pcts)),
     )
@@ -183,8 +185,3 @@ def _stop_lot(ticker: Ticker, node: Node) -> tuple[int, int, float]:
     except (KeyError, TypeError, ValueError) as exc:
         message = f"active lot for {ticker} lacks stop threshold inputs"
         raise ValueError(message) from exc
-
-
-def _position_ref(keys: tuple[str, ...]) -> str:
-    joined = "\n".join(sorted(keys)).encode("utf-8")
-    return hashlib.sha256(joined).hexdigest()[:16]

@@ -241,20 +241,56 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Status:** implemented on branch
+`sprint-182-a-new-position-is-protected-on-the-run-that-opens-it` as `0.90.16`.
+Branch push / remote gate proof happens after this closeout commit; merge, deploy, and live-fill
+proof are not claimed here.
 
-**Status:** SPEC
+**Result:** a broker holding whose buy `Fill` is already filled but whose monitor-owned `Position`
+does not exist yet now gets a broker stop from Fill + OrderIntent lineage. Execution still writes
+only execution-owned facts (`Fill`, `BrokerStopOrder`) and predicts the same `position_ref` the
+monitor will later derive for `Position`, so monitor adoption does not cause a duplicate stop.
+Rejected stop submissions, including Alpaca-style `403 potential wash trade`, remain rejected stop
+Fills plus `UnprotectedPosition` faults and repeat until a live stop exists.
 
-**Result:** *not yet implemented.*
+**Files changed:** `agents/execution/broker_stops.py`;
+`agents/execution/filled_entry_stops.py`; `agents/execution/pm_execution.py`;
+`agents/execution/poll.py`; `agents/execution/tests/test_broker_stop_pending_position.py`;
+`agents/execution/tests/test_filled_entry_stops.py`; `contracts/position_refs.py`;
+`contracts/positions.py`; `docs/design-log.md`; `docs/STATE.md`; `pyproject.toml`; `uv.lock`;
+this sprint handoff.
 
-**Files changed:** *...*
+**Design decisions:** recorded as [DL-118](../design-log.md). Chosen: place stops from filled-entry
+lineage without execution writing `Position`; keep wash-trade stop rejections loud/repeated instead
+of auto-cancelling unknown buys; keep repeated unprotected faults because this is live risk, not
+immutable residue. Rejected: moving stop placement after monitor for S182, monitor-to-execution stop
+requests, execution-created `Position`, Fill-key-derived `position_ref`, and blind buy cancellation.
 
-**Design decisions:** *who may create the `Position`, the 403 wash-trade path, and fault repetition —
-as a DL entry with rejected alternatives.*
+**Proof:** first failing test before implementation:
+`uv run pytest agents/execution/tests/test_broker_stop_pending_position.py::test_filled_entry_without_position_is_protected_from_fill_lineage --no-cov`
+failed with `ValueError: not enough values to unpack (expected 1, got 0)` because no
+`BrokerStopOrder` was written. Restored focused proof:
+`uv run pytest agents/execution/tests/test_broker_stop_pending_position.py
+agents/execution/tests/test_filled_entry_stops.py --no-cov` passed `7 passed`; the broader
+broker-stop/poll regression set passed `43 passed`.
 
-**Proof:** *a position filled between runs protected on the next run; the failing test that came
-first; the wash-trade test.*
+**Module sizes:** `poll.py` is split and now **135** lines, under both the 150 warning and 200 hard
+cap. Other touched modules are under the hard cap: `pm_execution.py` **84**,
+`broker_stops.py` **187**, `filled_entry_stops.py` **176**, `contracts/positions.py` **187**,
+`contracts/position_refs.py` **16**, `test_broker_stop_pending_position.py` **156**,
+`test_filled_entry_stops.py` **167**.
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+**Live proof:** not done. The sprint's live proof requires a real or deliberately constructed fill
+between runs; this branch proves the behavior with graph/broker fixtures only. No production graph
+state was mutated, no broker order was created, and no teardown was required.
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+**Guards planted:** Fill-derived planning disabled by blocking every broker holding -> S182 test
+failed with zero `BrokerStopOrder` nodes; restored. Rejected-stop fault branch suppressed -> wash
+trade test failed with `len(unprotected) == 0`; restored. Fill-derived `position_ref` changed to a
+Fill-key-shaped hash -> S182 test failed on the expected monitor-compatible `position_ref`;
+restored.
+
+**`make ci`:** final redirected local gate
+`C:\Users\yury_\AppData\Local\Temp\trading-agents-s182-make-ci-final.log` exited `0`:
+`2331 passed, 4 skipped`, `100.00%` coverage, `pip-audit` no known vulnerabilities, tracked and
+untracked detect-secrets checks passed.

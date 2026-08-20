@@ -8,6 +8,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-117 - The news feed is market-wide, and the sentiment score is an unweighted mean of it - status: MEASURED (2026-08-20)
+
+**Question (work-queue item 26, filed diagnose-first).** The deliberator rejected sentiment as
+evidence on three consecutive nights because the headlines behind it were not about the name. Was
+the provider returning loose matches, or was the analyst failing to filter?
+
+**Answer: the provider, and the analyst applies no filter of any kind.** Headlines come from
+Finnhub `/company-news?symbol=X`, so the *vendor* asserts the association;
+`fundamentals_parse.py:_parse_news` then takes every `headline` string in the payload, capped by
+count, with **no relevance test**.
+
+**Measured on `verify-2026-08-19-clean-2`, 99 tickers, 1,533 headline slots / 1,015 distinct.**
+A headline filed under many tickers cannot be about any one of them, which measures contamination
+without needing a company-name map:
+
+| | |
+| --- | --- |
+| Slots whose headline is filed under **>=2** tickers | **736 = 48 %** |
+| Slots whose headline is filed under **>=5** tickers | **287 = 19 %** |
+| Slots containing their own ticker symbol | 154 = 10 % (lower bound; misses company names) |
+| Worst single headline | *"Which dow jones stocks are moving on Tuesday?"* filed under **20** tickers |
+| Worst ticker | **MRK, 60 %** of its 20 headlines are >=5-ticker generic |
+
+**It moves the score, because the score is an unweighted mean.** `score_sentiment` averages
+per-headline sub-scores, so a Dow Jones roundup counts exactly as much as an earnings report.
+Re-scoring every ticker with the >=5-ticker headlines removed: **mean shift 4.8 points, max 75.0**
+(TSLA **75.0 -> 0.0**), **15 tickers move more than 10 points**, and one ticker is left with no
+scoreable headline at all.
+
+**RETRACTION - my own framing in item 26 was wrong.** I filed it saying *"mis-attributed news is
+buying stocks"*. The data says the opposite: **every** PM-approved order on that run scores *higher*
+once contamination is removed (AMZN +2.3, GOOGL +6.0, INTC +5.0, CSCO **+14.3**, others 0.0). The
+generic headlines were **suppressing** those scores. The deliberator's GOOGL objection was therefore
+half right - the input is genuinely contaminated, but the approval survived the noise rather than
+depending on it. 🪤 **This is bidirectional noise, not a bias toward buying**, and the risk is
+mis-ranking and false rejection as much as false approval. Same error shape as DL-116: I asserted a
+direction I had not measured.
+
+**Candidate fix, cheap and vendor-independent.** The batch already contains every ticker's
+headlines, so cross-ticker duplication is computable at zero API cost: drop, or down-weight, any
+headline appearing under >= N tickers in the same run. **Not yet specced** - the threshold, and
+whether to drop or weight, need a decision:
+
+- *Drop at N=5* would remove 19 % of slots and leave 1 ticker with no signal at all, so the
+  no-signal path must be a first-class outcome rather than an accident.
+- *Down-weighting* keeps the signal but makes the score no longer a plain mean, which changes an
+  artefact the deliberator reads.
+- 🪤 **Do not filter on the ticker symbol appearing in the headline.** Only 10 % of slots would
+  survive, because real company news says "ExxonMobil", not "XOM".
+
+---
+
 ## DL-116 - The veto becomes binding by arithmetic, not by a switch - status: DECIDED (2026-08-19), AMENDED same day (half the diagnosis was wrong)
 
 **Problem.** `sched-2026-08-19` submitted **all 9** PM-approved orders with

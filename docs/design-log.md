@@ -8,6 +8,66 @@ and is marked CLOSED here.
 
 ---
 
+## DL-120 - Tunable sweep: 236 of 246 settings fields are declared; the ten that are not include two dormant switches - status: MEASURED (2026-08-20)
+
+**Why swept.** S183 found `stop_target_mode` written as a bare default rather than a `tunable()`,
+hiding S150's fully-built volatility-scaled stop. The question was whether it was alone.
+
+**Method.** `tunable()` always sets `description=why`, so a settings field with no description was
+not declared through it. Imported every module under `agents/ kernel/ orchestration/ surfaces/
+contracts/`, walked every `BaseSettings` subclass, and classified each field.
+
+**Measured — 24 settings classes, 246 fields:**
+
+| | count |
+| --- | --- |
+| declared via `tunable()` | **236** |
+| bare, wiring-shaped (urls, keys, model refs) — legitimately not tunables | 32 |
+| bare, **behavioural** — suspects | **10** |
+
+**The ten, judged:**
+
+| Field | Verdict |
+| --- | --- |
+| `analyst.stop_target_mode = "flat"` | **must be tunable** — already in S183 |
+| `execution.order_price_tolerance_mode = "flat"` | **must be tunable** — the *same defect twice* |
+| `scanner.benchmark_ticker = "SPY"` | **must be tunable** — sets every `relative_strength` and `beta` |
+| `provider.alpaca_data_feed = "iex"` | **must be tunable** — IEX is a partial feed; SIP is the full one |
+| `provider.ingest_ohlcv_only = False` | **must be tunable** — gates which feeds are ingested |
+| `curator.predictor_strategy = "majority_class"` | **must be tunable** — selects the predictor |
+| `execution.stage = "paper"` | **needs a `why` at minimum** — see below |
+| `curator.schema_ref = "curator.training_example.v1"` | fine — a version identity, not a knob |
+| `ProviderFeedSettings.alpaca_data_feed` / `.ingest_ohlcv_only` | duplicates of the two above |
+
+🚨 **The headline is not the count, it is the pattern.** Two agents, two sprints, the same mistake:
+
+- `analyst.settings:140` — `stop_target_mode` bare, surrounded by `scaled_stop_atr_multiplier`,
+  `scaled_stop_floor_pct`, `scaled_stop_ceiling_pct`, **all properly tunable** (S150).
+- `execution.settings:49` — `order_price_tolerance_mode` bare, surrounded by
+  `scaled_order_price_tolerance_atr_multiplier`, `_floor_bps`, `_ceiling_bps`, **all properly
+  tunable** (S149).
+
+**Each sprint carefully registered the challenger's parameters and forgot the switch that selects
+it.** The result is a fully built, fully parameterised challenger that no operator can reach through
+the catalogue — twice. Whatever review caught the parameters did not think of the mode as one.
+
+**`execution.stage` — severity corrected downward after checking.** It is
+`Literal["paper", "broker_shadow", "live_manual", "live_autopilot"]`, so on its face the paper/live
+switch and the most consequential value in the system. But: the graph is authoritative
+(`current_stage_from_graph` prefers the latest `StageTransition`, falling back to the env value only
+when none exists), and [`run.py:51`](../../agents/execution/run.py#L51) rejects outright —
+`if stage not in ("paper", "broker_shadow"): return live_gate_rejected(...)`. **Both live stages
+reject every order; the live submission path is not built.** So a stray `EXECUTION_STAGE` cannot
+trade real money. 🪤 **The defect is that it carries no recorded `why` and is invisible to the
+catalogue — not that it is dangerous today.** Saying otherwise would be the third unmeasured
+direction claim in two days.
+
+**Not swept: bare literals inside domain code**, the class S174 hit with
+`_DEFAULT_LOOKBACK_DAYS = 60`. This sweep covers settings fields only. A module-level-constant sweep
+is a separate, larger read and is **not** claimed here.
+
+---
+
 ## DL-119 - The veto rejects 73% of approved orders, and it keeps citing one missing gate - status: MEASURED (2026-08-20)
 
 **What changed.** DL-116 raised the grace so the veto actually binds. Four real runs later the

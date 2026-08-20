@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-20 22:15 AEST · **Version:** 0.91.00 candidate (fleet still `s182` / `0.90.16`) · **S184 built locally on `sprint-184-one-issuer-is-one-bet`: issuer aggregation, measured correlation, and explicit not-evaluated PM gates.**
+**Last updated:** 2026-08-20 23:05 AEST · **Version:** 0.91.00 (fleet still `s182`, deploy in flight) · **S184 merged: concentration is now issuer + measured correlation. The 73 % veto rate is the thing it must move, and only a live run can show that.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -43,55 +43,38 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-**In flight, 2026-08-20 evening.**
-- **PROVEN RESULT — S184 built locally on `sprint-184-one-issuer-is-one-bet`.** PM now aggregates
-  concentration by issuer (`GOOG` + `GOOGL` as Alphabet), rejects measured correlated clusters
-  against the held book, emits `not_evaluated` for missing sector labels and short correlation
-  history, counts held position dollars in `max_sector_pct`, and carries `GateOutcome.outcome` as
-  `passed | failed | not_evaluated` while accepting legacy `passed` payloads. Local guard proof:
-  the planted pre-implementation run
-  `uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`
-  failed 5/5; final `make ci` redirected to `.tmp\make-ci-s184-final.log` exited 0 with
-  **2360 passed / 6 skipped / 100.00 %**, pip-audit clean, detect-secrets clean. Before/after:
-  the same `GOOG`/`AMZN` set changed from both approved to `GOOG:sizing` and
-  `AMZN:correlated_cluster_concentration`; provider calls for correlation added **0** held-name
-  requests. Law rows/drift/counters are reconciled (`PM 28 / 47`; DRIFT-042..046 corrected).
-  **Remote branch gate remains post-push proof:** run `make gate-ran` from this worktree after the
-  final commit is pushed and compare its printed SHA to `git rev-parse HEAD` before merge.
+**PROVEN RESULT — S184 merged `18c41b1` (`0.91.00`), 2026-08-20.** ADR-0023 shipped. The PM now
+aggregates concentration by **issuer** (GOOG + GOOGL = Alphabet), rejects **measured** correlated
+clusters against the held book, emits `not_evaluated` for a missing sector label or too-short
+history, counts held dollars in `max_sector_pct`, and carries `GateOutcome.outcome` as
+`passed | failed | not_evaluated`. **Verified independently before merge:** `GATE PROVEN` for
+`8613d72` from a worktree at that SHA; `make ci` reproduced at exit 0, **2360 passed / 100.00 %**;
+all five `.passed` readers migrated; rollups **28 / 47** in `ledger.md` *and* `INDEX.md`;
+DRIFT-042..046 `CORRECTED`. Measured behaviour change: the same GOOG/AMZN set went from both
+approved to `GOOG:sizing` + `AMZN:correlated_cluster_concentration`, with **0** added provider
+requests. PM law rows `PM-NEV-07/08/09` are 🟩.
+
+🚨 **Two defects the merge exposed, both fixed on `chore-gate-outcome-refuses-ambiguity`.**
+**(1)** S184 kept `GateOutcome.passed` as a two-state view that **re-collapsed the states it had just
+separated** — `not_evaluated` read as *"the gate found a breach"* when the truth is *"it never ran"*.
+No production reader used it; the hazard was the next one. It now raises (DL-122 amendment).
+**(2)** CodeQL **#187** `py/mismatched-multiple-assignment` — **the same rule, same package, as #177
+four days earlier** ([DL-123](design-log.md)). 🪤 **A green branch gate does not mean CodeQL-clean:**
+`codeql.yml` runs only on `main`, so the scan that finds this class had not run when S184's branch
+went green. Merge-then-verify is again the only exit — a trap that fires twice in four days is a
+missing check, filed as queue item 31.
+
+🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's
+exposure-aggregation objections disappear and the **73 % veto rate falls materially**. Unit fixtures
+cannot show that; only a live run can. **If the objections persist now that the PM aggregates
+properly, the finding moves to the referee** — the separation the ADR was written to make possible.
+
 - **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
   attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as a
   `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was right.**
   Confirm the correction was picked up before accepting a handback.
 - **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
   gate-proven at `5bf72c9`, unmerged; only the 15-order K=4 measurement remains.
-
-**PROVEN RESULT — PM `laws.md` amended to v1.3 for
-[ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md), 2026-08-20.**
-`PM-NEV-06`'s **two measured-false claims are withdrawn** — the labels are not GICS level 1 (30
-industry labels, not 11) and the count cap is **not** the correlation penalty (the AI complex spans
-five labels, so 15 correlated names pass before it fires once). The duty moved rather than
-vanished: `PM-NEV-07` (aggregate by issuer), `PM-NEV-08` (measured correlated-cluster cap),
-`PM-NEV-09` (an unevaluable gate declares itself), five PARAM rows, DRIFT-041..046. **Verified:** `check_law_coverage.py` exits **0**;
-clause IDs **44 → 47**, all `PM-`-prefixed with no leakage into another agent's book; rollups in
-`ledger.md` *and* `INDEX.md` both read **25 / 47** and match the derived count; **no green was
-moved** — every new clause is ⬜ and the two widened clauses kept their narrow green rows with the
-uncovered half named (conventions §7a).
-
-🚨 **The amendment found a hole nothing in the repo could have reported.** `PM-NEV-09` ran into
-`GateOutcome.passed: bool` — **two states, no way to say *not evaluated***. The clause is
-unexpressible in the contract carrying its evidence **and no test fails**, because `PM-TYP-03` only
-said the payloads *"match `contracts/…` exactly"* — the file as both claim and oracle. Rewritten to
-enumerate. 🪤 **The scanner has the same defect in another encoding** (`FilterVerdict`: "did not run"
-and "passed" are the same bytes) — **that is the S183 bug**, in a second agent. 15 clauses still say
-"matches the file" ([DL-121](design-log.md), queue item 30).
-
-**Packaged as [S184](sprints/sprint-184-one-issuer-is-one-bet.md), with Codex.** Premises verified on
-the live spine before writing: 🪤 the `Bar` label has **zero** nodes, but the run's
-`MarketData.snapshot` holds **exactly 202 bars × 98 tickers** and **all 22 held names are in it** — so
-correlation costs no API calls, exactly as ADR-0023 assumed. 🪤 The PM's own provider call is 7 days
-of recommendation tickers only and must **not** be widened. `Sector` holds 101 real rows over **30**
-labels plus **5 junk rows parsed from prose**. 🚨 DRIFT-045 is in scope and non-deferrable — fixing
-the name count un-masks a dollar cap that never sees held positions.
 
 **PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution now
 derives a protective stop from **`Fill` + `OrderIntent` lineage** when the monitor has not yet

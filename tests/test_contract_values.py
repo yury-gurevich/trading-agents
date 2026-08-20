@@ -158,9 +158,13 @@ def test_gate_outcome_has_three_wire_states_and_legacy_passed_view() -> None:
     assert blocked.outcome == GateStatus.FAILED
     assert blocked.passed is False
     assert string_passed.outcome == GateStatus.PASSED
-    assert not_evaluated.passed is False
     assert dumped["outcome"] == "not_evaluated"
     assert "passed" not in dumped
+    # PM-NEV-09: a boolean cannot carry "not evaluated", so asking for one is a
+    # question with no honest answer. Returning False would report a breach the
+    # gate never looked for.
+    with pytest.raises(ValueError, match="was not evaluated"):
+        _ = not_evaluated.passed
 
 
 def test_broker_native_stops_bump_contract_ownership() -> None:

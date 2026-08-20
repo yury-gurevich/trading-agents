@@ -21,6 +21,17 @@ readers must branch on the three-state value. Rejected: adding `evaluated: bool`
 That is additive, but it permits `evaluated=false, passed=true`, exactly the impossible state
 `PM-NEV-09` forbids.
 
+> **Amendment, 2026-08-20 (post-merge review).** The shipped `GateOutcome` kept a `passed` property
+> as a two-state convenience view, and it **re-collapsed the three states it had just separated**:
+> `not_evaluated` read as `False`, i.e. *"the gate found a breach"* when the truth is *"the gate
+> never ran"*. No production reader used it — all five were migrated — but it left the exact
+> conflation this sprint removed reachable by the next one. **`passed` now raises on
+> `NOT_EVALUATED`.** Rejected: deleting the property, which is equally safe but churns 31 test
+> assertions in a just-verified sprint for no added protection. Rejected: leaving it, on the
+> grounds that no caller uses it today — the defect class this whole thread is about
+> ([DL-121](design-log.md)) is precisely *a hazard nothing currently trips over*. A boolean view of
+> a tri-state fact is fine where the third state is impossible, and must refuse where it is not.
+
 **Decision 2 - issuer identity is trading-pack data delivered to PM, not imported by PM.** The map
 lives as `orchestration/packs/trading_issuer_map.json`; PM loads it from base64 env content in the
 fleet or a path in local/dev, mirroring the master grant-pack pattern. A ticker absent from the map

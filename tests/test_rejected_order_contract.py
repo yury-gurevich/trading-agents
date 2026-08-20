@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from contracts.portfolio_manager import GateOutcome, OrderIntentSet
+from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntentSet
 
 
 def test_rejected_order_gate_report_is_additive_for_historical_payloads() -> None:
@@ -30,7 +30,7 @@ def test_rejected_order_gate_report_is_additive_for_historical_payloads() -> Non
         name="cash_available",
         value=100.0,
         threshold=0.0,
-        passed=False,
+        outcome=GateStatus.FAILED,
         detail="fixture",
     )
 

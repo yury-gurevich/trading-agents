@@ -35,7 +35,11 @@ def test_full_p3_slice_produces_order_intent_with_complete_lineage() -> None:
     ProviderAgent(
         bus,
         graph=graph,
-        source=FakeDataSource(bars=_pipeline_bars(), vix=12.0),
+        source=FakeDataSource(
+            bars=_pipeline_bars(),
+            sectors={"AAPL": "Technology", "MSFT": "Technology"},
+            vix=12.0,
+        ),
         settings=ProviderSettings(max_staleness_days=7),
     ).bind()
     ScannerAgent(

@@ -58,6 +58,20 @@ def test_vocabulary_is_set_by_its_own_narrow_update() -> None:
     assert text.count("Get-VocabularyEnv") >= 3  # definition + both setters
 
 
+def test_issuer_map_is_loaded_from_pack_and_sent_only_to_pm() -> None:
+    """S184: the issuer map is PM pack data, not a tunable or fleet-wide env."""
+    text = _script_text()
+    agent_env = text.split("function Get-AgentEnv", 1)[1].split(
+        "function Get-LiveEnvNames", 1
+    )[0]
+
+    assert "function Get-IssuerMapEnv" in text
+    assert "trading_issuer_map.json" in text
+    assert "PORTFOLIO_MANAGER_ISSUER_MAP_B64" in text
+    assert '$name -eq "portfolio-manager"' in agent_env
+    assert agent_env.count("Get-IssuerMapEnv") == 1
+
+
 def test_deploy_reports_its_own_failure() -> None:
     """DL-85: `up` printed "Fleet deployed" and exited 0 after 15 failures.
 

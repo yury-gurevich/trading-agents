@@ -374,6 +374,9 @@ function Get-AgentEnv($name, $masterUrl, $pubB64) {
       "DELIBERATOR_INSTANCE_NAME=$name"
     )
   }
+  if ($name -eq "portfolio-manager") {
+    $envv += @(Get-IssuerMapEnv)
+  }
   return $envv + (Get-AppTunables $name)
 }
 
@@ -570,6 +573,13 @@ function Get-VocabularyEnv {
   # resolve in local dev — base64 is the only deployable form.
   $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_graph_vocabulary.json"
   return "GRAPH_VOCABULARY_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+}
+
+function Get-IssuerMapEnv {
+  # The issuer map is trading-pack data (ADR-0012), not a PM tunable. Inject it
+  # as base64 so the portfolio-manager image stays pack-agnostic like master.
+  $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_issuer_map.json"
+  return "PORTFOLIO_MANAGER_ISSUER_MAP_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
 }
 
 # The pack must NOT ride on a create/update that also carries secrets, the GHCR

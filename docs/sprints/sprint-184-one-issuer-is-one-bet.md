@@ -379,25 +379,63 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Status:** BUILT locally on `sprint-184-one-issuer-is-one-bet`; remote `make gate-ran` is post-push
+proof and must be quoted in the final handoff for the pushed `HEAD`.
 
-**Status:** SPEC
+**Result:** Implemented PM issuer aggregation, measured correlated-cluster concentration, explicit
+`not_evaluated` gate evidence, held-book sector dollars for `max_sector_pct`, and the
+`GateOutcome` tri-state contract. Version bumped to `0.91.00` / `uv.lock` `0.91.0`.
 
-**Result:** *not yet implemented.*
+**Files changed:** PM contract and domain gates; PM agent/run/poll/entrypoint/settings wiring;
+deliberator PM rendering/value labels; PM rejection rendering; deploy env-pack wiring; trading
+tunables and new issuer-map pack; focused PM/contract/orchestration fixture tests; law/test-plan,
+drift, ledger, index, design-log and state docs.
 
-**Files changed:** *...*
+**Design decisions:** [DL-122](../design-log.md#dl-122---s184-concentration-gates-issuer-correlation-and-not-evaluated-evidence---status-decided-2026-08-20)
+records the five decisions and rejected alternatives before implementation: `GateOutcome.outcome`
+enum; issuer map as trading-pack data; cluster recomputed against the running issuer book; PM-local
+correlation from run `MarketData` cached per evaluation; not-evaluated outcomes name the missing
+input and block approval.
 
-**Design decisions:** *the five decisions above, as a DL entry with rejected alternatives.*
+**Proof:** Failing guards came first:
+`uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`
+failed 5/5 before implementation. Green evidence includes
+`test_issuer_concentration.py::test_dual_class_order_counts_existing_issuer_exposure` for
+GOOGL-then-GOOG as one issuer/exposure; `test_correlation_concentration.py::test_correlated_cluster_rejects_cross_label_order`
+for cluster rejection while label gates pass; `test_missing_sector_label_is_not_evaluated` and
+`test_short_correlation_history_is_not_evaluated` for not-evaluated distinct from pass; and
+`test_held_sector_dollars_count_toward_sector_cap` for DRIFT-045.
 
-**Proof:** *the failing tests that came first; GOOGL-then-GOOG rejected as one issuer; a correlated
-candidate rejected on cluster weight with every label gate passing; not-evaluated proven distinct
-from a pass; a held position's dollars counted by `max_sector_pct`; the measured before/after on the
-approved-order set with every change explained; measured provider-call count for the correlation
-input.*
+**Before/after measurement:** Same two-order set (`GOOG`, `AMZN`) against the same held book
+(`GOOGL`, `AAPL`, `MSFT`). Before `main@806956b10d64471702e2e5eb7d9e3a6577d0e4d4` approved both
+orders; all old gates rendered `True`. After S184 approved none: `GOOG` rejected `sizing` because
+held `GOOGL` already consumes Alphabet issuer exposure; `AMZN` rejected
+`correlated_cluster_concentration` with `correlated_cluster_pct=failed` while sizing, position,
+cash, reward/risk and label gates passed.
 
-**Law rows:** *`PM-NEV-07/08/09` 🟩 with citing tests; `check_law_coverage.py` exit code; the
-reconciled counters in `ledger.md` and `INDEX.md`; DRIFT-042..046 marked `CORRECTED`.*
+**Provider-call measurement:** Correlation input came from graph-carried run bars; the PM provider
+request stayed `(('AMZN',),)` for the recommendation ticker only, so correlation added `0` provider
+requests for held names.
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+**Law rows:** `PM-NEV-07`, `PM-NEV-08`, `PM-NEV-09`, the widened issuer half of `PM-NEV-06`, and the
+tri-state half of `PM-TYP-03` are green in `agents/portfolio_manager/laws/test-plan.md`. PM counters
+in `docs/laws/ledger.md` and `docs/laws/INDEX.md` both read `28 / 47`; `DRIFT-042..046` are marked
+`CORRECTED` with regression tests. `uv run python scripts/check_law_coverage.py` is green inside
+`make ci`.
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+**Guards planted:** PM-NEV-07 planted a GOOGL-held/GOOG-buy case and failed before issuer kwargs
+existed. PM-NEV-08 planted a correlated AMZN-vs-held-AAPL/MSFT case and failed before correlation
+inputs existed. PM-NEV-09 planted missing-sector and short-history cases and failed because the old
+code silently passed/approved instead of emitting not-evaluated. DRIFT-045 planted a held-sector
+dollar cap case and failed because held dollars were absent from the old `max_sector_pct`
+calculation. All are restored as passing tests in the final suite.
+
+**`make ci`:** Redirected to `.tmp\make-ci-s184-final.log`, exit `0`. Summary:
+`2360 passed, 6 skipped`, `100.00%` coverage, `pip-audit` found no known vulnerabilities,
+detect-secrets passed tracked and untracked scans.
+
+**Remote gate:** `make gate-ran` must be run after the final commit is pushed from the worktree whose
+`HEAD` is being proved. Its output is intentionally not pre-pasted into this committed closeout,
+because editing this file after the gate would change the SHA the gate proved. The final handoff
+must quote the `make gate-ran` output and compare its printed SHA to `git rev-parse HEAD` before
+merge.

@@ -12,6 +12,11 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
+from agents.portfolio_manager.issuer_map import (
+    IssuerMap,
+    load_issuer_map_from_env,
+)
+from agents.portfolio_manager.market_context import market_data_for_run
 from agents.portfolio_manager.portfolio import PortfolioState, default_portfolio
 from agents.portfolio_manager.provider_client import (
     request_market_data,
@@ -46,6 +51,7 @@ class PortfolioManagerAgent(AgentBase):
         graph: GraphStore,
         settings: PortfolioManagerSettings | None = None,
         portfolio: PortfolioState | None = None,
+        issuer_map: IssuerMap | None = None,
         sink: FaultSink | None = None,
     ) -> None:
         """Create a PM with injected bus, graph, settings, portfolio, and sink."""
@@ -53,6 +59,9 @@ class PortfolioManagerAgent(AgentBase):
         self._graph = graph
         self._settings = settings or PortfolioManagerSettings()
         self._portfolio = portfolio
+        self._issuer_map = (
+            issuer_map if issuer_map is not None else load_issuer_map_from_env()
+        )
         self.sink = sink if sink is not None else CollectingFaultSink()
         self.handlers = {
             "evaluate_orders": self._evaluate_orders,
@@ -72,7 +81,11 @@ class PortfolioManagerAgent(AgentBase):
     def _evaluate_orders(self, request: BaseModel) -> OrderIntentSet:
         recommendation_set = RecommendationSet.model_validate(request)
         market = regime = None
+        correlation_market = None
         if recommendation_set.recommendations:
+            correlation_market = market_data_for_run(
+                self._graph, recommendation_set.run_id
+            )
             market = request_market_data(
                 self.bus, self.sink, recommendation_set, self._window()
             )
@@ -81,10 +94,12 @@ class PortfolioManagerAgent(AgentBase):
             self._graph,
             recommendation_set=recommendation_set,
             market=market,
+            correlation_market=correlation_market,
             regime=regime,
             settings=self._settings,
             portfolio=self._current_portfolio(),
             sink=self.sink,
+            issuer_map=self._issuer_map,
         )
 
     def _explain_decision(self, request: BaseModel) -> Explanation:

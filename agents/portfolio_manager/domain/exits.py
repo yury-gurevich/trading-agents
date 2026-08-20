@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain.volatility import decision_atr_pct
 from contracts.common import Explanation
-from contracts.portfolio_manager import GateOutcome, OrderIntent
+from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntent
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.portfolio import PortfolioState
@@ -37,28 +37,32 @@ def exit_outcomes(
             name="sizing",
             value=float(value / portfolio.value) if portfolio.value > 0 else 0.0,
             threshold=1.0,
-            passed=True,
+            outcome=GateStatus.PASSED,
             detail=f"full_exit_quantity_shares={quantity}; exit_value_usd={value:.2f}",
         ),
         GateOutcome(
             name="min_order_quantity",
             value=float(quantity),
             threshold=float(min_order_quantity),
-            passed=quantity >= min_order_quantity,
+            outcome=(
+                GateStatus.PASSED
+                if quantity >= min_order_quantity
+                else GateStatus.FAILED
+            ),
             detail=f"whole-share exit quantity for {item.ticker}",
         ),
         GateOutcome(
             name="max_positions",
             value=float(open_after),
             threshold=float(max_positions),
-            passed=True,
+            outcome=GateStatus.PASSED,
             detail="sell reduces open position count",
         ),
         GateOutcome(
             name="cash_available",
             value=0.0,
             threshold=float(portfolio.cash.amount),
-            passed=True,
+            outcome=GateStatus.PASSED,
             detail="sell raises cash; no buying-power draw",
         ),
     )

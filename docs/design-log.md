@@ -8,6 +8,60 @@ and is marked CLOSED here.
 
 ---
 
+## DL-122 - S184 concentration gates: issuer, correlation, and not-evaluated evidence - status: DECIDED (2026-08-20)
+
+**Context.** S184 implements ADR-0023 and PM laws v1.3. The sprint brief requires five design
+decisions before code, with rejected alternatives recorded here rather than rediscovered inside the
+implementation.
+
+**Decision 1 - `GateOutcome` carries an outcome enum, not a boolean field.** Replace
+`passed: bool` with `outcome = passed | failed | not_evaluated`. Historical payloads with a
+`passed` key are accepted by a compatibility validator and normalized to `outcome`, but production
+readers must branch on the three-state value. Rejected: adding `evaluated: bool` beside `passed`.
+That is additive, but it permits `evaluated=false, passed=true`, exactly the impossible state
+`PM-NEV-09` forbids.
+
+**Decision 2 - issuer identity is trading-pack data delivered to PM, not imported by PM.** The map
+lives as `orchestration/packs/trading_issuer_map.json`; PM loads it from base64 env content in the
+fleet or a path in local/dev, mirroring the master grant-pack pattern. A ticker absent from the map
+is its own issuer and is an ordinary evaluable input. Rejected: hard-coding dual-class tickers in
+the PM agent, which would move pack knowledge across the ADR-0012 wall; rejected also: making the
+map a `tunable()`, because it is data identity, not a parameter to optimize.
+
+**Decision 3 - one correlated cluster is recomputed against the running issuer book per candidate.**
+Returns are close-to-close over the configured lookback window. The cluster is the candidate issuer
+plus every held or tentatively approved issuer whose pairwise return correlation with the candidate
+issuer is at least `correlation_threshold`. If the candidate issuer is already held, the candidate
+adds dollars to that existing issuer exposure and does not consume a new issuer/name slot; the
+cluster still evaluates against other correlated held issuers. Rejected: a static start-of-run book,
+because `PM-STA-03` requires tentative approvals to affect later candidates; rejected: sector-label
+proxies, because ADR-0023 exists precisely because labels miss the cross-label cluster.
+
+**Decision 4 - correlation is computed in the PM domain from the run `MarketData`, cached for the run.**
+The graph-pull path already supplies that node; the direct RPC path first looks up the full
+`MarketData` by `RecommendationSet.run_id` and uses the existing short provider call only for
+prices/regime when needed. The correlation helper caches close-to-close returns per issuer and pair
+correlations inside one evaluation call. Measurement before implementation, using a synthetic
+99-ticker x 202-bar book and 22 held pairs: 2000 candidate passes took 8.584242 s, or
+4.2921 ms/pass, before any cache beyond return maps. That is below the latency budget dominated by
+provider/LLM calls. Rejected: widening the PM provider call to fetch held-book bars; rejected:
+reading `Bar` nodes, which are measured zero; rejected: persisting correlation facts this sprint.
+
+**Decision 5 - not-evaluated outcomes name the missing input and block approval.** Missing sector
+labels emit `outcome=not_evaluated` for sector concentration evidence with
+`missing_input=sector_label`; too few overlapping returns emit `outcome=not_evaluated` for
+`correlated_cluster_pct` with `missing_input=overlapping_return_bars`. The rejection reasons are
+`sector_not_evaluated` and `correlation_not_evaluated`, and the gate report renders
+`NOT-EVALUATED` as its own state. Rejected: returning `()` for unevaluable gates, because absence
+and pass become indistinguishable; rejected: reporting not-evaluated as `FAILED`, because that hides
+whether the gate found a breach or lacked the input to know.
+
+**Guards already planted.** The first red run was
+`uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`:
+5 failed on the old code, covering `PM-NEV-07`, `PM-NEV-08`, `PM-NEV-09` and DRIFT-045.
+
+---
+
 ## DL-121 - The contracts leg of laws/contracts/tests was never load-bearing - status: DECIDED (2026-08-20)
 
 **The question (operator, mid-amendment).** *"CONTRACTS should reflect LAWS and tested by TESTS, but

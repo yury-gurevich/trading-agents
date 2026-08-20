@@ -58,16 +58,6 @@ diffing against a recorded baseline rather than by reading the output.
 synthetic fixture cannot exhibit it. MO and CSCO are already protected; proof needs a **new** entry
 to fill. Tonight's 22:30 UTC run is the first on `s182` with Opus and is the natural occasion.
 
-🚨 **3 of 22 positions have no protective stop — $2,147.76** (CSCO 9, MO 15, NFLX 2), and the pause
-means nothing will place them. **Root cause measured, filed as item 27:** at 22:30 on 08-19 the fleet
-raised *"unprotected held position CSCO qty=9: no active graph position"* for all three — yet by the
-end of that same run all three **were** active `Position` nodes. `place_broker_stops` runs **before**
-reconciliation adopts the run's new fills, so a position adopted this run can only be protected on
-the next. 🪤 **A second blocker was stacked on it:** Alpaca rejected two stops with `403 potential
-wash trade detected` because a test run's buy limits were open on the same symbols — **test orders
-can block protective stops.** That half is cleared. 🟢 Graph and broker agree, 22 active positions
-each — this is an ordering defect, not divergence.
-
 **Test residue cleared, 2026-08-20.** Codex's S172 K=4 attempts left **13 synthetic 1-share orders**
 open (`verify-2026-08-19-s172-k4-15-racefix-*`), queued for today's open — cancelled, book back to 19
 open orders, all protective stops, 0 non-stop. 🪤 **Two earlier attempts already filled**: 1-share
@@ -85,24 +75,6 @@ synthetic 15-order attempt wrote `real_debate_count=0`, `failed_open_count=15`, 
 OpenAI `429 credit_balance_exhausted`. 🟢 Service Bus stayed clean before and after (0 active /
 0 dead-letter), so S171's correlation guarantee is not implicated.
 
-**PROVEN RESULT — fleet rolled back to `s181`, 2026-08-20.** Proving a deploy requires deploying, so
-`up -Tag s172` left **all 16 apps + the job running unmerged code** while `main` sat at `37d44a9`,
-and the `DeployRecord` still said `s181` — meaning the dashboard would have read the fleet
-**current while it was not**, the exact DL-46 error the record exists to prevent. Rolled back by
-image-only retag: 16/16 on `s181`, all `Succeeded`, tunables intact (grace **1800**, timeout **120**,
-effort `high`), and scale config **diffs identical** to the pre-S172 baseline. 🪤 **The first diff
-caught residual drift** — `maxReplicas` was restored to 1 but the KEDA rule's `desiredReplicas` was
-still `4`; both peers corrected. **No new `DeployRecord` written** — the existing `s181`/`bcf3a2b`
-row is true again, and a duplicate would only add noise to an append-only log.
-
-🚨 **Open decision — tonight's 22:30 UTC run.** OpenAI reads `no credits remaining` again and
-Anthropic is capped until 2026-09-01. **With no provider, every debate fails open and orders reach
-the broker unvetoed** — regardless of which tag is deployed. Either top up credits (which also
-unblocks the S172 proof) or disable `dispatcher-cron` for tonight. 🪤 **Our own metering does not
-reconcile:** the `LLMCall` ledger accounts for **$2.12** of the $5 added on 2026-08-19, so
-`/audit-costs`, which prices from that ledger, is currently understating real spend by an unknown
-margin.
-
 **PROVEN RESULT — one clean run, 2026-08-19 (the goal that was set).** After the operator restored
 OpenAI credits, `verify-2026-08-19-clean-2` on the deployed `s181` fleet:
 **8/8 stages · `real_debate_count` 9 of 9 (`debate_coverage` = 1.0) · `failed_open_count` **0** ·
@@ -113,7 +85,7 @@ MDLZ) — every one genuinely debated. 45 `LLMCall` rows = exactly 9 x 5. Cost *
 🪤 **The timeout raise was load-bearing after all, for a different reason than it was made for:**
 this run logged **68.4 s and 61.6 s** calls, both of which the old 60 s ceiling would have cut.
 DL-116's amendment stands — the fail-opens were `HTTP 429`s — but 120 s was genuinely needed.
-🚨 **That run was only possible because of a $5 top-up, and the prediction made here came true within a day**: "a second credit exhaustion stops the fleet again". It did — see the open decision above. Anthropic remains capped until **2026-09-01**, so there is still no fallback provider. Kept as a **standing operational note** in the work queue rather than a work item, because it is an outage condition, not something to build.
+🚨 **The prediction made here came true within a day** — "a second credit exhaustion stops the fleet again". It did, on 2026-08-20. **Resolved by moving provider, not by topping up**: the operator raised the Anthropic spend cap and the deliberator now runs `claude-opus-5`. **OpenAI remains at zero credits**, so there is still no fallback in the other direction. Kept as a **standing operational note** in the work queue rather than a work item, because it is an outage condition, not something to build.
 
 **PROVEN RESULT — S181 closed, fully proven on the fleet.** Sweep #1 (06:37:57) wrote the ack and one
 fault; **sweep #2 (07:45:33) wrote neither** — `UntrackedOpenOrder` **13 → 13**, acks **1 → 1**.

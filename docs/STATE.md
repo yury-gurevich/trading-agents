@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-21 00:20 AEST · **Version:** 0.91.01 · **Fleet `s184`, asleep.** · **S184 is deployed and drift-free; the 71 % veto rate it must move is measured tonight, unattended.**
+**Last updated:** 2026-08-22 15:30 AEST · **Version:** 0.91.01 · **The referee is down until 2026-08-30 (no API credit): S184's PM half is proven live, its veto-rate prediction cannot be measured, and ~6 sessions will trade unvetoed behind a red gate.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -16,9 +16,12 @@ headline each session; never append a fourth. Oldest *Recent* entries split to t
 **The bar, set by the operator 2026-08-20.** The etalon is done when **the pack trades unattended
 for a sustained stretch and the evidence discipline catches its own defects without the operator in
 the loop.** Not "trading is finished" — but far above where it is. 🚨 **Consequence for ranking:**
-whatever currently prevents unattended operation *is* etalon work, not a detour from it. Today that
-is the **73 % veto rate** ([DL-119](design-log.md)) — a system that rejects its own orders and trades
-nothing cannot demonstrate that the method produces working systems. 🪤 **Generality is a separate
+whatever currently prevents unattended operation *is* etalon work, not a detour from it. **Until
+2026-08-22 that was the 73 % veto rate** ([DL-119](design-log.md)). It is now one level up: the
+referee cannot run at all until **2026-08-30**, so the pack trades unvetoed behind a gate that is red
+nightly for a non-defect ([DL-125](design-log.md)). 🚨 **A discipline that cries wolf for six
+straight nights fails the second half of the bar as surely as not trading fails the first** — which
+is why work-queue **item 6** (a declared advisory posture) is now ranked first. 🪤 **Generality is a separate
 unproven axis:** ADR-0012's platform/pack wall stays *de jure* until a second pack exists, and
 clearing this bar does not close that.
 
@@ -43,97 +46,82 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-**PROVEN RESULT — S184 merged `18c41b1` (`0.91.00`), 2026-08-20.** ADR-0023 shipped. The PM now
-aggregates concentration by **issuer** (GOOG + GOOGL = Alphabet), rejects **measured** correlated
-clusters against the held book, emits `not_evaluated` for a missing sector label or too-short
-history, counts held dollars in `max_sector_pct`, and carries `GateOutcome.outcome` as
-`passed | failed | not_evaluated`. **Verified independently before merge:** `GATE PROVEN` for
-`8613d72` from a worktree at that SHA; `make ci` reproduced at exit 0, **2360 passed / 100.00 %**;
-all five `.passed` readers migrated; rollups **28 / 47** in `ledger.md` *and* `INDEX.md`;
-DRIFT-042..046 `CORRECTED`. Measured behaviour change: the same GOOG/AMZN set went from both
-approved to `GOOG:sizing` + `AMZN:correlated_cluster_concentration`, with **0** added provider
-requests. PM law rows `PM-NEV-07/08/09` are 🟩.
+🚨 **THE DELIBERATOR IS DOWN UNTIL 2026-08-30 — operator-stated 2026-08-22, not an estimate.**
+The Anthropic **credit balance** is exhausted: `HTTP 400 "Your credit balance is too low"`, read from
+`DeliberationRun.failed_open_reason` before the metrics ([DL-125](design-log.md)). 🪤 **Not a 429,
+not a timeout** — a billing failure no tunable, concurrency change or adapter refactor can reach, and
+a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under *Next* item 8.
+**Both providers ran dry inside three days** (OpenAI 429 on 08-19, Anthropic 400 on 08-20).
 
-🚨 **Two defects the merge exposed, both fixed on `chore-gate-outcome-refuses-ambiguity`.**
-**(1)** S184 kept `GateOutcome.passed` as a two-state view that **re-collapsed the states it had just
-separated** — `not_evaluated` read as *"the gate found a breach"* when the truth is *"it never ran"*.
-No production reader used it; the hazard was the next one. It now raises (DL-122 amendment).
-**(2)** CodeQL **#187** `py/mismatched-multiple-assignment` — **the same rule, same package, as #177
-four days earlier** ([DL-123](design-log.md)). 🪤 **A green branch gate does not mean CodeQL-clean:**
-`codeql.yml` runs only on `main`, so the scan that finds this class had not run when S184's branch
-went green. Merge-then-verify is again the only exit — a trap that fires twice in four days is a
-missing check, filed as queue item 31.
+**What that means for every scheduled run until 2026-08-30, all expected, none a defect:** acceptance
+FAILs on `debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders go to the broker
+**unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator error incidents each run
+raises. 🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce
+exactly. The one thing worth doing about it is work-queue **item 6**.
 
-🟢 **DEPLOYED `s184` and put back to sleep, 2026-08-21.** Full `up` (not a retag — S184 adds the
-issuer-map pack, `PORTFOLIO_MANAGER_ISSUER_MAP_B64` and four tunables). `ENV PRESERVATION` **16/16**,
-so the DL-100 guard confirmed the `up` would drop no live env key. **16/16 apps on `s184`; scale *and*
-KEDA-rule metadata diffed to zero drift** against the recorded baseline; `dispatcher-cron` `s184`,
-cron `30 22 * * 1-5`. PM env carries all five S184 keys, each verified PRESENT. 🪤 `curator` failed once on an
-Azure `InternalServerError`, was left cleanly on `s182` (`Succeeded`, not broken) and took a targeted
-image retry — it carries no pack tunables, so only the image differed. 🪤 The `min-replicas 1` bump used
-to run off-window was **restored to 0 and re-diffed**; that leftover was the S182 deploy's defect.
+**PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 apps verified).**
+99 evaluated → 23 candidates → 28 scored → **PM approved 3** (C 7, AMZN 3, GOOG 3) → 3 submitted →
+**0 fills** (submitted 22:40 UTC Friday, so they sit `accepted` at the broker for Monday 2026-08-24).
+`real_debate_count=0`: all 3 failed open.
 
-🚨 **A test run was abandoned, and the first teardown reported false success** ([DL-124](design-log.md)).
-`verify-2026-08-20-s184-a` read `MarketData=0` at 14:05 — taken for *"nothing happened"* when it meant
-*"nothing yet"*: the paced ingest was in flight. The provider finished at ~14:09 and the scanner
-consumed it (99 evaluated, **23 candidates**) whose `AnalystRun` was missing, i.e. **live pending work that
-would have run a second cascade tonight**. 🪤 The teardown could not see it: `ScanRun` is keyed
-`scanner-run-<uuid>` with `run_id=None`, and **the verification query used the same filter**, so it
-confirmed the teardown instead of testing it. A second pass on the uuid removed **24 nodes + 25 edges**.
-Now proven with the pollers' own predicates: **provider 0 / scanner 0 / analyst 0 / pm 0 pending**, 22 positions intact. 🪤 A watcher caught this after the point check said clean.
+🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG and GOOGL landed in the same
+batch — the exact case the ADR was written for. GOOG passed sizing at `issuer=alphabet;
+existing_issuer_value_usd=0.00` → **0.998 %**; GOOGL then **failed** at `existing_issuer_value_usd=1025.19`
+→ **1.67 % > 1 %, `outcome=failed`**. 🚨 **Pre-S184 both would have passed** (1.00 % and 0.67 % sized
+alone) and the run would have opened **two positions in one company**. Also visible in the same gate
+report: issuer-level `max_positions`, `max_sector_pct` counting `held_sector_value_usd=1092.36`, and a
+three-state `correlated_cluster_pct` ([DL-122](design-log.md) amendment).
 
-🚨 **The measurement is tonight's 22:30 UTC scheduled run — unattended, on the production path**, which
-is a better test than the one abandoned: no operator in the loop is the actual bar.
+🚨 **NOT PROVEN, and now un-measurable until 2026-08-30 — ADR-0023's falsifiable test.** The
+prediction is that the deliberator's exposure objections vanish and the **73 % veto rate falls
+materially**. It has **zero real-debate data on `s184` code**. 🪤 **Neither of the two runs since
+counts, and both look like they might:** `sched-2026-08-20` reads 40 % and `sched-2026-08-21` reads
+0 %, but both are raw rates diluted by orders never reviewed — of the 2 orders actually debated on
+08-20, **2 were vetoed**. A veto rate over unreviewed orders is not a veto rate. The 73 % stands as
+the last honest figure ([DL-119](design-log.md) amendment).
 
-🚨 **NOT PROVEN — ADR-0023's falsifiable test.** The prediction is that the deliberator's
-exposure-aggregation objections disappear and the **73 % veto rate falls materially**. Unit fixtures
-cannot show that; only a live run can. **If the objections persist now that the PM aggregates
-properly, the finding moves to the referee** — the separation the ADR was written to make possible.
+🚨 **NOT PROVEN, and 2026-08-21 was checked and did not supply it — S182 live.** The run looked
+like the case: INTC/NEE/XOM filled between runs, raised `missing_graph_position` flags, and execution
+placed three stops on them. **But each stop carries `stop_pct_source=position`** — it came from a
+`Position` that `position_sync` had already written at 22:31:52, **eight minutes before execution
+ran** — so the Fill+OrderIntent fallback never fired. 🪤 **Do not re-check it this way:** run-start
+reconciliation now closes the very window S182 was built for.
 
 - **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
   attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as
   a `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was
   right.** Confirm the correction was picked up before accepting a handback.
-- **[S172](sprints/sprint-172-independent-debates-run-independently.md) is unblocked** — built,
-  gate-proven at `5bf72c9`, unmerged; only the 15-order K=4 measurement remains.
+- 🪤 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is RE-BLOCKED** — built and
+  gate-proven at `5bf72c9`, unmerged. Its 15-order K=4 measurement needs real debates, so it cannot
+  merge before **2026-08-30**. The "unblocked 2026-08-19" note is withdrawn in the queue.
 
-**PROVEN RESULT — S182 merged `2fc0672` (`0.90.16`) and deployed `s182`, 2026-08-20.** Execution
-derives a protective stop from `Fill` + `OrderIntent` lineage when the monitor has not yet written the
-`Position`; `contracts/position_refs.py` makes the no-double-place guarantee structural. 🪤 **Two traps
-a glance would miss:** the working directory was left on Codex's branch, so the first `git merge` said
-*"Already up to date"* — merging the branch into itself; and the post-deploy scale diff showed
-`minReplicas=1` on all 16, my own leftover. **Both caught by diffing against a recorded baseline.**
+**Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1`
+(`0.91.00`), `make ci` 2360 passed / 100.00 %, `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09`
+🟩, DRIFT-042..046 `CORRECTED`; deployed `s184` with `ENV PRESERVATION` 16/16 and zero scale/KEDA
+drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`:
+`GateOutcome.passed` re-collapsed the states S184 had just separated and now raises, and CodeQL
+**#187** was `py/mismatched-multiple-assignment` — **the same rule and package as #177 four days
+earlier**, because `codeql.yml` runs only on `main` (queue item 31). **S182** merged `2fc0672`
+(`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because
+`ScanRun` is uuid-keyed and the verification query reused the teardown's own filter
+([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates
+now read **0 pending** at every stage, 22 positions intact.
 
-**NOT PROVEN: S182 live.** The defect needs a position filled *between* runs, so no synthetic fixture
-can exhibit it — proof waits on a **new** entry filling. Opportunistic.
-
-**Test residue cleared, 2026-08-20.** Codex's 13 synthetic 1-share S172 orders cancelled. 🪤 Two
-earlier attempts already filled, so the book carries **2 NFLX shares created by a test harness**,
-never vetoed, still held — selling is a real trade and needs a decision.
-
-**S172 handed back unmerged, 2026-08-20 — correctly.** Bounded `debate_concurrency=4`, deterministic
-PM-order reassembly, per-order fail-open isolation. Tip `5bf72c9`, **`GATE PROVEN`**. Unmerged because
-the live K=4 measurement could not run (OpenAI `429`). **Now unblocked** (queue item 3).
-
-**PROVEN RESULT — the veto binds, first time (DL-116).** Grace 900 → 1800 and per-call timeout
-60 → 120, in the tunables pack as well as live env (DL-100). `verify-2026-08-19-clean` returned
-`deliberation_status=applied_failed_open`, **not** `proceeded_unvetoed`: 6 of 9 orders blocked, **3
-submitted instead of 9**. 🚨 **This is a posture change made by arithmetic** — DL-104 set the grace to
-900 precisely to keep the veto advisory. Work-queue **item 6** (a real advisory/binding switch)
-stays open; the posture is now held by two numbers a busier night could overturn.
-
-🪤 **I got half the diagnosis wrong and it cost a run.** The fail-opens were read as a 60 s timeout
-because the latency tail sat exactly at that ceiling. They were `HTTP 429`s. The reason string was
-in `DeliberationRun.failed_open_reason` the whole time. Third instance of taking a number that
-*correlates* with the boundary as the cause — after the `record_deploy` SHA and the module-size
-counts. **Read the reason field before the metrics.**
+🪤 **Two live residues to decide, neither urgent.** The book carries **2 NFLX shares created by the
+S172 test harness**, never vetoed — selling is a real trade. And `cancel_stop` raised one
+`HTTP 422 Unprocessable Entity` on 2026-08-21, the only non-billing error incident of the run.
 
 ## Next
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-**Ahead of the numbered list — one measurement now unblocked, and three questions raised and not yet
-answered.**
+🚨 **Re-ranked 2026-08-22: work-queue item 6 is first** — a declared advisory/binding posture, the
+only queued item that changes what the next ~6 unvetoed nights *mean*, and the only one that needs no
+LLM to build or prove. Item 3 (S172) drops to second **because it is blocked, not because it shrank**;
+item 9 (S173) is provider-blocked too. **Items 28, 29, 26, 12, 20, 21, 22, 30, 31 and 11 are not, and
+they are what these six sessions can actually ship.**
+
+**Ahead of the numbered list — three questions raised and not yet answered.**
 
 **The measurement that reorders everything below it.** `0.90.02` made the `effort` tunable reach the
 wire, so the two free latency levers are measurable for the first time. Sweep **`effort` down from
@@ -143,8 +131,9 @@ round is **cutting the artefact under test to buy wall clock**, a recorded decis
 knob. Build [S172](sprints/sprint-172-independent-debates-run-independently.md) **only if both
 together still miss** — full ordering and the arithmetic in [DL-105](design-log.md)'s amendment.
 The sweep's first point is **done** — `effort` `max` → `high`, live since 2026-08-12 — and it
-cost three fail-opens before `request_timeout_seconds` went 30 → 60, **now proven at 0 fail-opens**
-(table under *Now*). The two levers are
+cost three fail-opens before `request_timeout_seconds` went 30 → 60, **which then proved out at 0
+fail-opens** on the runs of 2026-08-18/19 — a figure the billing outage has since made unreadable,
+since every debate now fails open for an unrelated reason. The two levers are
 **coupled**: raising effort lengthens the peer-call tail into a fixed timeout. Measure both
 together or not at all.
 
@@ -153,12 +142,14 @@ together or not at all.
 **(ii)** ~~collapse to one ranked queue~~ **DONE 2026-08-19** — the out-of-repo `debt.md` was **deleted**, not reconciled: it was a 2026-08-14 ancestor of `work-queue.md` and all 8 of its unique references were fragments of closed items. The queue was pruned 255 → 99 lines (11 closed rows removed, 2 folded into parents, every carried number re-measured); **(iii)** stop pinning version numbers in sprint
 specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day.
 
-1. 🚨 **Close the loop on `critical` Flags, so `healthy` can mean something again.** A **fix**.
-   47 unresolved critical Flags since 2026-07-08 pin `healthy=false` and `pending_human_flags=47`
-   forever. A divergence that reconciliation has already adopted should resolve its own Flag; the
-   backlog needs a one-off sweep behind that. 🪤 **Retracted, 2026-08-15:** this item previously
-   claimed the graph had the book wrong and ranked #1 for that reason. It did not — graph and broker
-   matched 19/19. The AVGO `overturn` was a **false premise**, not a data defect (see item 2).
+1. 🪤 **WITHDRAWN 2026-08-22 — the premise is dead, measured on the contract predicate.** This item
+   read: *"47 unresolved critical Flags pin `healthy=false` and `pending_human_flags=47` forever."*
+   `compute_health` returns **`pending_human_flags=0`**: all **60** Flags carry a `FlagResolution`
+   (S178/S179 closed this). `Flag.status` stays `pending` **by design** — the resolution is a separate
+   node, exactly like `Position.status` staying `open`. **I ranked this #1 on a raw-prop count for a
+   second time.** What actually pins `healthy=false` is `open_incidents`, today **5** — 3 of them the
+   billing outage, which clears itself on 2026-08-30. 🪤 This item had *already* been retracted once
+   (2026-08-15, the AVGO `overturn` false premise); it is now retracted on its remaining half too.
 2. 🪤 **Sweep the debate context for the same class — now FOUR instances, packaged as [S177](sprints/sprint-177-every-number-names-its-unit.md)** (2026-08-15). The fourth
    is `max_sector_pct`'s `deployed`: `SectorBook.__init__` seeds `_names` from held positions but
    **never seeds `_deployed`**, so `deployed` counts only *this batch* (GOOGL's `deployed=687.05` is

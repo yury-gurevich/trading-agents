@@ -8,6 +8,76 @@ and is marked CLOSED here.
 
 ---
 
+## DL-125 - The falsifiable test was blocked by a billing failure, and the referee is down until 2026-08-30 - status: MEASURED (2026-08-22)
+
+🚨 **ADR-0023's prediction could not be tested, and will not be testable for about six sessions.**
+
+**What was supposed to happen.** S184 shipped issuer aggregation and a measured correlated-cluster
+cap precisely so the deliberator's exposure objections - cited on four consecutive nights, 4 of the
+6 vetoes on the clean run - would stop being true. The prediction was that the **73 % veto rate
+falls materially** ([DL-119](design-log.md)). Only a live run can show it. `sched-2026-08-21` was
+that run: unattended, on the production path, fleet verified on `s184`.
+
+**What happened.** The run completed **8/8 stages** and failed acceptance:
+
+```text
+ACCEPTANCE  FAIL
+  FAIL  deliberation.debate_coverage: 0.0 < floor 1.0
+  FAIL  deliberation.failed_open_count: 3 > ceiling 0.0
+```
+
+`real_debate_count=0`. All three PM-approved orders (C, AMZN, GOOG) failed open and went to the
+broker unreviewed. **The deliberator never spoke, so the veto rate for this run is not 0 % - it is
+undefined.**
+
+**The reason, read from `failed_open_reason` before the metrics** (the DL-116 lesson, applied):
+
+```text
+RuntimeError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error',
+'message': 'Your credit balance is too low to access the Anthropic API. ...'}}
+```
+
+**Not a 429. Not a timeout.** A billing failure - the one cause in this class that no tunable, no
+concurrency change and no adapter refactor can reach.
+
+**Onset is 2026-08-20, not 08-21.** The prior scheduled run carries the identical 400 on 3 of its 5
+orders (`NEE`, `XOM`, `INTC`) - so **two consecutive scheduled runs** were already degraded when
+S184 was deployed. 🪤 The 2026-08-20 run's raw veto rate reads **40 %** (2 of 5), which looks like
+the predicted fall and is not: 3 of those 5 were fail-opens. Of the orders actually debated, **2 of
+2 were vetoed**. A veto rate computed over orders that were never reviewed is a diluted number, and
+this is the fourth time a metric that *correlates* with the answer has been mistaken for it.
+
+**Both providers have now run dry inside three days.** OpenAI on 2026-08-19 (`429 ... no credits
+remaining`), Anthropic on 2026-08-20 (`400 ... credit balance is too low`).
+
+**Operator constraint, stated 2026-08-22: not resolvable until 2026-08-30.**
+
+**What this blocks.**
+
+- ADR-0023's falsifiable test - parked until credit returns; nothing ships that changes this.
+- [S172](sprints/sprint-172-independent-debates-run-independently.md)'s 15-order K=4 measurement.
+  🪤 **Work-queue item 3's "UNBLOCKED 2026-08-20" is now false** and is corrected there.
+- Item 9's verdict-quality gate (S173), which also needs the API.
+
+**What it does NOT block, and this is the useful half.** ADR-0023 has **two** halves, and only the
+referee's half needs an LLM. **The PM's half is measurable from the gate report alone, and it
+fired** - see the DL-122 amendment. The next six sessions can still prove PM behaviour.
+
+**Ruled out: item 7 (one LLM adapter in the kernel) is not a mitigation.** It carries this note
+already for the 2026-08-19 outage and it holds harder now - a provider switch only helps if some
+provider has credit, and none does. **Do not re-justify S170 on this evidence.**
+
+🚨 **The real consequence is to the evidence discipline, not the trading.** For ~6 scheduled
+sessions the gate goes **red every night for an external non-defect**, while the system trades
+**unvetoed**. That is exactly the failure mode work-queue **item 6** (DL-104 d) was filed against -
+*"trains the operator to read a real fault as noise"* - now firing nightly instead of theoretically.
+**Item 6 stops being a nicety and becomes the thing that makes the next six nights honest:** a
+declared `advisory` posture would make the unvetoed submissions a *stated* mode with a truthful
+green, instead of six red nights that everyone learns to skip. It is promoted in the queue on this
+evidence.
+
+---
+
 ## DL-124 - Teardown by run-id misses every downstream artifact that is uuid-keyed - status: MEASURED (2026-08-21)
 
 🚨 **A "zero residue" claim was wrong within two minutes of being made, and the standard teardown
@@ -195,6 +265,32 @@ whether the gate found a breach or lacked the input to know.
 **Guards already planted.** The first red run was
 `uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`:
 5 failed on the old code, covering `PM-NEV-07`, `PM-NEV-08`, `PM-NEV-09` and DRIFT-045.
+
+**PROVEN LIVE 2026-08-22, unattended, on the production path.** `sched-2026-08-21` (fleet verified
+on `s184`, all 16 apps) put GOOG and GOOGL in front of the PM in the same batch - the exact case
+ADR-0023 was written for. Both gate reports, quoted verbatim from `OrderIntent.gate_report` and the
+`PMRun` rejection set:
+
+```text
+GOOG  sizing  value=0.009975  threshold=0.01  outcome=passed
+      issuer=alphabet; existing_issuer_value_usd=0.00;    position_value_usd=1025.19
+GOOGL sizing  value=0.016684  threshold=0.01  outcome=failed
+      issuer=alphabet; existing_issuer_value_usd=1025.19; position_value_usd=689.50
+```
+
+**GOOG's approved order counted against GOOGL as the same issuer**, taking Alphabet to 1.67 % of a
+$102,771.73 book and breaching the 1 % sizing cap. 🚨 **Pre-S184 both would have passed** - sized
+alone they are 1.00 % and 0.67 %, each under the cap - and the run would have opened **two positions
+in one company**. One issuer, one bet, measured in production rather than in a fixture.
+
+Three further S184 changes are visible in the same report, all previously only unit-proven:
+`max_positions` counts `held_issuers=...,alphabet; is_new_issuer=false`; `max_sector_pct` now reads
+`held_sector_value_usd=1092.36` beside `deployed_this_batch_usd=0.00`, so held dollars are counted
+(the latent cross-day gate defect in work-queue item 2); and `correlated_cluster_pct` appears with a
+three-state `outcome`.
+
+🪤 **This proves the PM half of ADR-0023 only.** The ADR's falsifiable prediction is about the
+*deliberator's* veto rate, and that half has no data at all - see [DL-125](design-log.md).
 
 ---
 
@@ -415,6 +511,21 @@ were 1-share fixtures, not trading decisions):
 
 **73 % vetoed**, and 2026-08-20 produced the first run that approved four orders and traded none.
 Only **2** of the 7 submitted ever filled (MO, CSCO).
+
+**AMENDED 2026-08-22 - the 73 % cannot be re-measured, and the two runs since do not move it.**
+Both scheduled runs after this entry was written were degraded by an API billing failure
+([DL-125](design-log.md)), so neither is a binding run:
+
+| Run | PM-approved | Really debated | Vetoed | Fail-open | Raw rate | Usable? |
+| --- | --- | --- | --- | --- | --- | --- |
+| `sched-2026-08-20` (pre-`s184` images) | 5 | 2 | 2 | 3 | 40 % | **no** - 2 of 2 debated were vetoed |
+| `sched-2026-08-21` (first on `s184`) | 3 | **0** | 0 | 3 | 0 % | **no** - undefined, not zero |
+
+🪤 **Neither 40 % nor 0 % is evidence that the veto rate fell.** Both are raw rates diluted by orders
+the deliberator never saw. **The correct statement is that ADR-0023's prediction has zero
+real-debate data on `s184` code** and will have none until credit returns on 2026-08-30. The 73 %
+across the four binding runs stands as the last honest figure.
+
 
 **The rejections are not noise, and they are not varied.** Across four consecutive nights the same
 complaint dominates: the PM has no issuer or correlation dimension. On the clean run **4 of 6**

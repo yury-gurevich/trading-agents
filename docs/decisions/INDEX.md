@@ -28,6 +28,7 @@ for the rationale instead of re-deriving it.
 | [0020](0020-llmcall-is-substrate-not-the-operators.md) | `LLMCall` is substrate, not the operator's | ✅ Accepted | Is the operator the only agent allowed to call an LLM, and does it exclusively own the `LLMCall` audit label? When a second agent needs to reason with a model, does it write `LLMCall` too, or its own label? | `operator` `deliberator` `llm` `audit` `cost` `substrate` |
 | [0021](0021-clause-summary-mirrors-the-law.md) | A clause summary mirrors the law, never the test | ✅ Accepted | When a test proves only part of a law clause, may the clause summary in `test-plan.md` be narrowed to describe what the test actually covers? Which document wins when `laws.md` and `test-plan.md` disagree? | `laws` `conventions` `test-plan` `coverage` `honesty` |
 | [0022](0022-the-veto-gates-buys-never-exits.md) | The veto gates buys, never exits | 🔄 Amended 2026-08-13 | Does the deliberation veto block execution, and what does it block? How do we tell “the veto has not run yet” from “the veto is not deployed”? | `execution` `deliberation` `risk` `adr` |
+| [0023](0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md) | Concentration is measured by issuer and correlation, not by a vendor label | ✅ Accepted | How does the PM account for correlated exposure across its book? The law says a per-sector name count is the correlation penalty — but the labels it counts are vendor industry strings, share classes of one issuer count as two names, and the correlation that actually bites crosses labels entirely. **Measured 2026-08-20:** the law says GICS level 1, the feed returns **30 industry labels**, so `max_names_per_sector=3` is ~3× weaker than intended; GOOG and GOOGL both read `Media` and count as two names for one issuer; the mega-cap AI complex spans **five** labels, admitting 15 correlated names before the cap fires once. Correlation is computable from the **203 bars already on the graph** at zero API cost. 🚨 Needs a **law-amendment cycle** — PM `laws.md` is LOCKED v1 and `PM-NEV-06` both names GICS L1 and claims the count cap *is* the correlation penalty |
 
 ## Status legend
 
@@ -37,7 +38,7 @@ for the rationale instead of re-deriving it.
 
 ## Adding a new ADR
 
-1. Next number is `0022`.
+1. Next number is `0024`.
 2. Copy any existing ADR as a template.
 3. Add a row to this table immediately — the `closes` question is the most important field.
 4. Link from the relevant law file (`docs/laws/`) if the ADR changes a charter or dependency.

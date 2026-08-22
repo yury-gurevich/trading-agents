@@ -74,7 +74,11 @@ def bind_provider(
     ProviderAgent(
         bus,
         graph=graph,
-        source=FakeDataSource(bars=bars, vix=12.0),
+        source=FakeDataSource(
+            bars=bars,
+            sectors={"AAPL": "Technology", "MSFT": "Technology"},
+            vix=12.0,
+        ),
         settings=ProviderSettings(max_staleness_days=7),
     ).bind()
 

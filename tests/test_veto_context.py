@@ -11,14 +11,13 @@ from tests.veto_context_fixtures import (
     candidates,
     intent,
     linked_graph,
-    market_data,
     order_set,
     recs,
-    regime,
 )
+from tests.veto_context_provider_fixtures import market_data, regime
 
 from contracts.analyst import RecommendationSet
-from contracts.portfolio_manager import GateOutcome
+from contracts.portfolio_manager import GateOutcome, GateStatus
 from contracts.provider import MarketData, RegimeContext
 from kernel import InMemoryGraphStore
 from orchestration.veto_context import build_veto_context
@@ -51,7 +50,7 @@ def test_context_renders_failed_gate_outcomes_plainly() -> None:
         name="max_sector_pct",
         value=0.41,
         threshold=0.30,
-        passed=False,
+        outcome=GateStatus.FAILED,
         detail="sector=Technology",
     )
     item = intent(stop=0.05, target=0.04, gates=(failed,))
@@ -61,11 +60,34 @@ def test_context_renders_failed_gate_outcomes_plainly() -> None:
     context = build_veto_context(graph, pm, orders, item)
 
     assert (
-        "name=max_sector_pct value_batch_sector_ratio=0.41 "
-        "threshold_sector_ratio=0.3 -> FAILED"
+        "name=max_sector_pct value_sector_exposure_ratio=0.41 "
+        "threshold_sector_exposure_ratio=0.3 -> FAILED"
     ) in context
     assert "base_stop_loss_pct=3.00% -> FAILED" in context
     assert "base_take_profit_pct=8.00% -> FAILED" in context
+
+
+def test_context_renders_not_evaluated_gate_outcomes_plainly() -> None:
+    """PM-NEV-09: PM context carries NOT-EVALUATED without treating it as pass."""
+    graph = InMemoryGraphStore()
+    not_evaluated = GateOutcome(
+        name="correlated_cluster_pct",
+        value=0.0,
+        threshold=0.25,
+        outcome=GateStatus.NOT_EVALUATED,
+        detail="missing_input=overlapping_return_bars",
+    )
+    item = intent(gates=(not_evaluated,))
+    orders = order_set(item)
+    pm = linked_graph(graph, full=True)
+
+    context = build_veto_context(graph, pm, orders, item)
+
+    assert (
+        "name=correlated_cluster_pct value_cluster_exposure_ratio=0 "
+        "threshold_cluster_exposure_ratio=0.25 -> NOT-EVALUATED"
+    ) in context
+    assert "missing_input=overlapping_return_bars" in context
 
 
 def test_regime_context_does_not_invent_an_atr_gate_outcome() -> None:

@@ -77,12 +77,11 @@ def test_clean_run_holds_all_invariants() -> None:
     assert "submitted=" in out  # execution
     assert "checked=" in out  # monitor
     assert "summary" in out  # reporter
-    # The fake source provides no sectors, so the observatory flags the PM
-    # concentration caps as INACTIVE (DRIFT-013) — an advisory WARN, not a failure.
-    assert "sectors   0/" in out
-    assert "WARN  sector_coverage" in out
-    # ...and it is the ONLY breach: every blocking data invariant holds.
-    assert "1 WARN - inspect above" in out
+    # The fake source provides sectors, so PM concentration gates have their
+    # required label input and the clean run holds all invariants.
+    assert "sectors   2/2" in out
+    assert "WARN  sector_coverage" not in out
+    assert "OBSERVATORY  OK - all invariants hold" in out
 
 
 def test_analyst_view_exposes_held_count() -> None:

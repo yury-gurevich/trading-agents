@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
@@ -33,6 +33,13 @@ class ReboundingDataSource:
     rebound_after_calls: int = 3
     vix: float | None = 12.0
     calls: int = 0
+    sectors: dict[str, str] = field(
+        default_factory=lambda: {
+            "AAPL": "Technology",
+            "LOW": "Technology",
+            "MSFT": "Technology",
+        }
+    )
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -72,8 +79,10 @@ class ReboundingDataSource:
         return {}
 
     def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
-        """Return no sectors; this fixture exercises the OHLCV path only."""
-        return {}
+        """Return deterministic sector labels for PM concentration gates."""
+        return {
+            ticker: self.sectors[ticker] for ticker in tickers if ticker in self.sectors
+        }
 
     def fetch_earnings(
         self, tickers: tuple[str, ...], window: Window

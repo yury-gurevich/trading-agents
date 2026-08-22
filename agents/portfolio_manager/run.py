@@ -17,6 +17,8 @@ from agents.portfolio_manager.result import build_order_set, incident_refs, reje
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from agents.portfolio_manager.portfolio import PortfolioState
     from agents.portfolio_manager.settings import PortfolioManagerSettings
     from contracts.analyst import RecommendationSet
@@ -31,9 +33,11 @@ def run_evaluation(
     recommendation_set: RecommendationSet,
     market: MarketData | None,
     regime: RegimeContext | None,
+    correlation_market: MarketData | None = None,
     settings: PortfolioManagerSettings,
     portfolio: PortfolioState,
     sink: FaultSink,
+    issuer_map: Mapping[str, str] | None = None,
 ) -> OrderIntentSet:
     """Size+risk-check recommendations against acquired market+regime; persist."""
     if not recommendation_set.recommendations:
@@ -80,6 +84,16 @@ def run_evaluation(
             sectors=market.sectors,
             max_sector_pct=settings.max_sector_pct,
             max_names_per_sector=settings.max_names_per_sector,
+            issuer_map=issuer_map,
+            correlation_bars=(
+                correlation_market.bars
+                if correlation_market is not None
+                else market.bars
+            ),
+            correlation_lookback_days=settings.correlation_lookback_days,
+            correlation_threshold=settings.correlation_threshold,
+            max_correlated_cluster_pct=settings.max_correlated_cluster_pct,
+            min_correlation_bars=settings.min_correlation_bars,
         )
     if capture.fault is not None:
         return reject_all(

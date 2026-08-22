@@ -295,7 +295,7 @@ than a drop, and the flat stop champion remains selected.
 `docs/STATE.md`; `pyproject.toml`; `uv.lock`.
 
 **Design decisions:** Recorded as
-[`DL-121`](../design-log.md#dl-121---s183-skipped-filters-and-stop-basis-are-explicit---status-decided-2026-08-20).
+[`DL-126`](../design-log.md#dl-126---s183-skipped-filters-and-stop-basis-are-explicit---status-decided-2026-08-20).
 Decisions: carry not-evaluated as a sibling `skipped_filters` field; split no-data earnings from
 known non-upcoming/past earnings; do not mark normal sparse earnings coverage as provider
 degradation in S183; render stop basis from existing analyst evidence while leaving

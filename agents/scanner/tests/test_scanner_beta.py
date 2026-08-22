@@ -76,7 +76,7 @@ def _beta_settings() -> ScannerSettings:
 
 
 def test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history() -> None:
-    """SCAN-OUT-02 / SCAN-OBS-01: beta pass/fail/skip are distinguishable."""
+    """SCAN-OUT-06 / SCAN-OBS-01: beta pass/fail/skip are distinguishable."""
     bars = (*_ONE_X, *_TWO_X, *_series("THIN", [100.0, 110.0]))
     survivors, trace = apply_filters(
         ("LOWB", "HIGHB", "THIN"),

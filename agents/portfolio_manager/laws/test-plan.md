@@ -50,8 +50,15 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-NEV-04 | min_reward_risk_ratio gate rejects low R/R recommendations. | boundary | `test_reward_risk.py::test_rejects_when_reward_risk_below_minimum` | 🟩 |
 | PM-NEV-04 | max_positions gate rejects when portfolio is full. | boundary | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 | PM-NEV-04 | cash_buffer_pct gate rejects insufficient cash orders. | boundary | `test_portfolio_manager_agent.py::test_risk_rejects_when_cash_buffer_binds` | 🟩 |
-| PM-NEV-06 | max_names_per_sector cap rejects an over-count correlated name the dollar cap allows. | boundary | `test_sector_name_count.py::test_rejects_third_same_sector_name_over_count_cap` | 🟩 |
-| PM-NEV-06 | Already-held same-sector names count toward the name cap. | invariance | `test_sector_name_count.py::test_held_position_counts_toward_name_cap` | 🟩 |
+| PM-NEV-06 | max_names_per_sector cap rejects an over-count same-label name the dollar cap allows. | boundary | `test_sector_name_count.py::test_rejects_third_same_sector_name_over_count_cap` | 🟩 |
+| PM-NEV-06 | Already-held same-label names count toward the name cap. | invariance | `test_sector_name_count.py::test_held_position_counts_toward_name_cap` | 🟩 |
+| PM-NEV-06 | The cap counts distinct **issuers**, not tickers, in a label whose granularity is whatever the source returns. | boundary | `test_issuer_concentration.py::test_dual_class_order_counts_existing_issuer_exposure` | 🟩 |
+| PM-NEV-07 | Two share classes of one issuer count as one name and one exposure across every concentration gate. | invariance | `test_issuer_concentration.py::test_dual_class_order_counts_existing_issuer_exposure` | 🟩 |
+| PM-NEV-07 | A ticker absent from the issuer map is its own issuer, and that is a pass, not a not-evaluated outcome. | boundary | `test_issuer_concentration.py::test_absent_issuer_map_entry_is_own_issuer_pass` | 🟩 |
+| PM-NEV-08 | An order that would push a correlated cluster above max_correlated_cluster_pct is rejected. | boundary | `test_correlation_concentration.py::test_correlated_cluster_rejects_cross_label_order` | 🟩 |
+| PM-NEV-08 | Cluster correlation is computed from bars the run already carries; no provider call is made for it. | boundary | `test_correlation_market_context.py::test_correlation_uses_graph_market_data_without_widening_provider_call` | 🟩 |
+| PM-NEV-09 | A missing sector label yields an explicit not-evaluated outcome, never an empty tuple read as a pass. | negative | `test_issuer_concentration.py::test_missing_sector_label_is_not_evaluated` | 🟩 |
+| PM-NEV-09 | Fewer than min_correlation_bars overlapping bars yields not-evaluated for that pair, never a pass. | negative | `test_correlation_concentration.py::test_short_correlation_history_is_not_evaluated` | 🟩 |
 | PM-STA-03 | Position cap enforced across all candidates within one run. | gate | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 
 ## State & effects
@@ -82,7 +89,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-TYP-01 | est_price is Decimal, never float. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-TYP-02 | quantity ≥ 1; stop_pct < target_pct when both present. | schema | `test_portfolio_manager_agent.py::test_evaluate_orders_sizes_order_and_stores_money_as_cents` | 🟩 |
 | PM-TYP-03 | OrderIntentSet deserialises from graph node per contract schema. | schema | `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | 🟩 |
-| PM-TYP-03 | OrderIntentSet, OrderIntent, RejectedOrder, and GateOutcome match the contract schema; CONTRACT.version is authoritative; gate_report is additive and defaults empty for older payloads. | schema | Demoted S156: `tests/test_contract_values.py::test_order_intent_gate_report_is_additive_and_round_trips` covers only the additive gate_report compatibility slice; `test_pm_pubsub.py::test_order_intent_result_is_deserializable` remains the green schema proof above. | ⬜ |
+| PM-TYP-03 | Each payload carries every field its clauses require, and GateOutcome expresses passed, failed and not-evaluated as three distinct values; CONTRACT.version is authoritative; gate_report is additive and defaults empty for older payloads. | schema | `tests/test_contract_values.py::test_gate_outcome_has_three_wire_states_and_legacy_passed_view`; `tests/test_contract_values.py::test_order_intent_gate_report_is_additive_and_round_trips`; `test_pm_pubsub.py::test_order_intent_result_is_deserializable` | 🟩 |
 | PM-TYP-03 | Historical RejectedOrder JSON without gate_report deserializes with an empty report, while current payloads round-trip populated gate_report. | schema | `tests/test_rejected_order_contract.py::test_rejected_order_gate_report_is_additive_for_historical_payloads` | 🟩 |
 
 ## Security

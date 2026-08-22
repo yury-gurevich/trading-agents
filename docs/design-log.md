@@ -8,7 +8,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-121 - S183 skipped filters and stop basis are explicit - status: DECIDED (2026-08-20)
+## DL-126 - S183 skipped filters and stop basis are explicit - status: DECIDED (2026-08-20)
 
 **Question.** The scanner and analyst both had values the deliberator had to infer around: a missing
 scanner filter name could mean "passed" or "not evaluated", and a stop percentage did not name
@@ -62,6 +62,375 @@ selected mode, ATR availability, ATR value, applied stop/target, and counterfact
   experiment that changes proposal values.
 - Add a second stop-basis carrier outside `StopTargetEvidence` - rejected because it would duplicate
   the S150 evidence that is already persisted and vocabulary-declared.
+## DL-125 - The falsifiable test was blocked by a billing failure, and the referee is down until 2026-08-30 - status: MEASURED (2026-08-22)
+
+🚨 **ADR-0023's prediction could not be tested, and will not be testable for about six sessions.**
+
+**What was supposed to happen.** S184 shipped issuer aggregation and a measured correlated-cluster
+cap precisely so the deliberator's exposure objections - cited on four consecutive nights, 4 of the
+6 vetoes on the clean run - would stop being true. The prediction was that the **73 % veto rate
+falls materially** ([DL-119](design-log.md)). Only a live run can show it. `sched-2026-08-21` was
+that run: unattended, on the production path, fleet verified on `s184`.
+
+**What happened.** The run completed **8/8 stages** and failed acceptance:
+
+```text
+ACCEPTANCE  FAIL
+  FAIL  deliberation.debate_coverage: 0.0 < floor 1.0
+  FAIL  deliberation.failed_open_count: 3 > ceiling 0.0
+```
+
+`real_debate_count=0`. All three PM-approved orders (C, AMZN, GOOG) failed open and went to the
+broker unreviewed. **The deliberator never spoke, so the veto rate for this run is not 0 % - it is
+undefined.**
+
+**The reason, read from `failed_open_reason` before the metrics** (the DL-116 lesson, applied):
+
+```text
+RuntimeError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error',
+'message': 'Your credit balance is too low to access the Anthropic API. ...'}}
+```
+
+**Not a 429. Not a timeout.** A billing failure - the one cause in this class that no tunable, no
+concurrency change and no adapter refactor can reach.
+
+**Onset is 2026-08-20, not 08-21.** The prior scheduled run carries the identical 400 on 3 of its 5
+orders (`NEE`, `XOM`, `INTC`) - so **two consecutive scheduled runs** were already degraded when
+S184 was deployed. 🪤 The 2026-08-20 run's raw veto rate reads **40 %** (2 of 5), which looks like
+the predicted fall and is not: 3 of those 5 were fail-opens. Of the orders actually debated, **2 of
+2 were vetoed**. A veto rate computed over orders that were never reviewed is a diluted number, and
+this is the fourth time a metric that *correlates* with the answer has been mistaken for it.
+
+**Both providers have now run dry inside three days.** OpenAI on 2026-08-19 (`429 ... no credits
+remaining`), Anthropic on 2026-08-20 (`400 ... credit balance is too low`).
+
+**Operator constraint, stated 2026-08-22: not resolvable until 2026-08-30.**
+
+**What this blocks.**
+
+- ADR-0023's falsifiable test - parked until credit returns; nothing ships that changes this.
+- [S172](sprints/sprint-172-independent-debates-run-independently.md)'s 15-order K=4 measurement.
+  🪤 **Work-queue item 3's "UNBLOCKED 2026-08-20" is now false** and is corrected there.
+- Item 9's verdict-quality gate (S173), which also needs the API.
+
+**What it does NOT block, and this is the useful half.** ADR-0023 has **two** halves, and only the
+referee's half needs an LLM. **The PM's half is measurable from the gate report alone, and it
+fired** - see the DL-122 amendment. The next six sessions can still prove PM behaviour.
+
+**Ruled out: item 7 (one LLM adapter in the kernel) is not a mitigation.** It carries this note
+already for the 2026-08-19 outage and it holds harder now - a provider switch only helps if some
+provider has credit, and none does. **Do not re-justify S170 on this evidence.**
+
+🚨 **The real consequence is to the evidence discipline, not the trading.** For ~6 scheduled
+sessions the gate goes **red every night for an external non-defect**, while the system trades
+**unvetoed**. That is exactly the failure mode work-queue **item 6** (DL-104 d) was filed against -
+*"trains the operator to read a real fault as noise"* - now firing nightly instead of theoretically.
+**Item 6 stops being a nicety and becomes the thing that makes the next six nights honest:** a
+declared `advisory` posture would make the unvetoed submissions a *stated* mode with a truthful
+green, instead of six red nights that everyone learns to skip. It is promoted in the queue on this
+evidence.
+
+---
+
+## DL-124 - Teardown by run-id misses every downstream artifact that is uuid-keyed - status: MEASURED (2026-08-21)
+
+🚨 **A "zero residue" claim was wrong within two minutes of being made, and the standard teardown
+idiom is why.**
+
+**What happened.** The S184 deploy check placed `verify-2026-08-20-s184-a`, then abandoned it. At
+**14:05:38** a direct query showed `MarketData=0` - nothing ingested - so it was recorded as safe to
+drop: *"no scan, order or fill existed to strand."* `pg_teardown --prefix verify-2026-08-20-s184-a
+--contains` deleted 3 nodes and 3 edges, a follow-up query returned **residue: none**, and the fleet
+was scaled to zero.
+
+**A background watcher, still running, contradicted all of it.** The provider was mid-ingest at
+14:05 and finished afterwards:
+
+```text
+00:07:27  MarketData=0   <- immediately after teardown
+00:09:30  MarketData=1   <- provider completed and wrote the node anyway
+```
+
+By 14:09:04 the **scanner had already consumed it** - `scanner-run-83d0562b…`, 99 evaluated,
+**23 candidates** - and its `AnalystRun` was still missing. That `ScanRun` was live pending work: the
+analyst polls `ScanRun` nodes with no downstream `AnalystRun`, so on the next wake it would have run
+a **second full cascade alongside the scheduled run** - the exact outcome the teardown was performed
+to prevent, displaced one stage down the pipeline.
+
+**Root cause - the idiom cannot see the artifacts.** Teardown matches graph *keys*. Provider nodes
+are keyed by run id (`market-data:<run_id>`, `regime-context:<run_id>`) and are caught. But
+**`ScanRun` is keyed `scanner-run-<uuid>` and carries `run_id=None`**; `AnalystRun` and `PMRun` are
+the same shape. So `--contains <run-id>` is **structurally incapable** of reaching anything past the
+provider, and it reports success while doing so. Measured: the second teardown, aimed at the uuid,
+removed **24 nodes and 25 edges** the first had left behind.
+
+🪤 **Two compounding traps, both of which fired.**
+
+- **A stage count of 0 is not "nothing happened", it is "nothing has happened *yet*".** A paced
+  99-ticker ingest takes ~7 minutes; the check was made at ~6. Reading an in-flight pipeline as an
+  idle one is the same absence-as-silence error `PM-NEV-09` and S183 exist to fix, made by hand.
+- **The verification query used the same wrong filter as the teardown**, so it confirmed the teardown
+  rather than testing it. `ScanRun` has no `run_id`, so filtering by run id found nothing and printed
+  *"residue: none"* - a green that could not have gone red.
+
+**The check that actually works.** Not "is the residue gone" but **"is any work pending for the next
+wake"**, asked in the pollers' own terms - the same predicates the agents use:
+
+```text
+RunRequest  with no INGESTED_BY   -> provider will run
+MarketData  with no SCANNED_BY    -> scanner will run
+ScanRun     with no ANALYZED_BY   -> analyst will run
+AnalystRun  with no EVALUATED_BY  -> pm will run
+```
+
+All four now read **0**, with 22 active positions intact. This predicate is key-agnostic, so it
+cannot be defeated by a uuid, and it answers the question that actually matters.
+
+**Rejected routes.**
+
+- *Stamp a run id onto every downstream node* - the honest structural fix, deferred not rejected. It
+  touches four agents' writers and their locked laws, and the pending-work predicate closes the
+  operational hole today without any of that.
+- *Wait out the pipeline before tearing down* - rejected as the general rule. It works only when
+  someone is watching, and the point of this system is that nobody is.
+- *Treat the watcher as noise* - it was very nearly dismissed as "no output yet". **It was the only
+  thing in the session that caught this.** Long-running observers earn their keep precisely when the
+  point measurement says everything is fine.
+
+**Consequence.** The S184 deploy row in `functionality-checks.md` and the `STATE.md` entry both
+carried the false "no scan existed / zero residue" claim and are corrected in the same commit that
+records this.
+
+---
+
+## DL-123 - The same CodeQL rule landed twice in four days, and the branch gate structurally cannot catch it - status: MEASURED (2026-08-20)
+
+**What happened.** Merging S184 raised CodeQL **#187**,
+`py/mismatched-multiple-assignment`, at `agents/portfolio_manager/tests/test_correlation_edges.py:46`:
+
+```python
+(outcome,) = book.outcomes(...)     # outcomes() returns () OR a 1-tuple
+```
+
+`CorrelationBook.outcomes` returns `()` when there is nothing to assess and a 1-tuple otherwise, so
+a fixed-arity unpack raises whenever the empty branch is taken. **This is the identical rule, in the
+identical package, that produced #177 four days earlier** ([DL-110](design-log.md)) - where a PM test
+unpacked `SectorBook.outcomes()` the same way, and that call also returns `()` with no sector.
+
+**The structural part, and the reason it will happen again.** `codeql.yml` runs **only on `main`**.
+S184's branch gate was genuinely green - CI, Security Findings and Build images all `success` at
+`8613d72`, verified independently from a worktree at that SHA - because **the analysis that finds
+this class had not run yet**. The alert appeared the moment the merge landed, and then failed the
+*next* branch's Security Findings gate, which is how it surfaced.
+
+🪤 **So "branch green" does not mean "CodeQL clean".** The gate proves CI and the findings baseline;
+it cannot prove a scan that only main triggers. DL-110 recorded this as a trap and prescribed
+merge-then-verify as the exit. That worked twice. **A trap that fires twice in four days is not a
+trap, it is a missing check** - and both instances are the same one-line shape.
+
+**Immediate fix.** Assert the length, then index:
+
+```python
+outcomes = book.outcomes(...)
+assert len(outcomes) == 1
+outcome = outcomes[0]
+```
+
+**Rejected routes.**
+
+- *Make `outcomes()` always return exactly one outcome* - rejected. The empty return is meaningful:
+  there is genuinely nothing to assess. Padding it with a filler outcome would reintroduce the
+  absence-as-silence confusion `PM-NEV-09` exists to remove.
+- *Wait for the next occurrence and fix it too* - rejected. That is the current policy by default,
+  and it has now cost two red gates.
+- *Move `codeql.yml` to run on branches* - **the obvious fix, deferred not rejected.** It would catch
+  this before merge. Cost and blast radius are unmeasured (scan minutes per push, and the
+  branch-vs-main alert-state semantics that DL-110 already found confusing). Queue item 31.
+- *A local grep guard in `make ci` for fixed-arity unpacks of a variable-arity return* - deferred.
+  Cheaper than CodeQL-on-branches and catches exactly this shape, but it is a new CI step and needs
+  its own `gate_selftest` case so it cannot regress.
+
+**Consequence for this merge.** A branch cannot clear an alert raised on `main`, so
+`chore-gate-outcome-refuses-ambiguity` carries the fix but **cannot go green on its own gate** -
+merge-then-verify on `main` is again the only exit, exactly as DL-110 prescribed. Recorded here so
+the third occurrence is measured against a decision rather than rediscovered.
+
+---
+
+## DL-122 - S184 concentration gates: issuer, correlation, and not-evaluated evidence - status: DECIDED (2026-08-20)
+
+**Context.** S184 implements ADR-0023 and PM laws v1.3. The sprint brief requires five design
+decisions before code, with rejected alternatives recorded here rather than rediscovered inside the
+implementation.
+
+**Decision 1 - `GateOutcome` carries an outcome enum, not a boolean field.** Replace
+`passed: bool` with `outcome = passed | failed | not_evaluated`. Historical payloads with a
+`passed` key are accepted by a compatibility validator and normalized to `outcome`, but production
+readers must branch on the three-state value. Rejected: adding `evaluated: bool` beside `passed`.
+That is additive, but it permits `evaluated=false, passed=true`, exactly the impossible state
+`PM-NEV-09` forbids.
+
+> **Amendment, 2026-08-20 (post-merge review).** The shipped `GateOutcome` kept a `passed` property
+> as a two-state convenience view, and it **re-collapsed the three states it had just separated**:
+> `not_evaluated` read as `False`, i.e. *"the gate found a breach"* when the truth is *"the gate
+> never ran"*. No production reader used it — all five were migrated — but it left the exact
+> conflation this sprint removed reachable by the next one. **`passed` now raises on
+> `NOT_EVALUATED`.** Rejected: deleting the property, which is equally safe but churns 31 test
+> assertions in a just-verified sprint for no added protection. Rejected: leaving it, on the
+> grounds that no caller uses it today — the defect class this whole thread is about
+> ([DL-121](design-log.md)) is precisely *a hazard nothing currently trips over*. A boolean view of
+> a tri-state fact is fine where the third state is impossible, and must refuse where it is not.
+
+**Decision 2 - issuer identity is trading-pack data delivered to PM, not imported by PM.** The map
+lives as `orchestration/packs/trading_issuer_map.json`; PM loads it from base64 env content in the
+fleet or a path in local/dev, mirroring the master grant-pack pattern. A ticker absent from the map
+is its own issuer and is an ordinary evaluable input. Rejected: hard-coding dual-class tickers in
+the PM agent, which would move pack knowledge across the ADR-0012 wall; rejected also: making the
+map a `tunable()`, because it is data identity, not a parameter to optimize.
+
+**Decision 3 - one correlated cluster is recomputed against the running issuer book per candidate.**
+Returns are close-to-close over the configured lookback window. The cluster is the candidate issuer
+plus every held or tentatively approved issuer whose pairwise return correlation with the candidate
+issuer is at least `correlation_threshold`. If the candidate issuer is already held, the candidate
+adds dollars to that existing issuer exposure and does not consume a new issuer/name slot; the
+cluster still evaluates against other correlated held issuers. Rejected: a static start-of-run book,
+because `PM-STA-03` requires tentative approvals to affect later candidates; rejected: sector-label
+proxies, because ADR-0023 exists precisely because labels miss the cross-label cluster.
+
+**Decision 4 - correlation is computed in the PM domain from the run `MarketData`, cached for the run.**
+The graph-pull path already supplies that node; the direct RPC path first looks up the full
+`MarketData` by `RecommendationSet.run_id` and uses the existing short provider call only for
+prices/regime when needed. The correlation helper caches close-to-close returns per issuer and pair
+correlations inside one evaluation call. Measurement before implementation, using a synthetic
+99-ticker x 202-bar book and 22 held pairs: 2000 candidate passes took 8.584242 s, or
+4.2921 ms/pass, before any cache beyond return maps. That is below the latency budget dominated by
+provider/LLM calls. Rejected: widening the PM provider call to fetch held-book bars; rejected:
+reading `Bar` nodes, which are measured zero; rejected: persisting correlation facts this sprint.
+
+**Decision 5 - not-evaluated outcomes name the missing input and block approval.** Missing sector
+labels emit `outcome=not_evaluated` for sector concentration evidence with
+`missing_input=sector_label`; too few overlapping returns emit `outcome=not_evaluated` for
+`correlated_cluster_pct` with `missing_input=overlapping_return_bars`. The rejection reasons are
+`sector_not_evaluated` and `correlation_not_evaluated`, and the gate report renders
+`NOT-EVALUATED` as its own state. Rejected: returning `()` for unevaluable gates, because absence
+and pass become indistinguishable; rejected: reporting not-evaluated as `FAILED`, because that hides
+whether the gate found a breach or lacked the input to know.
+
+**Guards already planted.** The first red run was
+`uv run pytest agents\portfolio_manager\tests\test_issuer_correlation_concentration.py --no-cov`:
+5 failed on the old code, covering `PM-NEV-07`, `PM-NEV-08`, `PM-NEV-09` and DRIFT-045.
+
+**PROVEN LIVE 2026-08-22, unattended, on the production path.** `sched-2026-08-21` (fleet verified
+on `s184`, all 16 apps) put GOOG and GOOGL in front of the PM in the same batch - the exact case
+ADR-0023 was written for. Both gate reports, quoted verbatim from `OrderIntent.gate_report` and the
+`PMRun` rejection set:
+
+```text
+GOOG  sizing  value=0.009975  threshold=0.01  outcome=passed
+      issuer=alphabet; existing_issuer_value_usd=0.00;    position_value_usd=1025.19
+GOOGL sizing  value=0.016684  threshold=0.01  outcome=failed
+      issuer=alphabet; existing_issuer_value_usd=1025.19; position_value_usd=689.50
+```
+
+**GOOG's approved order counted against GOOGL as the same issuer**, taking Alphabet to 1.67 % of a
+$102,771.73 book and breaching the 1 % sizing cap. 🚨 **Pre-S184 both would have passed** - sized
+alone they are 1.00 % and 0.67 %, each under the cap - and the run would have opened **two positions
+in one company**. One issuer, one bet, measured in production rather than in a fixture.
+
+Three further S184 changes are visible in the same report, all previously only unit-proven:
+`max_positions` counts `held_issuers=...,alphabet; is_new_issuer=false`; `max_sector_pct` now reads
+`held_sector_value_usd=1092.36` beside `deployed_this_batch_usd=0.00`, so held dollars are counted
+(the latent cross-day gate defect in work-queue item 2); and `correlated_cluster_pct` appears with a
+three-state `outcome`.
+
+🪤 **This proves the PM half of ADR-0023 only.** The ADR's falsifiable prediction is about the
+*deliberator's* veto rate, and that half has no data at all - see [DL-125](design-log.md).
+
+---
+
+## DL-121 - The contracts leg of laws/contracts/tests was never load-bearing - status: DECIDED (2026-08-20)
+
+**The question (operator, mid-amendment).** *"CONTRACTS should reflect LAWS and tested by TESTS, but
+laws are central to my picture of it."* Raised while the PM law-amendment for ADR-0023 was being
+drafted. It is right, and the measurement below shows which leg of that triangle is missing.
+
+**Measured, 2026-08-20.**
+
+- `laws -> test-plan -> tests` is real and CI-enforced. `scripts/check_law_coverage.py` fails the
+  build when a green row cites a test that does not exist or whose docstring does not name the
+  clause. 686 clauses across 14 books are bound this way.
+- **Contracts are outside that loop.** `grep` for a clause ID across all 24 files in `contracts/`
+  returns **zero**. The only link is prose running the other way: **16 clauses** say a variant of
+  *"X matches `contracts/<agent>.py` exactly"*.
+- **That phrasing is unfalsifiable.** `PM-TYP-03` asserts the payloads match
+  `contracts/portfolio_manager.py` exactly; the test proving it imports that contract and round-trips
+  it. **The contract is both the claim and the oracle** - change the contract and the test still
+  passes. S156 half-caught this and demoted the wide row to gray, leaving a narrow deserialisation
+  slice green.
+- Contrast `PM-OUT-02`, which enumerates `ticker`, `action`, `quantity >= 1`, `est_price` Decimal,
+  `stop_pct`, `target_pct`, `pm_run_id`, `provenance`. That clause **constrains** the contract.
+  `PM-TYP-03` **delegates** to it.
+
+**So the defect is not "contracts drift from laws". It is "the laws are vague enough that any
+contract satisfies them".**
+
+**The instance that proves it, found while drafting the amendment.** `PM-NEV-09` (new, this
+amendment) requires that a concentration gate which cannot evaluate says so and never silently
+passes. The contract that must carry that evidence is `contracts/portfolio_manager.py:18-23`:
+
+```python
+class GateOutcome(_Frozen):
+    name: str
+    value: float
+    threshold: float
+    passed: bool      # two states
+    detail: str = ""
+```
+
+**A boolean has no third state.** The clause is *unexpressible* in the contract that carries its
+evidence, and nothing in the repo says so: no test fails, no gate goes red. It was found only by
+opening the file by hand.
+
+🪤 **The scanner has the identical defect in a different encoding.** `FilterVerdict` carries
+`filter_fired` plus a `passed` tuple, so *"the earnings gate did not run"* and *"the earnings gate
+passed"* are the same bytes. **That is the bug S183 is out fixing right now** - the same
+contract-expressiveness hole, in a second agent, that neither law book prevented.
+
+**The sharpening.** A law is an assertion that can be **false** (`PM-NEV-06` claimed GICS level 1 and
+was measurably wrong). A contract is a **definition**, and a definition cannot be falsified. So
+"contracts reflect laws" cannot mean mechanical derivation. It means two checkable properties:
+
+1. Every clause asserting a payload shape **enumerates the fields it requires** - never "matches the
+   file exactly".
+2. Every field in a contract is **traceable to a clause that requires it**. An unclaimed field is
+   either dead, or an undocumented law.
+
+**Decision - fold the first instance into work already in flight, do not open a programme.** The PM
+amendment needs `GateOutcome` to gain a third state regardless. `PM-TYP-03` is therefore rewritten
+from *"matches the file"* to an enumeration that names the required fields and requires
+`GateOutcome` to be able to express *not evaluated*. One clause, one contract, real cost measured -
+then decide whether to sweep the other 15.
+
+**Cost, stated up front.** Rewriting a tautological `TYP` clause into an enumeration will demote
+greens; apparent coverage drops. That is the trade conventions 7a already accepted: *"when the two
+documents disagree, `laws.md` wins - even though that lowers apparent coverage."*
+
+**Rejected routes.**
+
+- *A fourth document layer mapping contracts to clauses* - rejected. The mapping belongs **inside**
+  the clause text, where it is already read during every amendment. A separate map is one more
+  surface to drift, and the operator has asked for less tracking surface, not more.
+- *Sweep all 16 `TYP` clauses now* - rejected as sequencing, not as an idea. The cost of one honest
+  enumeration is unmeasured; measuring it on PM first is cheap and the sweep is unblocked either way.
+- *Generate contracts from the law text* - rejected. The law is prose written in ideal-design mode
+  (conventions 6); generating types from it would invert the authoring direction and make the law
+  answerable to what the generator can parse.
+- *Leave it and rely on review* - rejected. Two agents already carry the same silent-pass defect,
+  and review is what missed both.
+
+**Follow-through.** Contract enumeration for the remaining 15 `TYP` clauses is a work-queue item, not
+a sprint yet. Related: ADR-0023 (the amendment that surfaced it), S183 (the scanner half of the same
+defect), conventions 7a (the coverage-vs-truth trade).
 
 ---
 
@@ -196,6 +565,21 @@ were 1-share fixtures, not trading decisions):
 
 **73 % vetoed**, and 2026-08-20 produced the first run that approved four orders and traded none.
 Only **2** of the 7 submitted ever filled (MO, CSCO).
+
+**AMENDED 2026-08-22 - the 73 % cannot be re-measured, and the two runs since do not move it.**
+Both scheduled runs after this entry was written were degraded by an API billing failure
+([DL-125](design-log.md)), so neither is a binding run:
+
+| Run | PM-approved | Really debated | Vetoed | Fail-open | Raw rate | Usable? |
+| --- | --- | --- | --- | --- | --- | --- |
+| `sched-2026-08-20` (pre-`s184` images) | 5 | 2 | 2 | 3 | 40 % | **no** - 2 of 2 debated were vetoed |
+| `sched-2026-08-21` (first on `s184`) | 3 | **0** | 0 | 3 | 0 % | **no** - undefined, not zero |
+
+🪤 **Neither 40 % nor 0 % is evidence that the veto rate fell.** Both are raw rates diluted by orders
+the deliberator never saw. **The correct statement is that ADR-0023's prediction has zero
+real-debate data on `s184` code** and will have none until credit returns on 2026-08-30. The 73 %
+across the four binding runs stands as the last honest figure.
+
 
 **The rejections are not noise, and they are not varied.** Across four consecutive nights the same
 complaint dominates: the PM has no issuer or correlation dimension. On the clean run **4 of 6**
@@ -3911,6 +4295,7 @@ file existing was not the same as it being referenced. Three layers of the same 
 afternoon, and only the last one was caught by *checking the artifact rather than the status*.
 
 ---
+
 ## DL-68 - The vocabulary guard was undeployable, and its pack was a trailing indicator · status: CLOSED (0.80.00)
 
 S143 shipped the write-time vocabulary guard and closed honestly: `GRAPH_VOCABULARY_PATH` was unset
@@ -3994,6 +4379,7 @@ against what the code *can* do, or it silently rots into a trap that fires on th
 which is, by definition, the path nobody has tested.
 
 ---
+
 ## DL-69 - ruff 0.16 wanted to reformat 36 docs; a dependency bump is not the place · status: CLOSED (0.80.01)
 
 The first monthly batched Dependabot PR under DL-64 (#75: ruff 0.15.22 -> 0.16.0,
@@ -4044,6 +4430,7 @@ scope and let the expansion be argued on its own. If Markdown snippets should be
 its own chore with its own diff - not a side effect of upgrading a linter.
 
 ---
+
 ## DL-70 - Arresting artifact/claim drift: stop asserting presence, start planting violations · status: DECIDED (standing practice; `scripts/gate_selftest.py` 19/19 as of 2026-08-05)
 
 Six entries this month record the same failure (DL-52/54/55, DL-65, DL-66, DL-67, DL-68). It is not

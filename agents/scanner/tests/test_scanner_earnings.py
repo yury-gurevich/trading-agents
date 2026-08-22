@@ -85,7 +85,7 @@ def test_earnings_beyond_window_keeps_candidate_and_records_metric() -> None:
 
 
 def test_no_earnings_data_records_earnings_gate_not_evaluated() -> None:
-    """SCAN-OUT-02 / SCAN-OBS-01: absent earnings is attested, not silent."""
+    """SCAN-OUT-06 / SCAN-OBS-01: absent earnings is attested, not silent."""
     bars = (
         *_series("NONE", [100.0, 110.0, 132.0]),
         *_series("FAR", [100.0, 110.0, 132.0]),
@@ -127,7 +127,7 @@ def test_past_earnings_date_does_not_exclude() -> None:
 
 
 def test_past_earnings_date_records_evaluated_pass_not_missing_data() -> None:
-    """SCAN-TYP-01 / SCAN-OBS-01: known past earnings differs from no data."""
+    """SCAN-OUT-07 / SCAN-OBS-01: known past earnings differs from no data."""
     bars = (
         *_series("PAST", [100.0, 110.0, 132.0]),
         *_series("UNKNOWN", [100.0, 110.0, 132.0]),

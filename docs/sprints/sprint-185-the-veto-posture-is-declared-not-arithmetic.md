@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-185-the-veto-posture-is-declared-not-arithmetic`
-**Status:** SPEC
+**Status:** SPEC — **with Codex since 2026-08-22**
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-104](../design-log.md) (d) the row this closes · [DL-116](../design-log.md) the

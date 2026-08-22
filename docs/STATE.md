@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-22 17:20 AEST · **Version:** 0.91.02 · **The referee is down until 2026-08-30 (no API credit); S185 is packaged to make those ~6 unvetoed nights a declared posture instead of an accident, and S183 shipped with the law cycle its spec forgot.**
+**Last updated:** 2026-08-22 17:45 AEST · **Version:** 0.91.02 · **The referee is down until 2026-08-30 (no API credit) and S185 is with Codex to make those ~6 unvetoed nights a declared posture instead of an accident; S186 and S187 are queued behind it.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -58,7 +58,7 @@ a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under
 **unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator incidents each run raises.
 🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce exactly.
 The one thing worth doing about it is **[S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md)**
-(work-queue item 6), **packaged 2026-08-22 and ready for Codex**: the veto's posture becomes a value
+(work-queue item 6), 🟠 **WITH CODEX since 2026-08-22**: the veto's posture becomes a value
 the operator declares and every run records, instead of an accident of `deliberation_grace_seconds`.
 🪤 **Not a softening** — DL-119 rejected that; declaring the posture is the opposite move, and
 **exits never wait in either posture** (S147 / ADR-0017). Measured while speccing: execution's
@@ -66,19 +66,14 @@ the operator declares and every run records, instead of an accident of `delibera
 row** — two silences that are *why* the posture could be set by arithmetic, both to be filed as drift.
 First sprint written from the new **[`_TEMPLATE.md`](sprints/_TEMPLATE.md)**, which merges S164's law
 rigour with the S177–S184 sections and adds the law-cycle question S183's spec forgot.
+🪤 **On handback, check the three things S183 taught, before anything else:** the **law cycle**
+actually happened (its answer is pre-answered YES in the spec, and the two silences — execution's
+`laws.md` having no deliberation clause, and `deliberation_grace_seconds` having no PARAM row — are
+filed as drift, not papered over); the **DL number** does not collide with `main`'s, which by then
+may have moved past DL-127; and the **version** is a MINOR *above* whatever `main` is at, not the
+number the branch was cut against.
 
-**Two more packaged the same day, both buildable without an LLM.**
-**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** — a
-headline the vendor filed under twenty tickers counts once, in full, for each. ✅ **The open shape
-question is closed by measurement, not taste** ([DL-127](design-log.md)): down-weight by `1/n`
-silences **0** tickers where dropping silences **4**, discards **0 %** of slots where dropping
-discards **23.4 %**, and its worst downstream confidence shift is **0.034 vs 0.065**. 🚨 Two carried
-queue numbers were wrong and are corrected (19 % → **23.4 %**; "1 ticker" → **4**).
-**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** — PARAM tables and code have drifted
-**in both directions** across three agents: the scanner ignores a law row the *analyst* honours, two
-provider settings are in no law at all, and `deliberation_grace_seconds` has no row. 🚨
-`execution.stage` is **retracted** — already declared. 🎯 Its durable half is a `make ci` check, since
-this is the second audit to find the class.
+**Two more packaged the same day, both buildable without an LLM.** **[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** — a headline the vendor filed under twenty tickers counts once, in full, for each. ✅ **The open shape question is closed by measurement, not taste** ([DL-127](design-log.md)): `1/n` down-weighting silences **0** tickers where dropping silences **4**, discards **0 %** of slots where dropping discards **23.4 %**, and its worst downstream confidence shift is **0.034 vs 0.065**. 🚨 Two carried queue numbers were wrong and are corrected (19 % → **23.4 %**; "1 ticker" → **4**). **[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** — PARAM tables and code drift **in both directions** across three agents: the scanner ignores a law row the *analyst* honours, two provider settings are in no law at all, `deliberation_grace_seconds` has no row, and `execution.stage` is **retracted** (already declared). 🎯 Its durable half is a `make ci` check — the second audit to find this class.
 
 **PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
 99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0

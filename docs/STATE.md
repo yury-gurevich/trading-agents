@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-22 16:05 AEST · **Version:** 0.91.02 · **The referee is down until 2026-08-30 (no API credit); S185 is packaged to make those ~6 unvetoed nights a declared posture instead of an accident, and S183 shipped with the law cycle its spec forgot.**
+**Last updated:** 2026-08-22 17:20 AEST · **Version:** 0.91.02 · **The referee is down until 2026-08-30 (no API credit); S185 is packaged to make those ~6 unvetoed nights a declared posture instead of an accident, and S183 shipped with the law cycle its spec forgot.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -67,6 +67,19 @@ row** — two silences that are *why* the posture could be set by arithmetic, bo
 First sprint written from the new **[`_TEMPLATE.md`](sprints/_TEMPLATE.md)**, which merges S164's law
 rigour with the S177–S184 sections and adds the law-cycle question S183's spec forgot.
 
+**Two more packaged the same day, both buildable without an LLM.**
+**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** — a
+headline the vendor filed under twenty tickers counts once, in full, for each. ✅ **The open shape
+question is closed by measurement, not taste** ([DL-127](design-log.md)): down-weight by `1/n`
+silences **0** tickers where dropping silences **4**, discards **0 %** of slots where dropping
+discards **23.4 %**, and its worst downstream confidence shift is **0.034 vs 0.065**. 🚨 Two carried
+queue numbers were wrong and are corrected (19 % → **23.4 %**; "1 ticker" → **4**).
+**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** — PARAM tables and code have drifted
+**in both directions** across three agents: the scanner ignores a law row the *analyst* honours, two
+provider settings are in no law at all, and `deliberation_grace_seconds` has no row. 🚨
+`execution.stage` is **retracted** — already declared. 🎯 Its durable half is a `make ci` check, since
+this is the second audit to find the class.
+
 **PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
 99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0
 fills**; they sit `accepted` at the broker for Monday 2026-08-24. `real_debate_count=0`, all 3 open.
@@ -93,19 +106,7 @@ filled between runs, raised `missing_graph_position` flags, and got stops — bu
 before execution ran**, so the Fill+OrderIntent fallback never fired. 🪤 **Do not re-check it this
 way:** run-start reconciliation now closes the very window S182 was built for.
 
-**PROVEN RESULT — S183 accepted and merged, `0.91.02`, 2026-08-22**
-([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)). A scanner gate that could not run now
-says so: `Candidate` and `FilterVerdict` carry `skipped_filters`, no-earnings-date is attested rather
-than silently passed, a *known past* date is an evaluated pass, thin beta history is attested, and the
-debate packet renders the stop's basis. **All 9 success factors met; `GATE PROVEN` for `27fa3f5`**
-(SHA checked against the worktree HEAD). 🪤 **The mid-build correction held** — `stop_target_mode` is
-still a bare default, not a `tunable()`, exactly as the locked analyst law requires. 🚨 **Three
-merge-time defects were mine, not Codex's:** the branch's DL number collided with `main`'s DL-121
-(renumbered **DL-126**), its version bump `0.90.17` would have *lowered* `main`'s `0.91.01`, and
-**my spec never asked for a law cycle** although the sprint changed `contracts/scanner.py` under a
-LOCKED law book — S184 had done exactly that cycle one day earlier. Closed here, not filed:
-`SCAN-OUT-06`/`SCAN-OUT-07` added (laws **v1.1**), three test-plan rows 🟩, rollup **19 / 41**, and
-`DRIFT-047` filed for the `SCAN-TYP-01` clause the change slipped under (work-queue item 30's class).
+**PROVEN RESULT — S183 accepted and merged, `0.91.02`, 2026-08-22** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)). A scanner gate that could not run now says so: `Candidate`/`FilterVerdict` carry `skipped_filters`, no-earnings-date is attested, a *known past* date is an evaluated pass, thin beta is attested, and the packet renders the stop's basis. **All 9 success factors met; `GATE PROVEN` for `27fa3f5`** (SHA checked against the worktree HEAD). 🪤 **The mid-build correction held.** 🚨 **Three merge-time defects were mine, not Codex's:** a DL number that collided with `main`'s DL-121 (→ **DL-126**); a bump `0.90.17` that would have *lowered* `0.91.01`; and **a spec that never asked for a law cycle** although the sprint changed `contracts/scanner.py` under a LOCKED law book, one day after S184 did exactly that cycle. Closed, not filed: `SCAN-OUT-06`/`SCAN-OUT-07` (laws **v1.1**), rollup **18 / 41** 🪤 *the gate corrected my 19 — two clauses proven by three rows is +2*, and `DRIFT-047` for the `SCAN-TYP-01` clause the change slipped under (item 30's class). **The omission is now a required section in [`_TEMPLATE.md`](sprints/_TEMPLATE.md).**
 - 🪤 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is RE-BLOCKED** — built and
   gate-proven at `5bf72c9`, unmerged. Its 15-order K=4 measurement needs real debates, so it cannot
   merge before **2026-08-30**. The "unblocked 2026-08-19" note is withdrawn in the queue.

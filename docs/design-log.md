@@ -8,6 +8,80 @@ and is marked CLOSED here.
 
 ---
 
+## DL-127 - Contaminated news is down-weighted, not dropped - status: DECIDED (2026-08-22)
+
+**The question ([DL-117](design-log.md), work-queue item 26).** Finnhub `/company-news?symbol=X`
+returns market-wide content and `_parse_news` applies no relevance test, so a headline filed under
+twenty tickers counts once, in full, for each of them. `score_sentiment` is an **unweighted mean**,
+so contamination moves the number. The fix is cheap and vendor-independent - cross-ticker duplication
+is computable from the batch at zero API cost - but the *shape* was undecided: **drop** headlines
+filed under >= N tickers, or **down-weight** them.
+
+The operator delegated the choice on the grounds that the downstream effect was not visible from the
+question. It is now measured, so the choice is made on evidence rather than taste.
+
+**Measured on `sched-2026-08-21`'s real news** - 98 tickers, 1,255 headline slots, 784 distinct
+headlines. 🚨 **Two carried numbers in the work queue were wrong and are corrected here:**
+
+| Claim | Carried | Measured 2026-08-22 |
+| --- | --- | --- |
+| slots filed under >= 5 tickers | 19 % | **23.4 %** |
+| tickers left with no sentiment at all by a drop | "1 ticker" | **4** - `CMCSA`, `GD`, `PEP`, `TXN` |
+| slots filed under >= 2 tickers | 48 % | **50.9 %** |
+| slots filed under >= 10 tickers | - | **14.8 %** |
+
+**The decisive comparison** ran both policies through the real pipeline - sub-score, mean, composite
+(`tech 0.5 / fund 0.3 / senti 0.2`, renormalised over present pillars), `confidence = 0.3 +
+composite x 0.6` - against the 0.600 regime floor. 🪤 The recomputed baseline reproduced **every**
+stored confidence to three decimals, which is what makes the deltas trustworthy.
+
+| | drop at N>=5 | down-weight 1/n |
+| --- | --- | --- |
+| tickers that lose sentiment entirely | **4** | **0** |
+| headline slots discarded | **23.4 %** | none |
+| raw sentiment moved > 10 pts | 10 tickers | 25 tickers |
+| mean absolute sentiment shift | 3.98 pts | 6.87 pts |
+| **max downstream confidence shift** | **0.0654** | **0.0338** |
+| floor crossings at 0.600 | 1 (`CMCSA` 0.638 -> 0.573) | 1 (`KO` 0.605 -> 0.599) |
+
+**DECISION: down-weight each headline by `1 / n_tickers`.** Five reasons, in order of weight:
+
+1. **It costs no ticker its signal.** Drop silences four; down-weight silences none. The single
+   stated objection to acting at all - *"leaves a ticker with no signal"* - disappears entirely, and
+   it was **four times larger** than the carried number said.
+2. **It uses all the evidence.** Drop discards 23.4 % of the slots the provider already paid for.
+3. 🚨 **It is gentler on the decision boundary while being more informative.** Down-weight moves
+   *more* tickers on raw sentiment (25 vs 10) yet its worst downstream confidence shift is **half**
+   drop's (0.034 vs 0.065). It redistributes; drop lurches.
+4. **Drop's one floor crossing is an artefact of information loss, not a correction.** `CMCSA` falls
+   0.065 and crosses the floor **because it has no sentiment left**, so the composite renormalises
+   onto technical+fundamental. The decision changes for a reason that has nothing to do with news
+   quality. Down-weight's crossing is `KO` at **0.599 against a 0.600 floor** - a genuine borderline,
+   moved by a hair.
+5. **It has no threshold to tune.** `N=5` is arbitrary: 50.9 % of slots qualify at `>=2`, 37.5 % at
+   `>=3`, 23.4 % at `>=5`. Any N is a magic number needing a `why` and an owner. `1/n` is
+   parameter-free, so it cannot drift and cannot be quietly retuned.
+
+**Rejected: drop at N>=5.** Reasons 1 and 4 above. It is also the option that *looks* more decisive
+and measures worse - the pattern this log keeps recording.
+
+**Rejected: leave it alone.** [DL-117](design-log.md) already retracted the alarming framing (*"mis-
+attributed news is buying stocks"* was wrong - contamination is **bidirectional noise**, and every
+approved order scores *higher* once it is removed). But bidirectional noise still mis-ranks, and the
+scanner ranks on this. Zero API cost, no vendor dependency, and now a measured downstream bound.
+
+**Recorded as a road not taken: `1/sqrt(n)`.** A softer discount, defensible if `1/n` proves too
+aggressive on genuinely multi-name events (an index-wide selloff *is* news about each constituent).
+Not chosen because nothing measured suggests `1/n` is too aggressive - its downstream shift is
+already the smaller of the two - and adding an exponent reintroduces the tunable that reason 5
+removes. Revisit only with evidence, not taste.
+
+🪤 **The weight belongs in the mean, not in the parse.** `_parse_news` must keep returning every
+headline: the duplication count is a property of the *batch*, not of a headline, and the parser sees
+one ticker at a time. Computing it there would need cross-ticker state in a per-ticker function.
+
+---
+
 ## DL-126 - S183 skipped filters and stop basis are explicit - status: DECIDED (2026-08-20)
 
 **Question.** The scanner and analyst both had values the deliberator had to infer around: a missing

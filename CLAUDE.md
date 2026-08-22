@@ -107,6 +107,11 @@ Sequence: worktree per sprint/chore → `make ci` locally → **push the branch*
 must exit 0** → then merge to `main` locally and push. **PRs are not required** — this repo has
 one developer, so a PR buys no review (DL-52 reversal, 2026-07-22).
 
+**Merging does not need operator permission** (operator, 2026-08-22: *"remove the requirement to ask
+me for merging. I am happy if you are"*). This retires the older convention of parking a proven branch
+pending authorization. **The evidence bar is unchanged** — only the asking is gone; judgement still
+applies, so a thin or unconvincing handback is *returned*, not merged.
+
 **Never merge a branch you have not seen go green on the remote.** The point was never the
 PR; it was that the security-findings `gate` used to be `pull_request`-triggered, so direct
 merges bypassed it — S131/S132/S134 each merged ungated that way. The gate now runs on push

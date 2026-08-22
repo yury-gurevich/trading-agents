@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-22 17:45 AEST · **Version:** 0.92.00 · **S185 is built locally: the veto posture is now declared/recorded, advisory failures are attributable warnings, and explicit binding blocks unreviewed buys; remote gate and merge/deploy remain operator-pending.**
+**Last updated:** 2026-08-22 19:10 AEST · **Version:** 0.92.00 · **S185 merged `5bea06d` — the veto's posture is now declared and recorded, not an accident of two timeouts; 🚨 it defaults to `advisory` and nothing flips it to `binding` when credit returns 2026-08-30.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -57,7 +57,11 @@ a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under
 `debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders reach the broker
 **unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator incidents each run raises.
 🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce exactly.
-The one thing worth doing about it is **[S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md)**
+✅ **DONE — [S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md) merged `5bea06d` (`0.92.00`), 2026-08-22.** `deliberation_posture` is an operator-declared **mode selector** (`advisory | binding`) recorded on every `ExecutionRun`, with fault severity and the acceptance check following it. **`GATE PROVEN` for `f9ac6b0`**; `make ci` exit 0 after merging `main` in, **2378 passed / 100.00 %**. Law cycle done: `EXEC-OUT-09`/`EXEC-NEV-06`/`EXEC-OBS-04`, execution laws **v1.1 → v1.2**, rollup **33 / 60** in ledger *and* INDEX, and the two silences I measured while speccing filed as **DRIFT-048/049** rather than papered over. 🟩 **The trap held:** `advisory` did **not** become a free pass — under `binding` the `debate_coverage` floor and `failed_open_count` ceiling stand; under `advisory` they are replaced by an attribution check that still fails on a missing posture, a missing reason, an unattributable status, or no linked `ExecutionRun`. 🪤 Exits never wait in either posture. 🪤 The default is `advisory` **because Codex measured the live graph first** and found the submit path *is* the current no-config behaviour, so the merge alone changed nothing.
+
+🚨 **The follow-up S185 leaves behind, and it is not a defect in the sprint.** The default is `advisory` and **nothing flips it to `binding` when credit returns on 2026-08-30**. The posture DL-116 and DL-119 fought for would then be a *declared* default rather than an arithmetic accident — better, but still not binding. **Flipping it must be a decision someone makes, not something that quietly never happens.** Queued as work-queue item 6b.
+
+The item that produced it was **[S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md)**
 (work-queue item 6), 🟢 **BUILT locally on branch
 `sprint-185-the-veto-posture-is-declared-not-arithmetic`**: `deliberation_posture` is a declared
 `advisory | binding` mode selector recorded on every `ExecutionRun`; advisory no-verdict submissions

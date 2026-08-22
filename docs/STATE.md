@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-22 15:30 AEST · **Version:** 0.91.01 · **The referee is down until 2026-08-30 (no API credit): S184's PM half is proven live, its veto-rate prediction cannot be measured, and ~6 sessions will trade unvetoed behind a red gate.**
+**Last updated:** 2026-08-22 16:05 AEST · **Version:** 0.91.02 · **The referee is down until 2026-08-30 (no API credit); S185 is packaged to make those ~6 unvetoed nights a declared posture instead of an accident, and S183 shipped with the law cycle its spec forgot.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -57,7 +57,15 @@ a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under
 `debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders reach the broker
 **unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator incidents each run raises.
 🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce exactly.
-The one thing worth doing about it is work-queue **item 6**.
+The one thing worth doing about it is **[S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md)**
+(work-queue item 6), **packaged 2026-08-22 and ready for Codex**: the veto's posture becomes a value
+the operator declares and every run records, instead of an accident of `deliberation_grace_seconds`.
+🪤 **Not a softening** — DL-119 rejected that; declaring the posture is the opposite move, and
+**exits never wait in either posture** (S147 / ADR-0017). Measured while speccing: execution's
+`laws.md` has **zero** clauses about deliberation and `deliberation_grace_seconds` has **no PARAM
+row** — two silences that are *why* the posture could be set by arithmetic, both to be filed as drift.
+First sprint written from the new **[`_TEMPLATE.md`](sprints/_TEMPLATE.md)**, which merges S164's law
+rigour with the S177–S184 sections and adds the law-cycle question S183's spec forgot.
 
 **PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
 99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0
@@ -102,17 +110,7 @@ LOCKED law book — S184 had done exactly that cycle one day earlier. Closed her
   gate-proven at `5bf72c9`, unmerged. Its 15-order K=4 measurement needs real debates, so it cannot
   merge before **2026-08-30**. The "unblocked 2026-08-19" note is withdrawn in the queue.
 
-**Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1`
-(`0.91.00`), `make ci` 2360 passed / 100.00 %, `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09`
-🟩, DRIFT-042..046 `CORRECTED`; deployed `s184` with `ENV PRESERVATION` 16/16 and zero scale/KEDA
-drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`:
-`GateOutcome.passed` re-collapsed the states S184 had just separated and now raises, and CodeQL
-**#187** was `py/mismatched-multiple-assignment` — **the same rule and package as #177 four days
-earlier**, because `codeql.yml` runs only on `main` (queue item 31). **S182** merged `2fc0672`
-(`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because
-`ScanRun` is uuid-keyed and the verification query reused the teardown's own filter
-([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates
-now read **0 pending** at every stage, 22 positions intact.
+**Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
 🪤 **Two live residues to decide, neither urgent.** **2 NFLX shares created by the S172 test
 harness**, never vetoed — selling is a real trade; and one `cancel_stop` `HTTP 422`, the run's only

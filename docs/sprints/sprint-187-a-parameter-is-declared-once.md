@@ -110,6 +110,15 @@ makes them a **law cycle**, not a code edit — the code is fine, the law never 
    **This is the durable half of the sprint** — items 1–3 are today's instances, item 4 is why there
    is not a fifth.
 5. **Drift rows** recording each divergence and its direction.
+6. 🧹 **Optional rider, take it or decline it in the return notes.** `scripts/check_module_size.py:32`
+   and `scripts/check_module_header.py:38` both skip paths containing `alembic/versions`. **That
+   condition excludes nothing**: the migrations live at `infra/migrations/versions`, and neither
+   checker scans `infra/` at all (`PKGS = kernel contracts agents orchestration surfaces`). It is
+   left over from the Sprint-03 root-level `alembic/`, deleted 2026-08-22. It is harmless but it
+   *reads* as "migrations are in scope and deliberately exempted", which is false. Deleting the two
+   clauses is the honest fix — you are already in both files. **Do not instead point the checkers at
+   `infra/migrations/versions`**: alembic-generated migrations do not carry `Agent:`/`Role:` headers
+   by convention, so that would manufacture work rather than remove a lie.
 
 ### Out of scope (do NOT build this sprint)
 

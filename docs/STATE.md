@@ -53,16 +53,15 @@ not a timeout** — a billing failure no tunable, concurrency change or adapter 
 a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under *Next* item 8.
 **Both providers ran dry inside three days** (OpenAI 429 on 08-19, Anthropic 400 on 08-20).
 
-**What that means for every scheduled run until 2026-08-30, all expected, none a defect:** acceptance
-FAILs on `debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders go to the broker
-**unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator error incidents each run
-raises. 🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce
-exactly. The one thing worth doing about it is work-queue **item 6**.
+**Every scheduled run until 2026-08-30, all expected, none a defect:** acceptance FAILs on
+`debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders reach the broker
+**unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator incidents each run raises.
+🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce exactly.
+The one thing worth doing about it is work-queue **item 6**.
 
-**PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 apps verified).**
-99 evaluated → 23 candidates → 28 scored → **PM approved 3** (C 7, AMZN 3, GOOG 3) → 3 submitted →
-**0 fills** (submitted 22:40 UTC Friday, so they sit `accepted` at the broker for Monday 2026-08-24).
-`real_debate_count=0`: all 3 failed open.
+**PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
+99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0
+fills**; they sit `accepted` at the broker for Monday 2026-08-24. `real_debate_count=0`, all 3 open.
 
 🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG and GOOGL landed in the same
 batch — the exact case the ADR was written for. GOOG passed sizing at `issuer=alphabet;
@@ -80,17 +79,25 @@ counts, and both look like they might:** `sched-2026-08-20` reads 40 % and `sche
 08-20, **2 were vetoed**. A veto rate over unreviewed orders is not a veto rate. The 73 % stands as
 the last honest figure ([DL-119](design-log.md) amendment).
 
-🚨 **NOT PROVEN, and 2026-08-21 was checked and did not supply it — S182 live.** The run looked
-like the case: INTC/NEE/XOM filled between runs, raised `missing_graph_position` flags, and execution
-placed three stops on them. **But each stop carries `stop_pct_source=position`** — it came from a
-`Position` that `position_sync` had already written at 22:31:52, **eight minutes before execution
-ran** — so the Fill+OrderIntent fallback never fired. 🪤 **Do not re-check it this way:** run-start
-reconciliation now closes the very window S182 was built for.
+🚨 **NOT PROVEN, and 2026-08-21 was checked and did not supply it — S182 live.** INTC/NEE/XOM
+filled between runs, raised `missing_graph_position` flags, and got stops — but each stop carries
+`stop_pct_source=position`, from a `Position` `position_sync` had written at 22:31:52, **eight minutes
+before execution ran**, so the Fill+OrderIntent fallback never fired. 🪤 **Do not re-check it this
+way:** run-start reconciliation now closes the very window S182 was built for.
 
-- **S183 is with Codex** ([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)) — scanner
-  attestation. 🪤 **Corrected mid-build** (`d859746`): it told Codex to register `stop_target_mode` as
-  a `tunable()`, which the locked analyst law forbids on purpose. **My spec was wrong; the law was
-  right.** Confirm the correction was picked up before accepting a handback.
+**PROVEN RESULT — S183 accepted and merged, `0.91.02`, 2026-08-22**
+([spec](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)). A scanner gate that could not run now
+says so: `Candidate` and `FilterVerdict` carry `skipped_filters`, no-earnings-date is attested rather
+than silently passed, a *known past* date is an evaluated pass, thin beta history is attested, and the
+debate packet renders the stop's basis. **All 9 success factors met; `GATE PROVEN` for `27fa3f5`**
+(SHA checked against the worktree HEAD). 🪤 **The mid-build correction held** — `stop_target_mode` is
+still a bare default, not a `tunable()`, exactly as the locked analyst law requires. 🚨 **Three
+merge-time defects were mine, not Codex's:** the branch's DL number collided with `main`'s DL-121
+(renumbered **DL-126**), its version bump `0.90.17` would have *lowered* `main`'s `0.91.01`, and
+**my spec never asked for a law cycle** although the sprint changed `contracts/scanner.py` under a
+LOCKED law book — S184 had done exactly that cycle one day earlier. Closed here, not filed:
+`SCAN-OUT-06`/`SCAN-OUT-07` added (laws **v1.1**), three test-plan rows 🟩, rollup **19 / 41**, and
+`DRIFT-047` filed for the `SCAN-TYP-01` clause the change slipped under (work-queue item 30's class).
 - 🪤 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is RE-BLOCKED** — built and
   gate-proven at `5bf72c9`, unmerged. Its 15-order K=4 measurement needs real debates, so it cannot
   merge before **2026-08-30**. The "unblocked 2026-08-19" note is withdrawn in the queue.
@@ -107,9 +114,9 @@ earlier**, because `codeql.yml` runs only on `main` (queue item 31). **S182** me
 ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates
 now read **0 pending** at every stage, 22 positions intact.
 
-🪤 **Two live residues to decide, neither urgent.** The book carries **2 NFLX shares created by the
-S172 test harness**, never vetoed — selling is a real trade. And `cancel_stop` raised one
-`HTTP 422 Unprocessable Entity` on 2026-08-21, the only non-billing error incident of the run.
+🪤 **Two live residues to decide, neither urgent.** **2 NFLX shares created by the S172 test
+harness**, never vetoed — selling is a real trade; and one `cancel_stop` `HTTP 422`, the run's only
+non-billing error incident.
 
 ## Next
 

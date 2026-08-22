@@ -152,18 +152,18 @@ sailing through. **Say so explicitly if it does.**
 
 ## Success factors
 
-- [ ] A ticker with no earnings date is recorded as **`earnings_window` not evaluated**, provably
+- [x] A ticker with no earnings date is recorded as **`earnings_window` not evaluated**, provably
       distinct from one that passed it. Same for `max_beta`.
-- [ ] Decision 2 applied: "no data" and "no upcoming earnings" are distinguishable, or the reason
+- [x] Decision 2 applied: "no data" and "no upcoming earnings" are distinguishable, or the reason
       they are not is recorded.
-- [ ] `stop_target_mode` is **left exactly as it is** — not registered, no law drift filed.
-- [ ] The stop's basis (mode + ATR availability) reaches the debate packet.
-- [ ] **No change to which orders are approved**, or the change is named and justified.
-- [ ] Decisions 1–4 recorded with rejected alternatives.
-- [ ] `filters.py` does not cross 200; ideally back under 150.
-- [ ] Each new guard planted, watched to fail, restored — stated per guard.
-- [ ] `make ci` exit 0, 100.00 % coverage.
-- [ ] `make gate-ran` **GATE PROVEN**, run from the worktree whose `HEAD` is the commit, SHA checked.
+- [x] `stop_target_mode` is **left exactly as it is** — not registered, no law drift filed.
+- [x] The stop's basis (mode + ATR availability) reaches the debate packet.
+- [x] **No change to which orders are approved**, or the change is named and justified.
+- [x] Decisions 1–4 recorded with rejected alternatives.
+- [x] `filters.py` does not cross 200; ideally back under 150.
+- [x] Each new guard planted, watched to fail, restored — stated per guard.
+- [x] `make ci` exit 0, 100.00 % coverage.
+- [x] `make gate-ran` **GATE PROVEN**, run from the worktree whose `HEAD` is the commit, SHA checked.
 
 ## Traps
 
@@ -271,21 +271,88 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
+**Status:** IMPLEMENTED — local proof complete; first pushed implementation tip remote-gated.
 
-**Status:** SPEC
+**Result:** Scanner filter evidence is now three-state. `Candidate` and `FilterVerdict` carry
+`skipped_filters`, and the debate packet renders the skipped list beside the survived list. A ticker
+with no earnings date records `earnings_window` as not evaluated; a ticker with a known past earnings
+date records a negative `days_to_earnings` and an evaluated `earnings_window` pass. Thin beta history
+records `max_beta` as skipped. The stop basis now reaches the debate packet from existing
+`StopTargetEvidence`: selected mode, ATR availability, ATR value, applied stop/target, fallback flag,
+and counterfactual mode.
 
-**Result:** *not yet implemented.*
+`stop_target_mode` was left exactly as the corrected spec requires: no `tunable()` registration, no
+law drift row, no default flip. No approval predicate changed: unknown earnings remains an attested
+skip rather than a drop, near-future earnings still drops, thin beta remains an attested skip rather
+than a drop, and the flat stop champion remains selected.
 
-**Files changed:** *...*
+**Files changed:** `contracts/scanner.py`; `agents/scanner/domain/filter_attestation.py`;
+`agents/scanner/domain/filters.py`; `agents/scanner/domain/ranking.py`;
+`agents/scanner/tests/test_scanner_earnings.py`; `agents/scanner/tests/test_scanner_beta.py`;
+`agents/scanner/tests/test_scanner_domain.py`; `agents/deliberator/context.py`;
+`agents/deliberator/context_pm.py`; `agents/deliberator/context_stop.py`;
+`tests/veto_context_fixtures.py`; `tests/test_veto_context.py`; `docs/design-log.md`;
+`docs/STATE.md`; `pyproject.toml`; `uv.lock`.
 
-**Design decisions:** *how "not evaluated" is carried, whether no-data differs from no-upcoming-
-earnings, whether the provider flags thin coverage, and what the stop attests — as a DL entry with
-rejected alternatives.*
+**Design decisions:** Recorded as
+[`DL-126`](../design-log.md#dl-126---s183-skipped-filters-and-stop-basis-are-explicit---status-decided-2026-08-20).
+Decisions: carry not-evaluated as a sibling `skipped_filters` field; split no-data earnings from
+known non-upcoming/past earnings; do not mark normal sparse earnings coverage as provider
+degradation in S183; render stop basis from existing analyst evidence while leaving
+`stop_target_mode` unchanged. Rejected alternatives are recorded there.
 
-**Proof:** *the failing test that came first; a no-earnings-date ticker attested as not-evaluated;
-evidence that approved orders did not change, or the named reason they did.*
+**Proof:** Planted focused guards first, before the implementation. The red run was:
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+```text
+uv run pytest agents/scanner/tests/test_scanner_earnings.py agents/scanner/tests/test_scanner_beta.py agents/analyst/tests/test_scaled_stop_targets.py tests/test_veto_context.py --no-cov
+exit 1
+```
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+Active red failures included:
+
+- no-earnings-date attestation: `AttributeError: 'Survivor' object has no attribute
+  'skipped_filters'`;
+- past-earnings split: `KeyError: 'days_to_earnings'`;
+- thin-beta attestation: `AttributeError: 'Survivor' object has no attribute 'skipped_filters'`;
+- stop-basis packet line: assertion failed because the packet had no `stop_target basis`.
+
+The corrected focused proof was:
+
+```text
+uv run pytest agents/scanner/tests/test_scanner_earnings.py agents/scanner/tests/test_scanner_beta.py agents/scanner/tests/test_scanner_domain.py agents/analyst/tests/test_scaled_stop_targets.py agents/analyst/tests/test_stop_target_evidence.py tests/test_veto_context.py --no-cov
+34 passed in 1.29s
+```
+
+Manual packet inspection rendered the new fields:
+
+```text
+Analyst recommendation ... stop_target basis: mode=flat; volatility_present=True; volatility_fallback=False; atr_pct=2.94%; applied_stop_pct=3.00%; applied_target_pct=8.00%; counterfactual_mode=scaled
+Scanner candidate ... survived_filters=['price', 'volume']; skipped_filters=['earnings_window']
+Scanner verdict ... filter_fired=None; ... skipped_filters=['earnings_window']
+```
+
+Line-count proof: `agents/scanner/domain/filters.py` is 136 lines; the new
+`agents/scanner/domain/filter_attestation.py` is 43 lines.
+
+**Guards planted:** `test_no_earnings_data_records_earnings_gate_not_evaluated`,
+`test_past_earnings_date_records_evaluated_pass_not_missing_data`,
+`test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history`, and
+`test_context_renders_stop_target_basis_from_analyst_evidence` were planted red, watched fail as
+above, and restored green in the focused run and full gate.
+
+**`make ci`:** redirected to `C:\Users\yury_\Downloads\project\trading-agents-s183-make-ci.log`.
+Exit code 0. Pytest reported `2332 passed, 6 skipped`, required coverage reached at `100.00 %`.
+`pip-audit` reported no known vulnerabilities. `detect-secrets` passed.
+
+**`make gate-ran`:** run from
+`C:\Users\yury_\Downloads\project\trading-agents-s183` at
+`50086f3a5231223104732fa4fee80df23bd34338`.
+
+```text
+GATE PROVEN for 50086f3a5231223104732fa4fee80df23bd34338:
+  Security Findings: success
+  CI: success
+```
+
+This closeout update is docs-only; the final handback must also cite `make gate-ran` for the pushed
+docs-only branch tip.

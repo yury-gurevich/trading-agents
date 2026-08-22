@@ -104,6 +104,23 @@ def test_regime_context_does_not_invent_an_atr_gate_outcome() -> None:
     assert "stop_pct=3.00% vs base_stop_loss_pct=3.00%" in stop_line
 
 
+def test_context_renders_stop_target_basis_from_analyst_evidence() -> None:
+    """ANLZ-OBS-03 / DL-113: stop proposal names mode and ATR availability."""
+    graph = InMemoryGraphStore()
+    item = intent(stop=0.03, target=0.08)
+    orders = order_set(item)
+    pm = linked_graph(graph, full=True)
+
+    context = build_veto_context(graph, pm, orders, item)
+
+    assert (
+        "stop_target basis: mode=flat; volatility_present=True; "
+        "volatility_fallback=False; atr_pct=2.94%; "
+        "applied_stop_pct=3.00%; applied_target_pct=8.00%; "
+        "counterfactual_mode=scaled"
+    ) in context
+
+
 def test_sparse_context_omits_missing_optional_evidence() -> None:
     graph = InMemoryGraphStore()
     item = intent(stop=None, target=None, gates=())

@@ -8,6 +8,60 @@ and is marked CLOSED here.
 
 ---
 
+## DL-126 - S183 skipped filters and stop basis are explicit - status: DECIDED (2026-08-20)
+
+**Question.** The scanner and analyst both had values the deliberator had to infer around: a missing
+scanner filter name could mean "passed" or "not evaluated", and a stop percentage did not name
+whether it came from the flat champion or the ATR-scaled challenger.
+
+**Decision 1 - carry "not evaluated" as a sibling field.** Add `skipped_filters` to `Candidate` and
+`FilterVerdict`, preserving `survived_filters` as only the filters that actually evaluated and
+passed. The debate packet renders both lists by name. `Candidate` has no property-enforced property
+list in `orchestration/packs/trading_graph_vocabulary.json`; the durable scanner payload is the
+typed `CandidateSet` stored on `ScanRun`, so no vocabulary-pack move is required.
+
+**Rejected alternatives.**
+
+- Encode suffixes such as `earnings_window:not_evaluated` inside `survived_filters` - rejected
+  because it turns a list of names into a parse convention and violates DL-113's "value names its
+  own meaning" rule.
+- Add a new `FilterVerdict` graph label - rejected again under the S165 law reading:
+  `SCAN-IDN-02` owns only `ScanRun` and `Candidate`, while `SCAN-OBS-01` already makes the
+  persisted `CandidateSet.filter_trace.verdicts` the lawful audit carrier.
+
+**Decision 2 - split no data from no upcoming/past earnings.** A missing earnings entry records
+`earnings_window` in `skipped_filters`. A known date outside the exclusion window, including a known
+past date represented by a negative `days_to_earnings`, records `earnings_window` in
+`survived_filters`. Near future earnings still drop the ticker. This is additive for approvals:
+unknown earnings no longer reads like a pass, but it still does not drop a candidate in S183.
+
+**Rejected alternative.** Drop unknown-earnings tickers now. That would be a real trade-decision
+change across the normal case, because the measured S183 run had earnings dates for only 10 of 98
+tickers. S183 is an attestation fix, not an earnings-coverage promotion gate.
+
+**Decision 3 - do not mark normal thin earnings coverage as provider degradation in S183.** Sparse
+earnings coverage is normal for the current feed shape, while `quality.notes` is used for provider
+health/degradation. The scanner now records the per-ticker truth the deliberator needs. A future
+coverage score may be useful, but a batch-level `earnings_degraded` note here would conflate
+"vendor has no date for this ticker" with a broken feed and could look like a whole-batch outage.
+
+**Decision 4 - the stop attests from existing analyst evidence, with the selector unchanged.**
+Leave `stop_target_mode` exactly as the locked analyst law declares it: a non-tunable mode selector
+defaulting to `"flat"`. Render the already-durable `StopTargetEvidence` in the debate packet:
+selected mode, ATR availability, ATR value, applied stop/target, and counterfactual mode. No new
+`Recommendation` properties are needed; `stop_target_mode`, `stop_target_volatility_present`, and
+`stop_target_volatility_fallback` are already in the graph vocabulary.
+
+**Rejected alternatives.**
+
+- Register `stop_target_mode` as `tunable()` - rejected by the corrected S183 spec and the locked
+  analyst law. It selects which formula runs, not a value within one.
+- File law drift against the selector row - rejected because `DL-120` established the law row is
+  correct.
+- Flip the default to `scaled` - rejected as out of scope. That is a champion-vs-challenger
+  experiment that changes proposal values.
+- Add a second stop-basis carrier outside `StopTargetEvidence` - rejected because it would duplicate
+  the S150 evidence that is already persisted and vocabulary-declared.
 ## DL-125 - The falsifiable test was blocked by a billing failure, and the referee is down until 2026-08-30 - status: MEASURED (2026-08-22)
 
 🚨 **ADR-0023's prediction could not be tested, and will not be testable for about six sessions.**

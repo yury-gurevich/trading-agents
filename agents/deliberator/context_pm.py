@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.deliberator.context_stop import stop_target_basis
 from agents.deliberator.context_values import (
     explain,
     gate_value_labels,
@@ -39,6 +40,7 @@ def recommendation_line(rec: Recommendation) -> str:
         f"suggested_stop_pct={percent(rec.suggested_stop_pct)}; "
         f"suggested_target_pct={percent(rec.suggested_target_pct)}; "
         f"quant_metrics={quant_metrics(rec)}; "
+        f"{stop_target_basis(rec)}; "
         f"rationale={explain(rec.rationale)}"
     )
 

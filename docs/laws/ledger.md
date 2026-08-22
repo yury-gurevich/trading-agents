@@ -36,7 +36,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | Agent | Laws authored? | Clauses green / total | Status |
 | --- | --- | --- | --- |
 | provider | ✅ v1 (LOCKED) | 16 / 62 | 🟨 partial — **16 of 62 clauses proven** after the S156 citation check; 24 have a gray row and 22 have no row at all (S157 warn-only backlog) · S169-sweep demoted `PROV-OUT-04` |
-| scanner | ✅ v1 (LOCKED) | 16 / 39 | 🟨 partial — **16 of 39 clauses proven** after the S156 citation check; 10 have a gray row and 13 have no row at all (S157 warn-only backlog) |
+| scanner | ✅ v1.1 (LOCKED) | 18 / 41 | 🟨 partial — **18 of 41 clauses proven**: the S156 citation check plus `SCAN-OUT-06`/`SCAN-OUT-07` added and proven green by S183 (two clauses, three rows — two rows cite `SCAN-OUT-06`); 10 have a gray row and 13 have no row at all (S157 warn-only backlog) |
 | analyst | ✅ v1.1 (LOCKED) | 23 / 46 | 🟨 partial — **23 of 46 clauses proven** after the S156 citation check; 10 have a gray row and 12 have no row at all (S157 warn-only backlog) · S152 declared 3 new clauses (43→46) · S169-sweep demoted `ANLZ-OBS-01` |
 | forecaster | ✅ v1 (LOCKED) | 16 / 45 | 🟨 partial — **16 of 45 clauses proven** after the S156 citation check; 29 have a gray row |
 | portfolio_manager | ✅ v1 (LOCKED) | 28 / 47 | 🟨 partial — **28 of 47 clauses proven** after S184 made PM-NEV-07/08/09 green and closed the v1.3 widened PM-NEV-06 and PM-TYP-03 rows; 12 law clauses still have no row (S157 warn-only backlog) |

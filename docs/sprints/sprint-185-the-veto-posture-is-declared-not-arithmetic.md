@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-185-the-veto-posture-is-declared-not-arithmetic`
-**Status:** SPEC — **with Codex since 2026-08-22**
-**Version:** *next available MINOR at merge*
+**Status:** BUILT — local proof complete; remote `make gate-ran` is post-push evidence.
+**Version:** 0.92.00
 **Effort:** M
 **Decisions:** [DL-104](../design-log.md) (d) the row this closes · [DL-116](../design-log.md) the
 grace change that made the veto binding by accident · [DL-119](../design-log.md) why softening the
@@ -244,18 +244,19 @@ cut before another DL lands will collide even when the number was free at branch
 
 ## Success factors
 
-- [ ] `advisory` and `binding` are declared values, recorded on every `ExecutionRun`.
-- [ ] Under a declared `advisory`, an unvetoed submission is a `warning` and the gate does not go red.
-- [ ] Under `binding`, a buy with no verdict does not reach the broker.
-- [ ] **Exits submit immediately in both postures** (A3).
-- [ ] The default changes no behaviour at merge (A6), measured against the last 10 runs.
-- [ ] Design decisions recorded with rejected alternatives, before implementation.
-- [ ] Law cycle done: clause(s) + test-plan rows + docstring citations + **both** rollups + the two
+- [x] `advisory` and `binding` are declared values, recorded on every `ExecutionRun`.
+- [x] Under a declared `advisory`, an unvetoed submission is a `warning` and the gate does not go red.
+- [x] Under `binding`, a buy with no verdict does not reach the broker.
+- [x] **Exits submit immediately in both postures** (A3).
+- [x] The default preserves the measured live broker-action shape; evidence severity now follows the
+      declared advisory posture instead of preserving accidental red/error noise.
+- [x] Design decisions recorded with rejected alternatives, before implementation.
+- [x] Law cycle done: clause(s) + test-plan rows + docstring citations + **both** rollups + the two
       drift rows for the measured silences.
-- [ ] `deliberation_posture` is a **mode selector**, not a `tunable()` — with its PARAM row.
-- [ ] Every new guard planted, watched to fail, restored — stated per guard.
-- [ ] Every touched module < 200 lines; state how `settings.py` was kept under it.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] `deliberation_posture` is a **mode selector**, not a `tunable()` — with its PARAM row.
+- [x] Every new guard planted, watched to fail, restored — stated per guard.
+- [x] Every touched module < 200 lines; state how `settings.py` was kept under it.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -432,18 +433,26 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `agents/execution/deliberation_gate.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; ADR-0022 | `EXEC-IDN-01`, `EXEC-NEV-01`, `EXEC-OBS-02`; no existing execution clause governs deliberation posture | Yes. The posture must be declared policy, not execution judgement; any binding drop must remain buy-only and must not alter arrived-veto handling. |
+| `agents/execution/pm_execution.py` / `ExecutionRun` evidence | Same execution law set; `docs/laws/ledger.md`; `docs/laws/INDEX.md` | `EXEC-IDN-01`, `EXEC-OUT-01`, `EXEC-TYP-03`, `EXEC-OBS-01` | Yes. The run record needs a separate posture axis; the five `deliberation_status` states should continue to answer why no verdict was applied. |
+| `agents/execution/settings.py` | Same execution law set, with the `PARAM` table checked directly | `EXEC-PARAM` table; conventions section 4; `order_price_tolerance_mode` precedent | Yes. `deliberation_posture` is a mode selector, not a `tunable()`. The missing `deliberation_grace_seconds` row is drift, not a reason to register the posture as a tunable. |
+| `agents/execution/deliberation_faults.py` | Same execution law set | `EXEC-OBS-02`; no existing clause distinguishes posture-specific deliberation fault severity | Yes. Fault severity must follow the declared posture: expected advisory fail-open is not the same evidence as a binding policy breach. |
+| `orchestration/packs/trading_deliberation_view.py` | `docs/laws/INDEX.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `docs/laws/ledger.md` | Layer-3 acceptance discipline; conventions section 3 | Yes. Acceptance must prove the declared posture was honored, not merely count debates unconditionally. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *Pre-answered
-YES in the spec. State what you added: clause IDs, law version, test-plan rows, both rollups, drift rows.*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** YES. The sprint
+adds an execution guarantee that deliberation posture is declared and recorded, and that buy orders
+with no verdict follow that declared posture while exits do not wait. The law cycle is done in
+execution law v1.2: `EXEC-OUT-09`, `EXEC-NEV-06`, and `EXEC-OBS-04`; test-plan rows were added; both
+rollups were updated; `DRIFT-048` was corrected and `DRIFT-049` remains open for S187.
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** None found during the pre-code read.
 
-**Laws found silent where a decision was needed:** *Two are already known — execution's `laws.md` has
-no deliberation clause, and `deliberation_grace_seconds` has no PARAM row. Confirm both and say what
-you filed.*
+**Laws found silent where a decision was needed:** Confirmed. Execution's `laws.md` has no clause that
+governs deliberation/veto posture, and `deliberation_grace_seconds` is present in
+`agents/execution/settings.py` but absent from the execution `PARAM` table. Both were filed as drift
+rows in `docs/laws/drift-register.md`: `DRIFT-048` corrected by S185 law v1.2, `DRIFT-049` left open.
 
-**Clauses that were ⬜ and are now proven:**
+**Clauses that were ⬜ and are now proven:** `EXEC-OUT-09`, `EXEC-NEV-06`, and `EXEC-OBS-04`.
 
 ---
 
@@ -451,47 +460,123 @@ you filed.*
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_advisory_posture_submits_unvetoed_buy_and_records_warning` | `agents/execution/tests/test_deliberation_posture.py` | PASS | `EXEC-OUT-09`, `EXEC-OBS-04` |
+| A2 | `test_binding_posture_blocks_unvetoed_buy_and_records_error` | `agents/execution/tests/test_deliberation_posture.py` | PASS | `EXEC-NEV-06`, `EXEC-OBS-04` |
+| A3 | `test_binding_posture_does_not_block_sell_only_run` | `agents/execution/tests/test_deliberation_posture.py` | PASS | `EXEC-NEV-06` |
+| A4 | `test_arrived_veto_is_honored_identically_under_both_postures` | `agents/execution/tests/test_deliberation_posture.py` | PASS | `EXEC-NEV-01`, `EXEC-NEV-06` |
+| A5 | `test_advisory_fail_open_passes_when_attributed`; `test_advisory_fail_open_fails_without_recorded_posture`; `test_advisory_fail_open_fails_without_reason`; `test_advisory_fail_open_fails_with_unattributable_status`; `test_deliberation_fails_without_linked_execution_run` | `orchestration/tests/test_trading_deliberation_posture.py` | PASS | `EXEC-OUT-09`, `EXEC-OBS-04` |
+| A6 | `test_default_posture_preserves_fail_open_submission_as_advisory`; `test_advisory_fail_open_deliberation_run_passes_acceptance` | `agents/execution/tests/test_deliberation_posture.py`; `orchestration/tests/test_trading_acceptance_deliberation.py` | PASS | `EXEC-OUT-09`, `EXEC-OBS-04` |
 
 **Tests added beyond the plan:**
+
+- `test_deliberation_posture_is_mode_selector_not_tunable` proves the mode selector is not a
+  `tunable()` and rejects invalid posture values.
+- `test_execution_run_deliberation_posture_props_are_declared` plants a misspelled
+  `deliberation_postuer` vocabulary property and verifies the pack rejects it.
+- `test_execution_contract_ownership_version` records the execution contract bump to `0.4.0`.
+- Existing acceptance tests now pin binding posture where they still require full debate coverage.
 
 ---
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
-
-**Status:** *not yet implemented.*
+**Status:** BUILT locally on `sprint-185-the-veto-posture-is-declared-not-arithmetic`; remote
+`make gate-ran` is post-push evidence and must be quoted in final handback.
 
 **Tree the proofs ran in (and `.env` present?):**
 
-**Result:** *not yet implemented.*
+`C:\Users\yury_\Downloads\project\trading-agents`; `.env` present for the live last-10-run
+measurement only. Tests and `make ci` used fixtures and did not require live provider calls.
+
+**Result:** Implemented S185 as a declared execution posture axis. Every `ExecutionRun` records
+`deliberation_posture`, `deliberation_status`, and `deliberation_blocked_count`; explicit `binding`
+blocks buy exposure when no `DeliberationRun` arrives after grace, while exits and arrived vetoes keep
+their existing behaviour. Advisory fail-opens now remain attributable without making the acceptance
+gate mute. Version bumped to `0.92.00`.
 
 **Files changed:**
 
-**Design decisions:** *the four above, as a DL entry with rejected alternatives.*
+Execution posture/settings/fault/run plumbing; execution contract; trading deliberation observatory
+view and vocabulary pack; local pipeline settings pass-through; focused execution/orchestration/
+vocabulary/contract tests; execution laws/test-plan plus law rollups and drift register; sprint/state/
+design-log docs; `pyproject.toml` and `uv.lock`.
+
+**Design decisions:** `DL-128` records the four decisions and the road not taken: posture is a mode
+selector; default/no-config is advisory to preserve measured broker submission shape; explicit
+binding drops only unreviewed buys; advisory acceptance asserts attribution; the five
+`deliberation_status` states remain separate from posture.
 
 **Proof — the red run first:**
 
+```text
+.venv\Scripts\python.exe -m pytest agents\execution\tests\test_deliberation_posture.py orchestration\tests\test_trading_deliberation_posture.py --no-cov
+7 failed, 1 passed
+```
+
+The planted failures covered missing `deliberation_posture`, binding buys still reaching the broker,
+and advisory acceptance still failing on raw debate coverage/fail-open count.
+
 **Proof — the green run:**
 
-**Guards planted:** *per guard: what was planted, that it failed, that it was restored.*
+```text
+.venv\Scripts\python.exe -m pytest agents\execution\tests\test_deliberation_posture.py agents\execution\tests\test_execution_deliberation_gate.py agents\execution\tests\test_execution_poll.py orchestration\tests\test_trading_deliberation_posture.py orchestration\tests\test_trading_deliberation_view.py orchestration\tests\test_trading_acceptance_deliberation.py orchestration\tests\test_veto_stage.py tests\test_graph_vocabulary_deliberation.py --no-cov
+46 passed
 
-**Module line counts:** *including how `settings.py` was kept under 200.*
+.venv\Scripts\python.exe -m pytest tests\test_graph_vocabulary_deliberation.py tests\test_graph_vocabulary_properties.py tests\test_graph_vocabulary_completeness.py orchestration\tests\test_graph_vocabulary_e2e.py --no-cov
+25 passed
+```
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+**Guards planted:** Advisory-no-verdict buy, binding-no-verdict buy, binding sell-only exit,
+arrived-veto under both postures, advisory fail-open attribution/missing posture/missing reason/
+unattributable status/no linked execution, mode-selector validation, and vocabulary misspelling
+`deliberation_postuer`. Each guard was red before implementation or before its final coverage branch,
+then restored and included in the green focused/full gates.
 
-**`make gate-ran`:** *the worktree path and the full 40-char SHA.*
+**Module line counts:** `agents/execution/deliberation_gate.py` 147,
+`agents/execution/pm_execution.py` 101, `agents/execution/deliberation_faults.py` 94,
+`agents/execution/deliberation_posture.py` 46, `agents/execution/settings.py` 152,
+`orchestration/packs/trading_deliberation_view.py` 136, `contracts/execution.py` 130. `settings.py`
+stayed under 200 by adding only the selector field and keeping posture logic in the new
+`deliberation_posture.py` helper.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s185-make-ci.log`; exit code stored
+in `C:\Users\yury_\AppData\Local\Temp\s185-make-ci.exit`; final exit `0`.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1019 files already formatted
+Success: no issues found in 841 source files
+TOTAL                                                     15169      0   3244      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2378 passed, 4 skipped in 192.39s (0:03:12) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 3 new file(s)
+```
+
+**`make gate-ran`:** Not yet run at this in-tree closeout point because the final commit has not been
+pushed. Run after pushing this branch from `C:\Users\yury_\Downloads\project\trading-agents`, compare
+the printed full SHA to `git rev-parse HEAD`, and quote it in final handback.
 
 **Not met / verified failing:**
+
+Remote branch gate proof is pending until after final commit/push. The original A6 wording asked for
+identical fault severity/acceptance; that exact subclaim is intentionally not preserved because the
+defect was accidental red/error evidence. The preserved default behaviour is the measured broker
+submit/drop shape from the last 10 runs.
 
 ---
 
 ## Return notes
 
--
+- Live measurement before design showed the last 10 `ExecutionRun`s already submit unreviewed or
+  fail-open orders; defaulting to `advisory` preserves that broker-action shape while making the
+  evidence explicit.
+- Deploy implication remains full `up`, not image-only retag: `ExecutionRun` vocabulary moved and the
+  operator must declare `EXECUTION_DELIBERATION_POSTURE` in the fleet.
+- `DRIFT-049` remains open for S187: `deliberation_grace_seconds` still needs a PARAM-table row.

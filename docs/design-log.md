@@ -8,6 +8,68 @@ and is marked CLOSED here.
 
 ---
 
+## DL-128 - S185 deliberation posture is a mode selector and a recorded run fact - status: DECIDED (2026-08-22)
+
+**Question.** The veto posture is currently inferred from timing: `deliberation_grace_seconds`
+determines whether execution usually sees a `DeliberationRun` before it submits, while fail-open
+reviews still submit and leave an error. S185 makes the posture explicit so the operator can choose
+whether unavailable deliberation is advisory or binding.
+
+**Measured before coding.** Reading the last ten live `ExecutionRun` nodes by their upstream
+`PMRun.created_at` showed the newest scheduled runs as `applied_failed_open` with submissions:
+`2026-08-20T22:42:21Z` submitted 3 and `2026-08-21T22:39:24Z` submitted 3. The same set also
+contains one `proceeded_unvetoed` verification run on `2026-08-19T06:46:26Z`, submitted 9. So the
+recorded graph proves why the evidence is noisy: unreviewed or failed-open orders can reach the
+broker, but the posture that made that acceptable or unacceptable is not stored.
+
+**Decision 1 - `deliberation_posture` is a mode selector, not a `tunable()`.** It chooses which
+policy runs (`advisory` vs `binding`), not a value inside a formula. It is therefore a bare
+`ExecutionSettings` field and a `PARAM` row with `NO (mode selector)`, following the existing
+`order_price_tolerance_mode` and `stop_target_mode` precedent.
+
+**Rejected alternative.** Register it with `tunable()`. That repeats the exact S183 trap in reverse:
+a mode selector would enter the parameter optimiser as though it were a bounded numeric dial.
+
+**Decision 2 - default/no-config is advisory; explicit binding drops buy exposure only when no
+`DeliberationRun` exists after grace.** The live graph measurement showed the submit path is the
+actual no-config behaviour: failed-open and one no-verdict verification run reached the broker. So
+`ExecutionSettings` defaults to `advisory`, recording the posture and downgrading the expected
+fail-open fault to warning. Under an explicit `binding`, a buy-carrying PMRun whose deliberation
+never arrived is consumed with those buys removed, an error fault, and `deliberation_blocked_count`
+on `ExecutionRun`. Sells in the same set still go through, because exits never wait. A linked
+`DeliberationRun` with `failed_open_tickers` keeps the current S175 shape: it submits fail-open,
+records `applied_failed_open`, and remains red unless the operator has declared advisory.
+
+**Rejected alternatives.**
+
+- Hold the whole PMRun for a later run - rejected because it reopens the DL-98 race and can strand
+  exits beside buys.
+- Block sells under binding - rejected by ADR-0017 and ADR-0022; delaying an exit costs control of
+  the book.
+- Treat failed-open reviews as clean under binding - rejected because the acceptance artifact would
+  say the posture was honored while the review did not happen.
+
+**Decision 3 - advisory acceptance asserts attribution, not debate coverage.** Under `binding`, the
+existing `debate_coverage >= 1.0` and `failed_open_count <= 0` checks remain blocking. Under
+`advisory`, fail-opens do not fail merely for being fail-open, but the stage must prove attribution:
+the linked `ExecutionRun` records `deliberation_posture=advisory`, the failed-open reason is present
+when failures exist, and the status is one of the known fail-open/no-verdict statuses rather than an
+unexplained pass.
+
+**Rejected alternative.** Make advisory pass everything. That would replace a gate that cries wolf
+with a gate that cannot fail, which is a worse evidence artifact.
+
+**Decision 4 - keep the five `deliberation_status` states and add posture as a separate axis.**
+`deliberation_status` continues to answer what happened to the review (`applied`,
+`applied_failed_open`, `not_required`, `waiting`, `proceeded_unvetoed`). `deliberation_posture`
+answers what policy applied. The combination is the fact the operator needs.
+
+**Rejected alternative.** Fold posture into new status strings such as `advisory_failed_open` or
+`binding_blocked`. That recreates the original confusion by mixing the reason no verdict exists with
+the policy that decided what to do about it.
+
+---
+
 ## DL-127 - Contaminated news is down-weighted, not dropped - status: DECIDED (2026-08-22)
 
 **The question ([DL-117](design-log.md), work-queue item 26).** Finnhub `/company-news?symbol=X`

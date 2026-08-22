@@ -19,6 +19,7 @@ from agents.execution.deliberation_gate import (
     drop_vetoed,
     failed_open_tickers,
 )
+from agents.execution.deliberation_posture import apply_deliberation_posture
 from agents.execution.exit_stops import report_unprotected_exits, settle_stops
 from agents.execution.reconciliation import reconcile_run_start
 from agents.execution.run import run_submit
@@ -55,6 +56,12 @@ def execute_pm_node(
     )
     failed_open = failed_open_tickers(graph, node)
     order_set = drop_vetoed(graph, node, order_set)
+    filtered = apply_deliberation_posture(
+        order_set,
+        status=status,
+        posture=settings.deliberation_posture,
+    )
+    order_set = filtered.order_set
     snapshot = reconcile_run_start(graph, broker, sink, run_id=order_set.run_id)
     freed = settle_stops(
         graph,
@@ -73,12 +80,22 @@ def execute_pm_node(
             "source_pm_run_id": order_set.run_id,
             "submitted": result.submitted,
             "rejected": result.rejected,
-            "skipped": result.skipped,
+            "skipped": result.skipped + filtered.blocked_count,
             "deliberation_status": status,
+            "deliberation_posture": settings.deliberation_posture,
+            "deliberation_blocked_count": filtered.blocked_count,
         },
     )
     if status == "proceeded_unvetoed":
-        record_unvetoed_submit(sink, order_set.run_id, result.submitted, settings)
+        record_unvetoed_submit(
+            sink,
+            order_set.run_id,
+            result.submitted,
+            settings,
+            blocked_count=filtered.blocked_count,
+        )
     if status == "applied_failed_open":
-        record_failed_open_submit(sink, order_set.run_id, result.submitted, failed_open)
+        record_failed_open_submit(
+            sink, order_set.run_id, result.submitted, failed_open, settings
+        )
     graph.add_edge(node, execution_run, EXECUTED_EDGE)

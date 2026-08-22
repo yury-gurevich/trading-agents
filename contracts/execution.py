@@ -14,6 +14,7 @@ from contracts.portfolio_manager import OrderIntentSet
 from kernel.contract import AgentContract, Capability
 
 ExecutionStage = Literal["paper", "broker_shadow", "live_manual", "live_autopilot"]
+DeliberationPosture = Literal["advisory", "binding"]
 
 
 # ── Inbound payloads ────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ class PromoteStageResult(_Frozen):
 
 CONTRACT = AgentContract(
     name="execution",
-    version="0.3.1",
+    version="0.4.0",
     mission=(
         "Be the single, idempotent boundary to the broker: submit approved orders, "
         "record fills, reconcile, and enforce stage gates (paper -> shadow -> live)."

@@ -74,3 +74,23 @@ def test_llmcall_props_are_declared_and_unknown_prop_fails() -> None:
     vocabulary.check_node("LLMCall", props=props)
     with pytest.raises(VocabularyError, match="undeclared properties"):
         vocabulary.check_node("LLMCall", props={**props, "calling_agnet": "x"})
+
+
+def test_execution_run_deliberation_posture_props_are_declared() -> None:
+    """EXEC-OUT-09 / DL-70: ExecutionRun posture props are vocabulary-declared."""
+    vocabulary = Vocabulary.from_mapping(_declaration())
+    props = {
+        "source_pm_run_id": "pm-1",
+        "submitted": 1,
+        "rejected": 0,
+        "skipped": 0,
+        "deliberation_status": "applied_failed_open",
+        "deliberation_posture": "advisory",
+        "deliberation_blocked_count": 0,
+    }
+
+    vocabulary.check_node("ExecutionRun", props=props)
+    with pytest.raises(VocabularyError, match="deliberation_postuer"):
+        vocabulary.check_node(
+            "ExecutionRun", props={**props, "deliberation_postuer": "advisory"}
+        )

@@ -167,7 +167,7 @@ def test_gate_outcome_has_three_wire_states_and_legacy_passed_view() -> None:
         _ = not_evaluated.passed
 
 
-def test_broker_native_stops_bump_contract_ownership() -> None:
-    assert EXECUTION_CONTRACT.version == "0.3.1"
+def test_execution_contract_ownership_version() -> None:
+    assert EXECUTION_CONTRACT.version == "0.4.0"
     assert "BrokerStopOrder" in EXECUTION_CONTRACT.owns_graph
     assert ANALYST_CONTRACT.version == "0.5.0"

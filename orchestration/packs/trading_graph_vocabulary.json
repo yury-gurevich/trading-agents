@@ -366,6 +366,18 @@
       "verdicts",
       "vetoed_tickers"
     ],
+    "ExecutionRun": [
+      "deliberation_blocked_count",
+      "deliberation_posture",
+      "deliberation_status",
+      "dropped",
+      "linked_from_key",
+      "rejected",
+      "resume_run_id",
+      "skipped",
+      "source_pm_run_id",
+      "submitted"
+    ],
     "BrokerPositionSnapshot": [
       "account_buying_power_cents",
       "account_cash_cents",

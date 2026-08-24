@@ -15,6 +15,7 @@ from agents.analyst.domain.alpha_features import compute_alpha_features
 from agents.analyst.domain.alpha_pillar import score_alpha158
 from agents.analyst.domain.recommend import AnalysisDecision, decide
 from agents.analyst.domain.scoring import score_candidate
+from agents.analyst.domain.sentiment_weights import batch_headline_weights
 from contracts.stop_rule import check_stop
 from kernel.errors import fault_boundary, fault_from_exception
 
@@ -60,6 +61,7 @@ def score_candidates(
                 for ticker, row in feature_rows.items():
                     if row is not None:
                         alpha_scores[ticker] = score_alpha158(row, universe)
+        headline_weights = batch_headline_weights(market.news)
         scored: list[AnalysisDecision] = []
         for candidate in candidate_set.candidates:
             ticker_bars = bars.get(candidate.ticker, ())
@@ -75,6 +77,7 @@ def score_candidates(
                         benchmark_bars,
                         market.news.get(candidate.ticker, ()),
                         settings,
+                        headline_weights=headline_weights,
                         alpha_score=alpha_scores.get(candidate.ticker),
                     ),
                     regime,

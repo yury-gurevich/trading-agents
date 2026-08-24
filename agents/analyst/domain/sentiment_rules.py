@@ -9,6 +9,10 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 # Curated finance-news headline terms the Loughran-McDonald master dictionary
 # omits: LM was built for 10-K filings, so headline verbs (beat, surge, plunge,
@@ -68,16 +72,22 @@ def _bounded(value: float) -> float:
 
 def score_sentiment(
     headlines: tuple[str, ...],
+    *,
+    headline_weights: Mapping[str, float] | None = None,
 ) -> tuple[float | None, dict[str, float]]:
-    """Average the net-tone sub-score of each headline that carries a lexicon word.
+    """Average the weighted net-tone sub-score of each lexicon-bearing headline.
 
     A headline's sub-score is ``50 + 50 * (pos - neg) / (pos + neg)`` (all-positive
     -> 100, balanced -> 50, all-negative -> 0). Headlines with no lexicon word carry
-    no signal and are skipped (never diluted toward neutral). Returns ``(None, {})``
-    when the input is empty or no headline is scored. Never raises.
+    no signal and are skipped (never diluted toward neutral). When ``headline_weights``
+    is provided, each scored headline contributes that many batch-weighted article
+    units; missing weights default to 1.0. Returns ``(None, {})`` when the input is
+    empty or no headline is scored. Never raises.
 
     The returned metrics are two different units, so they say so in their names:
     ``sentiment_articles`` counts *headlines* that scored, while
+    ``sentiment_batch_weighted_articles`` reports the batch-scoped weighted article
+    denominator used by the mean, and
     ``sentiment_positive_words`` / ``sentiment_negative_words`` count *lexicon word
     occurrences* summed across those headlines. Word counts routinely exceed the
     article count -- one headline can carry several lexicon words. They were once
@@ -85,7 +95,9 @@ def score_sentiment(
     counts beside ``sentiment_articles``; the deliberator reported the pair as an
     inconsistent feed and vetoed real orders on it (DL-112).
     """
-    sub_scores: list[float] = []
+    weighted_sum = 0.0
+    weight_total = 0.0
+    scored_articles = 0
     total_pos = 0
     total_neg = 0
     for headline in headlines:
@@ -94,14 +106,21 @@ def score_sentiment(
         neg = sum(1 for token in tokens if token in _NEGATIVE)
         if pos + neg == 0:
             continue
-        sub_scores.append(_bounded(50.0 + 50.0 * (pos - neg) / (pos + neg)))
+        weight = (
+            1.0 if headline_weights is None else headline_weights.get(headline, 1.0)
+        )
+        sub_score = _bounded(50.0 + 50.0 * (pos - neg) / (pos + neg))
+        weighted_sum += sub_score * weight
+        weight_total += weight
+        scored_articles += 1
         total_pos += pos
         total_neg += neg
-    if not sub_scores:
+    if scored_articles == 0:
         return None, {}
-    mean = sum(sub_scores) / len(sub_scores)
+    mean = weighted_sum / weight_total
     return mean, {
-        "sentiment_articles": float(len(sub_scores)),
+        "sentiment_articles": float(scored_articles),
+        "sentiment_batch_weighted_articles": weight_total,
         "sentiment_positive_words": float(total_pos),
         "sentiment_negative_words": float(total_neg),
     }

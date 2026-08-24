@@ -8,6 +8,53 @@ and is marked CLOSED here.
 
 ---
 
+## DL-132 - S186 sentiment de-duplication is batch-scoped and metric-visible - status: DECIDED (2026-08-24)
+
+**Question.** [DL-127](design-log.md) already decided the policy: down-weight duplicated news
+headlines by `1 / n_tickers` instead of dropping them. S186 has to decide the implementation shape
+without moving the provider boundary, hiding the denominator, or changing the scanner composite
+weights.
+
+**Decision 1 - compute duplication weights in the analyst batch path, over the whole
+`MarketData.news` batch.** `score_candidates` is the first analyst point that holds the whole news
+batch and the scored candidate subset together, so it prepares a headline-weight map once and passes
+it into candidate scoring. The denominator is every distinct ticker in `market.news` that carries the
+exact headline, not just the tickers that survived to `CandidateSet`.
+
+**Rejected alternatives.** Compute the count in `_parse_news` or the provider - rejected because the
+parser sees one ticker at a time and the provider must serve raw news, not interpretation. Count only
+candidate tickers - rejected because the committed `sched-2026-08-21` fixture proves that scope puts
+`KO` at 0.600 instead of the measured 0.599.
+
+**Decision 2 - exact headline string is the identity.** Re-measured on the committed fixture: exact,
+whitespace-collapsed, casefolded, and mojibake-replaced+casefolded matching all produce the same
+counts: 1,255 slots, 784 distinct headlines, 639 slots at `n >= 2`, 294 at `n >= 5`, 186 at
+`n >= 10`, max `n = 19`.
+
+**Rejected alternative.** Normalize on principle. It adds a hidden equivalence rule while changing
+none of the measured counts on the evidence run. If vendor text drift later makes normalization
+useful, that should arrive with a fresh measurement.
+
+**Decision 3 - keep `sentiment_articles` as an unweighted scored-headline count and add
+`sentiment_batch_weighted_articles` for the denominator actually used by the weighted mean.** The
+old metric still tells the truth about article count. The new metric names both the weighted unit and
+the batch scope, so DL-112's "same prefix, different units" failure is not repeated silently. Because
+this adds a `sentiment_*` metric, the analyst law/test-plan cycle is owed in this sprint.
+
+**Rejected alternatives.** Overload `sentiment_articles` to report weight - rejected because the name
+would say articles while the value is fractional. Rename `sentiment_articles` - rejected because the
+existing count is still meaningful and already consumed as an article count. Hide the weight - rejected
+because the score would no longer be reconstructable from the visible metrics.
+
+**Decision 4 - heavily duplicated all-news tickers keep a score.** The weighted mean remains
+`sum(weight * sub_score) / sum(weight)`, so shrinking every headline's weight does not remove the
+sentiment pillar as long as at least one headline has a lexicon word.
+
+**Rejected alternative.** Treat highly duplicated headlines as absent sentiment. That is the dropped
+headline policy under another name, and DL-127 rejected it because it silently changes the pillar mix.
+
+---
+
 ## DL-128 - S185 deliberation posture is a mode selector and a recorded run fact - status: DECIDED (2026-08-22)
 
 **Question.** The veto posture is currently inferred from timing: `deliberation_grace_seconds`

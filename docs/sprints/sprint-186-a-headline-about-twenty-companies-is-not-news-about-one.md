@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-186-a-headline-about-twenty-companies-is-not-news-about-one`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-127](../design-log.md) the decision and its measurement · [DL-117](../design-log.md)
@@ -452,16 +452,26 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `score_sentiment` and sentiment metrics | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `ANLZ-IDN-01`, `ANLZ-OUT-02`, `ANLZ-OUT-06`, `ANLZ-IDM-01`, `ANLZ-TYP-01`, `ANLZ-OBS-01`; conventions §3/§7 | Yes. Tests must cite the analyst clauses they prove, and metric names must keep unit/scope visible rather than relying on reader context. |
+| Analyst batch scoring call site | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md` | `ANLZ-IDN-01`, `ANLZ-NEV-03`, `ANLZ-IDM-01`, analyst `PARAM` rows for `sentiment_weight`, `confidence_floor`, `confidence_span` | Yes. The duplication denominator must be computed from the whole `MarketData.news` batch before candidate-level scoring so the composite and regime gate see the intended sentiment pillar only. |
+| Duplication count boundary | `agents/provider/laws/laws.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PROV-IN-06`, `PROV-NEV-02`, `PROV-NEV-03`, `PROV-NEV-08` | Yes. The provider serves raw news and must not interpret relevance, so the count stays in analyst code and no provider request, field, setting, or cap changes. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
+Yes, because design decision 3 needs a distinct metric for the weighted sentiment denominator. The generic `QuantMetric` contract does not change, but adding a new sentiment metric is a new analyst observability guarantee, so this sprint owes an analyst law amendment and test-plan row in the same unit of work.
+
 **Contradictions found between a law and this spec:**
+
+None found.
 
 **Laws found silent where a decision was needed:** *Check specifically whether the provider law says
 anything about news relevance.*
 
+No blocking silence found. `PROV-NEV-08` explicitly keeps news interpretation downstream by requiring the provider to serve raw facts rather than sentiment or relevance judgements.
+
 **Clauses that were ⬜ and are now proven:**
+
+`ANLZ-OBS-04` was added in analyst laws v1.2 and proven by `test_sentiment_weighting.py::test_weighted_article_metric_names_unit_and_batch_scope`.
 
 ---
 
@@ -469,49 +479,145 @@ anything about news relevance.*
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
+| A1 | `test_shared_headline_is_fractional_in_weighted_mean` | `agents/analyst/tests/test_sentiment_weighting.py` | passed | `ANLZ-IDM-01`, `ANLZ-OBS-04` |
+| A2 | `test_all_heavily_shared_headlines_still_score` | `agents/analyst/tests/test_sentiment_weighting.py` | passed | `ANLZ-IDM-01` |
+| A3 | `test_fixture_exclusive_news_tickers_are_unchanged` | `agents/analyst/tests/test_sentiment_weighting.py` | passed; fixture has the four named tickers in `news`, not `baseline`, so the test proves weighted-vs-unweighted sentiment identity on their real exclusive headlines | `ANLZ-IDM-01` |
+| A4 | `test_neutral_headline_is_skipped_before_weighting` | `agents/analyst/tests/test_sentiment_weighting.py` | passed | `ANLZ-IDM-01` |
+| A5 | `test_weighted_article_metric_names_unit_and_batch_scope` | `agents/analyst/tests/test_sentiment_weighting.py` | passed | `ANLZ-OBS-04`, `DL-112` |
+| A6 | `test_sched_2026_08_21_fixture_reproduces_weighted_measurement` | `agents/analyst/tests/test_sentiment_fixture_measurement.py` | passed | `ANLZ-IDM-01`, `ANLZ-NEV-03` |
 
 **Tests added beyond the plan:**
+
+None.
 
 ---
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
-
-**Status:** *not yet implemented.*
+**Status:** BUILT locally; branch gate pending until commit/push.
 
 **Tree the proofs ran in (and `.env` present?):**
 
-**Result:** *not yet implemented.*
+`C:\Users\yury_\Downloads\project\trading-agents`, branch `sprint-186-a-headline-about-twenty-companies-is-not-news-about-one`. `.env_present=yes`; no `.env` values were read or used.
+
+**Result:** Built S186. The analyst now computes exact-headline duplicate weights over the whole `MarketData.news` batch, passes them to `score_sentiment`, and exposes `sentiment_batch_weighted_articles` as the batch-scoped weighted denominator. No provider code, provider settings, vendor fields, graph vocabulary, or sentiment/composite weights changed.
 
 **Files changed:**
 
-**Design decisions:** *the four above, as a DL entry with rejected alternatives.*
+- `agents/analyst/domain/sentiment_weights.py`
+- `agents/analyst/domain/sentiment_rules.py`
+- `agents/analyst/domain/scoring.py`
+- `agents/analyst/domain/analyze.py`
+- `agents/analyst/tests/test_sentiment_weighting.py`
+- `agents/analyst/tests/test_sentiment_fixture_measurement.py`
+- `agents/analyst/tests/test_sentiment_rules.py`
+- `agents/analyst/tests/test_analyze_domain.py`
+- `agents/analyst/laws/laws.md`
+- `agents/analyst/laws/test-plan.md`
+- `docs/design-log.md`
+- `docs/laws/INDEX.md`
+- `docs/laws/ledger.md`
+- `pyproject.toml`
+- `uv.lock`
+
+**Design decisions:** `DL-132` records the four implementation decisions and rejected alternatives: analyst batch-scope computation, exact headline identity, `sentiment_articles` plus `sentiment_batch_weighted_articles`, and preserving a score when all scored headlines are duplicated.
 
 **Proof — the red run first:**
 
+```text
+uv run pytest agents/analyst/tests/test_sentiment_weighting.py --no-cov
+collected 6 items
+agents\analyst\tests\test_sentiment_weighting.py FFFFFF
+
+FAILED ... test_shared_headline_is_fractional_in_weighted_mean
+E   TypeError: score_sentiment() got an unexpected keyword argument 'headline_weights'
+FAILED ... test_all_heavily_shared_headlines_still_score
+E   TypeError: score_sentiment() got an unexpected keyword argument 'headline_weights'
+FAILED ... test_fixture_exclusive_news_tickers_are_unchanged
+E   TypeError: score_sentiment() got an unexpected keyword argument 'headline_weights'
+FAILED ... test_neutral_headline_is_skipped_before_weighting
+E   TypeError: score_sentiment() got an unexpected keyword argument 'headline_weights'
+FAILED ... test_weighted_article_metric_names_unit_and_batch_scope
+E   TypeError: score_sentiment() got an unexpected keyword argument 'headline_weights'
+FAILED ... test_sched_2026_08_21_fixture_reproduces_weighted_measurement
+E   assert None is not None
+============================== 6 failed in 1.53s ==============================
+```
+
 **Proof — the green run:**
 
-**The measurement reproduced (A6):** *`KO` 0.605 → ?, tickers losing their score → ?*
+```text
+uv run pytest agents/analyst/tests --no-cov
+============================= 382 passed in 5.51s =============================
+
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+...
+exit code 0
+```
+
+```text
+make ci *> $env:TEMP\s186-make-ci-final.txt
+exit_code=0
+...
+TOTAL                                                     15186      0   3248      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2384 passed, 4 skipped in 201.93s (0:03:21) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 3 new file(s)
+```
+
+**The measurement reproduced (A6):** `KO` 0.604607 -> 0.599485 (`0.599` to 3 dp), tickers losing their score -> 0. Baseline recompute reproduced 28 / 28 stored confidences to 3 dp; distinct headlines 784; max `n` 19.
 
 **Guards planted:**
 
+1. A1-A6 were planted before implementation and failed red as above.
+2. DL-70 violation: changed `batch_headline_weights` temporarily to return `1.0` for every headline and ran `uv run pytest agents/analyst/tests/test_sentiment_weighting.py::test_shared_headline_is_fractional_in_weighted_mean --no-cov`.
+
+```text
+FAILED ... test_shared_headline_is_fractional_in_weighted_mean
+E   assert 50.0 == 66.66666666666667 ...
+============================== 1 failed in 1.09s ==============================
+```
+
+Implementation restored; focused and analyst suites passed afterward.
+
 **Module line counts:**
 
-**`make ci`:** *exit code, passed/skipped counts, coverage %.*
+Checked with `scripts/check_module_size.py` line-count logic:
+
+```text
+agents/analyst/domain/analyze.py: 146
+agents/analyst/domain/scoring.py: 180
+agents/analyst/domain/sentiment_rules.py: 126
+agents/analyst/domain/sentiment_weights.py: 24
+agents/analyst/tests/test_analyze_domain.py: 192
+agents/analyst/tests/test_sentiment_rules.py: 121
+agents/analyst/tests/test_sentiment_weighting.py: 120
+agents/analyst/tests/test_sentiment_fixture_measurement.py: 136
+```
+
+`uv run python scripts/check_module_size.py agents\analyst\domain agents\analyst\tests` exited 0 with warnings only for pre-existing/near-limit files; no hard block.
+
+**`make ci`:** exit 0; 2384 passed, 4 skipped; 100.00 % coverage; pip-audit clean; tracked and untracked detect-secrets clean.
 
 **`make gate-ran`:** *worktree path and full 40-char SHA.*
 
+Pending until branch commit/push.
+
 **Not met / verified failing:**
+
+Branch push and `make gate-ran` not done yet in this draft closeout. A3's sprint prose said `DUK`, `GILD`, `MET`, `TGT` had stored baseline confidence; verified false for this fixture (`baseline` lacks all four). The final A3 guard uses their real exclusive `news` rows and proves weighted-vs-unweighted sentiment identity; there is no stored confidence for those four to assert.
 
 ---
 
 ## Return notes
 
--
+- No provider code changed; no new provider request, vendor field, setting, cap, tunable, or relevance model was added.
+- Graph vocabulary unchanged: `git diff --quiet -- orchestration\packs\trading_graph_vocabulary.json` exit 0; SHA256 `93DAB2E6E0DCDB3E9F2135090204D4261469541414C734A81628102E07AE6ABA`.
+- Analyst law cycle done: `ANLZ-OBS-04`, laws v1.2, law coverage exit 0, ledger/INDEX updated to 24 / 47.

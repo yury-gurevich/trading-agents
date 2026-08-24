@@ -25,6 +25,8 @@ from agents.analyst.domain.signal_selection import (
 from agents.analyst.domain.technical_rules import score_technical
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from agents.analyst.settings import AnalystSettings
     from contracts.provider import OHLCVBar
     from contracts.scanner import Candidate
@@ -53,6 +55,7 @@ def score_candidate(
     news: tuple[str, ...],
     settings: AnalystSettings,
     *,
+    headline_weights: Mapping[str, float] | None = None,
     alpha_score: float | None = None,
 ) -> ScoreBreakdown:
     """Score one candidate from price history, fundamentals, and news; then blend."""
@@ -72,7 +75,7 @@ def score_candidate(
     )
     raw_fund, fmetrics = score_fundamental(fundamentals)
     fundamental = None if raw_fund is None else _bounded(raw_fund / 100.0)
-    raw_sent, smetrics = score_sentiment(news)
+    raw_sent, smetrics = score_sentiment(news, headline_weights=headline_weights)
     sentiment = None if raw_sent is None else _bounded(raw_sent / 100.0)
     alpha = None if alpha_score is None else _bounded(alpha_score / 100.0)
     composite = _composite(technical, fundamental, sentiment, alpha, settings)

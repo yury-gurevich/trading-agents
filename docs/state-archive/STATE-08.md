@@ -134,3 +134,16 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
 [STATE-08.md](state-archive/STATE-08.md)**;
 `0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
 [STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
+
+---
+
+## The gate was red for two days over one test line (fix, no bump, 2026-08-17)
+
+*Moved out of `STATE.md` on 2026-08-24 so Recent stayed under the 200-line rule.*
+
+**The gate was red for two days over one test line (fix, no bump, 2026-08-17 —
+  [DL-110](../design-log.md)).** Four straight `Security Findings` failures — three on docs-only commits
+  — on CodeQL #177, the only error-level alert of 76: a PM test unpacked `SectorBook.outcomes()` into
+  two names, and that call returns `()` with no sector. `GATE PROVEN` for `21a5e81`. 🪤 **A branch
+  cannot clear an alert raised on `main`** (`codeql.yml` runs only there), and 🪤 **the step prints
+  nothing on failure** — read the report, not the log.

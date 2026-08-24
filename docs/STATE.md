@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-24 13:16 AEST · **Version:** 0.92.00 · **S185 merged `5bea06d` — the veto's posture is now declared and recorded, not an accident of two timeouts; 🚨 it defaults to `advisory` and nothing flips it to `binding` when credit returns 2026-08-30.**
+**Last updated:** 2026-08-24 13:52 AEST · **Version:** 0.92.00 · **🚨 Three queue items diagnosed 2026-08-24 and all three were the same shape — execution’s graph facts each denormalise lifecycle differently, and only `Position` has a predicate that hides it ([DL-129](design-log.md)/[DL-130](design-log.md)/[DL-131](design-log.md)). Two carried numbers were counting fields that never move.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,12 +37,20 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-- **The gate was red for two days over one test line (fix, no bump, 2026-08-17 —
-  [DL-110](design-log.md)).** Four straight `Security Findings` failures — three on docs-only commits
-  — on CodeQL #177, the only error-level alert of 76: a PM test unpacked `SectorBook.outcomes()` into
-  two names, and that call returns `()` with no sector. `GATE PROVEN` for `21a5e81`. 🪤 **A branch
-  cannot clear an alert raised on `main`** (`codeql.yml` runs only there), and 🪤 **the step prints
-  nothing on failure** — read the report, not the log.
+- **Three diagnoses, one pattern, no code changed (docs only, no bump, 2026-08-24).** Measured against
+  the live spine and the broker while S186/S187 waited on handover. **Item 12's "202-fill backlog" is
+  27** ([DL-129](design-log.md)) — `Fill.status` is a submit-time fact never mutated; truth is
+  `broker_status` + 3,725 `BrokerOrderStatus` nodes, and the sweep skips every terminal one. **Item
+  20's 228 faults are 13 objects** ([DL-130](design-log.md)) — `broker_stop` asks *is this of type
+  stop* and never reads status, `graph_stop` asks *is it active*, so every cancelled stop mismatches
+  forever; the broker **agrees** on all 13. **New item 32** ([DL-131](design-log.md)) — a stop that
+  *fires* is never reconciled: WFC filled at Alpaca 08-21T17:00:44, still active in the graph, because
+  `cancelled_at is None` is a stop's only lifecycle. 🟩 **Item 27's symptom is gone**: 24 positions / 24 stops, **1:1, zero unprotected** (was 22/19 and $2,147.76 on 08-19) — but its live
+  proof is still owed, all 24 read `stop_pct_source=position`, so S182's fallback has never fired.
+  🚨 The durable fix is **one predicate module for execution's broker facts**, not three patches.
+  🪤 Two of the three rows were **counting a field that never moves** — the retracted-DL-73 class,
+  twice more.
+
 
 ## Now
 

@@ -70,6 +70,102 @@ the policy that decided what to do about it.
 
 ---
 
+## DL-131 - A stop that fires is never reconciled, because `cancelled_at` is the only lifecycle a stop has - status: DECIDED (2026-08-24)
+
+**Found while proving item 27's protection coverage, not looked for.** *[measured 2026-08-24]* The
+broker holds **24 positions and 24 open stop orders, 1:1, zero unprotected and zero orphans** - the
+symptom that opened item 27 (22 positions, 19 stops, $2,147.76 unprotected on 2026-08-19) is gone.
+But the graph holds **25** active `BrokerStopOrder` facts against the broker's 24.
+
+**The extra one is `stop:9691904d478ed859:WFC`, and it did not fail - it worked.** The stop **fired**:
+Alpaca reports `status=filled, filled_at=2026-08-21T17:00:44Z, qty=11`. WFC was stopped out. The graph
+fact still reads `cancelled_at=None`, so `active_broker_stop_orders(graph)` returns it and will keep
+returning it forever.
+
+**The cause is that a stop has exactly one lifecycle marker and it is the wrong one.**
+`contracts/broker_stops.py` defines active as `cancelled_at is None`. Cancellation is written; **a
+fill is not**. So every stop-out from now on leaves a permanently "active" stop fact behind, and this
+was simply the account's first one.
+
+🪤 **The position side of the same event is correct**, which is what makes the gap precise rather
+than general: graph active positions are **24**, matching the broker symbol-for-symbol, and WFC's
+`Position` nodes still read `status: "open"` while `is_active_position_node` correctly returns
+`False`. Positions have a predicate that encodes the real lifecycle; stops have a nullable timestamp.
+
+**DECISION: record it as a defect now, fix it with the predicate it is missing.** A stop needs a
+resolved/live distinction that covers *filled* as well as *cancelled* - the `is_active_position_node`
+treatment, applied to `BrokerStopOrder`.
+
+🚨 **This is the third instance of one pattern in a single sitting**, and the pattern is the finding:
+**execution's graph facts each denormalise lifecycle differently, and only `Position` has a predicate
+that hides it.** [DL-129](design-log.md) - `Fill.status` is immutable, truth is in `broker_status`,
+and no `is_open_fill_node` exists, so an audit miscounted 202 open fills where 27 were open.
+[DL-130](design-log.md) - `BrokerStopOrder` liveness is asked two different ways in one comparison,
+producing 228 permanent faults. Here - a fired stop has no representation at all. 🪤 Do not fix these
+one at a time without noticing they are one shape: **one predicate module for execution's broker
+facts** is the durable answer, and it is a sprint, not a patch.
+
+🟢 **No capital is at risk today** - protection is 1:1 and the stale fact belongs to a closed
+position. The cost is that `active_broker_stop_orders` over-reports, and it will drift further with
+every stop-out.
+
+---
+
+## DL-130 - The stop-identity check compares a type against a lifecycle - status: DECIDED (2026-08-24)
+
+**The question (work-queue item 20).** `BrokerStopIdentityMismatch` has fired on every sweep for
+12 days - 40 on 08-08, then ~10/run, then 24, 39, **52**, 13. The row asked whether the idempotency
+key is reused across lots or the graph missed a status refresh, and said to decide that before
+changing anything.
+
+**Neither. The two sides of the comparison ask different questions** *[measured 2026-08-24]*:
+
+| Side | `agents/execution/drop_sweep.py` | What it actually asks |
+| --- | --- | --- |
+| `broker_stop` | `order.order_type in {"stop", "stop_limit"}` | *is this order of type stop?* - **status is never consulted** |
+| `graph_stop` | key in `active_broker_stop_orders(graph)` | *is this stop currently **active**?* - `cancelled_at is None` |
+
+A cancelled stop is still **type** `stop`, so `broker_stop` stays `True` for the rest of the
+account's life while `graph_stop` correctly goes `False`. **Every cancelled stop is therefore a
+permanent, guaranteed mismatch**, and the population only grows.
+
+**The numbers.** *[measured 2026-08-24]* The 228 faults are **13 distinct keys**, each re-raised
+~20 times across 11 days, always in the same direction (`broker_stop=True graph_stop=False`). All 13
+exist as `BrokerStopOrder` nodes and **all 13 carry `cancelled_at`, every one written on 2026-08-07
+between 08:04:46 and 08:04:51** - a single cancel event. 🪤 **The graph and the broker agree
+completely**: the same orders read `status=canceled` at Alpaca with the *same* timestamps. Nothing is
+diverging.
+
+**Why it recurs forever.** `AlpacaBroker._list_orders` queries `status=all&limit=500`
+(`agents/execution/alpaca.py:155`). *[measured]* that returns **242 orders spanning 2026-06-16 to
+2026-08-21, 136 of them `canceled`* - the entire account history, not a recent window. So the sweep
+re-examines every dead order on every run, and re-raises a new `Fault` node for each of the 13.
+
+🚨 **The row's own description was wrong on both halves.** It read *"the broker holds the stop open
+(`broker_stop=True`) while the graph `Fill` for the same key reads `broker_status=rejected`"*. The
+broker does **not** hold them open - they are `canceled` - and **no `Fill` is involved**: the
+comparison is order-type versus `BrokerStopOrder.cancelled_at`. 🪤 The row also called the rate
+unstable and suspected it tracked "how many stops the sweep saw". It does - the count is how many
+sweeps ran, not how many stops mismatched. Only 13 objects have ever mismatched.
+
+**DECISION: fix the predicate, not the data.** `broker_stop` must ask the same question as
+`graph_stop` - a terminal order (`canceled`, `expired`, `filled`, `rejected`) is not a live stop.
+Then the 13 stop matching, the exemption stops being granted on dead orders, and the fault becomes
+capable of meaning something.
+
+**Rejected: suppress or resolve the 13 faults.** `FaultSuppression` and `FaultResolution` exist and
+would silence the noise, but the detector would keep manufacturing the same class for every stop
+cancelled from now on. Suppressing a predicate that cannot be right is how a warning channel dies.
+
+**Rejected: narrow the `status=all&limit=500` window.** It would reduce the rate and hide the defect
+without fixing it, and the window has other consumers. 🪤 Worth knowing separately: at 242 orders the
+500 cap is not yet binding, but it will be, and nothing watches for that.
+
+🟢 **Severity is unchanged - `warning`, and no capital is at risk.** The exempted orders are already
+dead. The cost is 228 unresolved fault records burying real ones, growing every run.
+
+---
+
 ## DL-129 - `Fill.status` is a submit-time fact, so the "pending backlog" is not a backlog - status: DECIDED (2026-08-24)
 
 **The question (work-queue item 12).** The item reads *"the pending backlog is growing, not

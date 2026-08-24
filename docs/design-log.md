@@ -70,6 +70,44 @@ the policy that decided what to do about it.
 
 ---
 
+## DL-129 - `Fill.status` is a submit-time fact, so the "pending backlog" is not a backlog - status: DECIDED (2026-08-24)
+
+**The question (work-queue item 12).** The item reads *"the pending backlog is growing, not
+shrinking - 202 pending Fills, not ~122, of 211 total, and 121 carry `broker_status=rejected` while
+still reading `status=pending`"*. Measured against the live spine 2026-08-24 the population is
+larger again - **243 Fills, 138 `pending`/`rejected`, 67 `pending`/`filled`, 27 `pending`/unset** -
+which reads as a backlog growing on two fronts.
+
+**It is not a backlog. `Fill.status` is immutable by design.** `agents/execution/order_status_store.py`
+states it in its own docstring: *"record broker order-status reads **without mutating existing Fill
+facts**"*. `status` is what the broker said at submit; the refreshed truth is denormalised onto
+`broker_status` and evidenced by append-only `BrokerOrderStatus` nodes linked `REFRESHES` - **3,725
+of them** *[measured 2026-08-24]*. Both consumers agree: `refresh_pending_fills`
+(`agents/execution/reconciliation_store.py:42`) selects `status == "pending"` and then **skips any
+Fill whose `broker_status` is already terminal**, and `agents/execution/run.py:97` and
+`filled_entry_stops.py:126` both read `broker_status` with `status` only as a fallback. A Fill
+reading `pending`/`filled` is a correctly recorded, fully resolved fill.
+
+**The real open set is 27 of 243** *[measured 2026-08-24]* - `status == "pending"` **and**
+`broker_status` not terminal, which is exactly what the sweep retries. Three are from
+`sched-2026-08-21`, i.e. the newest run's normal in-flight orders. 🪤 The other **24 carry no
+`submitted_at` at all**, which is a separate and much smaller question than the one item 12 asks.
+
+**So item 12's Fill half is corrected, not closed.** What survives is: why do 24 open Fills have no
+submit timestamp, and does the sweep ever resolve them or do they age forever? That is a diagnosis,
+not a sprint. The `pg_teardown` delete path, the item's other half, is untouched by this.
+
+🚨 **This is the [DL-73](design-log.md) class, and the second time it has cost something.** That row
+audited `Position.status` - which stays `"open"` by design - and raised a false red-severity defect;
+the rule it produced was *never audit the graph on raw props, use the contracts predicate*. Item 12
+did the same thing to `Fill.status`. 🪤 **`Fill` has no equivalent predicate** - `contracts/positions.py`
+exports `is_active_position_node`, and `contracts/execution.py` only types the literal. The durable
+fix is an `is_open_fill_node` predicate beside it, so the next audit cannot make this mistake a third
+time. Recorded here rather than specced: it is one function and belongs to whichever sprint next
+touches execution contracts.
+
+---
+
 ## DL-127 - Contaminated news is down-weighted, not dropped - status: DECIDED (2026-08-22)
 
 **The question ([DL-117](design-log.md), work-queue item 26).** Finnhub `/company-news?symbol=X`

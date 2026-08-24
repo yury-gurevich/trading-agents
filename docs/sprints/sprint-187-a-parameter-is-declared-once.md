@@ -165,7 +165,7 @@ makes them a **law cycle**, not a code edit — the code is fine, the law never 
    also compares the declared *type*, *bounds* or *default* against the code is a scope question —
    more value, more false positives. Decide and justify.
 
-🪤 **Take the next free DL number, then re-check it at merge.** Highest as of 2026-08-22 is **DL-127**.
+🪤 **Take the next free DL number, then re-check it at merge.** Highest as of 2026-08-24 is **DL-129**. 🚨 The log is **not** in numeric order — S185's DL-128 sits *above* DL-127 — and carries five historic duplicates, so scan every `^## DL-` heading and take max+1 rather than reading the end of the file.
 
 ---
 

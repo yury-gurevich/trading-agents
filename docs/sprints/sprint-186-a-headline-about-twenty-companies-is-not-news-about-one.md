@@ -206,8 +206,10 @@ the implementation questions it deliberately left open.
    mean is still well-defined (`num/den`), so the score survives — that is why `1/n` silences nobody.
    Confirm this in a test rather than assuming it.
 
-🪤 **Take the next free DL number, then re-check it at merge.** As of 2026-08-22 the highest is
-**DL-127**. The log has historic duplicates and a branch cut before another DL lands will collide
+🪤 **Take the next free DL number, then re-check it at merge.** As of 2026-08-24 the highest is
+**DL-129**. 🚨 The hint here previously said DL-127 and was **already wrong when written** —
+S185 landed DL-128 the same day, *above* DL-127 in the file, so the log is **not** in numeric order
+and reading the end of it does not find the maximum. Scan every `^## DL-` heading and take max+1. The log has historic duplicates and a branch cut before another DL lands will collide
 even when the number was free at branch time.
 
 ---
@@ -411,7 +413,9 @@ CONTEXT YOU WILL NEED:
   for accuracy, not for safety, and do not write alarming wording back into the docs.
 - The measurement bounds the effect on ONE run. Do not write a success factor claiming it
   generalises.
-- Take the next free DL number and RE-CHECK IT AT MERGE. Highest as of 2026-08-22 is DL-127.
+- Take the next free DL number and RE-CHECK IT AT MERGE. Highest as of 2026-08-24 is DL-129. Do NOT
+  read it off the end of the file - the log is not in numeric order (S185's DL-128 sits above DL-127)
+  and already carries five historic duplicate numbers. Scan every '## DL-' heading and take max+1.
 
 NO LLM UNTIL SUNDAY 2026-08-30. The deliberator is out of credit until then, so every scheduled run
 fails acceptance on debate_coverage 0.0 for an unrelated reason. This sprint needs no LLM at any

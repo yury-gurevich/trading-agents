@@ -494,7 +494,7 @@ None.
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; branch gate pending until commit/push.
+**Status:** BUILT locally; branch gate proven after push.
 
 **Tree the proofs ran in (and `.env` present?):**
 
@@ -606,13 +606,18 @@ agents/analyst/tests/test_sentiment_fixture_measurement.py: 136
 
 **`make ci`:** exit 0; 2384 passed, 4 skipped; 100.00 % coverage; pip-audit clean; tracked and untracked detect-secrets clean.
 
-**`make gate-ran`:** *worktree path and full 40-char SHA.*
+**`make gate-ran`:** Worktree `C:\Users\yury_\Downloads\project\trading-agents`, full SHA `4b0daafd036973e6716b4c7badd686a005e8005e`.
 
-Pending until branch commit/push.
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 4b0daafd036973e6716b4c7badd686a005e8005e:
+  Security Findings: success
+  CI: success
+```
 
 **Not met / verified failing:**
 
-Branch push and `make gate-ran` not done yet in this draft closeout. A3's sprint prose said `DUK`, `GILD`, `MET`, `TGT` had stored baseline confidence; verified false for this fixture (`baseline` lacks all four). The final A3 guard uses their real exclusive `news` rows and proves weighted-vs-unweighted sentiment identity; there is no stored confidence for those four to assert.
+Merge, deploy, and live post-merge scanner/analyst read are not done. A3's sprint prose said `DUK`, `GILD`, `MET`, `TGT` had stored baseline confidence; verified false for this fixture (`baseline` lacks all four). The final A3 guard uses their real exclusive `news` rows and proves weighted-vs-unweighted sentiment identity; there is no stored confidence for those four to assert.
 
 ---
 

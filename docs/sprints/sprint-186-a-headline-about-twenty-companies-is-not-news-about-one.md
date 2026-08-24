@@ -118,6 +118,29 @@ over present pillars) → `confidence = 0.3 + composite × 0.6`, against the **0
 | Raw sentiment moves >10 pts under **1/n** | **25 tickers**; largest `CAT` 50.0 → 93.3 | *[measured]* |
 | Effect on the run's approved orders | *none of `C`/`AMZN`/`GOOG` crosses the floor* | *[measured]* — but this is **one run**; do not promise it generalises |
 
+### The fixture — extracted 2026-08-24, so this is reproducible without the graph
+
+`agents/analyst/tests/data/news_sched_2026_08_21.json` holds that run's **whole news batch**
+(98 tickers, 1,255 slots, 784 distinct headlines) plus the **analyst baseline** it produced
+(28 tickers: `technical_score`, `fundamental_score`, `sentiment_score`, `composite_score`,
+`confidence`, and the three `sentiment_*` metrics). A worktree has no `.env`; this is what lets A6
+run anyway. Verified on extraction: the unweighted recompute reproduced **28/28** stored confidences
+to 3 dp, and `KO` lands on **0.599** under `1/n` — *[measured 2026-08-24]*. No alpha pillar was
+active on this run, so the composite is the three-pillar one.
+
+It also carries two edge paths as **real** data rather than synthetic: **`DOW`, `SCHW`, `USB`** are
+baseline tickers with **no sentiment at all** (the renormalisation path the trap below describes —
+note it is three tickers, not the two named in DL-127's prose), and **`DUK`, `GILD`, `MET`, `TGT`**
+have news that is **entirely exclusive** (`n == 1` throughout), so A3 can assert byte-identity on
+real headlines instead of a constructed case. 🪤 The largest `n` actually observed is **19**, not the
+twenty of the title.
+
+🚨 **`n_tickers` is counted over every ticker in `news` (98), not over `baseline` (28).** This is not
+a detail. *[measured 2026-08-24]* counting `n` over only the scored candidates puts `KO` at
+**0.600** — which does **not** cross the 0.600 floor, and the sprint's one floor crossing silently
+disappears. Same code, different denominator, different headline result. `market.news` in
+`score_candidates` is the batch; the candidate set is a subset of it.
+
 🪤 **A ticker with no sentiment is already a first-class case.** `_composite` renormalises over
 *present* pillars, so an absent sentiment scores on technical+fundamental rather than being treated as
 neutral. `SCHW` and `DOW` took that path on 2026-08-21 with no incident. **This is why "loses its
@@ -167,7 +190,9 @@ the implementation questions it deliberately left open.
    🪤 **It cannot be `_parse_news`.** The count is a property of the **batch**, not of a headline, and
    the parser sees one ticker at a time — computing it there needs cross-ticker state in a per-ticker
    function. Options: compute it in the analyst as it scores the batch, or pass a prepared map. Say
-   which and why.
+   which and why. 🪤 **The scope is decided, not open:** count over the **whole** `market.news`
+   batch that `score_candidates` holds, not over the candidate set — see the 🚨 above for the
+   measured consequence of getting this backwards.
 2. **What counts as "the same headline"?** Exact string match is the cheap answer and is what the
    measurement used. Consider whether normalisation (case, whitespace, the vendor's mojibake — the
    run's data contains `Today�s Session`) changes the count materially. **Measure before
@@ -191,7 +216,7 @@ even when the number was free at branch time.
 
 | What | Detail |
 | --- | --- |
-| Files changed | `agents/analyst/domain/sentiment_rules.py` **~110**, `agents/analyst/domain/scoring.py`, possibly `agents/analyst/domain/sentiment_reading.py` |
+| Files changed | `agents/analyst/domain/sentiment_rules.py` (**107** lines), `agents/analyst/domain/scoring.py` (**177 — 23 from the hard block**, split rather than squeeze), `agents/analyst/domain/analyze.py` (**137**, holds the batch), possibly `agents/analyst/domain/sentiment_reading.py` (58) |
 | Agents affected | `analyst` only. 🪤 If the count is computed in the provider, you have crossed an agent boundary — don't |
 | Contract change? | **Expected no.** If you add or rename a metric, re-answer the law-cycle question |
 | Graph vocabulary change? | **No** — metrics ride inside existing properties. Verify, don't assume |
@@ -208,9 +233,11 @@ even when the number was free at branch time.
 3. **Plant the failing tests first** (A1–A6) and watch them fail. Paste the red output.
 4. **Implement** the `1/n` weighting.
 5. **Law cycle** if design decision 3 renames or adds a metric.
-6. **Reproduce the measurement** — re-score `sched-2026-08-21`'s news through your code and confirm
-   the numbers in the table above. 🪤 If your `KO` does not land at **0.599**, something differs;
-   find out what before continuing.
+6. **Reproduce the measurement** — re-score the committed fixture
+   (`agents/analyst/tests/data/news_sched_2026_08_21.json`) through your code and confirm the numbers
+   in the table above. No graph or `.env` access is needed. 🪤 If your `KO` does not land at
+   **0.599**, something differs — the first thing to check is whether you counted `n` over all 98
+   news tickers or only the 28 in `baseline`; find out before continuing.
 7. **Prove the guards can fail (DL-70)** — set every weight to 1.0, watch A1 go red, restore.
 8. **`make ci` green** — all 11 steps, **redirected to a file, never piped**.
 9. **Fill the handback sections** and set **Status:** to `BUILT`.
@@ -223,10 +250,10 @@ even when the number was free at branch time.
 | --- | --- | --- | --- |
 | A1 | 🎯 a headline filed under many tickers counts less than an exclusive one | two tickers, one shared headline + one exclusive, opposite polarity | the shared headline's pull is `1/n` of the exclusive one's — assert the **score**, not that a helper was called |
 | A2 | a ticker whose headlines are *all* heavily shared still gets a score | every headline filed under ≥10 | score is not `None`; the mean is well-defined |
-| A3 | 🪤 an exclusive-news ticker is completely unaffected | all headlines filed under exactly 1 | score is **byte-identical** to today's unweighted result |
+| A3 | 🪤 an exclusive-news ticker is completely unaffected | `DUK`, `GILD`, `MET`, `TGT` from the fixture — real tickers whose news is entirely `n == 1` | score is **byte-identical** to today's unweighted result, and their stored `confidence` is unchanged |
 | A4 | headlines with no lexicon word are still skipped, not diluted | mixed | the `pos + neg == 0` skip survives weighting |
 | A5 | the metrics name their unit and scope after weighting | any | whatever decision 3 chose is asserted here. **DL-112** |
-| A6 | 🪤 the measured run reproduces | `sched-2026-08-21` news fixture | `KO` 0.605 → **0.599**, and **0** tickers lose their score |
+| A6 | 🪤 the measured run reproduces | `agents/analyst/tests/data/news_sched_2026_08_21.json` — the whole 98-ticker batch | `KO` 0.605 → **0.599**, and **0** tickers lose their score. 🚨 count `n` over all 98, not the 28 in `baseline` |
 
 ---
 
@@ -286,6 +313,13 @@ not prove the bound holds on every run. Do not write a success factor that claim
 4. **Deploy: image-only retag** if the vocabulary hash is unchanged — verify, do not assume.
 5. **Read the next scheduled run's scanner ranking and analyst confidences** against the pre-merge
    ones. The behaviour change is intended; confirm it looks like the measurement predicted.
+   🚨 **Read those two numbers directly — do NOT read the acceptance verdict.** The deliberator has
+   no LLM credit until **Sunday 2026-08-30** (operator-stated; `docs/STATE.md`), so every scheduled
+   run until then fails acceptance on `debate_coverage: 0.0` and `failed_open_count > 0` **for a
+   reason that has nothing to do with this sprint**. A red gate on the first post-merge night is the
+   expected background state, not evidence about `1/n`. If you want a clean read, compare the
+   analyst's per-ticker `confidence` and the scanner's ranking, ticker by ticker, against the
+   pre-merge run.
 
 ---
 
@@ -305,6 +339,13 @@ under 2+ tickers, 23.4% under 5+, 14.8% under 10+.
 
 WHAT SHIPS. Weight each headline by 1 / n_tickers inside score_sentiment's mean, where n_tickers is
 how many distinct tickers in THIS BATCH the headline appears under. Nothing else.
+
+SCOPE OF n - GET THIS WRONG AND EVERYTHING ELSE LOOKS RIGHT. Count n over the WHOLE market.news
+batch that score_candidates holds (98 tickers on the fixture run), NOT over the candidate set or the
+28 tickers in the fixture's baseline block. Measured 2026-08-24: counting over the candidates puts
+KO at 0.600, which does NOT cross the 0.600 floor, and the sprint's one floor crossing vanishes.
+Same code, different denominator, different result. analyze.py::score_candidates already holds
+market.news; scoring.py is at 177 lines, 23 from the 200 hard block, so split rather than squeeze.
 
 THE SHAPE IS ALREADY DECIDED - DO NOT RE-LITIGATE IT. DL-127 measured drop-at-N versus down-weight
 through the real pipeline and chose down-weight: it silences 0 tickers where dropping silences 4
@@ -352,11 +393,15 @@ HARD LIMITS:
 TESTS - plant them first, watch them fail, paste the red output:
   A1 a shared headline pulls 1/n as hard as an exclusive one. Assert the SCORE, not a helper call.
   A2 a ticker whose headlines are all heavily shared still gets a score (not None).
-  A3 a ticker with only exclusive news scores byte-identically to today.
+  A3 a ticker with only exclusive news scores byte-identically to today. The fixture has four real
+     ones - DUK, GILD, MET, TGT - so this need not be synthetic. It also has three tickers with no
+     sentiment at all (DOW, SCHW, USB) exercising the renormalisation path.
   A4 headlines with no lexicon word are still skipped, not diluted toward neutral.
   A5 the metrics name their unit and scope after weighting (DL-112).
-  A6 reproduce the measurement on sched-2026-08-21's news: KO 0.605 -> 0.599, and ZERO tickers lose
-     their score. If your KO does not land on 0.599, something differs - find out what.
+  A6 reproduce the measurement from the committed fixture
+     agents/analyst/tests/data/news_sched_2026_08_21.json - it holds the whole 98-ticker news batch
+     plus the 28-ticker analyst baseline (technical/fundamental/sentiment/composite/confidence), so
+     no graph or .env access is needed. KO 0.605 -> 0.599, and ZERO tickers lose their score.
 
 CONTEXT YOU WILL NEED:
 - _composite renormalises over PRESENT pillars, so absent sentiment is not neutral - it changes the
@@ -367,6 +412,12 @@ CONTEXT YOU WILL NEED:
 - The measurement bounds the effect on ONE run. Do not write a success factor claiming it
   generalises.
 - Take the next free DL number and RE-CHECK IT AT MERGE. Highest as of 2026-08-22 is DL-127.
+
+NO LLM UNTIL SUNDAY 2026-08-30. The deliberator is out of credit until then, so every scheduled run
+fails acceptance on debate_coverage 0.0 for an unrelated reason. This sprint needs no LLM at any
+point - if something you are doing seems to need one, you have left the scope. And when the
+post-merge run is read, read the analyst confidences and scanner ranking directly; the red
+acceptance verdict is background noise, not a verdict on this change.
 
 GATE: make ci, all 11 steps, exit 0, 100.00% coverage. Redirect to a FILE and read the file - never
 pipe it, because make ci | tail reports tail's exit code, not make's. Then push and run make

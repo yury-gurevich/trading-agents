@@ -142,6 +142,17 @@ removes. Revisit only with evidence, not taste.
 headline: the duplication count is a property of the *batch*, not of a headline, and the parser sees
 one ticker at a time. Computing it there would need cross-ticker state in a per-ticker function.
 
+**Amended 2026-08-24 - the denominator's scope is part of the decision, and it was not stated.**
+Preparing the S186 handover surfaced a constraint this entry left implicit: **`n` must be counted
+over the whole `market.news` batch, not over the scored candidate set.** On `sched-2026-08-21` the
+provider returned news for **98** tickers while the analyst scored **28**, and the two denominators
+disagree on the result that decides the sprint - *[measured 2026-08-24]* `KO` lands on **0.599**
+counted over 98 and on **0.600** counted over 28, so the single floor crossing this entry rests on
+exists under one scope and vanishes under the other. Both are "1/n over this batch" in prose; only
+one reproduces the measurement. The run's news and the analyst baseline it produced are now committed
+as `agents/analyst/tests/data/news_sched_2026_08_21.json` so the claim is checkable without graph
+access - on extraction the unweighted recompute reproduced **28/28** stored confidences to 3 dp.
+
 ---
 
 ## DL-126 - S183 skipped filters and stop basis are explicit - status: DECIDED (2026-08-20)

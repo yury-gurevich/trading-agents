@@ -55,7 +55,7 @@ moves, you have done something else as well and should say what.
 | --- | --- | --- |
 | `agents/scanner/settings.py:53` `benchmark_ticker` | `agents/scanner/laws/laws.md` PARAM row (line ~228) | The law declares it **`YES`** (a tunable) and the code does not register it. **The law is right** — fix the code |
 | `agents/provider/settings_feeds.py:64,93` | `agents/provider/laws/laws.md` PARAM table (**LOCKED v1**) | Two parameters exist in no law at all. Law cycle |
-| `agents/execution/settings.py:122` `deliberation_grace_seconds` | `agents/execution/laws/laws.md` PARAM table | A registered `tunable()` with no PARAM row. Law cycle |
+| `agents/execution/settings.py:123` `deliberation_grace_seconds` | `agents/execution/laws/laws.md` PARAM table | A registered `tunable()` with no PARAM row. Law cycle |
 | the new `make ci` check | `docs/laws/conventions.md` | It encodes what the `Tunable` column means; it must not invent a stricter rule than the convention states |
 
 ⚠️ **The law is the authority, and it has already caught me out once here.** [DL-120](../design-log.md)'s
@@ -91,8 +91,8 @@ the scanner does not. One law row, two agents, one obeys.
 | `scanner.benchmark_ticker` | law says `YES`, **code is a bare default** | *[measured]* `agents/scanner/laws/laws.md:228` declares `YES`; `agents/scanner/settings.py:53` reads `benchmark_ticker: str = "SPY"`. The analyst's identical row at `agents/analyst/laws/laws.md:251` **is** honoured — `agents/analyst/settings.py:93` calls `tunable(` |
 | `provider.alpaca_data_feed` | **in no law at all** | *[measured]* `agents/provider/settings_feeds.py:93`, plain `Field(default="iex")`. Zero hits in `agents/provider/laws/laws.md` |
 | `provider.ingest_ohlcv_only` | **in no law at all** | *[measured]* `agents/provider/settings_feeds.py:64`, plain `Field(default=False)`, cited to DL-29 in a code comment only |
-| `execution.deliberation_grace_seconds` | **registered `tunable()`, no PARAM row** | *[measured]* `agents/execution/settings.py:122`. Surfaced while speccing [S185](sprint-185-the-veto-posture-is-declared-not-arithmetic.md) |
-| `execution.stage` | — | 🚨 *[measured — **RETRACTED**]* work-queue item 29 carried this as *"unverified whether it belongs"*. **It is already there**, `agents/execution/laws/laws.md:310`, declared `NO (config)`. **Not a defect. Do not touch it.** |
+| `execution.deliberation_grace_seconds` | **registered `tunable()`, no PARAM row** | *[measured]* `agents/execution/settings.py:123`. Surfaced while speccing [S185](sprint-185-the-veto-posture-is-declared-not-arithmetic.md) |
+| `execution.stage` | — | 🚨 *[measured — **RETRACTED**]* work-queue item 29 carried this as *"unverified whether it belongs"*. **It is already there**, `agents/execution/laws/laws.md:326`, declared `NO (config)`. **Not a defect. Do not touch it.** |
 
 🪤 **The provider law is LOCKED v1 since S69**, so its two missing rows were added post-lock. That
 makes them a **law cycle**, not a code edit — the code is fine, the law never caught up.
@@ -289,11 +289,11 @@ nothing checking. Verified 2026-08-22:
       agents/provider/settings_feeds.py:93 and :64, and they appear in NO law at all. The provider
       laws.md is LOCKED v1 since S69, so these were added post-lock. That is a LAW CYCLE, not a code
       edit - the code is fine, the law never caught up.
-  (c) execution.deliberation_grace_seconds - a registered tunable() at settings.py:122 with NO PARAM
+  (c) execution.deliberation_grace_seconds - a registered tunable() at settings.py:123 with NO PARAM
       row. Found while speccing S185.
 
 ALREADY RETRACTED - DO NOT "FIX" THESE:
-  - execution.stage is ALREADY in the execution PARAM table (laws.md:310, "NO (config)"). An older
+  - execution.stage is ALREADY in the execution PARAM table (laws.md:326, "NO (config)"). An older
     note called it unverified. It is verified and it is not a defect. Do not touch it.
   - stop_target_mode, order_price_tolerance_mode and curator.predictor_strategy are declared
     "NO (mode selector)" / "NO (structural)" ON PURPOSE, citing ADR-0013. DL-120's original headline

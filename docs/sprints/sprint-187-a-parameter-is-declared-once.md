@@ -88,7 +88,7 @@ the scanner does not. One law row, two agents, one obeys.
 
 | Instance | Direction | Status |
 | --- | --- | --- |
-| `scanner.benchmark_ticker` | law says `YES`, **code is a bare default** | *[measured]* `agents/scanner/laws/laws.md:228` declares `YES`; `agents/scanner/settings.py:53` reads `benchmark_ticker: str = "SPY"`. The analyst's identical row at `agents/analyst/laws/laws.md:251` **is** honoured — `agents/analyst/settings.py:93` calls `tunable(` |
+| `scanner.benchmark_ticker` | law says `YES`, **code is a bare default** | *[measured]* `agents/scanner/laws/laws.md:228` declares `YES`; `agents/scanner/settings.py:53` reads `benchmark_ticker: str = "SPY"`. The analyst's identical row at `agents/analyst/laws/laws.md:254` **is** honoured — `agents/analyst/settings.py:93` calls `tunable(` |
 | `provider.alpaca_data_feed` | **in no law at all** | *[measured]* `agents/provider/settings_feeds.py:93`, plain `Field(default="iex")`. Zero hits in `agents/provider/laws/laws.md` |
 | `provider.ingest_ohlcv_only` | **in no law at all** | *[measured]* `agents/provider/settings_feeds.py:64`, plain `Field(default=False)`, cited to DL-29 in a code comment only |
 | `execution.deliberation_grace_seconds` | **registered `tunable()`, no PARAM row** | *[measured]* `agents/execution/settings.py:123`. Surfaced while speccing [S185](sprint-185-the-veto-posture-is-declared-not-arithmetic.md) |
@@ -165,7 +165,7 @@ makes them a **law cycle**, not a code edit — the code is fine, the law never 
    also compares the declared *type*, *bounds* or *default* against the code is a scope question —
    more value, more false positives. Decide and justify.
 
-🪤 **Take the next free DL number, then re-check it at merge.** Highest as of 2026-08-24 is **DL-129**. 🚨 The log is **not** in numeric order — S185's DL-128 sits *above* DL-127 — and carries five historic duplicates, so scan every `^## DL-` heading and take max+1 rather than reading the end of the file.
+🪤 **Take the next free DL number, then re-check it at merge.** Highest as of 2026-08-30 is **DL-132** (S186 took it). 🚨 **Re-check every `file:line` in this spec before you start** — S186 merged on 2026-08-30 and its analyst law amendment shifted every analyst PARAM row by 3 (`laws.md:251` → **254**), which was corrected here but is exactly how these citations rot. 🚨 The log is **not** in numeric order — S185's DL-128 sits *above* DL-127 — and carries five historic duplicates, so scan every `^## DL-` heading and take max+1 rather than reading the end of the file.
 
 ---
 

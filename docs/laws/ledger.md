@@ -48,7 +48,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | curator | ✅ v1 (LOCKED) | 22 / 47 | 🟨 partial — **22 of 47 clauses proven** after the S156 citation check; 25 have a gray row |
 | operator | ✅ v1 (LOCKED) | 15 / 50 | 🟨 partial — **15 of 50 clauses proven** after the S156 citation check; 35 have a gray row |
 | supervisor | ✅ v1 (LOCKED) | 21 / 48 | 🟨 partial — **21 of 48 clauses proven** after S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); 27 have a gray row |
-| master | ✅ v1 (LOCKED) | 10 / 39 | 🟨 partial — **10 of 39 clauses proven** after the S156 citation check; 8 have a gray row and 21 have no row at all (S157 warn-only backlog) · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
+| master | ✅ v1.2 (LOCKED) | 15 / 44 | 🟨 partial — **15 of 44 clauses proven** after S188 adds and proves credential-test handover guards; 8 have a gray row and 21 have no row at all (S157 warn-only backlog) · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
 
 ## Layer 2 — Choreography
 

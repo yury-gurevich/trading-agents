@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -58,6 +58,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   other process. The key lives in Key Vault; master accesses it; no agent receives it.
 - **MST-NEV-05** — Master never imports code from any trading agent (`agents/scanner/`, etc.).
   It knows agent types by name/grant table, not by importing their code.
+- **MST-NEV-06** — Master never hands over a pack-declared credential until its applicable
+  credential test has either passed live or has a fresh costly-pass cache entry. A failed required
+  credential test refuses activation and writes no `AgentInstance`.
 
 ## State & storage (`STA`)
 
@@ -93,6 +96,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-FAIL-03** — Master itself is a single point of failure (RISK-1 in ADR-0007). Mitigation:
   thin implementation (no business logic), state in PostgreSQL via `GraphStore`, Container Apps
   auto-restart.
+- **MST-FAIL-04** — Credential-test transport failures are visible faults, not credential failures:
+  activation may proceed, no pass is cached, and required failures are decided from credential
+  rejection. Optional credential failures do not block activation.
 
 ## Type contracts (`TYP`)
 
@@ -110,6 +116,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   The full `.env` is never passed to any non-master container.
 - **MST-SEC-03** — `DEFAULT_GRANTS` in `grants.py` is the authoritative privilege table.
   Changes to it require a code review commit, not a runtime config change.
+- **MST-SEC-04** — Credential-test evidence never contains raw secret values. Activation records,
+  escalations, faults, and refusal exceptions name credential/test labels and sanitized causes only.
 
 ## Dependencies (`DEP`)
 
@@ -119,6 +127,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   ACTIVATE. Wired in S74; stub config `{}` used in S73.
 - **MST-DEP-03** — No dependency on any trading agent's code. All agent knowledge is in
   `DEFAULT_GRANTS` and `AgentDefinition` graph nodes.
+- **MST-DEP-04** — A credential-bearing pack must supply a non-empty credential-test declaration at
+  startup. Missing declarations, empty declarations, and unknown probe kinds are rejected loudly
+  instead of being treated as zero successful tests.
 
 ## Observability (`OBS`)
 
@@ -127,6 +138,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-OBS-02** — Every `drain()` call merges `drain_reason` onto the `AgentInstance` — shutdown
   intent is recorded alongside the live state.
 - **MST-OBS-03** — Fault channel receives all graph/Key Vault errors via `fault_boundary`.
+- **MST-OBS-04** — Successful activation records applicable credential-test evidence on the
+  `AgentInstance`: live-tested names, live-passed names, cached-pass names, optional failures, and
+  transport failures.
 
 ## Performance (`PERF`)
 
@@ -160,6 +174,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `handshake_timeout_1_seconds` | `10.0` | `float ≥ 1.0 ≤ 60.0` | YES | Seconds before master retries unacknowledged ACTIVATE |
 | `handshake_max_retries` | `5` | `int ≥ 1 ≤ 20` | YES | Max EHLO resends before agent transitions to INERT |
 | `handshake_timeout_2_seconds` | `300.0` | `float ≥ 30.0 ≤ 600.0` | YES | Total wait before unactivated agent goes INERT |
+| `credential_tests_path` | `""` | `str` | YES | Filesystem path fallback for the master credential-test declaration pack |
+| `credential_tests_b64` | `""` | `str` | YES | Base64 environment delivery for the master credential-test declaration pack |
+| `credential_pass_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a costly credential-test pass remains fresh during an activation wave |
 
 ## Divergence register
 
@@ -172,3 +189,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - v1 — authored S73 (P15 foundation) and locked immediately.
 - v1.1 — S74: DRIFT-001 resolved (RSA-PSS signing wired); S75: DRIFT-002 resolved (Key Vault wired).
+- v1.2 — S188: credential tests become pack-declared activation guards; required credential
+  failures refuse activation, transport failures fault without blocking, activation records test
+  evidence, and credential-test records are secret-redacted.

@@ -3,10 +3,10 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-188-a-credential-is-tested-before-it-is-handed-over`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.93.00`
 **Effort:** M
-**Decisions:** DL-36 (the policy this finally implements) · [DL-134](../design-log.md) (the addendum that found it unwired) · a new DL for the five design decisions below
+**Decisions:** DL-36 (the policy this finally implements) · [DL-134](../design-log.md) (the addendum that found it unwired) · [DL-136](../design-log.md) (S188 credential-test declaration + failure classification)
 
 > **Why this bump kind.** MINOR. Master gains a capability it does not have: refusing activation when
 > a credential it is about to hand over does not work. The substrate for it was built and tested;
@@ -48,7 +48,7 @@ changes, but master gains two guarantees it does not currently make:
 - activation **refuses** when a required credential fails its declared test, and
 - every activation **records which credentials were tested**.
 
-So: new clauses in `agents/master/laws/laws.md` (bump to **v1.1**, Changelog line), a `test-plan.md`
+So: new clauses in `agents/master/laws/laws.md` (bump to **v1.2**, Changelog line), a `test-plan.md`
 row per clause, the clause ID cited in each test docstring, the rollup updated in **both**
 `docs/laws/ledger.md` **and** `docs/laws/INDEX.md`, and a `drift-register.md` row for anything the
 change slips under.
@@ -130,7 +130,7 @@ because there is no test. That is what this sprint fixes.
    Start from the eight probes that already exist; express them as `http_status` / `dsn_select_1`.
 5. **Deploy wiring** — `infra/deploy-agents.ps1` passes the new env var, next to the grant policy and
    secret map.
-6. **The law cycle** named above, master laws → **v1.1**.
+6. **The law cycle** named above, master laws → **v1.2**.
 7. **The live functionality check** — see *Sequencing after merge*.
 
 ### Out of scope (do NOT build this sprint)
@@ -241,17 +241,17 @@ will collide even when the number was free at branch time (S183 hit this).
 
 ## Success factors
 
-- [ ] A required credential failing its declared probe **refuses activation**, leaves the agent in `PRE_FLIGHT`, and writes an `Escalation` naming it — proven by A1, not asserted.
-- [ ] A transport failure does **not** refuse activation, and does not cache a pass (A3).
-- [ ] No secret value reaches any fault, node prop, or exception text (A7).
-- [ ] An empty/absent declaration is loud (A8).
-- [ ] The master image still contains only `kernel/`, `contracts/`, `agents/master/` — `Dockerfile` unchanged, or the change is named and justified.
-- [ ] `remediation_mode` is untouched and still `"manual"`; nothing in this sprint sets `"automatic"`.
-- [ ] Design decisions recorded with rejected alternatives.
-- [ ] Law cycle done: master laws **v1.1**, a test-plan row per clause, clause IDs cited in docstrings, rollup updated in **both** `ledger.md` and `INDEX.md`, drift row filed.
-- [ ] Every new guard planted, watched to fail, restored — **stated per guard**.
-- [ ] Every touched module < 200 lines. `entrypoint.py` is at **150**; report its final count.
-- [ ] `make ci` exit 0, 100.00 % coverage, redirected to a file.
+- [x] A required credential failing its declared probe **refuses activation**, leaves the agent in `PRE_FLIGHT`, and writes an `Escalation` naming it — proven by A1, not asserted.
+- [x] A transport failure does **not** refuse activation, and does not cache a pass (A3).
+- [x] No secret value reaches any fault, node prop, or exception text (A7).
+- [x] An empty/absent declaration is loud (A8).
+- [x] The master image still contains only `kernel/`, `contracts/`, `agents/master/` — `Dockerfile` unchanged, or the change is named and justified.
+- [x] `remediation_mode` is untouched and still `"manual"`; nothing in this sprint sets `"automatic"`.
+- [x] Design decisions recorded with rejected alternatives.
+- [x] Law cycle done: master laws **v1.2**, a test-plan row per clause, clause IDs cited in docstrings, rollup updated in **both** `ledger.md` and `INDEX.md`, drift row filed.
+- [x] Every new guard planted, watched to fail, restored — **stated per guard**.
+- [x] Every touched module < 200 lines. `entrypoint.py` is at **169**; report its final count.
+- [x] `make ci` exit 0, 100.00 % coverage, redirected to a file.
 - [ ] `make gate-ran` `GATE PROVEN` for the branch tip, run from the worktree whose `HEAD` is that commit, printed SHA checked.
 
 ---
@@ -359,7 +359,7 @@ already do (MASTER_GRANT_POLICY_B64, MASTER_SECRET_MAP_B64 - verified on the liv
 4. orchestration/packs/trading_credential_tests.json: the per-agent-type declaration. Re-express the
    existing 8 probes as http_status / dsn_select_1 - do not import them.
 5. infra/deploy-agents.ps1: pass the new env var alongside the other two.
-6. Full law cycle: master laws v1.1 (two new guarantees - activation refuses on a failed required
+6. Full law cycle: master laws v1.2 (two new guarantees - activation refuses on a failed required
    credential; activation records what was tested), test-plan row per clause, clause ID in each test
    docstring, rollup in BOTH docs/laws/ledger.md and docs/laws/INDEX.md, drift row.
 
@@ -423,7 +423,27 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
-<!-- Which law files you read, which clauses bind, which are unproven, and the law-cycle answer. -->
+Read before first code change: `CLAUDE.md`, `docs/INDEX.md`, `docs/sprints/INDEX.md`, this sprint handover,
+`docs/laws/INDEX.md`, `agents/master/laws/laws.md`, `agents/master/laws/test-plan.md`,
+`docs/laws/conventions.md`, `docs/laws/ledger.md`, `docs/laws/drift-register.md`,
+`docs/decisions/INDEX.md`, and ADR-0012.
+
+Binding clauses: `MST-IDN-03` (master is the only Key Vault accessor), `MST-NEV-02` (no credentials beyond
+declared capability need), `MST-NEV-05` / `MST-DEP-03` (master imports no trading-agent code), `MST-FAIL-01`
+(activation failure leaves the EHLO unacknowledged / agent PRE_FLIGHT), `MST-SEC-02` / `MST-SEC-03`
+(least-privilege config and authoritative grants), `MST-OBS-01` / `MST-OBS-03` (activation and dependency
+failures are observable), and conventions §3/§7/§7a/§9 (green requires citing tests; new law before tests;
+test-plan summaries mirror laws; central drift rows). ADR-0012 binds the platform/pack wall: probe mechanics
+belong in master substrate, trading credential declarations arrive as pack data.
+
+Unproven or silent surface: current master law coverage is 10 / 39; the clauses most relevant to live secrets
+are mostly gray (`MST-IDN-03`, `MST-IN-03`, `MST-NEV-04`, `MST-SEC-01`, `MST-DEP-01`, `MST-DEP-02`,
+`MST-OBS-03`). The current law book is silent on the two S188 guarantees: a required failed credential test
+refuses activation, and activation records which credentials were tested. No law contradicts the sprint.
+
+Law-cycle answer: yes. No `contracts/` file is changed, but master gains new guarantees. This sprint therefore
+adds master law clauses, test-plan rows, docstring citations, rollup updates in `docs/laws/ledger.md` and
+`docs/laws/INDEX.md`, and a central drift row for the pre-S188 unwired credential-test guarantee.
 
 ---
 
@@ -431,28 +451,118 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | Result | Evidence |
 | --- | --- | --- |
-| A1 | | |
-| A2 | | |
-| A3 | | |
-| A4 | | |
-| A5 | | |
-| A6 | | |
-| A7 | | |
-| A8 | | |
+| A1 | PASS after red-first proof. Required `http_status` 401 raises `ActivationRefused`, writes `Escalation`, and leaves no `AgentInstance`. | Red-first command failed before implementation with `ModuleNotFoundError: No module named 'agents.master.credential_probes'`; planted guard break later failed with `Failed: DID NOT RAISE ActivationRefused`. Restored focused suite: `42 passed in 2.44s`. |
+| A2 | PASS. All-pass fake transport activates and `AgentInstance` records declared/tested/passed credential names. | `test_activation_records_tested_credentials`; DL-70 break removed the evidence merge and failed with `KeyError: 'credential_tests_declared'`; restored focused suite: `42 passed in 2.44s`. |
+| A3 | PASS. 503/transport failures do not block activation, do not cache a pass, and write a sanitized warning fault. | `test_transport_failure_faults_without_blocking_or_caching`; `test_probe_transport_exception_is_sanitized_fault`; `test_dsn_probe_can_classify_transport_failure`; DL-70 break classified 503 as credential failure and failed with `ActivationRefused`. |
+| A4 | PASS. Optional 401 is recorded without blocking activation. | `test_optional_credential_failure_is_recorded_without_blocking`; DL-70 break treated optional failures as required and failed with `ActivationRefused`. |
+| A5 | PASS. Costly pass cache skips only inside TTL and a later real failure is not hidden. | `test_pass_cache_skips_costly_probe_only_inside_ttl`; DL-70 break disabled `cache.record(...)` and failed on the second activation with `ActivationRefused`. |
+| A6 | PASS. Unknown probe kind raises at load. | `test_unknown_probe_kind_is_refused_loudly`; DL-70 break silently accepted the unknown kind and failed with `Failed: DID NOT RAISE ValueError`. |
+| A7 | PASS. Sentinel secret is absent from exception text, `Escalation` props, graph props, and fault messages/context. | `test_secret_values_never_appear_in_credential_probe_records`; DL-70 break appended resolved config to `ActivationRefused` and failed because `SHOULD_NOT_APPEAR` was found in recorded evidence. |
+| A8 | PASS. Secret-bearing startup without credential tests is loud, and the trading declaration loads to a nonzero count. | `test_missing_credential_tests_for_secret_pack_is_loud`; `test_trading_credential_tests_load_to_nonzero_count` (`1 passed in 1.04s`, pack count asserted as 12). DL-70 break bypassed the startup guard and failed with `Failed: DID NOT RAISE ValueError`. |
 
 ---
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: files changed with final
-     line counts, the A1 red output before the fix, the per-guard DL-70 break/restore statement, the
-     loaded-test count from A8, confirmation the Dockerfile is unchanged and remediation_mode
-     untouched, the exact `make ci` summary (unpiped, redirected to a file), and `make gate-ran`
-     output for the final tip with the SHA checked against the worktree HEAD.
-     Do not merge until every success factor above is answered with a measurement. -->
+Implemented S188 on branch `sprint-188-a-credential-is-tested-before-it-is-handed-over`, version
+`0.93.00`. Master now loads credential tests from `MASTER_CREDENTIAL_TESTS_B64` / path fallback,
+requires a non-empty declaration when a secret map is configured, classifies credential rejection vs
+transport failure by probe response, records sanitized credential-test evidence on `AgentInstance`,
+and refuses activation for required credential failures before any `AgentInstance` write. The master
+image stayed pack-agnostic: `git diff -- agents/master/Dockerfile` produced no output.
+`remediation_mode` remains `tunable("manual", ...)`; no deploy path sets `MASTER_REMEDIATION_MODE`,
+and this sprint does not set `"automatic"`.
+
+Files changed with final source/test line counts:
+
+```text
+72 agents/master/activation_credentials.py
+182 agents/master/agent.py
+88 agents/master/credential_probe_support.py
+55 agents/master/credential_probe_transports.py
+168 agents/master/credential_probes.py
+77 agents/master/credential_report.py
+46 agents/master/credential_result.py
+144 agents/master/credential_test.py
+169 agents/master/entrypoint.py
+129 agents/master/settings.py
+87 agents/master/tests/credential_probe_testkit.py
+101 agents/master/tests/test_credential_probe_dsn.py
+136 agents/master/tests/test_credential_probe_loading.py
+184 agents/master/tests/test_credential_probes.py
+165 agents/master/tests/test_credential_test.py
+125 agents/master/tests/test_master_entrypoint.py
+137 tests/test_deploy_script_invariants.py
+```
+
+A1 red-first output before implementation:
+
+```text
+uv run pytest agents/master/tests/test_credential_probes.py::test_required_http_status_401_refuses_activation -q --no-cov
+ERROR: found no collectors for C:\Users\yury_\Downloads\project\trading-agents\agents\master\tests\test_credential_probes.py::test_required_http_status_401_refuses_activation
+
+ImportError while importing test module 'C:\Users\yury_\Downloads\project\trading-agents\agents\master\tests\test_credential_probes.py'.
+agents\master\tests\test_credential_probes.py:16: in <module>
+    from agents.master.credential_probes import parse_credential_tests
+E   ModuleNotFoundError: No module named 'agents.master.credential_probes'
+```
+
+DL-70 planted break/restore evidence:
+
+- Required 4xx guard: changed HTTP 4xx credential rejection to pass; A1 failed with `Failed: DID NOT RAISE ActivationRefused`; restored.
+- Transport split guard: changed HTTP 503 to credential failure; A3 failed with `ActivationRefused: credential test(s) failed for 'provider': ['provider-llm']`; restored.
+- Optional guard: treated every failure as required; A4 failed with `ActivationRefused`; restored.
+- Pass-cache guard: skipped `cache.record(...)`; A5 failed on the second activation with `ActivationRefused`; restored.
+- Unknown-kind guard: made unknown probe kind silently pass; A6 failed with `Failed: DID NOT RAISE ValueError`; restored.
+- Secret-redaction guard: appended resolved config to `ActivationRefused`; A7 failed because `SHOULD_NOT_APPEAR` appeared in recorded evidence; restored.
+- Missing-declaration guard: bypassed the startup refusal; A8 failed with `Failed: DID NOT RAISE ValueError`; restored.
+- Activation-evidence guard: removed the credential evidence merge; A2 failed with `KeyError: 'credential_tests_declared'`; restored.
+
+Loaded trading credential-test count: `test_trading_credential_tests_load_to_nonzero_count` passed
+and asserts `len(tests) == 12`. Current pack sizes: `MASTER_CREDENTIAL_TESTS_B64_LENGTH=6516`,
+`MASTER_GRANT_POLICY_B64_LENGTH=3416`, `MASTER_SECRET_MAP_B64_LENGTH=1124`, so the deploy script uses
+a narrow `Set-MasterCredentialTests` update rather than adding the new blob to the already-long master
+create env-var call.
+
+Focused restore proof:
+
+```text
+uv run pytest agents/master/tests/test_credential_probes.py agents/master/tests/test_credential_probe_loading.py agents/master/tests/test_credential_probe_dsn.py agents/master/tests/test_master_entrypoint.py agents/master/tests/test_credential_test.py tests/test_deploy_script_invariants.py -q --no-cov
+..........................................                               [100%]
+42 passed in 2.44s
+
+uv run ruff check ...touched files...
+All checks passed!
+
+uv run mypy ...touched files...
+Success: no issues found in 13 source files
+```
+
+`make ci` was redirected to `C:\Users\yury_\AppData\Local\Temp\s188-make-ci-4.txt` and exited 0:
+
+```text
+================= 2410 passed, 4 skipped in 248.99s (0:04:08) =================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 11 new file(s)
+EXIT_CODE=0
+```
+
+Branch gate: pending first branch push; final closeout will replace this line with `make gate-ran`
+output for the final tip.
 
 ---
 
 ## Return notes
 
-<!-- Anything you found that this spec got wrong, and anything the next sprint should know. -->
+- The spec expected master laws to bump to `v1.1`, but `agents/master/laws/laws.md` already carried a
+  `v1.1` changelog entry from S74/S75. This branch uses `LOCKED v1.2` to avoid reusing a locked law
+  version.
+- `postgres` exists as a supported `dsn_select_1` probe kind, but `POSTGRES_DSN` is not currently part
+  of the ACTIVATE secret map in `orchestration/packs/trading_secrets.json`; deploy injects it outside
+  master credential handover. The trading credential-test pack therefore covers the credentials master
+  actually hands to agents today.
+- This branch is local/branch proof only so far: not merged, not deployed, and no live activation
+  refusal was run. Sequencing still says no full `up` before `sched-2026-08-31`, then perform the
+  declaration-only live functionality check and restore it without corrupting Key Vault secrets.

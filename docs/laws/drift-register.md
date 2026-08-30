@@ -32,6 +32,12 @@ vs a later decision) · `code-drift` (code diverged from intent) · `gap` (inten
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-051 | `SCAN-PARAM` | `benchmark_ticker` is declared `YES` in the scanner PARAM table and must be operator-visible as a justified tunable. | `ScannerSettings.benchmark_ticker` was a bare default (`"SPY"`), while the analyst honours the same law row as `tunable("SPY", why=...)`. | code-drift | **CORRECTED (S187, 2026-08-30).** `benchmark_ticker` now uses `tunable()` with the same default and no numeric bounds. Scanner law stayed read-only; no clauses added or proven. |
 
+## Master (`MST`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-053 | `MST-NEV-06` / `MST-FAIL-04` / `MST-OBS-04` / `MST-DEP-04` | Master must test every applicable pack-declared credential before handover, record the tested credential evidence, fail closed for required credential rejection, and refuse an empty credential-test declaration when secrets are configured. | Production master defaulted `credential_tests=()` and `entrypoint.py` did not load or pass any tests, so a credential-bearing pack activated as if zero probes meant success; the remediation path was unreachable because failures could never be non-empty. | code-drift / law gap | **CORRECTED (S188, master laws v1.2, 2026-08-30).** Credential tests are pack data (`MASTER_CREDENTIAL_TESTS_B64` / path fallback), required credential failures refuse activation without writing `AgentInstance`, transport failures fault without blocking or caching, optional failures are recorded, and successful activation records tested/pass/cache/failure evidence. |
+
 ## System-level
 
 | ID | Question | Decision | Status |

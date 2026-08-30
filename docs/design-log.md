@@ -8,6 +8,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-136 - S188 credential tests are pack data with response-classified failures - status: DECIDED (2026-08-30)
+
+**Context.** Master already has the DL-36 substrate shape (`CredentialTest`, `PassCache`, remediation
+entry), but production passes zero tests into it. S188 wires tests into the deployed master without
+breaking ADR-0012: the master image remains substrate-only, and trading-specific probes arrive as
+pack data.
+
+**Decision 1 - declaration-as-data with two substrate probe kinds.** The declaration is JSON loaded by
+`MASTER_CREDENTIAL_TESTS_B64` or a local path, parallel to grant policy and secret map. The substrate
+implements `http_status` and `dsn_select_1`; the trading pack chooses URLs, headers, expected statuses,
+agent types, and required/optional posture. Rejected: importing `orchestration.packs.trading_vault_probes`
+or provider SDK classes from `agents/master`, because that crosses the ADR-0012 wall and the master image
+does not contain those modules. Rejected too: widening `CredentialTest` to consume the seed-time
+`ProbeResult`; the substrate already owns a smaller activation-test interface.
+
+**Decision 2 - credential failure is classified by response, not by exception.** An HTTP 401/403, or any
+declared credential-failure status, means the credential itself was rejected; a required test in that
+state refuses activation. Timeout, DNS/connect/reset errors and 5xx statuses are transport failures:
+they are faulted and observed, but they do not refuse activation and they never cache a pass. Rejected:
+fail-closing every probe exception, because that would let a transient network fault halt the fleet.
+
+**Decision 3 - required means "this agent cannot perform its granted role without this credential."**
+Provider requires Tiingo, its primary OHLCV source. Provider Finnhub/FMP/Alpaca-data probes are optional:
+their failures degrade enrichment or fallback capacity but should not keep the fleet dark. Execution
+requires Alpaca broker credentials because broker submission is its role. Operator and the three
+deliberator roles require Anthropic because the live pack selects Anthropic; their OpenAI fallback is
+optional until the provider setting makes it primary again. Rejected: mark every configured credential
+required, which would turn a degraded optional feed or inactive fallback into a fleet-start outage.
+
+**Decision 4 - cache only costly passes, with a five-minute default TTL.** Auth endpoints such as
+`/v1/models` and lightweight feed probes are cheap enough to run on activation; the default pack marks
+them cheap. The tunable `credential_pass_cache_ttl_minutes` defaults to 5 for any future costly test,
+matching the existing secret cache horizon and bounding repeated probes across a 16-app activation wave.
+Rejected: cache all passes indefinitely, because a stale cached pass could hide a credential that failed
+moments later; rejected also: no cache support, because a later costly probe would force the old choice
+between cost and coverage.
+
+**Decision 5 - activation records test evidence on `AgentInstance`, not a new label.** Successful
+activation writes compact props for tested, passed, cached, optional-failed, and transport-failed
+credential names. Required failures still write `Escalation` and no `AgentInstance`, preserving the
+PRE_FLIGHT refusal shape. The graph vocabulary must declare the new `AgentInstance` props in the same
+unit of work. Rejected: a new per-probe graph label, because this sprint needs activation-level
+handover evidence and a new label would expand ownership/vocabulary blast radius without changing the
+decision.
+
+**Measured boundary note.** `postgres-dsn` is a seed-time credential probe today, but it is not currently
+handed over by master in `ACTIVATE`; Container Apps injects `POSTGRES_DSN` as a secretRef outside
+`MASTER_SECRET_MAP_B64`. `dsn_select_1` is still implemented and tested as substrate support, but the
+S188 trading declaration is scoped to the credentials master actually hands over.
+
+---
+
 ## DL-135 - Monday's run goes first, and two measurements shrank what it has to prove - status: DECIDED (2026-08-30)
 
 **Decision - `sched-2026-08-31` runs on `s187` untouched; S172's K=4 measurement happens after it,

@@ -16,6 +16,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
+from agents.master.credential_report import (
+    CredentialTestReport,
+    CredentialTransportFailure,
+)
+from agents.master.credential_result import CheckResult, coerce_result
 from agents.master.secret_map import resolve_config
 
 if TYPE_CHECKING:
@@ -39,15 +44,16 @@ class ActivationRefused(ValueError):  # noqa: N818 - a state ("refused"), not an
 class CredentialTest:
     """One credential check run against the resolved config.
 
-    ``run(config)`` returns True when the credential works. A ``required`` failure
-    blocks activation; a ``cost='costly'`` pass is cached (a live call costs money or
-    submits an order, so it must not run on every activation).
+    ``run(config)`` returns True or ``CredentialCheckResult(status="passed")`` when
+    the credential works. A ``required`` credential failure blocks activation; a
+    transport failure is faulted by the caller but does not block.
     """
 
     name: str
-    run: Callable[[Mapping[str, str]], bool]
+    run: Callable[[Mapping[str, str]], CheckResult]
     required: bool = True
     cost: Cost = "cheap"
+    agent_types: tuple[str, ...] = ()
 
 
 class PassCache:
@@ -82,22 +88,57 @@ def resolve_and_test(
     *,
     cache: PassCache | None = None,
 ) -> tuple[dict[str, object], list[str]]:
-    """Resolve the agent's secrets, run each test, return (config, failed_required).
+    """Resolve secrets and return the backward-compatible failure-name tuple."""
+    report = resolve_and_test_report(agent_type, store, secret_map, tests, cache=cache)
+    return report.config, list(report.failed_required)
 
-    A costly test that passed recently (per ``cache``) is not re-run. A required test
-    that fails names itself in the returned list; the caller (master.activate) refuses
-    handover and escalates when that list is non-empty. Optional failures are
-    non-blocking (activation proceeds).
-    """
+
+def resolve_and_test_report(
+    agent_type: str,
+    store: SecretStore,
+    secret_map: SecretMap,
+    tests: tuple[CredentialTest, ...],
+    *,
+    cache: PassCache | None = None,
+) -> CredentialTestReport:
+    """Resolve secrets, run applicable tests, and return activation evidence."""
     config = resolve_config(agent_type, store, secret_map)
     str_config = {k: v for k, v in config.items() if isinstance(v, str)}
-    failures: list[str] = []
+    applicable: list[str] = []
+    tested: list[str] = []
+    passed: list[str] = []
+    cached: list[str] = []
+    failed_required: list[str] = []
+    failed_optional: list[str] = []
+    transport_failures: list[CredentialTransportFailure] = []
     for test in tests:
-        if test.cost == "costly" and cache is not None and cache.fresh(test.name):
+        if test.agent_types and agent_type not in test.agent_types:
             continue
-        if test.run(str_config):
+        applicable.append(test.name)
+        if test.cost == "costly" and cache is not None and cache.fresh(test.name):
+            cached.append(test.name)
+            continue
+        tested.append(test.name)
+        result = coerce_result(test.run(str_config))
+        if result.status == "passed":
+            passed.append(test.name)
             if test.cost == "costly" and cache is not None:
                 cache.record(test.name)
+        elif result.status == "transport_failure":
+            transport_failures.append(
+                CredentialTransportFailure(test.name, result.reason)
+            )
         elif test.required:
-            failures.append(test.name)
-    return config, failures
+            failed_required.append(test.name)
+        else:
+            failed_optional.append(test.name)
+    return CredentialTestReport(
+        config,
+        tuple(applicable),
+        tuple(tested),
+        tuple(passed),
+        tuple(cached),
+        tuple(failed_required),
+        tuple(failed_optional),
+        tuple(transport_failures),
+    )

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 20:02 AEST · **Version:** 0.93.00 · **🟢 [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) is built and branch-gate proven: master credential tests now reach activation as pack data, required failures refuse handover, and local/remote gates are green; merge, deploy, and live proof remain pending.**
+**Last updated:** 2026-08-30 20:20 AEST · **Version:** 0.93.00 · **🟩 [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) MERGED — master now refuses activation on a dead required credential, the check that would have ended the 08-19 outage on night one. 🟠 Not deployed: the full `up` waits for Monday's run.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -60,29 +60,21 @@ Tuesday unreadable between *the referee bound* and *the fleet cannot reach a pro
 🟠 **Advisory is not the destination**, only a one-run delay against a named unknown.
 
 🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s187`, 2026-08-30** (was `s184`, three sprints behind).
-`pwsh infra/deploy-agents.ps1 up -Tag s187` exit 0. **Verified independently of its own output:** **16/16**
-apps on `s187`, **16/16** `Succeeded`, **16/16** KEDA `min=0 max=1, 1 rule` — *identical to the baseline
-captured before deploying* — and `dispatcher-cron` on `s187`, cron `30 22 * * 1-5`. `DeployRecord` carries
-the **build run's** head SHA `7d2339bc5a4f`, read from the run not handed in (item 21's defect).
-🚨 **`up` was required, not an image-only retag:** S185's `e370f88` moved the vocabulary pack
-(`8777b907…` → `93dab2e6…`), and a retag against a stale pack hits the fail-closed write guard mid-cascade
-(S148 stall, DL-85). 🪤 **The first attempt failed and changed nothing** — the S169 guard threw at
-Service Bus route prep *before* the first app create. Cause was local — a corrupt `azure-core` (dist-info
-with no `RECORD` file) that still looked installed; preflight never imports the deps its own steps need, so
-it surfaced *after* alembic ran. Full account in **item 34**.
-🟠 **Not yet proven at runtime:** Monday's run (2026-08-31, 22:30 UTC) must show
-`deliberation_posture` on its `ExecutionRun` — its absence on `sched-2026-08-28` is what proved the fleet
-was behind.
+`pwsh infra/deploy-agents.ps1 up -Tag s187` exit 0. **Verified independently of its own output:** **16/16** apps on
+`s187`, **16/16** `Succeeded`, **16/16** KEDA `min=0 max=1, 1 rule` — identical to the pre-deploy baseline — and
+`dispatcher-cron` on `s187`, cron `30 22 * * 1-5`. `DeployRecord` carries the **build run's** head SHA `7d2339bc5a4f`,
+read from the run not handed in (item 21's defect). 🚨 **`up` was required, not a retag:** S185's `e370f88` moved the
+vocabulary pack, and a retag against a stale pack hits the fail-closed write guard mid-cascade (S148 stall, DL-85).
+🪤 **The first attempt failed and changed nothing** — a corrupt local `azure-core` (dist-info with no `RECORD`) that
+still looked installed; preflight never imports the deps its own steps need, so it surfaced after alembic ran
+(item 34). 🟠 **Not yet proven at runtime:** Monday's run must show `deliberation_posture` on its `ExecutionRun`.
 
-🟩 **PROVEN RESULT — BOTH PROVIDERS VERIFIED BY DIRECT API CALL, 2026-08-30 17:00 AEST.** `claude-opus-5`
-and `gpt-5.5` each returned **HTTP 200** with content; the outage that began 2026-08-19 ([DL-125](design-log.md))
-is **over**. 🪤 **The Anthropic half was not a credit problem** — `HTTP 400 invalid_request_error`, *"your
-**specified** API usage limits"*, is an **operator-set** spend limit, distinct from the tier cap (`429` +
-`enforced_spend_limit_reached`). Raising it in Console → Billing restored access at once; the `2026-09-01` in
-the message was only the month reset. 🚨 **Verified from this machine, not the fleet** — the deliberator
-takes credentials via master/Key Vault, untested since the outage. Monday's run (08-31, 22:30 UTC) proves that
-*and* the deploy: expect `real_debate_count > 0` **and** `deliberation_posture` on the `ExecutionRun`.
-🟢 **Unblocks** item 6b (a real veto now, not a halt) and item 3 (K=4 needs real debates).
+🟩 **PROVEN RESULT — BOTH PROVIDERS VERIFIED BY DIRECT API CALL, 2026-08-30 17:00 AEST.** `claude-opus-5` and
+`gpt-5.5` each returned **HTTP 200**; the outage that began 2026-08-19 ([DL-125](design-log.md)) is **over**.
+🪤 **The Anthropic half was never a credit problem** — `HTTP 400`, *"your **specified** API usage limits"*, is an
+**operator-set** spend limit, distinct from the tier cap (`429` + `enforced_spend_limit_reached`); raising it in
+Console → Billing restored access at once, and the `2026-09-01` in the message was only the month reset.
+🚨 **Verified from this machine, not the fleet.** Monday's run (08-31, 22:30 UTC) proves that path *and* the deploy.
 
 🟩 **PROVEN RESULT — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) merged `7d36771` (`0.92.02`), 2026-08-30.**
 `scanner.benchmark_ticker` is a registered `tunable()` (default `"SPY"` unchanged); provider laws
@@ -110,24 +102,32 @@ on `s184` code; the 40 % and 0 % readings from 08-20/08-21 are raw rates diluted
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
-🟢 **BUILT + BRANCH-GATE PROVEN — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md), credential
-tested before handover** (`0.93.00`, 2026-08-30). Credential tests now load via
-`MASTER_CREDENTIAL_TESTS_B64` / path fallback, stay pack data, and run inside master activation without importing
-`orchestration/` or provider SDK code. Required credential rejection refuses activation before `AgentInstance`;
-transport failure faults without blocking or caching; optional failure records without blocking; successful activation
-records declared/tested/pass/cache/failure evidence. Local `make ci` exit 0: **2410 passed / 4 skipped / 100.00 %**.
-Remote `make gate-ran`: **GATE PROVEN** for `33b0cd5571e5ea5a1c7b307744b4f6560e9559be`. 🟠 Merge, full `up`,
-and live declaration-only refusal proof remain pending; sequencing still says do not deploy before Monday's scheduled
-run proves the current `s187` fleet.
+🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
+(`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes from `MASTER_CREDENTIAL_TESTS_B64`, **refuses
+activation** when a required credential is rejected, classifies transport failure separately so a DNS blip cannot halt
+the fleet, and records sanitized test evidence on `AgentInstance`. Master laws **v1.2**, five new `MST-*` clauses.
+`make ci` re-run by me from the branch worktree: exit 0, **2410 passed / 4 skipped / 100.00 %**; `GATE PROVEN` for the
+**merged** SHA with the printed SHA checked against `git rev-parse HEAD`; post-merge **CodeQL success, 0 open
+error-level alerts**.
+🚨 **One merge-review correction, and it mattered.** The sprint made `provider.tiingo` required and `alpaca-data`
+optional — the *fallback* gated, the *primary* not — reasoning from a sentence [ADR-0006](decisions/0006-market-data-vendor-tiering.md)'s
+own 2026-07-04 amendment supersedes. A dead Alpaca key would not have refused activation, and the nightly full-universe
+pull would have fallen back to a source budgeted at **500 unique symbols/month**. Flipped, verified against the secret
+map *and* the vault, pinned by a test ([DL-136](design-log.md) amendment). 🪤 `credential_failure_statuses` is **inert**
+— recorded with both honest options rather than patched at merge; the behaviour is correct and fail-closed.
+🟠 **NOT DEPLOYED, and this is the whole point of the sequencing.** Full `up` (new env key, tunable, `AgentInstance`
+vocabulary), which must not land before `sched-2026-08-31`. Deploy order after Monday: S172's K=4 measurement, then
+this. 🚨 **The live activation-refusal proof is still owed** — S188 is a code fact, not yet a fleet fact.
+🪤 Post-merge image build failed on `monitor` alone (`403` on the `dhi.io` base image, 14/15 green, zero monitor files
+in the merge) — **re-run green, all 15 images built.** A partial image set is what makes a later `up` fail mid-cascade.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
-gate-proven at `5bf72c9` (checked: CI + Security Findings + image build all `success` on the tip, not just on
-`a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled 2026-09-01, after Monday's run** ([DL-135](design-log.md)):
-it needs `s172` images and peer `maxReplicas=4` on the fleet, and deploying that first would spend the only
-instrument that proves the `s187` deploy and the credential path. Rollback is a retag to **`s187`**, not `s182`.
-🟩 **Monday's unknown is now one link, not three** — the fleet reads `DELIBERATOR_LLM_PROVIDER=anthropic` on all three
-deliberator apps, and `trading-agents-kv/anthropic-api-key` is byte-identical to the `.env` key that returned `HTTP 200`
-(SHA-256, never printed). Untested is only whether **master hands that secret over** — see S188 below.
+gate-proven at `5bf72c9` (checked on the tip, not just `a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled
+2026-09-01, after Monday's run** ([DL-135](design-log.md)): it needs `s172` images and peer `maxReplicas=4` on the
+fleet, and deploying that first spends the only instrument proving the `s187` deploy and the credential path. Rollback
+is a retag to **`s187`**, not `s182`. 🟩 **Monday's unknown is one link, not three** — the fleet reads
+`DELIBERATOR_LLM_PROVIDER=anthropic` on all three deliberators and the vault key is byte-identical to the verified one;
+untested is only whether **master hands it over**.
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-24 14:42 AEST · **Version:** 0.92.01 · **🟢 S186 is built locally on its sprint branch: batch-duplicate news is down-weighted `1/n`, `KO` reproduces 0.604607 → 0.599485, and no sentiment score is lost. Branch gate, merge, deploy, and live post-merge read are not claimed here.**
+**Last updated:** 2026-08-30 11:55 AEST · **Version:** 0.92.01 · **🟩 S186 merged `81b82ee` — sentiment is now a batch-weighted mean, so a headline filed under 19 tickers no longer counts once in full for each. 🚨 Today is 2026-08-30: the deliberator's credit returns and the posture is still `advisory` (item 6b).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -40,17 +40,15 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 - **Three diagnoses, one pattern, no code changed (docs only, no bump, 2026-08-24).** Measured against
   the live spine and the broker while S186/S187 waited on handover. **Item 12's "202-fill backlog" is
   27** ([DL-129](design-log.md)) — `Fill.status` is a submit-time fact never mutated; truth is
-  `broker_status` + 3,725 `BrokerOrderStatus` nodes, and the sweep skips every terminal one. **Item
-  20's 228 faults are 13 objects** ([DL-130](design-log.md)) — `broker_stop` asks *is this of type
-  stop* and never reads status, `graph_stop` asks *is it active*, so every cancelled stop mismatches
-  forever; the broker **agrees** on all 13. **New item 32** ([DL-131](design-log.md)) — a stop that
-  *fires* is never reconciled: WFC filled at Alpaca 08-21T17:00:44, still active in the graph, because
-  `cancelled_at is None` is a stop's only lifecycle. 🟩 **Item 27's symptom is gone**: 24 positions / 24 stops, **1:1, zero unprotected** (was 22/19 and $2,147.76 on 08-19) — but its live
-  proof is still owed, all 24 read `stop_pct_source=position`, so S182's fallback has never fired.
-  🚨 The durable fix is **one predicate module for execution's broker facts**, not three patches.
-  🪤 Two of the three rows were **counting a field that never moves** — the retracted-DL-73 class,
-  twice more.
-
+  `broker_status` + 3,725 `BrokerOrderStatus` nodes, and the sweep skips every terminal one. **Item 20's
+  228 faults are 13 objects** ([DL-130](design-log.md)) — `broker_stop` asks *is this of type stop* and
+  never reads status, `graph_stop` asks *is it active*, so every cancelled stop mismatches forever; the
+  broker **agrees** on all 13. **New item 32** ([DL-131](design-log.md)) — a stop that *fires* is never
+  reconciled: WFC filled at Alpaca 08-21T17:00:44, still active in the graph, because `cancelled_at is
+  None` is a stop's only lifecycle. 🟩 **Item 27's symptom is gone**: 24 positions / 24 stops, **1:1,
+  zero unprotected** (was 22/19 and $2,147.76 on 08-19) — but its live proof is still owed, all 24 read
+  `stop_pct_source=position`, so S182's fallback has never fired. 🪤 Two of the three rows were
+  **counting a field that never moves** — the retracted-DL-73 class, twice more.
 
 ## Now
 
@@ -81,7 +79,7 @@ detect-secrets clean. Law cycle happened in execution law **v1.2** (`EXEC-OUT-09
 S187's PARAM audit. 🟠 **Not merged or deployed:** branch push, `make gate-ran`, full `up`, and the
 operator posture declaration are still required before any live scheduled-run claim.
 
-**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) built locally on branch `sprint-186-a-headline-about-twenty-companies-is-not-news-about-one`, 2026-08-24.** The analyst now computes exact-headline duplicate weights over the whole `MarketData.news` batch and exposes `sentiment_batch_weighted_articles` so the weighted denominator is visible. Local proof: A1-A6 planted red, DL-70 all-weights-one violation failed A1, analyst suite 382 passed, `make ci` exit 0 with **2384 passed / 4 skipped / 100.00 %**. Law cycle done: analyst laws **v1.2**, `ANLZ-OBS-04`, rollup **24 / 47**. 🪤 The fixture prose said `DUK/GILD/MET/TGT` had stored baseline confidence; verified false, because those four are news-only in the fixture. The final guard proves their real exclusive headlines are weighted-identical to unweighted scoring.
+**PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟠 **Not deployed, and no live post-merge read yet** — image-only retag is owed, and 5 scheduled runs (08-24…08-28) have happened since the measurement.
 
 **S187 remains handover-ready and buildable without an LLM.** [S187](sprints/sprint-187-a-parameter-is-declared-once.md) covers PARAM tables and code drift **in both directions** across three agents: the scanner ignores a law row the *analyst* honours, two provider settings are in no law at all, `deliberation_grace_seconds` has no row, and `execution.stage` is **retracted** (already declared). Its durable half is a `make ci` check — the second audit to find this class.
 

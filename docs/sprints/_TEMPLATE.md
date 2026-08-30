@@ -169,7 +169,7 @@ when you merge.
 4. **Implement.**
 5. **Law cycle** if owed — clause, test-plan row, docstring citation, rollups, drift row.
 6. **Prove the guards can fail (DL-70)** — break the implementation, watch each guard go red, restore.
-7. **`make ci` green** — all 11 steps, **redirected to a file, never piped**.
+7. **`make ci` green** — all 12 steps, **redirected to a file, never piped**.
 8. **Fill the handback sections** at the bottom of this file.
 
 ---
@@ -215,7 +215,7 @@ field before the metrics.
 - No magic numbers — `kernel.tunable(..., why=...)` with bounds. 🪤 A **mode selector** (which formula
   runs) is *not* a tunable (a value within one) — check the agent's PARAM table before registering.
 - Faults, not silent failure — `kernel.fault_boundary`.
-- `make ci` **all 11 steps** green, **100.00 % coverage floor**. **Never measure the gate through a
+- `make ci` **all 12 steps** green, **100.00 % coverage floor**. **Never measure the gate through a
   pipe** — `make ci | tail` reports *`tail`'s* exit code. Redirect to a file and read the file.
 - Version bump of the kind named at the top, `uv.lock` staged with it.
 - Secrets never through the worktree — a worktree has **no `.env`**, so any proof needing live data

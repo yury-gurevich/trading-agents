@@ -24,7 +24,7 @@ check `agents/<name>/laws/laws.md` if a law question is involved.
 
 ---
 
-## CI gate — always run all 11 steps
+## CI gate — always run all 12 steps
 
 ```bash
 make ci                 # to the terminal, or:
@@ -33,8 +33,9 @@ make ci > /tmp/ci.txt 2>&1 ; echo $?     # redirect to a FILE, then read it
 
 Never declare a change "green" without `make ci` passing locally **and** without
 polling `gh run list` after pushing to confirm GitHub CI also passes.
-The gate has 11 steps: ruff, format, mypy, import-linter, module size, module header,
-law coverage, pytest (100 % coverage floor), pip-audit, detect-secrets, untracked secrets.
+The gate has 12 steps: ruff, format, mypy, import-linter, module size, module header,
+law coverage, PARAM/settings sync, pytest (100 % coverage floor), pip-audit, detect-secrets,
+untracked secrets.
 
 **Never measure the gate through a pipe.** `make ci | tail` reports **`tail`'s** exit code,
 not `make`'s — a real failure reads as green. Redirect to a file and read the file. This is

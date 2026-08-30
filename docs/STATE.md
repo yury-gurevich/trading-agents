@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 11:55 AEST · **Version:** 0.92.01 · **🟩 S186 merged `81b82ee` — sentiment is now a batch-weighted mean, so a headline filed under 19 tickers no longer counts once in full for each. 🚨 Today is 2026-08-30: the deliberator's credit returns and the posture is still `advisory` (item 6b).**
+**Last updated:** 2026-08-30 12:45 AEST · **Version:** 0.92.02 · **S187 built locally on `sprint-187-a-parameter-is-declared-once`: PARAM/settings sync is now a CI gate; branch proof comes after push.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -51,6 +51,15 @@ Layer-2 choreography 🟩 on a distributed run (S102).
   **counting a field that never moves** — the retracted-DL-73 class, twice more.
 
 ## Now
+
+✅ **BUILT locally — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) on branch
+`sprint-187-a-parameter-is-declared-once` (`0.92.02`).** `scanner.benchmark_ticker` is a registered
+`tunable()` with default `"SPY"` unchanged; provider laws **v1.1** declare `alpaca_data_feed` and
+`ingest_ohlcv_only` as `NO (mode selector)`; execution laws **v1.3** declare
+`deliberation_grace_seconds`; `make ci` now runs PARAM/settings sync as its 12th step. Local proof:
+redirected `make ci` exit 0, **2390 passed / 4 skipped**, **100.00% coverage**, audit and secrets
+gates clean. Branch push and `make gate-ran` are the next proof boundary; merge, deployment, fleet
+configuration, and live scheduled-run proof are not done.
 
 🚨 **THE DELIBERATOR IS DOWN UNTIL 2026-08-30 — operator-stated 2026-08-22, not an estimate.**
 The Anthropic **credit balance** is exhausted: `HTTP 400 "Your credit balance is too low"`, read from

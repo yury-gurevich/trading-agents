@@ -3,11 +3,12 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-187-a-parameter-is-declared-once`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.92.02`
 **Effort:** S (plus one law cycle)
 **Decisions:** [DL-120](../design-log.md) the sweep whose headline was wrong and whose remainder this
-closes · work-queue item 29 · ADR-0013 the mode-selector category
+closes · [DL-133](../design-log.md) parameter declaration check shape · work-queue item 29 · ADR-0013
+the mode-selector category
 
 > **Why this bump kind.** **fix → PATCH.** Nothing new is offered. Three parameters are declared in
 > one place and not the other, in both directions; this makes the two agree and adds the check that
@@ -215,19 +216,19 @@ makes them a **law cycle**, not a code edit — the code is fine, the law never 
 
 ## Success factors
 
-- [ ] `scanner.benchmark_ticker` is a `tunable()` with the same bounds/rationale shape as the analyst's.
-- [ ] Provider law has PARAM rows for both fields; provider law version bumped + Changelog line.
-- [ ] Execution law has a PARAM row for `deliberation_grace_seconds`; version bumped + Changelog line.
-- [ ] `make ci` reconciles PARAM rows against settings fields, **both directions**.
-- [ ] 🪤 The check is **green on all three declared mode selectors** (A4) — this is the one that
+- [x] `scanner.benchmark_ticker` is a `tunable()` with the same bounds/rationale shape as the analyst's.
+- [x] Provider law has PARAM rows for both fields; provider law version bumped + Changelog line.
+- [x] Execution law has a PARAM row for `deliberation_grace_seconds`; version bumped + Changelog line.
+- [x] `make ci` reconciles PARAM rows against settings fields, **both directions**.
+- [x] 🪤 The check is **green on all three declared mode selectors** (A4) — this is the one that
       proves it encodes the convention rather than a code-shape heuristic.
-- [ ] **No default value changed anywhere.**
-- [ ] `execution.stage` untouched.
-- [ ] Drift rows filed for each divergence, naming its direction.
-- [ ] Every reference to "11 steps" updated to 12.
-- [ ] Design decisions recorded with rejected alternatives, before implementation.
-- [ ] Every new guard planted, watched to fail, restored — stated per guard.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] **No default value changed anywhere.**
+- [x] `execution.stage` untouched.
+- [x] Drift rows filed for each divergence, naming its direction.
+- [x] Every reference to "11 steps" updated to 12.
+- [x] Design decisions recorded with rejected alternatives, before implementation.
+- [x] Every new guard planted, watched to fail, restored — stated per guard.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -379,18 +380,39 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `scanner.benchmark_ticker` | `agents/scanner/laws/laws.md` PARAM section; `agents/scanner/laws/test-plan.md` | PARAM declaration row only; no clause/rollup movement. | Yes. The law row is correct and says `YES`, so the code must register a `tunable()` rather than weakening the law. |
+| `provider.alpaca_data_feed`; `provider.ingest_ohlcv_only` | `agents/provider/laws/laws.md` PARAM/Changelog; `agents/provider/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | PARAM declarations under conventions §§4 and 9; no new clause ID. | Yes. Both are mode selectors, not tunables: one chooses the Alpaca feed route, the other chooses the OHLCV-only ingest workflow. |
+| `execution.deliberation_grace_seconds` | `agents/execution/laws/laws.md` PARAM/Changelog; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | Existing `DRIFT-049` and PARAM declaration only; no new clause ID. | Yes. Add the missing row and correct `DRIFT-049`; do not touch `execution.stage`, already declared `NO (config)`. |
+| PARAM reconciliation check | `docs/laws/conventions.md`; all agent law PARAM tables measured through settings metadata | Conventions §4/§9 and PARAM table semantics; tests for the script cite no agent clause because this is tooling, not agent behaviour. | Yes. Name presence alone would miss the scanner defect, so the check compares both-way presence plus tunable-family metadata, with legacy drift baselined. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *Pre-answered
-YES. State the two law versions bumped, the Changelog lines, and the drift rows.*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Pre-answered
+YES. Planned law amendments: provider laws `v1 -> v1.1` to declare `alpaca_data_feed` and
+`ingest_ohlcv_only`; execution laws `v1.2 -> v1.3` to declare `deliberation_grace_seconds`. Planned
+drift handling: add provider/scanner rows for the S187 divergences, correct existing `DRIFT-049`, and
+record the out-of-scope 57-row baseline as follow-up debt.
 
-**Full reconciliation count before choosing hard-fail vs warn:** *the number, per agent.*
+**Full reconciliation count before choosing hard-fail vs warn:** 60 name-presence divergences before
+fixes: provider 14 missing PARAM rows; scanner 1 missing PARAM row; analyst 22 missing PARAM rows; PM
+1 PARAM row without a settings field; deliberator 1 missing PARAM row; execution 1 missing PARAM row
+and 2 PARAM rows without settings fields; monitor 0; reporter 0; forecaster 7; operator 0;
+supervisor 0; curator 0; researcher 3; master 8. Tunable-family measurement added the intended
+scanner `benchmark_ticker` mismatch, with `execution.alpaca_base_url` treated as the existing
+`YES (environment)` exception and the operator `effort` row exposing an escaped-pipe parser trap, not
+a law defect. Decision: baseline-backed hard failure for unbaselined drift; legacy baseline prints
+warnings until a later PARAM cleanup retires it.
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** Scanner law metadata is internally stale: the
+file header still reads `LOCKED v1`, while the changelog, `docs/laws/INDEX.md`, and this sprint say
+S183 amended it to `v1.1`. The PARAM row itself is clear; scanner law remains read-only in this
+sprint.
 
-**Laws found silent where a decision was needed:**
+**Laws found silent where a decision was needed:** Provider law was silent for
+`alpaca_data_feed`/`ingest_ohlcv_only`; execution law was silent for
+`deliberation_grace_seconds`; the all-agent measurement also found 57 out-of-scope legacy
+name-presence gaps to baseline and file as follow-up debt.
 
-**Clauses that were ⬜ and are now proven:** *Expected: none — PARAM rows are declarations, not clauses.*
+**Clauses that were ⬜ and are now proven:** None expected. PARAM rows are declarations, not clauses,
+so test-plan rows and rollup counters do not move.
 
 ---
 
@@ -398,48 +420,171 @@ YES. State the two law versions bumped, the Changelog lines, and the drift rows.
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
+| A1 | `test_benchmark_ticker_is_registered_tunable_with_rationale` | `agents/scanner/tests/test_scanner_settings.py` | PASS (`uv run pytest agents/scanner/tests/test_scanner_settings.py tests/test_param_law_sync.py --no-cov`: 6 passed) | PARAM row only; no clause ID |
+| A2 | `test_param_row_without_settings_field_fails` | `tests/test_param_law_sync.py` | PASS; planted row is rejected and named | tooling guard; no agent clause |
+| A3 | `test_settings_field_without_param_row_fails` | `tests/test_param_law_sync.py` | PASS; planted bare field is rejected and named | tooling guard; no agent clause |
+| A4 | `test_declared_mode_selectors_are_not_tunables` | `tests/test_param_law_sync.py` | PASS; declared mode selector remains green | ADR-0013 convention, no agent clause |
+| A5 | `test_secret_and_config_only_rows_are_allowed` | `tests/test_param_law_sync.py` | PASS; secret/config-only rows remain green | tooling guard; no agent clause |
 
 **Tests added beyond the plan:**
+
+- `test_escaped_pipe_type_does_not_corrupt_tunable_cell` in `tests/test_param_law_sync.py`
+  locks the markdown parser against escaped-pipe type cells such as the operator `effort` row.
+- `make gate-selftest` now includes `param-law-sync` and proved the planted probe is rejected.
 
 ---
 
 ## Closeout — evidence
 
-<!-- FILL THIS IN BEFORE HANDING BACK. A handback with this placeholder intact is not accepted. -->
-
-**Status:** *not yet implemented.*
+**Status:** BUILT locally on branch `sprint-187-a-parameter-is-declared-once`; branch push and
+remote gate proof are performed after this final closeout edit so the proved SHA is not changed by
+recording it here.
 
 **Tree the proofs ran in (and `.env` present?):**
 
-**Result:** *not yet implemented.*
+`C:\Users\yury_\Downloads\project\trading-agents`, branch
+`sprint-187-a-parameter-is-declared-once`; `.env present: yes` (presence checked only; contents not
+printed). Reconciled with `origin/main` before final commit: `git fetch origin` succeeded and
+`git rev-list --left-right --count HEAD...origin/main` returned `0 0`.
+
+**Result:** Built. `scanner.benchmark_ticker` is now registered through `tunable()` with default
+`"SPY"` unchanged; provider law `LOCKED v1.1` declares `alpaca_data_feed` and
+`ingest_ohlcv_only` as `NO (mode selector)`; execution law `LOCKED v1.3` declares
+`deliberation_grace_seconds`; `make ci` now runs PARAM/settings sync as the 12th gate step.
 
 **Files changed:**
 
-**Design decisions:** *the four above, as a DL entry with rejected alternatives.*
+- Code/tooling: `agents/scanner/settings.py`, `scripts/check_param_law_sync.py`,
+  `scripts/param_law_sync.py`, `scripts/param_law_sync_sources.py`,
+  `scripts/param_law_sync_baseline.py`, `scripts/gate_selftest_cases.py`.
+- Tests: `agents/scanner/tests/test_scanner_settings.py`, `tests/test_param_law_sync.py`.
+- Laws/docs/versioning: `agents/provider/laws/laws.md`, `agents/execution/laws/laws.md`,
+  `docs/laws/drift-register.md`, `docs/laws/INDEX.md`, `docs/laws/ledger.md`,
+  `docs/design-log.md`, `docs/STATE.md`, `docs/sprints/_TEMPLATE.md`,
+  `docs/sprints/INDEX.md`, `CLAUDE.md`, `AGENTS.md`, `Makefile`, `pyproject.toml`, `uv.lock`.
 
-**Full reconciliation result:** *how many divergences across all agents, and hard-fail or warn.*
+**Design decisions:** Recorded before production edits as
+[DL-133](../design-log.md): both provider fields are mode selectors; the CI check is
+baseline-backed hard fail for unbaselined drift; it compares both-way name presence and
+tunable-family metadata, not full text/default/bounds semantics.
+
+**Full reconciliation result:** Initial all-agent measurement found 60 name-presence divergences
+plus the intended scanner tunable-family mismatch. After the scoped fixes, `uv run python
+scripts/check_param_law_sync.py` exits 0 and prints 57 legacy `[WARN]` rows from the explicit
+baseline; any new/unbaselined divergence is a hard `[FAIL]`.
 
 **Proof — the red run first:**
 
+- Initial tests before implementation:
+  ```text
+  uv run pytest agents/scanner/tests/test_scanner_settings.py tests/test_param_law_sync.py --no-cov
+  collected 6 items
+  FAILED agents/scanner/tests/test_scanner_settings.py::test_benchmark_ticker_is_registered_tunable_with_rationale
+  E   assert None
+  FAILED tests/test_param_law_sync.py::* - ModuleNotFoundError: No module named 'scripts.check_param_law_sync'
+  6 failed
+  ```
+- Guard proof, scanner registration temporarily reverted:
+  ```text
+  uv run python scripts/check_param_law_sync.py
+  [FAIL] agents/scanner/settings.py:53: scanner.benchmark_ticker law declares YES; settings field is not registered via tunable(), expected registered via tunable()
+  exit 1
+  ```
+- Guard proof, execution PARAM row temporarily deleted:
+  ```text
+  uv run python scripts/check_param_law_sync.py
+  [FAIL] agents/execution/settings.py:123: execution.deliberation_grace_seconds settings field has no PARAM row
+  exit 1
+  ```
+
 **Proof — the green run:**
+
+```text
+uv run pytest agents/scanner/tests/test_scanner_settings.py tests/test_param_law_sync.py --no-cov
+collected 6 items
+agents\scanner\tests\test_scanner_settings.py .                          [ 16%]
+tests\test_param_law_sync.py .....                                       [100%]
+6 passed in 1.06s
+```
+
+```text
+uv run python scripts/check_param_law_sync.py
+exit 0
+[WARN] ... 57 legacy baseline rows ...
+```
 
 **Guards planted:**
 
+- A settings field with no PARAM row is rejected (`probe.undocumented`).
+- A PARAM row with no settings field is rejected (`probe.missing_from_settings`).
+- A PARAM row declaring `YES` is rejected when the settings field is not registered through
+  `tunable()`.
+- Declared mode selectors and secret/config-only rows remain green.
+- `make gate-selftest` proved the new guard:
+  ```text
+  PASS  can-fail: param-law-sync — rejected (exit 1)
+  gate self-test: 20/20 passed
+  ```
+
 **Module line counts:**
 
-**`make ci`:** *exit code (12 steps now), passed/skipped counts, coverage %.*
+- `scripts/check_param_law_sync.py` 20 lines.
+- `scripts/param_law_sync.py` 173 lines.
+- `scripts/param_law_sync_sources.py` 72 lines.
+- `scripts/param_law_sync_baseline.py` 71 lines.
+- `tests/test_param_law_sync.py` 89 lines.
+- `agents/scanner/tests/test_scanner_settings.py` 24 lines.
+- `agents/scanner/settings.py` 75 lines.
 
-**`make gate-ran`:** *worktree path and full 40-char SHA.*
+**`make ci`:** Redirected to
+`C:\Users\yury_\AppData\Local\Temp\trading-agents-s187-ci.txt`; saved exit code in
+`C:\Users\yury_\AppData\Local\Temp\trading-agents-s187-ci.exit`.
+
+```text
+exit code: 0
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1028 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 845 source files
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run pytest
+collected 2394 items
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+2390 passed, 4 skipped in 185.74s (0:03:05)
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+```
+
+**`make gate-ran`:**
+
+Not run at this document edit because branch-tip proof requires the final commit to be pushed
+first. Per DL-48 handback practice, the final chat handback records the exact post-push
+`make gate-ran` SHA so the evidence is not invalidated by another commit.
 
 **Not met / verified failing:**
+
+- Remote gate proof is pending until after this final closeout edit is committed and pushed.
+- Merge, deployment, fleet configuration, and live scheduled-run proof are not done.
 
 ---
 
 ## Return notes
 
--
+- Optional rider accepted: the stale `alembic/versions` skips were removed from
+  `scripts/check_module_size.py` and `scripts/check_module_header.py`.
+- Provider/scanner/execution scope stayed narrow. `execution.stage` was not changed, and
+  `stop_target_mode`, `order_price_tolerance_mode`, and `curator.predictor_strategy` stayed declared
+  mode selectors, not tunables.
+- `scanner.benchmark_ticker` gaining an env key means production delivery is a full `up` deployment
+  concern, not an image-only retag.
+- Legacy PARAM/settings drift is intentionally visible as 57 baseline warnings under DRIFT-052.

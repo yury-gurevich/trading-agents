@@ -8,6 +8,52 @@ and is marked CLOSED here.
 
 ---
 
+## DL-133 - S187 parameter declarations are checked against settings fields - status: DECIDED (2026-08-30)
+
+**Question.** S187 closes the verified PARAM drift where law tables and settings fields disagree,
+but the first all-agent reconciliation found broader pre-existing drift: 60 name-presence
+differences before fixes, spread across provider 14/0, scanner 1/0, analyst 22/0, PM 0/1,
+deliberator 1/0, execution 1/2, forecaster 7/0, researcher 3/0 and master 8/0. The check therefore
+has to stop new drift without turning this small sprint into an accidental full law cleanup.
+
+**Decision 1 - `provider.alpaca_data_feed` is `NO (mode selector)`.** The value chooses which Alpaca
+market-data feed answers the request. That changes the vendor/entitlement route, not a value inside
+one scoring or validation formula.
+
+**Rejected alternatives.** Register it as a `tunable()` because SIP may be "better" - rejected
+because feed choice changes the data source semantics and cost/entitlement boundary. Leave it as
+undocumented config - rejected because it affects provider behaviour and must be visible in PARAM.
+
+**Decision 2 - `provider.ingest_ohlcv_only` is `NO (mode selector)`.** It switches the provider into
+the DL-29 OHLCV-only fast path and skips enrichment wholesale. That selects which ingestion workflow
+runs; it is not a bounded experimental value inside one workflow.
+
+**Rejected alternatives.** Treat it as a tunable because it can improve runtime - rejected because
+an optimiser should not silently choose to remove fundamentals/news/sectors/earnings from the run.
+Treat it as private config - rejected because the operator must see when enrichment is disabled.
+
+**Decision 3 - make the CI check a baseline-backed hard gate, not a naive hard fail or warn-only
+shadow.** The measured 60 differences prove a naive hard fail would block on work S187 is not doing.
+The check will therefore carry an explicit legacy baseline for the current repo and fail only on
+unbaselined drift; the legacy rows are still printed as warnings. Promotion trigger: retire the
+baseline when the cross-agent PARAM backlog recorded from this measurement is corrected.
+
+**Rejected alternatives.** Naive hard fail - rejected because it expands the sprint. Warn-only - rejected
+because it would still allow the fifth drift to land green. Do nothing after fixing the four named
+instances - rejected because DL-120 and S185 already proved manual audits are not enough.
+
+**Decision 4 - compare name presence both ways plus the tunable-family declaration, but not default,
+type or bound text.** Presence catches settings fields with no PARAM row and PARAM rows with no live
+settings field. Family matching catches the scanner-shaped defect (`YES` rows must be registered via
+the `tunable()` metadata, while `NO (...)` rows must not be), and it keeps deliberate mode selectors
+green. Defaults, type strings and bounds are deferred because the law tables use human-readable units
+and ranges; strict textual comparison would create false positives before the name/family contract is
+stable.
+
+**Rejected alternatives.** Name-only - rejected because it would miss `scanner.benchmark_ticker`.
+Full default/type/bounds comparison - rejected for this sprint because it conflates declaration drift
+with documentation-format drift.
+
 ## DL-132 - S186 sentiment de-duplication is batch-scoped and metric-visible - status: DECIDED (2026-08-24)
 
 **Question.** [DL-127](design-log.md) already decided the policy: down-weight duplicated news

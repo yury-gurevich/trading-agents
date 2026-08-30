@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -338,6 +338,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `scaled_order_price_tolerance_atr_multiplier` | `0.50` | `float ≥ 0.0, ≤ 2.0` (ratio) | YES | Challenger band near half of decision-time daily ATR; observed overnight gaps cluster at 0.3–0.6× ATR |
 | `scaled_order_price_tolerance_floor_bps` | `25` | `int ≥ 0, ≤ 500` (bps) | YES | Stops the scaled challenger becoming so narrow that quiet names cannot trade at all |
 | `scaled_order_price_tolerance_ceiling_bps` | `250` | `int ≥ 0, ≤ 500` (bps) | YES | Keeps the challenger narrow enough that ADR-0018 still rejects a materially unevaluated open |
+| `deliberation_grace_seconds` | `900` | `int ≥ 0, ≤ 3600` (seconds) | YES | How long a buy-carrying PMRun waits for its DeliberationRun before submitting under the declared posture; exits never wait (S147 / ADR-0017) |
 | `deliberation_posture` | `"advisory"` | `Literal["advisory","binding"]` — config | NO (mode selector) | S185 operator policy selector; `advisory` records expected fail-open as warning, `binding` refuses buy exposure when no `DeliberationRun` arrives. Not a tunable — switching it changes which policy runs, not a value inside one |
 | `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for broker-adopted positions with no PM stop lineage (ADR-0015 §3); matches the monitor-reconciliation paper-stage floor |
 
@@ -391,3 +392,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `EXEC-OBS-04` (fault/acceptance severity follows posture). Adds the `deliberation_posture`
   `PARAM` row as **NO (mode selector)**, not a tunable. Closes DRIFT-048; DRIFT-049 remains open
   for the older missing `deliberation_grace_seconds` PARAM row.
+- **v1.3 — S187 parameter declaration reconciliation (2026-08-30).** Adds the missing
+  `deliberation_grace_seconds` PARAM row from the existing `tunable()` declaration, correcting
+  DRIFT-049. No clauses were added or proven; rollup counters deliberately do not move.

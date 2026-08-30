@@ -106,7 +106,7 @@ no fault and a green gate. Correlation is now enforced, so concurrent in-flight 
 Each is a postcondition to prove, not an intention to state.
 
 1. **Serialization is gone, measured the same way it was found:** on a live run with `K=4`,
-   sum-of-latency Ã· span drops from the **0.95 measured on 2026-08-19** to **â 0.25** (â 1/K).
+   sum-of-latency ÷ span drops from the **0.95 measured on 2026-08-19** to **≈ 0.25** (≈ 1/K).
    Report the measured ratio. Use the 2026-08-19 figure as the baseline, not the older 0.90.
 2. **At least 15 orders finish inside the current 1800 s grace with headroom**, and the run writes
    **no** `DeliberationGraceExpired` fault. 15 is the measured breaking point at K=1 (1,854 s), so it
@@ -121,14 +121,14 @@ Each is a postcondition to prove, not an intention to state.
 
 ## Traps
 
-- ðª¤ **~~`effort` is inert~~ â CORRECTED 2026-08-19. It was fixed in `0.90.02` and is live at
+- 🪤 **~~`effort` is inert~~ — CORRECTED 2026-08-19. It was fixed in `0.90.02` and is live at
   `high`.** Do not try to tune latency by lowering it: that was measured as a fail-open source
   (3 on 2026-08-13) and reverting re-opens the DL-63 inert-knob question. Treat `effort=high` as
   part of the fixed baseline you are measuring against.
 - 🪤 **`max_tokens` is hard-capped `le=4096`.** Raising it is a code change, not a tunable move.
-- ðª¤ **`max_rounds` 2 â 1 is out of scope â and the reason first given here was wrong.**
+- 🪤 **`max_rounds` 2 → 1 is out of scope — and the reason first given here was wrong.**
   The old reason ("it will contaminate the before/after measurement") does not hold: the metric is
-  **sum-of-latency Ã· span**, a ratio, and it is **invariant to call count** â halving the rounds
+  **sum-of-latency ÷ span**, a ratio, and it is **invariant to call count** — halving the rounds
   halves numerator and denominator alike. The real reason is that it **changes the artefact under
   test**: this agent's own `max_rounds` `why` requires the debate to *"show more than one round in
   live proof"*, so a 1-round debate is a different thing, not a faster same thing. Cutting it to buy
@@ -136,8 +136,8 @@ Each is a postcondition to prove, not an intention to state.
 - 🪤 **Do not collapse the peers into the manager to get concurrency.** It would erase the role
   attribution the laws declare (`role_models`, `calling_agent` on every `LLMCall`) and with it the
   provenance guarantee DL-102 exists to protect.
-- ðª¤ **`maxReplicas` is production state, so this takes the full cycle and a deploy.**
-  **CORRECTED 2026-08-19: S169 landed** (`0.90.10`, deployed `s176a`) â a full `up` now *refuses*
+- 🪤 **`maxReplicas` is production state, so this takes the full cycle and a deploy.**
+  **CORRECTED 2026-08-19: S169 landed** (`0.90.10`, deployed `s176a`) — a full `up` now *refuses*
   before dropping a live env key and names it, and `orchestration/packs/trading_tunables.json` is the
   source of truth for operator values. **Put any new tunable's operator value in that pack**, or the
   next full `up` reverts it. Still snapshot env before and after: the guard is proven, your change

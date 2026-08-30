@@ -172,7 +172,7 @@ specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in 
 6. **DL-104 (c) — the analyst's hardcoded SMA-200 rationale.** The summary string always names
    SMA-200 while `indicators.sma_distance` returns `None` below its period. 🪤 **The bars gap
    underneath it is CLOSED** — S174 ships 203 bars, so SMA-200 now computes; what survives is the
-   rationale asserting an input without checking it exists. Same class as item 5. ð¨ **Cited again 2026-08-19** â NEE vetoed because *"the cited technical support is contradicted by a 0.463 technical score with bearish MACD/EMA/golden-cross inputs and a bottom-tier scanner rank"*: the rationale reads as confirmation while the score underneath it is bearish.
+   rationale asserting an input without checking it exists. Same class as item 5. 🚨 **Cited again 2026-08-19** — NEE vetoed because *"the cited technical support is contradicted by a 0.463 technical score with bearish MACD/EMA/golden-cross inputs and a bottom-tier scanner rank"*: the rationale reads as confirmation while the score underneath it is bearish.
 7. **DL-104 (d) — a real advisory/binding switch**, so *advisory* is a declared posture rather than a
    grace that happens to expire. Every run writes a truthful but uninformative `error` fault, which
    trains the operator to read a real fault as noise.

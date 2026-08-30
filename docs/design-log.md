@@ -72,6 +72,17 @@ is one branch that no recorded run has approached - *[carried, not re-measured]*
 counts in items 3 and DL-119 are 9, 9, 7, 5, 4, 4 and 3 against a 15-order trigger. Named, bounded,
 accepted.
 
+🚨 **Discovered while writing this — there is no cheap probe, because DL-36 Piece A is not wired.**
+`MasterAgent.__init__` takes `credential_tests: tuple[CredentialTest, ...] = ()`
+(`agents/master/agent.py:57`) and the deployed entrypoint constructs it **without that argument**
+(`agents/master/entrypoint.py:90-96`); no pack registers any. So the machinery that was built to
+*"test every credential before handing it to an agent"* runs **zero tests** in the fleet, and
+activation succeeding proves nothing about the provider path. 🪤 **That is exactly the check that
+would have caught the 2026-08-19 outage at activation rather than at debate time** — six nights
+earlier. It is also why the flip condition above has to be a whole scheduled run: **there is no
+smaller instrument.** Not filed as its own row yet; it belongs with item 6b's evidence until the
+2026-08-31 run says whether the path works at all.
+
 **What this does not decide.** Whether `advisory` should ever be the *permanent* posture. It should
 not: it is the setting that lets a referee outage pass acceptance, and living there indefinitely is
 DL-104's back door by another name, which DL-119 refused. This entry buys one run's delay against a

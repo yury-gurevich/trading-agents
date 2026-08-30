@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 14:27 AEST · **Version:** 0.92.02 · **🟩 S186 + S187 both merged and gate-proven (`81b82ee`, `7d36771`); the gate has a 12th step. 🚨 The deliberator's outage window ends today and the posture is still `advisory` — nothing flips it (item 6b).**
+**Last updated:** 2026-08-30 14:55 AEST · **Version:** 0.92.02 · **🚨 THE FLEET IS 3 SPRINTS BEHIND `main`: all 16 apps + the dispatcher job run `s184`, while S185, S186 and S187 are merged. Item 6b cannot be done until that changes — the deployed code has no posture switch to flip.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -52,6 +52,23 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🚨 **MEASURED 2026-08-30 — THE FLEET RUNS `s184`; THREE MERGED SPRINTS ARE INERT.** `az containerapp
+list` shows **all 16 apps** and `dispatcher-cron` on `…:s184`, while `main` is `0.92.02` carrying **S185**
+(merged 08-22), **S186** and **S187** (today) — **47 commits** since the last recorded deploy.
+🟩 **Corroborated at runtime, not just from tags:** `sched-2026-08-28`'s `ExecutionRun` carries **no
+`deliberation_posture` property**, which S185 guarantees on every run, so the running code demonstrably
+predates S185. 🚨 **Item 6b is therefore unexecutable as written** — the posture cannot be flipped to
+`binding` when the deployed code has no switch; **deploy is a prerequisite, not a follow-up.** S186's `1/n`
+weighting likewise is not affecting live ranking (S187 is a CI gate, so it loses nothing by waiting).
+🪤 **The `DeployRecord` trail cannot catch this:** newest is `2fc0672` (S182, 08-20) and **every record
+has `tag=None`, `app_count=None`** — work-queue item 21, measured. 🟠 **Target ready:** `7d36771` images
+exist at `:latest` and the full SHA, one tag covering S185+S186+S187.
+
+🚨 **The deliberator had NOT recovered as of the last run** *[measured 2026-08-30]*: `sched-2026-08-28`
+still failed open on `HTTP 400`, and `real_debate_count` is **0 on every run 08-21 → 08-28**. Today is the
+operator's stated restore date; nothing has verified it. 08-27 shows `failed_open_count=0` only because it
+had nothing to debate.
+
 🟩 **PROVEN RESULT — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) merged `7d36771` (`0.92.02`), 2026-08-30.**
 `scanner.benchmark_ticker` is a registered `tunable()` (default `"SPY"` unchanged); provider laws
 **v1.1** declare `alpaca_data_feed` and `ingest_ohlcv_only` `NO (mode selector)`; execution laws
@@ -64,26 +81,10 @@ become a nine-agent law cleanup ([DL-133](design-log.md) decision 3, with a reti
 **DRIFT-052** open; now ranked as work-queue item 33). The 57 print as `[WARN]` with `file:line` on
 every run, and unbaselined drift fails the gate. 🟠 **Not deployed** — retag owed for S186+S187 together.
 
-🚨 **THE DELIBERATOR'S OUTAGE WINDOW ENDS TODAY (2026-08-30) — and nothing has verified it reopened.** Operator-stated 2026-08-22, not an estimate; the next scheduled run is the test, not an assumption. 🚨 **The posture is still `advisory`** and nothing flips it to `binding` (item 6b) — so credit returning does **not** by itself restore a binding veto.
-The Anthropic **credit balance** is exhausted: `HTTP 400 "Your credit balance is too low"`, read from
-`DeliberationRun.failed_open_reason` before the metrics ([DL-125](design-log.md)). 🪤 **Not a 429,
-not a timeout** — a billing failure no tunable, concurrency change or adapter refactor can reach, and
-a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under *Next* item 8.
-**Both providers ran dry inside three days** (OpenAI 429 on 08-19, Anthropic 400 on 08-20).
-
-**Every scheduled run until 2026-08-30, all expected, none a defect:** acceptance FAILs on
-`debate_coverage: 0.0 < 1.0` and `failed_open_count > 0`; PM-approved orders reach the broker
-**unvetoed**; `compute_health` reads `healthy=false` on the 3 deliberator incidents each run raises.
-🚨 **Do not re-diagnose these nightly, and do not fire test runs at them** — they reproduce exactly.
-✅ **DONE — [S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md) merged `5bea06d` (`0.92.00`), 2026-08-22.** `deliberation_posture` is an operator-declared **mode selector** (`advisory | binding`) recorded on every `ExecutionRun`, with fault severity and the acceptance check following it. **`GATE PROVEN` for `f9ac6b0`**; `make ci` exit 0 after merging `main` in, **2378 passed / 100.00 %**. Law cycle done: `EXEC-OUT-09`/`EXEC-NEV-06`/`EXEC-OBS-04`, execution laws **v1.1 → v1.2**, rollup **33 / 60** in ledger *and* INDEX, and the two silences I measured while speccing filed as **DRIFT-048/049** rather than papered over. 🟩 **The trap held:** `advisory` did **not** become a free pass — under `binding` the `debate_coverage` floor and `failed_open_count` ceiling stand; under `advisory` they are replaced by an attribution check that still fails on a missing posture, a missing reason, an unattributable status, or no linked `ExecutionRun`. 🪤 Exits never wait in either posture. 🪤 The default is `advisory` **because Codex measured the live graph first** and found the submit path *is* the current no-config behaviour, so the merge alone changed nothing.
 
 🚨 **The follow-up S185 leaves behind, and it is not a defect in the sprint.** The default is `advisory` and **nothing flips it to `binding` when credit returns on 2026-08-30**. The posture DL-116 and DL-119 fought for would then be a *declared* default rather than an arithmetic accident — better, but still not binding. **Flipping it must be a decision someone makes, not something that quietly never happens.** Queued as work-queue item 6b.
 
 **PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟠 **Not deployed, and no live post-merge read yet** — image-only retag is owed, and 5 scheduled runs (08-24…08-28) have happened since the measurement.
-
-**PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
-99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0
-fills**; they sit `accepted` at the broker for Monday 2026-08-24. `real_debate_count=0`, all 3 open.
 
 🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG and GOOGL landed in the same
 batch — the exact case the ADR was written for. GOOG passed sizing at `issuer=alphabet;

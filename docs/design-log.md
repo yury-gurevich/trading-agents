@@ -8,6 +8,77 @@ and is marked CLOSED here.
 
 ---
 
+## DL-134 - The posture switch is not the decision DL-116 and DL-119 were arguing about - status: DECIDED (2026-08-30)
+
+**Question.** Both providers returned to service on 2026-08-30 and the fleet is on `s187`, so
+work-queue **item 6b** became a live decision for the first time rather than a no-op: flip
+`deliberation_posture` from `advisory` to `binding` today, or not.
+
+**Read the code before deciding, and it reframes the item.** `binding` bites in exactly one branch
+and no other:
+
+- `drop_vetoed` removes vetoed tickers **before** `apply_deliberation_posture` runs
+  (`agents/execution/pm_execution.py:59`), so an **arrived veto is honoured identically under both
+  postures** - asserted by `test_arrived_veto_is_honored_identically_under_both_postures`.
+- `apply_deliberation_posture` returns the order set untouched unless the status is
+  `proceeded_unvetoed`, i.e. **no `DeliberationRun` node exists at all** after the grace
+  (`agents/execution/deliberation_posture.py:38`).
+- `applied_failed_open` - a `DeliberationRun` *did* arrive but its reviews failed open - submits
+  under **both** postures. Posture changes only the fault severity, warning -> error
+  (`agents/execution/deliberation_faults.py:88`).
+- Acceptance is where posture bites hardest: `binding` adds `debate_coverage >= 1.0` and
+  `failed_open_count <= 0`; `advisory` asks only that the fail-open be attributed
+  (`orchestration/packs/trading_deliberation_view.py:63-70`).
+
+🚨 **Consequence.** Every degraded night of the outage was `applied_failed_open` - the deliberator
+ran and its provider calls were refused, so the artifact existed. **`binding` would have blocked
+zero orders on any of those nights.** What it would have done is turn each one into an acceptance
+*error*. The veto binding at all is DL-116's grace change, in force since 2026-08-19 and untouched
+by this switch; DL-119's 73 % is a rate over *arrived* verdicts and this switch does not move it by
+one order. **So the switch is not "make the veto bind."** It is two narrower things: (a) halt buy
+exposure when the referee is *entirely absent* after the grace, and (b) make acceptance strict about
+coverage. Item 6b's framing - "that would leave the veto non-binding by default" - is wrong, and
+this entry supersedes it.
+
+**Decision - stay `advisory` through the 2026-08-31 run; flip on that run's evidence, not today.**
+Two reasons, both about what is unmeasured rather than about posture:
+
+1. 🚨 **The provider proof is from the wrong machine.** The 2026-08-30 `HTTP 200`s were direct API
+   calls from the dev box. The deliberator receives credentials through master / Key Vault, and that
+   path has not run since 2026-08-19. If it is still broken, `binding` makes acceptance red for a
+   non-defect - **DL-125 repeated deliberately**, and that is the exact failure that ranked item 6
+   first in the first place.
+2. 🪤 **`proceeded_unvetoed` is the >=15-order branch, and its fix is unmerged.** Item 3 measured
+   1,854 s against the 1800 s grace at 15 orders. Under `binding` the busiest nights are the ones
+   that block every buy - and S172's `debate_concurrency=4`, the fix, is built and gate-proven at
+   `5bf72c9` but not merged, pending its own K=4 measurement.
+
+**Flip condition, so this is a check and not a second judgement call.** Flip when `sched-2026-08-31`
+shows `deliberation_posture` present on its `ExecutionRun`, `real_debate_count > 0`, **and**
+`failed_open_count == 0`. The third is what proves the Key Vault path; the first only proves the
+fleet is on `s187`. If `failed_open_count > 0`, the credential path is the finding and the flip
+waits on that, not on posture.
+
+**Ruled out - flip today and let Monday prove it.** Tempting: the switch is one line, reversible,
+and a binding referee is what DL-116 wanted. Rejected because it stakes the acceptance gate on an
+untested credential path, and a red Tuesday would then be **indistinguishable** between "the referee
+bound correctly" and "the fleet cannot reach a provider." Advisory records the same facts and keeps
+that distinction readable. The flip costs one line whenever we want it; the ambiguity costs a day.
+
+**Ruled out - make the flip wait on S172's merge as well.** Over-sequenced. Item 3 is already next
+in the order and will most likely land before a 15-order night; making the flip a compound condition
+produces a gate nobody checks. If S172 has not merged when the flip happens, the residual exposure
+is one branch that no recorded run has approached - *[carried, not re-measured]* the approved-order
+counts in items 3 and DL-119 are 9, 9, 7, 5, 4, 4 and 3 against a 15-order trigger. Named, bounded,
+accepted.
+
+**What this does not decide.** Whether `advisory` should ever be the *permanent* posture. It should
+not: it is the setting that lets a referee outage pass acceptance, and living there indefinitely is
+DL-104's back door by another name, which DL-119 refused. This entry buys one run's delay against a
+named unknown, not a policy.
+
+---
+
 ## DL-133 - S187 parameter declarations are checked against settings fields - status: DECIDED (2026-08-30)
 
 **Question.** S187 closes the verified PARAM drift where law tables and settings fields disagree,

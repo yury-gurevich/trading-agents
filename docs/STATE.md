@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 15:47 AEST · **Version:** 0.92.02 · **🟩 FLEET DEPLOYED TO `s187` — 16 apps + `dispatcher-cron`, verified on tag, state and KEDA rules; S185+S186+S187 are live for the first time. 🚨 Item 6b is now genuinely actionable: the posture switch exists in production and still defaults to `advisory`.**
+**Last updated:** 2026-08-30 17:16 AEST · **Version:** 0.92.02 · **🟩 BOTH LLM PROVIDERS VERIFIED WORKING and the fleet is on `s187` — the outage that began 2026-08-19 is over. 🚨 The posture is still `advisory`: item 6b is now a real decision rather than a trading halt.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -56,18 +56,22 @@ the **build run's** head SHA `7d2339bc5a4f`, read from the run not handed in (it
 🚨 **`up` was required, not an image-only retag:** S185's `e370f88` moved the vocabulary pack
 (`8777b907…` → `93dab2e6…`), and a retag against a stale pack hits the fail-closed write guard mid-cascade
 (S148 stall, DL-85). 🪤 **The first attempt failed and changed nothing** — the S169 guard threw at
-Service Bus route prep *before* the first app create. Cause was local: `azure-core`'s dist-info had **no
-`RECORD` file**, so an interrupted install left `azure/core/` with subdirectories and no `.py` files while
-looking installed. Fixed with `uv pip install --reinstall-package azure-core`; `uv.lock` untouched.
-Preflight never imports the deps its own steps need, so it surfaced *after* alembic ran — **item 34**.
+Service Bus route prep *before* the first app create. Cause was local — a corrupt `azure-core` (dist-info
+with no `RECORD` file) that still looked installed; preflight never imports the deps its own steps need, so
+it surfaced *after* alembic ran. Full account in **item 34**.
 🟠 **Not yet proven at runtime:** Monday's run (2026-08-31, 22:30 UTC) must show
 `deliberation_posture` on its `ExecutionRun` — its absence on `sched-2026-08-28` is what proved the fleet
 was behind.
 
-🚨 **The deliberator had NOT recovered as of the last run** *[measured 2026-08-30]*: `sched-2026-08-28`
-still failed open on `HTTP 400`, and `real_debate_count` is **0 on every run 08-21 → 08-28**. Today is the
-operator's stated restore date; nothing has verified it. 08-27 shows `failed_open_count=0` only because it
-had nothing to debate.
+🟩 **PROVEN RESULT — BOTH PROVIDERS VERIFIED BY DIRECT API CALL, 2026-08-30 17:00 AEST.** `claude-opus-5`
+and `gpt-5.5` each returned **HTTP 200** with content; the outage that began 2026-08-19 ([DL-125](design-log.md))
+is **over**. 🪤 **The Anthropic half was not a credit problem** — `HTTP 400 invalid_request_error`, *"your
+**specified** API usage limits"*, is an **operator-set** spend limit, distinct from the tier cap (`429` +
+`enforced_spend_limit_reached`). Raising it in Console → Billing restored access at once; the `2026-09-01` in
+the message was only the month reset. 🚨 **Verified from this machine, not the fleet** — the deliberator
+takes credentials via master/Key Vault, untested since the outage. Monday's run (08-31, 22:30 UTC) proves that
+*and* the deploy: expect `real_debate_count > 0` **and** `deliberation_posture` on the `ExecutionRun`.
+🟢 **Unblocks** item 6b (a real veto now, not a halt) and item 3 (K=4 needs real debates).
 
 🟩 **PROVEN RESULT — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) merged `7d36771` (`0.92.02`), 2026-08-30.**
 `scanner.benchmark_ticker` is a registered `tunable()` (default `"SPY"` unchanged); provider laws
@@ -80,9 +84,6 @@ divergences across nine agents; 3 fixed, **57 baselined** as warning-only so a s
 become a nine-agent law cleanup ([DL-133](design-log.md) decision 3, with a retire trigger;
 **DRIFT-052** open; now ranked as work-queue item 33). The 57 print as `[WARN]` with `file:line` on
 every run, and unbaselined drift fails the gate. 🟩 **Deployed** in `s187`.
-
-
-🚨 **The follow-up S185 leaves behind, and it is not a defect in the sprint.** The default is `advisory` and **nothing flips it to `binding` when credit returns on 2026-08-30**. The posture DL-116 and DL-119 fought for would then be a *declared* default rather than an arithmetic accident — better, but still not binding. **Flipping it must be a decision someone makes, not something that quietly never happens.** Queued as work-queue item 6b.
 
 **PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟩 **Deployed** in `s187`; the live post-merge read is Monday's run.
 

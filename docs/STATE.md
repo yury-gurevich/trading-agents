@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 20:20 AEST · **Version:** 0.93.00 · **🟩 [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) MERGED — master now refuses activation on a dead required credential, the check that would have ended the 08-19 outage on night one. 🟠 Not deployed: the full `up` waits for Monday's run.**
+**Last updated:** 2026-08-30 21:05 AEST · **Version:** 0.93.00 · **🟩 S188 merged (master refuses activation on a dead credential) and [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) is packaged — measured: 135 empty LLM completions, and the defect is in the *primary* adapter, not the fallback item 35 blamed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -76,50 +76,51 @@ still looked installed; preflight never imports the deps its own steps need, so 
 Console → Billing restored access at once, and the `2026-09-01` in the message was only the month reset.
 🚨 **Verified from this machine, not the fleet.** Monday's run (08-31, 22:30 UTC) proves that path *and* the deploy.
 
-🟩 **PROVEN RESULT — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) merged `7d36771` (`0.92.02`), 2026-08-30.**
-`scanner.benchmark_ticker` is a registered `tunable()` (default `"SPY"` unchanged); provider laws
-**v1.1** declare `alpaca_data_feed` and `ingest_ohlcv_only` `NO (mode selector)`; execution laws
-**v1.3** declare `deliberation_grace_seconds`, which **closes DRIFT-049** — the row S185 left open for
-this audit. `make ci` gained a **12th step**, PARAM/settings sync, with a `gate_selftest` probe proving
-it can fail. **`GATE PROVEN` for `7d36771`**; `make ci` re-run by me: exit 0, **2390 passed / 4 skipped /
-100.00 %**. 🚨 **The audit found 20× what the sprint was scoped for** — **60** PARAM/settings presence
-divergences across nine agents; 3 fixed, **57 baselined** as warning-only so a small sprint did not
-become a nine-agent law cleanup ([DL-133](design-log.md) decision 3, with a retire trigger;
-**DRIFT-052** open; now ranked as work-queue item 33). The 57 print as `[WARN]` with `file:line` on
-every run, and unbaselined drift fails the gate. 🟩 **Deployed** in `s187`.
+🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
+**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
+PARAM/settings sync. 🚨 Its audit found **20× its scope** — 60 divergences across nine agents, 3 fixed and **57
+baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-queue item 33).
+**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
+batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
+🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
 
-**PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟩 **Deployed** in `s187`; the live post-merge read is Monday's run.
+🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at `existing_issuer_value_usd=0.00` →
+0.998 %; GOOGL then **failed** at `1025.19` → 1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one
+company** ([DL-122](design-log.md)).
 
-🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG passed sizing at
-`existing_issuer_value_usd=0.00` → 0.998 %; GOOGL then **failed** at `1025.19` → 1.67 % > 1 %. 🚨 Pre-S184
-both would have passed and the run would have opened **two positions in one company** ([DL-122](design-log.md)).
-
-🚨 **NOT PROVEN — ADR-0023's falsifiable test** (the 73 % veto rate falls materially). **Zero real-debate data**
-on `s184` code; the 40 % and 0 % readings from 08-20/08-21 are raw rates diluted by orders never reviewed, so
-**73 % stands as the last honest figure** ([DL-119](design-log.md) amendment). 🟢 Monday can finally supply data.
+🚨 **NOT PROVEN — ADR-0023's falsifiable test** (the 73 % veto rate falls materially). **Zero real-debate data** on
+`s184` code; 08-20/08-21's 40 % and 0 % are raw rates diluted by orders never reviewed, so **73 % stands as the last
+honest figure** ([DL-119](design-log.md) amendment). 🟢 Monday can finally supply data. 🪤 **And S189 found a second
+way that number could be wrong** — an empty judge answer becomes a forced `revise`, which *counts as a veto*; 11 judge
+calls returned empty, and whether any fell inside DL-119's four binding runs is S189's first task.
 
 🚨 **NOT PROVEN — S182 live.** 2026-08-21 was checked and did not supply it: the stops INTC/NEE/XOM got carry
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
+🎯 **PACKAGED — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md), an empty answer says why it is
+empty** (work-queue item 35, 2026-08-30). Neither LLM adapter reads `stop_reason`/`finish_reason`, so a **truncation**,
+a **refusal** (Anthropic returns `HTTP 200` for those) and a genuinely empty answer are one recorded value.
+🚨 **Item 35's framing was wrong and is corrected:** it filed this as OpenAI-fallback-only and "not currently biting".
+**Measured on the live spine: 135 of 1,037 `LLMCall` rows are empty** (two agreeing signals), and **112 are
+`claude-opus-5` — the primary** — against 22 for `gpt-5.5`. 🪤 **98 of the 135 are 2026-08-08 alone**, a known outage
+day, so the honest steady-state figure is **~3 %** on days with no outage; quoting 13 % would repeat DL-119's own
+diluted-denominator mistake. 🚨 **The worst case has no fail-safe** — `debate_turn` emits `Turn(role, n, "")` unguarded, so a
+truncated argument becomes a hole in the transcript the judge rules on, and the verdict looks legitimate (proponent
+**16.0 %** empty, opponent **13.5 %**). 🎯 Ready for Codex; deploy is a full `up` behind S172 and S188.
+
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
-(`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes from `MASTER_CREDENTIAL_TESTS_B64`, **refuses
-activation** when a required credential is rejected, classifies transport failure separately so a DNS blip cannot halt
-the fleet, and records sanitized test evidence on `AgentInstance`. Master laws **v1.2**, five new `MST-*` clauses.
-`make ci` re-run by me from the branch worktree: exit 0, **2410 passed / 4 skipped / 100.00 %**; `GATE PROVEN` for the
-**merged** SHA with the printed SHA checked against `git rev-parse HEAD`; post-merge **CodeQL success, 0 open
-error-level alerts**.
-🚨 **One merge-review correction, and it mattered.** The sprint made `provider.tiingo` required and `alpaca-data`
-optional — the *fallback* gated, the *primary* not — reasoning from a sentence [ADR-0006](decisions/0006-market-data-vendor-tiering.md)'s
-own 2026-07-04 amendment supersedes. A dead Alpaca key would not have refused activation, and the nightly full-universe
-pull would have fallen back to a source budgeted at **500 unique symbols/month**. Flipped, verified against the secret
-map *and* the vault, pinned by a test ([DL-136](design-log.md) amendment). 🪤 `credential_failure_statuses` is **inert**
-— recorded with both honest options rather than patched at merge; the behaviour is correct and fail-closed.
-🟠 **NOT DEPLOYED, and this is the whole point of the sequencing.** Full `up` (new env key, tunable, `AgentInstance`
-vocabulary), which must not land before `sched-2026-08-31`. Deploy order after Monday: S172's K=4 measurement, then
-this. 🚨 **The live activation-refusal proof is still owed** — S188 is a code fact, not yet a fleet fact.
-🪤 Post-merge image build failed on `monitor` alone (`403` on the `dhi.io` base image, 14/15 green, zero monitor files
-in the merge) — **re-run green, all 15 images built.** A partial image set is what makes a later `up` fail mid-cascade.
+(`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes, **refuses activation** when a required
+credential is rejected, classifies transport failure separately so a DNS blip cannot halt the fleet, and records
+sanitized evidence on `AgentInstance`. Master laws **v1.2**. `make ci` re-run by me: **2410 passed / 100.00 %**;
+`GATE PROVEN` for the **merged** SHA; post-merge **CodeQL success, 0 open error-level alerts**; image build green on
+re-run after a transient `403` on one of 15 jobs.
+🚨 **One merge-review correction:** the sprint gated the *fallback* OHLCV credential and left the *primary* optional,
+reasoning from a sentence ADR-0006's own amendment supersedes — flipped, verified against the secret map and the
+vault, pinned by a test ([DL-136](design-log.md) amendment). 🪤 `credential_failure_statuses` is **inert**, recorded
+with both options rather than patched.
+🟠 **NOT DEPLOYED** — full `up`, and it must not land before `sched-2026-08-31`. **The live activation-refusal proof
+is owed:** S188 is a code fact, not yet a fleet fact.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
 gate-proven at `5bf72c9` (checked on the tip, not just `a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled

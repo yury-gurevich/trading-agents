@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 12:45 AEST · **Version:** 0.92.02 · **S187 built locally on `sprint-187-a-parameter-is-declared-once`: PARAM/settings sync is now a CI gate; branch proof comes after push.**
+**Last updated:** 2026-08-30 14:27 AEST · **Version:** 0.92.02 · **🟩 S186 + S187 both merged and gate-proven (`81b82ee`, `7d36771`); the gate has a 12th step. 🚨 The deliberator's outage window ends today and the posture is still `advisory` — nothing flips it (item 6b).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -52,16 +52,19 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-✅ **BUILT locally — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) on branch
-`sprint-187-a-parameter-is-declared-once` (`0.92.02`).** `scanner.benchmark_ticker` is a registered
-`tunable()` with default `"SPY"` unchanged; provider laws **v1.1** declare `alpaca_data_feed` and
-`ingest_ohlcv_only` as `NO (mode selector)`; execution laws **v1.3** declare
-`deliberation_grace_seconds`; `make ci` now runs PARAM/settings sync as its 12th step. Local proof:
-redirected `make ci` exit 0, **2390 passed / 4 skipped**, **100.00% coverage**, audit and secrets
-gates clean. Branch push and `make gate-ran` are the next proof boundary; merge, deployment, fleet
-configuration, and live scheduled-run proof are not done.
+🟩 **PROVEN RESULT — [S187](sprints/sprint-187-a-parameter-is-declared-once.md) merged `7d36771` (`0.92.02`), 2026-08-30.**
+`scanner.benchmark_ticker` is a registered `tunable()` (default `"SPY"` unchanged); provider laws
+**v1.1** declare `alpaca_data_feed` and `ingest_ohlcv_only` `NO (mode selector)`; execution laws
+**v1.3** declare `deliberation_grace_seconds`, which **closes DRIFT-049** — the row S185 left open for
+this audit. `make ci` gained a **12th step**, PARAM/settings sync, with a `gate_selftest` probe proving
+it can fail. **`GATE PROVEN` for `7d36771`**; `make ci` re-run by me: exit 0, **2390 passed / 4 skipped /
+100.00 %**. 🚨 **The audit found 20× what the sprint was scoped for** — **60** PARAM/settings presence
+divergences across nine agents; 3 fixed, **57 baselined** as warning-only so a small sprint did not
+become a nine-agent law cleanup ([DL-133](design-log.md) decision 3, with a retire trigger;
+**DRIFT-052** open; now ranked as work-queue item 33). The 57 print as `[WARN]` with `file:line` on
+every run, and unbaselined drift fails the gate. 🟠 **Not deployed** — retag owed for S186+S187 together.
 
-🚨 **THE DELIBERATOR IS DOWN UNTIL 2026-08-30 — operator-stated 2026-08-22, not an estimate.**
+🚨 **THE DELIBERATOR'S OUTAGE WINDOW ENDS TODAY (2026-08-30) — and nothing has verified it reopened.** Operator-stated 2026-08-22, not an estimate; the next scheduled run is the test, not an assumption. 🚨 **The posture is still `advisory`** and nothing flips it to `binding` (item 6b) — so credit returning does **not** by itself restore a binding veto.
 The Anthropic **credit balance** is exhausted: `HTTP 400 "Your credit balance is too low"`, read from
 `DeliberationRun.failed_open_reason` before the metrics ([DL-125](design-log.md)). 🪤 **Not a 429,
 not a timeout** — a billing failure no tunable, concurrency change or adapter refactor can reach, and
@@ -76,21 +79,7 @@ a *different* constraint from the 2026-09-01 Anthropic **usage cap** cited under
 
 🚨 **The follow-up S185 leaves behind, and it is not a defect in the sprint.** The default is `advisory` and **nothing flips it to `binding` when credit returns on 2026-08-30**. The posture DL-116 and DL-119 fought for would then be a *declared* default rather than an arithmetic accident — better, but still not binding. **Flipping it must be a decision someone makes, not something that quietly never happens.** Queued as work-queue item 6b.
 
-The item that produced it was **[S185](sprints/sprint-185-the-veto-posture-is-declared-not-arithmetic.md)**
-(work-queue item 6), 🟢 **BUILT locally on branch
-`sprint-185-the-veto-posture-is-declared-not-arithmetic`**: `deliberation_posture` is a declared
-`advisory | binding` mode selector recorded on every `ExecutionRun`; advisory no-verdict submissions
-are attributed warnings instead of accidental red/error noise; explicit binding blocks unreviewed
-buys but **exits never wait** and arrived vetoes still win. `make ci` passed locally with
-**2378 passed / 4 skipped / 100.00 % coverage**, pip-audit clean and tracked/untracked
-detect-secrets clean. Law cycle happened in execution law **v1.2** (`EXEC-OUT-09`, `EXEC-NEV-06`,
-`EXEC-OBS-04`); `DRIFT-048` corrected the missing deliberation law, and `DRIFT-049` remains open for
-S187's PARAM audit. 🟠 **Not merged or deployed:** branch push, `make gate-ran`, full `up`, and the
-operator posture declaration are still required before any live scheduled-run claim.
-
 **PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟠 **Not deployed, and no live post-merge read yet** — image-only retag is owed, and 5 scheduled runs (08-24…08-28) have happened since the measurement.
-
-**S187 remains handover-ready and buildable without an LLM.** [S187](sprints/sprint-187-a-parameter-is-declared-once.md) covers PARAM tables and code drift **in both directions** across three agents: the scanner ignores a law row the *analyst* honours, two provider settings are in no law at all, `deliberation_grace_seconds` has no row, and `execution.stage` is **retracted** (already declared). Its durable half is a `make ci` check — the second audit to find this class.
 
 **PROVEN RESULT — `sched-2026-08-21` completed 8/8, ACCEPTANCE FAIL, on `s184` (16/16 verified).**
 99 evaluated → 23 candidates → 28 scored → **3 approved** (C 7, AMZN 3, GOOG 3) → 3 submitted → **0

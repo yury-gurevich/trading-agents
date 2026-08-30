@@ -114,7 +114,14 @@ on `s184` code; the 40 % and 0 % readings from 08-20/08-21 are raw rates diluted
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
-gate-proven at `5bf72c9`, unmerged; its 15-order K=4 measurement now has real debates available. **Next after 6b.**
+gate-proven at `5bf72c9` (checked: CI + Security Findings + image build all `success` on the tip, not just on
+`a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled 2026-09-01, after Monday's run** ([DL-135](design-log.md)):
+it needs `s172` images and peer `maxReplicas=4` on the fleet, and deploying that first would spend the only
+instrument that proves the `s187` deploy and the credential path. Rollback is a retag to **`s187`**, not `s182`.
+🟩 **Monday's unknown is now one link, not three** — the live fleet reads `DELIBERATOR_LLM_PROVIDER=anthropic` on all
+three deliberator apps (applied by today's `up`), and `trading-agents-kv/anthropic-api-key` is byte-identical to the
+`.env` key that returned `HTTP 200` (SHA-256 compared, never printed). What is left untested is only whether **master
+hands that secret over** — the link with no test behind it, because `credential_tests=()`.
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
@@ -140,10 +147,7 @@ it cost three fail-opens until `request_timeout_seconds` went 30 → 60, which t
 the peer-call tail into a fixed timeout): measure them together or not at all. Arithmetic in
 [DL-105](design-log.md)'s amendment.
 
-**Undecided, recorded so they are not re-derived** — all raised 2026-08-11, none actioned:
-**(i)** ~~amend S172~~ **DONE 2026-08-19** — the unsound `max_rounds` reason is replaced (a 1-round debate is a different artefact, not a faster one), the build-trigger is now **measured** and in the spec (**15 orders breaches the 1800 s grace**), the stale `effort`/S169 traps are corrected, and a Codex handover block is written;
-**(ii)** ~~collapse to one ranked queue~~ **DONE 2026-08-19** — the out-of-repo `debt.md` was **deleted**, not reconciled: it was a 2026-08-14 ancestor of `work-queue.md` and all 8 of its unique references were fragments of closed items. The queue was pruned 255 → 99 lines (11 closed rows removed, 2 folded into parents, every carried number re-measured); **(iii)** stop pinning version numbers in sprint
-specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day.
+**Undecided, recorded so they are not re-derived** — raised 2026-08-11. **(i)** amend S172 and **(ii)** collapse to one ranked queue are both **DONE 2026-08-19** (detail in the queue's own header). **(iii)** stop pinning version numbers in sprint specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day — **still open**.
 
 1. 🪤 **WITHDRAWN 2026-08-22 — the premise is dead, measured on the contract predicate.** This item
    read: *"47 unresolved critical Flags pin `healthy=false` and `pending_human_flags=47` forever."*

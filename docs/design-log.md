@@ -8,6 +8,43 @@ and is marked CLOSED here.
 
 ---
 
+## DL-135 - Monday's run goes first, and two measurements shrank what it has to prove - status: DECIDED (2026-08-30)
+
+**Decision - `sched-2026-08-31` runs on `s187` untouched; S172's K=4 measurement happens after it,
+not before.** Item 3 is unblocked and is the first buildable item, but its measurement needs `s172`
+images and peer `maxReplicas=4` on the fleet - unmerged code, reversible by retag (**to `s187` now**,
+not the `s182` the queue row still names). Deploying that before Monday would spend the only
+instrument that can prove today's deploy *and* the credential path. The operator was offered the
+inversion and took it.
+
+**Ruled out - spend Monday on the K=4 measurement instead.** It would have moved the bigger item a
+day earlier. Rejected because the credential path is the older unknown and the cheaper one to clear:
+an unproven path makes the K=4 run return `real_debate_count=0` for the **third** time, and Monday
+would no longer be a proof of `s187`. Sequencing costs a day; the alternative risks losing both.
+
+**Two read-only measurements taken while deciding, both of which shrink Monday's unknown.**
+
+1. 🟩 **The live fleet reads `anthropic`, not `openai`.** All three deliberator apps now carry
+   `DELIBERATOR_LLM_PROVIDER=anthropic` (`az containerapp show`, 2026-08-30), with `EFFORT=high` and
+   `REQUEST_TIMEOUT_SECONDS=120`. Today's `up -Tag s187` applied the switch that
+   `orchestration/packs/trading_tunables.json` had carried as **staged but "NOT YET APPLIED LIVE"
+   since 2026-08-20**. So Monday debates on **`claude-opus-5`** - the provider whose spend limit was
+   actually raised - and **not** on the OpenAI fallback that carries item 35's silent-empty defect.
+   🪤 That pack note is now stale in two ways ("not yet applied live", "both providers are currently
+   non-functional") and is deliberately **left to be corrected inside S172's merge cycle**, which
+   already touches that file, rather than editing production state for a comment.
+2. 🟩 **The vault holds the key that works.** `anthropic-api-key` in `trading-agents-kv` is
+   byte-identical to the `.env` value that returned `HTTP 200` today - compared by SHA-256, first 12
+   hex `4f1e705379de`, values never printed and never written to disk.
+
+**What is left for Monday to prove, stated narrowly.** Not *"is there a working provider"* and not
+*"which one"* - both are now measured. Only **whether master resolves that vault secret and hands it
+to the deliberator**: the one link in the chain with no test behind it, because
+`credential_tests=()` ([DL-134](design-log.md)). Expect `real_debate_count > 0`,
+`failed_open_count == 0`, and `deliberation_posture` on the `ExecutionRun`.
+
+---
+
 ## DL-134 - The posture switch is not the decision DL-116 and DL-119 were arguing about - status: DECIDED (2026-08-30)
 
 **Question.** Both providers returned to service on 2026-08-30 and the fleet is on `s187`, so

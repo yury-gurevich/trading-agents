@@ -101,6 +101,12 @@ no fault and a green gate. Correlation is now enforced, so concurrent in-flight 
    `infra/deploy-agents.ps1` so the fan-out has somewhere to land. The manager stays at 1 —
    it is the coordinator, and a second manager would double-consume the `PMRun`.
 
+**When to run the measurement — 2026-09-01, not before ([DL-135](../design-log.md)).** It needs `s172`
+images and peer `maxReplicas=4` on the fleet, which puts unmerged code there again; rollback is a retag
+to **`s187`** (work-queue item 3 still says `s182`). `sched-2026-08-31` runs first on `s187` untouched —
+it is the only instrument that proves the master/Key Vault credential path, and a K=4 run against an
+unproven path returns `real_debate_count=0` for the third time.
+
 ## Success factors
 
 Each is a postcondition to prove, not an intention to state.
@@ -232,10 +238,18 @@ CONSTRAINTS
   completions per role. Measure before raising the default above 4.
 - Peers scale from minReplicas=0 inside the 22:25-00:30 UTC KEDA window; cold start is on the
   critical path for the first debate. Do not regress the cold path S171 measured.
-- LLM COST AND CREDITS: the deliberator runs on OpenAI gpt-5.5. A 9-order run costs ~$0.46. The
-  account ran out of credits on 2026-08-19 and there is NO fallback - Anthropic is capped until
-  2026-09-01. Check credits before any live multi-run measurement, and note that an exhausted
-  account presents misleadingly as "no deliberator peer reply received".
+- LLM PROVIDER AND COST - REWRITTEN 2026-08-30; the note here before was stale in every clause. The
+  deliberator runs **Anthropic `claude-opus-5`**, not OpenAI: all three apps read
+  `DELIBERATOR_LLM_PROVIDER=anthropic` live, applied by `up -Tag s187` today (DL-135). Both providers
+  returned HTTP 200 on 2026-08-30 and the vault key is byte-identical to the verified one, so the
+  outage is over and "capped until 2026-09-01" was a misread calendar reset. The old **~$0.46 per
+  9-order run** was priced on gpt-5.5 and does NOT carry to claude-opus-5 at effort=high - price the
+  run from the LLMCall ledger afterwards, do not assume it. An exhausted or refused account still
+  presents misleadingly as "no deliberator peer reply received".
+- OpenAI is now the FALLBACK, and the fallback can fail silently (work-queue item 35): llm_openai.py
+  never inspects finish_reason, so a reasoning-truncated call returns HTTP 200 with empty content and
+  raises nothing. If Anthropic throttles mid-measurement the K=4 numbers can degrade in a way that
+  looks like success - check role_models on the LLMCall rows before trusting the ratio.
 - maxReplicas is production state: full cycle and a deploy. S169 landed, so a full `up` now refuses
   before dropping a live env key - but verify, do not assume.
 - Branch sprint-172-independent-debates-run-independently. Version: next available MINOR at merge,

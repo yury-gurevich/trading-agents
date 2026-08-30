@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 14:55 AEST · **Version:** 0.92.02 · **🚨 THE FLEET IS 3 SPRINTS BEHIND `main`: all 16 apps + the dispatcher job run `s184`, while S185, S186 and S187 are merged. Item 6b cannot be done until that changes — the deployed code has no posture switch to flip.**
+**Last updated:** 2026-08-30 15:47 AEST · **Version:** 0.92.02 · **🟩 FLEET DEPLOYED TO `s187` — 16 apps + `dispatcher-cron`, verified on tag, state and KEDA rules; S185+S186+S187 are live for the first time. 🚨 Item 6b is now genuinely actionable: the posture switch exists in production and still defaults to `advisory`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,32 +37,32 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-- **Three diagnoses, one pattern, no code changed (docs only, no bump, 2026-08-24).** Measured against
-  the live spine and the broker while S186/S187 waited on handover. **Item 12's "202-fill backlog" is
-  27** ([DL-129](design-log.md)) — `Fill.status` is a submit-time fact never mutated; truth is
-  `broker_status` + 3,725 `BrokerOrderStatus` nodes, and the sweep skips every terminal one. **Item 20's
-  228 faults are 13 objects** ([DL-130](design-log.md)) — `broker_stop` asks *is this of type stop* and
-  never reads status, `graph_stop` asks *is it active*, so every cancelled stop mismatches forever; the
-  broker **agrees** on all 13. **New item 32** ([DL-131](design-log.md)) — a stop that *fires* is never
-  reconciled: WFC filled at Alpaca 08-21T17:00:44, still active in the graph, because `cancelled_at is
-  None` is a stop's only lifecycle. 🟩 **Item 27's symptom is gone**: 24 positions / 24 stops, **1:1,
-  zero unprotected** (was 22/19 and $2,147.76 on 08-19) — but its live proof is still owed, all 24 read
-  `stop_pct_source=position`, so S182's fallback has never fired. 🪤 Two of the three rows were
-  **counting a field that never moves** — the retracted-DL-73 class, twice more.
+- **Three diagnoses, one pattern, no code changed (docs only, 2026-08-24).** All three were the same
+  shape — execution's graph facts denormalise lifecycle differently and only `Position` has a predicate
+  hiding it. Item 12's "202-fill backlog" is **27** ([DL-129](design-log.md)); item 20's 228 faults are
+  **13 objects** the broker agrees are cancelled ([DL-130](design-log.md)); a stop that *fires* is never
+  reconciled ([DL-131](design-log.md), item 32). 🪤 Two rows were counting a field that never moves
+  — the retracted-DL-73 class, twice more. 🟩 Item 27's symptom is gone: 24 positions / 24 stops, 1:1,
+  zero unprotected (was 22/19 and $2,147.76) — but its live proof is still owed, all 24 reading
+  `stop_pct_source=position`. 🪤 Measured 08-24; six runs have happened since.
 
 ## Now
 
-🚨 **MEASURED 2026-08-30 — THE FLEET RUNS `s184`; THREE MERGED SPRINTS ARE INERT.** `az containerapp
-list` shows **all 16 apps** and `dispatcher-cron` on `…:s184`, while `main` is `0.92.02` carrying **S185**
-(merged 08-22), **S186** and **S187** (today) — **47 commits** since the last recorded deploy.
-🟩 **Corroborated at runtime, not just from tags:** `sched-2026-08-28`'s `ExecutionRun` carries **no
-`deliberation_posture` property**, which S185 guarantees on every run, so the running code demonstrably
-predates S185. 🚨 **Item 6b is therefore unexecutable as written** — the posture cannot be flipped to
-`binding` when the deployed code has no switch; **deploy is a prerequisite, not a follow-up.** S186's `1/n`
-weighting likewise is not affecting live ranking (S187 is a CI gate, so it loses nothing by waiting).
-🪤 **The `DeployRecord` trail cannot catch this:** newest is `2fc0672` (S182, 08-20) and **every record
-has `tag=None`, `app_count=None`** — work-queue item 21, measured. 🟠 **Target ready:** `7d36771` images
-exist at `:latest` and the full SHA, one tag covering S185+S186+S187.
+🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s187`, 2026-08-30** (was `s184`, three sprints behind).
+`pwsh infra/deploy-agents.ps1 up -Tag s187` exit 0. **Verified independently of its own output:** **16/16**
+apps on `s187`, **16/16** `Succeeded`, **16/16** KEDA `min=0 max=1, 1 rule` — *identical to the baseline
+captured before deploying* — and `dispatcher-cron` on `s187`, cron `30 22 * * 1-5`. `DeployRecord` carries
+the **build run's** head SHA `7d2339bc5a4f`, read from the run not handed in (item 21's defect).
+🚨 **`up` was required, not an image-only retag:** S185's `e370f88` moved the vocabulary pack
+(`8777b907…` → `93dab2e6…`), and a retag against a stale pack hits the fail-closed write guard mid-cascade
+(S148 stall, DL-85). 🪤 **The first attempt failed and changed nothing** — the S169 guard threw at
+Service Bus route prep *before* the first app create. Cause was local: `azure-core`'s dist-info had **no
+`RECORD` file**, so an interrupted install left `azure/core/` with subdirectories and no `.py` files while
+looking installed. Fixed with `uv pip install --reinstall-package azure-core`; `uv.lock` untouched.
+Preflight never imports the deps its own steps need, so it surfaced *after* alembic ran — **item 34**.
+🟠 **Not yet proven at runtime:** Monday's run (2026-08-31, 22:30 UTC) must show
+`deliberation_posture` on its `ExecutionRun` — its absence on `sched-2026-08-28` is what proved the fleet
+was behind.
 
 🚨 **The deliberator had NOT recovered as of the last run** *[measured 2026-08-30]*: `sched-2026-08-28`
 still failed open on `HTTP 400`, and `real_debate_count` is **0 on every run 08-21 → 08-28**. Today is the
@@ -79,12 +79,12 @@ it can fail. **`GATE PROVEN` for `7d36771`**; `make ci` re-run by me: exit 0, **
 divergences across nine agents; 3 fixed, **57 baselined** as warning-only so a small sprint did not
 become a nine-agent law cleanup ([DL-133](design-log.md) decision 3, with a retire trigger;
 **DRIFT-052** open; now ranked as work-queue item 33). The 57 print as `[WARN]` with `file:line` on
-every run, and unbaselined drift fails the gate. 🟠 **Not deployed** — retag owed for S186+S187 together.
+every run, and unbaselined drift fails the gate. 🟩 **Deployed** in `s187`.
 
 
 🚨 **The follow-up S185 leaves behind, and it is not a defect in the sprint.** The default is `advisory` and **nothing flips it to `binding` when credit returns on 2026-08-30**. The posture DL-116 and DL-119 fought for would then be a *declared* default rather than an arithmetic accident — better, but still not binding. **Flipping it must be a decision someone makes, not something that quietly never happens.** Queued as work-queue item 6b.
 
-**PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟠 **Not deployed, and no live post-merge read yet** — image-only retag is owed, and 5 scheduled runs (08-24…08-28) have happened since the measurement.
+**PROVEN RESULT — [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) merged `81b82ee` (`0.92.01`), 2026-08-30** (built by Codex on 08-24, verified and merged today). The analyst computes exact-headline duplicate weights over the whole `MarketData.news` batch — a new 24-line `sentiment_weights.py` rather than growing `scoring.py` — and exposes `sentiment_batch_weighted_articles` as the batch-scoped denominator. **`GATE PROVEN` for `81b82ee`** (CI + Security Findings), re-run by me from the worktree holding it, because Codex's own proof named `4b0daaf` and the docs commit on top would otherwise have merged unproven. `make ci` re-run **today**: exit 0, **2384 passed / 4 skipped / 100.00 %**. A1-A6 planted red first; the DL-70 violation (all weights forced to 1.0) failed A1 at `50.0 == 66.67`. Law cycle: analyst laws **v1.2**, `ANLZ-OBS-04` 🟩, ledger *and* INDEX **24 / 47**. [DL-132](design-log.md) records four decisions with alternatives, and decision 2 is **measured** — exact, whitespace-collapsed, casefolded and mojibake-normalised matching all give identical counts, so no normalisation was added on instinct. 🪤 It also **corrected my spec**: `DUK/GILD/MET/TGT` are news-only in the fixture, so their *stored confidence* could not be asserted; it proved weighted-vs-unweighted identity on their real headlines instead. 🟩 **Deployed** in `s187`; the live post-merge read is Monday's run.
 
 🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG and GOOGL landed in the same
 batch — the exact case the ADR was written for. GOOG passed sizing at `issuer=alphabet;

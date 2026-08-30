@@ -58,6 +58,22 @@ def test_vocabulary_is_set_by_its_own_narrow_update() -> None:
     assert text.count("Get-VocabularyEnv") >= 3  # definition + both setters
 
 
+def test_master_credential_tests_are_set_by_own_narrow_update() -> None:
+    """S188: credential-test pack is too large to ride the master create call."""
+    text = _script_text()
+    lines = text.splitlines()
+    offenders = [
+        line.strip()
+        for line in lines
+        if "Get-MasterCredentialTestsEnv" in line
+        and any(builder in line for builder in _CREATE_ARG_BUILDERS)
+    ]
+
+    assert "function Set-MasterCredentialTests" in text
+    assert "MASTER_CREDENTIAL_TESTS_B64" in text
+    assert not offenders, f"credential tests spliced into create args: {offenders}"
+
+
 def test_issuer_map_is_loaded_from_pack_and_sent_only_to_pm() -> None:
     """S184: the issuer map is PM pack data, not a tunable or fleet-wide env."""
     text = _script_text()

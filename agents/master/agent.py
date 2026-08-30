@@ -13,15 +13,20 @@ from datetime import UTC, datetime
 from threading import Lock
 from typing import TYPE_CHECKING
 
-from agents.master.activation_remediation import handle_activation_remediation
-from agents.master.credential_test import ActivationRefused, resolve_and_test
+from agents.master.activation_credentials import (
+    refuse_activation_for_failed_credentials,
+)
+from agents.master.credential_report import (
+    credential_test_props,
+    submit_transport_faults,
+)
+from agents.master.credential_test import resolve_and_test_report
 from agents.master.identity import next_instance_id
 from agents.master.key_vault import NullSecretStore
 from agents.master.settings import MasterSettings
 from agents.master.store import (
     write_agent_instance,
     write_capability_grant,
-    write_escalation,
     write_session,
 )
 from contracts.master import ACTIVATEMessage, DRAINMessage, EHLOMessage
@@ -103,38 +108,30 @@ class MasterAgent:
             if agent_type not in self._grant_policy:
                 raise ValueError(f"unknown agent_type {agent_type!r}")
 
-            config, failures = resolve_and_test(
+            report = resolve_and_test_report(
                 agent_type,
                 self._secret_store,
                 self._secret_map,
                 self._credential_tests,
                 cache=self._pass_cache,
             )
-            if failures:
-                escalation = write_escalation(
-                    self._graph,
-                    agent_type,
-                    tuple(failures),
-                    self._settings.remediation_mode,
-                )
-                handle_activation_remediation(
-                    graph=self._graph,
-                    sink=self.sink,
-                    settings=self._settings,
-                    escalation=escalation,
-                    agent_type=agent_type,
-                    secret_store=self._secret_store,
-                    secret_map=self._secret_map,
-                    credential_tests=self._credential_tests,
-                    pass_cache=self._pass_cache,
-                    llm=self._remediation_llm,
-                    catalogue=self._remediation_catalogue,
-                    system_prompt=self._remediation_system_prompt,
-                    executors=self._remediation_executors,
-                )
-                raise ActivationRefused(
-                    f"credential test(s) failed for {agent_type!r}: {failures}"
-                )
+            submit_transport_faults(self.sink, agent_type, report)
+            config = report.config
+            refuse_activation_for_failed_credentials(
+                graph=self._graph,
+                sink=self.sink,
+                settings=self._settings,
+                report=report,
+                agent_type=agent_type,
+                secret_store=self._secret_store,
+                secret_map=self._secret_map,
+                credential_tests=self._credential_tests,
+                pass_cache=self._pass_cache,
+                remediation_llm=self._remediation_llm,
+                remediation_catalogue=self._remediation_catalogue,
+                remediation_system_prompt=self._remediation_system_prompt,
+                remediation_executors=self._remediation_executors,
+            )
             instance_id = next_instance_id(
                 agent_type, self._instance_counter, self._instance_lock
             )
@@ -142,6 +139,9 @@ class MasterAgent:
 
             write_agent_instance(
                 self._graph, instance_id, agent_type, ehlo.ephemeral_boot_id
+            )
+            self._graph.merge_node(
+                "AgentInstance", instance_id, credential_test_props(report)
             )
             for cap, cfg in grants.items():
                 write_capability_grant(

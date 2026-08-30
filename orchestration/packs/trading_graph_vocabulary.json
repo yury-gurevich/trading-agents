@@ -351,6 +351,20 @@
   ],
   "owners": {},
   "properties": {
+    "AgentInstance": [
+      "agent_type",
+      "boot_id",
+      "credential_tests_cached",
+      "credential_tests_declared",
+      "credential_tests_failed_optional",
+      "credential_tests_passed",
+      "credential_tests_tested",
+      "credential_tests_transport_failed",
+      "drain_at",
+      "drain_reason",
+      "started_at",
+      "state"
+    ],
     "DeliberationRun": [
       "created_at",
       "debates",

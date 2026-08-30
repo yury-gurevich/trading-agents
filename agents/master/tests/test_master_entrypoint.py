@@ -12,10 +12,15 @@ from pathlib import Path
 
 import pytest
 
+from agents.master import credential_probes
 from agents.master.entrypoint import build_app, select_graph_store
 from agents.master.key_vault import EnvVarSecretStore
 from agents.master.settings import MasterSettings
-from agents.master.tests.helpers import TRADING_GRANTS_PATH, TRADING_SECRETS_PATH
+from agents.master.tests.helpers import (
+    TRADING_CREDENTIAL_TESTS_PATH,
+    TRADING_GRANTS_PATH,
+    TRADING_SECRETS_PATH,
+)
 from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair
@@ -44,11 +49,17 @@ def test_build_app_loads_grant_policy_and_secret_map_from_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """build_app loads both the grant policy and secret map from their pack paths."""
+    monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    # alpaca-data is the provider's one required credential (ADR-0006 amendment),
+    # so activation now resolves these two before it will hand the config over.
+    monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()
     settings = MasterSettings(
         grant_policy_path=TRADING_GRANTS_PATH,
         secret_map_path=TRADING_SECRETS_PATH,
+        credential_tests_path=TRADING_CREDENTIAL_TESTS_PATH,
     )
     agent, _ = build_app(
         InMemoryGraphStore(),
@@ -71,9 +82,21 @@ def test_build_app_loads_pack_data_from_base64_env(
     """build_app loads grants + secret map from base64 env content (cloud deploy)."""
     grants_b64 = base64.b64encode(Path(TRADING_GRANTS_PATH).read_bytes()).decode()
     secrets_b64 = base64.b64encode(Path(TRADING_SECRETS_PATH).read_bytes()).decode()
+    tests_b64 = base64.b64encode(
+        Path(TRADING_CREDENTIAL_TESTS_PATH).read_bytes()
+    ).decode()
+    monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    # alpaca-data is the provider's one required credential (ADR-0006 amendment),
+    # so activation now resolves these two before it will hand the config over.
+    monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()
-    settings = MasterSettings(grant_policy_b64=grants_b64, secret_map_b64=secrets_b64)
+    settings = MasterSettings(
+        grant_policy_b64=grants_b64,
+        secret_map_b64=secrets_b64,
+        credential_tests_b64=tests_b64,
+    )
     agent, _ = build_app(
         InMemoryGraphStore(),
         private,

@@ -50,7 +50,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | supervisor | ✅ LOCKED v1 (S71) | 21 / 48 | S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); counters are clauses proven / clauses declared |
 | curator | ✅ LOCKED v1 (S71) | 22 / 47 | S156 citation check; counters are clauses proven / clauses declared |
 | researcher | ✅ LOCKED v1 (S71) | 19 / 43 | S156 citation check; counters are clauses proven / clauses declared |
-| master | ✅ LOCKED v1 (S73) | 10 / 39 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74; **21 of its 39 clauses have no test-plan row** (S157 warn-only backlog) |
+| master | ✅ LOCKED v1.2 (S73, amended S188) | 15 / 44 | S188 adds and proves credential-test handover guards; RSA/Key Vault clauses deferred S74; **21 of its 44 clauses have no test-plan row** (S157 warn-only backlog) |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

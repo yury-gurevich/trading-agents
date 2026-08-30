@@ -15,6 +15,7 @@ from agents.master.secret_map import SecretMap, load_secret_map
 
 _PACKS = Path(__file__).resolve().parents[3] / "orchestration" / "packs"
 TRADING_GRANTS_PATH = str(_PACKS / "trading_grants.json")
+TRADING_CREDENTIAL_TESTS_PATH = str(_PACKS / "trading_credential_tests.json")
 TRADING_REMEDIATION_PROMPT_PATH = str(_PACKS / "trading_remediation_prompt.json")
 TRADING_REMEDIATION_SELECTION_CASES_PATH = str(
     _PACKS / "trading_remediation_selection_cases.json"

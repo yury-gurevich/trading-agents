@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 17:24 AEST · **Version:** 0.92.02 · **🟩 BOTH LLM PROVIDERS VERIFIED WORKING and the fleet is on `s187`. 🎯 Item 6b decided ([DL-134](design-log.md)): the posture stays `advisory` for one more run — `binding` never blocked an order during the outage, and Monday is what proves the fleet's credential path.**
+**Last updated:** 2026-08-30 18:05 AEST · **Version:** 0.92.02 · **🎯 Item 6b decided ([DL-134](design-log.md)): the posture stays `advisory` for one more run. S172's K=4 measurement is scheduled 2026-09-01 and [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) is packaged — master runs zero credential tests, which is why Monday has to be the instrument.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,14 +37,12 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-- **Three diagnoses, one pattern, no code changed (docs only, 2026-08-24).** All three were the same
-  shape — execution's graph facts denormalise lifecycle differently and only `Position` has a predicate
-  hiding it. Item 12's "202-fill backlog" is **27** ([DL-129](design-log.md)); item 20's 228 faults are
-  **13 objects** the broker agrees are cancelled ([DL-130](design-log.md)); a stop that *fires* is never
-  reconciled ([DL-131](design-log.md), item 32). 🪤 Two rows were counting a field that never moves
-  — the retracted-DL-73 class, twice more. 🟩 Item 27's symptom is gone: 24 positions / 24 stops, 1:1,
-  zero unprotected (was 22/19 and $2,147.76) — but its live proof is still owed, all 24 reading
-  `stop_pct_source=position`. 🪤 Measured 08-24; six runs have happened since.
+- **Three diagnoses, one pattern, no code changed (docs only, 2026-08-24).** All three were execution's
+  graph facts denormalising lifecycle differently, with only `Position` having a predicate to hide it:
+  item 12's "202-fill backlog" is **27** ([DL-129](design-log.md)); item 20's 228 faults are **13 objects**
+  the broker agrees are cancelled ([DL-130](design-log.md)); a stop that *fires* is never reconciled
+  ([DL-131](design-log.md), item 32). 🟩 Item 27's symptom is gone — 24 positions / 24 stops, 1:1, zero
+  unprotected — but its live proof is still owed. 🪤 Measured 08-24; six runs have happened since.
 
 ## Now
 
@@ -60,7 +58,6 @@ acceptance red. DL-116's grace is what made the veto bind, on 2026-08-19, and th
 untested since 2026-08-19. 🚨 Flipping today would stake the acceptance gate on that untested path and make a red
 Tuesday unreadable between *the referee bound* and *the fleet cannot reach a provider* — DL-125 repeated on purpose.
 🟠 **Advisory is not the destination**, only a one-run delay against a named unknown.
-
 
 🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s187`, 2026-08-30** (was `s184`, three sprints behind).
 `pwsh infra/deploy-agents.ps1 up -Tag s187` exit 0. **Verified independently of its own output:** **16/16**
@@ -113,21 +110,30 @@ on `s184` code; the 40 % and 0 % readings from 08-20/08-21 are raw rates diluted
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
+🎯 **PACKAGED — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md), the credential
+that is never tested** (work-queue item 36, 2026-08-30). 🚨 **`MasterAgent` declares
+`credential_tests: tuple[CredentialTest, ...] = ()` and `entrypoint.py:90-96` builds it without that argument** —
+no pack supplies any, so DL-36 Piece A runs **zero** tests in the fleet and activation succeeding proves nothing.
+**The remediation chain is unreachable for the same reason:** `handle_activation_remediation` fires only inside
+`if failures:`, so DL-36's whole self-healing arc is dead code downstream of one empty tuple. 🪤 **The obvious fix
+is the rejected one** — `orchestration/master_serve.py` already accepts the tests and 8 probes already exist, but
+the master image carries only `kernel/ contracts/ agents/master/` and import-linter forbids `agents → orchestration`;
+the image stays pack-agnostic (S86 / DL-12), so tests arrive as **data**. 🎯 Ready for Codex. **Deploy is a full `up`
+and must wait for Monday's run.** Item 35 (the fallback's silent empty) follows it, by operator direction.
+
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
 gate-proven at `5bf72c9` (checked: CI + Security Findings + image build all `success` on the tip, not just on
 `a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled 2026-09-01, after Monday's run** ([DL-135](design-log.md)):
 it needs `s172` images and peer `maxReplicas=4` on the fleet, and deploying that first would spend the only
 instrument that proves the `s187` deploy and the credential path. Rollback is a retag to **`s187`**, not `s182`.
-🟩 **Monday's unknown is now one link, not three** — the live fleet reads `DELIBERATOR_LLM_PROVIDER=anthropic` on all
-three deliberator apps (applied by today's `up`), and `trading-agents-kv/anthropic-api-key` is byte-identical to the
-`.env` key that returned `HTTP 200` (SHA-256 compared, never printed). What is left untested is only whether **master
-hands that secret over** — the link with no test behind it, because `credential_tests=()`.
+🟩 **Monday's unknown is now one link, not three** — the fleet reads `DELIBERATOR_LLM_PROVIDER=anthropic` on all three
+deliberator apps, and `trading-agents-kv/anthropic-api-key` is byte-identical to the `.env` key that returned `HTTP 200`
+(SHA-256, never printed). Untested is only whether **master hands that secret over** — see S188 below.
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
-🪤 **Two live residues to decide, neither urgent.** **2 NFLX shares created by the S172 test
-harness**, never vetoed — selling is a real trade; and one `cancel_stop` `HTTP 422`, the run's only
-non-billing error incident.
+🪤 **Two live residues to decide, neither urgent.** **2 NFLX shares** from the S172 test harness, never vetoed
+(selling is a real trade); and one `cancel_stop` `HTTP 422`, the run's only non-billing error incident.
 
 ## Next
 
@@ -149,14 +155,9 @@ the peer-call tail into a fixed timeout): measure them together or not at all. A
 
 **Undecided, recorded so they are not re-derived** — raised 2026-08-11. **(i)** amend S172 and **(ii)** collapse to one ranked queue are both **DONE 2026-08-19** (detail in the queue's own header). **(iii)** stop pinning version numbers in sprint specs (*"next available PATCH/MINOR at merge"*) — after three renumberings in one day — **still open**.
 
-1. 🪤 **WITHDRAWN 2026-08-22 — the premise is dead, measured on the contract predicate.** This item
-   read: *"47 unresolved critical Flags pin `healthy=false` and `pending_human_flags=47` forever."*
-   `compute_health` returns **`pending_human_flags=0`**: all **60** Flags carry a `FlagResolution`
-   (S178/S179 closed this). `Flag.status` stays `pending` **by design** — the resolution is a separate
-   node, exactly like `Position.status` staying `open`. **I ranked this #1 on a raw-prop count for a
-   second time.** What actually pins `healthy=false` is `open_incidents`, today **5** — 3 of them the
-   billing outage, which clears itself on 2026-08-30. 🪤 This item had *already* been retracted once
-   (2026-08-15, the AVGO `overturn` false premise); it is now retracted on its remaining half too.
+1. 🪤 **WITHDRAWN 2026-08-22 — retracted twice, on a raw-prop count both times.** `pending_human_flags`
+   is **0**; `Flag.status` stays `pending` by design, like `Position.status` staying `open`. What pins
+   `healthy=false` is `open_incidents`. The retracted-DL-73 class again — audit on the predicate.
 2. 🪤 **Sweep the debate context for the same class — now FOUR instances, packaged as [S177](sprints/sprint-177-every-number-names-its-unit.md)** (2026-08-15). The fourth
    is `max_sector_pct`'s `deployed`: `SectorBook.__init__` seeds `_names` from held positions but
    **never seeds `_deployed`**, so `deployed` counts only *this batch* (GOOGL's `deployed=687.05` is

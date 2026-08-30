@@ -60,6 +60,14 @@ def test_trading_credential_tests_load_to_nonzero_count() -> None:
         "openai",
         "tiingo",
     }
+    # ADR-0006 (2026-07-04 amendment): Alpaca is the runtime OHLCV route and Tiingo
+    # is the cheap fallback, budgeted at 500 unique symbols/month. Requiring the
+    # fallback and not the primary would halt the provider for the wrong outage, so
+    # the posture is pinned here rather than left to a JSON field nobody diffs.
+    provider_required = {
+        test.name for test in tests if test.required and "provider" in test.agent_types
+    }
+    assert provider_required == {"alpaca-data"}
 
 
 def test_probe_transport_exception_is_sanitized_fault() -> None:

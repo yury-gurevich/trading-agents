@@ -51,6 +51,10 @@ def test_build_app_loads_grant_policy_and_secret_map_from_paths(
     """build_app loads both the grant policy and secret map from their pack paths."""
     monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    # alpaca-data is the provider's one required credential (ADR-0006 amendment),
+    # so activation now resolves these two before it will hand the config over.
+    monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()
     settings = MasterSettings(
         grant_policy_path=TRADING_GRANTS_PATH,
@@ -83,6 +87,10 @@ def test_build_app_loads_pack_data_from_base64_env(
     ).decode()
     monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    # alpaca-data is the provider's one required credential (ADR-0006 amendment),
+    # so activation now resolves these two before it will hand the config over.
+    monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
+    monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()
     settings = MasterSettings(
         grant_policy_b64=grants_b64,

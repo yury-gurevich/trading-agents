@@ -252,7 +252,7 @@ will collide even when the number was free at branch time (S183 hit this).
 - [x] Every new guard planted, watched to fail, restored — **stated per guard**.
 - [x] Every touched module < 200 lines. `entrypoint.py` is at **169**; report its final count.
 - [x] `make ci` exit 0, 100.00 % coverage, redirected to a file.
-- [ ] `make gate-ran` `GATE PROVEN` for the branch tip, run from the worktree whose `HEAD` is that commit, printed SHA checked.
+- [x] `make gate-ran` `GATE PROVEN` for the branch tip, run from the worktree whose `HEAD` is that commit, printed SHA checked.
 
 ---
 
@@ -549,8 +549,46 @@ detect-secrets (untracked): scanning 11 new file(s)
 EXIT_CODE=0
 ```
 
-Branch gate: pending first branch push; final closeout will replace this line with `make gate-ran`
-output for the final tip.
+Branch gate was run from this worktree after pushing `HEAD`. The printed gate SHA matches
+`git rev-parse HEAD`:
+
+```text
+git rev-parse HEAD
+33b0cd5571e5ea5a1c7b307744b4f6560e9559be
+
+make gate-ran
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 33b0cd5571e5ea5a1c7b307744b4f6560e9559be:
+  Security Findings: success
+  CI: success
+```
+
+---
+
+## Merge review — what I changed before merging
+
+*Reviewed 2026-08-30. `make ci` re-run independently from this tree: exit 0, **2410 passed / 4 skipped /
+100.00 %**, matching the handback.*
+
+🚨 **One correction, applied on the branch: the provider's required/optional posture was inverted.**
+[DL-136](../design-log.md) decision 3 justified `tiingo` as required with *"its primary OHLCV source"* and
+left `alpaca-data` optional. ADR-0006's **2026-07-04 amendment** says the opposite — Alpaca is the runtime
+OHLCV route, Tiingo the cheap fallback — and the ADR *body* still carries the superseded sentence the
+decision was built on. As handed back, a dead `PROVIDER_ALPACA_*` key would not have refused activation,
+and the nightly full-universe pull would have fallen back to a source budgeted at **500 unique symbols per
+month**. Flipped both flags; the posture is now pinned by an assertion in
+`test_trading_credential_tests_load_to_nonzero_count`. Full reasoning in DL-136's amendment.
+🟢 **Decision 3's rule was right** — only its application to the provider was wrong.
+
+🪤 **One wart recorded, not fixed: `credential_failure_statuses` is inert** (`_http_runner`'s two final
+branches return the same thing, so all 12 pack declarations of it are no-ops). Behaviour is correct and
+fail-closed, so nothing is broken; deleting the field or giving it real meaning is a design choice, left
+undecided in DL-136 rather than patched at merge.
+
+🟢 **Everything else verified as claimed:** `Dockerfile` unchanged, `remediation_mode` still `"manual"`
+with no deploy path setting it, the `AgentInstance` vocabulary entry covers every prop the store writes,
+and the credential-tests pack is set by its own narrow `az` call — measured at **6,516** base64 characters
+against the ~8,191 ceiling the master `create` line already carries 4,540 of.
 
 ---
 

@@ -58,6 +58,69 @@ handed over by master in `ACTIVATE`; Container Apps injects `POSTGRES_DSN` as a 
 `MASTER_SECRET_MAP_B64`. `dsn_select_1` is still implemented and tested as substrate support, but the
 S188 trading declaration is scoped to the credentials master actually hands over.
 
+**AMENDMENT 2026-08-30, at merge review — decision 3's provider posture was inverted, and the reason
+it gave is the superseded half of ADR-0006.** Decision 3 reads *"Provider requires Tiingo, its primary
+OHLCV source"*, with `alpaca-data` optional. That is backwards.
+[ADR-0006](decisions/0006-market-data-vendor-tiering.md)'s **2026-07-04 amendment** — at the top of the
+file, above the body it supersedes — routes runtime OHLCV to **Alpaca**
+(`market_source_from_settings`, which batches many symbols per request) and makes **Tiingo the cheap
+fallback and DL-37 lineage source**. The ADR's body still reads *"Primary live OHLCV (full universe):
+Tiingo"*; that line is precisely what the amendment supersedes, and it is the line decision 3 was
+built on. 🪤 **S111 recorded this same trap once already** — the law book had drifted ahead of the ADR,
+and the fix was the amendment, not the body.
+
+**Why it is not cosmetic.** As handed back, a dead `PROVIDER_ALPACA_*` credential would **not** refuse
+provider activation: the nightly full-universe pull would silently fall back to Tiingo, whose
+documented budget is **50 requests/hour and 500 unique symbols/month**
+([`tiingo-usage-limits.md`](laws/tiingo-usage-limits.md)). One S&P-500 day exhausts the month, and 500
+symbols at 50 req/hour cannot be pulled inside a night in any case. **So the fallback cannot absorb the
+primary's loss** — and the credential the provider most needs gated was the one left optional. The
+mirror error costs too: a dead Tiingo key, which harms offline lineage work rather than the nightly
+run, would have refused provider activation outright. 🪤 **The two Alpaca probes do not cover each
+other** — provider reads `PROVIDER_ALPACA_API_KEY`/`_SECRET`, execution reads
+`EXECUTION_ALPACA_API_KEY`/`_SECRET_KEY`, so `alpaca-broker` being required on execution does not gate
+the provider's data path.
+
+**Corrected before merge:** `provider.alpaca-data` → `required: true`, `provider.tiingo` →
+`required: false`, and the posture is now pinned by an assertion in
+`test_trading_credential_tests_load_to_nonzero_count` rather than by a JSON field nobody diffs.
+🟢 **Decision 3's rule is unchanged and was right** — *"required means this agent cannot perform its
+granted role without this credential"*. Only its application to the provider was wrong, and only
+because it was applied against a superseded sentence.
+
+**Known wart, deliberately NOT fixed here: `credential_failure_statuses` is inert.** In `_http_runner`,
+`if status in failure_statuses or 400 <= status < 500: return credential_failed(...)` is followed by an
+identical unconditional `return credential_failed(...)`, so the declared list changes nothing — every
+non-expected, non-5xx status is a credential failure either way, and all 12 pack declarations of it are
+no-ops. 🟢 **The behaviour is correct and fail-closed**: the statuses that actually mattered in the
+outage, Anthropic `400` and OpenAI `429`, are caught. So this is not a defect in what the system does —
+but it is a declared knob that does nothing, inside the sprint about declarations that do nothing.
+🪤 **Do not "fix" it by making the branches differ without choosing.** The two honest options are to
+**delete the field** (12 pack declarations plus two code lines), or to **give it the one meaning it
+could have** — let a declared status override the `>= 500` transport rule, so a vendor that returns
+`503` for a revoked key can be declared as a credential failure. Left undecided on purpose; it is a
+design choice, not a typo, and nothing depends on it today.
+
+**What the flip's own test failure taught, kept because it is the load-bearing check.** Flipping
+`alpaca-data` to required broke two `test_master_entrypoint` fixtures with
+`ActivationRefused: ... ['alpaca-data']` even though their transport was stubbed to return `200`. The
+cause is upstream of the transport: `_http_runner` renders headers from the resolved config first, and
+a `KeyError` there becomes `credential_failed("missing_config:PROVIDER_ALPACA_API_KEY")`. 🟢 **A missing
+credential is a credential failure — correct, and it is what made the flip worth verifying rather than
+assuming.** Checked before keeping the change:
+`orchestration/packs/trading_secrets.json` maps `alpaca-key-id → PROVIDER_ALPACA_API_KEY` and
+`alpaca-secret-key → PROVIDER_ALPACA_API_SECRET` for `provider`, and **both secrets exist in
+`trading-agents-kv`** (names listed, values never read). So master resolves and probes them at
+activation, and required is safe. The fixtures now seed both.
+
+🪤 **The accepted cost, stated plainly: a required probe turns a rotted probe URL into a fleet halt.**
+If Alpaca moves `/v2/stocks/AAPL/trades/latest`, provider activation refuses on a `404` that is a
+config error, not a credential one. 🟢 This is **not a new class of exposure** — `alpaca-broker`
+(required, execution) and `anthropic` (required, on all three deliberators) already carry exactly it;
+the flip makes the provider consistent with them instead of an exception. If that exposure is ever
+judged too sharp, the fix is a third outcome for *"the probe itself is misconfigured"*, not a retreat
+to optional.
+
 ---
 
 ## DL-135 - Monday's run goes first, and two measurements shrank what it has to prove - status: DECIDED (2026-08-30)

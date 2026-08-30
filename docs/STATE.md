@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 19:51 AEST · **Version:** 0.93.00 · **🟢 [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) is built locally: master credential tests now reach activation as pack data, required failures refuse handover, and local `make ci` is green; branch gate, merge, deploy, and live proof remain pending.**
+**Last updated:** 2026-08-30 20:02 AEST · **Version:** 0.93.00 · **🟢 [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) is built and branch-gate proven: master credential tests now reach activation as pack data, required failures refuse handover, and local/remote gates are green; merge, deploy, and live proof remain pending.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -110,14 +110,15 @@ on `s184` code; the 40 % and 0 % readings from 08-20/08-21 are raw rates diluted
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
-🟢 **BUILT LOCALLY — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md), credential
+🟢 **BUILT + BRANCH-GATE PROVEN — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md), credential
 tested before handover** (`0.93.00`, 2026-08-30). Credential tests now load via
 `MASTER_CREDENTIAL_TESTS_B64` / path fallback, stay pack data, and run inside master activation without importing
 `orchestration/` or provider SDK code. Required credential rejection refuses activation before `AgentInstance`;
 transport failure faults without blocking or caching; optional failure records without blocking; successful activation
 records declared/tested/pass/cache/failure evidence. Local `make ci` exit 0: **2410 passed / 4 skipped / 100.00 %**.
-🟠 Branch gate, merge, full `up`, and live declaration-only refusal proof remain pending; sequencing still says do not
-deploy before Monday's scheduled run proves the current `s187` fleet.
+Remote `make gate-ran`: **GATE PROVEN** for `33b0cd5571e5ea5a1c7b307744b4f6560e9559be`. 🟠 Merge, full `up`,
+and live declaration-only refusal proof remain pending; sequencing still says do not deploy before Monday's scheduled
+run proves the current `s187` fleet.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
 gate-proven at `5bf72c9` (checked: CI + Security Findings + image build all `success` on the tip, not just on

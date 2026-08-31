@@ -8,6 +8,87 @@ and is marked CLOSED here.
 
 ---
 
+## DL-139 - Execution's broker facts get one liveness predicate, derived not written - status: DECIDED (2026-08-31)
+
+**The question.** [DL-131](design-log.md) closed with *"one predicate module for execution's broker
+facts is the durable answer, and it is a sprint, not a patch"*, folding in [DL-129](design-log.md)
+and [DL-130](design-log.md). Before packaging that as [S190](sprints/sprint-190-one-liveness-question-one-answer.md),
+the three rows' numbers were re-measured against the live spine, because all of them were seven days
+old and two had already been retracted once.
+
+**Re-measured 2026-08-31, read-only `SELECT`s on the Neon spine** (main worktree, `.env` present;
+nothing written, the fleet untouched):
+
+| | 2026-08-24 | **2026-08-31** |
+| --- | --- | --- |
+| `BrokerStopOrder` nodes / reading live | 25 live | **46 total, 29 live** |
+| Active `Position`s (`is_active_position_node`) | 24 | **28** |
+| `BrokerStopIdentityMismatch` faults | 228 | **304** |
+| …**distinct order keys behind them** | 13 | **17** |
+| `Fill` nodes / genuinely open | 243 / 27 | **259 / 29** |
+
+🚨 **Two carried claims are corrected.**
+
+1. **DL-130's "13 objects, not a growing fault" is wrong.** It is **17** seven days later — AVGO,
+   AMZN, MSFT, WFC, INTC, AMD and XOM joined the original ten, one per stop that died. The
+   *repetition* count tracks how many sweeps ran; the *object* count tracks stop-outs, and it grows.
+2. **DL-129's leftover — "24 open Fills carry no `submitted_at`" — is not a mystery, it is a naming
+   collision.** **28 of the 29** open Fills are **resting stops**: `_write_stop_fill` never writes
+   `submitted_at`, and a GTC stop that has not fired is `pending` by design, forever. Exactly **one**
+   is a real order. So "open fill" needs two predicates, not one, and item 12's Fill half is a
+   vocabulary defect rather than a backlog.
+
+**The finding that decides the design: the graph already holds the answer.** *[measured]* **Every one
+of the 46 `BrokerStopOrder` nodes has a `Fill` at the identical node key — 46/46, zero missing.** The
+live specimen:
+
+```text
+BrokerStopOrder stop:87403939105c0a24:PYPL   cancelled_at absent  -> reads LIVE
+Fill            stop:87403939105c0a24:PYPL   broker_status filled -> since 2026-08-28
+                                             realized_pnl_cents -9758
+Position        broker:PYPL:...              broker_absent true   -> correctly inactive
+```
+
+Three siblings, one truth, and only `Position` reads it correctly. **A further 7 stops carry
+`cancelled_at` whose own `Fill` says `filled` — and in 7 of 7 the fill was recorded 1-3 days
+*before* the cancel**, so this is not a fill/cancel race: `reconcile_broker_stops` eventually notices
+the position is gone, cancels an order that already filled, and the graph records a stop-out as
+*cancelled by us*. The lifecycle has one word for three endings.
+
+**DECISION 1: liveness is derived from the sibling `Fill`, never written onto the stop.** The join is
+by identical key with a `broker_order_id` fallback — the pairing `drop_sweep._tracked_as_stop` already
+uses. When the sibling Fill is missing (0/46 today) the stop is treated as **live**, so the existing
+`UnprotectedPosition` path speaks rather than a position silently losing protection.
+
+**Rejected: add `filled_at` / `resolved_at` to `BrokerStopOrder` and write it when the stop fires.**
+It is the obvious fix and it is the defect. The fact already exists at the identical key, so writing
+it again denormalises lifecycle a third time — precisely what DL-131 named as the shape. R007 §5 is
+explicit that a derived row is indistinguishable from an observed one at read time, and it needs a
+new writer in the run path: more blast radius for less truth. 🎯 **[DRIFT-029](laws/drift-register.md)
+had already reached the same end-state** — *"a current-status read model derived from
+`BrokerOrderStatus` facts rather than a mutable Fill status"* — so this decision is that row being
+honoured, not a new direction.
+
+**Rejected: three separate patches, one per DL row.** DL-131's actual finding is that they are one
+shape; three patches leave the fourth instance free to appear.
+
+**Rejected: suppress or resolve the 304 faults.** DL-130's decision stands — the detector would keep
+manufacturing the class for every stop that dies.
+
+**Measured while looking, recorded so nobody re-derives it.** The mismatch fault carries **no context
+at all** (0 of 304): the order key exists only inside the message string, which is why DL-130's
+"13 distinct keys" needed a regex over free text. And **5,762 of the 6,393 `Fault` nodes** are a
+single `execution/poll::position_sync` `ValueError` burst on 2026-07-30/31 — one dead incident, a
+month old, that distorts every fault-population percentage anyone quotes. Neither is S190's job; both
+change how its numbers should be read.
+
+**Status.** The remaining design decisions — the terminal vocabulary (🪤 `partial` must stay
+non-terminal or S176 is re-broken), the open-order/resting-stop discriminator, and the module's
+import surface — are specified in S190 and are to be **appended to this entry**, not opened as a new
+row.
+
+---
+
 ## DL-138 - S189 temporarily baselines S188 main CodeQL alerts - status: DECIDED (2026-08-31)
 
 **Context.** S189 pushed green on the regular CI workflow, then `Security Findings` failed because
@@ -120,7 +201,7 @@ S188 trading declaration is scoped to the credentials master actually hands over
 **AMENDMENT 2026-08-30, at merge review — decision 3's provider posture was inverted, and the reason
 it gave is the superseded half of ADR-0006.** Decision 3 reads *"Provider requires Tiingo, its primary
 OHLCV source"*, with `alpaca-data` optional. That is backwards.
-[ADR-0006](decisions/0006-market-data-vendor-tiering.md)'s **2026-07-04 amendment** — at the top of the
+[ADR-0006](decisions/0006-market-data-feed-strategy.md)'s **2026-07-04 amendment** — at the top of the
 file, above the body it supersedes — routes runtime OHLCV to **Alpaca**
 (`market_source_from_settings`, which batches many symbols per request) and makes **Tiingo the cheap
 fallback and DL-37 lineage source**. The ADR's body still reads *"Primary live OHLCV (full universe):
@@ -7394,7 +7475,7 @@ whichever sprint lands first.
   sprint**. The mapping is clean (coordinator = manager, roster = proponent/opponent, threads run
   parallel in one session with caching and compaction built in), but Anthropic hosts the agent loop
   and the container, which collides with three locked decisions: container-per-agent (LOCKED
-  2026-06-18), [ADR-0012](decisions/0012-platform-substrate-and-trading-pack.md)'s
+  2026-06-18), [ADR-0012](decisions/0012-platform-domain-separation.md)'s
   platform/pack wall, and DL-36's master-as-sole-Key-Vault-accessor. The parallelism it buys is
   available in-process for a fraction of the change.
 - 🪤 **Both are Anthropic-only, and the deliberator is deliberately on `gpt-5.5` until 2026-09-01**

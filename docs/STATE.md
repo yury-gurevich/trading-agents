@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-31 12:40 AEST · **Version:** 0.94.00 · **🟩 S189 merged `934ffb5` — a cut-off or declined LLM answer now says so instead of arriving as an empty string, and the CodeQL baseline is back to 1 key with 0 open error-level alerts.**
+**Last updated:** 2026-08-31 14:05 AEST · **Version:** 0.94.01 · **🟩 Item 34 shipped the hour it was ranked — the deploy preflight now imports the dependencies its own steps need; S190 is specced and its design was decided by re-measuring, not by the seven-day-old rows.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -39,6 +39,30 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight
+now runs the *same* import `scripts/servicebus_prepare_routes.py` runs, in the shape of the existing Postgres row.
+**Measured both ways** — real import → exit 0, missing module → exit 1 — and **observed in place**:
+`[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential row was red, which is
+the point: it reports a corrupt *local environment*, not a missing secret. `tests/test_deploy_script_invariants.py`
+pins **both sides**, so if route prep changes what it imports the gate fails and preflight has to follow. Full cycle
+despite being PowerShell: `make ci` exit 0 (**2419 passed, 100.00 %**), `GATE PROVEN` for
+`a234c28641386de4c9667a989d7ad571cc878dc3`, post-merge CodeQL **success**. 🎯 Timely — we deploy tomorrow, and this is
+the failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
+
+🎯 **SPECCED — [S190](sprints/sprint-190-one-liveness-question-one-answer.md): every broker fact answers "is this
+still live?" the same way.** One sprint for work-queue items **32 + 20 + 12's Fill half** — three defects that are one
+shape (execution's facts each denormalise lifecycle differently; only `Position` has a predicate).
+🚨 **The design was decided by re-measuring, not by the rows** ([DL-139](design-log.md)): **all 46**
+`BrokerStopOrder` nodes have a `Fill` at the *identical* key, so **the graph already holds the answer** and the fix is
+a **predicate, not a new property** — no graph write, no vocabulary change. Live specimen today:
+`stop:87403939105c0a24:PYPL` reads active while its own Fill has said `broker_status=filled` since 08-28
+(`realized_pnl_cents=-9758`). 🚨 **Two carried numbers were wrong** — DL-130's "13 objects" is **17** (304 faults, up
+from 228), and DL-129's "24 open Fills with no `submitted_at`" is **28 of 29 being resting stops**, pending by design.
+🪤 **7 stops carry `cancelled_at` written 1-3 days *after* their fill was recorded** — a stop-out logged as *cancelled
+by us*. [DRIFT-055](laws/drift-register.md) filed: `EXEC-OBS-03` is 🟩 on five tests, none of which exercise its
+*"the broker remains truth for liveness"* limb. ⏰ Tonight's run moves the specimen — re-run the join before building
+the fixture.
+
 🎯 **DECIDED — ITEM 6b: THE POSTURE STAYS `advisory` THROUGH MONDAY** ([DL-134](design-log.md), 2026-08-30).
 🪤 **The row's premise was wrong, read in the code.** `drop_vetoed` runs **before** `apply_deliberation_posture`
 (`agents/execution/pm_execution.py:59`), so an **arrived veto binds identically under both postures**. `binding`
@@ -52,22 +76,16 @@ untested since 2026-08-19. 🚨 Flipping today would stake the acceptance gate o
 Tuesday unreadable between *the referee bound* and *the fleet cannot reach a provider* — DL-125 repeated on purpose.
 🟠 **Advisory is not the destination**, only a one-run delay against a named unknown.
 
-🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s187`, 2026-08-30** (was `s184`, three sprints behind).
-`pwsh infra/deploy-agents.ps1 up -Tag s187` exit 0. **Verified independently of its own output:** **16/16** apps on
-`s187`, **16/16** `Succeeded`, **16/16** KEDA `min=0 max=1, 1 rule` — identical to the pre-deploy baseline — and
-`dispatcher-cron` on `s187`, cron `30 22 * * 1-5`. `DeployRecord` carries the **build run's** head SHA `7d2339bc5a4f`,
-read from the run not handed in (item 21's defect). 🚨 **`up` was required, not a retag:** S185's `e370f88` moved the
-vocabulary pack, and a retag against a stale pack hits the fail-closed write guard mid-cascade (S148 stall, DL-85).
-🪤 **The first attempt failed and changed nothing** — a corrupt local `azure-core` (dist-info with no `RECORD`) that
-still looked installed; preflight never imports the deps its own steps need, so it surfaced after alembic ran
-(item 34). 🟠 **Not yet proven at runtime:** Monday's run must show `deliberation_posture` on its `ExecutionRun`.
+🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s187`, 2026-08-30** (was `s184`). Verified independently of the tool's
+own output: **16/16** apps on `s187`, **16/16** `Succeeded`, KEDA identical to the pre-deploy baseline,
+`dispatcher-cron` on `s187`. `DeployRecord` carries the **build run's** head SHA (item 21's defect, hand-avoided).
+🪤 Its first attempt failed on the corrupt `azure-core` that became item 34 — **now fixed**.
+🟠 **Not yet proven at runtime:** Monday's run must show `deliberation_posture` on its `ExecutionRun`.
 
-🟩 **PROVEN RESULT — BOTH PROVIDERS VERIFIED BY DIRECT API CALL, 2026-08-30 17:00 AEST.** `claude-opus-5` and
-`gpt-5.5` each returned **HTTP 200**; the outage that began 2026-08-19 ([DL-125](design-log.md)) is **over**.
-🪤 **The Anthropic half was never a credit problem** — `HTTP 400`, *"your **specified** API usage limits"*, is an
-**operator-set** spend limit, distinct from the tier cap (`429` + `enforced_spend_limit_reached`); raising it in
-Console → Billing restored access at once, and the `2026-09-01` in the message was only the month reset.
-🚨 **Verified from this machine, not the fleet.** Monday's run (08-31, 22:30 UTC) proves that path *and* the deploy.
+🟩 **PROVEN RESULT — BOTH PROVIDERS VERIFIED BY DIRECT API CALL, 2026-08-30.** `claude-opus-5` and `gpt-5.5` each
+returned **HTTP 200**; the outage from 2026-08-19 ([DL-125](design-log.md)) is **over**. 🪤 The Anthropic half was an
+**operator-set** spend limit, not credit. 🚨 **Verified from this machine, not the fleet** — Monday's run proves that
+path *and* the deploy.
 
 🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
 **[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
@@ -77,54 +95,40 @@ baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-qu
 batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
 🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
 
-🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at `existing_issuer_value_usd=0.00` →
-0.998 %; GOOGL then **failed** at `1025.19` → 1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one
-company** ([DL-122](design-log.md)).
+🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at 0.998 %; GOOGL then **failed** at
+1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one company** ([DL-122](design-log.md)).
 
 🚨 **NOT PROVEN — ADR-0023's falsifiable test** (the 73 % veto rate falls materially). **Zero real-debate data** on
 `s184` code; 08-20/08-21's 40 % and 0 % are raw rates diluted by orders never reviewed, so **73 % stands as the last
-honest figure** ([DL-119](design-log.md) amendment). 🟢 Monday can finally supply data. 🪤 **And S189 found a second
-way that number could be wrong** — an empty judge answer becomes a forced `revise`, which *counts as a veto*; 11 judge
-calls returned empty, and whether any fell inside DL-119's four binding runs is S189's first task.
+honest figure** ([DL-119](design-log.md) amendment). 🟢 Monday can finally supply data.
 
-🚨 **NOT PROVEN — S182 live.** 2026-08-21 was checked and did not supply it: the stops INTC/NEE/XOM got carry
-`stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
-fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
+🚨 **NOT PROVEN — S182 live.** 2026-08-21's stops carry `stop_pct_source=position`, written eight minutes before
+execution ran, so the fallback never fired. 🪤 **Do not re-check it that way** — run-start reconciliation closes it.
 
 🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
-(`0.94.00`), 2026-08-31.** Adapters turn vendor-declared truncation/refusal into a sanitized stop error; empty
-debate turns cannot enter transcripts; a stopped judge keeps fail-safe `revise` with an honest reason instead
-of parser blame; every `LLMCall` carries `stop_reason`; `max_tokens` gains `le=8192` — 4096 had been both
-default *and* ceiling. **DL-119 contamination settled:** one empty judge call falls inside its four binding
-runs (AMZN, `verify-2026-08-19-clean`) — an asterisk, not a retraction. Deliberator laws **v1.1**, rollup
-**9 / 51**, [DL-137](design-log.md), DRIFT-054. **`GATE PROVEN` for the merged SHA**, post-merge CodeQL
-success, and a `S189_PROMPT_SENTINEL` test proves no prompt/completion text reaches the exception, fault,
-`DeliberationRun` or `LLMCall`. 🟩 **Its temporary CodeQL baseline is already gone:** S188's
-`#189`/`#190`/`#191` went **`fixed`** at `02:25:05Z`, so [DL-138](design-log.md)'s cleanup was done not
-carried — pruned **4 keys → 1**, ratchet still armed, **0 open error-level**, Security Findings green on
-`78303cb`. 🪤 Closure verified *first*. 🟠 **Not deployed**, and the pack moved (`stop_reason`), so it
-needs a full `up`; with S188 also deliberately undeployed the fleet on `s187` is two sprints back.
+(`0.94.00`), 2026-08-31.** A vendor-declared truncation or refusal is now a sanitized stop error, not an empty
+string: empty debate turns cannot enter transcripts, a stopped judge keeps fail-safe `revise` with an honest
+reason, every `LLMCall` carries `stop_reason`, and `max_tokens` gains `le=8192` (4096 had been both default
+*and* ceiling). **DL-119 contamination settled** — one empty judge call inside its four binding runs, an
+asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md), DRIFT-054;
+`GATE PROVEN` for the merged SHA, post-merge CodeQL success. 🟩 Its temporary CodeQL baseline is already
+pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
+🟠 **Not deployed**, and the pack moved (`stop_reason`), so it needs a full `up`; with S188 also undeployed
+the fleet on `s187` is two sprints back.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
-(`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes, **refuses activation** when a required
-credential is rejected, classifies transport failure separately so a DNS blip cannot halt the fleet, and records
-sanitized evidence on `AgentInstance`. Master laws **v1.2**. `make ci` re-run by me: **2410 passed / 100.00 %**;
-`GATE PROVEN` for the **merged** SHA; post-merge **CodeQL success, 0 open error-level alerts**; image build green on
-re-run after a transient `403` on one of 15 jobs.
-🚨 **One merge-review correction:** the sprint gated the *fallback* OHLCV credential and left the *primary* optional,
-reasoning from a sentence ADR-0006's own amendment supersedes — flipped, verified against the secret map and the
-vault, pinned by a test ([DL-136](design-log.md) amendment). 🪤 `credential_failure_statuses` is **inert**, recorded
-with both options rather than patched.
-🟠 **NOT DEPLOYED** — full `up`, and it must not land before `sched-2026-08-31`. **The live activation-refusal proof
-is owed:** S188 is a code fact, not yet a fleet fact.
+(`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure
+so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstance`; laws **v1.2**, `GATE PROVEN` for
+the merged SHA, post-merge CodeQL clean. 🚨 A merge-review correction flipped the *primary* OHLCV credential to
+required ([DL-136](design-log.md) amendment). 🟠 **NOT DEPLOYED** — full `up`, after `sched-2026-08-31`. **The live
+activation-refusal proof is owed:** S188 is a code fact, not yet a fleet fact.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED, 2026-08-30** — built and
-gate-proven at `5bf72c9` (checked on the tip, not just `a7e7ad1`), unmerged. 🎯 **Its K=4 measurement is scheduled
-2026-09-01, after Monday's run** ([DL-135](design-log.md)): it needs `s172` images and peer `maxReplicas=4` on the
-fleet, and deploying that first spends the only instrument proving the `s187` deploy and the credential path. Rollback
-is a retag to **`s187`**, not `s182`. 🟩 **Monday's unknown is one link, not three** — the fleet reads
-`DELIBERATOR_LLM_PROVIDER=anthropic` on all three deliberators and the vault key is byte-identical to the verified one;
-untested is only whether **master hands it over**.
+gate-proven at `5bf72c9` (checked on the tip), unmerged. 🎯 **K=4 measurement scheduled 2026-09-01, after Monday's
+run** ([DL-135](design-log.md)): it needs `s172` images and peer `maxReplicas=4` on the fleet, and deploying that
+first spends the only instrument proving the `s187` deploy and the credential path. Rollback is a retag to **`s187`**.
+🟩 **Monday's unknown is one link:** the fleet reads `DELIBERATOR_LLM_PROVIDER=anthropic` and the vault key is
+byte-identical to the verified one — untested is only whether **master hands it over**.
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 

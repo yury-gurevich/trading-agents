@@ -564,6 +564,9 @@ Final touched Python line counts:
 97 tests/test_graph_vocabulary_deliberation.py
 151 tests/test_graph_vocabulary_properties.py
 41 agents/operator/tests/test_operator_store.py
+99 agents/master/credential_probe_support.py
+159 agents/master/credential_probes.py
+55 agents/master/credential_probe_transports.py
 ```
 
 Version bump evidence: `pyproject.toml` is `0.94.00`; `uv lock` updated the normalized lock package
@@ -571,20 +574,39 @@ entry `trading-agents v0.93.0 -> v0.94.0`. The documented `trading-bump-version`
 installed in this checkout (`Failed to spawn: trading-bump-version`), and no
 `src/trading_v2/core/version.py` path exists, so the bump was applied directly and lock refreshed.
 
-Local `make ci` was redirected to `C:\Users\yury_\AppData\Local\Temp\s189-make-ci.log`, not piped:
+Remote gate blocker found after first push: Security Findings failed on pre-existing/open main CodeQL
+alerts #189, #190, and #191 (`py/unsafe-cyclic-import`) in the S188 master credential-probe transport
+split. S189 carries the narrow gate-unblocker because branch proof cannot pass while the repo-level
+security ratchet is red: `HttpProbeRequest` moved from `credential_probes.py` to
+`credential_probe_support.py`, `credential_probes.py` explicitly re-exports it, and
+`credential_probe_transports.py` type-checks against support instead of importing back through
+`credential_probes.py`.
+
+Focused master gate after the remote blocker fix:
+
+```text
+uv run pytest agents/master/tests/test_credential_probe_loading.py agents/master/tests/test_credential_probe_dsn.py agents/master/tests/test_credential_probes.py --no-cov
+============================= 18 passed in 1.43s ==============================
+uv run mypy agents/master/credential_probe_support.py agents/master/credential_probes.py agents/master/credential_probe_transports.py agents/master/tests/test_credential_probe_loading.py agents/master/tests/test_credential_probes.py
+Success: no issues found in 5 source files
+uv run ruff check agents/master/credential_probe_support.py agents/master/credential_probes.py agents/master/credential_probe_transports.py
+All checks passed!
+```
+
+Final local `make ci` after the master gate-unblocker was redirected to
+`C:\Users\yury_\AppData\Local\Temp\s189-make-ci-after-security-fix.log`, not piped:
 
 ```text
 exit=0
-TOTAL                                                     15480      0   3322      0  100.00%
+TOTAL                                                     15481      0   3322      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 2420 passed, 4 skipped in 198.21s (0:03:18) =================
+================= 2420 passed, 4 skipped in 184.31s (0:03:04) =================
 uv run pip-audit
 No known vulnerabilities found
 uv run pre-commit run detect-secrets --all-files
 Detect secrets...........................................................Passed
 uv run python scripts/check_untracked_secrets.py
-Detect secrets...........................................................Passed
-detect-secrets (untracked): scanning 1 new file(s)
+detect-secrets (untracked): no untracked files to scan
 ```
 
 Remote branch gate is not pasted into this committed closeout before the branch tip exists. After
@@ -604,6 +626,9 @@ unproved SHA.
 - The repo documents a `trading-bump-version` helper, but this checkout has no such console script and
   no `make bump-version` target. S189 used the required MINOR bump manually (`0.93.00` -> `0.94.00`)
   and refreshed `uv.lock`.
+- First branch push proved a separate gate defect: Security Findings failed on open main CodeQL
+  alerts #189-#191 from S188's master credential-probe import cycle. This branch includes the narrow
+  import-boundary repair so the required S189 branch gate can run green.
 - Deployment/live proof are deliberately not done here. Because `LLMCall.stop_reason` changes the
   graph vocabulary, deploy needs a full `up` in the S172/S188/S189 sequence, then the sprint's live
   minimum-`max_tokens` debate check and teardown.

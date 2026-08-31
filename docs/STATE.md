@@ -105,6 +105,7 @@ enter transcripts; stopped judges keep fail-safe `revise` with an honest reason;
 empty judge calls falls inside its four binding runs — AMZN under `verify-2026-08-19-clean` — so the 73 % veto-rate
 evidence needs an asterisk, not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md),
 DRIFT-054. Local `make ci` exit 0: **2420 passed / 4 skipped / 100.00 %**, pip-audit and detect-secrets clean.
+First push exposed S188 CodeQL #189-#191; branch also moves master's `HttpProbeRequest` to support to break that cycle.
 🟠 Branch push/gate, merge, full `up`, and live minimum-`max_tokens` proof remain separate states.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`

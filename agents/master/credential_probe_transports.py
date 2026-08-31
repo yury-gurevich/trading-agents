@@ -19,7 +19,7 @@ from agents.master.credential_result import (
 )
 
 if TYPE_CHECKING:
-    from agents.master.credential_probes import HttpProbeRequest
+    from agents.master.credential_probe_support import HttpProbeRequest
 
 
 def default_http_transport(request: HttpProbeRequest) -> int:  # pragma: no cover

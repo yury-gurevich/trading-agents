@@ -8,10 +8,21 @@ External I/O: none.
 from __future__ import annotations
 
 import urllib.parse
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+
+@dataclass(frozen=True)
+class HttpProbeRequest:
+    """Sanitized HTTP probe request passed to injected test transports."""
+
+    method: str
+    url: str
+    headers: dict[str, str]
+    timeout_seconds: int
 
 
 def render_url(

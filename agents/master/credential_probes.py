@@ -9,11 +9,11 @@ External I/O: optional HTTPS requests; optional PostgreSQL SELECT 1 for DSN prob
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from agents.master.credential_probe_support import (
+    HttpProbeRequest,
     bool_field,
     cost,
     int_field,
@@ -41,16 +41,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
 ProbeKind = Literal["http_status", "dsn_select_1"]
-
-
-@dataclass(frozen=True)
-class HttpProbeRequest:
-    """Sanitized HTTP probe request passed to injected test transports."""
-
-    method: str
-    url: str
-    headers: dict[str, str]
-    timeout_seconds: int
+__all__ = ["HttpProbeRequest", "load_credential_tests", "parse_credential_tests"]
 
 
 def parse_credential_tests(

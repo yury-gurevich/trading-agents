@@ -15,6 +15,7 @@ from agents.execution.broker_stop_thresholds import (
     BrokerStopThresholdPlan,
     StopPctSource,
 )
+from contracts.broker_lifecycle import is_filled_buy_fill
 from contracts.position_refs import position_ref_for_keys
 from contracts.positions import PositionStopThreshold
 
@@ -22,7 +23,6 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 _CENT_QUANT = Decimal("1")
-_FILLED_STATUSES = frozenset({"filled"})
 
 
 @dataclass(frozen=True)
@@ -123,8 +123,7 @@ def _threshold_plan(
 
 
 def _is_filled_buy(fill: Node) -> bool:
-    status = fill.props.get("broker_status", fill.props.get("status"))
-    return fill.props.get("side") == "buy" and status in _FILLED_STATUSES
+    return is_filled_buy_fill(fill)
 
 
 def _source_run_id(graph: GraphStore, fill: Node) -> str | None:

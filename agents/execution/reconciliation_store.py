@@ -19,6 +19,7 @@ from agents.execution.fill_attempts import broker_idempotency_key
 from agents.execution.order_status_store import write_order_status
 from agents.execution.realized_pnl import realized_pnl_props
 from agents.execution.snapshot_account import account_snapshot_props
+from contracts.broker_lifecycle import is_terminal_fill_broker_status
 from contracts.positions import is_active_position_node
 
 if TYPE_CHECKING:
@@ -26,8 +27,6 @@ if TYPE_CHECKING:
     from kernel import FaultSink, GraphStore, Node
 
 SnapshotStatus = Literal["fresh", "stale"]
-
-_TERMINAL_BROKER_STATUSES = frozenset({"filled", "rejected"})
 
 
 def refresh_pending_fills(
@@ -41,7 +40,7 @@ def refresh_pending_fills(
     for node in graph.list_nodes("Fill"):
         if node.props.get("status") != "pending":
             continue
-        if node.props.get("broker_status") in _TERMINAL_BROKER_STATUSES:
+        if is_terminal_fill_broker_status(node.props.get("broker_status")):
             continue
         broker_fill = by_key.get(broker_idempotency_key(node)) or by_order_id.get(
             str(node.props.get("broker_order_id", ""))

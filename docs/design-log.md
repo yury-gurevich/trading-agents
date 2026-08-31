@@ -82,6 +82,27 @@ single `execution/poll::position_sync` `ValueError` burst on 2026-07-30/31 — o
 month old, that distorts every fault-population percentage anyone quotes. Neither is S190's job; both
 change how its numbers should be read.
 
+**S190 amendment (2026-08-31).**
+
+**DECISION 2: use named broker-lifecycle vocabularies, and keep `partial` non-terminal.**
+One status set cannot honestly serve every call site: broker order records use cancellation/expiry
+terms, while `Fill.broker_status` settlement is the narrower `filled`/`rejected` boundary required by
+`EXEC-STA-05`. S190 therefore keeps the vocabularies together in `contracts/broker_lifecycle.py`, but
+as separate named sets. `partial` and `partially_filled` are not terminal for refresh/liveness, and
+`agents/execution/run.py`'s `COMPLETED_EXIT_STATUSES` remains a different exit-completion policy.
+
+**DECISION 3: a resting stop is identified by the semantic `stop_order_key` property.**
+`key LIKE 'stop:%'` and `props ? 'stop_order_key'` match the same production population today, but
+the property says what the fact is while the key format says how it happened to be named. The open
+order predicate excludes resting-stop Fills by that property, so the next audit cannot read a GTC
+protective stop as a broker order backlog.
+
+**DECISION 4: the lifecycle module lives in `contracts/` and imports no agents.**
+The predicates take a `GraphStore` and `Node`, matching `contracts/positions.py`, because both
+execution and reporter need the same read model. Moving the vocabulary down avoids an import-linter
+edge from contracts to agents and keeps the broker-lifecycle question available to readers without
+sharing execution internals.
+
 **Status.** The remaining design decisions — the terminal vocabulary (🪤 `partial` must stay
 non-terminal or S176 is re-broken), the open-order/resting-stop discriminator, and the module's
 import surface — are specified in S190 and are to be **appended to this entry**, not opened as a new

@@ -17,7 +17,7 @@ from kernel import CollectingFaultSink, InMemoryGraphStore, Node
 
 
 def test_filled_broker_status_is_not_reselected_for_order_status_writes() -> None:
-    """EXEC-IDM-01 / EXEC-OBS-01: terminal filled refresh is a no-op."""
+    """EXEC-STA-05 / EXEC-IDM-01: terminal filled refresh is a no-op."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     key = _pending_fill(graph, "AAPL", broker_status="filled")
@@ -29,7 +29,7 @@ def test_filled_broker_status_is_not_reselected_for_order_status_writes() -> Non
 
 
 def test_rejected_broker_status_is_not_reselected_for_order_status_writes() -> None:
-    """EXEC-IDM-01 / EXEC-OBS-01: terminal rejected refresh is a no-op."""
+    """EXEC-STA-05 / EXEC-IDM-01: terminal rejected refresh is a no-op."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     key = _pending_fill(graph, "AAPL", broker_status="rejected")
@@ -43,7 +43,7 @@ def test_rejected_broker_status_is_not_reselected_for_order_status_writes() -> N
 
 
 def test_partial_broker_status_still_refreshes_status_evidence() -> None:
-    """EXEC-OBS-01 / EXEC-OBS-02: partial fills keep observable refreshes."""
+    """EXEC-STA-05 / EXEC-OBS-01: partial fills keep observable refreshes."""
     graph = InMemoryGraphStore()
     sink = CollectingFaultSink()
     key = _pending_fill(graph, "AAPL", broker_status="partial")

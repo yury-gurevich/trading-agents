@@ -18,6 +18,7 @@ from agents.execution.fill_attempts import latest_fill_attempt
 from agents.execution.live_gate import live_gate_rejected
 from agents.execution.order_tolerance import OrderToleranceConfig
 from agents.execution.store import current_stage_from_graph, write_fills
+from contracts.broker_lifecycle import is_completed_exit_fill
 from contracts.common import Provenance
 from kernel import AgentFault, fault_boundary
 
@@ -28,8 +29,6 @@ if TYPE_CHECKING:
     from contracts.execution import ExecutionResult
     from contracts.portfolio_manager import OrderIntent, OrderIntentSet
     from kernel import FaultSink, GraphStore, Node
-
-COMPLETED_EXIT_STATUSES = frozenset({"filled", "partial", "partially_filled"})
 
 
 def run_submit(
@@ -94,8 +93,7 @@ def _completed_exit_fill(
     fill = latest_fill_attempt(graph, order.idempotency_key)
     if fill is None:
         return None
-    status = fill.props.get("broker_status", fill.props.get("status"))
-    return fill if status in COMPLETED_EXIT_STATUSES else None
+    return fill if is_completed_exit_fill(fill) else None
 
 
 def _record_completed_exit_skip(

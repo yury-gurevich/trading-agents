@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.execution.drop_sweep_ack import record_untracked_order_ack
+from contracts.broker_lifecycle import broker_order_lifecycle_status
 from kernel import AgentFault
 
 if TYPE_CHECKING:
@@ -77,6 +78,14 @@ def record_stop_mismatch(
                 f"stop identity mismatch for {order.idempotency_key}: "
                 f"broker_stop={broker_stop} graph_stop={graph_stop}; order exempted"
             ),
+            context={
+                "idempotency_key": order.idempotency_key,
+                "broker_order_id": order.broker_order_id,
+                "order_type": order.order_type,
+                "broker_status": broker_order_lifecycle_status(order),
+                "broker_stop": broker_stop,
+                "graph_stop": graph_stop,
+            },
         )
     )
 

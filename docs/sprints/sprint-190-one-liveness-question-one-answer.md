@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-190-one-liveness-question-one-answer`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.94.02`
 **Effort:** M
 **Decisions:** [DL-139](../design-log.md) (the 2026-08-31 re-measurement + *predicate, not property*) · DL-129 (`Fill.status` is immutable) · DL-130 (the sweep compares a type against a lifecycle) · DL-131 (a fired stop is never reconciled) · [DRIFT-055](../laws/drift-register.md) + [DRIFT-029](../laws/drift-register.md) · closes work-queue items **32**, **20** and **12**'s Fill half
@@ -601,7 +601,30 @@ and structured mismatch evidence.
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; branch remote gate pending after commit and push.
+**Status:** MERGED — `193e71b`, `0.94.02`, 2026-08-31.
+
+🪤 **Why the gate block below was written after the commit it proves.** `make gate-ran` output cannot
+live in the commit it certifies; amending the file would have produced a new, unproven SHA. The
+builder left it recorded in the handback and the evidence is completed here, at merge, against the
+proven commit — the repo's normal shape, and the reason the S186 trap is stated as *"a docs commit
+added above the gated commit merges unproven"*.
+
+**Verified at merge, independently of the handback** (2026-08-31):
+
+- branch tip **was** `c68290734239c55fcb9ab974fea4eab0bcc0b6f9` with **one** commit and nothing above
+  it, and its base was `de72610` — the tip of `main` — so no cross-sprint drift and no S186 trap;
+- `make gate-ran` **re-run by the reviewer** from a worktree at that SHA, printed SHA checked against
+  `git rev-parse HEAD`;
+- `security/findings-baseline.json` **untouched**; version bump **PATCH** and arithmetically correct;
+- `broker_stop_actions.py` (**191**) and `broker_stops.py` (**187**) **not grown** — the two modules
+  with no headroom;
+- the six status vocabularies are gone from all five call sites, and `partial` is still non-terminal;
+- law cycle consistent: `EXEC-OBS-05` appended, laws **v1.4**, rollup **35 / 61** in *both*
+  `ledger.md` and `INDEX.md`, `DRIFT-055` **CORRECTED**, `DL-139` **amended** rather than duplicated;
+- 🪤 `EXEC-STA-05` moved ⬜ → 🟩 by **re-citation** of three pre-existing tests. Checked rather than
+  taken on trust: they assert `BrokerOrderStatus == ()` and zero `REFRESHES` edges for filled and
+  rejected, and one of each for `partial`. The clause is genuinely proven; the tests had simply been
+  filed under `EXEC-IDM-01`.
 
 **Tree the proofs ran in (and `.env` present?):**
 `C:\Users\yury_\Downloads\project\trading-agents-sprint-190-one-liveness-question-one-answer`,

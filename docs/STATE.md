@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-31 16:17 AEST · **Version:** 0.94.02 · **🟢 BUILT LOCALLY — S190 is on `sprint-190-one-liveness-question-one-answer`; `make ci` passed with 100.00 % coverage, branch gate is next, and merge/deploy/live proof are not done.**
+**Last updated:** 2026-08-31 16:40 AEST · **Version:** 0.94.02 · **🟩 S190 merged `193e71b` — a stop that fired is no longer reported as protection, and one module now answers every broker-fact liveness question; work-queue items 32, 20 and 12's Fill half close together.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -39,38 +39,27 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🟢 **BUILT LOCALLY — S190 on branch `sprint-190-one-liveness-question-one-answer`, worktree
-`trading-agents-sprint-190-one-liveness-question-one-answer`.** Law reading was recorded before code;
-DL-139 was amended with decisions 2-4; the red guards were observed first; `contracts/broker_lifecycle.py`
-now owns broker-fact liveness without making `partial` terminal; `active_broker_stop_orders` excludes
-fired stops while resting stops stay live; `BrokerStopIdentityMismatch` carries structured context;
-execution laws are v1.4 with `EXEC-OBS-05`; DRIFT-055 is corrected; version is `0.94.02`; and local
-`make ci` exited 0 with **2432 passed, 6 skipped, 100.00 % coverage**. **Not yet done:** branch
-remote gate, merge, deploy, live Neon proof, backfill, or fleet operation.
+🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
+(`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
+asked. A `BrokerStopOrder` whose sibling `Fill` reached a terminal broker state is no longer returned by
+`active_broker_stop_orders`, so **a fired stop stops being counted as protection**; a resting-stop `Fill` is no longer
+an open order; and the stale-order sweep compares **live broker stop to live graph stop** instead of type-to-lifecycle.
+Six scattered status vocabularies collapse into one module — and `partial` stayed non-terminal, so S176 is intact.
+Execution laws **v1.4** (`EXEC-OBS-05`), rollup **35 / 61**, `DRIFT-055` **CORRECTED**, `DL-139` amended.
+🟩 **Verified independently of the handback:** branch tip **was** the gated SHA with nothing above it,
+`GATE PROVEN` for `c68290734239c55fcb9ab974fea4eab0bcc0b6f9` re-run from a worktree at that commit, security baseline
+untouched, PATCH bump correct, `broker_stop_actions.py` (191) and `broker_stops.py` (187) not grown.
+🪤 **`EXEC-STA-05` went ⬜ → 🟩 by re-citation** — the three tests already asserted the clause and were filed under
+`EXEC-IDM-01`; checked, and they do prove it, including *partial still refreshes*.
+🟠 **NOT DEPLOYED and no live proof yet.** The first run after deploy must show **zero new
+`BrokerStopIdentityMismatch` faults** and `active_broker_stop_orders` equal to the broker's live stop count.
 
-🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight
-now runs the *same* import `scripts/servicebus_prepare_routes.py` runs, in the shape of the existing Postgres row.
-**Measured both ways** — real import → exit 0, missing module → exit 1 — and **observed in place**:
-`[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential row was red, which is
-the point: it reports a corrupt *local environment*, not a missing secret. `tests/test_deploy_script_invariants.py`
-pins **both sides**, so if route prep changes what it imports the gate fails and preflight has to follow. Full cycle
-despite being PowerShell: `make ci` exit 0 (**2419 passed, 100.00 %**), `GATE PROVEN` for
-`a234c28641386de4c9667a989d7ad571cc878dc3`, post-merge CodeQL **success**. 🎯 Timely — we deploy tomorrow, and this is
-the failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
-
-🎯 **BUILD CONTEXT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md): every broker fact answers "is this
-still live?" the same way.** One sprint for work-queue items **32 + 20 + 12's Fill half** — three defects that are one
-shape (execution's facts each denormalise lifecycle differently; only `Position` has a predicate).
-🚨 **The design was decided by re-measuring, not by the rows** ([DL-139](design-log.md)): **all 46**
-`BrokerStopOrder` nodes have a `Fill` at the *identical* key, so **the graph already holds the answer** and the fix is
-a **predicate, not a new property** — no graph write, no vocabulary change. Live specimen today:
-`stop:87403939105c0a24:PYPL` reads active while its own Fill has said `broker_status=filled` since 08-28
-(`realized_pnl_cents=-9758`). 🚨 **Two carried numbers were wrong** — DL-130's "13 objects" is **17** (304 faults, up
-from 228), and DL-129's "24 open Fills with no `submitted_at`" is **28 of 29 being resting stops**, pending by design.
-🪤 **7 stops carry `cancelled_at` written 1-3 days *after* their fill was recorded** — a stop-out logged as *cancelled
-by us*. [DRIFT-055](laws/drift-register.md) filed: `EXEC-OBS-03` is 🟩 on five tests, none of which exercise its
-*"the broker remains truth for liveness"* limb. ⏰ Tonight's run moves the specimen — re-run the join before building
-the fixture.
+🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight now
+runs the *same* import route prep runs. **Measured both ways** (real → exit 0, missing module → exit 1) and
+**observed in place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential
+row was red — it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
+Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
+failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
 
 🎯 **DECIDED — ITEM 6b: THE POSTURE STAYS `advisory` THROUGH MONDAY** ([DL-134](design-log.md), 2026-08-30).
 🪤 **The row's premise was wrong, read in the code.** `drop_vetoed` runs **before** `apply_deliberation_posture`

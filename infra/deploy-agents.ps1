@@ -181,6 +181,20 @@ function Test-PostgresDsn {
   return $LASTEXITCODE -eq 0
 }
 
+function Test-ServiceBusImports {
+  # A package can look installed while being unusable: a corrupt azure-core
+  # (dist-info with no RECORD file, so uv and pip both still list it) left
+  # azure/core/ with subdirectories and zero .py files. Prepare-ServiceBusRoutes
+  # imports the admin client lazily inside main(), so that ImportError surfaced
+  # mid-procedure -- after `alembic upgrade head` had already migrated -- rather
+  # than here. Preflight checked every input to the step and never that the step
+  # could import its own dependency.
+  $py = "import azure.core.credentials; " +
+        "from azure.servicebus.management import ServiceBusAdministrationClient"
+  uv run --extra azure python -c $py *> $null
+  return $LASTEXITCODE -eq 0
+}
+
 function Get-PostgresDsnEnvName($target) {
   return "POSTGRES_DSN_" + $target.ToUpperInvariant().Replace("-", "_")
 }
@@ -534,6 +548,10 @@ function Preflight {
   $allSbReady = $sbReady -eq $sbTargets.Count
   Check $allSbReady "per-target Service Bus SAS strings: $sbReady/$($sbTargets.Count)"
   $ok = $ok -and $allSbReady
+
+  $sbImports = Test-ServiceBusImports
+  Check $sbImports "Service Bus route-prep imports (azure extra)"
+  $ok = $ok -and $sbImports
 
   if ($ghcr) {
     $imgs = @()

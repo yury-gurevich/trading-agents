@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import importlib
 
+from kernel.llm import STOP_REASON_UNKNOWN, LLMCompletionStoppedError
+
 
 class ConfigurationError(RuntimeError):
     """Raised when the Anthropic client cannot be constructed safely."""
@@ -36,6 +38,7 @@ class AnthropicLLMClient:
         self.model = model
         self.max_tokens = max_tokens
         self.effort = effort
+        self.last_stop_reason = STOP_REASON_UNKNOWN
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -49,12 +52,35 @@ class AnthropicLLMClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        self.last_stop_reason = _stop_reason(response)
         return _text(response)
 
 
 def _text(response: object) -> str:
+    stop_reason = _stop_reason(response)
+    if stop_reason == "max_tokens":
+        raise LLMCompletionStoppedError(provider="anthropic", stop_reason=stop_reason)
+    if stop_reason == "refusal":
+        raise LLMCompletionStoppedError(
+            provider="anthropic",
+            stop_reason=stop_reason,
+            category=_refusal_category(response),
+        )
     parts: list[str] = []
     for block in getattr(response, "content", ()):
         if getattr(block, "type", None) == "text":
             parts.append(str(getattr(block, "text", "")))
     return "\n".join(part for part in parts if part)
+
+
+def _stop_reason(response: object) -> str:
+    reason = str(getattr(response, "stop_reason", "") or "").strip()
+    return reason or STOP_REASON_UNKNOWN
+
+
+def _refusal_category(response: object) -> str | None:
+    details = getattr(response, "stop_details", None)
+    if details is None:
+        return None
+    category = str(getattr(details, "category", "") or "").strip()
+    return category or None

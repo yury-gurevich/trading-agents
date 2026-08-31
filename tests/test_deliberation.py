@@ -8,13 +8,18 @@ External I/O: none.
 
 from __future__ import annotations
 
+import pytest
+
 from kernel import (
     CHALLENGER_SYSTEM,
     DEFENDER_SYSTEM,
     JUDGE_SYSTEM,
     DeliberationPrompts,
+    LLMCompletionStoppedError,
     Proposition,
+    debate_turn,
     deliberate,
+    judge_verdict,
 )
 from kernel.deliberation import _parse_verdict
 
@@ -50,6 +55,14 @@ class _RecordingLLM(_RoleLLM):
     ) -> str:
         self.systems.append(system)
         return super().complete(system=system, user=user, tool_schema=tool_schema)
+
+
+class _StoppedLLM:
+    def complete(
+        self, *, system: str, user: str, tool_schema: dict[str, object]
+    ) -> str:
+        del system, user, tool_schema
+        raise LLMCompletionStoppedError(provider="anthropic", stop_reason="max_tokens")
 
 
 _PROP = Proposition(decision="Buy AAPL", context="momentum 0.6; RSI 55")
@@ -137,6 +150,23 @@ def test_role_prompt_overrides_are_used() -> None:
     ]
 
 
+def test_empty_debate_turn_raises_instead_of_entering_transcript() -> None:
+    """DLIB-NEV-07: empty turns are not transcript evidence."""
+    llm = _RoleLLM("", "unused", "unused")
+
+    with pytest.raises(LLMCompletionStoppedError, match="empty_debate_turn"):
+        debate_turn(llm, _PROP, role="defender", round_number=1, transcript=())
+
+
+def test_stopped_judge_response_defaults_to_revise_with_reason() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: stopped judge answers are honest revises."""
+    verdict = judge_verdict(_StoppedLLM(), _PROP, transcript=())
+
+    assert verdict.ruling == "revise"
+    assert "max_tokens" in verdict.rationale
+    assert "unparseable" not in verdict.rationale
+
+
 def test_parse_verdict_valid() -> None:
     v = _parse_verdict('{"ruling": "OVERTURN", "rationale": "fatal risk"}')
     assert v.ruling == "overturn"  # lower-cased
@@ -147,6 +177,14 @@ def test_parse_verdict_unparseable_defaults_to_revise() -> None:
     v = _parse_verdict("not json at all")
     assert v.ruling == "revise"
     assert "unparseable" in v.rationale
+
+
+def test_parse_verdict_empty_defaults_to_revise_without_parser_blame() -> None:
+    """DLIB-FAIL-04: a blank judge answer is empty, not malformed JSON."""
+    v = _parse_verdict("")
+    assert v.ruling == "revise"
+    assert "empty" in v.rationale
+    assert "unparseable" not in v.rationale
 
 
 def test_parse_verdict_missing_ruling_defaults_to_revise() -> None:

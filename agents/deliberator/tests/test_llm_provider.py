@@ -22,6 +22,7 @@ from agents.deliberator.llm_factory import (
     key_env_var,
 )
 from agents.deliberator.settings import DeliberatorSettings
+from kernel import describe
 
 
 class _FakeClient:
@@ -106,6 +107,14 @@ def test_openai_returns_the_assistant_text(monkeypatch: pytest.MonkeyPatch) -> N
     assert _text(response) == "verdict"
     assert _text(types.SimpleNamespace(choices=[])) == ""
     assert client.max_tokens == 4096
+
+
+def test_max_tokens_ceiling_is_tunable_above_the_default() -> None:
+    row = {item.name: item for item in describe(DeliberatorSettings)}["max_tokens"]
+
+    assert row.default == 4096
+    assert row.minimum == 64
+    assert row.maximum == 8192
 
 
 def _hide_sdk(monkeypatch: pytest.MonkeyPatch, missing: str) -> None:

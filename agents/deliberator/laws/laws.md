@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -50,6 +50,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   `calling_agent`, model, hashes, rough token counts, latency, and timestamp.
 - **DLIB-OUT-04** -- Non-uphold verdicts may only subtract existing PM-approved
   orders; uphold verdicts leave the order set unchanged.
+- **DLIB-OUT-05** -- Each LLM call records the provider stop reason as compact
+  audit metadata without storing prompt or completion payload text.
 
 ## Prohibitions (`NEV`)
 
@@ -59,6 +61,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 - **DLIB-NEV-04** -- Never fetches market data directly.
 - **DLIB-NEV-05** -- Never imports another agent or `orchestration`.
 - **DLIB-NEV-06** -- Never hides a failed debate or peer call as a clean veto.
+- **DLIB-NEV-07** -- Never records an empty debate turn as transcript evidence.
 
 ## State & Effects (`STA`)
 
@@ -91,6 +94,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   delete is attempted.
 - **DLIB-FAIL-03** -- After a crash, the manager retries any `PMRun` that still
   lacks a `DELIBERATED_BY` edge.
+- **DLIB-FAIL-04** -- A provider-declared truncated or refused completion is a
+  failed LLM call with its stop reason named.
 
 ## Type Alignment (`TYP`)
 
@@ -161,7 +166,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
-| `max_tokens` | `4096` | int >= 64 <= 4096 | YES | Per-call response cap |
+| `max_tokens` | `4096` | int >= 64 <= 8192 | YES | Per-call response cap |
 | `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |
 | `poll_interval_seconds` | `60` | int >= 1 <= 300 | YES | Bounds manager idle polling |
 | `proponent_identity` | `deliberator-proponent` | string | YES | Manager peer target |
@@ -177,3 +182,5 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 - v1 -- S153 created from `docs/laws/_TEMPLATE.md`, declaring the DL-80/ADR-0020
   deliberator capability. All clauses start gray.
+- v1.1 -- S189 adds stop-reason audit evidence and forbids truncated, refused,
+  or empty debate completions from entering the transcript as clean answers.

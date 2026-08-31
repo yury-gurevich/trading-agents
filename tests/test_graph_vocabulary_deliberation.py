@@ -65,6 +65,7 @@ def test_llmcall_props_are_declared_and_unknown_prop_fails() -> None:
         "model": "claude-opus-5",
         "prompt_hash": "abc",
         "response_hash": "def",
+        "stop_reason": "end_turn",
         "tokens_in": 10,
         "tokens_out": 3,
         "latency_ms": 25,

@@ -13,6 +13,7 @@ import pytest
 
 import agents.deliberator.llm_anthropic as anthropic_adapter
 from agents.deliberator.llm_anthropic import AnthropicLLMClient, ConfigurationError
+from kernel import LLMCompletionStoppedError
 
 
 class _FakeMessages:
@@ -79,3 +80,40 @@ def test_anthropic_client_returns_text_blocks(monkeypatch) -> None:
     assert kwargs["output_config"] == {"effort": "high"}
     assert kwargs["system"] == "sys"
     assert kwargs["messages"] == [{"role": "user", "content": "hello"}]
+
+
+def test_anthropic_max_tokens_without_text_raises_stop_reason() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: truncation is failure, not empty answer."""
+    response = SimpleNamespace(
+        content=(SimpleNamespace(type="thinking", text="spent budget"),),
+        stop_reason="max_tokens",
+    )
+
+    with pytest.raises(RuntimeError, match="max_tokens"):
+        anthropic_adapter._text(response)
+
+
+def test_anthropic_refusal_raises_with_guarded_category() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: refusal is named separately from truncation."""
+    response = SimpleNamespace(
+        content=(),
+        stop_reason="refusal",
+        stop_details=SimpleNamespace(category="policy"),
+    )
+
+    with pytest.raises(LLMCompletionStoppedError, match="refusal") as exc:
+        anthropic_adapter._text(response)
+
+    assert exc.value.stop_reason == "refusal"
+    assert exc.value.category == "policy"
+
+    with pytest.raises(LLMCompletionStoppedError) as uncategorized:
+        anthropic_adapter._text(SimpleNamespace(content=(), stop_reason="refusal"))
+    assert uncategorized.value.category is None
+
+
+def test_anthropic_end_turn_can_return_a_genuine_empty_answer() -> None:
+    """DLIB-FAIL-04: a normal empty answer is not a provider failure."""
+    response = SimpleNamespace(content=(), stop_reason="end_turn", stop_details=None)
+
+    assert anthropic_adapter._text(response) == ""

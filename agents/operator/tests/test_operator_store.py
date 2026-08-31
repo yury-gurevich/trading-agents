@@ -38,3 +38,4 @@ def test_write_llm_call_records_operator_attribution() -> None:
 
     assert second is first
     assert first.props["calling_agent"] == "operator"
+    assert first.props["stop_reason"] == "unknown"

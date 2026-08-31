@@ -8,6 +8,44 @@ and is marked CLOSED here.
 
 ---
 
+## DL-137 - S189 LLM stop reasons are adapter facts and kernel policy - status: DECIDED (2026-08-30)
+
+**Context.** S189 found 135 empty `LLMCall` completions, 11 of them judge calls, with no stored stop
+reason. The direct `correlation_id` is an internal `pm-run-*`, so the DL-119 contamination question
+has to be answered through graph lineage: one empty judge call, `pm-run-61025f7ffe254ae08b16f2adbaa456a7:AMZN:judge`,
+descends from `verify-2026-08-19-clean`; the other three DL-119 binding runs have zero empty judge
+calls.
+
+**Decision 1 - adapters extract stop metadata; the kernel owns completion policy.** Anthropic and
+OpenAI are the only code that can read `stop_reason` / `finish_reason` without guessing, so they set a
+small `last_stop_reason` side channel and raise a shared sanitized exception for vendor-declared
+truncation or refusal. `kernel.deliberation` still owns the semantic rule that an empty debate turn is
+not a turn, and that a stopped judge response defaults to `revise`. Rejected: putting all checks only
+in callers, because the vendor reason is already lost there. Rejected: putting all checks only in
+adapters, because a normal `end_turn` with an empty string is a legitimate model answer at the port
+level but not a valid debate turn. A future adapter must set `last_stop_reason` and raise the shared
+exception when the vendor says the answer was cut off or declined.
+
+**Decision 2 - the exception carries only sanitized stop metadata.** The shared exception carries
+provider, stop reason, and an optional refusal category. It never carries prompt text, completion text,
+API keys, or response payloads. Rejected: attaching the raw request/response for debugging, because
+the fail-open reason is durable graph evidence and S188's credential evidence rule applies here too:
+payload-rich errors turn observability into a leak path.
+
+**Decision 3 - `max_tokens` keeps its default and gains an 8192 ceiling.** The default stays 4096; the
+upper bound moves to 8192. That doubles emergency headroom for effort-heavy reasoning while remaining
+bounded against runaway cost, and it is still far above the measured visible-answer median of 168 words
+and max of 468 words. Rejected: 128K, because that needs streaming and is vendor-maximum thinking, not
+etalon evidence discipline. Rejected: leaving `le=4096`, because a tunable pinned to its default cannot
+be used to reproduce or mitigate truncation in live proof. Rejected: treating the bigger ceiling as the
+fix, because visibility is the fix; more budget is only an operator lever.
+
+**Decision 4 - `LLMCall.stop_reason` is compact vocabulary, not payload.** Every ledger write carries a
+`stop_reason` string: the vendor value when available, or `unknown` for clients that do not expose it.
+The property is declared in `trading_graph_vocabulary.json` in the same change. Rejected: separate raw
+metadata blobs or provider-specific fields, because this sprint needs the shared answer to "why did the
+call stop?" and adding payload-shaped audit props widens the privacy and vocabulary surface.
+
 ## DL-136 - S188 credential tests are pack data with response-classified failures - status: DECIDED (2026-08-30)
 
 **Context.** Master already has the DL-36 substrate shape (`CredentialTest`, `PassCache`, remediation

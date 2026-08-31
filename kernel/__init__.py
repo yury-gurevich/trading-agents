@@ -88,7 +88,12 @@ from kernel.graph import Edge, GraphStore, Node
 from kernel.graph_memory import InMemoryGraphStore
 from kernel.graph_postgres import PostgresGraphStore
 from kernel.graph_postgres_config import PostgresGraphSettings
-from kernel.llm import FakeLLMClient, LLMClient
+from kernel.llm import (
+    FakeLLMClient,
+    LLMClient,
+    LLMCompletionStoppedError,
+    llm_stop_reason,
+)
 from kernel.llm_ledger import LLMCallCapture, record_llm_call, write_llm_call
 from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
@@ -134,6 +139,7 @@ __all__ = [
     "InProcessBus",
     "LLMCallCapture",
     "LLMClient",
+    "LLMCompletionStoppedError",
     "LLMJudgeScorer",
     "MarketPack",
     "MarketPackRegistry",
@@ -172,6 +178,7 @@ __all__ = [
     "fault_occurrences",
     "faults_occurred_in_window",
     "judge_verdict",
+    "llm_stop_reason",
     "load_deliberation_prompt_artifact",
     "load_deliberation_prompt_artifacts",
     "load_prompt_artifact",

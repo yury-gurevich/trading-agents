@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from kernel.llm import STOP_REASON_UNKNOWN
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -26,11 +28,17 @@ class LLMCallCapture:
 
     prompt: str
     response: str = ""
+    stop_reason: str = STOP_REASON_UNKNOWN
     node: Node | None = None
 
     def set_response(self, response: str) -> None:
         """Record the raw model response for hashing and token estimates."""
         self.response = response
+
+    def set_stop_reason(self, stop_reason: str | None) -> None:
+        """Record sanitized model stop metadata without payload details."""
+        reason = str(stop_reason or "").strip()
+        self.stop_reason = reason or STOP_REASON_UNKNOWN
 
 
 @contextmanager
@@ -59,6 +67,7 @@ def record_llm_call(
             tokens_in=_rough_tokens(capture.prompt),
             tokens_out=_rough_tokens(capture.response),
             latency_ms=latency_ms,
+            stop_reason=capture.stop_reason,
         )
 
 
@@ -73,6 +82,7 @@ def write_llm_call(
     tokens_in: int,
     tokens_out: int,
     latency_ms: int,
+    stop_reason: str = STOP_REASON_UNKNOWN,
 ) -> Node:
     """Write one idempotent shared LLM call ledger node."""
     key = f"llmcall:{calling_agent}:{correlation_id}"
@@ -91,6 +101,7 @@ def write_llm_call(
             "tokens_in": tokens_in,
             "tokens_out": tokens_out,
             "latency_ms": latency_ms,
+            "stop_reason": str(stop_reason or "").strip() or STOP_REASON_UNKNOWN,
             "created_at": datetime.now(tz=UTC).isoformat(),
         },
     )

@@ -461,6 +461,7 @@
       "model",
       "prompt_hash",
       "response_hash",
+      "stop_reason",
       "tokens_in",
       "tokens_out"
     ],

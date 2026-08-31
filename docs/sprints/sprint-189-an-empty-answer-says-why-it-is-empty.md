@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-189-an-empty-answer-says-why-it-is-empty`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT
+**Version:** `0.94.00` (MINOR bump on branch)
 **Effort:** M
 **Decisions:** work-queue item 35 (the row this closes, and corrects) · [DL-99](../design-log.md) (why the second provider exists) · a new DL for the four design decisions below
 
@@ -252,18 +252,18 @@ branch cut before another DL lands will collide even when the number was free at
 
 ## Success factors
 
-- [ ] Scope item 1 answered with a number, **including if it is zero** — how many of the 11 empty judge calls fall inside DL-119's four binding runs.
-- [ ] A truncated completion raises with the stop reason named, on **both** adapters (A1, A2).
-- [ ] A refusal is distinguishable from a truncation (A3), and a legitimate empty answer is not an error (A4).
-- [ ] No empty `Turn` can enter a transcript (A5), and one bad turn fails one order (A6).
-- [ ] The judge's fail-safe `revise` is preserved, with an honest rationale (A7).
-- [ ] `LLMCall` records the stop reason, with its graph-vocabulary entry in the same commit (A8).
-- [ ] No prompt or completion text in any exception, fault, or node prop (A9).
-- [ ] `max_tokens` ceiling raised with a justified number, PARAM row in sync (A10).
-- [ ] Design decisions recorded with rejected alternatives.
-- [ ] Law cycle done: deliberator laws **v1.1**, test-plan row per clause, clause IDs in docstrings, rollup in **both** `ledger.md` and `INDEX.md`, drift row filed.
-- [ ] Every new guard planted, watched to fail, restored — **stated per guard**.
-- [ ] Every touched module < 200 lines. `make ci` exit 0, 100.00 % coverage, redirected to a file.
+- [x] Scope item 1 answered with a number, **including if it is zero** — how many of the 11 empty judge calls fall inside DL-119's four binding runs.
+- [x] A truncated completion raises with the stop reason named, on **both** adapters (A1, A2).
+- [x] A refusal is distinguishable from a truncation (A3), and a legitimate empty answer is not an error (A4).
+- [x] No empty `Turn` can enter a transcript (A5), and one bad turn fails one order (A6).
+- [x] The judge's fail-safe `revise` is preserved, with an honest rationale (A7).
+- [x] `LLMCall` records the stop reason, with its graph-vocabulary entry in the same commit (A8).
+- [x] No prompt or completion text in any exception, fault, or node prop (A9).
+- [x] `max_tokens` ceiling raised with a justified number, PARAM row in sync (A10).
+- [x] Design decisions recorded with rejected alternatives.
+- [x] Law cycle done: deliberator laws **v1.1**, test-plan row per clause, clause IDs in docstrings, rollup in **both** `ledger.md` and `INDEX.md`, drift row filed.
+- [x] Every new guard planted, watched to fail, restored — **stated per guard**.
+- [x] Every touched module < 200 lines. `make ci` exit 0, 100.00 % coverage, redirected to a file.
 
 ---
 
@@ -428,7 +428,35 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
-<!-- Which law files you read, which clauses bind, which are unproven, and the law-cycle answer. -->
+Read before code on 2026-08-30, on branch
+`sprint-189-an-empty-answer-says-why-it-is-empty`: `agents/deliberator/laws/laws.md`,
+`agents/deliberator/laws/test-plan.md`, `docs/laws/conventions.md`,
+`docs/laws/drift-register.md`, and `docs/laws/ledger.md` after entering through
+`docs/INDEX.md`, `docs/sprints/INDEX.md`, and `docs/laws/INDEX.md`.
+
+Binding deliberator clauses:
+`DLIB-FAIL-01` (green) requires each LLM or peer-call failure to fail open for the
+affected order with a recorded rationale; `DLIB-NEV-06` (green) forbids hiding a
+failed debate or peer call as a clean veto; `DLIB-OUT-02` (green) binds the
+recorded verdict/debate/narrative shape; `DLIB-OUT-03` (gray) governs `LLMCall`
+audit evidence; `DLIB-IDM-02` (gray) requires LLM output bounds and hashes to be
+stamped; `DLIB-OBS-01` (gray) requires a reconstructable debate transcript;
+`DLIB-OBS-02` (gray) binds attributable LLM spend; `DLIB-OBS-03` (green) requires
+visible fail-open outcomes; `DLIB-PERF-01` and `DLIB-PERF-02` (both gray) bind
+round and peer-wait bounds; the `PARAM` table binds `max_tokens` and must stay in
+sync with `DeliberatorSettings`.
+
+Umbrella conventions bind clause ID stability, gray-to-green proof by functional
+test docstring citation, locked-law amendment through a visible changelog, and
+central drift registration. Kernel has no agent law, and `docs/laws/conventions.md`
+does not define the shared `LLMClient` port contract for vendor stop/finish
+semantics; S189 therefore owes a `drift-register.md` row for that law silence.
+
+Law-cycle answer: yes. No `contracts/` file change is planned, but S189 adds
+deliberator guarantees for truncated/refused completions, empty debate turns, and
+`LLMCall` stop-reason evidence, so deliberator laws move to v1.1 with test-plan
+rows, clause IDs in the proving test docstrings, and rollups updated in both
+`docs/laws/ledger.md` and `docs/laws/INDEX.md`.
 
 ---
 
@@ -436,31 +464,146 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | Result | Evidence |
 | --- | --- | --- |
-| A1 | | |
-| A2 | | |
-| A3 | | |
-| A4 | | |
-| A5 | | |
-| A6 | | |
-| A7 | | |
-| A8 | | |
-| A9 | | |
-| A10 | | |
+| A1 | Passed. Anthropic `stop_reason == "max_tokens"` raises a named stop error instead of returning `""`. | Planted red: `uv run pytest tests/test_deliberator_anthropic.py::test_anthropic_max_tokens_without_text_raises_stop_reason --no-cov` failed with `Failed: DID NOT RAISE RuntimeError`; restored/final focused run: 44 passed. |
+| A2 | Passed. OpenAI `finish_reason == "length"` raises the same shared stop error. | `agents/deliberator/tests/test_llm_openai_adapter.py::test_openai_length_without_text_raises_stop_reason`; final focused run: 44 passed. |
+| A3 | Passed. Anthropic refusal raises with guarded `stop_details.category`; missing category stays safe. | `tests/test_deliberator_anthropic.py::test_anthropic_refusal_raises_with_guarded_category` and `...::test_anthropic_refusal_without_category_still_raises`; final focused run: 44 passed. |
+| A4 | Passed. A normal `end_turn` empty answer remains a legitimate empty completion at the adapter port. | `tests/test_deliberator_anthropic.py::test_anthropic_end_turn_empty_text_is_not_a_stop_error`; final focused run: 44 passed. |
+| A5 | Passed. `debate_turn` refuses to emit an empty `Turn`. | `tests/test_deliberation.py::test_empty_debate_turn_raises_instead_of_entering_transcript`; DL-70 red proved removing the guard fails. |
+| A6 | Passed. One stopped debate call fails open only that order, not the batch. | `agents/deliberator/tests/test_stop_reason_fail_open.py::test_one_stopped_turn_fails_only_that_order_and_records_reason` asserts AAPL completes, MSFT fails open, `real_debate_count=1`, `failed_open_count=1`, `failed_open_tickers=("MSFT",)`. |
+| A7 | Passed. Judge fail-safe `revise` is preserved and the reason names stop/empty-answer cause instead of parser blame. | `tests/test_deliberation.py::test_stopped_judge_response_defaults_to_revise_with_reason` and `...::test_parse_verdict_empty_defaults_to_revise_without_parser_blame`; final focused run: 44 passed. |
+| A8 | Passed. `LLMCall.stop_reason` is written on success and stopped paths, and declared in graph vocabulary. | `agents/deliberator/tests/test_stop_reason_fail_open.py::test_llmcall_records_stop_reason_without_payload`, `tests/test_graph_vocabulary_deliberation.py`, `tests/test_graph_vocabulary_properties.py`, `agents/operator/tests/test_operator_store.py`; DL-70 red proved undeclared vocabulary fails. |
+| A9 | Passed. No prompt/completion sentinel reaches the exception, fault, `DeliberationRun`, or `LLMCall` node props. | `test_one_stopped_turn_fails_only_that_order_and_records_reason` and `test_llmcall_records_stop_reason_without_payload` use `S189_PROMPT_SENTINEL` and assert it is absent from recorded evidence. |
+| A10 | Passed. `max_tokens` ceiling is raised and law/PARAM sync remains clean. | `agents/deliberator/tests/test_llm_provider.py::test_max_tokens_ceiling_is_tunable_above_the_default`; `uv run python scripts/check_param_law_sync.py` exit 0 with known baseline warnings only. |
 
 ---
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: the scope-item-1
-     correlation number (including if zero), files changed with final line counts, the A1 red output
-     before the fix, the per-guard DL-70 break/restore statement, the justified new max_tokens
-     ceiling, confirmation that per-order fail-open isolation still holds (A6), the exact `make ci`
-     summary (unpiped, redirected to a file), and `make gate-ran` output for the final tip with the
-     SHA checked against the worktree HEAD.
-     Do not merge until every success factor above is answered with a measurement. -->
+Scope item 1 — live-spine read-only correlation, rerun 2026-08-31 from the S189 worktree with `.env`
+loaded and no DSN printed. A separate `main` worktree was not present (`git worktree list` showed only
+this S189 worktree and the S172 worktree). Result: **1 of the 11 empty judge calls falls inside
+DL-119's four binding runs**.
+
+```text
+binding_run_id,pm_run_key,judge_calls,empty_judge_calls,empty_llm_keys,total_empty_judge_calls
+verify-2026-08-19-clean,pm-run-61025f7ffe254ae08b16f2adbaa456a7,6,1,llmcall:deliberator-manager:pm-run-61025f7ffe254ae08b16f2adbaa456a7:AMZN:judge,11
+verify-2026-08-19-clean-2,pm-run-9119508ef66d40a894637a1b80ee6015,9,0,,11
+verify-2026-08-20-opus,pm-run-506722dd718d43d29a43bece973f6112,4,0,,11
+verify-2026-08-20-s182-a,pm-run-08cdb3584cb5443d8c2abd5a8260d21b,4,0,,11
+binding_run_empty_judge_calls=1
+```
+
+Design/law cycle: [DL-137](../design-log.md) records the four S189 decisions and rejected
+alternatives. Deliberator laws move to **v1.1** with new `DLIB-OUT-05`, `DLIB-NEV-07`, and
+`DLIB-FAIL-04`; `test-plan.md` has green rows and docstring citations; `docs/laws/ledger.md` and
+`docs/laws/INDEX.md` now roll up deliberator as **9 / 51**. `DRIFT-054` records the law silence around
+the shared `LLMClient` vendor-stop contract.
+
+A1 planted red before the fix:
+
+```text
+uv run pytest tests/test_deliberator_anthropic.py::test_anthropic_max_tokens_without_text_raises_stop_reason --no-cov
+tests\test_deliberator_anthropic.py F
+E   Failed: DID NOT RAISE RuntimeError
+============================== 1 failed in 1.14s ==============================
+```
+
+DL-70 guard break/restore proof:
+
+```text
+Anthropic max_tokens guard removed:
+FAILED tests/test_deliberator_anthropic.py::test_anthropic_max_tokens_without_text_raises_stop_reason
+E   Failed: DID NOT RAISE RuntimeError
+
+kernel empty-turn guard removed:
+FAILED tests/test_deliberation.py::test_empty_debate_turn_raises_instead_of_entering_transcript
+E   Failed: DID NOT RAISE LLMCompletionStoppedError
+
+stopped-call ledger stop_reason assignment removed:
+FAILED agents/deliberator/tests/test_stop_reason_fail_open.py::test_llmcall_records_stop_reason_without_payload
+E   AssertionError: assert 'unknown' == 'max_tokens'
+
+LLMCall.stop_reason removed from graph vocabulary:
+FAILED tests/test_graph_vocabulary_deliberation.py::test_llmcall_props_are_declared_and_unknown_prop_fails
+E   kernel.graph_vocabulary.VocabularyError: undeclared properties for label 'LLMCall': ['stop_reason']
+```
+
+Restored focused green:
+
+```text
+uv run pytest tests/test_deliberator_anthropic.py agents/deliberator/tests/test_llm_openai_adapter.py tests/test_deliberation.py agents/deliberator/tests/test_stop_reason_fail_open.py agents/deliberator/tests/test_llm_provider.py tests/test_graph_vocabulary_deliberation.py tests/test_graph_vocabulary_properties.py agents/operator/tests/test_operator_store.py --no-cov
+============================= 44 passed in 9.03s ==============================
+
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+
+uv run python scripts/check_param_law_sync.py
+[WARN] agents/deliberator/settings.py:48: deliberator.llm_provider settings field has no PARAM row
+```
+
+The `max_tokens` default stays `4096`; the ceiling is **8192**. This doubles emergency headroom and
+keeps the live proof reproducible with the existing `ge=64` floor, while staying bounded against the
+observed visible-answer median of 168 words and max of 468 words. The 128K vendor maximum remains
+out of scope because it implies streaming and a different cost/risk envelope.
+
+Final touched Python line counts:
+
+```text
+80 kernel/llm.py
+115 kernel/llm_ledger.py
+198 kernel/deliberation.py
+172 agents/deliberator/agent.py
+86 agents/deliberator/llm_anthropic.py
+98 agents/deliberator/llm_openai.py
+142 agents/deliberator/settings.py
+186 agents/deliberator/tests/test_stop_reason_fail_open.py
+198 tests/test_deliberation.py
+119 tests/test_deliberator_anthropic.py
+117 agents/deliberator/tests/test_llm_openai_adapter.py
+151 agents/deliberator/tests/test_llm_provider.py
+97 tests/test_graph_vocabulary_deliberation.py
+151 tests/test_graph_vocabulary_properties.py
+41 agents/operator/tests/test_operator_store.py
+```
+
+Version bump evidence: `pyproject.toml` is `0.94.00`; `uv lock` updated the normalized lock package
+entry `trading-agents v0.93.0 -> v0.94.0`. The documented `trading-bump-version` helper is not
+installed in this checkout (`Failed to spawn: trading-bump-version`), and no
+`src/trading_v2/core/version.py` path exists, so the bump was applied directly and lock refreshed.
+
+Local `make ci` was redirected to `C:\Users\yury_\AppData\Local\Temp\s189-make-ci.log`, not piped:
+
+```text
+exit=0
+TOTAL                                                     15480      0   3322      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2420 passed, 4 skipped in 198.21s (0:03:18) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 1 new file(s)
+```
+
+Remote branch gate is not pasted into this committed closeout before the branch tip exists. After
+this closeout commit is pushed, run `make gate-ran` from this worktree and check its printed SHA
+against `git rev-parse HEAD`; do not amend only to paste that output, because that would create a new
+unproved SHA.
 
 ---
 
 ## Return notes
 
-<!-- Anything you found that this spec got wrong, and anything the next sprint should know. -->
+- DL-119's four binding runs are not clean of the empty-judge path: one AMZN judge call under
+  `verify-2026-08-19-clean` was empty and counted as a forced `revise`. The 73 % veto-rate evidence
+  therefore needs an asterisk, not a full retraction.
+- The spec's worktree trap was stale in this checkout: `.env` was present in the S189 worktree, and
+  there was no separate `main` worktree. The query was still read-only and printed no DSN.
+- The repo documents a `trading-bump-version` helper, but this checkout has no such console script and
+  no `make bump-version` target. S189 used the required MINOR bump manually (`0.93.00` -> `0.94.00`)
+  and refreshed `uv.lock`.
+- Deployment/live proof are deliberately not done here. Because `LLMCall.stop_reason` changes the
+  graph vocabulary, deploy needs a full `up` in the S172/S188/S189 sequence, then the sprint's live
+  minimum-`max_tokens` debate check and teardown.

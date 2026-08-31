@@ -23,9 +23,11 @@ from contracts.deliberator import (
 from kernel import (
     AgentBase,
     FakeLLMClient,
+    LLMCompletionStoppedError,
     Proposition,
     Turn,
     debate_turn,
+    llm_stop_reason,
     record_llm_call,
 )
 from kernel import judge_verdict as judge_kernel_verdict
@@ -128,6 +130,8 @@ class _LedgerLLM:
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
         """Record a call around the injected LLM completion."""
+        raw = ""
+        stopped: LLMCompletionStoppedError | None = None
         with record_llm_call(
             self._graph,
             calling_agent=self._calling_agent,
@@ -135,10 +139,20 @@ class _LedgerLLM:
             model=self._model,
             prompt=user,
         ) as call:
-            raw = self._llm.complete(system=system, user=user, tool_schema=tool_schema)
-            call.set_response(raw)
+            try:
+                raw = self._llm.complete(
+                    system=system, user=user, tool_schema=tool_schema
+                )
+            except LLMCompletionStoppedError as exc:
+                call.set_stop_reason(exc.stop_reason)
+                stopped = exc
+            else:
+                call.set_response(raw)
+                call.set_stop_reason(llm_stop_reason(self._llm))
         node: Node | None = call.node
         self.last_node_key = node.key if node is not None else None
+        if stopped is not None:
+            raise stopped
         return raw
 
 

@@ -13,10 +13,9 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    import pytest
+import pytest
 
 
 def test_complete_sends_system_and_user_and_returns_text(
@@ -33,7 +32,8 @@ def test_complete_sends_system_and_user_and_returns_text(
             return types.SimpleNamespace(
                 choices=[
                     types.SimpleNamespace(
-                        message=types.SimpleNamespace(content="uphold")
+                        finish_reason="stop",
+                        message=types.SimpleNamespace(content="uphold"),
                     )
                 ]
             )
@@ -61,6 +61,24 @@ def test_complete_sends_system_and_user_and_returns_text(
     # as live and did nothing. Asserting on the *stored* attribute is what let
     # that survive at 100 % coverage — assert on what reaches the wire.
     assert sent["reasoning_effort"] == "medium"
+    assert client.last_stop_reason == "stop"
+
+
+def test_openai_length_without_text_raises_stop_reason() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: truncation is failure, not empty answer."""
+    from agents.deliberator.llm_openai import _text
+
+    response = types.SimpleNamespace(
+        choices=[
+            types.SimpleNamespace(
+                finish_reason="length",
+                message=types.SimpleNamespace(content=None),
+            )
+        ]
+    )
+
+    with pytest.raises(RuntimeError, match="length"):
+        _text(response)
 
 
 # Read off `openai` 2.49.0 on 2026-08-11. Pinned rather than imported because

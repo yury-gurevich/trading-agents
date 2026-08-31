@@ -82,7 +82,7 @@ class DeliberatorSettings(AgentSettings):
         4096,
         why="Caps each role's reasoning and answer payload.",
         ge=64,
-        le=4096,
+        le=8192,
         unit="tokens",
     )
     request_timeout_seconds: float = tunable(

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-30 21:05 AEST · **Version:** 0.93.00 · **🟩 S188 merged (master refuses activation on a dead credential) and [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) is packaged — measured: 135 empty LLM completions, and the defect is in the *primary* adapter, not the fallback item 35 blamed.**
+**Last updated:** 2026-08-31 10:49 AEST · **Version:** 0.94.00 · **🟩 [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) built locally — stop reasons are durable LLM evidence, and DL-119 has one empty-judge contamination among its four binding runs.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -98,16 +98,14 @@ calls returned empty, and whether any fell inside DL-119's four binding runs is 
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
-🎯 **PACKAGED — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md), an empty answer says why it is
-empty** (work-queue item 35, 2026-08-30). Neither LLM adapter reads `stop_reason`/`finish_reason`, so a **truncation**,
-a **refusal** (Anthropic returns `HTTP 200` for those) and a genuinely empty answer are one recorded value.
-🚨 **Item 35's framing was wrong and is corrected:** it filed this as OpenAI-fallback-only and "not currently biting".
-**Measured on the live spine: 135 of 1,037 `LLMCall` rows are empty** (two agreeing signals), and **112 are
-`claude-opus-5` — the primary** — against 22 for `gpt-5.5`. 🪤 **98 of the 135 are 2026-08-08 alone**, a known outage
-day, so the honest steady-state figure is **~3 %** on days with no outage; quoting 13 % would repeat DL-119's own
-diluted-denominator mistake. 🚨 **The worst case has no fail-safe** — `debate_turn` emits `Turn(role, n, "")` unguarded, so a
-truncated argument becomes a hole in the transcript the judge rules on, and the verdict looks legitimate (proponent
-**16.0 %** empty, opponent **13.5 %**). 🎯 Ready for Codex; deploy is a full `up` behind S172 and S188.
+🟩 **BUILT LOCALLY — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md), `0.94.00`, 2026-08-31.**
+Anthropic/OpenAI now turn vendor-declared truncation/refusal into a sanitized stop error; empty debate turns cannot
+enter transcripts; stopped judges keep fail-safe `revise` with an honest reason; every `LLMCall` carries
+`stop_reason`; `max_tokens` keeps default `4096` and gains `le=8192`. **DL-119 contamination settled:** 1 of the 11
+empty judge calls falls inside its four binding runs — AMZN under `verify-2026-08-19-clean` — so the 73 % veto-rate
+evidence needs an asterisk, not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md),
+DRIFT-054. Local `make ci` exit 0: **2420 passed / 4 skipped / 100.00 %**, pip-audit and detect-secrets clean.
+🟠 Branch push/gate, merge, full `up`, and live minimum-`max_tokens` proof remain separate states.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes, **refuses activation** when a required

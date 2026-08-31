@@ -580,7 +580,12 @@ split. S189 carries the narrow gate-unblocker because branch proof cannot pass w
 security ratchet is red: `HttpProbeRequest` moved from `credential_probes.py` to
 `credential_probe_support.py`, `credential_probes.py` explicitly re-exports it, and
 `credential_probe_transports.py` type-checks against support instead of importing back through
-`credential_probes.py`.
+`credential_probes.py`. Local Security Findings reproduction identified the stable keys
+`github-code-scanning:04a4037c2988537fc2ff`,
+`github-code-scanning:8ede4336f31b262ee1c3`, and
+`github-code-scanning:c17c4b872389753b421b`; the branch baseline temporarily accepts those already-open
+main alerts so the branch gate can prove no additional error-level findings before post-merge CodeQL
+has a chance to close them.
 
 Focused master gate after the remote blocker fix:
 
@@ -628,7 +633,9 @@ unproved SHA.
   and refreshed `uv.lock`.
 - First branch push proved a separate gate defect: Security Findings failed on open main CodeQL
   alerts #189-#191 from S188's master credential-probe import cycle. This branch includes the narrow
-  import-boundary repair so the required S189 branch gate can run green.
+  import-boundary repair and temporarily baselines those three already-open keys so the required S189
+  branch gate can run green; after merge, CodeQL on `main` should mark them fixed and the baseline
+  entries should be pruned.
 - Deployment/live proof are deliberately not done here. Because `LLMCall.stop_reason` changes the
   graph vocabulary, deploy needs a full `up` in the S172/S188/S189 sequence, then the sprint's live
   minimum-`max_tokens` debate check and teardown.

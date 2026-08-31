@@ -8,6 +8,27 @@ and is marked CLOSED here.
 
 ---
 
+## DL-138 - S189 temporarily baselines S188 main CodeQL alerts - status: DECIDED (2026-08-31)
+
+**Context.** S189 pushed green on the regular CI workflow, then `Security Findings` failed because
+the repo still had three open error-level CodeQL alerts on `main`: #189, #190 and #191,
+`py/unsafe-cyclic-import`, all raised by S188's master credential-probe split. S189 now carries the
+actual code repair: `HttpProbeRequest` moved to `credential_probe_support.py`, `credential_probes.py`
+re-exports it deliberately, and `credential_probe_transports.py` type-checks against support rather
+than importing back through `credential_probes.py`. That removes the cycle in the branch, but the
+alerts themselves can only close after CodeQL analyzes the fix on `main`.
+
+**Decision.** Add the three stable CodeQL finding keys to `security/findings-baseline.json` as a
+temporary acceptance of already-open `main` alert state, while keeping `--fail-on-code-scanning-error`
+enabled. This lets the branch gate prove there are no additional unbaselined error-level findings
+before merge, without pretending the branch has closed alerts that only `main` can close.
+
+**Rejected routes.** Rejected: disable the security ratchet or loosen the workflow, because that would
+hide genuinely new findings. Rejected: merge a red branch and call it green, because S189 can use the
+workflow's documented "re-baseline deliberately" exit instead. Rejected: dismiss the alerts in the UI
+from this branch, because the code fix has not yet been analyzed on `main` and the intended cleanup is
+to prune the baseline after post-merge CodeQL marks the alerts fixed.
+
 ## DL-137 - S189 LLM stop reasons are adapter facts and kernel policy - status: DECIDED (2026-08-30)
 
 **Context.** S189 found 135 empty `LLMCall` completions, 11 of them judge calls, with no stored stop

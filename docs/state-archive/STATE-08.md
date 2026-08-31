@@ -147,3 +147,16 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
   two names, and that call returns `()` with no sector. `GATE PROVEN` for `21a5e81`. 🪤 **A branch
   cannot clear an alert raised on `main`** (`codeql.yml` runs only there), and 🪤 **the step prints
   nothing on failure** — read the report, not the log.
+
+---
+
+## Three diagnoses, one pattern (docs only, 2026-08-24)
+
+*Moved out of `STATE.md` on 2026-08-31 so Recent stayed under the 200-line rule. The durable records are [DL-129](../design-log.md), [DL-130](../design-log.md), [DL-131](../design-log.md) and work-queue items 12/20/32.*
+
+**Three diagnoses, one pattern, no code changed (docs only, 2026-08-24).** All three were execution's graph
+  facts denormalising lifecycle differently, with only `Position` having a predicate to hide it: item 12's
+  "202-fill backlog" is **27** ([DL-129](../design-log.md)); item 20's 228 faults are **13 objects** the broker
+  agrees are cancelled ([DL-130](../design-log.md)); a stop that *fires* is never reconciled
+  ([DL-131](../design-log.md), item 32). 🟩 Item 27's symptom is gone — 24 positions / 24 stops, 1:1, zero
+  unprotected — but its live proof is still owed. 🪤 Measured 08-24; seven runs have happened since.

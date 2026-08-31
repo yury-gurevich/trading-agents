@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-31 10:49 AEST · **Version:** 0.94.00 · **🟩 [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) built locally — stop reasons are durable LLM evidence, and DL-119 has one empty-judge contamination among its four binding runs.**
+**Last updated:** 2026-08-31 12:40 AEST · **Version:** 0.94.00 · **🟩 S189 merged `934ffb5` — a cut-off or declined LLM answer now says so instead of arriving as an empty string, and the CodeQL baseline is back to 1 key with 0 open error-level alerts.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,13 +36,6 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
-
-- **Three diagnoses, one pattern, no code changed (docs only, 2026-08-24).** All three were execution's
-  graph facts denormalising lifecycle differently, with only `Position` having a predicate to hide it:
-  item 12's "202-fill backlog" is **27** ([DL-129](design-log.md)); item 20's 228 faults are **13 objects**
-  the broker agrees are cancelled ([DL-130](design-log.md)); a stop that *fires* is never reconciled
-  ([DL-131](design-log.md), item 32). 🟩 Item 27's symptom is gone — 24 positions / 24 stops, 1:1, zero
-  unprotected — but its live proof is still owed. 🪤 Measured 08-24; six runs have happened since.
 
 ## Now
 
@@ -98,15 +91,19 @@ calls returned empty, and whether any fell inside DL-119's four binding runs is 
 `stop_pct_source=position`, written eight minutes before execution ran, so the Fill+OrderIntent fallback never
 fired. 🪤 **Do not re-check it this way** — run-start reconciliation now closes the very window S182 was built for.
 
-🟩 **BUILT LOCALLY — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md), `0.94.00`, 2026-08-31.**
-Anthropic/OpenAI now turn vendor-declared truncation/refusal into a sanitized stop error; empty debate turns cannot
-enter transcripts; stopped judges keep fail-safe `revise` with an honest reason; every `LLMCall` carries
-`stop_reason`; `max_tokens` keeps default `4096` and gains `le=8192`. **DL-119 contamination settled:** 1 of the 11
-empty judge calls falls inside its four binding runs — AMZN under `verify-2026-08-19-clean` — so the 73 % veto-rate
-evidence needs an asterisk, not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md),
-DRIFT-054. Local `make ci` exit 0: **2420 passed / 4 skipped / 100.00 %**, pip-audit and detect-secrets clean.
-First push exposed S188 CodeQL #189-#191; branch repairs the import cycle and temporarily baselines those already-open keys so Security Findings can gate the branch before `main` CodeQL closes them.
-🟠 Branch push/gate, merge, full `up`, and live minimum-`max_tokens` proof remain separate states.
+🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
+(`0.94.00`), 2026-08-31.** Adapters turn vendor-declared truncation/refusal into a sanitized stop error; empty
+debate turns cannot enter transcripts; a stopped judge keeps fail-safe `revise` with an honest reason instead
+of parser blame; every `LLMCall` carries `stop_reason`; `max_tokens` gains `le=8192` — 4096 had been both
+default *and* ceiling. **DL-119 contamination settled:** one empty judge call falls inside its four binding
+runs (AMZN, `verify-2026-08-19-clean`) — an asterisk, not a retraction. Deliberator laws **v1.1**, rollup
+**9 / 51**, [DL-137](design-log.md), DRIFT-054. **`GATE PROVEN` for the merged SHA**, post-merge CodeQL
+success, and a `S189_PROMPT_SENTINEL` test proves no prompt/completion text reaches the exception, fault,
+`DeliberationRun` or `LLMCall`. 🟩 **Its temporary CodeQL baseline is already gone:** S188's
+`#189`/`#190`/`#191` went **`fixed`** at `02:25:05Z`, so [DL-138](design-log.md)'s cleanup was done not
+carried — pruned **4 keys → 1**, ratchet still armed, **0 open error-level**, Security Findings green on
+`78303cb`. 🪤 Closure verified *first*. 🟠 **Not deployed**, and the pack moved (`stop_reason`), so it
+needs a full `up`; with S188 also deliberately undeployed the fleet on `s187` is two sprints back.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master loads pack-declared credential probes, **refuses activation** when a required

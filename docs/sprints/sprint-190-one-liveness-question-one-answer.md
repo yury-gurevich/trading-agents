@@ -191,12 +191,17 @@ Position broker:PYPL:175:5665 / broker:PYPL:17:5894
 days. Only the predicate is absent. 🪤 **This is why the fix must not be a new `filled_at` property:**
 R007 §5 — a derived row is indistinguishable from an observed one at read time.
 
-⏰ **This specimen has a shelf life.** `sched-2026-08-31` (tonight, 22:30 UTC) is the first run since
-PYPL filled on Friday — the cron is `30 22 * * 1-5`, so 08-29 and 08-30 were weekend. That run will
-find PYPL's position inactive and write `cancelled_at`, moving it from the "graph-active" bucket into
-the "fired but labelled cancelled" bucket (7 → 8). **If you start this sprint after tonight, re-run
-the join before writing the fixture and expect 28 active / 0 contradictions / 8 mislabelled.** The
-defect is unchanged; only which bucket PYPL sits in changes.
+⏰ **This specimen has a shelf life, and that changes nothing you build.** `sched-2026-08-31`
+(22:30 UTC) is the first run since PYPL filled on Friday — the cron is `30 22 * * 1-5`, so 08-29 and
+08-30 were weekend. That run will find PYPL's position inactive and write `cancelled_at`, moving it
+from the "graph-active" bucket into the "fired but labelled cancelled" bucket (7 → 8), i.e. **28
+active / 0 contradictions / 8 mislabelled**.
+
+🚨 **Build the fixture from the shapes printed above, in-test — never from the spine.** A worktree has
+no `.env`, and you are told not to query the spine at all; both bucket states are given here, and the
+*defect* is identical in either. The live numbers are **context for the reviewer**, not fixture
+inputs. If the counts matter to a claim you want to make at handback, say which bucket you assumed
+and let the merge re-measure it.
 
 ---
 
@@ -359,8 +364,10 @@ write it before A1 passes.
 (`run.py:32`) deliberately includes `partial`. A single unified set is the obvious refactor and it is
 how S176 gets re-broken.
 
-🪤 **The specimen moves tonight.** `sched-2026-08-31` will write `cancelled_at` on PYPL. Re-run the
-join before building the fixture; do not assume the numbers above still name the same buckets.
+🪤 **The specimen moves overnight, so do not hard-code a count.** `sched-2026-08-31` writes
+`cancelled_at` on PYPL, taking the buckets from 29-active/1-contradiction to 28-active/0. **Both
+shapes are in the spec** — assert on the *behaviour* of a fixture you built, never on a population
+size read from the live graph.
 
 🪤 **`cancelled_at` must keep being written.** This sprint adds a reader. If `cancel_stop` stops
 writing the marker, `EXEC-OBS-03`'s "cancellation is a marker, never a deletion" breaks and the audit
@@ -486,7 +493,10 @@ DO NOT:
   - Do not write a new Fill property. Fill has a property allowlist in
     orchestration/packs/trading_graph_vocabulary.json; touching it turns the deploy into a
     full `up`. BrokerStopOrder has no allowlist, but you are not writing to it either.
-  - Do not touch the fleet, do not deploy, do not run anything against the live spine.
+  - Do not touch the fleet, do not deploy, do not run anything against the live spine. Every
+    fixture is built IN-TEST from the shapes printed in the spec. The live counts there are
+    context for the reviewer, not inputs -- and one of them (PYPL) moves after the 22:30 UTC
+    run on 2026-08-31, which is exactly why you must not assert on a population size.
 
 LAW CYCLE — OWED, because this sprint changes contracts/:
   - Add EXEC-OBS-05 (append-only IDs, do not renumber): liveness of an execution broker fact

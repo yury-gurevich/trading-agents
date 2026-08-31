@@ -88,6 +88,31 @@ def test_issuer_map_is_loaded_from_pack_and_sent_only_to_pm() -> None:
     assert agent_env.count("Get-IssuerMapEnv") == 1
 
 
+def test_preflight_imports_what_its_own_steps_import() -> None:
+    """A package can look installed while being unusable, and preflight missed it.
+
+    The `s187` deploy failed at Service Bus route prep on a corrupt `azure-core`
+    — dist-info with no RECORD file, so uv still listed it installed while
+    `azure/core/` held zero `.py` files. Route prep imports its admin client
+    lazily inside `main()`, so the ImportError landed *after* `alembic upgrade
+    head` had migrated. Preflight checked every input to that step and never
+    that the step could import its own dependency. Pinned on both sides: if
+    route prep changes what it imports, this fails and preflight must follow.
+    """
+    text = _script_text()
+    body = text.split("function Preflight", 1)[1]
+    preflight = body.split("\nfunction ", 1)[0]
+    route_prep = Path("scripts/servicebus_prepare_routes.py").read_text(
+        encoding="utf-8"
+    )
+    symbol = "from azure.servicebus.management import ServiceBusAdministrationClient"
+
+    assert "function Test-ServiceBusImports" in text
+    assert "Test-ServiceBusImports" in preflight, "the check must run in preflight"
+    assert symbol in route_prep, "route prep no longer imports the pinned symbol"
+    assert symbol in text, "preflight must import exactly what route prep imports"
+
+
 def test_deploy_reports_its_own_failure() -> None:
     """DL-85: `up` printed "Fleet deployed" and exited 0 after 15 failures.
 

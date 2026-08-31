@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-08-31 14:05 AEST · **Version:** 0.94.01 · **🟩 Item 34 shipped the hour it was ranked — the deploy preflight now imports the dependencies its own steps need; S190 is specced and its design was decided by re-measuring, not by the seven-day-old rows.**
+**Last updated:** 2026-08-31 16:17 AEST · **Version:** 0.94.02 · **🟢 BUILT LOCALLY — S190 is on `sprint-190-one-liveness-question-one-answer`; `make ci` passed with 100.00 % coverage, branch gate is next, and merge/deploy/live proof are not done.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -39,6 +39,15 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🟢 **BUILT LOCALLY — S190 on branch `sprint-190-one-liveness-question-one-answer`, worktree
+`trading-agents-sprint-190-one-liveness-question-one-answer`.** Law reading was recorded before code;
+DL-139 was amended with decisions 2-4; the red guards were observed first; `contracts/broker_lifecycle.py`
+now owns broker-fact liveness without making `partial` terminal; `active_broker_stop_orders` excludes
+fired stops while resting stops stay live; `BrokerStopIdentityMismatch` carries structured context;
+execution laws are v1.4 with `EXEC-OBS-05`; DRIFT-055 is corrected; version is `0.94.02`; and local
+`make ci` exited 0 with **2432 passed, 6 skipped, 100.00 % coverage**. **Not yet done:** branch
+remote gate, merge, deploy, live Neon proof, backfill, or fleet operation.
+
 🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight
 now runs the *same* import `scripts/servicebus_prepare_routes.py` runs, in the shape of the existing Postgres row.
 **Measured both ways** — real import → exit 0, missing module → exit 1 — and **observed in place**:
@@ -49,7 +58,7 @@ despite being PowerShell: `make ci` exit 0 (**2419 passed, 100.00 %**), `GATE PR
 `a234c28641386de4c9667a989d7ad571cc878dc3`, post-merge CodeQL **success**. 🎯 Timely — we deploy tomorrow, and this is
 the failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
 
-🎯 **SPECCED — [S190](sprints/sprint-190-one-liveness-question-one-answer.md): every broker fact answers "is this
+🎯 **BUILD CONTEXT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md): every broker fact answers "is this
 still live?" the same way.** One sprint for work-queue items **32 + 20 + 12's Fill half** — three defects that are one
 shape (execution's facts each denormalise lifecycle differently; only `Position` has a predicate).
 🚨 **The design was decided by re-measuring, not by the rows** ([DL-139](design-log.md)): **all 46**

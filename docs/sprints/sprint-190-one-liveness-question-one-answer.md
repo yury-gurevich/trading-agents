@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-190-one-liveness-question-one-answer`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.94.02`
 **Effort:** M
 **Decisions:** [DL-139](../design-log.md) (the 2026-08-31 re-measurement + *predicate, not property*) · DL-129 (`Fill.status` is immutable) · DL-130 (the sweep compares a type against a lifecycle) · DL-131 (a fired stop is never reconciled) · [DRIFT-055](../laws/drift-register.md) + [DRIFT-029](../laws/drift-register.md) · closes work-queue items **32**, **20** and **12**'s Fill half
 
@@ -550,15 +550,29 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *fill me* | | | |
+| `contracts/broker_lifecycle.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `EXEC-IDN-03`, `EXEC-OBS-03`, `EXEC-STA-05`, `EXEC-OUT-07`, `EXEC-OBS-05` (to add) | Yes. `partial` must stay non-terminal, missing sibling Fill must default live, and the law amendment belongs in this sprint rather than another drift row. |
+| `contracts/broker_stops.py` | Same execution law files and umbrella laws | `EXEC-OBS-03`, `EXEC-IDN-03`, `EXEC-OBS-05` (to add) | Yes. `cancelled_at` remains an audit marker; liveness becomes a reader predicate, not a stop property or deletion. |
+| `agents/execution/drop_sweep.py` / `drop_sweep_records.py` | Same execution law files and umbrella laws | `EXEC-OUT-07`, `EXEC-OBS-03`, `EXEC-OBS-05` (to add) | Yes. Drops keep their own vocabulary; the mismatch detector must compare live-stop predicates on both sides and carry structured context. |
+| `agents/execution/reconciliation_store.py` | Same execution law files and umbrella laws | `EXEC-STA-05`, `EXEC-OUT-07`, `EXEC-OBS-05` (to add) | Yes. Terminal refresh remains `filled`/`rejected`; `partial` is deliberately refreshable. |
+| `agents/reporter/domain/trade_outcomes.py` | `agents/reporter/laws/laws.md`; execution law files and umbrella laws | `RPT-IDN-01`, `RPT-NEV-01`, `RPT-NEV-02`, `RPT-OBS-01`, plus execution lifecycle clauses read as upstream fact semantics | Yes. Reporter must remain a read-only projection and import contract vocabulary rather than define its own lifecycle literals. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *fill me*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes. It adds
+`contracts/broker_lifecycle.py`, edits `contracts/broker_stops.py`, and adds execution guarantee
+`EXEC-OBS-05` in this unit of work.
 
-**Contradictions found between a law and this spec:** *fill me*
+**Contradictions found between a law and this spec:** None. `EXEC-OBS-03` already says the broker
+remains truth for liveness; the spec makes the code satisfy that limb instead of changing the clause.
 
-**Laws found silent where a decision was needed:** *fill me*
+**Laws found silent where a decision was needed:** The current law surface has no single clause
+stating that execution broker-fact liveness is asked in one place, that resting-stop Fills are not
+open orders, or that the stale-order sweep compares broker and graph liveness. `EXEC-OBS-05` will
+cover that silence. `EXEC-STA-05` is also ⬜ in the read test-plan and must keep `partial`
+non-terminal.
 
-**Clauses that were ⬜ and are now proven:** *fill me*
+**Clauses that were ⬜ and are now proven:** `EXEC-OBS-03`'s broker-truth-for-liveness limb now has
+direct tests; `EXEC-STA-05` now proves `filled`/`rejected` terminal refresh and the `partial` boundary;
+new `EXEC-OBS-05` is added with tests for stop liveness, resting-stop fills, sweep liveness parity,
+and structured mismatch evidence.
 
 ---
 
@@ -566,48 +580,154 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *fill me* | | | |
+| A1 | `test_filled_sibling_fill_makes_uncancelled_stop_inactive` | `tests/test_broker_stop_liveness.py` | Passed | `EXEC-OBS-03`, `EXEC-OBS-05` |
+| A2 | `test_cancelled_stop_with_nonterminal_fill_stays_inactive` | `tests/test_broker_stop_liveness.py` | Passed | `EXEC-OBS-03`, `EXEC-OBS-05` |
+| A3 | `test_resting_stop_fill_keeps_stop_live` | `tests/test_broker_stop_liveness.py` | Passed | `EXEC-OBS-03`, `EXEC-OBS-05` |
+| A4 | `test_sweep_raises_no_mismatch_for_dead_stop_order` | `agents/execution/tests/test_drop_sweep_liveness.py` | Passed | `EXEC-OUT-07`, `EXEC-OBS-05` |
+| A5 | `test_live_stop_mismatch_fault_carries_context` | `agents/execution/tests/test_drop_sweep_liveness.py` | Passed | `EXEC-OBS-05` |
+| A6 | `test_resting_stop_fill_is_not_an_open_order_fill` | `tests/test_broker_fill_lifecycle.py` | Passed | `EXEC-OBS-05` |
+| A7 | `test_pending_buy_fill_is_an_open_order_fill` | `tests/test_broker_fill_lifecycle.py` | Passed | `EXEC-OBS-05` |
+| A8 | `test_partial_broker_status_still_refreshes_status_evidence` | `agents/execution/tests/test_fill_refresh_terminal.py` | Passed | `EXEC-STA-05` |
+| A9 | `test_broker_lifecycle_vocabulary_lives_in_one_module` | `tests/test_broker_lifecycle_invariants.py` | Passed | `EXEC-OBS-05` |
 
-**Tests added beyond the plan:** *fill me*
+**Tests added beyond the plan:** `test_missing_sibling_fill_keeps_stop_live`,
+`test_broker_order_id_fallback_finds_terminal_sibling_fill`,
+`test_terminal_and_dropped_fills_are_not_open_order_fills`,
+`test_resolved_drop_statuses_are_not_live_broker_stops`,
+`test_rejected_broker_status_is_not_reselected_for_order_status_writes`,
+`test_partial_broker_status_can_finish_with_final_price`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *fill me*
+**Status:** BUILT locally; branch remote gate pending after commit and push.
 
-**Tree the proofs ran in (and `.env` present?):** *fill me*
+**Tree the proofs ran in (and `.env` present?):**
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-190-one-liveness-question-one-answer`,
+branch `sprint-190-one-liveness-question-one-answer`, base HEAD
+`de72610ca62ce69b47c24a5d207e9b6ebee93750`; `.env` present: `False`.
 
-**Result:** *fill me*
+**Result:** `contracts/broker_lifecycle.py` now owns execution broker lifecycle vocabularies and
+predicates. `contracts/broker_stops.py` delegates active-stop reads to it; drop-sweep compares broker
+and graph live-stop predicates; fill refresh keeps `partial` non-terminal; reporter resolved-unfilled
+logic imports the contract vocabulary. `DRIFT-055` is corrected and execution law/test-plan rollups
+are updated to v1.4.
 
-**Files changed:** *fill me*
+**Files changed:** `contracts/broker_lifecycle.py`, `contracts/broker_stops.py`,
+`agents/execution/drop_sweep.py`, `agents/execution/drop_sweep_records.py`,
+`agents/execution/filled_entry_stops.py`, `agents/execution/reconciliation_store.py`,
+`agents/execution/run.py`, `agents/execution/tests/test_drop_sweep_liveness.py`,
+`agents/execution/tests/test_fill_refresh_terminal.py`, `agents/reporter/domain/trade_outcomes.py`,
+`scripts/_audit_broker_graph_drops.py`, `tests/test_broker_stops_contract.py`,
+`tests/test_broker_stop_liveness.py`, `tests/test_broker_fill_lifecycle.py`,
+`tests/test_broker_lifecycle_invariants.py`, `agents/execution/laws/laws.md`,
+`agents/execution/laws/test-plan.md`, `docs/design-log.md`, `docs/laws/INDEX.md`,
+`docs/laws/drift-register.md`, `docs/laws/ledger.md`, `docs/STATE.md`, `pyproject.toml`,
+`uv.lock`, and this sprint file.
 
-**Design decisions:** `DL-139` + your amendment — *fill me*
+**Design decisions:** `DL-139` amended before implementation with decisions 2-4: two named terminal
+vocabularies instead of forcing `partial` into a single set; resting stops discriminate by semantic
+`stop_order_key`; the lifecycle module lives in `contracts/` and imports no agents.
 
 **Proof — the red run first:**
 
 ```text
-fill me
+uv run pytest tests\test_broker_stops_contract.py agents\execution\tests\test_drop_sweep.py tests\test_broker_lifecycle_invariants.py --no-cov
+
+FAILED tests/test_broker_stops_contract.py::test_filled_sibling_fill_makes_uncancelled_stop_inactive
+FAILED tests/test_broker_stops_contract.py::test_resting_stop_fill_is_not_an_open_order_fill
+FAILED tests/test_broker_stops_contract.py::test_pending_buy_fill_is_an_open_order_fill
+FAILED agents/execution/tests/test_drop_sweep.py::test_sweep_raises_no_mismatch_for_dead_stop_order
+FAILED agents/execution/tests/test_drop_sweep.py::test_live_stop_mismatch_fault_carries_context
+FAILED tests/test_broker_lifecycle_invariants.py::test_broker_lifecycle_vocabulary_lives_in_one_module
+6 failed, 10 passed
 ```
 
 **Proof — the green run:**
 
 ```text
-fill me
+uv run ruff format contracts/broker_lifecycle.py contracts/broker_stops.py agents/execution/drop_sweep.py agents/execution/drop_sweep_records.py agents/execution/filled_entry_stops.py agents/execution/reconciliation_store.py agents/execution/run.py agents/reporter/domain/trade_outcomes.py scripts/_audit_broker_graph_drops.py tests/test_broker_stops_contract.py tests/test_broker_stop_liveness.py tests/test_broker_fill_lifecycle.py tests/test_broker_lifecycle_invariants.py agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_drop_sweep_liveness.py agents/execution/tests/test_fill_refresh_terminal.py agents/execution/tests/test_partial_fill_completion.py agents/execution/tests/test_filled_entry_stops.py agents/reporter/tests/test_trade_outcomes.py
+19 files left unchanged
+
+uv run ruff check contracts/broker_lifecycle.py contracts/broker_stops.py agents/execution/drop_sweep.py agents/execution/drop_sweep_records.py agents/execution/filled_entry_stops.py agents/execution/reconciliation_store.py agents/execution/run.py agents/reporter/domain/trade_outcomes.py scripts/_audit_broker_graph_drops.py tests/test_broker_stops_contract.py tests/test_broker_stop_liveness.py tests/test_broker_fill_lifecycle.py tests/test_broker_lifecycle_invariants.py agents/execution/tests/test_drop_sweep.py agents/execution/tests/test_drop_sweep_liveness.py agents/execution/tests/test_fill_refresh_terminal.py agents/execution/tests/test_partial_fill_completion.py agents/execution/tests/test_filled_entry_stops.py agents/reporter/tests/test_trade_outcomes.py
+All checks passed!
+
+uv run pytest tests\test_broker_stops_contract.py tests\test_broker_stop_liveness.py tests\test_broker_fill_lifecycle.py agents\execution\tests\test_drop_sweep.py agents\execution\tests\test_drop_sweep_liveness.py tests\test_broker_lifecycle_invariants.py agents\execution\tests\test_fill_refresh_terminal.py agents\execution\tests\test_partial_fill_completion.py agents\execution\tests\test_filled_entry_stops.py agents\reporter\tests\test_trade_outcomes.py --no-cov
+46 passed in 1.59s
+
+uv run pytest agents\execution\tests tests\test_broker_stops_contract.py tests\test_broker_stop_liveness.py tests\test_broker_fill_lifecycle.py tests\test_broker_lifecycle_invariants.py tests\test_audit_broker_graph.py agents\reporter\tests\test_trade_outcomes.py --no-cov
+245 passed in 3.39s
+
+uv run python scripts\check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+[WARN] agents/execution/laws/test-plan.md: 13 missing row(s): EXEC-DEP-01, EXEC-DEP-02, EXEC-DEP-03, EXEC-FAIL-04, EXEC-IDN-01, EXEC-IDN-02, EXEC-ORD-01, EXEC-ORD-02, EXEC-PERF-01, EXEC-SEC-02, EXEC-SEC-05, EXEC-STA-04, EXEC-TRG-04
+
+uv run pytest tests\test_broker_stops_contract.py tests\test_broker_stop_liveness.py tests\test_broker_fill_lifecycle.py agents\execution\tests\test_drop_sweep.py agents\execution\tests\test_drop_sweep_liveness.py agents\execution\tests\test_fill_refresh_terminal.py agents\execution\tests\test_partial_fill_completion.py agents\execution\tests\test_filled_entry_stops.py agents\reporter\tests\test_trade_outcomes.py --cov=contracts.broker_lifecycle --cov-report=term-missing --cov-fail-under=0
+contracts\broker_lifecycle.py                                54      0     10      0 100.00%
+45 passed in 16.09s
 ```
 
-**Guards planted:** *fill me*
+**Guards planted:** Broke `is_live_broker_stop_fact` so terminal sibling fills stayed live; A1 failed.
+Broke `is_resting_stop_fill`; A6 failed. Broke `is_open_order_fill`; A7 failed. Broke
+`is_live_broker_stop_order`; A4 failed. Removed `record_stop_mismatch` context; A5 failed. Added
+`partial` to terminal fill statuses; A8 failed. Restored each mutation and re-ran the focused green
+slice.
 
-**Module line counts:** *fill me*
+**Module line counts:** `contracts/broker_lifecycle.py` 162; `contracts/broker_stops.py` 105;
+`agents/execution/drop_sweep.py` 168; `agents/execution/drop_sweep_records.py` 172;
+`agents/execution/filled_entry_stops.py` 175; `agents/execution/reconciliation_store.py` 160;
+`agents/execution/run.py` 120; `agents/reporter/domain/trade_outcomes.py` 54;
+`agents/execution/tests/test_drop_sweep.py` 194; `agents/execution/tests/test_drop_sweep_liveness.py`
+78; `tests/test_broker_stop_liveness.py` 158; `tests/test_broker_fill_lifecycle.py` 90; no touched
+module exceeds 200. `uv run python scripts\check_module_size.py contracts agents tests scripts`
+exited 0 with warn-only rows below the 200 hard block.
 
-**`make ci`:** *fill me*
+**`make ci`:**
 
-**`make gate-ran`:** *fill me*
+```text
+make ci *> $env:TEMP\s190-make-ci.txt; "exit=$LASTEXITCODE"
+exit=0
 
-**Not met / verified failing:** *fill me*
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1044 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 858 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+uv run python scripts/check_param_law_sync.py
+uv run pytest
+TOTAL                                                     15537      0   3332      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+2432 passed, 6 skipped in 84.03s
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 5 new file(s)
+```
+
+**`make gate-ran`:** Pending branch commit, push, and remote workflow completion.
+
+**Not met / verified failing:** Branch push and remote `make gate-ran` proof are pending at this
+checkpoint. No live spine query, fleet change, deploy, backfill, or FaultResolution was attempted.
 
 ---
 
 ## Return notes
 
-- *fill me*
+- Next question remains separate: add an explicit resolved reason for fired-vs-cancelled stops if we
+  want that distinction written to the graph.
+- Historical `BrokerStopIdentityMismatch` faults, dead keys, and mislabelled old stops were not
+  backfilled by design; proof here is prevention of new local mismatches.
+- Live proof is after deployment: zero new `BrokerStopIdentityMismatch` faults and active graph stops
+  equal broker live stops, to be recorded in `docs/laws/functionality-checks.md`.
+- Fleet deployment was not attempted. This sprint itself can ride an image retag, but S189's graph
+  vocabulary move still makes the combined deploy a full `up`.

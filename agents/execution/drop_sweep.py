@@ -18,15 +18,17 @@ from agents.execution.drop_sweep_records import (
     remember_execution_run,
 )
 from agents.execution.fill_attempts import latest_fill_attempt
+from contracts.broker_lifecycle import (
+    is_broker_stop_order,
+    is_live_broker_stop_order,
+    is_resolved_drop_status,
+)
 from contracts.broker_stops import active_broker_stop_orders
 from kernel import fault_boundary
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker, BrokerFill
     from kernel import FaultSink, GraphStore, Node
-
-_STOP_TYPES = frozenset({"stop", "stop_limit"})
-_DROP_TERMINAL_REASONS = frozenset({"canceled", "cancelled", "expired"})
 
 
 def sweep_unfilled_orders(
@@ -128,13 +130,13 @@ def _is_current_run(order: BrokerFill, fill: Node | None, run_id: str) -> bool:
 
 
 def _is_stop_order(graph: GraphStore, order: BrokerFill, sink: FaultSink) -> bool:
-    broker_stop = str(order.order_type or "").lower() in _STOP_TYPES
+    broker_stop = is_live_broker_stop_order(order)
     graph_stop = _tracked_as_stop(graph, order)
     if broker_stop != graph_stop:
         record_stop_mismatch(
             sink, order, broker_stop=broker_stop, graph_stop=graph_stop
         )
-    return broker_stop or graph_stop
+    return is_broker_stop_order(order) or graph_stop
 
 
 def _tracked_as_stop(graph: GraphStore, order: BrokerFill) -> bool:
@@ -146,9 +148,8 @@ def _tracked_as_stop(graph: GraphStore, order: BrokerFill) -> bool:
 
 
 def _is_resolved_drop(order: BrokerFill) -> bool:
-    return (
-        order.status == "rejected"
-        and _resolved_drop_status(order) in _DROP_TERMINAL_REASONS
+    return order.status == "rejected" and is_resolved_drop_status(
+        _resolved_drop_status(order)
     )
 
 

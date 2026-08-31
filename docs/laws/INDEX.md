@@ -42,7 +42,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | scanner | ✅ LOCKED v1.1 (S70, amended S183) | 18 / 41 | S156 citation check + S183's `SCAN-OUT-06`/`SCAN-OUT-07`; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | portfolio_manager | ✅ LOCKED v1 (S70), amended v1.3 | 28 / 47 | S184 made PM-NEV-07/08/09 green and closed the v1.3 widened PM-NEV-06 and PM-TYP-03 rows; 12 law clauses still have no row (S157 warn-only backlog) |
 | deliberator | ✅ LOCKED v1.1 (S189) | 9 / 51 | S189 adds and proves stop-reason audit evidence, stopped-completion failure, and the empty-turn prohibition; S167 added `DLIB-OBS-03` proof for queryable fail-open causes |
-| execution | ✅ LOCKED **v1.3** (S187) | 33 / 60 | S187 adds a PARAM row only; S185 proved explicit deliberation posture (`EXEC-OUT-09`, `EXEC-NEV-06`, `EXEC-OBS-04`); counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
+| execution | ✅ LOCKED **v1.4** (S190) | 35 / 61 | S190 adds/proves `EXEC-OBS-05`, adds the missing `EXEC-OBS-03` liveness-limb proof, and proves `EXEC-STA-05`; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |
 | reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |
 | forecaster | ✅ LOCKED v1 (S71) | 16 / 45 | S156 citation check; counters are clauses proven / clauses declared |

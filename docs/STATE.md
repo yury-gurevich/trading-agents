@@ -67,10 +67,10 @@ PATCH bump correct. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by **re-citation**, alr
 `s187` raised **17** mismatch warnings and a `cancel_stop` 422 nine hours earlier; broker **identical before and
 after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
 
-🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight now
-runs the *same* import route prep runs. **Measured both ways** (real → exit 0, missing module → exit 1) and
-**observed in place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential
-row was red — it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
+🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight runs
+the *same* import route prep runs, **measured both ways** (real → exit 0, missing module → exit 1) and **observed in
+place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential row was red —
+it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
 Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
 failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
 

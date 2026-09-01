@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 19:35 AEST · **Version:** 0.94.03 · **🟩 S191 merged and gate-proven — a quiet night now gets the same acceptance verdict either way, confirmed on the live run that failed this morning.**
+**Last updated:** 2026-09-01 20:15 AEST · **Version:** 0.94.03 · **🟩 S191 merged, gate-proven and DEPLOYED `s191` — a quiet night now gets the same acceptance verdict either way, confirmed on the live run that failed this morning.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -44,8 +44,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 `PMRun.order_intent_set`, so quiet zero-order *and* sell-only `not_required` runs pass, while a `not_required`
 beside an approved buy still breaches as `buy_veto_missing` and an unreadable PM payload fails closed.
 🟩 **Verified independently:** claimed SHA **is** the tip, `GATE PROVEN` incl. post-merge **CodeQL**, PATCH correct.
-🎯 **The real proof is live, not a fixture:** `sched-2026-08-31` — which returned `ACCEPTANCE FAIL` this
-morning — now re-runs **`ACCEPTANCE PASS`**. 🟠 **NOT DEPLOYED**; vocabulary unmoved, so image-only retag.
+🎯 **The real proof is live, not a fixture:** `sched-2026-08-31` — which returned `ACCEPTANCE FAIL` this morning —
+now re-runs **`ACCEPTANCE PASS`**. 🟩 **DEPLOYED `s191`** by image-only retag: **16/16** on `s191`, **16/16**
+`Succeeded`, scale **diffed identical**, cron intact, `DeployRecord` on the build run's `1f0b6a0…`. 🟠 Live test owed.
 
 🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). **16/16** on `s190`, **16/16**
 `Succeeded`, scale config **diffed** against baseline — zero drift; cron **`30 22 * * 1-5`** intact; `DeployRecord`

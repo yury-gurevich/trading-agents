@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -168,6 +168,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `effort` | `max` | enum | YES | Anthropic reasoning effort |
 | `max_tokens` | `4096` | int >= 64 <= 8192 | YES | Per-call response cap |
 | `request_timeout_seconds` | `30.0` | float >= 1 <= 120 | YES | Bounds peer RPC wait |
+| `debate_concurrency` | `4` | int >= 1 <= 25 | YES | Manager fan-out over independent PM-approved orders, bounded by the vendor rate limit because each concurrent order holds one in-flight completion per peer role |
 | `poll_interval_seconds` | `60` | int >= 1 <= 300 | YES | Bounds manager idle polling |
 | `proponent_identity` | `deliberator-proponent` | string | YES | Manager peer target |
 | `opponent_identity` | `deliberator-opponent` | string | YES | Manager peer target |
@@ -184,3 +185,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   deliberator capability. All clauses start gray.
 - v1.1 -- S189 adds stop-reason audit evidence and forbids truncated, refused,
   or empty debate completions from entering the transcript as clean answers.
+- v1.2 -- S172 declares `debate_concurrency`, the manager's fan-out over
+  independent PM-approved orders. PARAM row only: no new clause, because the
+  existing DLIB-ORD clauses already govern per-order record order, and S172
+  proves them under concurrency rather than changing what they promise.

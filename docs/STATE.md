@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 16:20 AEST · **Version:** 0.94.02 · **🚨 S172's K=4 concurrency finally measured and it misses its own bar — 1.5x not 4x, with 6 peer replies dead-lettered; `s190` itself is live-proven and the fleet is back on it.**
+**Last updated:** 2026-09-01 18:57 AEST · **Version:** 0.94.03 · **🟩 S191 built locally: quiet/no-buy advisory `not_required` now passes deterministically, while skipped buy vetoes still breach.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -38,6 +38,17 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Recent (most recent first — detail in each sprint doc)
 
 ## Now
+
+🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) BUILT LOCALLY**
+on branch `sprint-191-a-quiet-night-gets-the-same-verdict-twice` (`0.94.03`). The deliberation
+acceptance view now derives approved-buy count from the linked `PMRun.order_intent_set`: quiet
+zero-order and sell-only `not_required` advisory runs pass, while a `not_required` run with an
+approved buy still breaches as `buy_veto_missing`. Law-read record completed before code, `DL-141`
+recorded, A1-A5 planted/proven, and the buy-detection guard was observed red then restored. Local
+`make ci` redirected to `C:\Users\yury_\AppData\Local\Temp\s191-ci.txt` exited 0: **2444 passed /
+4 skipped / 100.00 %**, pip-audit clean, detect-secrets clean. Scope stayed orchestration-only:
+no `contracts/`, graph vocabulary, env key, or tunable change. 🟠 Branch push and `make gate-ran`
+remain pending until the closeout commit exists.
 
 🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). Verified independently of the tool's own
 output: **16/16** apps on `s190`, **16/16** `Succeeded`, scale config **diffed** against the pre-deploy baseline (not

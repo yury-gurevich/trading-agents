@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+from contracts.portfolio_manager import OrderIntentSet
 from orchestration.observatory import Check, StageView
 
 if TYPE_CHECKING:
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
 DELIBERATED_EDGE = "DELIBERATED_BY"
 EXECUTED_EDGE = "EXECUTED_BY"
 ADVISORY_STATUSES = frozenset({"applied", "applied_failed_open", "proceeded_unvetoed"})
+NOT_REQUIRED_STATUS = "not_required"
+BUY_VETO_MISSING = "buy_veto_missing"
 
 
 def deliberation(graph: GraphStore, node: Node) -> StageView:
@@ -31,9 +34,10 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
     failed_open_count = _count(node.props.get("failed_open_count"))
     failed_open_tickers = _tickers(node.props.get("failed_open_tickers"))
     failed_open_reason = str(node.props.get("failed_open_reason") or "")
-    execution = _linked_execution(graph, node)
+    pm_run, execution = _linked_pm_and_execution(graph, node)
     posture = _prop(execution, "deliberation_posture")
     status = _prop(execution, "deliberation_status")
+    approved_buy_count = _approved_buy_count(pm_run)
     coverage = _coverage(real_debate_count, reviewed)
     outputs: tuple[str, ...] = (
         f"reviewed={reviewed}  vetoed={vetoed_count}",
@@ -54,7 +58,11 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
         "failed_open_count": failed_open_count,
         "deliberation_posture": posture,
         "advisory_attribution": _advisory_attribution(
-            posture, status, failed_open_count, failed_open_reason
+            posture,
+            status,
+            failed_open_count,
+            failed_open_reason,
+            approved_buy_count,
         ),
     }
     checks = [
@@ -103,15 +111,31 @@ def _display(value: int | None) -> str:
     return "n/a" if value is None else str(value)
 
 
-def _linked_execution(graph: GraphStore, node: Node) -> Node | None:
+def _linked_pm_and_execution(
+    graph: GraphStore, node: Node
+) -> tuple[Node | None, Node | None]:
     pm_run = next(
         iter(graph.ancestors(node, max_depth=1, edge_types={DELIBERATED_EDGE})), None
     )
     if pm_run is None:
-        return None
-    return next(
+        return None, None
+    execution = next(
         iter(graph.descendants(pm_run, max_depth=1, edge_types={EXECUTED_EDGE})), None
     )
+    return pm_run, execution
+
+
+def _approved_buy_count(node: Node | None) -> int | None:
+    if node is None:
+        return None
+    raw = node.props.get("order_intent_set")
+    if raw is None:
+        return None
+    try:
+        order_set = OrderIntentSet.model_validate(raw)
+    except ValueError:
+        return None
+    return sum(1 for intent in order_set.approved if intent.action == "buy")
 
 
 def _prop(node: Node | None, name: str) -> str | None:
@@ -126,8 +150,15 @@ def _advisory_attribution(
     status: str | None,
     failed_open_count: int | None,
     failed_open_reason: str,
+    approved_buy_count: int | None,
 ) -> str:
     if posture != "advisory":
+        return "missing"
+    if status == NOT_REQUIRED_STATUS:
+        if approved_buy_count == 0:
+            return "ok"
+        if approved_buy_count is not None:
+            return BUY_VETO_MISSING
         return "missing"
     if status not in ADVISORY_STATUSES:
         return "missing"

@@ -8,6 +8,51 @@ and is marked CLOSED here.
 
 ---
 
+## DL-141 - `not_required` is attributable only when the PM approved no buys - status: DECIDED (2026-09-01)
+
+**The question.** [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) found
+that advisory acceptance can return opposite verdicts for identical quiet runs. If the empty
+`DeliberationRun` lands before execution polls, execution records `deliberation_status="applied"`
+and the stage passes. If it lands after execution polls, execution records
+`deliberation_status="not_required"` and the same no-buy run fails
+`deliberation.advisory_attribution: missing`.
+
+**Decision 1 - `not_required` is attributable when the linked PMRun has zero approved buys.**
+`not_required` is already part of the execution status vocabulary (`EXEC-OUT-09`) and ADR-0022 says
+the veto gates buys, never exits. The acceptance reader therefore derives the missing fact from the
+linked `PMRun.order_intent_set`: zero approved buys is attributable, including sells-only runs;
+one or more approved buys is still a breach. The payload is readable without a graph-vocabulary
+change: `orchestration.packs.trading_observatory_chain` already validates the same nested property
+with `OrderIntentSet.model_validate(...)`.
+
+**Rejected alternatives.** Adding `not_required` to the advisory status set globally was rejected
+because it would also green-light a skipped veto on an exposure-opening buy. Conditioning on
+`submitted == 0` or `approved_count == 0` was rejected because both misclassify sell-only runs.
+Adding an `ExecutionRun` buy-count property was rejected because the fact is already derivable and a
+new graph property would turn an image-only retag into a vocabulary deploy.
+
+**Decision 2 - compute the buy count at the traversal boundary and keep attribution scalar.** The
+view already walks `DeliberationRun <-DELIBERATED_BY- PMRun -EXECUTED_BY-> ExecutionRun`. It now
+keeps the PMRun from that traversal, derives an approved-buy count, and passes that count into the
+pure `_advisory_attribution(...)` helper. This keeps graph traversal out of the helper and avoids
+any import from `agents.execution.deliberation_gate`.
+
+**Rejected alternatives.** Putting the graph lookup inside `_advisory_attribution` was rejected
+because it mixes traversal with a scalar policy check. Importing execution's `has_buy` was rejected
+because orchestration can read contract-shaped graph facts directly and should not couple this
+view to an agent implementation module.
+
+**Decision 3 - the buy breach is named `buy_veto_missing`.** Existing unattributable cases keep the
+`missing` token, while `not_required` beside an approved buy reports the sharper value. The check
+shape stays the same (`oneof ("ok",)`), so downstream breach rendering still fails on any non-`ok`
+value without a new acceptance primitive.
+
+**Law-cycle answer.** No law cycle is owed. No `contracts/` file, graph vocabulary, env key, or
+tunable changes. `EXEC-OUT-09` already declares `not_required`; `EXEC-OBS-04` states the
+posture-severity rule and does not enumerate a status list that omits it. `DRIFT-056` was not filed.
+
+---
+
 ## DL-140 - S172's K=4 concurrency measured at last, and it does not clear its own bar - status: MEASURED (2026-09-01)
 
 **The question.** [S172](sprints/sprint-172-independent-debates-run-independently.md) has been

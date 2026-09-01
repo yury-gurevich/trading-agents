@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 18:57 AEST · **Version:** 0.94.03 · **🟩 S191 built locally: quiet/no-buy advisory `not_required` now passes deterministically, while skipped buy vetoes still breach.**
+**Last updated:** 2026-09-01 19:35 AEST · **Version:** 0.94.03 · **🟩 S191 merged and gate-proven — a quiet night now gets the same acceptance verdict either way, confirmed on the live run that failed this morning.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -39,43 +39,32 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) BUILT LOCALLY**
-on branch `sprint-191-a-quiet-night-gets-the-same-verdict-twice` (`0.94.03`). The deliberation
-acceptance view now derives approved-buy count from the linked `PMRun.order_intent_set`: quiet
-zero-order and sell-only `not_required` advisory runs pass, while a `not_required` run with an
-approved buy still breaches as `buy_veto_missing`. Law-read record completed before code, `DL-141`
-recorded, A1-A5 planted/proven, and the buy-detection guard was observed red then restored. Local
-`make ci` redirected to `C:\Users\yury_\AppData\Local\Temp\s191-ci.txt` exited 0: **2444 passed /
-4 skipped / 100.00 %**, pip-audit clean, detect-secrets clean. Scope stayed orchestration-only:
-no `contracts/`, graph vocabulary, env key, or tunable change. 🟠 Branch push and `make gate-ran`
-remain pending until the closeout commit exists.
+🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
+(`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked
+`PMRun.order_intent_set`, so quiet zero-order *and* sell-only `not_required` runs pass, while a `not_required`
+beside an approved buy still breaches as `buy_veto_missing` and an unreadable PM payload fails closed.
+🟩 **Verified independently:** claimed SHA **is** the tip, `GATE PROVEN` incl. post-merge **CodeQL**, PATCH correct.
+🎯 **The real proof is live, not a fixture:** `sched-2026-08-31` — which returned `ACCEPTANCE FAIL` this
+morning — now re-runs **`ACCEPTANCE PASS`**. 🟠 **NOT DEPLOYED**; vocabulary unmoved, so image-only retag.
 
-🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). Verified independently of the tool's own
-output: **16/16** apps on `s190`, **16/16** `Succeeded`, scale config **diffed** against the pre-deploy baseline (not
-sampled) — zero drift; `dispatcher-cron` on `s190` with cron **`30 22 * * 1-5`** intact. `DeployRecord`
-`deploy:2026-09-01T01:32:41…` carries the **build run's** head SHA `b0185e76…` read back from the workflow (item 21's
-defect, hand-avoided a third time). 🚨 **S190 could not travel alone:** the vocabulary pack moved (`93dab2e6…` →
-`9b57a997…`), so an image-only retag would have met the fail-closed write guard mid-cascade (S148/[DL-85](design-log.md));
-the full `up` carried **S190 + S189 + S188 + item 34's preflight fix** together. `alembic upgrade head` was a **no-op**
-(already `0001_spine`) and **`ENV PRESERVATION` 16/16**, so no DL-100 revert. 🪤 **Two Dependabot merges had reached
-`main` ungated and the images were built from them** — auto-merge pushes via `GITHUB_TOKEN`, which by design triggers
-no workflow; **PR #82's merge commit differed from its gated head by 475 lines of `uv.lock`**, a union never gated as a
-unit. CI + Security Findings were dispatched and `GATE PROVEN` re-read for `b0185e76…` *before* the fleet moved.
+🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). **16/16** on `s190`, **16/16**
+`Succeeded`, scale config **diffed** against baseline — zero drift; cron **`30 22 * * 1-5`** intact; `DeployRecord`
+carries the **build run's** head SHA `b0185e76…` (item 21's defect, hand-avoided a third time). 🚨 **S190 could
+not travel alone:** the vocabulary pack moved, so a retag would have met the fail-closed write guard mid-cascade
+(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34's preflight fix** together,
+with `alembic upgrade head` a **no-op** and **`ENV PRESERVATION` 16/16**. 🪤 **Two Dependabot merges had reached `main` ungated** and the images came from them — re-gated by hand
+before the fleet moved; the mechanism is work-queue item 39.
 
 🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
 (`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
-asked. A `BrokerStopOrder` whose sibling `Fill` reached a terminal broker state is no longer returned by
-`active_broker_stop_orders`, so **a fired stop stops being counted as protection**; a resting-stop `Fill` is no longer
-an open order; and the stale-order sweep compares **live broker stop to live graph stop** instead of type-to-lifecycle.
-Six scattered status vocabularies collapse into one module — and `partial` stayed non-terminal, so S176 is intact.
-Execution laws **v1.4** (`EXEC-OBS-05`), rollup **35 / 61**, `DRIFT-055` **CORRECTED**, `DL-139` amended.
-🟩 **Verified independently of the handback:** `GATE PROVEN` for `c682907…` from a worktree at that commit,
-security baseline untouched, PATCH bump correct, both modules still under 200. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by
-**re-citation** — the tests already asserted it, filed under `EXEC-IDM-01`.
-🟩 **PROVEN LIVE ON THE FLEET, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`, 99 tickers) ran **8/8
-with zero faults**, where the same stage on `s187` raised **17** `stop identity mismatch` warnings and a
-`cancel_stop` `HTTP 422` nine hours earlier. Broker **identical before and after** — 28 positions / 28 stops, **same
-order IDs**, 0 created, 0 cancelled. Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
+asked: a fired stop stops being counted as protection, a resting-stop `Fill` is no longer an open order, and the
+stale-order sweep compares **live broker stop to live graph stop**. Six status vocabularies collapse into one, and
+`partial` stayed non-terminal so S176 is intact. Execution laws **v1.4**, rollup **35 / 61**, `DRIFT-055` CORRECTED.
+🟩 **Verified independently:** `GATE PROVEN` for `c682907…` from a worktree at that commit, baseline untouched,
+PATCH bump correct. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by **re-citation**, already asserted under `EXEC-IDM-01`.
+🟩 **PROVEN LIVE, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`) ran **8/8 with zero faults** where
+`s187` raised **17** mismatch warnings and a `cancel_stop` 422 nine hours earlier; broker **identical before and
+after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
 
 🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight now
 runs the *same* import route prep runs. **Measured both ways** (real → exit 0, missing module → exit 1) and

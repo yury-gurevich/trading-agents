@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 11:47 AEST · **Version:** 0.94.02 · **🟩 Fleet deployed to `s190` — S190, S189, S188 and item 34's preflight fix reached the fleet in one full `up`; three live proofs now ride on tonight's run.**
+**Last updated:** 2026-09-01 15:07 AEST · **Version:** 0.94.02 · **🟩 `s190` is live-proven — S190's stop sweep raised zero faults where `s187` raised 17, and S188's credential tests fired inside the fleet for the first time.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -61,8 +61,10 @@ Execution laws **v1.4** (`EXEC-OBS-05`), rollup **35 / 61**, `DRIFT-055` **CORRE
 🟩 **Verified independently of the handback:** `GATE PROVEN` for `c682907…` from a worktree at that commit,
 security baseline untouched, PATCH bump correct, both modules still under 200. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by
 **re-citation** — the tests already asserted it, filed under `EXEC-IDM-01`.
-🟢 **DEPLOYED `s190` 2026-09-01; live proof owed** — tonight must show **zero new `BrokerStopIdentityMismatch`
-faults** (17 fired this morning on `s187`, plus a `cancel_stop` 422) and `active_broker_stop_orders` = the broker's count.
+🟩 **PROVEN LIVE ON THE FLEET, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`, 99 tickers) ran **8/8
+with zero faults**, where the same stage on `s187` raised **17** `stop identity mismatch` warnings and a
+`cancel_stop` `HTTP 422` nine hours earlier. Broker **identical before and after** — 28 positions / 28 stops, **same
+order IDs**, 0 created, 0 cancelled. Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
 
 🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight now
 runs the *same* import route prep runs. **Measured both ways** (real → exit 0, missing module → exit 1) and
@@ -78,19 +80,15 @@ bites only on `proceeded_unvetoed` — *no `DeliberationRun` at all* after the g
 adds `debate_coverage >= 1.0` and `failed_open_count <= 0`. **Every degraded night of the outage was
 `applied_failed_open`**, so `binding` would have blocked **zero** orders on any of them; it would only have made
 acceptance red. DL-116's grace is what made the veto bind, on 2026-08-19, and this switch does not move DL-119's 73 %.
-🟠 **FLIP CONDITION NOT MET — 1 of 3, measured 2026-09-01.** `sched-2026-08-31` carried `deliberation_posture=advisory`
-✅, but `real_debate_count` was **0** and `failed_open_count == 0` only **vacuously**: PM approved nothing (28 holds;
-GOOGL, the lone buy, failed sizing), so no debate ran and the master/Key Vault path is *still* untested. **Posture
-stays `advisory`** — for want of evidence, not by choice. 🚨 **That run also went `ACCEPTANCE FAIL` for a non-defect:**
-`not_required` is declared (`agents/execution/deliberation_gate.py:38`) but missing from `ADVISORY_STATUSES`
-(`orchestration/packs/trading_deliberation_view.py:20`), so **a no-trade day cannot pass the advisory gate**.
+🟠 **FLIP CONDITION 1 of 3 on `sched-2026-08-31`** — the posture landed, but `real_debate_count` was **0** and
+`failed_open_count == 0` only vacuously; PM approved nothing, so no debate ran. 🟩 **Its real purpose is now met
+another way:** S188's in-fleet tests show all three deliberators passing `anthropic` through master's Key Vault, so
+the credential path is proven and only **debate mechanics** still need item 3's K=4 run. Posture stays `advisory`.
 
-🟩 **SUPERSEDED BY `s190` — the fleet was deployed to `s187` on 2026-08-30**, 16/16 verified, and
-`sched-2026-08-31` did carry `deliberation_posture=advisory` on its `ExecutionRun`, so that half of its proof landed.
+🟩 **SUPERSEDED BY `s190`** — `s187` deployed 2026-08-30, 16/16 verified; its runtime half landed on `sched-2026-08-31`.
 
 🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](design-log.md) outage is **over** (the
-Anthropic half was an **operator-set** spend limit, not credit). 🚨 **From this machine, not the fleet** — and
-`sched-2026-08-31` ran no debates, so the fleet's own path is still unproven.
+Anthropic half was an **operator-set** spend limit, not credit). 🟩 **And now from inside the fleet too**, via S188.
 
 🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
 **[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
@@ -123,8 +121,9 @@ pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-1
 (`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure
 so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstance`; laws **v1.2**, `GATE PROVEN` for
 the merged SHA, post-merge CodeQL clean. 🚨 A merge-review correction flipped the *primary* OHLCV credential to
-required ([DL-136](design-log.md) amendment). 🟢 **DEPLOYED `s190` 2026-09-01**, every `required=True` credential
-probed green first. **The activation-refusal proof is still owed** — a fleet fact only after tonight's run.
+required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09-01:** 15/15 agents `active` and the
+tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
+🟠 Only the **refusal** half is still owed, and 🪤 no green-credential night can supply it.
 
 🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED** — built and gate-proven at
 `5bf72c9`, unmerged. 🎯 **The K=4 measurement is now next** ([DL-135](design-log.md)): it needs `s172` images and peer
@@ -132,16 +131,17 @@ probed green first. **The activation-refusal proof is still owed** — a fleet f
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
-🪤 **Two live residues to decide, neither urgent.** **2 NFLX shares** from the S172 test harness, never vetoed
-(selling is a real trade); and `cancel_stop` `HTTP 422`, which **recurred on `sched-2026-08-31`** — S190 should end it.
+🪤 **One live residue to decide, not urgent.** **2 NFLX shares** from the S172 test harness, never vetoed
+(selling is a real trade). The `cancel_stop` `HTTP 422` half is **closed** — zero faults on the `s190` verify run.
 
 ## Next
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-🎯 **Re-ranked 2026-09-01, after the `s190` deploy.** **(1)** the advisory-gate no-trade defect — it reds the gate
-for a non-defect and would make tonight unreadable; **(2)** item 3, S172's K=4 measurement; **(3)** the Dependabot
-auto-merge gate hole (merge commits reach `main` ungated), with PR #83 open and failing CI merged-with-main.
+🎯 **Re-ranked 2026-09-01, after the `s190` deploy and its live proof.** **(1)** item 38, now measured as a **race**
+— the same zero-order inputs passed acceptance on one run and failed on another; **(2)** item 3, S172's K=4
+measurement, which is now the *only* thing standing between the veto and a verdict; **(3)** item 39, the Dependabot
+auto-merge gate hole, with PR #83 open and failing CI merged-with-main.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

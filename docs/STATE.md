@@ -49,7 +49,7 @@ operator's local merges working, so it binds Dependabot and nothing else.
 **activated**. Torn down by explicit key, every label back to baseline. 🪤 Zero auto-remediation is **correct** (`manual` is the default); an earlier reading of mine is retracted.
 🚨 **THE SWEEP ALSO FOUND A DEFECT NOBODY SOUGHT — item 40** ([DL-143](design-log.md)): **38 of 55 runs cannot be read at all.**
 S184's back-compat shim opens with `isinstance(data, dict)` while the store returns `MappingProxyType`, so it has **never once run in
-production**, and the dashboard raises on any pre-S184 run. 🪤 It passed its own suite throughout: its tests hand it dict literals. 🟠 Item 41 filed.
+production**, and the dashboard raises on any pre-S184 run. 🪤 It passed its own suite throughout: its tests hand it dict literals; specced as **S193**. 🟠 Item 41 filed.
 
 🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
 (`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked

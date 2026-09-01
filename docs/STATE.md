@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-09-01 20:15 AEST · **Version:** 0.94.03 · **🟩 S191 merged, gate-proven and DEPLOYED `s191` — a quiet night now gets the same acceptance verdict either way, confirmed on the live run that failed this morning.**
+**Last updated:** 2026-09-01 20:36 AEST · **Version:** 0.94.03 · **🟩 Three owed items closed with no code and no bump — and the sweep that proved one of them found a shim that has never run in production.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
-each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
+each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
 its success factors are *proven* (tests, `make ci`, the named live check) — never restate intent as outcome.
 **Size rules**, after this file reached 574 lines with a **112 KB header line**: keep it **under 200
 lines**, and keep the header above to **three clauses — stamp, version, one headline**. Replace that
@@ -39,6 +39,18 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
+🟩 **PROVEN RESULT — THREE OWED ITEMS CLOSED, 2026-09-01. No code changed, no version moved.**
+🟩 **ITEM 39 CLOSED BY PREVENTION** ([DL-142](design-log.md)) — the rule gates *heads*, and a merge builds a tree no head ever had.
+`required_status_checks.strict` and `allow_update_branch`, both **`false` → `true`**, make the gated head *be* the merged tree; an
+independent re-read shows **exactly one field changed** and both open PRs flipped to `BEHIND`. 🪤 `enforce_admins=false` keeps the
+operator's local merges working, so it binds Dependabot and nothing else.
+🟩 **ITEM 36 CLOSED — the owed refusal half, with a control arm** ([DL-144](design-log.md)): a deliberately wrong Alpaca key on
+`execution` gave `ActivationRefused`, `Escalation` **0 → 1**, **`AgentInstance` unmoved**; the identical harness with the real key
+**activated**. Torn down by explicit key, every label back to baseline. 🪤 Zero auto-remediation is **correct** (`manual` is the default); an earlier reading of mine is retracted.
+🚨 **THE SWEEP ALSO FOUND A DEFECT NOBODY SOUGHT — item 40** ([DL-143](design-log.md)): **38 of 55 runs cannot be read at all.**
+S184's back-compat shim opens with `isinstance(data, dict)` while the store returns `MappingProxyType`, so it has **never once run in
+production**, and the dashboard raises on any pre-S184 run. 🪤 It passed its own suite throughout: its tests hand it dict literals. 🟠 Item 41 filed.
+
 🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
 (`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked
 `PMRun.order_intent_set`, so quiet zero-order *and* sell-only `not_required` runs pass, while a `not_required`
@@ -46,15 +58,16 @@ beside an approved buy still breaches as `buy_veto_missing` and an unreadable PM
 🟩 **Verified independently:** claimed SHA **is** the tip, `GATE PROVEN` incl. post-merge **CodeQL**, PATCH correct.
 🎯 **The real proof is live, not a fixture:** `sched-2026-08-31` — which returned `ACCEPTANCE FAIL` this morning —
 now re-runs **`ACCEPTANCE PASS`**. 🟩 **DEPLOYED `s191`** by image-only retag: **16/16** on `s191`, **16/16**
-`Succeeded`, scale **diffed identical**, cron intact, `DeployRecord` on the build run's `1f0b6a0…`. 🟠 Live test owed.
+`Succeeded`, scale **diffed identical**, cron intact, `DeployRecord` on the build run's `1f0b6a0…`. 🟩 **LIVE-PROVEN, AND NO CASCADE WAS NEEDED:** the view is imported only by `accept.py` and the
+dashboard, and the fleet is **16 apps with no dashboard among them** — so it was proven over **all 55 runs on the spine**
+rather than one run. Both race branches are covered by real runs; `sched-2026-08-31` **PASSes**.
 
-🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). **16/16** on `s190`, **16/16**
-`Succeeded`, scale config **diffed** against baseline — zero drift; cron **`30 22 * * 1-5`** intact; `DeployRecord`
-carries the **build run's** head SHA `b0185e76…` (item 21's defect, hand-avoided a third time). 🚨 **S190 could
-not travel alone:** the vocabulary pack moved, so a retag would have met the fail-closed write guard mid-cascade
-(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34's preflight fix** together,
-with `alembic upgrade head` a **no-op** and **`ENV PRESERVATION` 16/16**. 🪤 **Two Dependabot merges had reached `main` ungated** and the images came from them — re-gated by hand
-before the fleet moved; the mechanism is work-queue item 39.
+🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`; now superseded by `s191` above). 16/16 on tag
+and `Succeeded`, scale **diffed** to zero drift, cron intact, `DeployRecord` on the **build run**'s SHA `b0185e76…`.
+🚨 **S190 could not travel alone:** the vocabulary pack moved, so a retag would have met the fail-closed write guard
+mid-cascade (S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**,
+**`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges had reached `main` ungated and the images came from them — now
+closed as item 39.
 
 🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
 (`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
@@ -86,19 +99,6 @@ acceptance red. DL-116's grace is what made the veto bind, on 2026-08-19, and th
 another way:** S188's in-fleet tests show all three deliberators passing `anthropic` through master's Key Vault, so
 the credential path is proven and only **debate mechanics** still need item 3's K=4 run. Posture stays `advisory`.
 
-🟩 **SUPERSEDED BY `s190`** — `s187` deployed 2026-08-30, 16/16 verified; its runtime half landed on `sched-2026-08-31`.
-
-🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](design-log.md) outage is **over** (the
-Anthropic half was an **operator-set** spend limit, not credit). 🟩 **And now from inside the fleet too**, via S188.
-
-🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
-**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
-PARAM/settings sync. 🚨 Its audit found **20× its scope** — 60 divergences across nine agents, 3 fixed and **57
-baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-queue item 33).
-**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
-batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
-🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
-
 🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at 0.998 %; GOOGL then **failed** at
 1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one company** ([DL-122](design-log.md)).
 
@@ -124,7 +124,7 @@ so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstanc
 the merged SHA, post-merge CodeQL clean. 🚨 A merge-review correction flipped the *primary* OHLCV credential to
 required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09-01:** 15/15 agents `active` and the
 tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
-🟠 Only the **refusal** half is still owed, and 🪤 no green-credential night can supply it.
+🟩 **AND THE REFUSAL HALF, 2026-09-01** ([DL-144](design-log.md)) — a broken credential refuses, a control arm activates. **Item 36 is closed.**
 
 🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED AT LAST, AND IT FAILS ITS OWN BAR**
 ([DL-140](design-log.md), 2026-09-01). Trustworthy run (69 `LLMCall` rows all `claude-opus-5`, 13 of 15 really debated), but

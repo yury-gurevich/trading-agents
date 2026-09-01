@@ -8,6 +8,68 @@ and is marked CLOSED here.
 
 ---
 
+## DL-144 - Activation refuses on a broken credential, and the arc that did not fire was configured not to - status: MEASURED (2026-09-01)
+
+**The owed half.** [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md)
+proved in the fleet that credential tests **run** (15/15 agents, 0 failures, `s190` deploy). What no
+green-credential night can supply is the other branch: an activation that actually **refuses**.
+Work-queue item 36 has carried that as owed since.
+
+**Design of the experiment - one variable, and a control.** `execution` is the only
+single-variable target in `trading_credential_tests.json`: two secrets, one probe
+(`alpaca-broker`), `required=True`. Everything else in the pack is either multi-probe (`provider`
+has three optional probes beside its required one) or shares `anthropic-api-key` across four
+agents. A real `MasterAgent` was built through the real composition root `build_trading_master`
+with the real pack data, and handed a secret store returning a deliberately wrong Alpaca key. The
+**control arm** re-ran the identical harness with the real credential. Only the credential differed.
+
+**Result.**
+
+| Arm | Outcome | `Escalation` | `AgentInstance` |
+| --- | --- | --- | --- |
+| broken | `ActivationRefused: credential test(s) failed for 'execution': ['alpaca-broker']` | 0 -> **1** | 2981 -> **2981** |
+| control | **ACTIVATED** `execution:20260901T103230:0` | 1 -> 1 | 2981 -> **2982** |
+
+The escalation carries `failed_credentials=('alpaca-broker',)`, `status='open'`, `mode='manual'`,
+`auto_attempts=0`. **The refused agent got no `AgentInstance`** - that is the property that matters,
+since the instance is what the rest of the fleet reads as "this agent is live". The control is what
+makes the refusal mean something: the same wiring, the same pack, the same spine, one different
+secret, opposite outcomes.
+
+🪤 **Named seam, not papered over.** This is not inside a fleet container. Proving it there would
+mean corrupting a live Key Vault secret whose value **cannot be read back** in order to restore it -
+an unsafe and irreversible test. It was refused on that ground rather than quietly skipped. What
+composes is: the fleet proved the tests *run* on real credentials (`s190`, 2026-09-01), and this
+proves the failure branch *refuses* on real code, real pack data, a real vendor probe and the real
+spine.
+
+**A wrong reading of mine, corrected here.** `RemediationAttempt` stayed **0**, and I first read
+that as DL-36's bounded self-healing arc being dead in the same way the empty `credential_tests`
+tuple was dead. **That was wrong.** `remediation_mode` defaults to `"manual"`
+(`agents/master/settings.py:91`) and its own `why` says so plainly: *"'manual' = refuse + escalate
+to a human ... The auto remediation itself is a later piece (C/D)."* Zero automatic attempts is the
+configured, intended behaviour. The escalation's `mode='manual'` says it on the node itself.
+
+**What is actually there is narrower, and latent.** `agents/master/entrypoint.py:105` constructs
+`MasterAgent` without `remediation_llm`, `remediation_catalogue`, `remediation_system_prompt` or
+`remediation_executors`, all four taking their empty defaults - for the S86/DL-12 reason that the
+master image copies only `kernel/ contracts/ agents/master/` and import-linter forbids
+`agents -> orchestration`, where `build_trading_master` lives. Today that is invisible, because
+`manual` mode would not use them anyway. **The trap is the day someone flips
+`remediation_mode` to `automatic`:** `plan_and_try_remediation` opens with
+`if llm is None or not catalogue: return None` (`agents/master/remediation_execution.py:141`) - a
+**silent** no-op with no fault, no flag, and no marker on the `Escalation`. The switch would appear
+to have been thrown, and the absence of remediation would be indistinguishable from remediation
+having run and found nothing to do. Filed as work-queue item 41: the fix is not to wire the
+catalogue now, it is to make the unwired case **say so**.
+
+**Teardown.** The four nodes created (1 `Escalation`, 1 `AgentInstance`, 2 `Session`) were deleted
+by explicit label and key, each verified to exist exactly once beforehand - no pattern matching,
+after DL-124's lesson about teardown queries that are structurally blind to what they are meant to
+remove. All five watched labels returned to their recorded pre-test values.
+
+---
+
 ## DL-143 - A back-compat shim that has never once run in production - status: MEASURED (2026-09-01)
 
 **Found while proving S191**, not by looking for it. To show the quiet-night fix held on real data

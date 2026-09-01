@@ -160,3 +160,20 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
   agrees are cancelled ([DL-130](../design-log.md)); a stop that *fires* is never reconciled
   ([DL-131](../design-log.md), item 32). 🟩 Item 27's symptom is gone — 24 positions / 24 stops, 1:1, zero
   unprotected — but its live proof is still owed. 🪤 Measured 08-24; seven runs have happened since.
+
+---
+
+**Third entry appended 2026-09-01.** Three `Now` blocks moved down from [`../STATE.md`](../STATE.md) so the 200-line rule held when the 2026-09-01 closures landed: the `s187` deploy (superseded by `s190`), the end of the [DL-125](../design-log.md) provider outage, and S186 + S187 as shipped. All three are settled history whose detail lives in their sprint docs.
+
+🟩 **SUPERSEDED BY `s190`** — `s187` deployed 2026-08-30, 16/16 verified; its runtime half landed on `sched-2026-08-31`.
+
+🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](design-log.md) outage is **over** (the
+Anthropic half was an **operator-set** spend limit, not credit). 🟩 **And now from inside the fleet too**, via S188.
+
+🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
+**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
+PARAM/settings sync. 🚨 Its audit found **20× its scope** — 60 divergences across nine agents, 3 fixed and **57
+baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-queue item 33).
+**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
+batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
+🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.

@@ -8,6 +8,129 @@ and is marked CLOSED here.
 
 ---
 
+## DL-143 - A back-compat shim that has never once run in production - status: MEASURED (2026-09-01)
+
+**Found while proving S191**, not by looking for it. To show the quiet-night fix held on real data
+rather than on one fresh cascade, the acceptance gate was run over **every run in production
+history** - all 55 `RunRequest`s on the live Neon spine. It could not read 38 of them.
+
+**The measurement.** Verdicts over 55 runs: **38 `ERROR`, 16 `FAIL`, 1 `PASS`**. The 38 errors are
+one defect, not many: every one is a `pydantic.ValidationError` on `OrderIntentSet` raised from
+`orchestration/packs/trading_observatory_chain.py:66` (`pm`), and the error *count* per run varies
+only with how many rejected intents that run held (5 to 126). The message is always
+`rejected.N.gate_report.M.outcome  Field required ... input_type=mappingproxy`.
+
+**Cause, measured to one line.** S184 added the tri-state `GateOutcome.outcome`
+(`contracts/portfolio_manager.py:33`) and shipped a migration validator beside it,
+`_accept_historical_passed` (`:38`), whose entire job is to normalise pre-S184 `passed` payloads.
+Its first line is:
+
+```python
+if not isinstance(data, dict) or "outcome" in data or "passed" not in data:
+    return data
+```
+
+The graph store hands back `MappingProxyType`, not `dict` - `kernel/graph_support.py:55`
+`_frozen_value` wraps **every nested Mapping recursively** (`:56`). And
+`isinstance(MappingProxyType({}), dict)` is **`False`**. So the shim takes its early return on
+every payload it exists to convert, and the historical row falls through to a required-field error.
+
+**Proven directly**, not inferred from the traceback:
+
+```text
+isinstance(mappingproxy, dict) = False
+plain dict   -> GateStatus.PASSED
+mappingproxy -> RAISED ValidationError - 1 validation error for GateOutcome
+```
+
+Same payload, same validator, opposite outcomes. The only variable is the wrapper the real store
+applies and the tests do not.
+
+**Why no test caught it.** The shim's tests hand it plain dict literals. Nothing exercised it
+against a payload that had made a round trip through a `GraphStore`, so it passed its own suite
+while being dead in the one place it is ever needed. This is the S184-era analogue of the
+`.env`-less tripwire rule: the fixture has to reproduce the **production type**, not a convenient
+one.
+
+**Blast radius.** Both consumers of `accept_run` are affected - `scripts/accept.py` and
+`surfaces/dashboard/projections.py:55`. The dashboard raises rather than renders for any run older
+than the outcome field. Retrospective reading of **69 %** of production history is currently
+impossible, which is also why this went unseen: nobody had swept the back catalogue until now.
+Current runs are unaffected - they write `outcome`, which is why `sched-2026-08-31` passes.
+
+**Not S191, and S191 is not exposed to it.** The crash is in the PM stage view, which predates
+S191 unchanged. S191's own `OrderIntentSet.model_validate` sits inside `except ValueError`, and
+`ValidationError` subclasses `ValueError`, so the new code degrades to `None` rather than raising.
+
+**The fix is one word** - `dict` becomes `Mapping` at `contracts/portfolio_manager.py:40`. The
+wider question is the class: any `isinstance(x, dict)` applied to graph props is permanently
+`False`. Swept the whole tree - every other hit reads `json.loads` output or an HTTP payload, which
+really are `dict`s, and `narrative()` (`agents/deliberator/review_record.py:85`) is called only at
+write time with in-process dicts (`agents/deliberator/poll.py:86`). The deliberation view already
+gets this right, testing `isinstance(..., Mapping)`. **One live instance, one latent trap.**
+
+**Owed:** a regression test that reads the shim's input back through a real store rather than
+constructing it, plus the sweep re-run as the proof. Filed as work-queue item 40.
+
+---
+
+## DL-142 - Ungated content reaches `main` by being merged, not by being pushed - status: DECIDED (2026-09-01)
+
+**The question.** Work-queue item 39 measured that Dependabot PRs **#81** and **#82** merged to
+`main` on 2026-08-31 with **no `CI` and no `Security Findings` run on either merge commit**, and
+that #82's merge tree differed from its own gated head by **475 lines of `uv.lock`** - a union of
+two lockfiles never gated as a unit, and the union the `s190` images were built from. How is that
+closed?
+
+**What the hole actually is.** "The branch is the gate" gates **heads**. A merge creates a *new
+tree* that no head ever had, and `dependabot-auto-merge.yml` performs that merge with
+`GITHUB_TOKEN`, whose pushes deliberately do not trigger workflows. So the gap is not that a check
+was skipped - it is that the thing which landed was never a thing any check had seen.
+
+**Decision - close it by prevention, in branch protection, not in the workflow.** Two settings,
+measured before and after:
+
+| Setting | Before | After |
+| --- | --- | --- |
+| `required_status_checks.strict` on `main` | `false` | **`true`** |
+| repo `allow_update_branch` | `false` | **`true`** |
+
+`strict: true` refuses any merge whose head is not up to date with `main`, collapsing the gap:
+**the gated head and the merged tree become the same tree**. #82 could not have landed without
+first being rebuilt on post-#81 `main` and passing CI on that union. `allow_update_branch: true` is
+the necessary other half - without it a behind PR merely *stalls*, and a silently parked security
+update is its own failure mode.
+
+**Proven, not assumed.** An independent re-read of the protection object showed **exactly one field
+changed** (`required_status_checks.strict: False -> True`; contexts, `enforce_admins`, force-push
+and deletion settings all identical). Both open PRs then reported `mergeStateStatus=BEHIND` where
+they had been mergeable - the flag binds the actual actor.
+
+**It binds Dependabot without touching the operator's workflow.** `enforce_admins` is `false`, so
+the operator's local `git merge` and `git push origin main` are unaffected; `GITHUB_TOKEN` is not
+an admin, so auto-merge **is** bound. The one actor with the hole is the one actor now constrained.
+
+**Roads not taken.**
+
+1. **A PAT instead of `GITHUB_TOKEN`**, so the merge commit triggers workflows - rejected: that is
+   detection *after* ungated code is already on `main`, and it adds a long-lived secret to hold.
+2. **A scheduled `main` auditor running `assert_gate_ran`** - rejected for the same reason, one
+   step worse: it reports a day late, by which time images may have been built from the union.
+   That is exactly what happened with `s190`.
+3. **GitHub merge queue** - the right answer at scale; it builds and gates the union explicitly.
+   Rejected *for now* as heavier than a one-developer repo on a **monthly** grouped Dependabot
+   schedule needs. Reopen if PR volume ever makes `strict` churn.
+4. **Editing `dependabot-auto-merge.yml`** - rejected: the workflow is correct about *what* may
+   auto-merge (non-major only). The defect is in *what a merge is allowed to be*, one layer down.
+
+**No version bump, no code change.** The fix is entirely repo settings; no Python behaviour ships,
+so the version scheme takes it at no bump.
+
+**Revert, if the churn ever costs more than the risk:** restore the saved protection object with
+`strict` back to `false`, and `gh api -X PATCH repos/:owner/:repo -F allow_update_branch=false`.
+
+---
+
 ## DL-141 - `not_required` is attributable only when the PM approved no buys - status: DECIDED (2026-09-01)
 
 **The question.** [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) found

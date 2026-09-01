@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 20:36 AEST · **Version:** 0.94.03 · **🟩 Three owed items closed with no code and no bump — and the sweep that proved one of them found a shim that has never run in production.**
+**Last updated:** 2026-09-01 21:40 AEST · **Version:** 0.94.03 · **🚨 Three owed items closed — and a second K=4 run says the deliberator's correctness failure is intermittent, while its acceptance criterion cannot be measured at all.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -126,9 +126,9 @@ required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09
 tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
 🟩 **AND THE REFUSAL HALF, 2026-09-01** ([DL-144](design-log.md)) — a broken credential refuses, a control arm activates. **Item 36 is closed.**
 
-🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED AT LAST, AND IT FAILS ITS OWN BAR**
-([DL-140](design-log.md), 2026-09-01). Trustworthy run (69 `LLMCall` rows all `claude-opus-5`, 13 of 15 really debated), but
-concurrency is **1.5x not 4x** and **6 peer replies were dead-lettered**. S171's correlation fails under load. Not mergeable.
+🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](design-log.md), [DL-145](design-log.md)). Same image, same K=4, five hours apart:
+**15/15 debated, 0 fail-opens** where the first run had 13 and 2 — the correctness failure is **intermittent and did not reproduce**. But the speed miss did, **1.78x of a possible 4x**, which
+**separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **Success factor 4 is unmeasurable:** `orphaned_reply_count` lives only in memory and a log line, and `deliberator-manager` logs **nothing** to Log Analytics (proven by control query), so the “6” can never be re-derived and this run's count is **UNKNOWN, not zero**. 🪤 **S192 must record the count first.**
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 

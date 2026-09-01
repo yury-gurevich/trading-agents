@@ -8,6 +8,103 @@ and is marked CLOSED here.
 
 ---
 
+## DL-145 - The K=4 correctness failure did not reproduce, the speed miss did, and the criterion that separates them cannot be measured - status: MEASURED (2026-09-01)
+
+**What was run.** [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md) step 1,
+in the run window the operator opened. The same configuration [DL-140](design-log.md) measured:
+image `s172b` (branch `sprint-172-k4-on-s190`, `fc36370`) on **the three deliberator apps only**, the
+other 13 left on `s191`; peers `maxReplicas=4`, manager pinned at 1; execution and portfolio-manager
+**held at `minReplicas=0`** so no synthetic order could reach a broker. A 15-buy synthetic `PMRun`
+(`verify-2026-09-01-s192-k4-110200`) seeded under `sched-2026-08-31`'s real AnalystRun. Seeded
+11:01:57 UTC, `DeliberationRun` written by 11:13 UTC.
+
+🪤 **DL-140's harness had never been committed** - it lived in that session's scratchpad and was
+gone. The recipe was **recovered from the graph**, not guessed: the surviving 15-buy synthetic run
+`verify-2026-08-19-s172-k4-15-racefix-a7e7ad1` cloned with every `run_id` rewritten, plus the
+`AnalystRun --EVALUATED_BY--> PMRun` edge that real PM runs carry. **That is why this measurement
+was expensive to repeat, and it is the second time in this sprint's history that the apparatus was
+lost rather than the finding.**
+
+### Finding 1 - the correctness failure did not reproduce
+
+| | DL-140 (05:53 UTC) | this run (11:02 UTC) |
+| --- | --- | --- |
+| `real_debate_count` | 13 / 15 | **15 / 15** |
+| `failed_open_count` | 2 (AAPL, BAC) | **0** |
+| `failed_open_tickers` | 2 | **empty** |
+| wall clock | 815 s | **710.5 s** |
+| `LLMCall` rows | 69 | **75** (= 15 x 5 exactly) |
+
+Same image, same K=4, same 15 orders, same lineage, about five hours apart. Every one of the 75
+calls is `claude-opus-5` with `stop_reason=end_turn` - no fallback, no throttle, no truncation - so
+this run is trustworthy by the same test DL-140 applied to itself. **The lost replies and fail-opens
+are therefore intermittent, and DL-140's single run was not a stable characterisation of them.**
+
+### Finding 2 - the speed miss reproduced, so the two symptoms are separable
+
+| Metric | target | DL-140 | this run |
+| --- | --- | --- | --- |
+| span / sum-of-latency | 0.25 | 0.67 | **0.562** |
+| effective concurrency | 4.0x | 1.49x | **1.78x** |
+
+Latency distribution, retained this time: **median 17.2 s, p90 23.0 s, max 32.2 s, and zero calls
+over 120 s**. So the `request_timeout_seconds=120` ceiling is not implicated, and slow individual
+calls are not the explanation - the sum of the work is 1265.0 s and it was spread over a 710.5 s
+span, which is 1.78 lanes of a possible 4.
+
+🚨 **This falsifies DL-140's central guess.** That entry said *"the speed miss and the lost replies
+are very likely one defect, not two."* This run has **the speed miss without the lost replies**, at
+the same concurrency. They are separable, and a sprint that fixes correlation may well leave the
+1.78x exactly where it is.
+
+### Finding 3 - S172's own success factor cannot be measured after the fact
+
+Success factor 4 is `orphaned_reply_count == 0`. That counter lives **only in
+`ServiceBusPeerClient` process memory** (`agents/deliberator/servicebus_peer_client.py:60-66`),
+is incremented by `_record_orphans`, and is emitted **only as a log warning** (`:170`). It is
+**never written to the graph**: the `DeliberationRun` props are `created_at, debates,
+failed_open_count, failed_open_reason, failed_open_tickers, max_rounds, narrative,
+real_debate_count, role_models, source_pm_run_id, transcript, verdicts, vetoed_tickers` - there is
+no orphan field.
+
+And the log is not retained either. `ContainerAppConsoleLogs_CL` holds **625 rows in the last three
+hours** - so the table works - but broken down by app it is `master` 531, `deliberator-proponent` 40,
+`deliberator-opponent` 54, and **`deliberator-manager` zero**. The manager, the one process that
+counts orphans, emits nothing that survives it.
+
+🪤 **The control query is what makes this a finding rather than a guess.** The filtered query
+returned nothing; an unfiltered count over the same window also returned **0**, which is how it was
+established that the table was empty for that app rather than that no orphans occurred. Reporting
+"0 orphans" from the first query would have been the "0 faults" error again.
+
+**So: DL-140's "6 orphaned replies" can never be re-derived, and this run's orphan count is
+`UNKNOWN` - not zero.** It is not reported as zero anywhere in this entry.
+
+### Consequence for S192 - the sprint's first job changed
+
+**Before diagnosing lost replies, make the count a recorded fact.** `orphaned_reply_count` belongs
+on the `DeliberationRun` beside `failed_open_count`, which is already there and is exactly the same
+kind of number. Until then every run has the same blind spot, the acceptance criterion is
+unfalsifiable, and the intermittency in Finding 1 cannot even be counted across runs - which is
+precisely why three attempts and two measurements have not settled this.
+
+**Ruled out, with reasons.**
+- **Declaring S172 mergeable on this run.** Rejected: 15/15 and 0 fail-opens is one good sample of
+  an intermittent failure, and success factor 4 is still unmeasurable. A green sample is not a proof
+  of absence.
+- **Declaring S172 dead on DL-140's run.** Also rejected, for the mirror reason.
+- **Chasing the 1.78x now.** Deferred: it is real and reproducible, but it is a performance shortfall
+  in a veto that is currently *correct*, and Finding 3 blocks the correctness question that outranks
+  it.
+
+**My own miss, recorded rather than buried.** The watcher was written to sample peer replica counts
+every 20 s - the one thing DL-140 lists as `NOT MEASURED` - and it returned `-1` on all 36 samples
+because it invoked `az` via `subprocess` without the Windows `.cmd` resolution. **Peer replica
+counts are still unmeasured, now across two runs.** Whoever runs this next should capture them from
+`az containerapp replica list` in the shell, not from inside Python.
+
+---
+
 ## DL-144 - Activation refuses on a broken credential, and the arc that did not fire was configured not to - status: MEASURED (2026-09-01)
 
 **The owed half.** [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md)

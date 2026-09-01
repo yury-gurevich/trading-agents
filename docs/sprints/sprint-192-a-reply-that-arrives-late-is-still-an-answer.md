@@ -13,6 +13,59 @@
 
 ---
 
+---
+
+## 🚨 AMENDMENT, 2026-09-01 — read this before the rest of the spec
+
+**The spec below was written against a single measurement. It has been re-measured, and the premise
+moved.** Nothing below is deleted, because the reasoning is still worth reading — but where it
+conflicts with this block, **this block wins**. Full detail in [DL-145](../design-log.md).
+
+The reproduction ran in the operator's window: same image `s172b`, same K=4, same 15-order harness,
+about five hours after DL-140's run.
+
+| | DL-140 | re-measured |
+| --- | --- | --- |
+| `real_debate_count` | 13 / 15 | **15 / 15** |
+| `failed_open_count` | 2 | **0** |
+| span ÷ sum | 0.67 (1.49x) | **0.562 (1.78x)** |
+| `orphaned_reply_count` | "6" | **UNKNOWN — see below** |
+
+**1 · The correctness failure did not reproduce.** It is **intermittent**. Do not design a fix
+around the assumption that it happens every run; a green run proves nothing, and so does a red one.
+
+**2 · The speed miss did reproduce, so the two symptoms are separable.** DL-140 guessed they were
+"very likely one defect, not two". This run has the miss **without** the losses at the same
+concurrency, which **falsifies that guess**. Fixing correlation may leave 1.78x untouched. Latency
+was median 17.2 s / p90 23.0 s / max 32.2 s with **zero calls over 120 s**, so the timeout ceiling is
+not the cause and raising it is still the wrong first move.
+
+**3 · 🎯 THE SPRINT'S FIRST JOB HAS CHANGED. Success factor 4 is currently unmeasurable.**
+`orphaned_reply_count` lives only in `ServiceBusPeerClient` process memory
+(`agents/deliberator/servicebus_peer_client.py:60-66`) and is emitted **only as a log warning**
+(`:170`). It is **never written to the graph** — the `DeliberationRun` has no orphan field — and
+`deliberator-manager` contributed **zero** rows to `ContainerAppConsoleLogs_CL` over three hours
+while master, opponent and proponent all logged. DL-140's "6" **can never be re-derived**, and the
+re-measured run's count is **UNKNOWN — not zero**.
+
+> **So step 1 is no longer "reproduce". It is: put `orphaned_reply_count` on the `DeliberationRun`,
+> beside `failed_open_count`, which is already there and is the same kind of number.** Until that
+> exists, the acceptance criterion cannot be falsified, the intermittency in finding 1 cannot be
+> counted across runs, and a fourth attempt will end exactly where the first three did.
+
+🪤 **Then, and only then, reproduce.** With the count recorded, a handful of runs answers the
+question that two expensive runs could not: how often, and correlated with what.
+
+🪤 **Two traps for whoever runs the harness.** (a) **DL-140's harness was never committed** — this
+run had to recover the recipe from the graph. Commit it this time. (b) **Peer replica counts are
+still unmeasured across both runs**; the second attempt failed because it called `az` from Python
+via `subprocess` without Windows `.cmd` resolution. Capture them from the shell.
+
+⚠️ **Do not merge S172 on a green sample.** A good sample of an intermittent failure is not proof of
+absence, and success factor 4 remains unmeasured.
+
+---
+
 ## 🔴 MUST RULE — read the laws before any code
 
 | Location | What lives there | How to treat it |

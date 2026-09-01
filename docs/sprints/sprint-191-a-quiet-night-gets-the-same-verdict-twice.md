@@ -6,7 +6,7 @@
 **Status:** SPEC
 **Version:** *next available PATCH at merge*
 **Effort:** S
-**Decisions:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md) the veto gates buys, never exits · `DL-140` (take it, then re-check at merge) · work-queue item 38
+**Decisions:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md) the veto gates buys, never exits · `DL-141` (take it, then re-check at merge) · work-queue item 38
 
 > **Why this bump kind.** No new capability. `EXEC-OBS-04` already promises that acceptance severity
 > follows the posture, and the acceptance view cannot deliver it: it reds a run whose every artefact
@@ -157,7 +157,7 @@ consistent one: it cannot be reproduced on demand, so it trains the reader to di
 
 ## The design decisions this sprint has to make
 
-**Record these in `docs/design-log.md` as `DL-140` with their rejected alternatives BEFORE
+**Record these in `docs/design-log.md` as `DL-141` with their rejected alternatives BEFORE
 implementing (LAW-06).**
 
 1. **What makes `not_required` attributable?** My recommendation is *"no buy intent in the linked
@@ -173,7 +173,7 @@ implementing (LAW-06).**
    more specific value is warranted, name it — but check it does not break the `oneof ("ok",)` check
    shape.
 
-🪤 **Take the next free DL number (`DL-140`), then re-check it at merge.** The log has historic
+🪤 **Take the next free DL number (`DL-141`), then re-check it at merge.** The log has historic
 duplicates and entries are prepended *and* appended. A branch cut before another DL lands will
 collide even when the number was free at branch time.
 
@@ -195,7 +195,7 @@ collide even when the number was free at branch time.
 ## Steps, in order
 
 1. **Read the laws** (MUST RULE above) and write the Law reading record.
-2. **Record the design decisions** in `docs/design-log.md` as `DL-140`.
+2. **Record the design decisions** in `docs/design-log.md` as `DL-141`.
 3. **Plant the failing test first** (test A1) and watch it fail. Paste the red output.
 4. **Implement.**
 5. **Law cycle** if owed — otherwise record the answer and the `EXEC-OBS-04` reading that justifies it.
@@ -230,7 +230,7 @@ matching the convention the existing tests in that file already follow.
 - [ ] No change to `applied`, `applied_failed_open`, `proceeded_unvetoed`, or the `binding` branch (A5).
 - [ ] No `contracts/` change, no graph-vocabulary change, no new env key or tunable — stated as
       observed, so the deploy stays an image-only retag.
-- [ ] Design decisions recorded as `DL-140` with rejected alternatives.
+- [ ] Design decisions recorded as `DL-141` with rejected alternatives.
 - [ ] Law cycle done, or the law-cycle question answered No **with the `EXEC-OBS-04` wording that
       justifies it**, plus a `DRIFT-056` row if the law is silent.
 - [ ] Every new guard planted, watched to fail, restored — stated per guard.
@@ -333,7 +333,7 @@ wording and record your answer.
 
 ORDER OF WORK.
 1. Read laws, write the Law reading record.
-2. Record the design decisions in docs/design-log.md as DL-140, WITH the rejected alternatives.
+2. Record the design decisions in docs/design-log.md as DL-141, WITH the rejected alternatives.
    Re-check the number is still free when you merge — the log has historic duplicates.
 3. Write the FAILING TEST FIRST and paste the red output before implementing.
 4. Implement. 5. Guards. 6. make ci. 7. Fill the handback sections.
@@ -447,7 +447,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:**
 
-**Design decisions:** recorded as `DL-140` —
+**Design decisions:** recorded as `DL-141` —
 
 **Proof — the red run first:**
 

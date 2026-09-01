@@ -8,6 +8,75 @@ and is marked CLOSED here.
 
 ---
 
+## DL-140 - S172's K=4 concurrency measured at last, and it does not clear its own bar - status: MEASURED (2026-09-01)
+
+**The question.** [S172](sprints/sprint-172-independent-debates-run-independently.md) has been
+BUILT and gate-proven since 2026-08-20 and unmergeable ever since, because its success factors are
+*measurements* and three attempts returned `real_debate_count=0` — twice on a dry vendor credit
+balance, once on an OpenAI 429. Work-queue item 3 has carried it as "ready to prove, then merge".
+
+**What was run.** Branch `sprint-172-k4-on-s190` (`fc36370`, `make ci` 2446 passed / 100.00 %,
+`GATE PROVEN`) built as `s172b` and deployed to **the three deliberator apps only** — the other 13
+stayed on `s190`, which is safe because the one shared-image file the branch touches,
+`kernel/bus_azure_ready.py`, changes **type annotations only**. Peers at `maxReplicas=4`, manager
+pinned at 1. Execution and PM were held at `minReplicas=0` so the synthetic orders could never reach
+a broker. A 15-buy `PMRun` (`pm-run-s172k4-a`) was seeded into `sched-2026-08-31`'s **real** analyst
+chain so `build_veto_context` rendered genuine analyst, scanner and market evidence rather than
+`Lineage: no AnalystRun linked`. 🪤 **15 orders is synthetic on purpose** — real nights have produced
+9, 9, 7, 5, 4, 4 and 3, so the 15-order breaking point has never occurred naturally and never will
+on demand.
+
+**The run is trustworthy, which is the part the previous three attempts could not establish.** All
+**69** `LLMCall` rows are `claude-opus-5` with `stop_reason=end_turn`: no fallback, no throttle, no
+truncation. 13 of 15 orders produced real debates.
+
+**Measured 2026-09-01, `pm-run-s172k4-a`, seeded 05:53:34 UTC, complete 06:07:08 UTC.**
+
+| Postcondition | Target | Measured | |
+| --- | --- | --- | --- |
+| span / sum-of-latency | **0.25** (1/K) | **0.67** (raw `sum/span` 1132.5 s / 760.9 s = 1.49) | red |
+| 15 orders inside the 1800 s grace | 15 debates, no `DeliberationGraceExpired` | **815 s** end-to-end, 985 s headroom, no grace fault, but only **13** real debates | amber |
+| `orphaned_reply_count == 0` | 0 | **6 orphaned peer replies dead-lettered** | red |
+| Fault isolation | isolated | **2 of 15** lost their peer reply entirely (AAPL, BAC) | red |
+
+🚨 **The success factor as written cannot be satisfied in the direction it names, and this is a spec
+defect worth fixing before anyone re-runs it.** Success factor 1 says the ratio *drops* from the
+0.95 measured on 2026-08-19 to about 0.25. But if 0.95 is the **serial** baseline, then
+`sum-of-latency / span` must **rise** under parallelism, not fall — perfect K=4 would read ~4.0, not
+0.25. The only orientation in which both numbers are coherent is **span / sum-of-latency**: serial
+about 1.0, perfect K=4 about 0.25. Read that way the honest figures are **0.95 -> 0.67**, i.e.
+**effective concurrency about 1.5x, not 4x**. Whoever re-runs this must state the orientation.
+
+🚨 **The speed miss and the lost replies are very likely one defect, not two.** The manager
+dead-lettered replies while waiting on *named* correlation keys — `SCHW:defender:r2`,
+`INTC:challenger:r2`, `BAC:challenger:r1`, `NFLX:challenger:r1` (2) and `NFLX:challenger:r2` — so
+replies are arriving for debates it is not currently waiting on, being discarded, and two orders
+then time out with `RuntimeError: no deliberator peer reply received`. That is S171's correlation
+guarantee **failing under concurrency**, which is the very thing S172 exists to establish; and a
+manager that serialises on waits while throwing away replies it will later need is a sufficient
+explanation for 1.5x instead of 4x.
+
+**Consequence for item 3.** The branch is **not mergeable on this evidence**. It is no longer
+blocked on an instrument, though — the instrument now exists and is repeatable, and the failure has
+named correlation keys to work from. The K=1 determinism replay (success factor 3) was **not run**:
+determinism is moot while 2 of 15 debates are lost.
+
+**Ruled out, with reasons.**
+- **Merging anyway because wall-clock improved.** Rejected: 815 s vs a projected 1,854 s is real, but
+  success factor 4 is `orphaned_reply_count == 0` and it measured 6. Shipping a veto that silently
+  discards peer replies is worse than a slow one.
+- **Raising `debate_concurrency` above 4 to buy speed.** Rejected: the losses are correlation
+  failures, so more concurrency would produce more of them.
+- **Running K=1 for the determinism comparison anyway.** Rejected as premature, and it costs a second
+  full Opus debate set.
+
+**Teardown.** `pg_teardown --prefix s172k4 --contains` removed **67 edges / 71 nodes** (the PMRun,
+its DeliberationRun and 69 LLMCall rows). `sched-2026-08-31` re-traced 8/8 and its AnalystRun is
+intact. The fleet is back to **16/16 on `s190`** with scale config diffed identical to the
+pre-measurement baseline.
+
+---
+
 ## DL-139 - Execution's broker facts get one liveness predicate, derived not written - status: DECIDED (2026-08-31)
 
 **The question.** [DL-131](design-log.md) closed with *"one predicate module for execution's broker

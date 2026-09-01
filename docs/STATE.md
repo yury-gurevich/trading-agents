@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 15:07 AEST · **Version:** 0.94.02 · **🟩 `s190` is live-proven — S190's stop sweep raised zero faults where `s187` raised 17, and S188's credential tests fired inside the fleet for the first time.**
+**Last updated:** 2026-09-01 16:20 AEST · **Version:** 0.94.02 · **🚨 S172's K=4 concurrency finally measured and it misses its own bar — 1.5x not 4x, with 6 peer replies dead-lettered; `s190` itself is live-proven and the fleet is back on it.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
@@ -125,9 +125,9 @@ required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09
 tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
 🟠 Only the **refusal** half is still owed, and 🪤 no green-credential night can supply it.
 
-🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED** — built and gate-proven at
-`5bf72c9`, unmerged. 🎯 **The K=4 measurement is now next** ([DL-135](design-log.md)): it needs `s172` images and peer
-`maxReplicas=4`. 🪤 **Rollback is now a retag to `s190`, not `s187`**, and `s172` needs rebuilding on top of `s190`.
+🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED AT LAST, AND IT FAILS ITS OWN BAR**
+([DL-140](design-log.md), 2026-09-01). Trustworthy run (69 `LLMCall` rows all `claude-opus-5`, 13 of 15 really debated), but
+concurrency is **1.5x not 4x** and **6 peer replies were dead-lettered**. S171's correlation fails under load. Not mergeable.
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
@@ -138,10 +138,10 @@ tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-🎯 **Re-ranked 2026-09-01, after the `s190` deploy and its live proof.** **(1)** item 38, now measured as a **race**
-— the same zero-order inputs passed acceptance on one run and failed on another; **(2)** item 3, S172's K=4
-measurement, which is now the *only* thing standing between the veto and a verdict; **(3)** item 39, the Dependabot
-auto-merge gate hole, with PR #83 open and failing CI merged-with-main.
+🎯 **Re-ranked 2026-09-01, after the `s190` proof and the K=4 measurement.** **(1)** item 3's newly-named defect —
+peer replies dead-lettered under concurrency, which blocks the veto's verdict and is now a code fix, not a
+measurement; **(2)** item 38, measured as a **race** (identical inputs, opposite acceptance verdicts), specced as
+[S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md); **(3)** item 39, the Dependabot gate hole.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

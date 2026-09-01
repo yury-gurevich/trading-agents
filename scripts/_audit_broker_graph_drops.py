@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from contracts.broker_lifecycle import is_broker_stop_order
+
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill, BrokerPosition
     from kernel import GraphStore
@@ -51,12 +53,7 @@ def unprotected_dropped_exit_rows(
 
 def is_stop_order(order: BrokerFill) -> bool:
     """Return whether broker metadata or the historic prefix marks a stop."""
-    return order.idempotency_key.startswith("stop:") or str(
-        order.order_type
-    ).lower() in {
-        "stop",
-        "stop_limit",
-    }
+    return is_broker_stop_order(order)
 
 
 def _dropped_sell_tickers(graph: GraphStore) -> frozenset[str]:

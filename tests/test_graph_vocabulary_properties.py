@@ -131,7 +131,7 @@ def test_deliberation_and_llmcall_props_are_recovered() -> None:
         "failed_open_tickers",
         "failed_open_reason",
     } <= recovered["DeliberationRun"]
-    assert {"calling_agent", "prompt_hash", "tokens_in", "latency_ms"} <= recovered[
+    assert {"calling_agent", "prompt_hash", "stop_reason", "tokens_in"} <= recovered[
         "LLMCall"
     ]
 

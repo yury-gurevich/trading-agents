@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -198,6 +198,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   to `flat`), and both the applied and counterfactual values. An operator must be able to answer
   *"what would the other mode have proposed here?"* without re-running the analyst.
   *(Declares capability decided in ADR-0013; shipped in S150.)*
+- **ANLZ-OBS-04** — Sentiment metrics distinguish the units they report: scored headline count,
+  lexicon word occurrences, and the batch-duplicate weighted article denominator used by the
+  sentiment mean. Metric names state the unit and the batch scope when the value is batch-scoped.
 
 ---
 
@@ -288,3 +291,6 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
     `scaled_stop_*` bounds, copied from the `tunable()` declarations in
     `agents/analyst/settings.py`. The ceiling row cites ADR-0019, which settled that the risk cap
     binds position size rather than stop distance.
+- **v1.2 — S186 law-amendment cycle (2026-08-24).** Declares the observability guarantee for
+  weighted sentiment metrics introduced by DL-132: `sentiment_articles` remains a scored-headline
+  count, while the weighted denominator is exposed under its own batch-scoped metric name.

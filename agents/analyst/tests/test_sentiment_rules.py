@@ -21,6 +21,7 @@ def test_all_positive_headline_scores_100() -> None:
     assert score == pytest.approx(100.0)
     assert metrics == {
         "sentiment_articles": 1.0,
+        "sentiment_batch_weighted_articles": 1.0,
         "sentiment_positive_words": 4.0,
         "sentiment_negative_words": 0.0,
     }

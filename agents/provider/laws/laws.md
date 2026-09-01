@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -277,6 +277,13 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | `finnhub_request_budget_per_minute` | `55` | `int requests/minute [0, 600]` | YES | Pace per-ticker Finnhub calls just under the 60 req/min free-tier cap; `0` disables pacing for controlled proofs. |
 | `finnhub_degraded_note_ticker_cap` | `5` | `int [1, 50]` | YES | Bound attributed feed-degradation notes while naming representative tickers. |
 
+**Provider mode selectors (non-tunable — choose which provider workflow or feed runs):**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `ingest_ohlcv_only` | `False` | `bool` | NO (mode selector) | DL-29 fast path; selects the OHLCV-only workflow and skips enrichment rather than tuning a value inside one workflow. |
+| `alpaca_data_feed` | `"iex"` | `str` | NO (mode selector) | Selects the Alpaca market-data feed route/entitlement; not a value inside a validation or scoring formula. |
+
 **Network timeouts:**
 
 | Name | Value | Type | Tunable | Rationale |
@@ -331,3 +338,6 @@ status:
   three buses + provider capability matrix). Citation pass complete across all provider test files;
   `test-plan.md` bound with 23 green clauses / 43 total. **This law is now the authoritative
   specification; copy template to other agents starting here.**
+- **v1.1 — S187 parameter declaration reconciliation (2026-08-30).** Adds PARAM rows for
+  `ingest_ohlcv_only` and `alpaca_data_feed` as `NO (mode selector)`, closing DRIFT-050. No clauses
+  were added or proven; rollup counters deliberately do not move.

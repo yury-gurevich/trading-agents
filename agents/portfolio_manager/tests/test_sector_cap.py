@@ -78,10 +78,13 @@ def test_approves_same_sector_within_cap() -> None:
     assert rejected == ()
 
 
-def test_unknown_sector_is_not_capped() -> None:
-    # MSFT has no sector, so the cap is skipped for it even under a tight cap.
-    approved, _rejected = _two_tech_buys({"AAPL": "Tech"}, Decimal("0.15"))
-    assert {o.ticker for o in approved} == {"AAPL", "MSFT"}
+def test_unknown_sector_is_not_evaluated() -> None:
+    """PM-NEV-09: a missing sector label is not a silent cap pass."""
+    approved, rejected = _two_tech_buys({"AAPL": "Tech"}, Decimal("0.15"))
+    assert {o.ticker for o in approved} == {"AAPL"}
+    assert [(item.ticker, item.reason) for item in rejected] == [
+        ("MSFT", "sector_not_evaluated")
+    ]
 
 
 def test_max_sector_pct_of_one_disables_the_cap() -> None:

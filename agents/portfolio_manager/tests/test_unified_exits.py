@@ -142,7 +142,7 @@ def test_sector_book_records_exit_name_reduction() -> None:
 
 def test_sector_book_removes_last_exited_sector_name() -> None:
     sell = recommendation("AAPL").model_copy(update={"action": "sell"})
-    book = SectorBook({"AAPL": "tech"}, ("AAPL",))
+    book = SectorBook({"AAPL": "tech", "NVDA": "tech"}, ("AAPL",))
 
     book.record_exit("AAPL")
     outcomes = book.outcomes(
@@ -153,7 +153,8 @@ def test_sector_book_removes_last_exited_sector_name() -> None:
         max_names_per_sector=1,
     )
 
-    assert outcomes == ()
+    assert outcomes[-1].value == 1.0
+    assert outcomes[-1].passed
     assert book.exit_outcomes(sell, max_names_per_sector=0)[0].passed
 
 

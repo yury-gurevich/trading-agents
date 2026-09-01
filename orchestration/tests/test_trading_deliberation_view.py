@@ -12,6 +12,19 @@ from orchestration.observatory import breaches
 from orchestration.packs.trading_deliberation_view import deliberation
 
 
+def _link_execution(graph: InMemoryGraphStore, node_key: str) -> None:
+    pm_run = graph.merge_node("PMRun", f"pm-{node_key}", {})
+    delib = graph.get_node("DeliberationRun", node_key)
+    assert delib is not None
+    execution = graph.merge_node(
+        "ExecutionRun",
+        f"exec-{node_key}",
+        {"deliberation_posture": "binding", "deliberation_status": "applied"},
+    )
+    graph.add_edge(pm_run, delib, "DELIBERATED_BY")
+    graph.add_edge(pm_run, execution, "EXECUTED_BY")
+
+
 def test_deliberation_view_handles_missing_narrative() -> None:
     graph = InMemoryGraphStore()
     node = graph.merge_node(
@@ -26,12 +39,14 @@ def test_deliberation_view_handles_missing_narrative() -> None:
             "failed_open_tickers": (),
         },
     )
+    _link_execution(graph, "run")
 
     view = deliberation(graph, node)
 
     assert view.outputs == (
         "reviewed=0  vetoed=0",
         "real_debates=0  failed_open=0",
+        "posture=binding  status=applied",
     )
     assert breaches(view) == ()
 
@@ -49,6 +64,7 @@ def test_old_empty_transcript_shape_fails_deliberation_checks() -> None:
             "transcript": (),
         },
     )
+    _link_execution(graph, "run")
 
     found = breaches(deliberation(graph, node))
 

@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import importlib
 
+from kernel.llm import STOP_REASON_UNKNOWN, LLMCompletionStoppedError
+
 
 class ConfigurationError(RuntimeError):
     """Raised when the OpenAI client cannot be constructed safely."""
@@ -49,6 +51,7 @@ class OpenAILLMClient:
         self.model = model
         self.max_tokens = max_tokens
         self.effort = effort
+        self.last_stop_reason = STOP_REASON_UNKNOWN
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
@@ -64,11 +67,14 @@ class OpenAILLMClient:
                 {"role": "user", "content": user},
             ],
         )
+        self.last_stop_reason = _stop_reason(response)
         return _text(response)
 
 
 def _text(response: object) -> str:
-    """Pull the assistant text out of a chat completion, tolerating empties."""
+    """Pull the assistant text out of a chat completion."""
+    if "length" in _finish_reasons(response):
+        raise LLMCompletionStoppedError(provider="openai", stop_reason="length")
     parts: list[str] = []
     for choice in getattr(response, "choices", ()):
         message = getattr(choice, "message", None)
@@ -76,3 +82,17 @@ def _text(response: object) -> str:
         if content:
             parts.append(str(content))
     return "\n".join(parts)
+
+
+def _stop_reason(response: object) -> str:
+    reasons = _finish_reasons(response)
+    return "+".join(dict.fromkeys(reasons)) if reasons else STOP_REASON_UNKNOWN
+
+
+def _finish_reasons(response: object) -> tuple[str, ...]:
+    reasons: list[str] = []
+    for choice in getattr(response, "choices", ()):
+        reason = str(getattr(choice, "finish_reason", "") or "").strip()
+        if reason:
+            reasons.append(reason)
+    return tuple(reasons)

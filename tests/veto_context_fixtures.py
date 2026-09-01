@@ -13,7 +13,13 @@ from typing import TYPE_CHECKING
 from tests.veto_context_gate_fixtures import pm_gate_report
 from tests.veto_context_provider_fixtures import market_data, prov, regime
 
-from contracts.analyst import QuantMetric, Recommendation, RecommendationSet, Rejection
+from contracts.analyst import (
+    QuantMetric,
+    Recommendation,
+    RecommendationSet,
+    Rejection,
+    StopTargetEvidence,
+)
 from contracts.common import Explanation, Money
 from contracts.portfolio_manager import GateOutcome, OrderIntent, OrderIntentSet
 from contracts.provider import REGIME_CONTEXT_LABEL
@@ -86,6 +92,7 @@ def recs(full: bool = True, *, include_aapl: bool = True) -> dict[str, object]:
         fundamental_score=0.65 if full else None,
         suggested_stop_pct=0.03 if full else None,
         suggested_target_pct=0.08 if full else None,
+        stop_target_evidence=_stop_target_evidence() if full else None,
         quant_metrics=(
             QuantMetric(name="composite_score", value=0.61),
             QuantMetric(name="history_bars", value=40.0),
@@ -107,6 +114,24 @@ def recs(full: bool = True, *, include_aapl: bool = True) -> dict[str, object]:
     ).model_dump(mode="json")
 
 
+def _stop_target_evidence() -> StopTargetEvidence:
+    return StopTargetEvidence(
+        mode="flat",
+        counterfactual_mode="scaled",
+        atr_pct=2.94,
+        volatility_present=True,
+        volatility_fallback=False,
+        applied_stop_pct=0.03,
+        applied_target_pct=0.08,
+        counterfactual_stop_pct=0.0588,
+        counterfactual_target_pct=0.1568,
+        flat_stop_pct=0.03,
+        flat_target_pct=0.08,
+        scaled_stop_pct=0.0588,
+        scaled_target_pct=0.1568,
+    )
+
+
 def candidates(full: bool = True) -> dict[str, object]:
     """Return scanner payload; sparse mode makes AAPL absent."""
     ticker = "AAPL" if full else "MSFT"
@@ -118,6 +143,7 @@ def candidates(full: bool = True) -> dict[str, object]:
                 rank=1,
                 score=0.81,
                 survived_filters=("price", "volume"),
+                skipped_filters=("earnings_window",),
                 metrics={"beta": 1.1, "return_5d": 0.08},
             ),
         ),
@@ -129,6 +155,7 @@ def candidates(full: bool = True) -> dict[str, object]:
                 FilterVerdict(
                     ticker=ticker,
                     decision="survived",
+                    skipped_filters=("earnings_window",),
                     features={"beta": 1.1, "return_5d": 0.08},
                 ),
             ),

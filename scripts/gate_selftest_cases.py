@@ -75,6 +75,25 @@ _LAW_PROBE_INDEX = """| Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
 | probe | locked | 2 / 2 | partial |
 """
+_PARAM_LAW_PROBE_ROOT = f"scripts/{PROBE_PREFIX}_param_law_sync"
+_PARAM_LAW_PROBE_SETTINGS = """from kernel import AgentSettings, tunable
+
+
+class ProbeSettings(AgentSettings):
+    declared: int = tunable(1, why="Declared tunable.")
+    undocumented: str = "x"
+"""
+_PARAM_LAW_PROBE_LAWS = """# Probe laws
+
+## Parameters (`PARAM`)
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `declared` | `1` | `int` | YES | Declared tunable. |
+| `missing_from_settings` | `"x"` | `str` | NO (config) | Planted row. |
+
+## Changelog
+"""
 
 FAILURE_CASES: tuple[FailureCase, ...] = (
     FailureCase(
@@ -128,6 +147,29 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
             _LAW_PROBE_ROOT,
         ],
         must_output=("PRB-IDN-01", "test_gone", "PRB-IDN-02", "test_uncited"),
+    ),
+    FailureCase(
+        name="param-law-sync",
+        why=(
+            "S187: a settings field without a PARAM row, or a PARAM row without "
+            "a settings field, must not silently pass the lane"
+        ),
+        files={
+            f"{_PARAM_LAW_PROBE_ROOT}/agents/probe/settings.py": (
+                _PARAM_LAW_PROBE_SETTINGS
+            ),
+            f"{_PARAM_LAW_PROBE_ROOT}/agents/probe/laws/laws.md": (
+                _PARAM_LAW_PROBE_LAWS
+            ),
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_param_law_sync.py",
+            _PARAM_LAW_PROBE_ROOT,
+        ],
+        must_output=("probe.undocumented", "probe.missing_from_settings"),
     ),
     FailureCase(
         name="untracked-secrets",

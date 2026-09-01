@@ -8,6 +8,7 @@ External I/O: master HTTP endpoint (POST /ehlo).
 
 from __future__ import annotations
 
+from agents.portfolio_manager.issuer_map import load_issuer_map_from_env
 from agents.portfolio_manager.poll import evaluate_analyst_node, find_pending
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from kernel import CollectingFaultSink
@@ -28,11 +29,16 @@ def main() -> None:  # pragma: no cover
 
     graph = build_graph_from_env()
     settings = PortfolioManagerSettings()
+    issuer_map = load_issuer_map_from_env()
     fault_sink = GraphFaultSink(graph, CollectingFaultSink())
     work_loop(
         lambda: find_pending(graph),
         lambda node: evaluate_analyst_node(
-            node, graph=graph, settings=settings, sink=fault_sink
+            node,
+            graph=graph,
+            settings=settings,
+            issuer_map=issuer_map,
+            sink=fault_sink,
         ),
         poll_interval=poll_interval_from_env("PM_POLL_INTERVAL"),
         graph=graph,

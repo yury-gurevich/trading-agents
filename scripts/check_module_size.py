@@ -29,7 +29,7 @@ _SCOPED_PREFIXES = (
 def _is_checked_path(path: Path) -> bool:
     """Return whether a path is in the module-size enforcement scope."""
     normalized = path.as_posix()
-    if "__init__.py" in normalized or "alembic/versions" in normalized:
+    if "__init__.py" in normalized:
         return False
     return normalized.startswith(_SCOPED_PREFIXES)
 

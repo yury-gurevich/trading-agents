@@ -16,6 +16,7 @@ from kernel import AgentSettings, tunable
 
 ExecutionStageValue = Literal["paper", "broker_shadow", "live_manual", "live_autopilot"]
 OrderPriceToleranceMode = Literal["flat", "scaled"]
+DeliberationPosture = Literal["advisory", "binding"]
 
 
 class ExecutionSettings(AgentSettings):
@@ -129,6 +130,7 @@ class ExecutionSettings(AgentSettings):
             "(S147 / ADR-0017): a sell-only run ignores this entirely."
         ),
     )
+    deliberation_posture: DeliberationPosture = "advisory"
     broker_stop_fallback_stop_pct: float = tunable(
         0.05,
         why=(

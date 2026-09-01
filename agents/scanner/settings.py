@@ -50,7 +50,10 @@ class ScannerSettings(AgentSettings):
         ge=1,
         le=50,
     )
-    benchmark_ticker: str = "SPY"
+    benchmark_ticker: str = tunable(
+        "SPY",
+        why="Relative-strength benchmark; matches the scanner's S&P 500 universe.",
+    )
     max_beta: float = tunable(
         2.5,
         why="Exclude names whose systematic risk (beta vs the benchmark) is too high.",

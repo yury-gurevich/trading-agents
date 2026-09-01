@@ -16,14 +16,16 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-TRG-03 | No self-trigger or external feed polling. | functional | _tbd_ | ⬜ |
 | DLIB-OUT-01 | Exactly one append-only `DeliberationRun` per processed PMRun, linked by `PMRun -DELIBERATED_BY-> DeliberationRun`. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` | 🟩 |
 | DLIB-OUT-02 | Run records verdicts, vetoes, debates, models, narrative, time. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs`; `test_concurrent_reviews.py::test_concurrent_reviews_preserve_durable_order`; `test_concurrent_reviews.py::test_single_order_failure_is_isolated_under_concurrency` | 🟩 |
-| DLIB-OUT-03 | LLM calls write attributable shared `LLMCall`. | functional | _tbd_ | ⬜ |
+| DLIB-OUT-03 | LLM calls write attributable shared `LLMCall`. | functional | `test_stop_reason_fail_open.py::test_llmcall_records_stop_reason_without_payload` | 🟩 |
 | DLIB-OUT-04 | Non-uphold only subtracts PM-approved orders. | functional | _tbd_ | ⬜ |
+| DLIB-OUT-05 | LLM calls record provider stop reason as compact audit metadata without prompt or completion text. | functional | `test_stop_reason_fail_open.py::test_llmcall_records_stop_reason_without_payload` | 🟩 |
 | DLIB-NEV-01 | Never originates an order. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-02 | Never resizes an order. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-03 | Never talks to broker. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-04 | Never fetches market data directly. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-05 | Never imports another agent or orchestration. | functional | _tbd_ | ⬜ |
 | DLIB-NEV-06 | Never hides failed debate or peer call as clean veto. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_manager_preflight.py::test_unreachable_peer_preflight_leaves_pmrun_unconsumed`; `test_manager_preflight.py::test_one_bad_peer_preflight_records_no_half_debate`; `tests/test_deliberator_reply_inbox.py::test_reply_inbox_stashes_pending_sibling_without_dead_letter` | 🟩 |
+| DLIB-NEV-07 | Never records an empty debate turn as transcript evidence. | functional | `test_stop_reason_fail_open.py::test_one_stopped_turn_fails_only_that_order_and_records_reason` | 🟩 |
 | DLIB-STA-01 | Manager is stateless between polls. | functional | _tbd_ | ⬜ |
 | DLIB-STA-02 | Graph effects append-only and idempotent by PM run id. | functional | _tbd_ | ⬜ |
 | DLIB-STA-03 | Peers write only shared LLM call audit nodes. | functional | _tbd_ | ⬜ |
@@ -36,6 +38,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-FAIL-01 | LLM or peer-call failure is fail-open and recorded. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_fail_open_reason.py::test_manager_fail_open_records_usage_limit_reason`; `test_concurrent_reviews.py::test_single_order_failure_is_isolated_under_concurrency` | 🟩 |
 | DLIB-FAIL-02 | Graph-write failure records fault, no delete. | functional | _tbd_ | ⬜ |
 | DLIB-FAIL-03 | Crash recovery retries runs lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
+| DLIB-FAIL-04 | Provider-declared truncated or refused completion is a failed LLM call with its stop reason named. | functional | `test_deliberator_anthropic.py::test_anthropic_max_tokens_without_text_raises_stop_reason`; `test_deliberator_anthropic.py::test_anthropic_refusal_raises_with_guarded_category`; `test_llm_openai_adapter.py::test_openai_length_without_text_raises_stop_reason`; `test_deliberation.py::test_stopped_judge_response_defaults_to_revise_with_reason`; `test_deliberation.py::test_parse_verdict_empty_defaults_to_revise_without_parser_blame`; `test_stop_reason_fail_open.py::test_one_stopped_turn_fails_only_that_order_and_records_reason` | 🟩 |
 | DLIB-TYP-01 | Bus payloads match `contracts/deliberator.py`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-02 | PM input validates as `OrderIntentSet`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-03 | Verdict rulings are constrained. | functional | _tbd_ | ⬜ |

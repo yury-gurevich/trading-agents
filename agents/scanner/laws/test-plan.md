@@ -28,6 +28,9 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | SCAN-OUT-03 | Provider degraded → empty CandidateSet + fault recorded; no crash. | degraded | `test_scanner_agent.py::test_degraded_provider_path_returns_empty_explained_result` | 🟩 |
 | SCAN-OUT-04 | Pub/sub event carries claim-check ref only, not CandidateSet payload. | pub/sub | `test_scanner_pubsub.py::test_run_trigger_publishes_candidates_ready` | 🟩 |
 | SCAN-OUT-05 | explain_filter returns Explanation; no provider call, no graph write. | read-only | Demoted S156: the live `test_scanner_explain.py::test_explain_filter_returns_grounded_explanation` asserts the explanation payload but not no provider call/no graph write. | ⬜ |
+| SCAN-OUT-06 | A gate that could not be evaluated is named in skipped_filters and is absent from survived_filters. | attestation | `test_scanner_earnings.py::test_no_earnings_data_records_earnings_gate_not_evaluated` | 🟩 |
+| SCAN-OUT-06 | Thin beta history is attested as skipped, not silently passed or dropped. | attestation | `test_scanner_beta.py::test_beta_cap_drops_high_beta_keeps_low_beta_skips_thin_history` | 🟩 |
+| SCAN-OUT-07 | A known past earnings date is an evaluated pass with negative days_to_earnings, distinct from no data. | boundary | `test_scanner_earnings.py::test_past_earnings_date_records_evaluated_pass_not_missing_data` | 🟩 |
 
 ## Prohibitions
 

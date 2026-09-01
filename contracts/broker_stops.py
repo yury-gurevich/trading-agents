@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from contracts.broker_lifecycle import is_live_broker_stop_fact
+
 if TYPE_CHECKING:
     from contracts.common import Ticker
     from kernel import GraphStore, Node
@@ -47,30 +49,33 @@ def next_broker_stop_order_key(
         node = graph.get_node(BROKER_STOP_ORDER_LABEL, key)
         if node is None:
             return key
-        if _broker_stop_order(node).cancelled_at is None:
+        if is_live_broker_stop_fact(graph, node):
             return None
         ordinal += 1
 
 
 def active_broker_stop_refs(graph: GraphStore) -> frozenset[str]:
-    """Return position_refs protected by non-cancelled BrokerStopOrder facts."""
+    """Return position_refs protected by live BrokerStopOrder facts."""
     return frozenset(order.position_ref for order in active_broker_stop_orders(graph))
 
 
 def active_broker_stop_orders(graph: GraphStore) -> tuple[BrokerStopOrder, ...]:
-    """Return broker stops whose graph fact has not been cancelled."""
+    """Return broker stops whose graph and broker evidence are still live."""
     return tuple(
-        order for order in broker_stop_orders(graph) if order.cancelled_at is None
+        _broker_stop_order(node)
+        for node in _broker_stop_order_nodes(graph)
+        if is_live_broker_stop_fact(graph, node)
     )
 
 
 def broker_stop_orders(graph: GraphStore) -> tuple[BrokerStopOrder, ...]:
     """Return all BrokerStopOrder graph facts in stable key order."""
+    return tuple(_broker_stop_order(node) for node in _broker_stop_order_nodes(graph))
+
+
+def _broker_stop_order_nodes(graph: GraphStore) -> tuple[Node, ...]:
     return tuple(
-        _broker_stop_order(node)
-        for node in sorted(
-            graph.list_nodes(BROKER_STOP_ORDER_LABEL), key=lambda item: item.key
-        )
+        sorted(graph.list_nodes(BROKER_STOP_ORDER_LABEL), key=lambda item: item.key)
     )
 
 

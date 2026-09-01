@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.settings import ExecutionSettings
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
@@ -49,6 +50,7 @@ def _cascade(
     *,
     with_deliberation: bool,
     deliberation_llm: LLMClient | None = None,
+    execution_settings: ExecutionSettings | None = None,
 ) -> InMemoryGraphStore:
     graph = InMemoryGraphStore()
     agent = ProviderAgent(
@@ -64,6 +66,7 @@ def _cascade(
                 graph,
                 provider_agent=agent,
                 broker=PaperBroker(),
+                execution_settings=execution_settings,
                 deliberation_llm=deliberation_llm
                 or FakeLLMClient(
                     {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
@@ -93,6 +96,7 @@ def test_all_fail_open_deliberation_run_fails_acceptance() -> None:
         "acc-fail-open",
         with_deliberation=True,
         deliberation_llm=_RaisingLLM(),
+        execution_settings=ExecutionSettings(deliberation_posture="binding"),
     )
 
     result = accept_run(graph, "acc-fail-open")
@@ -109,6 +113,22 @@ def test_all_fail_open_deliberation_run_fails_acceptance() -> None:
     )
 
 
+def test_advisory_fail_open_deliberation_run_passes_acceptance() -> None:
+    """EXEC-OUT-09 / EXEC-OBS-04: advisory fail-open is attributed, not red."""
+    graph = _cascade(
+        source(),
+        ("AAPL",),
+        "acc-advisory-fail-open",
+        with_deliberation=True,
+        deliberation_llm=_RaisingLLM(),
+    )
+
+    result = accept_run(graph, "acc-advisory-fail-open")
+
+    assert result.verdict == "PASS"
+    assert result.passed
+
+
 def test_mixed_fail_open_deliberation_run_fails_acceptance() -> None:
     """D3 DLIB-NEV-06 / DL-70: any failed-open ticker keeps the gate red."""
     graph = _cascade(
@@ -117,6 +137,7 @@ def test_mixed_fail_open_deliberation_run_fails_acceptance() -> None:
         "acc-mixed-fail-open",
         with_deliberation=True,
         deliberation_llm=_TickerFailingLLM(),
+        execution_settings=ExecutionSettings(deliberation_posture="binding"),
     )
 
     result = accept_run(graph, "acc-mixed-fail-open")

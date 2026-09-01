@@ -27,8 +27,15 @@ _GATE_VALUE_LABELS = {
     "max_positions": ("value_positions", "threshold_positions"),
     "cash_available": ("value_order_cost_usd", "threshold_available_cash_usd"),
     "reward_risk": ("value_reward_risk_ratio", "threshold_reward_risk_ratio"),
-    "max_sector_pct": ("value_batch_sector_ratio", "threshold_sector_ratio"),
-    "max_names_per_sector": ("value_sector_names", "threshold_sector_names"),
+    "max_sector_pct": (
+        "value_sector_exposure_ratio",
+        "threshold_sector_exposure_ratio",
+    ),
+    "max_names_per_sector": ("value_sector_issuers", "threshold_sector_issuers"),
+    "correlated_cluster_pct": (
+        "value_cluster_exposure_ratio",
+        "threshold_cluster_exposure_ratio",
+    ),
 }
 
 

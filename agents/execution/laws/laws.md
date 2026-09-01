@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -98,6 +98,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   **counterfactual** mode, tolerance and limit price for the band that was not used. The
   counterfactual is evidence only and never reaches the broker. *(Declares capability decided
   in ADR-0013 champion–challenger; shipped off by default in S149.)*
+- **EXEC-OUT-09** — Every graph-pull `ExecutionRun` records the deliberation posture that was
+  in force (`advisory` or `binding`), the deliberation status that occurred
+  (`applied`, `applied_failed_open`, `not_required`, `waiting`, or
+  `proceeded_unvetoed`), and the count of buy intents blocked by that posture. The status answers
+  what happened to the review; the posture answers the operator policy that decided what to do
+  about it. *(Declares capability decided in S185 / DL-128.)*
 
 ---
 
@@ -115,6 +121,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   stage-gate escalation path requires explicit operator/supervisor action.
 - **EXEC-NEV-05** — Never logs or returns the Alpaca API key, secret, or base URL in any
   capability response, graph node, or fault record. Credentials are settings only.
+- **EXEC-NEV-06** — Under `deliberation_posture="binding"`, execution never opens buy exposure
+  from a PMRun whose `DeliberationRun` did not arrive after the bounded grace; those buy intents
+  are skipped with evidence instead of reaching the broker. Exits are never delayed or dropped by
+  deliberation posture, and an arrived veto is still honoured exactly as an upstream block.
+  *(Declares capability decided in S185 / DL-128; preserves ADR-0017 and ADR-0022.)*
 
 ---
 
@@ -243,6 +254,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   broker stop** is surfaced as an `UnprotectedPosition` fault and retried on the next run — a
   refusal is never recorded once and then forgotten. *(Declares capability decided in
   ADR-0015 §3; the silence it forbids is the defect S146 fixed.)*
+- **EXEC-OBS-04** — Deliberation fail-open evidence is severity-aligned with the recorded
+  posture: an unreviewed submission under `advisory` is a warning with a recorded reason and
+  posture, while the same absence under `binding` is an error. Acceptance can therefore
+  distinguish an expected advisory outage from a binding policy breach without muting the
+  evidence. *(Declares capability decided in S185 / DL-128.)*
+- **EXEC-OBS-05** — Liveness of an execution broker fact is asked in exactly one place. A
+  `BrokerStopOrder` whose order has reached a terminal broker state is not live regardless of
+  `cancelled_at`; a resting-stop `Fill` is not an open order; and the stale-order sweep asks the
+  broker the same liveness question it asks of the graph. *(Declares the S190 / DL-139 correction
+  for DRIFT-055.)*
 
 ---
 
@@ -322,6 +343,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `scaled_order_price_tolerance_atr_multiplier` | `0.50` | `float ≥ 0.0, ≤ 2.0` (ratio) | YES | Challenger band near half of decision-time daily ATR; observed overnight gaps cluster at 0.3–0.6× ATR |
 | `scaled_order_price_tolerance_floor_bps` | `25` | `int ≥ 0, ≤ 500` (bps) | YES | Stops the scaled challenger becoming so narrow that quiet names cannot trade at all |
 | `scaled_order_price_tolerance_ceiling_bps` | `250` | `int ≥ 0, ≤ 500` (bps) | YES | Keeps the challenger narrow enough that ADR-0018 still rejects a materially unevaluated open |
+| `deliberation_grace_seconds` | `900` | `int ≥ 0, ≤ 3600` (seconds) | YES | How long a buy-carrying PMRun waits for its DeliberationRun before submitting under the declared posture; exits never wait (S147 / ADR-0017) |
+| `deliberation_posture` | `"advisory"` | `Literal["advisory","binding"]` — config | NO (mode selector) | S185 operator policy selector; `advisory` records expected fail-open as warning, `binding` refuses buy exposure when no `DeliberationRun` arrives. Not a tunable — switching it changes which policy runs, not a value inside one |
 | `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for broker-adopted positions with no PM stop lineage (ADR-0015 §3); matches the monitor-reconciliation paper-stage floor |
 
 ---
@@ -367,3 +390,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     `order_price_tolerance_bps`, the three `scaled_order_price_tolerance_*` bounds, and
     `broker_stop_fallback_stop_pct`. Values and bounds copied from the `tunable()` declarations
     in `agents/execution/settings.py`, not restated from memory.
+- **v1.2 — S185 deliberation posture declaration (2026-08-22).** Declares the operator-selected
+  deliberation posture that S185 made explicit after DL-104/DL-116 left it as timing arithmetic.
+  Adds `EXEC-OUT-09` (posture/status/block evidence on `ExecutionRun`), `EXEC-NEV-06` (binding
+  no-verdict buy exposure is blocked while exits and arrived vetoes keep their boundaries), and
+  `EXEC-OBS-04` (fault/acceptance severity follows posture). Adds the `deliberation_posture`
+  `PARAM` row as **NO (mode selector)**, not a tunable. Closes DRIFT-048; DRIFT-049 remains open
+  for the older missing `deliberation_grace_seconds` PARAM row.
+- **v1.3 — S187 parameter declaration reconciliation (2026-08-30).** Adds the missing
+  `deliberation_grace_seconds` PARAM row from the existing `tunable()` declaration, correcting
+  DRIFT-049. No clauses were added or proven; rollup counters deliberately do not move.
+- **v1.4 — S190 broker fact liveness (2026-08-31).** Adds `EXEC-OBS-05`: execution broker-fact
+  liveness is derived in one contract module, fired `BrokerStopOrder` facts stop reading live,
+  resting-stop Fills stop counting as open orders, and the stale-order sweep compares live broker
+  stops to live graph stops. Also proves the previously gray `EXEC-STA-05` row and adds missing
+  `EXEC-OBS-03` liveness-limb tests, correcting DRIFT-055.

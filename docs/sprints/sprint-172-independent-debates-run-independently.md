@@ -110,12 +110,18 @@ fail-open), and `DLIB-PERF-02` (peer wait bounded by request timeout).
    `infra/deploy-agents.ps1` so the fan-out has somewhere to land. The manager stays at 1 —
    it is the coordinator, and a second manager would double-consume the `PMRun`.
 
+**When to run the measurement — 2026-09-01, not before ([DL-135](../design-log.md)).** It needs `s172`
+images and peer `maxReplicas=4` on the fleet, which puts unmerged code there again; rollback is a retag
+to **`s187`** (work-queue item 3 still says `s182`). `sched-2026-08-31` runs first on `s187` untouched —
+it is the only instrument that proves the master/Key Vault credential path, and a K=4 run against an
+unproven path returns `real_debate_count=0` for the third time.
+
 ## Success factors
 
 Each is a postcondition to prove, not an intention to state.
 
 1. **Serialization is gone, measured the same way it was found:** on a live run with `K=4`,
-   sum-of-latency Ã· span drops from the **0.95 measured on 2026-08-19** to **â 0.25** (â 1/K).
+   sum-of-latency ÷ span drops from the **0.95 measured on 2026-08-19** to **≈ 0.25** (≈ 1/K).
    Report the measured ratio. Use the 2026-08-19 figure as the baseline, not the older 0.90.
 2. **At least 15 orders finish inside the current 1800 s grace with headroom**, and the run writes
    **no** `DeliberationGraceExpired` fault. 15 is the measured breaking point at K=1 (1,854 s), so it
@@ -130,14 +136,14 @@ Each is a postcondition to prove, not an intention to state.
 
 ## Traps
 
-- ðª¤ **~~`effort` is inert~~ â CORRECTED 2026-08-19. It was fixed in `0.90.02` and is live at
+- 🪤 **~~`effort` is inert~~ — CORRECTED 2026-08-19. It was fixed in `0.90.02` and is live at
   `high`.** Do not try to tune latency by lowering it: that was measured as a fail-open source
   (3 on 2026-08-13) and reverting re-opens the DL-63 inert-knob question. Treat `effort=high` as
   part of the fixed baseline you are measuring against.
 - 🪤 **`max_tokens` is hard-capped `le=4096`.** Raising it is a code change, not a tunable move.
-- ðª¤ **`max_rounds` 2 â 1 is out of scope â and the reason first given here was wrong.**
+- 🪤 **`max_rounds` 2 → 1 is out of scope — and the reason first given here was wrong.**
   The old reason ("it will contaminate the before/after measurement") does not hold: the metric is
-  **sum-of-latency Ã· span**, a ratio, and it is **invariant to call count** â halving the rounds
+  **sum-of-latency ÷ span**, a ratio, and it is **invariant to call count** — halving the rounds
   halves numerator and denominator alike. The real reason is that it **changes the artefact under
   test**: this agent's own `max_rounds` `why` requires the debate to *"show more than one round in
   live proof"*, so a 1-round debate is a different thing, not a faster same thing. Cutting it to buy
@@ -145,8 +151,8 @@ Each is a postcondition to prove, not an intention to state.
 - 🪤 **Do not collapse the peers into the manager to get concurrency.** It would erase the role
   attribution the laws declare (`role_models`, `calling_agent` on every `LLMCall`) and with it the
   provenance guarantee DL-102 exists to protect.
-- ðª¤ **`maxReplicas` is production state, so this takes the full cycle and a deploy.**
-  **CORRECTED 2026-08-19: S169 landed** (`0.90.10`, deployed `s176a`) â a full `up` now *refuses*
+- 🪤 **`maxReplicas` is production state, so this takes the full cycle and a deploy.**
+  **CORRECTED 2026-08-19: S169 landed** (`0.90.10`, deployed `s176a`) — a full `up` now *refuses*
   before dropping a live env key and names it, and `orchestration/packs/trading_tunables.json` is the
   source of truth for operator values. **Put any new tunable's operator value in that pack**, or the
   next full `up` reverts it. Still snapshot env before and after: the guard is proven, your change
@@ -241,10 +247,18 @@ CONSTRAINTS
   completions per role. Measure before raising the default above 4.
 - Peers scale from minReplicas=0 inside the 22:25-00:30 UTC KEDA window; cold start is on the
   critical path for the first debate. Do not regress the cold path S171 measured.
-- LLM COST AND CREDITS: the deliberator runs on OpenAI gpt-5.5. A 9-order run costs ~$0.46. The
-  account ran out of credits on 2026-08-19 and there is NO fallback - Anthropic is capped until
-  2026-09-01. Check credits before any live multi-run measurement, and note that an exhausted
-  account presents misleadingly as "no deliberator peer reply received".
+- LLM PROVIDER AND COST - REWRITTEN 2026-08-30; the note here before was stale in every clause. The
+  deliberator runs **Anthropic `claude-opus-5`**, not OpenAI: all three apps read
+  `DELIBERATOR_LLM_PROVIDER=anthropic` live, applied by `up -Tag s187` today (DL-135). Both providers
+  returned HTTP 200 on 2026-08-30 and the vault key is byte-identical to the verified one, so the
+  outage is over and "capped until 2026-09-01" was a misread calendar reset. The old **~$0.46 per
+  9-order run** was priced on gpt-5.5 and does NOT carry to claude-opus-5 at effort=high - price the
+  run from the LLMCall ledger afterwards, do not assume it. An exhausted or refused account still
+  presents misleadingly as "no deliberator peer reply received".
+- OpenAI is now the FALLBACK, and the fallback can fail silently (work-queue item 35): llm_openai.py
+  never inspects finish_reason, so a reasoning-truncated call returns HTTP 200 with empty content and
+  raises nothing. If Anthropic throttles mid-measurement the K=4 numbers can degrade in a way that
+  looks like success - check role_models on the LLMCall rows before trusting the ratio.
 - maxReplicas is production state: full cycle and a deploy. S169 landed, so a full `up` now refuses
   before dropping a live env key - but verify, do not assume.
 - Branch sprint-172-independent-debates-run-independently. Version: next available MINOR at merge,

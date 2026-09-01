@@ -15,9 +15,10 @@ were given.
    first. Do not open random files to discover what is there. Same for agent laws:
    `agents/<name>/laws/laws.md`.
 
-2. **`make ci` must pass — all 9 steps.** ruff, format, mypy, import-linter, module size, module
-   header, pytest at a **100.00 % coverage floor**, pip-audit, detect-secrets. Never lower the
-   floor. Never declare work green without running it, and confirm the remote gates after pushing.
+2. **`make ci` must pass — all 12 steps.** ruff, format, mypy, import-linter, module size, module
+   header, law coverage, PARAM/settings sync, pytest at a **100.00 % coverage floor**, pip-audit,
+   detect-secrets, untracked secrets. Never lower the floor. Never declare work green without running
+   it, and confirm the remote gates after pushing.
 
 3. **Version scheme `MAJOR.MM.PP` in `pyproject.toml` — a hard rule.** *feat* bumps the **two
    middle** digits; *fix* bumps the **last two**. A higher bump zeroes all lower groups

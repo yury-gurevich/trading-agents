@@ -351,6 +351,20 @@
   ],
   "owners": {},
   "properties": {
+    "AgentInstance": [
+      "agent_type",
+      "boot_id",
+      "credential_tests_cached",
+      "credential_tests_declared",
+      "credential_tests_failed_optional",
+      "credential_tests_passed",
+      "credential_tests_tested",
+      "credential_tests_transport_failed",
+      "drain_at",
+      "drain_reason",
+      "started_at",
+      "state"
+    ],
     "DeliberationRun": [
       "created_at",
       "debates",
@@ -365,6 +379,18 @@
       "transcript",
       "verdicts",
       "vetoed_tickers"
+    ],
+    "ExecutionRun": [
+      "deliberation_blocked_count",
+      "deliberation_posture",
+      "deliberation_status",
+      "dropped",
+      "linked_from_key",
+      "rejected",
+      "resume_run_id",
+      "skipped",
+      "source_pm_run_id",
+      "submitted"
     ],
     "BrokerPositionSnapshot": [
       "account_buying_power_cents",
@@ -435,6 +461,7 @@
       "model",
       "prompt_hash",
       "response_hash",
+      "stop_reason",
       "tokens_in",
       "tokens_out"
     ],

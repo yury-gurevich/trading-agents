@@ -37,12 +37,12 @@ Each agent's law files live at `agents/<name>/laws/`:
 
 | Agent | `laws.md` | Green clauses | Notes |
 | --- | --- | --- | --- |
-| provider | ✅ LOCKED v1 (S69) | 16 / 62 | S156 citation check; counters are clauses proven / clauses declared — 22 law clauses still have no row (S157 warn-only backlog) |
-| analyst | ✅ LOCKED **v1.1** (S152) | 23 / 46 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
-| scanner | ✅ LOCKED v1 (S70) | 16 / 39 | S156 citation check; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
-| portfolio_manager | ✅ LOCKED v1 (S70) | 25 / 44 | S156 citation check; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
-| deliberator | ✅ LOCKED v1 (S153) | 10 / 48 | S158 made the first four clauses green; S167 added `DLIB-OBS-03` proof for queryable fail-open causes; S172 proved concurrent-order record order, bounded pending-reply waits, and pending sibling reply handling |
-| execution | ✅ LOCKED **v1.1** (S152) | 30 / 57 | S164 proved broker stop dependency exercise and cancelled-stop retry (`EXEC-DEP-04`, `EXEC-OBS-03`); counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
+| provider | ✅ LOCKED v1.1 (S187) | 16 / 62 | S187 adds PARAM rows only; S156 citation check; counters are clauses proven / clauses declared — 22 law clauses still have no row (S157 warn-only backlog) |
+| analyst | ✅ LOCKED **v1.2** (S186) | 24 / 47 | S156 citation check plus S186's `ANLZ-OBS-04`; counters are clauses proven / clauses declared — 12 law clauses still have no row (S157 warn-only backlog) |
+| scanner | ✅ LOCKED v1.1 (S70, amended S183) | 18 / 41 | S156 citation check + S183's `SCAN-OUT-06`/`SCAN-OUT-07`; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
+| portfolio_manager | ✅ LOCKED v1 (S70), amended v1.3 | 28 / 47 | S184 made PM-NEV-07/08/09 green and closed the v1.3 widened PM-NEV-06 and PM-TYP-03 rows; 12 law clauses still have no row (S157 warn-only backlog) |
+| deliberator | ✅ LOCKED v1.1 (S189) | 9 / 51 | S189 adds and proves stop-reason audit evidence, stopped-completion failure, and the empty-turn prohibition; S167 added `DLIB-OBS-03` proof for queryable fail-open causes; S172 proved concurrent-order record order, bounded pending-reply waits, and pending sibling reply handling |
+| execution | ✅ LOCKED **v1.4** (S190) | 35 / 61 | S190 adds/proves `EXEC-OBS-05`, adds the missing `EXEC-OBS-03` liveness-limb proof, and proves `EXEC-STA-05`; counters are clauses proven / clauses declared — 13 law clauses still have no row (S157 warn-only backlog) |
 | monitor | ✅ LOCKED v1 (S71) | 20 / 46 | S156 citation check; counters are clauses proven / clauses declared — 7 law clauses still have no row (S157 warn-only backlog) |
 | reporter | ✅ LOCKED v1 (S71) | 20 / 39 | S156 removed orphan `RPT-OBS-03`; `RPT-TYP-03` still has no row (S157 warn-only backlog) |
 | forecaster | ✅ LOCKED v1 (S71) | 16 / 45 | S156 citation check; counters are clauses proven / clauses declared |
@@ -50,7 +50,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | supervisor | ✅ LOCKED v1 (S71) | 21 / 48 | S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); counters are clauses proven / clauses declared |
 | curator | ✅ LOCKED v1 (S71) | 22 / 47 | S156 citation check; counters are clauses proven / clauses declared |
 | researcher | ✅ LOCKED v1 (S71) | 19 / 43 | S156 citation check; counters are clauses proven / clauses declared |
-| master | ✅ LOCKED v1 (S73) | 10 / 39 | P15 bootstrap agent; RSA/Key Vault clauses deferred S74; **21 of its 39 clauses have no test-plan row** (S157 warn-only backlog) |
+| master | ✅ LOCKED v1.2 (S73, amended S188) | 15 / 44 | S188 adds and proves credential-test handover guards; RSA/Key Vault clauses deferred S74; **21 of its 44 clauses have no test-plan row** (S157 warn-only backlog) |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

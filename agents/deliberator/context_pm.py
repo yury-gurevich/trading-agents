@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.deliberator.context_stop import stop_target_basis
 from agents.deliberator.context_values import (
     explain,
     gate_value_labels,
@@ -19,7 +20,7 @@ from agents.deliberator.context_values import (
 
 if TYPE_CHECKING:
     from contracts.analyst import Recommendation
-    from contracts.portfolio_manager import GateOutcome, OrderIntent
+    from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntent
     from contracts.provider import OHLCVBar, RegimeContext
 
 
@@ -39,6 +40,7 @@ def recommendation_line(rec: Recommendation) -> str:
         f"suggested_stop_pct={percent(rec.suggested_stop_pct)}; "
         f"suggested_target_pct={percent(rec.suggested_target_pct)}; "
         f"quant_metrics={quant_metrics(rec)}; "
+        f"{stop_target_basis(rec)}; "
         f"rationale={explain(rec.rationale)}"
     )
 
@@ -94,7 +96,8 @@ def _gate_line(gate: GateOutcome) -> str:
     value_label, threshold_label = gate_value_labels(gate.name)
     return (
         f"name={gate.name} {value_label}={gate.value:.4g} "
-        f"{threshold_label}={gate.threshold:.4g} -> {_outcome(gate.passed)}{detail}"
+        f"{threshold_label}={gate.threshold:.4g} -> "
+        f"{_gate_outcome(gate.outcome)}{detail}"
     )
 
 
@@ -113,7 +116,7 @@ def _confidence_floor_line(
         "confidence_floor gate: "
         f"confidence_score={rec.confidence:.3f} vs "
         f"base_min_confidence_score={regime.base_min_confidence:.3f} "
-        f"-> {_outcome(passed)}"
+        f"-> {_bool_outcome(passed)}"
     )
 
 
@@ -132,12 +135,18 @@ def _stop_regime_line(
         "stop_vs_regime_volatility gate: "
         f"stop_pct={percent(intent.stop_pct)} vs "
         f"base_stop_loss_pct={percent(regime.base_stop_loss_pct)} "
-        f"-> {_outcome(stop_base_passed)}; "
+        f"-> {_bool_outcome(stop_base_passed)}; "
         f"target_pct={percent(intent.target_pct)} vs "
         f"base_take_profit_pct={percent(regime.base_take_profit_pct)} "
-        f"-> {_outcome(target_base_passed)}"
+        f"-> {_bool_outcome(target_base_passed)}"
     )
 
 
-def _outcome(passed: bool) -> str:
+def _bool_outcome(passed: bool) -> str:
     return "PASSED" if passed else "FAILED"
+
+
+def _gate_outcome(outcome: GateStatus) -> str:
+    if outcome == "not_evaluated":
+        return "NOT-EVALUATED"
+    return "PASSED" if outcome == "passed" else "FAILED"

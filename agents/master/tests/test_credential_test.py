@@ -19,6 +19,7 @@ from agents.master.credential_test import (
     CredentialTest,
     PassCache,
     resolve_and_test,
+    resolve_and_test_report,
 )
 from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
@@ -73,6 +74,24 @@ def test_resolve_and_test_optional_failure_is_non_blocking() -> None:
         "scanner", store, _MAP, (CredentialTest("opt", _failing, required=False),)
     )
     assert failures == []
+
+
+def test_agent_type_scoped_tests_skip_other_agents() -> None:
+    calls: list[str] = []
+
+    def run(_config: Mapping[str, str]) -> bool:
+        calls.append("called")
+        return True
+
+    report = resolve_and_test_report(
+        "scanner",
+        _Store({"postgres-dsn": "good"}),
+        _MAP,
+        (CredentialTest("provider-only", run, agent_types=("provider",)),),
+    )
+
+    assert report.applicable == ()
+    assert calls == []
 
 
 def test_costly_test_uses_cached_pass_and_skips_the_rerun() -> None:

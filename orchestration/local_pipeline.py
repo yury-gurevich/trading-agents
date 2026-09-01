@@ -53,6 +53,7 @@ def cascade_once(
     broker: Broker,
     analyst_settings: AnalystSettings | None = None,
     pm_settings: PortfolioManagerSettings | None = None,
+    execution_settings: ExecutionSettings | None = None,
     forecaster_agent: ForecasterAgent | None = None,
     deliberation_llm: LLMClient | None = None,
     deliberation_judge_llm: LLMClient | None = None,
@@ -73,7 +74,7 @@ def cascade_once(
     scanner_settings = ScannerSettings()
     analyst_settings = analyst_settings or AnalystSettings()
     pm_settings = pm_settings or PortfolioManagerSettings()
-    execution_settings = ExecutionSettings()
+    execution_settings = execution_settings or ExecutionSettings()
     bus = provider_agent.bus
     provider_agent.bind()  # so the forecaster's advisory RPC can reach the provider
     forecaster_agent = forecaster_agent or ForecasterAgent(bus, graph=graph)

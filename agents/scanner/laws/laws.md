@@ -63,6 +63,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **SCAN-OUT-05** — `explain_filter` returns a human-readable `Explanation` of all active
   filter thresholds for the requested universe. It does not trigger a provider call or write
   any graph node.
+- **SCAN-OUT-06** — A gate that did not run says so. Every `Candidate` and `FilterVerdict`
+  names in `skipped_filters` each gate that could not be evaluated for want of an input, and
+  `survived_filters` lists **only** gates that ran and passed. A gate the scanner could not
+  evaluate is never reported as one the ticker cleared. This extends SCAN-OUT-02's accounting
+  from dropped tickers to survivors: silence about a gate is itself explained.
+- **SCAN-OUT-07** — Absent input and evaluated-negative are distinguishable, never collapsed.
+  A ticker with **no** earnings date records `earnings_window` in `skipped_filters`; a ticker
+  with a **known past** earnings date records an evaluated pass carrying a negative
+  `days_to_earnings`. The same rule binds `max_beta` when history is too short to compute beta.
 
 ---
 
@@ -234,3 +243,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v0 — drafted (ideal-design, S70). Not yet locked.
+- v1 — LOCKED (S70). 🪤 The line above was left stale at the lock and is kept as written;
+  the header has read `LOCKED v1` since S70.
+- v1.1 — amended (S183, 2026-08-22). `SCAN-OUT-06` and `SCAN-OUT-07` added: a gate that could
+  not be evaluated must attest itself, and absent input must stay distinguishable from an
+  evaluated negative. 🚨 **The amendment trails the code by one sprint.** S183 shipped the
+  guarantee and `contracts/scanner.py` gained `skipped_filters` on `Candidate` and
+  `FilterVerdict` (`CONTRACT.version` 0.2.0 → 0.2.1) with no clause covering either — because
+  the **sprint spec never asked for a law cycle**, not because the build skipped one. Recorded
+  so the omission is attributed to the spec. See `DRIFT-047`.

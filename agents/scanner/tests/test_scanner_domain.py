@@ -29,6 +29,7 @@ def _survivor(
     return Survivor(
         ticker=ticker,
         survived_filters=("fixture",),
+        skipped_filters=(),
         metrics={
             "relative_strength": relative_strength,
             "average_volume": average_volume,

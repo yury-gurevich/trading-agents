@@ -11,6 +11,11 @@ import base64
 from typing import TYPE_CHECKING
 
 from agents.master.agent import MasterAgent
+from agents.master.credential_probes import (
+    load_credential_tests,
+    parse_credential_tests,
+)
+from agents.master.credential_test import PassCache
 from agents.master.grants import load_grant_policy, parse_grant_policy
 from agents.master.http_server import serve
 from agents.master.secret_map import load_secret_map, parse_secret_map
@@ -87,12 +92,26 @@ def build_app(
         parse_secret_map,
         load_secret_map,
     )
+    credential_tests = _resolve_pack(
+        settings.credential_tests_b64,
+        settings.credential_tests_path,
+        parse_credential_tests,
+        load_credential_tests,
+    )
+    if secret_map and not credential_tests:
+        raise ValueError(
+            "credential test declaration is required when a secret map is configured"
+        )
     agent = MasterAgent(
         graph=graph,
         settings=settings,
         secret_store=secret_store,
         grant_policy=grant_policy,
         secret_map=secret_map,
+        credential_tests=credential_tests or (),
+        pass_cache=PassCache(settings.credential_pass_cache_ttl_minutes)
+        if credential_tests
+        else None,
     )
     agent.start()
     return agent, private_key_pem

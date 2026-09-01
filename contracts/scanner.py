@@ -21,6 +21,7 @@ class Candidate(_Frozen):
     rank: int = Field(ge=1)
     score: float
     survived_filters: tuple[str, ...]
+    skipped_filters: tuple[str, ...] = ()
     metrics: dict[str, float] = Field(default_factory=dict)
     """Filter inputs worth carrying forward (beta, relative_strength, returns...)."""
 
@@ -37,6 +38,7 @@ class FilterVerdict(_Frozen):
     ticker: Ticker
     decision: Literal["survived", "dropped"]
     filter_fired: str | None = None
+    skipped_filters: tuple[str, ...] = ()
     features: dict[str, float] = Field(default_factory=dict)
     bypassed: bool = False
 
@@ -61,7 +63,7 @@ class CandidateSet(_Frozen):
 
 CONTRACT = AgentContract(
     name="scanner",
-    version="0.2.0",
+    version="0.2.1",
     mission=(
         "Reduce the full tradable universe to a small, ranked set of candidates "
         "worth deeper analysis, and explain why each survived or was filtered out."

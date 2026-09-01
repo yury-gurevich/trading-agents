@@ -58,6 +58,61 @@ def test_vocabulary_is_set_by_its_own_narrow_update() -> None:
     assert text.count("Get-VocabularyEnv") >= 3  # definition + both setters
 
 
+def test_master_credential_tests_are_set_by_own_narrow_update() -> None:
+    """S188: credential-test pack is too large to ride the master create call."""
+    text = _script_text()
+    lines = text.splitlines()
+    offenders = [
+        line.strip()
+        for line in lines
+        if "Get-MasterCredentialTestsEnv" in line
+        and any(builder in line for builder in _CREATE_ARG_BUILDERS)
+    ]
+
+    assert "function Set-MasterCredentialTests" in text
+    assert "MASTER_CREDENTIAL_TESTS_B64" in text
+    assert not offenders, f"credential tests spliced into create args: {offenders}"
+
+
+def test_issuer_map_is_loaded_from_pack_and_sent_only_to_pm() -> None:
+    """S184: the issuer map is PM pack data, not a tunable or fleet-wide env."""
+    text = _script_text()
+    agent_env = text.split("function Get-AgentEnv", 1)[1].split(
+        "function Get-LiveEnvNames", 1
+    )[0]
+
+    assert "function Get-IssuerMapEnv" in text
+    assert "trading_issuer_map.json" in text
+    assert "PORTFOLIO_MANAGER_ISSUER_MAP_B64" in text
+    assert '$name -eq "portfolio-manager"' in agent_env
+    assert agent_env.count("Get-IssuerMapEnv") == 1
+
+
+def test_preflight_imports_what_its_own_steps_import() -> None:
+    """A package can look installed while being unusable, and preflight missed it.
+
+    The `s187` deploy failed at Service Bus route prep on a corrupt `azure-core`
+    — dist-info with no RECORD file, so uv still listed it installed while
+    `azure/core/` held zero `.py` files. Route prep imports its admin client
+    lazily inside `main()`, so the ImportError landed *after* `alembic upgrade
+    head` had migrated. Preflight checked every input to that step and never
+    that the step could import its own dependency. Pinned on both sides: if
+    route prep changes what it imports, this fails and preflight must follow.
+    """
+    text = _script_text()
+    body = text.split("function Preflight", 1)[1]
+    preflight = body.split("\nfunction ", 1)[0]
+    route_prep = Path("scripts/servicebus_prepare_routes.py").read_text(
+        encoding="utf-8"
+    )
+    symbol = "from azure.servicebus.management import ServiceBusAdministrationClient"
+
+    assert "function Test-ServiceBusImports" in text
+    assert "Test-ServiceBusImports" in preflight, "the check must run in preflight"
+    assert symbol in route_prep, "route prep no longer imports the pinned symbol"
+    assert symbol in text, "preflight must import exactly what route prep imports"
+
+
 def test_deploy_reports_its_own_failure() -> None:
     """DL-85: `up` printed "Fleet deployed" and exited 0 after 15 failures.
 

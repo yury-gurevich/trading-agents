@@ -16,7 +16,12 @@ from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from agents.provider.sources import FakeDataSource
 from contracts.common import Explanation, Provenance
-from contracts.portfolio_manager import GateOutcome, OrderIntentSet, RejectedOrder
+from contracts.portfolio_manager import (
+    GateOutcome,
+    GateStatus,
+    OrderIntentSet,
+    RejectedOrder,
+)
 from kernel import InMemoryGraphStore, InProcessBus, Node
 from orchestration.batch_trace import print_trace
 from orchestration.local_pipeline import cascade_once
@@ -38,6 +43,8 @@ def test_batch_trace_renders_secondary_failed_rejection_gates(
             starting_cash=Decimal("1500.00"),
             max_position_pct=Decimal("0.80"),
             max_positions=1,
+            max_sector_pct=Decimal("1.00"),
+            max_correlated_cluster_pct=1.00,
         ),
     )
 
@@ -56,6 +63,8 @@ def test_batch_trace_stays_quiet_on_one_rejection_gate(
             starting_cash=Decimal("10000.00"),
             max_position_pct=Decimal("0.10"),
             max_positions=1,
+            max_sector_pct=Decimal("1.00"),
+            max_correlated_cluster_pct=1.00,
         ),
     )
 
@@ -104,6 +113,7 @@ def _cascade(run_id: str, pm_settings: PortfolioManagerSettings) -> InMemoryGrap
                 bar("MSFT", 4, 100.0),
                 bar("MSFT", 0, 116.0),
             ),
+            sectors={"AAPL": "Technology", "MSFT": "Technology"},
             vix=12.0,
         ),
         settings=ProviderSettings(max_staleness_days=7),
@@ -135,6 +145,6 @@ def _gate(name: str, *, passed: bool) -> GateOutcome:
         name=name,
         value=1.0,
         threshold=1.0,
-        passed=passed,
+        outcome=GateStatus.PASSED if passed else GateStatus.FAILED,
         detail="fixture",
     )

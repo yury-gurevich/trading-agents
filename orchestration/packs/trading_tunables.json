@@ -1,6 +1,6 @@
 {
   "_comment": "Operator-set agent tunables the deploy must carry (DL-100 / S169). Mechanism lives in infra/deploy-agents.ps1; these names and values are trading-pack data (ADR-0012). A full `up` REPLACES each app's env set, so a tunable that lives only as live cluster state is silently reverted to its code default with a green [OK]. This file is that single source of truth. Values are strings because container env vars are strings. Secrets never appear here - they arrive as secretrefs from Key Vault via master (DL-07).",
-  "_measured": "Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. Amended 2026-08-19 (DL-116): grace 900->1800 and deliberator request timeout 60->120, measured off sched-2026-08-19 (debate span ~990s vs 900s grace; LLM tail 65.3/59.3/58.2s vs a 60s ceiling).",
+  "_measured": "Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. STAGED 2026-08-20: DELIBERATOR_LLM_PROVIDER openai->anthropic on all three deliberators (DL-99 operator switch). The three *_MODEL vars are deliberately empty, so this resolves the Anthropic adapter default claude-opus-5. NOT YET APPLIED LIVE - the Anthropic key is blocked by an operator-set spend limit; live env still reads openai until that limit is raised. Both providers are currently non-functional, so the divergence degrades nothing. Amended 2026-08-19 (DL-116): grace 900->1800 and deliberator request timeout 60->120, measured off sched-2026-08-19 (debate span ~990s vs 900s grace; LLM tail 65.3/59.3/58.2s vs a 60s ceiling).",
   "apps": {
     "scanner": {
       "SCANNER_CANDIDATE_CAP": "25"
@@ -10,24 +10,28 @@
     },
     "portfolio-manager": {
       "PORTFOLIO_MANAGER_MAX_POSITION_PCT": "0.01",
-      "PORTFOLIO_MANAGER_MAX_POSITIONS": "60"
+      "PORTFOLIO_MANAGER_MAX_POSITIONS": "60",
+      "PORTFOLIO_MANAGER_CORRELATION_LOOKBACK_DAYS": "120",
+      "PORTFOLIO_MANAGER_CORRELATION_THRESHOLD": "0.70",
+      "PORTFOLIO_MANAGER_MAX_CORRELATED_CLUSTER_PCT": "0.25",
+      "PORTFOLIO_MANAGER_MIN_CORRELATION_BARS": "60"
     },
     "execution": {
       "EXECUTION_DELIBERATION_GRACE_SECONDS": "1800"
     },
     "deliberator-manager": {
-      "DELIBERATOR_LLM_PROVIDER": "openai",
+      "DELIBERATOR_LLM_PROVIDER": "anthropic",
       "DELIBERATOR_EFFORT": "high",
       "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120",
       "DELIBERATOR_DEBATE_CONCURRENCY": "4"
     },
     "deliberator-proponent": {
-      "DELIBERATOR_LLM_PROVIDER": "openai",
+      "DELIBERATOR_LLM_PROVIDER": "anthropic",
       "DELIBERATOR_EFFORT": "high",
       "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120"
     },
     "deliberator-opponent": {
-      "DELIBERATOR_LLM_PROVIDER": "openai",
+      "DELIBERATOR_LLM_PROVIDER": "anthropic",
       "DELIBERATOR_EFFORT": "high",
       "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120"
     }

@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
+from agents.portfolio_manager.issuer_map import IssuerMap, load_issuer_map_from_env
 from agents.portfolio_manager.run import run_evaluation
 from agents.portfolio_manager.settings import PortfolioManagerSettings
 from contracts.analyst import RecommendationSet
@@ -49,10 +50,12 @@ def evaluate_analyst_node(
     graph: GraphStore,
     settings: PortfolioManagerSettings | None = None,
     portfolio: PortfolioState | None = None,
+    issuer_map: IssuerMap | None = None,
     sink: FaultSink | None = None,
 ) -> None:
     """Evaluate one AnalystRun node from the graph and link the PMRun back to it."""
     settings = settings or PortfolioManagerSettings()
+    issuer_map = issuer_map if issuer_map is not None else load_issuer_map_from_env()
     sink = sink if sink is not None else GraphFaultSink(graph, CollectingFaultSink())
     recommendation_set = RecommendationSet.model_validate(
         node.props["recommendation_set"]
@@ -65,10 +68,12 @@ def evaluate_analyst_node(
         graph,
         recommendation_set=recommendation_set,
         market=market,
+        correlation_market=market,
         regime=regime,
         settings=settings,
         portfolio=portfolio,
         sink=sink,
+        issuer_map=issuer_map,
     )
     # Persist the full OrderIntentSet on the PMRun so execution can pull it from the
     # graph (DL-08b) instead of receiving it as a bus payload.

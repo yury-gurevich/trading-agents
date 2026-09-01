@@ -159,10 +159,12 @@ def test_score_candidates_threads_alpha_score_by_ticker(
         _news: tuple[str, ...],
         _settings: AnalystSettings,
         *,
+        headline_weights: dict[str, float] | None = None,
         alpha_score: float | None = None,
     ) -> ScoreBreakdown:
         assert scored_candidate is not None
         assert isinstance(bars, tuple)
+        assert headline_weights == {}
         captured[scored_candidate.ticker] = alpha_score
         return _score(alpha_score)
 

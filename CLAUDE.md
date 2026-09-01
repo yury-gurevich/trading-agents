@@ -24,17 +24,30 @@ check `agents/<name>/laws/laws.md` if a law question is involved.
 
 ---
 
-## CI gate — always run all 11 steps
+## CI gate — always run all 12 steps
 
 ```bash
 make ci                 # to the terminal, or:
 make ci > /tmp/ci.txt 2>&1 ; echo $?     # redirect to a FILE, then read it
 ```
 
-Never declare a change "green" without `make ci` passing locally **and** without
-polling `gh run list` after pushing to confirm GitHub CI also passes.
-The gate has 11 steps: ruff, format, mypy, import-linter, module size, module header,
-law coverage, pytest (100 % coverage floor), pip-audit, detect-secrets, untracked secrets.
+Never declare a change "green" on the strength of intent. **Run `make ci` locally before you
+push your own work** — it keeps a broken push off the remote — and confirm the remote gate afterwards.
+The gate has 12 steps: ruff, format, mypy, import-linter, module size, module header,
+law coverage, PARAM/settings sync, pytest (100 % coverage floor), pip-audit, detect-secrets,
+untracked secrets.
+
+**Verifying someone else's handback is the exception: `make gate-ran` is the proof, not a local
+re-run** (operator, 2026-08-31). Remote CI runs the same 12 steps on clean infrastructure with **no
+`.env`**, so a green gate for the merged SHA is a *stronger* signal than a local pass, and repeating
+it locally only re-derives a fact you already hold. 🪤 **What the re-run never checked is where
+the defects actually were:** the SHA being proven (a docs commit added *above* the gated commit merges
+unproven — S186), the diff itself (scope, security-baseline edits, bump kind, law-cycle consistency),
+the handback's claims re-measured independently, and cross-sprint effects (S186's merge silently
+shifted the `file:line` citations S187 depended on). Spend the time there.
+
+Still run it locally when: the remote gate is **not** green for the exact SHA you are merging; you
+need to *observe* something rather than infer it; or the work is your own and unpushed.
 
 **Never measure the gate through a pipe.** `make ci | tail` reports **`tail`'s** exit code,
 not `make`'s — a real failure reads as green. Redirect to a file and read the file. This is
@@ -106,6 +119,11 @@ Merge to `main` is the deploy trigger. Never commit sprint work directly to `mai
 Sequence: worktree per sprint/chore → `make ci` locally → **push the branch** → **`make gate-ran`
 must exit 0** → then merge to `main` locally and push. **PRs are not required** — this repo has
 one developer, so a PR buys no review (DL-52 reversal, 2026-07-22).
+
+**Merging does not need operator permission** (operator, 2026-08-22: *"remove the requirement to ask
+me for merging. I am happy if you are"*). This retires the older convention of parking a proven branch
+pending authorization. **The evidence bar is unchanged** — only the asking is gone; judgement still
+applies, so a thin or unconvincing handback is *returned*, not merged.
 
 **Never merge a branch you have not seen go green on the remote.** The point was never the
 PR; it was that the security-findings `gate` used to be `pull_request`-triggered, so direct

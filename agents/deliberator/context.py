@@ -105,6 +105,7 @@ def _scanner_lines(candidates: CandidateSet, ticker: str) -> list[str]:
         lines.append(
             f"Scanner verdict for {ticker}: decision={verdict.decision}; "
             f"filter_fired={verdict.filter_fired}; bypassed={verdict.bypassed}; "
+            f"skipped_filters={list(verdict.skipped_filters)}; "
             f"features={source_metric_map(verdict.features)}"
         )
     return lines
@@ -115,6 +116,7 @@ def _candidate_line(candidate: Candidate) -> str:
         f"Scanner candidate for {candidate.ticker}: rank_ordinal={candidate.rank}; "
         f"scanner_score={candidate.score:.3f}; "
         f"survived_filters={list(candidate.survived_filters)}; "
+        f"skipped_filters={list(candidate.skipped_filters)}; "
         f"metrics={source_metric_map(candidate.metrics)}"
     )
 

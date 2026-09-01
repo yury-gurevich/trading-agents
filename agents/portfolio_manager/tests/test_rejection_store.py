@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from agents.portfolio_manager.store import write_order_decision
 from agents.portfolio_manager.tests.helpers import recommendation, recommendation_set
-from contracts.portfolio_manager import GateOutcome, RejectedOrder
+from contracts.portfolio_manager import GateOutcome, GateStatus, RejectedOrder
 from kernel import InMemoryGraphStore
 
 
@@ -33,7 +33,7 @@ def test_store_writes_queryable_rejection_gate_report() -> None:
                         name="max_positions",
                         value=11.0,
                         threshold=10.0,
-                        passed=False,
+                        outcome=GateStatus.FAILED,
                         detail="fixture",
                     ),
                 ),

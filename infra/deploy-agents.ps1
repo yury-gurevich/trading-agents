@@ -189,6 +189,20 @@ function Test-PostgresDsn {
   return $LASTEXITCODE -eq 0
 }
 
+function Test-ServiceBusImports {
+  # A package can look installed while being unusable: a corrupt azure-core
+  # (dist-info with no RECORD file, so uv and pip both still list it) left
+  # azure/core/ with subdirectories and zero .py files. Prepare-ServiceBusRoutes
+  # imports the admin client lazily inside main(), so that ImportError surfaced
+  # mid-procedure -- after `alembic upgrade head` had already migrated -- rather
+  # than here. Preflight checked every input to the step and never that the step
+  # could import its own dependency.
+  $py = "import azure.core.credentials; " +
+        "from azure.servicebus.management import ServiceBusAdministrationClient"
+  uv run --extra azure python -c $py *> $null
+  return $LASTEXITCODE -eq 0
+}
+
 function Get-PostgresDsnEnvName($target) {
   return "POSTGRES_DSN_" + $target.ToUpperInvariant().Replace("-", "_")
 }
@@ -393,6 +407,9 @@ function Get-AgentEnv($name, $masterUrl, $pubB64) {
       "DELIBERATOR_INSTANCE_NAME=$name"
     )
   }
+  if ($name -eq "portfolio-manager") {
+    $envv += @(Get-IssuerMapEnv)
+  }
   return $envv + (Get-AppTunables $name)
 }
 
@@ -551,6 +568,10 @@ function Preflight {
   Check $allSbReady "per-target Service Bus SAS strings: $sbReady/$($sbTargets.Count)"
   $ok = $ok -and $allSbReady
 
+  $sbImports = Test-ServiceBusImports
+  Check $sbImports "Service Bus route-prep imports (azure extra)"
+  $ok = $ok -and $sbImports
+
   if ($ghcr) {
     $imgs = @()
     try {
@@ -591,6 +612,20 @@ function Get-VocabularyEnv {
   return "GRAPH_VOCABULARY_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
 }
 
+function Get-MasterCredentialTestsEnv {
+  # This pack is large enough that adding it to the master create call would push
+  # the same cmd.exe line ceiling as GRAPH_VOCABULARY_B64. Set it narrowly.
+  $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_credential_tests.json"
+  return "MASTER_CREDENTIAL_TESTS_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+}
+
+function Get-IssuerMapEnv {
+  # The issuer map is trading-pack data (ADR-0012), not a PM tunable. Inject it
+  # as base64 so the portfolio-manager image stays pack-agnostic like master.
+  $file = Join-Path $PSScriptRoot "..\orchestration\packs\trading_issuer_map.json"
+  return "PORTFOLIO_MANAGER_ISSUER_MAP_B64=" + [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+}
+
 # The pack must NOT ride on a create/update that also carries secrets, the GHCR
 # PAT and the master key: `az` is az.cmd, so every invocation inherits cmd's
 # command-line ceiling, and the base64 pack alone is >12,000 characters. Set it
@@ -620,6 +655,16 @@ function Set-JobVocabulary {
   return (Get-JobState $DISPATCHER_JOB) -eq "Succeeded"
 }
 
+function Set-MasterCredentialTests {
+  $state = Invoke-Az @(
+    "containerapp", "update", "--name", "master", "--resource-group", $RG,
+    "--subscription", $SUB, "--set-env-vars", (Get-MasterCredentialTestsEnv),
+    "--query", "properties.provisioningState", "-o", "tsv"
+  )
+  if ($null -eq $state) { return $false }
+  return (Get-AppState "master") -eq "Succeeded"
+}
+
 function Up {
   if (-not (Preflight)) { Write-Host "`nPreflight failed — fix the [XX] items above." -ForegroundColor Red; return }
   # Refuse before the first create, not after the ninth: a deploy that discards
@@ -639,6 +684,7 @@ function Up {
   $kv = Load-Json "key-vault.local.json"
   # Inject the trading pack policy + secret map as base64 env content (not baked
   # into the substrate image — keeps the master image pack-agnostic; S86 / DL-12).
+  # Credential tests are set by their own narrow call below to stay under cmd.exe.
   $packs = Join-Path $PSScriptRoot "..\orchestration\packs"
   $grantB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_grants.json")))
   $secretB64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $packs "trading_secrets.json")))
@@ -669,12 +715,13 @@ function Up {
   $mArgs += @("--env-vars") + $envv + (Get-CronScaleArgs "daily-master-window" $MasterScaleStart)
   $masterState = Invoke-Az $mArgs
   $vocabOk = Set-AppVocabulary "master"
+  $credentialTestsOk = Set-MasterCredentialTests
   $fqdn = az containerapp show --name master --resource-group $RG --subscription $SUB --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
   # The old check tested only [bool]$fqdn, which an already-existing app satisfies
   # whether or not this deploy did anything (DL-85). The state now comes from the
   # resource rather than from the deploying call's stream (row Q).
   $masterOk = ($null -ne $masterState) -and ((Get-AppState "master") -eq "Succeeded")
-  Check ($masterOk -and $vocabOk -and [bool]$fqdn) "master @ https://$fqdn"
+  Check ($masterOk -and $vocabOk -and $credentialTestsOk -and [bool]$fqdn) "master @ https://$fqdn"
   Bot
   $masterUrl = "https://$fqdn"
 

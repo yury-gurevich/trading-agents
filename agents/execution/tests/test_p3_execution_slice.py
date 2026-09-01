@@ -83,7 +83,11 @@ def _bind_pipeline(bus: InProcessBus, graph: InMemoryGraphStore) -> None:
     ProviderAgent(
         bus,
         graph=graph,
-        source=FakeDataSource(bars=_pipeline_bars(), vix=12.0),
+        source=FakeDataSource(
+            bars=_pipeline_bars(),
+            sectors={"AAPL": "Technology", "MSFT": "Technology"},
+            vix=12.0,
+        ),
         settings=ProviderSettings(max_staleness_days=7),
     ).bind()
     ScannerAgent(

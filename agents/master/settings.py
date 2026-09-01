@@ -63,6 +63,30 @@ class MasterSettings(AgentSettings):
             "precedence over secret_map_path. Keeps the master image pack-agnostic."
         ),
     )
+    credential_tests_path: str = tunable(
+        "",
+        why=(
+            "Filesystem path to the pack's credential-test JSON; empty = no "
+            "activation credential tests unless base64 pack data is supplied."
+        ),
+    )
+    credential_tests_b64: str = tunable(
+        "",
+        why=(
+            "Base64-encoded credential-test JSON injected at deploy time (cloud); "
+            "takes precedence over credential_tests_path."
+        ),
+    )
+    credential_pass_cache_ttl_minutes: int = tunable(
+        5,
+        why=(
+            "Minutes a costly credential-test pass remains fresh during an "
+            "activation wave (0 = never expires)."
+        ),
+        ge=0,
+        le=60,
+        unit="minutes",
+    )
 
     remediation_mode: str = tunable(
         "manual",

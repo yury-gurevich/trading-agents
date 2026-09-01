@@ -33,6 +33,7 @@ def rank_survivors(
             rank=rank,
             score=survivor.metrics["relative_strength"],
             survived_filters=survivor.survived_filters,
+            skipped_filters=survivor.skipped_filters,
             metrics=survivor.metrics,
         )
         for rank, survivor in enumerate(ordered[:cap], start=1)

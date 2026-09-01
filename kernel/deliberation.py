@@ -23,6 +23,7 @@ from kernel.deliberation_prompts import (
 from kernel.deliberation_prompts import (
     JUDGE_SYSTEM as JUDGE_SYSTEM,
 )
+from kernel.llm import LLMCompletionStoppedError
 
 if TYPE_CHECKING:
     from kernel.llm import LLMClient
@@ -101,6 +102,8 @@ def _render(proposition: Proposition, transcript: tuple[Turn, ...]) -> str:
 
 def _parse_verdict(raw: str) -> Verdict:
     """Parse the Judge's JSON; fall back to 'revise' when it is unreadable."""
+    if not raw.strip():
+        return Verdict("revise", "judge response empty — defaulting to revise")
     try:
         data = json.loads(raw)
         ruling = str(data["ruling"]).strip().lower()
@@ -128,6 +131,10 @@ def debate_turn(
         user=_render(proposition, transcript),
         tool_schema={},
     ).strip()
+    if not text:
+        raise LLMCompletionStoppedError(
+            provider="kernel", stop_reason="empty_debate_turn"
+        )
     return Turn(role, round_number, text)
 
 
@@ -139,11 +146,14 @@ def judge_verdict(
     prompts: DeliberationPrompts = DEFAULT_DELIBERATION_PROMPTS,
 ) -> Verdict:
     """Ask the debate Judge to rule using the same parser as ``deliberate``."""
-    raw = llm.complete(
-        system=prompts.judge,
-        user=_render(proposition, transcript),
-        tool_schema={},
-    )
+    try:
+        raw = llm.complete(
+            system=prompts.judge,
+            user=_render(proposition, transcript),
+            tool_schema={},
+        )
+    except LLMCompletionStoppedError as exc:
+        return Verdict("revise", f"judge response stopped: {exc}")
     return _parse_verdict(raw)
 
 

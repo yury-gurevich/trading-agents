@@ -27,6 +27,7 @@ from agents.portfolio_manager.domain.sizing import size_quantity
 
 if TYPE_CHECKING:
     from agents.portfolio_manager.domain.concentration import SectorBook
+    from agents.portfolio_manager.domain.correlation import CorrelationBook
     from agents.portfolio_manager.portfolio import PortfolioState
     from contracts.analyst import Recommendation
     from contracts.common import Money
@@ -73,7 +74,7 @@ def decide_entry(
     book: SectorBook,
     *,
     reserved_cash: Decimal,
-    open_tickers: set[str],
+    open_issuers: set[str],
     max_position_pct: Decimal,
     max_positions: int,
     cash_buffer_pct: Decimal,
@@ -83,6 +84,7 @@ def decide_entry(
     min_reward_risk_ratio: float,
     max_sector_pct: Decimal,
     max_names_per_sector: int,
+    correlations: CorrelationBook,
 ) -> tuple[OrderIntent | RejectedOrder, Decimal]:
     """Decide a buy, returning the decision and the cash it would commit."""
     quantity = size_quantity(
@@ -90,13 +92,16 @@ def decide_entry(
         max_position_pct=max_position_pct,
         est_price=price.amount,
     )
+    issuer = book.issuer_for(item.ticker)
     gates = position_outcomes(
         item=item,
         quantity=quantity,
         price=price,
         portfolio=portfolio,
         reserved_cash=reserved_cash,
-        open_tickers=open_tickers,
+        open_issuers=open_issuers,
+        issuer=issuer,
+        existing_issuer_value=book.issuer_value(issuer),
         max_position_pct=max_position_pct,
         max_positions=max_positions,
         cash_buffer_pct=cash_buffer_pct,
@@ -125,4 +130,19 @@ def decide_entry(
     if rejection is not None:
         return rejection, Decimal("0")
     gate_report = (*gates, stop_target.outcome, *sector_gates)
+    correlation_gates = correlations.outcomes(
+        item,
+        cost,
+        portfolio.value,
+        issuer_values=book.issuer_values(),
+        issuer_tickers=book.issuer_tickers(),
+    )
+    rejection = sector_rejection(
+        item.ticker,
+        correlation_gates,
+        gate_report,
+    )
+    if rejection is not None:
+        return rejection, Decimal("0")
+    gate_report = (*gate_report, *correlation_gates)
     return order_intent(item, quantity, price, stop_target, gate_report), cost

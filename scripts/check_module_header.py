@@ -35,7 +35,7 @@ _SCOPED_PREFIXES = (
 def _is_checked_path(path: Path) -> bool:
     """Return whether a path must carry a coding-agent header."""
     normalized = path.as_posix()
-    if normalized.endswith("__init__.py") or "alembic/versions" in normalized:
+    if normalized.endswith("__init__.py"):
         return False
     return normalized.startswith(_SCOPED_PREFIXES) and normalized.endswith(".py")
 

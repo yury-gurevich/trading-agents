@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-193-a-shim-that-never-runs-is-not-a-shim`
-**Status:** BUILT locally — branch proof pending
+**Status:** MERGED — main gate proven for implementation SHA
 **Version:** `0.94.04` (PATCH from `0.94.03`)
 **Effort:** S
 **Decisions:** [DL-143](../design-log.md) · work-queue item 40
@@ -353,7 +353,7 @@ must still fail validation, so `PM-NEV-09`'s invariant remains intact.
 
 **Fill this at handback. A placeholder here means the sprint is not done.**
 
-- **Merged SHA:** pending branch proof/merge
+- **Merged SHA:** `a9603d7f5390ba8b94c7b33ce961a7fc3c1bbce9`
 - **Version:** `0.94.04`
 - **`make ci`:** `make ci *> ..\s193-make-ci.txt; ...` exited 0. File evidence:
   ruff/format/mypy/import-linter passed; module-size had warnings only
@@ -361,7 +361,10 @@ must still fail validation, so `PM-NEV-09`'s invariant remains intact.
   PARAM sync emitted existing warn-only debt; pytest `2448 passed, 6 skipped` with
   `100.00%`; pip-audit found no known vulnerabilities; detect-secrets and untracked
   secret scan passed.
-- **`make gate-ran`:** pending branch push
+- **`make gate-ran`:** passed from the main worktree at
+  `a9603d7f5390ba8b94c7b33ce961a7fc3c1bbce9`:
+  Security Findings success, CI success, CodeQL success, Build and push agent
+  images success, plus configured graph/dependency update workflows success.
 - **Sweep before:** `38 ERROR, 16 FAIL, 1 PASS` over 55 runs *(measured 2026-09-01)*
 - **Sweep after:** `0 ERROR, 54 FAIL, 0 NO_TRADE, 0 UNPROVEN, 2 PASS` over 56
   `RunRequest`s on Postgres (2026-09-02); the denominator moved because
@@ -379,4 +382,8 @@ must still fail validation, so `PM-NEV-09`'s invariant remains intact.
 
 ## Return notes
 
-*(Anything you found that this spec got wrong, or that the next sprint should know.)*
+The live denominator moved from 55 to 56 because `sched-2026-09-01` appeared
+between the sprint measurement and handback; the postcondition that mattered was
+still met: historical PM-reader `ERROR`s are now zero. This handback
+distinguishes the implementation merge proof from any docs-only closeout commit
+that records the evidence after the proof.

@@ -118,6 +118,16 @@ asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137
 pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
 🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
 
+🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) merged `a9603d7`
+(`0.94.04`), 2026-09-02.** PM historical gate outcomes now accept graph-frozen `Mapping`
+payloads, so pre-S184 `passed` shims actually run after a Postgres/InMemory round trip. Red proof
+caught legacy `passed=True`, `passed=False`, nested rejected `gate_report`, and the observatory
+`pm` stage view; green proof added the graph-roundtrip contract tests. Local `make ci` passed
+`2448 passed, 6 skipped` at `100.00%`; main `make gate-ran` proved Security Findings, CI, CodeQL,
+image build, configured graph update, and dependency update for the implementation SHA. Live sweep:
+`38 ERROR, 16 FAIL, 1 PASS` over 55 before -> `0 ERROR, 54 FAIL, 2 PASS` over 56 after. No deploy or
+fleet retag was required.
+
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure
 so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstance`; laws **v1.2**, `GATE PROVEN` for

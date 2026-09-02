@@ -8,6 +8,78 @@ and is marked CLOSED here.
 
 ---
 
+## DL-147 - The mismatch warning is a 16-second staleness window, not a stale row - status: MEASURED (2026-09-02)
+
+**This corrects [DL-146](design-log.md) section 3 and the work-queue item 42 I filed from it.** Both
+described the two `BrokerStopIdentityMismatch` faults as *"a graph stop with no broker counterpart"*
+that should be *"retired once, rather than re-warned nightly"*. **Measured properly, that is wrong on
+every count**, and the real finding is smaller, sharper, and points at a different fix.
+
+### What the population actually is
+
+| Graph `BrokerStopOrder` nodes | 47 |
+| --- | --- |
+| sibling `Fill` with `status='pending'` | **47 — all of them** |
+| sibling `Fill` `broker_status=None` (live) | 26 |
+| sibling `Fill` `broker_status='filled'` | 11 |
+| sibling `Fill` `broker_status='rejected'` | 10 |
+
+🪤 **`status='pending'` is every stop's normal state and discriminates nothing** — the same trap as
+`Position.status` staying `"open"` ([DL-73](design-log.md)). I filed item 42 on that prop and it
+selected the entire population. The real liveness prop is **`broker_status`**, and
+`TERMINAL_FILL_BROKER_STATUSES = {"filled", "rejected"}` covers all 21 non-live stops correctly.
+
+🟩 **So S190's predicate is right and is working.** Run now, `active_broker_stop_orders` returns
+**26** — exactly the live ones — and **neither** warned stop is in it. Both broker orders still exist
+and are `filled`; nothing is orphaned and nothing needs retiring.
+
+### What actually happened, to the second
+
+| Event | Time (UTC) |
+| --- | --- |
+| sweep warns on AMD | 22:30:**42.42** |
+| sweep warns on USB | 22:30:**47.08** |
+| `BrokerOrderStatus` refresh writes `filled` for both | 22:30:**58.6** |
+
+**The refresh landed 16 s after the AMD warning and 11 s after the USB one — inside the same run.**
+The head-of-run drop sweep reads stop liveness *before* that run's broker reconciliation refreshes
+it. For those seconds the graph genuinely still believed the stop was live while the broker had
+already filled it, so `broker_stop=False graph_stop=True` was **a true statement about a stale
+read**, the sweep **exempted** the order rather than acting on it, and the run then fixed the graph.
+
+**Consequences, none of which match what I wrote yesterday.**
+
+- It is **transient and self-correcting**, not permanent. It will **not** recur for AMD or USB.
+- It fires **once per stop that fired since the previous run** — which is the actual explanation for
+  the counts: 17 on `s187` was a heavy fill day, 2 last night was two stops firing. It is not
+  evidence of a residue accumulating.
+- Nothing needs to be deleted or retired. **Item 42 as filed would have deleted live, correct data.**
+
+### The defect that *is* there, and it is item 20's original wording
+
+Item 20 was titled *"the check compares a type against a lifecycle"*. S190 answered that by making
+the sweep compare **live-to-live** — and comparing two liveness views is precisely what produces
+this, because the two views refresh at different times. A warning that says *identity mismatch* when
+the truth is *the graph has not been refreshed yet this run* is reporting an ordering artifact as a
+discrepancy, and it costs one permanent `Fault` row per fired stop, forever.
+
+**So the fix direction is the opposite of what item 42 said:** compare **identity to identity** — is
+this order a stop, per the broker's type and the existence of a graph node — and treat liveness
+separately, rather than folding refresh timing into an identity check. Alternatively refresh before
+sweeping; that is the riskier change because it reorders the head of the run.
+
+🟠 **Item 32's success factor is still not met as written** ("zero new mismatch faults on the first
+run after deploy" → 2). That stands. But the reason recorded in DL-146 was wrong, and the remedy it
+implied would have been harmful.
+
+**Recorded against myself, twice in two days.** Yesterday I reported the `s190` verify run's "zero
+faults" as proof S190 worked, when that run's book could not exercise the path. Today I corrected
+that in the wrong direction — asserting a stale-row residue from a `status` prop that means nothing,
+without reading `broker_status` or the refresh timestamps first. **Both errors came from reporting a
+count before reading the mechanism underneath it.**
+
+---
+
 ## DL-146 - S193 verified, the first unattended run passed, and S190's live proof came back failing - status: MEASURED (2026-09-02)
 
 Three results from the same morning, one of which corrects a claim of mine.

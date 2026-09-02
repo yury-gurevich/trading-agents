@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-02 12:55 AEST · **Version:** 0.94.04 · **🎯 The first unattended scheduled run since the deploy passed with the veto binding on both its buys — and the same run returned S190's owed live proof failing.**
+**Last updated:** 2026-09-02 13:30 AEST · **Version:** 0.94.04 · **🎯 The first unattended scheduled run passed with the veto binding on both its buys — and the two faults it raised turned out to be a 16-second staleness window, not the defect I twice filed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -41,11 +41,12 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 🎯 **PROVEN RESULT — THE FIRST UNATTENDED SCHEDULED RUN SINCE THE DEPLOY PASSED, WITH THE VETO ACTUALLY BINDING.** `sched-2026-09-01` fired on schedule on `s191`: **8/8 stages, `ACCEPTANCE PASS`**.
 PM approved **2 buys** (USB, AMD) of 29 candidates; the deliberator ran **2 real debates** with `failed_open_count=0` and **vetoed both**; execution recorded `deliberation_status=`**`applied`** — plain, not
-`applied_failed_open` and not `proceeded_unvetoed` — and **submitted 0**. The fleet returned to rest on its own, 16/16 at `minReplicas=0`. 🚨 **The same run returned item 32's owed live proof FAILING**
-([DL-146](design-log.md)): it asked for **zero** new mismatch faults on the first run after deploy and got **2**, both warning-level. 🪤 **The direction flipped, which is the useful part** — item 20's
-304 were all `broker_stop=True graph_stop=False`; these are the **mirror**, a graph stop with no broker counterpart, **exempted rather than cancelled**, on tickers with no active position, and the book is
-right (graph and broker agree on **26 tickers**). 🚨 **A claim of mine was narrower than I stated:** the `s190` verify run's “zero faults” was true, but its book held no stale stop pair, so it never
-exercised this path. S190 stands at **17 → 2**, not eliminated. Residue is **item 42** — retire such a stop once, rather than re-warn nightly.
+`applied_failed_open` and not `proceeded_unvetoed` — and **submitted 0**. The fleet returned to rest on its own, 16/16 at `minReplicas=0`. 🟠 **Item 32's success factor is still not met as written**
+— it asked for **zero** new mismatch faults on the first run after deploy and got **2**. 🚨 **But my first two readings of those 2 were both wrong, and the second would have deleted live data**
+([DL-147](design-log.md) corrects [DL-146](design-log.md)). Measured to the second: the sweep warned at **22:30:42**, and the refresh wrote `filled` at **22:30:58** — **16 s later, in the same run**.
+The head-of-run sweep reads stop liveness **before** the run refreshes it, so the warning is **transient and self-correcting**, fires once per stop that fired since the last run, and will not recur.
+🟩 **S190 is right and working** — `active_broker_stop_orders` returns exactly the **26** live stops. 🪤 I filed item 42 on `Fill.status='pending'`, which **all 47** stops carry — the [DL-73](design-log.md)
+trap again; the real prop is `broker_status`. **Item 42 rewritten**: the residue is item 20's original point, that the check compares a type against a lifecycle.
 
 🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
 (`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked

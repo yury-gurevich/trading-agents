@@ -8,6 +8,42 @@ and is marked CLOSED here.
 
 ---
 
+## DL-148 - Orphaned peer replies are a per-run fact, not a lifetime counter - status: DECIDED (2026-09-02)
+
+**Sprint:** [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md).
+
+DL-145 found that S172's `orphaned_reply_count == 0` criterion could not be re-derived because the
+manager kept the count only in `ServiceBusPeerClient` memory and the manager emitted no retained Log
+Analytics rows. S194 records the count on each `DeliberationRun`, but the implementation detail is
+load-bearing: the peer client counter is lifetime-cumulative for a client instance, and the manager
+poll loop can process multiple `PMRun`s through that same instance.
+
+**Decision.** Keep the transport-level counter cumulative, because that is the correct answer to
+"how many orphans has this client dead-lettered?", and have `review_pm_node` snapshot it before one
+PM run, then write only the delta after the run finishes. The red proof mattered: a deliberately
+naive raw write stamped run #2 with `3` when its own increment was `1`; the two-runs-one-client test
+catches exactly that bleed.
+
+**Visibility choice.** The deliberation view now renders `orphaned_replies=<n>` when the field is
+present and `orphaned_replies=n/a` for historical rows. Missing old data is not treated as zero, and
+it is not a new acceptance failure; it is simply not recorded. That keeps S194's instrument useful
+without rewriting the verdict of every pre-S194 run.
+
+**Law-cycle correction.** The sprint spec said the deliberator law was already v1.2 and expected a
+v1.3 bump. The actual file was `LOCKED v1.1`, so the lawful amendment is v1.2 with new
+`DLIB-OBS-04`; the spec was stale on the version number, not on the need for a clause.
+
+**Rejected routes.**
+
+- **Write the raw `peer_client.orphaned_reply_count`.** Rejected because it is a lifetime total and
+  quietly overstates later runs.
+- **Reset the Service Bus client counter between runs.** Rejected because it changes the meaning of
+  an existing transport diagnostic and makes any out-of-band reader depend on manager scheduling.
+- **Parse or retain log warnings instead.** Rejected for the reason DL-145 measured: the manager's
+  retained log table was empty, so a log-dependent proof would fail the same way.
+
+---
+
 ## DL-147 - The mismatch warning is a 16-second staleness window, not a stale row - status: MEASURED (2026-09-02)
 
 **This corrects [DL-146](design-log.md) section 3 and the work-queue item 42 I filed from it.** Both

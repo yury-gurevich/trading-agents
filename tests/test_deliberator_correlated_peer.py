@@ -27,7 +27,7 @@ from kernel.bus_azure_ready import ORPHANED_READY_EVENT_REASON
 
 
 def test_debate_turn_skips_stale_ahead_of_genuine_reply_and_faults() -> None:
-    """DLIB-DEP-02 / DLIB-NEV-06: stale replies are not clean debate turns."""
+    """DLIB-DEP-02 / DLIB-NEV-06 / DLIB-OBS-04: stale replies stay loud."""
     graph = InMemoryGraphStore()
     inner = CollectingFaultSink()
     stale = store_reply(

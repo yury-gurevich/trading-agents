@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.deliberator.context import build_veto_context
+from agents.deliberator.peer_client import orphaned_reply_count_from
 from agents.deliberator.review_record import (
     OrderReview,
     debate_record,
@@ -59,6 +60,7 @@ def review_pm_node(
     transcript: list[dict[str, object]] = []
     llm_call_keys: list[str] = []
     real_debate_count = 0
+    orphaned_reply_count_before = orphaned_reply_count_from(peer_client)
     failed_open_tickers: list[str] = []
     failed_open_reasons: list[str] = []
     for intent in order_set.approved:
@@ -89,6 +91,8 @@ def review_pm_node(
         max_rounds=settings.max_rounds,
         real_debate_count=real_debate_count,
         failed_open_count=len(failed_open_tickers),
+        orphaned_reply_count=orphaned_reply_count_from(peer_client)
+        - orphaned_reply_count_before,
         failed_open_tickers=failed_open_tickers,
         failed_open_reason=_combined_failed_open_reason(failed_open_reasons),
         llm_call_keys=llm_call_keys,

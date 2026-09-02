@@ -32,6 +32,7 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
     vetoed_count = len(vetoed) if isinstance(vetoed, tuple | list) else 0
     real_debate_count = _count(node.props.get("real_debate_count"))
     failed_open_count = _count(node.props.get("failed_open_count"))
+    orphaned_reply_count = _count(node.props.get("orphaned_reply_count"))
     failed_open_tickers = _tickers(node.props.get("failed_open_tickers"))
     failed_open_reason = str(node.props.get("failed_open_reason") or "")
     pm_run, execution = _linked_pm_and_execution(graph, node)
@@ -42,7 +43,8 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
     outputs: tuple[str, ...] = (
         f"reviewed={reviewed}  vetoed={vetoed_count}",
         f"real_debates={_display(real_debate_count)}  "
-        f"failed_open={_display(failed_open_count)}",
+        f"failed_open={_display(failed_open_count)}  "
+        f"orphaned_replies={_display(orphaned_reply_count)}",
     )
     if posture is not None or status is not None:
         outputs += (f"posture={posture or 'missing'}  status={status or 'missing'}",)
@@ -56,6 +58,7 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
         "debates": len(debates) if isinstance(debates, Mapping) else 0,
         "debate_coverage": coverage,
         "failed_open_count": failed_open_count,
+        "orphaned_reply_count": orphaned_reply_count,
         "deliberation_posture": posture,
         "advisory_attribution": _advisory_attribution(
             posture,

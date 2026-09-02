@@ -95,7 +95,7 @@ def test_peer_served_turn_writes_attributable_llm_call() -> None:
 
 
 def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> None:
-    """DLIB-OUT-01 / DLIB-OUT-02 / DL-80: manager writes one audit run."""
+    """DLIB-OUT-01 / DLIB-OUT-02 / DLIB-OBS-04: manager writes audit facts."""
     graph = InMemoryGraphStore()
     pm = _pm_node(graph)
     bus = InProcessBus()
@@ -140,6 +140,7 @@ def test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs() -> N
     assert run.props["vetoed_tickers"] == ()
     assert run.props["real_debate_count"] == 1
     assert run.props["failed_open_count"] == 0
+    assert run.props["orphaned_reply_count"] == 0
     assert run.props["failed_open_tickers"] == ()
     assert run.props["failed_open_reason"] == ""
     assert len(run.props["transcript"]) == 4

@@ -53,5 +53,6 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-OBS-01 | Debate audit reconstructable from `DeliberationRun`. | functional | _tbd_ | ⬜ |
 | DLIB-OBS-02 | LLM spend attributable per calling agent. | functional | _tbd_ | ⬜ |
 | DLIB-OBS-03 | Fail-open outcomes visible in rationale. | functional | `test_fail_open_reason.py::test_manager_fail_open_records_visible_rationale`; `test_fail_open_reason.py::test_manager_fail_open_records_usage_limit_reason` | 🟩 |
+| DLIB-OBS-04 | Each `DeliberationRun` records the per-run count of orphaned peer replies observed while processing that `PMRun`. | functional | `test_deliberator_agent.py::test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs`; `test_orphaned_reply_count.py::test_manager_records_orphaned_reply_count_per_run_delta` | 🟩 |
 | DLIB-PERF-01 | `max_rounds` bounds peer turns. | functional | _tbd_ | ⬜ |
 | DLIB-PERF-02 | Peer wait time is bounded. | functional | _tbd_ | ⬜ |

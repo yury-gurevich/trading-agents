@@ -45,10 +45,34 @@ def test_deliberation_view_handles_missing_narrative() -> None:
 
     assert view.outputs == (
         "reviewed=0  vetoed=0",
-        "real_debates=0  failed_open=0",
+        "real_debates=0  failed_open=0  orphaned_replies=n/a",
         "posture=binding  status=applied",
     )
     assert breaches(view) == ()
+
+
+def test_deliberation_view_renders_orphaned_reply_count() -> None:
+    """DLIB-OBS-04: late peer-reply evidence is visible when recorded."""
+    graph = InMemoryGraphStore()
+    node = graph.merge_node(
+        "DeliberationRun",
+        "run",
+        {
+            "verdicts": {"AAPL": "uphold"},
+            "vetoed_tickers": (),
+            "debates": {"AAPL": {"verdict": "uphold", "turns": []}},
+            "real_debate_count": 1,
+            "failed_open_count": 0,
+            "orphaned_reply_count": 2,
+            "failed_open_tickers": (),
+        },
+    )
+    _link_execution(graph, "run")
+
+    view = deliberation(graph, node)
+
+    assert view.observed["orphaned_reply_count"] == 2
+    assert any("orphaned_replies=2" in output for output in view.outputs)
 
 
 def test_old_empty_transcript_shape_fails_deliberation_checks() -> None:

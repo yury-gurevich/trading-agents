@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-194-a-number-nobody-records-is-a-number-nobody-has` — cut from **`main`**
-**Status:** SPEC — not started
-**Version:** *next available PATCH at merge* (from `0.94.04`)
+**Status:** BUILT locally — branch/main gates pending
+**Version:** `0.94.05` (PATCH from `0.94.04`)
 **Effort:** S
 **Decisions:** [DL-145](../design-log.md) the second K=4 measurement · work-queue item 3
 
@@ -246,12 +246,18 @@ it · anything you could not do.
 
 | Law file | Read in full? | Clauses relied on | Status (🟩/⬜) | Notes |
 | --- | --- | --- | --- | --- |
-| `agents/deliberator/laws/laws.md` | | | | |
-| `agents/deliberator/laws/test-plan.md` | | | | |
-| `docs/laws/conventions.md` | | | | |
-| `docs/laws/drift-register.md` | | | | |
+| `agents/deliberator/laws/laws.md` | Yes | `DLIB-OUT-02`, `DLIB-NEV-06`, `DLIB-OBS-01`, `DLIB-OBS-03` | `DLIB-OUT-02` 🟩; `DLIB-NEV-06` 🟩; `DLIB-OBS-01` ⬜; `DLIB-OBS-03` 🟩 | Current law records verdict/debate/fail-open evidence, but is silent on orphaned peer replies. |
+| `agents/deliberator/laws/test-plan.md` | Yes | same | mixed | The relied-on failed-call visibility clauses are green; reconstructable-run evidence is still gray, and the new orphan count needs its own cited row. |
+| `docs/laws/conventions.md` | Yes | §2, §3, §4, §7, §9 | applies | New IDs are append-only; a clause is green only with a passing functional test citation; locked laws need an explicit amendment and changelog. |
+| `docs/laws/drift-register.md` | Yes | central drift register shape | applies | No existing deliberator drift row or `DRIFT-056` row covers this; the sprint can amend the deliberator law directly because the guarantee is decided here. |
 
-**Law-cycle answer:** *(your reading, with the reason from the law text)*
+**Law-cycle answer:** YES. The sprint adds a guarantee the deliberator did not previously make:
+each `DeliberationRun` must record the count of peer replies that arrived after the manager stopped
+waiting for them. `DLIB-OUT-02` records the existing run payload shape, `DLIB-NEV-06` forbids hiding
+failed peer/debate evidence, and `DLIB-OBS` currently names reconstructability and fail-open
+rationale but not late/orphaned replies. Per conventions §4 and §7, the locked law should be amended
+first with a new append-only `DLIB-OBS-04`, then proven by functional tests that cite it. No
+`contracts/` file is planned.
 
 ---
 
@@ -259,27 +265,51 @@ it · anything you could not do.
 
 | # | Test | Result | Evidence |
 | --- | --- | --- | --- |
-| 1 | zero recorded, not omitted | | |
-| 2 | N orphans recorded as N | | |
-| 3 | two runs, one client — no bleed | | |
-| 4 | property declared in the pack | | |
-| 5 | old rows read back safely | | |
-| 6 | log warning still fires | | |
+| 1 | zero recorded, not omitted | 🟩 Passed | `test_manager_reviews_pending_pmrun_with_two_peer_rounds_and_llm_costs` asserts `orphaned_reply_count == 0` on the normal local peer path. |
+| 2 | N orphans recorded as N | 🟩 Passed | `test_orphaned_reply_count.py::test_manager_records_orphaned_reply_count_per_run_delta` records `2` for the first PM run. |
+| 3 | two runs, one client — no bleed | 🟩 Passed after red proof | Naive raw cumulative write failed with `assert 3 == 1` for run #2; the delta implementation records `1` while the peer client's lifetime total remains `3`. |
+| 4 | property declared in the pack | 🟩 Passed | `test_graph_vocabulary_deliberation.py` accepts `orphaned_reply_count`; the property scanner recovers it from the write site. |
+| 5 | old rows read back safely | 🟩 Passed | `test_deliberation_view_handles_missing_narrative` omits the new field and renders `orphaned_replies=n/a` with no new breach. |
+| 6 | log warning still fires | 🟩 Passed | `test_debate_turn_skips_stale_ahead_of_genuine_reply_and_faults` still asserts an `OrphanedPeerReply` fault and sink context with `orphan_count == 1`. |
 
 ---
 
 ## Closeout — evidence
 
-- **Merged SHA:**
-- **Version:**
-- **`make ci`:**
-- **`make gate-ran`:**
-- **Vocabulary hash before → after:**
-- **Deploy shape:** full `up` required — state it explicitly.
-- **Law cycle:**
+- **Merged SHA:** Pending branch commit, push, remote gate, and merge.
+- **Version:** `0.94.05`
+- **Red proof, missing field:** focused tests failed before implementation:
+  `KeyError: 'orphaned_reply_count'` in the manager persistence test,
+  `VocabularyError: undeclared properties for label 'DeliberationRun': ['orphaned_reply_count']`,
+  and a missing view observation key.
+- **Red proof, cumulative trap:** deliberately naive raw-count write failed
+  `test_manager_records_orphaned_reply_count_per_run_delta` with `assert 3 == 1`, proving run #2
+  would inherit run #1's orphan count.
+- **Focused green:** 61 passed in 8.88 s across deliberator, Service Bus peer, vocabulary, property
+  scanner, and deliberation-view tests.
+- **`make ci`:** `cmd /c "make ci > %TEMP%\s194-make-ci.txt 2>&1"` exited 0. File evidence:
+  ruff/format/mypy/import-linter passed; module-size warnings only; law coverage and PARAM sync
+  completed; pytest `2452 passed, 4 skipped` with `100.00%`; pip-audit found no known
+  vulnerabilities; detect-secrets and untracked secret scan passed.
+- **`make gate-ran`:** Pending branch commit, push, and remote workflow completion. Run it from the
+  worktree whose `HEAD` is the commit being proven and check the printed SHA against
+  `git rev-parse HEAD`.
+- **Vocabulary hash before → after:** `9b57a99786fee046042e2dd36a9d399e25d0d64850633a1b1db267ad1693a64e`
+  → `d47e88b19111ed2c5d355fee63d1e55426239da5a097ca748aa1f0833bf563c2`.
+- **Deploy shape:** full `up` required — the vocabulary pack changed and `DeliberationRun` is
+  property-enforced, so an image-only retag would be unsafe.
+- **Law cycle:** Completed locally. Deliberator laws `v1.1` → `v1.2`; new `DLIB-OBS-04` added and
+  cited by passing functional tests; ledger and laws index now read `10 / 52`.
 
 ---
 
 ## Return notes
 
-*(Anything this spec got wrong, or that the next sprint should know.)*
+- The spec expected a deliberator laws `v1.3` bump, but the actual law file was `LOCKED v1.1`; the
+  correct amendment is `v1.2`.
+- First full `make ci` failed on module size after the new test pushed
+  `agents/deliberator/poll.py` to 202 lines and `test_deliberator_agent.py` to 224. The helper moved
+  to `peer_client.py` and the new two-run proof was split into `test_orphaned_reply_count.py`; final
+  full CI passed.
+- Historical rows do not gain a fake zero. The view renders missing `orphaned_reply_count` as `n/a`.
+- Branch push, remote gate, merge, and post-merge proof remain pending at this local-built checkpoint.

@@ -37,13 +37,13 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f`
-(`0.94.05`), 2026-09-02.** `DeliberationRun` now records `orphaned_reply_count` as a per-run
-delta, the graph vocabulary declares it, and the deliberation view renders old rows as `n/a`.
-Red proof caught both the missing property and the cumulative-counter trap (`assert 3 == 1`);
-green proof includes `make ci` (`2452 passed, 4 skipped`, 100.00 %) plus branch and main
-`GATE PROVEN`. Full `up` required and the main workflows completed: CI, Security Findings,
-CodeQL, image build, Configured Graph Update, and `uv in / for openai - Update`.
+🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`), 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a **per-run delta**;
+the vocabulary declares it and the view renders old rows `n/a`. The two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN`
+for `e7699af` with the printed SHA checked against `HEAD`, PATCH bump correct, delta at `poll.py:63/94`, `DLIB-OBS-04` present, and the pack hash move confirmed to be **the added property, not EOL noise**
+(the JSON was already CRLF on both sides). 🟠 **DEPLOY IS OWED AND IT CANNOT BE A RETAG** — the pack moved `9b57a997…` → `d47e88b1…`, so it is a **full `up`**; until then **no nightly run records the
+count**, which is the entire purpose of the sprint. 🚨 **Two hazards found in the verifying, neither in the code** ([DL-148](design-log.md)): the handback reported a **CRLF regression as a fix** — three
+evidence docs went LF → CRLF and are now converted back, `git diff -w` empty — and **two different `v1.2` deliberator law versions now exist**, S194's on `main` and S172's on its branch, which git may merge
+**without a conflict**. Whoever merges S172 must renumber it to v1.3.
 
 ## Now
 
@@ -83,13 +83,6 @@ PATCH bump correct. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by **re-citation**, alr
 `s187` raised **17** mismatch warnings and a `cancel_stop` 422 nine hours earlier; broker **identical before and
 after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
 
-🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight runs
-the *same* import route prep runs, **measured both ways** (real → exit 0, missing module → exit 1) and **observed in
-place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential row was red —
-it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
-Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
-failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
-
 🎯 **DECIDED — ITEM 6b: THE POSTURE STAYS `advisory` THROUGH MONDAY** ([DL-134](design-log.md), 2026-08-30).
 🪤 **The row's premise was wrong, read in the code.** `drop_vetoed` runs **before** `apply_deliberation_posture`
 (`agents/execution/pm_execution.py:59`), so an **arrived veto binds identically under both postures**. `binding`
@@ -110,16 +103,6 @@ honest figure** ([DL-119](design-log.md) amendment). 🪤 `sched-2026-08-31` sup
 
 🚨 **NOT PROVEN — S182 live.** 2026-08-21's stops carry `stop_pct_source=position`, written eight minutes before
 execution ran, so the fallback never fired. 🪤 **Do not re-check it that way** — run-start reconciliation closes it.
-
-🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
-(`0.94.00`), 2026-08-31.** A vendor-declared truncation or refusal is now a sanitized stop error, not an empty
-string: empty debate turns cannot enter transcripts, a stopped judge keeps fail-safe `revise` with an honest
-reason, every `LLMCall` carries `stop_reason`, and `max_tokens` gains `le=8192` (4096 had been both default
-*and* ceiling). **DL-119 contamination settled** — one empty judge call inside its four binding runs, an
-asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md), DRIFT-054;
-`GATE PROVEN` for the merged SHA, post-merge CodeQL success. 🟩 Its temporary CodeQL baseline is already
-pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
-🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
 
 🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
 `Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**

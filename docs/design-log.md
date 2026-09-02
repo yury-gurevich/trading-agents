@@ -44,6 +44,70 @@ v1.3 bump. The actual file was `LOCKED v1.1`, so the lawful amendment is v1.2 wi
 
 ---
 
+## DL-148 - S194 verified; two hazards found in the verifying, neither in the code - status: MEASURED (2026-09-02)
+
+**The build is right.** `main` is `e7699af`, matching the handback; `make gate-ran` prints
+**GATE PROVEN** with `CI`, `Security Findings` and `CodeQL` all `success`, and the printed SHA
+matches `git rev-parse HEAD`. Version `0.94.05`, PATCH from `0.94.04`, correct. The per-run delta is
+implemented the way the trap demanded — snapshot at `agents/deliberator/poll.py:63`, subtracted at
+`:94-95` — and the two-runs-one-client test earned its place: the naive cumulative write failed
+`assert 3 == 1` before the delta fixed it. `DLIB-OBS-04` is present at `laws.md:131`, laws at v1.2,
+ledger rollup updated. The vocabulary hash moved
+`9b57a997…` → `d47e88b1…`, and **full `up` is correctly called for**.
+
+🪤 **The pack's hash move is real, and I checked it was not line-ending noise.** The vocabulary JSON
+was **already fully CRLF before** S194 (494 of 494 lines) and is fully CRLF after (495 of 495), so
+the delta is exactly the one added property line. Had the file's EOL style changed, the hash would
+have moved for a reason that has nothing to do with the pack's content — and the deploy decision
+reads that hash.
+
+### Hazard 1 · The handback reported a CRLF regression as a fix
+
+The report read *"CRLF fixed … the four touched docs now report `i/crlf w/crlf`"*. **`i/crlf` is the
+regression, not the fix.** This repo is LF: `git ls-files --eol` counts **1520 `i/lf`** against 42
+`i/crlf` and 17 `i/mixed`. Measured against my own prior commit `0a87649`, `docs/STATE.md`,
+`docs/work-queue.md` and `docs/sprints/INDEX.md` were **LF before S194 and CRLF after** — so the
+sprint introduced it. Converted back: 207 + 173 + 161 + 323 CRLF pairs removed, and
+**`git diff -w` is empty across all four**, so the change is line endings only.
+
+🪤 **Why it matters more than tidiness.** These are the three docs that carry the evidence. A CRLF
+file edited by any LF-writing tool produces a whole-file diff, which is precisely the condition
+under which a real one-line change stops being reviewable.
+
+🪤 **There is no `.gitattributes`, and adding one is not a free fix.** A blanket
+`* text=auto eol=lf` would normalise 59 files — **including `trading_graph_vocabulary.json`, whose
+byte-level hash is what decides retag versus full `up`**. Normalising it would move that hash for a
+non-content reason and either force a spurious full `up` or mask a real pack move. **That is a
+decision to take deliberately, not a cleanup to do in passing.** Left as-is, named here.
+
+### Hazard 2 · Two different `v1.2` deliberator law versions now exist
+
+- `main`, from S194: *"v1.2 — S194 adds recorded per-run orphaned peer reply counts…"*
+- `sprint-172-k4-on-s190`, from S172: *"v1.2 — S172 declares `debate_concurrency`…"*
+
+**Neither is wrong on its own** — both branches correctly bumped from v1.1, which is what a law cycle
+requires. The collision is structural: two long-lived branches each ran a law cycle from the same
+base. When S172 merges, the header will say v1.2 while the changelog carries **two distinct v1.2
+entries**, and if the hunks do not overlap git will merge them **without a conflict** — silently.
+Whoever merges S172 must renumber its entry to **v1.3** and bump the header. Recorded now because
+the merge is weeks away and this is exactly the kind of thing that is invisible at merge time.
+
+### And one thing the working tree was hiding
+
+`docs/sprints/INDEX.md` carried an **uncommitted IDE auto-format** that had renumbered an ordered
+list from `2. 3. 4. 5.` to `1. 1. 1. 1.` — caught because after converting line endings
+`git diff -w` still showed **4 changed lines**, which a pure EOL change cannot produce. Reverted and
+the conversion re-applied cleanly. **The check that caught it was diffing with `-w` and asking why
+the number was not zero**, which is the only reason it did not ride along into a commit.
+
+### 🟠 The instrument is merged but not deployed, and that is the whole point of it
+
+The fleet is on `s191`; S194 is `0.94.05` and **undeployed**. Until a **full `up`** runs, no nightly
+run records `orphaned_reply_count`, so the sprint's purpose — start counting orphans every night for
+free — has not begun. **Deploy is owed, and it cannot be an image retag** (the pack moved).
+
+---
+
 ## DL-147 - The mismatch warning is a 16-second staleness window, not a stale row - status: MEASURED (2026-09-02)
 
 **This corrects [DL-146](design-log.md) section 3 and the work-queue item 42 I filed from it.** Both

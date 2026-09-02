@@ -186,3 +186,24 @@ batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX
 ([DL-142](design-log.md)): `required_status_checks.strict` and `allow_update_branch` both **`false` → `true`**, so the gated head *is* the merged tree; exactly one field changed and both open PRs flipped to `BEHIND`.
 🟩 **Item 36's refusal half** with a control arm ([DL-144](design-log.md)): a wrong Alpaca key gave `ActivationRefused` with `AgentInstance` **unmoved**; the real key **activated**.
 🟩 **S191 needed no cascade** — no deployed agent runs the acceptance view — so it was proven over **all 55 runs on the spine**, which is what surfaced item 40.
+
+---
+
+**Fifth entry appended 2026-09-02.** Two settled `Now` blocks moved down from [`../STATE.md`](../STATE.md) under the under-200-line rule, which STATE had been bumping every session: **S189** (`0.94.00`, LLM stop reasons, shipped and deployed in `s190`) and **work-queue item 34** (`0.94.01`, deploy preflight imports its own steps). Both are closed with their detail in the sprint docs and design log.
+
+🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
+(`0.94.00`), 2026-08-31.** A vendor-declared truncation or refusal is now a sanitized stop error, not an empty
+string: empty debate turns cannot enter transcripts, a stopped judge keeps fail-safe `revise` with an honest
+reason, every `LLMCall` carries `stop_reason`, and `max_tokens` gains `le=8192` (4096 had been both default
+*and* ceiling). **DL-119 contamination settled** — one empty judge call inside its four binding runs, an
+asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md), DRIFT-054;
+`GATE PROVEN` for the merged SHA, post-merge CodeQL success. 🟩 Its temporary CodeQL baseline is already
+pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
+🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
+
+🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight runs
+the *same* import route prep runs, **measured both ways** (real → exit 0, missing module → exit 1) and **observed in
+place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential row was red —
+it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
+Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
+failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.

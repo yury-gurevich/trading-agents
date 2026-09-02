@@ -167,7 +167,7 @@ remove. All five watched labels returned to their recorded pre-test values.
 
 ---
 
-## DL-143 - A back-compat shim that has never once run in production - status: MEASURED (2026-09-01)
+## DL-143 - A back-compat shim that has never once run in production - status: CLOSED (2026-09-02)
 
 **Found while proving S191**, not by looking for it. To show the quiet-night fix held on real data
 rather than on one fresh cascade, the acceptance gate was run over **every run in production
@@ -228,8 +228,14 @@ really are `dict`s, and `narrative()` (`agents/deliberator/review_record.py:85`)
 write time with in-process dicts (`agents/deliberator/poll.py:86`). The deliberation view already
 gets this right, testing `isinstance(..., Mapping)`. **One live instance, one latent trap.**
 
-**Owed:** a regression test that reads the shim's input back through a real store rather than
-constructing it, plus the sweep re-run as the proof. Filed as work-queue item 40.
+**Closed by S193.** The regression now reads legacy `passed` gate payloads back through a real
+`GraphStore`, proving the `mappingproxy` nesting that production returns instead of constructing
+plain dicts. The test failed on `main` with four missing-`outcome` validation errors, including the
+nested `rejected.0.gate_report.0` path and the PM stage view. After the reader changed from `dict`
+to `Mapping`, the six graph-roundtrip regressions and the existing PM contract surface passed. The
+live sweep on 2026-09-02 returned `ERROR 0, FAIL 54, NO_TRADE 0, UNPROVEN 0, PASS 2` across **56**
+`RunRequest`s on Postgres; the denominator moved because `sched-2026-09-01` now exists and passes
+beside `sched-2026-08-31`. The remaining failures are historical verdicts, not reader crashes.
 
 ---
 

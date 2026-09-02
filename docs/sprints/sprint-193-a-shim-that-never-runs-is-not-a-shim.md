@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-193-a-shim-that-never-runs-is-not-a-shim`
-**Status:** SPEC — not started
-**Version:** *next available PATCH at merge* (from `0.94.03`)
+**Status:** BUILT locally — branch proof pending
+**Version:** `0.94.04` (PATCH from `0.94.03`)
 **Effort:** S
 **Decisions:** [DL-143](../design-log.md) · work-queue item 40
 
@@ -322,12 +322,17 @@ the passing output after · `make ci` result (from the file, with the tally) · 
 
 | Law file | Read in full? | Clauses relied on | Status (🟩/⬜) | Notes |
 | --- | --- | --- | --- | --- |
-| `agents/portfolio_manager/laws/laws.md` | | | | |
-| `agents/portfolio_manager/laws/test-plan.md` | | | | |
-| `docs/laws/conventions.md` | | | | |
-| `docs/laws/drift-register.md` | | | | |
+| `agents/portfolio_manager/laws/laws.md` | Yes | `PM-NEV-09`, `PM-TYP-03` | 🟩 | `PM-NEV-09` requires not-evaluated gates to stay distinct from passed gates; `PM-TYP-03` requires `GateOutcome` to carry the three states and keeps `gate_report` additive for older payloads. Neither clause narrows accepted containers to plain `dict`. |
+| `agents/portfolio_manager/laws/test-plan.md` | Yes | `PM-NEV-09`, `PM-TYP-03` | 🟩 | Both relied-on clauses are green. The new regression test cites `PM-NEV-09` because it protects the historical-reader path from silently collapsing missing state. |
+| `docs/laws/conventions.md` | Yes | §3, §7, §9 | N/A | Functional tests must cite the law ID they prove; discovered law/code drift belongs in the central drift register. |
+| `docs/laws/drift-register.md` | Yes | `DRIFT-044`, `DRIFT-046` | CORRECTED | S184 already corrected the tri-state and missing-gate drift. This sprint repairs the historical reader for that existing contract rather than opening a new law gap. |
 
-**Law-cycle answer:** *(does this trigger a full cycle? your reading, with the reason)*
+**Law-cycle answer:** This changes `contracts/portfolio_manager.py`, but it does **not** add a new
+agent guarantee or change any contract field. My reading is that a full law cycle is **not**
+triggered: S184 already promised that legacy `passed` payloads are accepted as the tri-state
+`outcome`, and widening the validator from `dict` to `Mapping` changes only which immutable
+container type can reach that existing conversion. A payload with neither `outcome` nor `passed`
+must still fail validation, so `PM-NEV-09`'s invariant remains intact.
 
 ---
 
@@ -335,12 +340,12 @@ the passing output after · `make ci` result (from the file, with the tally) · 
 
 | # | Test | Result | Evidence |
 | --- | --- | --- | --- |
-| 1 | Round-tripped pre-S184 payload → `PASSED` | | |
-| 2 | Round-tripped `passed=False` → `FAILED` | | |
-| 3 | Shapeless payload still raises | | |
-| 4 | Payload with `outcome` untouched | | |
-| 5 | Nested `rejected[].gate_report[]` validates | | |
-| 6 | `pm` stage view renders | | |
+| 1 | Round-tripped pre-S184 payload → `PASSED` | 🟩 Passes after red proof | Red: `GateOutcome.model_validate(mappingproxy(...passed=True...))` raised missing `outcome`; green: `tests/test_pm_gate_outcome_graph_roundtrip.py` passed. |
+| 2 | Round-tripped `passed=False` → `FAILED` | 🟩 Passes after red proof | Red: `GateOutcome.model_validate(mappingproxy(...passed=False...))` raised missing `outcome`; green: same focused run passed. |
+| 3 | Shapeless payload still raises | 🟩 Passed before and after | `test_shapeless_gate_round_tripped_through_graph_still_raises` keeps the invariant: no `outcome` and no `passed` still raises. |
+| 4 | Payload with `outcome` untouched | 🟩 Passed before and after | `test_current_outcome_round_tripped_through_graph_is_not_rewritten` preserves authoritative `outcome=not_evaluated`; `.passed` still raises. |
+| 5 | Nested `rejected[].gate_report[]` validates | 🟩 Passes after red proof | Red: `OrderIntentSet` raised at `rejected.0.gate_report.0.outcome`; green: same graph-roundtrip file passed. |
+| 6 | `pm` stage view renders | 🟩 Passes after red proof | Red: `trading_observatory_chain.pm` raised the same nested validation error; green: stage view returns `approved=0  rejected=1`. |
 
 ---
 
@@ -348,14 +353,27 @@ the passing output after · `make ci` result (from the file, with the tally) · 
 
 **Fill this at handback. A placeholder here means the sprint is not done.**
 
-- **Merged SHA:**
-- **Version:**
-- **`make ci`:**
-- **`make gate-ran`:**
+- **Merged SHA:** pending branch proof/merge
+- **Version:** `0.94.04`
+- **`make ci`:** `make ci *> ..\s193-make-ci.txt; ...` exited 0. File evidence:
+  ruff/format/mypy/import-linter passed; module-size had warnings only
+  (`contracts\portfolio_manager.py` 151 lines, below hard block); law coverage and
+  PARAM sync emitted existing warn-only debt; pytest `2448 passed, 6 skipped` with
+  `100.00%`; pip-audit found no known vulnerabilities; detect-secrets and untracked
+  secret scan passed.
+- **`make gate-ran`:** pending branch push
 - **Sweep before:** `38 ERROR, 16 FAIL, 1 PASS` over 55 runs *(measured 2026-09-01)*
-- **Sweep after:**
-- **Other `isinstance(..., dict)` sites checked:**
-- **Deploy:** not required — state explicitly that none was done and why.
+- **Sweep after:** `0 ERROR, 54 FAIL, 0 NO_TRADE, 0 UNPROVEN, 2 PASS` over 56
+  `RunRequest`s on Postgres (2026-09-02); the denominator moved because
+  `sched-2026-09-01` now exists and passes beside `sched-2026-08-31`.
+- **Other `isinstance(..., dict)` sites checked:** tree sweep found the fixed
+  contract validator as the only graph-prop compatibility instance. Other hits read
+  `json.loads`, HTTP/LLM/API payloads, env/config data, or tests; `narrative()` reads
+  in-process write-time dicts only. Graph `OrderIntentSet.model_validate(...)` readers
+  in observatory, deliberation view, execution, deliberator, batch trace, and
+  shadow-book joins are covered by the contract-level fix; no per-site coercion added.
+- **Deploy:** not required and none done. This fixes retrospective readers; fresh
+  production runs already write `outcome`, and the fix can ride the next fleet move.
 
 ---
 

@@ -8,6 +8,84 @@ and is marked CLOSED here.
 
 ---
 
+## DL-146 - S193 verified, the first unattended run passed, and S190's live proof came back failing - status: MEASURED (2026-09-02)
+
+Three results from the same morning, one of which corrects a claim of mine.
+
+### 1 · S193 verified independently - work-queue item 40 is closed
+
+The handback's numbers were re-measured rather than accepted. `main` is
+`72e063b9eb0a01251db0290d38591e464123096c`, matching the claim; `make gate-ran` from a worktree at
+that SHA prints **GATE PROVEN** with `CI`, `Security Findings` and `CodeQL` all `success`, and the
+printed SHA matches `git rev-parse HEAD` (the trap that makes a green gate mean a different commit).
+Version `0.94.04` - PATCH from `0.94.03`, correct for a fix. The change is the one word the spec
+asked for: `isinstance(data, Mapping)` at `contracts/portfolio_manager.py:41`, with `Mapping`
+imported from `collections.abc`.
+
+**The sweep, re-run by me rather than quoted:** **56 runs, 0 `ERROR`, 54 `FAIL`, 2 `PASS`.** The
+postcondition - zero errors across every run on the spine - is met.
+
+🪤 **The handback reported the `FAIL` count moving 16 → 54 without explaining it, and the spec said
+that move needed an explanation.** It accounts for exactly, so this is not a returned handback - but
+the arithmetic was done here, not there: the **38** runs that previously crashed are now readable and
+land on `FAIL` (16 + 38 = **54**), and the run count 55 → 56 with `PASS` 1 → 2 is the overnight
+`sched-2026-09-01` arriving and passing. Nothing regressed; 38 runs stopped being unreadable and
+started being *legitimately* red on old data, which is what the spec predicted.
+
+### 2 · The first unattended scheduled run since the deploy passed, with the veto binding
+
+`sched-2026-09-01` fired on schedule on `s191`: **8/8 stages, `ACCEPTANCE PASS`**. PM approved **2
+buys** (USB 16, AMD 2) out of 29 candidates; the deliberator ran **2 real debates** with
+`failed_open_count=0` and **vetoed both**; execution recorded `deliberation_posture=advisory`,
+`deliberation_status=**applied**` - plain `applied`, not `applied_failed_open`, not
+`proceeded_unvetoed` - and **submitted 0**. Monitor checked 26 holdings and closed none.
+
+🎯 **That is the whole loop running unattended and the referee actually binding**: the pipeline
+formed intentions, the veto reviewed them, blocked them, and the gate went green with nobody in the
+loop. Fleet returned to rest on its own - 16/16 on `s191`, all at `minReplicas=0`.
+
+### 3 · 🚨 Item 32's owed live proof is NOT met, and a claim of mine was narrower than I stated
+
+Item 32 closed with `\U0001f7e0 Live proof owed: zero new mismatch faults on the first run after
+deploy`. That run has now happened and raised **2** `BrokerStopIdentityMismatch` faults, both
+`severity=warning`, at 22:30:42 and 22:30:47:
+
+```text
+stop identity mismatch for stop:ae47484da7932450:AMD: broker_stop=False graph_stop=True; order exempted
+stop identity mismatch for stop:b9ee81c7e7df0383:USB: broker_stop=False graph_stop=True; order exempted
+```
+
+**So the success factor is verified failing, and is recorded that way rather than quietly dropped.**
+
+**But the direction flipped, which matters for what to do about it.** Item 20's measurement was
+**304 faults across 17 keys, all `broker_stop=True graph_stop=False`** - a broker stop with no graph
+record. These two are the **mirror**: a graph stop with **no broker counterpart**. Each is a
+`BrokerStopOrder` node plus a `Fill` still `status=pending`, sharing a `broker_order_id`, for a
+ticker with **no active position**. The sweep read it correctly and **exempted** the order rather
+than cancelling anything, so no wrong action was taken - this is accumulating warning-level noise,
+not a book error.
+
+🟩 **The book is correct**, checked with the contracts predicate and not raw props (DL-73's lesson):
+`audit_broker_graph.py` reports graph and broker agreeing on **26 tickers**, quantity and stop
+quantity matching 1:1, with `failures=1` - the long-known stale `stop:probe-s164:T#1` residue, not
+new. 🪤 The raw `Position.status` for AMD and USB both read `open`, and reading *that* would have
+produced a false red exactly as DL-73 did; `is_active_position_node` puts neither ticker in the
+active set.
+
+🚨 **The correction I owe.** On 2026-09-01 I reported the `s190` verify cascade as running "8/8 with
+**zero faults**" and presented that as S190 proven live, against 17 on `s187` nine hours earlier. The
+zero was true of that run - but that run's book had no stale stop/`Fill` pair in it, so **it could
+not have exercised this path at all**. The proof was narrower than the claim it was supporting, and
+the first real scheduled run found what it could not. S190 remains a large real improvement
+(**17 → 2**, and the 304-fault direction is gone); it did not eliminate the class.
+
+**Consequence.** Item 32 reopens on its residue only, with the mirror direction named. The fix is
+not another liveness predicate - it is that a `BrokerStopOrder` whose `Fill` is still `pending` and
+whose broker order no longer exists should be **retired**, not re-warned every night. Until then
+this adds two pending faults per run forever, which is DL-125's cries-wolf shape at low volume.
+
+---
+
 ## DL-145 - The K=4 correctness failure did not reproduce, the speed miss did, and the criterion that separates them cannot be measured - status: MEASURED (2026-09-01)
 
 **What was run.** [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md) step 1,

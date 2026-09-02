@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-01 21:40 AEST · **Version:** 0.94.03 · **🚨 Three owed items closed — and a second K=4 run says the deliberator's correctness failure is intermittent, while its acceptance criterion cannot be measured at all.**
+**Last updated:** 2026-09-02 12:55 AEST · **Version:** 0.94.04 · **🎯 The first unattended scheduled run since the deploy passed with the veto binding on both its buys — and the same run returned S190's owed live proof failing.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -39,17 +39,13 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🟩 **PROVEN RESULT — THREE OWED ITEMS CLOSED, 2026-09-01. No code changed, no version moved.**
-🟩 **ITEM 39 CLOSED BY PREVENTION** ([DL-142](design-log.md)) — the rule gates *heads*, and a merge builds a tree no head ever had.
-`required_status_checks.strict` and `allow_update_branch`, both **`false` → `true`**, make the gated head *be* the merged tree; an
-independent re-read shows **exactly one field changed** and both open PRs flipped to `BEHIND`. 🪤 `enforce_admins=false` keeps the
-operator's local merges working, so it binds Dependabot and nothing else.
-🟩 **ITEM 36 CLOSED — the owed refusal half, with a control arm** ([DL-144](design-log.md)): a deliberately wrong Alpaca key on
-`execution` gave `ActivationRefused`, `Escalation` **0 → 1**, **`AgentInstance` unmoved**; the identical harness with the real key
-**activated**. Torn down by explicit key, every label back to baseline. 🪤 Zero auto-remediation is **correct** (`manual` is the default); an earlier reading of mine is retracted.
-🚨 **THE SWEEP ALSO FOUND A DEFECT NOBODY SOUGHT — item 40** ([DL-143](design-log.md)): **38 of 55 runs cannot be read at all.**
-S184's back-compat shim opens with `isinstance(data, dict)` while the store returns `MappingProxyType`, so it has **never once run in
-production**, and the dashboard raises on any pre-S184 run. 🪤 It passed its own suite throughout: its tests hand it dict literals; specced as **S193**. 🟠 Item 41 filed.
+🎯 **PROVEN RESULT — THE FIRST UNATTENDED SCHEDULED RUN SINCE THE DEPLOY PASSED, WITH THE VETO ACTUALLY BINDING.** `sched-2026-09-01` fired on schedule on `s191`: **8/8 stages, `ACCEPTANCE PASS`**.
+PM approved **2 buys** (USB, AMD) of 29 candidates; the deliberator ran **2 real debates** with `failed_open_count=0` and **vetoed both**; execution recorded `deliberation_status=`**`applied`** — plain, not
+`applied_failed_open` and not `proceeded_unvetoed` — and **submitted 0**. The fleet returned to rest on its own, 16/16 at `minReplicas=0`. 🚨 **The same run returned item 32's owed live proof FAILING**
+([DL-146](design-log.md)): it asked for **zero** new mismatch faults on the first run after deploy and got **2**, both warning-level. 🪤 **The direction flipped, which is the useful part** — item 20's
+304 were all `broker_stop=True graph_stop=False`; these are the **mirror**, a graph stop with no broker counterpart, **exempted rather than cancelled**, on tickers with no active position, and the book is
+right (graph and broker agree on **26 tickers**). 🚨 **A claim of mine was narrower than I stated:** the `s190` verify run's “zero faults” was true, but its book held no stale stop pair, so it never
+exercised this path. S190 stands at **17 → 2**, not eliminated. Residue is **item 42** — retire such a stop once, rather than re-warn nightly.
 
 🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
 (`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked
@@ -62,12 +58,10 @@ now re-runs **`ACCEPTANCE PASS`**. 🟩 **DEPLOYED `s191`** by image-only retag:
 dashboard, and the fleet is **16 apps with no dashboard among them** — so it was proven over **all 55 runs on the spine**
 rather than one run. Both race branches are covered by real runs; `sched-2026-08-31` **PASSes**.
 
-🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`; now superseded by `s191` above). 16/16 on tag
-and `Succeeded`, scale **diffed** to zero drift, cron intact, `DeployRecord` on the **build run**'s SHA `b0185e76…`.
-🚨 **S190 could not travel alone:** the vocabulary pack moved, so a retag would have met the fail-closed write guard
-mid-cascade (S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**,
-**`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges had reached `main` ungated and the images came from them — now
-closed as item 39.
+🟩 **PROVEN RESULT — FLEET DEPLOYED `s190` THEN `s191`, 2026-09-01** (from `s187`). 16/16 on tag, scale **diffed** to zero drift, cron intact, `DeployRecord` on the
+build run's own SHA. 🚨 **S190 could not travel alone** — the vocabulary pack had moved, so a retag would have met the fail-closed write guard mid-cascade
+(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**, **`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges
+had reached `main` ungated and the images came from them — now closed as item 39.
 
 🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
 (`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
@@ -118,15 +112,10 @@ asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137
 pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
 🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
 
-🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) merged `a9603d7`
-(`0.94.04`), 2026-09-02.** PM historical gate outcomes now accept graph-frozen `Mapping`
-payloads, so pre-S184 `passed` shims actually run after a Postgres/InMemory round trip. Red proof
-caught legacy `passed=True`, `passed=False`, nested rejected `gate_report`, and the observatory
-`pm` stage view; green proof added the graph-roundtrip contract tests. Local `make ci` passed
-`2448 passed, 6 skipped` at `100.00%`; main `make gate-ran` proved Security Findings, CI, CodeQL,
-image build, configured graph update, and dependency update for the implementation SHA. Live sweep:
-`38 ERROR, 16 FAIL, 1 PASS` over 55 before -> `0 ERROR, 54 FAIL, 2 PASS` over 56 after. No deploy or
-fleet retag was required.
+🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
+`Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**
+`GATE PROVEN` for `72e063b` with the printed SHA checked against `HEAD`, PATCH bump correct, and **the sweep re-run here: 56 runs, `0 ERROR`, 54 `FAIL`, 2 `PASS`.** 🪤 The handback moved `FAIL` 16 → 54
+without explaining it; it accounts for exactly — the **38** formerly-unreadable runs are now readable and legitimately red on old data (16 + 38 = 54), and `PASS` 1 → 2 is the overnight run arriving.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure

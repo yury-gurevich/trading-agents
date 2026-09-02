@@ -177,3 +177,12 @@ baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-qu
 **[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
 batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
 🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
+
+---
+
+**Fourth entry appended 2026-09-02.** The 2026-09-01 *three owed items closed* block moved down from [`../STATE.md`](../STATE.md) under the under-200-line rule, once its results were settled and recorded in [DL-142](../design-log.md), [DL-143](../design-log.md), [DL-144](../design-log.md) and the functionality-check register. It covers the day work-queue items **36**, **39** and **40** were closed or filed, with no code change and no version bump.
+
+🟩 **PROVEN RESULT — THREE OWED ITEMS CLOSED, 2026-09-01. No code changed, no version moved.** 🟩 **Item 39** by prevention
+([DL-142](design-log.md)): `required_status_checks.strict` and `allow_update_branch` both **`false` → `true`**, so the gated head *is* the merged tree; exactly one field changed and both open PRs flipped to `BEHIND`.
+🟩 **Item 36's refusal half** with a control arm ([DL-144](design-log.md)): a wrong Alpaca key gave `ActivationRefused` with `AgentInstance` **unmoved**; the real key **activated**.
+🟩 **S191 needed no cascade** — no deployed agent runs the acceptance view — so it was proven over **all 55 runs on the spine**, which is what surfaced item 40.

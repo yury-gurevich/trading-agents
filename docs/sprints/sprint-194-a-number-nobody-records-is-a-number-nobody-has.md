@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-194-a-number-nobody-records-is-a-number-nobody-has` — cut from **`main`**
-**Status:** BUILT locally — branch/main gates pending
+**Status:** MERGED + GATE PROVEN on `main`
 **Version:** `0.94.05` (PATCH from `0.94.04`)
 **Effort:** S
 **Decisions:** [DL-145](../design-log.md) the second K=4 measurement · work-queue item 3
@@ -276,7 +276,7 @@ first with a new append-only `DLIB-OBS-04`, then proven by functional tests that
 
 ## Closeout — evidence
 
-- **Merged SHA:** Pending branch commit, push, remote gate, and merge.
+- **Merged SHA:** `e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`
 - **Version:** `0.94.05`
 - **Red proof, missing field:** focused tests failed before implementation:
   `KeyError: 'orphaned_reply_count'` in the manager persistence test,
@@ -291,9 +291,13 @@ first with a new append-only `DLIB-OBS-04`, then proven by functional tests that
   ruff/format/mypy/import-linter passed; module-size warnings only; law coverage and PARAM sync
   completed; pytest `2452 passed, 4 skipped` with `100.00%`; pip-audit found no known
   vulnerabilities; detect-secrets and untracked secret scan passed.
-- **`make gate-ran`:** Pending branch commit, push, and remote workflow completion. Run it from the
-  worktree whose `HEAD` is the commit being proven and check the printed SHA against
-  `git rev-parse HEAD`.
+- **Branch `make gate-ran`:** `GATE PROVEN for e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`
+  after branch CI `33602950063` and Security Findings completed success.
+- **Main `make gate-ran`:** run from `main` with `git rev-parse HEAD` =
+  `e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`; output:
+  `GATE PROVEN for e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120` with CI,
+  Security Findings, CodeQL, Build and push agent images, Configured Graph Update, and
+  `uv in / for openai - Update` all success.
 - **Vocabulary hash before → after:** `9b57a99786fee046042e2dd36a9d399e25d0d64850633a1b1db267ad1693a64e`
   → `d47e88b19111ed2c5d355fee63d1e55426239da5a097ca748aa1f0833bf563c2`.
 - **Deploy shape:** full `up` required — the vocabulary pack changed and `DeliberationRun` is
@@ -312,4 +316,8 @@ first with a new append-only `DLIB-OBS-04`, then proven by functional tests that
   to `peer_client.py` and the new two-run proof was split into `test_orphaned_reply_count.py`; final
   full CI passed.
 - Historical rows do not gain a fake zero. The view renders missing `orphaned_reply_count` as `n/a`.
-- Branch push, remote gate, merge, and post-merge proof remain pending at this local-built checkpoint.
+- Branch push, remote gate, fast-forward merge to `main`, main push, configured graph update, image
+  build, CodeQL, and post-merge `make gate-ran` are complete for
+  `e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`.
+- No live orphan count is claimed from this sprint. The instrument is shipped; the next live
+  deliberation run is the first chance to record the number this sprint added.

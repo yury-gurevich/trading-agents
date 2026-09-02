@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-02 13:30 AEST · **Version:** 0.94.04 · **🎯 The first unattended scheduled run passed with the veto binding on both its buys — and the two faults it raised turned out to be a 16-second staleness window, not the defect I twice filed.**
+**Last updated:** 2026-09-02 17:30 AEST · **Version:** 0.94.05 · **🎯 The deliberator now persists per-run orphaned reply counts, so S192 can measure the next K=4 run instead of guessing.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,14 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
+
+🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f`
+(`0.94.05`), 2026-09-02.** `DeliberationRun` now records `orphaned_reply_count` as a per-run
+delta, the graph vocabulary declares it, and the deliberation view renders old rows as `n/a`.
+Red proof caught both the missing property and the cumulative-counter trap (`assert 3 == 1`);
+green proof includes `make ci` (`2452 passed, 4 skipped`, 100.00 %) plus branch and main
+`GATE PROVEN`. Full `up` required and the main workflows completed: CI, Security Findings,
+CodeQL, image build, Configured Graph Update, and `uv in / for openai - Update`.
 
 ## Now
 
@@ -128,7 +136,7 @@ tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/
 
 🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](design-log.md), [DL-145](design-log.md)). Same image, same K=4, five hours apart:
 **15/15 debated, 0 fail-opens** where the first run had 13 and 2 — the correctness failure is **intermittent and did not reproduce**. But the speed miss did, **1.78x of a possible 4x**, which
-**separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **Success factor 4 is unmeasurable:** `orphaned_reply_count` lives only in memory and a log line, and `deliberator-manager` logs **nothing** to Log Analytics (proven by control query), so the “6” can never be re-derived and this run's count is **UNKNOWN, not zero**. 🪤 **S192 must record the count first.**
+**separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **The 2026-09-01 orphan count remains UNKNOWN, not zero:** pre-S194 rows/logs cannot re-derive it. 🟩 **S194 now records the per-run count on every future `DeliberationRun`, so S192 can diagnose from measured data instead of first building the instrument.**
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 

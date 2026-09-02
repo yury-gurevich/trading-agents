@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-02 17:30 AEST · **Version:** 0.94.05 · **🎯 The deliberator now persists per-run orphaned reply counts, so S192 can measure the next K=4 run instead of guessing.**
+**Last updated:** 2026-09-02 19:20 AEST · **Version:** 0.94.05 · **🟩 Fleet on `s194` by full `up` — the orphan-count instrument is live, and tonight's run writes the first value it has ever had.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,13 +37,14 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`), 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a **per-run delta**;
-the vocabulary declares it and the view renders old rows `n/a`. The two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN`
-for `e7699af` with the printed SHA checked against `HEAD`, PATCH bump correct, delta at `poll.py:63/94`, `DLIB-OBS-04` present, and the pack hash move confirmed to be **the added property, not EOL noise**
-(the JSON was already CRLF on both sides). 🟠 **DEPLOY IS OWED AND IT CANNOT BE A RETAG** — the pack moved `9b57a997…` → `d47e88b1…`, so it is a **full `up`**; until then **no nightly run records the
-count**, which is the entire purpose of the sprint. 🚨 **Two hazards found in the verifying, neither in the code** ([DL-148](design-log.md)): the handback reported a **CRLF regression as a fix** — three
-evidence docs went LF → CRLF and are now converted back, `git diff -w` empty — and **two different `v1.2` deliberator law versions now exist**, S194's on `main` and S172's on its branch, which git may merge
-**without a conflict**. Whoever merges S172 must renumber it to v1.3.
+🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
+**per-run delta**; the two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN` for `e7699af` with the printed SHA checked
+against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
+cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
+**`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
+🟠 **It has recorded nothing yet.** The first value arrives from **tonight's 22:30 UTC run**; a quiet night writes `0`, which is itself the first datapoint S172 has ever had. 🚨 Two hazards stand from verifying, neither
+in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
+branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
 
 ## Now
 

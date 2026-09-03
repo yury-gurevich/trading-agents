@@ -107,7 +107,9 @@ is wall clock (S172); this path's is neither, so the two do not compete.
 | `revise` share of real debates | **45 of 58 = 78 %** | *[measured 2026-08-10/11, DL-104]* four runs carrying real verdicts |
 | `DeliberationRun` rows on the spine | **61** | *[measured 2026-09-03]* `g.list_nodes("DeliberationRun")` |
 | …with `real_debate_count > 0` | **23** | *[measured 2026-09-03]* same listing |
-| …**and** `failed_open_count == 0` — **the clean replay corpus** | **15** | *[measured 2026-09-03]* same listing. Comfortably over the ≥ 3 this sprint needs |
+| …**and** `failed_open_count == 0` | **15** | *[measured 2026-09-03]* same listing |
+| **The corpus that matters — `PMRun`s with full lineage, renderable today** | **46 runs / 261 approved orders** | *[measured 2026-09-03]* rendered every `PMRun` through `replayed_user_prompt`; 4 early-return, 11 with no approved orders |
+| Turns that replay to their *stored* hash (needs the recording code version) | **49 of 272**; **4 of 4** on current-code runs | *[measured 2026-09-03]* step 0, live |
 | Ticker verdicts across runs with real debates | **210** | *[measured 2026-09-03]* sum of `verdicts` map lengths |
 | `LLMCall` rows available for hash comparison | **1,132** | *[measured 2026-09-03]* `g.list_nodes("LLMCall")` |
 | Calls per order | **5** (`defender:r1`, `challenger:r1`, `defender:r2`, `challenger:r2`, `judge`) | *[measured 2026-09-03]* `correlation_id` suffixes, `sched-2026-09-02` |
@@ -220,6 +222,48 @@ time. **Check again when you merge.**
 
 ---
 
+## Step 0 — RESULT, measured live 2026-09-03
+
+🟩 **Step 0 passes, and it is a real `DLIB-OBS-01` proof — scoped.** `orchestration/deliberation_replay.py`
+reproduces the recorded user prompt **byte-for-byte**, verified against the ledger's own digest, on the
+turns recorded by the renderer currently on `main`: **4 of 4** (`sched-2026-09-01`, `sched-2026-09-02`,
+full lineage, 7,933-char contexts).
+
+🚨 **Across all history it is 49 of 272, and the failures are not random.** Replay fidelity tracks
+**the code version that recorded the run**:
+
+| Group | Replays | Why |
+| --- | --- | --- |
+| `sched` runs on `s191` / `s194` (built from `main`) | **4 / 4** | recorded by today's renderer |
+| every `sched` run 2026-08-07 → 08-28 | **0 / N** | recorded by an older renderer — S175 removed the ATR fragment, S183/S184 changed `FilterVerdict` |
+| three `verify-2026-08-19-s172-k4-*` | 45 / 45 | 🪤 **not evidence** — these are synthetic runs with *no lineage*, so the string is a short early-return that barely changed |
+| `verify-2026-09-01-s192-k4` | **0 / 15** | recent, but recorded on **`s172b`**, the unmerged branch image |
+
+🪤 **The distinction I got wrong first, corrected here because it changes the sprint's size.** "Replays to
+the stored hash" and "can be rendered and re-run today" are **different questions**:
+
+- Matching a *historical* hash needs the recording code — that is the **4 turns** above, and it is only
+  needed to validate the replay path, which it now has.
+- **Self-agreement needs neither.** It generates all N samples itself under identical conditions the
+  harness controls, so it needs only **intact lineage**. Measured 2026-09-03: **46 `PMRun`s with full
+  lineage carrying 261 approved orders** (plus 4 early-return runs and 11 with no approved orders).
+
+🎯 **So Part A is not blocked and never was — the corpus is 261 orders across 46 runs**, far past the
+"≥ 3 historical `PMRun`s" this spec asks for.
+
+🚨 **One success factor is withdrawn as unmeetable.** *"The 56 % baseline is reproduced or refuted
+against DL-104's four runs, by the harness"* — those runs are 2026-08-08/10 and replay **0 / 18**. The
+prompts that produced the 56 % no longer exist in reproducible form. **The 56 % stays a historical
+datapoint and stops being a target**; the sprint measures a **fresh** baseline under today's code
+instead, on a far larger sample. Recorded rather than quietly re-scoped.
+
+🟠 **The gap that made this discoverable-only-by-accident is filed, not fixed here:** nothing stamps
+`LLMCall` with the code version that produced it, so replayability is unknowable until you try. That is
+**work-queue item 44** — a graph-vocabulary change, which drags in the pack, a law cycle and a full `up`
+deploy, and would swallow this sprint.
+
+---
+
 ## Part B — the effort and `max_rounds` sweep
 
 🚨 **The control arm is not optional, and it is the whole reason Part B lives in this sprint.** At
@@ -277,7 +321,11 @@ orders × repeats × arms, halve for batch pricing, report against the synchrono
       there and reports that — a complete and acceptable outcome.
 - [ ] **Self-agreement is a number with a confidence interval**, over ≥ 5 repeats on ≥ 3 historical
       `PMRun`s (15 clean ones exist), with the fail-open exclusion count beside it.
-- [ ] **The 56 % baseline is reproduced or refuted** by the harness rather than by hand.
+- [ ] ~~**The 56 % baseline is reproduced or refuted** by the harness rather than by hand.~~
+      🚨 **WITHDRAWN 2026-09-03 as unmeetable** — DL-104's runs replay **0 / 18** under today's
+      renderer. Replaced by: **a fresh self-agreement baseline measured under today's code**, on
+      the 46-run / 261-order corpus, reported beside the historical 56 % without claiming to
+      reproduce it.
 - [ ] **The harness writes nothing** — planted `merge_node` fails a test, watched failing first.
 - [ ] **Batch economics measured, not assumed:** actual batch cost against the synchronous
       equivalent, and the observed turnaround.

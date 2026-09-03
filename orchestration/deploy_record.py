@@ -24,7 +24,7 @@ class BuildEvidence(Protocol):
     @property
     def git_sha(self) -> str:
         """Return the workflow head SHA."""
-        ...  # pragma: no cover - protocol declaration only.
+        raise NotImplementedError  # pragma: no cover - protocol declaration only.
 
 
 class BuildReader(Protocol):
@@ -34,7 +34,7 @@ class BuildReader(Protocol):
         self, tag: str, git_sha: str | None = None
     ) -> tuple[BuildEvidence, ...]:
         """Return successful image builds that produced tag."""
-        ...  # pragma: no cover - protocol declaration only.
+        raise NotImplementedError  # pragma: no cover - protocol declaration only.
 
 
 def record_deploy(

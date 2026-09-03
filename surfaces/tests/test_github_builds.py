@@ -85,14 +85,15 @@ def test_github_reader_finds_successful_builds_that_published_tag() -> None:
     assert _reader(open_fake).image_builds_for_tag("s194", git_sha="s194-sha") == (
         MainImageBuild("s194-sha", 7, "https://example/run/7"),
     )
-    assert seen == [
-        "https://api.github.com/repos/owner/repo/actions/workflows/"
-        "build-images.yml/runs?branch=main&status=success&per_page=100",
-        "https://api.github.com/repos/owner/repo/actions/runs/8/logs",
-        "https://api.github.com/repos/owner/repo/actions/runs/7/logs",
+    runs_url = (
         "https://api.github.com/repos/owner/repo/actions/workflows/"
         "build-images.yml/runs?branch=main&status=success&per_page=100"
-        "&head_sha=s194-sha",
+    )
+    assert seen == [
+        runs_url,
+        "https://api.github.com/repos/owner/repo/actions/runs/8/logs",
+        "https://api.github.com/repos/owner/repo/actions/runs/7/logs",
+        f"{runs_url}&head_sha=s194-sha",
         "https://api.github.com/repos/owner/repo/actions/runs/7/logs",
     ]
 

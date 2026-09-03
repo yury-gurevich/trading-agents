@@ -41,13 +41,13 @@ class GitHubReader(Protocol):
 
     def latest_main_image_build(self) -> MainImageBuild:
         """Return the newest successful main build."""
-        ...  # pragma: no cover - protocol declaration only.
+        raise NotImplementedError  # pragma: no cover - protocol declaration only.
 
     def image_builds_for_tag(
         self, tag: str, git_sha: str | None = None
     ) -> tuple[MainImageBuild, ...]:
         """Return successful image builds that published tag."""
-        ...  # pragma: no cover - protocol declaration only.
+        raise NotImplementedError  # pragma: no cover - protocol declaration only.
 
 
 class GitHubActionsReader:

@@ -50,7 +50,8 @@ def main() -> None:
         )
     except DeployRecordVerificationError as exc:
         parser.error(str(exc))
-    print(f"recorded DeployRecord {node.key}")
+    else:
+        print(f"recorded DeployRecord {node.key}")
 
 
 if __name__ == "__main__":

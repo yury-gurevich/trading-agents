@@ -9,7 +9,6 @@
 > Handover to a delegated coding agent. Everything under **Measured** was read off this repo or the
 > live spine on **2026-08-18**. Everything marked **Assumed** has **not** been verified — check it
 > before building on it. Do not treat an unmarked claim as measured.
-
 > 🟩 **Re-verified 2026-09-03, before handover.** Every `file:line` below was re-read at `14d8458`.
 > **Two citations had drifted by one line and are corrected here**, and **both “Assumed” claims are now
 > measured** — one of them **changes decision 2** (see *Decision 2* and the coverage trap). The rest of
@@ -61,9 +60,31 @@ one is superseded, not erased. **Do not delete it**, and do not build a delete p
 ## The design decisions this sprint has to make
 
 **1 · Verify, or resolve?** 🚨 **Recommended: verify, and refuse on mismatch.** Keep `--git-sha`
-required, then compare it against the newest successful `build-images.yml` run and exit non-zero
-naming both SHAs if they differ. Refusing teaches the operator what went wrong; silently resolving
-hides that the command they typed was wrong.
+required, then verify it against the build record and exit non-zero naming both SHAs if it does not
+hold. Refusing teaches the operator what went wrong; silently resolving hides that the command they
+typed was wrong.
+
+🚨 **CORRECTED 2026-09-03 — verify against *the newest* build is the WRONG RULE, and this repo
+disproves it today.** The original wording said "compare it against the newest successful
+`build-images.yml` run". Measured now:
+
+- The `s194` images were built from **`e0a144f`** (its own successful build run, `2026-09-02T07:26Z`).
+- The newest successful `build-images.yml` run on `main` is **`75027b6`** (`08:47Z`) — a **docs
+  commit**, which built only because `build-images.yml`'s path filter includes `agents/**` and the
+  commit edited `agents/deliberator/laws/laws.md`.
+- So under the newest-build rule, recording the deploy that is **actually on the fleet right now**
+  (`s194` / `e0a144f`) would be **REFUSED** — the correct record rejected as a mismatch.
+
+🪰 **It is the same flaw the spec already rejected "resolve silently" for.** That option was
+rejected because it "makes `record_deploy` unable to record a deploy whose build is not the newest —
+and a rollback to an older tag is exactly that case". **Verify-against-newest breaks the identical
+case**, and additionally breaks the ordinary case where any law-file edit lands after the build.
+
+🎯 **The rule to implement instead:** the given SHA must be the head SHA of a **successful
+`build-images.yml` run that produced the tag being recorded** — an existence-and-identity check, not
+a recency check. 🪰 **`latest_main_image_build()` cannot answer that** — it returns only the newest
+run — so this needs a **second query on the existing client**, which is not the same thing as a second
+client. Extending `GitHubActionsReader` is in scope; writing a new GitHub adapter is not.
 
 - *Rejected:* **resolve it silently** (drop the argument, read the build's SHA). It would have
   produced the right record today, but it also makes `record_deploy` unable to record a deploy whose
@@ -122,14 +143,24 @@ is a reporting-integrity fix.
 2. **Record the decision** (decisions 1–3) in `docs/design-log.md` with rejected alternatives,
    **before** applying it. LAW-06.
 3. **Implement the verification** in the tooling layer, reusing the existing reader.
-4. **Prove it against the real repo:** the true `s179` pair (`s179` / `4c8eeb0505bc65c081be3d1fe
-   71049f7d88e0e43`) must be accepted, and the wrong pair (`s179` / `8fbf3a41339d0a31aa9a057952fe
-   5e6401280ac1`) must be **refused**. Both are real values from today.
+4. **Prove it against the real repo.** 🚨 **These values were "real today" on 2026-08-18 and have
+   since decayed — re-verified and restated 2026-09-03.** The pair that must be **REFUSED** still
+   holds and is the sharpest case: `8fbf3a41339d0a31aa9a057952fe5e6401280ac1` (a docs commit)
+   has **zero** `build-images.yml` runs — measured, `gh run list` returns none for it — while
+   `4c8eeb0505bc65c081be3d1fe71049f7d88e0e43` has **two** successful runs. That is the real
+   discriminator: *was this commit ever built at all*, not *is it the newest*.
+   🚨 **Add the counter-example that the newest-build rule fails:** `s194` /
+   `e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120` is the deploy **currently on the fleet** and **must be
+   ACCEPTED**, even though `75027b62a8d45a67be0b8a3aaf66108f22ffc228` is a newer successful build.
+   A guard that refuses this pair is wrong, however green its tests are.
 5. `make ci` green, **plant each new guard and watch it fail**, restore.
 
 ## Success factors
 
 - [ ] A well-formed but wrong SHA is **refused**, naming both the given and the expected SHA.
+- [ ] 🚨 **The `s194` / `e0a144f` pair is ACCEPTED though a newer build exists** — the check is
+      existence-and-identity, not recency. This success factor is the one that fails a
+      newest-build implementation.
 - [ ] The real `s179` / `4c8eeb0` pair is still accepted — the guard does not block correct use.
 - [ ] The GitHub-unreadable case behaves as decision 3 says, and a test proves it.
 - [ ] No second GitHub client — `GitHubActionsReader` is reused.
@@ -194,6 +225,15 @@ WHAT TO DO
 3. Verify and refuse on mismatch - do NOT silently resolve the SHA (that breaks recording a
    rollback to an older tag). Do NOT settle for 40-hex shape validation: the SHA that broke this
    was perfectly well-formed and would have passed.
+3b. CORRECTED 2026-09-03, READ THIS BEFORE IMPLEMENTING. Do NOT verify against "the newest
+   successful build". Measured today: the s194 images on the fleet were built from e0a144f, but the
+   newest successful build-images.yml run on main is 75027b6 - a DOCS commit that built only because
+   the path filter includes agents/** and it edited agents/deliberator/laws/laws.md. Under a
+   newest-build rule the correct record for the running fleet would be REFUSED. Implement an
+   EXISTENCE-AND-IDENTITY check instead: the given SHA must be the head SHA of a successful
+   build-images.yml run that produced the tag being recorded. latest_main_image_build() cannot
+   answer that - extend GitHubActionsReader with a second query. Extending the existing client is in
+   scope; a second GitHub adapter is not.
 4. Reuse the EXISTING client: surfaces/dashboard/github_builds.py GitHubActionsReader
    .latest_main_image_build(). Do not write a second GitHub client.
 5. Placement. MEASURED 2026-09-03: .importlinter has four contracts and NONE forbids
@@ -208,8 +248,13 @@ WHAT TO DO
    declares a GitHubReader Protocol, separate from the adapter at :45, so a fake satisfies it.
 6. Decide explicitly what happens when GitHub cannot be read (refuse, or record with
    sha_verified=false). A silent pass is NOT an option - that is the current behaviour.
-7. Prove with the real values from today: (s179, 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43) must be
-   ACCEPTED; (s179, 8fbf3a41339d0a31aa9a057952fe5e6401280ac1) must be REFUSED.
+7. Prove with real values, re-verified 2026-09-03:
+   - (s179, 8fbf3a41339d0a31aa9a057952fe5e6401280ac1) must be REFUSED - that commit has ZERO
+     build-images.yml runs, while 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43 has two successful ones.
+   - (s179, 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43) must be ACCEPTED.
+   - (s194, e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120) must be ACCEPTED - this is the deploy on the
+     fleet right now, and a NEWER successful build (75027b6...) exists. This pair is the one that
+     fails a newest-build implementation. Do not skip it.
 8. make ci green. Plant EVERY new guard, watch it fail, restore. Report each plant in the closeout.
 
 CONSTRAINTS

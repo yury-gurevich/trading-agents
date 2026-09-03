@@ -8,6 +8,45 @@ and is marked CLOSED here.
 
 ---
 
+## DL-149 - Deploy records verify the built commit, not the caller's ambient HEAD - status: DECIDED (2026-09-03)
+
+**Sprint:** [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md).
+
+`scripts/record_deploy.py` currently trusts the `--git-sha` it is handed, but the `s179` deploy
+proved that ambient `HEAD` can move after the image build. A deploy record is only useful if it names
+the commit the image workflow actually built.
+
+**Decision.** Keep the SHA explicit and verify it against the newest successful `build-images.yml`
+run before writing the append-only `DeployRecord`. A mismatch refuses the write and names both the
+given and expected SHA. Correct rollback records stay possible because the operator still supplies
+the intended SHA, but a typo or stale shell substitution cannot become durable evidence.
+
+**Placement.** Put the covered guard beside the orchestration writer, with the expected SHA supplied
+as a plain injected value. The CLI remains wiring: it builds the existing dashboard GitHub reader,
+passes the resulting build SHA into the guard, then appends the record. This creates no
+`orchestration -> surfaces` import and keeps the behavior inside the coverage floor.
+
+**GitHub unreadable case.** Fail closed: if GitHub build evidence is missing or unreadable, the CLI
+must refuse to write a "verified" record. Adding `sha_verified=false` is deferred because the current
+dashboard vocabulary and projection treat `DeployRecord` as verified evidence, and soft records would
+need their own projection semantics.
+
+**Tag scope.** The SHA guard does not replace fleet/tag verification. The deploy procedure must still
+prove every app and the dispatcher job are on the intended tag before recording; tag mismatch remains
+a `/check-fleet`/deploy-procedure concern rather than an inference made from GitHub Actions.
+
+**Rejected routes.**
+
+- **Resolve the SHA silently from GitHub and drop the argument.** Rejected because rollback records
+  may intentionally point at an older successful build.
+- **Validate only 40-hex shape.** Rejected because the bad `s179` SHA was well-formed.
+- **Put GitHub verification inside `orchestration.deploy_record` via a dashboard import.** Rejected
+  because the needed seam is dependency injection; crossing the layer boundary buys nothing.
+- **Write an asserted record when GitHub cannot be read.** Rejected for this sprint because it would
+  make a verified evidence label carry an unverified claim.
+
+---
+
 ## DL-148 - Orphaned peer replies are a per-run fact, not a lifetime counter - status: DECIDED (2026-09-02)
 
 **Sprint:** [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md).

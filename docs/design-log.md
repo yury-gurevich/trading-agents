@@ -8,6 +8,73 @@ and is marked CLOSED here.
 
 ---
 
+## DL-150 - The per-order debate cost is 84 s, not 124 s, and S172's trigger no longer follows from it - status: MEASURED (2026-09-03)
+
+**Raised by the operator asking a different question** — whether debate quality had ever been measured
+at one round versus two, and across `effort` levels, with a view to spending less. Answering it meant
+re-reading the `LLMCall` ledger, and the number that came back **moves the argument for S172**.
+
+**Measured, off the spine, 2026-09-03.** Five calls per order every time — `defender:r1`,
+`challenger:r1`, `defender:r2`, `challenger:r2`, `judge` — read from the `correlation_id` suffixes:
+
+| Run | Orders | Calls | Sum of latencies | **Per order** |
+| --- | --- | --- | --- | --- |
+| `sched-2026-09-02` | 2 | 10 | 144.9 s | **72.5 s** |
+| `sched-2026-09-01` | 2 | 10 | 160.7 s | **80.4 s** |
+| `verify-2026-09-01-s192-k4-110200` | 15 | 75 | 1,265.0 s | **84.3 s** |
+
+🚨 **Work-queue item 3 carries 124 s**, re-measured on `s181` when the deliberator ran `gpt-5.5`.
+The pack has since moved to `claude-opus-5` **and** `effort` `max` → `high` (live 2026-08-12), and the
+cost fell by roughly a third. **The 124 s figure should not be quoted again.**
+
+**What that does to the grace arithmetic.** The deployed grace is **1,800 s**
+(`EXECUTION_DELIBERATION_GRACE_SECONDS` on the `execution` app — 🪰 note the *code* default is
+**900**, so the deployed value is an env override and reading `settings.py` alone understates the
+headroom by half). At 84.3 s per order, serial:
+
+| Orders | Serial cost | vs 1,800 s grace |
+| --- | --- | --- |
+| 15 | 1,265 s | 🟩 fits, 30 % headroom |
+| 21 | 1,770 s | 🟩 fits, barely |
+| **22** | **1,855 s** | 🚨 **breaches** |
+| 25 | 2,108 s | 🚨 breaches |
+
+**Why this is a decision and not just a number.** [DL-105](#dl-105)'s amendment wrote S172's trigger
+down: *build it when the measured serial cost at the target funnel width still exceeds the grace
+**after the two tunables have been swept***. At ≤21 orders it no longer does. Recent nights approved
+**2, 2, 9, 7**. 🚨 **So the trigger is met only if the target funnel width is ≥22 — which is an
+operator decision, not a measurement, and it is the open question this entry hands back.**
+
+🪰 **What this entry does NOT say.** It does not say S172 is wrong or that its work was wasted.
+The correctness defect it exposed — peer replies dead-lettered under concurrency — is **independent
+of whether we need the speed**, though it can only manifest at K > 1. Nor is 84.3 s durable: it is a
+function of model and `effort`, both tunable, so it will move again. **Re-measure before quoting.**
+
+**Three things measured in passing, each worth its own line.**
+
+1. 🟩 **The 4096-token cap is not biting.** Across the last **95** deliberation calls the largest
+   `tokens_out` was **394**, and **zero** calls stopped for any reason other than `end_turn`. The
+   candidate explanation that a verdict truncated under `max_tokens` contributes to the **56 %**
+   self-agreement is **not visible in the data**. It is not thereby refuted — 95 calls is a small
+   sample and the concern was raised against a different model — but it is no longer free to assume.
+2. 🟠 **`effort` is `high` on the fleet, and `max` in the code.** `DELIBERATOR_EFFORT=high` is set
+   on all three deliberator apps; `settings.py` defaults to `max`. Recorded because a reader of the
+   source alone would draw the wrong conclusion about what the fleet actually runs.
+3. 🚨 **Quality has never been measured for either lever.** `effort` and `max_rounds` have been
+   decided three times between them — DL-105's sweep, the 2026-08-13 timeout incident, and
+   [DL-140](#dl-140)'s rejected routes — and **every one of those decisions turned on wall clock or
+   fail-opens. None measured whether the verdicts changed.** The instrument that could is
+   **item 9 / S173**, and its control arm is not optional: at **56 %** self-agreement, the same
+   config disagrees with itself 44 % of the time, so a `high`-vs-`medium` difference is
+   uninterpretable without a same-config arm measuring the noise floor first.
+
+🪰 **Housekeeping found while writing this:** `docs/design-log.md` contains **two** entries numbered
+**DL-148** (*"Orphaned peer replies are a per-run fact"* and *"S194 verified; two hazards"*), both
+2026-09-02. Left unrenumbered deliberately — both are cited from `STATE.md` and the work queue, and
+silently changing an identifier is worse than a known collision. Filed as doc hygiene.
+
+---
+
 ## DL-149 - Deploy records verify the built commit, not the caller's ambient HEAD - status: DECIDED (2026-09-03, corrected 2026-09-03)
 
 **Sprint:** [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md).

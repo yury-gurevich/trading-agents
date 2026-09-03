@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-03 12:40 AEST · **Version:** 0.94.06 · **🟩 S180 merged — `record_deploy` now refuses a SHA not backed by a successful `build-images.yml` run.**
+**Last updated:** 2026-09-03 14:26 AEST · **Version:** 0.94.06 · **🟩 S180 merged — `record_deploy` now refuses a SHA not backed by a successful `build-images.yml` run.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -48,9 +48,9 @@ branch — git may merge them **without a conflict**, so whoever merges S172 ren
 
 ## Now
 
-🟩 **PROVEN RESULT — [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md) MERGED `71bc69f` (`0.94.06`), 2026-09-03.** `record_deploy` now calls `verify_build_sha()` before writing; existence-and-identity check via `GitHubBuildChecker` Protocol (no `orchestration→surfaces` import). GitHub unreadable → `sha_verified=False` (honest degraded path). SHA mismatch → exits 1 with both SHAs named. `DL-149` corrected. 🟩 **Gate: CI + Security Findings both `success` for `ebb1c98` on the sprint branch.**
+🟩 **PROVEN RESULT — [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md) MERGED `71bc69f` (`0.94.06`), 2026-09-03.** `record_deploy` now calls `verify_build_sha()` before writing; **existence** check via an injected `GitHubBuildChecker` Protocol (no `orchestration→surfaces` import). GitHub unreadable → `sha_verified=False` (honest degraded path). SHA mismatch → exits 1 with both SHAs named. `DL-149` corrected. 🚨 **The gate claim in this entry was about the wrong commit and has been replaced.** It read *"CI + Security Findings `success` for `ebb1c98` on the sprint branch"* — but **two commits landed above `ebb1c98`** before the merge, which is exactly the S186 trap CLAUDE.md names. 🟩 **Re-proven independently 2026-09-03 14:20 on the SHA actually on `main`:** `GATE PROVEN for 7b30f1b08431825b6889c33b04a51830462b848c`, from a detached worktree at that commit with the printed SHA checked against `git rev-parse HEAD` — **CI, Security Findings *and* CodeQL all `success`**. 🟠 **Residue, unmerged:** the merged check proves a SHA *was built*, not that it built **this tag** — so recording `s193` against the commit that built `s194` still passes. The tag-identity upgrade (`image_builds_for_tag` on `GitHubActionsReader`) exists as **uncommitted work in the shared tree**, snapshotted at `refs/wip/codex-s180-20260903`; it is not lost, and it is not merged.
 
-🎯 **Next:** plan S181 — the next queued sprint per `docs/sprints/INDEX.md`.
+🎯 **Next:** 🚨 *(the line here read “plan S181” — S181 shipped weeks ago; corrected.)* **[DL-150](design-log.md) re-measured the per-order debate cost at 72.5–84.3 s, not the 124 s work-queue item 3 rests on**, so serial deliberation now fits the deployed 1,800 s grace to **21** orders and breaches at **22**. Recent nights approved **2, 2, 9, 7**. **S172's own trigger is therefore met only if the target funnel width is ≥22 — an operator decision, open.** Next work: **item 9 / S173**, the verdict-quality gate, which is the instrument for the `effort` and `max_rounds` question and the only way to read the **56 %** self-agreement.
 
 🎯 **PROVEN RESULT — THE FIRST `s194` NIGHT PASSED CLEAN, AND THE INSTRUMENT WROTE ITS FIRST VALUE.** `sched-2026-09-02` fired on schedule: **8/8 stages, `ACCEPTANCE PASS`**, provider
 `quality ok 98/99` with **no `*_degraded` notes**. 🟩 **The number S172's criterion could never be falsified without now exists:** `DeliberationRun pm-run-c31f4806…` (22:44:09 UTC) carries

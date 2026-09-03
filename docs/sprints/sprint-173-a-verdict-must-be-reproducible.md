@@ -9,6 +9,13 @@
 > 2026-08-10/11. Everything marked **Assumed** has **not** been verified — check it before building
 > on it.
 
+> 🟩 **Re-verified 2026-09-03, and the sprint grew a second job.** Both blocking traps are
+> **cleared** (evidence in *Traps*), the spec's central assumption is now **directly checkable**
+> rather than assumed (step 0), and the operator has asked a question this harness is the only
+> instrument for: **does verdict quality actually change with `effort` or with `max_rounds`?**
+> That is now **Part B** below. Part A (reproducibility) is unchanged and must land first, because
+> **Part B is uninterpretable without it** — see the control-arm rule.
+
 ## Why
 
 **The veto does not agree with itself, and nothing measures that but hand-reading.**
@@ -37,6 +44,14 @@ is wall clock (S172); this path's constraint is neither, so the two do not compe
 byte-identical deliberation context. If it does not, the harness is measuring context drift rather
 than verdict reproducibility, and that must be fixed before any rate is reported.
 
+🟩 **NO LONGER AN ASSUMPTION — it is checkable, measured 2026-09-03.** Every `LLMCall` row
+already stores a **`prompt_hash`**, written as `_digest(capture.prompt)` at
+`kernel/llm_ledger.py:65`. So the harness can rebuild the context for a stored `PMRun`, digest it
+**the same way**, and compare against the hash the live run actually recorded.
+🎯 **Make that step 0 and a hard gate on the whole sprint: if the rebuilt digest does not equal
+the stored `prompt_hash`, every number downstream is measuring context drift, and the sprint stops
+there and says so.**
+
 ## Steps, in order
 
 1. **A read-only replay harness** — rebuild the deliberation context for a stored `PMRun` and its
@@ -58,6 +73,45 @@ than verdict reproducibility, and that must be fixed before any rate is reported
 6. **Re-derive the 56 % baseline** from the four existing `DeliberationRun`s through the new harness.
    If the harness cannot reproduce the hand-computed figure, the harness is wrong — say so and stop.
 
+## Part B — the sweep the operator asked for (2026-09-03)
+
+**The question.** `effort` and `max_rounds` have each been decided three times — DL-105's sweep, the
+2026-08-13 timeout incident, and [DL-140](../design-log.md)'s rejected routes — and 🚨 **every one
+of those decisions turned on wall clock or fail-opens. Not one measured whether the verdicts changed.**
+If quality holds at a lower `effort`, the pipeline gets cheaper and faster for nothing; see
+[DL-150](../design-log.md).
+
+🚨 **The control arm is not optional, and it is the whole reason Part B lives in this sprint.**
+At **56 %** self-agreement the same configuration disagrees with itself on nearly half of comparable
+verdicts. A `high`-vs-`medium` difference **cannot be told apart from that noise** without measuring
+the noise first. Three arms, same `PMRun`s, same repeats, one batch:
+
+| Arm | Varies | Answers |
+| --- | --- | --- |
+| **A — control** | nothing (`high` vs `high`) | the noise floor; this is Part A's self-agreement number |
+| **B — effort** | `high` vs `medium` (and `low` if B separates) | whether `effort` moves verdicts **beyond** the floor |
+| **C — rounds** | `max_rounds` 2 vs 1 | whether the second round changes the verdict at all |
+
+**Report each arm as an agreement rate against arm A's interval, never as a bare percentage.** A
+result inside arm A's confidence interval is *"indistinguishable from noise"*, which is a finding,
+not a failure.
+
+🪤 **Arm C measures a decision, it does not make one.** `max_rounds` 2 -> 1 has been rejected
+twice on the same recorded ground: the debate's own `why` requires more than one round in live proof,
+so cutting it is *"cutting the artefact under test to buy wall clock"*. **Measuring it here is in
+scope; changing the deployed value is an ADR, not a sprint outcome.** Report the number and stop.
+
+🪤 **Arm B has a confound, and it runs the other way from the obvious one.** Lowering `effort`
+also shortens the peer-call tail, and that tail is what interacts with `request_timeout_seconds` —
+the coupling that caused three fail-opens on 2026-08-13. **In batch there is no timeout, so the
+confound is absent here**, which means a Part B result **does not transfer to the live path
+unchanged**. Say so in the report rather than implying the sweep licenses a live change on its own.
+
+**Cost, measured rather than guessed** ([DL-150](../design-log.md)). One order costs **5 calls**
+(`defender:r1`, `challenger:r1`, `defender:r2`, `challenger:r2`, `judge`) at roughly **5,800 tokens
+in / 1,280 out**. Multiply by orders x repeats x arms, halve for batch pricing, and report it against
+the synchronous equivalent — that is success factor 4, and Part B is what makes it worth reporting.
+
 ## Success factors
 
 1. **Self-agreement is a number with a confidence interval**, measured over ≥ 5 repeats on ≥ 3
@@ -71,15 +125,26 @@ than verdict reproducibility, and that must be fixed before any rate is reported
 5. **The gate can fail** — a planted low-agreement fixture drives `deliberation_quality.py` to FAIL;
    a planted high-agreement fixture drives it to PASS.
 6. `make ci` exit 0 unpiped to a file, 100.00 % coverage floor held.
+7. 🟩 **Step 0 proved, not asserted:** a rebuilt context digest **equals** the stored
+   `prompt_hash` for at least one real historical `PMRun`, both sides quoted. If it does not, the
+   sprint stops there and reports that instead — that is a complete and acceptable outcome.
+8. **Part B: all three arms reported against arm A's confidence interval**, each with its
+   fail-open exclusion count, and an explicit statement of which differences fall **inside** the
+   noise floor. A bare "quality was the same" without arm A's interval does not satisfy this.
 
 ## Traps
 
-- 🪤 **Do not run this before [DL-104](../design-log.md) (a) and (b) land.** Six of fifteen vetoes
-  were manufactured by the deliberator's own context builder (the invented ATR fragment at
-  `context_pm.py:138`). Measuring reproducibility over that fragment measures the fragment.
-- 🪤 **Batch is Anthropic-only, and the deliberator key is limited until 2026-09-01**
-  ([DL-99](../design-log.md)). Either wait for the date or resolve the limit —
-  [S170](sprint-170-one-llm-adapter-in-the-plumbing.md) carries the same dependency.
+- 🟩 ~~**Do not run this before [DL-104](../design-log.md) (a) and (b) land**~~ — **CLEARED,
+  verified 2026-09-03.** The invented ATR fragment is **gone**: `agents/deliberator/context_pm.py`
+  contains **no `atr` reference at all**, and that gate line now reports the real
+  `stop_vs_regime_volatility` comparison against `base_stop_loss_pct`. Shipped in S175.
+- 🟩 ~~**Batch is Anthropic-only, and the deliberator key is limited until 2026-09-01**~~ —
+  **CLEARED.** The date has passed, and [DL-135](../design-log.md) verified both providers
+  `HTTP 200`, with the live fleet reading `DELIBERATOR_LLM_PROVIDER=anthropic` on all three
+  deliberator apps.
+- 🪤 **The fleet runs `DELIBERATOR_EFFORT=high`; `settings.py` defaults to `max`** (measured
+  2026-09-03). **Arm A's control must replay at `high`, the deployed value** — replaying at the
+  code default would measure a configuration that has never run in production.
 - 🪤 **The `fallbacks` parameter is rejected on the Batches API.** A refusal in a batch result is
   handled by the caller, not by a server-side fallback.
 - 🪤 **`max_tokens: 0` is rejected inside a batch** — the cache pre-warm trick does not apply here.

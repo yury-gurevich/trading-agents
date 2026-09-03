@@ -53,7 +53,7 @@ branch — git may merge them **without a conflict**, so whoever merges S172 ren
 **`orphaned_reply_count=0`** beside `real_debate_count=2` and `failed_open_count=0` — **every earlier run on the spine reads `<ABSENT>`**, so this is the first datapoint, and it is the quiet-night `0`
 [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) predicted. 🟩 **The veto bound for a second night:** PM approved **2 buys** (AMD, USB) of 30 scored, the deliberator ran
 **2 real debates** and **vetoed both** (`revise`), execution recorded `deliberation_status=`**`applied`** and **submitted 0**; the fleet returned to rest on its own, **16/16 on `s194` at `minReplicas=0`**.
-🪰 **`deliberation_posture=advisory` with `blocked_count=0` in that record is not a veto being ignored** — `drop_vetoed` strips vetoed tickers **before** posture is consulted
+🪤 **`deliberation_posture=advisory` with `blocked_count=0` in that record is not a veto being ignored** — `drop_vetoed` strips vetoed tickers **before** posture is consulted
 (`agents/execution/pm_execution.py:57-63`); posture governs only the no-artifact branch, so an advisory posture and a binding veto are not in contradiction. 🟩 **[DL-147](design-log.md)'s prediction held,
 and item 32's success factor is met on this run:** **zero** new faults of any kind — the newest on the spine are still the two `BrokerStopIdentityMismatch` warnings at `2026-09-01T22:30:42/47`. No stop
 fired (0 submitted), so the transient 16-second staleness warning did not recur, exactly as the corrected reading said it would not. 🟠 Item **42** still stands: the check compares a type against a lifecycle.

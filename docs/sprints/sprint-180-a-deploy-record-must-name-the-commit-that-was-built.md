@@ -10,6 +10,11 @@
 > live spine on **2026-08-18**. Everything marked **Assumed** has **not** been verified — check it
 > before building on it. Do not treat an unmarked claim as measured.
 
+> 🟩 **Re-verified 2026-09-03, before handover.** Every `file:line` below was re-read at `14d8458`.
+> **Two citations had drifted by one line and are corrected here**, and **both “Assumed” claims are now
+> measured** — one of them **changes decision 2** (see *Decision 2* and the coverage trap). The rest of
+> the spec stands as written; the `s179` SHA pair in step 4 is still real.
+
 ## Why
 
 **It already produced a wrong answer once, today.** The `s179` deploy was recorded with
@@ -17,7 +22,7 @@
 is the commit the images were actually built from, so the record named `8fbf3a41` — a commit that
 was never built into any image.
 
-That is not cosmetic. `surfaces/dashboard/projections_currency.py:61`:
+That is not cosmetic. `surfaces/dashboard/projections_currency.py:60`:
 
 ```python
 evidence["main_matches_record"] = sha == build.git_sha
@@ -28,7 +33,7 @@ evidence["main_matches_record"] = sha == build.git_sha
 SHA recorded, the dashboard would have reported the fleet **"behind" while it was current** — the
 exact DL-46 currency error the `DeployRecord` exists to prevent.
 
-**Measured — what `record_deploy` validates today.** `orchestration/deploy_record.py:27-31` checks
+**Measured — what `record_deploy` validates today.** `orchestration/deploy_record.py:26-30` checks
 only that tag, sha and actor are **non-empty strings**:
 
 ```python
@@ -69,9 +74,23 @@ hides that the command they typed was wrong.
 **2 · Where does the check live?** 🚨 **Recommended: `scripts/record_deploy.py`**, the tooling layer.
 🪤 **Do not put it in `orchestration/deploy_record.py`** — the reusable GitHub client lives at
 `surfaces/dashboard/github_builds.py`, and importing it from `orchestration/` makes orchestration
-depend on surfaces. Check the import-linter contracts before choosing; "Agents may not reach into
-surfaces or orchestration" exists, and **Assumed, not verified:** that no contract currently forbids
-`orchestration → surfaces`. Verify rather than assume.
+depend on surfaces.
+
+🟩 **MEASURED 2026-09-03, and it is the opposite of what this spec assumed.** `.importlinter` declares
+**four** contracts — `agents-are-islands`, `agents-import-only-kernel-and-contracts`,
+`kernel-has-no-domain-knowledge`, `contracts-are-pure-vocabulary`. **None of them forbids
+`orchestration → surfaces`**, so `lint-imports` will **not** stop you putting the check in
+`orchestration/`. 🚨 **The gate is therefore not the arbiter here — judgement is.** Do not read a
+green `lint-imports` as permission.
+
+🎯 **Recommended resolution, because decision 2 and the coverage trap below are otherwise in direct
+tension:** put the testable verification in a **module**, taking the expected SHA (or a zero-argument
+callable returning it) as a **parameter**, and let `scripts/record_deploy.py` stay a thin entry point
+that constructs the concrete reader and passes it in. That satisfies both constraints at once — the
+logic sits inside the coverage floor, and **no new cross-layer import is created at all**.
+🟩 **The seam already exists:** `surfaces/dashboard/github_builds.py:37` declares a `GitHubReader`
+**Protocol** (`latest_main_image_build`) separate from the concrete adapter at `:45`, so a fake
+satisfies it in a test without touching the network.
 
 **3 · What happens when GitHub cannot be read?** Token missing, API down, rate-limited. **Decide
 explicitly** and say so: refuse (safe, but blocks a legitimate deploy record during a GitHub
@@ -125,11 +144,14 @@ is a reporting-integrity fix.
 🪤 **Shape validation is not the fix.** The SHA that broke this was perfectly well-formed. A 40-hex
 check would have passed it. The check has to be against the *build*.
 
-🪤 **`scripts/` may be outside the coverage floor.** S178 added `scripts/sweep_divergence_flags.py`
-and `make ci` still reported 100.00 %, so scripts appear to be excluded. **Assumed, not verified.**
-If the logic lives only in `scripts/`, it may be untestable under the floor — which is a reason to
-put the *testable* part in a module and keep `scripts/` a thin entry point. Check the coverage
-config before deciding where the code goes.
+🪤 **`scripts/` IS outside the coverage floor — this is no longer an assumption.** 🟩 **Measured
+2026-09-03:** `pyproject.toml:239` reads
+`source = ["kernel", "contracts", "agents", "orchestration", "surfaces"]` — **`scripts` is not in that
+list** — while `:253` sets `fail_under = 100.00`. So **logic placed in `scripts/` is invisible to the
+floor**: it can ship untested and `make ci` will still print 100.00 %. 🚨 **This is what puts decision 2
+in tension with itself** — "put the check in `scripts/`" and "prove it under the 100 % floor" cannot
+both be satisfied by the same lines. Resolve it as decision 2 now recommends: testable logic in a
+module, `scripts/record_deploy.py` a thin wiring entry point.
 
 🪤 **Do not "fix" the bad record on the spine.** It is superseded and the log is append-only.
 Deleting it would be the same class of move DL-44 prohibits.
@@ -152,14 +174,14 @@ docs/sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md i
 writing anything. Read CLAUDE.md. Read docs/INDEX.md before opening any docs folder.
 
 WHAT IS WRONG
-scripts/record_deploy.py trusts the --git-sha it is handed. orchestration/deploy_record.py:27-31
+scripts/record_deploy.py trusts the --git-sha it is handed. orchestration/deploy_record.py:26-30
 validates only that tag/sha/actor are non-empty strings - no shape check, no cross-check.
 
 This produced a wrong record today, 2026-08-18. The s179 deploy was recorded with
 --git-sha $(git rev-parse HEAD), but HEAD had moved ONE DOCS-ONLY COMMIT past 4c8eeb0, the commit
 the images were built from. The record named 8fbf3a41, a commit never built into any image.
 
-That matters because surfaces/dashboard/projections_currency.py:61 does
+That matters because surfaces/dashboard/projections_currency.py:60 does
   evidence["main_matches_record"] = sha == build.git_sha
 where sha is the record's git_sha and build.git_sha is the head SHA of the newest successful
 build-images.yml run on main. With the wrong SHA recorded the dashboard reports the fleet "behind"
@@ -174,9 +196,16 @@ WHAT TO DO
    was perfectly well-formed and would have passed.
 4. Reuse the EXISTING client: surfaces/dashboard/github_builds.py GitHubActionsReader
    .latest_main_image_build(). Do not write a second GitHub client.
-5. Put the check in the TOOLING layer (scripts/record_deploy.py). Putting it in
-   orchestration/deploy_record.py would make orchestration import surfaces - check the
-   import-linter contracts before you choose.
+5. Placement. MEASURED 2026-09-03: .importlinter has four contracts and NONE forbids
+   orchestration -> surfaces, so lint-imports will not stop you putting this in orchestration/.
+   Do not read a green lint-imports as permission. ALSO MEASURED: scripts/ is NOT in
+   [tool.coverage.run] source (pyproject.toml:239) while fail_under = 100.00 (:253), so logic in
+   scripts/ is invisible to the coverage floor and can ship untested at a green 100.00%.
+   Those two facts together: put the TESTABLE verification in a module taking the expected SHA
+   (or a callable returning it) as a PARAMETER, and keep scripts/record_deploy.py a thin entry
+   point that builds the concrete reader and passes it in. No new cross-layer import, and the
+   logic sits inside the floor. The seam exists already: surfaces/dashboard/github_builds.py:37
+   declares a GitHubReader Protocol, separate from the adapter at :45, so a fake satisfies it.
 6. Decide explicitly what happens when GitHub cannot be read (refuse, or record with
    sha_verified=false). A silent pass is NOT an option - that is the current behaviour.
 7. Prove with the real values from today: (s179, 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43) must be
@@ -186,9 +215,11 @@ WHAT TO DO
 CONSTRAINTS
 - Do NOT delete or edit the bad DeployRecord on the spine. It is superseded by a corrected record
   appended at 07:56:29 and the log is append-only. Do not add a delete path.
-- scripts/ appears to be excluded from the 100% coverage floor (S178 added a script and CI still
-  read 100.00%) - VERIFY that, and keep the testable logic in a module with scripts/ a thin entry
-  point if so.
+- scripts/ is excluded from the 100% coverage floor - measured, see step 5. Do not put logic you
+  cannot test there.
+- Repo files are LF, not CRLF. Do not convert or reflow line endings, and do not let an editor do
+  it: a delegated agent did exactly that on 2026-09-02 and reported the conversion as a fix
+  (DL-148). Check `git diff -w` shows no whole-file rewrites before handing back.
 - A script run from a git worktree silently gets the in-memory store, because a worktree has no
   .env. Copy the refuse-on-in-memory guard from scripts/sweep_divergence_flags.py. NEVER copy .env
   into a worktree.

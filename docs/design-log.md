@@ -104,26 +104,29 @@ silently changing an identifier is worse than a known collision. Filed as doc hy
 proved that ambient `HEAD` can move after the image build. A deploy record is only useful if it names
 the commit the image workflow actually built.
 
-**Decision 1 — verify and refuse on mismatch (existence-and-identity, not recency).**
+**Decision 1 — verify and refuse on mismatch (tag existence-and-identity, not recency).**
 Keep `--git-sha` required. Before writing the append-only `DeployRecord`, query GitHub Actions for
-`build-images.yml` runs whose `head_sha` equals the given SHA and whose `status` is `success`. If
-none is found, exit non-zero naming the given SHA. This is an existence-and-identity check: it asks
-"was this SHA ever built?" not "is it the newest build?". The `s194` / `e0a144f` case (measured
-2026-09-03) disproves a recency rule — `75027b6` was a newer successful build from a docs commit,
-meaning a recency check would refuse the correct record for the fleet actually running. Only the
-existence check handles both the ordinary case and the rollback case correctly.
+successful `build-images.yml` runs that produced the tag being recorded; the given SHA must be one
+of those runs' `head_sha` values. If it is absent, exit non-zero naming the given SHA and the
+accepted build SHAs for that tag. This asks "did this successful build produce this deploy tag?"
+not merely "was this SHA ever built?" and not "is this the newest build?". The `s194` / `e0a144f`
+case (measured 2026-09-03) disproves a recency rule — `75027b6` was a newer successful build from a
+docs commit, meaning a recency check would refuse the correct record for the fleet actually running.
+Only tag-scoped existence-and-identity handles both ordinary deploys and rollback records correctly.
 
-**Decision 2 — placement: testable module, thin entry point.** The verification logic lives in
-`orchestration/deploy_verify.py` (inside the coverage floor) as `verify_build_sha()`, accepting a
-`GitHubBuildChecker` Protocol as an injected parameter. `scripts/record_deploy.py` remains a thin
-wiring entry point: it constructs a `GitHubActionsReader` (extended with `sha_has_successful_build`)
-and passes it in. This creates no `orchestration → surfaces` import and keeps the logic fully tested.
-The `GitHubReader` Protocol at `surfaces/dashboard/github_builds.py:37` is the existing seam.
+**Decision 2 — placement: covered writer guard, injected reader, thin entry point.** The covered
+verification logic lives beside the append-only writer as `record_verified_deploy()` in
+`orchestration/deploy_record.py`, accepting a local `BuildReader` Protocol as an injected parameter.
+`scripts/record_deploy.py` remains a thin wiring entry point: it builds the existing dashboard
+GitHub reader and passes it in. This creates no `orchestration → surfaces` import and keeps the
+behavior inside the coverage floor. The `GitHubReader` Protocol in `surfaces/dashboard/github_builds.py`
+is extended on the existing client; no second GitHub client is introduced.
 
-**Decision 3 — GitHub unreadable: record with sha_verified=False.** If the GitHub token is absent,
-the API is down, or the read times out, record the deploy with `sha_verified=False`. This is honest:
-the currency projection can distinguish a verified record from an asserted one. A silent pass is not
-an option — that is the current behaviour and it is what this sprint exists to remove.
+**Decision 3 — GitHub unreadable: fail closed.** If the GitHub token is absent, the API is down, the
+read times out, or no successful run can be associated with the tag, refuse the write. The current
+dashboard vocabulary treats `DeployRecord` as verified currency evidence; an asserted record would
+need separate projection semantics before it is safe. A silent pass is not an option — that is the
+current behaviour and it is what this sprint exists to remove.
 
 **Tag scope.** The SHA guard does not replace fleet/tag verification. The deploy procedure must still
 prove every app and the dispatcher job are on the intended tag before recording; tag mismatch remains
@@ -140,9 +143,10 @@ a `/check-fleet`/deploy-procedure concern rather than an inference made from Git
   unmatchable. The check must be existence-and-identity, not recency.
 - **Put GitHub verification inside `orchestration.deploy_record` via a dashboard import.** Rejected
   because dependency injection is the right seam; crossing the layer boundary buys nothing.
-- **Fail closed when GitHub is unreadable.** Rejected: it blocks a legitimate deploy record during a
-  GitHub outage. Recording with `sha_verified=False` is the honest degraded path and still improves
-  over silent trust.
+- **Accept any successful build for the SHA, regardless of tag.** Rejected because it proves the
+  commit reached `build-images.yml` but not that it produced the tag now being recorded.
+- **Write an asserted record when GitHub cannot be read.** Rejected for this sprint because it would
+  make a verified evidence label carry an unverified claim.
 
 ---
 

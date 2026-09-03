@@ -50,6 +50,27 @@ The correctness defect it exposed — peer replies dead-lettered under concurren
 of whether we need the speed**, though it can only manifest at K > 1. Nor is 84.3 s durable: it is a
 function of model and `effort`, both tunable, so it will move again. **Re-measure before quoting.**
 
+🚨 **CORRECTION, same day — the token figures above are not tokens.** Reading
+`kernel/llm_ledger.py` for S173 showed `tokens_in` / `tokens_out` are written by
+`_rough_tokens(value) = max(1, len(value.split()))` (`:114`) — **a word count**, and
+`_digest`/`_rough_tokens` are fed `prompt=user` (`agents/deliberator/agent.py:139`), so the figure
+covers **only the user message and excludes the system prompt entirely**. So "≈ 5,800 in / 1,280 out
+per order" is *words in the user half*, and real billed tokens are **higher on both counts** — English
+runs roughly 1.3 tokens per word before the system prompt is added back. **The latency and call-count
+measurements above are unaffected**; only the token/cost figures are, and they are understated.
+
+🚨 **This is not local to this entry.** The `/audit-costs` skill prices LLM spend from these same
+`LLMCall` rows, so **every LLM cost this project has reported is a systematic underestimate**. Filed
+as a work-queue item. 🪰 The fix is not simply multiplying by 1.3: the honest source is the API's
+own `usage` (`input_tokens`, `output_tokens`, and the cache fields), which the adapters currently
+discard.
+
+🪰 **And it weakens a law clause.** `DLIB-IDM-02` says outputs are *"bounded by role, model, max
+rounds, **prompt hashes**, response hashes, and timestamps"*. Since the hash covers the user string
+only, **two calls with identical `prompt_hash` can have had different system prompts** — which is
+exactly what a compiled-prompt change (DL-42) would do. The bound is real but narrower than it reads,
+and S173's replay must say so rather than treat hash equality as whole-context equality.
+
 **Three things measured in passing, each worth its own line.**
 
 1. 🟩 **The 4096-token cap is not biting.** Across the last **95** deliberation calls the largest

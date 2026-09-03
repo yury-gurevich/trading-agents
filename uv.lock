@@ -3256,7 +3256,7 @@ wheels = [
 
 [[package]]
 name = "trading-agents"
-version = "0.94.5"
+version = "0.94.6"
 source = { virtual = "." }
 dependencies = [
     { name = "cryptography" },

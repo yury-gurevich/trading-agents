@@ -86,7 +86,7 @@ class DebateResult:
     verdict: Verdict
 
 
-def _render(proposition: Proposition, transcript: tuple[Turn, ...]) -> str:
+def render_debate_prompt(proposition: Proposition, transcript: tuple[Turn, ...]) -> str:
     """Build the shared user context: the proposition + the debate so far."""
     lines = [
         f"DECISION UNDER TEST: {proposition.decision}",
@@ -128,7 +128,7 @@ def debate_turn(
     system = prompts.defender if role == "defender" else prompts.challenger
     text = llm.complete(
         system=system,
-        user=_render(proposition, transcript),
+        user=render_debate_prompt(proposition, transcript),
         tool_schema={},
     ).strip()
     if not text:
@@ -149,7 +149,7 @@ def judge_verdict(
     try:
         raw = llm.complete(
             system=prompts.judge,
-            user=_render(proposition, transcript),
+            user=render_debate_prompt(proposition, transcript),
             tool_schema={},
         )
     except LLMCompletionStoppedError as exc:

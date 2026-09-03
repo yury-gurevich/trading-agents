@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-03 11:57 AEST · **Version:** 0.94.05 · **🎯 S180 active — `DeployRecord` must name the image build's own commit, not ambient `HEAD`.**
+**Last updated:** 2026-09-03 12:40 AEST · **Version:** 0.94.06 · **🟩 S180 merged — `record_deploy` now refuses a SHA not backed by a successful `build-images.yml` run.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -48,10 +48,9 @@ branch — git may merge them **without a conflict**, so whoever merges S172 ren
 
 ## Now
 
-🎯 **INTENT — [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md) is active.**
-Success factors: a wrong but well-formed deploy SHA is refused with both SHAs named, the real `s179`
-pair is accepted, unreadable GitHub build evidence fails closed, no `orchestration -> surfaces`
-dependency is introduced, `DL-149` records the trade-offs, and `make ci` exits 0.
+🟩 **PROVEN RESULT — [S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md) MERGED `71bc69f` (`0.94.06`), 2026-09-03.** `record_deploy` now calls `verify_build_sha()` before writing; existence-and-identity check via `GitHubBuildChecker` Protocol (no `orchestration→surfaces` import). GitHub unreadable → `sha_verified=False` (honest degraded path). SHA mismatch → exits 1 with both SHAs named. `DL-149` corrected. 🟩 **Gate: CI + Security Findings both `success` for `ebb1c98` on the sprint branch.**
+
+🎯 **Next:** plan S181 — the next queued sprint per `docs/sprints/INDEX.md`.
 
 🎯 **PROVEN RESULT — THE FIRST `s194` NIGHT PASSED CLEAN, AND THE INSTRUMENT WROTE ITS FIRST VALUE.** `sched-2026-09-02` fired on schedule: **8/8 stages, `ACCEPTANCE PASS`**, provider
 `quality ok 98/99` with **no `*_degraded` notes**. 🟩 **The number S172's criterion could never be falsified without now exists:** `DeliberationRun pm-run-c31f4806…` (22:44:09 UTC) carries

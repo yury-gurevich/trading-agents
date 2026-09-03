@@ -457,17 +457,43 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-03, before the first code change.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(fill)* | | | |
+| the replay harness | `agents/deliberator/laws/laws.md` + `test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | **DLIB-OBS-01** (⬜, test `_tbd_`) | **Yes, twice.** (1) OBS-01 is **unproven** — the harness is not *relying* on a proven claim, it is the **first test of it**. (2) Reading `kernel/deliberation.py:89` showed the `user` string is `_render(proposition, transcript)`, and for **`defender:r1` the transcript is empty** — so that one turn is reconstructible from graph state *alone*. That is now the step-0 assertion, because it isolates `build_veto_context` from transcript fidelity |
+| the reproducibility metric | same | **DLIB-IDM-02** (⬜, test `_tbd_`) | **Yes.** The clause's bound is **narrower than it reads** — see contradictions below |
+| batch cost reporting | same | **DLIB-OBS-02** (⬜, test `_tbd_`) | **Yes.** Attribution is real, but the *quantity* is a word count — work-queue item 43. Part B's cost figures must come from the API's `usage`, not from `LLMCall` |
+| `_render` / digest parity | `docs/laws/conventions.md` | — | The digest must be **the same function** the ledger uses, not a re-implementation, or step 0 proves only that two hash functions agree |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(fill — and state which branch of decision 1 you took)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
+**No new clause is owed as specced** — no `contracts/` type changes, and the harness is a read-only
+derivation. 🚨 **But the sprint is not law-neutral:** all three clauses it touches are **⬜ with test
+`_tbd_`**, so S173 is the first thing to prove them. That owes the *proving* half of the cycle —
+clause IDs cited in the test docstrings (conventions §3), the `_tbd_` rows in `test-plan.md` replaced
+with real test names, and the rollup recomputed in **both** `docs/laws/ledger.md` and
+`docs/laws/INDEX.md`. 🪤 The rollup is derived — let `make ci` tell you the number.
+**Decision 1 branch taken:** *not yet taken — recorded here at handback.*
 
-**Contradictions found between a law and this spec:** *(fill)*
+**Contradictions found between a law and this spec:**
+🚨 **One, and it is material.** `DLIB-IDM-02` says LLM outputs are *"bounded by role, model, max
+rounds, **prompt hashes**, response hashes, and timestamps"*. Measured: `agents/deliberator/agent.py:139`
+passes **`prompt=user`** to `record_llm_call`, so `prompt_hash` is `sha256` of the *user* string only
+and **does not cover the system prompt** (`kernel/llm_ledger.py:110`). Two calls with identical
+`prompt_hash` can therefore have had **different system prompts** — precisely what a compiled-prompt
+change ([DL-42](../design-log.md)) does. The bound is real but narrower than the clause reads.
+**Not treated as a law defect to fix in this sprint** — the clause is LOCKED and the honest response
+is a `drift-register.md` row plus scoping step 0's claim to the user half. Filed accordingly.
 
-**Laws found silent where a decision was needed:** *(fill)*
+**Laws found silent where a decision was needed:**
+**One.** No clause says whether a *derivation* over `DeliberationRun` may write anything back. The
+prohibition this sprint works under (`the harness writes nothing`) is a **spec invariant and an S160
+convention, not a law**. Recorded here rather than assumed; if decision 1 persists the figure, that
+silence is what a new `DLIB-OBS-05` would fill.
 
-**Clauses that were ⬜ and are now proven:** *(fill)*
+**Clauses that were ⬜ and are now proven:** *(fill at handback — candidates are DLIB-OBS-01 via
+step 0, DLIB-IDM-02 via the reproducibility metric, and DLIB-OBS-02 only if Part B's cost reporting
+uses the API's own `usage` rather than the ledger's word counts.)*
 
 ---
 

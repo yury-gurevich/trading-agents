@@ -40,6 +40,7 @@ def test_record_deploy_appends_and_exact_replay_dedupes() -> None:
         "git_sha": "abc123",
         "deployed_at": "2026-07-09T02:03:00+00:00",
         "actor": "operator",
+        "sha_verified": True,
     }
 
 

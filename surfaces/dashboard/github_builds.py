@@ -95,6 +95,36 @@ class GitHubActionsReader:
         except (KeyError, TypeError, ValueError):
             raise GitHubReadError("GitHub build response was incomplete") from None
 
+    def sha_has_successful_build(self, sha: str) -> bool | None:
+        """Return True if SHA heads a successful build run, False if none, None on err.
+
+        Existence-and-identity check: asks whether this exact SHA was ever built, not
+        whether it is the newest build. A newer successful build for a different commit
+        does not affect the answer.
+        """
+        workflow = quote(self._workflow, safe="")
+        url = (
+            f"https://api.github.com/repos/{self._repository}/actions/workflows/"
+            f"{workflow}/runs?head_sha={sha}&status=success&per_page=1"
+        )
+        request = Request(  # fixed GitHub HTTPS origin.
+            url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {self._token}",
+                "X-GitHub-Api-Version": "2026-03-10",
+            },
+        )
+        try:
+            with self._opener(request, timeout=self._timeout) as response:
+                payload = cast("dict[str, object]", json.load(response))
+        except (HTTPError, URLError, TimeoutError, ValueError):
+            return None
+        runs = payload.get("workflow_runs")
+        if not isinstance(runs, list):
+            return None
+        return len(runs) > 0
+
 
 def build_github_reader(
     settings: DashboardSettings, environ: Mapping[str, str] | None = None

@@ -21,6 +21,7 @@ def record_deploy(
     git_sha: str,
     actor: str,
     deployed_at: datetime | None = None,
+    sha_verified: bool = True,
 ) -> Node:
     """Append one verified deployment fact without changing earlier records."""
     clean_tag = tag.removeprefix(":").strip()
@@ -41,5 +42,6 @@ def record_deploy(
             "git_sha": clean_sha,
             "deployed_at": timestamp,
             "actor": clean_actor,
+            "sha_verified": sha_verified,
         },
     )

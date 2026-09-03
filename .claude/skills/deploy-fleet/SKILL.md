@@ -106,6 +106,14 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    `DeployRecord` is the dashboard's currency evidence; never backfill a tag or SHA
    from inference.
 
+   🚨 **The script now verifies the SHA against GitHub Actions before writing.** Pass
+   the full SHA of the commit the images were built from (the `head_sha` in the
+   `build-images.yml` run), not `$(git rev-parse HEAD)` — HEAD may have moved since the
+   build. If the SHA has no successful `build-images.yml` run the script exits non-zero
+   and names the rejected SHA. If `GITHUB_TOKEN` is absent the record is written with
+   `sha_verified=False` (honest degraded path). A refusal is not a broken tool — it means
+   the SHA you passed was never built.
+
 Full re-provisioning (env/secret/scale changes, new apps) is **not** this skill — that is
 `pwsh infra/deploy-agents.ps1 up -Tag <tag>`, which re-runs alembic + Service Bus routes too.
 

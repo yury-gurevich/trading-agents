@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-02 19:20 AEST · **Version:** 0.94.05 · **🟩 Fleet on `s194` by full `up` — the orphan-count instrument is live, and tonight's run writes the first value it has ever had.**
+**Last updated:** 2026-09-03 11:40 AEST · **Version:** 0.94.05 · **🟩 The orphan-count instrument recorded its first value ever — `orphaned_reply_count=0`, on a clean 8/8 `s194` night.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -42,20 +42,21 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
 cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
 **`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
-🟠 **It has recorded nothing yet.** The first value arrives from **tonight's 22:30 UTC run**; a quiet night writes `0`, which is itself the first datapoint S172 has ever had. 🚨 Two hazards stand from verifying, neither
+🟩 **It has now recorded:** `sched-2026-09-02` wrote **`orphaned_reply_count=0`** — the first datapoint S172's criterion has ever had (*Now*). 🚨 Two hazards stand from verifying, neither
 in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
 branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
 
 ## Now
 
-🎯 **PROVEN RESULT — THE FIRST UNATTENDED SCHEDULED RUN SINCE THE DEPLOY PASSED, WITH THE VETO ACTUALLY BINDING.** `sched-2026-09-01` fired on schedule on `s191`: **8/8 stages, `ACCEPTANCE PASS`**.
-PM approved **2 buys** (USB, AMD) of 29 candidates; the deliberator ran **2 real debates** with `failed_open_count=0` and **vetoed both**; execution recorded `deliberation_status=`**`applied`** — plain, not
-`applied_failed_open` and not `proceeded_unvetoed` — and **submitted 0**. The fleet returned to rest on its own, 16/16 at `minReplicas=0`. 🟠 **Item 32's success factor is still not met as written**
-— it asked for **zero** new mismatch faults on the first run after deploy and got **2**. 🚨 **But my first two readings of those 2 were both wrong, and the second would have deleted live data**
-([DL-147](design-log.md) corrects [DL-146](design-log.md)). Measured to the second: the sweep warned at **22:30:42**, and the refresh wrote `filled` at **22:30:58** — **16 s later, in the same run**.
-The head-of-run sweep reads stop liveness **before** the run refreshes it, so the warning is **transient and self-correcting**, fires once per stop that fired since the last run, and will not recur.
-🟩 **S190 is right and working** — `active_broker_stop_orders` returns exactly the **26** live stops. 🪤 I filed item 42 on `Fill.status='pending'`, which **all 47** stops carry — the [DL-73](design-log.md)
-trap again; the real prop is `broker_status`. **Item 42 rewritten**: the residue is item 20's original point, that the check compares a type against a lifecycle.
+🎯 **PROVEN RESULT — THE FIRST `s194` NIGHT PASSED CLEAN, AND THE INSTRUMENT WROTE ITS FIRST VALUE.** `sched-2026-09-02` fired on schedule: **8/8 stages, `ACCEPTANCE PASS`**, provider
+`quality ok 98/99` with **no `*_degraded` notes**. 🟩 **The number S172's criterion could never be falsified without now exists:** `DeliberationRun pm-run-c31f4806…` (22:44:09 UTC) carries
+**`orphaned_reply_count=0`** beside `real_debate_count=2` and `failed_open_count=0` — **every earlier run on the spine reads `<ABSENT>`**, so this is the first datapoint, and it is the quiet-night `0`
+[S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) predicted. 🟩 **The veto bound for a second night:** PM approved **2 buys** (AMD, USB) of 30 scored, the deliberator ran
+**2 real debates** and **vetoed both** (`revise`), execution recorded `deliberation_status=`**`applied`** and **submitted 0**; the fleet returned to rest on its own, **16/16 on `s194` at `minReplicas=0`**.
+🪰 **`deliberation_posture=advisory` with `blocked_count=0` in that record is not a veto being ignored** — `drop_vetoed` strips vetoed tickers **before** posture is consulted
+(`agents/execution/pm_execution.py:57-63`); posture governs only the no-artifact branch, so an advisory posture and a binding veto are not in contradiction. 🟩 **[DL-147](design-log.md)'s prediction held,
+and item 32's success factor is met on this run:** **zero** new faults of any kind — the newest on the spine are still the two `BrokerStopIdentityMismatch` warnings at `2026-09-01T22:30:42/47`. No stop
+fired (0 submitted), so the transient 16-second staleness warning did not recur, exactly as the corrected reading said it would not. 🟠 Item **42** still stands: the check compares a type against a lifecycle.
 
 🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
 (`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked

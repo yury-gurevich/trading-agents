@@ -7944,7 +7944,7 @@ refactor can be done later against a guard that already exists.
 
 ---
 
-## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: OPEN (found 2026-08-07 while executing the flatten chore)
+## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: CLOSED by S163 (`425aa6d`, `0.89.01`, 2026-08-07 — the same day it was found); LIVE PROOF STILL OWED
 
 **Found at the baseline step of [chore-flatten-and-resize](sprints/chore-flatten-and-resize.md), before
 anything was changed.** The chore was packaged to flatten the book by raising
@@ -8036,6 +8036,27 @@ stop for each `sold_ticker` *before* `run_submit`, recording the cancellation fa
   divergence can cost real money.
 - **Lower the stop thresholds out of the way instead of cancelling.** Rejected: it neither frees
   `qty_available` nor removes the opposite-side conflict, and it quietly disarms risk control.
+
+### Correction 2026-09-04 — this was fixed the day it was filed, and the header said OPEN for 28 days
+
+**The fix shipped as [S163](sprints/sprint-163-an-exit-cancels-its-own-stop.md)** (`425aa6d`,
+`0.89.01`, 2026-08-07): `cancel_stops_for_exits` (`agents/execution/exit_stops.py:47`) cancels the
+resting stop of every ticker this run exits, and `settle_stops` (`:25`) sequences it *between*
+`reconcile_broker_stops` and `place_broker_stops`, before `run_submit`. It returns only the tickers
+whose fact actually flipped to `cancelled`, so a failed cancel leaves the position protected — the
+graph/broker divergence this entry refused to manufacture by hand. **Only the status line was never
+updated**, so a closed defect has been readable as open ever since; found while listing open debt.
+
+**Measured live 2026-09-04, and the physical condition is unchanged — correctly.** 26 positions, **26**
+resting `sell stop` orders, `qty_available = 0` on **26 of 26**. That is what a fully protected book
+looks like; the defect was never the reservation, it was submitting an exit into it.
+
+🪤 **But the fixed path has still never executed in production.** Of **21** filled sells since
+2026-08-07, **20 are `stop` fills** — the broker's own resting stop firing — and the twenty-first is
+the 08-07 flatten `limit`. **Zero PM-approved exits have ever reached the broker**, so
+`cancel_stops_for_exits` has never run outside its tests. **Every share this book has ever sold was
+sold by a stop, not by a decision** — which is [DL-58](design-log.md)'s *"a green run that could only
+buy"* surviving its own fix, and it makes the sell half of the pipeline unproven end to end.
 
 ---
 

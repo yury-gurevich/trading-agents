@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-195-the-beta-cap-has-never-fired`
 **Status:** BUILT
-**Version:** next available PATCH at merge — `0.94.08`
+**Version:** next available PATCH at merge — `0.94.08`, plus `0.94.09` for the image fix below
 **Effort:** S
 **Decisions:** [`DL-151`](../design-log.md) — where the benchmark ticker is owned, and the two
 routes rejected to get it to the provider.
@@ -176,9 +176,11 @@ TOTAL   15660   0   3364   0   100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
 ```
 
+**The first merge broke the dispatcher image, and the smoke test caught it.** `0.94.08` merged green on CI, CodeQL and Security Findings, then `build-images.yml` failed: `place_run_request` now imports `ScannerSettings`, and the slim dispatcher image copies `agents/scanner/__init__.py` and `universe.py` but not `settings.py`. The calendar-skip smoke (`DISPATCHER_AS_OF=2026-07-04`, expecting `skipped sched-2026-07-04`) exited 1. Fixed in `0.94.09` by the missing `COPY`, and the guard that could not have caught it was replaced: `test_dispatcher_image_copies_everything_its_entrypoint_imports` now reads the entrypoints' imports transitively instead of checking a hardcoded list.
+
 **Guards planted:** test 8 pins the *broken* shape (`max_beta` in `skipped_filters`, never in
 `survived_filters`, when the snapshot carries no benchmark), so a future regression to an empty
-series fails a test instead of passing silently for 59 runs.
+series fails a test instead of passing silently for 59 runs. The Dockerfile guard was verified by removing the new `COPY` line — `AssertionError: dispatcher image omits imported modules: ['agents/scanner/settings.py']` — then restoring it and re-running green.
 
 **Module line counts:** `contracts/provider.py` **231**, `orchestration/start.py` **132**,
 `agents/provider/poll.py` **101**, `agents/provider/ingest.py` **174**,

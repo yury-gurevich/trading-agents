@@ -238,6 +238,40 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         ],
         must_output=("no workflow run exists",),
     ),
+    FailureCase(
+        name="gate-ran-judges-the-newest-attempt-not-the-first",
+        why=(
+            "2026-09-04: Security Findings failed at 11:35:53 because CodeQL had "
+            "not yet marked alert #178 fixed; a re-dispatch concluded success and "
+            "the script still reported NOT PROVEN off the dead first attempt. A "
+            "regression must show as a *newer* failure, never a stale one"
+        ),
+        files={
+            f"scripts/{PROBE_PREFIX}_rerun.json": (
+                '{"total_count": 3, "workflow_runs": ['
+                '{"name": "CI", "status": "completed", "conclusion": "success",'
+                ' "run_started_at": "2026-09-04T11:30:00Z", "id": 1},'
+                '{"name": "Security Findings", "status": "completed",'
+                ' "conclusion": "success",'
+                ' "run_started_at": "2026-09-04T11:35:00Z", "id": 2},'
+                '{"name": "Security Findings", "status": "completed",'
+                ' "conclusion": "failure",'
+                ' "run_started_at": "2026-09-04T11:45:00Z", "id": 3}'
+                "]}" + chr(10)
+            )
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/assert_gate_ran.py",
+            "--sha",
+            "0000000000000000000000000000000000000000",
+            "--runs-json",
+            f"scripts/{PROBE_PREFIX}_rerun.json",
+        ],
+        must_output=("concluded 'failure'",),
+    ),
 )
 
 INVARIANTS: tuple[Invariant, ...] = (

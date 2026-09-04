@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-195-the-beta-cap-has-never-fired`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** next available PATCH at merge — `0.94.08`, plus `0.94.09` for the image fix below
 **Effort:** S
 **Decisions:** [`DL-151`](../design-log.md) — where the benchmark ticker is owned, and the two
@@ -134,7 +134,7 @@ already-declared field actually requested. No law-cycle needed; no clause text t
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/AppData/Local/Temp/wt-s195`,
 branch `sprint-195-the-beta-cap-has-never-fired`, `.env` **no** (the worktree has none — the unit
@@ -189,7 +189,19 @@ series fails a test instead of passing silently for 59 runs. The Dockerfile guar
 **`make ci`:** redirected to a file, exit code **0**. 2474 passed, 6 skipped, coverage 100.00 %.
 pip-audit: no known vulnerabilities. detect-secrets: passed, untracked scan passed.
 
-**`make gate-ran`:** pending — recorded at merge in `docs/STATE.md`.
+**`make gate-ran`:** run from `C:/Users/yury_/AppData/Local/Temp/wt-main`, whose `HEAD` matched the
+printed SHA:
+
+```text
+GATE PROVEN for 92597aa305180c2a047ccc54010cdb29c0a2f7c0:
+  Security Findings: success
+  CI: success
+  CodeQL: success
+  Build and push agent images: success
+```
+
+The first merge (`6b82092`, `0.94.08`) is green on CI, CodeQL and Security Findings but **failed**
+`build-images.yml`; `92597aa` (`0.94.09`) is the commit where all four are green.
 
 **Not met / verified failing:** the fix is **not yet observed in the fleet**. The running images are
 `:s194`; until a deploy retags them, production still scans without a benchmark. The first deployed

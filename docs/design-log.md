@@ -8,6 +8,75 @@ and is marked CLOSED here.
 
 ---
 
+## DL-154 - The judge's gate objections, measured: two are wrong, and our rendering is why - status: MEASURED (2026-09-04)
+
+**Item 47 filed four claims from the deliberator's vetoes of `USB` and `AVGO` on
+`verify-2026-09-04-s196-earnings`, on the rule "verify each claim before building anything."
+All four are now measured against the live book and the gate reports.**
+
+### (a) and (b) - REFUTED. The correlation gate did its job.
+
+The judge argued `correlated_cluster_pct` rendered `cluster_issuers=AVGO` **alone** -- "a
+self-referential test that measures no correlation" -- and that USB's `{BAC,USB}` cluster **omits
+co-held `C` and `SCHW`**, leaving the rate-sensitive factor load unmeasured.
+
+Measured on 120 trading days to 2026-09-03 (Alpaca daily closes, split-adjusted), against the
+deployed threshold of **0.70**:
+
+| pair | correlation | overlap | in cluster? |
+| --- | --- | --- | --- |
+| USB ~ BAC | **0.7639** | 120 | yes -- correctly |
+| USB ~ C | 0.5650 | 120 | no -- correctly |
+| USB ~ SCHW | 0.3180 | 120 | no -- correctly |
+| AVGO ~ NVDA | 0.4739 | 120 | no -- correctly |
+| AVGO ~ INTC | 0.4988 | 120 | no -- correctly |
+
+Every pair had the **full 120-bar overlap**, so `min_correlation_bars=60` was never the binding
+constraint and no pair went unevaluated -- had one, `_unevaluated_pair`
+(`agents/portfolio_manager/domain/correlation.py:92`) would have returned a `not_evaluated` outcome
+instead of a cluster, which is the S183 attestation working. **`C` and `SCHW` were measured and are
+simply not correlated with USB at 0.70 over this window.** A cluster of one is the correct answer.
+
+🚨 **But the judge's mistake was caused by our rendering, which makes this a real defect anyway.**
+`cluster_issuers=AVGO` is **indistinguishable from a check that never ran**. The detail string names
+the cluster and never says how many held issuers were examined, so "evaluated 27, none above 0.70"
+and "evaluated nothing" render identically. That is [S183](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)'s
+skipped-vs-passed defect and [DL-152](design-log.md)'s *producer knew something it never said*, now in
+a **third** gate -- and this time it cost a veto and two nights of not trading.
+
+### (c) - CONFIRMED, and understated.
+
+The same gate report shows `target_pct=0.1000; stop_pct=0.0500` for **both** USB (a bank) and AVGO
+(a semiconductor); `stop_target_mode` is `"flat"` (`agents/analyst/settings.py:140`), and the sizing
+gate is `position_value / portfolio_value` against a flat 0.01 with **no volatility term**. Measured
+betas across the 26 held names run **XOM -0.97 to INTC 3.35** -- wider than the -0.70..3.19 the judge
+cited. 🟩 **The fix is already built and dormant:** S150's scaled mode ([DL-77](design-log.md)),
+off by default, promotion pending. This is a **promotion decision on evidence, not a sprint** -- and
+DL-77 names the trap: widen the stop without the target and AMD/MRVL/HPE silently stop passing the
+reward-risk gate.
+
+### (d) - CONFIRMED as description; it is the design, not a defect.
+
+`resolve_order_tolerance` (`agents/execution/order_tolerance.py:81`) builds the limit price purely
+from `intent.est_price` plus `order_price_tolerance_bps` -- **flat, 50 bps** -- and nothing fetches a
+live quote at submit. So the order is anchored to the decision price. 🪤 **That is what a limit order
+is for:** if the market moved more than 0.5 %, the order does not fill, which is protection rather
+than staleness. The open question is whether 50 bps flat is the right band, which is
+[DL-76](design-log.md) -- challenger shipped S149, off by default, promotion pending.
+
+### What this changes
+
+**Item 47 is not a sprint.** It is one small observability fix -- the correlation gate must report how
+many issuers it evaluated -- plus two **promotion decisions** on challengers that already exist.
+
+🎯 **And it is the first time the judge has been wrong.** It had been right twice (the missing beta
+certification, the unevaluated earnings window), which is exactly why the "verify before building"
+rule was attached to this item. Two sprints would have been spent on a gate that was working. 🪤 The
+lesson is not that the judge is unreliable: **it read the evidence we gave it correctly, and the
+evidence was ambiguous.** Fix the rendering and the objection disappears on its own.
+
+---
+
 ## DL-153 - S172 merges as a dial at K=1; the fan-out itself is still unproven - status: DECIDED (2026-09-04)
 
 **The question.** S172 was built, gate-proven and left unmerged for two weeks because its K=4

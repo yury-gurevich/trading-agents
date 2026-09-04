@@ -92,9 +92,22 @@ def _merge_parts(
         sentiment={k: v for p in parts for k, v in p.sentiment.items()},
         sectors={k: v for p in parts for k, v in p.sectors.items()},
         earnings={k: v for p in parts for k, v in p.earnings.items()},
+        earnings_horizon_days=_merged_earnings_horizon(parts),
         quality=quality,
         provenance=provenance,
     )
+
+
+def _merged_earnings_horizon(parts: tuple[MarketData, ...]) -> int | None:
+    """The horizon shared by every chunk, or None if any chunk could not claim one.
+
+    The batch is one unit downstream, so a single degraded chunk makes the whole
+    earnings map unsafe to read as complete.
+    """
+    horizons = {part.earnings_horizon_days for part in parts}
+    if len(horizons) != 1:
+        return None
+    return horizons.pop()
 
 
 def ingest_chunked(

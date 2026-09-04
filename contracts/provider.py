@@ -63,6 +63,12 @@ class DataQualityTrace(_Frozen):
 
 class MarketData(_Frozen):
     bars: tuple[OHLCVBar, ...]
+    earnings_horizon_days: int | None = None
+    """How many days ahead the ``earnings`` map covers, or None when unknown.
+
+    A number here means the map is *complete* for that horizon: a ticker absent from it
+    has no earnings inside those days, which is a fact, not a gap. None means the feed
+    was not requested or came back degraded, and absence proves nothing."""
     benchmark: tuple[OHLCVBar, ...] = ()
     """Benchmark-ticker OHLCV when ``benchmark`` was requested; the substrate for the
     analyst relative-strength signal. Degraded independently of candidate quality."""

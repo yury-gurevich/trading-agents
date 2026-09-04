@@ -8,6 +8,49 @@ and is marked CLOSED here.
 
 ---
 
+## DL-152 - An earnings map that covers 30 days should say so, and a gate should be allowed to answer - status: DECIDED (2026-09-04)
+
+**Raised by what survived S195.** With `max_beta` finally evaluating (20/20 candidates, AMD dropped
+at beta 3.186), the deliberator still vetoed both approved buys on `verify-2026-09-04-s195-beta`, and
+its reasoning had narrowed to a single clause: *"earnings_window was skipped, not passed - USB was
+never tested against an earnings date"*. Four nights, zero submissions.
+
+**Measured, 2026-09-04.** `finnhub_earnings_lookahead_days` is **30**; `earnings_exclusion_days` is
+**5**. The provider asks Finnhub for earnings inside 30 days per ticker, and on `sched-2026-09-03`
+got 6 dates for 99 tickers with `quality.notes` empty - the correct answer, not a degraded feed. A
+ticker absent from that map therefore has no earnings for 30 days, which certainly means none within
+5. `evaluate_filters` nonetheless filed all **20 of 20** absences under `skipped`, so a proven answer
+was reported in the same words as total ignorance.
+
+**Decided.** The producer states the scope of what it produced: `MarketData.earnings_horizon_days`.
+A number means the map is complete for that horizon; `None` means absence proves nothing. The scanner
+treats absence as a **pass** only when the declared horizon **strictly exceeds** the exclusion window.
+This is S177's principle applied one level up - there, every number named its unit; here, a map names
+its coverage.
+
+**The claim is withheld far more often than it is made.** Unrequested feed, any `earnings_degraded`
+note, or a chunked ingest where a single chunk could not claim a horizon - all yield `None`. A
+degraded earnings feed produces gaps that look exactly like "no earnings due", and reading those as a
+pass would certify risk nobody measured. The skip was over-cautious; a false pass would be dishonest
+in the direction that loses money.
+
+**Ruled out.**
+
+- *Let the scanner assume 30 days.* Agents are islands, so it cannot read provider settings, and a
+  second hardcoded copy is the PARAM-divergence class of work-queue item 33 - wrong the moment the
+  tunable moves, and silently.
+- *Write a sentinel date for "none due".* Puts a fabricated fact in a data map and forces every
+  consumer to learn the sentinel. Coverage is metadata about the map, not a member of it.
+- *Treat absence as a pass unconditionally.* The failure mode this repo exists to avoid.
+
+**The shape of both S195 and S196 is the same defect twice.** In each case a producer knew something
+(SPY's bars; the earnings horizon) that a consumer needed, and simply never said it - and in each
+case the consumer's silence was read downstream as "unverified" rather than "unstated". Worth
+watching for a third instance: the question to ask of any gate that reports `skipped` is whether
+somebody upstream already knows the answer.
+
+---
+
 ## DL-151 - The beta cap's denominator travels as run state, not as a second declaration - status: DECIDED (2026-09-04)
 
 **Raised by a three-night no-trade streak.** `sched-2026-09-01`, `-02` and `-03` each approved two

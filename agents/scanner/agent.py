@@ -102,6 +102,7 @@ class ScannerAgent(AgentBase):
             market.earnings,
             window.end,
             self._settings,
+            market.earnings_horizon_days,
         )
         candidates = rank_survivors(survivors, cap=self._settings.candidate_cap)
         provenance = write_scan(

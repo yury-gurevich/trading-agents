@@ -109,6 +109,7 @@ class ProviderAgent(AgentBase):
             sink=self.sink,
             quality=quality,
             benchmark_ticker=data_request.benchmark_ticker,
+            earnings_lookahead_days=self._settings.finnhub_earnings_lookahead_days,
         )
         provenance = write_market_snapshot(
             self._graph,
@@ -124,6 +125,7 @@ class ProviderAgent(AgentBase):
             sentiment=optional.sentiment,
             sectors=optional.sectors,
             earnings=optional.earnings,
+            earnings_horizon_days=optional.earnings_horizon_days,
             quality=optional.quality,
             provenance=provenance,
         )

@@ -8,6 +8,54 @@ and is marked CLOSED here.
 
 ---
 
+## DL-151 - The beta cap's denominator travels as run state, not as a second declaration - status: DECIDED (2026-09-04)
+
+**Raised by a three-night no-trade streak.** `sched-2026-09-01`, `-02` and `-03` each approved two
+orders and submitted none, with byte-identical deliberator verdicts `{'AMD': 'revise', 'USB':
+'revise'}`. The judge's stated ground was that `max_beta` and `earnings_window` were **skipped, not
+passed**, so it would not certify gap or beta risk.
+
+**Measured, 2026-09-04.** `max_beta` has been evaluated **0 times across 59 stored `ScanRun` nodes**
+and skipped 112 times. The gate is implemented and wired; what is missing is its denominator. The
+persisted snapshot carries `benchmark = ()` because `MARKET_FIELDS` never requested the field, and
+the deployed scanner reads that snapshot rather than fetching its own series. The data itself was
+always there - probed live, `SPY: 143 bars`. AMD's real beta over that window is **3.2877** against a
+cap of **2.5**, so with a benchmark it would have been dropped at the scanner and never reached the
+PM.
+
+**Decided.** The scanner owns the benchmark ticker, because it owns the gate the ticker is the
+denominator of. The value travels to the provider as **run state** - a `benchmark_ticker` prop on the
+`RunRequest`, stamped by orchestration, read by the provider's poll. This is not a new mechanism: it
+is exactly how the analyst's `required_history_bars` and `lookback_days` already reach the provider,
+and `DataRequest.benchmark_ticker` already existed in the contract, unused.
+
+**Ruled out.**
+
+- *Let the scanner fetch its own benchmark in the poll path*, mirroring what the in-process agent
+  already does. Rejected: the poll path exists so the provider container need not be alive (DL-08).
+  Giving the scanner a live provider RPC, or its own data credential, trades one measurable gate for
+  a structural regression.
+- *Give the provider its own `benchmark_ticker` setting.* Rejected: two agents would declare the same
+  value independently, which is the PARAM divergence class work-queue item 33 already tracks. Agents
+  are islands, so the provider cannot read `ScannerSettings` - but that argues for passing the value,
+  not for copying it.
+- *Fetch the benchmark once per chunk.* Rejected on cost: one series serves the whole batch, so only
+  the first chunk asks for it and `_merge_parts` keeps the first non-empty one.
+
+**Left open, deliberately.** The `earnings_window` half of the same veto is **not** a data defect.
+The provider looks 30 days ahead; the scanner excludes names reporting within 5. Absence from the
+earnings map therefore *proves* no earnings inside the exclusion window, yet the filter records SKIP
+rather than PASS. That is a labelling change to `evaluate_filters`, filed separately so it does not
+ride along with a contract change. Until it lands, expect the deliberator to keep objecting: one
+gate certified is not two.
+
+**A standing lesson.** Every unit test and every local run was green throughout, because the
+in-process path fetches the benchmark itself and only the graph-pull path was broken. Two code paths
+to the same data, one of which is production, is how a gate goes 59 runs without ever firing and
+nothing turns red.
+
+---
+
 ## DL-150 - The per-order debate cost is 84 s, not 124 s, and S172's trigger no longer follows from it - status: MEASURED (2026-09-03)
 
 **Raised by the operator asking a different question** — whether debate quality had ever been measured

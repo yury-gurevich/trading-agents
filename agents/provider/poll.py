@@ -18,6 +18,7 @@ from agents.provider.ingest import ingest_once
 from contracts.positions import open_position_tickers
 from contracts.provider import (
     MARKET_DATA_LABEL,
+    RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
@@ -50,6 +51,7 @@ def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
         _union(tickers, open_position_tickers(agent._graph)),
         run_id=str(node.props["run_id"]),
         lookback_days=_lookback_days(node),
+        benchmark_ticker=_benchmark_ticker(node),
     )
     assert market_key is not None  # the dispatcher always places a non-empty universe
     market_node = agent._graph.get_node(MARKET_DATA_LABEL, market_key)
@@ -59,6 +61,20 @@ def ingest_run_node(node: Node, *, agent: ProviderAgent) -> None:
 
 def _union(left: tuple[str, ...], right: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(dict.fromkeys((*left, *right)))
+
+
+def _benchmark_ticker(node: Node) -> str | None:
+    """The beta benchmark this run declared, or None when it named none.
+
+    The ticker is the scanner's to own (it is the denominator of its beta cap);
+    the dispatcher stamps it on the RunRequest so the provider can ingest the
+    series without importing another agent's settings. Absent or blank means the
+    run asked for no benchmark, which costs the beta cap and nothing else.
+    """
+    raw = node.props.get(RUN_REQUEST_BENCHMARK_TICKER_PROP)
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    return raw.strip().upper()
 
 
 def _lookback_days(node: Node) -> int:

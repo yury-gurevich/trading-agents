@@ -23,6 +23,7 @@ from agents.provider.ingest import (
     _with_cached_sectors,
     _write_market_data,
     _write_regime_context,
+    with_benchmark_field,
 )
 from agents.provider.store import write_market_snapshot
 from contracts.feed_notes import is_degraded_feed_note
@@ -105,6 +106,7 @@ def ingest_chunked(
     delay_seconds: float,
     lookback_days: int,
     fields: tuple[str, ...] = MARKET_FIELDS,
+    benchmark_ticker: str | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str | None:
     """Fetch *universe* in paced chunks, reassemble one batch, write it once.
@@ -117,13 +119,21 @@ def ingest_chunked(
     """
     if not universe:
         return None
+    fields = with_benchmark_field(fields, benchmark_ticker)
     window = _today_window(lookback_days)
     chunks = _chunks(universe, chunk_size)
     parts: list[MarketData] = []
     for index, chunk in enumerate(chunks):
+        # One benchmark series serves the whole batch, so only the first chunk
+        # asks for it; _merge_parts keeps the first non-empty one.
         parts.append(
             agent._get_market_data(
-                DataRequest(tickers=chunk, window=window, fields=fields)
+                DataRequest(
+                    tickers=chunk,
+                    window=window,
+                    fields=fields,
+                    benchmark_ticker=benchmark_ticker if index == 0 else None,
+                )
             )
         )
         if index < len(chunks) - 1:

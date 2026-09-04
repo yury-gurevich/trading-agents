@@ -112,6 +112,11 @@ def test_ingest_fields_full_by_default_ohlcv_only_when_flagged() -> None:
     """DL-29: the fast-mode flag narrows the requested fields to OHLCV only."""
     assert _ingest_fields(ProviderSettings()) == MARKET_FIELDS
     assert _ingest_fields(ProviderSettings(ingest_ohlcv_only=True)) == ("ohlcv",)
+    assert _ingest_fields(ProviderSettings(), "SPY") == (*MARKET_FIELDS, "benchmark")
+    assert _ingest_fields(ProviderSettings(ingest_ohlcv_only=True), "SPY") == (
+        "ohlcv",
+        "benchmark",
+    )
 
 
 def _recent_bars() -> tuple[OHLCVBar, ...]:

@@ -8,6 +8,64 @@ and is marked CLOSED here.
 
 ---
 
+## DL-153 - S172 merges as a dial at K=1; the fan-out itself is still unproven - status: DECIDED (2026-09-04)
+
+**The question.** S172 was built, gate-proven and left unmerged for two weeks because its K=4
+measurement failed its own bar. The queue's standing refusal was *"a good sample of an intermittent
+failure is not proof of absence."* What changed is that the reason to merge stopped being speed.
+
+**The speed case is gone.** [DL-150](design-log.md) re-measured per-order debate cost at **72.5-84.3 s**,
+not the 124 s the item rested on, so serial deliberation fits the deployed 1,800 s grace to **21**
+orders and breaches at **22**. Recent nights approved 2, 2, 9, 7. S172's own build trigger -- *serial
+cost at the target funnel width exceeds the grace* -- is therefore met only if the target is >=22,
+which is an operator decision and not a measurement.
+
+**So what merges is the option, not the behaviour.** `debate_concurrency` is `tunable(4, ge=1, le=25)`;
+`main` had no such setting at all, so K=1 is not merely the low end of the dial, it is the entire
+pre-merge world. The deployed value ships as **1** in `trading_tunables.json`, which is the status quo
+behaviourally, and raising it becomes a deliberate pack edit plus an `up`.
+
+🚨 **The branch would have deployed K=4 on the next full `up`.** It already carried
+`DELIBERATOR_DEBATE_CONCURRENCY: "4"` in the tunables pack -- easy to miss at the end of the block,
+and found only because a duplicate key printed the wrong value back. That is the one configuration
+K>1 has never been proven in: **1.78x of a possible 4x** ([DL-145](design-log.md)), and on the earlier
+of two runs **6 dead-lettered peer replies** with 2 of 15 orders failing open ([DL-140](design-log.md)).
+The second run was clean, which is why the failure is *intermittent and not disproven* rather than
+fixed. **Merging the code while deploying the unproven value would have converted a parked risk into a
+live one, silently.**
+
+**What the merge cost, recorded because the next stale branch will cost the same.** The branch forked
+at `2f4ff82`, **52 commits** behind, before S191/S193/S194/S195/S196. Since item 39's fix set
+`required_status_checks.strict`, a branch cannot land until it is rebuilt on current `main` and green
+**on that union** -- the gate proves a SHA, and a merge creates a tree no head ever had. Five real
+conflicts, one of them semantic: S172 replaced the per-order `for` loop with a `review_approved_orders`
+batch while S194 wrapped that same loop in an `orphaned_reply_count` before/after delta. Both survive;
+the baseline is read before the batch, which keeps it a per-run delta under fan-out. The **`v1.2` law
+collision STATE predicted did conflict** rather than interleaving silently -- S194's v1.2 stands,
+S172's is renumbered **v1.3**.
+
+🪤 **A rollup written by arithmetic was wrong and the gate caught it.** I resolved the ledger to
+**14 / 52** by adding S172's four greens to main's ten; `check_law_coverage.py` derived **15 / 52** and
+refused the commit. The generated number is the number.
+
+**Ruled out.**
+- *Merging at K=4 to "get the measurement in production"* -- a nightly scheduled run is not a harness,
+  and an intermittent fail-open reaching real orders is the failure mode the veto exists to prevent.
+- *Leaving it unmerged until K>1 is proven* -- the position the queue held for two weeks. Rejected on
+  the cost now visible: the rebase grew from 8 commits to 52, and the law collision it accumulated was
+  found by STATE only because someone wrote it down. Branch rot is not free.
+- *Pinning the deployed value in a test* (`== "4"`, as the branch did) -- makes every operator change a
+  code edit, which is exactly what `trading_tunables.json` exists to avoid ([DL-63](design-log.md)
+  correction, same day). The test now asserts the pack *carries* the key -- the DL-100 invariant -- and
+  validates the value through `DeliberatorSettings`.
+
+**What is still owed.** K>1 is unproven, not shipped-and-broken. `orphaned_reply_count` (S194) now
+records on every `DeliberationRun`, so the intermittency can be **counted across nights** instead of
+chased with one-off K=4 harnesses -- which is the instrument [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md)
+was re-scoped around and the reason S194 went first.
+
+---
+
 ## DL-152 - An earnings map that covers 30 days should say so, and a gate should be allowed to answer - status: DECIDED (2026-09-04)
 
 **Raised by what survived S195.** With `max_beta` finally evaluating (20/20 candidates, AMD dropped

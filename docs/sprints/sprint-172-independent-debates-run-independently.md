@@ -4,7 +4,9 @@
 **Closes:** the scaling half of [DL-103](../design-log.md) · **Opens from:**
 [DL-105](../design-log.md) · **Type:** feat ·
 **Target version:** next available **MINOR** at merge — **do not pin it in this file** ·
-**Branch:** `sprint-172-independent-debates-run-independently`
+**Branch:** `sprint-172-k4-on-s190` (rebuilt on `s190`; the original
+`sprint-172-independent-debates-run-independently` is superseded) ·
+**Status:** MERGED — `3f29c1e`, `0.95.00`, 2026-09-04
 
 > Handover to a delegated coding agent. Everything under **Measured** was read off the live spine or
 > the deployed fleet on 2026-08-11. Everything marked **Assumed** has **not** been verified — check
@@ -268,6 +270,35 @@ CONSTRAINTS
 ```
 
 ## Closeout — evidence
+
+**Result 2026-09-04: MERGED as `3f29c1e` (`0.95.00`) — as a dial at K=1, not as a fan-out.**
+The K=4 success factors below were **never met** and are not claimed: `debate_concurrency` merges as
+an available, bounded setting whose **deployed value is 1**, which is the pre-merge behaviour. See
+[DL-153](../design-log.md) for the decision and what it ruled out.
+
+- 🟩 **Gate:** `make ci` exit 0 — **2501 passed, 6 skipped, 100.00 %**; `GATE PROVEN` for
+  `11480913228f8736e8498144ead019fb5d6070da`, printed SHA checked against `HEAD`, nothing above it,
+  `security/findings-baseline.json` untouched, MINOR bump correct (`0.94.10` → `0.95.00`).
+- 🚨 **The deployed value was changed at merge.** The branch shipped
+  `DELIBERATOR_DEBATE_CONCURRENCY: "4"` in `trading_tunables.json`, so the next full `up` would have
+  deployed the one configuration K>1 has never been proven in. The pack now ships **1**, with the
+  reason in its own `_measured` note. 🪤 Found only because a duplicate JSON key printed the wrong
+  value back — filed as work-queue item **48**, since nothing checks for a shadowed key.
+- 🪤 **A branch test pinned the number** (`== "4"`). The [DL-100](../design-log.md) invariant is that
+  the pack *carries* the key so a full `up` cannot silently revert it, not that it holds any one
+  value; pinning made every operator change a code edit. It now validates through
+  `DeliberatorSettings`, proven by planting `0` (two tests red, then green).
+- 🪤 **Catch-up merge, 52 commits.** Forked at `2f4ff82`, before S191/S193/S194/S195/S196. Five real
+  conflicts; the semantic one was S172's `review_approved_orders` batch against S194's
+  `orphaned_reply_count` before/after delta around the same loop — both kept, baseline read before
+  the batch so it stays a per-run delta under fan-out. The **`v1.2` law collision did conflict**
+  rather than interleaving: S194's v1.2 stands, S172's renumbered **v1.3**, rollup **15 / 52** — a
+  figure written as 14 by arithmetic and refused by `check_law_coverage.py`.
+- 🟠 **Still owed:** K>1 is unproven, not shipped-and-broken. S194's `orphaned_reply_count` now
+  records on every `DeliberationRun`, so the intermittent fail-open can be counted across nights
+  rather than chased with one-off harnesses — the instrument S192 was re-scoped around.
+
+*[original closeout follows, written when the branch was unmergeable]*
 
 **Result:** built, deployed, and branch-gated; **not mergeable yet** because the required live K=4
 measurement could not be produced while the OpenAI account is out of credits. This is the exact

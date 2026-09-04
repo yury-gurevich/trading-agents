@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any
 
@@ -37,7 +38,7 @@ class GateOutcome(_Frozen):
     @classmethod
     def _accept_historical_passed(cls, data: Any) -> Any:  # noqa: ANN401
         """Normalize pre-S184 ``passed`` payloads into the tri-state field."""
-        if not isinstance(data, dict) or "outcome" in data or "passed" not in data:
+        if not isinstance(data, Mapping) or "outcome" in data or "passed" not in data:
             return data
         normalized = dict(data)
         normalized["outcome"] = (

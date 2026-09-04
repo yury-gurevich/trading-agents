@@ -40,6 +40,7 @@ def apply_filters(
     earnings: dict[str, date],
     as_of: date,
     settings: ScannerSettings,
+    earnings_horizon_days: int | None = None,
 ) -> tuple[tuple[Survivor, ...], FilterTrace]:
     """Apply the filter chain; emit survivors, drop counts, and per-ticker verdicts."""
     grouped = _group_bars(bars)
@@ -58,7 +59,9 @@ def apply_filters(
             )
             continue  # no bars to compute features from — bypass cannot rescue it
         features = _features(ticker_bars, benchmark_bars, earnings, as_of, settings)
-        fired, passed, skipped = evaluate_filters(features, settings)
+        fired, passed, skipped = evaluate_filters(
+            features, settings, earnings_horizon_days
+        )
         if fired is None:
             verdicts.append(
                 FilterVerdict(

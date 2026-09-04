@@ -19,6 +19,12 @@ if TYPE_CHECKING:
 __all__ = ["BusPeerClient", "PeerClient", "ServiceBusPeerClient"]
 
 
+def orphaned_reply_count_from(peer_client: object) -> int:
+    """Return a peer client's cumulative orphan count when it exposes one."""
+    value = getattr(peer_client, "orphaned_reply_count", 0)
+    return value if isinstance(value, int) else 0
+
+
 class PeerClient(Protocol):
     """Transport-neutral manager port for one debate-turn request."""
 
@@ -44,6 +50,11 @@ class BusPeerClient:
     def preflight(self, recipients: tuple[str, ...]) -> None:
         """Local in-process peers are addressable through the injected bus."""
         del recipients
+
+    @property
+    def orphaned_reply_count(self) -> int:
+        """Return no late replies for the local in-process peer transport."""
+        return 0
 
     def debate_turn(
         self, recipient: str, request: DebateTurnRequest

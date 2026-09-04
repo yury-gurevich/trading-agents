@@ -51,6 +51,7 @@ def scan_market_node(
         market.earnings,
         window_end,
         settings,
+        market.earnings_horizon_days,
     )
     candidates = rank_survivors(survivors, cap=settings.candidate_cap)
     provenance = write_scan(

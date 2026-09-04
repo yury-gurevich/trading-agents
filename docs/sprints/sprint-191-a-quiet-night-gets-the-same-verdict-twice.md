@@ -3,10 +3,10 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-191-a-quiet-night-gets-the-same-verdict-twice`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
-**Decisions:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md) the veto gates buys, never exits · `DL-140` (take it, then re-check at merge) · work-queue item 38
+**Decisions:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md) the veto gates buys, never exits · `DL-141` (take it, then re-check at merge) · work-queue item 38
 
 > **Why this bump kind.** No new capability. `EXEC-OBS-04` already promises that acceptance severity
 > follows the posture, and the acceptance view cannot deliver it: it reds a run whose every artefact
@@ -157,7 +157,7 @@ consistent one: it cannot be reproduced on demand, so it trains the reader to di
 
 ## The design decisions this sprint has to make
 
-**Record these in `docs/design-log.md` as `DL-140` with their rejected alternatives BEFORE
+**Record these in `docs/design-log.md` as `DL-141` with their rejected alternatives BEFORE
 implementing (LAW-06).**
 
 1. **What makes `not_required` attributable?** My recommendation is *"no buy intent in the linked
@@ -173,7 +173,7 @@ implementing (LAW-06).**
    more specific value is warranted, name it — but check it does not break the `oneof ("ok",)` check
    shape.
 
-🪤 **Take the next free DL number (`DL-140`), then re-check it at merge.** The log has historic
+🪤 **Take the next free DL number (`DL-141`), then re-check it at merge.** The log has historic
 duplicates and entries are prepended *and* appended. A branch cut before another DL lands will
 collide even when the number was free at branch time.
 
@@ -195,7 +195,7 @@ collide even when the number was free at branch time.
 ## Steps, in order
 
 1. **Read the laws** (MUST RULE above) and write the Law reading record.
-2. **Record the design decisions** in `docs/design-log.md` as `DL-140`.
+2. **Record the design decisions** in `docs/design-log.md` as `DL-141`.
 3. **Plant the failing test first** (test A1) and watch it fail. Paste the red output.
 4. **Implement.**
 5. **Law cycle** if owed — otherwise record the answer and the `EXEC-OBS-04` reading that justifies it.
@@ -222,20 +222,20 @@ matching the convention the existing tests in that file already follow.
 
 ## Success factors
 
-- [ ] A `not_required` advisory run with **no approved buy** produces no acceptance breach (A1).
-- [ ] A **sells-only** `not_required` advisory run produces no breach (A2).
-- [ ] A `not_required` advisory run **with an approved buy** still breaches (A3) — stated explicitly,
+- [x] A `not_required` advisory run with **no approved buy** produces no acceptance breach (A1).
+- [x] A **sells-only** `not_required` advisory run produces no breach (A2).
+- [x] A `not_required` advisory run **with an approved buy** still breaches (A3) — stated explicitly,
       because this is the invariant the obvious fix destroys.
-- [ ] Both orderings of the incident give the same verdict (A4).
-- [ ] No change to `applied`, `applied_failed_open`, `proceeded_unvetoed`, or the `binding` branch (A5).
-- [ ] No `contracts/` change, no graph-vocabulary change, no new env key or tunable — stated as
+- [x] Both orderings of the incident give the same verdict (A4).
+- [x] No change to `applied`, `applied_failed_open`, `proceeded_unvetoed`, or the `binding` branch (A5).
+- [x] No `contracts/` change, no graph-vocabulary change, no new env key or tunable — stated as
       observed, so the deploy stays an image-only retag.
-- [ ] Design decisions recorded as `DL-140` with rejected alternatives.
-- [ ] Law cycle done, or the law-cycle question answered No **with the `EXEC-OBS-04` wording that
+- [x] Design decisions recorded as `DL-141` with rejected alternatives.
+- [x] Law cycle done, or the law-cycle question answered No **with the `EXEC-OBS-04` wording that
       justifies it**, plus a `DRIFT-056` row if the law is silent.
-- [ ] Every new guard planted, watched to fail, restored — stated per guard.
-- [ ] Every touched module < 200 lines.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] Every new guard planted, watched to fail, restored — stated per guard.
+- [x] Every touched module < 200 lines.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
@@ -333,7 +333,7 @@ wording and record your answer.
 
 ORDER OF WORK.
 1. Read laws, write the Law reading record.
-2. Record the design decisions in docs/design-log.md as DL-140, WITH the rejected alternatives.
+2. Record the design decisions in docs/design-log.md as DL-141, WITH the rejected alternatives.
    Re-check the number is still free when you merge — the log has historic duplicates.
 3. Write the FAILING TEST FIRST and paste the red output before implementing.
 4. Implement. 5. Guards. 6. make ci. 7. Fill the handback sections.
@@ -411,15 +411,24 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `orchestration/packs/trading_deliberation_view.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `EXEC-OUT-09`; `EXEC-OBS-04` | Yes. `EXEC-OUT-09` explicitly includes `not_required` in the execution status vocabulary, while `EXEC-OBS-04` requires posture-aligned acceptance severity without enumerating statuses. The fix belongs in the orchestration reader, not execution or contracts. |
+| `orchestration/tests/test_trading_deliberation_posture.py` | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `EXEC-OUT-09`; `EXEC-OBS-04` | Yes. New tests must cite both clause IDs in docstrings and preserve the buy-intent invariant rather than treating every `not_required` as acceptable. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
+No. This sprint changes how `orchestration/` interprets facts execution already writes. It does not change `contracts/`, add an `ExecutionRun` field, add graph vocabulary, or add a new execution-agent guarantee. `EXEC-OUT-09` already declares `not_required`; `EXEC-OBS-04` already requires advisory/binding acceptance severity to follow the recorded posture.
+
 **Contradictions found between a law and this spec:**
+
+None.
 
 **Laws found silent where a decision was needed:**
 
+None requiring a drift row. `EXEC-OBS-04` does not enumerate allowed advisory statuses or omit `not_required`; it states the posture-severity rule. `DRIFT-056` was therefore not filed at law-read.
+
 **Clauses that were ⬜ and are now proven:**
+
+None at law-read. `EXEC-OUT-09` and `EXEC-OBS-04` are already green in `agents/execution/laws/test-plan.md`; this sprint adds regression coverage for the orchestration reader.
 
 ---
 
@@ -427,55 +436,152 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
+| A1 | `test_not_required_advisory_with_no_approved_buy_is_attributed` | `orchestration/tests/test_trading_deliberation_not_required.py` | 🟩 passed | `EXEC-OUT-09`; `EXEC-OBS-04` |
+| A2 | `test_not_required_advisory_sell_only_run_is_attributed` | `orchestration/tests/test_trading_deliberation_not_required.py` | 🟩 passed | `EXEC-OUT-09`; `EXEC-OBS-04` |
+| A3 | `test_not_required_advisory_with_approved_buy_still_breaches` | `orchestration/tests/test_trading_deliberation_not_required.py` | 🟩 passed | `EXEC-OUT-09`; `EXEC-OBS-04` |
+| A4 | `test_quiet_advisory_ordering_statuses_share_verdict[not_required/applied]` | `orchestration/tests/test_trading_deliberation_not_required.py` | 🟩 passed | `EXEC-OUT-09`; `EXEC-OBS-04` |
+| A5 | `test_existing_advisory_statuses_stay_attributed[...]`; `test_binding_branch_still_uses_coverage_and_fail_open_checks` | `orchestration/tests/test_trading_deliberation_not_required.py` | 🟩 passed | `EXEC-OUT-09`; `EXEC-OBS-04` |
 
 **Tests added beyond the plan:**
+
+`test_not_required_advisory_with_unreadable_pm_payload_still_breaches` covers the defensive path:
+an unreadable linked `PMRun.order_intent_set` is not treated as "no buys".
 
 ---
 
 ## Closeout — evidence
 
-**Status:**
+**Status:** BUILT locally on branch `sprint-191-a-quiet-night-gets-the-same-verdict-twice`.
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents`,
+branch `sprint-191-a-quiet-night-gets-the-same-verdict-twice`; `.env` present: `True`. Proofs were
+unit/full-gate checks and printed no secret values.
 
-**Result:**
+**Result:** `orchestration/packs/trading_deliberation_view.py` now reads the linked PMRun's existing
+`order_intent_set`, derives the approved-buy count, and attributes advisory `not_required` only when
+approved buys are zero. Zero-order and sell-only quiet runs pass; a `not_required` run with an
+approved buy still breaches as `buy_veto_missing`. `applied`, `applied_failed_open`,
+`proceeded_unvetoed`, and binding checks stay unchanged.
 
-**Files changed:**
+**Files changed:** `orchestration/packs/trading_deliberation_view.py`;
+`orchestration/tests/test_trading_deliberation_not_required.py`; `docs/design-log.md`;
+`docs/STATE.md`; `docs/sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md`;
+`pyproject.toml`; `uv.lock`.
 
-**Design decisions:** recorded as `DL-140` —
+**Design decisions:** recorded as `DL-141` — `not_required` is attributable iff the linked PMRun has
+zero approved buys; the buy count is computed at the traversal boundary and passed into the pure
+attribution helper; the buy-skipped breach is named `buy_veto_missing`. Rejected alternatives:
+global `not_required` allow-listing, `submitted == 0`, `approved_count == 0`, a new `ExecutionRun`
+property, and importing execution's `has_buy`.
 
 **Proof — the red run first:**
 
 ```text
+uv run pytest orchestration/tests/test_trading_deliberation_posture.py --no-cov
+collected 14 items
+orchestration\tests\test_trading_deliberation_posture.py FFFF..........  [100%]
+
+FAILED test_not_required_advisory_with_no_approved_buy_is_attributed
+E   AssertionError: assert 'missing' == 'ok'
+FAILED test_not_required_advisory_sell_only_run_is_attributed
+E   AssertionError: assert 'missing' == 'ok'
+FAILED test_not_required_advisory_with_approved_buy_still_breaches
+E   AssertionError: assert 'missing' == 'buy_veto_missing'
+FAILED test_quiet_advisory_ordering_statuses_share_verdict[not_required]
+E   Left contains one more item: Breach(stage='deliberation', key='advisory_attribution',
+E   detail="missing not in ('ok',)", severity='fail')
+4 failed, 10 passed in 1.08s
 ```
 
 **Proof — the green run:**
 
 ```text
+uv run pytest orchestration\tests\test_trading_deliberation_not_required.py orchestration\tests\test_trading_deliberation_posture.py orchestration\tests\test_trading_acceptance_deliberation.py --no-cov
+19 passed in 2.74s
+
+uv run ruff check orchestration\packs\trading_deliberation_view.py orchestration\tests\test_trading_deliberation_not_required.py orchestration\tests\test_trading_deliberation_posture.py
+All checks passed!
+
+uv run ruff format --check orchestration\packs\trading_deliberation_view.py orchestration\tests\test_trading_deliberation_not_required.py orchestration\tests\test_trading_deliberation_posture.py
+3 files already formatted
 ```
 
-**Guards planted:**
+**Guards planted:** Broke buy detection by counting `sell` instead of `buy`; A3 failed:
 
-**Module line counts:**
+```text
+uv run pytest orchestration/tests/test_trading_deliberation_posture.py::test_not_required_advisory_with_approved_buy_still_breaches --no-cov
+E   AssertionError: assert 'ok' == 'buy_veto_missing'
+1 failed in 1.07s
+```
 
-**`make ci`:** redirected to `<path>`. Exit code . , coverage . pip-audit . detect-secrets .
+Restored the comparison and re-ran the focused suite green. A1/A2/A4 were also observed red before
+implementation in the first planted run above. The defensive unreadable-payload branch was added
+after coverage showed it uncovered; it proves invalid PM payloads still breach instead of being
+misread as no-buy.
 
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**Module line counts:** `orchestration/packs/trading_deliberation_view.py` 167 lines;
+`orchestration/tests/test_trading_deliberation_not_required.py` 167 lines;
+`orchestration/tests/test_trading_deliberation_posture.py` unchanged by final diff and below the
+hard cap. Scoped module-size proof exited 0 with warn-only rows for the two touched Python files.
+
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s191-ci.txt`. Exit code `0`;
+coverage `100.00 %`; pip-audit clean; detect-secrets clean.
+
+```text
+$p = Join-Path $env:TEMP 's191-ci.txt'; make ci > $p 2>&1; $code = $LASTEXITCODE
+exit=0
+
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+1045 files already formatted
+uv run mypy kernel contracts agents orchestration surfaces
+Success: no issues found in 859 source files
+uv run lint-imports
+Contracts: 4 kept, 0 broken.
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+[WARN] law coverage: 101 clause(s) have no test-plan row (assertion E warn-only)
+uv run python scripts/check_param_law_sync.py
+uv run pytest
+TOTAL                                                     15559      0   3342      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+2444 passed, 4 skipped in 232.88s (0:03:52)
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 1 new file(s)
+```
+
+**`make gate-ran`:** Pending branch commit, push, and remote workflow completion. Do not amend only
+to paste that output after the final SHA is proven; that would create a new unproven SHA. Run from
+`C:\Users\yury_\Downloads\project\trading-agents` after pushing and check the printed SHA against
+`git rev-parse HEAD`.
 
 ```text
 ```
 
-**Not met / verified failing:**
+**Not met / verified failing:** Branch push and remote `make gate-ran` proof are pending at this
+closeout checkpoint. No live spine query, fleet retag/deploy, or broker-side proof was attempted.
 
 ---
 
 ## Return notes
 
--
--
--
+- The view is still keyed on an existing `DeliberationRun`; if no `DeliberationRun` exists at all,
+  the deliberation stage view is absent and the separate acceptance-stage absence check owns that
+  failure. Confirmed out of scope here.
+- No `contracts/` path changed; `git diff --name-only -- contracts orchestration\packs\trading_graph_vocabulary.json`
+  returned no paths. No graph vocabulary, env key, or tunable changed.
+- First full `make ci` failed on module size after the new tests made
+  `test_trading_deliberation_posture.py` 234 lines; the tests were split into
+  `test_trading_deliberation_not_required.py`. Second full `make ci` failed at 99.98 % coverage on
+  the defensive invalid-payload branch; the unreadable-payload test corrected it. Final `make ci`
+  passed.
+- Version bumped PATCH: `pyproject.toml` `0.94.02` -> `0.94.03`; `uv lock` updated
+  `trading-agents v0.94.2 -> v0.94.3`.
+- Deploy implication remains image-only retag for this sprint's diff, but re-check the vocabulary
+  hash at deploy time as the spec says.

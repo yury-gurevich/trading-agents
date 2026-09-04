@@ -30,15 +30,33 @@ if TYPE_CHECKING:
 MARKET_FIELDS = ("ohlcv", "news", "fundamentals", "sectors", "earnings_calendar")
 
 
-def _ingest_fields(settings: object) -> tuple[str, ...]:
+def _ingest_fields(
+    settings: object, benchmark_ticker: str | None = None
+) -> tuple[str, ...]:
     """Fields to request per ingest.
 
     OHLCV-only fast mode (DL-29) skips the per-ticker Finnhub enrichment the
-    acceptance does not need; otherwise all fields.
+    acceptance does not need; otherwise all fields. The benchmark series rides
+    along in both modes when the run names one: it is a single extra OHLCV call,
+    and without it the scanner's beta cap has no denominator to gate on.
     """
-    if getattr(settings, "ingest_ohlcv_only", False):
-        return ("ohlcv",)
-    return MARKET_FIELDS
+    ohlcv_only = getattr(settings, "ingest_ohlcv_only", False)
+    base = ("ohlcv",) if ohlcv_only else MARKET_FIELDS
+    return with_benchmark_field(base, benchmark_ticker)
+
+
+def with_benchmark_field(
+    fields: tuple[str, ...], benchmark_ticker: str | None
+) -> tuple[str, ...]:
+    """Add the benchmark field when a benchmark ticker was named.
+
+    Naming a ticker without requesting the field fetches nothing, which is how the
+    beta cap went unevaluated in every deployed run; keeping the two together here
+    means no caller can name one without asking for the other.
+    """
+    if not benchmark_ticker or "benchmark" in fields:
+        return fields
+    return (*fields, "benchmark")
 
 
 def universe_from_env() -> tuple[str, ...]:
@@ -117,6 +135,7 @@ def ingest_once(
     run_id: str | None = None,
     *,
     lookback_days: int,
+    benchmark_ticker: str | None = None,
 ) -> str | None:
     """Fetch all data fields for *universe*, write them to the graph, return the key.
 
@@ -130,7 +149,7 @@ def ingest_once(
     if not universe:
         return None
     key_id = run_id or uuid.uuid4().hex
-    fields = _ingest_fields(agent._settings)
+    fields = _ingest_fields(agent._settings, benchmark_ticker)
     chunk_size = getattr(agent._settings, "ingest_chunk_size", 0)
     if chunk_size and chunk_size > 0 and len(universe) > chunk_size:
         from agents.provider.ingest_chunked import ingest_chunked
@@ -143,12 +162,14 @@ def ingest_once(
             delay_seconds=agent._settings.ingest_chunk_delay_seconds,
             fields=fields,
             lookback_days=lookback_days,
+            benchmark_ticker=benchmark_ticker,
         )
     window = _today_window(lookback_days)
     market_request = DataRequest(
         tickers=universe,
         window=window,
         fields=fields,
+        benchmark_ticker=benchmark_ticker,
     )
     market = agent._get_market_data(market_request)
     market = _with_cached_sectors(agent._graph, market, universe)

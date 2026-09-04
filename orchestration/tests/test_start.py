@@ -15,7 +15,9 @@ from agents.analyst.history_requirements import required_history_bars
 from agents.analyst.settings import AnalystSettings
 from agents.provider.domain.market_calendar import trading_sessions_between
 from agents.provider.settings import ProviderSettings
+from agents.scanner.settings import ScannerSettings
 from contracts.provider import (
+    RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
@@ -76,4 +78,18 @@ def test_place_run_request_writes_trigger_node() -> None:
     assert (
         trading_sessions_between(start - timedelta(days=1), as_of)
         >= required_bars + buffer_sessions
+    )
+
+
+def test_place_run_request_declares_the_scanner_benchmark() -> None:
+    """The beta cap's denominator is the scanner's to name, and the run carries it.
+
+    The provider cannot import another agent's settings, so without this prop the
+    benchmark series is never ingested and the cap silently never gates.
+    """
+    graph = InMemoryGraphStore()
+    node = place_run_request(graph, run_id="r1", tickers=("AAPL",))
+    assert (
+        node.props[RUN_REQUEST_BENCHMARK_TICKER_PROP]
+        == ScannerSettings().benchmark_ticker
     )

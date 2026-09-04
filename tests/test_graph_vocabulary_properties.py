@@ -128,6 +128,7 @@ def test_deliberation_and_llmcall_props_are_recovered() -> None:
         "narrative",
         "real_debate_count",
         "failed_open_count",
+        "orphaned_reply_count",
         "failed_open_tickers",
         "failed_open_reason",
     } <= recovered["DeliberationRun"]

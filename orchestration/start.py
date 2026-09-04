@@ -17,7 +17,9 @@ from typing import TYPE_CHECKING
 from agents.analyst.history_requirements import required_history_bars
 from agents.analyst.settings import AnalystSettings
 from agents.provider.settings import ProviderSettings
+from agents.scanner.settings import ScannerSettings
 from contracts.provider import (
+    RUN_REQUEST_BENCHMARK_TICKER_PROP,
     RUN_REQUEST_LABEL,
     RUN_REQUEST_LOOKBACK_DAYS_PROP,
     RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP,
@@ -85,6 +87,7 @@ def place_run_request(
             "requested_at": requested.isoformat(),
             RUN_REQUEST_LOOKBACK_DAYS_PROP: active_lookback,
             RUN_REQUEST_REQUIRED_HISTORY_BARS_PROP: required_history_bars(settings),
+            RUN_REQUEST_BENCHMARK_TICKER_PROP: ScannerSettings().benchmark_ticker,
         },
     )
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.deliberator.context import build_veto_context
+from agents.deliberator.peer_client import orphaned_reply_count_from
 from agents.deliberator.review_batch import review_approved_orders
 from agents.deliberator.review_record import (
     OrderReview,
@@ -52,6 +53,9 @@ def review_pm_node(
     if not _preflight_peers(peer_client, settings, sink):
         return
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
+    # Read before the batch, subtracted after: the count is a per-run delta on a
+    # client that outlives the run (S194/DL-148), and that holds under fan-out too.
+    orphaned_reply_count_before = orphaned_reply_count_from(peer_client)
 
     def review_one(intent: OrderIntent) -> OrderReview:
         return _review_one(
@@ -76,6 +80,8 @@ def review_pm_node(
         max_rounds=settings.max_rounds,
         real_debate_count=batch.real_debate_count,
         failed_open_count=len(batch.failed_open_tickers),
+        orphaned_reply_count=orphaned_reply_count_from(peer_client)
+        - orphaned_reply_count_before,
         failed_open_tickers=batch.failed_open_tickers,
         failed_open_reason=_combined_failed_open_reason(batch.failed_open_reasons),
         llm_call_keys=batch.llm_call_keys,

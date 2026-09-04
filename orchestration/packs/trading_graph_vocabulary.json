@@ -373,6 +373,7 @@
       "failed_open_tickers",
       "max_rounds",
       "narrative",
+      "orphaned_reply_count",
       "real_debate_count",
       "role_models",
       "source_pm_run_id",

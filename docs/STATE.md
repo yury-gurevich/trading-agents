@@ -1,9 +1,9 @@
 # Project State
 
-**Last updated:** 2026-09-01 15:07 AEST · **Version:** 0.94.02 · **🟩 `s190` is live-proven — S190's stop sweep raised zero faults where `s187` raised 17, and S188's credential tests fired inside the fleet for the first time.**
+**Last updated:** 2026-09-04 17:50 AEST · **Version:** 0.94.09 · **🟩 S195+S196 live-proven on `s196`: every scanner gate now answers (`skipped: NONE`) — and the veto moved from missing evidence to the gates themselves.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
-each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…07.md` + git). **LAW-02:** an item is "shipped" only when
+each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
 its success factors are *proven* (tests, `make ci`, the named live check) — never restate intent as outcome.
 **Size rules**, after this file reached 574 lines with a **112 KB header line**: keep it **under 200
 lines**, and keep the header above to **three clauses — stamp, version, one headline**. Replace that
@@ -37,41 +37,53 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
+🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
+**per-run delta**; the two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN` for `e7699af` with the printed SHA checked
+against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
+cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
+**`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
+🟩 **It has now recorded:** `sched-2026-09-02` wrote **`orphaned_reply_count=0`** — the first datapoint S172's criterion has ever had (*Now*). 🚨 Two hazards stand from verifying, neither
+in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
+branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
+
 ## Now
 
-🟩 **PROVEN RESULT — FLEET DEPLOYED TO `s190`, 2026-09-01** (was `s187`). Verified independently of the tool's own
-output: **16/16** apps on `s190`, **16/16** `Succeeded`, scale config **diffed** against the pre-deploy baseline (not
-sampled) — zero drift; `dispatcher-cron` on `s190` with cron **`30 22 * * 1-5`** intact. `DeployRecord`
-`deploy:2026-09-01T01:32:41…` carries the **build run's** head SHA `b0185e76…` read back from the workflow (item 21's
-defect, hand-avoided a third time). 🚨 **S190 could not travel alone:** the vocabulary pack moved (`93dab2e6…` →
-`9b57a997…`), so an image-only retag would have met the fail-closed write guard mid-cascade (S148/[DL-85](design-log.md));
-the full `up` carried **S190 + S189 + S188 + item 34's preflight fix** together. `alembic upgrade head` was a **no-op**
-(already `0001_spine`) and **`ENV PRESERVATION` 16/16**, so no DL-100 revert. 🪤 **Two Dependabot merges had reached
-`main` ungated and the images were built from them** — auto-merge pushes via `GITHUB_TOKEN`, which by design triggers
-no workflow; **PR #82's merge commit differed from its gated head by 475 lines of `uv.lock`**, a union never gated as a
-unit. CI + Security Findings were dispatched and `GATE PROVEN` re-read for `b0185e76…` *before* the fleet moved.
+🟩 **PROVEN RESULT — [S196](sprints/sprint-196-a-filter-that-can-answer-says-so.md) MERGED `41b9785` (`0.94.10`) **AND DEPLOYED `s196`**, 2026-09-04.** The provider now declares `MarketData.earnings_horizon_days` — a number means the earnings map is *complete* for that horizon, `None` means absence proves nothing — and the scanner reads absence as a **pass** only when that horizon strictly exceeds `earnings_exclusion_days`. It is withheld on an unrequested feed, on any `earnings_degraded` note, and when chunks disagree, because a degraded feed’s gaps look exactly like "no earnings due". 🟩 **Live-proven on `verify-2026-09-04-s196-earnings`: `skipped: NONE`** — all five scanner gates evaluated for **20 of 20** candidates, where the previous day `earnings_window` was skipped 20/20 and `max_beta` had never fired in 59 runs. 8/8 stages; `GATE PROVEN` for `41b9785`; `DeployRecord` `s196` written on the `.env` token alone. 🚨 **No trade followed, and that is the finding:** the deliberator vetoed `USB` and `AVGO` on the **substance** of the gates — `correlated_cluster_pct` rendering a **cluster of one**, the `{BAC,USB}` cluster omitting co-held `C`/`SCHW`, non-vol-adjusted sizing on a beta-2.152 name, and a stale-anchored `est_price` with no re-check at fill. Four checkable claims, filed as item **47**. 🪤 **Corroborated by the book:** AMD (−$3,614) and MRVL (−$1,330) are the two worst names ever held and together exceed the entire net realized gain — and AMD is exactly what the beta cap now drops.
+
+🟩 **PROVEN RESULT — [S195](sprints/sprint-195-the-beta-cap-gates-on-a-benchmark-it-actually-has.md) MERGED `92597aa` (`0.94.09`), 2026-09-04.** **The scanner’s `max_beta` gate has never fired in the fleet:** measured **0 evaluations across 59 stored `ScanRun` nodes** against **112 skips**. `compute_beta` was implemented and wired all along; the persisted snapshot carried `benchmark = ()` because `MARKET_FIELDS` never requested the field, and the graph-pull scanner reads that snapshot rather than fetching its own series — the in-process path does, which is why every unit test stayed green. 🚨 **It cost three nights of trading:** `sched-2026-09-01/-02/-03` each approved 2 orders and submitted **0**, the deliberator vetoing both names all three nights with byte-identical verdicts `{’AMD’: ‘revise’, ‘USB’: ‘revise’}` for want of a certified beta. AMD’s real beta over that window is **3.2877** against a **2.5** cap — it should have been dropped at the scanner. The `RunRequest` now declares the scanner’s benchmark ([DL-151](design-log.md)); the provider ingests it once per batch. 🪤 **The first merge (`6b82092`, `0.94.08`) passed CI, CodeQL and Security Findings and then failed `build-images.yml`** — the slim dispatcher image lacked `agents/scanner/settings.py`; `92597aa` adds the `COPY` and replaces the hardcoded guard with a transitive read of the entrypoints’ imports. 🟩 **Proven:** local `make ci` exit 0 (2475 passed, 6 skipped, 100.00 %), and `make gate-ran` from `wt-main` printed `GATE PROVEN for 92597aa305180c2a047ccc54010cdb29c0a2f7c0` — CI, CodeQL, Security Findings **and the image build** all `success`, matching `git rev-parse HEAD`. 🟩 **DEPLOYED `s195`, 2026-09-04 14:55 AEST:** all **16** apps and `dispatcher-cron` on `:s195` (built from `89e879a`), **16/16 `Succeeded`**, KEDA preserved (`min=0 max=1`, one rule each), cron `30 22 * * 1-5` intact; vocabulary pack `d47e88b1…` identical to `s194`, so an image-only retag was the proven path. 🟩 **`DeployRecord` written and verified:** `deploy:2026-09-04T04:59:35…:s195:89e879a…` — S180’s tag-identity rule executing against the live API for the first time. It first refused with `GitHub build read failed (403)`: the `.env` `GITHUB_TOKEN` carries **`read:packages` only** (200 on `/user`, 4,899 of 5,000 remaining — **not expired, not rate-limited**; `/logs` returns `Must have admin rights to Repository.`). The `gh` CLI’s stored token (`repo, workflow`) reads that endpoint at 200/826 KB, and the record went through on it. 🪤 The two tokens are **different** — `gh auth token` echoes `GITHUB_TOKEN` back when it is set, which is how they first looked the same. 🟩 **Closed the same day (item 46):** `.env` now holds a fine-grained **Actions: Read-only** token, separate from the fleet’s `read:packages` pull credential — which the two had shared. Re-proven on `.env` alone: run logs `200`, `image_builds_for_tag("s195")` → `89e879a…`, and a wrong SHA refused. 🟩 **LIVE-PROVEN 2026-09-04 on `verify-2026-09-04-s195-beta`** (manual key, so tonight’s scheduled run is untouched): provider ingested **202 SPY bars**, `max_beta` went from **0 evaluations across 59 `ScanRun` nodes** to **20/20 evaluated**, and dropped **AMD at beta 3.186** and **INTC at 3.048** against the 2.5 cap — AMD being exactly the name that reached the PM and was vetoed three nights running. Run completed **8/8**. 🚨 **Trading still did not resume, and the cause is now singular:** the deliberator vetoed `USB` and `AVGO` **solely** because `earnings_window` was *skipped, not passed* (20/20) — work-queue item **45**, which S195 deliberately left. The beta objection is gone. 🪤 A deleted GitHub token revoked the fleet’s GHCR pull credential mid-procedure (`ImagePullBackOff`, measured); replaced across 17 targets and re-proven. KEDA windows restored.
+
+🟩 **[S180](sprints/sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md) MERGED `fc2c799` (`0.94.07`), 2026-09-04** — `record_verified_deploy()` refuses a SHA that is not the head of a successful `build-images.yml` run **for the tag being recorded**; GitHub unreadable fails closed. Now exercised twice against the live API (`s195`, `s196`), accepting the built commit and refusing a wrong one. Detail in the sprint doc.
+
+🎯 **Next:** **[DL-150](design-log.md) re-measured the per-order debate cost at 72.5–84.3 s, not the 124 s work-queue item 3 rests on**, so serial deliberation now fits the deployed 1,800 s grace to **21** orders and breaches at **22**. Recent nights approved **2, 2, 9, 7**. **S172's own trigger is therefore met only if the target funnel width is ≥22 — an operator decision, open.** Next work: **item 9 / S173**, the verdict-quality gate, which is the instrument for the `effort` and `max_rounds` question and the only way to read the **56 %** self-agreement.
+
+🟩 **The first `s194` night passed clean (2026-09-02) and S194’s instrument wrote its first value:** `orphaned_reply_count=0` beside `real_debate_count=2`, `failed_open_count=0`, `quality ok 98/99` with no `*_degraded` notes, and **zero** new faults — the number S172’s criterion could never be falsified without. 🪤 `deliberation_posture=advisory` with `blocked_count=0` is **not** a veto being ignored: `drop_vetoed` removes vetoed tickers before posture is applied (`agents/execution/pm_execution.py:57-63`), so posture governs only the no-artifact branch. Superseded as *Now* by S195/S196; kept for the posture note.
+
+🟩 **PROVEN RESULT — [S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md) MERGED `97e9fb5`
+(`0.94.03`), 2026-09-01.** The acceptance view derives the approved-**buy** count from the linked
+`PMRun.order_intent_set`, so quiet zero-order *and* sell-only `not_required` runs pass, while a `not_required`
+beside an approved buy still breaches as `buy_veto_missing` and an unreadable PM payload fails closed.
+🟩 **Verified independently:** claimed SHA **is** the tip, `GATE PROVEN` incl. post-merge **CodeQL**, PATCH correct.
+🎯 **The real proof is live, not a fixture:** `sched-2026-08-31` — which returned `ACCEPTANCE FAIL` this morning —
+now re-runs **`ACCEPTANCE PASS`**. 🟩 **DEPLOYED `s191`** by image-only retag: **16/16** on `s191`, **16/16**
+`Succeeded`, scale **diffed identical**, cron intact, `DeployRecord` on the build run's `1f0b6a0…`. 🟩 **LIVE-PROVEN, AND NO CASCADE WAS NEEDED:** the view is imported only by `accept.py` and the
+dashboard, and the fleet is **16 apps with no dashboard among them** — so it was proven over **all 55 runs on the spine**
+rather than one run. Both race branches are covered by real runs; `sched-2026-08-31` **PASSes**.
+
+🟩 **PROVEN RESULT — FLEET DEPLOYED `s190` THEN `s191`, 2026-09-01** (from `s187`). 16/16 on tag, scale **diffed** to zero drift, cron intact, `DeployRecord` on the
+build run's own SHA. 🚨 **S190 could not travel alone** — the vocabulary pack had moved, so a retag would have met the fail-closed write guard mid-cascade
+(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**, **`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges
+had reached `main` ungated and the images came from them — now closed as item 39.
 
 🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
 (`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
-asked. A `BrokerStopOrder` whose sibling `Fill` reached a terminal broker state is no longer returned by
-`active_broker_stop_orders`, so **a fired stop stops being counted as protection**; a resting-stop `Fill` is no longer
-an open order; and the stale-order sweep compares **live broker stop to live graph stop** instead of type-to-lifecycle.
-Six scattered status vocabularies collapse into one module — and `partial` stayed non-terminal, so S176 is intact.
-Execution laws **v1.4** (`EXEC-OBS-05`), rollup **35 / 61**, `DRIFT-055` **CORRECTED**, `DL-139` amended.
-🟩 **Verified independently of the handback:** `GATE PROVEN` for `c682907…` from a worktree at that commit,
-security baseline untouched, PATCH bump correct, both modules still under 200. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by
-**re-citation** — the tests already asserted it, filed under `EXEC-IDM-01`.
-🟩 **PROVEN LIVE ON THE FLEET, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`, 99 tickers) ran **8/8
-with zero faults**, where the same stage on `s187` raised **17** `stop identity mismatch` warnings and a
-`cancel_stop` `HTTP 422` nine hours earlier. Broker **identical before and after** — 28 positions / 28 stops, **same
-order IDs**, 0 created, 0 cancelled. Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
-
-🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight now
-runs the *same* import route prep runs. **Measured both ways** (real → exit 0, missing module → exit 1) and
-**observed in place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktree where every credential
-row was red — it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
-Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
-failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
+asked: a fired stop stops being counted as protection, a resting-stop `Fill` is no longer an open order, and the
+stale-order sweep compares **live broker stop to live graph stop**. Six status vocabularies collapse into one, and
+`partial` stayed non-terminal so S176 is intact. Execution laws **v1.4**, rollup **35 / 61**, `DRIFT-055` CORRECTED.
+🟩 **Verified independently:** `GATE PROVEN` for `c682907…` from a worktree at that commit, baseline untouched,
+PATCH bump correct. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by **re-citation**, already asserted under `EXEC-IDM-01`.
+🟩 **PROVEN LIVE, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`) ran **8/8 with zero faults** where
+`s187` raised **17** mismatch warnings and a `cancel_stop` 422 nine hours earlier; broker **identical before and
+after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.
 
 🎯 **DECIDED — ITEM 6b: THE POSTURE STAYS `advisory` THROUGH MONDAY** ([DL-134](design-log.md), 2026-08-30).
 🪤 **The row's premise was wrong, read in the code.** `drop_vetoed` runs **before** `apply_deliberation_posture`
@@ -85,19 +97,6 @@ acceptance red. DL-116's grace is what made the veto bind, on 2026-08-19, and th
 another way:** S188's in-fleet tests show all three deliberators passing `anthropic` through master's Key Vault, so
 the credential path is proven and only **debate mechanics** still need item 3's K=4 run. Posture stays `advisory`.
 
-🟩 **SUPERSEDED BY `s190`** — `s187` deployed 2026-08-30, 16/16 verified; its runtime half landed on `sched-2026-08-31`.
-
-🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](design-log.md) outage is **over** (the
-Anthropic half was an **operator-set** spend limit, not credit). 🟩 **And now from inside the fleet too**, via S188.
-
-🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
-**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
-PARAM/settings sync. 🚨 Its audit found **20× its scope** — 60 divergences across nine agents, 3 fixed and **57
-baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-queue item 33).
-**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
-batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
-🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
-
 🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at 0.998 %; GOOGL then **failed** at
 1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one company** ([DL-122](design-log.md)).
 
@@ -107,15 +106,10 @@ honest figure** ([DL-119](design-log.md) amendment). 🪤 `sched-2026-08-31` sup
 🚨 **NOT PROVEN — S182 live.** 2026-08-21's stops carry `stop_pct_source=position`, written eight minutes before
 execution ran, so the fallback never fired. 🪤 **Do not re-check it that way** — run-start reconciliation closes it.
 
-🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
-(`0.94.00`), 2026-08-31.** A vendor-declared truncation or refusal is now a sanitized stop error, not an empty
-string: empty debate turns cannot enter transcripts, a stopped judge keeps fail-safe `revise` with an honest
-reason, every `LLMCall` carries `stop_reason`, and `max_tokens` gains `le=8192` (4096 had been both default
-*and* ceiling). **DL-119 contamination settled** — one empty judge call inside its four binding runs, an
-asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md), DRIFT-054;
-`GATE PROVEN` for the merged SHA, post-merge CodeQL success. 🟩 Its temporary CodeQL baseline is already
-pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
-🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
+🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
+`Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**
+`GATE PROVEN` for `72e063b` with the printed SHA checked against `HEAD`, PATCH bump correct, and **the sweep re-run here: 56 runs, `0 ERROR`, 54 `FAIL`, 2 `PASS`.** 🪤 The handback moved `FAIL` 16 → 54
+without explaining it; it accounts for exactly — the **38** formerly-unreadable runs are now readable and legitimately red on old data (16 + 38 = 54), and `PASS` 1 → 2 is the overnight run arriving.
 
 🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure
@@ -123,25 +117,24 @@ so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstanc
 the merged SHA, post-merge CodeQL clean. 🚨 A merge-review correction flipped the *primary* OHLCV credential to
 required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09-01:** 15/15 agents `active` and the
 tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
-🟠 Only the **refusal** half is still owed, and 🪤 no green-credential night can supply it.
+🟩 **AND THE REFUSAL HALF, 2026-09-01** ([DL-144](design-log.md)) — a broken credential refuses, a control arm activates. **Item 36 is closed.**
 
-🟢 **[S172](sprints/sprint-172-independent-debates-run-independently.md) is UNBLOCKED** — built and gate-proven at
-`5bf72c9`, unmerged. 🎯 **The K=4 measurement is now next** ([DL-135](design-log.md)): it needs `s172` images and peer
-`maxReplicas=4`. 🪤 **Rollback is now a retag to `s190`, not `s187`**, and `s172` needs rebuilding on top of `s190`.
+🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](design-log.md), [DL-145](design-log.md)). Same image, same K=4, five hours apart:
+**15/15 debated, 0 fail-opens** where the first run had 13 and 2 — the correctness failure is **intermittent and did not reproduce**. But the speed miss did, **1.78x of a possible 4x**, which
+**separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **The 2026-09-01 orphan count remains UNKNOWN, not zero:** pre-S194 rows/logs cannot re-derive it. 🟩 **S194 now records the per-run count on every future `DeliberationRun`, so S192 can diagnose from measured data instead of first building the instrument.**
 
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
-🪤 **One live residue to decide, not urgent.** **2 NFLX shares** from the S172 test harness, never vetoed
-(selling is a real trade). The `cancel_stop` `HTTP 422` half is **closed** — zero faults on the `s190` verify run.
+🪤 **One live residue, not urgent:** **2 NFLX shares** from the S172 test harness, never vetoed (selling is a real trade). The `cancel_stop` `HTTP 422` half is **closed**.
 
 ## Next
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-🎯 **Re-ranked 2026-09-01, after the `s190` deploy and its live proof.** **(1)** item 38, now measured as a **race**
-— the same zero-order inputs passed acceptance on one run and failed on another; **(2)** item 3, S172's K=4
-measurement, which is now the *only* thing standing between the veto and a verdict; **(3)** item 39, the Dependabot
-auto-merge gate hole, with PR #83 open and failing CI merged-with-main.
+🎯 **Re-ranked 2026-09-01, after the `s190` proof and the K=4 measurement.** **(1)** item 3's newly-named defect —
+peer replies dead-lettered under concurrency, which blocks the veto's verdict and is now a code fix, not a
+measurement; **(2)** item 38, measured as a **race** (identical inputs, opposite acceptance verdicts), specced as
+[S191](sprints/sprint-191-a-quiet-night-gets-the-same-verdict-twice.md); **(3)** item 39, the Dependabot gate hole.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

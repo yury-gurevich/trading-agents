@@ -18,6 +18,7 @@ COPY agents/provider/domain/market_calendar.py agents/provider/domain/market_cal
 COPY agents/provider/settings.py agents/provider/settings.py
 COPY agents/provider/settings_feeds.py agents/provider/settings_feeds.py
 COPY agents/scanner/__init__.py agents/scanner/__init__.py
+COPY agents/scanner/settings.py agents/scanner/settings.py
 COPY agents/scanner/universe.py agents/scanner/universe.py
 COPY orchestration/__init__.py orchestration/__init__.py
 COPY orchestration/history_window.py orchestration/history_window.py

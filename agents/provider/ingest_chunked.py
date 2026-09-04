@@ -23,6 +23,7 @@ from agents.provider.ingest import (
     _with_cached_sectors,
     _write_market_data,
     _write_regime_context,
+    with_benchmark_field,
 )
 from agents.provider.store import write_market_snapshot
 from contracts.feed_notes import is_degraded_feed_note
@@ -91,9 +92,22 @@ def _merge_parts(
         sentiment={k: v for p in parts for k, v in p.sentiment.items()},
         sectors={k: v for p in parts for k, v in p.sectors.items()},
         earnings={k: v for p in parts for k, v in p.earnings.items()},
+        earnings_horizon_days=_merged_earnings_horizon(parts),
         quality=quality,
         provenance=provenance,
     )
+
+
+def _merged_earnings_horizon(parts: tuple[MarketData, ...]) -> int | None:
+    """The horizon shared by every chunk, or None if any chunk could not claim one.
+
+    The batch is one unit downstream, so a single degraded chunk makes the whole
+    earnings map unsafe to read as complete.
+    """
+    horizons = {part.earnings_horizon_days for part in parts}
+    if len(horizons) != 1:
+        return None
+    return horizons.pop()
 
 
 def ingest_chunked(
@@ -105,6 +119,7 @@ def ingest_chunked(
     delay_seconds: float,
     lookback_days: int,
     fields: tuple[str, ...] = MARKET_FIELDS,
+    benchmark_ticker: str | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str | None:
     """Fetch *universe* in paced chunks, reassemble one batch, write it once.
@@ -117,13 +132,21 @@ def ingest_chunked(
     """
     if not universe:
         return None
+    fields = with_benchmark_field(fields, benchmark_ticker)
     window = _today_window(lookback_days)
     chunks = _chunks(universe, chunk_size)
     parts: list[MarketData] = []
     for index, chunk in enumerate(chunks):
+        # One benchmark series serves the whole batch, so only the first chunk
+        # asks for it; _merge_parts keeps the first non-empty one.
         parts.append(
             agent._get_market_data(
-                DataRequest(tickers=chunk, window=window, fields=fields)
+                DataRequest(
+                    tickers=chunk,
+                    window=window,
+                    fields=fields,
+                    benchmark_ticker=benchmark_ticker if index == 0 else None,
+                )
             )
         )
         if index < len(chunks) - 1:

@@ -95,7 +95,9 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    supposed to preserve them, and "supposed to" is what verification is for.
 
 6. **Record the verified deploy fact** (LAW-02) on the graph, then note the same tag,
-   commit, and verification output wherever the work is being tracked:
+   commit, and verification output wherever the work is being tracked. This step re-reads
+   GitHub build evidence using `GITHUB_TOKEN` and refuses to write unless the supplied SHA is one
+   of the successful `build-images.yml` runs that produced the supplied tag:
 
    ```bash
    PYTHONPATH=. uv run python scripts/record_deploy.py \
@@ -104,7 +106,8 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
 
    Run this only after step 5 proves every target is on that tag. The append-only
    `DeployRecord` is the dashboard's currency evidence; never backfill a tag or SHA
-   from inference.
+   from inference. If the command refuses, fix the evidence mismatch or GitHub token/read problem
+   before recording; do not work around it with an asserted record.
 
 Full re-provisioning (env/secret/scale changes, new apps) is **not** this skill — that is
 `pwsh infra/deploy-agents.ps1 up -Tag <tag>`, which re-runs alembic + Service Bus routes too.

@@ -5666,7 +5666,7 @@ and re-key.
 
 ---
 
-## DL-63 · Non-secret runtime config has no delivery channel to the fleet · status: OPEN (recommended: B)
+## DL-63 · Non-secret runtime config has no delivery channel to the fleet · status: MOSTLY CLOSED — option **C** shipped and hardened as `trading_tunables.json` (S169/[DL-100](design-log.md)); option B never built and no longer recommended
 
 **Question.** Where should a *non-secret* runtime parameter — the LLM model id, the reasoning
 effort level — live, so that changing it changes what the deployed fleet actually runs?
@@ -5704,6 +5704,40 @@ work locally.
   `tunable()` catalogue, the bounds validation (the `Literal` that rejects a bad effort level at load
   instead of as a 400 mid-run), and the `laws.md` PARAM documentation — in exchange for a vault
   round-trip on every boot. Vault is for credentials.
+
+### Correction 2026-09-04 — the channel was built, as option C, and the status never moved
+
+**`orchestration/packs/trading_tunables.json` is the delivery channel this entry says does not
+exist.** It shipped with S169 ([DL-100](design-log.md)) after an `up` silently reverted
+`MAX_POSITION_PCT` 0.01 → 0.10 — a 10x position size under a green `[OK]`. `Load-Tunables`
+(`infra/deploy-agents.ps1:359`) throws if the pack is missing, `Get-AppTunables` folds each app's
+rows into its env set, and `Assert-FleetEnvPreserved` **refuses the whole deploy** rather than drop a
+key the pack forgot. It carries 13 rows today, including `DELIBERATOR_EFFORT`,
+`DELIBERATOR_REQUEST_TIMEOUT_SECONDS` and `EXECUTION_DELIBERATION_GRACE_SECONDS`.
+
+**And it is already bound to the settings it configures.** `tests/test_deploy_tunables_pack.py`
+asserts every app is a deployed app, every key is a tunable that agent actually reads, every value is
+a string, no credential is carried as a plain value, and the settings class *accepts* each value.
+`make ci` cannot read PowerShell, so that test is what stops a typo deploying cleanly and configuring
+nothing.
+
+**What is actually left, and it is not what the entry says.** Applying a change still needs a full
+`up`: `Get-AppTunables` is reached only through `Get-AgentEnv`, and the script's only actions are
+`preflight` and `up`. So one number costs a 16-app deploy, or a hand `az containerapp update` that
+the pack reconciles at the next `up`. That is option C's known, accepted cost — not an absent channel.
+
+🪤 **Option B is now ruled out, not merely unbuilt.** A second delivery path (master-side pack →
+ACTIVATE → `os.environ`) was written and discarded the same day: it duplicates every guarantee the
+tunables pack already makes, and its one novel benefit — a graph record of what was delivered — costs
+a property on the enforced `AgentInstance` label, therefore a vocabulary-pack move and a full `up`
+anyway. **Two mechanisms configuring the same fleet is the six-status-vocabularies shape S190 spent a
+sprint collapsing.** One channel, hardened, wins.
+
+🚨 **How this was found is the lesson, and it is the second time today.** The work was started
+because *the status line said OPEN* — the same reading error that had just been corrected in
+[DL-95](design-log.md), which had been fixed the day it was filed and read OPEN for 28 days. **A
+design-log status is a claim about the code, and it decays like any other.** Check the mechanism
+before building the mechanism.
 
 ---
 

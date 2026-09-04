@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 
+from agents.deliberator.settings import DeliberatorSettings
 from kernel import AgentSettings
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -106,5 +107,14 @@ def test_the_dispatcher_cron_is_a_five_field_expression() -> None:
 
 
 def test_deliberator_manager_carries_debate_concurrency() -> None:
-    """DRIFT-041 / DL-100: full up must preserve the manager fan-out value."""
-    assert _APPS["deliberator-manager"]["DELIBERATOR_DEBATE_CONCURRENCY"] == "4"
+    """DRIFT-041 / DL-100: full up must preserve the manager fan-out value.
+
+    The invariant is that the pack *carries* the key, not that it holds any one
+    number: a full `up` replaces each app's env set, so a fan-out held only as live
+    cluster state reverts to the code default in silence. Pinning the value here
+    instead would make every operator change a code edit, which is the opposite of
+    what the tunables pack is for -- the value is a deploy-time decision, recorded
+    in the pack's own `_measured` note.
+    """
+    value = _APPS["deliberator-manager"]["DELIBERATOR_DEBATE_CONCURRENCY"]
+    assert DeliberatorSettings(debate_concurrency=int(value)).debate_concurrency >= 1

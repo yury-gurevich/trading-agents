@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-196-a-filter-that-can-answer-says-so`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** next available PATCH at merge — `0.94.10`
 **Effort:** S
 **Decisions:** [`DL-152`](../design-log.md) — the earnings map declares its own scope, and why the
@@ -129,7 +129,7 @@ strengthened, not altered — it now declines to claim a horizon it cannot stand
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:/Users/yury_/AppData/Local/Temp/wt-s196`,
 branch `sprint-196-a-filter-that-can-answer-says-so`, `.env` **no**.
@@ -172,7 +172,13 @@ against the stashed implementation before being trusted.
 **`make ci`:** redirected to a file, exit code **0**. 2487 passed, 6 skipped, coverage 100.00 %.
 pip-audit clean, detect-secrets clean.
 
-**`make gate-ran`:** recorded at merge in `docs/STATE.md`.
+**`make gate-ran`:** run from `C:/Users/yury_/AppData/Local/Temp/wt-main`, `HEAD` matching the printed SHA:
+
+```text
+GATE PROVEN for 41b9785c0a662d8ffb1a331aa7254eb03fac5aa0
+```
+
+CI, CodeQL, Security Findings and the image build all `success`.
 
 **Not met / verified failing:** not yet observed in the fleet — the running images are `:s195`. And
 this sprint does not promise a trade: it removes the deliberator's *stated* objection, but the judge

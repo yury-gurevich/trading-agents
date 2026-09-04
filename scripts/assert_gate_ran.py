@@ -32,7 +32,14 @@ import sys
 import time
 from pathlib import Path
 
-from scripts.gate_run_selection import latest_per_workflow
+# `python scripts/assert_gate_ran.py` puts scripts/ on sys.path, not the repo root,
+# so the package import fails on clean infrastructure while passing locally off an
+# editable install. Same pattern as gate_selftest.py, and measured: CI red at 18/21.
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from scripts.gate_run_selection import latest_per_workflow  # noqa: E402
 
 # The workflows whose absence means the commit was never really gated. `gate`
 # lives in Security Findings; `quality`/`test`/`security` live in CI.

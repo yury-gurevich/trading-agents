@@ -1,6 +1,6 @@
 {
   "_comment": "Operator-set agent tunables the deploy must carry (DL-100 / S169). Mechanism lives in infra/deploy-agents.ps1; these names and values are trading-pack data (ADR-0012). A full `up` REPLACES each app's env set, so a tunable that lives only as live cluster state is silently reverted to its code default with a green [OK]. This file is that single source of truth. Values are strings because container env vars are strings. Secrets never appear here - they arrive as secretrefs from Key Vault via master (DL-07).",
-  "_measured": "Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. STAGED 2026-08-20: DELIBERATOR_LLM_PROVIDER openai->anthropic on all three deliberators (DL-99 operator switch). The three *_MODEL vars are deliberately empty, so this resolves the Anthropic adapter default claude-opus-5. NOT YET APPLIED LIVE - the Anthropic key is blocked by an operator-set spend limit; live env still reads openai until that limit is raised. Both providers are currently non-functional, so the divergence degrades nothing. Amended 2026-08-19 (DL-116): grace 900->1800 and deliberator request timeout 60->120, measured off sched-2026-08-19 (debate span ~990s vs 900s grace; LLM tail 65.3/59.3/58.2s vs a 60s ceiling).",
+  "_measured": "Snapshot of the live fleet read on 2026-08-14 from Azure Container Apps RG trading-agents. STAGED 2026-08-20: DELIBERATOR_LLM_PROVIDER openai->anthropic on all three deliberators (DL-99 operator switch). The three *_MODEL vars are deliberately empty, so this resolves the Anthropic adapter default claude-opus-5. NOT YET APPLIED LIVE - the Anthropic key is blocked by an operator-set spend limit; live env still reads openai until that limit is raised. Both providers are currently non-functional, so the divergence degrades nothing. Amended 2026-08-19 (DL-116): grace 900->1800 and deliberator request timeout 60->120, measured off sched-2026-08-19 (debate span ~990s vs 900s grace; LLM tail 65.3/59.3/58.2s vs a 60s ceiling). Amended 2026-09-04 (S172 merge): DELIBERATOR_DEBATE_CONCURRENCY ships at 1, not the code default of 4. K=1 is the deployed status quo; K>1 measured 1.78x of a possible 4x and, on one of two runs, dead-lettered 6 peer replies with 2 of 15 orders failing open, so the fan-out merges as an available dial rather than as proven behaviour. Raising it is a deliberate edit here plus an `up`.",
   "apps": {
     "scanner": {
       "SCANNER_CANDIDATE_CAP": "25"
@@ -22,7 +22,8 @@
     "deliberator-manager": {
       "DELIBERATOR_LLM_PROVIDER": "anthropic",
       "DELIBERATOR_EFFORT": "high",
-      "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120"
+      "DELIBERATOR_REQUEST_TIMEOUT_SECONDS": "120",
+      "DELIBERATOR_DEBATE_CONCURRENCY": "1"
     },
     "deliberator-proponent": {
       "DELIBERATOR_LLM_PROVIDER": "anthropic",

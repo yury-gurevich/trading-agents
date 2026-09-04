@@ -81,6 +81,15 @@ each other's replies — a stale *success* reply accepted as a verdict about a d
 no fault and a green gate. Correlation is now enforced, so concurrent in-flight requests are safe.
 **That guarantee is this sprint's first-class regression risk: prove it still holds under load.**
 
+## Law-reading record
+
+Read before code on branch `sprint-172-independent-debates-run-independently`:
+`agents/deliberator/laws/laws.md` locked v1. Relevant clauses are `DLIB-IDN-03`
+(three bounded identities), `DLIB-OUT-02` and `DLIB-OBS-01` (recorded debate shape and
+reconstructable transcript), `DLIB-NEV-05` (no cross-agent/orchestration imports),
+`DLIB-ORD-01` (turn order inside one order remains sequential), `DLIB-FAIL-01` (per-order
+fail-open), and `DLIB-PERF-02` (peer wait bounded by request timeout).
+
 ## Steps, in order
 
 1. **Add `debate_concurrency` as a `tunable()`** on `DeliberatorSettings` — the number of orders
@@ -260,8 +269,74 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-<!-- Coding agent: replace this comment with the proven result. Required: files changed, the
-     measured sum-of-latency ÷ span ratio at K=1 and K=4, the grace-headroom figure, the determinism
-     comparison, orphaned_reply_count, the planted single-order failure result, the exact `make ci`
-     summary (unpiped, redirected to a file), and `make gate-ran` output for the final tip.
-     Do not merge until every success factor above is answered with a measurement. -->
+**Result:** built, deployed, and branch-gated; **not mergeable yet** because the required live K=4
+measurement could not be produced while the OpenAI account is out of credits. This is the exact
+blocker warned in the handover, not a code failure or a valid reason to switch provider.
+
+**Files changed:** `agents/deliberator/settings.py`, `agents/deliberator/review_batch.py`,
+`agents/deliberator/poll.py`, `agents/deliberator/servicebus_peer_client.py`,
+`agents/deliberator/servicebus_reply_inbox.py`, `kernel/bus_azure_ready.py`,
+`infra/deploy-agents.ps1`, `orchestration/packs/trading_tunables.json`, deliberator/deploy tests,
+law-plan/ledger/drift docs, `docs/STATE.md`, and the version bump to `0.91.00` with `uv.lock`.
+
+**Implemented proof points:**
+- `debate_concurrency` is a tunable defaulting to `4`, bounded `ge=1/le=25`, with the vendor-rate-limit
+  rationale. `orchestration/packs/trading_tunables.json` carries `DELIBERATOR_DEBATE_CONCURRENCY=4`.
+- Manager review now uses a bounded thread pool over independent approved orders. `K=1` takes the
+  serial path; `K=4` reassembles `verdicts`, `vetoed_tickers`, `debates`, `transcript`, and
+  `llm_call_keys` in `order_set.approved` order before the graph write.
+- Peer replies use a shared in-process inbox so one manager thread can stash a sibling's correlated
+  ready event instead of dead-lettering it. The planted regression for the receive-stash race failed
+  with `CorrelatedReadyEventTimeoutError`; restored code passed
+  `tests/test_deliberator_correlated_peer.py` and `tests/test_deliberator_reply_inbox.py` (`9 passed`).
+- `test_single_order_failure_is_isolated_under_concurrency` plants one order failure and proves the
+  other verdicts survive with exactly one failed-open ticker. Determinism is covered by
+  `test_concurrent_reviews_preserve_durable_order`, comparing serial and concurrent record order.
+- `infra/deploy-agents.ps1` keeps `deliberator-manager` at `maxReplicas=1` and sets
+  `deliberator-proponent`/`deliberator-opponent` to `maxReplicas=4`, with cron `desiredReplicas=4`
+  for the peers.
+
+**Baseline K=1 measurement:** carried from the amended 2026-08-19 live run
+`verify-2026-08-19-clean-2`: 9 orders, 45 `LLMCall` rows, first-to-last span `1113 s`, summed
+per-call latency `1059 s`, `sum/span = 0.95`, projected 15-order serial wall clock `1854 s`.
+
+**Live K=4 measurement attempt:** deployed tag `s172` from code/deploy proof commit
+`a7e7ad12911ca2dd76be51c6ef5bba0f6344e350`. `preflight -Tag s172` exit `0`; `up -Tag s172` exit
+`0`. Azure config after deploy: manager image `trading-agents-deliberator:s172`, `max=1`,
+cron `desiredReplicas=1`; proponent/opponent image `trading-agents-deliberator:s172`, `max=4`,
+cron `desiredReplicas=4`. For the live proof window, replicas were manually warmed to manager `1`,
+proponent `4`, opponent `4`, all `Running`; after the blocked attempt they were restored to
+`minReplicas=0`.
+
+Synthetic PMRun `verify-2026-08-19-s172-k4-15-racefix-a7e7ad1` was inserted at
+`2026-08-19T12:58:10.717138+00:00` with 15 approved orders. The resulting `DeliberationRun` was
+created at `2026-08-19T12:59:19.553907+00:00`, but it was not a successful concurrency proof:
+`real_debate_count=0`, `failed_open_count=15`, `transcript_count=0`, `LLMCall=0`, and
+`failed_open_reason` was OpenAI `429 credit_balance_exhausted` / "You have no credits remaining".
+Because no `LLMCall` rows were written, the required K=4 `sum-of-latency / span` ratio is **not
+measurable**. The grace headroom figure for this failed-open artifact was `1731.163 s`, but that
+does **not** satisfy the success factor because zero orders were actually debated.
+
+**S171 under load:** Service Bus residue before the live attempt was 0 active / 0 dead-letter on
+`deliberator-manager.reply/agent`, `deliberator-proponent.requests/agent`, and
+`deliberator-opponent.requests/agent`; after the failed-open attempt the same three subscriptions
+were still 0 active / 0 dead-letter. No `DeliberationGraceExpired` fault was written for the attempt,
+but `orphaned_reply_count == 0` under a successful 15-order concurrent debate is still unproven
+because the LLM calls never started.
+
+**Local gate:** `make ci` was redirected to `..\s172-make-ci.log`, not piped:
+`make_ci_exit=0`; tail summary `2336 passed, 6 skipped in 121.37s`; total coverage `100.00 %`;
+`pip-audit` reported no known vulnerabilities; detect-secrets and untracked-secret checks passed.
+
+**Remote gate at the code/deploy proof commit:**
+```
+make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350
+GATE PROVEN for a7e7ad12911ca2dd76be51c6ef5bba0f6344e350:
+  Build and push agent images: success
+  Security Findings: success
+  CI: success
+```
+
+**Return note:** do **not** merge yet. Restore OpenAI credits, rerun the same 15-order K=4 live proof,
+and replace this blocked measurement with the real `sum/span`, grace-headroom, `real_debate_count=15`,
+`failed_open_count=0`, 75 `LLMCall` rows, and post-run orphan/subscription counts.

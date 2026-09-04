@@ -16,20 +16,20 @@ from typing import Any, Protocol
 ORPHANED_READY_EVENT_REASON = "S171OrphanedReply"
 
 
-class ReadyEventReceiver(Protocol):
+class ReadyEventReceiver[MessageT](Protocol):
     """Small receiver slice needed for correlated ready-event resolution."""
 
     def receive_messages(
         self, *, max_message_count: int, max_wait_time: float
-    ) -> Sequence[Any]:
+    ) -> Sequence[MessageT]:
         """Receive raw Service Bus messages."""
         ...  # pragma: no cover - protocol declaration only.
 
-    def complete_message(self, message: object) -> None:
+    def complete_message(self, message: MessageT) -> None:
         """Complete a raw message that matched the requested correlation id."""
         ...  # pragma: no cover - protocol declaration only.
 
-    def dead_letter_message(self, message: object, *, reason: str) -> None:
+    def dead_letter_message(self, message: MessageT, *, reason: str) -> None:
         """Dead-letter a raw message that cannot answer this request."""
         ...  # pragma: no cover - protocol declaration only.
 
@@ -62,8 +62,8 @@ def ready_event_from_raw(raw: object) -> dict[str, Any]:
     return data
 
 
-def receive_correlated_ready_event(
-    receiver: ReadyEventReceiver,
+def receive_correlated_ready_event[MessageT](
+    receiver: ReadyEventReceiver[MessageT],
     *,
     correlation_id: str,
     deadline: float,

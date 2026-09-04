@@ -11,14 +11,13 @@ from typing import TYPE_CHECKING
 
 from agents.deliberator.context import build_veto_context
 from agents.deliberator.peer_client import orphaned_reply_count_from
+from agents.deliberator.review_batch import review_approved_orders
 from agents.deliberator.review_record import (
     OrderReview,
-    debate_record,
     fail_open_review,
     failed_open_reason,
     narrative,
     role_models,
-    transcript_records,
 )
 from agents.deliberator.store import find_pending as find_pending
 from agents.deliberator.store import write_deliberation_run
@@ -54,48 +53,38 @@ def review_pm_node(
     if not _preflight_peers(peer_client, settings, sink):
         return
     order_set = OrderIntentSet.model_validate(node.props["order_intent_set"])
-    verdicts: dict[str, str] = {}
-    vetoed: list[str] = []
-    debates: dict[str, object] = {}
-    transcript: list[dict[str, object]] = []
-    llm_call_keys: list[str] = []
-    real_debate_count = 0
+    # Read before the batch, subtracted after: the count is a per-run delta on a
+    # client that outlives the run (S194/DL-148), and that holds under fan-out too.
     orphaned_reply_count_before = orphaned_reply_count_from(peer_client)
-    failed_open_tickers: list[str] = []
-    failed_open_reasons: list[str] = []
-    for intent in order_set.approved:
-        review = _review_one(
-            graph, node, order_set, intent, manager, peer_client, settings, sink
+
+    def review_one(intent: OrderIntent) -> OrderReview:
+        return _review_one(
+            graph, node, order_set, manager, peer_client, settings, sink, intent
         )
-        verdicts[intent.ticker] = review.verdict
-        debates[intent.ticker] = debate_record(review)
-        transcript.extend(transcript_records(intent.ticker, review.turns))
-        llm_call_keys.extend(review.llm_call_keys)
-        if review.turns:
-            real_debate_count += 1
-        if review.failed_open:
-            failed_open_tickers.append(intent.ticker)
-            failed_open_reasons.append(review.failed_open_reason)
-        if review.verdict != "uphold":
-            vetoed.append(intent.ticker)
+
+    batch = review_approved_orders(
+        order_set.approved,
+        concurrency=settings.debate_concurrency,
+        review_one=review_one,
+    )
     write_deliberation_run(
         graph,
         node,
         order_set=order_set,
-        verdicts=verdicts,
-        vetoed_tickers=vetoed,
-        debates=debates,
-        narrative=narrative(debates),
-        transcript=transcript,
+        verdicts=batch.verdicts,
+        vetoed_tickers=batch.vetoed_tickers,
+        debates=batch.debates,
+        narrative=narrative(batch.debates),
+        transcript=batch.transcript,
         role_models=role_models(settings),
         max_rounds=settings.max_rounds,
-        real_debate_count=real_debate_count,
-        failed_open_count=len(failed_open_tickers),
+        real_debate_count=batch.real_debate_count,
+        failed_open_count=len(batch.failed_open_tickers),
         orphaned_reply_count=orphaned_reply_count_from(peer_client)
         - orphaned_reply_count_before,
-        failed_open_tickers=failed_open_tickers,
-        failed_open_reason=_combined_failed_open_reason(failed_open_reasons),
-        llm_call_keys=llm_call_keys,
+        failed_open_tickers=batch.failed_open_tickers,
+        failed_open_reason=_combined_failed_open_reason(batch.failed_open_reasons),
+        llm_call_keys=batch.llm_call_keys,
     )
 
 
@@ -118,11 +107,11 @@ def _review_one(
     graph: GraphStore,
     node: Node,
     order_set: OrderIntentSet,
-    intent: OrderIntent,
     manager: DeliberatorAgent,
     peer_client: PeerClient,
     settings: DeliberatorSettings,
     sink: FaultSink,
+    intent: OrderIntent,
 ) -> OrderReview:
     """Run all peer turns plus the manager verdict; fail open on faults."""
     result = fail_open_review()

@@ -79,15 +79,15 @@ In scope: the benchmark series reaches the persisted snapshot the graph-pull sca
 3. **What happens when a run names no benchmark?** Nothing changes: the field is unrequested, the
    cap records `skipped`, and no other gate is affected. Failing closed here would stall ingest.
 
-## Blast radius — measured 2026-09-04
+## Blast radius — measured 2026-09-04 (line counts re-measured after merge)
 
 | File | Lines after | Change |
 | --- | --- | --- |
-| `contracts/provider.py` | 231 | One new RunRequest prop name |
-| `orchestration/start.py` | 132 | Stamps the scanner's benchmark on the RunRequest |
+| `contracts/provider.py` | 159 | One new RunRequest prop name |
+| `orchestration/start.py` | 100 | Stamps the scanner's benchmark on the RunRequest |
 | `agents/provider/poll.py` | 101 | Reads the prop, normalises it, passes it on |
-| `agents/provider/ingest.py` | 174 | `with_benchmark_field` keeps field and ticker inseparable |
-| `agents/provider/ingest_chunked.py` | 148 | Asks for the series on the first chunk only |
+| `agents/provider/ingest.py` | 179 | `with_benchmark_field` keeps field and ticker inseparable |
+| `agents/provider/ingest_chunked.py` | 146 | Asks for the series on the first chunk only |
 
 Nothing in the trading path changes shape: the snapshot gains a field that was already declared and
 already merged by `_merge_parts` (`ingest_chunked.py:88`) — it had simply never been populated.
@@ -182,9 +182,10 @@ Required test coverage of 100.0% reached. Total coverage: 100.00%
 `survived_filters`, when the snapshot carries no benchmark), so a future regression to an empty
 series fails a test instead of passing silently for 59 runs. The Dockerfile guard was verified by removing the new `COPY` line — `AssertionError: dispatcher image omits imported modules: ['agents/scanner/settings.py']` — then restoring it and re-running green.
 
-**Module line counts:** `contracts/provider.py` **231**, `orchestration/start.py` **132**,
-`agents/provider/poll.py` **101**, `agents/provider/ingest.py` **174**,
-`agents/provider/ingest_chunked.py` **148** — all under the 200 hard block.
+**Module line counts, re-measured 2026-09-04 after merge** (the first set of numbers in this doc was
+asserted, not measured, and three of five were wrong): `contracts/provider.py` **159**,
+`orchestration/start.py` **100**, `agents/provider/poll.py` **101**, `agents/provider/ingest.py`
+**179**, `agents/provider/ingest_chunked.py` **146** — all under the 200 hard block.
 
 **`make ci`:** redirected to a file, exit code **0**. 2474 passed, 6 skipped, coverage 100.00 %.
 pip-audit: no known vulnerabilities. detect-secrets: passed, untracked scan passed.

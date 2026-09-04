@@ -51,7 +51,7 @@ def test_concurrent_reviews_preserve_durable_order() -> None:
         ticker for ticker in TICKERS for _ in range(2)
     ]
     assert [row["role"] for row in concurrent_run.props["transcript"]] == [
-        role for _ticker in TICKERS for role in ("defender", "challenger")
+        role for _ in TICKERS for role in ("defender", "challenger")
     ]
 
 

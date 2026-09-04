@@ -38,7 +38,7 @@ The checks that MUST pass before any action runs. No gate green → no action.
 
 | Gate ID | Check | Pass criteria | On fail |
 | --- | --- | --- | --- |
-| G-… | <what is verified> | <green condition> | block / warn / prompt |
+| G-… | &lt;what is verified&gt; | &lt;green condition&gt; | block / warn / prompt |
 
 ## OPS-ACT · Actions / Runbooks
 
@@ -46,7 +46,7 @@ Each operation this subsystem supports. One row per action; link a runbook for t
 
 | Action | Gates required | Idempotent | Dry-run | Postcondition (proof it worked) | Rollback | Blast radius |
 | --- | --- | --- | --- | --- | --- | --- |
-| <verb> | G-… | yes/no | yes/no | <verifiable check> | <how to undo, or PNR-id> | <scope> |
+| verb | G-… | yes/no | yes/no | verifiable check | how to undo, or PNR-id | scope |
 
 ## OPS-PNR · Points of no return
 
@@ -92,4 +92,4 @@ named downstream neighbors. This is what fires the maintenance loop for this sub
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 0.1 | <date> | initial draft |
+| 0.1 | YYYY-MM-DD | initial draft |

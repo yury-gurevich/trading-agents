@@ -2,6 +2,9 @@
 
 Agent: tooling
 Role: prove the measurement counts what it compared and never guesses the rest.
+      Cites DLIB-IDM-02: the clause bounds outputs by prompt hashes, and this is
+      the first thing to measure that bound. DLIB-OBS-01 is left to
+      test_deliberation_replay.py, which tests reconstruction rather than counting.
 External I/O: none.
 """
 
@@ -19,7 +22,7 @@ from orchestration.deliberation_replay import replayed_user_prompt
 
 
 def test_a_faithfully_recorded_turn_is_reported_as_reproducible() -> None:
-    """DLIB-OBS-01: a stored hash the graph can rebuild counts as matched."""
+    """DLIB-IDM-02: a stored hash the graph can rebuild counts as matched."""
     graph, node, orders, item = _corpus()
     _record(graph, node.key, item.ticker, _live_digest(graph, node, orders, item))
 
@@ -31,7 +34,7 @@ def test_a_faithfully_recorded_turn_is_reported_as_reproducible() -> None:
 
 
 def test_a_hash_the_graph_cannot_rebuild_is_a_mismatch_not_a_pass() -> None:
-    """DLIB-OBS-01: drift is counted, never rounded away."""
+    """DLIB-IDM-02: drift is counted, never rounded away."""
     graph, node, _orders, item = _corpus()
     _record(graph, node.key, item.ticker, digest_text("recorded by older code"))
 
@@ -43,7 +46,7 @@ def test_a_hash_the_graph_cannot_rebuild_is_a_mismatch_not_a_pass() -> None:
 
 
 def test_an_order_that_was_never_debated_is_excluded_from_the_denominator() -> None:
-    """DLIB-OBS-01: no recorded turn is not a failure to reproduce."""
+    """DLIB-IDM-02: no recorded turn is not a failure to reproduce."""
     graph, _node, _orders, _item = _corpus()
 
     report = measure_reproducibility(graph)
@@ -55,7 +58,7 @@ def test_an_order_that_was_never_debated_is_excluded_from_the_denominator() -> N
 
 
 def test_a_pm_run_with_an_unreadable_order_set_is_counted_and_skipped() -> None:
-    """DLIB-OBS-01: an unreadable run is named, never silently dropped."""
+    """DLIB-IDM-02: an unreadable run is named, never silently dropped."""
     graph = InMemoryGraphStore()
     graph.merge_node("PMRun", "pm-run-broken", {"order_intent_set": {"nope": 1}})
     graph.merge_node("PMRun", "pm-run-empty", {})
@@ -68,7 +71,7 @@ def test_a_pm_run_with_an_unreadable_order_set_is_counted_and_skipped() -> None:
 
 
 def test_run_ids_narrow_the_corpus_without_changing_the_measurement() -> None:
-    """DLIB-OBS-01: the filter selects runs; it does not reinterpret them."""
+    """DLIB-IDM-02: the filter selects runs; it does not reinterpret them."""
     graph, node, orders, item = _corpus()
     _record(graph, node.key, item.ticker, _live_digest(graph, node, orders, item))
     graph.merge_node("PMRun", "pm-run-other", {"order_intent_set": {"nope": 1}})
@@ -83,7 +86,7 @@ def test_run_ids_narrow_the_corpus_without_changing_the_measurement() -> None:
 
 
 def test_a_call_without_a_correlation_id_or_hash_is_not_indexed() -> None:
-    """DLIB-OBS-01: a malformed ledger row cannot masquerade as evidence."""
+    """DLIB-IDM-02: a malformed ledger row cannot masquerade as evidence."""
     graph, node, _orders, item = _corpus()
     graph.merge_node("LLMCall", "call-no-corr", {"prompt_hash": "deadbeef"})
     graph.merge_node(

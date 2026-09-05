@@ -113,7 +113,7 @@ def test_the_judge_verdict_is_parsed_by_the_live_parser() -> None:
 
 
 def test_an_unparseable_ruling_defaults_to_revise_exactly_as_it_does_live() -> None:
-    """DLIB-OBS-01: the replayed verdict distribution must match the real one."""
+    """DLIB-TYP-03: replay must not admit a ruling the live parser would refuse."""
     states = _judged("not json at all")
 
     assert states[0].verdict is not None

@@ -3,9 +3,10 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-173-a-verdict-must-be-reproducible`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** MERGED — Part A complete and proven; Part B built, unfunded, unrun
+**Version:** 0.97.00
 **Effort:** L
+**Produced:** [DL-158](../design-log.md) — five dependent rounds and the price · [DL-159](../design-log.md) — the exclusion predicate, the floor, and the re-derived baseline · [DRIFT-056](../laws/drift-register.md)
 **Decisions:** [DL-104](../design-log.md) (e) — the 56 % it left open · [DL-105](../design-log.md) — the Batch API substrate and the lever order · [DL-150](../design-log.md) — the re-measured cost, and the question this sprint now answers
 
 > **Why this bump kind.** The deliberator gains a dimension it did not have: its verdicts become
@@ -583,42 +584,140 @@ uses the API's own `usage` rather than the ledger's word counts.)*
 
 ---
 
-## Test plan results — fill at handback
+## Test plan results — filled at handback 2026-09-05
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(fill)* | | | |
+| step 0 | `test_defender_r1_replays_to_its_recorded_prompt_hash` | `tests/test_deliberation_replay.py` | 🟩 | DLIB-OBS-01 / DLIB-IDM-02 |
+| step 0 | read-only assertion on the replay | `tests/test_deliberation_replay.py` | 🟩 | DLIB-OBS-01 |
+| measure | 6 tests | `tests/test_deliberation_reproducibility.py` | 🟩 | DLIB-IDM-02 |
+| identity | 6 tests | `tests/test_replay_keys.py` | 🟩 | — |
+| rounds | 15 tests | `tests/test_replay_rounds.py` | 🟩 | DLIB-TYP-03 |
+| driver | 8 tests | `tests/test_replay_batch.py` | 🟩 | — |
+| corpus | 4 tests | `tests/test_replay_corpus.py` | 🟩 | — |
+| metrics | 7 tests | `tests/test_verdict_metrics.py` | 🟩 | — |
+| sources | 5 tests | `tests/test_verdict_sources.py` | 🟩 | — |
+| interval | 7 tests | `tests/test_agreement.py` | 🟩 | — |
+| gate | 7 tests | `tests/test_quality_gate.py` | 🟩 | — |
 
-**Tests added beyond the plan:** *(fill)*
+**Tests added beyond the plan:** the DL-70 sweep found two guards that did not guard, and both fixes
+added assertions — `test_the_interval_is_wilsons_by_value_not_merely_by_range`, and a
+`no_counterpart == 2` assertion on `test_two_different_decisions_are_never_compared_against_each_other`.
+
+**Clauses that were ⬜ and are now proven: none.** This is the honest outcome, not an omission.
+`DLIB-IDM-02` was the candidate, and measuring it produced **DRIFT-056** instead of a green: the
+clause's `prompt hashes` bound covers the *user* string only. Greening a clause this sprint just
+filed drift against would be certifying the half that was measured as if it were the whole.
+`DLIB-OBS-02` needs Part B's `usage` figures, which do not exist because nothing was submitted.
 
 ---
 
 ## Closeout — evidence
 
-**Result:** *not yet implemented.*
+**Result: Part A complete and proven; Part B built but unfunded and therefore unrun.**
 
-**Files changed:** *(fill)*
+**Decision 1 branch taken: NOT PERSISTED.** The figure is a pure derivation over stored state; no
+`merge_node`, no `add_edge`, no new label. Consequences, all confirmed: **no law cycle owed, no
+`contracts/` change, no graph-vocabulary move, and no deploy** — this sprint does not reach the
+fleet at all. Recorded in DL-159. The road not taken: persisting would make the figure trendable and
+owe a `DLIB-OBS-05` plus the full cycle; rejected because there is no figure worth trending until a
+funded sweep produces one, and a persisted zero-sample metric is a durable lie.
 
-**Step 0 — rebuilt digest vs stored `prompt_hash`:** *(both hashes quoted, and whether they matched)*
+**Files changed:** `orchestration/replay_keys.py`, `replay_types.py`, `replay_rounds.py`,
+`replay_corpus.py`, `replay_batch.py`, `agreement.py`, `verdict_metrics.py`, `verdict_sources.py`,
+`quality_gate.py`, `settings.py`, `deliberation_replay.py`; `scripts/deliberation_reproducibility.py`,
+`deliberation_replay_batch.py`, `deliberation_quality.py`; eleven test files;
+`docs/design-log.md` (DL-158, DL-159), `docs/laws/drift-register.md` (DRIFT-056).
 
-**Self-agreement:** *(figure, interval, repeats, PMRuns, fail-open exclusion count)*
+**Step 0 — rebuilt digest vs stored `prompt_hash`: MATCHED.** Re-measured 2026-09-05 after the
+49-commit catch-up merge, via the committed `scripts/deliberation_reproducibility.py` against the
+live spine:
 
-**56 % baseline:** *(reproduced | refuted — with the harness's number beside DL-104's)*
+| Sample | Result |
+| --- | --- |
+| Whole corpus | **57 of 280 = 20.36 %** |
+| Five most recent debated runs (2026-09-01 → 09-04) | **10 of 10 = 100 %** |
 
-**Part B — three arms:** *(each arm's rate against arm A's interval, and which fall inside the floor)*
+Both numbers are the finding. 100 % on current-code runs says the harness is correct; 20 % across
+history says replay fidelity tracks the *recording* code version — work-queue item 44, not this
+sprint. Quoting either alone would mislead.
 
-**Batch economics:** *(measured batch cost, synchronous equivalent, observed turnaround)*
+**Self-agreement: not measured — nothing was submitted to a provider.** The harness plans
+**1,645 requests** for one repeat of one arm over the live corpus (65 PM runs, 0 unreadable,
+**329 subjects**), proven by a read-only `--dry-run` end to end. No self-agreement number exists and
+none can until a sweep is funded.
 
-**Guards planted:** *(per guard: what was planted, that it failed, that it was restored)*
+**56 % baseline: REPRODUCED, exactly.**
+`scripts/deliberation_quality.py --recorded-run pm-run-0c3c9324… --recorded-run pm-run-cbd26639…`:
 
-**`make ci`:** *(exit code, passed/skipped counts, coverage %, redirected to a file — never piped)*
+```text
+self_agreement: matched=9; compared=16; excluded=0; no_counterpart=2;
+                rate=56.25%; ci95=[33.18%, 76.90%]
+```
 
-**`make gate-ran`:** *(output for the final tip, with the printed SHA checked against `git rev-parse HEAD`)*
+`matched=9, compared=16` — DL-104's hand-computed figure, through the same code path every other
+agreement number goes through. 🚨 **And the interval is a finding of its own: [33.2 %, 76.9 %]
+contains both 50 % and 75 %, so the 56 % that has been cited in three decisions cannot distinguish
+"chance" from "acceptable".** Recorded in DL-159.
+
+**Part B — three arms: NOT RUN.** Built arm-agnostic and unfunded by design; the arm count is an
+operator decision against DL-158's table (control only ≈ $30 · three arms × 3 ≈ $90 · three arms ×
+5 ≈ $151), not an assumption baked into code.
+
+**Batch economics: priced, not observed.** $0.0305 per order-replay on batch (DL-158). No batch has
+been submitted, so turnaround is unmeasured.
+
+**Guards planted (DL-70): 10 mutations, 10 caught — after two rounds.** The first sweep planted ten
+and **two survived**: `wilson_interval`'s `max(0.0, …)/min(1.0, …)` clamps returned an in-range
+interval from a deliberately corrupted denominator, and `self_agreement`'s `no_counterpart` could be
+zeroed because its only covering test used a case where zero is correct. The clamps are removed (a
+clamp cannot correct a real Wilson bound, only hide a broken one) and the interval is now pinned by
+value. Re-run: **10 of 10 red, then restored, then `make ci` green.**
+
+**`make ci`: exit 0** — **2592 passed, 6 skipped, 100.00 % coverage**, redirected to a file and read,
+never piped.
+
+**`make gate-ran`:** *(filled below at merge.)*
 
 ---
 
 ## Return notes
 
-*(fill at handback: anything not met, stated plainly as "verified failing" or "not done" —
-LAW-02. Anything you found that this spec got wrong. Anything the next sprint should know that
-is not already written down.)*
+**What this spec got wrong, measured:**
+
+1. 🚨 **The `custom_id` shape implies a batching that is impossible.**
+   `{pm_run}:{ticker}:{repeat}:{arm}:{role}` reads as though one debate's five calls go into a batch
+   together. They cannot — `render_debate_prompt` interpolates the transcript, so turn N+1's prompt
+   contains turn N's answer. The harness runs **five dependent rounds**, each a batch across every
+   debate. Recorded as DL-158 before any code was written.
+2. **`custom_id` also cannot be that string on the wire.** The Batch API bounds it by charset and
+   length, and a colon-separated label satisfies neither. The readable label is kept, sanitised and
+   truncated, then made unique again by a digest of the *whole* label — so truncation can never
+   merge two turns.
+3. **"46 runs / 261 approved orders" is now 65 / 329.** Re-measured through the committed corpus
+   builder; the spec's 2026-09-03 figures were correct when written.
+
+**What was found that the spec did not anticipate:**
+
+4. 🚨 **83 of 329 approved orders on the spine are fail-opens — 25.2 %.** Every one of the other 246
+   has a real recorded verdict, so the corpus splits exactly two ways with nothing unaccounted for.
+   The spec was right that the exclusion predicate matters; it is larger than "a correction".
+5. **The recorded verdict distribution is 61 % `revise` over 246, not DL-104's 78 % over 58.**
+6. 🪤 **The two graph stores return different Python types for one property.** `InMemoryGraphStore`
+   freezes props (`dict` → `mappingproxy`, `list` → `tuple`); Postgres returns plain JSON. An
+   `isinstance(x, dict)` guard passes in production and fails in tests. Caught by a red test here;
+   every reader of `node.props` is exposed. Both in DL-159.
+
+**Not done, stated plainly:**
+
+- **No provider submission, so no self-agreement, no cross-vendor number, and no Part B.** Awaiting
+  the funding decision.
+- **`DLIB-OBS-02` remains ⬜.** Part B's cost reporting was to prove it from the API's `usage`;
+  nothing was submitted.
+- **Cross-vendor agreement is not implemented.** Only an Anthropic batch adapter exists; a `gpt-5.5`
+  arm needs an OpenAI batch adapter, which is a separate piece of work and was not in Part A's path.
+
+**For the next sprint:** the DL-70 mutation sweep was run from a throwaway script and found two real
+gaps in one pass. A repeatable version is worth having, but it is **deliberately not queued**: the queue is under a
+2026-09-18 empty-by deadline and this is discretionary. Recorded here so the next person can pick it
+up without rediscovering it.

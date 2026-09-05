@@ -8,7 +8,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-160 - the sweep's price was wrong by 3.2x, and work-queue item 43 is exactly why - status: MEASURED (2026-09-05)
+## DL-160 - the sweep's price was wrong by 3.2x, and work-queue item 43 is exactly why - status: DECIDED (2026-09-05 — stop, spend nothing more)
 
 🚨 **[DL-158](#dl-158---part-b-is-five-dependent-batch-rounds-not-one-batch-of-debates---and-it-has-a-price---status-decided-2026-09-05) priced an order-replay at `$0.0305` for five calls — `$0.0061` per call. Measured on the real thing: `$0.0196` per call.** Round 1 of the funded sweep (2,961 requests, 2,957 succeeded / 4 errored) cost **$58.05**, read from the Batch API's own `usage` rather than from anything this repo records:
 
@@ -40,6 +40,23 @@ Characters-per-token calibrated at **2.14** on round 1's real figures — low fo
 Full design A therefore lands near **$331** against the **~$90** quoted. The operator authorised $90; that authorisation does not stretch to $331, so the sweep is **stopped after round 1** pending a fresh decision.
 
 🪤 **Round 1 alone yields nothing measurable.** A verdict needs all five rounds, so the $58 buys zero verdicts unless some configuration is finished. That is an argument for completing *one* usable arm, not for completing all three.
+
+### DECISION (operator, 2026-09-05): stop. Spend nothing more.
+
+**Part B does not run.** Put the corrected table above, the operator chose to bank the $58 rather than
+buy any of the four options — including the $75 one. **This is a decision, not a deferral:** the
+effort/`max_rounds` question stays answered by assumption, and that is now a recorded choice made
+against a known price rather than an omission.
+
+**What the $58 bought, stated honestly: no verdicts.** A verdict needs all five rounds, so round 1's
+2,957 answers produce nothing measurable on their own. They sit at
+`…/scratchpad/sweep-1/round-01.json` (6 MB) and stay reusable indefinitely on disk — the Batch API's
+own 29-day results window does not apply to a file already written. If the sweep is ever funded,
+that round is not re-bought.
+
+**What it did buy is this entry.** The pricing error was 3.2x and would have been discovered either
+by spending $331 or by spending $58; it was discovered by spending $58. Everything S173 Part A ships
+— the harness, the metrics, the gate, the re-derived DL-104 baseline — is unaffected and cost nothing.
 
 ### Two things worth doing regardless of which option is chosen
 

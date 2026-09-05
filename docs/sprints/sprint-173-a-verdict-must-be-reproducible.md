@@ -677,7 +677,11 @@ value. Re-run: **10 of 10 red, then restored, then `make ci` green.**
 **`make ci`: exit 0** — **2592 passed, 6 skipped, 100.00 % coverage**, redirected to a file and read,
 never piped.
 
-**`make gate-ran`:** *(filled below at merge.)*
+**`make gate-ran`:** `GATE PROVEN for eeab36c02fcd8b470e2a1c19a6aa9341d7dfc16f` (CI + Security
+Findings, attempt 1 each), run from the branch worktree and checked against its `git rev-parse HEAD`.
+Re-proven on the merge commit: `GATE PROVEN for 98cc45ed6cd796bfadcb71a8761ee13475a78de7` — CI,
+CodeQL, Security Findings **and the image build** all `success`, **0 open error-level alerts**, the
+printed SHA matching `HEAD` on `main`. Tag `v0.97.00` cut on that commit.
 
 ---
 

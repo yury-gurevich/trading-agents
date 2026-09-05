@@ -62,8 +62,8 @@ def record_llm_call(
             calling_agent=calling_agent,
             correlation_id=correlation_id,
             model=model,
-            prompt_hash=_digest(capture.prompt),
-            response_hash=_digest(capture.response),
+            prompt_hash=digest_text(capture.prompt),
+            response_hash=digest_text(capture.response),
             tokens_in=_rough_tokens(capture.prompt),
             tokens_out=_rough_tokens(capture.response),
             latency_ms=latency_ms,
@@ -107,7 +107,8 @@ def write_llm_call(
     )
 
 
-def _digest(value: str) -> str:
+def digest_text(value: str) -> str:
+    """Hash one prompt or response the way every ledger row is hashed."""
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 

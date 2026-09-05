@@ -201,6 +201,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **ANLZ-OBS-04** — Sentiment metrics distinguish the units they report: scored headline count,
   lexicon word occurrences, and the batch-duplicate weighted article denominator used by the
   sentiment mean. Metric names state the unit and the batch scope when the value is batch-scoped.
+- **ANLZ-OBS-05** — A recorded realized drawdown declares the horizon it covers. For each past
+  `Recommendation` the run's own bars can settle, the analyst records the deepest close-to-low fall
+  over the following `stop_target_drawdown_horizon_days` sessions, **together with that horizon**, so
+  a number measured under one window can never be read as if it were measured under another. Absence
+  of the value means the window has not settled, the anchor session is missing, or the run never
+  fetched that ticker — **never that the name did not fall**; a real zero is written as zero. The
+  write is append-only: a recorded observation is immutable, and a backfill failure is a fault
+  (`ANLZ-OBS-02`) that never withdraws the recommendations already written.
+  *(Declares the outcome half ADR-0013 assumed and never built; the counterfactual in `ANLZ-OBS-03`
+  was unjudgeable on this book without it.)*
 
 ---
 
@@ -257,6 +267,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `signal_diversity_slack` | `5.0` | `float ≥ 0.0, ≤ 50.0` | YES | Slack allowing a lower-scoring signal from an unused pillar to surface in the rationale |
 | `max_top_signals` | `5` | `int ≥ 1, ≤ 20` | YES | Maximum explanatory signals surfaced per recommendation rationale |
 | `stop_target_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — it selects which formula runs, not a value within one |
+| `stop_target_drawdown_horizon_days` | `10` | `int ≥ 1, ≤ 60` (sessions) | YES | Sessions after a recommendation over which its realized adverse excursion is measured (`ANLZ-OBS-05`). Long enough for an ordinary stop to be touched by noise, short enough that most recommendations settle inside the run's own lookback; every recorded value carries the horizon it used, so changing this cannot silently reinterpret history |
 | `scaled_stop_atr_multiplier` | `2.0` | `float` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
 | `scaled_stop_floor_pct` | `0.025` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Stops volatility-scaled stops becoming too tight on very quiet or tiny-ATR names while still allowing a narrower-than-flat challenger |
 | `scaled_stop_ceiling_pct` | `0.08` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Respects the PRD/regime maximum stop risk; the challenger must not silently widen a stop past the declared risk cap. **The cap binds position size, not stop distance — [ADR-0019](../../../docs/decisions/0019-risk-cap-binds-position-size-not-stop-distance.md)** |
@@ -294,3 +305,16 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
 - **v1.2 — S186 law-amendment cycle (2026-08-24).** Declares the observability guarantee for
   weighted sentiment metrics introduced by DL-132: `sentiment_articles` remains a scored-headline
   count, while the weighted denominator is exposed under its own batch-scoped metric name.
+
+- v1.3 — amendment (DL-156 / S198, 2026-09-05). Added `ANLZ-OBS-05` (a recorded realized drawdown
+  declares its horizon) and the `stop_target_drawdown_horizon_days` PARAM row. The clause exists
+  because ADR-0013 makes promoting the scaled-stop challenger an operator flip **on evidence**, and
+  the evidence could not be assembled: `stop_target_observed_drawdown_pct` was declared in the graph
+  vocabulary and read by `scripts/compare_stop_targets.py`, and **no agent ever wrote it** — measured
+  2026-09-05 over 269 recorded recommendations, `known_outcomes` was **0**, which the report rendered
+  indistinguishably from "no outcomes yet" (work-queue item 49). `ANLZ-OBS-03` promised the
+  counterfactual was reconstructable; it was, and it was also unjudgeable, because nothing recorded
+  what actually happened next. No existing clause was weakened. Cited tests:
+  `test_stop_target_outcome.py::test_settled_window_reports_the_deepest_fall_and_the_horizon_it_covers`,
+  `::test_an_unsettled_window_stays_absent_rather_than_reporting_zero` and
+  `::test_a_recorded_drawdown_is_never_rewritten`.

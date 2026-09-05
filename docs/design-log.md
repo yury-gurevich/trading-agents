@@ -8,6 +8,76 @@ and is marked CLOSED here.
 
 ---
 
+## DL-156 - The stop mode flips, and the book starts recording whether it was right - status: DECIDED (2026-09-05)
+
+**Trigger.** [DL-154](design-log.md) confirmed item 47 (c): one flat `stop_pct=0.0500` for a book
+whose betas run **XOM -0.97 ... INTC 3.35**. [DL-77](design-log.md) had already measured what that
+means - 2.4 ATRs on BAC, 0.6 on MRVL - and S150 built the scaled challenger, off by default, with
+promotion left as an ADR-0013 operator flip **on evidence**. Preparing that flip on 2026-09-05 found
+why it had never been taken.
+
+**The measurement** (`scripts/compare_stop_targets.py`, live graph, 269 recorded recommendations):
+
+| mode | stop min / median / max | RR pass rate | known outcomes | would-touch rate |
+| --- | --- | --- | --- | --- |
+| flat | 5.00 / 5.00 / 5.00 | 100.00 % | 0 | n/a |
+| scaled | 3.00 / 5.45 / 8.00 | 100.00 % | 0 | n/a |
+
+🟩 **DL-77's named trap does not bite.** The danger was that widening stops without widening
+targets would collapse the reward-risk ratio and silently stop AMD, MRVL and HPE being traded at all.
+The pass rate is **100 % in both modes** across all 269, because `_scaled_target` scales the target
+with the stop, and `test_scaled_stop_rr_gate.py::test_reward_risk_verdict_is_mode_invariant_when_both_values_scale`
+proves the verdict is mode-invariant.
+
+🚨 **But the column that decides the question is structurally empty.** `known_outcomes` is
+**0**, and it was never going to be anything else: `stop_target_observed_drawdown_pct` is declared in
+the graph vocabulary and read by the comparison script, and **no agent writes it**. The only writers
+are two tests. So the report renders "nothing produces this" identically to "no outcomes yet" -
+[DL-152](design-log.md)'s pattern in a fourth shape, and the reason a promotion that has been
+"pending evidence" since S150 could never move. Filed as work-queue **item 49**.
+
+**Decision (operator, 2026-09-05): flip and build the recorder in the same change.** The operator
+was given four options - flip on the backtest alone, build the recorder first, flip plus recorder, or
+close 47 (c) as a decided policy - and chose **flip plus recorder**, so the flip becomes auditable on
+our own trades rather than defended by argument. **The calendar made the pairing free:** 2026-09-05
+is a Saturday and the dispatcher cron is `30 22 * * 1-5`, so the next scheduled run is Monday
+2026-09-07 and there is no run between the decision and the deploy. Shipped as
+[S198](sprints/sprint-198-a-stop-we-never-measured.md) under new clause `ANLZ-OBS-05`.
+
+**The shape of the record.** The analyst measures, for each past `Recommendation` its own bars can
+settle, the deepest close-to-low fall over the following `stop_target_drawdown_horizon_days` sessions
+as a fraction of the decision close - **and writes the horizon beside the number**. A drawdown
+measured over 10 sessions and one measured over 30 are different quantities; storing them together is
+what stops a later horizon change silently reinterpreting history. The merge is append-only, so a
+recorded observation is immutable. Absence means the window has not settled, the anchor session is
+missing, or the run never fetched that ticker - **never that the name did not fall**. A real zero is
+written as zero, which is the discrimination item 49 existed to restore.
+
+**Ruled out.**
+
+- *A separate `StopTargetOutcome` label.* Ownership-pure - the analyst would not be re-writing a node
+  it already closed - but the comparison script already reads the property off `Recommendation`, and
+  a second label buys that purity at the cost of a join nothing else needs.
+- *The monitor as the writer.* Defensible on "whoever watches the position measures it", but the
+  analyst **owns** the `Recommendation` label and already holds ~200 bars per ticker each run. The
+  monitor would be reaching across ownership for data it would have to fetch again.
+- *A horizon matched to each recommendation's actual holding period.* More faithful for the ones that
+  were traded, and undefined for the majority that were not. A uniform window is what makes the touch
+  rate comparable across the book, which is the whole point of the number.
+- *Flipping without the recorder.* Offered and rejected by the operator. It would have left the flip
+  permanently defensible only by DL-77's external 2026-04 backtest.
+- *Building the recorder and deferring the flip.* Correct by ADR-0013's letter, but the data takes
+  weeks to accumulate and objection (c) keeps vetoing meanwhile; the deadline for the queue is
+  Friday 2026-09-18.
+
+🚨 **What this decision does NOT settle.** The flip is live, not vindicated. `known_outcomes`
+will be non-zero after the first run under this build, and the first settled windows will be short
+and few. Reading `compare_stop_targets.py` is worth doing; acting on it before the sample can carry
+the weight would be the same mistake in the other direction. **State the denominator when reporting
+it.**
+
+---
+
 ## DL-155 - A gate that examined eight issuers and one that examined none rendered the same string - status: DECIDED (2026-09-05)
 
 **The defect DL-154 left standing, now fixed.** DL-154 measured the deliberator's four objections

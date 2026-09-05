@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from agents.analyst.domain.analyze import score_candidates
 from agents.analyst.domain.sentiment_reading import provider_reading
 from agents.analyst.held_universe import scoring_universe
+from agents.analyst.outcome_backfill import backfill_observed_drawdowns
 from agents.analyst.result import build_empty_result, run_explanation, split_decisions
 from agents.analyst.store import write_analysis
 from contracts.analyst import RecommendationSet
@@ -105,6 +106,7 @@ def run_analysis(
         incident_refs=incident_refs,
         held_count=len(held_positions),
     )
+    _record_settled_drawdowns(graph, market, settings, sink)
     return RecommendationSet(
         run_id=provenance.run_id,
         recommendations=recommendations,
@@ -112,6 +114,31 @@ def run_analysis(
         explanation=run_explanation(recommendations, rejections, regime),
         provenance=provenance,
     )
+
+
+def _record_settled_drawdowns(
+    graph: GraphStore,
+    market: MarketData,
+    settings: AnalystSettings,
+    sink: FaultSink,
+) -> None:
+    """Record realized drawdowns for past recommendations this run can settle.
+
+    ANLZ-OBS-05. Never blocks the run: the recommendations are already written, and
+    a backfill failure must not withdraw them.
+    """
+    with fault_boundary(
+        sink,
+        agent="analyst",
+        module="agents.analyst.run",
+        capability="analyze",
+        reraise=False,
+    ):
+        backfill_observed_drawdowns(
+            graph,
+            market.bars,
+            horizon_days=settings.stop_target_drawdown_horizon_days,
+        )
 
 
 def _record_fault(sink: FaultSink, message: str) -> None:

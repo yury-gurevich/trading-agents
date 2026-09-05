@@ -477,6 +477,7 @@
       "stop_target_counterfactual_mode",
       "stop_target_counterfactual_stop_pct",
       "stop_target_counterfactual_target_pct",
+      "stop_target_drawdown_horizon_days",
       "stop_target_flat_stop_pct",
       "stop_target_flat_target_pct",
       "stop_target_mode",

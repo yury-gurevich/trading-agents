@@ -8,6 +8,68 @@ and is marked CLOSED here.
 
 ---
 
+## DL-157 - The worker half of a fan-out obeyed a literal while the code half obeyed the pack - status: DECIDED (2026-09-05)
+
+**Found by verifying, not by reading.** The 2026-09-05 full `up` to `:s198` deployed cleanly - 16/16
+apps on tag, 16/16 `Succeeded`, `ENV PRESERVATION` 16/16, alembic OK, the deployed vocabulary
+byte-identical to the repo pack. The scale diff against the pre-deploy baseline was **not** identical:
+
+```text
+- deliberator-opponent   0  1  1        + deliberator-opponent   0  4  1
+- deliberator-proponent  0  1  1        + deliberator-proponent  0  4  1
+```
+
+Both peers went from `maxReplicas` **1** to **4**, with the cron rule's `desiredReplicas` at **4**,
+while the manager stayed at 1. Read live off the rule metadata, not inferred.
+
+**Where it came from.** `infra/deploy-agents.ps1` carried
+`if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }` in both
+`Get-AppMaxReplicas` and `Get-AppDesiredReplicas`, added by S172's own infra commit `c8c4fb0`. S172
+merged on 2026-09-04 and the fleet was never re-`up`'d, so the literal sat dormant for a day and
+applied itself on the first full `up` after it. **Nothing was wrong with the deploy** - it did
+exactly what the script said.
+
+🚨 **The contradiction is with S172's own decision.** [DL-153](design-log.md) records that
+S172 merged the dial at **K=1**, not the branch's K=4, because K>1 has never been proven: 1.78x of a
+possible 4x ([DL-145](design-log.md)) and, on the earlier of two runs, **6 dead-lettered peer
+replies with 2 of 15 orders failing open** ([DL-140](design-log.md)). The sprint doc's words were
+*"what merged is the option, not the behaviour."* The pack shipped `DELIBERATOR_DEBATE_CONCURRENCY=1`
+and the deploy script provisioned **four workers** regardless - the option was withheld in the code
+half and taken in the infra half.
+
+**Decision: the peer replica count is resolved from the pack, never from a literal.**
+`Resolve-DebateConcurrency` reads `apps."deliberator-manager".DELIBERATOR_DEBATE_CONCURRENCY` and
+falls back to 1 on an absent, unparseable or sub-1 value; both helpers call it. Raising the fan-out
+is then one edit in one place - the pack - exactly as DL-153 said it should be.
+
+🪴 **This is the same defect the file already fixed once, one layer down.** `Load-Tunables`
+and `Resolve-DispatcherCron` exist because *"a literal default is what reverted `30 22 * * 1-5` to
+daily"*, and the 2026-08-08 `up` silently wiped a 1 % position cap back to 10 % under a green `[OK]`.
+The lesson had been learned for **env values** and not for **scale shape**, so a new literal walked
+straight back in beside the guard that exists to stop it. `tests/test_deploy_tunables_pack.py`
+now asserts the shape too; planted the literal back and watched the test go red before restoring.
+
+**Was the live state harmful?** Not measurably, and that is not the standard. At K=1 the manager has
+at most one peer request outstanding, so three of four replicas idle - waste, not danger. But the
+whole reason K=1 is deployed is that the multi-consumer configuration is the one whose failure mode
+was measured, and there was no scheduled run between the deploy and the fix (2026-09-05 is a
+Saturday; cron is `30 22 * * 1-5`), so no run ever executed against it.
+
+**Ruled out.**
+
+- *Hand-setting the two apps back to 1/1 with `az containerapp update`.* Fastest, and wrong: it
+  creates live cluster state the script disagrees with, so the next `up` reverts it in silence. That
+  is precisely DL-100's defect, and choosing it here would have been choosing the disease to treat
+  the symptom.
+- *Leaving it and filing a queue item.* The fleet would have run Monday in a configuration nobody
+  decided, with the sprint doc for S172 claiming the opposite in writing.
+- *Deriving the replica count from a new deploy-script parameter.* A second dial for one decision.
+  The pack already holds the number the code reads; the infra should read the same one.
+- *Pinning the pack value in the test.* Rejected for the reason the neighbouring test gives: the
+  invariant is that the pack **governs**, not that it holds any particular number.
+
+---
+
 ## DL-156 - The stop mode flips, and the book starts recording whether it was right - status: DECIDED (2026-09-05)
 
 **Trigger.** [DL-154](design-log.md) confirmed item 47 (c): one flat `stop_pct=0.0500` for a book

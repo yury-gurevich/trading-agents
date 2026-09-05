@@ -8,6 +8,47 @@ and is marked CLOSED here.
 
 ---
 
+## DL-160 - the sweep's price was wrong by 3.2x, and work-queue item 43 is exactly why - status: MEASURED (2026-09-05)
+
+🚨 **[DL-158](#dl-158---part-b-is-five-dependent-batch-rounds-not-one-batch-of-debates---and-it-has-a-price---status-decided-2026-09-05) priced an order-replay at `$0.0305` for five calls — `$0.0061` per call. Measured on the real thing: `$0.0196` per call.** Round 1 of the funded sweep (2,961 requests, 2,957 succeeded / 4 errored) cost **$58.05**, read from the Batch API's own `usage` rather than from anything this repo records:
+
+| Measured, round 1 (`msgbatch_01NtHf…`) | Value |
+| --- | --- |
+| input tokens | **8,865,925** — mean **2,998** per call |
+| output tokens | **2,870,907** — mean **970** per call |
+| cache read / write | **0 / 0** — no prompt caching anywhere |
+| cost at batch rates ($2.50 / $12.50 per MTok) | **$58.05**, i.e. **$0.0196 per call** |
+
+**Why the estimate was low, precisely — and it is not a modelling nicety.** DL-158 built its figure from `LLMCall.tokens_in`/`tokens_out`, which **work-queue item 43 had already established are word counts, not tokens, and exclude the system prompt entirely** (`kernel/llm_ledger.py:114`, `agents/deliberator/agent.py:139` passing `prompt=user`). Two errors compounded:
+
+1. **The per-order figure was treated as covering all five calls.** It does not: every call re-sends the whole context, so ~3,000 input tokens are paid **five times per order**, not once.
+2. 🚨 **"Excludes the system prompt" is the dominant term here, because the system prompts are wildly unequal.** Measured: **`DEFENDER_SYSTEM` 434 chars · `CHALLENGER_SYSTEM` 6,764 · `JUDGE_SYSTEM` 6,341.** The challenger's is **15.6x** the defender's. Round 1 is the *only* round that speaks with the small one, so calibrating anything on round 1 — as DL-158 effectively did — understates every round after it.
+
+**Output is half the remaining bill.** At 970 output tokens per arguing turn and $12.50/MTok, output alone is ~$0.0121 of each $0.0196 call. No amount of input trimming touches that.
+
+### The corrected table, projected from round 1's measured usage
+
+Characters-per-token calibrated at **2.14** on round 1's real figures — low for prose, but the veto context is numbers and `snake_case` identifiers, which tokenize badly. Round 1 is paid and free in every row.
+
+| Option | Calls left | Debates | Remaining | With system-prompt caching |
+| --- | --- | --- | --- | --- |
+| **A** three arms x 3 repeats *(what was funded)* | 9,854 | 2,961 | **$274** | $218 |
+| **B** three arms x 2 repeats | 6,564 | 1,974 | **$182** | $145 |
+| **C** control arm only x 3 repeats | 3,944 | 987 | **$112** | $91 |
+| **D** control arm only x 2 repeats | 2,628 | 658 | **$75** | $61 |
+
+Full design A therefore lands near **$331** against the **~$90** quoted. The operator authorised $90; that authorisation does not stretch to $331, so the sweep is **stopped after round 1** pending a fresh decision.
+
+🪤 **Round 1 alone yields nothing measurable.** A verdict needs all five rounds, so the $58 buys zero verdicts unless some configuration is finished. That is an argument for completing *one* usable arm, not for completing all three.
+
+### Two things worth doing regardless of which option is chosen
+
+🟩 **Prompt caching is unclaimed money, and not only for this sweep.** `cache_read = 0` across all 2,957 calls. The challenger and judge system prompts are identical across every request in a round, so `cache_control` on the system block cuts them to 10% of the input rate — **~20% off the sweep** (table above), and it applies to the **nightly fleet** too, where every debate in a run shares those same two prompts inside the cache TTL. This is a code change to the adapters, not to the harness.
+
+🚨 **This is the second time item 43 has cost a real decision, and the first time it cost money.** The item's own text predicted it: *"it is urgent for decisions, because the effort/cost sweep in S173 Part B is one of them."* It was ranked and not done, and the sweep was then priced off the numbers it warns about. The honest source is the API's own `usage`, which both adapters currently discard — and which this entry had to fetch by hand.
+
+---
+
 ## DL-159 - what the agreement metrics must exclude, and the floor the gate starts with - status: DECIDED (2026-09-05)
 
 **S173's four measurement decisions, each answered against data rather than by assertion.**

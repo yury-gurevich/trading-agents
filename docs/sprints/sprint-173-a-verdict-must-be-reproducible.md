@@ -222,6 +222,44 @@ time. **Check again when you merge.**
 
 ---
 
+## Step 0 - RE-MEASURED 2026-09-05, after the 49-commit catch-up merge, and now a committed script
+
+🚨 **The catch-up merge could have invalidated step 0 and did not - checked, not assumed.** The
+branch forked at `f89f8e9`; `main` has since carried S172, S180, S191, S194-S198 and the peer-replica
+fix. **S197 changes the PM gate `detail` string**, which is rendered straight into the veto context, so
+the first question was whether the renderer moved. It did not: `orchestration/veto_context.py`,
+`agents/deliberator/context_pm.py`, `kernel/deliberation.py` and `kernel/llm_ledger.py` are **all absent
+from the 49-commit diff**. S197 put its census in the *stored data*, not the renderer, so historical runs
+render exactly as before.
+
+🟩 **Re-proven live, and stronger than before: 10 of 10 on the five most recent debated runs** -
+`pm-run-5c9c98f0`, `d5688a43`, `63b92d6a`, `c31f4806`, `f6614d3f`, spanning 2026-09-01 through
+2026-09-04, i.e. nights recorded after S194, S195, S196 **and** S197 merged. The spec's original claim
+was 4 of 4.
+
+| Measure | Value | How |
+| --- | --- | --- |
+| Corpus on the spine now | **65 `PMRun`, 65 `DeliberationRun`, 1,172 `LLMCall`** | *[measured 2026-09-05]* live listing; every call carries a `prompt_hash` |
+| Approved orders across all runs | **329** | *[measured 2026-09-05]* `scripts/deliberation_reproducibility.py` |
+| Turns with a stored hash to compare | **280** | same - 49 approved orders were never debated (fail-open or no turn) |
+| Replay to their stored hash, **whole corpus** | **57 of 280 = 20.36 %** | same |
+| Replay to their stored hash, **five most recent runs** | **10 of 10 = 100 %** | same, `--run-id` per run |
+
+🎯 **The two numbers together are the finding.** 100 % on current-code runs says the harness is
+correct; 20 % across history says **replay fidelity tracks the recording code version**, which is
+work-queue **item 44** and not this sprint's job. Reporting only the 20 % would have read as a broken
+harness; reporting only the 100 % would have hidden the drift.
+
+🪴 **The measurement is a committed script this time, not a scratchpad.**
+`scripts/deliberation_reproducibility.py` is read-only (zero `merge_node` / `add_edge`), takes
+`--run-id` to narrow, and **states its denominator** rather than printing a bare percentage - S192
+recorded that DL-140's harness lived in a session scratchpad and was gone when it was next needed.
+🪴 It was run from the branch worktree with `POSTGRES_DSN` passed **through the process
+environment only**, never as a file in the tree, so the no-secrets-in-the-worktree rule held while
+branch code still read the live spine.
+
+---
+
 ## Step 0 — RESULT, measured live 2026-09-03
 
 🟩 **Step 0 passes, and it is a real `DLIB-OBS-01` proof — scoped.** `orchestration/deliberation_replay.py`

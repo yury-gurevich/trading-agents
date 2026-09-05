@@ -9,15 +9,31 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from contracts.portfolio_manager import OrderIntentSet
 from kernel.deliberation import Proposition, Turn, render_debate_prompt
 from kernel.llm_ledger import digest_text
 from orchestration.veto_context import build_veto_context
 
 if TYPE_CHECKING:
-    from contracts.portfolio_manager import OrderIntent, OrderIntentSet
+    from contracts.portfolio_manager import OrderIntent
     from kernel import GraphStore, Node
 
-__all__ = ["replayed_prompt_digest", "replayed_user_prompt"]
+__all__ = ["order_set_of", "replayed_prompt_digest", "replayed_user_prompt"]
+
+
+def order_set_of(node: Node) -> OrderIntentSet | None:
+    """Read a PMRun's stored order set, or None when it cannot be read.
+
+    An unreadable run is a real category — early-return runs store no set at all —
+    so callers count it rather than treating it as an empty debate.
+    """
+    raw = node.props.get("order_intent_set")
+    if raw is None:
+        return None
+    try:
+        return OrderIntentSet.model_validate(raw)
+    except ValueError:
+        return None
 
 
 def replayed_user_prompt(

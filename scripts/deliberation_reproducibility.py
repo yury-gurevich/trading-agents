@@ -19,11 +19,13 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:  # pragma: no cover - import-path shim
     sys.path.insert(0, str(_ROOT))
 
-from contracts.portfolio_manager import OrderIntentSet  # noqa: E402
-from orchestration.deliberation_replay import replayed_prompt_digest  # noqa: E402
+from orchestration.deliberation_replay import (  # noqa: E402
+    order_set_of,
+    replayed_prompt_digest,
+)
 
 if TYPE_CHECKING:
-    from contracts.portfolio_manager import OrderIntent
+    from contracts.portfolio_manager import OrderIntent, OrderIntentSet
     from kernel import GraphStore, Node
 
 # Only the first defender turn is a pure function of graph state: every later turn
@@ -61,7 +63,7 @@ def measure_reproducibility(
         if wanted and node.key not in wanted:
             continue
         pm_runs += 1
-        order_set = _order_set(node)
+        order_set = order_set_of(node)
         if order_set is None:
             unreadable += 1
             continue
@@ -102,16 +104,6 @@ def _compare(
         return "no_recorded_turn"
     rebuilt = replayed_prompt_digest(graph, node, order_set, intent)
     return "matched" if rebuilt == recorded else "mismatched"
-
-
-def _order_set(node: Node) -> OrderIntentSet | None:
-    raw = node.props.get("order_intent_set")
-    if raw is None:
-        return None
-    try:
-        return OrderIntentSet.model_validate(raw)
-    except ValueError:
-        return None
 
 
 def _recorded_hashes(graph: GraphStore) -> dict[str, str]:

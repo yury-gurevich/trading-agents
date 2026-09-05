@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-173-a-verdict-must-be-reproducible`
-**Status:** MERGED — Part A complete and proven; Part B built, unfunded, unrun
+**Status:** CLOSED — Part A merged and proven; Part B ran one round and was stopped on price (DL-160)
 **Version:** 0.97.00
 **Effort:** L
 **Produced:** [DL-158](../design-log.md) — five dependent rounds and the price · [DL-159](../design-log.md) — the exclusion predicate, the floor, and the re-derived baseline · [DRIFT-056](../laws/drift-register.md)
@@ -660,12 +660,24 @@ agreement number goes through. 🚨 **And the interval is a finding of its own: 
 contains both 50 % and 75 %, so the 56 % that has been cited in three decisions cannot distinguish
 "chance" from "acceptable".** Recorded in DL-159.
 
-**Part B — three arms: NOT RUN.** Built arm-agnostic and unfunded by design; the arm count is an
-operator decision against DL-158's table (control only ≈ $30 · three arms × 3 ≈ $90 · three arms ×
-5 ≈ $151), not an assumption baked into code.
+**Part B — RAN ONE ROUND, THEN STOPPED ON PRICE** ([DL-160](../design-log.md)). The operator funded
+three arms × 3 repeats against DL-158's ~$90. Round 1 went through — **2,961 requests, 2,957
+succeeded, 4 errored** — and round 2 was refused for insufficient credit. 🚨 **Round 1 alone cost
+$58.05: $0.0196 per call against the quoted $0.0061, a 3.2× error.** Put the corrected table (the
+funded design lands near **$331**), the operator's decision was **stop, spend nothing more** — a
+choice made against a known price, not a deferral. **No self-agreement figure exists**, because a
+verdict needs all five rounds.
 
-**Batch economics: priced, not observed.** $0.0305 per order-replay on batch (DL-158). No batch has
-been submitted, so turnaround is unmeasured.
+**Batch economics: now measured, and the estimate was wrong.** Read from the Batch API's own `usage`,
+not from anything this repo records: **2,998 input and 970 output tokens per call**, `cache_read` and
+`cache_write` **0** across all 2,957 calls. DL-158's figure came off `LLMCall`'s word counts
+(work-queue item 43), which exclude the system prompt — and the system prompts are **defender 434
+chars, challenger 6,764, judge 6,341**, so round 1, the only round that speaks with the small one, is
+the worst possible thing to calibrate on. Turnaround: round 1's 2,961 requests ended within ~5
+minutes. 🪤 **Two ceilings that are not the ones documented:** a single ~74 MB POST fails with
+`APIConnectionError` well inside the 100k-request and 256 MB limits (fixed in `0.97.01` by chunking
+on payload bytes), and output at 970 tokens/call is **half the bill**, which no input trimming
+touches.
 
 **Guards planted (DL-70): 10 mutations, 10 caught — after two rounds.** The first sweep planted ten
 and **two survived**: `wilson_interval`'s `max(0.0, …)/min(1.0, …)` clamps returned an in-range
@@ -714,8 +726,9 @@ printed SHA matching `HEAD` on `main`. Tag `v0.97.00` cut on that commit.
 
 **Not done, stated plainly:**
 
-- **No provider submission, so no self-agreement, no cross-vendor number, and no Part B.** Awaiting
-  the funding decision.
+- **No self-agreement figure, and none is coming.** Part B was funded, ran round 1, and was stopped
+  when the price proved 3.2× the estimate. A verdict needs all five rounds, so round 1's 2,957 answers
+  produce nothing measurable; they are on disk and would not be re-bought if it is ever resumed.
 - **`DLIB-OBS-02` remains ⬜.** Part B's cost reporting was to prove it from the API's `usage`;
   nothing was submitted.
 - **Cross-vendor agreement is not implemented.** Only an Anthropic batch adapter exists; a `gpt-5.5`

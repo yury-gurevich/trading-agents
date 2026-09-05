@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-198-a-stop-we-never-measured`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.96.00` (MINOR)
 **Effort:** M
 **Decisions:** [DL-156](../design-log.md) the recorder and its rejected shapes - [DL-77](../design-log.md) the measurement and its 2026-09-05 addendum - ADR-0013 promotion path - work-queue items **47 (c)** and **49**
@@ -171,7 +171,7 @@ would want a query rather than a scan.
 
 ## Closeout - evidence
 
-**Status:** BUILT
+**Status:** MERGED `b2fc22b`, 2026-09-05
 
 **Tree the proofs ran in (and `.env` present?):** `wt-s198`, branch
 `sprint-198-a-stop-we-never-measured`, **no `.env`**. The 269-row comparison in *Measured* above was
@@ -199,7 +199,19 @@ measurement that motivated it is the 2026-09-05 addendum to [`DL-77`](../design-
 **`make ci`:** redirected to a file, never piped. **Exit code 0.** `2524 passed, 6 skipped`, coverage
 **100.00 %**. pip-audit `No known vulnerabilities found`. detect-secrets `Passed`.
 
-**`make gate-ran`:** *pending push - filled at merge.*
+**`make gate-ran`:** run from the branch worktree `wt-s198`, whose `HEAD` was
+`9dba4257001c70f074d33819d719245c611df533` - checked against `git rev-parse HEAD`, with nothing
+committed above it:
+
+```text
+GATE PROVEN for 9dba4257001c70f074d33819d719245c611df533:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+Merged to `main` as `b2fc22b`, and re-proven on the merge commit itself - **CI, CodeQL, Security
+Findings and `Build and push agent images` all `success`**, with **0 open error-level alerts**.
+The post-merge CodeQL check matters here: `codeql.yml` runs only on `main` (queue item 31).
 
 **Not met / verified failing:** none. **Owed, not failed:** the full `up` (the vocabulary moved), and
 the first reading of `compare_stop_targets.py` with a non-zero `known_outcomes`.

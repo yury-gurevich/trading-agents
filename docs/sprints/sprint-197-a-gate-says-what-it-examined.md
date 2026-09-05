@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-197-a-gate-says-what-it-examined`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** `0.95.03` (PATCH)
 **Effort:** S
 **Decisions:** [DL-155](../design-log.md) the census and its rejected shapes - [DL-154](../design-log.md) the measurement that found the defect - work-queue item **47**, first of three parts
@@ -136,7 +136,7 @@ deliberate ([DL-155](../design-log.md)).
 
 ## Closeout - evidence
 
-**Status:** BUILT
+**Status:** MERGED `dc79d05`, 2026-09-05
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\AppData\Local\Temp\wt-s197`, branch
 `sprint-197-a-gate-says-what-it-examined`, **no `.env`** - every proof here is unit-level and needs
@@ -175,7 +175,17 @@ alternatives and the reason each dies.
 **100.00 %**. pip-audit `No known vulnerabilities found`. detect-secrets `Passed` (tracked and
 untracked).
 
-**`make gate-ran`:** *pending push - filled at merge.*
+**`make gate-ran`:** run from the branch worktree `wt-s197`, whose `HEAD` was
+`64764c733c4bdd229efb3fa0f470b54f6f286533` - checked against `git rev-parse HEAD`, with nothing
+committed above it:
+
+```text
+GATE PROVEN for 64764c733c4bdd229efb3fa0f470b54f6f286533:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+Merged to `main` as `dc79d05`.
 
 **Not met / verified failing:** none. **Owed, not failed:** the live re-render on the fleet, which
 needs a deployed run.

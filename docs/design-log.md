@@ -6793,7 +6793,28 @@ Recorded here deliberately rather than folded into S149.
 
 ---
 
-## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: PARTLY (challenger SHIPPED S150 `ca97797`/0.84.00, off by default; promotion still pending)
+## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: PARTLY (challenger SHIPPED S150 `ca97797`/0.84.00, off by default; **promotion still pending, and 2026-09-05 measured why it cannot yet be decided on evidence** — see the addendum below)
+
+**Addendum, measured 2026-09-05 (live graph, `scripts/compare_stop_targets.py`, 269 recorded recommendations).**
+
+| mode | stop min / median / max | RR pass rate | known outcomes | would-touch rate |
+| --- | --- | --- | --- | --- |
+| flat | 5.00 / 5.00 / 5.00 | 100.00 % | 0 | n/a |
+| scaled | 3.00 / 5.45 / 8.00 | 100.00 % | 0 | n/a |
+
+**Two findings, pulling in opposite directions.** 🟩 **The trap named above does not bite on our own book:** the
+reward-risk pass rate is **100 % in both modes** across all 269, so promoting would not silently stop AMD, MRVL or HPE
+being traded - `_scaled_target` scales the target with the stop, and `test_scaled_stop_rr_gate.py::test_reward_risk_verdict_is_mode_invariant_when_both_values_scale`
+proves the verdict is mode-invariant. 🚨 **But `known_outcomes` is 0 and always will be:**
+`stop_target_observed_drawdown_pct` is declared in the graph vocabulary and read by the comparison script, and **nothing
+in the fleet writes it** - the only writers are two tests. So the touch-rate column, which is the whole statistical case
+for scaling, **cannot be computed from our own trades**, and the report renders that indistinguishably from "no outcomes
+yet". Filed as work-queue **item 49**.
+
+**What this means for the promotion.** ADR-0013 makes it an "operator config flip **on evidence**". The evidence that
+exists is the 65-session external backtest in this entry (2026-04, seven tickers) plus the 269-row shape comparison
+above. What does not exist, and cannot until item 49 is built, is the touch rate on positions we actually held. That is
+a real choice for the operator - flip on the backtest and accept it, or record outcomes first - not a gap to paper over.
 
 **Trigger.** DL-76 recorded, as a finding left unfixed, that `suggested_stop_pct` is
 `regime.base_stop_loss_pct` for every buy - one global number, currently 5 %, for the whole book. I

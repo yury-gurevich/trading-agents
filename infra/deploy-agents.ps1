@@ -345,14 +345,32 @@ function Prepare-ServiceBusRoutes {
   if (-not $ok) { throw "Service Bus route preparation failed" }
 }
 
+# The peer replica count follows the pack's declared debate concurrency, never a
+# literal -- the same defect shape as the literal cron default that reverted
+# `30 22 * * 1-5` to daily. S172 shipped the dial at K=1 on purpose (DL-153,
+# DL-145: K>1 measured 1.78x of a possible 4x and, on one of two runs, 6
+# dead-lettered peer replies with 2 of 15 orders failing open). A hardcoded 4 here
+# provisioned the worker half of the fan-out the pack deliberately withheld --
+# measured live on the 2026-09-05 `up` to :s198, which took both peers from
+# max/desired 1 to 4 while the pack still said 1.
+function Resolve-DebateConcurrency {
+  $apps = (Load-Tunables).apps
+  if (@($apps.PSObject.Properties.Name) -notcontains 'deliberator-manager') { return 1 }
+  $value = $apps.'deliberator-manager'.DELIBERATOR_DEBATE_CONCURRENCY
+  $parsed = 0
+  if (-not [int]::TryParse([string]$value, [ref]$parsed)) { return 1 }
+  if ($parsed -lt 1) { return 1 }
+  return $parsed
+}
+
 function Get-AppMaxReplicas($name) {
-  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }
+  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return (Resolve-DebateConcurrency) }
   if ($name -eq "deliberator-manager") { return 1 }
   return 1
 }
 
 function Get-AppDesiredReplicas($name) {
-  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }
+  if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return (Resolve-DebateConcurrency) }
   return $ScaleDesiredReplicas
 }
 

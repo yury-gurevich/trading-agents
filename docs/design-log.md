@@ -8,6 +8,64 @@ and is marked CLOSED here.
 
 ---
 
+## DL-155 - A gate that examined eight issuers and one that examined none rendered the same string - status: DECIDED (2026-09-05)
+
+**The defect DL-154 left standing, now fixed.** DL-154 measured the deliberator's four objections
+to `USB` and `AVGO` and refuted two of them: the correlation gate had examined every held issuer at
+**full 120-bar overlap** and correctly found nothing above `0.70`. `min_correlation_bars` never
+bound; `C` and `SCHW` *were* measured. The judge was not careless - it read
+`cluster_issuers=BAC,USB` and `cluster_issuers=AVGO`, which say what the cluster **is** and nothing
+about what was compared to build it. *Examined 8, none above threshold* and *examined nothing*
+were the same 20 characters.
+
+**Decision. The evaluated gate renders its census into the same `detail` the deliberator reads.**
+`agents/deliberator/context_pm.py:95` passes `gate.detail` through verbatim, so the census needs no
+new channel and no contract change. Five fields, appended after `cluster_issuers`:
+
+| Field | Answers |
+| --- | --- |
+| `examined_issuers` | how many held issuers were compared at all - `0` is now visible |
+| `correlated_issuers` | which reached the threshold, **and at what measured value** |
+| `below_threshold_top` | the strongest three near misses, by name and value |
+| `correlation_threshold` | the bar they were measured against |
+| `min_pair_overlap_bars` | the thinnest comparison used - the number that refutes "the pair went unevaluated" |
+
+Rendered against DL-154's own measurements, the two nights that read identically no longer do:
+
+```text
+cluster_issuers=AVGO; examined_issuers=3; correlated_issuers=none;
+  below_threshold_top=INTC:0.4988,NVDA:0.4739,MRVL:0.4102; min_pair_overlap_bars=120
+cluster_issuers=AVGO; examined_issuers=0; correlated_issuers=none;
+  below_threshold_top=none; min_pair_overlap_bars=none
+```
+
+**This is the third instance of one pattern, and it now has a clause.** S183 (`SCAN-OUT-06/07`) split
+*skipped* from *passed* in the scanner; DL-152/S196 gave the earnings filter a way to say what its
+map covered; both were about a producer that knew something it never said. `PM-NEV-09` already
+separated *not evaluated* from *passed*. What had no clause was the level below: an **evaluated**
+gate that reports its verdict without the size of the comparison behind it. `PM-OBS-03` (laws v1.4)
+asserts that duty, so the regression is now a failing test rather than another veto.
+
+**Ruled out.**
+
+- *A separate `correlation_census` gate outcome.* Rejected: the deliberator renders one line per
+  gate outcome, and a second `correlated_cluster_pct`-adjacent row invites the judge to weigh the
+  census as its own verdict. The census is evidence **for** the outcome, so it belongs inside it.
+- *Naming every below-threshold issuer.* Rejected on length - the book can hold ten issuers and the
+  detail is read by an LLM under a context budget. Three near misses plus `examined_issuers` carries
+  the same refutation; the count is what proves nothing was skipped, the names are what make it
+  checkable.
+- *Emitting the census only when the cluster is a singleton.* Rejected: conditional evidence is how
+  this class of defect is born. The census renders on every evaluated outcome.
+- *Fixing it in the prompt instead* ("assume an omitted issuer was measured"). Rejected outright -
+  it asks the judge to trust an inference we can simply state, and DL-154's whole finding is that
+  the judge reasons correctly from what we render.
+
+**Cost of the omission, for the record.** Two of the four objections behind four consecutive
+no-trade nights rested on it. The gate was right the whole time.
+
+---
+
 ## DL-154 - The judge's gate objections, measured: two are wrong, and our rendering is why - status: MEASURED (2026-09-04)
 
 **Item 47 filed four claims from the deliberator's vetoes of `USB` and `AVGO` on

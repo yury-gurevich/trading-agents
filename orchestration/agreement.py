@@ -36,7 +36,11 @@ def wilson_interval(matched: int, compared: int) -> tuple[float, float] | None:
         )
         / denominator
     )
-    return (max(0.0, centre - spread), min(1.0, centre + spread))
+    # No clamping. Wilson is provably inside [0, 1], so a clamp cannot correct a
+    # real bound — it can only hide a broken one, and it did: a deliberately
+    # corrupted denominator still produced an in-range interval (DL-70 sweep,
+    # 2026-09-05). The bounds are pinned by value in the tests instead.
+    return (centre - spread, centre + spread)
 
 
 @dataclass(frozen=True)

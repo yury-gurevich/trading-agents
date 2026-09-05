@@ -40,12 +40,22 @@ def test_a_missing_counterpart_is_not_counted_as_an_exclusion() -> None:
     assert "no_counterpart=9" in detail
 
 
+def test_the_interval_is_wilsons_by_value_not_merely_by_range() -> None:
+    """DL-104's 9 of 16, to four places. A range assertion passed a broken
+    denominator in the 2026-09-05 mutation sweep; only pinned values catch it."""
+    low, high = wilson_interval(9, 16) or (0.0, 0.0)
+
+    assert round(low, 4) == 0.3318
+    assert round(high, 4) == 0.7690
+
+
 def test_the_interval_stays_inside_zero_and_one_at_the_extremes() -> None:
     """The normal approximation leaves [0,1] here; Wilson is chosen for this."""
     low, high = wilson_interval(4, 4) or (0.0, 0.0)
 
     assert 0.0 <= low <= high <= 1.0
-    assert high == 1.0
+    assert round(high, 6) == 1.0
+    assert round(low, 4) == 0.5101
 
 
 def test_a_small_sample_gets_a_wide_interval_and_a_large_one_a_narrow_one() -> None:

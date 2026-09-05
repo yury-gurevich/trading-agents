@@ -50,6 +50,9 @@ def test_two_different_decisions_are_never_compared_against_each_other() -> None
 
     assert measured.compared == 0
     assert measured.rate is None
+    # Two decisions replayed once each: no pair, no failure, and nothing hidden.
+    assert measured.no_counterpart == 2
+    assert measured.excluded == 0
 
 
 def test_a_failed_replay_is_excluded_and_counted_not_treated_as_a_verdict() -> None:

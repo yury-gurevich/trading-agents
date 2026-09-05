@@ -8,6 +8,66 @@ and is marked CLOSED here.
 
 ---
 
+## DL-159 - what the agreement metrics must exclude, and the floor the gate starts with - status: DECIDED (2026-09-05)
+
+**S173's four measurement decisions, each answered against data rather than by assertion.**
+
+**1. The exclusion predicate is one function, and it is not optional.** A fail-open is recorded as
+`verdict: "uphold"` (`agents/deliberator/review_record.py:41-51`), indistinguishable in the
+`verdicts` map from a real ruling. `real_verdicts()` subtracts `failed_open_tickers` once, and
+every metric reads through it. 🚨 **Measured 2026-09-05, this is not a rounding correction: of the
+329 approved orders on the spine, 83 are fail-opens - 25.2 %.** Every one of the remaining 246 has
+a real recorded verdict, so the corpus splits exactly two ways and nothing is unaccounted for. A
+metric that skipped the predicate would have counted 83 fabricated `uphold`s as agreement, and
+because fail-opens cluster by outage they would have agreed with each other.
+
+**2. The denominator is comparable *pairs*, not records.** Self-agreement over N repeats of one
+decision is every unordered pair of those repeats (3 repeats -> 3 pairs), restricted to one arm.
+Two different decisions are never compared with each other, and a failed replay is excluded and
+*counted*, never silently dropped. `excluded` (no real debate) and `no_counterpart` (the other
+source never ruled on this decision) are separate fields, because conflating them lets a shrinking
+overlap read as a rising failure rate.
+
+**3. The interval is Wilson's score interval, at 95 %.** Rejected: the normal approximation, which
+at this sprint's affordable sample sizes - tens of pairs, proportions that can sit at 0 or 1 -
+produces bounds outside `[0, 1]` and is badly calibrated near the ends. A bare percentage without
+an interval does not satisfy the sprint's first success factor, and 9-of-16 is precisely the sample
+size where the distinction bites.
+
+**4. The floor starts at 0.56, warn-only, and refuses to rule below 10 pairs.** The only
+self-agreement figure ever measured is [DL-104](design-log.md)'s 9 of 16 = 56 %, so the floor is set
+at the *known-bad* level: it cannot certify quality, but a further decline becomes visible. It is
+deliberately uncalibrated until Part B's repeats exist, which is why the gate ships warn-only
+(S156's pattern for law-coverage assertion E) - **a gate that blocks on an invented threshold is
+worse than no gate, because it teaches everyone to ignore it.** Below 10 comparable pairs the Wilson
+interval spans most of `[0, 1]`, so the gate reports INSUFFICIENT and makes no quality claim in
+either direction rather than passing a one-coin-toss sample.
+
+### Two things measured on the way past, both re-measurements of a smaller sample
+
+🪤 **The recorded verdict distribution is 61 % `revise`, not 78 %.** Over all 246 real verdicts on
+the spine (2026-09-05): `revise` 150, `uphold` 74, `overturn` 22. DL-104's **45 of 58 = 78 %** was
+four runs; the full corpus is **150 of 246 = 60.98 %**. The direction holds - the veto overwhelmingly
+declines to simply uphold - but the magnitude was overstated by the small sample, and anything built
+on 78 % should be rebuilt on 61 %.
+
+🪤 **The two graph stores hand back different Python types for the same property.**
+`InMemoryGraphStore` freezes props (`dict` -> `mappingproxy`, `list` -> `tuple`); the Postgres store
+returns plain JSON types. An `isinstance(value, dict)` guard therefore passes in production and
+fails in every unit test - or the reverse, depending which way it was written. Caught here by a red
+test, not in production. Any reader of `node.props` must accept both shapes: use `Mapping`, and
+`list | tuple` for sequences. Recorded because the next reader will hit it too.
+
+### What is proven, and what is not
+
+Proven: the harness plans **1,645 requests** for one repeat of one arm over the live corpus (65 PM
+runs, 0 unreadable, 329 subjects), the metrics and gate run end to end against the live spine, and
+`make ci` is green at 100 % coverage. **Not proven: nothing has been submitted to a provider.** No
+self-agreement number exists yet, and none can until the operator funds a sweep
+([DL-158](design-log.md)'s table).
+
+---
+
 ## DL-158 - Part B is five dependent batch rounds, not one batch of debates - and it has a price - status: DECIDED (2026-09-05)
 
 **Two things measured before building S173's batch layer, both of which change it.**

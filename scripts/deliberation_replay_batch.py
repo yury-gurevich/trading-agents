@@ -26,6 +26,7 @@ if str(_ROOT) not in sys.path:  # pragma: no cover - import-path shim
     sys.path.insert(0, str(_ROOT))
 
 from orchestration.replay_batch import replay_debates  # noqa: E402
+from orchestration.replay_chunks import chunk_by_bytes  # noqa: E402
 from orchestration.replay_corpus import build_corpus  # noqa: E402
 from orchestration.replay_types import Arm, BatchRequest, BatchResult  # noqa: E402
 
@@ -35,6 +36,7 @@ ARMS = {
     "rounds": Arm("rounds", "claude-opus-5", "high", 1),
 }
 _POLL_SECONDS = 30
+_CREATE_ATTEMPTS = 4
 
 
 class AnthropicBatchGateway:
@@ -71,19 +73,49 @@ class AnthropicBatchGateway:
         return results
 
     def _submit(self, requests: list[BatchRequest]) -> tuple[BatchResult, ...]:
+        """Submit the round as byte-bounded chunks, then wait for all of them.
+
+        Every chunk is created before any is polled, because batches run in
+        parallel server-side: submitting serially would multiply the wall clock
+        by the number of chunks for no benefit.
+        """
+        chunks = chunk_by_bytes(requests)
+        print(f"round {self._round}: {len(requests)} requests in {len(chunks)} chunks")
+        ids = [self._create(chunk, index) for index, chunk in enumerate(chunks, 1)]
+        results: list[BatchResult] = []
+        for index, batch_id in enumerate(ids, 1):
+            results.extend(self._collect(batch_id, index, len(ids)))
+        return tuple(results)
+
+    def _create(self, chunk: tuple[BatchRequest, ...], index: int) -> str:
         assert self._client is not None
-        batch = self._client.messages.batches.create(
-            requests=[_wire(request) for request in requests]
-        )
-        print(f"round {self._round}: batch {batch.id}, {len(requests)} requests")
+        payload = [_wire(request) for request in chunk]
+        for attempt in range(1, _CREATE_ATTEMPTS + 1):
+            try:
+                batch = self._client.messages.batches.create(requests=payload)
+            except Exception as exc:
+                if attempt == _CREATE_ATTEMPTS:
+                    raise
+                wait = _POLL_SECONDS * attempt
+                print(f"  chunk {index}: create failed ({exc}); retrying in {wait}s")
+                time.sleep(wait)
+            else:
+                print(f"  chunk {index}: {batch.id}, {len(chunk)} requests")
+                return str(batch.id)
+        raise RuntimeError("unreachable")
+
+    def _collect(self, batch_id: str, index: int, total: int) -> list[BatchResult]:
+        assert self._client is not None
         while True:
-            batch = self._client.messages.batches.retrieve(batch.id)
+            batch = self._client.messages.batches.retrieve(batch_id)
             if batch.processing_status == "ended":
                 break
             time.sleep(_POLL_SECONDS)
-        return tuple(
-            _result(entry) for entry in self._client.messages.batches.results(batch.id)
-        )
+        found = [
+            _result(entry) for entry in self._client.messages.batches.results(batch_id)
+        ]
+        print(f"  chunk {index}/{total} ended: {len(found)} results")
+        return found
 
 
 def _wire(request: BatchRequest) -> dict[str, object]:

@@ -12,6 +12,7 @@ COPY agents/analyst/__init__.py agents/analyst/__init__.py
 COPY agents/analyst/history_requirements.py agents/analyst/history_requirements.py
 COPY agents/analyst/settings.py agents/analyst/settings.py
 COPY agents/analyst/settings_indicators.py agents/analyst/settings_indicators.py
+COPY agents/analyst/settings_stop_target.py agents/analyst/settings_stop_target.py
 COPY agents/provider/__init__.py agents/provider/__init__.py
 COPY agents/provider/domain/__init__.py agents/provider/domain/__init__.py
 COPY agents/provider/domain/market_calendar.py agents/provider/domain/market_calendar.py

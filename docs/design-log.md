@@ -58,6 +58,32 @@ fails in every unit test - or the reverse, depending which way it was written. C
 test, not in production. Any reader of `node.props` must accept both shapes: use `Mapping`, and
 `list | tuple` for sequences. Recorded because the next reader will hit it too.
 
+### Step 5, done: the harness re-derives DL-104's 9 of 16 exactly — and the interval changes what it means
+
+`scripts/deliberation_quality.py --recorded-run pm-run-0c3c9324… --recorded-run pm-run-cbd26639…`,
+run against the live spine 2026-09-05, through the same metric every other agreement number goes
+through:
+
+```text
+self_agreement: matched=9; compared=16; excluded=0; no_counterpart=2;
+                rate=56.25%; ci95=[33.18%, 76.90%]
+```
+
+**matched=9, compared=16 — the hand-computed figure, reproduced by code.** The sprint's own stopping
+rule was that a harness which cannot reproduce it is wrong; it reproduces it. It also states the two
+things the hand computation did not: **`no_counterpart=2`** (two tickers appear in only one of the
+two runs, consistent with run A's 16 real + 2 fail-open against run B's 18), and the interval.
+
+🚨 **The interval is the finding. 56 % on 16 pairs has a 95 % confidence interval of
+[33.2 %, 76.9 %].** That span contains 50 % *and* 75 %. So the measured number can support neither
+"barely distinguishable from chance" nor "acceptably consistent" — it is compatible with both. This
+does not refute [DL-104](#dl-104--the-vetos-verdicts-were-read-for-the-first-time-it-is-a-good-auditor-and-a-bad-gate)'s
+conclusion, which rested mainly on reading the *grounds* (2 of 15 survived checking) rather than on
+the rate. But the **56 % itself has since been cited in three decisions** — DL-105's sweep, the
+2026-08-13 timeout incident, and DL-140's rejected routes — and on 16 pairs it cannot carry that
+weight. **Anything that needs to distinguish an arm from the control needs a sample large enough for
+the intervals not to overlap**, which is the argument for funding repeats rather than a single pass.
+
 ### What is proven, and what is not
 
 Proven: the harness plans **1,645 requests** for one repeat of one arm over the live corpus (65 PM

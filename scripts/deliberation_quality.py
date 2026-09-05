@@ -25,8 +25,11 @@ from orchestration.settings import DeliberationQualitySettings  # noqa: E402
 from orchestration.verdict_metrics import (  # noqa: E402
     ReplayVerdict,
     agreement_with,
-    recorded_verdicts,
     self_agreement,
+)
+from orchestration.verdict_sources import (  # noqa: E402
+    recorded_as_repeats,
+    recorded_verdicts,
 )
 
 
@@ -49,7 +52,13 @@ def load_verdicts(path: Path) -> tuple[ReplayVerdict, ...]:
 def main(argv: list[str] | None = None) -> int:
     """Measure and judge one replay sweep."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verdicts", required=True, help="path to verdicts.json")
+    parser.add_argument("--verdicts", help="path to a replay sweep's verdicts.json")
+    parser.add_argument(
+        "--recorded-run",
+        action="append",
+        default=[],
+        help="measure agreement between recorded DeliberationRuns, by ticker",
+    )
     parser.add_argument("--arm", default=None, help="restrict to one arm")
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--blocking", action="store_true", help="fail below the floor")
@@ -58,8 +67,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    if not args.verdicts and len(args.recorded_run) < 2:
+        parser.error("give --verdicts, or two or more --recorded-run ids")
+
     settings = DeliberationQualitySettings()
-    verdicts = load_verdicts(Path(args.verdicts))
+    verdicts = (
+        load_verdicts(Path(args.verdicts))
+        if args.verdicts
+        else recorded_as_repeats(_graph(args), args.recorded_run)
+    )
     agreement = self_agreement(verdicts, arm=args.arm)
     gate = evaluate_quality(
         agreement,
@@ -71,18 +87,22 @@ def main(argv: list[str] | None = None) -> int:
 
     for arm in sorted({verdict.arm for verdict in verdicts}):
         print(self_agreement(verdicts, arm=arm).detail())
-    if not args.no_graph:
+    if not args.no_graph and args.verdicts:
         print(_against_the_record(verdicts, args))
     return gate.exit_code
 
 
-def _against_the_record(verdicts: tuple[ReplayVerdict, ...], args: object) -> str:
+def _graph(args: object) -> object:
     from dotenv import load_dotenv
 
     from kernel.graph_env import build_graph_from_env
 
     load_dotenv(Path(args.env_file), override=False)  # type: ignore[attr-defined]
-    truth = recorded_verdicts(build_graph_from_env())
+    return build_graph_from_env()
+
+
+def _against_the_record(verdicts: tuple[ReplayVerdict, ...], args: object) -> str:
+    truth = recorded_verdicts(_graph(args))  # type: ignore[arg-type]
     return agreement_with(
         verdicts,
         truth,

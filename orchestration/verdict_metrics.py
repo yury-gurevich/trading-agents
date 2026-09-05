@@ -3,17 +3,17 @@
 Agent: orchestration
 Role: answer "does the veto agree with itself" — and with a second vendor, and
       with the hand-checked ground truth — from verdict labels, never prose.
-External I/O: reads the injected GraphStore for recorded verdicts. No writes.
+External I/O: none — the records come from a replay sweep or from
+              ``orchestration.verdict_sources``.
 
-One exclusion predicate, in one place: a fail-open is recorded as
-``verdict: "uphold"`` (``review_record.fail_open_review``), so a metric that does
-not subtract ``failed_open_tickers`` measures the fail-open rate and calls it
-agreement. DL-104's run D is 5 of 6, not 5 of 10, for exactly this reason.
+Every metric counts three things separately: what agreed, what was excluded
+because no real debate produced it, and what had nothing to be compared against.
+Collapsing the last two would let a shrinking overlap read as a rising failure
+rate, which is the shape of error this sprint exists to remove.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import combinations
 from typing import TYPE_CHECKING
@@ -21,17 +21,9 @@ from typing import TYPE_CHECKING
 from orchestration.agreement import Agreement
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
 
-    from kernel import GraphStore
-
-__all__ = [
-    "ReplayVerdict",
-    "agreement_with",
-    "real_verdicts",
-    "recorded_verdicts",
-    "self_agreement",
-]
+__all__ = ["Decision", "ReplayVerdict", "agreement_with", "self_agreement"]
 
 Decision = tuple[str, str]
 
@@ -58,31 +50,6 @@ class ReplayVerdict:
         return self.failure is None and self.ruling is not None
 
 
-def real_verdicts(props: Mapping[str, object]) -> dict[str, str]:
-    """Read one DeliberationRun's verdicts with its fail-opens subtracted."""
-    # The in-memory store freezes props (dict -> mappingproxy, list -> tuple) while
-    # the Postgres store returns plain JSON types, so both shapes must be read.
-    verdicts = props.get("verdicts")
-    if not isinstance(verdicts, Mapping):
-        return {}
-    failed = props.get("failed_open_tickers")
-    excluded = set(failed) if isinstance(failed, list | tuple) else set()
-    return {
-        str(ticker): str(ruling)
-        for ticker, ruling in verdicts.items()
-        if ticker not in excluded
-    }
-
-
-def recorded_verdicts(graph: GraphStore) -> dict[Decision, str]:
-    """Every real verdict the live fleet has recorded, fail-opens removed."""
-    found: dict[Decision, str] = {}
-    for node in graph.list_nodes("DeliberationRun"):
-        for ticker, ruling in real_verdicts(node.props).items():
-            found[(node.key, ticker)] = ruling
-    return found
-
-
 def self_agreement(
     verdicts: Iterable[ReplayVerdict], *, arm: str | None = None
 ) -> Agreement:
@@ -96,12 +63,16 @@ def self_agreement(
         for rulings in grouped.values()
         for first, second in combinations(rulings, 2)
     ]
-    name = "self_agreement" if arm is None else f"self_agreement[{arm}]"
     return Agreement(
-        name=name,
+        name="self_agreement" if arm is None else f"self_agreement[{arm}]",
         matched=sum(1 for first, second in pairs if first == second),
         compared=len(pairs),
         excluded=excluded,
+        # A decision replayed only once yields no pair. It is not a failure and
+        # not a disagreement, but it must not vanish from the report either.
+        no_counterpart=sum(
+            len(rulings) for rulings in grouped.values() if len(rulings) < 2
+        ),
     )
 
 

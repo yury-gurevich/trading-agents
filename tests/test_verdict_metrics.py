@@ -8,12 +8,9 @@ External I/O: none.
 
 from __future__ import annotations
 
-from kernel import InMemoryGraphStore
 from orchestration.verdict_metrics import (
     ReplayVerdict,
     agreement_with,
-    real_verdicts,
-    recorded_verdicts,
     self_agreement,
 )
 
@@ -83,41 +80,6 @@ def test_one_arm_can_be_measured_without_the_others_contaminating_it() -> None:
     assert self_agreement(verdicts, arm="control").matched == 1
     assert self_agreement(verdicts, arm="effort").matched == 0
     assert "self_agreement[effort]" in self_agreement(verdicts, arm="effort").detail()
-
-
-def test_a_fail_open_uphold_is_subtracted_from_a_recorded_run() -> None:
-    """fail_open_review records 'uphold'; counting it would measure the outage."""
-    props = {
-        "verdicts": {"USB": "uphold", "AVGO": "revise"},
-        "failed_open_tickers": ["USB"],
-    }
-
-    assert real_verdicts(props) == {"AVGO": "revise"}
-
-
-def test_a_run_with_no_readable_verdict_map_contributes_nothing() -> None:
-    """A malformed row must not become an empty agreement claim."""
-    assert real_verdicts({}) == {}
-    assert real_verdicts({"verdicts": "not a map"}) == {}
-    assert real_verdicts({"verdicts": {"USB": "revise"}, "failed_open_tickers": 3}) == {
-        "USB": "revise"
-    }
-
-
-def test_the_recorded_verdicts_are_keyed_by_run_and_ticker() -> None:
-    """One ticker can be judged differently on different nights."""
-    graph = InMemoryGraphStore()
-    graph.merge_node(
-        "DeliberationRun",
-        "pm-run-1",
-        {"verdicts": {"USB": "revise", "C": "uphold"}, "failed_open_tickers": ["C"]},
-    )
-    graph.merge_node("DeliberationRun", "pm-run-2", {"verdicts": {"USB": "uphold"}})
-
-    assert recorded_verdicts(graph) == {
-        ("pm-run-1", "USB"): "revise",
-        ("pm-run-2", "USB"): "uphold",
-    }
 
 
 def test_agreement_with_a_second_source_reports_what_it_could_not_compare() -> None:

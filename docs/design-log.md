@@ -8,6 +8,64 @@ and is marked CLOSED here.
 
 ---
 
+## DL-158 - Part B is five dependent batch rounds, not one batch of debates - and it has a price - status: DECIDED (2026-09-05)
+
+**Two things measured before building S173's batch layer, both of which change it.**
+
+🚨 **A debate cannot be submitted as one batch of five requests.** The spec's `custom_id` shape
+(`{pm_run}:{ticker}:{repeat}:{arm}:{role}`) reads as though the five calls of one debate go into a
+batch together. They cannot: `render_debate_prompt(proposition, transcript)`
+(`kernel/deliberation.py:89`) interpolates the debate so far, and `agents/deliberator/poll.py:153-169`
+appends each reply to that transcript before the next turn is issued. **Turn N+1's prompt contains
+turn N's answer**, so the five calls are strictly sequential *within* an order.
+
+**They are independent *across* orders, and that is what batches.** The harness therefore runs
+**five dependent rounds** - `defender:r1`, `challenger:r1`, `defender:r2`, `challenger:r2`, `judge` -
+each one batch containing every order's turn for that round, each round submitted only after the
+previous round's results are read back. The Batch API's 100k-request ceiling is nowhere near binding
+(the largest design below is ~4,935 requests per round), and "most batches complete within an hour"
+makes five rounds a few hours of wall clock - which this path has, because it has no latency budget
+at all ([DL-105](design-log.md)).
+
+🚨 **This also constrains `custom_id`**: it must identify the order *and the repeat and arm*,
+because the round is the batch, so results come back keyed only by that string and in **any order**.
+
+**The price, so the arm count is a decision and not a surprise.**
+
+| Input | Value | Source |
+| --- | --- | --- |
+| `claude-opus-5` | **$5.00 / MTok in, $25.00 / MTok out** | first-party API rates |
+| Batch API discount | **50 %** | Message Batches |
+| Tokens per order (all five calls) | **~5,800 in / ~1,280 out** | *[measured 2026-09-03, DL-150]* USB on `sched-2026-09-02` |
+| Approved orders on the spine | **329** across 65 `PMRun`s | *[measured 2026-09-05]* `scripts/deliberation_reproducibility.py` |
+
+One order-replay costs **$0.061** at standard rates, **$0.0305** on batch. So:
+
+| Design | Replays | Batch cost |
+| --- | --- | --- |
+| **Control arm only** (the noise floor), 329 orders x 3 repeats | 987 | **~$30** |
+| Three arms x 3 repeats | 2,961 | **~$90** |
+| Three arms x 5 repeats | 4,935 | **~$151** |
+
+🪴 **Three caveats, stated rather than buried.** The `max_rounds` arm changes the *number* of
+calls per order and the `effort` arm changes output tokens, so arms B and C are not priced identically
+to arm A - these figures are the arm-A rate applied three times. Prompt caching is **unmodelled
+upside**: repeats of one order share a byte-identical prefix, so co-located repeats would read cache
+at ~0.1x input cost, but batch scheduling is not controllable and the cache TTL is minutes, so it is
+not counted. And the token figure comes from **one** measured order, not a distribution.
+
+**Decision: build the harness arm-agnostic and let the operator choose the design.** The round-batch
+machinery is identical for one arm or three; what differs is how many batches get submitted. So Part A
+ships the harness and the control arm's shape without spending anything, and the arm count is a
+funding decision made against the table above rather than an assumption baked into code.
+
+🚨 **The control arm is not the cheap option to cut.** At 56 % self-agreement the same config
+disagrees with itself nearly half the time; without arm A's noise floor a `high`-vs-`medium`
+difference is uninterpretable. Cutting arms B and C leaves a usable result; cutting arm A leaves
+three numbers that cannot be compared to anything.
+
+---
+
 ## DL-157 - The worker half of a fan-out obeyed a literal while the code half obeyed the pack - status: DECIDED (2026-09-05)
 
 **Found by verifying, not by reading.** The 2026-09-05 full `up` to `:s198` deployed cleanly - 16/16

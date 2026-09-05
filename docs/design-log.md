@@ -8,6 +8,414 @@ and is marked CLOSED here.
 
 ---
 
+## DL-157 - The worker half of a fan-out obeyed a literal while the code half obeyed the pack - status: DECIDED (2026-09-05)
+
+**Found by verifying, not by reading.** The 2026-09-05 full `up` to `:s198` deployed cleanly - 16/16
+apps on tag, 16/16 `Succeeded`, `ENV PRESERVATION` 16/16, alembic OK, the deployed vocabulary
+byte-identical to the repo pack. The scale diff against the pre-deploy baseline was **not** identical:
+
+```text
+- deliberator-opponent   0  1  1        + deliberator-opponent   0  4  1
+- deliberator-proponent  0  1  1        + deliberator-proponent  0  4  1
+```
+
+Both peers went from `maxReplicas` **1** to **4**, with the cron rule's `desiredReplicas` at **4**,
+while the manager stayed at 1. Read live off the rule metadata, not inferred.
+
+**Where it came from.** `infra/deploy-agents.ps1` carried
+`if ($name -in @("deliberator-proponent", "deliberator-opponent")) { return 4 }` in both
+`Get-AppMaxReplicas` and `Get-AppDesiredReplicas`, added by S172's own infra commit `c8c4fb0`. S172
+merged on 2026-09-04 and the fleet was never re-`up`'d, so the literal sat dormant for a day and
+applied itself on the first full `up` after it. **Nothing was wrong with the deploy** - it did
+exactly what the script said.
+
+🚨 **The contradiction is with S172's own decision.** [DL-153](design-log.md) records that
+S172 merged the dial at **K=1**, not the branch's K=4, because K>1 has never been proven: 1.78x of a
+possible 4x ([DL-145](design-log.md)) and, on the earlier of two runs, **6 dead-lettered peer
+replies with 2 of 15 orders failing open** ([DL-140](design-log.md)). The sprint doc's words were
+*"what merged is the option, not the behaviour."* The pack shipped `DELIBERATOR_DEBATE_CONCURRENCY=1`
+and the deploy script provisioned **four workers** regardless - the option was withheld in the code
+half and taken in the infra half.
+
+**Decision: the peer replica count is resolved from the pack, never from a literal.**
+`Resolve-DebateConcurrency` reads `apps."deliberator-manager".DELIBERATOR_DEBATE_CONCURRENCY` and
+falls back to 1 on an absent, unparseable or sub-1 value; both helpers call it. Raising the fan-out
+is then one edit in one place - the pack - exactly as DL-153 said it should be.
+
+🪴 **This is the same defect the file already fixed once, one layer down.** `Load-Tunables`
+and `Resolve-DispatcherCron` exist because *"a literal default is what reverted `30 22 * * 1-5` to
+daily"*, and the 2026-08-08 `up` silently wiped a 1 % position cap back to 10 % under a green `[OK]`.
+The lesson had been learned for **env values** and not for **scale shape**, so a new literal walked
+straight back in beside the guard that exists to stop it. `tests/test_deploy_tunables_pack.py`
+now asserts the shape too; planted the literal back and watched the test go red before restoring.
+
+**Was the live state harmful?** Not measurably, and that is not the standard. At K=1 the manager has
+at most one peer request outstanding, so three of four replicas idle - waste, not danger. But the
+whole reason K=1 is deployed is that the multi-consumer configuration is the one whose failure mode
+was measured, and there was no scheduled run between the deploy and the fix (2026-09-05 is a
+Saturday; cron is `30 22 * * 1-5`), so no run ever executed against it.
+
+**Ruled out.**
+
+- *Hand-setting the two apps back to 1/1 with `az containerapp update`.* Fastest, and wrong: it
+  creates live cluster state the script disagrees with, so the next `up` reverts it in silence. That
+  is precisely DL-100's defect, and choosing it here would have been choosing the disease to treat
+  the symptom.
+- *Leaving it and filing a queue item.* The fleet would have run Monday in a configuration nobody
+  decided, with the sprint doc for S172 claiming the opposite in writing.
+- *Deriving the replica count from a new deploy-script parameter.* A second dial for one decision.
+  The pack already holds the number the code reads; the infra should read the same one.
+- *Pinning the pack value in the test.* Rejected for the reason the neighbouring test gives: the
+  invariant is that the pack **governs**, not that it holds any particular number.
+
+---
+
+## DL-156 - The stop mode flips, and the book starts recording whether it was right - status: DECIDED (2026-09-05)
+
+**Trigger.** [DL-154](design-log.md) confirmed item 47 (c): one flat `stop_pct=0.0500` for a book
+whose betas run **XOM -0.97 ... INTC 3.35**. [DL-77](design-log.md) had already measured what that
+means - 2.4 ATRs on BAC, 0.6 on MRVL - and S150 built the scaled challenger, off by default, with
+promotion left as an ADR-0013 operator flip **on evidence**. Preparing that flip on 2026-09-05 found
+why it had never been taken.
+
+**The measurement** (`scripts/compare_stop_targets.py`, live graph, 269 recorded recommendations):
+
+| mode | stop min / median / max | RR pass rate | known outcomes | would-touch rate |
+| --- | --- | --- | --- | --- |
+| flat | 5.00 / 5.00 / 5.00 | 100.00 % | 0 | n/a |
+| scaled | 3.00 / 5.45 / 8.00 | 100.00 % | 0 | n/a |
+
+🟩 **DL-77's named trap does not bite.** The danger was that widening stops without widening
+targets would collapse the reward-risk ratio and silently stop AMD, MRVL and HPE being traded at all.
+The pass rate is **100 % in both modes** across all 269, because `_scaled_target` scales the target
+with the stop, and `test_scaled_stop_rr_gate.py::test_reward_risk_verdict_is_mode_invariant_when_both_values_scale`
+proves the verdict is mode-invariant.
+
+🚨 **But the column that decides the question is structurally empty.** `known_outcomes` is
+**0**, and it was never going to be anything else: `stop_target_observed_drawdown_pct` is declared in
+the graph vocabulary and read by the comparison script, and **no agent writes it**. The only writers
+are two tests. So the report renders "nothing produces this" identically to "no outcomes yet" -
+[DL-152](design-log.md)'s pattern in a fourth shape, and the reason a promotion that has been
+"pending evidence" since S150 could never move. Filed as work-queue **item 49**.
+
+**Decision (operator, 2026-09-05): flip and build the recorder in the same change.** The operator
+was given four options - flip on the backtest alone, build the recorder first, flip plus recorder, or
+close 47 (c) as a decided policy - and chose **flip plus recorder**, so the flip becomes auditable on
+our own trades rather than defended by argument. **The calendar made the pairing free:** 2026-09-05
+is a Saturday and the dispatcher cron is `30 22 * * 1-5`, so the next scheduled run is Monday
+2026-09-07 and there is no run between the decision and the deploy. Shipped as
+[S198](sprints/sprint-198-a-stop-we-never-measured.md) under new clause `ANLZ-OBS-05`.
+
+**The shape of the record.** The analyst measures, for each past `Recommendation` its own bars can
+settle, the deepest close-to-low fall over the following `stop_target_drawdown_horizon_days` sessions
+as a fraction of the decision close - **and writes the horizon beside the number**. A drawdown
+measured over 10 sessions and one measured over 30 are different quantities; storing them together is
+what stops a later horizon change silently reinterpreting history. The merge is append-only, so a
+recorded observation is immutable. Absence means the window has not settled, the anchor session is
+missing, or the run never fetched that ticker - **never that the name did not fall**. A real zero is
+written as zero, which is the discrimination item 49 existed to restore.
+
+**Ruled out.**
+
+- *A separate `StopTargetOutcome` label.* Ownership-pure - the analyst would not be re-writing a node
+  it already closed - but the comparison script already reads the property off `Recommendation`, and
+  a second label buys that purity at the cost of a join nothing else needs.
+- *The monitor as the writer.* Defensible on "whoever watches the position measures it", but the
+  analyst **owns** the `Recommendation` label and already holds ~200 bars per ticker each run. The
+  monitor would be reaching across ownership for data it would have to fetch again.
+- *A horizon matched to each recommendation's actual holding period.* More faithful for the ones that
+  were traded, and undefined for the majority that were not. A uniform window is what makes the touch
+  rate comparable across the book, which is the whole point of the number.
+- *Flipping without the recorder.* Offered and rejected by the operator. It would have left the flip
+  permanently defensible only by DL-77's external 2026-04 backtest.
+- *Building the recorder and deferring the flip.* Correct by ADR-0013's letter, but the data takes
+  weeks to accumulate and objection (c) keeps vetoing meanwhile; the deadline for the queue is
+  Friday 2026-09-18.
+
+🚨 **What this decision does NOT settle.** The flip is live, not vindicated. `known_outcomes`
+will be non-zero after the first run under this build, and the first settled windows will be short
+and few. Reading `compare_stop_targets.py` is worth doing; acting on it before the sample can carry
+the weight would be the same mistake in the other direction. **State the denominator when reporting
+it.**
+
+---
+
+## DL-155 - A gate that examined eight issuers and one that examined none rendered the same string - status: DECIDED (2026-09-05)
+
+**The defect DL-154 left standing, now fixed.** DL-154 measured the deliberator's four objections
+to `USB` and `AVGO` and refuted two of them: the correlation gate had examined every held issuer at
+**full 120-bar overlap** and correctly found nothing above `0.70`. `min_correlation_bars` never
+bound; `C` and `SCHW` *were* measured. The judge was not careless - it read
+`cluster_issuers=BAC,USB` and `cluster_issuers=AVGO`, which say what the cluster **is** and nothing
+about what was compared to build it. *Examined 8, none above threshold* and *examined nothing*
+were the same 20 characters.
+
+**Decision. The evaluated gate renders its census into the same `detail` the deliberator reads.**
+`agents/deliberator/context_pm.py:95` passes `gate.detail` through verbatim, so the census needs no
+new channel and no contract change. Five fields, appended after `cluster_issuers`:
+
+| Field | Answers |
+| --- | --- |
+| `examined_issuers` | how many held issuers were compared at all - `0` is now visible |
+| `correlated_issuers` | which reached the threshold, **and at what measured value** |
+| `below_threshold_top` | the strongest three near misses, by name and value |
+| `correlation_threshold` | the bar they were measured against |
+| `min_pair_overlap_bars` | the thinnest comparison used - the number that refutes "the pair went unevaluated" |
+
+Rendered against DL-154's own measurements, the two nights that read identically no longer do:
+
+```text
+cluster_issuers=AVGO; examined_issuers=3; correlated_issuers=none;
+  below_threshold_top=INTC:0.4988,NVDA:0.4739,MRVL:0.4102; min_pair_overlap_bars=120
+cluster_issuers=AVGO; examined_issuers=0; correlated_issuers=none;
+  below_threshold_top=none; min_pair_overlap_bars=none
+```
+
+**This is the third instance of one pattern, and it now has a clause.** S183 (`SCAN-OUT-06/07`) split
+*skipped* from *passed* in the scanner; DL-152/S196 gave the earnings filter a way to say what its
+map covered; both were about a producer that knew something it never said. `PM-NEV-09` already
+separated *not evaluated* from *passed*. What had no clause was the level below: an **evaluated**
+gate that reports its verdict without the size of the comparison behind it. `PM-OBS-03` (laws v1.4)
+asserts that duty, so the regression is now a failing test rather than another veto.
+
+**Ruled out.**
+
+- *A separate `correlation_census` gate outcome.* Rejected: the deliberator renders one line per
+  gate outcome, and a second `correlated_cluster_pct`-adjacent row invites the judge to weigh the
+  census as its own verdict. The census is evidence **for** the outcome, so it belongs inside it.
+- *Naming every below-threshold issuer.* Rejected on length - the book can hold ten issuers and the
+  detail is read by an LLM under a context budget. Three near misses plus `examined_issuers` carries
+  the same refutation; the count is what proves nothing was skipped, the names are what make it
+  checkable.
+- *Emitting the census only when the cluster is a singleton.* Rejected: conditional evidence is how
+  this class of defect is born. The census renders on every evaluated outcome.
+- *Fixing it in the prompt instead* ("assume an omitted issuer was measured"). Rejected outright -
+  it asks the judge to trust an inference we can simply state, and DL-154's whole finding is that
+  the judge reasons correctly from what we render.
+
+**Cost of the omission, for the record.** Two of the four objections behind four consecutive
+no-trade nights rested on it. The gate was right the whole time.
+
+---
+
+## DL-154 - The judge's gate objections, measured: two are wrong, and our rendering is why - status: MEASURED (2026-09-04)
+
+**Item 47 filed four claims from the deliberator's vetoes of `USB` and `AVGO` on
+`verify-2026-09-04-s196-earnings`, on the rule "verify each claim before building anything."
+All four are now measured against the live book and the gate reports.**
+
+### (a) and (b) - REFUTED. The correlation gate did its job.
+
+The judge argued `correlated_cluster_pct` rendered `cluster_issuers=AVGO` **alone** -- "a
+self-referential test that measures no correlation" -- and that USB's `{BAC,USB}` cluster **omits
+co-held `C` and `SCHW`**, leaving the rate-sensitive factor load unmeasured.
+
+Measured on 120 trading days to 2026-09-03 (Alpaca daily closes, split-adjusted), against the
+deployed threshold of **0.70**:
+
+| pair | correlation | overlap | in cluster? |
+| --- | --- | --- | --- |
+| USB ~ BAC | **0.7639** | 120 | yes -- correctly |
+| USB ~ C | 0.5650 | 120 | no -- correctly |
+| USB ~ SCHW | 0.3180 | 120 | no -- correctly |
+| AVGO ~ NVDA | 0.4739 | 120 | no -- correctly |
+| AVGO ~ INTC | 0.4988 | 120 | no -- correctly |
+
+Every pair had the **full 120-bar overlap**, so `min_correlation_bars=60` was never the binding
+constraint and no pair went unevaluated -- had one, `_unevaluated_pair`
+(`agents/portfolio_manager/domain/correlation.py:92`) would have returned a `not_evaluated` outcome
+instead of a cluster, which is the S183 attestation working. **`C` and `SCHW` were measured and are
+simply not correlated with USB at 0.70 over this window.** A cluster of one is the correct answer.
+
+🚨 **But the judge's mistake was caused by our rendering, which makes this a real defect anyway.**
+`cluster_issuers=AVGO` is **indistinguishable from a check that never ran**. The detail string names
+the cluster and never says how many held issuers were examined, so "evaluated 27, none above 0.70"
+and "evaluated nothing" render identically. That is [S183](sprints/sprint-183-a-gate-that-did-not-run-says-so.md)'s
+skipped-vs-passed defect and [DL-152](design-log.md)'s *producer knew something it never said*, now in
+a **third** gate -- and this time it cost a veto and two nights of not trading.
+
+### (c) - CONFIRMED, and understated.
+
+The same gate report shows `target_pct=0.1000; stop_pct=0.0500` for **both** USB (a bank) and AVGO
+(a semiconductor); `stop_target_mode` is `"flat"` (`agents/analyst/settings.py:140`), and the sizing
+gate is `position_value / portfolio_value` against a flat 0.01 with **no volatility term**. Measured
+betas across the 26 held names run **XOM -0.97 to INTC 3.35** -- wider than the -0.70..3.19 the judge
+cited. 🟩 **The fix is already built and dormant:** S150's scaled mode ([DL-77](design-log.md)),
+off by default, promotion pending. This is a **promotion decision on evidence, not a sprint** -- and
+DL-77 names the trap: widen the stop without the target and AMD/MRVL/HPE silently stop passing the
+reward-risk gate.
+
+### (d) - CONFIRMED as description; it is the design, not a defect.
+
+`resolve_order_tolerance` (`agents/execution/order_tolerance.py:81`) builds the limit price purely
+from `intent.est_price` plus `order_price_tolerance_bps` -- **flat, 50 bps** -- and nothing fetches a
+live quote at submit. So the order is anchored to the decision price. 🪤 **That is what a limit order
+is for:** if the market moved more than 0.5 %, the order does not fill, which is protection rather
+than staleness. The open question is whether 50 bps flat is the right band, which is
+[DL-76](design-log.md) -- challenger shipped S149, off by default, promotion pending.
+
+### What this changes
+
+**Item 47 is not a sprint.** It is one small observability fix -- the correlation gate must report how
+many issuers it evaluated -- plus two **promotion decisions** on challengers that already exist.
+
+🎯 **And it is the first time the judge has been wrong.** It had been right twice (the missing beta
+certification, the unevaluated earnings window), which is exactly why the "verify before building"
+rule was attached to this item. Two sprints would have been spent on a gate that was working. 🪤 The
+lesson is not that the judge is unreliable: **it read the evidence we gave it correctly, and the
+evidence was ambiguous.** Fix the rendering and the objection disappears on its own.
+
+---
+
+## DL-153 - S172 merges as a dial at K=1; the fan-out itself is still unproven - status: DECIDED (2026-09-04)
+
+**The question.** S172 was built, gate-proven and left unmerged for two weeks because its K=4
+measurement failed its own bar. The queue's standing refusal was *"a good sample of an intermittent
+failure is not proof of absence."* What changed is that the reason to merge stopped being speed.
+
+**The speed case is gone.** [DL-150](design-log.md) re-measured per-order debate cost at **72.5-84.3 s**,
+not the 124 s the item rested on, so serial deliberation fits the deployed 1,800 s grace to **21**
+orders and breaches at **22**. Recent nights approved 2, 2, 9, 7. S172's own build trigger -- *serial
+cost at the target funnel width exceeds the grace* -- is therefore met only if the target is >=22,
+which is an operator decision and not a measurement.
+
+**So what merges is the option, not the behaviour.** `debate_concurrency` is `tunable(4, ge=1, le=25)`;
+`main` had no such setting at all, so K=1 is not merely the low end of the dial, it is the entire
+pre-merge world. The deployed value ships as **1** in `trading_tunables.json`, which is the status quo
+behaviourally, and raising it becomes a deliberate pack edit plus an `up`.
+
+🚨 **The branch would have deployed K=4 on the next full `up`.** It already carried
+`DELIBERATOR_DEBATE_CONCURRENCY: "4"` in the tunables pack -- easy to miss at the end of the block,
+and found only because a duplicate key printed the wrong value back. That is the one configuration
+K>1 has never been proven in: **1.78x of a possible 4x** ([DL-145](design-log.md)), and on the earlier
+of two runs **6 dead-lettered peer replies** with 2 of 15 orders failing open ([DL-140](design-log.md)).
+The second run was clean, which is why the failure is *intermittent and not disproven* rather than
+fixed. **Merging the code while deploying the unproven value would have converted a parked risk into a
+live one, silently.**
+
+**What the merge cost, recorded because the next stale branch will cost the same.** The branch forked
+at `2f4ff82`, **52 commits** behind, before S191/S193/S194/S195/S196. Since item 39's fix set
+`required_status_checks.strict`, a branch cannot land until it is rebuilt on current `main` and green
+**on that union** -- the gate proves a SHA, and a merge creates a tree no head ever had. Five real
+conflicts, one of them semantic: S172 replaced the per-order `for` loop with a `review_approved_orders`
+batch while S194 wrapped that same loop in an `orphaned_reply_count` before/after delta. Both survive;
+the baseline is read before the batch, which keeps it a per-run delta under fan-out. The **`v1.2` law
+collision STATE predicted did conflict** rather than interleaving silently -- S194's v1.2 stands,
+S172's is renumbered **v1.3**.
+
+🪤 **A rollup written by arithmetic was wrong and the gate caught it.** I resolved the ledger to
+**14 / 52** by adding S172's four greens to main's ten; `check_law_coverage.py` derived **15 / 52** and
+refused the commit. The generated number is the number.
+
+**Ruled out.**
+- *Merging at K=4 to "get the measurement in production"* -- a nightly scheduled run is not a harness,
+  and an intermittent fail-open reaching real orders is the failure mode the veto exists to prevent.
+- *Leaving it unmerged until K>1 is proven* -- the position the queue held for two weeks. Rejected on
+  the cost now visible: the rebase grew from 8 commits to 52, and the law collision it accumulated was
+  found by STATE only because someone wrote it down. Branch rot is not free.
+- *Pinning the deployed value in a test* (`== "4"`, as the branch did) -- makes every operator change a
+  code edit, which is exactly what `trading_tunables.json` exists to avoid ([DL-63](design-log.md)
+  correction, same day). The test now asserts the pack *carries* the key -- the DL-100 invariant -- and
+  validates the value through `DeliberatorSettings`.
+
+**What is still owed.** K>1 is unproven, not shipped-and-broken. `orphaned_reply_count` (S194) now
+records on every `DeliberationRun`, so the intermittency can be **counted across nights** instead of
+chased with one-off K=4 harnesses -- which is the instrument [S192](sprints/sprint-192-a-reply-that-arrives-late-is-still-an-answer.md)
+was re-scoped around and the reason S194 went first.
+
+---
+
+## DL-152 - An earnings map that covers 30 days should say so, and a gate should be allowed to answer - status: DECIDED (2026-09-04)
+
+**Raised by what survived S195.** With `max_beta` finally evaluating (20/20 candidates, AMD dropped
+at beta 3.186), the deliberator still vetoed both approved buys on `verify-2026-09-04-s195-beta`, and
+its reasoning had narrowed to a single clause: *"earnings_window was skipped, not passed - USB was
+never tested against an earnings date"*. Four nights, zero submissions.
+
+**Measured, 2026-09-04.** `finnhub_earnings_lookahead_days` is **30**; `earnings_exclusion_days` is
+**5**. The provider asks Finnhub for earnings inside 30 days per ticker, and on `sched-2026-09-03`
+got 6 dates for 99 tickers with `quality.notes` empty - the correct answer, not a degraded feed. A
+ticker absent from that map therefore has no earnings for 30 days, which certainly means none within
+5. `evaluate_filters` nonetheless filed all **20 of 20** absences under `skipped`, so a proven answer
+was reported in the same words as total ignorance.
+
+**Decided.** The producer states the scope of what it produced: `MarketData.earnings_horizon_days`.
+A number means the map is complete for that horizon; `None` means absence proves nothing. The scanner
+treats absence as a **pass** only when the declared horizon **strictly exceeds** the exclusion window.
+This is S177's principle applied one level up - there, every number named its unit; here, a map names
+its coverage.
+
+**The claim is withheld far more often than it is made.** Unrequested feed, any `earnings_degraded`
+note, or a chunked ingest where a single chunk could not claim a horizon - all yield `None`. A
+degraded earnings feed produces gaps that look exactly like "no earnings due", and reading those as a
+pass would certify risk nobody measured. The skip was over-cautious; a false pass would be dishonest
+in the direction that loses money.
+
+**Ruled out.**
+
+- *Let the scanner assume 30 days.* Agents are islands, so it cannot read provider settings, and a
+  second hardcoded copy is the PARAM-divergence class of work-queue item 33 - wrong the moment the
+  tunable moves, and silently.
+- *Write a sentinel date for "none due".* Puts a fabricated fact in a data map and forces every
+  consumer to learn the sentinel. Coverage is metadata about the map, not a member of it.
+- *Treat absence as a pass unconditionally.* The failure mode this repo exists to avoid.
+
+**The shape of both S195 and S196 is the same defect twice.** In each case a producer knew something
+(SPY's bars; the earnings horizon) that a consumer needed, and simply never said it - and in each
+case the consumer's silence was read downstream as "unverified" rather than "unstated". Worth
+watching for a third instance: the question to ask of any gate that reports `skipped` is whether
+somebody upstream already knows the answer.
+
+---
+
+## DL-151 - The beta cap's denominator travels as run state, not as a second declaration - status: DECIDED (2026-09-04)
+
+**Raised by a three-night no-trade streak.** `sched-2026-09-01`, `-02` and `-03` each approved two
+orders and submitted none, with byte-identical deliberator verdicts `{'AMD': 'revise', 'USB':
+'revise'}`. The judge's stated ground was that `max_beta` and `earnings_window` were **skipped, not
+passed**, so it would not certify gap or beta risk.
+
+**Measured, 2026-09-04.** `max_beta` has been evaluated **0 times across 59 stored `ScanRun` nodes**
+and skipped 112 times. The gate is implemented and wired; what is missing is its denominator. The
+persisted snapshot carries `benchmark = ()` because `MARKET_FIELDS` never requested the field, and
+the deployed scanner reads that snapshot rather than fetching its own series. The data itself was
+always there - probed live, `SPY: 143 bars`. AMD's real beta over that window is **3.2877** against a
+cap of **2.5**, so with a benchmark it would have been dropped at the scanner and never reached the
+PM.
+
+**Decided.** The scanner owns the benchmark ticker, because it owns the gate the ticker is the
+denominator of. The value travels to the provider as **run state** - a `benchmark_ticker` prop on the
+`RunRequest`, stamped by orchestration, read by the provider's poll. This is not a new mechanism: it
+is exactly how the analyst's `required_history_bars` and `lookback_days` already reach the provider,
+and `DataRequest.benchmark_ticker` already existed in the contract, unused.
+
+**Ruled out.**
+
+- *Let the scanner fetch its own benchmark in the poll path*, mirroring what the in-process agent
+  already does. Rejected: the poll path exists so the provider container need not be alive (DL-08).
+  Giving the scanner a live provider RPC, or its own data credential, trades one measurable gate for
+  a structural regression.
+- *Give the provider its own `benchmark_ticker` setting.* Rejected: two agents would declare the same
+  value independently, which is the PARAM divergence class work-queue item 33 already tracks. Agents
+  are islands, so the provider cannot read `ScannerSettings` - but that argues for passing the value,
+  not for copying it.
+- *Fetch the benchmark once per chunk.* Rejected on cost: one series serves the whole batch, so only
+  the first chunk asks for it and `_merge_parts` keeps the first non-empty one.
+
+**Left open, deliberately.** The `earnings_window` half of the same veto is **not** a data defect.
+The provider looks 30 days ahead; the scanner excludes names reporting within 5. Absence from the
+earnings map therefore *proves* no earnings inside the exclusion window, yet the filter records SKIP
+rather than PASS. That is a labelling change to `evaluate_filters`, filed separately so it does not
+ride along with a contract change. Until it lands, expect the deliberator to keep objecting: one
+gate certified is not two.
+
+**A standing lesson.** Every unit test and every local run was green throughout, because the
+in-process path fetches the benchmark itself and only the graph-pull path was broken. Two code paths
+to the same data, one of which is production, is how a gate goes 59 runs without ever firing and
+nothing turns red.
+
+---
+
 ## DL-150 - The per-order debate cost is 84 s, not 124 s, and S172's trigger no longer follows from it - status: MEASURED (2026-09-03)
 
 **Raised by the operator asking a different question** — whether debate quality had ever been measured
@@ -50,6 +458,27 @@ The correctness defect it exposed — peer replies dead-lettered under concurren
 of whether we need the speed**, though it can only manifest at K > 1. Nor is 84.3 s durable: it is a
 function of model and `effort`, both tunable, so it will move again. **Re-measure before quoting.**
 
+🚨 **CORRECTION, same day — the token figures above are not tokens.** Reading
+`kernel/llm_ledger.py` for S173 showed `tokens_in` / `tokens_out` are written by
+`_rough_tokens(value) = max(1, len(value.split()))` (`:114`) — **a word count**, and
+`_digest`/`_rough_tokens` are fed `prompt=user` (`agents/deliberator/agent.py:139`), so the figure
+covers **only the user message and excludes the system prompt entirely**. So "≈ 5,800 in / 1,280 out
+per order" is *words in the user half*, and real billed tokens are **higher on both counts** — English
+runs roughly 1.3 tokens per word before the system prompt is added back. **The latency and call-count
+measurements above are unaffected**; only the token/cost figures are, and they are understated.
+
+🚨 **This is not local to this entry.** The `/audit-costs` skill prices LLM spend from these same
+`LLMCall` rows, so **every LLM cost this project has reported is a systematic underestimate**. Filed
+as a work-queue item. 🪰 The fix is not simply multiplying by 1.3: the honest source is the API's
+own `usage` (`input_tokens`, `output_tokens`, and the cache fields), which the adapters currently
+discard.
+
+🪰 **And it weakens a law clause.** `DLIB-IDM-02` says outputs are *"bounded by role, model, max
+rounds, **prompt hashes**, response hashes, and timestamps"*. Since the hash covers the user string
+only, **two calls with identical `prompt_hash` can have had different system prompts** — which is
+exactly what a compiled-prompt change (DL-42) would do. The bound is real but narrower than it reads,
+and S173's replay must say so rather than treat hash equality as whole-context equality.
+
 **Three things measured in passing, each worth its own line.**
 
 1. 🟩 **The 4096-token cap is not biting.** Across the last **95** deliberation calls the largest
@@ -83,26 +512,29 @@ silently changing an identifier is worse than a known collision. Filed as doc hy
 proved that ambient `HEAD` can move after the image build. A deploy record is only useful if it names
 the commit the image workflow actually built.
 
-**Decision 1 — verify and refuse on mismatch (existence-and-identity, not recency).**
+**Decision 1 — verify and refuse on mismatch (tag existence-and-identity, not recency).**
 Keep `--git-sha` required. Before writing the append-only `DeployRecord`, query GitHub Actions for
-`build-images.yml` runs whose `head_sha` equals the given SHA and whose `status` is `success`. If
-none is found, exit non-zero naming the given SHA. This is an existence-and-identity check: it asks
-"was this SHA ever built?" not "is it the newest build?". The `s194` / `e0a144f` case (measured
-2026-09-03) disproves a recency rule — `75027b6` was a newer successful build from a docs commit,
-meaning a recency check would refuse the correct record for the fleet actually running. Only the
-existence check handles both the ordinary case and the rollback case correctly.
+successful `build-images.yml` runs that produced the tag being recorded; the given SHA must be one
+of those runs' `head_sha` values. If it is absent, exit non-zero naming the given SHA and the
+accepted build SHAs for that tag. This asks "did this successful build produce this deploy tag?"
+not merely "was this SHA ever built?" and not "is this the newest build?". The `s194` / `e0a144f`
+case (measured 2026-09-03) disproves a recency rule — `75027b6` was a newer successful build from a
+docs commit, meaning a recency check would refuse the correct record for the fleet actually running.
+Only tag-scoped existence-and-identity handles both ordinary deploys and rollback records correctly.
 
-**Decision 2 — placement: testable module, thin entry point.** The verification logic lives in
-`orchestration/deploy_verify.py` (inside the coverage floor) as `verify_build_sha()`, accepting a
-`GitHubBuildChecker` Protocol as an injected parameter. `scripts/record_deploy.py` remains a thin
-wiring entry point: it constructs a `GitHubActionsReader` (extended with `sha_has_successful_build`)
-and passes it in. This creates no `orchestration → surfaces` import and keeps the logic fully tested.
-The `GitHubReader` Protocol at `surfaces/dashboard/github_builds.py:37` is the existing seam.
+**Decision 2 — placement: covered writer guard, injected reader, thin entry point.** The covered
+verification logic lives beside the append-only writer as `record_verified_deploy()` in
+`orchestration/deploy_record.py`, accepting a local `BuildReader` Protocol as an injected parameter.
+`scripts/record_deploy.py` remains a thin wiring entry point: it builds the existing dashboard
+GitHub reader and passes it in. This creates no `orchestration → surfaces` import and keeps the
+behavior inside the coverage floor. The `GitHubReader` Protocol in `surfaces/dashboard/github_builds.py`
+is extended on the existing client; no second GitHub client is introduced.
 
-**Decision 3 — GitHub unreadable: record with sha_verified=False.** If the GitHub token is absent,
-the API is down, or the read times out, record the deploy with `sha_verified=False`. This is honest:
-the currency projection can distinguish a verified record from an asserted one. A silent pass is not
-an option — that is the current behaviour and it is what this sprint exists to remove.
+**Decision 3 — GitHub unreadable: fail closed.** If the GitHub token is absent, the API is down, the
+read times out, or no successful run can be associated with the tag, refuse the write. The current
+dashboard vocabulary treats `DeployRecord` as verified currency evidence; an asserted record would
+need separate projection semantics before it is safe. A silent pass is not an option — that is the
+current behaviour and it is what this sprint exists to remove.
 
 **Tag scope.** The SHA guard does not replace fleet/tag verification. The deploy procedure must still
 prove every app and the dispatcher job are on the intended tag before recording; tag mismatch remains
@@ -119,9 +551,10 @@ a `/check-fleet`/deploy-procedure concern rather than an inference made from Git
   unmatchable. The check must be existence-and-identity, not recency.
 - **Put GitHub verification inside `orchestration.deploy_record` via a dashboard import.** Rejected
   because dependency injection is the right seam; crossing the layer boundary buys nothing.
-- **Fail closed when GitHub is unreadable.** Rejected: it blocks a legitimate deploy record during a
-  GitHub outage. Recording with `sha_verified=False` is the honest degraded path and still improves
-  over silent trust.
+- **Accept any successful build for the SHA, regardless of tag.** Rejected because it proves the
+  commit reached `build-images.yml` but not that it produced the tag now being recorded.
+- **Write an asserted record when GitHub cannot be read.** Rejected for this sprint because it would
+  make a verified evidence label carry an unverified claim.
 
 ---
 
@@ -5550,7 +5983,7 @@ and re-key.
 
 ---
 
-## DL-63 · Non-secret runtime config has no delivery channel to the fleet · status: OPEN (recommended: B)
+## DL-63 · Non-secret runtime config has no delivery channel to the fleet · status: MOSTLY CLOSED — option **C** shipped and hardened as `trading_tunables.json` (S169/[DL-100](design-log.md)); option B never built and no longer recommended
 
 **Question.** Where should a *non-secret* runtime parameter — the LLM model id, the reasoning
 effort level — live, so that changing it changes what the deployed fleet actually runs?
@@ -5588,6 +6021,40 @@ work locally.
   `tunable()` catalogue, the bounds validation (the `Literal` that rejects a bad effort level at load
   instead of as a 400 mid-run), and the `laws.md` PARAM documentation — in exchange for a vault
   round-trip on every boot. Vault is for credentials.
+
+### Correction 2026-09-04 — the channel was built, as option C, and the status never moved
+
+**`orchestration/packs/trading_tunables.json` is the delivery channel this entry says does not
+exist.** It shipped with S169 ([DL-100](design-log.md)) after an `up` silently reverted
+`MAX_POSITION_PCT` 0.01 → 0.10 — a 10x position size under a green `[OK]`. `Load-Tunables`
+(`infra/deploy-agents.ps1:359`) throws if the pack is missing, `Get-AppTunables` folds each app's
+rows into its env set, and `Assert-FleetEnvPreserved` **refuses the whole deploy** rather than drop a
+key the pack forgot. It carries 13 rows today, including `DELIBERATOR_EFFORT`,
+`DELIBERATOR_REQUEST_TIMEOUT_SECONDS` and `EXECUTION_DELIBERATION_GRACE_SECONDS`.
+
+**And it is already bound to the settings it configures.** `tests/test_deploy_tunables_pack.py`
+asserts every app is a deployed app, every key is a tunable that agent actually reads, every value is
+a string, no credential is carried as a plain value, and the settings class *accepts* each value.
+`make ci` cannot read PowerShell, so that test is what stops a typo deploying cleanly and configuring
+nothing.
+
+**What is actually left, and it is not what the entry says.** Applying a change still needs a full
+`up`: `Get-AppTunables` is reached only through `Get-AgentEnv`, and the script's only actions are
+`preflight` and `up`. So one number costs a 16-app deploy, or a hand `az containerapp update` that
+the pack reconciles at the next `up`. That is option C's known, accepted cost — not an absent channel.
+
+🪤 **Option B is now ruled out, not merely unbuilt.** A second delivery path (master-side pack →
+ACTIVATE → `os.environ`) was written and discarded the same day: it duplicates every guarantee the
+tunables pack already makes, and its one novel benefit — a graph record of what was delivered — costs
+a property on the enforced `AgentInstance` label, therefore a vocabulary-pack move and a full `up`
+anyway. **Two mechanisms configuring the same fleet is the six-status-vocabularies shape S190 spent a
+sprint collapsing.** One channel, hardened, wins.
+
+🚨 **How this was found is the lesson, and it is the second time today.** The work was started
+because *the status line said OPEN* — the same reading error that had just been corrected in
+[DL-95](design-log.md), which had been fixed the day it was filed and read OPEN for 28 days. **A
+design-log status is a claim about the code, and it decays like any other.** Check the mechanism
+before building the mechanism.
 
 ---
 
@@ -6458,7 +6925,28 @@ Recorded here deliberately rather than folded into S149.
 
 ---
 
-## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: PARTLY (challenger SHIPPED S150 `ca97797`/0.84.00, off by default; promotion still pending)
+## DL-77 - The same 5 % stop is 2.4 ATRs for BAC and 0.6 for MRVL · status: PARTLY (challenger SHIPPED S150 `ca97797`/0.84.00, off by default; **promotion still pending, and 2026-09-05 measured why it cannot yet be decided on evidence** — see the addendum below)
+
+**Addendum, measured 2026-09-05 (live graph, `scripts/compare_stop_targets.py`, 269 recorded recommendations).**
+
+| mode | stop min / median / max | RR pass rate | known outcomes | would-touch rate |
+| --- | --- | --- | --- | --- |
+| flat | 5.00 / 5.00 / 5.00 | 100.00 % | 0 | n/a |
+| scaled | 3.00 / 5.45 / 8.00 | 100.00 % | 0 | n/a |
+
+**Two findings, pulling in opposite directions.** 🟩 **The trap named above does not bite on our own book:** the
+reward-risk pass rate is **100 % in both modes** across all 269, so promoting would not silently stop AMD, MRVL or HPE
+being traded - `_scaled_target` scales the target with the stop, and `test_scaled_stop_rr_gate.py::test_reward_risk_verdict_is_mode_invariant_when_both_values_scale`
+proves the verdict is mode-invariant. 🚨 **But `known_outcomes` is 0 and always will be:**
+`stop_target_observed_drawdown_pct` is declared in the graph vocabulary and read by the comparison script, and **nothing
+in the fleet writes it** - the only writers are two tests. So the touch-rate column, which is the whole statistical case
+for scaling, **cannot be computed from our own trades**, and the report renders that indistinguishably from "no outcomes
+yet". Filed as work-queue **item 49**.
+
+**What this means for the promotion.** ADR-0013 makes it an "operator config flip **on evidence**". The evidence that
+exists is the 65-session external backtest in this entry (2026-04, seven tickers) plus the 269-row shape comparison
+above. What does not exist, and cannot until item 49 is built, is the touch rate on positions we actually held. That is
+a real choice for the operator - flip on the backtest and accept it, or record outcomes first - not a gap to paper over.
 
 **Trigger.** DL-76 recorded, as a finding left unfixed, that `suggested_stop_pct` is
 `regime.base_stop_loss_pct` for every buy - one global number, currently 5 %, for the whole book. I
@@ -7828,7 +8316,7 @@ refactor can be done later against a guard that already exists.
 
 ---
 
-## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: OPEN (found 2026-08-07 while executing the flatten chore)
+## DL-95 · The book cannot be sold: every share is reserved by its own resting stop · status: CLOSED by S163 (`425aa6d`, `0.89.01`, 2026-08-07 — the same day it was found); LIVE PROOF STILL OWED
 
 **Found at the baseline step of [chore-flatten-and-resize](sprints/chore-flatten-and-resize.md), before
 anything was changed.** The chore was packaged to flatten the book by raising
@@ -7920,6 +8408,27 @@ stop for each `sold_ticker` *before* `run_submit`, recording the cancellation fa
   divergence can cost real money.
 - **Lower the stop thresholds out of the way instead of cancelling.** Rejected: it neither frees
   `qty_available` nor removes the opposite-side conflict, and it quietly disarms risk control.
+
+### Correction 2026-09-04 — this was fixed the day it was filed, and the header said OPEN for 28 days
+
+**The fix shipped as [S163](sprints/sprint-163-an-exit-cancels-its-own-stop.md)** (`425aa6d`,
+`0.89.01`, 2026-08-07): `cancel_stops_for_exits` (`agents/execution/exit_stops.py:47`) cancels the
+resting stop of every ticker this run exits, and `settle_stops` (`:25`) sequences it *between*
+`reconcile_broker_stops` and `place_broker_stops`, before `run_submit`. It returns only the tickers
+whose fact actually flipped to `cancelled`, so a failed cancel leaves the position protected — the
+graph/broker divergence this entry refused to manufacture by hand. **Only the status line was never
+updated**, so a closed defect has been readable as open ever since; found while listing open debt.
+
+**Measured live 2026-09-04, and the physical condition is unchanged — correctly.** 26 positions, **26**
+resting `sell stop` orders, `qty_available = 0` on **26 of 26**. That is what a fully protected book
+looks like; the defect was never the reservation, it was submitting an exit into it.
+
+🪤 **But the fixed path has still never executed in production.** Of **21** filled sells since
+2026-08-07, **20 are `stop` fills** — the broker's own resting stop firing — and the twenty-first is
+the 08-07 flatten `limit`. **Zero PM-approved exits have ever reached the broker**, so
+`cancel_stops_for_exits` has never run outside its tests. **Every share this book has ever sold was
+sold by a stop, not by a decision** — which is [DL-58](design-log.md)'s *"a green run that could only
+buy"* surviving its own fix, and it makes the sell half of the pipeline unproven end to end.
 
 ---
 

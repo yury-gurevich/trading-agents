@@ -32,6 +32,15 @@ import sys
 import time
 from pathlib import Path
 
+# `python scripts/assert_gate_ran.py` puts scripts/ on sys.path, not the repo root,
+# so the package import fails on clean infrastructure while passing locally off an
+# editable install. Same pattern as gate_selftest.py, and measured: CI red at 18/21.
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from scripts.gate_run_selection import latest_per_workflow  # noqa: E402
+
 # The workflows whose absence means the commit was never really gated. `gate`
 # lives in Security Findings; `quality`/`test`/`security` live in CI.
 REQUIRED_WORKFLOWS = ("CI", "Security Findings")
@@ -120,14 +129,14 @@ def check(sha: str, payload: dict[str, object]) -> list[str]:
             "was never created and merging would bypass the gate entirely."
         ]
     reasons = []
-    seen = {str(run.get("name")) for run in runs if isinstance(run, dict)}
+    # Only the newest attempt of each workflow decides: a re-run that fixed a gate
+    # must be provable, or the tool teaches people to bypass it (gate_run_selection).
+    newest = latest_per_workflow(runs)
     for required in REQUIRED_WORKFLOWS:
-        if required not in seen:
+        if required not in newest:
             reasons.append(f"workflow {required!r} produced no run for {sha}")
-    for run in runs:
-        if not isinstance(run, dict):
-            continue
-        name, status = str(run.get("name")), str(run.get("status"))
+    for name, run in newest.items():
+        status = str(run.get("status"))
         conclusion = run.get("conclusion")
         if status != "completed":
             reasons.append(f"{name} is {status}, not completed — wait, do not merge")
@@ -160,11 +169,14 @@ def main(argv: list[str] | None = None) -> int:
     if reasons:
         raise GateNotProven("; ".join(reasons))
 
-    runs = payload.get("workflow_runs") or []
+    # Print what was judged, not every attempt: listing a superseded failure
+    # beside GATE PROVEN reads as a contradiction and invites a second guess.
+    newest = latest_per_workflow(payload.get("workflow_runs") or [])
     print(f"GATE PROVEN for {sha}:")
-    for run in runs:
-        if isinstance(run, dict):
-            print(f"  {run.get('name')}: {run.get('conclusion')}")
+    for name, run in sorted(newest.items()):
+        superseded = run.get("run_attempt")
+        attempt = f" (attempt {superseded})" if isinstance(superseded, int) else ""
+        print(f"  {name}: {run.get('conclusion')}{attempt}")
     return 0
 
 

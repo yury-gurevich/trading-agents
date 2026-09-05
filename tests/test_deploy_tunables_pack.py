@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 
+from agents.deliberator.settings import DeliberatorSettings
 from kernel import AgentSettings
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -103,3 +104,37 @@ def test_the_settings_a_pack_app_resolves_accept_the_values_it_carries() -> None
 def test_the_dispatcher_cron_is_a_five_field_expression() -> None:
     """The cron is carried too: its script default reverted a weekday-only job."""
     assert len(str(_PACK["dispatcher"]["cron"]).split()) == 5
+
+
+def test_deliberator_manager_carries_debate_concurrency() -> None:
+    """DRIFT-041 / DL-100: full up must preserve the manager fan-out value.
+
+    The invariant is that the pack *carries* the key, not that it holds any one
+    number: a full `up` replaces each app's env set, so a fan-out held only as live
+    cluster state reverts to the code default in silence. Pinning the value here
+    instead would make every operator change a code edit, which is the opposite of
+    what the tunables pack is for -- the value is a deploy-time decision, recorded
+    in the pack's own `_measured` note.
+    """
+    value = _APPS["deliberator-manager"]["DELIBERATOR_DEBATE_CONCURRENCY"]
+    assert DeliberatorSettings(debate_concurrency=int(value)).debate_concurrency >= 1
+
+
+def test_peer_replica_count_follows_the_pack_and_not_a_literal() -> None:
+    """DL-157: the worker half of the fan-out obeys the same dial as the code half.
+
+    S172 shipped `debate_concurrency` at K=1 on purpose (DL-153) because K>1 was
+    measured at 1.78x of a possible 4x and, on one of two runs, dead-lettered 6 peer
+    replies with 2 of 15 orders failing open. A hardcoded peer replica count in the
+    deploy script provisioned four workers anyway -- measured live on the 2026-09-05
+    `up` to :s198, which took both peers from max/desired 1 to 4 while the pack still
+    said 1. That is the literal-default shape this whole file exists to prevent, one
+    layer down from the cron it already caught.
+    """
+    assert "function Resolve-DebateConcurrency" in _DEPLOY
+    assert "DELIBERATOR_DEBATE_CONCURRENCY" in _DEPLOY
+    for helper in ("Get-AppMaxReplicas", "Get-AppDesiredReplicas"):
+        body = _DEPLOY.split(f"function {helper}(", 1)[1].split("\n}", 1)[0]
+        assert "deliberator-proponent" in body
+        assert "(Resolve-DebateConcurrency)" in body
+        assert not re.search(r'deliberator-opponent"\)\)\s*\{\s*return\s+\d', body)

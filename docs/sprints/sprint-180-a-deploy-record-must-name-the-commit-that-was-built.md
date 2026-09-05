@@ -157,18 +157,18 @@ is a reporting-integrity fix.
 
 ## Success factors
 
-- [ ] A well-formed but wrong SHA is **refused**, naming both the given and the expected SHA.
-- [ ] 🚨 **The `s194` / `e0a144f` pair is ACCEPTED though a newer build exists** — the check is
+- [x] A well-formed but wrong SHA is **refused**, naming both the given and the expected SHA.
+- [x] 🚨 **The `s194` / `e0a144f` pair is ACCEPTED though a newer build exists** — the check is
       existence-and-identity, not recency. This success factor is the one that fails a
       newest-build implementation.
-- [ ] The real `s179` / `4c8eeb0` pair is still accepted — the guard does not block correct use.
-- [ ] The GitHub-unreadable case behaves as decision 3 says, and a test proves it.
-- [ ] No second GitHub client — `GitHubActionsReader` is reused.
-- [ ] Import-linter passes; no new `orchestration → surfaces` dependency introduced.
-- [ ] Existing `DeployRecord` rows are untouched; **no delete path is added**.
-- [ ] Decision recorded in `docs/design-log.md` with rejected alternatives.
-- [ ] Each new guard **planted, watched to fail, restored** — stated per guard.
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] The real `s179` / `4c8eeb0` pair is still accepted — the guard does not block correct use.
+- [x] The GitHub-unreadable case behaves as decision 3 says, and a test proves it.
+- [x] No second GitHub client — `GitHubActionsReader` is reused.
+- [x] Import-linter passes; no new `orchestration → surfaces` dependency introduced.
+- [x] Existing `DeployRecord` rows are untouched; **no delete path is added**.
+- [x] Decision recorded in `docs/design-log.md` with rejected alternatives.
+- [x] Each new guard **planted, watched to fail, restored** — stated per guard.
+- [x] `make ci` exit 0, 100.00 % coverage.
 
 ## Traps
 
@@ -278,39 +278,85 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Result:** Implemented. `make ci` exits 0. Branch pushed to remote.
+**Result:** Implemented on
+`sprint-180-a-deploy-record-must-name-the-commit-that-was-built`, after merging `origin/main`
+through `93f82b9` so DL-150 and its same-day correction remain above DL-149. Local `make ci`
+exits 0. `docs/STATE.md` is deliberately not updated by this branch: the final "merged/proven"
+result belongs only after merge to `main`, push, and `make gate-ran` from the worktree whose
+`HEAD` is the merged commit.
 
 **Files changed:**
 
 | File | Lines | Change |
 |---|---|---|
-| `orchestration/deploy_verify.py` | 50 | NEW — testable `verify_build_sha()` + `GitHubBuildChecker` Protocol |
-| `orchestration/tests/test_deploy_verify.py` | 53 | NEW — 5 tests for the verify module |
-| `surfaces/tests/test_dashboard_github_sha_check.py` | 78 | NEW — 6 tests for `sha_has_successful_build` |
-| `surfaces/dashboard/github_builds.py` | 142 | Extended: `sha_has_successful_build()` added to `GitHubActionsReader` |
-| `orchestration/deploy_record.py` | 47 | `sha_verified: bool = True` added to `record_deploy()` and props |
-| `orchestration/tests/test_deploy_record.py` | 65 | Assert updated to include `sha_verified: True` in props |
-| `scripts/record_deploy.py` | 79 | Calls `verify_build_sha`; adds `InMemoryGraphStore` guard |
-| `.claude/skills/deploy-fleet/SKILL.md` | +10 | Step 6 updated with refusal note |
-| `docs/design-log.md` | — | DL-149 corrected: existence-and-identity, sha_verified=False |
-| `pyproject.toml` | — | 0.94.05 → 0.94.06 (PATCH) |
+| `orchestration/deploy_record.py` | 105 | Added `DeployRecordVerificationError`, local `BuildReader` / `BuildEvidence` Protocols, and `record_verified_deploy()` with tag-scoped build evidence |
+| `orchestration/tests/test_deploy_record_verification.py` | 167 | NEW — wrong S179 refused, real S179 accepted, required S194/e0 accepted with newer build present, unreadable/empty evidence fail closed |
+| `surfaces/dashboard/github_builds.py` | 193 | Extended existing `GitHubActionsReader` with `image_builds_for_tag(tag, git_sha=None)`; no second GitHub client |
+| `surfaces/tests/test_github_builds.py` | 191 | NEW — latest-build parsing plus tag-specific and candidate-SHA narrowed lookup |
+| `surfaces/tests/test_github_builds_env.py` | 45 | NEW — token binding and sanitized latest-build transport failure |
+| `scripts/record_deploy.py` | 54 | Thin wiring: loads `.env`, refuses in-memory graph, builds existing GitHub reader, calls `record_verified_deploy()` |
+| `.claude/skills/deploy-fleet/SKILL.md` | — | Step 6 updated: GitHub evidence must prove the supplied SHA produced the supplied tag; no asserted fallback |
+| `docs/design-log.md` | — | DL-149 reapplied below DL-150: tag existence-and-identity, fail closed, SHA-only check rejected |
+| `orchestration/deploy_verify.py` / tests | deleted | Removed the already-merged SHA-only verifier because it proves "this SHA was built" but not "this SHA built this tag" |
+| `surfaces/tests/test_dashboard_github_sha_check.py` | deleted | Replaced by tag-specific GitHub reader tests |
+| `pyproject.toml` / `uv.lock` | — | `0.94.06` → `0.94.07` (PATCH); `0.94.06` is already on `main` |
 
-**Design decisions:** DL-149 (corrected 2026-09-03):
-- Decision 1: existence-and-identity check — SHA must head a successful `build-images.yml` run, not necessarily the newest one. Recency rule rejected because `s194`/`e0a144f` would be refused under it.
-- Decision 2: testable logic in `orchestration/deploy_verify.py` with injected `GitHubBuildChecker` Protocol; `scripts/record_deploy.py` is a thin wiring entry point. No `orchestration→surfaces` import created.
-- Decision 3: GitHub unreadable → record with `sha_verified=False` (honest degraded path). Fail-closed rejected because it blocks legitimate deploys during GitHub outages.
+**Design decisions:** DL-149 (reapplied after DL-150):
+- Decision 1: tag existence-and-identity — the given SHA must be among successful
+  `build-images.yml` runs that produced the recorded tag; newest-build recency and SHA-only
+  existence are both rejected.
+- Decision 2: covered logic lives beside the append-only writer as `record_verified_deploy()` with
+  an injected local `BuildReader` Protocol. `scripts/record_deploy.py` is wiring only.
+- Decision 3: GitHub unreadable or absent evidence fails closed. No `sha_verified=False` asserted
+  records in this sprint because `DeployRecord` is dashboard currency evidence.
 
 **Proof — real test values (re-verified 2026-09-03):**
-- `(s179, 8fbf3a41339d0a31aa9a057952fe5e6401280ac1)` → **REFUSED** — `_Checker(False)` models zero build runs for this SHA; `test_verify_raises_when_no_build_exists` asserts `DeployVerifyError`.
-- `(s179, 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43)` → **ACCEPTED** — `_Checker(True)` models two successful runs; `test_verify_returns_true_when_build_exists` asserts `True`.
-- `(s194, e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120)` → **ACCEPTED** — the existence check asks "was this SHA ever built?", not "is it the newest?". A newer build for `75027b6` is irrelevant. Same `_Checker(True)` path.
+- `gh run list --workflow build-images.yml --commit e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`
+  returned one successful run, `33603577617`, created `2026-09-02T07:26:26Z`.
+- `gh run list --workflow build-images.yml --commit 8fbf3a41339d0a31aa9a057952fe5e6401280ac1`
+  returned `[]`.
+- `gh run list --workflow build-images.yml --commit 4c8eeb0505bc65c081be3d1fe71049f7d88e0e43`
+  returned two successful runs, `32111023429` and `32110110833`.
+- `gh run list --workflow build-images.yml --limit 3` showed newer successful builds above
+  `e0a144f`: `71bc69f` (`2026-09-03T02:39:53Z`) and `75027b6`
+  (`2026-09-02T08:47:35Z`). Recency is therefore not the discriminator.
+- `test_record_verified_deploy_refuses_mismatched_built_commit` refuses
+  `s179` / `8fbf3a...` and asserts the refusal names both `8fbf3a...` and accepted
+  `4c8eeb0...`.
+- `test_record_verified_deploy_accepts_the_real_s179_built_commit` accepts
+  `s179` / `4c8eeb0...`.
+- `test_record_verified_deploy_accepts_s194_when_newer_build_exists` accepts
+  `s194` / `e0a144f...` while the injected tag evidence also contains newer
+  `75027b6...`, and asserts the verifier asks the reader for candidate
+  `("s194", "e0a144f...")`.
+- The gap already on `main` is stated plainly: `verify_build_sha()` /
+  `sha_has_successful_build()` proves a SHA was built, not that it built the recorded tag. This
+  patch closes the `s193`-against-`s194` shape by replacing that path with `image_builds_for_tag`.
 
 **Guards planted:**
 
-1. **`verify_build_sha` refuses a SHA with no build:** Replaced `raise DeployVerifyError(...)` with `pass`. `test_verify_raises_when_no_build_exists` failed with `DID NOT RAISE DeployVerifyError`. Restored.
+1. **Wrong SHA refusal:** Changed `if clean_sha not in expected_shas:` to `if False:`.
+   `test_record_verified_deploy_refuses_mismatched_built_commit` failed with
+   `DID NOT RAISE DeployRecordVerificationError`. Restored.
 
-2. **`sha_has_successful_build` returns `None` on transport error:** Changed `return None` to `return False` in the `except` block. `test_sha_has_successful_build_returns_none_on_read_error[url-error]` failed with `assert False is None`. Restored.
+2. **Candidate-SHA lookup:** Changed the first reader call from
+   `image_builds_for_tag(clean_tag, clean_sha)` to `image_builds_for_tag(clean_tag)`.
+   `test_record_verified_deploy_accepts_s194_when_newer_build_exists` failed because it saw
+   `reader.calls == [('s194', None)]` instead of `('s194', 'e0a144f...')`. Restored.
 
-3. **`sha_verified` stored in DeployRecord props:** Commented out `"sha_verified": sha_verified`. `test_record_deploy_appends_and_exact_replay_dedupes` failed with `Right contains 1 more item: {'sha_verified': True}`. Restored.
+3. **Tag filter in the GitHub reader:** Changed the log filter to `if True`.
+   `test_github_reader_finds_successful_builds_that_published_tag` failed because
+   `MainImageBuild(git_sha='newer-sha', run_id=8, ...)` leaked into the result. Restored.
 
-**`make ci`:** exit 0 — 2461 passed, 6 skipped, 100.00% coverage. No whole-file CRLF rewrites (`git diff -w` shows only content diffs).
+4. **GitHub unreadable fail-closed translation:** Changed `except RuntimeError` to
+   `except ValueError`. `test_record_verified_deploy_refuses_unreadable_build_evidence` failed by
+   leaking raw `RuntimeError: GitHub build read failed (test)`. Restored.
+
+**`make ci`:** exit 0. Final redirected run:
+- `orchestration\deploy_record.py 48 stmts, 12 branches, 100.00%`
+- `surfaces\dashboard\github_builds.py 93 stmts, 16 branches, 100.00%`
+- `TOTAL 15648 stmts, 3362 branches, 100.00%`
+- `2467 passed, 4 skipped in 206.71s (0:03:26)`
+- `pip-audit`: `No known vulnerabilities found`
+- `detect-secrets`: `Passed`
+- `check_untracked_secrets.py`: `Passed`; scanned 3 new files <!-- pragma: allowlist secret -->

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING
 
-from contracts.feed_notes import consume_degraded_feed_notes
+from contracts.feed_notes import consume_degraded_feed_notes, degraded_feed_name
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -33,6 +33,7 @@ class OptionalFields:
     sentiment: dict[str, float]
     sectors: dict[str, str]
     earnings: dict[str, date]
+    earnings_horizon_days: int | None
     benchmark: tuple[OHLCVBar, ...]
     quality: DataQualityTrace
 
@@ -46,6 +47,7 @@ def collect_optional_fields(
     sink: FaultSink,
     quality: DataQualityTrace,
     benchmark_ticker: str | None = None,
+    earnings_lookahead_days: int | None = None,
 ) -> OptionalFields:
     """Fetch every requested optional field; skip unrequested, degrade on fault."""
     empty_funda: dict[str, dict[str, float]] = {}
@@ -101,6 +103,9 @@ def collect_optional_fields(
             quality=quality,
         )
     return OptionalFields(
+        earnings_horizon_days=_earnings_horizon(
+            fields, quality, earnings_lookahead_days
+        ),
         fundamentals=fundamentals,
         news=news,
         sentiment=sentiment,
@@ -109,6 +114,23 @@ def collect_optional_fields(
         benchmark=benchmark,
         quality=quality,
     )
+
+
+def _earnings_horizon(
+    fields: tuple[str, ...],
+    quality: DataQualityTrace,
+    earnings_lookahead_days: int | None,
+) -> int | None:
+    """The horizon the earnings map covers, or None when absence proves nothing.
+
+    Only a *clean* fetch earns a horizon: a degraded earnings feed leaves gaps that
+    look exactly like "no earnings due", and a consumer must not read them as an answer.
+    """
+    if "earnings_calendar" not in fields or earnings_lookahead_days is None:
+        return None
+    if any(degraded_feed_name(note) == "earnings" for note in quality.notes):
+        return None
+    return earnings_lookahead_days
 
 
 def _fetch_optional[T](

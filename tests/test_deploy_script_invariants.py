@@ -160,3 +160,26 @@ def test_status_board_column_width_is_derived_not_hardcoded() -> None:
 
     assert "$appW" in text, "the APP column width must be computed"
     assert "{0,-19}" not in text, "hardcoded APP column width reintroduced"
+
+
+def test_deliberator_served_peers_can_scale_past_one_replica() -> None:
+    """S172: proponent/opponent scale out, while the manager stays singular."""
+    text = _script_text()
+
+    assert "function Get-AppMaxReplicas" in text
+    assert "function Get-AppDesiredReplicas" in text
+    assert '"deliberator-proponent", "deliberator-opponent"' in text
+    assert '"--max-replicas", $maxReplicas' in text
+    assert "desiredReplicas=$desiredReplicas" in text
+    assert "(Get-AppMaxReplicas $name)" in text
+    assert "(Get-AppDesiredReplicas $name)" in text
+    assert re.search(r'"deliberator-manager".*return 1', text, re.DOTALL)
+
+
+def test_gitignored_deploy_json_can_come_from_process_env() -> None:
+    """Secrets stay out of sibling worktrees used for branch deploys."""
+    text = _script_text()
+
+    assert "GHCR_LOCAL_JSON" in text
+    assert "KEY_VAULT_LOCAL_JSON" in text
+    assert '[Environment]::GetEnvironmentVariable($envName, "Process")' in text

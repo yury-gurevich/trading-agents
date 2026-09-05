@@ -61,6 +61,12 @@ class _BuildReader:
     def latest_main_image_build(self) -> MainImageBuild:
         return MainImageBuild("main-sha", 293, "https://github.example/293")
 
+    def image_builds_for_tag(
+        self, tag: str, git_sha: str | None = None
+    ) -> tuple[MainImageBuild, ...]:
+        del git_sha
+        return (MainImageBuild("main-sha", 293, f"https://github.example/{tag}"),)
+
 
 class _Azure:
     def __init__(

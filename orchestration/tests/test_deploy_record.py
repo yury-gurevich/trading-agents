@@ -1,7 +1,7 @@
 """Append-only DeployRecord tests.
 
 Agent: orchestration
-Role: prove verified deployment facts append and exact replays dedupe.
+Role: prove deployment facts append and exact replays dedupe.
 External I/O: none; the graph is in memory.
 """
 
@@ -40,7 +40,6 @@ def test_record_deploy_appends_and_exact_replay_dedupes() -> None:
         "git_sha": "abc123",
         "deployed_at": "2026-07-09T02:03:00+00:00",
         "actor": "operator",
-        "sha_verified": True,
     }
 
 

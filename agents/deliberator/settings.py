@@ -45,6 +45,16 @@ class DeliberatorSettings(AgentSettings):
         ge=1,
         le=5,
     )
+    debate_concurrency: int = tunable(
+        4,
+        why=(
+            "Manager fan-out for independent PM-approved orders, bounded by the "
+            "vendor rate limit because each concurrent order can hold one "
+            "in-flight completion per peer role."
+        ),
+        ge=1,
+        le=25,
+    )
     llm_provider: str = tunable(
         default="anthropic",
         why=(

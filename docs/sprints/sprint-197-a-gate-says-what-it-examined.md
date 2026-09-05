@@ -187,8 +187,11 @@ GATE PROVEN for 64764c733c4bdd229efb3fa0f470b54f6f286533:
 
 Merged to `main` as `dc79d05`.
 
-**Not met / verified failing:** none. **Owed, not failed:** the live re-render on the fleet, which
-needs a deployed run.
+**Not met / verified failing:** none. **DEPLOYED `s198` 2026-09-05** by full `up` (carried with S198,
+whose vocabulary move forbade a retag): 16/16 apps on tag, 16/16 `Succeeded`, `ENV PRESERVATION`
+16/16, deployed vocabulary byte-identical to the repo pack. **Owed, not failed:** the live re-render
+in a real veto context, which needs a cascade - first is the scheduled **Monday 2026-09-07 22:30
+UTC**.
 
 ---
 

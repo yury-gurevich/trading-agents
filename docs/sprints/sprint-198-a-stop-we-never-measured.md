@@ -213,8 +213,26 @@ Merged to `main` as `b2fc22b`, and re-proven on the merge commit itself - **CI, 
 Findings and `Build and push agent images` all `success`**, with **0 open error-level alerts**.
 The post-merge CodeQL check matters here: `codeql.yml` runs only on `main` (queue item 31).
 
-**Not met / verified failing:** none. **Owed, not failed:** the full `up` (the vocabulary moved), and
-the first reading of `compare_stop_targets.py` with a non-zero `known_outcomes`.
+**Deploy:** full `up -Tag s198` from `70bf6662` - never a retag, and the decision was proven before
+it was taken (vocabulary `d47e88b1...` -> `2d1b2dbc...`, tunables `ec468c49...` -> `90b4d637...`).
+`ENV PRESERVATION` **16/16**, alembic OK, **16/16** apps on tag, **16/16 `Succeeded`**, cron
+`30 22 * * 1-5` intact. The deployed `GRAPH_VOCABULARY_B64` decodes **byte-identical** to the repo
+pack and declares `stop_target_drawdown_horizon_days`, so the fail-closed guard will accept the
+write. `ANALYST_STOP_TARGET_MODE=scaled` read back off the live analyst app;
+`DELIBERATOR_DEBATE_CONCURRENCY=1` unchanged. `DeployRecord` written on the build run's own SHA.
+Full row in [`functionality-checks.md`](../laws/functionality-checks.md).
+
+**Verifying the deploy found a contradiction the diff would not have** ([DL-157](../design-log.md)):
+both peer deliberators came up at `maxReplicas`/`desiredReplicas` **4** against a baseline of **1**,
+because `deploy-agents.ps1` hardcoded it in S172's own infra commit while the pack still declared
+`DELIBERATOR_DEBATE_CONCURRENCY=1` - the fan-out withheld in the code half and taken in the infra
+half. Fixed in the script rather than the cluster (`b0c1d4c`, no bump, `GATE PROVEN` for `01f1ec5`);
+the re-`up` leaves scale **byte-identical to the pre-deploy baseline, zero drift**, all three
+deliberators **1/1**. **The scale diff is the only check that would have caught it.**
+
+**Not met / verified failing:** none. **Owed, not failed:** the first reading of
+`compare_stop_targets.py` with a non-zero `known_outcomes`. No cascade has run under `s198` yet - the
+first is the scheduled **Monday 2026-09-07 22:30 UTC**, the cron being weekdays-only.
 
 ---
 

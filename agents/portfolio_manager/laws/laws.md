@@ -218,6 +218,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the `OrderIntentResult` node.
 - **PM-OBS-02** — Faults (provider degradation, per-evaluation errors) are routed to the
   central fault channel. Every rejection has an attributed reason; no silence, no mystery.
+- **PM-OBS-03** — A concentration gate that *did* evaluate reports the size of the comparison
+  behind its verdict. The correlated-cluster outcome names how many held issuers were examined,
+  which of them reached `correlation_threshold` and at what measured value, the strongest near
+  misses below it, and the smallest pairwise overlap any of those comparisons used. `PM-NEV-09`
+  separates *not evaluated* from *passed*; this clause separates *evaluated and found nothing*
+  from *evaluated nothing*, which is the pair a cluster of one collapses without it. The census
+  is evidence, not a summary: it is rendered into the same `detail` that reaches the deliberator.
 
 ---
 
@@ -315,3 +322,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `correlation_lookback_days`, `correlation_threshold`, `max_correlated_cluster_pct`,
   `min_correlation_bars`, `issuer_map` (NO — pack data). All new clauses are ⬜ until a functional
   test cites them; no green was moved by this amendment.
+
+- v1.4 — amendment (DL-155 / S197, 2026-09-05). Added `PM-OBS-03` (an evaluated gate reports its
+  census). The clause exists because the deliberator vetoed two orders on the reading that the
+  correlation gate had not run — `cluster_issuers=AVGO` and `cluster_issuers=BAC,USB` say what the
+  cluster *is* and nothing about what was compared to build it, so *examined 8, none above 0.70*
+  and *examined nothing* rendered identically. The judge read the evidence correctly; the evidence
+  was incomplete. No existing clause was weakened: `PM-NEV-09` already forbade recording an
+  unevaluable gate as passed, and this adds the census an evaluable one owes. Cited tests:
+  `test_correlation_census.py::test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out`
+  and `::test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass`.

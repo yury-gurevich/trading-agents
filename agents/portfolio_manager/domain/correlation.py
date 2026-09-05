@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.correlation_census import build_census
 from agents.portfolio_manager.domain.correlation_math import (
     pair_correlation,
     returns_by_ticker,
@@ -60,15 +61,19 @@ class CorrelationBook:
         if self.max_cluster_pct is None:
             return ()
         issuer = issuer_key(item.ticker, self.issuer_map)
-        cluster = {issuer}
         unevaluated = self._unevaluated_pair(item.ticker, issuer, issuer_tickers)
         if unevaluated is not None:
             return (self._not_evaluated(item.ticker, unevaluated[0], unevaluated[1]),)
-        for held_issuer in sorted(issuer_values):
-            if held_issuer == issuer:
-                continue
-            if self._correlates(item.ticker, held_issuer, issuer_tickers):
-                cluster.add(held_issuer)
+        census = build_census(
+            candidate_ticker=item.ticker,
+            candidate_issuer=issuer,
+            issuer_keys=issuer_values,
+            issuer_tickers=issuer_tickers,
+            pair=self._pair,
+            threshold=self.threshold,
+            min_bars=self.min_bars,
+        )
+        cluster = {issuer, *census.clustered()}
         value = cost + issuer_values.get(issuer, _ZERO)
         value += sum(issuer_values.get(key, _ZERO) for key in cluster if key != issuer)
         threshold_value = Decimal(str(self.max_cluster_pct)) * portfolio_value
@@ -83,6 +88,7 @@ class CorrelationBook:
                 detail=(
                     f"candidate_issuer={issuer}; "
                     f"cluster_issuers={','.join(sorted(cluster))}; "
+                    f"{census.detail()}; "
                     f"cluster_value_usd={value:.2f}; "
                     f"portfolio_value_usd={portfolio_value:.2f}"
                 ),
@@ -104,18 +110,6 @@ class CorrelationBook:
             if best_overlap < self.min_bars:
                 return held_issuer, best_overlap
         return None
-
-    def _correlates(
-        self,
-        candidate_ticker: str,
-        held_issuer: str,
-        issuer_tickers: Mapping[str, tuple[str, ...]],
-    ) -> bool:
-        for held_ticker in issuer_tickers.get(held_issuer, ()):
-            corr, overlap = self._pair(candidate_ticker, held_ticker)
-            if overlap >= self.min_bars and corr is not None and corr >= self.threshold:
-                return True
-        return False
 
     def _best_overlap(
         self,

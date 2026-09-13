@@ -125,10 +125,41 @@ def _wire(request: BatchRequest) -> dict[str, object]:
             "model": request.model,
             "max_tokens": request.max_tokens,
             "output_config": {"effort": request.effort},
-            "system": request.system,
+            "system": _cached_system(request.system),
             "messages": [{"role": "user", "content": request.user}],
         },
     }
+
+
+def _cached_system(system: str) -> list[dict[str, object]]:
+    """Mark the round's system prompt cacheable with a one-hour entry.
+
+    A round is planned one `(role, round)` step at a time, so every request in a
+    submitted batch carries the **same** role's system prompt, byte for byte —
+    one cache write and then a read on all the rest. S173 Part B paid full input
+    price on all 2,957 of its calls with `cache_read` at 0 throughout
+    ([DL-160](../docs/design-log.md)).
+
+    🪤 The TTL is 1h, not the 5-minute default, *because* this is a batch. The
+    API processes a batch across a window of minutes to hours, so a 5-minute
+    entry would expire mid-round and be rewritten repeatedly — paying the 1.25x
+    write premium over and over for few reads. A 1-hour entry costs 2x to write
+    once and is read by the thousands of requests behind it. The live nightly
+    path makes the opposite choice for the opposite reason: its requests are
+    seconds apart, where 1h buys nothing but the doubled write.
+
+    Round 1 will show no cache activity at all: it is the only all-defender
+    round, and the defender prompt (167 tokens, measured 2026-09-13) is below
+    `claude-opus-5`'s 512-token minimum cacheable prefix. Challenger (2,561) and
+    judge (2,474) clear it.
+    """
+    return [
+        {
+            "type": "text",
+            "text": system,
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        }
+    ]
 
 
 def _result(entry: object) -> BatchResult:

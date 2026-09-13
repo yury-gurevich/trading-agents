@@ -95,6 +95,7 @@ from kernel.llm import (
     llm_stop_reason,
 )
 from kernel.llm_ledger import LLMCallCapture, record_llm_call, write_llm_call
+from kernel.llm_tokens import LLMUsage, llm_usage, llm_usage_or_none, usage_count
 from kernel.market_pack import MarketPack, MarketPackRegistry
 from kernel.metrics import MeteredFaultSink, Metrics, NullMetrics
 from kernel.metrics_prometheus import MetricsSettings, PrometheusMetrics
@@ -141,6 +142,7 @@ __all__ = [
     "LLMClient",
     "LLMCompletionStoppedError",
     "LLMJudgeScorer",
+    "LLMUsage",
     "MarketPack",
     "MarketPackRegistry",
     "MessageBus",
@@ -179,6 +181,8 @@ __all__ = [
     "faults_occurred_in_window",
     "judge_verdict",
     "llm_stop_reason",
+    "llm_usage",
+    "llm_usage_or_none",
     "load_deliberation_prompt_artifact",
     "load_deliberation_prompt_artifacts",
     "load_prompt_artifact",
@@ -196,5 +200,6 @@ __all__ = [
     "score_understanding",
     "tunable",
     "understanding_rate",
+    "usage_count",
     "write_llm_call",
 ]

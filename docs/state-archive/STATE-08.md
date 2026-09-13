@@ -207,3 +207,25 @@ place**: `[OK] Service Bus route-prep imports (azure extra)`, green in a worktre
 it reports a corrupt *local environment*, not a missing secret. The invariant test pins **both sides**.
 Full cycle despite being PowerShell: `GATE PROVEN` for `a234c28…`, post-merge CodeQL **success**. 🎯 This is the
 failure that stopped the `s187` deploy *after* `alembic upgrade head` had run.
+
+---
+
+## Split from `STATE.md` 2026-09-13 (S199) — the S190/S191 fleet deploy and S190's own merge
+
+Moved verbatim to keep `STATE.md` under its 200-line rule. Both are fully shipped and proven; the live detail lives in their sprint docs.
+
+🟩 **PROVEN RESULT — FLEET DEPLOYED `s190` THEN `s191`, 2026-09-01** (from `s187`). 16/16 on tag, scale **diffed** to zero drift, cron intact, `DeployRecord` on the
+build run's own SHA. 🚨 **S190 could not travel alone** — the vocabulary pack had moved, so a retag would have met the fail-closed write guard mid-cascade
+(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**, **`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges
+had reached `main` ungated and the images came from them — now closed as item 39.
+
+🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
+(`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
+asked: a fired stop stops being counted as protection, a resting-stop `Fill` is no longer an open order, and the
+stale-order sweep compares **live broker stop to live graph stop**. Six status vocabularies collapse into one, and
+`partial` stayed non-terminal so S176 is intact. Execution laws **v1.4**, rollup **35 / 61**, `DRIFT-055` CORRECTED.
+🟩 **Verified independently:** `GATE PROVEN` for `c682907…` from a worktree at that commit, baseline untouched,
+PATCH bump correct. 🪤 `EXEC-STA-05` went ⬜ → 🟩 by **re-citation**, already asserted under `EXEC-IDM-01`.
+🟩 **PROVEN LIVE, 2026-09-01.** One cascade (`verify-2026-09-01-s190-stops`) ran **8/8 with zero faults** where
+`s187` raised **17** mismatch warnings and a `cancel_stop` 422 nine hours earlier; broker **identical before and
+after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **item 12's delete path, first live use**.

@@ -455,6 +455,8 @@
       "time_in_force"
     ],
     "LLMCall": [
+      "cache_read_tokens",
+      "cache_write_tokens",
       "calling_agent",
       "correlation_id",
       "created_at",
@@ -463,6 +465,7 @@
       "prompt_hash",
       "response_hash",
       "stop_reason",
+      "token_source",
       "tokens_in",
       "tokens_out"
     ],

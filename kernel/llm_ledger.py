@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from kernel.llm import STOP_REASON_UNKNOWN
+from kernel.llm_tokens import SOURCE_ESTIMATED, LLMUsage, token_counts
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -29,6 +30,7 @@ class LLMCallCapture:
     prompt: str
     response: str = ""
     stop_reason: str = STOP_REASON_UNKNOWN
+    usage: LLMUsage | None = None
     node: Node | None = None
 
     def set_response(self, response: str) -> None:
@@ -39,6 +41,10 @@ class LLMCallCapture:
         """Record sanitized model stop metadata without payload details."""
         reason = str(stop_reason or "").strip()
         self.stop_reason = reason or STOP_REASON_UNKNOWN
+
+    def set_usage(self, usage: LLMUsage | None) -> None:
+        """Record the provider's own token accounting, when it reported any."""
+        self.usage = usage
 
 
 @contextmanager
@@ -57,6 +63,9 @@ def record_llm_call(
         yield capture
     finally:
         latency_ms = int((time.perf_counter() - started) * 1000)
+        counts = token_counts(
+            capture.usage, prompt=capture.prompt, response=capture.response
+        )
         capture.node = write_llm_call(
             graph,
             calling_agent=calling_agent,
@@ -64,10 +73,13 @@ def record_llm_call(
             model=model,
             prompt_hash=digest_text(capture.prompt),
             response_hash=digest_text(capture.response),
-            tokens_in=_rough_tokens(capture.prompt),
-            tokens_out=_rough_tokens(capture.response),
+            tokens_in=counts.tokens_in,
+            tokens_out=counts.tokens_out,
             latency_ms=latency_ms,
             stop_reason=capture.stop_reason,
+            cache_read_tokens=counts.cache_read_tokens,
+            cache_write_tokens=counts.cache_write_tokens,
+            token_source=counts.token_source,
         )
 
 
@@ -83,8 +95,15 @@ def write_llm_call(
     tokens_out: int,
     latency_ms: int,
     stop_reason: str = STOP_REASON_UNKNOWN,
+    cache_read_tokens: int = 0,
+    cache_write_tokens: int = 0,
+    token_source: str = SOURCE_ESTIMATED,
 ) -> Node:
-    """Write one idempotent shared LLM call ledger node."""
+    """Write one idempotent shared LLM call ledger node.
+
+    ``token_source`` defaults to ``estimated`` so a caller that does not pass
+    it cannot silently present a word count as a vendor measurement.
+    """
     key = f"llmcall:{calling_agent}:{correlation_id}"
     current = graph.get_node("LLMCall", key)
     if current is not None:
@@ -100,6 +119,9 @@ def write_llm_call(
             "response_hash": response_hash,
             "tokens_in": tokens_in,
             "tokens_out": tokens_out,
+            "cache_read_tokens": cache_read_tokens,
+            "cache_write_tokens": cache_write_tokens,
+            "token_source": token_source,
             "latency_ms": latency_ms,
             "stop_reason": str(stop_reason or "").strip() or STOP_REASON_UNKNOWN,
             "created_at": datetime.now(tz=UTC).isoformat(),
@@ -110,7 +132,3 @@ def write_llm_call(
 def digest_text(value: str) -> str:
     """Hash one prompt or response the way every ledger row is hashed."""
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
-
-def _rough_tokens(value: str) -> int:
-    return max(1, len(value.split())) if value else 0

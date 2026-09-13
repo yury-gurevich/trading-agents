@@ -152,7 +152,7 @@ partial fail-open look like the common case; the ledger says the opposite.
 | Tests added | `agents/master/tests/test_credential_probe_body.py` **175** (new), `orchestration/tests/test_trading_deliberation_unvetoed.py` **99** (new) |
 | Contract change? | No |
 | Graph vocabulary change? | **No** — `advisory_attribution` is an acceptance-view observed key that already existed; only its value set grows |
-| Deploy implication | **Image-only retag is sufficient.** The vocabulary pack does not move; the credential pack is baked into the master image, so the fleet must be rebuilt at a new tag for the probe to change |
+| Deploy implication | 🚨 **Full `up`, never a retag** — corrected below. The vocabulary pack does **not** move, but `trading_credential_tests.json` is injected as `MASTER_CREDENTIAL_TESTS_B64` and `b64` wins over the baked file, so only an `up` refreshes it |
 | Live spend added | **$0.00006** per Anthropic probe activation, ×4 required probes = **$0.00024** per full fleet activation (7 input at $5/MTok + 1 output at $25/MTok — Opus 5 rates verified 2026-09-13 against `platform.claude.com`, matching `orchestration/packs/llm_pricing.json`) |
 
 ---
@@ -294,6 +294,39 @@ verified against `platform.claude.com`.
 night's **~15,000 ms**. The ledger could have named this on 2026-08-21, nineteen days before item 50
 was filed. Queued as **item 55**.
 
+### 🚨 Second correction — this needs a full `up`, not an image-only retag
+
+Measured 2026-09-13 while deploying, against the live fleet. The Blast radius table above said
+*"image-only retag is sufficient"* on the grounds that the **vocabulary** pack does not move. That
+reasoning is right about the vocabulary pack and wrong about this sprint, because the file this
+sprint edits is delivered a different way.
+
+| Fact | Value | How |
+| --- | --- | --- |
+| `trading_graph_vocabulary.json` at `s200` vs `HEAD` | `58769995…` **both** | *[measured]* `git show <sha>:… \| sha256sum` |
+| `trading_credential_tests.json` at `HEAD` | `b1496f71…` | *[measured]* same |
+| **Deployed** `MASTER_CREDENTIAL_TESTS_B64`, decoded | **`307e2a9a…`** | *[measured]* `az containerapp show -n master` |
+| What the deployed pack probes | `GET /v1/models` on **all four** | *[measured]* decoded the live env var |
+
+🚨 **`agents/master/entrypoint.py:42` says `b64` wins**: *"b64 wins so the master image stays
+pack-agnostic — the pack is injected at [deploy time]"*. `infra/deploy-agents.ps1:637`
+(`Get-MasterCredentialTestsEnv`) is what sets it, and only a full `up` re-runs that function. So an
+image-only retag would have pushed new images that still read the **old** credential pack out of an
+env var — the fix live in the image, inert in the config, and every verification of "the fleet is on
+`s202`" would have passed.
+
+🪤 **That is the DL-46 currency failure in its purest form, and the skill's own step-1 question does
+not catch it.** *"Did the vocabulary pack move?"* is the right question for image-vs-pack skew in the
+graph write guard; it is the wrong question for a sprint whose payload is a **different** injected
+pack. The general rule this sprint adds: **ask which of a change's artifacts are injected at deploy
+time, not just whether the vocabulary pack moved.** Three packs are injected that way today —
+`GRAPH_VOCABULARY_B64`, `MASTER_CREDENTIAL_TESTS_B64`, `PORTFOLIO_MANAGER_ISSUER_MAP_B64` — and a
+retag refreshes none of them.
+
+**Third time in one sprint that a claim made from reasoning failed against a measurement** (the probe
+price, the DL-125 citation, and now the deploy path). Each was caught by running the check rather
+than by re-reading the reasoning.
+
 ## Return notes
 
 - **DL-163 sequenced this wrong and measuring it is what caught that.** Its "probe first, it is
@@ -307,6 +340,9 @@ was filed. Queued as **item 55**.
   worse than no gate, because it reports as coverage. It was caught by running `/audit-costs`,
   not by re-reading the sprint — a check that touches real data beats another pass over my own
   reasoning.
+- **The deploy question is not always "did the vocabulary pack move?"** Three packs are injected
+  at deploy time and a retag refreshes none of them. This sprint's payload was one of the other
+  two, and the habit of checking only the vocabulary hash would have shipped an inert fix.
 - **What the next sprint should know:** **item 53** is the rest of this defect — three OpenAI probe
   entries and two vault probes that also cannot fail. They gate nothing today, which is why they
   were left; they are written down so they are not rediscovered by another four-night outage.

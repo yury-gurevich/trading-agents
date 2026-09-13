@@ -39,6 +39,34 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    Check which labels those are rather than assuming — `Rejection`, for instance, is *not* one,
    which is why S162 needed no pack move despite writing a new property.
 
+   🚨 **The vocabulary pack is not the only injected pack, and this question alone is not enough**
+   (S202, 2026-09-13). **Three** packs are injected as base64 env vars by `up`, and an image-only
+   retag refreshes **none** of them:
+
+   | Env var | Source file | Set by |
+   | --- | --- | --- |
+   | `GRAPH_VOCABULARY_B64` | `trading_graph_vocabulary.json` | `Get-GraphVocabularyEnv` |
+   | `MASTER_CREDENTIAL_TESTS_B64` | `trading_credential_tests.json` | `Get-MasterCredentialTestsEnv` |
+   | `PORTFOLIO_MANAGER_ISSUER_MAP_B64` | `trading_issuer_map.json` | `Get-IssuerMapEnv` |
+
+   For each of these the injected value **wins over the file baked into the image** —
+   `agents/master/entrypoint.py:42`: *"b64 wins so the master image stays pack-agnostic."* So the
+   real step-1 question is **"does this change touch any injected pack?"**, not just the vocabulary
+   one. Diff all three against the deployed commit:
+
+   ```bash
+   for f in trading_graph_vocabulary trading_credential_tests trading_issuer_map; do
+     echo "$f: $(git diff --stat <deployed-commit>..HEAD -- orchestration/packs/$f.json | wc -l) changed"
+   done
+   ```
+
+   🪤 **S202 nearly shipped inert.** Its vocabulary hash was identical on both sides (`58769995…`),
+   so the question as written said "retag" — but its payload was the *credential* pack, and the
+   deployed env var decoded to `307e2a9a…` against the repo's `b1496f71…`, still probing the
+   endpoint the sprint existed to replace. New images, old pack, and every "the fleet is on `s202`"
+   check would have passed. That is the DL-46 currency failure with the currency check looking one
+   pack to the left.
+
 2. **Build all 15 images at the tag** (from `main` unless the operator says otherwise):
 
    ```bash

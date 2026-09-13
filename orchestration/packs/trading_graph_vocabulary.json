@@ -463,8 +463,10 @@
       "latency_ms",
       "model",
       "prompt_hash",
+      "prompt_recipe_hash",
       "response_hash",
       "stop_reason",
+      "system_prompt_hash",
       "token_source",
       "tokens_in",
       "tokens_out"

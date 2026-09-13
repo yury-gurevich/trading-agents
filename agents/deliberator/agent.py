@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from agents.deliberator.prompt_recipe import PROMPT_RECIPE_HASH
 from agents.deliberator.settings import DeliberatorSettings
 from contracts.deliberator import (
     DebateProposition,
@@ -139,6 +140,8 @@ class _LedgerLLM:
             correlation_id=self._correlation_id,
             model=self._model,
             prompt=user,
+            system_prompt=system,
+            prompt_recipe_hash=PROMPT_RECIPE_HASH,
         ) as call:
             try:
                 raw = self._llm.complete(

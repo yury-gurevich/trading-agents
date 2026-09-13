@@ -102,6 +102,7 @@ class OperatorAgent(AgentBase):
             correlation_id=corr,
             model=self._settings.model,
             prompt=user,
+            system_prompt=system,
         ) as call:
             raw = self._llm.complete(system=system, user=user, tool_schema={})
             call.set_response(raw)
@@ -129,6 +130,7 @@ class OperatorAgent(AgentBase):
             correlation_id=corr,
             model=self._settings.model,
             prompt=user,
+            system_prompt=system,
         ) as call:
             raw = self._llm.complete(
                 system=system, user=user, tool_schema=INTENT_TOOL_SCHEMA

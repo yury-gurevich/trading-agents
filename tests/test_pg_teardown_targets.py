@@ -114,7 +114,9 @@ def test_collect_gathers_rows_the_walk_cannot_reach() -> None:
     assert POSITION_CHECK in found
     owned_query, owned_params = cursor.calls[-1]
     assert "LIKE ANY" in owned_query
-    assert f"{MONITOR_RUN[1]}:%" in owned_params[-1]
+    # Contains, not prefix: an owned key may carry its owner anywhere in it.
+    # See test_pg_teardown_orphans.py for the shape a prefix anchor missed.
+    assert f"%{MONITOR_RUN[1]}:%" in owned_params[-1]
 
 
 def test_collect_skips_the_owned_pass_when_no_container_was_reached() -> None:

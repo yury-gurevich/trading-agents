@@ -174,9 +174,25 @@ def protected_matches(cursor: Any, patterns: list[str]) -> int:  # noqa: ANN401
 
 
 def _owned_patterns(found: set[tuple[str, str]]) -> list[str]:
-    """Build `<container key>:%` patterns for every run container in `found`."""
+    """Build `%<container key>:%` patterns for every run container in `found`.
+
+    🪤 The match is **contains**, not prefix. An owned row may carry its owner's
+    key anywhere: `monitor-run-<id>:broker:WFC:…:check` starts with it, but
+    `broker-position-snapshot:<pm-run id>:<ts>` puts a label slug in front. A
+    prefix anchor found the first and silently missed the second, and because
+    `survivors()` builds its patterns here too, the self-check was blind in
+    exactly the deleter's blind spot — so the teardown exited 0 with an orphan
+    left (measured 2026-09-13 on `verify-2026-09-13-s200`; DL-94's defect
+    reappearing through the verifier).
+
+    Widening is safe for one reason, asserted in `test_pg_teardown_orphans.py`:
+    every query that consumes these patterns is scoped to
+    `RUN_ARTIFACT_LABELS`, so no protected production row is selectable however
+    wide the key pattern gets. Container keys are uuid-suffixed, so a contains
+    match cannot reach across runs either.
+    """
     return sorted(
-        like_pattern(f"{key}:", contains=False)
+        like_pattern(f"{key}:", contains=True)
         for label, key in found
         if label in RUN_CONTAINER_LABELS
     )

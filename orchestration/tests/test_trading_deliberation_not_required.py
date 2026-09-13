@@ -151,6 +151,9 @@ def test_binding_branch_still_uses_coverage_and_fail_open_checks() -> None:
     [
         ("applied", 0, ""),
         ("applied_failed_open", 1, "RuntimeError: provider unavailable"),
+        # Still green, but only because this fixture approves **no buy**. S202
+        # made `proceeded_unvetoed` with an approved buy breach — see
+        # `test_trading_deliberation_unvetoed.py` for that half.
         ("proceeded_unvetoed", 0, ""),
     ],
 )

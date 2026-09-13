@@ -23,9 +23,16 @@ if TYPE_CHECKING:
 
 
 def default_http_transport(request: HttpProbeRequest) -> int:  # pragma: no cover
-    """Run a declared HTTP probe with stdlib urllib."""
+    """Run a declared HTTP probe with stdlib urllib.
+
+    `data=None` keeps a bodyless probe byte-identical to the GET it was before
+    probe bodies existed.
+    """
     req = urllib.request.Request(  # noqa: S310
-        request.url, headers=request.headers, method=request.method
+        request.url,
+        data=request.body,
+        headers=request.headers,
+        method=request.method,
     )
     try:
         with urllib.request.urlopen(req, timeout=request.timeout_seconds) as resp:  # noqa: S310

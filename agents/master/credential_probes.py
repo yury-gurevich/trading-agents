@@ -17,11 +17,13 @@ from agents.master.credential_probe_support import (
     bool_field,
     cost,
     int_field,
+    json_body,
     render,
     render_url,
     required_str,
     status_set,
     str_dict,
+    with_json_content_type,
 )
 from agents.master.credential_probe_transports import (
     default_dsn_select_1 as _default_dsn_select_1,
@@ -111,6 +113,7 @@ def _http_runner(
     url_template = required_str(entry, "url")
     headers = str_dict(entry.get("headers", {}), "headers")
     query = str_dict(entry.get("query", {}), "query")
+    body = json_body(entry.get("json_body"))
     expected = status_set(entry.get("expected_statuses", [200]))
     failure_statuses = status_set(entry.get("credential_failure_statuses", [401, 403]))
     timeout_seconds = int_field(entry.get("timeout_seconds", 15), "timeout_seconds")
@@ -123,9 +126,11 @@ def _http_runner(
             }
         except KeyError as exc:
             return credential_failed(f"missing_config:{exc.args[0]}")
+        if body is not None:
+            rendered_headers = with_json_content_type(rendered_headers)
         try:
             status = transport(
-                HttpProbeRequest(method, url, rendered_headers, timeout_seconds)
+                HttpProbeRequest(method, url, rendered_headers, timeout_seconds, body)
             )
         except (TimeoutError, OSError) as exc:
             return credential_transport_failed(type(exc).__name__)

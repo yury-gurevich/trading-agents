@@ -113,20 +113,38 @@ def test_all_fail_open_deliberation_run_fails_acceptance() -> None:
     )
 
 
-def test_advisory_fail_open_deliberation_run_passes_acceptance() -> None:
-    """EXEC-OUT-09 / EXEC-OBS-04: advisory fail-open is attributed, not red."""
+def test_advisory_veto_that_reviewed_nothing_fails_acceptance() -> None:
+    """EXEC-OUT-09 / EXEC-OBS-04: under advisory, a veto reviewing nothing is red.
+
+    🎯 The four blind nights, end to end. The LLM raises on every subject, so the
+    `DeliberationRun` exists, records its cause, and reviewed **none** of the orders
+    it was given — the operator's *"the veto could not execute at all"*
+    (2026-09-13), which S202 separates from partial degradation.
+
+    🪤 S185 wrote this same fixture asserting **PASS**, under the name
+    `test_advisory_fail_open_deliberation_run_passes_acceptance`. Its intent was
+    *"a partial fail-open with a stated cause is not red"* — but this cascade
+    approves exactly **one** order, so 1 of 1 failed open and the fixture was a
+    total outage all along. The partial case cannot be expressed end to end here
+    and is asserted at the unit level instead
+    (`test_trading_deliberation_unvetoed.py::test_a_partially_degraded_veto_stays_green`,
+    `test_trading_deliberation_posture.py::test_advisory_fail_open_passes_when_attributed`).
+    """
     graph = _cascade(
         source(),
         ("AAPL",),
-        "acc-advisory-fail-open",
+        "acc-advisory-total-outage",
         with_deliberation=True,
         deliberation_llm=_RaisingLLM(),
     )
 
-    result = accept_run(graph, "acc-advisory-fail-open")
+    result = accept_run(graph, "acc-advisory-total-outage")
 
-    assert result.verdict == "PASS"
-    assert result.passed
+    assert result.verdict == "FAIL"
+    assert any(
+        breach.stage == "deliberation" and breach.key == "advisory_attribution"
+        for breach in result.breaches
+    )
 
 
 def test_mixed_fail_open_deliberation_run_fails_acceptance() -> None:

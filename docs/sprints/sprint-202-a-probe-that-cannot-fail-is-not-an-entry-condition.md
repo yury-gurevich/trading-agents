@@ -32,10 +32,14 @@ neither was delivered. So no clause is owed, no `contracts/` file changes, and t
 does **not** move — but a drift row is owed, because a clause that was green on an oracle that cannot
 fail is a register row, not a silent fix (conventions §9).
 
-⚠️ **The invariant this must not break: a present-but-degraded veto stays green.** The change makes
-an *absent* veto red. [DL-125](../design-log.md) measured what widening that to `applied_failed_open`
-costs — six consecutive nights red for a non-defect. Asserted directly, not assumed:
-`test_failed_open_with_a_reason_is_still_green`, parametrised over no-buy, buy, and mixed sets.
+⚠️ **The invariant this must not break: a veto that ran and degraded on *some* of its subjects
+stays green.** The change makes a veto that reviewed **nothing** red — by either route. Asserted
+directly, not assumed: `test_a_partially_degraded_veto_stays_green`, parametrised over 1-of-2,
+1-of-3 and 2-of-3 failures.
+
+🪤 **The first cut of this sprint drew that line in the wrong place** — see the Correction section
+below. It keyed on the absent-`DeliberationRun` statuses only, and would have fired on **0** runs
+while leaving all **4** real occurrences green.
 
 ---
 
@@ -46,8 +50,10 @@ submitted buys with no veto at all reports red under `advisory` posture.
 
 ## Why (context)
 
-Work-queue item 50, from four blind nights (2026-09-09 → 2026-09-12). Every deliberator activated
-clean and every debate then failed with `400 … credit balance is too low`.
+Work-queue item 50, from **nine** blind nights — `2026-08-21, -24, -25, -26, -28` and
+`2026-09-08, -09, -10, -11`, each with `real_debate_count = 0`. Every deliberator activated clean and
+every debate then failed with `400 … credit balance is too low`. *(Item 50 was filed citing four
+nights; the full extent was measured on 2026-09-13 by `/audit-costs`.)*
 
 🚨 **DL-36 Piece A was built correctly and asked the wrong question.** The probe's
 `credential_failure_statuses` already contained **400**. It called `GET /v1/models` — free metadata,
@@ -58,7 +64,7 @@ and handover proceeded. *The failure list was right; the endpoint was wrong.*
 
 | Request to `POST /v1/messages` | Status | Meaning |
 | --- | --- | --- |
-| valid key, `max_tokens: 1`, body present | **200** (7 in / 1 out) | probe passes, ≈ **$0.00018** |
+| valid key, `max_tokens: 1`, body present | **200** (7 in / 1 out) | probe passes, **$0.00006** |
 | invalid key | **401** | credential failure |
 | valid key, **no body** | **400** | 🚨 a *valid* key fails |
 | valid key, retired model name | **404** | a pack typo reads as a credential failure |
@@ -72,20 +78,24 @@ activation outage.
 deliberators; under `advisory` the run then submits its buys with no veto and a **green** board. A
 stricter probe without a run-level gate converts our own config drift into unreviewed orders.
 
-### Measured, 2026-09-13 — against the live spine, before changing the gate
+### Measured, 2026-09-13 — against the live spine, over the 40 linked `ExecutionRun` rows
 
-| Posture + status | Count |
+| Condition | Occurrences |
 | --- | --- |
-| `advisory` + `applied` | 7 |
-| `advisory` + `applied_failed_open` | **4** |
-| `advisory` + `not_required` | 1 |
 | `advisory` + `proceeded_unvetoed` | **0** |
+| `advisory` + `applied_failed_open`, `failed_open_count == reviewed` | **4** |
+| `advisory` + `applied_failed_open`, `0 < failed_open_count < reviewed` | **0** |
+| `advisory` + `applied` (clean) | 7 |
+| `advisory` + `not_required` | 1 |
 | no posture prop (predates S185) | 28 |
 | **total `ExecutionRun`** | **69** |
 
-🎯 **That table is the answer to DL-125.** The wide rule (all advisory fail-open red) would turn
-**4** historical runs red. The narrow rule turns **0** — it is a tripwire for a condition that has
-never yet occurred, not a re-scoring of history.
+🎯 **Row two is the incident.** All four carry `real_debate_count = 0` and a `failed_open_reason`
+naming `400 … credit balance is too low`. The rule has to reach them, and keying on row one alone
+does not — that was the first cut's error, corrected below.
+
+🪤 **Row three is the case that stays green, and it has occurred 0 times.** The status label made a
+partial fail-open look like the common case; the ledger says the opposite.
 
 ---
 
@@ -98,7 +108,11 @@ never yet occurred, not a re-scoring of history.
 3. **Four pack entries move** to `POST https://api.anthropic.com/v1/messages` with
    `{"model": "claude-opus-5", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}` —
    `operator`, `deliberator-manager`, `-proponent`, `-opponent`. All four are `required: true`.
-4. **`advisory` + `proceeded_unvetoed` + an approved buy breaches**, as `veto_never_ran`.
+4. **A veto that could not execute breaches**, as `veto_never_ran`, by **either** route —
+   `proceeded_unvetoed` with an approved buy (no `DeliberationRun`), or `applied_failed_open` where
+   every reviewed subject failed open (a `DeliberationRun` that reviewed nothing).
+4b. **The attribution logic moves to its own module**, `trading_deliberation_attribution.py`, because
+   it now carries real policy and the view was at 194 of 200 lines.
 5. **Two drift guards** — the pack's probe model is asserted equal to
    `llm_factory.DEFAULT_MODEL["anthropic"]`; the content type is supplied by the runner.
 6. **DRIFT-058** written and CORRECTED; **item 53** filed for the probes left blind on purpose.
@@ -121,6 +135,9 @@ never yet occurred, not a re-scoring of history.
   the likeliest cause. Recorded in DL-164 because it is a real asymmetry.
 - **Make every absent veto red regardless of posture or direction.** Rejected: the rule is about
   *unreviewed exposure*, which is why a sell-only `proceeded_unvetoed` run stays green.
+- **Key the rule on the status label alone.** Tried first, and it produced a gate that fires on
+  **0** of 69 runs while the condition the operator named sits in the ledger 4 times under a
+  different label. Rejected on measurement; see the Correction section.
 - **Let each pack entry declare its own `content-type`.** Rejected: forgetting it produces a 400
   indistinguishable from an exhausted credential, on a fail-closed path. The runner defaults it and
   still lets a pack override.
@@ -136,7 +153,7 @@ never yet occurred, not a re-scoring of history.
 | Contract change? | No |
 | Graph vocabulary change? | **No** — `advisory_attribution` is an acceptance-view observed key that already existed; only its value set grows |
 | Deploy implication | **Image-only retag is sufficient.** The vocabulary pack does not move; the credential pack is baked into the master image, so the fleet must be rebuilt at a new tag for the probe to change |
-| Live spend added | ≈ **$0.00018** per Anthropic probe activation, ×4 required probes ≈ **$0.0007** per full fleet activation |
+| Live spend added | **$0.00006** per Anthropic probe activation, ×4 required probes = **$0.00024** per full fleet activation (7 input at $5/MTok + 1 output at $25/MTok — Opus 5 rates verified 2026-09-13 against `platform.claude.com`, matching `orchestration/packs/llm_pricing.json`) |
 
 ---
 
@@ -191,8 +208,13 @@ its name implies is worse than one that fails.
 | B1 | `test_unvetoed_advisory_buy_breaches` | PASS (red first) |
 | B2 | `test_unvetoed_advisory_sell_only_run_stays_green` | PASS |
 | B3 | `test_unvetoed_advisory_with_unreadable_pm_payload_breaches` | PASS (red first) |
-| B4 | `test_failed_open_with_a_reason_is_still_green` ×3 | PASS (DL-125 guard) |
-| B5 | `test_binding_posture_is_untouched_by_the_advisory_rule` | PASS |
+| B4 | `test_a_veto_that_reviewed_nothing_breaches` ×3 | PASS (the 4 real occurrences) |
+| B5 | `test_a_partially_degraded_veto_stays_green` ×3 | PASS (the case that stays green) |
+| B6 | `test_a_fail_open_without_a_reason_is_still_unattributed` | PASS |
+| B7 | `test_a_clean_applied_veto_stays_green` | PASS |
+| B8 | `test_binding_posture_is_untouched_by_the_advisory_rule` | PASS |
+| B9 | `test_advisory_veto_that_reviewed_nothing_fails_acceptance` (end to end) | PASS |
+| B10 | `test_advisory_fail_open_on_every_subject_does_not_pass` | PASS |
 
 ---
 
@@ -231,6 +253,47 @@ pip-audit clean, detect-secrets clean.
 
 ---
 
+---
+
+## Correction — the rule as first built could never have fired
+
+Found by `/audit-costs` the same day, before merge. The first cut keyed only on
+`proceeded_unvetoed`, and this document reported *"turns 0 of 69 runs red"* as a **feature**. It is
+not one: it means the tripwire is **inert**.
+
+| Condition | Occurrences (40 linked `ExecutionRun` rows) |
+| --- | --- |
+| `advisory` + `proceeded_unvetoed` — *what the first cut keyed on* | **0** |
+| `advisory` + `applied_failed_open`, `failed_open_count == reviewed` | **4** |
+| `advisory` + `applied_failed_open`, `0 < failed_open_count < reviewed` | **0** |
+
+All four of row two carry `real_debate_count = 0` and a `400 … credit balance is too low` reason —
+the incident this sprint exists for, left green by the first cut. **The line is partial-vs-total,
+not present-vs-absent.**
+
+🪤 **I cited DL-125 as forbidding this and it says no such thing.** DL-125 argued against nightly red
+*for a declared, accepted, external outage*, proposing the declared `advisory` posture so
+knowingly-unvetoed submissions get "a stated mode with a truthful green"; its own `sched-2026-08-21`
+record treats that run **failing acceptance** as correct. Citing it from memory rather than reading
+it is the same error as pricing the probe from memory — both in this sprint, both caught the same day
+by running a check rather than by re-reading my own conclusions.
+
+🪤 **Three tests were passing for a reason their names did not describe**, each with a 1-of-1 fixture
+that reads as partial and is total: S185's `test_advisory_fail_open_passes_when_attributed`, its
+end-to-end twin, and S191's `proceeded_unvetoed` parametrize case. All three fixtures are now
+explicitly one or the other. The end-to-end cascade approves exactly **one** order, so it cannot
+express a partial fail-open at all; that test now asserts the total outage it actually builds, and
+the partial case is asserted at the unit level.
+
+**Corrected numbers:** the outage is **nine** nights, not four. The probe costs **$0.00006**, not
+$0.00018 — the first figure used Opus **4.1**'s retired $15/$75 from memory; Opus 5 is $5/$25,
+verified against `platform.claude.com`.
+
+🎯 **The signature was free and unwatched.** Every call on those nine nights recorded
+`response_hash = e3b0c44298fc…` — SHA-256 of the empty string — at **~300 ms** against a working
+night's **~15,000 ms**. The ledger could have named this on 2026-08-21, nineteen days before item 50
+was filed. Queued as **item 55**.
+
 ## Return notes
 
 - **DL-163 sequenced this wrong and measuring it is what caught that.** Its "probe first, it is
@@ -240,6 +303,10 @@ pip-audit clean, detect-secrets clean.
 - **The gate change is not a new policy.** `not_required` with an approved buy was already red
   (`buy_veto_missing`, S191). `proceeded_unvetoed` is the same fact with a more honest label, and it
   was green. The board's verdict depended on the wording.
+- **The correction below matters more than the original diff.** A gate that fires on nothing is
+  worse than no gate, because it reports as coverage. It was caught by running `/audit-costs`,
+  not by re-reading the sprint — a check that touches real data beats another pass over my own
+  reasoning.
 - **What the next sprint should know:** **item 53** is the rest of this defect — three OpenAI probe
   entries and two vault probes that also cannot fail. They gate nothing today, which is why they
   were left; they are written down so they are not rediscovered by another four-night outage.

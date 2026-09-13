@@ -42,6 +42,7 @@ def _deliberation_graph(
     failed_open_reason: str = "",
     order_payload: object | None = None,
     reviewed: bool = False,
+    reviewed_tickers: tuple[str, ...] = (),
 ) -> tuple[InMemoryGraphStore, Node]:
     graph = InMemoryGraphStore()
     pm_run = graph.merge_node(
@@ -49,8 +50,9 @@ def _deliberation_graph(
         "pm-run",
         {"order_intent_set": order_payload or _order_intent_set(*actions)},
     )
-    verdicts = {"AAPL": "uphold"} if reviewed else {}
-    debates = {"AAPL": {"verdict": "uphold", "turns": []}} if reviewed else {}
+    tickers = reviewed_tickers or (("AAPL",) if reviewed else ())
+    verdicts = dict.fromkeys(tickers, "uphold")
+    debates = {t: {"verdict": "uphold", "turns": []} for t in tickers}
     delib = graph.merge_node(
         "DeliberationRun",
         "delib-run",

@@ -12,17 +12,13 @@ from typing import TYPE_CHECKING
 
 from contracts.portfolio_manager import OrderIntentSet
 from orchestration.observatory import Check, StageView
+from orchestration.packs.trading_deliberation_attribution import advisory_attribution
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 DELIBERATED_EDGE = "DELIBERATED_BY"
 EXECUTED_EDGE = "EXECUTED_BY"
-ADVISORY_STATUSES = frozenset({"applied", "applied_failed_open", "proceeded_unvetoed"})
-NOT_REQUIRED_STATUS = "not_required"
-PROCEEDED_UNVETOED_STATUS = "proceeded_unvetoed"
-BUY_VETO_MISSING = "buy_veto_missing"
-VETO_NEVER_RAN = "veto_never_ran"
 
 
 def deliberation(graph: GraphStore, node: Node) -> StageView:
@@ -62,12 +58,13 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
         "failed_open_count": failed_open_count,
         "orphaned_reply_count": orphaned_reply_count,
         "deliberation_posture": posture,
-        "advisory_attribution": _advisory_attribution(
-            posture,
-            status,
-            failed_open_count,
-            failed_open_reason,
-            approved_buy_count,
+        "advisory_attribution": advisory_attribution(
+            posture=posture,
+            status=status,
+            failed_open_count=failed_open_count,
+            failed_open_reason=failed_open_reason,
+            approved_buy_count=approved_buy_count,
+            reviewed=reviewed,
         ),
     }
     checks = [
@@ -148,47 +145,3 @@ def _prop(node: Node | None, name: str) -> str | None:
         return None
     value = node.props.get(name)
     return value if isinstance(value, str) else None
-
-
-def _advisory_attribution(
-    posture: str | None,
-    status: str | None,
-    failed_open_count: int | None,
-    failed_open_reason: str,
-    approved_buy_count: int | None,
-) -> str:
-    """Classify what an advisory run can actually prove about its veto.
-
-    🚨 `proceeded_unvetoed` means **no DeliberationRun exists at all** — the veto
-    could not execute, and buys reached the broker unreviewed. That is the same
-    fact `not_required` already scores `buy_veto_missing` for; the only
-    difference is which status honestly describes it. Scoring one red and the
-    other green made the board depend on the wording rather than the outcome
-    (operator decision, 2026-09-13: *"should a run where the veto could not
-    execute at all stay green under advisory posture? No"*).
-
-    🪤 This deliberately does **not** touch `applied_failed_open`, where a
-    DeliberationRun exists and names its own degradation.
-    [DL-125](../../docs/design-log.md) measured what widening the red to that
-    status costs — six consecutive nights red for a non-defect, which teaches the
-    operator to ignore the gate.
-    Measured 2026-09-13 over all 69 `ExecutionRun` rows: `advisory` +
-    `proceeded_unvetoed` has occurred **0** times, while `advisory` +
-    `applied_failed_open` has occurred **4**. The narrow rule costs no board
-    churn; the wide one would have cost all four.
-    """
-    if posture != "advisory":
-        return "missing"
-    if status == NOT_REQUIRED_STATUS:
-        if approved_buy_count == 0:
-            return "ok"
-        if approved_buy_count is not None:
-            return BUY_VETO_MISSING
-        return "missing"
-    if status == PROCEEDED_UNVETOED_STATUS:
-        return "ok" if approved_buy_count == 0 else VETO_NEVER_RAN
-    if status not in ADVISORY_STATUSES:
-        return "missing"
-    if failed_open_count and not failed_open_reason:
-        return "missing"
-    return "ok"

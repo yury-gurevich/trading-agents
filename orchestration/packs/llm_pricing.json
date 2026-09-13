@@ -32,5 +32,12 @@
       "output": 25.0,
       "source": "https://www.anthropic.com/claude/opus"
     }
+  },
+  "cache_multipliers": {
+    "read": 0.1,
+    "write": 1.25,
+    "basis": "multipliers on the model's own input rate, not absolute prices",
+    "note": "Anthropic prices a cache read at ~0.1x the input rate and a 5-minute cache write at 1.25x. Applied to cache_read_tokens / cache_write_tokens, which Anthropic reports separately from input_tokens. OpenAI prompt caching is automatic and charges nothing to write, so its adapter reports cache_write_tokens=0 and the write multiplier never applies to it.",
+    "source": "https://docs.claude.com/en/docs/build-with-claude/prompt-caching"
   }
 }

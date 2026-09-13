@@ -23,6 +23,7 @@ from __future__ import annotations
 import importlib
 
 from kernel.llm import STOP_REASON_UNKNOWN, LLMCompletionStoppedError
+from kernel.llm_tokens import LLMUsage, llm_usage_or_none, usage_count
 
 
 class ConfigurationError(RuntimeError):
@@ -52,12 +53,14 @@ class OpenAILLMClient:
         self.max_tokens = max_tokens
         self.effort = effort
         self.last_stop_reason = STOP_REASON_UNKNOWN
+        self.last_usage: LLMUsage | None = None
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
         """Call OpenAI and return one free-text deliberation answer."""
         del tool_schema
+        self.last_usage = None
         response = self._client.chat.completions.create(
             model=self.model,
             max_completion_tokens=self.max_tokens,
@@ -68,7 +71,32 @@ class OpenAILLMClient:
             ],
         )
         self.last_stop_reason = _stop_reason(response)
+        self.last_usage = _usage(response)
         return _text(response)
+
+
+def _usage(response: object) -> LLMUsage | None:
+    """Read OpenAI's usage block into the normalised kernel shape.
+
+    🪤 `prompt_tokens` **includes** `prompt_tokens_details.cached_tokens` here,
+    the opposite of Anthropic, where `input_tokens` excludes them. The kernel's
+    `tokens_in` is defined as the *uncached* input, so the cached part is
+    subtracted — mapping the field straight across would count every cached
+    token twice and overstate the bill it was just fixed to report honestly.
+    Clamped at zero: a vendor that ever reported more cached than prompt tokens
+    must not produce a negative count.
+
+    There is no cache-*write* count because OpenAI's prompt caching is
+    automatic and unbilled — `cache_write_tokens` stays 0 by construction, not
+    because the field was forgotten.
+    """
+    prompt_tokens = usage_count(response, "usage.prompt_tokens")
+    cached = usage_count(response, "usage.prompt_tokens_details.cached_tokens")
+    return llm_usage_or_none(
+        tokens_in=max(0, prompt_tokens - cached),
+        tokens_out=usage_count(response, "usage.completion_tokens"),
+        cache_read_tokens=min(cached, prompt_tokens),
+    )
 
 
 def _text(response: object) -> str:

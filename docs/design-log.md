@@ -8,6 +8,42 @@ and is marked CLOSED here.
 
 ---
 
+## DL-161 - a token count comes from the vendor, and a cache discount is only real if it is recorded - status: DECIDED (2026-09-13)
+
+**The question.** Work-queue item 43 named two things in one row: the ledger writes *word* counts, and prompt caching is unclaimed. They look like one change at one file. They are not, and the order matters.
+
+**What was measured first, 2026-09-13, against `claude-opus-5` via `messages.count_tokens`:**
+
+| Claim | Value | How |
+| --- | --- | --- |
+| `DEFENDER_SYSTEM` | **167 tokens** (434 chars) | `count_tokens`, live API |
+| `CHALLENGER_SYSTEM` | **2,561 tokens** (6,764 chars) | same |
+| `JUDGE_SYSTEM` | **2,474 tokens** (6,341 chars) | same |
+| `claude-opus-5` minimum cacheable prefix | **512 tokens** | vendor documentation |
+| Live `usage` fields available | `input_tokens`, `output_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens` | one live call, read back |
+
+🚨 **The defender prompt cannot be cached at all.** 167 < 512, so the marker is accepted, no error is raised, and `cache_read_input_tokens` stays 0 forever for that role. Two of three roles clear the minimum. A sprint that claimed "prompt caching added, ~20 % saved" without this number would have been wrong about a third of its traffic and unable to tell.
+
+**The decision: the recording comes first, and it carries a provenance stamp.**
+
+`cache_control` alone would have produced a discount nobody could verify — exactly [DL-152](#dl-152)'s pattern in a fifth shape (a declared property with no producer; S198's item 49 was the fourth). So `LLMCall` gains `cache_read_tokens`, `cache_write_tokens` **and `token_source`**, and the adapters feed it the provider's own `usage`.
+
+**Why `token_source` is not redundant.** `tokens_in`/`tokens_out` already existed, so the fix could have silently replaced their *source* and changed nothing about the column names — no vocabulary change, no deploy. That was rejected: six words in and four out is a plausible *vendor* count as well as a word count, so a corrected row and a legacy row would be byte-identical on the numbers. The stamp is what makes the 1,177 existing rows readable as the estimates they are, and it is what lets `/audit-costs` report a **floor** rather than a price. Proven by `test_vendor_and_estimated_rows_are_distinguishable`.
+
+**The road not taken:**
+
+- **A 1.3x correction factor on the existing word counts.** Rejected: the ratio is not a constant. Measured, the system prompt alone ranges 167 to 2,561 tokens by role, and it is excluded from the word count entirely — so one multiplier cannot be right for more than one role.
+- **Folding cached tokens into `tokens_in`.** Rejected: the three groups bill at three different rates (read ~0.1x, write 1.25x at the 5-minute TTL). One number would replace an understated bill with an overstated one.
+- **Mapping each vendor's usage fields by a shared name table in the kernel.** Rejected after measuring the convention clash: Anthropic's `input_tokens` **excludes** cached tokens, OpenAI's `prompt_tokens` **includes** them. A field-for-field map would double-count every cached OpenAI token. The kernel fixes the *meaning* (`tokens_in` is uncached input) and each adapter reaches it; the OpenAI adapter subtracts, with a clamp and a test.
+- **Batch mode for the live nightly debate.** Rejected on measurement, operator decision 2026-09-13. Nightly `LLMCall` volume is **2, 1, 1, 1** over 2026-09-08..-11 — batching saves cents per night and costs the run its bounded wall clock (the Batch API gives no latency guarantee; the grace is 1,800 s and `request_timeout_seconds` is 30). The Batch API stays where the money is: the replay harness, which now also caches.
+- **`cache_control` on the operator's system prompt.** Rejected: caching is a prefix match and `tools` renders ahead of `system`; the operator's tool list varies per call (`parse_intent` vs `answer_question`), so the marker would write entries nobody reads at 1.25x. Pinned by a test so a later consistency edit has to argue with it.
+
+**The TTL is deliberately different in the two paths.** The live adapter takes the 5-minute default (requests 84 s apart — [DL-150](#dl-150) — and a read refreshes the timer, so 1h buys nothing but a doubled write). The batch harness takes `ttl: "1h"`, because a batch is processed across minutes to hours and a 5-minute entry would expire mid-round and be rewritten repeatedly. Both halves are pinned by tests, so the asymmetry reads as a decision rather than an inconsistency.
+
+🪤 **The expensive half was the failure path, and a planted guard found it.** Moving `set_usage` into the success-only branch — the obvious shape — turned the truncation test red at `assert 0 == 4096`. `effort` is `max`, so a completion ending in `max_tokens` has spent its entire output budget *before* raising; the estimate fallback then sees an empty response, so the most expensive calls the fleet makes would have been recorded as costing **zero output**. Usage is read on both paths.
+
+---
+
 ## DL-160 - the sweep's price was wrong by 3.2x, and work-queue item 43 is exactly why - status: DECIDED (2026-09-05 — stop, spend nothing more)
 
 🚨 **[DL-158](#dl-158---part-b-is-five-dependent-batch-rounds-not-one-batch-of-debates---and-it-has-a-price---status-decided-2026-09-05) priced an order-replay at `$0.0305` for five calls — `$0.0061` per call. Measured on the real thing: `$0.0196` per call.** Round 1 of the funded sweep (2,961 requests, 2,957 succeeded / 4 errored) cost **$58.05**, read from the Batch API's own `usage` rather than from anything this repo records:

@@ -28,6 +28,7 @@ from kernel import (
     Turn,
     debate_turn,
     llm_stop_reason,
+    llm_usage,
     record_llm_call,
 )
 from kernel import judge_verdict as judge_kernel_verdict
@@ -149,6 +150,14 @@ class _LedgerLLM:
             else:
                 call.set_response(raw)
                 call.set_stop_reason(llm_stop_reason(self._llm))
+            # Usage is read on both paths: a truncated or refused completion was
+            # still generated and still billed, so dropping its tokens here would
+            # under-report exactly the calls that cost the most — `effort=max`
+            # spends the whole output budget before raising `max_tokens`, and the
+            # estimate fallback sees an empty response, so a success-only capture
+            # records those calls as costing *zero* output. Measured: planting
+            # that guard turned the truncation test red at `assert 0 == 4096`.
+            call.set_usage(llm_usage(self._llm))
         node: Node | None = call.node
         self.last_node_key = node.key if node is not None else None
         if stopped is not None:

@@ -37,7 +37,14 @@ from contracts.operator import (
     ExplainRequest,
     HumanCommand,
 )
-from kernel import AgentBase, CollectingFaultSink, FakeLLMClient, FaultSink, GraphStore
+from kernel import (
+    AgentBase,
+    CollectingFaultSink,
+    FakeLLMClient,
+    FaultSink,
+    GraphStore,
+    llm_usage,
+)
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
@@ -98,6 +105,7 @@ class OperatorAgent(AgentBase):
         ) as call:
             raw = self._llm.complete(system=system, user=user, tool_schema={})
             call.set_response(raw)
+            call.set_usage(llm_usage(self._llm))
         assert call.node is not None
         write_command_audit(
             self._graph,
@@ -126,6 +134,7 @@ class OperatorAgent(AgentBase):
                 system=system, user=user, tool_schema=INTENT_TOOL_SCHEMA
             )
             call.set_response(raw)
+            call.set_usage(llm_usage(self._llm))
         assert call.node is not None
         data = normalize_explicit_intent(command.text, parse_json(raw))
         parsed_outcome = outcome(data)

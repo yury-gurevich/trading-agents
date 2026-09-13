@@ -28,7 +28,13 @@ class _FakeMessages:
                 SimpleNamespace(type="tool", text="ignored"),
                 SimpleNamespace(type="text", text="second"),
                 SimpleNamespace(type="text", text=""),
-            )
+            ),
+            usage=SimpleNamespace(
+                input_tokens=1731,
+                output_tokens=906,
+                cache_read_input_tokens=2561,
+                cache_creation_input_tokens=0,
+            ),
         )
 
 
@@ -78,7 +84,9 @@ def test_anthropic_client_returns_text_blocks(monkeypatch) -> None:
     assert kwargs["model"] == "claude-opus-5"
     assert kwargs["max_tokens"] == 123
     assert kwargs["output_config"] == {"effort": "high"}
-    assert kwargs["system"] == "sys"
+    assert kwargs["system"] == [
+        {"type": "text", "text": "sys", "cache_control": {"type": "ephemeral"}}
+    ]
     assert kwargs["messages"] == [{"role": "user", "content": "hello"}]
 
 

@@ -10,6 +10,8 @@ from __future__ import annotations
 import importlib
 import json
 
+from kernel.llm_tokens import LLMUsage, llm_usage_or_none, usage_count
+
 
 class ConfigurationError(RuntimeError):
     """Raised when the Anthropic client cannot be constructed safely."""
@@ -37,11 +39,13 @@ class AnthropicLLMClient:
         self.model = model
         self.max_tokens = max_tokens
         self.effort = effort
+        self.last_usage: LLMUsage | None = None
 
     def complete(
         self, *, system: str, user: str, tool_schema: dict[str, object]
     ) -> str:
         """Call Anthropic with bounded intent or explanation tool output."""
+        self.last_usage = None
         name = "parse_intent" if tool_schema else "answer_question"
         schema = tool_schema or {
             "type": "object",
@@ -68,8 +72,27 @@ class AnthropicLLMClient:
             "tool_choice": {"type": "tool", "name": name},
         }
         response = self._client.messages.create(**kwargs)
+        self.last_usage = _usage(response)
         data = _tool_input(response)
         return json.dumps(data) if tool_schema else str(data.get("answer", ""))
+
+
+def _usage(response: object) -> LLMUsage | None:
+    """Read Anthropic's usage block so operator calls price like every other.
+
+    No `cache_control` marker here, unlike the deliberator. The operator sends
+    a `tools` list that changes with `tool_schema` — `parse_intent` against
+    `answer_question` — and tools render *ahead* of `system` in the cached
+    prefix, so a marked system block would be invalidated by the very thing
+    that varies per call. Marking it would write cache entries that are never
+    read and bill 1.25x for the privilege.
+    """
+    return llm_usage_or_none(
+        tokens_in=usage_count(response, "usage.input_tokens"),
+        tokens_out=usage_count(response, "usage.output_tokens"),
+        cache_read_tokens=usage_count(response, "usage.cache_read_input_tokens"),
+        cache_write_tokens=usage_count(response, "usage.cache_creation_input_tokens"),
+    )
 
 
 def _tool_input(response: object) -> dict[str, object]:

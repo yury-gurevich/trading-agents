@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -130,6 +130,13 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 - **DLIB-OBS-03** -- Fail-open outcomes are visible in the recorded rationale.
 - **DLIB-OBS-04** -- Each `DeliberationRun` records the per-run count of
   orphaned peer replies observed while processing that `PMRun`.
+- **DLIB-OBS-05** -- Each `LLMCall` records the token counts the provider itself
+  reported, and declares on the row whether those counts are vendor-measured or
+  locally estimated. A completion the provider declared truncated or refused is
+  still counted, because it was still generated and still billed.
+- **DLIB-OBS-06** -- Deliberation requests offer each role's frozen system prompt
+  to the provider's prompt cache, and each `LLMCall` records the cached input
+  tokens actually read and written, so a claimed discount is falsifiable.
 
 ## Performance Envelope (`PERF`)
 
@@ -193,3 +200,12 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   independent PM-approved orders. PARAM row only: no new clause, because the
   existing DLIB-ORD clauses already govern per-order record order, and S172
   proves them under concurrency rather than changing what they promise.
+- v1.4 -- S199 adds `DLIB-OBS-05` (an `LLMCall` carries the provider's own token
+  counts and says whether they are measured or estimated) and `DLIB-OBS-06` (the
+  frozen role prompt is offered to the prompt cache and the cached tokens are
+  recorded). Both close work-queue item 43, where the ledger wrote *word* counts
+  excluding the system prompt and every published cost figure was derived from
+  them. `DLIB-OBS-02` stays **gray**: it promises per-calling-agent spend
+  attribution, and S199 corrects the *numbers* that clause would be read
+  through without adding a functional deliberator test that proves the
+  attribution itself. Correcting an input is not proving the claim.

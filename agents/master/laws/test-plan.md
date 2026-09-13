@@ -11,7 +11,7 @@
 | MST-STA-03 | `activate()` writes one `CapabilityGrant` per capability | `test_activate_writes_capability_grant_nodes` | 🟩 |
 | MST-IDM-01 | Two EHLO of same type → distinct instance IDs | `test_activate_second_instance_of_same_type_gets_unique_id` | 🟩 |
 | MST-NEV-01 | Unknown agent_type rejected; no graph write | `test_activate_unknown_agent_type_raises` | 🟩 |
-| MST-NEV-06 | Master never hands over a pack-declared credential until its applicable credential test has either passed live or has a fresh costly-pass cache entry; a failed required credential test refuses activation and writes no `AgentInstance` | `test_required_http_status_401_refuses_activation` | 🟩 |
+| MST-NEV-06 | Master never hands over a pack-declared credential until its applicable credential test has either passed live or has a fresh costly-pass cache entry; a failed required credential test refuses activation and writes no `AgentInstance` | `test_required_http_status_401_refuses_activation`; `test_credential_probe_body.py::test_a_drained_key_refuses_activation` (the 400 a credit-exhausted account returns, DRIFT-058) | 🟩 |
 | MST-OUT-02 | `drain()` returns `DRAINMessage` | `test_drain_returns_drain_message` | 🟩 |
 | MST-STA-04 | `drain()` writes `drain_reason` to AgentInstance | `test_drain_marks_instance_in_graph` | 🟩 |
 | MST-NEV-02 | `drain` on unknown instance_id raises `KeyError` | `test_drain_unknown_instance_raises` | 🟩 |

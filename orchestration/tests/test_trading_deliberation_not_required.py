@@ -42,6 +42,7 @@ def _deliberation_graph(
     failed_open_reason: str = "",
     order_payload: object | None = None,
     reviewed: bool = False,
+    reviewed_tickers: tuple[str, ...] = (),
 ) -> tuple[InMemoryGraphStore, Node]:
     graph = InMemoryGraphStore()
     pm_run = graph.merge_node(
@@ -49,8 +50,9 @@ def _deliberation_graph(
         "pm-run",
         {"order_intent_set": order_payload or _order_intent_set(*actions)},
     )
-    verdicts = {"AAPL": "uphold"} if reviewed else {}
-    debates = {"AAPL": {"verdict": "uphold", "turns": []}} if reviewed else {}
+    tickers = reviewed_tickers or (("AAPL",) if reviewed else ())
+    verdicts = dict.fromkeys(tickers, "uphold")
+    debates = {t: {"verdict": "uphold", "turns": []} for t in tickers}
     delib = graph.merge_node(
         "DeliberationRun",
         "delib-run",
@@ -151,6 +153,9 @@ def test_binding_branch_still_uses_coverage_and_fail_open_checks() -> None:
     [
         ("applied", 0, ""),
         ("applied_failed_open", 1, "RuntimeError: provider unavailable"),
+        # Still green, but only because this fixture approves **no buy**. S202
+        # made `proceeded_unvetoed` with an approved buy breach — see
+        # `test_trading_deliberation_unvetoed.py` for that half.
         ("proceeded_unvetoed", 0, ""),
     ],
 )

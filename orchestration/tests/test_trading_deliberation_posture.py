@@ -17,19 +17,31 @@ def _fail_open_graph(
     posture: str | None = "advisory",
     status: str = "applied_failed_open",
     reason: str = "RuntimeError: provider unavailable",
+    subjects: tuple[str, ...] = ("AAPL", "MSFT"),
+    failed: int = 1,
 ) -> tuple[InMemoryGraphStore, Node]:
+    """A **partially** degraded advisory veto: it ran, and reviewed some subjects.
+
+    🪤 S185 wrote this fixture as 1 of 1 failed open with `real_debate_count=0` —
+    which is a *total* outage, not the partial degradation the tests here are named
+    for. S202 made those two cases score differently (a veto that reviewed nothing
+    is `veto_never_ran`), so the fixture is now explicitly partial and the total
+    case is asserted separately below. The tests' intent is unchanged; only the
+    ambiguity is gone.
+    """
     graph = InMemoryGraphStore()
     pm_run = graph.merge_node("PMRun", "pm-run", {})
+    failed_tickers = subjects[:failed]
     delib = graph.merge_node(
         "DeliberationRun",
         "delib-run",
         {
-            "verdicts": {"AAPL": "uphold"},
+            "verdicts": dict.fromkeys(subjects, "uphold"),
             "vetoed_tickers": (),
-            "debates": {"AAPL": {"verdict": "uphold", "turns": []}},
-            "real_debate_count": 0,
-            "failed_open_count": 1,
-            "failed_open_tickers": ("AAPL",),
+            "debates": {t: {"verdict": "uphold", "turns": []} for t in subjects},
+            "real_debate_count": len(subjects) - failed,
+            "failed_open_count": failed,
+            "failed_open_tickers": failed_tickers,
             "failed_open_reason": reason,
         },
     )
@@ -52,6 +64,20 @@ def test_advisory_fail_open_passes_when_attributed() -> None:
     found = breaches(deliberation(graph, node))
 
     assert found == ()
+
+
+def test_advisory_fail_open_on_every_subject_does_not_pass() -> None:
+    """EXEC-OBS-04: an attributed cause does not excuse reviewing nothing (S202).
+
+    The distinction acceptance has to make is partial vs total, not attributed vs
+    unattributed — a veto that failed open on every subject it was given did not
+    execute at all, which the operator ruled on 2026-09-13.
+    """
+    graph, node = _fail_open_graph(subjects=("AAPL", "MSFT"), failed=2)
+
+    found = breaches(deliberation(graph, node))
+
+    assert [breach.key for breach in found] == ["advisory_attribution"]
 
 
 def test_advisory_fail_open_fails_without_recorded_posture() -> None:

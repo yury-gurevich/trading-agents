@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+import json
 import urllib.parse
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
@@ -23,6 +24,38 @@ class HttpProbeRequest:
     url: str
     headers: dict[str, str]
     timeout_seconds: int
+    #: Pre-serialised request body, or None for a probe that sends none.
+    body: bytes | None = None
+
+
+def json_body(value: object) -> bytes | None:
+    """Serialise a declared JSON probe body, or None when the probe sends none.
+
+    Keys are sorted so one declaration always produces the same bytes — a probe
+    that cannot be reproduced byte-for-byte cannot be reasoned about after it
+    fails. No config templates are rendered here: a probe body carries no
+    secret (the credential travels in a header), and `format_map` on JSON text
+    would have to escape every brace in the document.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("credential probe field 'json_body' must be an object")
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def with_json_content_type(headers: dict[str, str]) -> dict[str, str]:
+    """Default a JSON content type, never duplicating one the pack declared.
+
+    🪤 Measured 2026-09-13: `POST https://api.anthropic.com/v1/messages` with no
+    readable body returns **400** for a *valid* key. A forgotten content type is
+    therefore indistinguishable from an exhausted credential, and it would fail
+    every required probe at once — so the runner supplies the header rather than
+    trusting each pack entry to remember it.
+    """
+    if any(key.lower() == "content-type" for key in headers):
+        return headers
+    return {**headers, "content-type": "application/json"}
 
 
 def render_url(

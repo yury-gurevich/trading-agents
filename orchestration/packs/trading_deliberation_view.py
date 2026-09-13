@@ -12,15 +12,13 @@ from typing import TYPE_CHECKING
 
 from contracts.portfolio_manager import OrderIntentSet
 from orchestration.observatory import Check, StageView
+from orchestration.packs.trading_deliberation_attribution import advisory_attribution
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 DELIBERATED_EDGE = "DELIBERATED_BY"
 EXECUTED_EDGE = "EXECUTED_BY"
-ADVISORY_STATUSES = frozenset({"applied", "applied_failed_open", "proceeded_unvetoed"})
-NOT_REQUIRED_STATUS = "not_required"
-BUY_VETO_MISSING = "buy_veto_missing"
 
 
 def deliberation(graph: GraphStore, node: Node) -> StageView:
@@ -60,12 +58,13 @@ def deliberation(graph: GraphStore, node: Node) -> StageView:
         "failed_open_count": failed_open_count,
         "orphaned_reply_count": orphaned_reply_count,
         "deliberation_posture": posture,
-        "advisory_attribution": _advisory_attribution(
-            posture,
-            status,
-            failed_open_count,
-            failed_open_reason,
-            approved_buy_count,
+        "advisory_attribution": advisory_attribution(
+            posture=posture,
+            status=status,
+            failed_open_count=failed_open_count,
+            failed_open_reason=failed_open_reason,
+            approved_buy_count=approved_buy_count,
+            reviewed=reviewed,
         ),
     }
     checks = [
@@ -146,25 +145,3 @@ def _prop(node: Node | None, name: str) -> str | None:
         return None
     value = node.props.get(name)
     return value if isinstance(value, str) else None
-
-
-def _advisory_attribution(
-    posture: str | None,
-    status: str | None,
-    failed_open_count: int | None,
-    failed_open_reason: str,
-    approved_buy_count: int | None,
-) -> str:
-    if posture != "advisory":
-        return "missing"
-    if status == NOT_REQUIRED_STATUS:
-        if approved_buy_count == 0:
-            return "ok"
-        if approved_buy_count is not None:
-            return BUY_VETO_MISSING
-        return "missing"
-    if status not in ADVISORY_STATUSES:
-        return "missing"
-    if failed_open_count and not failed_open_reason:
-        return "missing"
-    return "ok"

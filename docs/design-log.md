@@ -8,6 +8,107 @@ and is marked CLOSED here.
 
 ---
 
+## DL-164 - a probe that cannot fail is not an entry condition, and the gate it feeds has to bite the run - status: IMPLEMENTED (S202, 2026-09-13)
+
+Implements [DL-163](#dl-163) — both halves, in one sprint, because **measuring the fix changed its sequencing.**
+
+### What the measurement changed
+
+DL-163 said *"do the probe first — it is cheaper, it is a pack edit, and it fails before orders exist."* The second clause was wrong, and the live API said so.
+
+| Request to `POST https://api.anthropic.com/v1/messages` | Status | *[measured 2026-09-13]* |
+| --- | --- | --- |
+| valid key, `max_tokens: 1`, body present | **200**, 7 input / 1 output tokens | the probe passes and costs **$0.00006** |
+| invalid key | **401** | credential failure, as before |
+| valid key, **no request body** | **400** | 🚨 a *valid* key fails |
+| valid key, retired model name | **404** | a pack typo reads as a credential failure |
+
+🚨 **Row three killed the one-line pack edit.** `agents/master/credential_probe_support.py` had no notion of a request body — `HttpProbeRequest` carried `method`, `url`, `headers`, `timeout_seconds` and nothing else. Pointing the pack at `/v1/messages` without teaching the runner to send a body would have returned **400 for every key, valid or not**, failing all four *required* Anthropic probes simultaneously. The fix for a credit outage would have been a total activation outage. So the probe half is a code change, not a pack edit.
+
+### Why the gate could not wait
+
+🪤 **The probe alone would have made the failure mode worse, not better.** DL-163 already recorded that DL-36 halts the *agent*, not the run. Combine that with row four above: a model name that rots returns 404, the runner maps every 4xx to a credential failure, all three deliberators refuse activation — and under `advisory` the run then submits its buys with **no veto and a green board**. A stricter probe without a run-level gate converts our own config drift into unreviewed orders. That is why both halves ship together, and it is the part DL-163 got out of order.
+
+Two guards fall out of it: the pack's probe model is asserted equal to `llm_factory.DEFAULT_MODEL["anthropic"]` so the two cannot drift silently, and the runner supplies `content-type: application/json` itself rather than trusting each pack entry to remember it.
+
+### The gate, and why it is narrow
+
+The operator's **No** is implemented as: `advisory` + `proceeded_unvetoed` + at least one approved buy → `advisory_attribution = "veto_never_ran"`, which breaches.
+
+🎯 **This is not a new policy — it is the existing policy applied consistently.** The acceptance view *already* scored this exact outcome red when the status read `not_required` (`buy_veto_missing`, S191). `proceeded_unvetoed` is the same fact — buys reached the broker with nothing reviewing them — more honestly labelled. Scoring one red and the other green made the verdict depend on which status string described the outcome rather than on the outcome.
+
+**Measured before changing it**, across all **69** `ExecutionRun` rows on the live spine:
+
+| Posture + status | Count |
+| --- | --- |
+| `advisory` + `applied` | 7 |
+| `advisory` + `applied_failed_open` | **4** |
+| `advisory` + `not_required` | 1 |
+| `advisory` + `proceeded_unvetoed` | **0** |
+| (no posture prop recorded — predates S185) | 28 |
+
+🪤 **That table is the whole answer to DL-125.** DL-125 measured that making advisory fail-open red costs six consecutive nights of red for a non-defect, which trains the operator to ignore the gate. The wide rule would have turned those **4** `applied_failed_open` runs red. The narrow rule turns **0** runs red, because the condition it names has never yet occurred — it is a tripwire, not a re-scoring of history. `applied_failed_open` is deliberately untouched: there a `DeliberationRun` exists and names its own degradation.
+
+### The road not taken
+
+- **Render config templates into the probe body.** Rejected: the credential travels in a header, so a body carries no secret, and `format_map` over JSON text would have to escape every brace in the document. Bodies are declared as JSON objects and serialised with sorted keys, so one declaration always produces the same bytes.
+- **Classify `404` as a pack defect rather than a credential failure.** Tempting — a retired model is not a credential problem, and calling it one sends the operator down the wrong path. Rejected as scope: the reason string is already `http_404`, the action (halt) is right either way, and with the gate in place the run goes red with that reason visible. The model-drift assertion removes the likeliest cause instead.
+- **Make `survivors`-style blanket red for every absent veto, advisory or not.** Rejected: that is DL-125's mistake with extra steps. The rule is about *unreviewed exposure*, which is why a sell-only `proceeded_unvetoed` run stays green.
+- **Fix the OpenAI probes and the two vault probes in the same sprint.** They share the defect exactly — `GET /v1/models` on either vendor is free metadata. Rejected and **queued as item 53** instead: the three OpenAI entries are `required: false`, so their verdict halts nothing, and `orchestration/packs/trading_vault_probes.py` is reached only by the two `seed_key_vault*` scripts, an operator-run surface that gates no run. Fixing them buys no safety today and spends real tokens on both vendors. Recorded rather than silently left, because a known-blind probe that nobody wrote down is how this sprint's defect survived four nights.
+
+### 🚨 Correction, same day — the rule as first built could never have fired
+
+Found by `/audit-costs`, which is the point of running it. The first implementation keyed only on
+`proceeded_unvetoed`, and I reported *"turns 0 of 69 runs red"* as a **feature** (no board churn).
+It is not a feature; it means the tripwire is **inert**. Re-measured over the 40 linked
+`ExecutionRun` rows carrying a deliberation status:
+
+| Condition | Occurrences |
+| --- | --- |
+| `advisory` + `proceeded_unvetoed` — *what the rule keyed on* | **0** |
+| `advisory` + `applied_failed_open` where `failed_open_count == reviewed` | **4** |
+| `advisory` + `applied_failed_open` where `0 < failed_open_count < reviewed` | **0** |
+
+🎯 **All four of row two carry `real_debate_count = 0` and a `failed_open_reason` naming `400 … credit
+balance is too low`.** They are the incident this sprint exists for, and the first cut left every one
+of them green. The condition the operator described — *the veto could not execute at all* — was
+sitting in the ledger the whole time wearing the `applied_failed_open` label. **The line is
+partial-vs-total, not present-vs-absent.**
+
+🪤 **I cited DL-125 as forbidding this, and DL-125 says no such thing.** Re-read: DL-125 argued
+against the gate going red nightly *for a declared, accepted, external outage*, and its remedy was
+item 6's declared `advisory` posture so knowingly-unvetoed submissions get "a stated mode with a
+truthful green". Its own `sched-2026-08-21` record treats that run **failing acceptance** as the
+correct outcome. It never argued a veto that reviewed nothing should read green. Declared posture
+excuses trading unvetoed; it does not excuse reporting that the veto worked — and the operator's
+2026-09-13 decision settles the remainder. **I built a narrower rule than the evidence supported by
+citing a document from memory instead of reading it**, which is the same failure as pricing the probe
+from memory in the paragraph above.
+
+🪤 **Three tests were passing for a reason their names did not describe**, all with a 1-of-1 fixture
+that reads as partial and is total: S185's `test_advisory_fail_open_passes_when_attributed`, its
+end-to-end twin in `test_trading_acceptance_deliberation.py`, and S191's `proceeded_unvetoed`
+parametrize case. Fixtures are now explicitly partial or explicitly total. 🪤 **The end-to-end
+cascade approves exactly one order, so it cannot express a partial fail-open at all** — that case is
+asserted at the unit level, and the end-to-end test now asserts the total outage it actually builds.
+
+**Also corrected here:** the outage is **nine** nights, not four — `2026-08-21, -24, -25, -26, -28`
+and `2026-09-08, -09, -10, -11` — every one with `real_debate_count = 0`. And the probe costs
+**$0.00006**, not the $0.00018 first written: that used Opus **4.1**'s retired $15/$75, priced from
+memory. Opus 5 is $5/$25, verified against `platform.claude.com` and matching
+`orchestration/packs/llm_pricing.json`.
+
+🎯 **The signature was free and nobody was watching it.** Every call on those nine nights recorded
+`response_hash = e3b0c44298fc…` — the SHA-256 of the empty string — at **~300 ms** against a working
+night's **~15,000 ms**. The ledger could have named this outage on 2026-08-21, nineteen days before
+it was filed as item 50.
+
+### What this still does not cover
+
+**Credit exhausted mid-run** — between order one and order five. The probe runs at activation; nothing re-probes between debates. The gate catches the *consequence* (a run that submitted buys with no veto goes red) but only after the fact. Narrowing that further would mean re-probing per debate, which is a cost and latency decision, not a correctness one. Left open deliberately and named here so it is not mistaken for covered.
+
+---
+
 ## DL-163 - the entry condition existed, had the right failure code, and probed an endpoint that cannot fail - status: DECIDED (operator, 2026-09-13)
 
 **Operator decision, 2026-09-13: NO.** A run where the veto could not execute **at all** must not stay green under `advisory` posture. That settles [work-queue item 50](work-queue.md) as a decision.

@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -47,7 +47,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-OUT-02** -- Each `DeliberationRun` records verdicts, vetoed tickers,
   per-ticker debate turns, role models, narrative, and creation time.
 + **DLIB-OUT-03** -- Each LLM call writes a shared `LLMCall` with
-  `calling_agent`, model, hashes, rough token counts, latency, and timestamp.
+  `calling_agent`, model, hashes, token counts, latency, and timestamp.
 + **DLIB-OUT-04** -- Non-uphold verdicts may only subtract existing PM-approved
   orders; uphold verdicts leave the order set unchanged.
 + **DLIB-OUT-05** -- Each LLM call records the provider stop reason as compact
@@ -130,14 +130,18 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-OBS-03** -- Fail-open outcomes are visible in the recorded rationale.
 + **DLIB-OBS-04** -- Each `DeliberationRun` records the per-run count of
   orphaned peer replies observed while processing that `PMRun`.
-- **DLIB-OBS-05** -- Each `LLMCall` records the token counts the provider itself
++ **DLIB-OBS-05** -- Each `LLMCall` records the token counts the provider itself
   reported, and declares on the row whether those counts are vendor-measured or
   locally estimated. A completion the provider declared truncated or refused is
   still counted, because it was still generated and still billed.
-- **DLIB-OBS-06** -- Deliberation requests offer each role's frozen system prompt
++ **DLIB-OBS-06** -- Deliberation requests offer each role's frozen system prompt
   to the provider's prompt cache, and each `LLMCall` records the cached input
   tokens actually read and written, so a claimed discount is falsifiable.
 
++ **DLIB-OBS-07** -- Each `LLMCall` records a digest identifying the code that
+  rendered its prompt, so whether a stored prompt hash is comparable to the
+  current renderer is answerable without replaying the call. A call whose
+  renderer was not recorded reads as unknown, never as the current one.
 ## Performance Envelope (`PERF`)
 
 + **DLIB-PERF-01** -- `max_rounds` bounds peer turns before execution.
@@ -200,7 +204,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   independent PM-approved orders. PARAM row only: no new clause, because the
   existing DLIB-ORD clauses already govern per-order record order, and S172
   proves them under concurrency rather than changing what they promise.
-- v1.4 -- S199 adds `DLIB-OBS-05` (an `LLMCall` carries the provider's own token
++ v1.4 -- S199 adds `DLIB-OBS-05` (an `LLMCall` carries the provider's own token
   counts and says whether they are measured or estimated) and `DLIB-OBS-06` (the
   frozen role prompt is offered to the prompt cache and the cached tokens are
   recorded). Both close work-queue item 43, where the ledger wrote *word* counts
@@ -209,3 +213,14 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   attribution, and S199 corrects the *numbers* that clause would be read
   through without adding a functional deliberator test that proves the
   attribution itself. Correcting an input is not proving the claim.
++ v1.5 -- S200 adds `DLIB-OBS-07`: each `LLMCall` records a digest of the code
+  that rendered its prompt, closing work-queue item 44 -- 62 of 285 stored turns
+  replay to their hash (re-measured 2026-09-13), and nothing distinguished "the
+  model wandered" from "the renderer changed" without replaying every row. The
+  same sprint hashes the **system** prompt alongside the user prompt, which
+  **CORRECTS DRIFT-056** by the route that row named (hash it, rather than narrow
+  the clause) -- so `DLIB-IDM-02` moves gray to green, proven by a test asserting
+  **every** bound it names, not just the repaired half, exactly as DRIFT-056
+  demanded. `DLIB-OUT-03` drops the word *rough* from "rough token counts": S199
+  made that word false the day it merged, and a clause describing the code as it
+  was a day ago is drift (DRIFT-057).

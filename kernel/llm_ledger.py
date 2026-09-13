@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from kernel.llm import STOP_REASON_UNKNOWN
 from kernel.llm_tokens import SOURCE_ESTIMATED, LLMUsage, token_counts
+from kernel.prompt_recipe import RECIPE_UNKNOWN
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -55,8 +56,18 @@ def record_llm_call(
     correlation_id: str,
     model: str,
     prompt: str,
+    system_prompt: str = "",
+    prompt_recipe_hash: str = RECIPE_UNKNOWN,
 ) -> Iterator[LLMCallCapture]:
-    """Persist one LLM call after the wrapped completion finishes."""
+    """Persist one LLM call after the wrapped completion finishes.
+
+    ``system_prompt`` is hashed, never stored — `DLIB-OUT-05` allows compact
+    audit metadata only. Hashing it closes [DRIFT-056](../docs/laws/drift-register.md):
+    `DLIB-IDM-02` reads as though the recorded hashes bound what the model was
+    asked, and until now only the *user* half was hashed, so two calls with
+    different system prompts and identical user context were indistinguishable —
+    exactly what a role-prompt experiment changes.
+    """
     started = time.perf_counter()
     capture = LLMCallCapture(prompt=prompt)
     try:
@@ -80,6 +91,8 @@ def record_llm_call(
             cache_read_tokens=counts.cache_read_tokens,
             cache_write_tokens=counts.cache_write_tokens,
             token_source=counts.token_source,
+            system_prompt_hash=digest_text(system_prompt),
+            prompt_recipe_hash=prompt_recipe_hash,
         )
 
 
@@ -98,11 +111,15 @@ def write_llm_call(
     cache_read_tokens: int = 0,
     cache_write_tokens: int = 0,
     token_source: str = SOURCE_ESTIMATED,
+    system_prompt_hash: str = "",
+    prompt_recipe_hash: str = RECIPE_UNKNOWN,
 ) -> Node:
     """Write one idempotent shared LLM call ledger node.
 
     ``token_source`` defaults to ``estimated`` so a caller that does not pass
-    it cannot silently present a word count as a vendor measurement.
+    it cannot silently present a word count as a vendor measurement, and
+    ``prompt_recipe_hash`` defaults to ``unknown`` for the same reason: an
+    unrecorded renderer must read as unrecorded, never as *this* renderer.
     """
     key = f"llmcall:{calling_agent}:{correlation_id}"
     current = graph.get_node("LLMCall", key)
@@ -122,6 +139,8 @@ def write_llm_call(
             "cache_read_tokens": cache_read_tokens,
             "cache_write_tokens": cache_write_tokens,
             "token_source": token_source,
+            "system_prompt_hash": system_prompt_hash,
+            "prompt_recipe_hash": prompt_recipe_hash,
             "latency_ms": latency_ms,
             "stop_reason": str(stop_reason or "").strip() or STOP_REASON_UNKNOWN,
             "created_at": datetime.now(tz=UTC).isoformat(),

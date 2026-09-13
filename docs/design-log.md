@@ -8,6 +8,40 @@ and is marked CLOSED here.
 
 ---
 
+## DL-162 - a prompt's provenance is a content digest, not a version string - status: DECIDED (2026-09-13)
+
+**The question.** Work-queue item 44 reads *"nothing records which code version produced an `LLMCall`"*. Taken literally that asks for a version string. Measured, a version string does not answer the question the item's own evidence poses.
+
+**Measured first, 2026-09-13:**
+
+| Claim | Value | How |
+| --- | --- | --- |
+| Stored `defender:r1` turns that replay to their hash | **62 of 285 = 21.75 %** | re-run of `scripts/deliberation_reproducibility.py` against the live spine |
+| The queue's carried figure | 57 of 280 = 20.36 % | drifted as runs landed; [DRIFT-056](laws/drift-register.md) corrected to the new number |
+| `trading-agents` installed as a package in the agent image | **no** | `uv.lock` declares `source = { virtual = "." }` |
+| Source `.py` files present in the image | **yes** | each `Dockerfile` copies `kernel/`, `contracts/` and its own package as source |
+
+**The decision: hash the content that determines the prompt, not the build that shipped it.**
+
+A version string tells you *which build*; it does not tell you whether the renderer moved between that build and today — you would still have to go and look, which is the work item 44 exists to remove. A digest over the source of every module that shapes the prompt answers it directly and maintains itself: any edit that can change a prompt necessarily changes the source that produces it.
+
+**Why the caller declares its own module set.** `import-linter` forbids `kernel → agents`, and the modules that decide a deliberation prompt straddle both layers — `kernel.deliberation` renders the turn while `agents.deliberator.context*` builds the context interpolated into it. So `kernel/prompt_recipe.py` hashes modules it is *handed* and never guesses. The deliberator declares 7, the operator 3, and they are deliberately different digests: the operator's prompts come from `agents/operator/domain/prompts.py`, so borrowing the deliberator's digest would assert something false about which code ran — the exact class of claim the field exists to prevent.
+
+**The road not taken:**
+
+- **`code_version` from package metadata.** Rejected on measurement: the project is a `virtual` uv workspace, so it is not installed in the image and `importlib.metadata.version` raises. Reading `pyproject.toml` by path would work, and puts a file dependency inside the veto path for a field `DeployRecord` (S180) already answers better — it binds a running tag to the commit that built it, verified against the GitHub API.
+- **A behavioural digest** — render a canonical fixture through the real renderer and hash the output. Strictly tighter: a comment edit would not move it. Rejected because the veto context is built from a `GraphStore`, so a fixture render needs a fake graph inside the production call path. That is a large new surface to be wrong in, guarding against nothing worse than an over-cautious mismatch.
+- **Including `contracts/` in the digest.** Rejected: contracts carry payload shapes, not prompt text, so folding them in moves the digest on every unrelated contract edit — a precise signal converted into noise nobody reads.
+- **Narrowing `DLIB-IDM-02`** to admit the bound covers only the user context — the second route DRIFT-056 offered. Rejected: the clause describes what we want to be true, and taking the cheaper half-truth retires the ambition rather than meeting it. Hashing the system prompt costs one `digest_text` call.
+
+🪤 **The digest fails in the safe direction, deliberately.** It hashes source, so a comment or docstring edit moves it although the rendered prompt is byte-identical — a false *"not comparable"*. It cannot do the reverse. So read an **unchanged** digest as proof the prompt builder did not move; never read a changed one as proof it did.
+
+🪤 **The declared module list is the whole correctness of the field, and it is hand-maintained.** A prompt-shaping module missing from it yields two rows agreeing on the digest while their prompts were built differently. `test_prompt_recipe.py` derives the expected set from the real import graph of `build_veto_context` and `render_debate_prompt`, so adding a context module without declaring it fails `make ci`. Planting the omission of `context_stop` turned it red — and it caught the transitive imports too.
+
+🪰 **A self-inflicted drift found by reading the law this sprint had to touch** ([DRIFT-057](laws/drift-register.md)): `DLIB-OUT-03` said *"rough token counts"*, describing the `_rough_tokens` word count S199 replaced **the day before**. A sprint that changes what a recorded field *means* has to re-read the clauses that describe it, not only the ones it adds. Cheapest class of drift to create, and we created it.
+
+---
+
 ## DL-161 - a token count comes from the vendor, and a cache discount is only real if it is recorded - status: DECIDED (2026-09-13)
 
 **The question.** Work-queue item 43 named two things in one row: the ledger writes *word* counts, and prompt caching is unclaimed. They look like one change at one file. They are not, and the order matters.

@@ -8,6 +8,34 @@ and is marked CLOSED here.
 
 ---
 
+## DL-163 - the entry condition existed, had the right failure code, and probed an endpoint that cannot fail - status: DECIDED (operator, 2026-09-13)
+
+**Operator decision, 2026-09-13: NO.** A run where the veto could not execute **at all** must not stay green under `advisory` posture. That settles [work-queue item 50](work-queue.md) as a decision.
+
+**The operator's better question: could the question have been avoided by checking entry conditions?** Measured — **yes, and the mechanism is already built and already wired.**
+
+| Claim | Value | How |
+| --- | --- | --- |
+| All three deliberators carry a **required** Anthropic credential probe | yes | *[measured]* `orchestration/packs/trading_credential_tests.json` — `deliberator-manager`, `-proponent`, `-opponent` |
+| What the probe calls | `GET https://api.anthropic.com/v1/models` | *[measured]* same pack |
+| Its `credential_failure_statuses` | `[400, 401, 403, 429]` — **already includes 400** | *[measured]* same pack |
+| What a drained account actually returns | `400 invalid_request_error … Your credit balance is too low` on `POST /v1/messages` | *[measured]* the four blind nights, recorded verbatim on each `DeliberationRun` |
+
+🚨 **So the probe's failure list was right and its endpoint was wrong.** `/v1/models` is free metadata: it lists models, consumes no tokens, and is not billed. A key on a zero-credit account is still a **valid** key, so the probe returns **200**, the agent activates, and the first real debate turn is where the money problem surfaces. S188 shipped DL-36 Piece A correctly; the pack asks it the wrong question.
+
+**The fix is a pack edit, not a gate change:** point the deliberator's Anthropic probe at a minimal billable call (`POST /v1/messages`, `max_tokens: 1`) so it exercises *spend capability* rather than *key validity*. The 400 it returns is already in the failure list, so nothing else changes. Cost is a fraction of a cent per activation.
+
+🪤 **But an entry condition alone does not close it, for two reasons, and this is the part worth keeping.**
+
+1. **Halting the deliberator is not the same as halting the run.** DL-36's policy is *failure halts*. A failed probe stops the deliberator from activating — and under `advisory` posture a run with **no** deliberator still submits, because `proceeded_unvetoed` is what `binding` bites on ([DL-134](#dl-134)). So the precondition has to gate the **run**, or the posture has to make an absent veto binding. Otherwise the probe turns a silent fail-open into a slightly earlier silent fail-open.
+2. **It cannot cover exhaustion mid-run.** Credit can drain between the first order and the fifth. Entry conditions make that the *rare* case instead of the primary one — which is exactly why the operator's "No" still has to be implemented as a backstop.
+
+**Sequencing that follows:** the probe fix is the primary defect (it would have prevented the actual four-night incident); the acceptance/posture change is the backstop for mid-run exhaustion. Do the probe first — it is cheaper, it is a pack edit, and it fails *before* orders exist rather than explaining afterwards why they were not reviewed.
+
+**The road not taken:** making `advisory` fail-open red outright. Rejected as the primary fix — [DL-125](#dl-125) measured the cost of that directly (six straight nights of a red gate for a non-defect, which trains the operator to read a real fault as noise). The precondition avoids the dilemma instead of choosing a side of it.
+
+---
+
 ## DL-162 - a prompt's provenance is a content digest, not a version string - status: DECIDED (2026-09-13)
 
 **The question.** Work-queue item 44 reads *"nothing records which code version produced an `LLMCall`"*. Taken literally that asks for a version string. Measured, a version string does not answer the question the item's own evidence poses.

@@ -8,6 +8,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-165 - the tolerance band is promoted on external evidence, because the flip is what makes own-book evidence possible - status: DECIDED (operator, 2026-09-13)
+
+**Operator decision, 2026-09-13: promote the S149 volatility-scaled tolerance**, closing work-queue **item 47** and resolving [DL-76](#dl-76)'s pending promotion. Chosen over my recommendation to keep the flat band and close the item as decided-by-design.
+
+### The evidence problem that shaped the decision
+
+ADR-0013 requires promotion on measurement, never argument. The measurement was **structurally uncollectable**, and the reason is worth keeping because it generalises.
+
+`scripts/compare_order_tolerances.py`, run 2026-09-13 over every evidenced order:
+
+```text
+mode     orders  would_have_filled  drop_rate_pct  avg_slippage_bps
+flat     170     170                0.00           -25.03
+scaled   170     170                0.00           -25.03
+```
+
+| Claim | Value | How |
+| --- | --- | --- |
+| Orders carrying S149 tolerance evidence | **170** | *[measured]* `Fill` rows with `order_scaled_tolerance_bps` |
+| Scaled **wider** than flat | **170 of 170** (75-250 bps vs a fixed 50) | *[measured]* never equal, never narrower |
+| Of those rows, `status='pending'` | **168** | *[measured]* 2 `rejected`; the whole table is 4 `filled` / 7 `rejected` / 257 `pending` |
+
+🪤 **The script is not defective — it is starved by which mode is applied, and the two look identical in the output.** `_would_fill` compares the **actual execution price** against each mode's limit, which is the right construction. But every recorded order was placed under the **narrower** band, so its execution price is inside the flat limit by definition, and the wider scaled band therefore also accepts it. A wider band can only ever fill *more*. The population that discriminates — orders the flat band **refused** — never produces a `Fill` row at all, so it is absent from the denominator.
+
+🎯 **The flip is what makes the comparison informative, and this is the strongest argument for taking it.** With `scaled` applied, the **wider** band is the one placing orders, and the counterfactual becomes the **narrower** flat limit. An order that fills above the flat limit is then, precisely, an order the flat band would have refused — which is DL-76's refusal rate, measured on our own book, for the first time. The decision and the instrument arrive together.
+
+### What it was decided on
+
+DL-76's **external** measurement: 60 sessions of real overnight gaps (Alpaca daily bars from 2026-05-01), directional refusal.
+
+| | |
+| --- | --- |
+| Blended refusal at 50 bps | **35 % of buys, 23 % of sells** |
+| Low-gap end | SCHW 25 %, USB 30 %, WFC 37 % |
+| High-gap end | HPE 45 %, MRVL 48 %, **AMD 52 %** |
+
+The finding was never the rate but the **distribution**: 50 bps is one median gap for SCHW and one fifth of one for MRVL, so a single number encodes two different policies depending on which ticker it lands on, and nobody chose that.
+
+⚠️ **Stated plainly because it is a real weakness:** this evidence is external and roughly four months old, and ADR-0013 exists to prevent exactly this kind of promotion. It is accepted here because the alternative was not "promote on better evidence" but "never collect any", and because the promotion itself starts the collection.
+
+### The road not taken
+
+- **Keep flat, close as decided-by-design** — my recommendation, and DL-76 already called it *"genuinely defensible"*. Two facts supported it: S198 measured **AMD and MRVL as the two worst names ever held** (-$3,614 and -$1,330, together exceeding the entire net realized gain), and S195's beta cap already drops **AMD** at the scanner (measured live 2026-09-04 at beta 3.186 against a 2.5 cap), so the band would partly be unlocking names another gate deliberately removes. 🪤 **I could confirm that only for AMD, not for MRVL or HPE** — one name, not three, which is weaker than it first reads. Rejected by the operator.
+- **Build a producer for refused orders, decide later** — rejected on time: the graph holds **4 filled orders in its entire history**, so "later" is unbounded. The flip achieves the same measurement without new plumbing.
+- **Widen the flat band to ~150 bps** — DL-76 already ruled this out as the primary answer: it moves the rate without fixing the **shape**.
+
+### Owed next
+
+The report prints `0.00` for both modes with no indication that the comparison could not have differed. That is a *legibility* defect, not a computation one — a reader concludes "no difference" where the truth is "cannot differ in this direction". Filed as **item 56**: label the structurally-uninformative case rather than reporting a confident zero. 🪰 This is [DL-152](#dl-152)'s shape once more — a producer that knew something it never said — and the sixth instance.
+
+---
+
 ## DL-164 - a probe that cannot fail is not an entry condition, and the gate it feeds has to bite the run - status: IMPLEMENTED (S202, 2026-09-13)
 
 Implements [DL-163](#dl-163) — both halves, in one sprint, because **measuring the fix changed its sequencing.**

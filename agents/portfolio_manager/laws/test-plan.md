@@ -109,3 +109,20 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-OBS-03 | An evaluated cluster gate names the issuers examined, the ones that correlated, and the near misses. | audit | `test_correlation_census.py::test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out` | 🟩 |
 | PM-OBS-03 | A census over zero held issuers renders differently from one that examined and found nothing. | negative | `test_correlation_census.py::test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass` | 🟩 |
 | PM-OBS-03 | The census reaches the gate_report detail the deliberator reads, not just the domain object. | audit | `test_correlation_census.py::test_gate_detail_carries_the_census_beside_the_cluster` | 🟩 |
+
+## S204 row declarations
+
+| Law | What the row declares | Scenario | Test | Status |
+| --- | --- | --- | --- | --- |
+| PM-IDN-01 | Recommendation-to-order purpose, portfolio-state gates, and negative authorities need one boundary proof. | boundary | _tbd_ | ⬜ |
+| PM-IDN-02 | Exclusive ownership of PMRun, OrderIntent, Rejection, and OrderIntentResult labels needs a single-writer proof. | boundary | _tbd_ | ⬜ |
+| PM-STA-04 | OrderIntentResult must capture the final portfolio_state_snapshot; this is unbuilt with the same missing-snapshot finding as DRIFT-039. | audit | _tbd_ | ⬜ |
+| PM-ORD-01 | Recommendation iteration order must deterministically affect position and sector caps. | ordering | _tbd_ | ⬜ |
+| PM-ORD-02 | Concurrent evaluate_orders requests are unsafe by design and need an explicit single-thread/single-tenant guard or proof. | concurrency | _tbd_ | ⬜ |
+| PM-FAIL-03 | Graph write failure must fault, return the computed set, and be safe to retry append-only. | fault | _tbd_ | ⬜ |
+| PM-PERF-01 | PM latency budget needs an explicit provider-round-trip/per-candidate bound proof. | performance | _tbd_ | ⬜ |
+| PM-SEC-01 | PM must hold no credentials, make no external API calls, and have no direct broker authority. | security | _tbd_ | ⬜ |
+| PM-SEC-03 | Removing the analysis.recommendations.ready subscription must quarantine PM without corrupting persisted state. | quarantine | _tbd_ | ⬜ |
+| PM-DEP-01 | PM bus dependency stands on the Layer-0 bus charter for request/reply and subscribe/publish. | structural | dependencies.md DEP-BUS-* + probes/checks.py | 🧱 |
+| PM-DEP-02 | PM graph dependency stands on the Layer-0 Postgres charter for append-write and claim-check read. | structural | dependencies.md DEP-POSTGRES-* + probes/checks.py | 🧱 |
+| PM-DEP-03 | PM provider-feed dependency stands on the Layer-0 feed charter through provider price/regime capabilities. | structural | dependencies.md DEP-FEED-* + probes/checks.py | 🧱 |

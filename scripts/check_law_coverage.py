@@ -20,6 +20,7 @@ from scripts.law_coverage_docs import (  # noqa: E402
     discover_agent_books,
     parse_rollup_claims,
 )
+from scripts.law_coverage_status import row_status_errors  # noqa: E402
 from scripts.law_coverage_tests import TestResolver, extract_citations  # noqa: E402
 
 if TYPE_CHECKING:
@@ -76,6 +77,8 @@ def _check_book(
     report: CoverageReport,
 ) -> None:
     for row in book.rows:
+        for error in row_status_errors(row):
+            report.errors.append(_row_message(row, error))
         if row.clause_id not in book.law_ids:
             report.errors.append(
                 _row_message(
@@ -166,13 +169,13 @@ def _add_missing_row_warnings(
     missing_total = sum(len(values) for values in missing_by_agent.values())
     if missing_total == 0:
         return
-    report.warnings.append(
-        f"[WARN] law coverage: {missing_total} clause(s) have no test-plan row "
-        "(assertion E warn-only)"
+    report.errors.append(
+        f"[FAIL] law coverage: {missing_total} clause(s) have no test-plan row "
+        "(assertion E)"
     )
     for agent, missing in sorted(missing_by_agent.items()):
-        report.warnings.append(
-            f"[WARN] agents/{agent}/laws/test-plan.md: {len(missing)} missing row(s): "
+        report.errors.append(
+            f"[FAIL] agents/{agent}/laws/test-plan.md: {len(missing)} missing row(s): "
             f"{', '.join(missing)}"
         )
 

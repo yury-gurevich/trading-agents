@@ -86,3 +86,21 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | SCAN-OBS-01 | ScanRun node in graph is reconstructable into the CandidateSet, **including the FilterTrace**. | audit | `test_scanner_agent.py::test_scan_provenance_links_candidates_to_provider_snapshot`; `test_scan_verdict_persistence.py::test_scan_run_keeps_a_verdict_for_every_evaluated_ticker` | 🟩 |
 | SCAN-OBS-02 | Fault recorded to sink on provider degradation; not silent. | observable | `test_scanner_agent.py::test_degraded_provider_path_returns_empty_explained_result` | 🟩 |
+
+## S204 row declarations
+
+| Law | What the row declares | Scenario | Test | Status |
+| --- | --- | --- | --- | --- |
+| SCAN-IDN-01 | Scanner purpose is a charter statement; filter/rank/drop behavior is proven by the narrower IN/OUT/NEV rows. | charter | Charter: no single observation can prove the mission statement itself; falsifiable duties are split into the behavior rows below. | 📜 |
+| SCAN-IDN-02 | Exclusive ownership of ScanRun and Candidate labels needs a single-writer proof. | boundary | _tbd_ | ⬜ |
+| SCAN-STA-03 | Scan window must be calculated fresh from UTC now and lookback_days, with no persisted time state. | state | _tbd_ | ⬜ |
+| SCAN-ORD-02 | Scanner must be safe for concurrent requests because it holds no shared mutable state. | concurrency | _tbd_ | ⬜ |
+| SCAN-FAIL-03 | Graph write failure must fault and return the computed empty/partial CandidateSet safely for retry. | fault | _tbd_ | ⬜ |
+| SCAN-NEV-04 | Scanner must write only ScanRun and Candidate labels and only reference provider provenance. | boundary | _tbd_ | ⬜ |
+| SCAN-NEV-05 | Scanner must never mutate universe definitions or cache them between calls. | boundary | _tbd_ | ⬜ |
+| SCAN-PERF-01 | Scanner latency budget needs an explicit provider-round-trip plus in-process-filter bound proof. | performance | _tbd_ | ⬜ |
+| SCAN-SEC-01 | Scanner must hold no credentials or external API authority. | security | _tbd_ | ⬜ |
+| SCAN-SEC-03 | Removing run.trigger subscription or taking the container offline must quarantine scanner without corrupting persisted state. | quarantine | _tbd_ | ⬜ |
+| SCAN-DEP-01 | Scanner bus dependency stands on the Layer-0 bus charter for provider request/reply and run.trigger publish/subscribe. | structural | dependencies.md DEP-BUS-* + probes/checks.py | 🧱 |
+| SCAN-DEP-02 | Scanner graph dependency stands on the Layer-0 Postgres charter for ScanRun and Candidate append-write. | structural | dependencies.md DEP-POSTGRES-* + probes/checks.py | 🧱 |
+| SCAN-DEP-03 | Scanner feed dependency stands on the Layer-0 feed charter through provider health. | structural | dependencies.md DEP-FEED-* + probes/checks.py | 🧱 |

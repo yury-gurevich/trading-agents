@@ -109,12 +109,12 @@ def test_rollup_drift_is_caught(tmp_path, capsys):
     assert "probe claims 5 / 1; derived 1 / 1" in output
 
 
-def test_missing_row_warns_without_failing(tmp_path, capsys):
+def test_missing_row_fails(tmp_path, capsys):
     # The rollup must already say 1 / 2: a clause with no row still counts
     # against the denominator, it is simply unproven.
     write_book(tmp_path, laws=("PRB-IDN-01", "PRB-IDN-02"), rollup=(1, 2))
 
-    assert main([str(tmp_path)]) == 0
+    assert main([str(tmp_path)]) == 1
     output = capsys.readouterr().out
     assert "1 clause(s) have no test-plan row" in output
     assert "PRB-IDN-02" in output

@@ -56,6 +56,13 @@ IDs are **append-only and immutable**:
 
 - A clause is **GREEN** iff **≥ 1 passing functional test cites its ID** (in the test's docstring).
 - A clause with no citing test, or a failing one, is **GRAY**.
+- A clause may have a **STRUCTURAL** row (`🧱`) when its proof is a named gate or a charter-backed
+  gate rather than an agent-local functional test. The test-plan row must name both the gate and the
+  specific rule or charter clause it stands on, for example `import-linter: "Agents may not import
+  one another"` or `dependencies.md DEP-BUS-* + probes/checks.py`.
+- A clause may have a **CHARTER** row (`📜`) only when it is a purpose statement no observation could
+  contradict. The test-plan row must say why it is unfalsifiable. Charter rows still count in the
+  denominator and never count green.
 - **Dependencies first:** an agent clause cannot be counted green while a `DEP-*` clause it relies on
   is gray. Layer-0 gets a green bill of health before Layer-1 agents.
 - The rollup lives in [`ledger.md`](ledger.md); "the system is green" means *every* non-deprecated law

@@ -27,5 +27,26 @@
 | MST-SEC-01 | RSA signature on ACTIVATE | deferred S74 | ⬜ |
 | MST-DEP-01 | Graph reachability guard before startup failure | integration (deferred) | ⬜ |
 | MST-DEP-02 | Key Vault credential resolution | deferred S74 | ⬜ |
+| MST-IN-01 | activate accepts EHLOMessage fields, rejects unknown agent_type with ValueError | _tbd_ | ⬜ |
+| MST-IN-02 | drain accepts DRAINMessage, requires known AgentInstance, and raises KeyError for unknown IDs | _tbd_ | ⬜ |
+| MST-TRG-01 | activate is triggered by EHLO on the handshake queue | _tbd_ | ⬜ |
+| MST-TRG-02 | drain is triggered by operator/supervisor or master's crash-recovery path | _tbd_ | ⬜ |
+| MST-OUT-03 | start() writes a Session node with started_at for crash recovery | _tbd_ | ⬜ |
+| MST-IDM-02 | restart reads existing Session nodes before writing a new Session | _tbd_ | ⬜ |
+| MST-ORD-01 | start() must precede activate(); activate without a live session cannot link to session_id | _tbd_ | ⬜ |
+| MST-ORD-02 | master startup and live handshake queue precede trading-agent EHLO | _tbd_ | ⬜ |
+| MST-FAIL-01 | graph unavailable on activate is faulted and re-raised without acknowledging EHLO | _tbd_ | ⬜ |
+| MST-FAIL-02 | graph unavailable on drain is faulted and re-raised while the agent continues running | _tbd_ | ⬜ |
+| MST-FAIL-03 | single-point-of-failure mitigation is a risk charter: thin master, state in Postgres, and platform restart are architectural claims, not an agent-local observation | Charter: no single functional observation can prove the RISK-1 mitigation envelope; failures are covered by the narrower FAIL rows. | 📜 |
+| MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState match contracts/master.py | _tbd_ | ⬜ |
+| MST-TYP-02 | ACTIVATE capability_grants is a JSON-safe map and never contains product names | _tbd_ | ⬜ |
+| MST-SEC-02 | each agent receives only credentials for declared capability_grants, never the full .env | _tbd_ | ⬜ |
+| MST-SEC-03 | DEFAULT_GRANTS is the authoritative privilege table and cannot be changed by runtime config | _tbd_ | ⬜ |
+| MST-OBS-01 | every activate() writes a queryable AgentInstance node | _tbd_ | ⬜ |
+| MST-OBS-02 | every drain() records drain_reason on AgentInstance | _tbd_ | ⬜ |
+| MST-OBS-03 | graph and Key Vault errors reach the fault channel through fault_boundary | _tbd_ | ⬜ |
+| MST-PERF-01 | activate() writes one AgentInstance plus N CapabilityGrant nodes and meets the stated p99 budget | _tbd_ | ⬜ |
+| MST-NEV-05 | master has no dependency on trading-agent code | import-linter: "Agents may not import one another" | 🧱 |
+| MST-DEP-03 | master depends on no trading-agent code; knowledge stays in DEFAULT_GRANTS and AgentDefinition rows | import-linter: "Agents may not import one another" | 🧱 |
 
 Functional tests live in `agents/master/tests/test_master_agent.py`.

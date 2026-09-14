@@ -70,6 +70,7 @@ def parse_test_plan(agent: str, path: Path) -> list[TestPlanRow]:
                     line_number=line_index,
                     clause_id=match.group(0),
                     test_text=cells[test_index],
+                    status_text=cells[status_index],
                     green="🟩" in cells[status_index],
                 )
             )

@@ -32,6 +32,7 @@ class TestPlanRow:
     line_number: int
     clause_id: str
     test_text: str
+    status_text: str
     green: bool
 
 

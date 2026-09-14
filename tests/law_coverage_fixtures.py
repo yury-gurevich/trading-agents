@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
 GREEN = "🟩"
 GRAY = "⬜"
+STRUCTURAL = "🧱"
+CHARTER = "📜"
 
 
 def write_book(

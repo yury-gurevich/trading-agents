@@ -92,3 +92,20 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-OBS-05 | A name that only rose records a real zero, distinguishable from absence. | boundary | `test_stop_target_outcome.py::test_a_name_that_only_rose_records_a_real_zero` | 🟩 |
 | ANLZ-OBS-05 | A recorded observation is immutable - the append-only merge is never rewritten. | negative | `test_stop_target_backfill.py::test_a_recorded_drawdown_is_never_rewritten` | 🟩 |
 | ANLZ-OBS-05 | A backfill failure is a fault and does not withdraw the recommendations already written. | negative | `test_stop_target_backfill.py::test_a_backfill_failure_is_a_fault_and_does_not_withdraw_the_run` | 🟩 |
+
+## S204 row declarations
+
+| Law | What the row declares | Scenario | Test | Status |
+| --- | --- | --- | --- | --- |
+| ANLZ-IDN-01 | Candidate-to-recommendation purpose, pillar blend, and negative authorities need one boundary proof. | boundary | _tbd_ | ⬜ |
+| ANLZ-IDN-02 | Exclusive ownership of AnalystRun, Recommendation, and SentimentReading labels needs a single-writer proof. | boundary | _tbd_ | ⬜ |
+| ANLZ-IN-04 | explain_recommendation must accept CandidateSet, return Explanation, and avoid provider calls and graph writes. | read-only | _tbd_ | ⬜ |
+| ANLZ-NEV-04 | Analyst must never write graph labels it does not own. | boundary | _tbd_ | ⬜ |
+| ANLZ-ORD-01 | Candidate order must not affect individual scores. | ordering | _tbd_ | ⬜ |
+| ANLZ-ORD-02 | Consecutive and concurrent analyze calls must not share mutable scoring state. | concurrency | _tbd_ | ⬜ |
+| ANLZ-PERF-01 | Analyst latency budget needs an explicit bounded-latency/per-round-trip proof. | performance | _tbd_ | ⬜ |
+| ANLZ-SEC-01 | Analyst must hold no credentials or external API authority. | security | _tbd_ | ⬜ |
+| ANLZ-SEC-03 | Removing the scan.candidates.ready subscription must quarantine the analyst without corrupting persisted state. | quarantine | _tbd_ | ⬜ |
+| ANLZ-DEP-01 | Analyst bus dependency stands on the Layer-0 bus charter for request/reply and subscribe/publish. | structural | dependencies.md DEP-BUS-* + probes/checks.py | 🧱 |
+| ANLZ-DEP-02 | Analyst graph dependency stands on the Layer-0 Postgres charter for append-write and claim-check read. | structural | dependencies.md DEP-POSTGRES-* + probes/checks.py | 🧱 |
+| ANLZ-DEP-03 | Analyst provider-feed dependency stands on the Layer-0 feed charter through provider capabilities. | structural | dependencies.md DEP-FEED-* + probes/checks.py | 🧱 |

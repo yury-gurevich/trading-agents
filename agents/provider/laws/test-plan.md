@@ -101,6 +101,33 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PROV-OUT-06 | A degraded fetch emits `market_data_degraded` consistently with the response's quality record. | degraded | _tbd_ | ⬜ |
 | PROV-NEV-08 | The provider returns raw news headlines and performs no sentiment/score/classification. | boundary | `test_provider_news.py::test_news_populated_when_field_requested` | 🟩 |
 
+## S204 row declarations
+
+| Law | What the row declares | Scenario | Test | Status |
+| --- | --- | --- | --- | --- |
+| PROV-IDN-01 | Provider's acquire/validate/serve-market-facts purpose needs a boundary proof across price, optional facts, and regime. | boundary | _tbd_ | ⬜ |
+| PROV-IDN-02 | Provider as the single data boundary needs a system-wide proof that other agents do not touch market-data APIs. | boundary | _tbd_ | ⬜ |
+| PROV-IDN-03 | Provider exclusive ownership of market-fact/regime artifacts and durable store needs a single-writer proof. | boundary | _tbd_ | ⬜ |
+| PROV-IN-02 | Regime request with a single as-of date is accepted and served. | happy | _tbd_ | ⬜ |
+| PROV-TRG-03 | Invalid requests must be rejected before any fetch occurs. | boundary | _tbd_ | ⬜ |
+| PROV-OUT-03 | Exactly one of SUCCESS, DEGRADED, or FAULT is produced for every request; existing split rows do not prove the total/exclusive space. | total-space | _tbd_ | ⬜ |
+| PROV-NEV-02 | Provider must never score, rank, size, order, or decide. | boundary | _tbd_ | ⬜ |
+| PROV-STA-02 | Provider side effects are limited to fact/regime appends, degradation events, metrics, and faults. | boundary | _tbd_ | ⬜ |
+| PROV-STA-05 | Provider carries no decision state between requests. | state | _tbd_ | ⬜ |
+| PROV-ORD-01 | Requests are independent and have no prior-request dependency. | ordering | _tbd_ | ⬜ |
+| PROV-ORD-03 | Duplicate or late requests are independently safe. | idempotency | _tbd_ | ⬜ |
+| PROV-FAIL-04 | Append-only correction means rollback is neither required nor possible. | recovery | _tbd_ | ⬜ |
+| PROV-OBS-01 | Every served fact must be reconstructable from graph provenance plus quality record. | audit | _tbd_ | ⬜ |
+| PROV-PERF-02 | N-ticker requests need a stated latency budget and surfaced latency metrics. | performance | _tbd_ | ⬜ |
+| PROV-SEC-03 | Provider cannot grant capabilities, widen endpoint set at runtime, or write outside owned labels. | security | _tbd_ | ⬜ |
+| PROV-SEC-06 | Provider egress must be restricted to declared market-data endpoints. | security | _tbd_ | ⬜ |
+| PROV-SEC-08 | Provider must be independently disableable/quarantinable without corrupting the system. | quarantine | _tbd_ | ⬜ |
+| PROV-DEP-01 | Provider feed dependency stands on the Layer-0 feed charter. | structural | dependencies.md DEP-FEED-* + probes/checks.py | 🧱 |
+| PROV-DEP-02 | Provider graph dependency stands on the Layer-0 Postgres charter. | structural | dependencies.md DEP-POSTGRES-* + probes/checks.py | 🧱 |
+| PROV-DEP-03 | Provider bus dependency stands on the Layer-0 bus charter. | structural | dependencies.md DEP-BUS-* + probes/checks.py | 🧱 |
+| PROV-DEP-04 | Provider clock dependency stands on the Layer-0 clock charter for fetch-time/staleness provenance. | structural | dependencies.md DEP-CLOCK-* + probes/checks.py | 🧱 |
+| PROV-DEP-05 | Provider config/secrets dependency stands on the Layer-0 config charter. | structural | dependencies.md DEP-CONFIG-* + probes/checks.py | 🧱 |
+
 > Rows are intentionally implementation-agnostic. At **reconciliation**, each `_tbd_` becomes a real
 > `agents/provider/tests/…::test_name`; if the code can't satisfy a row, that is a drift finding —
 > fix the code, or (if the law is genuinely lacking) amend `laws.md` with a version bump.

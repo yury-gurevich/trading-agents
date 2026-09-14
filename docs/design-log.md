@@ -9508,3 +9508,43 @@ subjects that can never match a live divergence. `_retire_absent` deliberately s
 `scripts/sweep_divergence_flags.py` retires them as one audited, append-only action with
 before/after counts. Letting a run silently clear 45 historical flags as a side effect would have
 been the same "fix it by editing the graph" move DL-44 prohibits, one level removed.
+
+---
+
+## DL-112 - Law rows can be structural or charter, but neither is a hidden green test - status: DECIDED (2026-09-14)
+
+**The problem.** S204 closes the S157 rowless-clause backlog by giving every law clause a test-plan
+row before assertion E becomes enforcing. The row needs to say how the clause is proven, not merely
+exist, or the backlog can reappear as a pile of vague gray rows.
+
+**Decision. Structural rows may cite a charter, but must name the executable surface behind it.**
+Agent `DEP` clauses usually stand on the Layer-0 dependency charter, so a 🧱 row may cite
+`docs/laws/dependencies.md`; it must also name the relevant charter clause family and
+`probes/checks.py` as the oracle. `MST-DEP-03` is different: it is proven structurally by
+import-linter's "agents may not import one another" contract.
+
+**Decision. Charter rows stay in the denominator and never count green.** A 📜 row is an honest
+"this is a purpose statement; no observation could contradict it" classification. It is still a
+declared clause, so it remains in the rollup denominator. It does not add to the green numerator,
+because conventions §3 still reserves green for functional tests that cite the ID.
+
+**Decision. Assertion E enforces well-formedness, not existence alone.** A clause row now satisfies
+the checker only if its status is one of the documented marks. A 🧱 row must name a gate/probe or
+charter plus oracle; a 📜 row must state why the clause is unfalsifiable. This is stricter than item
+10's minimum, but it prevents the new vocabulary from becoming a dumping ground.
+
+**Decision. Wrong clauses are drift, never quiet law edits.** If classifying a row exposes a false
+or self-oracle clause, this sprint records or cites a drift row and leaves `laws.md` untouched.
+Work-queue item 30 owns the contract-exactly clauses; S204 only makes the row surface complete.
+
+**Rejected routes.**
+
+- *Structural rows must cite only executable gates* - rejected because agent `DEP` clauses point at
+  the Layer-0 dependency charter, whose own probe surface is the executable proof. Forcing every row
+  to skip the charter would hide the law layer the clause actually names.
+- *Charter clauses are removed from the denominator* - rejected because they are still declared
+  laws. Removing them would make the rollup look greener by making claims disappear.
+- *Existence-only assertion E* - rejected because it would stop rowless clauses but allow
+  content-free 🧱 or 📜 rows, recreating DRIFT-058's "oracle ran" problem in law-book form.
+- *Fix bad clauses while row-filling* - rejected as a scope leak. Law amendments demote/prove truth
+  in their own cycle; this sprint records rows and drift only.

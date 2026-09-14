@@ -41,5 +41,6 @@
 | RPT-PERF-01 | 🟩 | `test_reporter_trims_long_narratives_at_configured_limit` |
 | RPT-PERF-02 | ⬜ | — |
 | RPT-CAP | ⬜ | — |
+| RPT-TYP-03 | ⬜ | ReportSnapshotResult graph node payload must match RunSnapshot schema so claim_check_read reconstructs a valid object; _tbd_ |
 
-**Green: 19 / 40**
+**Green: 20 / 39**

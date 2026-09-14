@@ -42,5 +42,12 @@
 | MON-OBS-02 | ⬜ | — |
 | MON-PERF-01 | ⬜ | — |
 | MON-CAP | ⬜ | — |
+| MON-IN-04 | ⬜ | malformed input must degrade with a returned payload and never raise to the bus; _tbd_ |
+| MON-NEV-05 | ⬜ | monitor must read fills/recommendations without mutating another agent's nodes; _tbd_ |
+| MON-OBS-03 | ⬜ | CloseDecision.pnl_cents must be the realized-PnL audit trail consumed by reporter; _tbd_ |
+| MON-ORD-02 | ⬜ | concurrent check_positions calls for one run may duplicate MonitorRun nodes but must not corrupt data; _tbd_ |
+| MON-PERF-02 | ⬜ | monitor must hold no open connections between calls and rely on bounded bus timeout; _tbd_ |
+| MON-SEC-02 | ⬜ | monitor must not log position, price, PnL, or ticker details to external systems; _tbd_ |
+| MON-SEC-03 | ⬜ | monitor can be revoked and later replay pending fills without breaking the system; _tbd_ |
 
-**Green: 19 / 40**
+**Green: 20 / 46**

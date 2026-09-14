@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-204-every-clause-declares-how-it-is-proven` <!-- create BEFORE any code -->
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** 0.98.01
 **Effort:** L
 **Decisions:** work-queue **item 10** (hardening row **O**) · [DRIFT-058](../laws/drift-register.md) applied to the law book itself · conventions **§3** (Layer-0 green bill) · work-queue **item 30** deliberately **not** here — see Out of scope
 
@@ -408,20 +408,25 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Law file | Read in full? | Clauses that bind this work | Anything ⬜ you relied on |
 | --- | --- | --- | --- |
-| `docs/laws/conventions.md` | | | |
-| `docs/laws/dependencies.md` | | | |
-| `agents/analyst/laws/*` | | | |
-| `agents/execution/laws/*` | | | |
-| `agents/master/laws/*` | | | |
-| `agents/monitor/laws/*` | | | |
-| `agents/portfolio_manager/laws/*` | | | |
-| `agents/provider/laws/*` | | | |
-| `agents/reporter/laws/*` | | | |
-| `agents/scanner/laws/*` | | | |
+| `docs/laws/conventions.md` | Yes | §2 append-only IDs; §3 green definition; §7/§7a test-plan citation and summary fidelity; §9 drift-register rule | No unproved row used as authority; current §3 lacks 🧱/📜, which this sprint extends |
+| `docs/laws/dependencies.md` | Yes | Layer-0 `DEP-*` charter, probe sequencing, and `probes/` as the dependency oracle | Live dependency greens are not re-proven here; dependency rows cite the charter/probe surface, not a fresh probe run |
+| `agents/analyst/laws/*` | Yes | Existing `ANLZ-*` clauses and current analyst test-plan rows; missing rows from the checker only | Existing ⬜ rows identify backlog only; no analyst clause is promoted |
+| `agents/execution/laws/*` | Yes | Existing `EXEC-*` clauses and current execution test-plan rows; broker-boundary and dependency rows classify from clause text | Existing ⬜ rows identify backlog only; no execution clause is promoted |
+| `agents/master/laws/*` | Yes | Existing `MST-*` clauses and current master test-plan rows; `MST-DEP-03` is the import-linter exception among DEP rows | Existing ⬜ rows identify backlog only; no master clause is promoted |
+| `agents/monitor/laws/*` | Yes | Existing `MON-*` clauses and current monitor test-plan rows | Existing ⬜ rows identify backlog only; no monitor clause is promoted |
+| `agents/portfolio_manager/laws/*` | Yes | Existing `PM-*` clauses and current PM test-plan rows; DRIFT-039 remains a false/unbuilt clause finding, not a row-edit fix | Existing ⬜ rows identify backlog only; no PM clause is promoted |
+| `agents/provider/laws/*` | Yes | Existing `PROV-*` clauses and current provider test-plan rows; DRIFT-040 remains an open provenance gap | Existing ⬜ rows identify backlog only; no provider clause is promoted |
+| `agents/reporter/laws/*` | Yes | Existing `RPT-*` clauses and current reporter test-plan rows | Existing ⬜ rows identify backlog only; no reporter clause is promoted |
+| `agents/scanner/laws/*` | Yes | Existing `SCAN-*` clauses and current scanner test-plan rows; DRIFT-047 stays out of scope | Existing ⬜ rows identify backlog only; no scanner clause is promoted |
 
-**Law-cycle question answered:** *(No / Yes + what the cycle covered)*
+**Law-cycle question answered:** No. This sprint writes test-plan rows that describe how existing
+clauses are proven, structurally covered, charter-only, or still unproven. It touches no
+`contracts/` file, edits no `laws.md`, and adds no new agent guarantee.
 
-**Laws that contradicted the spec, if any:** *(and what you did about it)*
+**Laws that contradicted the spec, if any:** None found. The spec's known traps were confirmed:
+most agent `DEP` clauses point at the Layer-0 dependency charter rather than import-linter, while
+`MST-DEP-03` is the import-boundary exception; family names clustered the work, but each clause still
+had to be classified individually.
 
 ---
 
@@ -429,42 +434,72 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | # | Test | Status |
 | --- | --- | --- |
-| A1 | assertion E fails a rowless clause | |
-| A2 | 0 rowless clauses reported | |
-| A3 | malformed 🧱 row rejected | |
-| A4 | malformed 📜 row rejected | |
-| A5 | rollups match the gate | |
+| A1 | assertion E fails a rowless clause | Passed. Pre-change planted `RPT-PERF-99` was warn-only and `make ci` exited 0; post-change the same plant made `make ci` exit non-zero naming `RPT-PERF-99`. |
+| A2 | 0 rowless clauses reported | Passed. `PYTHONPATH=. uv run python scripts\check_law_coverage.py` exited 0 with no output after restore. |
+| A3 | malformed 🧱 row rejected | Passed. Temporary `SCAN-DEP-01` structural row with `_tbd_` test failed: `structural row names no gate, probe, or charter`, `exit=1`. |
+| A4 | malformed 📜 row rejected | Passed. Temporary `SCAN-IDN-01` charter row with `_tbd_` test failed: `charter row states no unfalsifiable reason`, `exit=1`. |
+| A5 | rollups match the gate | Passed. Delivered checker run exited 0; no ledger/index rollup drift reported. |
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT | MERGED)*
+**Status:** BUILT
 
-**Tree the proofs ran in:** *(path; `.env` present or not — this sprint needs none)*
+**Tree the proofs ran in:** `C:\Users\yury_\Downloads\project\trading-agents`; `.env` present in the worktree but this sprint did not read or require secrets.
 
-**Result:** *(what is now true that was not)*
+**Result:** All target law clauses now have test-plan rows, assertion E is an enforcing failure instead of a warn-only advisory, and 🧱/📜 rows have documented well-formedness rules checked by the law-coverage gate. No delivered `laws.md` edit remains.
 
-**Rows written, by kind:** *(🟩 / ⬜ / 🧱 / 📜 counts, and the per-agent breakdown)*
+**Rows written, by kind:** 🟩 0 / ⬜ 80 / 🧱 19 / 📜 2. Per agent: analyst ⬜9 🧱3; execution ⬜10 🧱3; master ⬜18 🧱2 📜1; monitor ⬜7; portfolio_manager ⬜9 🧱3; provider ⬜17 🧱5; reporter ⬜1; scanner ⬜9 🧱3 📜1.
 
-**Every 📜 justified:** *(list each with its reason — the part most likely to be challenged)*
+**Every 📜 justified:** `MST-FAIL-03` is the architectural RISK-1 mitigation charter; no single functional observation can prove the envelope, and narrower FAIL rows cover mechanics. `SCAN-IDN-01` is the scanner mission statement; filter/rank/drop obligations are falsified by narrower IN/OUT/NEV rows, not by one mission observation.
 
-**Rollups before → after:** *(both files, numbers from the gate, not by hand)*
+**Rollups before → after:** Green/total counters stayed unchanged because the checker already counted law IDs in denominators: provider 16/62 → 16/62; analyst 25/48 → 25/48; scanner 18/41 → 18/41; portfolio_manager 29/48 → 29/48; execution 35/61 → 35/61; monitor 20/46 → 20/46; reporter 20/39 → 20/39; master 15/44 → 15/44. The changed number is rowless clauses: 101 → 0. Both `docs/laws/ledger.md` and `docs/laws/INDEX.md` were reconciled to that gate behavior.
 
-**Proof — assertion E watched passing, then failing:** *(paste both)*
+**Proof — assertion E watched passing, then failing:** Pre-change plant (`RPT-PERF-99`) with temporary reporter rollup adjustment, `make ci > $env:TEMP\s204-assertion-e-warn-only-ci.txt 2>&1`, shell observed `exit=0`:
+```text
+[WARN] law coverage: 102 clause(s) have no test-plan row (assertion E warn-only)
+[WARN] agents/reporter/laws/test-plan.md: 2 missing row(s): RPT-PERF-99, RPT-TYP-03
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2706 passed, 4 skipped in 208.24s (0:03:28) =================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+```
+Post-change re-plant after assertion E promotion, `make ci > $env:TEMP\s204-assertion-e-fails-ci.txt 2>&1`, shell observed non-zero:
+```text
+[FAIL] law coverage: 1 clause(s) have no test-plan row (assertion E)
+[FAIL] agents/reporter/laws/test-plan.md: 1 missing row(s): RPT-PERF-99
+make: *** [Makefile:53: ci] Error 1
+```
 
-**Proof — the green run:** *(`make ci` exit code, test counts, coverage, pip-audit, detect-secrets)*
+**Proof — the green run:** `make ci > C:\Users\yury_\AppData\Local\Temp\s204-clean-ci-final.txt 2>&1`, shell observed `exit=0`:
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run lint-imports
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+uv run python scripts/check_module_header.py kernel contracts agents orchestration surfaces scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2710 passed, 4 skipped in 207.55s (0:03:27) =================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+```
 
-**`make gate-ran`:** *(printed SHA and the `git rev-parse HEAD` it was checked against)*
+**`make gate-ran`:** Not done yet; branch has not been pushed. This will be replaced with printed SHA evidence after the remote gate is terminal.
 
-**Design decisions recorded:** *(DL number)*
+**Design decisions recorded:** `DL-112`.
 
-**Not met / verified failing:** *(plainly)*
+**Not met / verified failing:** Branch remote proof is not done yet. Deploy is not applicable; nothing here reaches an agent image.
 
 ---
 
 ## Return notes
 
-*(What the next sprint should know — especially: which ⬜ rows look most worth turning green first,
-since this sprint makes that backlog rankable for the first time; and any place this spec was wrong,
-which it has already been twice.)*
+The highest-value ⬜ rows to turn green first are the PM snapshot cluster (`PM-STA-04` / `PM-OUT-06` / `PM-OBS-01`, tracked by DRIFT-039), provider total-space completeness (`PROV-OUT-03`), and master RSA/Key Vault credential rows if the next sprint is platform-hardening. Structural rows are not green proof and do not improve the numerator; they only make the dependency contract explicit.
+
+Spec correction found during build: the rollup green/total counters did not get worse, because the checker already counted law IDs in denominators before rows existed. The honest change was rowless clauses going from 101 to 0, while green/total stayed the same.

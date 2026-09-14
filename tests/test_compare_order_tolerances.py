@@ -51,7 +51,7 @@ def test_comparison_script_never_writes_or_promotes() -> None:
 
     report = compare_order_tolerances(graph)
 
-    assert [row.mode for row in report] == ["flat", "scaled"]
+    assert [row.mode for row in report.modes] == ["flat", "scaled"]
     assert graph.writes == []
 
 
@@ -88,8 +88,9 @@ def _fill_props(
     actual: int,
     flat_limit: int,
     scaled_limit: int,
+    applied: str | None = None,
 ) -> dict[str, object]:
-    return {
+    props: dict[str, object] = {
         "source_run_id": "pm-run",
         "side": side,
         "price_cents": actual,
@@ -97,3 +98,6 @@ def _fill_props(
         "order_flat_limit_price_cents": flat_limit,
         "order_scaled_limit_price_cents": scaled_limit,
     }
+    if applied is not None:
+        props["order_tolerance_mode"] = applied
+    return props

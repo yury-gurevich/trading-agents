@@ -115,7 +115,8 @@ def _http_runner(
     query = str_dict(entry.get("query", {}), "query")
     body = json_body(entry.get("json_body"))
     expected = status_set(entry.get("expected_statuses", [200]))
-    failure_statuses = status_set(entry.get("credential_failure_statuses", [401, 403]))
+    # Validated as a pack field, then deliberately not consulted — see `run`.
+    status_set(entry.get("credential_failure_statuses", [401, 403]))
     timeout_seconds = int_field(entry.get("timeout_seconds", 15), "timeout_seconds")
 
     def run(config: Mapping[str, str]) -> CheckResult:
@@ -138,8 +139,12 @@ def _http_runner(
             return credential_passed()
         if status >= 500:
             return credential_transport_failed(f"http_{status}")
-        if status in failure_statuses or 400 <= status < 500:
-            return credential_failed(f"http_{status}")
+        # 🪤 Every other unexpected status is a credential failure, and
+        # `credential_failure_statuses` cannot change that: it is a record of the
+        # statuses we have *measured* a vendor return, not a filter. The two
+        # branches this replaces were identical, which made the pack field read
+        # like a control it has never been. S203 left the fail-closed behaviour
+        # exactly as it was and made the inertness visible instead.
         return credential_failed(f"http_{status}")
 
     return run

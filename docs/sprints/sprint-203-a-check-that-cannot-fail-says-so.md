@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-203-a-check-that-cannot-fail-says-so` *(already created from `e4ef0b8`)*
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.98.02` (PATCH)
 **Effort:** M
 **Decisions:** work-queue **items 53, 56, 41** · [DL-152](../design-log.md) (the recurring shape) · [DRIFT-058](../laws/drift-register.md) (the lesson this generalises) · a new drift row is **owed** — see the law-cycle answer
 
@@ -225,43 +225,125 @@ the SHA from the working directory and a `SHA=` argument is ignored. Check the p
 
 | # | Test | Watched red first? | Status |
 | --- | --- | --- | --- |
-| A1 | an `openai` pack probe passes for a working key *(live measurement, recorded here)* | n/a | |
-| A2 | an `openai` pack probe **fails** for an unusable key *(live)* | n/a | |
-| A3 | the pack's OpenAI model equals `DEFAULT_MODEL["openai"]` | | |
-| A4 | a bodyless variant is refused / recorded | | |
-| B1 | `probe_openai` exercises spend, not metadata | | |
-| B2 | `probe_anthropic` likewise | | |
-| C1 | report labels the uninformative case when the applied band is wider on every row | | |
-| C2 | report does **not** label it once a narrower-applied row exists | | |
-| C3 | `_would_fill` results are unchanged by this sprint | | |
-| D1 | `automatic` + unwired catalogue raises / stamps, and does not return `None` silently | | |
-| D2 | `manual` is unaffected | | |
+| A1 | an `openai` pack probe passes for a working key *(live, through the parsed pack and the real transport)* | n/a | 🟩 `CredentialCheckResult(status='passed')` |
+| A2 | an `openai` pack probe **fails** for an unusable key *(live)* | n/a | 🟩 `credential_failure / http_401`; a missing key gives `missing_config:OPENAI_API_KEY` |
+| A3 | the pack's OpenAI model equals `DEFAULT_MODEL["openai"]` | 🟩 yes -- `KeyError: 'json_body'` against the old pack | 🟩 `test_the_openai_probe_model_tracks_the_adapter_default` |
+| A4 | a bodyless variant is refused / recorded | n/a | 🟩 recorded: **400** `you must provide a model parameter` -- the same trap S202 measured for Anthropic |
+| A5 | the budget survives a reasoning model's preamble | 🟩 yes (same red) | 🟩 `test_the_openai_probe_budget_survives_a_reasoning_model` -- **new, not in the spec** (see Return notes) |
+| A6 | an unlisted 4xx still fails the probe | n/a -- pins pre-existing behaviour | 🟩 `test_an_unlisted_4xx_still_fails_the_probe` (418 -> `credential_failure`) |
+| B1 | `probe_openai` exercises spend, not metadata | 🟩 yes -- `'.../v1/models' != '.../v1/chat/completions'` | 🟩 `test_the_registered_probes_use_the_billable_requests`; live `ProbeResult(ok=True)` valid / `ok=False` invalid |
+| B2 | `probe_anthropic` likewise | 🟩 yes (same red) | 🟩 same test; both live arms measured |
+| C1 | report labels the uninformative case when the applied band is wider on every row | 🟩 yes -- the last line was `scaled 1 1 0.00 40.00`, with no label | 🟩 `test_a_narrower_applied_band_forces_both_columns_to_zero` + `test_the_rendered_report_carries_the_label` |
+| C2 | report does **not** label it once a narrower-applied row exists | 🟩 yes (same red) | 🟩 `test_a_wider_applied_band_makes_the_comparison_informative`, plus the sell-side direction, the unclassified row and the no-data case |
+| C3 | `_would_fill` results are unchanged by this sprint | n/a -- pins existing arithmetic | 🟩 `test_would_fill_is_unchanged_by_this_sprint` (4 cases); the pre-existing `flat 2 1 50.00 40.00` assertion is untouched |
+| D1 | `automatic` + unwired catalogue raises, and does not return `None` silently | 🟩 yes -- `Failed: DID NOT RAISE ValueError` | 🟩 `test_automatic_remediation_refuses_a_master_that_cannot_remediate` |
+| D2 | `manual` is unaffected | n/a | 🟩 `test_manual_remediation_is_unaffected` |
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(SPEC → BUILT at handback)*
+**Status:** BUILT, 2026-09-14.
 
-**Tree the proofs ran in:** *(path, and whether `.env` was present)*
+**Tree the proofs ran in:** `C:/Users/yury_/Downloads/project/wt-s203`, branch
+`sprint-203-a-check-that-cannot-fail-says-so`, **no `.env`**. The live vendor measurements ran from
+that same tree with the key read out of the main checkout's `.env` at call time — no credential file
+was ever created inside this worktree.
 
-**Result:** *(one paragraph: what is now true that was not)*
+**Result:** Three checks that reported success by saying nothing now either fail honestly or declare
+that they could not have failed. The three pack `openai` probes and both `trading_vault_probes.py`
+LLM probes `POST` a real completion instead of reading free metadata, so a key that cannot spend now
+fails the DL-36 entry condition instead of passing it. `compare_order_tolerances` ends every report
+with a `comparison:` line saying whether its numbers were reachable or structurally forced.
+`remediation_mode="automatic"` refuses to start a master that cannot remediate, instead of returning
+`None` at an unwired guard and writing nothing at all.
 
-**Proof — the red run, before the fix:** *(paste)*
+**Proof — the red runs, before each fix:**
 
-**Proof — the green run:** *(`make ci` exit code, test counts, coverage, pip-audit, detect-secrets)*
+```text
+# A3/A5 -- the pack probes, against the pre-S203 pack
+E   KeyError: 'json_body'        (9 failed, 1 passed)
 
-**`make gate-ran`:** *(printed SHA, and the `git rev-parse HEAD` you checked it against)*
+# B1/B2 -- the vault probes, with trading_vault_probes.py reverted
+E   AssertionError: assert ['https://api...dels?limit=1'] == ['https://api.../v1/messages']
+E     At index 0 diff: 'https://api.openai.com/v1/models' != 'https://api.openai.com/v1/chat/completions'
 
-**Live measurements:** *(the A1/A2 statuses and the per-activation cost)*
+# C1 -- the report, with compare_order_tolerances.py reverted
+E   AssertionError: assert False
+E    +    where ... = 'scaled\t1\t1\t0.00\t40.00'.startswith('comparison: FORCED')
 
-**Item 41 shape chosen, and why:** *(raise vs stamp, and the deploy implication)*
+# D1 -- entrypoint with the guard call removed
+E   Failed: DID NOT RAISE ValueError
+```
 
-**Not met / verified failing:** *(say so plainly — an unmet success factor is a result, not a gap to hide)*
+**Proof — the live vendor measurement (2026-09-14, `gpt-5.5`, `POST /v1/chat/completions`):**
+
+| Arm | Status | Note |
+| --- | --- | --- |
+| valid key, `max_completion_tokens: 256` | **200** | 7 input / 26-38 output over five runs |
+| invalid key | **401** | `invalid_api_key` |
+| valid key, **no body** | **400** | `you must provide a model parameter` |
+| valid key, `max_tokens` instead | **400** | `unsupported_parameter` — this model rejects the Anthropic spelling |
+| valid key, retired model name | **404** | `model_not_found` |
+| valid key, `max_completion_tokens: 1` | **400** | *the near-miss* — see Return notes |
+
+Through the parsed pack and the real transport: `passed` for the live key, `credential_failure /
+http_401` for a bogus one. Both corrected vault probes likewise: `ProbeResult(ok=True)` live,
+`ok=False` for a bad key, for **both** vendors.
+
+**Proof — the green run:** `make ci` exit **0**, redirected to a file and read from the file.
+Counts are recorded in `STATE.md` with the merge.
+
+**`make gate-ran`:** run from this worktree; the printed SHA is recorded in `STATE.md` against the
+`git rev-parse HEAD` it was checked against.
+
+**Live measurements (A1/A2 and the per-activation cost):** A1 `passed`, A2 `credential_failure`,
+both against the live API. **Cost added per full fleet activation: ~US$0.0028** — three probes x
+(7 input tokens @ $5/M + ~30 output @ $30/M) is about US$0.00094 each, roughly **A$0.004** at the
+pricing pack's `aud_per_usd` of 1.3945. Taken from the vendor's own `usage` block, not estimated.
+The Anthropic vault probe adds one more billable call to a seeding script that only runs by hand.
+
+**Item 41 shape chosen, and why:** **raise at construction.** The spec offered raise-or-stamp. The
+stamp shape adds an `Escalation` property, which moves the graph vocabulary pack and forces a full
+`up` — a deploy cost for a defect that never reaches an escalation in the first place. Raising
+mirrors the check three lines above it in `build_app`, fails before any run happens rather than
+after it, and adds no vocabulary. It lives in its own module (`agents/master/remediation_posture.py`)
+because `entrypoint.py` was already at 169 of 200 lines.
+
+**Not met / verified failing:** nothing in scope was left unmet. Two honest limits: (1) the OpenAI
+probes stay `required: false`, so a drained OpenAI key still will not halt activation — a posture
+decision the spec ruled out of scope, now filed as **work-queue item 58** rather than done quietly;
+(2) the tolerance label is proven on fixtures, not yet on the live book — the first fills recorded
+under the promoted `scaled` band will flip it to `INFORMATIVE` on their own, and nothing here forces
+that to happen sooner.
 
 ---
 
 ## Return notes
 
-*(What the next sprint should know. Include anything this spec got wrong — specs in this repo are
-corrected by the build, not defended.)*
+**The spec was right about the shape and wrong about one number, and the number would have taken
+three deliberators down.** It said to mirror S202's Anthropic body, whose budget is `max_tokens: 1`.
+Measured: `gpt-5.5` is a reasoning model and spends the whole budget on reasoning tokens before
+emitting any content, so `max_completion_tokens: 1` returns **400 for a valid key**. That is exactly
+the failure mode the spec's own trap section warned about, arriving through the parameter the spec
+told us to copy. Five runs at 256 consumed 26-38 completion tokens, and an unreached cap is charged
+nothing — so a generous cap is strictly safer at identical cost. 🪰 **Generalisable: when a probe
+is copied between vendors, the token budget is part of the request shape, not a constant.**
+
+**A second thing the spec did not know: `credential_failure_statuses` has never done anything.** The
+runner's two 4xx branches were textually identical, so any non-expected status below 500 is a
+credential failure whether the pack lists it or not. S202's "the failure list is right; the endpoint
+is wrong" was therefore true for a different reason than it reads — the list could not have been
+wrong, because it is never consulted. The fail-closed behaviour is correct and is left exactly as it
+was; the identical branches are collapsed and commented so the field stops reading like a control,
+and `test_an_unlisted_4xx_still_fails_the_probe` pins it. Whether it *should* become a real filter
+(an unlisted 4xx as a transport fault rather than a credential fault) is a behaviour change with
+fail-closed consequences — filed as **work-queue item 57**, not decided here.
+
+**What the next sprint should know about item 56.** The label is computed from
+`order_tolerance_mode` on the `Fill`, which records the band that was actually applied. A row can
+only discriminate when the applied band is the **wider** one — then a fill above the narrower limit
+is precisely an order the narrower mode would have refused. Before DL-165 that was true on 0 of 170
+rows; after it, it should be true on every new row. 🎯 **If the label still reads `FORCED` after a
+week of trading under `scaled`, the promotion did not reach the fleet** — and that is now visible
+without re-deriving the argument from first principles.

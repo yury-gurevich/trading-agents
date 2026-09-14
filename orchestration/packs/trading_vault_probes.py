@@ -15,6 +15,10 @@ from agents.provider.alpaca_data import AlpacaDataSource
 from agents.provider.fmp import FMPDataSource
 from agents.provider.fundamentals import FinnhubDataSource
 from agents.provider.tiingo import TiingoDataSource
+from orchestration.packs.trading_vault_llm_requests import (
+    anthropic_spend_request,
+    openai_spend_request,
+)
 from orchestration.packs.trading_vault_postgres import postgres_ready
 from orchestration.packs.trading_vault_probe_support import (
     http_json,
@@ -109,24 +113,15 @@ def probe_alpaca_broker(env: Mapping[str, str]) -> ProbeResult:
 
 @_probe("openai")
 def probe_openai(env: Mapping[str, str]) -> ProbeResult:
-    """Check OpenAI auth with the models endpoint."""
-    req = urllib.request.Request(
-        "https://api.openai.com/v1/models",
-        headers={"Authorization": f"Bearer {required(env, 'OPENAI_API_KEY')}"},
-    )
+    """Check OpenAI with a minimal billable call, not free metadata."""
+    req = openai_spend_request(env)
     return run_probe("openai", lambda: http_json(req) is not None)
 
 
 @_probe("anthropic")
 def probe_anthropic(env: Mapping[str, str]) -> ProbeResult:
-    """Check Anthropic auth with the models endpoint."""
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/models?limit=1",
-        headers={
-            "anthropic-version": "2023-06-01",
-            "x-api-key": required(env, "ANTHROPIC_API_KEY"),
-        },
-    )
+    """Check Anthropic with a minimal billable call, not free metadata."""
+    req = anthropic_spend_request(env)
     return run_probe("anthropic", lambda: http_json(req) is not None)
 
 

@@ -243,3 +243,24 @@ tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/
 🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](design-log.md), [DL-145](design-log.md)). Same image, same K=4, five hours apart:
 **15/15 debated, 0 fail-opens** where the first run had 13 and 2 — the correctness failure is **intermittent and did not reproduce**. But the speed miss did, **1.78x of a possible 4x**, which
 **separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **The 2026-09-01 orphan count remains UNKNOWN, not zero:** pre-S194 rows/logs cannot re-derive it. 🟩 **S194 now records the per-run count on every future `DeliberationRun`, so S192 can diagnose from measured data instead of first building the instrument.**
+
+---
+
+## Appended 2026-09-14 — S193 and S194, moved so *Recent* stayed under the 200-line rule
+
+Both were merged and deployed on 2026-09-02 and are closed; they moved here when S203's *Now*
+entry landed. Their links are unchanged, and both are still cited from `work-queue.md`.
+
+🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
+**per-run delta**; the two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN` for `e7699af` with the printed SHA checked
+against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
+cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
+**`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
+🟩 **It has now recorded:** `sched-2026-09-02` wrote **`orphaned_reply_count=0`** — the first datapoint S172's criterion has ever had (*Now*). 🚨 Two hazards stand from verifying, neither
+in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
+branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
+
+🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
+`Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**
+`GATE PROVEN` for `72e063b` with the printed SHA checked against `HEAD`, PATCH bump correct, and **the sweep re-run here: 56 runs, `0 ERROR`, 54 `FAIL`, 2 `PASS`.** 🪤 The handback moved `FAIL` 16 → 54
+without explaining it; it accounts for exactly — the **38** formerly-unreadable runs are now readable and legitimately red on old data (16 + 38 = 54), and `PASS` 1 → 2 is the overnight run arriving.

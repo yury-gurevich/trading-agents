@@ -490,11 +490,17 @@ uv run python scripts/check_untracked_secrets.py
 Detect secrets...........................................................Passed
 ```
 
-**`make gate-ran`:** Not done yet; branch has not been pushed. This will be replaced with printed SHA evidence after the remote gate is terminal.
+**`make gate-ran`:** `make gate-ran` from `C:\Users\yury_\Downloads\project\trading-agents` printed:
+```text
+GATE PROVEN for 4a5184fbf4edabce8148b04e5f9d44080d309019:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+`git rev-parse HEAD` matched `4a5184fbf4edabce8148b04e5f9d44080d309019`.
 
 **Design decisions recorded:** `DL-112`.
 
-**Not met / verified failing:** Branch remote proof is not done yet. Deploy is not applicable; nothing here reaches an agent image.
+**Not met / verified failing:** Deploy is not applicable; nothing here reaches an agent image.
 
 ---
 

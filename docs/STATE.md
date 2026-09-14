@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-14 13:31 AEST · **Version:** 0.98.01 · **🟦 S204 built locally: every law clause has a proof row and rowless clauses now fail the gate.**
+**Last updated:** 2026-09-14 13:42 AEST · **Version:** 0.98.01 · **🟩 S204 branch-proven: every law clause has a proof row and rowless clauses now fail the gate.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -48,13 +48,14 @@ branch — git may merge them **without a conflict**, so whoever merges S172 ren
 
 ## Now
 
-🟦 **BUILT LOCALLY — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) on
+🟩 **BRANCH-PROVEN RESULT — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) on
 `sprint-204-every-clause-declares-how-it-is-proven` (`0.98.01`), 2026-09-14.** Every target law
 clause now has a test-plan row; 🧱/📜 row kinds are documented and checked; assertion E was watched
 pass as warn-only on planted `RPT-PERF-99`, then fail after promotion on the same plant; both law
 rollups reconcile to the checker; no delivered `laws.md` edit remains. 🟩 **Local proof:** `make ci`
-exit 0, **2710 passed, 4 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🟦 **Remote proof
-pending:** branch push / `make gate-ran` not done yet.
+exit 0, **2710 passed, 4 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🟩 **Remote proof:**
+`make gate-ran` printed `GATE PROVEN` for `4a5184fbf4edabce8148b04e5f9d44080d309019`, matching
+`git rev-parse HEAD` on the same worktree.
 
 🟩 **PROVEN RESULT — work-queue item 47 CLOSED, 2026-09-13 (operator decision, [DL-165](design-log.md)).** The last of its four objections is decided: **`EXECUTION_ORDER_PRICE_TOLERANCE_MODE` flat → scaled**, promoting the S149 challenger that has shipped off-by-default since `0.83.00`. 🪤 **Promoted on DL-76's *external* measurement, not own-book evidence, and saying so is the point:** own-book evidence was **structurally uncollectable**. `compare_order_tolerances` reported flat and scaled **identical at 0.00 % drop over 170 orders** — *correctly*, because scaled is wider on **170 of 170** (75-250 bps against a fixed 50), so every order the flat band accepted the scaled band also accepts, and the orders flat **refused** never produce a `Fill` row to be counted at all. 🎯 **The flip is what makes the comparison informative for the first time:** with the wider band applied, an order that fills above the flat limit is precisely an order flat would have refused — DL-76's **35 % of buys** refusal rate, measured on our own book. Decision and instrument arrive together, which is why this beat waiting. ⚠️ **The weakness, stated:** DL-76's numbers are ~4 months old and external (60 sessions of overnight gaps: SCHW 25 % against **AMD 52 %** — one number encoding two policies), and ADR-0013 exists to prevent exactly this kind of promotion. Accepted because the alternative was not better evidence but **none** — the graph holds **4 filled orders in its entire history**. 🟠 **I recommended the opposite** (keep flat, close as decided-by-design) on two facts: S198 measured AMD and MRVL as the two worst names ever held, and S195's beta cap already drops AMD at the scanner. 🪤 **That case was weaker than it read — I could confirm the beta cap only for AMD, not MRVL or HPE.** Operator overrode; recorded as an override, not a consensus. 🟩 **Proven:** `make ci` exit 0 (**2706 passed, 4 skipped, 100.00 %**). 🟩 **DEPLOYED `s202a` 2026-09-13 by full `up`** (tunables are injected env vars, so only an `up` applies them; suffixed chore tag per [DL-106](design-log.md) rather than a second `s202`, which would put two commits under one name). **16/16 on `:s202a`**, **16/16 `Succeeded`**, cron intact, scale/KEDA **byte-identical to baseline, zero drift**, and `EXECUTION_ORDER_PRICE_TOLERANCE_MODE=scaled` present on `execution` — a **new** variable, so it could not have been inherited. S202's credential pack re-verified byte-identical after the re-`up`. `DeployRecord deploy:2026-09-13T13:05:11…:s202a:e78e91e…`. 🟠 **Opens item 56:** the report prints a confident `0.00` without saying it could not have differed — [DL-152](design-log.md)'s shape for the sixth time.
 

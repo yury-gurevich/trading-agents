@@ -8,6 +8,37 @@ and is marked CLOSED here.
 
 ---
 
+## DL-166 - three checks that could not fail, and the two things measuring them taught - status: DECIDED (S203, 2026-09-14)
+
+Built as [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) (`0.98.02`), closing work-queue items **53**, **56** and **41**. The sprint's thesis came from [DRIFT-058](laws/drift-register.md): *a green row whose oracle cannot fail proves only that the oracle ran.* Two things the sprint learned are worth keeping separately from the closeout, because both generalise past this repo.
+
+### 1. A probe's token budget is part of the request shape, not a constant
+
+S202 fixed the Anthropic probes with `POST /v1/messages`, `max_tokens: 1`. The obvious move for OpenAI was the same body with the same budget. **Measured 2026-09-14 against the live API: `max_completion_tokens: 1` returns `400` for a perfectly valid key** -- `gpt-5.5` is a reasoning model and spends the entire budget on reasoning tokens before emitting a single content token, so the request truncates and the API refuses it.
+
+A `400` is indistinguishable from a dead key to the runner. Copying the spec's suggested body verbatim would have failed all three OpenAI probes at once, for a working key. This is the *same* class of near-miss S202 documented (a bodyless POST also returns 400) arriving through a different parameter one sprint later.
+
+Ruled out: `max_completion_tokens: 16`, which measured **200** but left only a 1.7x margin over the worst of five observed runs (38 completion tokens). **Chosen: 256.** An unreached cap is charged nothing -- the five runs cost 26-38 completion tokens regardless -- so a generous cap is strictly safer *at identical cost*. 🪤 **The rule: measure the budget on the vendor you are probing, and prefer the cap that cannot truncate, because truncation reads as a credential failure.**
+
+### 2. `credential_failure_statuses` has never been consulted
+
+Found while editing the pack. `agents/master/credential_probes.py` had two consecutive 4xx branches with **identical bodies**: `if status in failure_statuses or 400 <= status < 500: return credential_failed(...)` followed by `return credential_failed(...)`. Every non-expected status below 500 is a credential failure whether the pack lists it or not.
+
+So the pack field is documentation wearing a control's clothes -- and S202's note that *"the failure list is right; the endpoint is wrong"* was true for a reason other than it reads: the list could not have been wrong, because nothing reads it.
+
+**Decided: leave the behaviour exactly as it is.** Fail-closed on any unexpected 4xx is the correct posture for a credential probe, and S203 is a defect-fix sprint. The identical branches are collapsed with a comment, and `test_an_unlisted_4xx_still_fails_the_probe` pins the fact so the next reader trusts the code over the JSON. **Ruled out (filed as work-queue item 57):** making the field authoritative, so an unlisted 4xx becomes a *transport* fault rather than a credential fault. That is a real behaviour change with fail-closed consequences -- a vendor returning an unlisted 4xx would stop blocking activation -- and it deserves its own decision rather than a drive-by.
+
+### 3. Item 41: raise, not stamp
+
+The spec offered two shapes for `remediation_mode="automatic"` on an unwired catalogue. **Chosen: raise at construction**, in `agents/master/remediation_posture.py`.
+
+- **Raise** mirrors the check three lines above it in `build_app` (a secret map with no credential tests), fails before any run rather than after one, and adds no graph vocabulary.
+- **Stamp the `Escalation`** was rejected: it adds a property, which moves the vocabulary pack and forces a full `up`, and it only speaks *after* a failure has already been mishandled.
+
+🚨 **No `MST-*` clause was written, and master laws stay LOCKED v1.2.** Measured: all **44** master clauses are silent on remediation. Conventions §9 says a silence where a decision was needed is a finding to record, so it is recorded as [DRIFT-059](laws/drift-register.md) with the forced decision named -- clause remediation when DL-144's Pieces C/D land, or state that it is governed by settings alone. Writing a clause now for a deliberately unbuilt feature would be work-queue item 30's unfalsifiable-claim defect, committed on purpose.
+
+---
+
 ## DL-165 - the tolerance band is promoted on external evidence, because the flip is what makes own-book evidence possible - status: DECIDED (operator, 2026-09-13)
 
 **Operator decision, 2026-09-13: promote the S149 volatility-scaled tolerance**, closing work-queue **item 47** and resolving [DL-76](#dl-76)'s pending promotion. Chosen over my recommendation to keep the flat band and close the item as decided-by-design.

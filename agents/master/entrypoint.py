@@ -18,6 +18,7 @@ from agents.master.credential_probes import (
 from agents.master.credential_test import PassCache
 from agents.master.grants import load_grant_policy, parse_grant_policy
 from agents.master.http_server import serve
+from agents.master.remediation_posture import refuse_unwired_automatic_remediation
 from agents.master.secret_map import load_secret_map, parse_secret_map
 from agents.master.settings import MasterSettings
 from kernel.crypto import generate_keypair
@@ -102,6 +103,7 @@ def build_app(
         raise ValueError(
             "credential test declaration is required when a secret map is configured"
         )
+    refuse_unwired_automatic_remediation(settings)
     agent = MasterAgent(
         graph=graph,
         settings=settings,

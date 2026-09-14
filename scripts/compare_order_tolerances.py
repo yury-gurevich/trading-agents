@@ -18,6 +18,18 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from scripts.order_tolerance_fields import (  # noqa: E402
+    actual_price_cents,
+    limit_cents,
+    price_cents,
+    tolerance_row,
+)
+from scripts.order_tolerance_informativeness import (  # noqa: E402
+    Informativeness,
+    assess,
+    render_comparison_line,
+)
+
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
@@ -40,15 +52,26 @@ class ModeReport:
     avg_slippage_bps: Decimal | None
 
 
+@dataclass(frozen=True)
+class ComparisonReport:
+    """Both mode aggregates, plus whether they could have differed at all."""
+
+    modes: tuple[ModeReport, ...]
+    informativeness: Informativeness
+
+
 def compare_order_tolerances(
     graph: GraphStore, *, run_ids: tuple[str, ...] = ()
-) -> tuple[ModeReport, ...]:
+) -> ComparisonReport:
     """Return report rows for fills with S149 tolerance evidence."""
     fills = tuple(_eligible_fills(graph, frozenset(run_ids)))
-    return tuple(_mode_report(mode, fills) for mode in _MODES)
+    return ComparisonReport(
+        modes=tuple(_mode_report(mode, fills) for mode in _MODES),
+        informativeness=assess(tuple(tolerance_row(node) for node in fills)),
+    )
 
 
-def render_report(rows: tuple[ModeReport, ...]) -> str:
+def render_report(report: ComparisonReport) -> str:
     """Render a tab-separated, pasteable operator report."""
     lines = ["mode\torders\twould_have_filled\tdrop_rate_pct\tavg_slippage_bps"]
     lines.extend(
@@ -61,8 +84,9 @@ def render_report(rows: tuple[ModeReport, ...]) -> str:
                 "n/a" if row.avg_slippage_bps is None else _fmt(row.avg_slippage_bps),
             )
         )
-        for row in rows
+        for row in report.modes
     )
+    lines.append(render_comparison_line(report.informativeness))
     return "\n".join(lines)
 
 
@@ -100,11 +124,11 @@ def _eligible_fills(graph: GraphStore, run_ids: frozenset[str]) -> tuple[Node, .
     for node in graph.list_nodes("Fill"):
         if run_ids and str(node.props.get("source_run_id", "")) not in run_ids:
             continue
-        if _price_cents(node, "order_decided_price_cents") is None:
+        if price_cents(node, "order_decided_price_cents") is None:
             continue
-        if _actual_price_cents(node) is None:
+        if actual_price_cents(node) is None:
             continue
-        if any(_limit_cents(node, mode) is None for mode in _MODES):
+        if any(limit_cents(node, mode) is None for mode in _MODES):
             continue
         rows.append(node)
     return tuple(rows)
@@ -126,42 +150,21 @@ def _mode_report(mode: Mode, fills: tuple[Node, ...]) -> ModeReport:
 
 
 def _would_fill(node: Node, mode: Mode) -> bool:
-    actual = _actual_price_cents(node)
-    limit = _limit_cents(node, mode)
+    actual = actual_price_cents(node)
+    limit = limit_cents(node, mode)
     if actual is None or limit is None:
         return False
     return actual <= limit if node.props.get("side") == "buy" else actual >= limit
 
 
 def _slippage_bps(node: Node) -> Decimal:
-    actual = Decimal(_actual_price_cents(node) or 0)
-    decided = Decimal(_price_cents(node, "order_decided_price_cents") or 0)
+    actual = Decimal(actual_price_cents(node) or 0)
+    decided = Decimal(price_cents(node, "order_decided_price_cents") or 0)
     if decided <= 0:
         return Decimal("0")
     if node.props.get("side") == "sell":
         return (decided - actual) / decided * _BPS
     return (actual - decided) / decided * _BPS
-
-
-def _limit_cents(node: Node, mode: Mode) -> int | None:
-    return _price_cents(node, f"order_{mode}_limit_price_cents")
-
-
-def _actual_price_cents(node: Node) -> int | None:
-    for field in (
-        "actual_open_price_cents",
-        "broker_price_cents",
-        "price_cents",
-    ):
-        value = _price_cents(node, field)
-        if value is not None:
-            return value
-    return None
-
-
-def _price_cents(node: Node, field: str) -> int | None:
-    value = node.props.get(field)
-    return value if isinstance(value, int) else None
 
 
 def _fmt(value: Decimal) -> str:

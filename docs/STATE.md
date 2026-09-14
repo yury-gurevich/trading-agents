@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-14 13:42 AEST · **Version:** 0.98.01 · **🟩 S204 branch-proven: every law clause has a proof row and rowless clauses now fail the gate.**
+**Last updated:** 2026-09-14 18:11 AEST · **Version:** 0.98.02 · **🟩 S203 branch-proven: the three checks that could not fail now can, and the one that could not discriminate says so.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,25 +37,31 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Recent (most recent first — detail in each sprint doc)
 
-🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
-**per-run delta**; the two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN` for `e7699af` with the printed SHA checked
-against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
-cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
-**`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
-🟩 **It has now recorded:** `sched-2026-09-02` wrote **`orphaned_reply_count=0`** — the first datapoint S172's criterion has ever had (*Now*). 🚨 Two hazards stand from verifying, neither
-in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
-branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
+🟩 **PROVEN RESULT — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) MERGED
+`24d61f0` (`0.98.01`), 2026-09-14 — work-queue item 10 closed, the longest-carried row in the queue.**
+Every target law clause has a test-plan proof row, the 🧱/📜 row kinds are documented and checked, and
+assertion E in `check_law_coverage.py` is **promoted warn-only → enforcing**: watched pass on a planted
+`RPT-PERF-99`, then fail after promotion on the same plant. 🟩 **Verified on the merged SHA:**
+`make gate-ran` printed `GATE PROVEN` for `24d61f0` on `main` — CI, CodeQL, Security Findings, image
+build and dependency runs all green. No deploy: law, test-plan, docs and checker surfaces only.
 
 ## Now
 
-🟩 **BRANCH-PROVEN RESULT — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) on
-`sprint-204-every-clause-declares-how-it-is-proven` (`0.98.01`), 2026-09-14.** Every target law
-clause now has a test-plan row; 🧱/📜 row kinds are documented and checked; assertion E was watched
-pass as warn-only on planted `RPT-PERF-99`, then fail after promotion on the same plant; both law
-rollups reconcile to the checker; no delivered `laws.md` edit remains. 🟩 **Local proof:** `make ci`
-exit 0, **2710 passed, 4 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🟩 **Remote proof:**
-`make gate-ran` printed `GATE PROVEN` for `4a5184fbf4edabce8148b04e5f9d44080d309019`, matching
-`git rev-parse HEAD` on the same worktree.
+🟩 **BRANCH-PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) on
+`sprint-203-a-check-that-cannot-fail-says-so` (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and
+41** closed. The three pack `openai` probes and both `trading_vault_probes.py` LLM probes now POST a
+real completion, so a key that cannot spend fails the DL-36 entry condition instead of passing it;
+`compare_order_tolerances` ends every report with `comparison: FORCED | INFORMATIVE | NO DATA`;
+`remediation_mode="automatic"` refuses to start a master that cannot remediate. 🪰 **The near-miss
+that justifies the live-measurement rule:** the body this sprint's own spec prescribed — S202's
+`max_tokens: 1` — returns **400 for a valid key** on `gpt-5.5`, a reasoning model that spends the
+whole budget before emitting content; measured before the pack was edited, so three probes were never
+broken ([DL-166](design-log.md)). 🟩 **Live proof:** through the parsed pack and the real
+transport, `passed` for the live key and `credential_failure / http_401` for a bogus one; both
+corrected vault probes likewise, both vendors, both arms. Cost **~US$0.0028** per full fleet
+activation, from the vendor's `usage` block. 🟩 **Local proof:** `make ci` exit 0, **2742 passed,
+6 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🚨 **No `MST-*` clause written** — all
+44 master clauses are silent on remediation, recorded as [DRIFT-059](laws/drift-register.md).
 
 🟩 **PROVEN RESULT — work-queue item 47 CLOSED, 2026-09-13 (operator decision, [DL-165](design-log.md)).** The last of its four objections is decided: **`EXECUTION_ORDER_PRICE_TOLERANCE_MODE` flat → scaled**, promoting the S149 challenger that has shipped off-by-default since `0.83.00`. 🪤 **Promoted on DL-76's *external* measurement, not own-book evidence, and saying so is the point:** own-book evidence was **structurally uncollectable**. `compare_order_tolerances` reported flat and scaled **identical at 0.00 % drop over 170 orders** — *correctly*, because scaled is wider on **170 of 170** (75-250 bps against a fixed 50), so every order the flat band accepted the scaled band also accepts, and the orders flat **refused** never produce a `Fill` row to be counted at all. 🎯 **The flip is what makes the comparison informative for the first time:** with the wider band applied, an order that fills above the flat limit is precisely an order flat would have refused — DL-76's **35 % of buys** refusal rate, measured on our own book. Decision and instrument arrive together, which is why this beat waiting. ⚠️ **The weakness, stated:** DL-76's numbers are ~4 months old and external (60 sessions of overnight gaps: SCHW 25 % against **AMD 52 %** — one number encoding two policies), and ADR-0013 exists to prevent exactly this kind of promotion. Accepted because the alternative was not better evidence but **none** — the graph holds **4 filled orders in its entire history**. 🟠 **I recommended the opposite** (keep flat, close as decided-by-design) on two facts: S198 measured AMD and MRVL as the two worst names ever held, and S195's beta cap already drops AMD at the scanner. 🪤 **That case was weaker than it read — I could confirm the beta cap only for AMD, not MRVL or HPE.** Operator overrode; recorded as an override, not a consensus. 🟩 **Proven:** `make ci` exit 0 (**2706 passed, 4 skipped, 100.00 %**). 🟩 **DEPLOYED `s202a` 2026-09-13 by full `up`** (tunables are injected env vars, so only an `up` applies them; suffixed chore tag per [DL-106](design-log.md) rather than a second `s202`, which would put two commits under one name). **16/16 on `:s202a`**, **16/16 `Succeeded`**, cron intact, scale/KEDA **byte-identical to baseline, zero drift**, and `EXECUTION_ORDER_PRICE_TOLERANCE_MODE=scaled` present on `execution` — a **new** variable, so it could not have been inherited. S202's credential pack re-verified byte-identical after the re-`up`. `DeployRecord deploy:2026-09-13T13:05:11…:s202a:e78e91e…`. 🟠 **Opens item 56:** the report prints a confident `0.00` without saying it could not have differed — [DL-152](design-log.md)'s shape for the sixth time.
 
@@ -119,11 +125,6 @@ honest figure** ([DL-119](design-log.md) amendment). 🪤 `sched-2026-08-31` sup
 🚨 **NOT PROVEN — S182 live.** 2026-08-21's stops carry `stop_pct_source=position`, written eight minutes before
 execution ran, so the fallback never fired. 🪤 **Do not re-check it that way** — run-start reconciliation closes it.
 
-🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
-`Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**
-`GATE PROVEN` for `72e063b` with the printed SHA checked against `HEAD`, PATCH bump correct, and **the sweep re-run here: 56 runs, `0 ERROR`, 54 `FAIL`, 2 `PASS`.** 🪤 The handback moved `FAIL` 16 → 54
-without explaining it; it accounts for exactly — the **38** formerly-unreadable runs are now readable and legitimately red on old data (16 + 38 = 54), and `PASS` 1 → 2 is the overnight run arriving.
-
 **Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
 
 🪤 **One live residue, not urgent:** **2 NFLX shares** from the S172 test harness, never vetoed (selling is a real trade). The `cancel_stop` `HTTP 422` half is **closed**.
@@ -132,14 +133,14 @@ without explaining it; it accounts for exactly — the **38** formerly-unreadabl
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-🎯 **Re-ranked 2026-09-13, after S199 closed item 43 and filed item 50.** **13 items open** against the
-operator's **Friday 2026-09-18** empty-by date. The count did not move and the *composition* got worse: **item 43 is
-closed** (the ledger now records the vendor's own tokens, and prompt caching is claimed and recorded) but **item 50 is
-new and outranks everything** — four nights of a veto that could not run, five orders to the broker, and zero faults
-raised. 🚨 **Item 50 first, and it is small:** the signal is already on the `DeliberationRun`
-(`real_debate_count == 0` beside approved buys); what is missing is a producer and a severity, not a measurement.
-Behind it: item 47's remaining objection, then item 44 (which drags the same vocabulary pack S199 just moved — worth
-pairing with the S199 deploy rather than paying for two full `up`s).
+🎯 **Re-ranked 2026-09-14, after S204 closed item 10 and S203 closed items 53, 56 and 41.**
+**10 items open** against the operator's **Friday 2026-09-18** empty-by date — the first review in weeks
+where the count actually fell, and the two rows filed in their place (**57**, **58**) are single
+decisions rather than builds. 🚨 **What is left is mostly not code:** item 33 (57 accepted
+PARAM/settings divergences), item 30 (15 unfalsifiable "matches the contract file exactly" clauses),
+item 22 (a sprint's built state is not machine-checkable), item 31 (CodeQL runs only on `main`), item
+7 (the duplicated LLM adapter) and item 11 (the delegated-agent sandbox default). Item **42** is the
+one live-behaviour defect still open: one spurious stop-liveness warning per run, every run.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

@@ -2,60 +2,98 @@
 # Sprint 204 — every law clause declares how it is proven, or that it cannot be
 
 **Phase:** Etalon-first continuous improvement (DL-19)
-**Branch:** `sprint-204-every-clause-declares-how-it-is-proven` *(create before any code)*
+**Branch:** `sprint-204-every-clause-declares-how-it-is-proven` <!-- create BEFORE any code -->
 **Status:** SPEC
 **Version:** *next available PATCH at merge*
 **Effort:** L
-**Decisions:** work-queue **items 10 and 30** (both) · hardening row **O** · [DRIFT-058](../laws/drift-register.md) (the lesson this applies) · [DL-121](../design-log.md) (item 30's measurement) · conventions **§7a** trade, knowingly re-taken
+**Decisions:** work-queue **item 10** (hardening row **O**) · [DRIFT-058](../laws/drift-register.md) applied to the law book itself · conventions **§3** (Layer-0 green bill) · work-queue **item 30** deliberately **not** here — see Out of scope
 
-> **Why this bump kind.** PATCH. No new capability and no agent behaviour changes. The deliverable is
-> that a **warn-only gate becomes enforcing** and the law book stops having silent holes. Tooling and
-> documentation of what is already true.
+> **Why this bump kind.** PATCH. No new capability, no agent behaviour change, nothing ships in an
+> image. The deliverable is that a **warn-only gate becomes enforcing** and the law book stops having
+> 101 silent holes. That is a fix to tooling and to documentation of what is already true.
 
 ---
 
 ## 🔴 MUST RULE — read the laws for every element you touch, BEFORE you write any code
 
+**This is a gate, not advice. Do not open an editor until the Law reading record is written.**
+
 | Location | What lives there | How to treat it |
 | --- | --- | --- |
-| `agents/*/laws/laws.md` (all 15) | **LOCKED** constitutions | **Read-only.** This sprint edits **test-plans**, not laws — with the one exception in Scope 4, which is a *clause rewrite* and needs the full cycle |
-| `agents/*/laws/test-plan.md` | proven 🟩 / unproven ⬜ per clause | **This is what the sprint writes** |
-| `docs/laws/conventions.md` | §7a (rewrite trade), §9 (drift) | Read both — §7a is the accepted cost of Scope 4 |
-| `docs/laws/ledger.md` + `docs/laws/INDEX.md` | the two rollups | **Both** must be reconciled; they drift apart otherwise |
-| `docs/laws/drift-register.md` | the appendable file | Rows owed where a clause turns out to be unprovable *and* wrong |
+| `agents/*/laws/laws.md` (8 agents) | **LOCKED** constitutions | **Read-only. This sprint does not edit a single one.** A clause you believe is wrong is a `drift-register.md` row plus a report — never a quiet edit |
+| `agents/*/laws/test-plan.md` (8 agents) | proven 🟩 / unproven ⬜ per clause | **This is the only law-adjacent thing the sprint writes** |
+| `docs/laws/conventions.md` | the status vocabulary and §3 (Layer-0 green bill) | Read; **this sprint extends the vocabulary here** |
+| `docs/laws/dependencies.md` | the **Layer-0 dependency charter** — 32 `DEP-*` clauses | Read before classifying any agent `*-DEP-*` clause. It is their oracle |
+| `docs/laws/ledger.md` + `docs/laws/INDEX.md` | the two rollups | **Both** must be reconciled — they drift when only one is updated |
+| `docs/laws/drift-register.md` | the one law-adjacent file you may append to | A row is owed for any clause that turns out to be **wrong**, not merely unproven |
 
-**Law-cycle question — does this sprint change `contracts/`, or add a guarantee an agent did not
-previously make?** **No for Scopes 1–3** — writing a test-plan row records how an *existing* clause is
-proven; it adds no guarantee. **Yes for Scope 4**, which rewrites unfalsifiable clauses and therefore
-owes the full cycle for each: clause text, test-plan row, clause ID in the test docstring, rollups in
-**both** `ledger.md` and `INDEX.md`, and a drift row. Do Scopes 1–3 first and land Scope 4 separately
-if the sprint gets long — **say so rather than rushing the law cycle**.
+### The rule
 
-⚠️ **The invariant this must not break: no clause may become 🟩 in this sprint.** This sprint's job is
-to make the book *honest*, not to make it *greener*. A row that says ⬜ is a success here. If you find
-yourself writing a test to turn something green, you have left the scope.
+1. Read every law file in the map below — whole file, first time.
+2. Read each agent's `test-plan.md` alongside its `laws.md`.
+3. Read [`conventions.md`](../laws/conventions.md) and [`drift-register.md`](../laws/drift-register.md).
+4. Answer the law-cycle question below.
+5. Write the **Law reading record** before your first change.
+6. If a law contradicts this spec, **stop and report**. The law is more likely right than the spec.
+7. If a law is **silent** where you needed a decision, that silence is a finding: record it.
+
+### 🩹 The law-cycle question — answer before step 5
+
+> **Does this sprint change any file in `contracts/`, or add a guarantee an agent did not previously
+> make?**
+
+**No.** Writing a test-plan row **records how an existing clause is proven**; it creates no guarantee
+that did not already exist. No `contracts/` file is touched, no `laws.md` is edited, no clause text
+changes, no agent behaviour changes.
+
+🪤 **The trap in this answer is the opposite of the usual one.** The usual failure is a sprint that
+owes a law cycle and skips it. Here the temptation is to *invent* one — to rewrite a clause because
+writing its row exposed that it is badly worded. **Do not.** A clause you believe is wrong is a
+`drift-register.md` row and a report. Rewriting clauses is work-queue item 30 and is explicitly out
+of scope; mixing it in turns an L sprint into an XL one and produces a rushed law cycle, which is the
+failure mode the template's own warning describes.
+
+### Element → law map
+
+| Element you will touch | Law file(s) to read first | Why it binds |
+| --- | --- | --- |
+| `agents/*/laws/test-plan.md` × 8 | that agent's `laws.md`; `conventions.md` | Every row must name a clause that exists and describe it truthfully |
+| any `*-DEP-*` row | `docs/laws/dependencies.md`; `probes/checks.py` | conventions §3 — an agent DEP clause **declares which Layer-0 component it stands on**; the charter plus its probe is the oracle |
+| `docs/laws/conventions.md` | itself | It is the authority for the status vocabulary this sprint extends |
+| `scripts/check_law_coverage.py` **225** | `conventions.md` | It is the gate that enforces the convention |
+| `docs/laws/ledger.md`, `docs/laws/INDEX.md` | both | Rollups are **derived by the gate**, never hand-counted |
+
+⚠️ **The one invariant this sprint must not break: no clause may become 🟩.** This sprint makes the
+book *honest*, not *greener*. A row that says ⬜ is a success. If you are writing a test to turn
+something green, you have left the scope — stop and report.
 
 ---
 
 ## Goal
 
-Every law clause in every agent has a test-plan row; each row declares **how** the clause is proven —
-by a test, by a CI gate, or not at all — and `check_law_coverage.py` assertion E is promoted from
-warn-only to enforcing.
+Every law clause in every agent has a test-plan row; each row declares **how** the clause is
+proven — by a test, by a named CI gate, or not at all — and assertion E in
+`scripts/check_law_coverage.py` is promoted from warn-only to enforcing.
 
 ## Why (context)
 
-Work-queue **item 10** (hardening row O) and **item 30**, which are the same defect at two depths.
+Work-queue **item 10** / hardening row **O**, carried since S157 and never picked up because it reads
+as a 101-item slog.
 
-🚨 **Item 10 is about rows, not tests, and that is what makes it tractable.** Its own text: *"101 law
-clauses with no test-plan row; assertion E in `check_law_coverage.py` is warn-only and **cannot be
-promoted until the rows exist**."* Writing 101 honest rows — most of them ⬜ — is mechanical. Writing
-101 tests is not, and is not asked for.
+🎯 **It is not. It is about rows, not tests** — which is the re-scope that makes it tractable. Item
+10's own text: *"101 law clauses with no test-plan row; assertion E in `check_law_coverage.py` is
+warn-only and **cannot be promoted until the rows exist**."* Writing 101 honest rows — most of them
+⬜ — is mechanical. Writing 101 tests is a multi-sprint programme and is **not what this asks for**.
 
-### Measured, 2026-09-14 (re-measured; both rows were `[carried]`)
+🚨 **This is [DRIFT-058](../laws/drift-register.md) applied to the law book itself.** That row, written
+2026-09-13 out of S202, says: *a green row whose oracle cannot fail proves only that the oracle ran.*
+A clause with **no row at all** is the same defect one level worse — there is not even an oracle to
+interrogate, and the gate that should have said so has been warn-only.
 
-`PYTHONPATH=. uv run python scripts/check_law_coverage.py` → **101** clauses with no row, confirming
-the carried number, spread over **8** agents:
+### Measured, 2026-09-14 — read these before designing
+
+`PYTHONPATH=. uv run python scripts/check_law_coverage.py` → **101** clauses with no test-plan row
+(the `[carried]` number re-measured and **confirmed**), across **8** agents:
 
 | Agent | Missing rows |
 | --- | --- |
@@ -68,8 +106,7 @@ the carried number, spread over **8** agents:
 | monitor | 7 |
 | reporter | 1 |
 
-🎯 **They are not 101 distinct problems — they cluster into a few families**, each missing across most
-agents:
+🎯 **They cluster into families, so the decision is per family and the application is mechanical:**
 
 | Family | Missing | Missing in N agents | Cumulative |
 | --- | --- | --- | --- |
@@ -81,186 +118,346 @@ agents:
 | FAIL / NEV / IN / STA / OBS | 28 | 3–5 each | 90.1 % |
 | TRG / TYP / OUT / IDM | 10 | 1–3 each | 100 % |
 
-**Five families are 62 % of the backlog.** So the work is *decide once per family what proving it
-means*, then apply — not 101 independent judgements.
-
-### What the families turn out to be — sampled, and it changes the answer
+### What sampling the clauses actually showed — and it contradicted this spec twice
 
 | Clause | Text (abridged) | What proves it |
 | --- | --- | --- |
-| `MST-DEP-03` | *"No dependency on any trading agent's code"* | 🧱 **import-linter already enforces this** — contract *"Agents may not import one another"* |
+| `ANLZ-DEP-01` | *"`DEP-BUS`: requires request/reply and subscribe/publish"* | 🧱 the **Layer-0 charter** + its probe |
+| `MST-DEP-03` | *"No dependency on any trading agent's code"* | 🧱 **import-linter**, contract *"Agents may not import one another"* |
 | `MST-ORD-01` | *"`start()` must be called before `activate()`"* | ✅ an ordinary test; nobody wrote one |
-| `MST-PERF-01` | *"`activate()` writes 1 `AgentInstance` + N `CapabilityGrant`"* | ✅ a counting assertion — **not a performance claim despite the family name** |
-| `MST-SEC-02` | *"Each agent receives only the config for its declared grants"* | ✅ testable; likely already covered by an uncited test |
-| `SCAN-IDN-01` | *"The scanner's sole job is universe → ranked candidates"* | 📜 **a charter statement — not falsifiable** |
-| `PM-IDN-01` | *"The portfolio manager's sole job is recommendation → sized order intent"* | 📜 same |
+| `MST-PERF-01` | *"`activate()` writes 1 `AgentInstance` + N `CapabilityGrant`"* | ✅ a **counting** assertion — not a performance claim |
+| `MST-IDN-01` | *"`start()` writes Session node"* | ✅ testable — **and it already has a row** |
+| `SCAN-IDN-01` | *"The scanner's sole job is universe → ranked candidates"* | 📜 a **charter statement**; no observation contradicts it |
 
-🪤 **Do not turn the family into the rule.** `MST-IDN-01` *does* have a row and *is* testable
-(*"`start()` writes Session node"*). Families **cluster**; classification is **per clause**. I made
-exactly this overgeneralisation while scoping and it was wrong within one sample.
+🪤 **First contradiction: I generalised DEP to import-linter from a single sample, and it is wrong for
+17 of 18.** Most agent DEP clauses name `DEP-BUS` / `DEP-POSTGRES` / `DEP-BROKER` / `DEP-FEED` — they
+declare which **Layer-0 infrastructure** the agent stands on, and `docs/laws/dependencies.md` is that
+charter (32 clauses), with `probes/checks.py` (**367** lines of `DEP-*`-tagged probes) as its oracle.
+`MST-DEP-03` is the *exception*. Classify agent DEP rows against the charter, not the linter.
 
-🚨 **And the deepest case is item 30:** 15 clauses assert *"X matches `contracts/<agent>.py` exactly"*,
-so the file is **both the claim and the oracle** — a contract can change with every test still green.
-[DL-121](../design-log.md) measured this and it is **not theoretical**: the scanner's `FilterVerdict`
-collapsed *"did not run"* and *"passed"* into the same bytes, which **is the S183 bug**, and no law
-book prevented it.
-
-**This is [DRIFT-058](../laws/drift-register.md) again** — *a green row whose oracle cannot fail
-proves only that the oracle ran* — in the law book itself rather than in a credential probe.
+🪤 **Second contradiction: families cluster, clauses classify.** `MST-IDN-01` is testable and already
+rowed while `SCAN-IDN-01` is a charter statement — same family. **Read every clause.** Marking a
+family by its name is the exact error this spec made and had corrected by one sample.
 
 ---
 
-## Scope
+## Scope — and what is deliberately NOT here
 
-### 1. A proof-kind vocabulary for test-plan rows
+### 1. Extend the status vocabulary in `conventions.md`
 
-Extend the Status column beyond 🟩/⬜ with two kinds that are **honest answers, not excuses**:
+Two additional kinds, each an **honest answer** rather than an excuse:
 
-| Mark | Meaning | Test column must contain |
+| Mark | Meaning | The Test column must contain |
 | --- | --- | --- |
-| 🟩 | proven by a functional test | the test name; the test docstring cites the clause ID |
-| ⬜ | owed a test | what is missing, if known |
-| 🧱 | **structural** — proven by a named CI gate, not a unit test | the gate + the contract/rule name, e.g. `import-linter: "Agents may not import one another"` |
-| 📜 | **charter** — a purpose/identity statement, not falsifiable by design | *why* it is not falsifiable |
-
-Document it in `docs/laws/conventions.md` as the authority; the per-agent test-plans follow.
-
-🪤 **📜 is the dangerous one.** It must never become a dumping ground for "hard to test". The test is:
-*could any observation contradict this clause?* If yes, it is ⬜, not 📜. Expect to justify every 📜 in
-the closeout, and expect me to push back on them individually.
+| 🟩 | proven by a functional test | the test name; its docstring cites the clause ID |
+| ⬜ | owed a test | what is missing, where known |
+| 🧱 | **structural** — proven by a named gate or charter, not a unit test | the gate **and** the specific rule, e.g. `import-linter: "Agents may not import one another"`, or `dependencies.md DEP-BUS-01 + probes/checks.py` |
+| 📜 | **charter** — a purpose statement no observation could contradict | **why** it is unfalsifiable |
 
 ### 2. Write the 101 missing rows
 
-One row per clause, with the honest kind. Most will be ⬜ and that is the correct outcome. Work by
-**family across agents**, not agent by agent — the decision is per family and the application is
-mechanical, and doing it agent-first re-litigates the same question eight times.
+Work **by family across agents**, not agent by agent — the judgement is per family and doing it
+agent-first re-litigates the same question eight times. Most rows will be ⬜; that is correct.
 
 ### 3. Promote assertion E to enforcing
 
-Once every clause has a row, flip assertion E in `scripts/check_law_coverage.py` (**225** lines) from
-`[WARN]` to a gate failure, so a new clause without a row **fails CI**. This is the whole point of the
-sprint — the ratchet that stops the backlog regrowing.
+Flip it in `scripts/check_law_coverage.py` from `[WARN]` to a gate failure, so a new clause without a
+row fails CI. **This is the point of the sprint** — the ratchet that stops the backlog regrowing.
 
-🪤 **Watch it fail first** (DL-70): add a clause with no row, see CI go red, remove it.
+### Out of scope (do NOT build this sprint)
 
-### 4. Item 30's 15 unfalsifiable clauses *(land separately if the sprint gets long)*
+- **Writing tests to turn ⬜ into 🟩.** Explicitly not this sprint.
+- **Editing any `laws.md`.** Not one, not even to fix wording.
+- **Work-queue item 30** (15 clauses asserting *"matches `contracts/<agent>.py` exactly"*). Same family
+  of defect — a clause that is its own oracle — but each rewrite is a **full law cycle** and demotes
+  greens under conventions §7a. 101 rows plus 15 law cycles is an XL sprint that would produce a
+  rushed law cycle. It gets its own sprint.
+- **Work-queue item 33** (57 PARAM/settings divergences). Same *shape*, different coupling
+  (laws↔settings) and a different decision (putting secret names into PARAM tables as `NO (secret)`).
 
-Rewrite each *"matches `contracts/<agent>.py` exactly"* clause to **enumerate the required fields**,
-so the clause stops being its own oracle. `PM-TYP-03` is already rewritten (PM laws v1.3) — **follow
-that precedent exactly** rather than inventing a second shape.
+### The road not taken (LAW-06)
 
-⚠️ **This demotes greens, knowingly** — conventions §7a, the trade already accepted. Each rewrite is a
-full law cycle per the law-cycle answer above.
-
-### Out of scope
-
-- **Writing tests to turn ⬜ into 🟩.** Explicitly not this sprint. The backlog of *tests* is what the
-  honest rows will finally make visible and rankable.
-- **Editing any `laws.md` outside Scope 4.**
-- **Item 33** (57 PARAM/settings divergences). Same *shape* — a claim whose check is warn-only — but a
-  different surface (laws↔settings) and a different decision (putting secret names into PARAM tables
-  as `NO (secret)`). Ranked separately on purpose.
-
-### The road not taken
-
-- **One sprint for items 10, 30 and 33.** I measured the hypothesis that they are one problem: they are
-  the same *shape* but three different *couplings* — laws↔test-plan, laws↔contracts, laws↔settings —
-  with three different decisions. Rejected; 33 stays its own row.
-- **Writing the 101 tests.** Rejected: that is a multi-sprint programme, and item 10 does not ask for
-  it. Rows first makes the test backlog legible and rankable for the first time.
-- **Leaving assertion E warn-only and just adding rows.** Rejected — without the promotion the backlog
-  regrows silently, which is the ratchet failure item 33 already demonstrates with its 57 `[WARN]`s.
+- **One sprint for items 10, 30 and 33.** I measured the hypothesis that they are one problem: same
+  shape, but three couplings — laws↔test-plan, laws↔contracts, laws↔settings — with three different
+  decisions. Rejected; only item 10 is here.
+- **Writing the 101 tests.** Rejected: a multi-sprint programme, and not what item 10 asks for. Rows
+  first is what makes the test backlog legible and rankable for the first time.
+- **Adding rows but leaving assertion E warn-only.** Rejected — without the promotion the backlog
+  regrows silently, which is precisely what item 33's 57 standing `[WARN]`s demonstrate.
+- **Auto-generating rows from clause text.** Rejected: it would encode the family-name error above at
+  scale. A generator may *list* the clauses; a human classifies them.
 
 ---
 
-## Blast radius
+## The design decisions this sprint has to make
+
+1. **Is 🧱 allowed to cite a charter, or only an executable gate?** Agent DEP clauses point at
+   `dependencies.md`, whose own clauses are proven by `probes/checks.py` — that is a two-hop
+   citation. Decide whether a 🧱 row must name the probe, or may name the charter clause. **Record the
+   choice and why.**
+2. **What happens to a 📜 clause's agent when rolling up?** Does a charter clause count in the
+   denominator of "19 of 55 proven"? Either answer is defensible; an unrecorded answer is not.
+3. **Does assertion E enforce only row *existence*, or also row *well-formedness*** (a 🧱 naming its
+   gate, a 📜 stating its reason)? Existence is the minimum item 10 asks for; well-formedness is what
+   stops 📜 becoming a dumping ground.
+4. **Is a clause that is wrong, not merely unproven, in scope to flag?** Yes — as a
+   `drift-register.md` row, never as an edit.
+
+---
+
+## Blast radius — measured 2026-09-14
 
 | What | Detail |
 | --- | --- |
-| Files changed | 8 × `agents/*/laws/test-plan.md`, `docs/laws/conventions.md`, `scripts/check_law_coverage.py` **225**, `docs/laws/ledger.md`, `docs/laws/INDEX.md`; Scope 4 also touches ≤15 `laws.md` |
-| Contract change? | No |
-| Graph vocabulary change? | No |
-| Deploy implication | **None.** Nothing ships in an agent image |
-| Agent behaviour change | **None** — this is the point; if behaviour changes, scope has leaked |
+| Files changed | 8 × `agents/*/laws/test-plan.md`; `docs/laws/conventions.md`; `scripts/check_law_coverage.py` **225**; `docs/laws/ledger.md`; `docs/laws/INDEX.md` |
+| Contract change? | **No** |
+| Graph vocabulary change? | **No** |
+| Agent behaviour change? | **None.** If behaviour changes, scope has leaked |
+| Deploy implication | **None** — nothing ships in an agent image. No retag, no `up` |
+| Live data touched | None |
 
 🚨 **The rollups will get *worse*, and that is the correct result.** Adding ⬜ rows for
-previously-rowless clauses changes the proven/total ratios in `ledger.md` and `INDEX.md`. **Measure
-the before and after and state both** — a ratio that drops because the denominator became honest is a
-success, and must not be presented as a regression or quietly smoothed. 🪤 **Derive the new numbers
-with the coverage checker, never by arithmetic** — it has rejected my hand-counted rollups twice
-(S199 17/54, S172 15/52).
+previously-rowless clauses changes the proven/total ratios in `ledger.md` and `INDEX.md`. **State
+before and after.** A ratio that falls because the denominator became honest is a success and must not
+be presented as a regression or quietly smoothed.
+
+🪤 **Derive the rollups with the gate, never by arithmetic** — it has rejected hand-counted rollups
+twice (S199's claimed 17/54, S172's claimed 15/52).
+
+---
+
+## Steps, in order
+
+1. **Read the laws** (MUST RULE) and write the **Law reading record** below.
+2. **Record the design decisions** (the four above) in `docs/design-log.md`.
+3. **Plant the failing test first**: add a clause with no test-plan row, run `make ci`, watch
+   assertion E **pass** (it is warn-only today). That red-first is inverted — capture the *current*
+   behaviour, then after step 5 the same plant must **fail**. Paste both.
+4. **Extend `conventions.md`** with 🧱 and 📜 and their evidence requirements.
+5. **Write the 101 rows**, family by family across agents.
+6. **Promote assertion E**, then re-run the step-3 plant and watch it go red. Restore.
+7. **Reconcile both rollups** from the gate's own numbers.
+8. **`make ci` green** — all 12 steps, **redirected to a file, never piped**.
+9. **Fill the handback sections** at the bottom of this file.
+
+---
+
+## Test plan
+
+| # | Test | Plants | Must prove |
+| --- | --- | --- | --- |
+| A1 | 🎯 assertion E fails a rowless clause | a clause added to any `laws.md` with no test-plan row | `make ci` exits non-zero naming the clause |
+| A2 | assertion E passes when every clause has a row | the tree as delivered | `check_law_coverage.py` reports **0** rowless clauses |
+| A3 | 🪤 a 🧱 row with no named gate is rejected | a 🧱 row whose Test column names no gate | the gate refuses it *(only if decision 3 says well-formedness is enforced)* |
+| A4 | 🪤 a 📜 row with no stated reason is rejected | a 📜 row with an empty justification | as A3 |
+| A5 | rollups match the gate | the delivered tree | `ledger.md` and `INDEX.md` numbers equal the checker's |
 
 ---
 
 ## Success factors
 
 - [ ] `check_law_coverage.py` reports **0** clauses without a test-plan row.
-- [ ] Assertion E is **enforcing**, and was watched failing on a planted rowless clause.
-- [ ] The 🧱/📜 vocabulary is documented in `conventions.md` and used consistently.
-- [ ] Every 🧱 row names the gate **and** the specific contract/rule that proves it.
+- [ ] Assertion E is **enforcing**, watched failing on a planted rowless clause, then restored.
+- [ ] 🧱 and 📜 are documented in `conventions.md` with their evidence requirements.
+- [ ] Every 🧱 row names the gate **and** the specific rule or charter clause.
 - [ ] Every 📜 row states why no observation could contradict the clause.
-- [ ] **No clause became 🟩** in Scopes 1–3.
-- [ ] `ledger.md` and `INDEX.md` rollups reconciled, both, with before/after numbers stated.
-- [ ] `make ci` exit 0, 100.00 % coverage, redirected to a **file** and read from the file.
-- [ ] `make gate-ran` exit 0 from **this** worktree, printed SHA checked against `git rev-parse HEAD`.
+- [ ] **No clause became 🟩.**
+- [ ] **No `laws.md` was edited.**
+- [ ] `ledger.md` and `INDEX.md` reconciled, both, with before/after numbers from the gate.
+- [ ] The four design decisions recorded in `docs/design-log.md` with rejected alternatives.
+- [ ] Law-cycle question answered **No** with its reason, in the Law reading record.
+- [ ] Every touched module < 200 lines.
+- [ ] `make ci` exit 0, 100.00 % coverage.
 
 ---
 
 ## Traps
 
-🪤 **📜 will be abused under time pressure.** Every charter mark is a clause nobody will ever test
-again. If in doubt, ⬜.
+🪤 **📜 will be abused under time pressure.** Every charter mark is a clause nobody tests again. The
+test is: *could any observation contradict this clause?* If yes, it is ⬜. Expect every 📜 to be
+challenged individually at handback.
 
-🪤 **Families cluster; clauses classify.** `MST-IDN-01` is testable while `SCAN-IDN-01` is a charter
-statement, and both are IDN. Read each clause.
+🪤 **Families cluster; clauses classify.** This spec asserted "DEP = import-linter" and was wrong for
+17 of 18, and asserted IDN was charter when `MST-IDN-01` is testable and already rowed. **Read every
+clause.** If you find more spec errors of this kind, say so in Return notes — specs here are corrected
+by the build, not defended.
 
-🪤 **`PERF` mostly is not about performance.** `MST-PERF-01` is a node-count assertion. Do not mark a
-family ⬜-by-default on the strength of its name.
+🪤 **`PERF` mostly is not about performance.** `MST-PERF-01` is a node-count assertion.
 
-🪤 **Both rollups, or they drift.** `ledger.md` and `INDEX.md` each carry per-agent counts; updating
-one is how they diverged before.
+🪤 **Both rollups, or they drift.** Updating one is how they diverged before.
 
-🪤 **Never measure the gate through a pipe.** `make ci | tail` reports `tail`'s exit code.
-
-🪤 **Run `make gate-ran` from the worktree whose `HEAD` is the commit being proven** — a `SHA=`
-argument is ignored, and it will happily print `GATE PROVEN` for a different commit.
+🪤 **A clause that is wrong is not a clause you may fix.** Drift row and report.
 
 ---
 
-## Test plan
+## Guardrails (every sprint)
 
-| # | Test | Watched red first? | Status |
+- No agent imports another agent; kernel imports nothing above it (`import-linter`).
+- Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa`.
+  📌 Current sizes: `scripts/check_law_coverage.py` **225** *(already over — it is a `scripts/` file and
+  `scripts/` is **exempt** from the module-size gate; do not "fix" it)*, `probes/checks.py` **367**.
+- Module docstring declares `Agent:` / `Role:` / `External I/O:`.
+- No magic numbers — `kernel.tunable(..., why=...)` with bounds.
+- Faults, not silent failure — `kernel.fault_boundary`.
+- `make ci` **all 12 steps** green, **100.00 % coverage floor**. **Never measure the gate through a
+  pipe** — `make ci | tail` reports *`tail`'s* exit code. Redirect to a file and read the file.
+- Version bump of the kind named at the top, `uv.lock` staged with it.
+- Secrets never through the worktree — a worktree has **no `.env`**. This sprint needs none; **say so**.
+
+---
+
+## Sequencing after merge
+
+1. `make ci` green locally, branch pushed, **`make gate-ran` exits 0**.
+   🪤 **Run it from the worktree whose `HEAD` is the commit you are proving** — it resolves the SHA from
+   the working directory and ignores a `SHA=` argument. **Check the printed SHA against
+   `git rev-parse HEAD`.**
+2. Merge to `main` locally and push. 🪤 Check you are not on the branch already.
+3. **Post-merge CodeQL** — `codeql.yml` runs only on `main`.
+4. **Deploy: none.** Nothing in this sprint reaches an agent image.
+
+---
+
+## Handover — paste this to Codex
+
+```text
+Sprint 204 — every law clause declares how it is proven, or that it cannot be.
+Branch: sprint-204-every-clause-declares-how-it-is-proven (create it before any code; never main).
+Full spec: docs/sprints/sprint-204-every-clause-declares-how-it-is-proven.md — read it all first.
+
+WHAT: 101 law clauses across 8 agents have no test-plan row, so assertion E in
+scripts/check_law_coverage.py has been warn-only. Give every clause a row that declares HOW it is
+proven, then promote assertion E to enforcing.
+
+THIS IS ABOUT ROWS, NOT TESTS. Do not write tests to turn anything green. A row that says
+"unproven" is a success. If you are writing a test, you have left the scope — stop and report.
+
+MUST RULE — before any code: read every agents/*/laws/laws.md and test-plan.md you touch, plus
+docs/laws/conventions.md, docs/laws/dependencies.md and docs/laws/drift-register.md. Then write the
+"Law reading record" section at the bottom of the spec. It is a gate, not advice.
+
+LAW-CYCLE ANSWER: No. Writing a row records how an existing clause is proven; it adds no guarantee.
+DO NOT EDIT ANY laws.md — not one, not even wording. A clause you believe is wrong is a
+drift-register.md row plus a report. Rewriting clauses is work-queue item 30 and is out of scope.
+
+THE WORK:
+1. Extend docs/laws/conventions.md with two row kinds beyond the existing proven/unproven:
+     structural — proven by a named gate or charter, not a unit test. The Test column must name the
+                  gate AND the specific rule (e.g. import-linter "Agents may not import one another",
+                  or dependencies.md DEP-BUS-01 + probes/checks.py).
+     charter    — a purpose statement no observation could contradict. Must state WHY.
+2. Write the 101 rows. Work family-by-family ACROSS agents, not agent by agent.
+3. Promote assertion E from [WARN] to a gate failure.
+4. Reconcile the rollups in BOTH docs/laws/ledger.md AND docs/laws/INDEX.md, using numbers the gate
+   derives — never hand-counted. It has rejected hand-counted rollups twice before.
+
+GET THE CURRENT LIST WITH:
+  PYTHONPATH=. uv run python scripts/check_law_coverage.py
+
+TRAPS, named because a trap not written down gets hit:
+- Families cluster, clauses classify. This spec itself asserted "DEP is import-linter" and was WRONG
+  for 17 of 18 — most agent DEP clauses name DEP-BUS/DEP-POSTGRES/DEP-BROKER/DEP-FEED and point at
+  the Layer-0 charter in docs/laws/dependencies.md, whose oracle is probes/checks.py. MST-DEP-03 is
+  the exception. It also asserted IDN was charter, but MST-IDN-01 is testable and already has a row.
+  READ EVERY CLAUSE. If you find more spec errors, say so in Return notes.
+- PERF is mostly not about performance. MST-PERF-01 is a node-count assertion.
+- "charter" will be abused under time pressure. The test is: could any observation contradict this
+  clause? If yes it is unproven, not charter. Every charter mark will be challenged at handback.
+- The rollups will get WORSE as denominators become honest. That is the correct result. State before
+  and after; do not smooth it.
+- scripts/ is EXEMPT from the 200-line module-size gate. check_law_coverage.py is 225 lines; do not
+  "fix" that.
+- Never measure the gate through a pipe: `make ci | tail` reports tail's exit code. Redirect to a
+  file and read the file.
+- Run `make gate-ran` from the worktree whose HEAD is the commit being proven; a SHA= argument is
+  ignored. Check the printed SHA against `git rev-parse HEAD`.
+
+ORDER: laws → law reading record → design decisions to docs/design-log.md → plant a rowless clause
+and confirm it currently PASSES (warn-only) → extend conventions → write rows → promote assertion E
+→ re-plant and watch it FAIL → restore → reconcile both rollups → make ci to a file → fill handback.
+
+FOUR DESIGN DECISIONS the spec asks you to make and record: (1) may a structural row cite a charter,
+or must it name an executable probe; (2) do charter clauses count in rollup denominators; (3) does
+assertion E enforce row existence only, or well-formedness too; (4) confirm that a wrong clause is
+flagged as drift, never edited.
+
+HANDBACK IS MANDATORY: fill the Law reading record BEFORE coding, then Test plan results, Closeout
+evidence with real pasted output, and Return notes; set Status: BUILT. Anything not met is stated
+plainly as "verified failing" or "not done". An incomplete handback is returned, not repaired.
+
+Deploy: none. Nothing here reaches an agent image. No .env needed — say which tree you ran in.
+```
+
+---
+
+## Handback contract — MANDATORY
+
+1. Fill the **Law reading record** *before* your first code change.
+2. Fill the **Test plan results** table. A test you chose not to write needs a reason, not a blank.
+3. Fill **Closeout — evidence** with real pasted output.
+4. Fill **Return notes**.
+5. Set **Status:** to `BUILT`.
+6. State anything not met plainly as "verified failing" or "not done" (LAW-02). **Never write a
+   `Result:` for work you have not done.**
+
+An incomplete handback is returned, not repaired (DL-48).
+
+---
+
+## Law reading record — fill BEFORE writing code
+
+| Law file | Read in full? | Clauses that bind this work | Anything ⬜ you relied on |
 | --- | --- | --- | --- |
-| A1 | `check_law_coverage.py` reports 0 rowless clauses | | |
-| A2 | a planted rowless clause **fails** the gate (assertion E enforcing) | **required** | |
-| A3 | a 🧱 row without a named gate is rejected | | |
-| A4 | a 📜 row without a stated reason is rejected | | |
-| A5 | rollup numbers are derived by the checker, and match `ledger.md` and `INDEX.md` | | |
-| B1 *(Scope 4)* | a rewritten contract clause enumerates fields and its test cites the clause ID | | |
+| `docs/laws/conventions.md` | | | |
+| `docs/laws/dependencies.md` | | | |
+| `agents/analyst/laws/*` | | | |
+| `agents/execution/laws/*` | | | |
+| `agents/master/laws/*` | | | |
+| `agents/monitor/laws/*` | | | |
+| `agents/portfolio_manager/laws/*` | | | |
+| `agents/provider/laws/*` | | | |
+| `agents/reporter/laws/*` | | | |
+| `agents/scanner/laws/*` | | | |
+
+**Law-cycle question answered:** *(No / Yes + what the cycle covered)*
+
+**Laws that contradicted the spec, if any:** *(and what you did about it)*
+
+---
+
+## Test plan results — fill at handback
+
+| # | Test | Status |
+| --- | --- | --- |
+| A1 | assertion E fails a rowless clause | |
+| A2 | 0 rowless clauses reported | |
+| A3 | malformed 🧱 row rejected | |
+| A4 | malformed 📜 row rejected | |
+| A5 | rollups match the gate | |
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(SPEC → BUILT at handback)*
+**Status:** *(BUILT | MERGED)*
 
-**Tree the proofs ran in:** *(path; `.env` present or not)*
+**Tree the proofs ran in:** *(path; `.env` present or not — this sprint needs none)*
 
 **Result:** *(what is now true that was not)*
 
-**Rows written:** *(count by kind — 🟩 / ⬜ / 🧱 / 📜 — and the per-agent breakdown)*
+**Rows written, by kind:** *(🟩 / ⬜ / 🧱 / 📜 counts, and the per-agent breakdown)*
 
-**Every 📜 justified:** *(list them with the reason; this is the part most likely to be challenged)*
+**Every 📜 justified:** *(list each with its reason — the part most likely to be challenged)*
 
-**Rollups before → after:** *(both files, numbers from the checker not by hand)*
+**Rollups before → after:** *(both files, numbers from the gate, not by hand)*
 
-**Proof — assertion E watched failing:** *(paste)*
+**Proof — assertion E watched passing, then failing:** *(paste both)*
 
-**Proof — the green run:** *(`make ci` exit code, counts, coverage)*
+**Proof — the green run:** *(`make ci` exit code, test counts, coverage, pip-audit, detect-secrets)*
 
 **`make gate-ran`:** *(printed SHA and the `git rev-parse HEAD` it was checked against)*
 
-**Scope 4 landed or deferred:** *(say which, and why)*
+**Design decisions recorded:** *(DL number)*
 
 **Not met / verified failing:** *(plainly)*
 
@@ -268,5 +465,6 @@ argument is ignored, and it will happily print `GATE PROVEN` for a different com
 
 ## Return notes
 
-*(What the next sprint should know — especially which ⬜ rows look most worth turning green first,
-since this sprint makes that backlog rankable for the first time.)*
+*(What the next sprint should know — especially: which ⬜ rows look most worth turning green first,
+since this sprint makes that backlog rankable for the first time; and any place this spec was wrong,
+which it has already been twice.)*

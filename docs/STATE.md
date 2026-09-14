@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-14 18:11 AEST · **Version:** 0.98.02 · **🟩 S203 branch-proven: the three checks that could not fail now can, and the one that could not discriminate says so.**
+**Last updated:** 2026-09-14 18:47 AEST · **Version:** 0.98.02 · **🟩 S203 merged `e890f93`: the three checks that could not fail now can, and the one that could not discriminate says so.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -47,8 +47,8 @@ build and dependency runs all green. No deploy: law, test-plan, docs and checker
 
 ## Now
 
-🟩 **BRANCH-PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) on
-`sprint-203-a-check-that-cannot-fail-says-so` (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and
+🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
+(`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and
 41** closed. The three pack `openai` probes and both `trading_vault_probes.py` LLM probes now POST a
 real completion, so a key that cannot spend fails the DL-36 entry condition instead of passing it;
 `compare_order_tolerances` ends every report with `comparison: FORCED | INFORMATIVE | NO DATA`;
@@ -61,7 +61,7 @@ transport, `passed` for the live key and `credential_failure / http_401` for a b
 corrected vault probes likewise, both vendors, both arms. Cost **~US$0.0028** per full fleet
 activation, from the vendor's `usage` block. 🟩 **Local proof:** `make ci` exit 0, **2742 passed,
 6 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🚨 **No `MST-*` clause written** — all
-44 master clauses are silent on remediation, recorded as [DRIFT-059](laws/drift-register.md).
+44 master clauses are silent on remediation, recorded as [DRIFT-059](laws/drift-register.md). 🟩 **Remote proof:** `make gate-ran` printed `GATE PROVEN` for the branch tip `ee2fe9b71df2f2edef60ee0dd9ed05ac1c53f4e4` (matching `git rev-parse HEAD` in that worktree) and again for the merge commit `e890f93521cc765231dbd8bcaf7d57bb207b44f3` on `main` — CI, CodeQL, Security Findings **and the image build** all `success`. 🟠 **DEPLOY OWED, and it must be a full `up`, never a retag:** `trading_credential_tests.json` ships as `MASTER_CREDENTIAL_TESTS_B64` and `entrypoint.py:42` makes b64 win over the baked file, so **until the pack is re-injected the fleet's OpenAI probes are still the blind ones**. The tolerance label and the remediation refusal are code-only and travel with the image.
 
 🟩 **PROVEN RESULT — work-queue item 47 CLOSED, 2026-09-13 (operator decision, [DL-165](design-log.md)).** The last of its four objections is decided: **`EXECUTION_ORDER_PRICE_TOLERANCE_MODE` flat → scaled**, promoting the S149 challenger that has shipped off-by-default since `0.83.00`. 🪤 **Promoted on DL-76's *external* measurement, not own-book evidence, and saying so is the point:** own-book evidence was **structurally uncollectable**. `compare_order_tolerances` reported flat and scaled **identical at 0.00 % drop over 170 orders** — *correctly*, because scaled is wider on **170 of 170** (75-250 bps against a fixed 50), so every order the flat band accepted the scaled band also accepts, and the orders flat **refused** never produce a `Fill` row to be counted at all. 🎯 **The flip is what makes the comparison informative for the first time:** with the wider band applied, an order that fills above the flat limit is precisely an order flat would have refused — DL-76's **35 % of buys** refusal rate, measured on our own book. Decision and instrument arrive together, which is why this beat waiting. ⚠️ **The weakness, stated:** DL-76's numbers are ~4 months old and external (60 sessions of overnight gaps: SCHW 25 % against **AMD 52 %** — one number encoding two policies), and ADR-0013 exists to prevent exactly this kind of promotion. Accepted because the alternative was not better evidence but **none** — the graph holds **4 filled orders in its entire history**. 🟠 **I recommended the opposite** (keep flat, close as decided-by-design) on two facts: S198 measured AMD and MRVL as the two worst names ever held, and S195's beta cap already drops AMD at the scanner. 🪤 **That case was weaker than it read — I could confirm the beta cap only for AMD, not MRVL or HPE.** Operator overrode; recorded as an override, not a consensus. 🟩 **Proven:** `make ci` exit 0 (**2706 passed, 4 skipped, 100.00 %**). 🟩 **DEPLOYED `s202a` 2026-09-13 by full `up`** (tunables are injected env vars, so only an `up` applies them; suffixed chore tag per [DL-106](design-log.md) rather than a second `s202`, which would put two commits under one name). **16/16 on `:s202a`**, **16/16 `Succeeded`**, cron intact, scale/KEDA **byte-identical to baseline, zero drift**, and `EXECUTION_ORDER_PRICE_TOLERANCE_MODE=scaled` present on `execution` — a **new** variable, so it could not have been inherited. S202's credential pack re-verified byte-identical after the re-`up`. `DeployRecord deploy:2026-09-13T13:05:11…:s202a:e78e91e…`. 🟠 **Opens item 56:** the report prints a confident `0.00` without saying it could not have differed — [DL-152](design-log.md)'s shape for the sixth time.
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-14 20:44 AEST · **Version:** 0.98.02 · **🟩 S203 merged `e890f93` and DEPLOYED `s203`: the three checks that could not fail now can, and the one that could not discriminate says so.**
+**Last updated:** 2026-09-14 21:26 AEST · **Version:** 0.98.02 · **🟩 S203 merged `e890f93` and DEPLOYED `s203`: the three checks that could not fail now can, and the one that could not discriminate says so.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -140,7 +140,7 @@ decisions rather than builds. 🚨 **What is left is mostly not code:** item 33 
 PARAM/settings divergences), item 30 (15 unfalsifiable "matches the contract file exactly" clauses),
 item 22 (a sprint's built state is not machine-checkable), item 31 (CodeQL runs only on `main`), item
 7 (the duplicated LLM adapter) and item 11 (the delegated-agent sandbox default). Item **42** is the
-one live-behaviour defect still open: one spurious stop-liveness warning per run, every run.
+one live-behaviour defect still open: one spurious stop-liveness warning per run, every run. 📦 **[S205](sprints/sprint-205-a-type-clause-names-the-fields-it-requires.md) is specced and handed to Codex** (2026-09-14): item 30, the twelve clauses whose oracle is the file they describe — the direct successor to S204, which gave every clause a row but could not make those twelve rows *fail*.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

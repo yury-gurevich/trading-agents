@@ -1,6 +1,6 @@
 # `Scanner` — Laws
 
-**Prefix:** `SCAN` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `SCAN` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Reduce the full tradable universe to a small, ranked, explained set of candidates
 > worth deeper analysis — nothing more.
@@ -137,9 +137,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **SCAN-TYP-01** — `CandidateSet`, `Candidate`, `FilterTrace`, and `Explanation` match
-  `contracts/scanner.py` exactly; `contracts.scanner.CONTRACT.version` is the authoritative
-  version string.
+- **SCAN-TYP-01** — The scanner payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/scanner.py`, is the authority on what must be present.
+  `CandidateSet` carries `run_id`, `candidates`, `filter_trace`, `explanation`, and `provenance`
+  (`SCAN-OUT-01`/`SCAN-OUT-03`). `Candidate` carries `ticker`, `rank`, `score`,
+  `survived_filters`, `skipped_filters`, and `metrics` (`SCAN-OUT-01`/`SCAN-OUT-06`).
+  `FilterTrace` carries `universe_size`, `evaluated`, `dropped_by_filter`, and `verdicts`
+  (`SCAN-OUT-02`). `FilterVerdict` carries `ticker`, `decision`, `filter_fired`,
+  `skipped_filters`, `features`, and `bypassed` (`SCAN-OUT-02`/`SCAN-OUT-06`/`SCAN-OUT-07`).
+  `contracts.scanner.CONTRACT.version` is the authoritative version string for current schema
+  identity; DRIFT-060 tracks the missing gate that would require the version to move when payload
+  shape changes.
 - **SCAN-TYP-02** — `Candidate.score` is a dimensionless `float`; `Candidate.rank` is a
   positive `int ≥ 1`. Neither carries a currency unit. `FilterTrace` counts are exact
   non-negative integers summing to `universe_size`.
@@ -252,3 +260,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `FilterVerdict` (`CONTRACT.version` 0.2.0 → 0.2.1) with no clause covering either — because
   the **sprint spec never asked for a law cycle**, not because the build skipped one. Recorded
   so the omission is attributed to the spec. See `DRIFT-047`.
+- v1.2 — S205 rewrites `SCAN-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `CandidateSet`, `Candidate`, `FilterTrace`, and `FilterVerdict`; the clause
+  now names both `skipped_filters` fields and closes DRIFT-047. No contract shape changes.

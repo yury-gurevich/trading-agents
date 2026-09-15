@@ -1,6 +1,6 @@
 # `Curator` — Laws
 
-**Prefix:** `CUR` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `CUR` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Curate the collected provenance graph into clean, labelled, versioned datasets ready
 > for later LLM training — running out of band, alongside trading, never touching the
@@ -109,8 +109,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **CUR-TYP-01** — `DatasetManifest`, `PredictorManifest`, and `PromotionResult` match
-  `contracts/curator.py` exactly.
+- **CUR-TYP-01** — The curator payload types carry, at minimum, the fields its own clauses require;
+  the clause, not `contracts/curator.py`, is the authority on what must be present.
+  `DatasetManifest` carries `dataset_id`, `version`, `purpose`, `example_count`, `splits`,
+  `schema_ref`, `explanation`, and `provenance` (`CUR-OUT-01`). `DatasetSplit` carries `name` and
+  `example_count` (`CUR-OUT-01`). `PredictorManifest` carries `predictor_id`, `dataset_id`,
+  `purpose`, `target`, `strategy`, `metrics`, `sample_size`, `advisory`,
+  `promotion_eligible`, `explanation`, and `provenance` (`CUR-OUT-03`/`CUR-OUT-04`).
+  `PromotionResult` carries `predictor_id`, `status`, `state`, `reason`, `explanation`, and
+  `provenance` (`CUR-OUT-05`).
 - **CUR-TYP-02** — `metrics` in `PredictorManifest` is `dict[str, float]`; `accuracy` and
   `train_size`/`test_size` are always present after a successful train.
 - **CUR-TYP-03** — `train_val_test` split fractions sum to 1.0 (validated by `DatasetRequest`);
@@ -188,3 +195,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S205 rewrites `CUR-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `DatasetManifest`, `DatasetSplit`, `PredictorManifest`, and
+  `PromotionResult`. No contract shape changes.

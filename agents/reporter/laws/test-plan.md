@@ -30,7 +30,7 @@
 | RPT-FAIL-01 | 🟩 | `test_reporter_fault_boundary_returns_degraded_payloads` |
 | RPT-FAIL-02 | ⬜ | — |
 | RPT-FAIL-03 | ⬜ | — |
-| RPT-TYP-01 | 🟩 | `test_report_snapshot_is_deserializable` |
+| RPT-TYP-01 | 🟩 | `tests/test_contract_required_fields.py::test_reporter_payload_fields_required_by_law`; `test_report_snapshot_is_deserializable` |
 | RPT-TYP-02 | 🟩 | `test_metrics_narrative.py::test_dropped_decision_is_visible_but_not_rejected` |
 | RPT-SEC-01 | ⬜ | — |
 | RPT-SEC-02 | ⬜ | — |

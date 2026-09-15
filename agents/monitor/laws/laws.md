@@ -1,6 +1,6 @@
 # `Monitor` — Laws
 
-**Prefix:** `MON` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `MON` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Watch open positions and decide when to exit under policy (stop, target, time, regime)
 > — then hand every close to execution and explain every hold.
@@ -42,8 +42,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MON-OUT-01** — `check_positions` returns `CloseDecisionSet { run_id, decisions,
   positions_checked, explanation, provenance }` as the RPC response.
 - **MON-OUT-02** — Each `CloseDecision` carries: `ticker`, `position_id`,
-  `decision` (`"close"` | `"hold"`), `trigger`, `rationale` (Explanation), and `pnl_cents`
-  (int | None).
+  `decision` (`"close"` | `"hold"`), `trigger`, `rationale` (Explanation), `quantity`,
+  `reference_price_cents`, and `pnl_cents` (int | None).
 - **MON-OUT-03** — `pnl_cents` is the realized gross PnL in integer cents on a close decision;
   `None` on a hold. Computed as `(exit − entry) × quantity`.
 - **MON-OUT-04** — A `MonitorRun` graph node is written after every `check_positions` call,
@@ -107,8 +107,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **MON-TYP-01** — `CloseDecisionSet` and `CloseDecision` match `contracts/monitor.py` exactly.
-  `pnl_cents` is `int | None` — never a float.
+- **MON-TYP-01** — The monitor payload types carry, at minimum, the fields its own clauses require;
+  the clause, not `contracts/monitor.py`, is the authority on what must be present.
+  `CloseDecisionSet` carries `run_id`, `decisions`, `positions_checked`, `explanation`, and
+  `provenance` (`MON-OUT-01`/`MON-OUT-07`). `CloseDecision` carries `ticker`, `position_id`,
+  `decision`, `trigger`, `rationale`, `quantity`, `reference_price_cents`, and `pnl_cents`
+  (`MON-OUT-02`/`MON-OUT-03`). `pnl_cents` is `int | None` — never a float.
 - **MON-TYP-02** — `MonitorDecisionResult` graph node payload matches the `CloseDecisionSet`
   schema so `claim_check_read` returns a reconstructable object.
 - **MON-TYP-03** — `MonitorRequest.run_id` is a non-empty string; empty strings produce a
@@ -184,3 +188,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S205 rewrites `MON-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `CloseDecisionSet` and `CloseDecision`, and aligns `MON-OUT-02` with the
+  contract-visible close-decision quantity and reference-price fields. `MON-TYP-02` remains a
+  separate graph serialization-shape clause. No contract shape changes.

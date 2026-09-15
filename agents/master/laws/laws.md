@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -102,8 +102,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type contracts (`TYP`)
 
-- **MST-TYP-01** — `EHLOMessage`, `ACTIVATEMessage`, `DRAINMessage`, `AgentState` are declared in
-  `contracts/master.py`. All are Pydantic `_Frozen` models. `AgentState` is a `StrEnum`.
+- **MST-TYP-01** — The master handshake payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/master.py`, is the authority on what must be present.
+  `EHLOMessage` carries `ephemeral_boot_id`, `agent_type`, and `capability_declaration`
+  (`MST-IN-01`). `ACTIVATEMessage` carries `instance_id`, `agent_type`, `capability_grants`,
+  `config`, and `signature` (`MST-OUT-01`/`MST-SEC-01`/`MST-SEC-02`). `DRAINMessage` carries
+  `instance_id` and `reason` (`MST-IN-02`/`MST-OUT-02`). These three messages are Pydantic
+  `_Frozen` models. `AgentState` is a `StrEnum`.
 - **MST-TYP-02** — `capability_grants` in `ACTIVATEMessage` is `dict[str, object]` — a JSON-safe
   map of interface names to operation lists. Never contains product names.
 
@@ -192,3 +197,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.2 — S188: credential tests become pack-declared activation guards; required credential
   failures refuse activation, transport failures fault without blocking, activation records test
   evidence, and credential-test records are secret-redacted.
+- v1.3 — S205 rewrites `MST-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `EHLOMessage`, `ACTIVATEMessage`, and `DRAINMessage`, while preserving the
+  `_Frozen` and `AgentState`/`StrEnum` type assertions. No contract shape changes.

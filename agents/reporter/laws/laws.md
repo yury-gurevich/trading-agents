@@ -1,6 +1,6 @@
 # `Reporter` — Laws
 
-**Prefix:** `RPT` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `RPT` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Stitch each completed run and each trade into durable, human-readable metrics and
 > narrative — the truth surface the dashboard and operator read.
@@ -89,7 +89,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **RPT-TYP-01** — `RunSnapshot` and `TradeNarrative` match `contracts/reporter.py` exactly.
+- **RPT-TYP-01** — The reporter payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/reporter.py`, is the authority on what must be present.
+  `RunSnapshot` carries `run_id`, `portfolio_metrics`, `signal_metrics`, `regime_attribution`,
+  `headline`, and `provenance` (`RPT-OUT-01`/`RPT-OUT-02`/`RPT-OUT-06`). `TradeNarrative` carries
+  `position_id`, `story`, and `provenance` (`RPT-OUT-03`).
 - **RPT-TYP-02** — `portfolio_metrics` is a `dict[str, float]`; `expectancy_cents` is float
   (integer cents represented as float); no type coercion silently drops precision.
 - **RPT-TYP-03** — `ReportSnapshotResult` graph node payload matches `RunSnapshot` schema so
@@ -157,3 +161,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S205 rewrites `RPT-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `RunSnapshot` and `TradeNarrative`. `RPT-TYP-03` remains a separate
+  claim-check serialization-shape clause. No contract shape changes.

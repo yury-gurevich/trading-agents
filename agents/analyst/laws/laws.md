@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -151,9 +151,19 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **ANLZ-TYP-01** — `Recommendation.confidence` is a `float ∈ [0.0, 1.0]`; never fabricated
-  above 1.0 or below 0.0. `RecommendationSet`, `Recommendation`, and `Rejection` match
-  `contracts/analyst.py` exactly.
+- **ANLZ-TYP-01** — The analyst payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/analyst.py`, is the authority on what must be present.
+  `RecommendationSet` carries `run_id`, `recommendations`, `rejections`, `explanation`, and
+  `provenance` (`ANLZ-OUT-01`/`ANLZ-OUT-04`). Each `Recommendation` carries `ticker`, `action`,
+  `exit_trigger`, `confidence`, `technical_score`, `sentiment_score`, `fundamental_score`,
+  `suggested_stop_pct`, `suggested_target_pct`, `quant_metrics`, `stop_target_evidence`, and
+  `rationale` (`ANLZ-OUT-02`/`ANLZ-OUT-07`/`ANLZ-OUT-08`). `StopTargetEvidence` carries `mode`,
+  `counterfactual_mode`, `atr_pct`, `volatility_present`, `volatility_fallback`,
+  `applied_stop_pct`, `applied_target_pct`, `counterfactual_stop_pct`,
+  `counterfactual_target_pct`, `flat_stop_pct`, `flat_target_pct`, `scaled_stop_pct`, and
+  `scaled_target_pct` (`ANLZ-OUT-07`/`ANLZ-OUT-08`). `Rejection` carries `ticker` and `reason`
+  (`ANLZ-OUT-03`). `Recommendation.confidence` remains a `float ∈ [0.0, 1.0]`, never fabricated
+  above 1.0 or below 0.0.
 - **ANLZ-TYP-02** — `suggested_stop_pct` and `suggested_target_pct` are `float ∈ [0.0, 1.0]`
   or `None`; stop is always < target when both are present (enforced by the regime source).
 - **ANLZ-TYP-03** — `SentimentReading` carries a `scorer` field (`"lexicon"` or `"provider"`)
@@ -318,3 +328,6 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
   `test_stop_target_outcome.py::test_settled_window_reports_the_deepest_fall_and_the_horizon_it_covers`,
   `::test_an_unsettled_window_stays_absent_rather_than_reporting_zero` and
   `::test_a_recorded_drawdown_is_never_rewritten`.
+- v1.4 — S205 rewrites `ANLZ-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `RecommendationSet`, `Recommendation`, `StopTargetEvidence`, and
+  `Rejection`, following the S184 portfolio-manager precedent. No contract shape changes.

@@ -39,7 +39,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-FAIL-02 | Graph-write failure records fault, no delete. | functional | _tbd_ | ⬜ |
 | DLIB-FAIL-03 | Crash recovery retries runs lacking `DELIBERATED_BY`. | functional | _tbd_ | ⬜ |
 | DLIB-FAIL-04 | Provider-declared truncated or refused completion is a failed LLM call with its stop reason named. | functional | `test_deliberator_anthropic.py::test_anthropic_max_tokens_without_text_raises_stop_reason`; `test_deliberator_anthropic.py::test_anthropic_refusal_raises_with_guarded_category`; `test_llm_openai_adapter.py::test_openai_length_without_text_raises_stop_reason`; `test_deliberation.py::test_stopped_judge_response_defaults_to_revise_with_reason`; `test_deliberation.py::test_parse_verdict_empty_defaults_to_revise_without_parser_blame`; `test_stop_reason_fail_open.py::test_one_stopped_turn_fails_only_that_order_and_records_reason` | 🟩 |
-| DLIB-TYP-01 | Bus payloads match `contracts/deliberator.py`. | functional | _tbd_ | ⬜ |
+| DLIB-TYP-01 | Bus payloads carry the required proposition, turn, request, reply, and verdict fields. | functional | `tests/test_contract_required_payload_fields.py::test_deliberator_bus_payload_fields_required_by_law` | 🟩 |
 | DLIB-TYP-02 | PM input validates as `OrderIntentSet`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-03 | Verdict rulings are constrained. | functional | _tbd_ | ⬜ |
 | DLIB-SEC-01 | Holds only scoped graph, bus, and LLM credentials. | functional | _tbd_ | ⬜ |

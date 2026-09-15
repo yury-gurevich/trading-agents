@@ -1,6 +1,6 @@
 # `Supervisor` — Laws
 
-**Prefix:** `SUP` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `SUP` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Route messages between agents, enforce the capability matrix and hard-NO safety surface,
 > flag anomalies for human review, and produce the master health/decision report.
@@ -96,8 +96,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **SUP-TYP-01** — `DispatchResult`, `MasterReport`, `TypedIntent`, and `FlagRequest` match
-  `contracts/supervisor.py` exactly.
+- **SUP-TYP-01** — The supervisor payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/supervisor.py`, is the authority on what must be present.
+  `DispatchResult` carries `accepted`, `routed_to`, `rejection`, and `provenance`
+  (`SUP-OUT-01`/`SUP-OUT-03`/`SUP-OUT-04`/`SUP-OUT-05`/`SUP-OUT-06`). `MasterReport` carries
+  `healthy`, `open_incidents`, `pending_human_flags`, `last_successful_run`, `summary`, and
+  `provenance` (`SUP-OUT-02`). Accepted `TypedIntent` payloads carry `family`, `parameters`,
+  `requires_confirmation`, and `provenance` as declared by `contracts.operator.TypedIntent`
+  (`SUP-IN-01`/`SUP-TRG-01`). `FlagRequest` carries `subject_ref`, `severity`, and `reason`
+  (`SUP-IN-03`/`SUP-OUT-03`).
 - **SUP-TYP-02** — `DispatchResult.accepted: bool` is always present; never None.
 - **SUP-TYP-03** — `MasterReport.healthy: bool` is derived from the graph health check; a
   graph traversal failure always yields `healthy=False`.
@@ -166,3 +173,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S205 rewrites `SUP-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `DispatchResult`, `MasterReport`, accepted `contracts.operator.TypedIntent`,
+  and `FlagRequest`. No contract shape changes.

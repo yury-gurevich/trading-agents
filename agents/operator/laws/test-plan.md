@@ -35,7 +35,7 @@
 | OPR-FAIL-01 | 🟩 | `test_interpret_llm_exception_returns_refusal` |
 | OPR-FAIL-02 | 🟩 | `test_interpret_invalid_intent_family_is_refused` |
 | OPR-FAIL-03 | ⬜ | — |
-| OPR-TYP-01 | ⬜ | — |
+| OPR-TYP-01 | 🟩 | `tests/test_contract_required_fields.py::test_operator_payload_fields_required_by_law` |
 | OPR-TYP-02 | ⬜ | — |
 | OPR-TYP-03 | ⬜ | — |
 | OPR-SEC-01 | ⬜ | — |
@@ -54,4 +54,4 @@
 | OPR-PERF-03 | ⬜ | — |
 | OPR-CAP | ⬜ | — |
 
-## Green: 14 / 51
+## Green: 16 / 50

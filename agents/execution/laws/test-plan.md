@@ -80,7 +80,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | --- | --- | --- | --- | --- |
 | EXEC-TYP-01 | Fill.price is Decimal; broker string parsed before persisting. | schema | `test_execution_agent.py::test_submit_records_fill_cents_and_executes_lineage` | 🟩 |
 | EXEC-TYP-02 | Fill.status ∈ {filled, partial, rejected, pending}; no other values. | schema | `test_execution_agent.py::test_broker_rejection_records_rejected_fill_and_fault` | 🟩 |
-| EXEC-TYP-03 | ExecutionResult deserialises from graph node per contract schema. | schema | `test_execution_pubsub.py::test_execution_result_is_deserializable` | 🟩 |
+| EXEC-TYP-03 | Execution payloads carry the required ExecutionResult, Fill, ReconcileResult, StageStatus, PromoteStageResult, and CONTRACT.version fields. | schema | `tests/test_contract_required_payload_fields.py::test_execution_payload_fields_required_by_law`; `test_execution_pubsub.py::test_execution_result_is_deserializable` | 🟩 |
 
 ## Security
 

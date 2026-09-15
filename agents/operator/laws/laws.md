@@ -1,6 +1,6 @@
 # `Operator` — Laws
 
-**Prefix:** `OPR` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `OPR` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Translate the operator's human-language commands into typed, policy-bound intents;
 > explain system state from stored evidence; refuse or escalate anything ambiguous or unsafe.
@@ -107,8 +107,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **OPR-TYP-01** — `CommandResult`, `TypedIntent`, and `HumanCommand` match `contracts/operator.py`
-  exactly.
+- **OPR-TYP-01** — The operator payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/operator.py`, is the authority on what must be present.
+  `CommandResult` carries `outcome`, `intent`, and `message` (`OPR-OUT-01`/`OPR-OUT-02`).
+  `TypedIntent` carries `family`, `parameters`, `requires_confirmation`, and `provenance`
+  (`OPR-OUT-03`/`OPR-TYP-02`/`OPR-TYP-03`). `HumanCommand` carries `text`, `actor`, `channel`, and
+  `request_id` (`OPR-IN-01`/`OPR-OBS-01`/`OPR-IDM-03`).
 - **OPR-TYP-02** — `TypedIntent.family` is constrained to `IntentFamily` literals; no runtime
   extension.
 - **OPR-TYP-03** — `requires_confirmation: bool` is always present on `TypedIntent`; never None.
@@ -220,3 +224,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     `LLMCall` cannot drift back in.
   - The operator's own LLM-calling behaviour, prompts, tools and outputs are **unchanged**. Nothing
     it does today is altered; only its claim over what *other* agents may do.
+- v1.3 — S205 rewrites `OPR-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `CommandResult`, `TypedIntent`, and `HumanCommand`. No contract shape changes.

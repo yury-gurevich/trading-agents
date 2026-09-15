@@ -421,21 +421,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Clause | File:line | Shape (a) file-as-oracle / (b) serialisation / (c) already fine | Current row | Call + reason |
 | --- | --- | --- | --- | --- |
-| `ANLZ-TYP-01` | `agents/analyst/laws/laws.md:154` | | 🟩 round-trip | |
-| `CUR-TYP-01` | `agents/curator/laws/laws.md:112` | | ⬜ | |
-| `DLIB-TYP-01` | `agents/deliberator/laws/laws.md:102` | | ⬜ `_tbd_` | |
-| `EXEC-TYP-03` | `agents/execution/laws/laws.md:200` | | 🟩 round-trip | |
-| `FORE-TYP-01` | `agents/forecaster/laws/laws.md:103` | | ⬜ | |
-| `FORE-TYP-03` | `agents/forecaster/laws/laws.md:106` | | | |
-| `MON-TYP-01` | `agents/monitor/laws/laws.md:110` | | ⬜ | |
-| `MON-TYP-02` | `agents/monitor/laws/laws.md:112` | | | |
-| `MST-TYP-01` | `agents/master/laws/laws.md:105` | | ⬜ `_tbd_` | |
-| `OPR-TYP-01` | `agents/operator/laws/laws.md:110` | | ⬜ | |
-| `RPT-TYP-01` | `agents/reporter/laws/laws.md:92` | | 🟩 round-trip | |
-| `RPT-TYP-03` | `agents/reporter/laws/laws.md:95` | | | |
-| `RES-TYP-01` | `agents/researcher/laws/laws.md:95` | | ⬜ | |
-| `SCAN-TYP-01` | `agents/scanner/laws/laws.md:140` | | 🟩 round-trip | `DRIFT-047` |
-| `SUP-TYP-01` | `agents/supervisor/laws/laws.md:99` | | ⬜ | |
+| `ANLZ-TYP-01` | `agents/analyst/laws/laws.md:154` | (a) file-as-oracle | 🟩 round-trip | Rewrite to name `RecommendationSet`, `Recommendation`, `StopTargetEvidence`, and `Rejection` fields; replace round-trip row with literal field guard. |
+| `CUR-TYP-01` | `agents/curator/laws/laws.md:112` | (a) file-as-oracle | ⬜ | Rewrite to name dataset, split, predictor, and promotion-result fields; add literal field guard. |
+| `DLIB-TYP-01` | `agents/deliberator/laws/laws.md:102` | (a) file-as-oracle | ⬜ `_tbd_` | Rewrite to name proposition, turn, turn request/reply, and verdict request/reply fields; add literal field guard. |
+| `EXEC-TYP-03` | `agents/execution/laws/laws.md:200` | (a) file-as-oracle | 🟩 round-trip | Rewrite to name current execution result, fill, reconcile, stage-status, promotion-result, and version fields; file drift for unenforced version-move semantics and output-law mismatches. |
+| `FORE-TYP-01` | `agents/forecaster/laws/laws.md:103` | (a) file-as-oracle | ⬜ | Rewrite to name `ShadowPrediction` and `Scorecard` fields; add literal field guard. |
+| `FORE-TYP-03` | `agents/forecaster/laws/laws.md:106` | (b) serialisation shape | | Keep: it names a concrete `graph_store.forecasts` JSON shape that can be falsified by graph/serialization round-trip tests. |
+| `MON-TYP-01` | `agents/monitor/laws/laws.md:110` | (a) file-as-oracle | ⬜ | Rewrite to name `CloseDecisionSet` and `CloseDecision` fields; align the cited output clause to the same concrete payload. |
+| `MON-TYP-02` | `agents/monitor/laws/laws.md:112` | (b) serialisation shape | | Keep: it names a concrete graph `positions` node shape that can be falsified by graph/serialization tests. |
+| `MST-TYP-01` | `agents/master/laws/laws.md:105` | (a) file-as-oracle | ⬜ `_tbd_` | Rewrite the contract-file sentence to name `EHLOMessage`, `ACTIVATEMessage`, and `DRAINMessage` fields; preserve `_Frozen` and `AgentState`/`StrEnum` checks. |
+| `OPR-TYP-01` | `agents/operator/laws/laws.md:110` | (a) file-as-oracle | ⬜ | Rewrite to name `CommandResult`, `TypedIntent`, and `HumanCommand` fields; add literal field guard. |
+| `RPT-TYP-01` | `agents/reporter/laws/laws.md:92` | (a) file-as-oracle | 🟩 round-trip | Rewrite to name `RunSnapshot` and `TradeNarrative` fields; replace round-trip row with literal field guard. |
+| `RPT-TYP-03` | `agents/reporter/laws/laws.md:95` | (b) serialisation shape | | Keep: it names the claim-check JSON shape rather than a contract file as its own oracle. |
+| `RES-TYP-01` | `agents/researcher/laws/laws.md:95` | (a) file-as-oracle | ⬜ | Rewrite to name proposal, proposed-change, and backtest-evidence fields; add literal field guard. |
+| `SCAN-TYP-01` | `agents/scanner/laws/laws.md:140` | (a) file-as-oracle | 🟩 round-trip | `DRIFT-047`: rewrite to name `CandidateSet`, `Candidate`, `FilterTrace`, `FilterVerdict`, and version fields; replace round-trip row with literal field guard. |
+| `SUP-TYP-01` | `agents/supervisor/laws/laws.md:99` | (a) file-as-oracle | ⬜ | Rewrite to name dispatch, report, accepted `contracts.operator.TypedIntent`, and flag-request fields; add literal field guard. |
 
 ---
 
@@ -443,18 +443,51 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| PM precedent | `agents/portfolio_manager/laws/laws.md`, `agents/portfolio_manager/laws/test-plan.md` | `PM-TYP-03` | Yes: use PM's direct field-list pattern and do not touch PM. |
+| Analyst | `agents/analyst/laws/laws.md`, `agents/analyst/laws/test-plan.md` | `ANLZ-TYP-01`, cited output clauses | Yes: its green row must move from generic round-trip proof to a required-field proof. |
+| Curator | `agents/curator/laws/laws.md`, `agents/curator/laws/test-plan.md` | `CUR-TYP-01`, cited archive/promotion clauses | Yes: the row can become green if the clause names current manifest fields directly. |
+| Deliberator | `agents/deliberator/laws/laws.md`, `agents/deliberator/laws/test-plan.md` | `DLIB-TYP-01`, cited debate/verdict clauses | Yes: the `_tbd_` row needs a shared required-field test with its own docstring citation. |
+| Execution | `agents/execution/laws/laws.md`, `agents/execution/laws/test-plan.md` | `EXEC-TYP-03`, cited output/stage clauses | Yes: current contract-visible fields can be named, but output-law mismatches and version-move enforcement require drift rows. |
+| Forecaster | `agents/forecaster/laws/laws.md`, `agents/forecaster/laws/test-plan.md` | `FORE-TYP-01`, `FORE-TYP-03` | Yes: rewrite only `FORE-TYP-01`; keep `FORE-TYP-03` as a falsifiable serialized graph shape. |
+| Monitor | `agents/monitor/laws/laws.md`, `agents/monitor/laws/test-plan.md` | `MON-TYP-01`, `MON-TYP-02`, `MON-OUT-02` | Yes: rewrite `MON-TYP-01`; keep `MON-TYP-02`; align `MON-OUT-02` with the contract-visible close-decision fields it requires. |
+| Master | `agents/master/laws/laws.md`, `agents/master/laws/test-plan.md` | `MST-TYP-01` | Yes: only the contract-file sentence changes; `_Frozen` and `AgentState` as `StrEnum` remain asserted and tested. |
+| Operator | `agents/operator/laws/laws.md`, `agents/operator/laws/test-plan.md` | `OPR-TYP-01`, cited command clauses | Yes: the row can become green through a literal field test rather than a placeholder. |
+| Reporter | `agents/reporter/laws/laws.md`, `agents/reporter/laws/test-plan.md` | `RPT-TYP-01`, `RPT-TYP-03`, cited output clauses | Yes: rewrite `RPT-TYP-01`; keep `RPT-TYP-03` as a claim-check JSON shape. |
+| Researcher | `agents/researcher/laws/laws.md`, `agents/researcher/laws/test-plan.md` | `RES-TYP-01`, cited output clauses | Yes: the row can become green through proposal/change/backtest field assertions. |
+| Scanner | `agents/scanner/laws/laws.md`, `agents/scanner/laws/test-plan.md` | `SCAN-TYP-01`, `DRIFT-047` | Yes: the rewritten clause must name `FilterVerdict` and prove `skipped_filters`, closing the measured drift. |
+| Supervisor | `agents/supervisor/laws/laws.md`, `agents/supervisor/laws/test-plan.md` | `SUP-TYP-01`, cited dispatch/report/flag clauses | Yes: accepted typed intents come from `contracts.operator.TypedIntent`, so the clause must name that source explicitly. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(the spec says
 No/No but Yes to twelve per-agent cycles — confirm after reading, and say if you disagree)*
 
+Confirmed: no final `contracts/` changes and no new agent guarantee. This sprint narrows existing
+file-as-oracle wording into falsifiable field-name wording while preserving guarantees through named
+fields or drift rows.
+
 **Contradictions found between a law and this spec:**
+
+No direct contradiction. Execution law reading plus contract inspection exposed stale output field
+names in `EXEC-OUT-01`, `EXEC-OUT-02`, `EXEC-OUT-04`, and `EXEC-OUT-05`; S205 recorded that as
+DRIFT-061 instead of editing contracts.
 
 **Laws found silent where a decision was needed:**
 
+Execution and Scanner mention `CONTRACT.version`, but the law/gate set does not require a version
+bump when contract shape changes. S205 recorded the missing version-move enforcement as DRIFT-060
+and only proves the current version identity and required fields.
+
 **Clauses that were ⬜ and are now proven:** *(IDs, and the rollup the gate computed)*
 
+`CUR-TYP-01` (22/47 → 23/47), `DLIB-TYP-01` (19/55 → 20/55), `FORE-TYP-01`
+(16/45 → 17/45), `MON-TYP-01` (20/46 → 21/46), `MST-TYP-01` (15/44 → 16/44),
+`OPR-TYP-01` (15/50 → 16/50), `RES-TYP-01` (19/43 → 20/43), and `SUP-TYP-01`
+(21/48 → 22/48). Computed by `uv run python scripts\check_law_coverage.py` after the row updates.
+
 **Clauses that were 🟩 and are now ⬜:** *(IDs, and why the old test does not prove the new clause)*
+
+None. `ANLZ-TYP-01`, `EXEC-TYP-03`, `RPT-TYP-01`, and `SCAN-TYP-01` stayed green because their rows
+now cite literal required-field tests; the older round-trip tests remain supplemental rather than
+being the only proof.
 
 ---
 
@@ -462,58 +495,166 @@ No/No but Yes to twelve per-agent cycles — confirm after reading, and say if y
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | PASS/FAIL | |
+| A1 | `test_analyst_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `ANLZ-TYP-01` |
+| A2 | `test_curator_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `CUR-TYP-01` |
+| A3 | `test_deliberator_bus_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `DLIB-TYP-01` |
+| A4 | `test_execution_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `EXEC-TYP-03` |
+| A5 | `test_forecaster_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `FORE-TYP-01` |
+| A6 | `test_monitor_payload_fields_required_by_law` | `tests/test_contract_required_payload_fields.py` | PASS | `MON-TYP-01` |
+| A7 | `test_master_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `MST-TYP-01` |
+| A8 | `test_operator_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `OPR-TYP-01` |
+| A9 | `test_reporter_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `RPT-TYP-01` |
+| A10 | `test_researcher_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `RES-TYP-01` |
+| A11 | `test_scanner_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `SCAN-TYP-01` |
+| A12 | `test_supervisor_payload_fields_required_by_law` | `tests/test_contract_required_fields.py` | PASS | `SUP-TYP-01` |
 
 **Tests added beyond the plan:**
+
+None.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT | MERGED)*
+**Status:** BUILDING — remote gate and merge still pending.
 
 **Tree the proofs ran in (and `.env` present?):**
 
+`C:/Users/yury_/Downloads/project/trading-agents`, branch
+`sprint-205-a-type-clause-names-the-fields-it-requires`; pre-commit HEAD
+`6e046e1123842b6ab678937308a0e309e8c1f2c6`; `.env` present: `True`. No live data or secrets were
+needed or read for S205.
+
 **Result:** *(what is now true, in the artefact's own words — not the intent restated)*
+
+The twelve file-as-oracle `TYP` clauses now name the payload fields they require. The three
+serialization-shape clauses (`FORE-TYP-03`, `MON-TYP-02`, `RPT-TYP-03`) stayed in their existing
+family. `DRIFT-047` is corrected; DRIFT-060 and DRIFT-061 record the two scoped findings S205 did
+not build.
 
 **Files changed:**
 
-**Design decisions:** recorded as `DL-NNN`
+Agent law books and test plans for Analyst, Curator, Deliberator, Execution, Forecaster, Master,
+Monitor, Operator, Reporter, Researcher, Scanner, and Supervisor; `docs/design-log.md`;
+`docs/laws/drift-register.md`; `docs/laws/ledger.md`; `docs/laws/INDEX.md`;
+`docs/sprints/sprint-205-a-type-clause-names-the-fields-it-requires.md`;
+`tests/test_contract_required_fields.py`; `tests/test_contract_required_payload_fields.py`;
+`pyproject.toml`; `uv.lock`.
+
+**Design decisions:** recorded as `DL-168`
 
 **Proof — the red run first:**
 
 ```text
+Command:
+uv run pytest tests\test_contract_required_fields.py::test_scanner_payload_fields_required_by_law --no-cov
+
+Result:
+collected 1 item
+
+tests\test_contract_required_fields.py F                                 [100%]
+
+FAILED tests/test_contract_required_fields.py::test_scanner_payload_fields_required_by_law
+E   AssertionError: assert ['skipped_filters'] == []
+1 failed in 1.29s
 ```
 
 **Proof — the field-deletion guards (≥ 3 agents):**
 
 ```text
+Guard 1 — Scanner / FilterVerdict.skipped_filters:
+Output pasted in "Proof — the red run first" above.
+
+Guard 2 — Master / EHLOMessage.capability_declaration:
+Command:
+uv run pytest tests\test_contract_required_fields.py::test_master_payload_fields_required_by_law --no-cov
+
+Result:
+collected 1 item
+
+tests\test_contract_required_fields.py F                                 [100%]
+
+FAILED tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law
+E   AssertionError: assert ['capability_declaration'] == []
+1 failed in 1.23s
+
+Guard 3 — Researcher / ParameterChangeProposal.backtest:
+Command:
+uv run pytest tests\test_contract_required_fields.py::test_researcher_payload_fields_required_by_law --no-cov
+
+Result:
+collected 1 item
+
+tests\test_contract_required_fields.py F                                 [100%]
+
+FAILED tests/test_contract_required_fields.py::test_researcher_payload_fields_required_by_law
+E   AssertionError: assert ['backtest'] == []
+1 failed in 1.22s
 ```
 
 **Proof — the green run:**
 
 ```text
+uv run pytest tests\test_contract_required_fields.py tests\test_contract_required_payload_fields.py --no-cov
+collected 12 items
+tests\test_contract_required_fields.py ......                            [ 50%]
+tests\test_contract_required_payload_fields.py ......                    [100%]
+12 passed in 1.34s
+
+uv run python scripts\check_law_coverage.py
+exit code 0, no output
 ```
 
 **`git diff --stat contracts/`:** *(must be empty)*
 
+`git diff --stat -- contracts` exited 0 with no output.
+
 **Rollups, as computed by the gate:** *(before → after, in `ledger.md` and `docs/laws/INDEX.md`)*
+
+Analyst 25/48 → 25/48; Curator 22/47 → 23/47; Deliberator 19/55 → 20/55; Execution 35/61 → 35/61;
+Forecaster 16/45 → 17/45; Master 15/44 → 16/44; Monitor 20/46 → 21/46; Operator 15/50 → 16/50;
+Reporter 20/39 → 20/39; Researcher 19/43 → 20/43; Scanner 18/41 → 18/41; Supervisor 21/48 → 22/48.
 
 **Module line counts:**
 
-**`make ci`:** redirected to *(path)*. Exit code *(n)*. *(N passed, M skipped)*, coverage *(100.00 %)*.
+`tests/test_contract_required_fields.py`: 114 lines.
+`tests/test_contract_required_payload_fields.py`: 116 lines.
+
+**`make ci`:** redirected to `%TEMP%\s205-make-ci.txt`. Exit code 0. 2756 passed, 4 skipped,
+coverage 100.00%.
+
+```text
+TOTAL                                                     16467      0   3500      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2756 passed, 4 skipped in 267.92s (0:04:27) =================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
+```
 
 **`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
 
 ```text
+Pending branch push and remote checks.
 ```
 
 **Not met / verified failing:**
+
+Pending remote branch gate, merge, and post-merge CodeQL.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(What you disagreed with in the spec after reading the laws.)*
-- *(What the next sprint should know that is not obvious from the diff.)*
+- Scope held: no final `contracts/` edits; temporary contract edits were used only for the required
+  red guards and were restored before green proof.
+- I did not disagree with the spec after reading the laws. I did separate the three serialization
+  clauses from the twelve file-as-oracle clauses, as the spec asked.
+- The first full `make ci` attempt failed on module size after the single guard file counted as 215
+  lines; the guard family was split into two files and rechecked with `scripts/check_module_size.py`.
+- Next sprint should know that `CONTRACT.version` movement is not enforced (DRIFT-060), and execution
+  output clauses name several fields the current execution contract does not carry (DRIFT-061).

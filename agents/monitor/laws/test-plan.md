@@ -32,7 +32,7 @@
 | MON-FAIL-02 | 🟩 | `test_missing_current_price_skips_position_and_records_fault` |
 | MON-FAIL-03 | 🟩 | `test_missing_stop_target_uses_fallback_and_records_fault` |
 | MON-FAIL-04 | ⬜ | — |
-| MON-TYP-01 | ⬜ | — |
+| MON-TYP-01 | 🟩 | `tests/test_contract_required_payload_fields.py::test_monitor_payload_fields_required_by_law` |
 | MON-TYP-02 | 🟩 | `test_monitor_decision_result_is_deserializable` |
 | MON-TYP-03 | ⬜ | — |
 | MON-SEC-01 | ⬜ | — |
@@ -50,4 +50,4 @@
 | MON-SEC-02 | ⬜ | monitor must not log position, price, PnL, or ticker details to external systems; _tbd_ |
 | MON-SEC-03 | ⬜ | monitor can be revoked and later replay pending fills without breaking the system; _tbd_ |
 
-**Green: 20 / 46**
+**Green: 21 / 46**

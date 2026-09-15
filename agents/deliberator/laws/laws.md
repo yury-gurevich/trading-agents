@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -99,7 +99,15 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 ## Type Alignment (`TYP`)
 
-+ **DLIB-TYP-01** -- Bus payloads match `contracts/deliberator.py` exactly.
++ **DLIB-TYP-01** -- Deliberator bus payloads carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/deliberator.py`, is the authority on what must be present.
+  `DebateProposition` carries `decision` and `context` (`DLIB-IN-02`/`DLIB-IN-03`).
+  `DebateTurnRecord` carries `role`, `round`, and `text` (`DLIB-OUT-02`/`DLIB-NEV-07`).
+  `DebateTurnRequest` carries `request_id`, `proposition`, `role`, `round_number`, and
+  `transcript` (`DLIB-IN-02`/`DLIB-ORD-01`). `DebateTurnReply` carries `request_id`, `turn`, and
+  `llm_call_key` (`DLIB-OUT-03`/`DLIB-OBS-02`). `VerdictRequest` carries `request_id`,
+  `proposition`, and `transcript` (`DLIB-IN-03`). `VerdictReply` carries `request_id`, `ruling`,
+  `rationale`, and `llm_call_key` (`DLIB-OUT-01`/`DLIB-TYP-03`/`DLIB-OBS-02`).
 + **DLIB-TYP-02** -- PM input is validated as `contracts.portfolio_manager.OrderIntentSet`.
 + **DLIB-TYP-03** -- Verdict rulings are limited to `uphold`, `overturn`, or
   `revise`.
@@ -224,3 +232,6 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   demanded. `DLIB-OUT-03` drops the word *rough* from "rough token counts": S199
   made that word false the day it merged, and a clause describing the code as it
   was a day ago is drift (DRIFT-057).
++ v1.6 -- S205 rewrites `DLIB-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for debate proposition, turn, request, reply, and verdict payloads. No contract
+  shape changes.

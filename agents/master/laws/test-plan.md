@@ -1,6 +1,6 @@
 # `Master` — Law Test-Plan
 
-**Prefix:** `MST` · **status:** LOCKED v1.2 · **aligned with:** laws.md LOCKED v1.2
+**Prefix:** `MST` · **status:** LOCKED v1.3 · **aligned with:** laws.md LOCKED v1.3
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -38,7 +38,7 @@
 | MST-FAIL-01 | graph unavailable on activate is faulted and re-raised without acknowledging EHLO | _tbd_ | ⬜ |
 | MST-FAIL-02 | graph unavailable on drain is faulted and re-raised while the agent continues running | _tbd_ | ⬜ |
 | MST-FAIL-03 | single-point-of-failure mitigation is a risk charter: thin master, state in Postgres, and platform restart are architectural claims, not an agent-local observation | Charter: no single functional observation can prove the RISK-1 mitigation envelope; failures are covered by the narrower FAIL rows. | 📜 |
-| MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState match contracts/master.py | _tbd_ | ⬜ |
+| MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState carry the required fields and type assertions | `tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law` | 🟩 |
 | MST-TYP-02 | ACTIVATE capability_grants is a JSON-safe map and never contains product names | _tbd_ | ⬜ |
 | MST-SEC-02 | each agent receives only credentials for declared capability_grants, never the full .env | _tbd_ | ⬜ |
 | MST-SEC-03 | DEFAULT_GRANTS is the authoritative privilege table and cannot be changed by runtime config | _tbd_ | ⬜ |

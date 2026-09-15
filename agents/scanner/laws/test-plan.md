@@ -71,7 +71,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| SCAN-TYP-01 | CandidateSet validates against contracts/scanner.py CONTRACT schema. | schema | `test_scanner_pubsub.py::test_scan_result_node_candidates_are_deserializable` | 🟩 |
+| SCAN-TYP-01 | Scanner payloads carry the required CandidateSet, Candidate, FilterTrace, FilterVerdict, and CONTRACT.version fields. | schema | `tests/test_contract_required_fields.py::test_scanner_payload_fields_required_by_law`; `test_scanner_pubsub.py::test_scan_result_node_candidates_are_deserializable` | 🟩 |
 | SCAN-TYP-02 | Candidate.score is a dimensionless float; Candidate.rank is a positive int; FilterTrace counts are exact non-negative integers summing to universe_size. | schema | Demoted S156: `test_scanner_agent.py::test_run_scan_calls_provider_and_returns_ranked_candidates` asserts rank and filter counts, but not Candidate.score's dimensionless float contract. | ⬜ |
 
 ## Security

@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -197,9 +197,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   Broker-returned price strings are parsed to `Decimal` before persisting.
 - **EXEC-TYP-02** — `Fill.status` is one of the literal string union
   `{"filled", "partial", "rejected", "pending"}`; no other values are written.
-- **EXEC-TYP-03** — `ExecutionResult`, `Fill`, `ReconcileResult`, `StageStatus`, and
-  `PromoteStageResult` match `contracts/execution.py` exactly; `CONTRACT.version` is the
-  authoritative version string.
+- **EXEC-TYP-03** — The execution payload types carry, at minimum, the fields its own clauses can
+  currently require from `contracts.execution`; the clause, not `contracts/execution.py`, is the
+  authority on what must be present. `ExecutionResult` carries `run_id`, `stage`, `fills`,
+  `submitted`, `rejected`, `dropped`, `skipped`, and `provenance` (`EXEC-OUT-01`/`EXEC-OUT-03`).
+  `Fill` carries `ticker`, `side`, `quantity`, `price`, `broker_order_id`, and `status`
+  (`EXEC-OUT-02`/`EXEC-TYP-01`/`EXEC-TYP-02`). `ReconcileResult` carries `matched`,
+  `discrepancies`, and `provenance` (`EXEC-OUT-04`). `StageStatus` carries `stage`, `idempotent`,
+  and `reason` (`EXEC-STA-02`). `PromoteStageResult` carries `accepted`, `previous_stage`,
+  `current_stage`, `reason`, and `provenance` (`EXEC-OUT-05`). `CONTRACT.version` remains the
+  authoritative version string for current schema identity. DRIFT-060 tracks the missing gate that
+  would require the version to move when payload shape changes; DRIFT-061 tracks older execution
+  output clauses whose field names are wider than the current contract.
 
 ---
 
@@ -405,3 +414,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   resting-stop Fills stop counting as open orders, and the stale-order sweep compares live broker
   stops to live graph stops. Also proves the previously gray `EXEC-STA-05` row and adds missing
   `EXEC-OBS-03` liveness-limb tests, correcting DRIFT-055.
+- **v1.5 — S205 required contract fields (2026-09-15).** Rewrites `EXEC-TYP-03` from a
+  file-as-oracle contract assertion into explicit required fields for execution payloads and current
+  `CONTRACT.version` identity. No contract shape changes. DRIFT-060 records the unbuilt
+  version-move gate; DRIFT-061 records output-law fields that no current execution contract carries.

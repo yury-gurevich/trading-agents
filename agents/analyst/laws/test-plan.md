@@ -69,7 +69,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| ANLZ-TYP-01 | Recommendation.confidence ∈ [0.0, 1.0]; never fabricated above 1.0. | schema | `test_analyst_pubsub.py::test_recommendation_result_is_deserializable` | 🟩 |
+| ANLZ-TYP-01 | Analyst payloads carry the required RecommendationSet, Recommendation, StopTargetEvidence, and Rejection fields, and Recommendation.confidence remains bounded. | schema | `tests/test_contract_required_payload_fields.py::test_analyst_payload_fields_required_by_law`; `test_analyst_pubsub.py::test_recommendation_result_is_deserializable` | 🟩 |
 | ANLZ-TYP-02 | suggested_stop_pct < suggested_target_pct when both present; never inverted. | schema | `test_scaled_stop_targets.py::test_scaled_mode_floor_and_risk_ceiling_clamp` | 🟩 |
 | ANLZ-TYP-03 | SentimentReading.scorer ∈ {"lexicon", "provider"}; never omitted. | schema | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
 

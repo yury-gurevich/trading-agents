@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -100,7 +100,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **FORE-TYP-01** — `ShadowPrediction` and `Scorecard` match `contracts/forecaster.py` exactly.
+- **FORE-TYP-01** — The forecaster payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/forecaster.py`, is the authority on what must be present.
+  `ShadowPrediction` carries `model_id`, `subject_ref`, `value`, `confidence`, `shadow`, and
+  `provenance` (`FORE-OUT-01`/`FORE-OUT-02`/`FORE-OUT-05`). `Scorecard` carries `model_id`,
+  `metrics`, `sample_size`, `fresh_as_of`, and `promotion_eligible`
+  (`FORE-OUT-03`/`FORE-OUT-04`).
 - **FORE-TYP-02** — `value` and `confidence` are floats in `[0, 1]`; the logistic squash applied
   to raw LightGBM outputs ensures the range.
 - **FORE-TYP-03** — `ShadowPrediction` graph node serialisation matches the contract so downstream
@@ -191,3 +196,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
 - v1.1 — S72: added `system_prompt` tunable (ADR-0010 immediate consequence); pre-declared for P13.
+- v1.2 — S205 rewrites `FORE-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `ShadowPrediction` and `Scorecard`. `FORE-TYP-03` remains a separate
+  serialization-shape clause. No contract shape changes.

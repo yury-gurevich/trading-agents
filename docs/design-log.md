@@ -61,6 +61,69 @@ This is [DL-104](design-log.md)'s defect class — *the veto is shown a pass/fai
 
 ---
 
+## DL-168 - type clauses name required fields instead of using contract files as their own oracle - status: DECIDED (S205, 2026-09-15)
+
+Sprint 205 applies the S184 `PM-TYP-03` pattern to the remaining file-as-oracle `TYP` clauses:
+the clause names the fields it requires, and the contract file is only the implementation under
+test. This closes [DRIFT-047](laws/drift-register.md) for Scanner and addresses work-queue item 30's
+broader defect: a law that says "matches `contracts/<agent>.py` exactly" cannot fail, because the
+file is both the claim and the oracle.
+
+### 1. One shared guard family, one docstring per clause
+
+Chosen: add shared required-field guard modules under `tests/test_contract_required_*fields.py`,
+with one test function for each rewritten clause. Each test docstring cites exactly one clause ID and
+writes the required field names literally. This follows the S204 coverage gate, which reads
+docstrings, and keeps the evidence close to the contract boundary rather than scattering identical
+helpers through twelve agent suites. The family is split across two files only to stay under the
+200-line module-size hard block.
+
+Ruled out: extending `tests/test_contract_values.py`. It is already near the 200-line module limit
+and exists for PM's value-state precedent, not for every contract field list. Ruled out:
+parameterising all clauses under one test function, because that would decouple eleven clauses from
+their docstring citation and recreate the coverage ambiguity S204 just removed.
+
+### 2. Required means declared on the model, not complete equality
+
+Chosen: the tests assert that named fields are present in each Pydantic model's `model_fields`.
+They do not derive the expected list from the model, and they do not assert exact equality. Exact
+equality would turn additive contract work into a law failure even when no agent clause depended on
+the new field; deriving from the model would move the tautology down one layer.
+
+This sprint does not decide nullability, default values, or semantic meaning of each field. Those
+belong to the agent `OUT`, `NEV`, `STA`, or settings clauses that use the payloads.
+
+### 3. Serialization-shape clauses stay in their own family
+
+Chosen: rewrite only the file-as-oracle clauses. `FORE-TYP-03`, `MON-TYP-02`, and `RPT-TYP-03`
+name concrete graph or claim-check JSON shapes rather than a contract file as authority, so they can
+be falsified by serialization or round-trip tests. Those rows remain serialization-shape evidence,
+not required-field evidence.
+
+Ruled out: rewriting those three only because the original work-queue count said 15. The re-measure
+reconciled the count as 12 file-as-oracle clauses plus 3 serialization shapes, with PM already fixed
+as the prior 16th clause.
+
+### 4. Version movement and stale execution field names are drift, not contract edits
+
+`EXEC-TYP-03` and `SCAN-TYP-01` mention `CONTRACT.version`, but no current gate requires that
+version to move when a payload shape changes. Sprint 205 will prove the current version identity and
+required fields, then file the missing bump-on-shape rule as drift.
+
+Execution law reading also found stale output field names: current `contracts.execution` payloads do
+not carry every field named by `EXEC-OUT-01`, `EXEC-OUT-02`, and `EXEC-OUT-05`. Chosen: record that
+as drift and keep `contracts/` untouched. Ruled out: changing the contract to satisfy the old text,
+because S205's scope is to make existing type clauses falsifiable, not to mutate payload shape.
+
+### 5. Keep the special type assertions explicit
+
+`MST-TYP-01` is not a plain field-list clause: it also asserts `_Frozen` inheritance and
+`AgentState` as a `StrEnum`. Those assertions stay in the law text and in the test. `SUP-TYP-01`
+accepts a `TypedIntent`, but the type is declared in `contracts.operator`, not
+`contracts.supervisor`; the rewritten supervisor clause must name that source directly.
+
+---
+
 ## DL-166 - three checks that could not fail, and the two things measuring them taught - status: DECIDED (S203, 2026-09-14)
 
 Built as [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) (`0.98.02`), closing work-queue items **53**, **56** and **41**. The sprint's thesis came from [DRIFT-058](laws/drift-register.md): *a green row whose oracle cannot fail proves only that the oracle ran.* Two things the sprint learned are worth keeping separately from the closeout, because both generalise past this repo.

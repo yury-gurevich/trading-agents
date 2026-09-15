@@ -36,7 +36,7 @@
 | CUR-FAIL-03 | ⬜ | Demoted S156: `test_train_predictor_degrades_on_graph_fault` covers degraded predictor manifest and fault emission, but not the full no-Predictor-node clause. |
 | CUR-FAIL-04 | 🟩 | `test_low_accuracy_rejected_without_flag` |
 | CUR-FAIL-05 | 🟩 | `test_empty_corpus_degrades_without_crash` |
-| CUR-TYP-01 | ⬜ | — |
+| CUR-TYP-01 | 🟩 | `tests/test_contract_required_payload_fields.py::test_curator_payload_fields_required_by_law` |
 | CUR-TYP-02 | ⬜ | — |
 | CUR-TYP-03 | ⬜ | — |
 | CUR-SEC-01 | ⬜ | — |
@@ -51,4 +51,4 @@
 | CUR-PERF-02 | ⬜ | — |
 | CUR-CAP | ⬜ | — |
 
-**Green: 22 / 48**
+**Green: 23 / 47**

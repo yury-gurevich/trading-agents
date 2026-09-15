@@ -31,7 +31,7 @@
 | RES-FAIL-02 | 🟩 | `test_researcher_degrades_on_graph_fault` |
 | RES-FAIL-03 | ⬜ | — |
 | RES-FAIL-04 | ⬜ | — |
-| RES-TYP-01 | ⬜ | — |
+| RES-TYP-01 | 🟩 | `tests/test_contract_required_fields.py::test_researcher_payload_fields_required_by_law` |
 | RES-TYP-02 | 🟩 | `test_low_confidence_raises_floor` |
 | RES-TYP-03 | ⬜ | — |
 | RES-SEC-01 | ⬜ | — |
@@ -47,4 +47,4 @@
 | RES-PERF-02 | ⬜ | — |
 | RES-CAP | ⬜ | — |
 
-**Green: 19 / 44**
+**Green: 20 / 43**

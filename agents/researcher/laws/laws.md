@@ -1,6 +1,6 @@
 # `Researcher` — Laws
 
-**Prefix:** `RES` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `RES` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Mine accumulated evidence for parameter and strategy improvements and propose bounded,
 > measurable changes into the human-review queue — never apply them itself.
@@ -92,8 +92,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Type alignment (`TYP`)
 
-- **RES-TYP-01** — `ParameterChangeProposal` and `ProposedChange` match `contracts/researcher.py`
-  exactly.
+- **RES-TYP-01** — The researcher payload types carry, at minimum, the fields its own clauses
+  require; the clause, not `contracts/researcher.py`, is the authority on what must be present.
+  `ParameterChangeProposal` carries `proposal_id`, `changes`, `rationale`, `provenance`, and
+  `backtest` (`RES-OUT-01`). `ProposedChange` carries `parameter`, `current_value`,
+  `proposed_value`, `evidence_window_days`, and `expected_effect` (`RES-OUT-01`/`RES-TYP-02`/
+  `RES-TYP-03`). `BacktestEvidence` carries `sharpe`, `ic_mean`, `max_drawdown`, `turnover`,
+  `n_days`, `window_start`, `window_end`, `holdout_sharpe`, `holdout_ic_mean`, `slippage_bps`, and
+  `engine` so the proposal's evidence payload remains named instead of implied by the contract file.
 - **RES-TYP-02** — `ProposedChange.current_value` and `proposed_value` are floats; bounded by
   the settings schema constraints.
 - **RES-TYP-03** — `evidence_window_days` on each `ProposedChange` reflects the actual evidence
@@ -167,3 +173,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Changelog
 
 - v1 — authored S71 and locked immediately (full first-principles cycle).
+- v1.1 — S205 rewrites `RES-TYP-01` from a file-as-oracle contract assertion into explicit
+  required fields for `ParameterChangeProposal`, `ProposedChange`, and `BacktestEvidence`. No
+  contract shape changes.

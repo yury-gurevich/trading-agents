@@ -32,7 +32,7 @@
 | FORE-FAIL-01 | 🟩 | `test_forecast_falls_back_to_neutral_on_a_model_fault` |
 | FORE-FAIL-02 | 🟩 | `test_forecast_survives_a_provider_fault` |
 | FORE-FAIL-03 | ⬜ | Demoted S156: `test_forecast_return_falls_back_to_neutral_on_a_model_fault` covers a generic injected model exception, not the specific missing-LightGBM-file clause. |
-| FORE-TYP-01 | ⬜ | — |
+| FORE-TYP-01 | 🟩 | `tests/test_contract_required_payload_fields.py::test_forecaster_payload_fields_required_by_law` |
 | FORE-TYP-02 | ⬜ | — |
 | FORE-TYP-03 | ⬜ | — |
 | FORE-SEC-01 | ⬜ | — |
@@ -49,4 +49,4 @@
 | FORE-PERF-03 | ⬜ | — |
 | FORE-CAP | ⬜ | — |
 
-## **Green: 16 / 46**
+## **Green: 17 / 45**

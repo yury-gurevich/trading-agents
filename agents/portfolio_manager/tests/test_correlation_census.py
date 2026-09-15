@@ -70,7 +70,9 @@ def test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out() -> Non
         "correlated_issuers=BAC:0.7639; "
         "below_threshold_top=C:0.5650,SCHW:0.3180; "
         "correlation_threshold=0.7000; "
-        "min_pair_overlap_bars=120"
+        "min_pair_overlap_bars=120; "
+        "skipped_pairs=0; "
+        "skipped_pair_issuers=none"
     )
 
 
@@ -84,7 +86,9 @@ def test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass() -> 
         "correlated_issuers=none; "
         "below_threshold_top=none; "
         "correlation_threshold=0.7000; "
-        "min_pair_overlap_bars=none"
+        "min_pair_overlap_bars=none; "
+        "skipped_pairs=0; "
+        "skipped_pair_issuers=none"
     )
 
 
@@ -115,14 +119,19 @@ def test_an_unmeasurable_pair_is_labelled_and_ranked_last() -> None:
     assert "below_threshold_top=BBB:0.2000,AAA:unmeasured" in census.detail()
 
 
-def test_a_thin_pair_is_excluded_from_correlation_but_counted_in_overlap() -> None:
-    """PM-OBS-03: min_correlation_bars is visible as the overlap it enforced."""
-    table: Mapping[str, tuple[float | None, int]] = {"AAA": (0.99, 30)}
-    census = _census(table, {"AAA": ("AAA",)}, min_bars=60)
+def test_skipped_pair_names_the_issuer_and_its_overlap() -> None:
+    """PM-OBS-03 / PM-OBS-04: skipped pair detail names issuer and overlap."""
+    table: Mapping[str, tuple[float | None, int]] = {
+        "AAA": (0.99, 30),
+        "BBB": (0.75, 120),
+    }
+    census = _census(table, {name: (name,) for name in table}, min_bars=60)
 
-    assert census.clustered() == ()
-    assert "below_threshold_top=AAA:unmeasured" in census.detail()
-    assert "min_pair_overlap_bars=30" in census.detail()
+    assert census.clustered() == ("BBB",)
+    assert "examined_issuers=1" in census.detail()
+    assert "correlated_issuers=BBB:0.7500" in census.detail()
+    assert "skipped_pairs=1" in census.detail()
+    assert "skipped_pair_issuers=AAA:30" in census.detail()
 
 
 def test_a_multi_ticker_issuer_is_judged_on_its_strongest_pair() -> None:
@@ -159,6 +168,7 @@ def test_gate_detail_carries_the_census_beside_the_cluster() -> None:
     assert len(outcomes) == 1
     assert "examined_issuers=1" in outcomes[0].detail
     assert "min_pair_overlap_bars=65" in outcomes[0].detail
+    assert "skipped_pairs=0" in outcomes[0].detail
 
 
 def _bars(ticker: str, *, days: int, drift: float = 1.0) -> tuple[OHLCVBar, ...]:

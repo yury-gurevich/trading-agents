@@ -11,7 +11,10 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.domain.correlation_census import build_census
+from agents.portfolio_manager.domain.correlation_census import (
+    CorrelationCensus,
+    build_census,
+)
 from agents.portfolio_manager.domain.correlation_math import (
     pair_correlation,
     returns_by_ticker,
@@ -61,9 +64,6 @@ class CorrelationBook:
         if self.max_cluster_pct is None:
             return ()
         issuer = issuer_key(item.ticker, self.issuer_map)
-        unevaluated = self._unevaluated_pair(item.ticker, issuer, issuer_tickers)
-        if unevaluated is not None:
-            return (self._not_evaluated(item.ticker, unevaluated[0], unevaluated[1]),)
         census = build_census(
             candidate_ticker=item.ticker,
             candidate_issuer=issuer,
@@ -73,6 +73,8 @@ class CorrelationBook:
             threshold=self.threshold,
             min_bars=self.min_bars,
         )
+        if census.all_pairs_unusable():
+            return (self._not_evaluated(item.ticker, census),)
         cluster = {issuer, *census.clustered()}
         value = cost + issuer_values.get(issuer, _ZERO)
         value += sum(issuer_values.get(key, _ZERO) for key in cluster if key != issuer)
@@ -95,34 +97,6 @@ class CorrelationBook:
             ),
         )
 
-    def _unevaluated_pair(
-        self,
-        candidate_ticker: str,
-        candidate_issuer: str,
-        issuer_tickers: Mapping[str, tuple[str, ...]],
-    ) -> tuple[str, int] | None:
-        for held_issuer in sorted(issuer_tickers):
-            if held_issuer == candidate_issuer:
-                continue
-            best_overlap = self._best_overlap(
-                candidate_ticker, held_issuer, issuer_tickers
-            )
-            if best_overlap < self.min_bars:
-                return held_issuer, best_overlap
-        return None
-
-    def _best_overlap(
-        self,
-        candidate_ticker: str,
-        held_issuer: str,
-        issuer_tickers: Mapping[str, tuple[str, ...]],
-    ) -> int:
-        overlaps = [
-            self._pair(candidate_ticker, held_ticker)[1]
-            for held_ticker in issuer_tickers.get(held_issuer, ())
-        ]
-        return max(overlaps, default=0)
-
     def _pair(self, left: str, right: str) -> tuple[float | None, int]:
         left_key = left.upper()
         right_key = right.upper()
@@ -134,17 +108,21 @@ class CorrelationBook:
         return self._pair_cache[key]
 
     def _not_evaluated(
-        self, candidate_ticker: str, held_issuer: str, observed: int
+        self, candidate_ticker: str, census: CorrelationCensus
     ) -> GateOutcome:
+        first = census.first_skipped()
+        held_issuer = "none" if first is None else first.issuer
+        observed = 0 if first is None else first.overlap_bars
         return GateOutcome(
             name="correlated_cluster_pct",
-            value=float(observed),
+            value=float(census.max_skipped_overlap()),
             threshold=float(self.min_bars),
             outcome=GateStatus.NOT_EVALUATED,
             detail=(
                 "missing_input=overlapping_return_bars; "
                 f"candidate_ticker={candidate_ticker}; held_issuer={held_issuer}; "
-                f"observed_bars={observed}; min_correlation_bars={self.min_bars}"
+                f"observed_bars={observed}; min_correlation_bars={self.min_bars}; "
+                f"{census.detail()}"
             ),
         )
 

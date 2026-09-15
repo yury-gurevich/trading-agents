@@ -58,7 +58,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-NEV-08 | An order that would push a correlated cluster above max_correlated_cluster_pct is rejected. | boundary | `test_correlation_concentration.py::test_correlated_cluster_rejects_cross_label_order` | 🟩 |
 | PM-NEV-08 | Cluster correlation is computed from bars the run already carries; no provider call is made for it. | boundary | `test_correlation_market_context.py::test_correlation_uses_graph_market_data_without_widening_provider_call` | 🟩 |
 | PM-NEV-09 | A missing sector label yields an explicit not-evaluated outcome, never an empty tuple read as a pass. | negative | `test_issuer_concentration.py::test_missing_sector_label_is_not_evaluated` | 🟩 |
-| PM-NEV-09 | Fewer than min_correlation_bars overlapping bars yields not-evaluated for that pair, never a pass. | negative | `test_correlation_concentration.py::test_short_correlation_history_is_not_evaluated` | 🟩 |
+| PM-NEV-09 | Fewer than min_correlation_bars overlapping bars leaves the whole gate not-evaluated when no usable pair remains, never a pass. | negative | `test_correlation_concentration.py::test_every_pair_unusable_still_reports_not_evaluated` | 🟩 |
 | PM-STA-03 | Position cap enforced across all candidates within one run. | gate | `test_portfolio_manager_agent.py::test_risk_rejects_when_position_limit_binds` | 🟩 |
 
 ## State & effects
@@ -109,6 +109,8 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | PM-OBS-03 | An evaluated cluster gate names the issuers examined, the ones that correlated, and the near misses. | audit | `test_correlation_census.py::test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out` | 🟩 |
 | PM-OBS-03 | A census over zero held issuers renders differently from one that examined and found nothing. | negative | `test_correlation_census.py::test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass` | 🟩 |
 | PM-OBS-03 | The census reaches the gate_report detail the deliberator reads, not just the domain object. | audit | `test_correlation_census.py::test_gate_detail_carries_the_census_beside_the_cluster` | 🟩 |
+| PM-OBS-03 | Pairwise skipped correlation comparisons name the issuer and observed overlap in the same census detail. | audit | `test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap` | 🟩 |
+| PM-OBS-04 | Evaluated PM gates disclose whether the opposite verdict was reachable: structurally fixed stop/target comparisons name the base percentages and applied mode; data-varying gates are not labelled structurally fixed; pairwise correlation skips do not disable usable comparisons and no usable pair remains not-evaluated. | audit | `test_reward_risk.py::test_a_structurally_fixed_gate_discloses_that_it_could_not_differ`; `test_correlation_concentration.py::test_one_unusable_pair_does_not_disable_the_whole_gate`; `test_correlation_concentration.py::test_every_pair_unusable_still_reports_not_evaluated`; `test_gate_reachability.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed`; `test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap` | 🟩 |
 
 ## S204 row declarations
 

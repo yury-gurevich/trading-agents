@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from agents.portfolio_manager.domain.gate_report import stop_target_report
 from agents.portfolio_manager.domain.risk import evaluate_recommendations
 from agents.portfolio_manager.tests.helpers import cash_portfolio, recommendation
+from contracts.analyst import StopTargetEvidence
 from contracts.common import Money
 
 if TYPE_CHECKING:
@@ -45,6 +46,70 @@ def test_rejects_when_reward_risk_below_minimum() -> None:
 
     assert approved == ()
     assert rejected[0].reason == "reward_risk_below_min"
+
+
+def test_a_structurally_fixed_gate_discloses_that_it_could_not_differ() -> None:
+    """PM-OBS-04: a fixed reward/risk verdict says the other answer was unreachable."""
+    item = recommendation("AAPL").model_copy(
+        update={
+            "suggested_stop_pct": 0.08,
+            "suggested_target_pct": 0.16,
+            "stop_target_evidence": StopTargetEvidence(
+                mode="scaled",
+                counterfactual_mode="flat",
+                atr_pct=0.064,
+                volatility_present=True,
+                volatility_fallback=False,
+                applied_stop_pct=0.08,
+                applied_target_pct=0.16,
+                counterfactual_stop_pct=0.05,
+                counterfactual_target_pct=0.10,
+                flat_stop_pct=0.05,
+                flat_target_pct=0.10,
+                scaled_stop_pct=0.08,
+                scaled_target_pct=0.16,
+            ),
+        }
+    )
+
+    report = stop_target_report(item, 0.05, 0.10, 1.5)
+
+    assert report.outcome.outcome == "passed"
+    assert "base_stop_loss_pct=0.0500" in report.outcome.detail
+    assert "base_take_profit_pct=0.1000" in report.outcome.detail
+    assert "applied_mode=scaled" in report.outcome.detail
+    assert "comparison=STRUCTURALLY_DETERMINED" in report.outcome.detail
+
+
+def test_a_zero_stop_ratio_is_not_labelled_structurally_fixed() -> None:
+    """PM-OBS-04: undefined ratios do not claim structural reachability."""
+    item = recommendation("AAPL").model_copy(
+        update={
+            "suggested_stop_pct": 0.0,
+            "suggested_target_pct": 0.10,
+            "stop_target_evidence": StopTargetEvidence(
+                mode="scaled",
+                counterfactual_mode="flat",
+                atr_pct=0.0,
+                volatility_present=True,
+                volatility_fallback=False,
+                applied_stop_pct=0.0,
+                applied_target_pct=0.10,
+                counterfactual_stop_pct=0.0,
+                counterfactual_target_pct=0.10,
+                flat_stop_pct=0.0,
+                flat_target_pct=0.10,
+                scaled_stop_pct=0.0,
+                scaled_target_pct=0.10,
+            ),
+        }
+    )
+
+    report = stop_target_report(item, 0.0, 0.10, 1.5)
+
+    assert report.outcome.outcome == "failed"
+    assert "base_stop_loss_pct=0.0000" in report.outcome.detail
+    assert "comparison=INFORMATIVE" in report.outcome.detail
 
 
 def test_rejects_zero_stop_loss_as_undefined() -> None:

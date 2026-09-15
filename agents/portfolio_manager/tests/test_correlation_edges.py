@@ -62,6 +62,30 @@ def test_candidate_already_held_counts_same_issuer_without_pairing() -> None:
     assert "cluster_issuers=AAPL" in outcome.detail
 
 
+def test_repeated_pair_uses_cached_correlation() -> None:
+    """PM-NEV-08: repeated pair evaluation preserves the measured cluster."""
+    book = CorrelationBook(_bars(("AAPL", "MSFT"), days=66), {}, 120, 0.70, 0.25, 60)
+
+    first = book.outcomes(
+        buy("AAPL"),
+        Decimal("500.00"),
+        Decimal("10000.00"),
+        issuer_values={"MSFT": Decimal("1000.00")},
+        issuer_tickers={"MSFT": ("MSFT",)},
+    )[0]
+    second = book.outcomes(
+        buy("AAPL"),
+        Decimal("500.00"),
+        Decimal("10000.00"),
+        issuer_values={"MSFT": Decimal("1000.00")},
+        issuer_tickers={"MSFT": ("MSFT",)},
+    )[0]
+
+    assert first.outcome == "passed"
+    assert second.detail == first.detail
+    assert "cluster_issuers=AAPL,MSFT" in second.detail
+
+
 def test_degenerate_pair_does_not_expand_cluster() -> None:
     """PM-NEV-08: undefined correlation is evaluated but not treated as correlated."""
     portfolio = cash_portfolio(

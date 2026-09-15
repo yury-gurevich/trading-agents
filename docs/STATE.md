@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 19:29 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED (`8c6f74a`) and DEPLOYED `s206` — 16/16 apps + dispatcher, packs unmoved, env and KEDA byte-identical. The referee stops being shown a `FAILED` for a check no agent performs; tonight's `sched-2026-09-15` at 22:30 UTC is the first live run that reads the corrected context.**
+**Last updated:** 2026-09-15 22:16 AEST · **Version:** 0.98.05 target · **S208 BUILT locally on `sprint-208-a-risk-gate-says-what-it-can-reject`: PM risk gates disclose verdict reachability; correlation skips only unusable pairs and all-unusable evidence remains `NOT_EVALUATED`. Branch gate/merge/deploy are not yet claimed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -55,6 +55,19 @@ change; [DRIFT-061](laws/drift-register.md) — five execution output clauses na
 does not carry.
 
 ## Now
+
+🟩 **BUILT LOCALLY — [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) (`0.98.05`
+target), 2026-09-15.** `reward_risk` now renders `base_take_profit_pct`, `base_stop_loss_pct`,
+`applied_mode`, `structural_basis` and `comparison=STRUCTURALLY_DETERMINED` when the ratio is fixed
+by the base stop/target pair; full gate reports prove data-varying gates are not labelled structural.
+`correlated_cluster_pct` now skips only unusable pairs, attributes them as `skipped_pair_issuers`,
+and still reports whole-gate `NOT_EVALUATED` when no usable pair remains. `PM-OBS-04` is added and
+green; PM law rollup moved **29 / 48 → 30 / 49**; `DRIFT-063` records the corrected drift. 🟩 **Proof
+so far:** T1/T2 reproduced red on `main`; T0 live denominator still **273 / 35**; T6 replay over the
+7 census-bearing records found **0** cluster mismatches; local redirected `make ci` exit 0 with
+**2763 passed, 6 skipped, 100.00 %**, pip-audit and secrets checks clean; `git diff --stat contracts/`
+empty; `correlation.py` is **115** lines. 🟠 **Still owed before merge:** branch push and exact-HEAD
+`make gate-ran`; no merge, post-merge CodeQL or deploy is claimed yet.
 
 🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
 BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders

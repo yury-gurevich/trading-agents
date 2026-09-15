@@ -124,7 +124,8 @@ class PortfolioManagerSettings(AgentSettings):
         60,
         why=(
             "Minimum overlapping close-to-close returns for a usable pairwise "
-            "correlation; below this the gate is not evaluated, never passed."
+            "correlation; below this the pair is skipped, and a gate with no "
+            "usable pairs is not evaluated, never passed."
         ),
         ge=20,
         le=250,

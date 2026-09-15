@@ -510,7 +510,8 @@ from **29 / 48** to **30 / 49** in both law rollups.
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; branch `make gate-ran` still pending the pushed commit SHA.
+**Status:** BUILT — local CI and branch gate proved for implementation commit
+`95e17d776b6f661852473f8736c8d731f39db3e5`.
 
 **Tree the proofs ran in (and `.env` present?):** Local tests and `make ci` ran in
 `C:\Users\yury_\Downloads\project\trading-agents-sprint-208-a-risk-gate-says-what-it-can-reject`
@@ -621,11 +622,20 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 2 new file(s)
 ```
 
-**`make gate-ran`:** not done yet; requires commit + branch push. This line must be replaced with
-the exact branch proof before final handback.
+**`make gate-ran`:** run from
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-208-a-risk-gate-says-what-it-can-reject`
+at `95e17d776b6f661852473f8736c8d731f39db3e5`:
 
-**Not met / verified failing:** Branch `make gate-ran` is not done yet; no merge, post-merge CodeQL,
-or deploy was attempted.
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 95e17d776b6f661852473f8736c8d731f39db3e5:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+head=95e17d776b6f661852473f8736c8d731f39db3e5
+exit=0
+```
+
+**Not met / verified failing:** No merge, post-merge CodeQL or deploy was attempted.
 
 ---
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 22:16 AEST · **Version:** 0.98.05 target · **S208 BUILT locally on `sprint-208-a-risk-gate-says-what-it-can-reject`: PM risk gates disclose verdict reachability; correlation skips only unusable pairs and all-unusable evidence remains `NOT_EVALUATED`. Branch gate/merge/deploy are not yet claimed.**
+**Last updated:** 2026-09-15 22:23 AEST · **Version:** 0.98.05 target · **S208 BUILT on `sprint-208-a-risk-gate-says-what-it-can-reject`: PM risk gates disclose verdict reachability; correlation skips only unusable pairs and all-unusable evidence remains `NOT_EVALUATED`. Branch gate is proven; merge/deploy are not yet claimed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -66,8 +66,9 @@ green; PM law rollup moved **29 / 48 → 30 / 49**; `DRIFT-063` records the corr
 so far:** T1/T2 reproduced red on `main`; T0 live denominator still **273 / 35**; T6 replay over the
 7 census-bearing records found **0** cluster mismatches; local redirected `make ci` exit 0 with
 **2763 passed, 6 skipped, 100.00 %**, pip-audit and secrets checks clean; `git diff --stat contracts/`
-empty; `correlation.py` is **115** lines. 🟠 **Still owed before merge:** branch push and exact-HEAD
-`make gate-ran`; no merge, post-merge CodeQL or deploy is claimed yet.
+empty; `correlation.py` is **115** lines. 🟩 **Branch proof:** `make gate-ran` from the S208 worktree
+printed `GATE PROVEN` for `95e17d776b6f661852473f8736c8d731f39db3e5`, with CI and Security Findings
+both `success`. 🟠 **Still owed before ship:** no merge, post-merge CodeQL or deploy is claimed yet.
 
 🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
 BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders

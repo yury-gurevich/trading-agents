@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 18:50 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED to `main` (`8c6f74a`): the deliberation context no longer renders a `PASSED`/`FAILED` for a check no agent performs, and every verdict it still renders names its enforcer. Not yet deployed — the fleet runs the old renderer until an image-only retag.**
+**Last updated:** 2026-09-15 19:05 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED (`8c6f74a`) and DEPLOYED `s206` — 16/16 apps + dispatcher, packs unmoved, env and KEDA byte-identical. The referee stops being shown a `FAILED` for a check no agent performs; tonight's `sched-2026-09-15` at 22:30 UTC is the first live run that reads the corrected context.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -72,9 +72,26 @@ implementation commit the handback pasted (`2807b44`) — the S186 hazard, check
 reproduced red** at the branch base `823e5cf` in a throwaway worktree, failing on exactly the two lines
 the handback claimed. `git diff --stat contracts/` empty, `context_pm.py` **129** lines, PATCH bump correct
 (no agent gained a capability). 🟩 **MERGED `8c6f74a`** — the only difference between the gate-proven tip
-and the merge commit is S207's three docs files, no code. 🟠 **Still owed:** the image-only retag, and the
-next scheduled run as T6's live counterpart. **Until that retag the fleet still renders the invented
-verdict**, so tonight's run is not yet the corrected one.
+and the merge commit is S207's three docs files, no code.
+🟩 **DEPLOYED `s206`, 2026-09-15 19:02 AEST, by image-only retag — and the path was proven, not assumed.**
+All **three** injected packs were diffed against the deployed `s203` commit `34eec3f` before choosing the
+path (S202's near-miss, checked): `trading_graph_vocabulary` `58769995…`, `trading_credential_tests`
+`f8f03950…`, `trading_issuer_map` `2ed1f41c…` — **byte-identical on both sides**, so a retag ships the whole
+payload. 🎯 **The blast radius was read rather than assumed too:** the entire executable diff since `s203`
+is S206's three deliberator modules; every other changed file under `agents/` is a `laws.md`/`test-plan.md`.
+🟩 **Verified:** 15/15 image jobs green at `ea6a3b4`, **16/16 apps on `:s206`** plus `dispatcher-cron`,
+**16/16 `Succeeded`**, cron `30 22 * * 1-5` intact, and scale/KEDA **and per-app env-var counts diffed
+byte-identical to the pre-deploy baseline**. `DeployRecord deploy:2026-09-15T09:02:01…:s206:ea6a3b4…`.
+🚨 **Caught mid-deploy and worth recording:** `deliberator-proponent` briefly showed **two** active
+revisions (`0000107` on `:s203`, `0000108` on `:s206`); re-read after the transition it is Single-mode with
+`0000108` sole active and ready. A one-shot read there would have reported a partial deploy.
+🟩 **Spine, bus and cadence checked, not inferred:** `spine ok`; 8 Service Bus routes present, none
+created; dispatcher `Succeeded` on every trading day back to 09-07.
+🎯 **Pre-flight on the thing that actually decides whether tomorrow's test means anything:** the
+**required** Anthropic activation probe — the exact `POST /v1/messages` body the pack injects — returned
+**200** against the live key at 09:0X UTC. The nine blind nights were `400 credit balance is too low`, and
+under S202 that now *halts* the deliberator rather than passing it, so a drained key would have produced
+another unreviewed night. It is funded. 🟠 **Still owed:** the run itself.
 
 🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
 (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and

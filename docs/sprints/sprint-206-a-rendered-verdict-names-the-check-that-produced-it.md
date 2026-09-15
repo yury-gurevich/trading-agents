@@ -721,8 +721,14 @@ GATE PROVEN for 8c6f74afb76d4d323f262521c7907d0e92d31c80:
   Security Findings: success (attempt 1)
 ```
 
-🟠 **Not deployed.** Deploy shape is the image-only retag the spec names; until it runs the fleet still
-renders the invented verdict, so no live run has yet read the corrected context.
+🟩 **DEPLOYED `s206`, 2026-09-15 — image-only retag, the shape the spec predicted, confirmed by
+measurement rather than by the prediction.** All three injected packs byte-identical to the deployed `s203`
+commit `34eec3f`; 15/15 image jobs green at `ea6a3b4`; **16/16 apps on `:s206`** plus `dispatcher-cron`, all
+`Succeeded`; cron `30 22 * * 1-5` intact; scale/KEDA and per-app env-var counts diffed **byte-identical** to the
+pre-deploy baseline. `DeployRecord deploy:2026-09-15T09:02:01…:s206:ea6a3b4…`. 🚨 `deliberator-proponent`
+briefly carried two active revisions during the transition — re-read, it is Single-mode on `0000108` alone.
+🟠 **T6's live counterpart is still owed:** `sched-2026-09-15` at 22:30 UTC is the first run to read the
+corrected context.
 
 **Not met / verified failing:**
 

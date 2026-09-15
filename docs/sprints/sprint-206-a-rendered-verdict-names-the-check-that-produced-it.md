@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.98.04`
 **Effort:** M
 **Decisions:** [DL-167](../design-log.md) the open thread · `DRIFT-062` the row this opens · work-queue item **59**
 
@@ -484,11 +484,13 @@ None found. The existing deliberator law is silent on this exact rendered-verdic
 
 **Clauses that were ⬜ and are now proven:** *(IDs, and the rollup the gate computed)*
 
-Pending closeout. `DLIB-NEV-08` will be green only if T1-T4 pass with docstrings citing it and the law coverage gate computes the updated rollup.
+`DLIB-NEV-08` was added and proven green. The gate-derived deliberator rollup is
+`20 / 55` -> `21 / 56` in both `docs/laws/ledger.md` and `docs/laws/INDEX.md`.
 
 **Clauses that were 🟩 and are now ⬜:** *(IDs, and why the old test does not prove the new clause)*
 
-None expected. The old `DLIB-NEV-06` coverage remains about failed debate/peer-call evidence; the mis-cited test will be rewritten rather than used to demote that clause.
+None. The old `DLIB-NEV-06` coverage remains about failed debate/peer-call evidence; the
+mis-cited test was rewritten under `DLIB-NEV-08` rather than used to demote that clause.
 
 ---
 
@@ -496,68 +498,187 @@ None expected. The old `DLIB-NEV-06` coverage remains about failed debate/peer-c
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| T1 | | | PASS/FAIL | |
-| T2 | | | PASS/FAIL | |
-| T3 | | | PASS/FAIL | |
-| T4 | | | PASS/FAIL | |
-| T5 | | | PASS/FAIL | |
-| T6 | | | measured / not run | |
+| T1 | `test_no_rendered_verdict_lacks_an_enforcing_check` | `tests/test_veto_context_verdict_attribution.py` | PASS; watched fail first on the old renderer | `DLIB-NEV-08` |
+| T2 | `test_scaled_mode_renders_no_failed_for_a_preserved_ratio` | `tests/test_veto_context_verdict_attribution.py` | PASS | `DLIB-NEV-08` |
+| T3 | `test_stop_basis_degrades_without_evidence` | `tests/test_veto_context_verdict_attribution.py` | PASS | `DLIB-NEV-08` |
+| T4 | `test_confidence_floor_names_its_enforcer` | `tests/test_veto_context_verdict_attribution.py` | PASS | `DLIB-NEV-08` |
+| T5 | `sched-2026-09-14` prompt rebuild | `scripts/deliberation_reproducibility.py` | PASS; rebuilt prompt has no `stop_vs_regime_volatility gate:` | -- |
+| T6 | WFC-only replay measurement | in-memory replay using the deliberation modules | measured; WFC changed `revise` -> `uphold` | -- |
 
 **Tests added beyond the plan:**
+
+`tests/test_veto_context_verdict_attribution.py::test_stop_basis_renders_zero_stop_ratio_as_unavailable`
+covers the zero-stop reward-risk fallback so `context_stop.py` remains at 100.00 % coverage.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT | MERGED)*
+**Status:** BUILT — local CI, remote branch CI, Security Findings and branch `make gate-ran` were
+proven for the implementation commit. Main merge, post-merge CodeQL, fleet retag and the next
+scheduled live counterpart are not done.
 
 **Tree the proofs ran in (and `.env` present?):**
 
+`C:/Users/yury_/Downloads/project/wt-s206`, branch
+`sprint-206-a-rendered-verdict-names-the-check-that-produced-it`; `.env` present in that worktree:
+`False`. T5/T6 used the main checkout's `.env` at call time for graph/API access, without copying
+credentials into the worktree and without persisting full prompts or completions.
+
 **Result:** *(what is now true, in the artefact's own words — not the intent restated)*
+
+The debate context no longer renders `stop_vs_regime_volatility gate:` or any `PASSED`/`FAILED`
+verdict for stop/regime comparisons. Stop/regime data now renders as
+`stop_target_regime basis:` with `mode`, applied/flat/scaled stop-target values and reward-risk
+ratios. The confidence-floor verdict remains, but now names `enforced_by=analyst`; PM gate outcomes
+are unchanged.
 
 **Files changed:**
 
+`agents/deliberator/context.py`; `agents/deliberator/context_pm.py`;
+`agents/deliberator/context_stop.py`; `agents/deliberator/laws/laws.md`;
+`agents/deliberator/laws/test-plan.md`; `docs/STATE.md`; `docs/laws/INDEX.md`;
+`docs/laws/drift-register.md`; `docs/laws/ledger.md`;
+`docs/sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md`;
+`orchestration/tests/test_veto_stage.py`; `pyproject.toml`; `tests/test_veto_context.py`;
+`tests/test_veto_context_value_labels.py`; `tests/test_veto_context_verdict_attribution.py`;
+`uv.lock`.
+
 **Design decisions:** recorded as `DL-NNN`
+
+No new `DL-*` entry was opened. The implementation follows [DL-167](../design-log.md) and files
+[DRIFT-062](../laws/drift-register.md) for the missing rendered-verdict law after S175.
 
 **Proof — the RED run first (T1 failing on `main`, naming the invented gate):**
 
 ```text
+uv run pytest tests/test_veto_context.py::test_no_rendered_verdict_lacks_an_enforcing_check --no-cov -vv
+FAILED tests/test_veto_context.py::test_no_rendered_verdict_lacks_an_enforcing_check
+E   AssertionError: assert [
+E     'missing enforcing agent analyst: confidence_floor: confidence_floor gate: confidence_score=0.620 vs base_min_confidence_score=0.570 -> PASSED',
+E     'no enforcing check declared: stop_vs_regime_volatility: stop_vs_regime_volatility gate: stop_pct=3.00% vs base_stop_loss_pct=3.00% -> PASSED; target_pct=8.00% vs base_take_profit_pct=8.00% -> PASSED',
+E   ] == []
 ```
 
 **Proof — the green run:**
 
 ```text
+uv run pytest tests/test_veto_context.py tests/test_veto_context_verdict_attribution.py tests/test_veto_context_value_labels.py orchestration/tests/test_veto_stage.py --no-cov
+collected 20 items
+tests\test_veto_context.py ......                                        [ 30%]
+tests\test_veto_context_verdict_attribution.py .....                     [ 55%]
+tests\test_veto_context_value_labels.py .                                [ 60%]
+orchestration\tests\test_veto_stage.py ........                          [100%]
+============================= 20 passed in 1.61s ==============================
+
+uv run ruff check agents/deliberator/context_pm.py agents/deliberator/context_stop.py agents/deliberator/context.py tests/test_veto_context.py tests/test_veto_context_verdict_attribution.py tests/test_veto_context_value_labels.py orchestration/tests/test_veto_stage.py
+All checks passed!
+
+uv run mypy agents/deliberator/context_pm.py agents/deliberator/context_stop.py agents/deliberator/context.py tests/test_veto_context_verdict_attribution.py --no-incremental
+Success: no issues found in 4 source files
+
+uv run python scripts/check_law_coverage.py
+<exit 0>
 ```
 
 **Proof — T5, the rebuilt `sched-2026-09-14` prompt, before and after:**
 
 ```text
+[WFC before]
+confidence_floor gate: confidence_score=0.675 vs base_min_confidence_score=0.600 -> PASSED
+stop_vs_regime_volatility gate: stop_pct=4.14% vs base_stop_loss_pct=5.00% -> PASSED; target_pct=8.29% vs base_take_profit_pct=10.00% -> FAILED
+
+[WFC after]
+confidence_floor gate: enforced_by=analyst; confidence_score=0.675 vs base_min_confidence_score=0.600 -> PASSED
+stop_target_regime basis: mode=scaled; applied_stop_pct=4.14%; applied_target_pct=8.29%; flat_stop_pct=5.00%; flat_target_pct=10.00%; scaled_stop_pct=4.14%; scaled_target_pct=8.29%; counterfactual_mode=flat; applied_reward_risk_ratio=2.00; flat_reward_risk_ratio=2.00; scaled_reward_risk_ratio=2.00
+
+[MDLZ before]
+confidence_floor gate: confidence_score=0.650 vs base_min_confidence_score=0.600 -> PASSED
+stop_vs_regime_volatility gate: stop_pct=3.83% vs base_stop_loss_pct=5.00% -> PASSED; target_pct=7.66% vs base_take_profit_pct=10.00% -> FAILED
+
+[MDLZ after]
+confidence_floor gate: enforced_by=analyst; confidence_score=0.650 vs base_min_confidence_score=0.600 -> PASSED
+stop_target_regime basis: mode=scaled; applied_stop_pct=3.83%; applied_target_pct=7.66%; flat_stop_pct=5.00%; flat_target_pct=10.00%; scaled_stop_pct=3.83%; scaled_target_pct=7.66%; counterfactual_mode=flat; applied_reward_risk_ratio=2.00; flat_reward_risk_ratio=2.00; scaled_reward_risk_ratio=2.00
+
+scripts/deliberation_reproducibility.py:
+before matched 2 / 2 prompt turns, reproducible_pct 100.00
+after mismatched 2 / 2 prompt turns, reproducible_pct 0.00
 ```
 
 **T6 — replay result, and whether the verdicts changed:** *(either answer is a pass; state it plainly)*
 
 ```text
+corpus=pm_runs=1; unreadable_runs=0; subjects=2; selected=1 WFC
+planning ('defender', 1): 1 request(s)
+planning ('challenger', 1): 1 request(s)
+planning ('defender', 2): 1 request(s)
+planning ('challenger', 2): 1 request(s)
+planning ('judge', 0): 1 request(s)
+requests=5; completed=1; failed=0
+WFC original=revise; replay=uphold; changed=True; failure=None
+tokens_in=28675; tokens_out=6764; cache_read=2556; cache_write=5025
 ```
 
 **`git diff --stat contracts/`:** *(must be empty)*
 
+Empty output.
+
 **Rollups, as computed by the gate:** *(before → after, in `ledger.md` and `docs/laws/INDEX.md`)*
+
+Deliberator: `20 / 55` -> `21 / 56` in both `docs/laws/ledger.md` and `docs/laws/INDEX.md`;
+`uv run python scripts/check_law_coverage.py` exits 0.
 
 **Module line counts:** *(`context_pm.py` must be below 150)*
 
-**`make ci`:** redirected to *(path)*. Exit code *(n)*. *(N passed, M skipped)*, coverage *(100.00 %)*.
+```text
+129 agents\deliberator\context_pm.py
+83 agents\deliberator\context_stop.py
+133 agents\deliberator\context.py
+158 tests\test_veto_context.py
+165 tests\test_veto_context_verdict_attribution.py
+64 tests\test_veto_context_value_labels.py
+191 orchestration\tests\test_veto_stage.py
+```
+
+**`make ci`:** redirected to `C:\Users\yury_\Downloads\project\s206-make-ci.txt`. Exit code `0`.
+`2758 passed, 6 skipped`, coverage `100.00 %`.
+
+```text
+TOTAL                                                     16475      0   3504      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2758 passed, 6 skipped in 83.57s (0:01:23) ==================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 1 new file(s)
+```
 
 **`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
 
 ```text
+HEAD=2807b446ca7789b0117c9548a88eb53f61e00aaa
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 2807b446ca7789b0117c9548a88eb53f61e00aaa:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
 **Not met / verified failing:**
+
+Main merge, post-merge CodeQL, image-only retag, and the next scheduled live counterpart are not
+done in this BUILT handback. No `contracts/` edit was made. No live fleet state was changed.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(What you disagreed with in the spec after reading the laws.)*
-- *(What the next sprint should know that is not obvious from the diff.)*
+- Scope held. The only functional behavior changed is the rendered deliberation context: no PM order
+  creation/sizing path moved, no `contracts/` file changed, and no new PM gate was added.
+- I disagreed with none of the sprint after reading the laws. The useful finding was law silence:
+  the existing green clauses did not forbid an invented rendered verdict, so `DLIB-NEV-08` now does.
+- The WFC replay changed from `revise` to `uphold`, but that is measurement, not the success
+  condition. The safer next question is to re-measure work-queue item 59 and then revisit item 6b
+  after the branch is merged/deployed and a scheduled run has produced the live counterpart.

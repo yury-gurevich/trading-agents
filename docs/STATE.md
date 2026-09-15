@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 12:51 AEST · **Version:** 0.98.03 · **🟠 INTENT — S206 active on `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`: a rendered deliberation verdict must name the check and enforcing agent that produced it, with the invented stop/regime verdict removed.**
+**Last updated:** 2026-09-15 16:56 AEST · **Version:** 0.98.04 · **🟩 S206 BUILT on `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`: deliberation contexts no longer render the invented stop/regime verdict, and rendered verdicts now name the check/enforcer that produced them.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -56,11 +56,18 @@ does not carry.
 
 ## Now
 
-🟠 **INTENT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md) active,
-2026-09-15.** Success factors: T1 first fails on `main` naming `stop_vs_regime_volatility` and then passes;
-T2-T4 prove `DLIB-NEV-08`; no `contracts/` diff; `make ci` is redirected to a file and exits 0 with 100.00 %
-coverage; law rollups are gate-derived in `ledger.md` and `docs/laws/INDEX.md`; T5 rebuilds the
-`sched-2026-09-14` prompt with the invented line absent; branch `make gate-ran` proves the exact HEAD.
+🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
+BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders
+`stop_vs_regime_volatility gate:` or any `PASSED`/`FAILED` outcome for the unenforced stop/regime
+comparison; the line is now a descriptive `stop_target_regime basis:` carrying mode, applied/flat/scaled
+stop-target values and reward-risk ratios. The real confidence-floor verdict now names
+`enforced_by=analyst`, PM gate outcomes are unchanged, and `contracts/` stayed untouched. 🟩 **Proven:**
+T1 failed first on the old renderer naming `stop_vs_regime_volatility`; focused tests later reported
+20 passed; local `make ci` exit 0 with **2758 passed, 6 skipped, 100.00 %**; branch `make gate-ran`
+printed `GATE PROVEN` for `2807b446ca7789b0117c9548a88eb53f61e00aaa`. `DLIB-NEV-08` is green and the
+deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups. 🟠 **Not merged/deployed yet:**
+post-merge CodeQL, image-only retag, and the next scheduled live counterpart are still owed after a
+merge decision.
 
 🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
 (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and

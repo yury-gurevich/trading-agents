@@ -464,18 +464,31 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `agents/deliberator/context_pm.py` | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `DLIB-IDN-01`, `DLIB-OUT-04`, `DLIB-NEV-01`, `DLIB-NEV-02`, `DLIB-NEV-06`, `DLIB-NEV-07`; new `DLIB-NEV-08` owed | Yes. Existing green clauses guard failed debate evidence, not invented rendered gate verdicts, so the confidence verdict must name its real analyst enforcer and the stop/regime verdict must stop being a verdict. |
+| `agents/deliberator/context_stop.py` | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `DLIB-IDN-01`, `DLIB-OUT-04`, `DLIB-NEV-01`, `DLIB-NEV-02`; new `DLIB-NEV-08` owed | Yes. The stop-target evidence renderer is the cohesive home for descriptive stop/target basis text because it already promises not to invent a gate. |
+| `agents/deliberator/context.py` | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `DLIB-IDN-01`, `DLIB-OUT-04`, `DLIB-NEV-01`, `DLIB-NEV-02`; new `DLIB-NEV-08` owed | No contradiction. Signature cleanup is allowed only because it removes dead context plumbing and does not alter approved orders. |
+| `agents/deliberator/laws/laws.md` and `agents/deliberator/laws/test-plan.md` | Same deliberator law book/test plan plus `docs/laws/conventions.md` §§2-4, 7, 7a, 9 | `DLIB-NEV-08`; conventions append-only IDs, gray-to-green, lock/amendment, clause-summary fidelity, drift-register rules | Yes. This is a deliberate law cycle: append `DLIB-NEV-08`, bump v1.6 to v1.7, add the test-plan row, and cite the clause in T1-T4 docstrings. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(the spec says
 No to `contracts/` and Yes to one new clause — confirm after reading, and say if you disagree)*
 
+Confirmed. This sprint must not change `contracts/`; `StopTargetEvidence` already supplies the values needed for the renderer. It does add one deliberator guarantee: rendered `PASSED`/`FAILED` outcomes must correspond to checks some agent enforces and must name the enforcing agent/check.
+
 **Contradictions found between a law and this spec:**
+
+None found. The existing deliberator law is silent on this exact rendered-verdict truthfulness rule, but no clause contradicts the sprint.
 
 **Laws found silent where a decision was needed:**
 
+`DLIB-NEV-*` currently forbids order origination/resizing, broker/feed access, cross-agent imports, hidden failed peer calls, and empty transcript evidence, but no clause forbids rendering a `PASSED`/`FAILED` outcome for a comparison no agent performs. This silence is the finding recorded as `DRIFT-062` in this sprint.
+
 **Clauses that were ⬜ and are now proven:** *(IDs, and the rollup the gate computed)*
 
+Pending closeout. `DLIB-NEV-08` will be green only if T1-T4 pass with docstrings citing it and the law coverage gate computes the updated rollup.
+
 **Clauses that were 🟩 and are now ⬜:** *(IDs, and why the old test does not prove the new clause)*
+
+None expected. The old `DLIB-NEV-06` coverage remains about failed debate/peer-call evidence; the mis-cited test will be rewritten rather than used to demote that clause.
 
 ---
 

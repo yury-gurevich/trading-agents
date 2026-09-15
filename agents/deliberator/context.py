@@ -72,7 +72,7 @@ def build_veto_context(
     market = MarketData.model_validate(market_node.props["snapshot"])
     lines.extend(market_lines(market, intent.ticker))
     regime = regime_context(graph, market_node)
-    lines.extend(regime_gate_lines(regime, rec, intent, market.bars))
+    lines.extend(regime_gate_lines(regime, rec, intent))
     return "\n".join(lines)
 
 

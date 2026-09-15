@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 14:10 AEST · **Version:** 0.98.03 · **🟩 S205 merged and independently gate-proven on `af75079`: the twelve contract-type clauses now name the fields they require, and item 30 — the queue's second-biggest carried row — is closed.**
+**Last updated:** 2026-09-15 12:51 AEST · **Version:** 0.98.03 · **🟠 INTENT — S206 active on `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`: a rendered deliberation verdict must name the check and enforcing agent that produced it, with the invented stop/regime verdict removed.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -56,13 +56,11 @@ does not carry.
 
 ## Now
 
-🟩 **PROVEN RESULT — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) MERGED
-`24d61f0` (`0.98.01`), 2026-09-14 — work-queue item 10 closed, the longest-carried row in the queue.**
-Every target law clause has a test-plan proof row, the 🧱/📜 row kinds are documented and checked, and
-assertion E in `check_law_coverage.py` is **promoted warn-only → enforcing**: watched pass on a planted
-`RPT-PERF-99`, then fail after promotion on the same plant. 🟩 **Verified on the merged SHA:**
-`make gate-ran` printed `GATE PROVEN` for `24d61f0` on `main` — CI, CodeQL, Security Findings, image
-build and dependency runs all green. No deploy: law, test-plan, docs and checker surfaces only.
+🟠 **INTENT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md) active,
+2026-09-15.** Success factors: T1 first fails on `main` naming `stop_vs_regime_volatility` and then passes;
+T2-T4 prove `DLIB-NEV-08`; no `contracts/` diff; `make ci` is redirected to a file and exits 0 with 100.00 %
+coverage; law rollups are gate-derived in `ledger.md` and `docs/laws/INDEX.md`; T5 rebuilds the
+`sched-2026-09-14` prompt with the invented line absent; branch `make gate-ran` proves the exact HEAD.
 
 🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
 (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and

@@ -14,14 +14,11 @@ from tests.veto_context_fixtures import (
     order_set,
     recs,
 )
-from tests.veto_context_provider_fixtures import market_data, regime
+from tests.veto_context_provider_fixtures import market_data
 
-from contracts.analyst import RecommendationSet
 from contracts.portfolio_manager import GateOutcome, GateStatus
-from contracts.provider import MarketData, RegimeContext
 from kernel import InMemoryGraphStore
 from orchestration.veto_context import build_veto_context
-from orchestration.veto_context_pm import regime_gate_lines
 
 
 def test_context_completeness_renders_every_enforced_gate_with_outcome() -> None:
@@ -37,7 +34,6 @@ def test_context_completeness_renders_every_enforced_gate_with_outcome() -> None
         "name=max_sector_pct",
         "name=max_names_per_sector",
         "confidence_floor gate",
-        "stop_vs_regime_volatility gate",
     )
     for gate in required:
         line = next(line for line in context.splitlines() if gate in line)
@@ -63,8 +59,7 @@ def test_context_renders_failed_gate_outcomes_plainly() -> None:
         "name=max_sector_pct value_sector_exposure_ratio=0.41 "
         "threshold_sector_exposure_ratio=0.3 -> FAILED"
     ) in context
-    assert "base_stop_loss_pct=3.00% -> FAILED" in context
-    assert "base_take_profit_pct=8.00% -> FAILED" in context
+    assert "stop_vs_regime_volatility gate:" not in context
 
 
 def test_context_renders_not_evaluated_gate_outcomes_plainly() -> None:
@@ -88,20 +83,6 @@ def test_context_renders_not_evaluated_gate_outcomes_plainly() -> None:
         "threshold_cluster_exposure_ratio=0.25 -> NOT-EVALUATED"
     ) in context
     assert "missing_input=overlapping_return_bars" in context
-
-
-def test_regime_context_does_not_invent_an_atr_gate_outcome() -> None:
-    """DLIB-NEV-06 / DL-104: PM context may not fabricate a gate verdict."""
-    item = intent()
-    rec = RecommendationSet.model_validate(recs()).recommendations[0]
-    market = MarketData.model_validate(market_data(full=False))
-    regime_context = RegimeContext.model_validate(regime())
-
-    stop_line = regime_gate_lines(regime_context, rec, item, market.bars)[2]
-
-    assert "stop_vs_regime_volatility gate:" in stop_line
-    assert "ATR%" not in stop_line
-    assert "stop_pct=3.00% vs base_stop_loss_pct=3.00%" in stop_line
 
 
 def test_context_renders_stop_target_basis_from_analyst_evidence() -> None:
@@ -139,7 +120,7 @@ def test_sparse_context_omits_missing_optional_evidence() -> None:
     assert "Fundamentals for AAPL" not in context
     assert "Regime: unavailable" in context
     assert "confidence_floor gate unavailable" in context
-    assert "stop_vs_regime_volatility gate unavailable" in context
+    assert "stop_target_regime basis: unavailable" in context
 
 
 def test_context_reports_missing_lineage() -> None:

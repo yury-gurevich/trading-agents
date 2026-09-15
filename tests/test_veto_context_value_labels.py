@@ -57,8 +57,8 @@ def test_full_context_names_available_value_units_and_boundaries() -> None:
     assert "Regime: label=neutral; vix_index=14.2" in context
     assert "Portfolio/batch context: unavailable" in context
     assert (
-        "confidence_floor gate: confidence_score=0.620 vs "
+        "confidence_floor gate: enforced_by=analyst; confidence_score=0.620 vs "
         "base_min_confidence_score=0.570 -> PASSED"
     ) in context
-    assert "stop_vs_regime_volatility gate:" in context
+    assert "stop_target_regime basis:" in context
     assert "stop_pct=3.00% vs ATR%=" not in context

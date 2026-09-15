@@ -1,7 +1,7 @@
-"""PM and regime gate renderers for deliberation evidence.
+"""PM and regime evidence renderers for deliberation evidence.
 
 Agent: deliberator
-Role: render explicit pass/fail gate outcomes for the debate context.
+Role: render PM gate outcomes and regime context for the debate context.
 External I/O: none.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.deliberator.context_stop import stop_target_basis
+from agents.deliberator.context_stop import stop_regime_basis, stop_target_basis
 from agents.deliberator.context_values import (
     explain,
     gate_value_labels,
@@ -21,7 +21,7 @@ from agents.deliberator.context_values import (
 if TYPE_CHECKING:
     from contracts.analyst import Recommendation
     from contracts.portfolio_manager import GateOutcome, GateStatus, OrderIntent
-    from contracts.provider import OHLCVBar, RegimeContext
+    from contracts.provider import RegimeContext
 
 
 def order_lines(intent: OrderIntent) -> list[str]:
@@ -49,14 +49,13 @@ def regime_gate_lines(
     regime: RegimeContext | None,
     rec: Recommendation | None,
     intent: OrderIntent,
-    bars: tuple[OHLCVBar, ...],
 ) -> list[str]:
-    """Render regime values plus explicit analyst and stop/volatility outcomes."""
+    """Render regime values plus explicit analyst outcomes and stop basis."""
     if regime is None:
         return [
             "Regime: unavailable (no RegimeContext linked to MarketData).",
             _confidence_floor_line(None, rec),
-            _stop_regime_line(None, intent, bars),
+            stop_regime_basis(None, rec, intent),
         ]
     return [
         (
@@ -68,7 +67,7 @@ def regime_gate_lines(
             f"base_max_holding_days={regime.base_max_holding_days}"
         ),
         _confidence_floor_line(regime, rec),
-        _stop_regime_line(regime, intent, bars),
+        stop_regime_basis(regime, rec, intent),
     ]
 
 
@@ -113,32 +112,10 @@ def _confidence_floor_line(
         )
     passed = rec.confidence >= regime.base_min_confidence
     return (
-        "confidence_floor gate: "
+        "confidence_floor gate: enforced_by=analyst; "
         f"confidence_score={rec.confidence:.3f} vs "
         f"base_min_confidence_score={regime.base_min_confidence:.3f} "
         f"-> {_bool_outcome(passed)}"
-    )
-
-
-def _stop_regime_line(
-    regime: RegimeContext | None, intent: OrderIntent, _bars: tuple[OHLCVBar, ...]
-) -> str:
-    if regime is None or intent.stop_pct is None or intent.target_pct is None:
-        return (
-            "stop_vs_regime_volatility gate unavailable: "
-            f"stop_pct={percent(intent.stop_pct)}; "
-            f"target_pct={percent(intent.target_pct)}."
-        )
-    stop_base_passed = intent.stop_pct <= regime.base_stop_loss_pct
-    target_base_passed = intent.target_pct >= regime.base_take_profit_pct
-    return (
-        "stop_vs_regime_volatility gate: "
-        f"stop_pct={percent(intent.stop_pct)} vs "
-        f"base_stop_loss_pct={percent(regime.base_stop_loss_pct)} "
-        f"-> {_bool_outcome(stop_base_passed)}; "
-        f"target_pct={percent(intent.target_pct)} vs "
-        f"base_take_profit_pct={percent(regime.base_take_profit_pct)} "
-        f"-> {_bool_outcome(target_base_passed)}"
     )
 
 

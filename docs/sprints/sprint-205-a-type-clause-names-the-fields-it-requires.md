@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-205-a-type-clause-names-the-fields-it-requires` *(created from `21a746e`, before any code)*
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** L
 **Decisions:** work-queue **item 30** · [DRIFT-047](../laws/drift-register.md) (the scanner instance this closes) · [DL-121](../design-log.md) (where the item was first measured) · `conventions.md` §3 (gray → green, and the 🧱/📜 row kinds S204 made checkable) · **the precedent is already in the law book: `PM-TYP-03`, rewritten by S184**
@@ -516,7 +516,7 @@ None.
 
 ## Closeout — evidence
 
-**Status:** BUILDING — evidence commit, final remote gate, and merge still pending.
+**Status:** BUILT — branch build and evidence commit proven; main merge and post-merge checks are handled after branch gate.
 
 **Tree the proofs ran in (and `.env` present?):**
 
@@ -636,9 +636,10 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 2 new file(s)
 ```
 
-**`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
+**`make gate-ran`:** run from `C:/Users/yury_/Downloads/project/trading-agents`:
 
 ```text
+Implementation commit:
 C:/Users/yury_/Downloads/project/trading-agents
 7842987f79f9dcf0226d1d02eeaa052422161882
 
@@ -646,11 +647,20 @@ uv run python scripts/assert_gate_ran.py
 GATE PROVEN for 7842987f79f9dcf0226d1d02eeaa052422161882:
   CI: success (attempt 1)
   Security Findings: success (attempt 1)
+
+Evidence commit:
+C:/Users/yury_/Downloads/project/trading-agents
+a90536ac6f5a39becdf2d1ffcdd087d38911239d
+
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for a90536ac6f5a39becdf2d1ffcdd087d38911239d:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
 **Not met / verified failing:**
 
-Pending evidence commit, final remote branch gate, merge, and post-merge CodeQL.
+No branch-build requirement remains unmet. Main merge and post-merge CodeQL are the next release checks after the branch gate.
 
 ---
 

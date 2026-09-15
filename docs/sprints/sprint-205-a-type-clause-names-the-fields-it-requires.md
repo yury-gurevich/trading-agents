@@ -516,7 +516,7 @@ None.
 
 ## Closeout — evidence
 
-**Status:** BUILDING — remote gate and merge still pending.
+**Status:** BUILDING — evidence commit, final remote gate, and merge still pending.
 
 **Tree the proofs ran in (and `.env` present?):**
 
@@ -639,12 +639,18 @@ detect-secrets (untracked): scanning 2 new file(s)
 **`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
 
 ```text
-Pending branch push and remote checks.
+C:/Users/yury_/Downloads/project/trading-agents
+7842987f79f9dcf0226d1d02eeaa052422161882
+
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 7842987f79f9dcf0226d1d02eeaa052422161882:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
 **Not met / verified failing:**
 
-Pending remote branch gate, merge, and post-merge CodeQL.
+Pending evidence commit, final remote branch gate, merge, and post-merge CodeQL.
 
 ---
 

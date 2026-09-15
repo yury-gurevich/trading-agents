@@ -61,6 +61,79 @@ This is [DL-104](design-log.md)'s defect class — *the veto is shown a pass/fai
 
 ---
 
+## DL-169 - two PM risk gates have never rejected an order, and the regime label never touches the numbers that decide one - status: OPEN (measured 2026-09-15, work-queue items 60, 61, 64)
+
+Measured against the live spine on 2026-09-15 at `main` @ `deca4e9`, fleet on `:s206`, while looking for the next sprint after [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md). Everything below came out of the graph or out of the code, not from the carried work-queue text - which turned out to be wrong in its denominator.
+
+### 0. The denominator two rows got wrong
+
+The spine holds **273** `OrderIntent` nodes, but only **35** carry gate outcomes at all. The other **238** are pre-S183/S184 records from 2026-07-07 to mid-August whose `gate_report` entries have `outcome: null`; outcome recording begins **2026-08-20**. So item 60's *"170 of 170"* and item 61's *"31 of 181"* are both counted over the wrong population. The honest denominator for any gate-outcome claim is **35 approved orders across 15 trading days**.
+
+The lesson is the one [S186](sprints/sprint-186-a-citation-is-checked-not-remembered.md) already taught in another form: a number carried between reviews is a number nobody re-derived.
+
+### 1. `reward_risk` is a constant, and not only in the observed sample
+
+`agents/portfolio_manager/domain/gate_report.py:57-75` tests `target_pct / stop_pct` against `min_reward_risk_ratio = 1.5`. Measured: **256 recorded gate entries, one distinct value - `{2.0: 256}`**.
+
+It is forced, in both stop modes:
+
+```python
+_scaled_target = min(flat_target * (scaled_stop / flat_stop), _MAX_PCT)   # stop_target.py:86
+```
+
+Divide by `scaled_stop` and the mode cancels - the ratio reduces to `flat_target / flat_stop` whatever ATR does to the stop, and the floor/ceiling clamps on the *stop* cancel with it. Only the `_MAX_PCT` clamp on the *target* could break the identity, and it has never bitten.
+
+The deeper half is upstream. `flat_target` and `flat_stop` are `base_take_profit_pct` and `base_stop_loss_pct`, and `agents/provider/agent.py:155-161` returns **both straight from settings** (`0.10` and `0.05`, `agents/provider/settings.py:23,29`). The regime `label` is computed, written to the graph, carried on `RegimeContext` - and **never modulates a single risk number**. So the ratio is `2.0` in `calm`, in `neutral` and in `stressed` alike.
+
+**Consequence:** there is no regime, and no threshold, in which this gate can discriminate. It is the [DRIFT-058](laws/drift-register.md) class - a check that cannot fail - sitting in the capital path rather than in a credential probe, and [S202](sprints/sprint-202-a-probe-that-cannot-fail-is-not-an-entry-condition.md)/[S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) removed its siblings without anyone looking here.
+
+### 2. Neither of the two never-fires gates has ever rejected anything
+
+919 `Rejection` nodes, complete reason census:
+
+| reason | n |
+| --- | --- |
+| `hold_recommendation` | 848 |
+| `sector_name_count` | 30 |
+| `sizing` | 19 |
+| `account_unavailable` | 18 |
+| `max_positions` | 3 |
+| `insufficient_cash` | 1 |
+
+`reward_risk`: **zero**. `correlated_cluster_pct`: **zero**. The PM does reject orders - these two gates specifically never have.
+
+### 3. The correlation gate's abort path is real, and has never run
+
+`_unevaluated_pair` (`agents/portfolio_manager/domain/correlation.py:97-110`) returns on the **first** held issuer whose best overlap is under `min_correlation_bars = 60`, and its caller (`correlation.py:63-66`) then returns that single `NOT_EVALUATED` **for the whole gate**. One short-history holding would switch correlation checking off for every candidate that night.
+
+But all 35 recorded evaluations are `passed` - 0 failed, 0 not-evaluated - and the observed `min_pair_overlap_bars` is **81-82** against the threshold of 60. So this is **latent** debt, repair before it bites. Item 61's *"absent from the other ~150 order evaluations"* is the pre-2026-08-20 era, not the disable path. Recording the difference matters: a sprint that describes latent debt as a live incident is overstating its own evidence.
+
+### 4. What the census already shows, and why the 0.70 cutoff is not a defect
+
+[S197](sprints/sprint-197-an-evaluated-gate-names-what-it-examined.md)'s `PM-OBS-03` census is in production on 7 records, and it is doing its job:
+
+```text
+2026-09-14 WFC  cluster_issuers=USB,WFC; examined_issuers=24; correlated_issuers=USB:0.7054;
+                below_threshold_top=C:0.6650,SCHW:0.3856,BMY:0.2185; correlation_threshold=0.7000
+```
+
+The cluster is **one name in 19 of 35 evaluations, two in the other 16, and has never had three**. USB clears 0.70 by 0.0054; C misses by 0.0350. The referee's recurring objection that clusters omit co-held names is **correct as an observation and already disclosed** - which makes the cutoff a tunable question for `/tuner` with a registered hypothesis, **not** a defect to fix in a repair sprint.
+
+### Options weighed
+
+| Option | Status |
+| --- | --- |
+| Move `min_reward_risk_ratio` so the gate "does something" | **Ruled out.** No threshold discriminates a constant; it only moves the boundary between always-passes and always-fails. The DRIFT-058 trap in its other mask |
+| Delete the `reward_risk` gate | **Ruled out.** It is a real invariant assertion - if the analyst's derivation ever changes, a `FAILED` here is the tripwire. Disclosing it keeps the tripwire; deleting it throws it away |
+| Derive stop and target independently so the ratio varies | **Deferred - capital-risk policy, ADR-owed.** This is the other half of item 60 and is not a defect sprint's decision |
+| Make the regime label modulate the base pair | **Deferred - same reason.** Recorded here and as work-queue item **64** so it is not re-derived |
+| Lower `correlation_threshold` to 0.65 so C clusters with WFC | **Ruled out here.** Fitting the instrument to one night's answer; a `/tuner` experiment, not a sprint |
+| Disclose what each gate *can* reject, and make the correlation gate skip only the unusable pair | **CHOSEN - specced as [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md)**, `PM-OBS-04` |
+
+### Status
+
+**OPEN.** S208 takes the non-policy half: the disclosure and the pairwise skip. Items **60** (independent derivation) and **62** (risk-based sizing) stay open as policy questions, and item **64** records the regime finding. 🪤 **The sizing one is the referee's most-repeated ground and the biggest single lever on the veto rate - it is blocked on an operator decision, not on engineering.**
+
 ## DL-168 - type clauses name required fields instead of using contract files as their own oracle - status: DECIDED (S205, 2026-09-15)
 
 Sprint 205 applies the S184 `PM-TYP-03` pattern to the remaining file-as-oracle `TYP` clauses:

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 19:05 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED (`8c6f74a`) and DEPLOYED `s206` — 16/16 apps + dispatcher, packs unmoved, env and KEDA byte-identical. The referee stops being shown a `FAILED` for a check no agent performs; tonight's `sched-2026-09-15` at 22:30 UTC is the first live run that reads the corrected context.**
+**Last updated:** 2026-09-15 19:29 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED (`8c6f74a`) and DEPLOYED `s206` — 16/16 apps + dispatcher, packs unmoved, env and KEDA byte-identical. The referee stops being shown a `FAILED` for a check no agent performs; tonight's `sched-2026-09-15` at 22:30 UTC is the first live run that reads the corrected context.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -147,8 +147,9 @@ never once failed, and sizing caps dollars rather than risk. S205 then closed **
 were "mostly not code" a week ago only **33** (57 PARAM/settings divergences), **22** (a sprint's built state
 is not machine-checkable), **31** (CodeQL runs only on `main`), **7** (the duplicated LLM adapter) and **11**
 (the delegated-agent sandbox default) remain. Item **42** is still the one live-behaviour defect open: one
-spurious stop-liveness warning per run, every run. 📦 **[S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
-is specced** (2026-09-15) against item 59 — a rendered verdict must name the check that produced it.
+spurious stop-liveness warning per run, every run. **S206 has since shipped and deployed** — see *Now*.
+
+📦 **[S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) is specced** (2026-09-15) against items **60** and **61**, from a live-spine audit recorded as [DL-169](design-log.md): two PM risk gates have **never rejected an order** — `reward_risk` has one distinct value across 256 recordings because the ratio cancels to two constants the regime label never touches, and `correlated_cluster_pct` abandons the whole gate on the first thin-overlap holding. Both appear **zero** times in 919 `Rejection` rows. 🪤 **The audit also corrected the queue's own denominators** — only **35** of 273 `OrderIntent` nodes carry gate outcomes, and the correlation abort path has **never fired**, so that half is repair before it bites. 🚨 **One decision is the operator's and is not in the sprint:** item **62**, position sizing by risk rather than dollars, is the referee's most-repeated nightly ground and the largest single lever on the veto rate — it is blocked on a policy call, not on engineering. New item **64** records that the regime label never modulates any risk number.
 
 **Ahead of the numbered list — three questions raised and not yet answered.**
 

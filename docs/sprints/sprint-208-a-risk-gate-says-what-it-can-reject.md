@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-208-a-risk-gate-says-what-it-can-reject`
-**Status:** BUILT
+**Status:** MERGED — `d43280e` on `main`, 2026-09-16 (gate proven for `210dbd3`)
 **Version:** `0.98.05`
 **Effort:** M–L
 **Decisions:** [DL-169](../design-log.md) the open thread · `DRIFT-063` the row this opens · work-queue items **60** and **61**

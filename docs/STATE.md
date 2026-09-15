@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 22:23 AEST · **Version:** 0.98.05 target · **S208 BUILT on `sprint-208-a-risk-gate-says-what-it-can-reject`: PM risk gates disclose verdict reachability; correlation skips only unusable pairs and all-unusable evidence remains `NOT_EVALUATED`. Branch gate is proven; merge/deploy are not yet claimed.**
+**Last updated:** 2026-09-16 00:45 AEST · **Version:** 0.98.05 · **🟩 S208 MERGED (`d43280e`) and tagged `v0.98.05` — PM risk gates now disclose whether the opposite verdict was reachable, and the correlation gate skips only the unusable pair. Gate proven for `210dbd3`; NOT deployed — the fleet still runs `s206`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -35,29 +35,10 @@ Completed arcs live in their sprint docs + archives: fleet (DL-35), credentials 
 migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at the full S&P-500;
 Layer-2 choreography 🟩 on a distributed run (S102).
 
-## Recent (most recent first — detail in each sprint doc)
-
-🟩 **PROVEN RESULT — [S205](sprints/sprint-205-a-type-clause-names-the-fields-it-requires.md) MERGED
-`af75079` (`0.98.03`), 2026-09-15 — work-queue **item 30** closed, and a clause family stopped being its own
-oracle.** The twelve `TYP` clauses that said a payload *"matches `contracts/<agent>.py` exactly"* now **name the
-fields they require**, each traceable to the clause that needs it; two new guard modules fail when a required
-field is deleted, proven on three agents (Scanner `skipped_filters`, Master `capability_declaration`,
-Researcher `backtest`). Zero `contracts/` edits — `git diff --stat -- contracts` empty.
-🟩 **Verified independently on the merged SHA, not on the handback's word:**
-`assert_gate_ran.py --sha af75079346a74f402408a6795ee881666f61b051` printed `GATE PROVEN` — image build, CI,
-CodeQL, Security Findings and the dependency run all green; `main`'s later tip `8faf856` is `GATE PROVEN` too,
-so no S205 commit rides above a gated one (the S186 hazard). 🟩 **Local `make ci`:** 2756 passed, 4 skipped,
-100.00 %, pip-audit and detect-secrets clean. **No deploy, and checked rather than assumed:** the diff is laws,
-test-plans, docs, two `tests/` modules and the version — nothing that ships in an image.
-🪤 **Two forced decisions found and deliberately not built**, carried as open rows rather than as silent
-residue: [DRIFT-060](laws/drift-register.md) — nothing requires `CONTRACT.version` to move when required fields
-change; [DRIFT-061](laws/drift-register.md) — five execution output clauses name fields `contracts.execution`
-does not carry.
-
 ## Now
 
-🟩 **BUILT LOCALLY — [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) (`0.98.05`
-target), 2026-09-15.** `reward_risk` now renders `base_take_profit_pct`, `base_stop_loss_pct`,
+🟩 **MERGED — [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) (`0.98.05`,
+merge `d43280e`), 2026-09-16.** `reward_risk` now renders `base_take_profit_pct`, `base_stop_loss_pct`,
 `applied_mode`, `structural_basis` and `comparison=STRUCTURALLY_DETERMINED` when the ratio is fixed
 by the base stop/target pair; full gate reports prove data-varying gates are not labelled structural.
 `correlated_cluster_pct` now skips only unusable pairs, attributes them as `skipped_pair_issuers`,
@@ -68,7 +49,12 @@ so far:** T1/T2 reproduced red on `main`; T0 live denominator still **273 / 35**
 **2763 passed, 6 skipped, 100.00 %**, pip-audit and secrets checks clean; `git diff --stat contracts/`
 empty; `correlation.py` is **115** lines. 🟩 **Branch proof:** `make gate-ran` from the S208 worktree
 printed `GATE PROVEN` for `95e17d776b6f661852473f8736c8d731f39db3e5`, with CI and Security Findings
-both `success`. 🟠 **Still owed before ship:** no merge, post-merge CodeQL or deploy is claimed yet.
+both `success`; re-run from the branch worktree at `210dbd3591afde812f998e37f7a3430e0f45bbd0`
+(the docs commit above it) before merging, so the merged SHA is the proven one. 🟠 **Still owed:**
+post-merge CodeQL on `main`, and the deploy — the fleet still runs `s206`, so the new gate detail is
+not live yet.
+
+## Recent (most recent first — detail in each sprint doc)
 
 🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
 BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders
@@ -107,27 +93,24 @@ created; dispatcher `Succeeded` on every trading day back to 09-07.
 under S202 that now *halts* the deliberator rather than passing it, so a drained key would have produced
 another unreviewed night. It is funded. 🟠 **Still owed:** the run itself.
 
-🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
-(`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and
-41** closed. The three pack `openai` probes and both `trading_vault_probes.py` LLM probes now POST a
-real completion, so a key that cannot spend fails the DL-36 entry condition instead of passing it;
-`compare_order_tolerances` ends every report with `comparison: FORCED | INFORMATIVE | NO DATA`;
-`remediation_mode="automatic"` refuses to start a master that cannot remediate. 🪰 **The near-miss
-that justifies the live-measurement rule:** the body this sprint's own spec prescribed — S202's
-`max_tokens: 1` — returns **400 for a valid key** on `gpt-5.5`, a reasoning model that spends the
-whole budget before emitting content; measured before the pack was edited, so three probes were never
-broken ([DL-166](design-log.md)). 🟩 **Live proof:** through the parsed pack and the real
-transport, `passed` for the live key and `credential_failure / http_401` for a bogus one; both
-corrected vault probes likewise, both vendors, both arms. Cost **~US$0.0028** per full fleet
-activation, from the vendor's `usage` block. 🟩 **Local proof:** `make ci` exit 0, **2742 passed,
-6 skipped, 100.00 %**, pip-audit and detect-secrets clean. 🚨 **No `MST-*` clause written** — all
-44 master clauses are silent on remediation, recorded as [DRIFT-059](laws/drift-register.md). 🟩 **Remote proof:** `make gate-ran` printed `GATE PROVEN` for the branch tip `ee2fe9b71df2f2edef60ee0dd9ed05ac1c53f4e4` (matching `git rev-parse HEAD` in that worktree) and again for the merge commit `e890f93521cc765231dbd8bcaf7d57bb207b44f3` on `main` — CI, CodeQL, Security Findings **and the image build** all `success`. 🟩 **DEPLOYED `s203`, 2026-09-14 20:40 AEST, by full `up` — never a retag, because the credential-tests pack moved.** 🚨 **The retag question looked at the wrong pack and the measurement caught it:** `trading_graph_vocabulary.json` and `trading_issuer_map.json` are **unchanged** since the deployed `e78e91ed`, so the vocabulary test alone said *retag* — while the deployed `MASTER_CREDENTIAL_TESTS_B64` decoded to **`b1496f71…`** against the repo's **`f8f03950…`**, still carrying the blind OpenAI probes this sprint exists to replace. That is S202's near-miss in the same place, and asking *"did any injected pack move?"* is what makes it visible. 🟩 **Verified:** 15/15 image jobs green at `34eec3f`, **16/16** apps on `:s203` plus `dispatcher-cron`, **16/16 `Succeeded`**, **`ENV PRESERVATION` 16/16**, alembic OK, cron `30 22 * * 1-5` intact, and scale/KEDA **diffed byte-identical to the pre-deploy baseline**. 🎯 **The check that matters here:** the deployed `MASTER_CREDENTIAL_TESTS_B64` now decodes byte-identical to the repo pack and its `openai` entry reads `POST /v1/chat/completions` with `max_completion_tokens: 256`. `DeployRecord` `deploy:2026-09-14T10:40:19…:s203:34eec3f…` written. 🟠 **Not yet proven live** — the first run under `s203` is the scheduled one, **Tuesday 2026-09-15 22:30 UTC**.
+🟩 **PROVEN RESULT — [S205](sprints/sprint-205-a-type-clause-names-the-fields-it-requires.md) MERGED
+`af75079` (`0.98.03`), 2026-09-15 — work-queue **item 30** closed, and a clause family stopped being its own
+oracle.** The twelve `TYP` clauses that said a payload *"matches `contracts/<agent>.py` exactly"* now **name the
+fields they require**, each traceable to the clause that needs it; two new guard modules fail when a required
+field is deleted, proven on three agents (Scanner `skipped_filters`, Master `capability_declaration`,
+Researcher `backtest`). Zero `contracts/` edits — `git diff --stat -- contracts` empty.
+🟩 **Verified independently on the merged SHA, not on the handback's word:**
+`assert_gate_ran.py --sha af75079346a74f402408a6795ee881666f61b051` printed `GATE PROVEN` — image build, CI,
+CodeQL, Security Findings and the dependency run all green; `main`'s later tip `8faf856` is `GATE PROVEN` too,
+so no S205 commit rides above a gated one (the S186 hazard). 🟩 **Local `make ci`:** 2756 passed, 4 skipped,
+100.00 %, pip-audit and detect-secrets clean. **No deploy, and checked rather than assumed:** the diff is laws,
+test-plans, docs, two `tests/` modules and the version — nothing that ships in an image.
+🪤 **Two forced decisions found and deliberately not built**, carried as open rows rather than as silent
+residue: [DRIFT-060](laws/drift-register.md) — nothing requires `CONTRACT.version` to move when required fields
+change; [DRIFT-061](laws/drift-register.md) — five execution output clauses name fields `contracts.execution`
+does not carry.
 
-🟩 **PROVEN RESULT — work-queue item 47 CLOSED, 2026-09-13 (operator decision, [DL-165](design-log.md)).** The last of its four objections is decided: **`EXECUTION_ORDER_PRICE_TOLERANCE_MODE` flat → scaled**, promoting the S149 challenger that has shipped off-by-default since `0.83.00`. 🪤 **Promoted on DL-76's *external* measurement, not own-book evidence, and saying so is the point:** own-book evidence was **structurally uncollectable**. `compare_order_tolerances` reported flat and scaled **identical at 0.00 % drop over 170 orders** — *correctly*, because scaled is wider on **170 of 170** (75-250 bps against a fixed 50), so every order the flat band accepted the scaled band also accepts, and the orders flat **refused** never produce a `Fill` row to be counted at all. 🎯 **The flip is what makes the comparison informative for the first time:** with the wider band applied, an order that fills above the flat limit is precisely an order flat would have refused — DL-76's **35 % of buys** refusal rate, measured on our own book. Decision and instrument arrive together, which is why this beat waiting. ⚠️ **The weakness, stated:** DL-76's numbers are ~4 months old and external (60 sessions of overnight gaps: SCHW 25 % against **AMD 52 %** — one number encoding two policies), and ADR-0013 exists to prevent exactly this kind of promotion. Accepted because the alternative was not better evidence but **none** — the graph holds **4 filled orders in its entire history**. 🟠 **I recommended the opposite** (keep flat, close as decided-by-design) on two facts: S198 measured AMD and MRVL as the two worst names ever held, and S195's beta cap already drops AMD at the scanner. 🪤 **That case was weaker than it read — I could confirm the beta cap only for AMD, not MRVL or HPE.** Operator overrode; recorded as an override, not a consensus. 🟩 **Proven:** `make ci` exit 0 (**2706 passed, 4 skipped, 100.00 %**). 🟩 **DEPLOYED `s202a` 2026-09-13 by full `up`** (tunables are injected env vars, so only an `up` applies them; suffixed chore tag per [DL-106](design-log.md) rather than a second `s202`, which would put two commits under one name). **16/16 on `:s202a`**, **16/16 `Succeeded`**, cron intact, scale/KEDA **byte-identical to baseline, zero drift**, and `EXECUTION_ORDER_PRICE_TOLERANCE_MODE=scaled` present on `execution` — a **new** variable, so it could not have been inherited. S202's credential pack re-verified byte-identical after the re-`up`. `DeployRecord deploy:2026-09-13T13:05:11…:s202a:e78e91e…`. 🟠 **Opens item 56:** the report prints a confident `0.00` without saying it could not have differed — [DL-152](design-log.md)'s shape for the sixth time.
-
-🟩 **PROVEN RESULT — [S202](sprints/sprint-202-a-probe-that-cannot-fail-is-not-an-entry-condition.md) BUILT (`0.98.00`), 2026-09-13 — the deliberator's credential probe can now fail, and a run whose veto never executed no longer reports green.** Closes work-queue **item 50**; implements [DL-163](design-log.md)'s operator decision as [DL-164](design-log.md); **CORRECTS new [DRIFT-058](laws/drift-register.md)**. 🚨 **The defect was not in the runner — it was in the question the pack asked.** `MST-NEV-06` promises a credential has *passed live* before handover, and the Anthropic probe's `credential_failure_statuses` already contained the **400** a drained account returns. It called `GET /v1/models`: free metadata, no tokens, not billed. A zero-credit key is a **valid** key, so the probe genuinely passed and all three deliberators activated clean for four nights while every debate died on `400 … credit balance is too low`. **The clause held literally and the guarantee it exists for did not.** 🪤 **DL-163 called this a one-line pack edit and measuring it proved otherwise:** `HttpProbeRequest` had no request body, and a bodyless `POST /v1/messages` returns **400 for a valid key** *[measured live]* — so the pack edit alone would have failed **all four required** Anthropic probes at once, trading a credit outage for a total activation outage. Probe bodies are a code change, which is why this is a **MINOR** and not a PATCH. 🎯 **Proven falsifiable against the live API through the real runner, which is the whole point:** funded key → `passed` (200, 7 in / 1 out, $0.00006); unusable key → `credential_failure http_401`; and `GET /v1/models` returned **200** for that same funded key in the same session. ⚠️ **Honest limit — the 400 path was not reproduced live** (that needs a genuinely drained account); it is carried by unit test and by the incident record. 🎯 **The gate half shipped with it rather than after it, and DL-163 had that backwards too:** a retired model name returns **404** *[measured]*, the runner maps every 4xx to a credential failure, so a stricter probe plus our own config drift would halt all three deliberators and let the run submit unreviewed buys on a **green** board — DL-36 halts the *agent*, not the run. So `advisory` + `proceeded_unvetoed` + an approved buy now breaches as `veto_never_ran`, which is the operator's **No** (2026-09-13). 🟩 **Not a new policy — the same policy applied consistently:** `not_required` with an approved buy was already red (`buy_veto_missing`, S191); `proceeded_unvetoed` is the identical fact more honestly labelled, and it was green, so the verdict depended on the wording. 🚨 **CORRECTED the same day, before merge, by `/audit-costs`:** the rule as first built keyed only on `proceeded_unvetoed` and I reported *"0 of 69 runs turn red"* as a **feature**. It is not — it means the tripwire is **inert**. Re-measured over the 40 linked `ExecutionRun` rows: `advisory` + `proceeded_unvetoed` **0**; `advisory` + `applied_failed_open` with `failed_open_count == reviewed` **4**; genuinely *partial* fail-open **0**. 🎯 **All four of the middle row carry `real_debate_count = 0` and a `400 … credit balance is too low` reason** — they are this sprint's own incident, and the first cut left every one green. **The line is partial-vs-total, not present-vs-absent.** 🪤 **I cited DL-125 as forbidding it and it says no such thing** — DL-125 argued against nightly red for a *declared, accepted, external* outage and proposed the advisory posture as the remedy; its own `sched-2026-08-21` entry treats that run failing acceptance as correct. Citing a document from memory instead of reading it, in the same sprint that priced a probe from memory. 🪤 **Three tests were passing for a reason their names did not describe**, each a 1-of-1 fixture that reads as partial and is total; all three are now explicitly one or the other. **The outage is nine nights, not four** (08-21/-24/-25/-26/-28, 09-08/-09/-10/-11). 🟩 **Proven:** `make ci` exit 0 (**2701 passed, 6 skipped, 100.00 %**), pip-audit and detect-secrets clean; `GATE PROVEN` for the pre-correction tip with the printed SHA checked against `HEAD`. 🟩 **DEPLOYED `s202` 2026-09-13 by full `up`, never a retag — and the path decision was itself a finding.** The deploy skill asks *did the vocabulary pack move?*; it did not (`58769995…` both sides), so the answer was **retag** — but this sprint's payload is the *credential* pack, injected as `MASTER_CREDENTIAL_TESTS_B64`, and `entrypoint.py:42` says **b64 wins** over the baked file. *[Measured before deploying]* the live master decoded to **`307e2a9a…`** against the repo's **`b1496f71…`**, still probing `GET /v1/models` on all four. **A retag would have shipped the fix inside the image and left it inert in config, with 16/16 on `s202` and every currency check passing** — DL-46 with the currency check looking one pack to the left. 🪤 **Three packs are injected at deploy time** — vocabulary, master credential tests, PM issuer map — **and a retag refreshes none of them**; the `deploy-fleet` skill's step 1 now asks about all three. 🟩 **Verified:** `ENV PRESERVATION` OK, alembic OK, 8 Service Bus routes, **16/16 on `:s202`**, **16/16 `Succeeded`**, dispatcher-cron on `:s202`, cron `30 22 * * 1-5` intact, scale/KEDA **byte-identical to the pre-deploy baseline, zero drift**. 🎯 **The check that mattered:** the deployed `MASTER_CREDENTIAL_TESTS_B64` now decodes **byte-identical to the repo** (`b1496f71…`) and all four required probes read `POST /v1/messages` `max_tokens=1` `model=claude-opus-5`. `DeployRecord deploy:2026-09-13T11:14:40…:s202:6df1c2df…`, `GATE PROVEN` for that SHA incl. CodeQL and the image build. 🟠 **Still open, deliberately: credit exhausted *mid-run*** — nothing re-probes between debates — and **new items 53 and 55** — four more probes that cannot fail (three `required: false` OpenAI entries and two vault probes, none of which gates a run), and the free unwatched outage signature: every call on all nine blind nights recorded `response_hash = e3b0c44298fc…`, **SHA-256 of the empty string**, at **~300 ms** against a working night's **~15,000 ms**. The ledger could have named this on **2026-08-21**, nineteen days before item 50 was filed.
-
-🗄️ **Older shipped results — S199, S200, S201 and the item-6b posture decision are now in [state-archive/STATE-10.md](state-archive/STATE-10.md); S172, S173 Part A, S180, S191, S195–S198 and the CodeQL repair in [STATE-09.md](state-archive/STATE-09.md); everything earlier in [state-archive/INDEX.md](state-archive/INDEX.md).**
+🗄️ **Older shipped results — S202, S203 and the work-queue item 47 promotion are now in [state-archive/STATE-11.md](state-archive/STATE-11.md); S199, S200, S201 and the item-6b posture decision in [STATE-10.md](state-archive/STATE-10.md); S172, S173 Part A, S180, S191, S195–S198 and the CodeQL repair in [STATE-09.md](state-archive/STATE-09.md); everything earlier in [state-archive/INDEX.md](state-archive/INDEX.md).**
 
 🟠 **FLIP CONDITION 1 of 3 on `sched-2026-08-31`** — the posture landed, but `real_debate_count` was **0** and
 `failed_open_count == 0` only vacuously; PM approved nothing, so no debate ran. 🟩 **Its real purpose is now met

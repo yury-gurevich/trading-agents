@@ -347,5 +347,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `test_reward_risk.py::test_a_structurally_fixed_gate_discloses_that_it_could_not_differ`,
   `test_correlation_concentration.py::test_one_unusable_pair_does_not_disable_the_whole_gate`,
   `::test_every_pair_unusable_still_reports_not_evaluated`,
-  `test_portfolio_manager_audit.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed`,
+  `test_gate_reachability.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed`,
   and `test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap`.

@@ -78,7 +78,7 @@ The lesson is the one [S186](sprints/sprint-186-a-citation-is-checked-not-rememb
 It is forced, in both stop modes:
 
 ```python
-_scaled_target = min(flat_target * (scaled_stop / flat_stop), _MAX_PCT)   # stop_target.py:86
+_scaled_target = min(flat_target * (scaled_stop / flat_stop), _MAX_PCT)   # stop_target.py:89
 ```
 
 Divide by `scaled_stop` and the mode cancels - the ratio reduces to `flat_target / flat_stop` whatever ATR does to the stop, and the floor/ceiling clamps on the *stop* cancel with it. Only the `_MAX_PCT` clamp on the *target* could break the identity, and it has never bitten.
@@ -104,7 +104,7 @@ The deeper half is upstream. `flat_target` and `flat_stop` are `base_take_profit
 
 ### 3. The correlation gate's abort path is real, and has never run
 
-`_unevaluated_pair` (`agents/portfolio_manager/domain/correlation.py:97-110`) returns on the **first** held issuer whose best overlap is under `min_correlation_bars = 60`, and its caller (`correlation.py:63-66`) then returns that single `NOT_EVALUATED` **for the whole gate**. One short-history holding would switch correlation checking off for every candidate that night.
+`_unevaluated_pair` (`agents/portfolio_manager/domain/correlation.py:98-110`) returns on the **first** held issuer whose best overlap is under `min_correlation_bars = 60`, and its caller (`correlation.py:63-66`) then returns that single `NOT_EVALUATED` **for the whole gate**. One short-history holding would switch correlation checking off for every candidate that night.
 
 But all 35 recorded evaluations are `passed` - 0 failed, 0 not-evaluated - and the observed `min_pair_overlap_bars` is **81-82** against the threshold of 60. So this is **latent** debt, repair before it bites. Item 61's *"absent from the other ~150 order evaluations"* is the pre-2026-08-20 era, not the disable path. Recording the difference matters: a sprint that describes latent debt as a live incident is overstating its own evidence.
 

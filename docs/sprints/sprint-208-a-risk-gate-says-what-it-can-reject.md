@@ -110,7 +110,7 @@ quote it** — the query is four lines and it is T0.
 inferred from the sample:**
 
 - `_scaled_target = min(flat_target × (scaled_stop / flat_stop), _MAX_PCT)`
-  (`agents/analyst/domain/stop_target.py:86`). Divide by `scaled_stop` and the mode cancels:
+  (`agents/analyst/domain/stop_target.py:89`, in `_scaled_target` at `:86`). Divide by `scaled_stop` and the mode cancels:
   **ratio ≡ `flat_target / flat_stop`**, whatever ATR does to the stop. The floor/ceiling clamps on
   the *stop* (`stop_target.py:79-83`) cancel with it. Only the `_MAX_PCT` clamp on the *target* could
   break the identity, and it has never bitten.
@@ -127,7 +127,7 @@ appears zero times. `correlated_cluster_pct` appears zero times.** Other gates *
 "the PM never rejects", it is these two specifically.
 
 **3. The correlation gate's abort path is real code and has never run.** `_unevaluated_pair`
-(`agents/portfolio_manager/domain/correlation.py:97-110`) walks held issuers in sorted order and
+(`agents/portfolio_manager/domain/correlation.py:98-110`) walks held issuers in sorted order and
 `return`s on the **first** one whose best overlap is under `min_correlation_bars = 60`; its caller
 (`correlation.py:63-66`) then returns that single `NOT_EVALUATED` outcome **for the whole gate**. One
 short-history holding would switch correlation checking off for every candidate that night.
@@ -166,8 +166,8 @@ symptom.**
 | # | Site | Today | After |
 | --- | --- | --- | --- |
 | 1 | `reward_risk` (`gate_report.py:57-75`) | `value=2.0 threshold=1.5 -> PASSED`, indistinguishable from a risk check that discharged | **Keep the verdict and the threshold.** Add the disclosure: the ratio is **structurally determined** by the two regime constants, and the detail names them and the applied mode |
-| 2 | `_unevaluated_pair` (`correlation.py:97-110`) | First unusable held issuer returns `NOT_EVALUATED` **for the whole gate** | **Evaluate pairwise.** Skip only the unusable pair; the gate evaluates on what remains, and the census reports how many pairs were skipped and why |
-| 3 | `CorrelationCensus.detail()` (`correlation_census.py:45-56`) | Reports `examined_issuers`, `correlated_issuers`, `below_threshold_top`, `correlation_threshold`, `min_pair_overlap_bars` | **Gains `skipped_pairs=N`** so the honest-state signal `PM-NEV-09` protects survives the change from whole-gate to per-pair |
+| 2 | `_unevaluated_pair` (`correlation.py:98-110`) | First unusable held issuer returns `NOT_EVALUATED` **for the whole gate** | **Evaluate pairwise.** Skip only the unusable pair; the gate evaluates on what remains, and the census reports how many pairs were skipped and why |
+| 3 | `CorrelationCensus.detail()` (`correlation_census.py:48-56`) | Reports `examined_issuers`, `correlated_issuers`, `below_threshold_top`, `correlation_threshold`, `min_pair_overlap_bars` | **Gains `skipped_pairs=N`** so the honest-state signal `PM-NEV-09` protects survives the change from whole-gate to per-pair |
 | 4 | `PM-OBS-04` + `DRIFT-063` | — | The clause, the test-plan row, the register row |
 
 🪤 **Case 2 changes what the gate can reject.** Today a thin-history holding silently disables the cap;
@@ -244,7 +244,7 @@ the day its sprint merges, by our own hand.** Update the `why=` in the same comm
 | --- | --- | --- |
 | `agents/portfolio_manager/domain/gate_report.py` | **120** | Grows — the `reward_risk` disclosure |
 | `agents/portfolio_manager/domain/correlation.py` | **153** ⚠️ past the 150 warn | Must **shrink or split** — pairwise walk replaces the abort |
-| `agents/portfolio_manager/domain/correlation_census.py` | **131** | Grows — `skipped_pairs` |
+| `agents/portfolio_manager/domain/correlation_census.py` | **131** | Grows — `skipped_pairs` in `detail()` at `:48-56` |
 | `agents/portfolio_manager/domain/risk.py` | **161** ⚠️ | Likely untouched — check before editing |
 | `agents/portfolio_manager/settings.py` | — | One `why=` string only (design decision 3). **No default moves** |
 | `agents/portfolio_manager/laws/laws.md` | LOCKED **v1.4**, rollup **29 / 48** | → v1.5, `PM-OBS-04` |
@@ -366,7 +366,8 @@ that the book changes. If nothing is rejected for a month, this sprint still suc
 ## Handover — paste this to Codex
 
 ```text
-Branch: sprint-208-a-risk-gate-says-what-it-can-reject, from main at deca4e9 or later.
+Branch: sprint-208-a-risk-gate-says-what-it-can-reject, from main at 03f40b4 or later (that commit
+carries this spec).
 
 THE DEFECT, measured 2026-09-15 against the live spine. Two PM risk gates have never rejected an
 order, for two different reasons, and neither says so.
@@ -374,13 +375,13 @@ order, for two different reasons, and neither says so.
 (1) reward_risk (agents/portfolio_manager/domain/gate_report.py:57-75) tests target_pct/stop_pct
 against min_reward_risk_ratio=1.5. Measured: 256 recorded gate entries, ONE distinct value - 2.0.
 It is a constant by construction: _scaled_target = min(flat_target * (scaled_stop/flat_stop),
-_MAX_PCT) at agents/analyst/domain/stop_target.py:86, so dividing by scaled_stop cancels the mode
+_MAX_PCT) at agents/analyst/domain/stop_target.py:89, so dividing by scaled_stop cancels the mode
 and the ratio reduces to flat_target/flat_stop in BOTH modes. And flat_target/flat_stop are
 base_take_profit_pct/base_stop_loss_pct, which agents/provider/agent.py:155-161 returns STRAIGHT
 FROM SETTINGS (0.10 and 0.05) - the regime label never touches them. So the ratio is 2.0 in every
 regime. There is no threshold that makes a constant discriminate.
 
-(2) correlated_cluster_pct: _unevaluated_pair (agents/portfolio_manager/domain/correlation.py:97-110)
+(2) correlated_cluster_pct: _unevaluated_pair (agents/portfolio_manager/domain/correlation.py:98-110)
 returns on the FIRST held issuer whose overlap is under min_correlation_bars=60, and its caller
 (correlation.py:63-66) then returns that single NOT_EVALUATED for the WHOLE gate. One short-history
 holding disables correlation checking for every candidate that night.

@@ -37,6 +37,7 @@ because the project rule is: *read a folder's `INDEX.md` before opening files in
 | [a2a-boundary/](a2a-boundary/INDEX.md) | R004 | A2A interop standard — convergent principles, no internal adoption; boundary adapter behind triggers. |
 | [cloud-free-tiers/](cloud-free-tiers/INDEX.md) | Reference | AWS/GCP/Azure always-free service catalogs (feeds R002 / DL-15). |
 | [parameter-inventory/](parameter-inventory/INDEX.md) | Reference | Every `tunable()` (133 params, 18 files) with defaults/bounds/why — the decision-parameter surface; manual stand-in for CI-1. |
+| [risk-parameter-bounds/](risk-parameter-bounds/INDEX.md) | Reference | External evidence (literature + UCITS) for what each risk-shaping parameter's min/max envelope should be; companion to parameter-inventory. Headline: risk per trade 0.05 % vs a standard 1-2 %. |
 | [quant-methods/](quant-methods/INDEX.md) | Reference | What each quant signal *measures*, why it matters, how to read it + uncovered areas + deterministic params to raise prediction confidence. |
 | [experiments/](experiments/INDEX.md) | Log | Research-probe experiments (purpose · process · delivery · interpretation). EXP-001 = do the LLMs understand our parameters (gpt-5.4 vs 5.5). |
 

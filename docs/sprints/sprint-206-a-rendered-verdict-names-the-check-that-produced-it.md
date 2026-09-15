@@ -369,8 +369,14 @@ to the answer.
 ## Handover — paste this to Codex
 
 ```text
-Branch: sprint-206-a-rendered-verdict-names-the-check-that-produced-it (from main, AFTER S205 has
-merged - check; S205 edits the same law book and you will collide).
+Branch: sprint-206-a-rendered-verdict-names-the-check-that-produced-it, from main at ebe827d or
+later. The S205 collision is GONE - S205 merged af75079 on 2026-09-15 and its law-book edits are in
+main already, so branch from main and there is nothing to wait for.
+
+RE-VERIFIED ON main @ ebe827d, 2026-09-15, after S205 merged - every file:line below still resolves
+to what this spec says it does (the S186 hazard, checked not assumed): context_pm.py is 152 lines,
+context_stop.py 33, deliberator laws are LOCKED v1.6 and DLIB-NEV-07 is the highest clause, so
+DLIB-NEV-08 is free.
 
 THE DEFECT, measured 2026-09-15. agents/deliberator/context_pm.py:123 renders
 "stop_vs_regime_volatility gate: ... -> PASSED/FAILED" into the debate context. No agent performs

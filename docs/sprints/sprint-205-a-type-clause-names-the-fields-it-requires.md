@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-205-a-type-clause-names-the-fields-it-requires` *(created from `21a746e`, before any code)*
-**Status:** BUILT
-**Version:** *next available PATCH at merge*
+**Status:** MERGED `af75079` (`0.98.03`), 2026-09-15
+**Version:** `0.98.03` (PATCH — law/test/doc surfaces, no new capability)
 **Effort:** L
 **Decisions:** work-queue **item 30** · [DRIFT-047](../laws/drift-register.md) (the scanner instance this closes) · [DL-121](../design-log.md) (where the item was first measured) · `conventions.md` §3 (gray → green, and the 🧱/📜 row kinds S204 made checkable) · **the precedent is already in the law book: `PM-TYP-03`, rewritten by S184**
 
@@ -516,7 +516,7 @@ None.
 
 ## Closeout — evidence
 
-**Status:** BUILT — branch build and evidence commit proven; main merge and post-merge checks are handled after branch gate.
+**Status:** MERGED — branch gate, main merge and post-merge gate all proven.
 
 **Tree the proofs ran in (and `.env` present?):**
 
@@ -658,9 +658,36 @@ GATE PROVEN for a90536ac6f5a39becdf2d1ffcdd087d38911239d:
   Security Findings: success (attempt 1)
 ```
 
+**Post-merge gate, on `main`:** re-run independently 2026-09-15 from
+`C:/Users/yury_/Downloads/project/trading-agents`, against the full 40-char SHA of the last S205
+commit on `main` — not the branch SHA, and not an abbreviation:
+
+```text
+uv run python scripts/assert_gate_ran.py --sha af75079346a74f402408a6795ee881666f61b051
+GATE PROVEN for af75079346a74f402408a6795ee881666f61b051:
+  Build and push agent images: success (attempt 1)
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+  uv in / for openai - Update #1576739381: success (attempt 1)
+```
+
+`main` has since advanced to `8faf856f50fd1a0933ef4ba360ddd3f661a51c9f` on an unrelated docs commit;
+`af75079…` is an ancestor of it, and the tip is `GATE PROVEN` too (CI, CodeQL, Security Findings) —
+so no S205 commit sits above a gated one unproven (the S186 hazard).
+
+**Checkpoint:** tag `checkpoint-20260915-sprint-205-type-clause-fields` and branch
+`backup/main-after-sprint-205-type-clause-fields`, both at `af75079…`. Sprint branch deleted locally
+and on the remote.
+
+**Deploy:** **not applicable, and checked rather than assumed.** The merged diff touches agent
+`laws.md`/`test-plan.md`, `docs/`, two new `tests/` modules, `pyproject.toml` and `uv.lock` — no file
+under `agents/*/` that ships in an image, and no `contracts/` edit. Nothing reaches a running
+container, so no fleet retag was run.
+
 **Not met / verified failing:**
 
-No branch-build requirement remains unmet. Main merge and post-merge CodeQL are the next release checks after the branch gate.
+Nothing. Branch gate, merge, post-merge CodeQL and the deploy question are all closed above. Two findings are deliberately **not** built and are carried as open drift rows, not as silent residue: [DRIFT-060](../laws/drift-register.md) (`CONTRACT.version` movement is ungated) and [DRIFT-061](../laws/drift-register.md) (five execution output clauses name fields `contracts.execution` does not carry).
 
 ---
 

@@ -111,6 +111,23 @@ Three facts, each measured:
    Both orders carried `reward_risk = 2.0` **exactly** — the ratio the real gate tests — and both
    passed it.
 
+🚨 **It is a mode detector, not a risk check — measured 2026-09-15 over the last 8 scheduled runs
+(32 recommendations carrying `stop_target_evidence`):**
+
+| applied mode | n | both legs PASSED | exactly one FAILED | both FAILED |
+| --- | --- | --- | --- | --- |
+| `flat` | 12 | **12** | 0 | 0 |
+| `scaled` | 20 | **0** | **20** | 0 |
+
+Of the 20 scaled cases, **13 fail the target leg** (bracket tightened, `2xATR < 5%`) and **7 fail the
+stop leg** (bracket widened, `2xATR > 5%`). So the line does not detect risk in either direction — it
+reports `flat` as all-clear and `scaled` as one-failure, **100 % of the time, both ways**. A reader
+cannot distinguish "this bracket is dangerous" from "this bracket was adjusted at all".
+
+🪰 **The clamps have never bitten, but they are not theoretical:** 0 of 32 hit the 2.5 % floor or the
+8 % ceiling — though AMD reached **7.995 %** against the 8.00 % cap, 0.005 points short. The bounds
+are the real protection here, and they are close to live, not far away.
+
 3. **The referee leads with it.** Both 2026-09-14 vetoes cite it first: *"A live FAILED
    `stop_vs_regime_volatility` target leg was approved with no rendered waiver."* Both orders were
    dropped; the run submitted **0**.

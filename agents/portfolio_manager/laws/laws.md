@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -225,6 +225,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   separates *not evaluated* from *passed*; this clause separates *evaluated and found nothing*
   from *evaluated nothing*, which is the pair a cluster of one collapses without it. The census
   is evidence, not a summary: it is rendered into the same `detail` that reaches the deliberator.
+- **PM-OBS-04** — Every evaluated PM gate that renders a `PASSED` or `FAILED` verdict discloses
+  whether the opposite verdict was reachable from the evidence it had. A gate whose verdict is
+  structurally fixed by the input stop/target policy percentages says so in `detail`, names the
+  base percentages and applied mode, and remains a tripwire if those inputs change. A data-varying
+  gate must not be labelled structurally fixed; it keeps its measured value, threshold, and
+  comparison detail as the evidence a reader can use to see what would have changed the verdict.
+  `NOT_EVALUATED` remains the only honest state when no usable evidence exists (`PM-NEV-09`).
 
 ---
 
@@ -332,3 +339,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   unevaluable gate as passed, and this adds the census an evaluable one owes. Cited tests:
   `test_correlation_census.py::test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out`
   and `::test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass`.
+- v1.5 — amendment (DL-169 / S208, 2026-09-15). Added `PM-OBS-04`: evaluated gate verdicts disclose
+  whether the opposite answer was reachable. The reward-risk gate keeps its verdict and threshold
+  but marks structurally determined stop/target policy comparisons in `detail`, and the
+  correlated-cluster gate skips only unusable pairs while preserving a whole-gate `NOT_EVALUATED`
+  outcome when no usable pair remains. Cited tests:
+  `test_reward_risk.py::test_a_structurally_fixed_gate_discloses_that_it_could_not_differ`,
+  `test_correlation_concentration.py::test_one_unusable_pair_does_not_disable_the_whole_gate`,
+  `::test_every_pair_unusable_still_reports_not_evaluated`,
+  `test_portfolio_manager_audit.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed`,
+  and `test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap`.

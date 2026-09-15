@@ -35,15 +35,40 @@ class IssuerComparison:
 
 
 @dataclass(frozen=True)
+class SkippedPair:
+    """One held issuer pair skipped because overlap was too thin."""
+
+    issuer: str
+    overlap_bars: int
+
+    def render(self) -> str:
+        """Render this skipped pair as ``ISSUER:overlap``."""
+        return f"{self.issuer}:{self.overlap_bars}"
+
+
+@dataclass(frozen=True)
 class CorrelationCensus:
     """Every comparison the correlated-cluster gate performed for one candidate."""
 
     comparisons: tuple[IssuerComparison, ...]
     threshold: float
+    skipped: tuple[SkippedPair, ...] = ()
 
     def clustered(self) -> tuple[str, ...]:
         """Return the held issuers whose measured correlation reached the threshold."""
         return tuple(item.issuer for item in self._at_or_above())
+
+    def all_pairs_unusable(self) -> bool:
+        """Return whether every available held pair was below the overlap floor."""
+        return not self.comparisons and bool(self.skipped)
+
+    def first_skipped(self) -> SkippedPair | None:
+        """Return the first skipped pair by issuer order, if any."""
+        return self.skipped[0] if self.skipped else None
+
+    def max_skipped_overlap(self) -> int:
+        """Return the widest skipped overlap, or zero when no pair was skipped."""
+        return max((item.overlap_bars for item in self.skipped), default=0)
 
     def detail(self) -> str:
         """Render the census as gate-detail fields."""
@@ -54,6 +79,8 @@ class CorrelationCensus:
                 f"below_threshold_top={_render(self._below()[:_TOP_BELOW])}",
                 f"correlation_threshold={self.threshold:.4f}",
                 f"min_pair_overlap_bars={self._min_overlap()}",
+                f"skipped_pairs={len(self.skipped)}",
+                f"skipped_pair_issuers={_render_skipped(self.skipped)}",
             )
         )
 
@@ -101,12 +128,24 @@ def build_census(
     min_bars: int,
 ) -> CorrelationCensus:
     """Compare the candidate against every held issuer and record each result."""
-    comparisons = tuple(
-        _compare(candidate_ticker, held, issuer_tickers, pair, min_bars)
-        for held in sorted(issuer_keys)
-        if held != candidate_issuer
+    comparisons: list[IssuerComparison] = []
+    skipped: list[SkippedPair] = []
+    for held in sorted(issuer_keys):
+        if held == candidate_issuer:
+            continue
+        comparison = _compare(candidate_ticker, held, issuer_tickers, pair, min_bars)
+        if comparison.overlap_bars < min_bars:
+            skipped.append(
+                SkippedPair(
+                    issuer=comparison.issuer,
+                    overlap_bars=comparison.overlap_bars,
+                )
+            )
+            continue
+        comparisons.append(comparison)
+    return CorrelationCensus(
+        comparisons=tuple(comparisons), skipped=tuple(skipped), threshold=threshold
     )
-    return CorrelationCensus(comparisons=comparisons, threshold=threshold)
 
 
 def _compare(
@@ -128,4 +167,8 @@ def _compare(
 
 
 def _render(items: tuple[IssuerComparison, ...]) -> str:
+    return ",".join(item.render() for item in items) if items else _NONE
+
+
+def _render_skipped(items: tuple[SkippedPair, ...]) -> str:
     return ",".join(item.render() for item in items) if items else _NONE

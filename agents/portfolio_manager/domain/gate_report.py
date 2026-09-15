@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.reward_risk_detail import reward_risk_detail
 from agents.portfolio_manager.domain.volatility import decision_atr_pct
 from contracts.common import Explanation
 from contracts.portfolio_manager import (
@@ -67,9 +68,12 @@ def stop_target_report(
                 if stop_pct > 0.0 and ratio >= min_ratio
                 else GateStatus.FAILED
             ),
-            detail=(
-                f"target_pct={target_pct:.4f}; stop_pct={stop_pct:.4f}; "
-                f"source={_stop_target_source(item)}"
+            detail=reward_risk_detail(
+                item,
+                stop_pct=stop_pct,
+                target_pct=target_pct,
+                default_stop_pct=default_stop_pct,
+                default_target_pct=default_target_pct,
             ),
         ),
     )
@@ -114,7 +118,3 @@ def order_intent(
         ),
         gate_report=outcomes,
     )
-
-
-def _stop_target_source(item: Recommendation) -> str:
-    return "recommendation" if item.suggested_stop_pct is not None else "regime"

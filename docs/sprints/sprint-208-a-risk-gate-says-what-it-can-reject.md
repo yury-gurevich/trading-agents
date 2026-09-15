@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-208-a-risk-gate-says-what-it-can-reject`
-**Status:** SPECCED
+**Status:** BUILT
 **Version:** `0.98.05`
 **Effort:** M–L
 **Decisions:** [DL-169](../design-log.md) the open thread · `DRIFT-063` the row this opens · work-queue items **60** and **61**
@@ -464,21 +464,26 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| `gate_report.py` | | | |
-| `correlation.py` | | | |
-| `correlation_census.py` | | | |
-| `laws.md` / `test-plan.md` | | | |
+| `gate_report.py` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-OUT-01..03`, `PM-NEV-04`, `PM-TYP-03`, `PM-OBS-01`, new `PM-OBS-04` | Yes. The law file confirms the contract already has `GateOutcome.detail`; the disclosure belongs there, with no `contracts/` edit. |
+| `correlation.py` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-NEV-08`, `PM-NEV-09`, `PM-OBS-03`, new `PM-OBS-04` | Yes. `PM-NEV-09` requires all-pairs-unusable to remain `NOT_EVALUATED`; the fix is pair-level skipping, not a silent pass. |
+| `correlation_census.py` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-NEV-08`, `PM-NEV-09`, `PM-OBS-03`, new `PM-OBS-04` | Yes. The census is the existing `PM-OBS-03` evidence channel, so skipped-pair attribution should render there rather than in a new contract field. |
+| `laws.md` / `test-plan.md` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; `docs/laws/INDEX.md` | conventions §2, §3, §4, §7, §7a, §9; `PM-OBS-04` free; `PM-NEV-10` free but out of scope | Yes. This is an observability clause, not a prohibition; `PM-OBS-04` is the correct new ID. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(the spec says
-No to `contracts/` and Yes to one new clause — confirm after reading, and say if you disagree)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/`
+change is needed or allowed; `GateOutcome.detail` and tri-state `GateStatus` already carry the
+evidence. Yes, the sprint adds one PM guarantee: a rendered `PASSED`/`FAILED` gate must disclose
+whether the opposite verdict was reachable. Full law cycle owed as `PM-OBS-04`.
 
-**Contradictions found between a law and this spec:**
+**Contradictions found between a law and this spec:** None found.
 
-**Laws found silent where a decision was needed:**
+**Laws found silent where a decision was needed:** PM laws were silent on verdict-reachability
+disclosure for gates that render `PASSED` or `FAILED`; this sprint fills that silence with
+`PM-OBS-04`.
 
-**Clauses that were ⬜ and are now proven:** *(IDs, and the rollup the gate computed)*
+**Clauses that were ⬜ and are now proven:** `PM-OBS-04` is now 🟩; PM rollup moved
+from **29 / 48** to **30 / 49** in both law rollups.
 
-**Clauses that were 🟩 and are now ⬜:** *(IDs, and why the old test does not prove the new clause)*
+**Clauses that were 🟩 and are now ⬜:** None identified before implementation.
 
 ---
 
@@ -486,50 +491,157 @@ No to `contracts/` and Yes to one new clause — confirm after reading, and say 
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| T0 | | | | |
-| T1 | | | | |
-| T2 | | | | |
-| T3 | | | | |
-| T4 | | | | |
-| T5 | | | | |
-| T6 | | | | |
+| T0 | live denominator re-derivation | manual read-only graph query via main `.env` | PASS — `OrderIntent count=273`; `OrderIntent with non-null gate outcome=35` | — |
+| T1 | `test_a_structurally_fixed_gate_discloses_that_it_could_not_differ` | `agents/portfolio_manager/tests/test_reward_risk.py` | PASS; verified red on `main` first | `PM-OBS-04` |
+| T2 | `test_one_unusable_pair_does_not_disable_the_whole_gate` | `agents/portfolio_manager/tests/test_correlation_concentration.py` | PASS; verified red on `main` first | `PM-OBS-04`, `PM-NEV-09` |
+| T3 | `test_every_pair_unusable_still_reports_not_evaluated` | `agents/portfolio_manager/tests/test_correlation_concentration.py` | PASS | `PM-NEV-09`, `PM-OBS-04` |
+| T4 | `test_a_gate_whose_value_varies_is_not_marked_structurally_fixed` | `agents/portfolio_manager/tests/test_gate_reachability.py` | PASS | `PM-OBS-04` |
+| T5 | `test_skipped_pair_names_the_issuer_and_its_overlap` | `agents/portfolio_manager/tests/test_correlation_census.py` | PASS | `PM-OBS-03`, `PM-OBS-04` |
+| T6 | recorded census replay | manual read-only graph replay via main `.env` | PASS — 7 records, 0 cluster mismatches, new skip field renders as zero | — |
 
 **Tests added beyond the plan:**
+
+- `agents/portfolio_manager/tests/test_reward_risk.py::test_a_zero_stop_ratio_is_not_labelled_structurally_fixed`
+  cites `PM-OBS-04` and covers the undefined-ratio defensive branch.
+- `agents/portfolio_manager/tests/test_correlation_edges.py::test_repeated_pair_uses_cached_correlation`
+  cites `PM-NEV-08` and covers the pair-correlation cache-hit branch introduced by the split.
 
 ---
 
 ## Closeout — evidence
 
-**Status:**
+**Status:** BUILT — local CI and branch gate proved for implementation commit
+`95e17d776b6f661852473f8736c8d731f39db3e5`.
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** Local tests and `make ci` ran in
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-208-a-risk-gate-says-what-it-can-reject`
+with no local `.env`. T0 and T6 were read-only graph measurements run from that worktree after
+loading `..\trading-agents\.env` from the main worktree; no secrets were printed.
 
 **T0 — the denominator you measured:** *(OrderIntent count, outcome-bearing count)*
 
-**Result:** *(what is now true, in the artefact's own words — not the intent restated)*
+```text
+OrderIntent count=273
+OrderIntent with non-null gate outcome=35
+```
+
+**Result:** `reward_risk` detail now renders `base_take_profit_pct`, `base_stop_loss_pct`,
+`applied_mode`, `structural_basis` and `comparison=STRUCTURALLY_DETERMINED` when the recorded
+stop/target evidence shows the ratio was fixed by the base pair. Data-varying gates do not carry the
+structural marker. `correlated_cluster_pct` now evaluates usable pairs even when one held issuer is
+below `min_correlation_bars`, reports `skipped_pairs` plus `skipped_pair_issuers`, and still returns
+whole-gate `NOT_EVALUATED` when no usable pair remains.
 
 **Files changed:**
 
-**Design decisions:** recorded as `DL-NNN`
+```text
+agents/portfolio_manager/domain/correlation.py
+agents/portfolio_manager/domain/correlation_census.py
+agents/portfolio_manager/domain/gate_report.py
+agents/portfolio_manager/domain/reward_risk_detail.py
+agents/portfolio_manager/settings.py
+agents/portfolio_manager/laws/laws.md
+agents/portfolio_manager/laws/test-plan.md
+agents/portfolio_manager/tests/test_correlation_census.py
+agents/portfolio_manager/tests/test_correlation_concentration.py
+agents/portfolio_manager/tests/test_correlation_edges.py
+agents/portfolio_manager/tests/test_gate_reachability.py
+agents/portfolio_manager/tests/test_reward_risk.py
+docs/STATE.md
+docs/laws/INDEX.md
+docs/laws/drift-register.md
+docs/laws/ledger.md
+docs/work-queue.md
+pyproject.toml
+uv.lock
+```
+
+**Design decisions:** recorded as `DL-169`; `DRIFT-063` filed and marked corrected by S208.
 
 **Proof — the RED runs first (T1 and T2 failing on `main`):**
 
+```text
+2 collected; 2 failed
+test_reward_risk.py:78: assertion failed because old detail was
+"target_pct=0.1600; stop_pct=0.0800; source=recommendation"
+and did not contain "base_stop_loss_pct=0.0500"
+test_correlation_concentration.py:105: expected "correlated_cluster_concentration";
+observed "correlation_not_evaluated"
+```
+
 **Proof — the green run:**
+
+```text
+uv run pytest agents\portfolio_manager\tests\test_reward_risk.py::test_a_structurally_fixed_gate_discloses_that_it_could_not_differ agents\portfolio_manager\tests\test_correlation_concentration.py::test_one_unusable_pair_does_not_disable_the_whole_gate agents\portfolio_manager\tests\test_correlation_concentration.py::test_every_pair_unusable_still_reports_not_evaluated agents\portfolio_manager\tests\test_gate_reachability.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed agents\portfolio_manager\tests\test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap --no-cov
+5 passed in 1.21s
+
+uv run pytest agents\portfolio_manager --no-cov
+116 passed in 1.87s
+```
 
 **Proof — T6, the recorded census replayed:**
 
-**`git diff --stat contracts/`:** *(must be empty)*
+```text
+census-bearing records=7
+cluster_issuers mismatches=0
+new_renderer_skip_field=skipped_pairs=0
+```
 
-**Rollups, as computed by the gate:** *(before → after, in `ledger.md` and `docs/laws/INDEX.md`)*
+**`git diff --stat contracts/`:** empty output.
+
+**Rollups, as computed by the gate:** `check_law_coverage.py` first reported
+`portfolio_manager claims 29 / 48; derived 30 / 49`; after updating both rollups it exited 0.
+`agents/portfolio_manager/laws/laws.md`, `docs/laws/ledger.md` and `docs/laws/INDEX.md` now all
+record **30 / 49** with `PM-OBS-04` green.
 
 **Module line counts:** *(`correlation.py` must be below 150)*
 
-**`make ci`:** redirected to *(file)*. Exit code:
+```text
+agents\portfolio_manager\domain\correlation.py 115
+agents\portfolio_manager\domain\correlation_census.py 141
+agents\portfolio_manager\domain\gate_report.py 105
+agents\portfolio_manager\domain\reward_risk_detail.py 90
+agents\portfolio_manager\tests\test_correlation_census.py 157
+agents\portfolio_manager\tests\test_correlation_concentration.py 134
+agents\portfolio_manager\tests\test_correlation_edges.py 138
+agents\portfolio_manager\tests\test_gate_reachability.py 55
+agents\portfolio_manager\tests\test_portfolio_manager_audit.py 145
+agents\portfolio_manager\tests\test_reward_risk.py 128
+```
 
-**`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
+**`make ci`:** redirected to
+`C:\Users\yury_\AppData\Local\Temp\s208-make-ci-20260915-220939.log`. Exit code: `0`.
 
-**Not met / verified failing:**
+```text
+TOTAL                                                     16525      0   3518      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+2763 passed, 6 skipped in 84.85s
+uv run pip-audit
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
+```
+
+**`make gate-ran`:** run from
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-208-a-risk-gate-says-what-it-can-reject`
+at `95e17d776b6f661852473f8736c8d731f39db3e5`:
+
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 95e17d776b6f661852473f8736c8d731f39db3e5:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+head=95e17d776b6f661852473f8736c8d731f39db3e5
+exit=0
+```
+
+**Not met / verified failing:** No merge, post-merge CodeQL or deploy was attempted.
 
 ---
 
 ## Return notes
+
+S208 deliberately leaves work-queue item 60's independent-target-derivation half open as an operator
+policy decision. It closes item 61's pairwise correlation-disable defect and corrects the stale
+denominators in `docs/work-queue.md`. `docs/local/STATE.md` does not exist in this repository, so the
+sprint boundary note was recorded in tracked `docs/STATE.md` instead.

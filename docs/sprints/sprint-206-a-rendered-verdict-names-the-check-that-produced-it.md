@@ -262,9 +262,13 @@ is not required. 🪤 If you find yourself needing a pack change, the scope has 
 | T3 | `test_stop_basis_degrades_without_evidence` | `rec=None`, and `stop_pct`/`target_pct=None`, render as unavailable — **no verdict invented to fill the gap** | `DLIB-NEV-08` |
 | T4 | `test_confidence_floor_names_its_enforcer` | The confidence-floor line names the analyst as enforcer, and keeps its (real) verdict | `DLIB-NEV-08` |
 | T5 | Prompt rebuild (manual, free) | `scripts/deliberation_reproducibility.py` rebuilds the `sched-2026-09-14` defender prompt; the rebuilt text contains **no** `stop_vs_regime_volatility gate:`. Paste the before/after fragment | — |
-| T6 | Replay measurement (paid, bounded) | Replay the two 2026-09-14 debates with the corrected context and **report whether the verdicts change**. *[measured: the original run cost **$1.73** at opus-5 list over 10 `LLMCall` rows, 54,638 in / 12,112 out — a replay is the same order, less via the Batches path]* | — |
+| T6 | Replay measurement (paid, **capped under $1**) | Replay **WFC only** — one order, five calls — with the corrected context, and **report whether the verdict changes**. *[measured 2026-09-15 from the ledger: WFC's five calls were 27,939 in / 5,568 out = **$0.84** at opus-5 list, or **~$0.42** through `scripts/deliberation_replay_batch.py`. The full two-order replay would be $1.73; one order is enough for a clean A/B and is the scoped spend.]* 🪤 **Do not replay both orders, and do not swap in a cheaper model** — a different model invalidates the comparison. If the spend is refused, say so and fall back to T6-free below | — |
 
-🚨 **T6 is a measurement, not a success condition.** See below.
+🚨 **T6 is a measurement, not a success condition.** See Success factors.
+
+**T6-free — the zero-cost fallback.** The next scheduled run after the retag answers the same question for **no marginal spend**, because that run happens anyway. 🪤 **It is a weaker instrument and the spec says so plainly:** it runs on different tickers in a different regime, so a changed verdict cannot be attributed to this fix. Prefer the $0.84 A/B; use this if the spend is refused, and report which one you ran.
+
+💰 **Project LLM spend to date, for calibration:** *[measured 2026-09-15 from the `LLMCall` ledger]* **$34.20** lifetime at opus-5 list — $0.19 in July, $26.42 in August (the experimentation month), **$7.59** so far in September. A nightly deliberation that reaches a real debate costs about **$1.73**. Keep this sprint's measurement under a dollar.
 
 ---
 
@@ -400,9 +404,14 @@ rule that clause does not contain, and it currently asserts the invented line IS
 uses flat mode, where the two values are equal, which is why the suite never saw this.
 
 SUCCESS IS NOT "the referee stops vetoing". It is: the context tells the truth. Report the replay
-result either way. The original debate cost $1.73 (10 LLMCall rows, 54,638 in / 12,112 out, opus-5
-list), so a replay is affordable - but if it still vetoes, say so plainly and do not tune anything to
-change it.
+result either way, and if it still vetoes, say so plainly and do not tune anything to change it.
+
+COST IS CAPPED UNDER $1. Replay WFC ONLY - one order, five calls, measured at $0.84 at opus-5 list
+(27,939 in / 5,568 out), or ~$0.42 through scripts/deliberation_replay_batch.py. Do NOT replay both
+orders ($1.73) and do NOT substitute a cheaper model - a different model invalidates the comparison.
+Project lifetime LLM spend is $34.20, so this is a real constraint, not a formality. If the spend is
+refused, fall back to the free option: let the next scheduled run answer it, and say that is what you
+did, noting it runs on different inputs so a changed verdict cannot be attributed to this fix.
 
 make ci all 12 steps, redirected to a FILE (never | tail - that reports tail's exit code), 100.00%
 coverage. Then make gate-ran from the worktree whose HEAD is the commit you are proving.

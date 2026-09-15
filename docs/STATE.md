@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-14 21:26 AEST · **Version:** 0.98.02 · **🟩 S203 merged `e890f93` and DEPLOYED `s203`: the three checks that could not fail now can, and the one that could not discriminate says so.**
+**Last updated:** 2026-09-15 10:45 AEST · **Version:** 0.98.02 · **🔴 Queue re-reviewed against the live spine: the referee vetoes 100 % of what it reviews, and every order that reached the broker since 2026-09-01 went through on a night it was blind — [item 59](work-queue.md) / [DL-167](design-log.md), ranked first.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when

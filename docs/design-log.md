@@ -8,6 +8,59 @@ and is marked CLOSED here.
 
 ---
 
+## DL-167 - the referee only blocks orders when it works, and its leading ground is a comparison that cannot pass - status: OPEN (measured 2026-09-15, work-queue item 59)
+
+Found by reading `sched-2026-09-14` and then walking all **48** scheduled runs on the live spine. Nothing here was inferred from code alone; every number below came out of the graph.
+
+### 1. The measurement that reframes the etalon bar
+
+Split the recent runs by `deliberation_status`:
+
+| nights | status | orders approved | orders submitted |
+| --- | --- | --- | --- |
+| `sched-2026-09-01, -02, -03, -04, -14` | `applied` (referee really ran, `real_debate_count=2`) | 2 each | **0 each** |
+| `sched-2026-09-08, -09, -10, -11` | `applied_failed_open` (referee blind) | 2, 1, 1, 1 | **2, 1, 1, 1** |
+
+🚨 **Every order that has reached the broker since 2026-09-01 did so because the referee was broken — 9 of 9.** The four fail-open nights are exactly item 55's blind-night signature (empty-string response hash, sub-second latency). So the operator's bar — *the pack trades unattended for a sustained stretch* — is currently satisfiable **only while the referee is down**, which is not a bar anyone wants cleared that way.
+
+All-time the rate has moved the wrong way: **28** real-debate runs, **220** reviewed, **174** vetoed = **79.1 %** (`revise` 152, `uphold` 46, `overturn` 22), against [DL-119](design-log.md)'s 73 %. [ADR-0023](decisions/0023-the-pm-gets-an-issuer-and-a-correlation-dimension.md) predicted S184's issuer/correlation dimension would lower it. **Measured false.**
+
+### 2. The leading veto ground is structurally guaranteed
+
+`_stop_regime_line` (`agents/deliberator/context_pm.py:132`) renders:
+
+```text
+stop_vs_regime_volatility gate: stop_pct=X vs base_stop_loss_pct=A -> PASSED/FAILED;
+                                target_pct=Y vs base_take_profit_pct=B -> PASSED/FAILED
+```
+
+with `target_base_passed = intent.target_pct >= regime.base_take_profit_pct`. But under `ANALYST_STOP_TARGET_MODE=scaled`, `agents/analyst/domain/stop_target.py:86` defines
+
+```python
+_scaled_target = min(flat_target * (scaled_stop / flat_stop), 1.0)
+```
+
+so whenever ATR tightens the stop (`scaled_stop < flat_stop`), `scaled_target < flat_target` **necessarily**, and the target leg **cannot** pass while the stop leg **cannot** fail. Measured on `sched-2026-09-14`: WFC `stop 4.14 % <= 5.00 %` PASSED, `target 8.29 % < 10.00 %` **FAILED**; MDLZ `3.83 %` / `7.66 %`. Both orders carry `reward_risk = 2.0` exactly — the ratio the real gate tests — and both passed it.
+
+🪤 **No PM gate performs the failing comparison.** Both approved orders carry eight `gate_report` entries, **all `passed`**, and none is named `stop_vs_regime_volatility`. The referee is shown a FAILED verdict for a check the portfolio manager does not run.
+
+### 3. Why this is a repeat, and why it hid for nine days
+
+This is [DL-104](design-log.md)'s defect class — *the veto is shown a pass/fail no gate ever computed* — surviving in the half of the line [S175](sprints/sprint-175-the-veto-says-only-what-it-can-prove.md) did not remove. S175 deleted the invented `stop_pct vs ATR%` comparison from this same rendered fragment; the `target_pct vs base_take_profit_pct` comparison stayed, harmless while the mode was `flat` (where `target_pct == base_take_profit_pct`, so it always passed).
+
+[S198](sprints/sprint-198-a-stop-we-never-measured.md) flipped `ANALYST_STOP_TARGET_MODE=scaled` on 2026-09-05 and deployed `s198`. That flip turned an always-true line into an **always-false** one. It went unseen because the only runs between the flip and 2026-09-14 were the four blind nights, where the referee never read the line at all. 🪰 **Two correct, independently-proven changes composed into a defect neither sprint could have seen alone** — and the instrument that would have caught it was down for the whole interval.
+
+### 4. Options, and what is ruled out
+
+- **Render the comparison against the applied mode's own baseline** — `StopTargetEvidence` already carries `mode`, `flat_*`, `scaled_*` and `counterfactual_*`, so the material is present and simply unrendered. *Current preference.*
+- **Render the counterfactual beside the applied value**, so the referee sees the scaling rather than a bare FAILED.
+- **Ruled out: delete the line.** The same argument would delete a genuine check, and S175 already showed that deleting half a fragment leaves the other half to rot.
+- **Ruled out for now: concluding the referee is simply too harsh.** Its other recurring grounds — fixed-fraction sizing that is not volatility-adjusted, and `correlated_cluster_pct` enumerating clusters that omit co-held names — repeat on **every** night measured and are **not** assessed here. Correct this defect first, then re-measure the rate before touching the referee's disposition.
+
+🪤 **The ordering consequence:** work-queue item **6b** (advisory vs binding) cannot be decided before this. `advisory` already blocks 100 % of reviewed orders, so flipping to `binding` would change nothing about what trades and only change what turns red.
+
+---
+
 ## DL-166 - three checks that could not fail, and the two things measuring them taught - status: DECIDED (S203, 2026-09-14)
 
 Built as [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) (`0.98.02`), closing work-queue items **53**, **56** and **41**. The sprint's thesis came from [DRIFT-058](laws/drift-register.md): *a green row whose oracle cannot fail proves only that the oracle ran.* Two things the sprint learned are worth keeping separately from the closeout, because both generalise past this repo.

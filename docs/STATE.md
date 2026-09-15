@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 16:56 AEST · **Version:** 0.98.04 · **🟩 S206 BUILT on `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`: deliberation contexts no longer render the invented stop/regime verdict, and rendered verdicts now name the check/enforcer that produced them.**
+**Last updated:** 2026-09-15 18:50 AEST · **Version:** 0.98.04 · **🟩 S206 MERGED to `main` (`8c6f74a`): the deliberation context no longer renders a `PASSED`/`FAILED` for a check no agent performs, and every verdict it still renders names its enforcer. Not yet deployed — the fleet runs the old renderer until an image-only retag.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -65,9 +65,16 @@ stop-target values and reward-risk ratios. The real confidence-floor verdict now
 T1 failed first on the old renderer naming `stop_vs_regime_volatility`; focused tests later reported
 20 passed; local `make ci` exit 0 with **2758 passed, 6 skipped, 100.00 %**; branch `make gate-ran`
 printed `GATE PROVEN` for `2807b446ca7789b0117c9548a88eb53f61e00aaa`. `DLIB-NEV-08` is green and the
-deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups. 🟠 **Not merged/deployed yet:**
-post-merge CodeQL, image-only retag, and the next scheduled live counterpart are still owed after a
-merge decision.
+deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups.
+🟩 **Verified on handback rather than taken on trust, 2026-09-15:** `make gate-ran` re-run from the
+S206 worktree proved the **branch tip** `5a192a960b366ccbab25c31d518dd934acf4d17c`, not just the
+implementation commit the handback pasted (`2807b44`) — the S186 hazard, checked. T1 was **independently
+reproduced red** at the branch base `823e5cf` in a throwaway worktree, failing on exactly the two lines
+the handback claimed. `git diff --stat contracts/` empty, `context_pm.py` **129** lines, PATCH bump correct
+(no agent gained a capability). 🟩 **MERGED `8c6f74a`** — the only difference between the gate-proven tip
+and the merge commit is S207's three docs files, no code. 🟠 **Still owed:** the image-only retag, and the
+next scheduled run as T6's live counterpart. **Until that retag the fleet still renders the invented
+verdict**, so tonight's run is not yet the corrected one.
 
 🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
 (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and

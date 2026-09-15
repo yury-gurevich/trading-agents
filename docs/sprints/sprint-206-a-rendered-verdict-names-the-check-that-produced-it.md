@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`
-**Status:** BUILT
+**Status:** SHIPPED
 **Version:** `0.98.04`
 **Effort:** M
 **Decisions:** [DL-167](../design-log.md) the open thread · `DRIFT-062` the row this opens · work-queue item **59**
@@ -514,7 +514,7 @@ covers the zero-stop reward-risk fallback so `context_stop.py` remains at 100.00
 
 ## Closeout — evidence
 
-**Status:** BUILT — local CI, remote branch CI, Security Findings and branch `make gate-ran` were
+**Status:** SHIPPED — local CI, remote branch CI, Security Findings and branch `make gate-ran` were
 proven for the implementation commit. Main merge, post-merge CodeQL, fleet retag and the next
 scheduled live counterpart are not done.
 
@@ -665,6 +665,64 @@ GATE PROVEN for 2807b446ca7789b0117c9548a88eb53f61e00aaa:
   CI: success (attempt 1)
   Security Findings: success (attempt 1)
 ```
+
+**Handback verification — re-measured on merge, 2026-09-15 (planning):**
+
+🚨 **The handback's `make gate-ran` proves `2807b44`, which is the implementation commit, not the
+branch tip** — `5a192a9` (the docs handback commit) sits above it. That is exactly the S186 hazard, so it
+was re-run rather than accepted:
+
+```text
+$ cd C:/Users/yury_/Downloads/project/wt-s206 && make gate-ran
+GATE PROVEN for 5a192a960b366ccbab25c31d518dd934acf4d17c:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+$ git rev-parse HEAD
+5a192a960b366ccbab25c31d518dd934acf4d17c
+```
+
+🟩 **T1's red run reproduced independently**, not read from the paste — the new test file copied into a
+throwaway worktree detached at the branch base `823e5cf`, where the fix does not exist:
+
+```text
+$ uv run pytest tests/t1_red_check.py::test_no_rendered_verdict_lacks_an_enforcing_check --no-cov -q
+E   AssertionError: assert ['missing enf...0% -> PASSED'] == []
+E     Left contains 2 more items, first extra item: 'missing enforcing agent analyst: confidence_floor: ...'
+1 failed in 3.46s
+```
+
+🟩 **Re-measured, each independently:** `git diff --stat contracts/` **empty**; `context_pm.py` **129**,
+`context_stop.py` **83**, `context.py` **133** — all under the warn line; `kernel/` and `.github/` untouched and
+the secrets baseline unedited; the bump is `0.98.03 → 0.98.04`, **PATCH**, correct because no agent gains a
+capability; laws `v1.6 → v1.7` with `DLIB-NEV-08`, a test-plan row citing five tests, and **21 / 56** in both
+`ledger.md` and `docs/laws/INDEX.md`; all five pinned assertions updated and the mis-cited
+`test_regime_context_does_not_invent_an_atr_gate_outcome` deleted rather than patched.
+
+🎯 **T1 is a real oracle, not the S205 anti-pattern** — it scans every `-> PASSED`/`-> FAILED` in the whole
+rendered context, extracts the check name, and requires it to be a `gate_report` entry or an explicitly
+declared context check carrying `enforced_by=`. A new fabricated verdict cannot pass without someone adding
+it to the allowlist by hand.
+
+🟠 **One residue, named rather than left implicit:** the happy-path `stop_target_regime basis:` line never
+prints `base_stop_loss_pct` / `base_take_profit_pct`, so the label says *regime* while the regime bases appear
+only under their derivation names (`flat_*`, which equal them). No information is lost; the naming is looser
+than the line's own label.
+
+🟩 **MERGED `8c6f74afb76d4d323f262521c7907d0e92d31c80`**, 2026-09-15. The merge commit differs from the
+gate-proven tip only by S207's three docs files (`git diff 5a192a9..8c6f74a --stat`: `docs/sprints/INDEX.md`,
+`docs/sprints/sprint-207-*.md`, `docs/work-queue.md`) — **no code**. One `INDEX.md` row conflict, resolved by
+keeping both sprint rows. **Post-merge `main` gate, all six workflows:**
+
+```text
+GATE PROVEN for 8c6f74afb76d4d323f262521c7907d0e92d31c80:
+  Build and push agent images: success (attempt 1)
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+🟠 **Not deployed.** Deploy shape is the image-only retag the spec names; until it runs the fleet still
+renders the invented verdict, so no live run has yet read the corrected context.
 
 **Not met / verified failing:**
 

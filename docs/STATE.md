@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-16 00:45 AEST · **Version:** 0.98.05 · **🟩 S208 MERGED (`d43280e`) and tagged `v0.98.05` — PM risk gates now disclose whether the opposite verdict was reachable, and the correlation gate skips only the unusable pair. Gate proven for `210dbd3`; NOT deployed — the fleet still runs `s206`.**
+**Last updated:** 2026-09-16 01:05 AEST · **Version:** 0.98.05 · **🟩 S208 MERGED (`d43280e`), tagged `v0.98.05` and DEPLOYED `s208` — PM risk gates now disclose whether the opposite verdict was reachable, and the correlation gate skips only the unusable pair. 16/16 apps + dispatcher on `:s208`, packs and KEDA unmoved; the live proof is tonight's `sched-2026-09-16`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,22 +37,9 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🟩 **MERGED — [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) (`0.98.05`,
-merge `d43280e`), 2026-09-16.** `reward_risk` now renders `base_take_profit_pct`, `base_stop_loss_pct`,
-`applied_mode`, `structural_basis` and `comparison=STRUCTURALLY_DETERMINED` when the ratio is fixed
-by the base stop/target pair; full gate reports prove data-varying gates are not labelled structural.
-`correlated_cluster_pct` now skips only unusable pairs, attributes them as `skipped_pair_issuers`,
-and still reports whole-gate `NOT_EVALUATED` when no usable pair remains. `PM-OBS-04` is added and
-green; PM law rollup moved **29 / 48 → 30 / 49**; `DRIFT-063` records the corrected drift. 🟩 **Proof
-so far:** T1/T2 reproduced red on `main`; T0 live denominator still **273 / 35**; T6 replay over the
-7 census-bearing records found **0** cluster mismatches; local redirected `make ci` exit 0 with
-**2763 passed, 6 skipped, 100.00 %**, pip-audit and secrets checks clean; `git diff --stat contracts/`
-empty; `correlation.py` is **115** lines. 🟩 **Branch proof:** `make gate-ran` from the S208 worktree
-printed `GATE PROVEN` for `95e17d776b6f661852473f8736c8d731f39db3e5`, with CI and Security Findings
-both `success`; re-run from the branch worktree at `210dbd3591afde812f998e37f7a3430e0f45bbd0`
-(the docs commit above it) before merging, so the merged SHA is the proven one. 🟠 **Still owed:**
-post-merge CodeQL on `main`, and the deploy — the fleet still runs `s206`, so the new gate detail is
-not live yet.
+🟩 **MERGED and DEPLOYED — [S208](sprints/sprint-208-a-risk-gate-says-what-it-can-reject.md) (`0.98.05`, merge `d43280e`, tag `s208`), 2026-09-16 — work-queue item **61** closed, **60** narrowed.** `reward_risk` keeps its verdict and threshold but now names `base_take_profit_pct`, `base_stop_loss_pct`, `applied_mode`, `structural_basis` and `comparison=STRUCTURALLY_DETERMINED` when the ratio is fixed by the base pair — and a full gate report proves data-varying gates are **not** labelled structural, which is what stops the clause describing one site. `correlated_cluster_pct` now skips only the unusable pair, attributes it as `skipped_pair_issuers`, and still returns whole-gate `NOT_EVALUATED` when no usable pair remains, so `PM-NEV-09` comes out stronger. `PM-OBS-04` added and green; PM rollup **29 / 48 → 30 / 49** as the gate computed it; `DRIFT-063` filed and corrected. 🟩 **Proven:** T1/T2 red on `main` first; local `make ci` exit 0 (**2763 passed, 6 skipped, 100.00 %**); `contracts/` diff empty; `correlation.py` 153 → **115** lines; `make gate-ran` on the **merged** SHA — `main` @ `773c02e`, with CI, **CodeQL**, Security Findings and the image build all `success`, so no commit rides above a gated one (the S186 hazard). 🚨 **One handback defect no gate could catch, fixed on merge:** the `laws.md` v1.5 changelog cited `test_portfolio_manager_audit.py` for the T4 test, which lives in `test_gate_reachability.py`; the test-plan row the coverage gate reads was right, the prose was not.
+
+🟩 **DEPLOYED `s208` by image-only retag, and the path was proven before it was taken.** All **three** injected packs were diffed against the deployed `ea6a3b4` *and* against what the live fleet decodes — vocabulary `58769995…`, credential tests `f8f03950…`, issuer map `2ed1f41c…`, identical on all three sides — so the retag ships nothing inert (the S202 trap). 🟩 **Verified:** 15/15 image jobs green at `773c02e`, **16/16 apps on `:s208`** plus `dispatcher-cron`, 16/16 `Succeeded`, cron `30 22 * * 1-5` intact, scale and KEDA **diffed byte-identical to the pre-deploy baseline, zero drift**, packs re-checked *after* the retag unchanged. `DeployRecord deploy:2026-09-15T14:55:48…:s208:773c02e…`. 🟠 **Still owed — the live check:** no order intent has been written by this code yet. After `sched-2026-09-16` (22:30 UTC) read one `reward_risk` detail for `comparison=STRUCTURALLY_DETERMINED` and one `correlated_cluster_pct` detail for `skipped_pairs=`, then record it in [`laws/functionality-checks.md`](laws/functionality-checks.md).
 
 ## Recent (most recent first — detail in each sprint doc)
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-15 14:10 AEST · **Version:** 0.98.03 · **🟩 S205 merged and independently gate-proven on `af75079`: the twelve contract-type clauses now name the fields they require, and item 30 — the queue's second-biggest carried row — is closed.**
+**Last updated:** 2026-09-15 16:56 AEST · **Version:** 0.98.04 · **🟩 S206 BUILT on `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`: deliberation contexts no longer render the invented stop/regime verdict, and rendered verdicts now name the check/enforcer that produced them.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -56,13 +56,18 @@ does not carry.
 
 ## Now
 
-🟩 **PROVEN RESULT — [S204](sprints/sprint-204-every-clause-declares-how-it-is-proven.md) MERGED
-`24d61f0` (`0.98.01`), 2026-09-14 — work-queue item 10 closed, the longest-carried row in the queue.**
-Every target law clause has a test-plan proof row, the 🧱/📜 row kinds are documented and checked, and
-assertion E in `check_law_coverage.py` is **promoted warn-only → enforcing**: watched pass on a planted
-`RPT-PERF-99`, then fail after promotion on the same plant. 🟩 **Verified on the merged SHA:**
-`make gate-ran` printed `GATE PROVEN` for `24d61f0` on `main` — CI, CodeQL, Security Findings, image
-build and dependency runs all green. No deploy: law, test-plan, docs and checker surfaces only.
+🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
+BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders
+`stop_vs_regime_volatility gate:` or any `PASSED`/`FAILED` outcome for the unenforced stop/regime
+comparison; the line is now a descriptive `stop_target_regime basis:` carrying mode, applied/flat/scaled
+stop-target values and reward-risk ratios. The real confidence-floor verdict now names
+`enforced_by=analyst`, PM gate outcomes are unchanged, and `contracts/` stayed untouched. 🟩 **Proven:**
+T1 failed first on the old renderer naming `stop_vs_regime_volatility`; focused tests later reported
+20 passed; local `make ci` exit 0 with **2758 passed, 6 skipped, 100.00 %**; branch `make gate-ran`
+printed `GATE PROVEN` for `2807b446ca7789b0117c9548a88eb53f61e00aaa`. `DLIB-NEV-08` is green and the
+deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups. 🟠 **Not merged/deployed yet:**
+post-merge CodeQL, image-only retag, and the next scheduled live counterpart are still owed after a
+merge decision.
 
 🟩 **PROVEN RESULT — [S203](sprints/sprint-203-a-check-that-cannot-fail-says-so.md) MERGED `e890f93`
 (`0.98.02`), 2026-09-14.** Work-queue items **53, 56 and

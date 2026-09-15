@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -62,6 +62,10 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + **DLIB-NEV-05** -- Never imports another agent or `orchestration`.
 + **DLIB-NEV-06** -- Never hides a failed debate or peer call as a clean veto.
 + **DLIB-NEV-07** -- Never records an empty debate turn as transcript evidence.
++ **DLIB-NEV-08** -- Never renders a `PASSED` or `FAILED` verdict for a
+  comparison no agent enforces. Every rendered debate-context verdict names the
+  check and enforcing agent that produced it; descriptive evidence is rendered
+  without a verdict.
 
 ## State & Effects (`STA`)
 
@@ -235,3 +239,6 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + v1.6 -- S205 rewrites `DLIB-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for debate proposition, turn, request, reply, and verdict payloads. No contract
   shape changes.
++ v1.7 -- S206 adds `DLIB-NEV-08`: rendered debate-context verdicts must name
+  the check and enforcing agent that produced them, and descriptive stop-target
+  evidence must not be rendered as a gate verdict.

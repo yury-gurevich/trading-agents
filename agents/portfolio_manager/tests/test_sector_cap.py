@@ -8,6 +8,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -21,8 +22,10 @@ from agents.portfolio_manager.tests.helpers import (
     recommendation_set,
     wire_pm,
 )
-from contracts.common import Money
+from agents.portfolio_manager.tests.s184_helpers import correlated_bars
+from contracts.common import Money, Provenance
 from contracts.portfolio_manager import OrderIntentSet
+from contracts.provider import MARKET_DATA_LABEL, DataQualityTrace, MarketData, OHLCVBar
 
 if TYPE_CHECKING:
     from contracts.analyst import Recommendation
@@ -45,8 +48,12 @@ def _two_tech_buys(
     return evaluate_recommendations(
         recs,
         prices,
-        cash_portfolio("10000.00"),
-        max_position_pct=Decimal("0.10"),
+        cash_portfolio(
+            "20000.00",
+            {"OTHER": 1},
+            position_values={"OTHER": Money(amount=Decimal("10000.00"))},
+        ),
+        max_position_pct=Decimal("0.05"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,
@@ -96,14 +103,31 @@ def test_max_sector_pct_of_one_disables_the_cap() -> None:
 def test_agent_applies_the_sector_cap_over_the_bus() -> None:
     """PM-NEV-04: sector cap enforced end-to-end over the bus."""
     payload = recommendation_set(recommendation("AAPL"), recommendation("MSFT"))
-    bus, _graph, sink = wire_pm(
+    bus, graph, sink = wire_pm(
         source_bars=(bar("AAPL", 0, 100.0), bar("MSFT", 0, 100.0)),
         sectors={"AAPL": "Technology", "MSFT": "Technology"},
         settings=PortfolioManagerSettings(
             starting_cash=Decimal("10000.00"),
-            max_position_pct=Decimal("0.10"),
+            max_position_pct=Decimal("0.05"),
             max_sector_pct=Decimal("0.15"),
+            max_names_per_sector=0,
         ),
+        portfolio=cash_portfolio(
+            "20000.00",
+            {"OTHER": 1},
+            position_values={"OTHER": Money(amount=Decimal("10000.00"))},
+        ),
+    )
+    graph.merge_node(
+        MARKET_DATA_LABEL,
+        f"market-data:{payload.run_id}",
+        {
+            "snapshot": MarketData(
+                bars=(*correlated_bars(("AAPL", "MSFT"), days=66), *_flat_bars()),
+                quality=DataQualityTrace(requested=3, returned=3),
+                provenance=Provenance(run_id=payload.run_id, source_agent="provider"),
+            ).model_dump(mode="json")
+        },
     )
 
     result = OrderIntentSet.model_validate(
@@ -115,3 +139,20 @@ def test_agent_applies_the_sector_cap_over_the_bus() -> None:
         ("MSFT", "sector_concentration")
     ]
     assert sink.faults == []
+
+
+def _flat_bars() -> tuple[OHLCVBar, ...]:
+    return tuple(_bar("OTHER", offset, 100.0) for offset in range(66))
+
+
+def _bar(ticker: str, offset: int, close: float) -> OHLCVBar:
+    day = date(2026, 1, 1) + timedelta(days=offset)
+    return OHLCVBar(
+        ticker=ticker,
+        bar_date=day,
+        open=close,
+        high=close + 1.0,
+        low=close - 1.0,
+        close=close,
+        volume=1_000_000,
+    )

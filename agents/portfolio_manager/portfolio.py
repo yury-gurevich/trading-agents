@@ -29,9 +29,14 @@ class PortfolioState(_Frozen):
     account_buying_power_cents: int | None = None
 
     @property
-    def value(self) -> Decimal:
+    def equity_value(self) -> Decimal:
         """Return the equity-backed portfolio value used for sizing."""
         return self.cash.amount
+
+    @property
+    def value(self) -> Decimal:
+        """Compatibility alias for the equity-backed portfolio value."""
+        return self.equity_value
 
     @property
     def deployed_value(self) -> Decimal:
@@ -51,7 +56,7 @@ class PortfolioState(_Frozen):
         """Return equity not already deployed or reserved by this PM run."""
         if not self.account_is_fresh:
             return Decimal("0")
-        return self.value * (Decimal("1") - cash_buffer_pct) - (
+        return self.equity_value * (Decimal("1") - cash_buffer_pct) - (
             self.deployed_value + reserved_cash
         )
 

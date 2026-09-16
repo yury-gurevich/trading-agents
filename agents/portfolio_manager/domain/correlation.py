@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain import deployment_floor
 from agents.portfolio_manager.domain.correlation_census import (
     CorrelationCensus,
     build_census,
@@ -55,14 +56,39 @@ class CorrelationBook:
         self,
         item: Recommendation,
         cost: Decimal,
-        portfolio_value: Decimal,
+        equity_value: Decimal,
         *,
+        deployed_value: Decimal | None = None,
+        max_position_pct: Decimal = Decimal("0"),
+        max_names_per_sector: int = 0,
         issuer_values: Mapping[str, Decimal],
         issuer_tickers: Mapping[str, tuple[str, ...]],
     ) -> tuple[GateOutcome, ...]:
         """Return the correlated-cluster outcome for this tentative order."""
         if self.max_cluster_pct is None:
             return ()
+        denominator_value = equity_value if deployed_value is None else deployed_value
+        denominator_name = (
+            "portfolio_equity" if deployed_value is None else "deployed_capital"
+        )
+        if deployed_value is not None and (
+            denominator_value <= 0
+            or deployment_floor.is_below_floor(
+                deployed_value=denominator_value,
+                equity_value=equity_value,
+                max_names_per_sector=max_names_per_sector,
+                max_position_pct=max_position_pct,
+                concentration_cap=self.max_cluster_pct,
+            )
+        ):
+            return (
+                self._floor_not_evaluated(
+                    equity_value,
+                    denominator_value,
+                    max_position_pct,
+                    max_names_per_sector,
+                ),
+            )
         issuer = issuer_key(item.ticker, self.issuer_map)
         census = build_census(
             candidate_ticker=item.ticker,
@@ -78,21 +104,25 @@ class CorrelationBook:
         cluster = {issuer, *census.clustered()}
         value = cost + issuer_values.get(issuer, _ZERO)
         value += sum(issuer_values.get(key, _ZERO) for key in cluster if key != issuer)
-        threshold_value = Decimal(str(self.max_cluster_pct)) * portfolio_value
+        ratio = _ratio(value, denominator_value)
         return (
             GateOutcome(
                 name="correlated_cluster_pct",
-                value=_ratio(value, portfolio_value),
+                value=ratio,
                 threshold=float(self.max_cluster_pct),
                 outcome=(
-                    GateStatus.PASSED if value <= threshold_value else GateStatus.FAILED
+                    GateStatus.PASSED
+                    if ratio <= float(self.max_cluster_pct)
+                    else GateStatus.FAILED
                 ),
                 detail=(
                     f"candidate_issuer={issuer}; "
                     f"cluster_issuers={','.join(sorted(cluster))}; "
                     f"{census.detail()}; "
                     f"cluster_value_usd={value:.2f}; "
-                    f"portfolio_value_usd={portfolio_value:.2f}"
+                    f"denominator={denominator_name}; "
+                    f"deployed_portfolio_usd={denominator_value:.2f}; "
+                    f"portfolio_value_usd={equity_value:.2f}"
                 ),
             ),
         )
@@ -123,6 +153,27 @@ class CorrelationBook:
                 f"candidate_ticker={candidate_ticker}; held_issuer={held_issuer}; "
                 f"observed_bars={observed}; min_correlation_bars={self.min_bars}; "
                 f"{census.detail()}"
+            ),
+        )
+
+    def _floor_not_evaluated(
+        self,
+        equity_value: Decimal,
+        deployed_value: Decimal,
+        max_position_pct: Decimal,
+        max_names_per_sector: int,
+    ) -> GateOutcome:
+        return GateOutcome(
+            name="correlated_cluster_pct",
+            value=0.0,
+            threshold=float(self.max_cluster_pct or 0.0),
+            outcome=GateStatus.NOT_EVALUATED,
+            detail=deployment_floor.detail(
+                deployed_value=deployed_value,
+                equity_value=equity_value,
+                max_names_per_sector=max_names_per_sector,
+                max_position_pct=max_position_pct,
+                concentration_cap=self.max_cluster_pct or 0.0,
             ),
         )
 

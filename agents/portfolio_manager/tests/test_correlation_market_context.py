@@ -62,7 +62,7 @@ def test_correlation_uses_graph_market_data_without_widening_provider_call() -> 
         graph=graph,
         settings=PortfolioManagerSettings(
             starting_cash=Decimal("10000.00"),
-            max_position_pct=Decimal("0.10"),
+            max_position_pct=Decimal("0.01"),
             max_positions=10,
             max_sector_pct=Decimal("0.50"),
             max_names_per_sector=3,

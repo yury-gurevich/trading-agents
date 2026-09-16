@@ -88,7 +88,7 @@ def decide_entry(
 ) -> tuple[OrderIntent | RejectedOrder, Decimal]:
     """Decide a buy, returning the decision and the cash it would commit."""
     quantity = size_quantity(
-        portfolio_value=portfolio.value,
+        portfolio_value=portfolio.equity_value,
         max_position_pct=max_position_pct,
         est_price=price.amount,
     )
@@ -120,7 +120,9 @@ def decide_entry(
     sector_gates = book.outcomes(
         item,
         cost,
-        portfolio.value,
+        portfolio.equity_value,
+        portfolio.deployed_value,
+        max_position_pct=max_position_pct,
         max_sector_pct=max_sector_pct,
         max_names_per_sector=max_names_per_sector,
     )
@@ -133,7 +135,10 @@ def decide_entry(
     correlation_gates = correlations.outcomes(
         item,
         cost,
-        portfolio.value,
+        portfolio.equity_value,
+        deployed_value=portfolio.deployed_value,
+        max_position_pct=max_position_pct,
+        max_names_per_sector=max_names_per_sector,
         issuer_values=book.issuer_values(),
         issuer_tickers=book.issuer_tickers(),
     )

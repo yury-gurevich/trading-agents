@@ -83,13 +83,19 @@ class SectorBook:
         self,
         item: Recommendation,
         cost: Decimal,
-        portfolio_value: Decimal,
+        equity_value: Decimal,
+        deployed_value: Decimal | None = None,
         *,
+        max_position_pct: Decimal = Decimal("0"),
         max_sector_pct: Decimal,
         max_names_per_sector: int,
     ) -> tuple[GateOutcome, ...]:
         """Return explicit sector-gate outcomes for this tentative order."""
         sector = self._sector(item.ticker)
+        denominator_value = equity_value if deployed_value is None else deployed_value
+        denominator_name = (
+            "portfolio_equity" if deployed_value is None else "deployed_capital"
+        )
         if (
             sector is None
             and max_sector_pct >= Decimal("1")
@@ -113,8 +119,12 @@ class SectorBook:
                 held_value=held_value,
                 batch_value=batch_value,
                 cost=cost,
-                portfolio_value=portfolio_value,
+                equity_value=equity_value,
+                deployed_value=denominator_value,
                 max_sector_pct=max_sector_pct,
+                max_position_pct=max_position_pct,
+                max_names_per_sector=max_names_per_sector,
+                denominator_name=denominator_name,
             )
         ]
         if max_names_per_sector > 0:

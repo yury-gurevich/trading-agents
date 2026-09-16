@@ -39,7 +39,7 @@ def test_correlated_cluster_rejects_cross_label_order() -> None:
         (buy("AMZN"),),
         {"AMZN": Money(amount=Decimal("100.00"))},
         portfolio,
-        max_position_pct=Decimal("0.10"),
+        max_position_pct=Decimal("0.01"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,
@@ -64,7 +64,7 @@ def test_correlated_cluster_rejects_cross_label_order() -> None:
     assert sector.outcome == "passed"
     assert names.outcome == "passed"
     assert cluster.outcome == "failed"
-    assert cluster.value == 0.30
+    assert cluster.value == 1.05
     assert "cluster_issuers=AAPL,AMZN,MSFT" in cluster.detail
 
 
@@ -75,7 +75,7 @@ def test_one_unusable_pair_does_not_disable_the_whole_gate() -> None:
         {"AAPL": 10, "MSFT": 10},
         position_values={
             "AAPL": Money(amount=Decimal("500.00")),
-            "MSFT": Money(amount=Decimal("1000.00")),
+            "MSFT": Money(amount=Decimal("2000.00")),
         },
     )
 
@@ -83,7 +83,7 @@ def test_one_unusable_pair_does_not_disable_the_whole_gate() -> None:
         (buy("AMZN"),),
         {"AMZN": Money(amount=Decimal("100.00"))},
         portfolio,
-        max_position_pct=Decimal("0.10"),
+        max_position_pct=Decimal("0.01"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,
@@ -113,14 +113,14 @@ def test_every_pair_unusable_still_reports_not_evaluated() -> None:
     portfolio = cash_portfolio(
         "10000.00",
         {"AAPL": 10},
-        position_values={"AAPL": Money(amount=Decimal("1000.00"))},
+        position_values={"AAPL": Money(amount=Decimal("1300.00"))},
     )
 
     approved, rejected = evaluate_recommendations(
         (buy("MSFT"),),
         {"MSFT": Money(amount=Decimal("100.00"))},
         portfolio,
-        max_position_pct=Decimal("0.10"),
+        max_position_pct=Decimal("0.01"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,

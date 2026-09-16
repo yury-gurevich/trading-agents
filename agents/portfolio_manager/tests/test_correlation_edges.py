@@ -91,14 +91,14 @@ def test_degenerate_pair_does_not_expand_cluster() -> None:
     portfolio = cash_portfolio(
         "10000.00",
         {"AAPL": 10},
-        position_values={"AAPL": Money(amount=Decimal("1000.00"))},
+        position_values={"AAPL": Money(amount=Decimal("1300.00"))},
     )
 
     approved, rejected = evaluate_recommendations(
         (buy("MSFT"),),
         {"MSFT": Money(amount=Decimal("100.00"))},
         portfolio,
-        max_position_pct=Decimal("0.10"),
+        max_position_pct=Decimal("0.01"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,

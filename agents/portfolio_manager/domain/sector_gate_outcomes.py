@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain import deployment_floor
 from contracts.portfolio_manager import GateOutcome, GateStatus
 
 if TYPE_CHECKING:
@@ -47,25 +48,57 @@ def sector_exposure_outcome(
     held_value: Decimal,
     batch_value: Decimal,
     cost: Decimal,
-    portfolio_value: Decimal,
+    equity_value: Decimal,
+    deployed_value: Decimal,
     max_sector_pct: Decimal,
+    max_position_pct: Decimal,
+    max_names_per_sector: int,
+    denominator_name: str = "deployed_capital",
 ) -> GateOutcome:
     """Return the held-plus-batch sector exposure outcome."""
     total = held_value + batch_value + cost
+    if max_sector_pct < 1 and (
+        deployed_value <= 0
+        or deployment_floor.is_below_floor(
+            deployed_value=deployed_value,
+            equity_value=equity_value,
+            max_names_per_sector=max_names_per_sector,
+            max_position_pct=max_position_pct,
+            concentration_cap=max_sector_pct,
+        )
+    ):
+        return GateOutcome(
+            name="max_sector_pct",
+            value=0.0,
+            threshold=float(max_sector_pct),
+            outcome=GateStatus.NOT_EVALUATED,
+            detail=(
+                f"sector={sector}; "
+                + deployment_floor.detail(
+                    deployed_value=deployed_value,
+                    equity_value=equity_value,
+                    max_names_per_sector=max_names_per_sector,
+                    max_position_pct=max_position_pct,
+                    concentration_cap=max_sector_pct,
+                    denominator_name=denominator_name,
+                )
+            ),
+        )
+    value = ratio(total, deployed_value)
     return GateOutcome(
         name="max_sector_pct",
-        value=ratio(total, portfolio_value),
+        value=value,
         threshold=float(max_sector_pct),
         outcome=(
-            GateStatus.PASSED
-            if total <= max_sector_pct * portfolio_value
-            else GateStatus.FAILED
+            GateStatus.PASSED if value <= float(max_sector_pct) else GateStatus.FAILED
         ),
         detail=(
             f"sector={sector}; held_sector_value_usd={held_value:.2f}; "
             f"deployed_this_batch_usd={batch_value:.2f}; "
             f"order_cost_usd={cost:.2f}; "
-            f"portfolio_value_usd={portfolio_value:.2f}"
+            f"denominator={denominator_name}; "
+            f"deployed_portfolio_usd={deployed_value:.2f}; "
+            f"portfolio_value_usd={equity_value:.2f}"
         ),
     )
 

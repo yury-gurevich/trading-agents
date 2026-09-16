@@ -149,7 +149,7 @@ def test_held_sector_dollars_count_toward_sector_cap() -> None:
     assert approved == ()
     assert rejected[0].reason == "sector_concentration"
     assert sector.outcome == "failed"
-    assert sector.value == 0.35
+    assert sector.value == 1.4
     assert "held_sector_value_usd=2500.00" in sector.detail
 
 

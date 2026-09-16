@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-210-concentration-divides-by-the-book`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge* — **do not pin a number**, S209 is in flight and will move it
 **Effort:** M — the code is small and touches three gates; the **PM law cycle is half the sprint**
 **Decisions:** [ADR-0025](../decisions/0025-concentration-measures-the-book-position-risk-measures-the-capital-base.md) · [ADR-0026](../decisions/0026-a-small-book-is-allowed-to-be-concentrated.md) · DL-171 · DRIFT-065 · closes work-queue item **65**
@@ -476,15 +476,36 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `domain/sector_gate_outcomes.py` / `sector_exposure_outcome` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; ADR-0025; ADR-0026 | `PM-NEV-04`, `PM-NEV-06`, `PM-NEV-09`, `PM-OBS-04` | Yes. The sector dollar cap must become deployed-book concentration evidence, but below the derived floor it is explicitly `NOT_EVALUATED`; the missing-sector and floor cases must stay distinguishable. |
+| `domain/correlation.py` / `correlated_cluster_pct` | Same PM law/test-plan set plus ADR-0025 and ADR-0026 | `PM-NEV-04`, `PM-NEV-07`, `PM-NEV-08`, `PM-NEV-09`, `PM-OBS-03`, `PM-OBS-04` | Yes. Keep S208 pairwise skip semantics intact; change only the cluster denominator and add the derived-floor not-evaluated path. |
+| `domain/position_gates.py` / `sizing` | Same PM law/test-plan set plus ADR-0025 | `PM-IDN-01`, `PM-NEV-04`, `PM-NEV-05`, `PM-NEV-09`, `PM-OBS-01` | Yes. `sizing` stays on the equity denominator; the implementation must include an invariant test proving that. |
+| `portfolio.py` denominator names | Same PM law/test-plan set plus ADR-0025 | `PM-IDN-01`, `PM-OUT-06`, `PM-PARAM starting_cash`, `DRIFT-036` | Yes. Rename for clarity only; `portfolio.value` is equity-backed despite returning the field named `cash`. Behaviour must not move. |
+| PM law amendment | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/INDEX.md`; `docs/laws/ledger.md`; `docs/laws/drift-register.md` | conventions §2-4, §7, §7a, §9; `PM-NEV-06`, `PM-NEV-08`, `PM-NEV-09`, `PM-OBS-04` | Yes. `PM-NEV-09` is a closed enumeration and must gain the deployment-floor trigger; denominator semantics must be stated in law; `PM-OBS-04` is not rewritten this sprint. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
+No `contracts/` change is planned or authorized. This sprint does add guarantees: sector-weight and
+correlated-cluster concentration are measured against the deployed book rather than total equity, and
+below the derived deployment floor those gates return explicit `NOT_EVALUATED` outcomes rather than
+passing or failing.
+
 **Contradictions found between a law and this spec:**
+
+None found. The PM law book and ADRs agree on the direction; the law book is incomplete for the new
+denominator and the new not-evaluated trigger, which this sprint is explicitly scoped to amend.
 
 **Laws found silent where a decision was needed:**
 
+`PM-NEV-06` and `PM-NEV-08` do not yet state the deployed-book denominator for the ratio gates, and
+`PM-NEV-09` does not yet name deployment below the derived floor as a not-evaluated trigger.
+`PM-OBS-04` may overstate its proof surface versus its current test-plan row; file this as
+`DRIFT-065` and do not rewrite the clause in this sprint.
+
 **Clauses that were ⬜ and are now proven:**
+
+No new clause IDs moved from ⬜ to 🟩. S210 adds/refreshes green proof rows for already-green
+`PM-NEV-06`, `PM-NEV-08`, and `PM-NEV-09`; the PM rollup remains **30 / 49** in
+`docs/laws/ledger.md` and `docs/laws/INDEX.md`.
 
 ---
 
@@ -492,57 +513,129 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | | | | |
-| A2 | | | | |
-| A3 | | | | |
-| A4 | | | | |
-| A5 | | | | |
-| A6 | | | | |
-| A7 | | | | |
-| A8 | | | | |
-| A9 | | | | |
+| A1 | `test_sector_gate_uses_deployed_book_denominator` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 `value == 0.1803`, `PASSED`, `denominator=deployed_capital` | `PM-NEV-06`, `PM-NEV-09` |
+| A2 | `test_cluster_gate_uses_deployed_book_denominator` | `agents/portfolio_manager/tests/test_concentration_deployed_correlation.py` | 🟩 `value == 0.0455`, `PASSED`, `denominator=deployed_capital` | `PM-NEV-08`, `PM-NEV-09` |
+| A3 | `test_below_derived_sector_floor_is_not_evaluated` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 flat and 8.80%-deployed books render `NOT_EVALUATED`, not `FAILED`, and detail names floor plus deployment | `PM-NEV-09` |
+| A4 | `test_current_book_is_above_the_derived_floors` | `agents/portfolio_manager/tests/test_concentration_deployed_correlation.py` | 🟩 current 21.24%-deployed book evaluates both gates normally | `PM-NEV-06`, `PM-NEV-08` |
+| A5 | `test_sizing_still_uses_equity_denominator` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 AMZN sizing remains `0.009723`, `PASSED`, equity denominator | `PM-NEV-04` |
+| A6 | `test_floor_is_derived_from_live_tunables` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 floor moves to `0.1333` and `0.1500` when live caps change | `PM-NEV-09` |
+| A7 | `test_zero_denominator_helper_does_not_emit_failed_zero_value` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 helper-level zero denominator gives `NOT_EVALUATED`, not failed zero evidence | `PM-NEV-09` |
+| A8 | `test_below_derived_sector_floor_is_not_evaluated` | `agents/portfolio_manager/tests/test_concentration_deployed_sector.py` | 🟩 floor `NOT_EVALUATED` is carried in `gate_report`; PM approval proceeds under sizing/name-count controls rather than counting it as passed | `PM-NEV-09` |
+| A9 | `test_recorded_sector_verdicts_stay_passed_after_denominator_swap`; `test_recorded_cluster_verdicts_stay_passed_after_denominator_swap` | `agents/portfolio_manager/tests/test_concentration_no_shock.py` | 🟩 ADR-0025 replay values Banking `0.1803`, Media `0.1289`, Food `0.0922`, WFC `0.0455`, MDLZ `0.0458` all remain `PASSED` under unchanged caps | `PM-NEV-06`, `PM-NEV-08`, `PM-NEV-09` |
 
 **Tests added beyond the plan:**
+
+- Existing PM concentration tests were updated so above-floor rejection proofs remain above the new
+  derived floor, and the bus-level sector-cap test now gives the unrelated correlation gate
+  non-blocking evidence before asserting the sector rejection.
 
 ---
 
 ## Closeout — evidence
 
-**Status:**
+**Status:** BUILT locally; remote branch CI and exact-SHA gate proof pending.
 
-**Tree the proofs ran in (and `.env` present?):**
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-210-concentration-divides-by-book`, branch `sprint-210-concentration-divides-by-the-book`; no `.env` was read or required.
 
-**Result:**
+**Result:** Implemented the deployed-capital denominator for `max_sector_pct` and
+`correlated_cluster_pct`; preserved equity-denominated `sizing`; added derived-floor
+`NOT_EVALUATED` evidence; renamed `PortfolioState.equity_value` while keeping `value` as a
+compatibility alias; amended PM laws/test-plan/rollups and filed `DRIFT-065`.
 
-**Files changed:**
+**Files changed:** PM domain/test files, PM law book/test-plan, docs law rollups, drift register,
+design log, work queue, sprint handback, `docs/STATE.md`, `pyproject.toml`, and `uv.lock`.
+`git diff --stat contracts` is empty.
 
-**Design decisions:** recorded as `DL-NNN`
+**Design decisions:** recorded as `DL-171`.
 
 **Proof — the red runs first:**
 
 ```text
+> uv run pytest agents\portfolio_manager\tests\test_concentration_deployed_sector.py agents\portfolio_manager\tests\test_concentration_deployed_correlation.py --no-cov
+
+collected 9 items
+FAILED test_concentration_deployed_sector.py::test_sector_gate_uses_deployed_book_denominator
+  old value 0.03830062348851048 did not match expected 0.1803
+FAILED test_concentration_deployed_sector.py::test_below_derived_sector_floor_is_not_evaluated[0]
+  old behavior approved without the deployment-floor NOT_EVALUATED detail
+FAILED test_concentration_deployed_sector.py::test_below_derived_sector_floor_is_not_evaluated[9000.00]
+  old behavior approved without the deployment-floor NOT_EVALUATED detail
+FAILED test_concentration_deployed_sector.py::test_floor_is_derived_from_live_tunables[4-0.30-0.1333]
+FAILED test_concentration_deployed_sector.py::test_floor_is_derived_from_live_tunables[3-0.20-0.1500]
+FAILED test_concentration_deployed_sector.py::test_zero_denominator_helper_does_not_emit_failed_zero_value
+  old helper emitted FAILED with value=0.0
+FAILED test_concentration_deployed_correlation.py::test_cluster_gate_uses_deployed_book_denominator
+  old value 0.009655334893929855 did not match expected 0.0455
+
+========================= 7 failed, 2 passed =========================
 ```
 
 **Proof — the green run:**
 
 ```text
+> uv run pytest agents\portfolio_manager\tests\test_concentration_deployed_sector.py agents\portfolio_manager\tests\test_concentration_deployed_correlation.py agents\portfolio_manager\tests\test_concentration_no_shock.py --no-cov
+============================= 14 passed in 1.12s ==============================
+
+> uv run pytest agents\portfolio_manager\tests --no-cov
+============================= 132 passed in 1.79s =============================
+
+> uv run ruff check agents\portfolio_manager\domain\deployment_floor.py agents\portfolio_manager\domain\correlation.py agents\portfolio_manager\domain\order_decision.py agents\portfolio_manager\domain\position_gates.py agents\portfolio_manager\domain\sector_book.py agents\portfolio_manager\domain\sector_gate_outcomes.py agents\portfolio_manager\portfolio.py agents\portfolio_manager\tests\test_concentration_deployed_sector.py agents\portfolio_manager\tests\test_concentration_deployed_correlation.py agents\portfolio_manager\tests\test_concentration_no_shock.py agents\portfolio_manager\tests\test_correlation_concentration.py agents\portfolio_manager\tests\test_correlation_edges.py agents\portfolio_manager\tests\test_correlation_market_context.py agents\portfolio_manager\tests\test_issuer_concentration.py agents\portfolio_manager\tests\test_portfolio_manager_audit.py agents\portfolio_manager\tests\test_sector_cap.py
+All checks passed!
+
+> git diff --stat contracts
+<empty>
 ```
 
-**Guards planted:**
+**Guards planted:** A1/A2 denominator guards failed on the old equity denominator; A3/A6/A7 floor
+and zero-denominator guards failed before implementation; A5 pins the sizing denominator; A9 pins
+the no-shock replay values.
 
 **Module line counts:**
 
-**`make ci`:** redirected to `<path>`. Exit code `<n>`.
+```text
+agents\portfolio_manager\domain\deployment_floor.py: 80
+agents\portfolio_manager\domain\correlation.py: 182
+agents\portfolio_manager\domain\order_decision.py: 153
+agents\portfolio_manager\domain\position_gates.py: 177
+agents\portfolio_manager\domain\sector_book.py: 196
+agents\portfolio_manager\domain\sector_gate_outcomes.py: 161
+agents\portfolio_manager\portfolio.py: 68
+agents\portfolio_manager\tests\test_concentration_deployed_sector.py: 177
+agents\portfolio_manager\tests\test_concentration_deployed_correlation.py: 105
+agents\portfolio_manager\tests\test_concentration_no_shock.py: 77
+agents\portfolio_manager\tests\test_sector_cap.py: 158
+```
 
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**`make ci`:** redirected to `tmp\s210-make-ci.log`. Exit code `0`.
+
+```text
+> make ci > tmp\s210-make-ci.log 2>&1
+Success: no issues found in 914 source files
+TOTAL                                                     16567      0   3530      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2780 passed, 6 skipped in 83.26s (0:01:23) ==================
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 5 new file(s)
+```
+
+**`make gate-ran`:** pending remote checks.
 
 ```text
 ```
 
-**Not met / verified failing:**
+**Not met / verified failing:** Remote branch CI, exact-SHA `make gate-ran`, merge, deploy, and
+next-scheduled-run live proof are not yet done at this checkpoint.
 
 ---
 
 ## Return notes
 
--
+- The S210 brief's A1 prose lists Banking held `$1,915.80` plus WFC order `$986.86`, which cannot
+  produce `0.1803` against deployed `$21,711.95`. The test uses the dollar total implied by the
+  recorded ratio (`$2,927.80` held plus `$986.86` order) so the old and new ratios are falsifiable.
+- `DRIFT-065` is filed only as the PM-OBS-04 proof-scope question. This sprint does not rewrite
+  `PM-OBS-04`.
+- Below-floor concentration gates are visible `NOT_EVALUATED` evidence, but they do not veto by
+  themselves; otherwise ADR-0026's accepted small-book bootstrap risk would remain a deadlock.

@@ -47,11 +47,11 @@ def position_outcomes(
     return (
         GateOutcome(
             name="sizing",
-            value=_ratio(issuer_value, portfolio.value),
+            value=_ratio(issuer_value, portfolio.equity_value),
             threshold=float(max_position_pct),
             outcome=(
                 GateStatus.PASSED
-                if issuer_value <= max_position_pct * portfolio.value
+                if issuer_value <= max_position_pct * portfolio.equity_value
                 else GateStatus.FAILED
             ),
             detail=(
@@ -59,7 +59,7 @@ def position_outcomes(
                 f"existing_issuer_value_usd={_money(existing_issuer_value)}; "
                 f"quantity_shares={quantity}; est_price_usd={_money(price.amount)}; "
                 f"position_value_usd={_money(cost)}; "
-                f"portfolio_value_usd={_money(portfolio.value)}"
+                f"portfolio_value_usd={_money(portfolio.equity_value)}"
             ),
         ),
         GateOutcome(
@@ -93,7 +93,7 @@ def position_outcomes(
             threshold=float(available),
             outcome=GateStatus.PASSED if cost <= available else GateStatus.FAILED,
             detail=(
-                f"portfolio_value_usd={_money(portfolio.value)}; "
+                f"portfolio_value_usd={_money(portfolio.equity_value)}; "
                 f"deployed_portfolio_usd={_money(portfolio.deployed_value)}; "
                 f"cash_buffer_pct={float(cash_buffer_pct):.4f}; "
                 f"reserved_cash_this_batch_usd={_money(reserved_cash)}"
@@ -128,6 +128,8 @@ def sector_rejection(
     gate_report = (*prior_outcomes, *outcomes)
     for outcome in outcomes:
         if outcome.outcome == GateStatus.NOT_EVALUATED:
+            if "reason=deployment_below_floor" in outcome.detail:
+                continue
             reason = _not_evaluated_reason(outcome.name)
             return RejectedOrder(ticker=ticker, reason=reason, gate_report=gate_report)
         if (

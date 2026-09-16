@@ -8,6 +8,31 @@ and is marked CLOSED here.
 
 ---
 
+## DL-171 - concentration gates use a derived deployment floor - status: DECIDED (S210, 2026-09-16)
+
+**Decision. Compute the floor through one shared helper that takes the gate cap.** `max_sector_pct`
+and `max_correlated_cluster_pct` have different caps, so no shared constant is valid. The helper will
+derive `max_names_per_sector * max_position_pct / cap` from the live PM settings at evaluation time,
+then each gate applies it against `deployed_value / equity_value` before it evaluates the
+deployed-capital ratio.
+
+**Decision. `NOT_EVALUATED` detail names the suppression reason and both quantities.** A floor
+suppression renders as its own not-evaluated reason, distinct from `missing_input=sector_label` and
+short correlation history. The detail must name the denominator that would have been used,
+`deployment_floor_pct`, `deployment_pct`, and that the floor was the reason. This keeps a suppressed
+gate visibly different from a passing gate under `PM-NEV-09`.
+
+**Rejected routes.**
+
+- Add a new tunable or hard-coded 10 % / 12 % floor. Rejected because the floor is implied by the
+  existing caps and must move when those caps move.
+- Compute one shared floor once and pass it to both gates. Rejected because the gates have different
+  caps, so the same book can be above one floor and below the other.
+- Hide the deployed-zero value/verdict contradiction behind the floor. Rejected because helpers should
+  make the reported value and verdict agree even when called directly.
+
+---
+
 ## DL-170 - the stale-order sweep asks identity, not liveness - status: DECIDED (S209, 2026-09-16)
 
 **Decision. Identity is the sweep's question; liveness is reconciliation's.** The head-of-run stale

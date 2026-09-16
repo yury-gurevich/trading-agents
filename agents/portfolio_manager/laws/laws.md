@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -91,7 +91,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   granularity actually received — finer labels scatter one bet across more buckets and make a fixed
   count cap weaker, not stronger. This is a **label-bucket cap, not the correlation penalty**:
   correlation is measured, not labelled, and is enforced by `PM-NEV-08`. `0` disables the gate;
-  already-held issuers in the label count toward the limit.
+  already-held issuers in the label count toward the limit. The paired sector dollar cap
+  (`max_sector_pct`) measures held-plus-in-run sector exposure against **deployed capital**, not
+  total equity; per-position sizing remains equity-denominated.
 - **PM-NEV-07** — Never counts two share classes of one issuer as two names or two exposures.
   Every concentration gate — position count, sector-label count, sector weight, correlated-cluster
   weight — aggregates by issuer key before it counts or weighs. The issuer key comes from the
@@ -103,12 +105,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   pairwise return correlation with it, over `correlation_lookback_days`, is at least
   `correlation_threshold`. Correlation is computed from bars the run already carries; the PM never
   fetches market data to obtain it (`PM-NEV-02`). This clause is the correlation penalty; the
-  label-bucket count of `PM-NEV-06` is not.
+  label-bucket count of `PM-NEV-06` is not. The cluster weight is measured against **deployed
+  capital**, not total equity.
 - **PM-NEV-09** — Never records a concentration gate it could not evaluate as passed. When the
-  sector label is missing, or fewer than `min_correlation_bars` overlapping bars exist for a pair,
-  the gate emits an explicit **not-evaluated** outcome naming the missing input. An absent outcome
-  and a passing outcome are never the same value. Every not-evaluated outcome appears in
-  `gate_report` (`PM-OBS-01`) so a reader can tell a gate that passed from a gate that never ran.
+  sector label is missing, fewer than `min_correlation_bars` overlapping bars exist for every
+  usable correlation pair, or deployment is below the derived floor needed for a deployed-book
+  ratio, the gate emits an explicit **not-evaluated** outcome naming the input or floor condition.
+  A deployment-floor outcome names the actual deployment and derived floor; it is not a passing
+  concentration verdict, but ADR-0026 permits a small book to continue under sizing and name-count
+  controls rather than deadlocking at zero deployment. An absent outcome and a passing outcome are
+  never the same value. Every not-evaluated outcome appears in `gate_report` (`PM-OBS-01`) so a
+  reader can tell a gate that passed from a gate that never ran.
 
 ---
 
@@ -280,11 +287,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `min_order_quantity` | `1` | `int ≥ 1` (shares) | YES | Minimum order size; prevents sub-1-share intents |
 | `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
 | `min_reward_risk_ratio` | `1.5` | `float ≥ 0.0, ≤ 20.0` | YES | Minimum R/R ratio; target pct ÷ stop pct must exceed this or reject |
-| `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum portfolio weight in any single sector label, counted over held **and** in-run issuers |
+| `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum deployed-book weight in any single sector label, counted over held **and** in-run issuers |
 | `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
 | `correlation_lookback_days` | `120` | `int ≥ 20, ≤ 250` (days) | YES | Bars used for the pairwise return correlation — long enough to be stable, short enough to track the current regime; runs already carry ~200 bars, so this costs no fetch |
 | `correlation_threshold` | `0.70` | `float ≥ 0.0, ≤ 1.0` | YES | Pairwise return correlation at or above which two issuers are treated as one bet |
-| `max_correlated_cluster_pct` | `0.25` | `float ≥ 0.0, ≤ 1.0` | YES | Max portfolio weight in one correlated cluster; tighter than `max_sector_pct` because a measured cluster is a truer bet boundary than a label |
+| `max_correlated_cluster_pct` | `0.25` | `float ≥ 0.0, ≤ 1.0` | YES | Max deployed-book weight in one correlated cluster; tighter than `max_sector_pct` because a measured cluster is a truer bet boundary than a label |
 | `min_correlation_bars` | `60` | `int ≥ 20, ≤ 250` (bars) | YES | Minimum overlapping bars for a usable estimate; below it the pair is **not evaluated** (`PM-NEV-09`), never silently passed |
 | `issuer_map` | pack data | `mapping ticker → issuer key` | NO (pack data) | Owned by the trading pack (ADR-0012), not the agent; collapses share classes of one issuer to one key. Absence means single-class, which is the common case |
 
@@ -349,3 +356,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `::test_every_pair_unusable_still_reports_not_evaluated`,
   `test_gate_reachability.py::test_a_gate_whose_value_varies_is_not_marked_structurally_fixed`,
   and `test_correlation_census.py::test_skipped_pair_names_the_issuer_and_its_overlap`.
+- v1.6 — amendment (DL-171 / S210, 2026-09-16). Stated the deployed-capital denominator for
+  sector-dollar and correlated-cluster concentration ratios, while preserving equity-denominated
+  sizing. Added the deployment-below-derived-floor `NOT_EVALUATED` trigger to `PM-NEV-09`; the
+  floor is derived from live caps and name/position limits, is disclosed in `detail`, and does not
+  become a new tunable. Cited tests:
+  `test_concentration_deployed_sector.py::test_sector_gate_uses_deployed_book_denominator`,
+  `::test_below_derived_sector_floor_is_not_evaluated`,
+  `::test_sizing_still_uses_equity_denominator`,
+  `::test_floor_is_derived_from_live_tunables`,
+  `::test_zero_denominator_helper_does_not_emit_failed_zero_value`,
+  `test_concentration_deployed_correlation.py::test_cluster_gate_uses_deployed_book_denominator`,
+  `::test_current_book_is_above_the_derived_floors`, and
+  `test_concentration_no_shock.py`.

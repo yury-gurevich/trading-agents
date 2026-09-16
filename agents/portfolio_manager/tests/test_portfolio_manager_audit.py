@@ -50,15 +50,22 @@ def test_order_intent_emits_pm_gate_report() -> None:
     approved, rejected = evaluate_recommendations(
         (recommendation("AAPL"),),
         {"AAPL": Money(amount=Decimal("100.00"))},
-        cash_portfolio("10000.00", {"MSFT": 1}),
-        max_position_pct=Decimal("0.10"),
+        cash_portfolio(
+            "10000.00",
+            {"MSFT": 1, "BIG": 1},
+            position_values={
+                "MSFT": Money(amount=Decimal("500.00")),
+                "BIG": Money(amount=Decimal("500.00")),
+            },
+        ),
+        max_position_pct=Decimal("0.01"),
         max_positions=10,
         cash_buffer_pct=Decimal("0.05"),
         min_order_quantity=1,
         default_stop_pct=0.05,
         default_target_pct=0.10,
         min_reward_risk_ratio=1.5,
-        sectors={"AAPL": "Technology", "MSFT": "Technology"},
+        sectors={"AAPL": "Technology", "MSFT": "Other", "BIG": "Other"},
         max_sector_pct=Decimal("0.30"),
         max_names_per_sector=3,
     )
@@ -75,7 +82,7 @@ def test_order_intent_emits_pm_gate_report() -> None:
         "max_sector_pct",
         "max_names_per_sector",
     } <= names
-    assert all(gate.passed for gate in approved[0].gate_report)
+    assert all(gate.outcome == "passed" for gate in approved[0].gate_report)
 
 
 def test_cash_gate_subtracts_reserved_cash_for_later_recommendations() -> None:

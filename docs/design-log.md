@@ -8,6 +8,33 @@ and is marked CLOSED here.
 
 ---
 
+## DL-170 - the stale-order sweep asks identity, not liveness - status: DECIDED (S209, 2026-09-16)
+
+**Decision. Identity is the sweep's question; liveness is reconciliation's.** The head-of-run stale
+order sweep may ask whether a broker order is a stop and whether the graph has a corresponding stop
+identity. It must not fault merely because the broker has already observed a terminal stop while the
+graph-side fill refresh has not yet run. That refresh happens later in the same run from the same
+broker read path; measuring the live spine on 2026-09-16 found nine such faults, one per stop key,
+and every one resolved to a terminal broker status 11.4-19.4 seconds later in the same run.
+
+**Decision. No separate liveness-disagreement observer is added.** The existing broker lifecycle
+predicates remain the single liveness source. After the refresh, the measured transient has nothing
+left to report, and adding a post-refresh warning would create another place to ask the liveness
+question `EXEC-OBS-05` exists to centralize.
+
+**Rejected routes.**
+
+- Reorder the run so refresh happens before the sweep. Rejected because it changes what the sweep can
+  cancel, not just what it reports; the bug is a warning defect, and the cancel path touches live
+  broker state.
+- Suppress, downgrade, or deduplicate `BrokerStopIdentityMismatch`. Rejected because the fault is not
+  too loud; it is asking the wrong question.
+- Add a post-refresh liveness check. Rejected because it would be a second liveness observer while the
+  broker lifecycle contract already owns the predicate, and the measured same-run refresh leaves no
+  stop divergence for it to find.
+
+---
+
 ## DL-167 - the referee only blocks orders when it works, and its leading ground is a comparison that cannot pass - status: OPEN (measured 2026-09-15, work-queue item 59)
 
 Found by reading `sched-2026-09-14` and then walking all **48** scheduled runs on the live spine. Nothing here was inferred from code alone; every number below came out of the graph.

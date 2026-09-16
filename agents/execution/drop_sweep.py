@@ -20,10 +20,9 @@ from agents.execution.drop_sweep_records import (
 from agents.execution.fill_attempts import latest_fill_attempt
 from contracts.broker_lifecycle import (
     is_broker_stop_order,
-    is_live_broker_stop_order,
     is_resolved_drop_status,
 )
-from contracts.broker_stops import active_broker_stop_orders
+from contracts.broker_stops import broker_stop_orders
 from kernel import fault_boundary
 
 if TYPE_CHECKING:
@@ -130,7 +129,7 @@ def _is_current_run(order: BrokerFill, fill: Node | None, run_id: str) -> bool:
 
 
 def _is_stop_order(graph: GraphStore, order: BrokerFill, sink: FaultSink) -> bool:
-    broker_stop = is_live_broker_stop_order(order)
+    broker_stop = is_broker_stop_order(order)
     graph_stop = _tracked_as_stop(graph, order)
     if broker_stop != graph_stop:
         record_stop_mismatch(
@@ -143,7 +142,7 @@ def _tracked_as_stop(graph: GraphStore, order: BrokerFill) -> bool:
     return any(
         order.idempotency_key == stop.key
         or order.broker_order_id == stop.broker_order_id
-        for stop in active_broker_stop_orders(graph)
+        for stop in broker_stop_orders(graph)
     )
 
 

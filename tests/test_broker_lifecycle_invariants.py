@@ -8,7 +8,13 @@ External I/O: reads source files only.
 from __future__ import annotations
 
 import ast
+from dataclasses import dataclass
 from pathlib import Path
+
+from contracts.broker_lifecycle import (
+    broker_order_lifecycle_status,
+    is_live_broker_stop_order,
+)
 
 LIFECYCLE_MODULE = Path("contracts/broker_lifecycle.py")
 TARGETS = (
@@ -18,6 +24,15 @@ TARGETS = (
     Path("agents/execution/run.py"),
     Path("agents/reporter/domain/trade_outcomes.py"),
 )
+
+
+@dataclass(frozen=True)
+class _Order:
+    idempotency_key: str
+    broker_order_id: str
+    order_type: str | None
+    status: str
+    reason: str | None = None
 
 
 def test_broker_lifecycle_vocabulary_lives_in_one_module() -> None:
@@ -33,6 +48,24 @@ def test_broker_lifecycle_vocabulary_lives_in_one_module() -> None:
 
     assert LIFECYCLE_MODULE.exists()
     assert offenders == []
+
+
+def test_broker_order_lifecycle_status_drives_live_stop_orders() -> None:
+    """EXEC-OBS-05: broker stop order liveness uses one lifecycle vocabulary."""
+    resting = _Order("stop:ref:AMD", "broker-resting", "stop", "pending")
+    terminal_reason = _Order(
+        "stop:ref:AMD",
+        "broker-terminal",
+        "stop",
+        "pending",
+        reason="canceled",
+    )
+    ordinary = _Order("old-run:AMD:buy", "broker-ordinary", "limit", "pending")
+
+    assert is_live_broker_stop_order(resting)
+    assert broker_order_lifecycle_status(terminal_reason) == "canceled"
+    assert not is_live_broker_stop_order(terminal_reason)
+    assert not is_live_broker_stop_order(ordinary)
 
 
 def _is_status_set_assignment(node: ast.AST) -> bool:

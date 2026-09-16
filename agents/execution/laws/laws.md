@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -271,8 +271,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-OBS-05** — Liveness of an execution broker fact is asked in exactly one place. A
   `BrokerStopOrder` whose order has reached a terminal broker state is not live regardless of
   `cancelled_at`; a resting-stop `Fill` is not an open order; and the stale-order sweep asks the
-  broker the same liveness question it asks of the graph. *(Declares the S190 / DL-139 correction
-  for DRIFT-055.)*
+  broker and graph the same stop-identity question rather than comparing liveness views. *(Declares
+  the S190 / DL-139 correction for DRIFT-055 and the S209 / DL-170 correction for DRIFT-064.)*
 
 ---
 
@@ -418,3 +418,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   file-as-oracle contract assertion into explicit required fields for execution payloads and current
   `CONTRACT.version` identity. No contract shape changes. DRIFT-060 records the unbuilt
   version-move gate; DRIFT-061 records output-law fields that no current execution contract carries.
+- **v1.6 — S209 stop identity mismatch amendment (2026-09-16).** Amends only the final
+  `EXEC-OBS-05` stale-order-sweep limb: the sweep compares broker and graph stop identity, not
+  liveness, so a stop that fired before the same run's broker-status refresh is not reported as a
+  `BrokerStopIdentityMismatch`. Adds fired-stop and graph-only mismatch guards, records DRIFT-064,
+  and leaves the green rollup unchanged.

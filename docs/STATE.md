@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-16 21:21 AEST · **Version:** 0.98.07 · **🟠 S210 BUILT and branch-gated on `sprint-210-concentration-divides-by-the-book` — concentration gates divide by deployed capital and below-floor books render `NOT_EVALUATED`; merge/deploy/live proof is pending.**
+**Last updated:** 2026-09-16 23:55 AEST · **Version:** 0.98.07 · **🟩 S210 MERGED, DEPLOYED `s210` and PROVEN LIVE — concentration now divides by the deployed book (Banking read **0.185255** against the 0.30 cap, versus 0.0383 under the old equity denominator), `sizing` still divides by equity, and three inert PM gates can bind again.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when

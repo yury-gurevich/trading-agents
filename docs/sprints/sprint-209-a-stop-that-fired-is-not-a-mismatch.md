@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-209-stop-fired-not-mismatch`
-**Status:** MERGED `032cd8e` · DEPLOYED `s209`, 2026-09-16 · live fired-stop proof owed
+**Status:** code merged `032cd8e` · DEPLOYED `s209`, 2026-09-16 · live fired-stop proof owed
 **Version:** `0.98.06`
 **Effort:** S — but **not** the "small" the work queue promised: the code is ~4 lines, the **law cycle is the sprint**.
 **Decisions:** DL-170 · DRIFT-064 · builds and deploys work-queue item **42**, with live closure still owed
@@ -515,7 +515,7 @@ GATE PROVEN for e6094ec70247e00ff53cdd126c409cb40ecc3f66:
   Security Findings: success (attempt 1)
 ```
 
-**`make gate-ran`:** final merged SHA, run from the deployed worktree at
+**`make gate-ran`:** deployed code SHA, run from the deployed worktree at
 `032cd8ef6fa34f65099bf4ecb82af7d819888a1a` after the `s209` manual image build:
 
 ```text

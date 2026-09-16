@@ -501,13 +501,16 @@ detect-secrets (untracked): scanning 1 new file(s)
 
 **`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\trading-agents-s209-make-ci-2.txt`. Exit code `0`.
 
-**`make gate-ran`:** run from `<worktree path>` at `<full 40-char SHA>`:
+**`make gate-ran`:** run from `C:\Users\yury_\Downloads\project\trading-agents` at `e6094ec70247e00ff53cdd126c409cb40ecc3f66`:
 
 ```text
-not run yet — branch commit/push comes after this local handback update
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for e6094ec70247e00ff53cdd126c409cb40ecc3f66:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** Branch remote gate, merge, deploy, and live fired-stop proof are not done yet. The live check requires a future scheduled run where a protective stop actually fired; a no-stop-fired run proves nothing.
+**Not met / verified failing:** Merge, deploy, and live fired-stop proof are not done yet. The live check requires a future scheduled run where a protective stop actually fired; a no-stop-fired run proves nothing.
 
 ---
 

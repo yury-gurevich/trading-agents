@@ -533,7 +533,7 @@ No new clause IDs moved from ⬜ to 🟩. S210 adds/refreshes green proof rows f
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; remote branch CI and exact-SHA gate proof pending.
+**Status:** BUILT and branch-gated; merge/deploy/live proof pending.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-210-concentration-divides-by-book`, branch `sprint-210-concentration-divides-by-the-book`; no `.env` was read or required.
 
@@ -620,13 +620,18 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 5 new file(s)
 ```
 
-**`make gate-ran`:** pending remote checks.
+**`make gate-ran`:** run from `C:\Users\yury_\Downloads\project\trading-agents-sprint-210-concentration-divides-by-book` at `540415ff91fc312f05dcce3d79bc4c220d450b85` after remote CI and Security Findings completed.
 
 ```text
+> make gate-ran
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 540415ff91fc312f05dcce3d79bc4c220d450b85:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** Remote branch CI, exact-SHA `make gate-ran`, merge, deploy, and
-next-scheduled-run live proof are not yet done at this checkpoint.
+**Not met / verified failing:** Merge, deploy, and next-scheduled-run live proof are not yet done.
+This evidence update itself must be pushed and re-proven before final handback.
 
 ---
 

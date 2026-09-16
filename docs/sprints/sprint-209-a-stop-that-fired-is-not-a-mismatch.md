@@ -3,10 +3,10 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-209-stop-fired-not-mismatch`
-**Status:** BUILT
-**Version:** *next available PATCH at merge* (main is `0.98.05`)
+**Status:** MERGED `032cd8e` · DEPLOYED `s209`, 2026-09-16 · live fired-stop proof owed
+**Version:** `0.98.06`
 **Effort:** S — but **not** the "small" the work queue promised: the code is ~4 lines, the **law cycle is the sprint**.
-**Decisions:** DL-170 (take the next free number, re-check at merge) · DRIFT-064 · closes work-queue item **42**, retires item **32**'s residue
+**Decisions:** DL-170 · DRIFT-064 · builds and deploys work-queue item **42**, with live closure still owed
 
 > **Why this bump kind.** PATCH. No new capability: the sweep already decides exemption correctly
 > (`drop_sweep.py:139` already returns on **identity**). Only the *warning* beside that decision asks
@@ -454,9 +454,12 @@ None expected. `EXEC-OBS-05` is already 🟩 and should remain 🟩 with revised
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED and DEPLOYED (`s209`); live fired-stop proof still owed
 
-**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents`, branch `sprint-209-stop-fired-not-mismatch`; `.env` present but not read for this in-memory implementation. Live-spine measurements were not reproduced.
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents`,
+branch `sprint-209-stop-fired-not-mismatch`; `.env` present. Unit/local proofs did not read it;
+deploy, readback, and `DeployRecord` used the gitignored live credentials without printing values.
+The future fired-stop live proof was not reproduced.
 
 **Result:** `_is_stop_order` now records `BrokerStopIdentityMismatch` only for stop identity disagreement: broker side uses `is_broker_stop_order(order)`, graph side uses unfiltered `broker_stop_orders(graph)`, and the existing exemption return still skips every broker or graph stop identity. No `contracts/` files changed.
 
@@ -501,7 +504,9 @@ detect-secrets (untracked): scanning 1 new file(s)
 
 **`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\trading-agents-s209-make-ci-2.txt`. Exit code `0`.
 
-**`make gate-ran`:** run from `C:\Users\yury_\Downloads\project\trading-agents` at `e6094ec70247e00ff53cdd126c409cb40ecc3f66`:
+**`make gate-ran`:** branch implementation commit, run from
+`C:\Users\yury_\Downloads\project\trading-agents` at
+`e6094ec70247e00ff53cdd126c409cb40ecc3f66`:
 
 ```text
 uv run python scripts/assert_gate_ran.py
@@ -510,7 +515,41 @@ GATE PROVEN for e6094ec70247e00ff53cdd126c409cb40ecc3f66:
   Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** Merge, deploy, and live fired-stop proof are not done yet. The live check requires a future scheduled run where a protective stop actually fired; a no-stop-fired run proves nothing.
+**`make gate-ran`:** final merged SHA, run from the deployed worktree at
+`032cd8ef6fa34f65099bf4ecb82af7d819888a1a` after the `s209` manual image build:
+
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 032cd8ef6fa34f65099bf4ecb82af7d819888a1a:
+  Build and push agent images: success (attempt 1)
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Merge / release evidence:** `main` fast-forwarded to
+`032cd8ef6fa34f65099bf4ecb82af7d819888a1a`; pushed with annotated tag
+`checkpoint-20260916-s209-stop-fired-not-mismatch` and backup branch
+`backup/main-after-20260916-s209-stop-fired-not-mismatch`. Manual GitHub Actions image build
+`35050880879` published tag `s209` for that SHA.
+
+**Deploy proof:** `pwsh -NoProfile -File infra\deploy-agents.ps1 up -Tag s209` exited `0` with
+preflight, env preservation, alembic, Service Bus routes, master, 15 agents, and `dispatcher-cron`
+all `[OK]`. Pre-deploy baseline was 17/17 targets on `s208`, all `Succeeded`; post-deploy readback
+was 17/17 targets on `s209`, all `Succeeded`, dispatcher cron `30 22 * * 1-5`.
+
+```text
+pre_tags=s208
+post_tags=s209
+shape_drift_count=0
+vocabulary.live.unique_count=1 summary=58769995a4f32fbc8d7b55e676602b19a2141f750940d876544031ba7b4ef5fb:17 match=True
+credential_tests.live=f8f039501e3d60ddab08fdeb8cdae4959d3ee1302bde54bc0792fec3ed4d1b2c match=True
+issuer_map.live=2ed1f41c9a396618952de7d8a0f01e32a2ec582177f397769df4e1697f1fd7b1 match=True
+recorded DeployRecord deploy:2026-09-16T08:45:36.837136+00:00:s209:032cd8ef6fa34f65099bf4ecb82af7d819888a1a
+```
+
+**Not met / verified failing:** The live fired-stop proof is not done yet. The live check requires a
+future scheduled run where a protective stop actually fired; a no-stop-fired run proves nothing.
 
 ---
 
@@ -519,3 +558,6 @@ GATE PROVEN for e6094ec70247e00ff53cdd126c409cb40ecc3f66:
 - `DRIFT-064` records that `EXEC-OBS-05` described the defect from S190 until this amendment.
 - First full `make ci` exited 2 only because removing the sweep's indirect call to `is_live_broker_stop_order` exposed missing direct coverage in `contracts/broker_lifecycle.py`; `test_broker_order_lifecycle_status_drives_live_stop_orders` fixes that without reintroducing liveness into the sweep.
 - `git diff --stat -- contracts` is empty.
+- Deployment was image-only: vocabulary, master credential tests, and issuer-map packs were
+  hash-identical before and after retag. The only remaining closure proof is the next scheduled run
+  that actually includes a fired protective stop.

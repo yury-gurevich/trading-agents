@@ -1,9 +1,7 @@
 """Batch trace — per-stage metrics for one graph-pull pipeline run.
 
 Agent: orchestration
-Role: walk the provenance chain for a given run_id and print structured numbers for
-      every stage (position sync -> reporter). A batch is one RunRequest: one
-      universe, one download, processed end-to-end. Reads only; never writes.
+Role: print read-only per-stage metrics for one RunRequest provenance chain.
 External I/O: none (delegates to the injected GraphStore).
 """
 
@@ -14,6 +12,7 @@ from typing import TYPE_CHECKING
 from orchestration.batch_chain import CHAIN, POSITION_SYNC_KEY
 from orchestration.batch_chain import walk_chain as walk_chain
 from orchestration.pm_rejections import format_pm_rejection
+from orchestration.trace_deliberation import format_deliberation_trace
 from orchestration.trace_format import metric_text as mt
 
 if TYPE_CHECKING:
@@ -22,8 +21,13 @@ if TYPE_CHECKING:
 _COMPLETE_KEYS = (POSITION_SYNC_KEY, *(label for _, label in CHAIN))
 
 
+def trace_stage_total() -> int:
+    """Return the number of stages the trace considers complete."""
+    return len(_COMPLETE_KEYS)
+
+
 def print_trace(graph: GraphStore, run_id: str) -> int:
-    """Print per-stage batch metrics. Returns number of completed stages (max 7)."""
+    """Print per-stage batch metrics. Returns number of completed stages."""
     from contracts.provider import REGIME_CONTEXT_LABEL, MarketData, RegimeContext
 
     nodes = walk_chain(graph, run_id)
@@ -130,6 +134,7 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
         print()
 
     pm_node = nodes.get("PMRun")
+    exec_node = nodes.get("ExecutionRun")
     if pm_node:
         from contracts.portfolio_manager import OrderIntentSet
 
@@ -145,7 +150,13 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
             print(f"  {format_pm_rejection(rej)}")
         print()
 
-    exec_node = nodes.get("ExecutionRun")
+    delib_node = nodes.get("DeliberationRun")
+    if delib_node:
+        print("[deliberation]")
+        for line in format_deliberation_trace(pm_node, delib_node, exec_node):
+            print(f"  {line}")
+        print()
+
     if exec_node:
         submitted = exec_node.props.get("submitted", "?")
         rejected = exec_node.props.get("rejected", "?")
@@ -180,9 +191,8 @@ def print_trace(graph: GraphStore, run_id: str) -> int:
         if headline:  # pragma: no branch
             print(f"  summary   {headline[:80]}")
         print()
-
     complete = sum(1 for key in _COMPLETE_KEYS if key in nodes)
-    total = len(_COMPLETE_KEYS)
+    total = trace_stage_total()
     status = "OK batch processed" if complete == total else "INCOMPLETE"
     print(f"RESULT  {complete}/{total} stages complete  {status}")
     return complete

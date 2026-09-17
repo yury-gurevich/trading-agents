@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-212-trace-says-why-nothing-was-submitted`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** closes work-queue items **66** and **67** · no ADR · no DRIFT row expected
@@ -326,15 +326,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| _to fill_ | | | |
+| `orchestration/batch_trace.py` | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; execution and deliberator law/test-plan files | LAW-02; conventions §3/§7. No agent clause governs the operator renderer itself. | Yes. Keep the trace read-only and expose the stage total from the same tuple `print_trace` uses instead of changing its existing integer return contract. |
+| `orchestration/trace_deliberation.py` | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md`; `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `DLIB-OUT-02` (green) guarantees `DeliberationRun` verdicts and vetoed tickers; `EXEC-OUT-09` (green) guarantees `ExecutionRun.deliberation_status` and posture-blocked count. | Yes. Render only recorded facts, tolerate missing historical props, and do not add execution-side counts or vocabulary. |
+| `scripts/trace_run.py` | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | LAW-02: the exit code is a machine-readable proof claim. | Yes. The CLI must compare completed stages with the exported total, not a literal. |
+| new trace tests | `docs/laws/conventions.md`; execution and deliberator test plans | conventions §3/§7; `DLIB-OUT-02`; `EXEC-OUT-09`; LAW-02. | Yes. New tests will cite the governed law IDs in docstrings even though the production change is operator tooling. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** _to fill_
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Scope is operator tooling only (`orchestration/` trace rendering plus `scripts/trace_run.py`). It reads existing `DeliberationRun` and `ExecutionRun` properties, changes no agent write, no `contracts/` file, no graph vocabulary, and no deployment surface.
 
-**Contradictions found between a law and this spec:** _to fill_
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** _to fill_
+**Laws found silent where a decision was needed:** No agent law governs `batch_trace`, `print_trace`, or `trace_run`; LAW-02 governs the proof claim and DL-174 records the design choices. No drift row is added because no agent guarantee is being added or changed.
 
-**Clauses that were ⬜ and are now proven:** _to fill_
+**Clauses that were ⬜ and are now proven:** None. This sprint relies on already-green `DLIB-OUT-02` and `EXEC-OUT-09`; it does not promote a law clause.
 
 ---
 
@@ -342,48 +345,80 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | _to fill_ | | | |
+| A1 | `test_trace_run_exits_zero_for_complete_trace` | `orchestration/tests/test_trace_run_cli.py` | PASS | LAW-02 |
+| A2 | `test_trace_run_exits_nonzero_for_incomplete_trace` | `orchestration/tests/test_trace_run_cli.py` | PASS | LAW-02 |
+| A3 | `test_trace_run_uses_stage_tuple_total` | `orchestration/tests/test_trace_run_cli.py` | PASS | LAW-02 |
+| A4 | `test_fully_vetoed_trace_explains_withheld_orders` | `orchestration/tests/test_trace_deliberation.py` | PASS | `DLIB-OUT-02` / `EXEC-OUT-09` / LAW-02 |
+| A5 | `test_partial_veto_trace_explains_only_matching_gap` | `orchestration/tests/test_trace_deliberation.py` | PASS | `DLIB-OUT-02` / `EXEC-OUT-09` / LAW-02 |
+| A6 | `test_trace_does_not_invent_veto_cause` | `orchestration/tests/test_trace_deliberation.py` | PASS | `DLIB-OUT-02` / LAW-02 |
+| A7 | `test_old_deliberation_row_renders_unknowns` | `orchestration/tests/test_trace_deliberation.py` | PASS | `DLIB-OUT-02` / LAW-02 |
+| A8 | `test_trace_without_deliberation_keeps_existing_shape` | `orchestration/tests/test_trace_deliberation.py` | PASS | LAW-02 |
 
-**Tests added beyond the plan:** _to fill_
+**Tests added beyond the plan:** `orchestration/tests/test_trace_deliberation_edges.py` covers malformed defensive paths: non-numeric `submitted`, absent `ExecutionRun`, absent `PMRun`, missing/invalid PM payload, mismatch between veto count and submitted gap, and vetoed tickers outside approved buys.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** _to fill_
+**Status:** BUILT locally at rebased implementation commit `5d3a69630e3e2ee7e41d6ab444aed28e2e09ebd0`; branch remote proof pending until the rewritten branch is pushed.
 
-**Tree the proofs ran in (and `.env` present?):** _to fill_
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-212-trace-says-why-nothing-was-submitted`; `Test-Path .env` returned `False`.
 
-**Result:** _to fill_
+**Result:** Implemented operator-tooling trace repair. `trace_run.py` now exits 0 when `complete == trace_stage_total()`. `print_trace` now prints a `[deliberation]` block after `[pm]` and before `[execution]` when `walk_chain` found a `DeliberationRun`; the block renders reviewed/vetoed/status/tickers and only prints `withheld=N by deliberation veto` when approved buy tickers, vetoed tickers and submitted count reconcile exactly.
 
-**Files changed:** _to fill_
+**Files changed:** `orchestration/batch_trace.py`, `orchestration/trace_deliberation.py`, `scripts/trace_run.py`, `orchestration/tests/test_trace_deliberation.py`, `orchestration/tests/test_trace_deliberation_edges.py`, `orchestration/tests/test_trace_run_cli.py`, `docs/design-log.md`, `docs/STATE.md`, this sprint file, `pyproject.toml`, `uv.lock`.
 
-**Design decisions:** _to fill_
+**Design decisions:** `DL-174` records (1) exposing the stage total without changing `print_trace`'s integer return type, and (2) the exact conservative rule for the withheld line. Rejected: returning a tuple/result object, changing `7` to `8`, using `skipped`/`deliberation_blocked_count`, or inferring a cause from `approved > submitted`.
 
 **Proof — the red run first:**
 
 ```text
-_to fill_
+uv run pytest orchestration\tests\test_trace_deliberation.py orchestration\tests\test_trace_run_cli.py --no-cov
+collected 8 items
+orchestration\tests\test_trace_deliberation.py FFFF.                     [ 62%]
+orchestration\tests\test_trace_run_cli.py F.F                            [100%]
+FAILED ... test_trace_run_exits_zero_for_complete_trace
+FAILED ... test_trace_run_uses_stage_tuple_total
+FAILED ... test_fully_vetoed_trace_explains_withheld_orders
+FAILED ... test_partial_veto_trace_explains_only_matching_gap
+FAILED ... test_trace_does_not_invent_veto_cause
+FAILED ... test_old_deliberation_row_renders_unknowns
+========================= 6 failed, 2 passed in 1.78s =========================
+
+DL-70 guard breaks after implementation:
+- permissive CLI exit (`complete <= total`) made `test_trace_run_exits_nonzero_for_incomplete_trace` fail: `assert 0 != 0`.
+- forced deliberation rendering without a `DeliberationRun` made `test_trace_without_deliberation_keeps_existing_shape` fail.
+- weakened withheld reconciliation made `test_trace_does_not_invent_veto_cause` fail on `withheld=4 by deliberation veto`.
 ```
 
 **Proof — the green run:**
 
 ```text
-_to fill_
+uv run pytest orchestration\tests\test_trace_deliberation.py orchestration\tests\test_trace_deliberation_edges.py orchestration\tests\test_trace_run_cli.py --no-cov
+collected 15 items
+orchestration\tests\test_trace_deliberation.py .....                     [ 33%]
+orchestration\tests\test_trace_deliberation_edges.py .......             [ 80%]
+orchestration\tests\test_trace_run_cli.py ...                            [100%]
+============================= 15 passed in 1.47s ==============================
+
+uv run pytest orchestration\tests\test_batch_trace.py orchestration\tests\test_pm_rejection_rendering.py orchestration\tests\test_position_sync_display_branches.py orchestration\tests\test_trace_deliberation.py orchestration\tests\test_trace_run_cli.py --no-cov
+============================= 20 passed in 1.90s ==============================
 ```
 
-**Guards planted:** _to fill_
+**Guards planted:** A1-A8 from the sprint plan plus seven defensive edge guards. A1/A3/A4/A5/A6/A7 failed on the pre-change code; A2/A6/A8 were also proven able to fail via intentional DL-70 breaks and restored.
 
-**Module line counts:** _to fill_
+**Module line counts:** `orchestration/batch_trace.py` 198; `orchestration/trace_deliberation.py` 83; `scripts/trace_run.py` 37; `orchestration/tests/test_trace_deliberation.py` 199; `orchestration/tests/test_trace_deliberation_edges.py` 133; `orchestration/tests/test_trace_run_cli.py` 84.
 
-**`make ci`:** _to fill_
+**`make ci`:** after rebasing onto `origin/main` @ `2ef03befbf08ce4f80c44f0a183be2ececb9d5eb`, `make ci > $env:TEMP\s212-ci-rebased-main2.txt 2>&1; Write-Output $LASTEXITCODE` exited `0`. Log tail: `2811 passed, 6 skipped in 88.10s`, `Required test coverage of 100.0% reached. Total coverage: 100.00%`; `uv run pip-audit` -> `No known vulnerabilities found`; detect-secrets passed and untracked secret scan reported `no untracked files to scan`.
 
-**`make gate-ran`:** _to fill_
+**`make gate-ran`:** Pending; branch not pushed yet. Must be filled after remote CI/Security Findings are terminal and then re-proven for the final evidence commit.
 
-**Not met / verified failing:** _to fill_
+**Not met / verified failing:** Remote branch proof pending; merge not done; deployment not required; live operator check from main checkout not done in this worktree because `.env` is absent and the sprint explicitly keeps live spine access out of this build worktree.
 
 ---
 
 ## Return notes
 
-- _to fill_
+- Branch local build is green with no `agents/` or `contracts/` diff (`git diff --stat -- agents contracts` and `git diff --name-only -- agents contracts` produced no output).
+- The operator check still belongs after merge from the main checkout with `.env`: `trace_run.py --run-id sched-2026-09-16` should print `[deliberation] reviewed=4  vetoed=4` with USB, WFC, AMZN, MDLZ and exit 0.
+- S212 changes operator tooling only; no deploy is implied.

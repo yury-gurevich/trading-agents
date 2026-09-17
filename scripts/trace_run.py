@@ -25,12 +25,12 @@ def main() -> None:
     from dotenv import load_dotenv
 
     from kernel.graph_env import build_graph_from_env
-    from orchestration.batch_trace import print_trace
+    from orchestration.batch_trace import print_trace, trace_stage_total
 
     load_dotenv()
     graph = build_graph_from_env()
     complete = print_trace(graph, args.run_id)
-    sys.exit(0 if complete == 7 else 1)
+    sys.exit(0 if complete == trace_stage_total() else 1)
 
 
 if __name__ == "__main__":

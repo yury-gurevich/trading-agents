@@ -98,6 +98,36 @@ not *what a given verdict means*. Expected block rate **53 % -> ~6 %**; the name
 
 ---
 
+## DL-174 - the operator trace explains veto-withheld orders without inventing a cause - status: DECIDED (S212, 2026-09-18)
+
+**Decision. Expose the stage total from `batch_trace` without changing `print_trace`'s return type.**
+`print_trace` already returns the completed count and has callers that assert an integer. S212 adds a
+small exported total helper derived from the same `_COMPLETE_KEYS` tuple, and `scripts/trace_run.py`
+compares the two values. This keeps the CLI's proof claim tied to the renderer's own stage set while
+leaving existing callers unchanged.
+
+**Decision. The withheld line prints only when recorded facts reconcile exactly.** The renderer may
+print reviewed/vetoed/status from `DeliberationRun` and `ExecutionRun` whenever those fields exist,
+but it claims `withheld=N by deliberation veto` only when the approved buy tickers, the vetoed
+tickers, and `ExecutionRun.submitted` agree that the missing submitted orders are exactly the vetoed
+buys. Missing or malformed old-row props render as `?` or are omitted; they never raise and never
+become a causal claim.
+
+**Rejected routes.**
+
+- Change `print_trace` to return `(complete, total)` or a result object. Rejected because
+  `print_trace` is a human-output helper with existing integer callers; widening the return value
+  would make this tooling fix touch unrelated tests and acceptance code.
+- Replace the stale `7` with `8` in `trace_run.py`. Rejected because it would fix today's symptom
+  while preserving the exact drift mechanism that failed when `PositionSync` became a stage.
+- Claim withheld orders from `skipped`, `rejected`, or `deliberation_blocked_count`. Rejected because
+  the measured fully vetoed nights record those values as zero; the actual veto fact lives on the
+  linked `DeliberationRun`.
+- Infer a veto cause whenever `approved > submitted`. Rejected because broker refusal, stage gates,
+  or historical/malformed rows can also produce gaps. The trace explains only what the record states.
+
+---
+
 ## DL-172 - reward-risk target uses median trailing favourable excursion - status: DECIDED (S211, 2026-09-17)
 
 **Decision. Add a separate lookback-window count for the decision-time estimate.**

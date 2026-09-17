@@ -9,6 +9,8 @@ tags: [tiingo, alpaca, finnhub, feeds, provider]
 
 **Status:** Accepted · **Date:** 2026-06-16 · **Decider:** Yury Gurevich (product owner)
 
+> **Amendment (2026-09-17) — FMP also supplies the regime's VIX.** [ADR-0028](0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md): every source here hard-coded `vix=None`, so the regime was a silent `neutral` on 50 of 50 runs. FMP's `^VIX` daily series becomes the regime input through the provider's existing FMP credential; FRED `VIXCLS` is the named fallback, and a missing or stale value marks the regime degraded.
+
 > **Amendment (2026-07-04) — primary/fallback roles updated to match shipped reality.** The runtime
 > composite (`agents/provider/composite.py::market_source_from_settings`) routes OHLCV to
 > **Alpaca** (batches many symbols per request — the right shape for daily full-universe pulls);

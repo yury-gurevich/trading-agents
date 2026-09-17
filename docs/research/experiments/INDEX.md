@@ -30,10 +30,11 @@ defence for any action it triggers.
 | [EXP-006](EXP-006-nrun-hardening.md) | Harden the firewall — N-run aggregation against debate noise | 2026-06-25 | ✅ **noise-aware gate** — N=3 reveals `calendar-staleness` was champion-flaky (1/3) so EXP-005's trip was partly noise; gate now trips gpt-5.4 on the *robust* `name-correlation` (2/3→1/3). Found+fixed 400-tok truncation. Next: larger N + margin (CI-4/S93) |
 | [EXP-007](EXP-007-aura-snapshot-local-export.md) | Can Aura Free snapshots be stored locally via API? | 2026-07-01 | Snapshot create/list works on the active Free instance, but local download is blocked by `HTTP 403`; Free snapshots are managed rollback only, not off-platform backup proof |
 | [EXP-008](EXP-008-correlation-cutoff-replay.md) | Does the 0.70 correlation cutoff decide anything, and is it noise? | 2026-09-17 | Replay of 38 approvals (validated 38/38): **no cutoff from 0.70 down to 0.50 rejects anything** at today's book; weighted ρ⁺ rejects MDLZ ×5. Near 0.70 the verdict is sampling noise (CI spans 0.70 on 12/16 pairs; halves disagree 7/16), **not outlier days** (Δρ +0.001). Feeds work-queue item 68 → an ADR on gate meaning, not urgent |
+| [EXP-009](EXP-009-volatility-sizing-replay.md) | Should position size follow volatility, and does the regime label have anything to scale by? | 2026-09-17 | Replay of 61 approved buys (sizing reconstructed 61/61): iso-risk sizing cuts per-position risk dispersion 4.2× → 1.9× and worst loss −30 %, but lost **$445 more** this month (AMD alone −$255; calm names fell) — not free, one window can't settle it. 🚨 **Regime label `neutral` on 50/50 runs: no production source supplies VIX.** Feeds items 62/64 and new item 70 |
 
 ## Adding an experiment
 
-1. Next id is `EXP-009`. Create `EXP-00N-<slug>.md` with the four headings above.
+1. Next id is `EXP-010`. Create `EXP-00N-<slug>.md` with the four headings above.
 2. Add a row here.
 3. Link the artifacts (transcripts, critique docs) from *Delivery*.
 4. If it triggers a parameter change, that change runs as a **parameter experiment** (charter report) —

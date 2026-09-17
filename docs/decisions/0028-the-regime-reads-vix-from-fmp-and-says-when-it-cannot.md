@@ -60,10 +60,12 @@ item 64's policy question has anything to act on.
 **The three working sources agree exactly:** 74 common days (2026-06-01 → 2026-09-16), maximum
 |FMP − FRED| = **0.000**, maximum |FMP − Cboe| = **0.000**.
 
-**FMP is already trusted by the provider:** `fmp-api-key → PROVIDER_FMP_API_KEY` is in the provider's
+**FMP is already trusted by the provider, but not yet wired in:** `fmp-api-key → PROVIDER_FMP_API_KEY` is in the provider's
 entitlements (`orchestration/packs/trading_secrets.json`), and the `fmp` probe in
 `orchestration/packs/trading_credential_tests.json` tests it before handover (DL-36). No new secret, grant,
-vendor or cost.
+vendor or cost. 🪤 **It is not in the live composite, though:** `market_source_from_settings` (`agents/provider/composite.py:83`)
+builds Alpaca + Finnhub + Alpha Vantage only. `FMPDataSource` exists and `settings.fmp_api_key` is populated, but
+nothing constructs it, so the build wires it in.
 
 **What the label would have been.** Using FMP closes on each scheduled run's as-of date with the live
 thresholds (risk_on ≤ 15, risk_off ≥ 20, high ≥ 25, extreme ≥ 35): **49 / 49** real run dates have a value.
@@ -81,8 +83,11 @@ been `neutral` 38, **`risk_on` 10, `risk_off` 1**, with **12 label changes**, ag
    - Newest bar is the **previous** session → used and recorded with its date, plus a **warning-severity**
      note that it is prior-session. The label is still computed.
    - No bar, a bar older than the previous session, a non-numeric value, or a fetch failure → **the regime is
-     DEGRADED**: incident ref and fault recorded, `vix` absent, label `neutral`, and the output **says why**.
-     A missing input never again produces a clean `neutral`.
+     DEGRADED in its VIX input**: a warning fault is recorded, `vix` is absent, the label is `neutral`, and the
+     regime **says why** in its own status field. A missing input never again produces a clean `neutral`.
+   - 🚨 **Corrected the same day, before any build (see *Correction* below):** the degraded marker must **not**
+     be a `provenance.incident_refs` entry, and a vendor failure must be handled inside the VIX source, never
+     raised into `_get_regime`'s fault boundary.
 3. **The honesty half is a law change.** `PROV-OUT-02` / `PROV-OUT-03` must require that a regime without a
    measured input is reported degraded, with a test on a source that returns *nothing* (not one that raises),
    so the clause can fail. This is owed as a law cycle in the implementing sprint.
@@ -100,8 +105,8 @@ been `neutral` 38, **`risk_on` 10, `risk_off` 1**, with **12 label changes**, ag
   nights). Its arguments may cite it. That is intended, and it is the only behavioural change.
 - **Deploy is an image rebuild**, not a secret change. Whether it needs a full `up` depends on whether the build
   adds a vocabulary property (e.g. `vix_as_of`); the implementing sprint states it.
-- **FMP becomes load-bearing for the regime.** An FMP outage now shows as a degraded regime every night it
-  lasts, instead of hiding as `neutral`.
+- **FMP becomes load-bearing for the regime *label*, not for trading.** An FMP outage now shows as a VIX-degraded
+  regime every night it lasts, instead of hiding as `neutral`, and it halts nothing (see *Correction*).
 - **ADR-0006 is amended:** FMP's role grows from "validation" to "validation + regime VIX".
 
 ### Assumed, not measured — the implementing sprint must prove it live
@@ -110,6 +115,30 @@ been `neutral` 38, **`risk_on` 10, `risk_off` 1**, with **12 label changes**, ag
   there two hours after the 20:15 UTC VIX close is **unmeasured**. The freshness rule (decision 2) tolerates a
   one-session lag, so the design doesn't depend on the answer, but the first scheduled run after deploy must
   record which case occurred.
+
+## Correction — 2026-09-17, same day, before any build
+
+While packaging the implementing sprint (S213), the planning agent found that decision 2 as first written
+would have **halted all trading, exits included, on any VIX miss**:
+
+- `agents/analyst/run.py:56` — `if regime.provenance.incident_refs:` → `build_empty_result(... "provider regime
+  data degraded")`. The analyst emits **no recommendations at all**, which under ADR-0017 includes every exit.
+- `agents/portfolio_manager/run.py:123` — the same condition → `"provider_degraded"`, rejecting every order.
+
+Both treat *any* regime incident ref as "the regime is unusable". That was reasonable when the regime's only
+consumed numbers (the base policy defaults) could only be missing if the whole fetch failed. It is wrong for a
+missing VIX, which **no consumer reads as a number**: the defaults come from settings and are unaffected. Blocking
+exits on an auxiliary input is the failure S147 refused and that froze the book for eight days.
+
+**Therefore:**
+
+1. A missing or stale VIX is recorded on the regime itself (a status and the bar's date, as contract fields)
+   plus a **warning** fault. It is **never** added to `provenance.incident_refs`.
+2. The VIX source handles its own vendor failures (timeout, HTTP error, unparseable body) and returns
+   "missing". It must not raise, because an exception reaching `_get_regime`'s `fault_boundary` becomes
+   `regime_source_degraded`, which is an incident ref and would halt the run for the same reason.
+3. `regime_source_degraded` keeps its current meaning and behaviour for a genuine boundary failure. Changing how
+   the analyst and PM react to a degraded regime is their law's question and is out of scope here.
 
 ## Rejected alternatives
 

@@ -2,7 +2,7 @@
 type: Architecture Decision
 status: accepted
 closes: "The reward_risk gate has one distinct value (2.00) across 294 recordings because target and stop are both derived from the same regime base pair, so the ratio is identically base_take_profit_pct / base_stop_loss_pct. Should the gate be retired, or given an independent target derivation? And if the derivation changes, what happens to the 1.5 floor that was calibrated against a constant?"
-tags: [analyst, portfolio-manager, risk, reward-risk, stop-target, excursion, threshold, adr-0017, adr-0025, pm-nev, anlz-obs-05, dl-119]
+tags: [analyst, portfolio-manager, risk, reward-risk, stop-target, excursion, threshold, exp-010, s211, adr-0017, adr-0025, pm-nev, anlz-obs-05, dl-119]
 amends: ADR-0025
 ---
 
@@ -78,6 +78,8 @@ fetched; the backfilled realised value is the check on it, not the input.
 
 ### 2 · The floor moves from 1.5 to **1.0**
 
+> 🚨 **Corrected 2026-09-17, before merge: the floor ships at `0.80`.** The table above measures a different ratio from the one this decision builds. See *Correction* at the end.
+
 `1.5` was never a judgement about reward against risk. It was a number that sat safely below a
 constant 2.00, and it has no meaning independent of that constant. Shipping the new derivation
 against the old floor would reject **62 %** of candidates overnight.
@@ -152,3 +154,51 @@ requires a new ADR.**
 - The `1.5` value currently in `min_reward_risk_ratio`
   (`agents/portfolio_manager/settings.py:67`) becomes `1.0`, with the `why=` restated: it is now a
   bound on a measured quantity, not on a constant.
+
+## Correction — 2026-09-17, at S211's handback, before merge
+
+**What went wrong.** The *Evidence* table measures **median favourable excursion ÷ median adverse
+excursion**. Decision 1 derives the **target** from the favourable excursion, and S211's spec kept the
+**stop** untouched (2 × ATR, clamped) as an invariant. `reward_risk` reads `target_pct ÷ stop_pct`, so the
+quantity actually built is **median favourable excursion ÷ ATR stop**, with a different denominator from the one the
+1.0 floor was chosen on. The planning agent introduced this when writing the spec. The implementation
+followed the spec correctly.
+
+**Measured on the built code**
+([EXP-010](../research/experiments/EXP-010-reward-risk-floor-on-the-built-ratio.md): S211 branch, live
+`MarketData`, 98 names × the last three scheduled runs, production `scaled` mode):
+
+| Floor | Share of names rejected on the built ratio |
+| --- | --- |
+| 1.00 | **55 % · 58 % · 68 %** |
+| 0.85 | 26 % · 28 % · 29 % |
+| **0.80** | **17 % · 16 % · 18 %** |
+| 0.75 | 12 % · 11 % · 16 % |
+
+The built ratio's median is **0.93-0.98**, against 1.23 for this ADR's ratio on the same bars. Shipping 1.0
+would have rejected most of the book: the exact failure decision 2 warns about, one layer down.
+
+**Therefore (operator, 2026-09-17, *"0.80"*):**
+
+1. **Decision 2 is amended: `min_reward_risk_ratio` = `0.80`.** Said out loud: *never buy a name whose
+   typical 10-session upside is less than four-fifths of the distance to its stop.* It keeps the roughly
+   one-in-five filter the 1.0 ruling was made for.
+2. **Below 1.0 is not looser than the original sentence.** The target is a median excursion, which half of
+   prior windows reach. The median name's stop sits about 1.3× beyond its median adverse excursion, so fewer
+   than half of windows reach the stop. Requiring the target to at least equal the stop is therefore stricter
+   than requiring typical upside to at least equal typical downside.
+3. **§3 is unchanged:** the floor stays absolute. 0.80 is a calibration point on three nights in one regime,
+   not a promise about the rejection share.
+4. **Decision 1 is unchanged.** Stop invariant, median estimator, and trailing windows all stand.
+
+**Consequence not stated above.** The target's median falls from **8.4-9.1 %** (2 × stop) to **4.2 %**. No
+exit reads it: exit triggers are `stop` and `thesis` only (`agents/analyst/domain/recommend.py:26`). So this
+changes the gate and what the deliberator is shown, not when positions close.
+
+**Road not taken:**
+
+- **Keep 1.0.** Rejects 55-68 %, a veto of the book rather than a filter.
+- **Gate on this ADR's ratio instead** (favourable ÷ adverse, ~30 % below 1.0 on the replay). Rejected: the
+  gate would stop comparing the target with the stop actually placed, and it needs a further contract field
+  for the adverse estimate.
+- **0.85.** Rejects 26-29 %, stricter than the filter that was approved.

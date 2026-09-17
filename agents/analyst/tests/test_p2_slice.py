@@ -37,7 +37,7 @@ def test_full_p2_slice_produces_recommendation_with_complete_lineage() -> None:
             min_price=5.0,
             min_average_volume=500_000.0,
             candidate_cap=1,
-            lookback_days=7,
+            lookback_days=14,
         ),
     ).bind()
     AnalystAgent(bus, graph=graph).bind()

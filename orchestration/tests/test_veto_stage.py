@@ -135,7 +135,7 @@ def test_veto_prompt_includes_upstream_analysis_context() -> None:
     assert "Scanner candidate for AAPL" in prompt
     assert "Market data quality:" in prompt
     assert "Latest OHLCV for AAPL:" in prompt
-    assert "close_usd=116" in prompt
+    assert "close_usd=106" in prompt
     assert "base_min_confidence_score=" in prompt
     assert "PM gate outcome: name=sizing" in prompt
     assert "PM gate outcome: name=reward_risk" in prompt
@@ -157,7 +157,7 @@ def test_veto_context_renders_quant_signals_to_all_three_roles() -> None:
         context = by_role[role]
         assert "quant_metrics=source-owned-units-scope-unknown{" in context
         assert "composite_score=0.5" in context
-        assert "history_bars=2" in context
+        assert "history_bars=11" in context
         assert "confidence_score=0.6" in context
 
 

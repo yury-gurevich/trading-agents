@@ -8,6 +8,47 @@ and is marked CLOSED here.
 
 ---
 
+## DL-172 - reward-risk target uses median trailing favourable excursion - status: DECIDED (S211, 2026-09-17)
+
+**Decision. Add a separate lookback-window count for the decision-time estimate.**
+`stop_target_drawdown_horizon_days` remains the session length of the realised adverse excursion and
+the decision-time favourable excursion. It does not also say how many prior rolling windows to
+sample. S211 adds `stop_target_excursion_lookback_windows` as its own tunable, so the PARAM row keeps
+the forward-outcome meaning it already has and the estimate's sampling depth is visible.
+
+**Decision. Use the ADR's estimator: median favourable excursion.** Each prior window uses the same
+session horizon as the realised drawdown check, anchored only on bars whose full window ends at or
+before the decision day. The target is the median of those per-window close-to-high favourable
+excursions, capped to the normal percentage rail, and the evidence records the horizon and sample
+count beside the estimate.
+
+**Decision. An unavailable estimate is not allowed to pass as the old constant.** If there are too
+few bars for even one prior window, the analyst marks the target estimate unavailable and the PM must
+not read the default target as a passed reward-risk gate. The gate evidence must make this distinct
+from a measured zero-upside name.
+
+**Correction. The PM floor is 0.80 on the ratio S211 actually builds.** ADR-0027 first chose 1.0
+from median favourable excursion divided by median adverse excursion, but S211 kept the stop leg
+unchanged, so the built gate reads target_pct divided by stop_pct. ADR-0027 Correction and EXP-010
+replayed the built branch over the live MarketData snapshots and showed 1.0 would reject 55-68 % of
+names; 0.80 rejects 16-18 %. S211 therefore sets `min_reward_risk_ratio=0.80`: never buy a name
+whose typical 10-session upside is less than four-fifths of the distance to its stop.
+
+**Rejected routes.**
+
+- Reuse `stop_target_drawdown_horizon_days` as both horizon and lookback. Rejected because the law
+  and PARAM row already define it as the outcome window; overloading it would silently change what a
+  recorded drawdown number means.
+- Average the excursions. Rejected because ADR-0027's measured table used the median, and a mean
+  would ship a different estimator than the one the threshold was calibrated against.
+- Use every available prior window without a tunable. Rejected because the estimate would drift when
+  provider lookback depth changes for another reason.
+- Fall back to `base_take_profit_pct` as an evaluated target. Rejected because that is the constant
+  S211 exists to remove; it can be a compatibility/default display value only if the gate refuses to
+  treat it as evaluated evidence.
+
+---
+
 ## DL-171 - concentration gates use a derived deployment floor - status: DECIDED (S210, 2026-09-16)
 
 **Decision. Compute the floor through one shared helper that takes the gate cap.** `max_sector_pct`

@@ -65,10 +65,12 @@ class PortfolioManagerSettings(AgentSettings):
         unit="days",
     )
     min_reward_risk_ratio: float = tunable(
-        1.5,
+        0.80,
         why=(
-            "Reject setups whose reward-to-risk ratio (target_pct / stop_pct) is below "
-            "the reference minimum; protects per-trade expectancy. 0 disables the gate."
+            "Reject setups whose typical 10-session upside is less than "
+            "four-fifths of the distance to the stop; ADR-0027 Correction / "
+            "EXP-010 calibrate this built target_pct/stop_pct ratio. "
+            "0 disables the gate."
         ),
         ge=0.0,
         le=10.0,

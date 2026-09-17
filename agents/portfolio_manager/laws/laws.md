@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -239,6 +239,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   gate must not be labelled structurally fixed; it keeps its measured value, threshold, and
   comparison detail as the evidence a reader can use to see what would have changed the verdict.
   `NOT_EVALUATED` remains the only honest state when no usable evidence exists (`PM-NEV-09`).
+- **PM-OBS-05** — The reward-risk gate compares measured target evidence against measured stop
+  risk when analyst stop/target evidence is present. Its detail discloses the target basis,
+  favourable-excursion percent, horizon, sample count, measured value, threshold, and whether the
+  comparison was informative. Different measured upside profiles can produce different
+  `reward_risk` values, and measured upside below the configured fraction of stop risk is
+  rejectable at the configured floor. Legacy payloads without measured target evidence may still
+  disclose a structurally fixed stop/target policy comparison under `PM-OBS-04`; measured target
+  evidence must not be labelled structurally fixed.
 
 ---
 
@@ -286,7 +294,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `cash_buffer_pct` | `0.05` | `float ≥ 0.0, ≤ 0.50` | YES | Reserve fraction of cash never deployed; covers fees and slippage |
 | `min_order_quantity` | `1` | `int ≥ 1` (shares) | YES | Minimum order size; prevents sub-1-share intents |
 | `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
-| `min_reward_risk_ratio` | `1.5` | `float ≥ 0.0, ≤ 20.0` | YES | Minimum R/R ratio; target pct ÷ stop pct must exceed this or reject |
+| `min_reward_risk_ratio` | `0.80` | `float ≥ 0.0, ≤ 10.0` | YES | Minimum built reward-risk ratio; typical 10-session upside must be at least four-fifths of stop distance or reject (ADR-0027 Correction / EXP-010) |
 | `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum deployed-book weight in any single sector label, counted over held **and** in-run issuers |
 | `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
 | `correlation_lookback_days` | `120` | `int ≥ 20, ≤ 250` (days) | YES | Bars used for the pairwise return correlation — long enough to be stable, short enough to track the current regime; runs already carry ~200 bars, so this costs no fetch |
@@ -369,3 +377,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `test_concentration_deployed_correlation.py::test_cluster_gate_uses_deployed_book_denominator`,
   `::test_current_book_is_above_the_derived_floors`, and
   `test_concentration_no_shock.py`.
+- v1.7 — amendment (DL-172 / S211, 2026-09-17). Added `PM-OBS-05` and lowered
+  `min_reward_risk_ratio` from 1.5 to 0.80 because reward-risk now compares measured target
+  evidence against the stop risk that S211 leaves unchanged. ADR-0027 Correction / EXP-010 showed
+  the built target_pct ÷ stop_pct ratio would reject most of the book at 1.0, while 0.80 keeps the
+  intended filter. Measured reward-risk detail names the target basis and favourable-excursion
+  sample inputs and is not labelled structurally determined. Cited tests:
+  `test_reward_risk_measured_excursion.py::test_reward_risk_varies_across_measured_excursion_profiles`,
+  `::test_default_reward_risk_floor_is_the_corrected_built_ratio_floor`,
+  `::test_reward_risk_rejects_measured_upside_below_default_floor`,
+  `::test_reward_risk_between_old_and_new_floor_passes_by_default`,
+  `::test_measured_reward_risk_is_not_labelled_structurally_fixed`, and
+  `::test_reward_risk_floor_is_read_from_the_tunable_value`.

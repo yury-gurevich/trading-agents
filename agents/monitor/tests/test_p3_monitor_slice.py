@@ -94,7 +94,7 @@ def _bind_pipeline(
             min_price=5.0,
             min_average_volume=500_000.0,
             candidate_cap=1,
-            lookback_days=7,
+            lookback_days=14,
         ),
     ).bind()
     AnalystAgent(bus, graph=graph).bind()

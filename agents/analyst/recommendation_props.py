@@ -48,4 +48,14 @@ def _stop_target_props(evidence: StopTargetEvidence) -> dict[str, object]:
         "stop_target_flat_target_pct": evidence.flat_target_pct,
         "stop_target_scaled_stop_pct": evidence.scaled_stop_pct,
         "stop_target_scaled_target_pct": evidence.scaled_target_pct,
+        "stop_target_favorable_excursion_pct": evidence.favorable_excursion_pct,
+        "stop_target_favorable_excursion_horizon_days": (
+            evidence.favorable_excursion_horizon_days
+        ),
+        "stop_target_favorable_excursion_sample_count": (
+            evidence.favorable_excursion_sample_count
+        ),
+        "stop_target_favorable_excursion_lookback_windows": (
+            evidence.favorable_excursion_lookback_windows
+        ),
     }

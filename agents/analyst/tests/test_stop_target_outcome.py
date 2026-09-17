@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from agents.analyst.domain.stop_target_outcome import observed_drawdown
+from agents.analyst.domain.stop_target_outcome import (
+    observed_drawdown,
+    trailing_favorable_excursion,
+)
 from contracts.provider import OHLCVBar
 
 _DECISION = date(2026, 3, 2)
@@ -67,6 +70,61 @@ def test_the_anchor_is_the_last_session_on_or_before_the_decision_day() -> None:
     assert observation.drawdown_pct == 0.10
 
 
+def test_trailing_favorable_estimate_uses_only_prior_settled_windows() -> None:
+    """ANLZ-OBS-06: target estimate uses bars at or before the decision day."""
+    bars = tuple(
+        _bar(
+            "AAA",
+            _DECISION - timedelta(days=14 - offset),
+            100.0,
+            95.0,
+            high=130.0 if offset > 4 else 100.0,
+        )
+        for offset in range(15)
+    )
+    future_spike = (
+        *bars,
+        _bar("AAA", _DECISION + timedelta(days=20), 100.0, 95.0, high=500.0),
+    )
+
+    observation = trailing_favorable_excursion(future_spike, _DECISION, 10, 120)
+
+    assert observation is not None
+    assert observation.excursion_pct == 0.30
+    assert observation.horizon_days == 10
+    assert observation.sample_count == 5
+
+
+def test_trailing_favorable_estimate_is_absent_until_one_window_settles() -> None:
+    """ANLZ-OBS-06: insufficient prior bars are absence, not measured zero."""
+    bars = tuple(
+        _bar("AAA", _DECISION - timedelta(days=9 - offset), 100.0, 95.0)
+        for offset in range(10)
+    )
+
+    assert trailing_favorable_excursion(bars, _DECISION, 10, 120) is None
+
+
+def test_trailing_favorable_estimate_rejects_zero_horizon() -> None:
+    """ANLZ-OBS-06: a zero target horizon cannot produce target evidence."""
+    bars = tuple(
+        _bar("AAA", _DECISION - timedelta(days=offset), 100.0, 95.0)
+        for offset in range(3)
+    )
+
+    assert trailing_favorable_excursion(bars, _DECISION, 0, 120) is None
+
+
+def test_trailing_favorable_estimate_requires_an_anchor_bar() -> None:
+    """ANLZ-OBS-06: without a decision-time close there is no target denominator."""
+    bars = tuple(
+        _bar("AAA", _DECISION + timedelta(days=offset + 1), 100.0, 95.0)
+        for offset in range(3)
+    )
+
+    assert trailing_favorable_excursion(bars, _DECISION, 1, 120) is None
+
+
 def _flat(ticker: str, *, days: int, close: float) -> tuple[OHLCVBar, ...]:
     return tuple(
         _bar(ticker, _DECISION - timedelta(days=offset), close, close)
@@ -81,12 +139,14 @@ def _lows(ticker: str, lows: tuple[float, ...]) -> tuple[OHLCVBar, ...]:
     )
 
 
-def _bar(ticker: str, day: date, close: float, low: float) -> OHLCVBar:
+def _bar(
+    ticker: str, day: date, close: float, low: float, *, high: float | None = None
+) -> OHLCVBar:
     return OHLCVBar(
         ticker=ticker,
         bar_date=day,
         open=close,
-        high=max(close, low) + 1.0,
+        high=max(close, low) + 1.0 if high is None else high,
         low=low,
         close=close,
         volume=1_000_000,

@@ -14,12 +14,13 @@ from agents.analyst.domain.recommend_summary import buy_summary
 from agents.analyst.domain.recommend_text import held_recommendation_context
 from agents.analyst.domain.sentiment_reading import SentimentReading, lexicon_reading
 from agents.analyst.domain.stop_target import resolve_stop_target
+from agents.analyst.settings import AnalystSettings
 from contracts.analyst import QuantMetric, Recommendation, Rejection
 from contracts.common import Action, Explanation
 
 if TYPE_CHECKING:
     from agents.analyst.domain.scoring import ScoreBreakdown
-    from agents.analyst.settings import AnalystSettings
+    from agents.analyst.domain.stop_target import StopTargetProposal
     from contracts.provider import RegimeContext
     from contracts.scanner import Candidate
 
@@ -46,18 +47,16 @@ def decide(
     settings: AnalystSettings | None = None,
 ) -> AnalysisDecision:
     """Turn one score into an actionable recommendation or a rejection."""
-    settings = _settings(settings)
+    settings = AnalystSettings() if settings is None else settings
     reading = lexicon_reading(candidate.ticker, score)
     if held and stop_breached:
         return AnalysisDecision(
             recommendation=_recommendation(
                 candidate,
                 score,
-                regime,
                 "sell",
                 exit_confidence_floor,
                 "stop",
-                settings,
             ),
             rejection=None,
             sentiment_reading=reading,
@@ -75,11 +74,9 @@ def decide(
             recommendation=_recommendation(
                 candidate,
                 score,
-                regime,
                 action,
                 exit_confidence_floor,
                 exit_trigger,
-                settings,
             ),
             rejection=None,
             sentiment_reading=reading,
@@ -93,6 +90,16 @@ def decide(
                     f"confidence {score.confidence:.3f} below regime floor "
                     f"{regime.base_min_confidence:.3f}"
                 ),
+            ),
+            sentiment_reading=reading,
+        )
+    stop_target = resolve_stop_target(regime, score.metrics, settings)
+    if stop_target is None:
+        return AnalysisDecision(
+            recommendation=None,
+            rejection=Rejection(
+                ticker=candidate.ticker,
+                reason="target_estimate_unavailable",
             ),
             sentiment_reading=reading,
         )
@@ -114,10 +121,9 @@ def decide(
             candidate,
             score,
             "buy",
-            regime,
             summary,
             evidence_refs,
-            settings,
+            stop_target=stop_target,
         ),
         rejection=None,
         sentiment_reading=reading,
@@ -127,11 +133,9 @@ def decide(
 def _recommendation(
     candidate: Candidate,
     score: ScoreBreakdown,
-    regime: RegimeContext,
     action: Action,
     exit_floor: float,
     exit_trigger: ExitTrigger | None,
-    settings: AnalystSettings,
 ) -> Recommendation:
     summary, evidence_refs = held_recommendation_context(
         candidate.ticker, score.confidence, exit_floor, exit_trigger
@@ -140,11 +144,9 @@ def _recommendation(
         candidate,
         score,
         action,
-        regime,
         summary,
         evidence_refs,
         exit_trigger=exit_trigger,
-        settings=settings,
     )
 
 
@@ -152,15 +154,11 @@ def _build_recommendation(
     candidate: Candidate,
     score: ScoreBreakdown,
     action: Action,
-    regime: RegimeContext,
     summary: str,
     evidence_refs: tuple[str, ...],
-    settings: AnalystSettings,
     exit_trigger: ExitTrigger | None = None,
+    stop_target: StopTargetProposal | None = None,
 ) -> Recommendation:
-    stop_target = None
-    if action == "buy":
-        stop_target = resolve_stop_target(regime, score.metrics, settings)
     return Recommendation(
         ticker=candidate.ticker,
         action=action,
@@ -183,11 +181,3 @@ def _quant_metrics(score: ScoreBreakdown) -> tuple[QuantMetric, ...]:
         QuantMetric(name=name, value=value)
         for name, value in sorted(score.metrics.items())
     )
-
-
-def _settings(settings: AnalystSettings | None) -> AnalystSettings:
-    if settings is not None:
-        return settings
-    from agents.analyst.settings import AnalystSettings
-
-    return AnalystSettings()

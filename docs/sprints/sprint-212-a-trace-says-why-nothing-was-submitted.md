@@ -60,7 +60,7 @@ on `ExecutionRun`). That adds an execution output guarantee and a vocabulary pro
 | `orchestration/batch_trace.py` (**188** lines) | `docs/laws/conventions.md`; LAW-02 | Operator-facing proof surface; no agent clause — confirm by reading |
 | new `orchestration/trace_deliberation.py` | `agents/deliberator/laws/laws.md` + `test-plan.md` (the `DeliberationRun` output clauses) | You render the deliberator's recorded fields; read which ones are guaranteed and which may be absent on old rows |
 | `scripts/trace_run.py` (**37** lines) | LAW-02 | An exit code is a machine-readable verdict |
-| `orchestration/tests/test_batch_trace.py` (**190** lines) | `docs/laws/conventions.md` §3 | Test file is near the 200-line block — new tests go in a new file |
+| `orchestration/tests/test_batch_trace.py` (**187** lines) | `docs/laws/conventions.md` §3 | Test file is near the 200-line block — new tests go in a new file |
 
 ⚠️ **The invariant: the trace reads, it never writes.** `batch_trace.py`'s docstring says *"Reads only; never
 writes."* If any change here would call `merge_node`, `add_edge` or any store write, **stop and report**.
@@ -94,9 +94,10 @@ chain, a loop) reads every healthy night as a failure, which is the cries-wolf s
 | Existing test already expects 8 | `assert "8/8 stages complete" in out` | *[measured]* `orchestration/tests/test_batch_trace.py:98` — the renderer is right; only the CLI's literal is stale |
 | The trace already has the DeliberationRun in hand | `walk_chain` stores it under `nodes["DeliberationRun"]` | *[measured]* `orchestration/batch_chain.py:48-51` (`DELIBERATION_KEY`); `print_trace` never reads it |
 | What the run recorded | `verdicts` all `revise`; `vetoed_tickers=('USB','WFC','AMZN','MDLZ')`; `ExecutionRun` `skipped=0`, `deliberation_blocked_count=0`, `deliberation_status=applied` | *[measured 2026-09-17, live spine]* `DeliberationRun pm-run-eb9bcad8…`, `ExecutionRun execution-submit-pm-run-eb9bcad8…` |
+| 🔁 It recurred the next night | `sched-2026-09-17`: PM approved **3** (USB, AMZN, WFC); `verdicts` all `revise`; `vetoed_tickers=('USB','AMZN','WFC')`; `ExecutionRun` `submitted=0 rejected=0 skipped=0 deliberation_blocked_count=0`, `deliberation_status=applied` | *[measured 2026-09-18, live spine]* `DeliberationRun`/`ExecutionRun` for `pm-run-87942b0d882644eda8ad95a618a06cc3`. Same unreconciled shape one night later, on `:s211` — **A4/A5 model a case that has now happened twice** |
 | Why `ExecutionRun` can't reconcile it | `drop_vetoed` runs before the counters; `skipped` counts only `result.skipped + filtered.blocked_count` (posture filter) | *[measured]* `agents/execution/pm_execution.py:58`, `:83` |
 | A rendering already exists — in the dashboard, not the CLI | `f"reviewed={reviewed}  vetoed={vetoed_count}"` | *[measured]* `orchestration/packs/trading_deliberation_view.py:42`; no `orchestration/*.py` imports `orchestration.packs` today |
-| Veto frequency this block would have explained | at least one buy vetoed on **6 of the last 10** `DeliberationRun`s; **all** reviewed buys vetoed on 5 of them | *[measured 2026-09-17]* last 10 `DeliberationRun`s by `created_at`, verdicts read from `verdicts` (2026-09-04 → 2026-09-16) |
+| Veto frequency this block would have explained | at least one buy vetoed on **7 of the last 12** `DeliberationRun`s; **all** reviewed buys vetoed on 6 of them; **20 of 26 reviewed buys vetoed (77 %)** across that window | *[re-measured 2026-09-18]* last 12 `DeliberationRun`s by `created_at`, verdicts read from `verdicts` (2026-09-04 → 2026-09-17) |
 
 ---
 
@@ -240,7 +241,7 @@ agent's at merge, not yours. Do not try to reach the spine.
 
 - No agent imports another agent; kernel imports nothing above it (`import-linter`).
 - Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa`.
-  📌 Current sizes: `orchestration/batch_trace.py` **188**, `orchestration/tests/test_batch_trace.py` **190**,
+  📌 Current sizes: `orchestration/batch_trace.py` **188**, `orchestration/tests/test_batch_trace.py` **187**,
   `scripts/trace_run.py` **37**, `orchestration/batch_chain.py` **75**.
 - Module docstring declares `Agent:` / `Role:` / `External I/O:`.
 - No magic numbers — in particular, **no stage-count literal**.

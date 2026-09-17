@@ -72,6 +72,7 @@ def stop_target_report(
                 item,
                 stop_pct=stop_pct,
                 target_pct=target_pct,
+                min_ratio=min_ratio,
                 default_stop_pct=default_stop_pct,
                 default_target_pct=default_target_pct,
             ),

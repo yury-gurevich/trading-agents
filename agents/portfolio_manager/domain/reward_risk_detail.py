@@ -21,12 +21,13 @@ def reward_risk_detail(
     *,
     stop_pct: float,
     target_pct: float,
+    min_ratio: float,
     default_stop_pct: float,
     default_target_pct: float,
 ) -> str:
     """Render the reward-risk gate's verdict-reachability disclosure."""
     comparison = _comparison_kind(
-        item, stop_pct, target_pct, default_stop_pct, default_target_pct
+        item, stop_pct, target_pct, min_ratio, default_stop_pct, default_target_pct
     )
     return "; ".join(
         (
@@ -96,9 +97,12 @@ def _comparison_kind(
     item: Recommendation,
     stop_pct: float,
     target_pct: float,
+    min_ratio: float,
     default_stop_pct: float,
     default_target_pct: float,
 ) -> str:
+    if min_ratio <= 0.0 and stop_pct > 0.0:
+        return "DISCLOSURE_ONLY"
     if _is_structurally_determined(
         item, stop_pct, target_pct, default_stop_pct, default_target_pct
     ):

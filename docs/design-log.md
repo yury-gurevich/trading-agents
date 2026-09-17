@@ -27,12 +27,12 @@ few bars for even one prior window, the analyst marks the target estimate unavai
 not read the default target as a passed reward-risk gate. The gate evidence must make this distinct
 from a measured zero-upside name.
 
-**Correction. The PM floor is 0.80 on the ratio S211 actually builds.** ADR-0027 first chose 1.0
-from median favourable excursion divided by median adverse excursion, but S211 kept the stop leg
-unchanged, so the built gate reads target_pct divided by stop_pct. ADR-0027 Correction and EXP-010
-replayed the built branch over the live MarketData snapshots and showed 1.0 would reject 55-68 % of
-names; 0.80 rejects 16-18 %. S211 therefore sets `min_reward_risk_ratio=0.80`: never buy a name
-whose typical 10-session upside is less than four-fifths of the distance to its stop.
+**Correction 2. The PM floor ships disclosure-only.** ADR-0027 Correction 2 / EXP-011 replayed
+47,485 historical decisions and found the built target_pct / stop_pct ratio does not predict
+returns: passed minus rejected was +0.03 % with a confidence interval spanning zero. The returned
+positive floor would reject a median 49 % of names per night while not improving return selection.
+S211 therefore sets `min_reward_risk_ratio=0`: record the measured ratio in every gate report, but
+do not reject on it unless a future positive floor has new evidence.
 
 **Rejected routes.**
 

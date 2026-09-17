@@ -11,6 +11,8 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+import pytest
+
 from agents.analyst.domain.recommend import decide
 from agents.analyst.domain.scoring import score_candidate
 from agents.analyst.settings import AnalystSettings
@@ -31,7 +33,7 @@ def test_reward_risk_varies_across_measured_excursion_profiles() -> None:
     first = _recommendation_from_profile("AAPL", high_after_anchor=130.0)
     second = _recommendation_from_profile("MSFT", high_after_anchor=160.0)
 
-    approved, rejected = _evaluate(first, second, min_ratio=0.80)
+    approved, rejected = _evaluate(first, second, min_ratio=0.0)
     gates = {
         intent.ticker: _gate(intent.gate_report, "reward_risk") for intent in approved
     }
@@ -41,13 +43,28 @@ def test_reward_risk_varies_across_measured_excursion_profiles() -> None:
     assert {gates["AAPL"].value, gates["MSFT"].value} != {2.0}
 
 
-def test_default_reward_risk_floor_is_the_corrected_built_ratio_floor() -> None:
-    """PM-NEV-04: ADR-0027 Correction / EXP-010 set the built-ratio floor."""
-    assert PortfolioManagerSettings().min_reward_risk_ratio == 0.80
+def test_default_reward_risk_floor_is_disclosure_only() -> None:
+    """PM-OBS-05 / PM-NEV-04: ADR-0027 Correction 2 defaults to disclosure."""
+    assert PortfolioManagerSettings().min_reward_risk_ratio == 0.0
 
 
-def test_reward_risk_rejects_measured_upside_below_default_floor() -> None:
-    """ANLZ-TYP-02 / ANLZ-OBS-06 / PM-OBS-05 / PM-NEV-04: floor still binds."""
+def test_low_measured_reward_risk_passes_by_default_as_disclosure() -> None:
+    """PM-OBS-04 / PM-OBS-05 / PM-NEV-04: default records without rejection."""
+    poor = _recommendation_from_profile("AAPL", high_after_anchor=102.5)
+    default_floor = PortfolioManagerSettings().min_reward_risk_ratio
+
+    approved, rejected = _evaluate(poor, min_ratio=default_floor)
+    gate = _gate(approved[0].gate_report, "reward_risk")
+
+    assert rejected == ()
+    assert approved[0].ticker == "AAPL"
+    assert gate.threshold == 0.0
+    assert gate.value == pytest.approx(0.5)
+    assert "comparison=DISCLOSURE_ONLY" in gate.detail
+
+
+def test_positive_reward_risk_floor_still_rejects_below_floor() -> None:
+    """ANLZ-TYP-02 / ANLZ-OBS-06 / PM-OBS-05 / PM-NEV-04: floor can bind."""
     poor = _recommendation_from_profile("AAPL", high_after_anchor=103.0)
 
     approved, rejected = _evaluate(poor, min_ratio=0.80)
@@ -57,24 +74,11 @@ def test_reward_risk_rejects_measured_upside_below_default_floor() -> None:
     assert rejected[0].reason == "reward_risk_below_min"
     assert gate.threshold == 0.80
     assert gate.value < 0.80
+    assert "comparison=DISCLOSURE_ONLY" not in gate.detail
 
 
-def test_reward_risk_between_old_and_new_floor_passes_by_default() -> None:
-    """PM-NEV-04 / PM-OBS-05: 0.80 recalibration is behavioral, not cosmetic."""
-    item = _recommendation_from_profile("AAPL", high_after_anchor=104.5)
-    default_floor = PortfolioManagerSettings().min_reward_risk_ratio
-
-    approved, rejected = _evaluate(item, min_ratio=default_floor)
-    gate = _gate(approved[0].gate_report, "reward_risk")
-
-    assert rejected == ()
-    assert approved[0].ticker == "AAPL"
-    assert gate.threshold == 0.80
-    assert 0.80 <= gate.value < 1.0
-
-
-def test_measured_reward_risk_is_not_labelled_structurally_fixed() -> None:
-    """PM-OBS-04 / PM-OBS-05: measured target evidence is informative."""
+def test_positive_reward_risk_floor_is_informative_not_structural() -> None:
+    """PM-OBS-04 / PM-OBS-05: positive floors compare measured evidence."""
     item = _recommendation_from_profile("AAPL", high_after_anchor=130.0)
 
     approved, rejected = _evaluate(item, min_ratio=0.80)
@@ -84,6 +88,7 @@ def test_measured_reward_risk_is_not_labelled_structurally_fixed() -> None:
     assert "target_basis=trailing_favorable_excursion" in gate.detail
     assert "favorable_excursion_sample_count=5" in gate.detail
     assert "comparison=INFORMATIVE" in gate.detail
+    assert "comparison=DISCLOSURE_ONLY" not in gate.detail
     assert "comparison=STRUCTURALLY_DETERMINED" not in gate.detail
 
 

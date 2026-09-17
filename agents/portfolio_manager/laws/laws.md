@@ -242,11 +242,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **PM-OBS-05** — The reward-risk gate compares measured target evidence against measured stop
   risk when analyst stop/target evidence is present. Its detail discloses the target basis,
   favourable-excursion percent, horizon, sample count, measured value, threshold, and whether the
-  comparison was informative. Different measured upside profiles can produce different
-  `reward_risk` values, and measured upside below the configured fraction of stop risk is
-  rejectable at the configured floor. Legacy payloads without measured target evidence may still
-  disclose a structurally fixed stop/target policy comparison under `PM-OBS-04`; measured target
-  evidence must not be labelled structurally fixed.
+  comparison was informative or disclosure-only. Different measured upside profiles can produce
+  different `reward_risk` values. The default is disclosure-only: the gate rejects measured upside
+  below the configured fraction of stop risk only when a positive floor is configured. Legacy
+  payloads without measured target evidence may still disclose a structurally fixed stop/target
+  policy comparison under `PM-OBS-04`; measured target evidence must not be labelled structurally
+  fixed.
 
 ---
 
@@ -294,7 +295,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `cash_buffer_pct` | `0.05` | `float ≥ 0.0, ≤ 0.50` | YES | Reserve fraction of cash never deployed; covers fees and slippage |
 | `min_order_quantity` | `1` | `int ≥ 1` (shares) | YES | Minimum order size; prevents sub-1-share intents |
 | `price_lookback_days` | `7` | `int ≥ 1, ≤ 30` (days) | YES | How far back to look for a valid close price from the provider |
-| `min_reward_risk_ratio` | `0.80` | `float ≥ 0.0, ≤ 10.0` | YES | Minimum built reward-risk ratio; typical 10-session upside must be at least four-fifths of stop distance or reject (ADR-0027 Correction / EXP-010) |
+| `min_reward_risk_ratio` | `0` | `float ≥ 0.0, ≤ 10.0` | YES | Disclosure-only default; records measured target/stop ratio in every gate report and rejects only when a positive floor is configured (ADR-0027 Correction 2 / EXP-011) |
 | `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum deployed-book weight in any single sector label, counted over held **and** in-run issuers |
 | `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
 | `correlation_lookback_days` | `120` | `int ≥ 20, ≤ 250` (days) | YES | Bars used for the pairwise return correlation — long enough to be stable, short enough to track the current regime; runs already carry ~200 bars, so this costs no fetch |
@@ -378,14 +379,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `::test_current_book_is_above_the_derived_floors`, and
   `test_concentration_no_shock.py`.
 - v1.7 — amendment (DL-172 / S211, 2026-09-17). Added `PM-OBS-05` and lowered
-  `min_reward_risk_ratio` from 1.5 to 0.80 because reward-risk now compares measured target
-  evidence against the stop risk that S211 leaves unchanged. ADR-0027 Correction / EXP-010 showed
-  the built target_pct ÷ stop_pct ratio would reject most of the book at 1.0, while 0.80 keeps the
-  intended filter. Measured reward-risk detail names the target basis and favourable-excursion
+  `min_reward_risk_ratio` from 1.5 to 0 because reward-risk now compares measured target evidence
+  against the stop risk that S211 leaves unchanged, but ADR-0027 Correction 2 / EXP-011 found the
+  built target_pct ÷ stop_pct ratio does not predict returns. The default therefore records and
+  discloses the measured ratio without rejecting; any positive floor re-enables rejection and needs
+  evidence first. Measured reward-risk detail names the target basis and favourable-excursion
   sample inputs and is not labelled structurally determined. Cited tests:
   `test_reward_risk_measured_excursion.py::test_reward_risk_varies_across_measured_excursion_profiles`,
-  `::test_default_reward_risk_floor_is_the_corrected_built_ratio_floor`,
-  `::test_reward_risk_rejects_measured_upside_below_default_floor`,
-  `::test_reward_risk_between_old_and_new_floor_passes_by_default`,
-  `::test_measured_reward_risk_is_not_labelled_structurally_fixed`, and
+  `::test_default_reward_risk_floor_is_disclosure_only`,
+  `::test_low_measured_reward_risk_passes_by_default_as_disclosure`,
+  `::test_positive_reward_risk_floor_still_rejects_below_floor`,
+  `::test_positive_reward_risk_floor_is_informative_not_structural`, and
   `::test_reward_risk_floor_is_read_from_the_tunable_value`.

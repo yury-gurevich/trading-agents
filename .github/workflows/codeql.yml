@@ -12,8 +12,15 @@ on:
     - cron: "30 5 * * 1"
   workflow_dispatch:
 
+# One group per commit, not per ref (work-queue item 31). A per-ref group with
+# cancel-in-progress let the next push on main cancel a merge's scan, so a code
+# merge followed by a docs commit was never analysed at its own SHA (15 of the
+# last 200 main runs were cancelled). cancel-in-progress: false alone is not
+# enough: GitHub keeps one *pending* run per group, so the middle push of a
+# burst would still be dropped. Keying on the SHA gives every commit its own
+# scan (median 153 s) and only collapses re-runs of the same commit.
 concurrency:
-  group: codeql-${{ github.ref }}
+  group: codeql-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 permissions:

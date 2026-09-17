@@ -35,6 +35,9 @@ if TYPE_CHECKING:
     from contracts.scanner import CandidateSet
     from kernel import Node
 
+_AAPL_CLOSES = (100, 110, 105, 109, 104, 108, 103, 107, 102, 108, 106)
+_MSFT_CLOSES = (100, 106, 103, 105, 102, 105, 102, 105, 103, 106, 104)
+
 
 def bind_pipeline(
     bus: InProcessBus,
@@ -53,7 +56,7 @@ def bind_pipeline(
             min_price=5.0,
             min_average_volume=500_000.0,
             candidate_cap=1,
-            lookback_days=7,
+            lookback_days=14,
         ),
     ).bind()
     AnalystAgent(bus, graph=graph).bind()
@@ -84,22 +87,23 @@ def bind_provider(
 
 
 def entry_bars() -> tuple[OHLCVBar, ...]:
-    """Return scan/analyze/PM bars that approve one AAPL order.
-
-    Two bars per ticker stays below every indicator window (RSI-2 needs three closes),
-    so the analyst composite degrades to neutral -> confidence 0.60, clearing the
-    strict-``<`` regime floor; AAPL's wider rise keeps it the top scanner candidate.
-    """
+    """Return scan/analyze/PM bars that approve one measured AAPL order."""
     return (
-        bar("AAPL", 4, 100.0),
-        bar("AAPL", 0, 116.0),
-        bar("MSFT", 4, 100.0),
-        bar("MSFT", 0, 110.0),
+        *_measured_upside_bars("AAPL", _AAPL_CLOSES),
+        *_measured_upside_bars("MSFT", _MSFT_CLOSES),
+    )
+
+
+def _measured_upside_bars(
+    ticker: str, closes: tuple[float, ...]
+) -> tuple[OHLCVBar, ...]:
+    count = len(closes)
+    return tuple(
+        bar(ticker, count - 1 - offset, close) for offset, close in enumerate(closes)
     )
 
 
 def scan_message() -> AgentMessage:
-    """Build a scanner request for the P3 fixture universe."""
     return AgentMessage(
         sender="tester",
         recipient="scanner",
@@ -110,7 +114,6 @@ def scan_message() -> AgentMessage:
 
 
 def analysis_message(payload: CandidateSet) -> AgentMessage:
-    """Build an analyst request."""
     return AgentMessage(
         sender="tester",
         recipient="analyst",
@@ -121,7 +124,6 @@ def analysis_message(payload: CandidateSet) -> AgentMessage:
 
 
 def orders_message(payload: RecommendationSet) -> AgentMessage:
-    """Build a PM request."""
     return AgentMessage(
         sender="tester",
         recipient="portfolio_manager",
@@ -132,7 +134,6 @@ def orders_message(payload: RecommendationSet) -> AgentMessage:
 
 
 def submit_message(payload: OrderIntentSet) -> AgentMessage:
-    """Build an execution submit request."""
     return AgentMessage(
         sender="tester",
         recipient="execution",
@@ -143,7 +144,6 @@ def submit_message(payload: OrderIntentSet) -> AgentMessage:
 
 
 def monitor_message(run_id: str) -> AgentMessage:
-    """Build a monitor request."""
     return AgentMessage(
         sender="tester",
         recipient="monitor",

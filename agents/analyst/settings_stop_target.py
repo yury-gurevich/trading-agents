@@ -34,6 +34,18 @@ class _StopTargetSettings(_IndicatorSettings):
         le=60,
         unit="sessions",
     )
+    stop_target_excursion_lookback_windows: int = tunable(
+        120,
+        why=(
+            "Number of prior rolling windows sampled for the decision-time "
+            "favorable-excursion target estimate. It is separate from the outcome "
+            "horizon so changing the sampling depth cannot reinterpret recorded "
+            "drawdowns."
+        ),
+        ge=1,
+        le=250,
+        unit="windows",
+    )
     scaled_stop_atr_multiplier: float = tunable(
         2.0,
         why=(

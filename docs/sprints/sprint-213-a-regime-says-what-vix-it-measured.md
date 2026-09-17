@@ -234,7 +234,7 @@ move risk?*) has nothing to act on, and the deliberator is told `vix_index=None`
 | Agents affected | **provider** (code). Analyst, PM, deliberator **read** `RegimeContext` and must be proven unchanged. No agent imports another |
 | Contract change? | **Yes** — `RegimeContext` +2 defaulted fields; law cycle mandatory |
 | Graph vocabulary change? | **Should be no** — the new fields ride inside the existing `RegimeContext.snapshot`. Diff `orchestration/packs/trading_graph_vocabulary.json` at handback and state the result |
-| New env keys / tunables | **None expected.** `fmp_base_url`, `fmp_api_key`, `fmp_timeout` already exist. If you add a tunable, the deploy becomes a full `up`; say so |
+| New env keys / tunables | **None expected.** `fmp_base_url`, `fmp_api_key`, `fmp_timeout` already exist. If you add a tunable, the deploy becomes a full `up`; say so <!-- pragma: allowlist secret --> |
 | Deploy implication | **Image rebuild and fleet retag**, if the vocabulary pack and tunables are unchanged (verify, don't assume). Every image carries `contracts/`; old images ignore the new fields, so a mixed fleet can't break |
 
 ---

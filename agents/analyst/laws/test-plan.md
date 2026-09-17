@@ -29,7 +29,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-OUT-04 | Provider degraded → empty RecommendationSet + incident_refs + fault. | degraded | `test_analyst_agent.py::test_degraded_market_data_returns_explained_rejection` | 🟩 |
 | ANLZ-OUT-05 | Pub/sub event carries claim-check ref only, not RecommendationSet payload. | pub/sub | `test_analyst_pubsub.py::test_candidates_ready_triggers_recommendations_ready` | 🟩 |
 | ANLZ-OUT-06 | SentimentReading node persisted for every scored ticker. | append-only | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
-| ANLZ-OUT-07 | scaled mode scales stop and target in lockstep so target_pct/stop_pct is invariant; a candidate with no usable ATR degrades to flat. | boundary | _tbd_ | ⬜ |
+| ANLZ-OUT-07 | flat/scaled modes leave stop selection intact, derive the target from measured favourable excursion, degrade missing ATR to the flat stop, and reject missing target estimates. | boundary | _tbd_ | ⬜ |
 | ANLZ-OUT-08 | Every stop/target proposal records applied and counterfactual mode, stop and target; the counterfactual never reaches the PM. | happy | _tbd_ | ⬜ |
 
 ## Prohibitions
@@ -70,7 +70,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | ANLZ-TYP-01 | Analyst payloads carry the required RecommendationSet, Recommendation, StopTargetEvidence, and Rejection fields, and Recommendation.confidence remains bounded. | schema | `tests/test_contract_required_payload_fields.py::test_analyst_payload_fields_required_by_law`; `test_analyst_pubsub.py::test_recommendation_result_is_deserializable` | 🟩 |
-| ANLZ-TYP-02 | suggested_stop_pct < suggested_target_pct when both present; never inverted. | schema | `test_scaled_stop_targets.py::test_scaled_mode_floor_and_risk_ceiling_clamp` | 🟩 |
+| ANLZ-TYP-02 | suggested_stop_pct and suggested_target_pct are bounded optional floats; a measured target may be ≤ stop and is rejected downstream when a positive PM floor is configured rather than treated as a type error. | schema | `test_scaled_stop_targets.py::test_scaled_mode_floor_and_risk_ceiling_clamp`; `test_reward_risk_measured_excursion.py::test_positive_reward_risk_floor_still_rejects_below_floor` | 🟩 |
 | ANLZ-TYP-03 | SentimentReading.scorer ∈ {"lexicon", "provider"}; never omitted. | schema | `test_analyst_agent.py::test_recommendation_carries_sentiment_score_when_present` | 🟩 |
 
 ## Security
@@ -92,6 +92,10 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | ANLZ-OBS-05 | A name that only rose records a real zero, distinguishable from absence. | boundary | `test_stop_target_outcome.py::test_a_name_that_only_rose_records_a_real_zero` | 🟩 |
 | ANLZ-OBS-05 | A recorded observation is immutable - the append-only merge is never rewritten. | negative | `test_stop_target_backfill.py::test_a_recorded_drawdown_is_never_rewritten` | 🟩 |
 | ANLZ-OBS-05 | A backfill failure is a fault and does not withdraw the recommendations already written. | negative | `test_stop_target_backfill.py::test_a_backfill_failure_is_a_fault_and_does_not_withdraw_the_run` | 🟩 |
+| ANLZ-OBS-06 | The decision-time favourable-excursion target estimate uses only bars at or before the decision day and records the horizon and sample count. | no-lookahead | `test_stop_target_outcome.py::test_trailing_favorable_estimate_uses_only_prior_settled_windows` | 🟩 |
+| ANLZ-OBS-06 | Insufficient prior bars leave the estimate absent rather than recording measured zero. | negative | `test_stop_target_outcome.py::test_trailing_favorable_estimate_is_absent_until_one_window_settles` | 🟩 |
+| ANLZ-OBS-06 | A recommendation with measured target evidence keeps stop values unchanged and serializes the target estimate fields. | audit | `test_measured_stop_targets.py::test_measured_target_evidence_keeps_stop_values_unchanged` | 🟩 |
+| ANLZ-OBS-06 | Missing measured target evidence rejects the buy candidate instead of falling back to the old constant target. | negative | `test_measured_stop_targets.py::test_unavailable_measured_target_is_rejected_not_flattened` | 🟩 |
 
 ## S204 row declarations
 

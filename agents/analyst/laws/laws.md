@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -71,11 +71,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   provider returns a sentiment score for that ticker). These nodes are the input substrate for
   the forecaster's `sentiment_scorecard`.
 - **ANLZ-OUT-07** — The stop/target proposal runs in a selectable **mode**. `flat` proposes the
-  regime's single stop percent (the champion). `scaled` proposes a bounded ATR-scaled stop and
-  scales the target **in lockstep**, so `target_pct / stop_pct` is algebraically invariant and
-  the portfolio manager's reward-risk gate sees the same ratio in either mode. A candidate with
-  no usable decision-time ATR degrades to `flat` rather than failing. *(Declares capability
-  decided in ADR-0013 champion–challenger; shipped off by default in S150.)*
+  regime's single stop percent (the champion). `scaled` proposes a bounded ATR-scaled stop. The
+  target is the decision-time trailing favourable excursion estimate declared by `ANLZ-OBS-06`,
+  not a constant multiplied by the stop. A candidate with no usable decision-time ATR degrades to
+  the flat stop, but a buy candidate with no usable target estimate is rejected with attributed
+  silence rather than receiving the old constant target. *(Amended by S211; stop scaling remains
+  the ADR-0013 champion–challenger capability shipped off by default in S150.)*
 - **ANLZ-OUT-08** — Every recommendation carrying a stop/target proposal records durable
   applied-vs-counterfactual evidence: the selected mode, the applied stop and target, and the
   counterfactual mode, stop and target for the proposal that was not used. The counterfactual is
@@ -160,12 +161,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `rationale` (`ANLZ-OUT-02`/`ANLZ-OUT-07`/`ANLZ-OUT-08`). `StopTargetEvidence` carries `mode`,
   `counterfactual_mode`, `atr_pct`, `volatility_present`, `volatility_fallback`,
   `applied_stop_pct`, `applied_target_pct`, `counterfactual_stop_pct`,
-  `counterfactual_target_pct`, `flat_stop_pct`, `flat_target_pct`, `scaled_stop_pct`, and
-  `scaled_target_pct` (`ANLZ-OUT-07`/`ANLZ-OUT-08`). `Rejection` carries `ticker` and `reason`
+  `counterfactual_target_pct`, `flat_stop_pct`, `flat_target_pct`, `scaled_stop_pct`,
+  `scaled_target_pct`, `favorable_excursion_pct`, `favorable_excursion_horizon_days`,
+  `favorable_excursion_sample_count`, and `favorable_excursion_lookback_windows`
+  (`ANLZ-OUT-07`/`ANLZ-OUT-08`/`ANLZ-OBS-06`). `Rejection` carries `ticker` and `reason`
   (`ANLZ-OUT-03`). `Recommendation.confidence` remains a `float ∈ [0.0, 1.0]`, never fabricated
   above 1.0 or below 0.0.
 - **ANLZ-TYP-02** — `suggested_stop_pct` and `suggested_target_pct` are `float ∈ [0.0, 1.0]`
-  or `None`; stop is always < target when both are present (enforced by the regime source).
+  or `None`. A measured target can be ≤ the stop because it is evidence, not a type promise; the
+  portfolio manager's reward-risk gate owns rejecting upside that does not exceed measured
+  downside.
 - **ANLZ-TYP-03** — `SentimentReading` carries a `scorer` field (`"lexicon"` or `"provider"`)
   that identifies which pillar produced it. The field is never omitted or defaulted silently.
 
@@ -221,6 +226,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   (`ANLZ-OBS-02`) that never withdraws the recommendations already written.
   *(Declares the outcome half ADR-0013 assumed and never built; the counterfactual in `ANLZ-OBS-03`
   was unjudgeable on this book without it.)*
+- **ANLZ-OBS-06** — A buy-side stop/target proposal records a decision-time favourable-excursion
+  estimate used as the target leg: the measured excursion percent, the horizon in sessions, the
+  number of prior settled windows sampled, and the lookback-window cap. The estimate is computed
+  only from bars at or before the decision day; later bars are never input. Absence means no prior
+  window settled or the inputs were unusable — never measured zero — and a buy candidate with an
+  absent estimate is rejected rather than assigned a constant target. The estimate is
+  unconditional evidence about the name's recent behaviour, not evidence conditioned on the
+  analyst's buy signal.
 
 ---
 
@@ -278,6 +291,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `max_top_signals` | `5` | `int ≥ 1, ≤ 20` | YES | Maximum explanatory signals surfaced per recommendation rationale |
 | `stop_target_mode` | `"flat"` | `Literal["flat","scaled"]` — config | NO (mode selector) | ADR-0013 champion–challenger selector; `flat` is the champion. Not a tunable — it selects which formula runs, not a value within one |
 | `stop_target_drawdown_horizon_days` | `10` | `int ≥ 1, ≤ 60` (sessions) | YES | Sessions after a recommendation over which its realized adverse excursion is measured (`ANLZ-OBS-05`). Long enough for an ordinary stop to be touched by noise, short enough that most recommendations settle inside the run's own lookback; every recorded value carries the horizon it used, so changing this cannot silently reinterpret history |
+| `stop_target_excursion_lookback_windows` | `120` | `int ≥ 1, ≤ 250` (windows) | YES | Number of prior settled windows sampled for the decision-time favourable-excursion target estimate (`ANLZ-OBS-06`). Separate from the forward horizon so the estimate depth can change without redefining what one observed horizon means |
 | `scaled_stop_atr_multiplier` | `2.0` | `float` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
 | `scaled_stop_floor_pct` | `0.025` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Stops volatility-scaled stops becoming too tight on very quiet or tiny-ATR names while still allowing a narrower-than-flat challenger |
 | `scaled_stop_ceiling_pct` | `0.08` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Respects the PRD/regime maximum stop risk; the challenger must not silently widen a stop past the declared risk cap. **The cap binds position size, not stop distance — [ADR-0019](../../../docs/decisions/0019-risk-cap-binds-position-size-not-stop-distance.md)** |
@@ -331,3 +345,12 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
 - v1.4 — S205 rewrites `ANLZ-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `RecommendationSet`, `Recommendation`, `StopTargetEvidence`, and
   `Rejection`, following the S184 portfolio-manager precedent. No contract shape changes.
+- v1.5 — amendment (DL-172 / S211, 2026-09-17). Added `ANLZ-OBS-06` and amended
+  `ANLZ-OUT-07`, `ANLZ-TYP-01`, and `ANLZ-TYP-02` so the target leg is a decision-time measured
+  favourable excursion, not a constant paired with the stop. Stops are unchanged; insufficient
+  target evidence rejects the buy candidate; measured target evidence is serialized with horizon,
+  sample count, and lookback. Cited tests:
+  `test_stop_target_outcome.py::test_trailing_favorable_estimate_uses_only_prior_settled_windows`,
+  `::test_trailing_favorable_estimate_is_absent_until_one_window_settles`,
+  `test_measured_stop_targets.py::test_measured_target_evidence_keeps_stop_values_unchanged`, and
+  `::test_unavailable_measured_target_is_rejected_not_flattened`.

@@ -43,6 +43,10 @@ class StopTargetEvidence(_Frozen):
     flat_target_pct: float = Field(ge=0.0, le=1.0)
     scaled_stop_pct: float = Field(ge=0.0, le=1.0)
     scaled_target_pct: float = Field(ge=0.0, le=1.0)
+    favorable_excursion_pct: float | None = Field(default=None, ge=0.0, le=1.0)
+    favorable_excursion_horizon_days: int | None = Field(default=None, ge=1)
+    favorable_excursion_sample_count: int | None = Field(default=None, ge=0)
+    favorable_excursion_lookback_windows: int | None = Field(default=None, ge=1)
 
 
 class Recommendation(_Frozen):

@@ -21,12 +21,13 @@ def reward_risk_detail(
     *,
     stop_pct: float,
     target_pct: float,
+    min_ratio: float,
     default_stop_pct: float,
     default_target_pct: float,
 ) -> str:
     """Render the reward-risk gate's verdict-reachability disclosure."""
     comparison = _comparison_kind(
-        item, stop_pct, target_pct, default_stop_pct, default_target_pct
+        item, stop_pct, target_pct, min_ratio, default_stop_pct, default_target_pct
     )
     return "; ".join(
         (
@@ -37,6 +38,10 @@ def reward_risk_detail(
             f"source={_stop_target_source(item)}",
             f"applied_mode={_applied_mode(item)}",
             f"structural_basis={_structural_basis(item)}",
+            f"target_basis={_target_basis(item)}",
+            f"favorable_excursion_pct={_favorable_excursion_pct(item)}",
+            f"favorable_excursion_horizon_days={_favorable_excursion_horizon_days(item)}",
+            f"favorable_excursion_sample_count={_favorable_excursion_sample_count(item)}",
             f"comparison={comparison}",
         )
     )
@@ -63,13 +68,41 @@ def _structural_basis(item: Recommendation) -> str:
     return "recommendation_stop_pct/recommendation_target_pct"
 
 
+def _target_basis(item: Recommendation) -> str:
+    evidence = item.stop_target_evidence
+    if evidence is not None and evidence.favorable_excursion_sample_count is not None:
+        return "trailing_favorable_excursion"
+    return _structural_basis(item)
+
+
+def _favorable_excursion_pct(item: Recommendation) -> str:
+    evidence = item.stop_target_evidence
+    value = None if evidence is None else evidence.favorable_excursion_pct
+    return "n/a" if value is None else f"{value:.4f}"
+
+
+def _favorable_excursion_horizon_days(item: Recommendation) -> str:
+    evidence = item.stop_target_evidence
+    value = None if evidence is None else evidence.favorable_excursion_horizon_days
+    return "n/a" if value is None else str(value)
+
+
+def _favorable_excursion_sample_count(item: Recommendation) -> str:
+    evidence = item.stop_target_evidence
+    value = None if evidence is None else evidence.favorable_excursion_sample_count
+    return "n/a" if value is None else str(value)
+
+
 def _comparison_kind(
     item: Recommendation,
     stop_pct: float,
     target_pct: float,
+    min_ratio: float,
     default_stop_pct: float,
     default_target_pct: float,
 ) -> str:
+    if min_ratio <= 0.0 and stop_pct > 0.0:
+        return "DISCLOSURE_ONLY"
     if _is_structurally_determined(
         item, stop_pct, target_pct, default_stop_pct, default_target_pct
     ):
@@ -87,6 +120,8 @@ def _is_structurally_determined(
     evidence = item.stop_target_evidence
     if evidence is None:
         return item.suggested_stop_pct is None and item.suggested_target_pct is None
+    if evidence.favorable_excursion_sample_count is not None:
+        return False
     return (
         _close(evidence.flat_stop_pct, default_stop_pct)
         and _close(evidence.flat_target_pct, default_target_pct)

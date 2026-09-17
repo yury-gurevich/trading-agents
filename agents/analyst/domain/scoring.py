@@ -22,6 +22,7 @@ from agents.analyst.domain.signal_selection import (
     select_top_signals,
     technical_signals,
 )
+from agents.analyst.domain.target_excursion_metrics import target_excursion_metrics
 from agents.analyst.domain.technical_rules import score_technical
 
 if TYPE_CHECKING:
@@ -91,6 +92,7 @@ def score_candidate(
         **fmetrics,
         **rs_metrics,
         **smetrics,
+        **target_excursion_metrics(rows, settings),
     }
     if fundamental is not None:
         metrics["fundamental_score"] = fundamental

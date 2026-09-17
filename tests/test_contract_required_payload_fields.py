@@ -38,7 +38,9 @@ def test_analyst_payload_fields_required_by_law() -> None:
         "mode counterfactual_mode atr_pct volatility_present volatility_fallback "
         "applied_stop_pct applied_target_pct counterfactual_stop_pct "
         "counterfactual_target_pct flat_stop_pct flat_target_pct scaled_stop_pct "
-        "scaled_target_pct",
+        "scaled_target_pct favorable_excursion_pct "
+        "favorable_excursion_horizon_days favorable_excursion_sample_count "
+        "favorable_excursion_lookback_windows",
     )
     _assert_fields(analyst.Rejection, "ticker reason")
 

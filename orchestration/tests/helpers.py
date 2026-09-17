@@ -107,24 +107,56 @@ def bar(ticker: str, days_ago: int, close: float) -> OHLCVBar:
 
 
 def entry_bars() -> tuple[OHLCVBar, ...]:
-    """Return scan/analyze/PM bars that approve one AAPL order.
-
-    AAPL gets two in-window bars (older bar inside the scanner's 5-day lookback): below
-    every indicator window (RSI-2 needs three closes), so the analyst degrades to
-    neutral -> confidence 0.60, clearing the strict-``<`` regime floor. MSFT's older bar
-    sits outside the scan window, so only AAPL survives as a candidate (one position).
-    """
+    """Return scan/analyze/PM bars that approve measured AAPL/MSFT orders."""
     return (
-        bar("AAPL", 4, 100.0),
-        bar("AAPL", 0, 116.0),
-        bar("MSFT", 6, 100.0),
-        bar("MSFT", 0, 110.0),
+        *_measured_upside_bars(
+            "AAPL",
+            (
+                100.0,
+                110.0,
+                105.0,
+                109.0,
+                104.0,
+                103.0,
+                103.0,
+                107.0,
+                102.0,
+                108.0,
+                106.0,
+            ),
+        ),
+        *_measured_upside_bars(
+            "MSFT",
+            (
+                100.0,
+                106.0,
+                103.0,
+                105.0,
+                102.0,
+                101.0,
+                102.0,
+                105.0,
+                103.0,
+                106.0,
+                104.0,
+            ),
+        ),
+    )
+
+
+def _measured_upside_bars(
+    ticker: str, closes: tuple[float, ...]
+) -> tuple[OHLCVBar, ...]:
+    """Return one settled favorable-excursion window ending at the decision bar."""
+    count = len(closes)
+    return tuple(
+        bar(ticker, count - 1 - offset, close) for offset, close in enumerate(closes)
     )
 
 
 def rebound_bars() -> tuple[OHLCVBar, ...]:
     """Return monitor bars that trip AAPL's stop."""
-    return (bar("AAPL", 0, 100.0),)
+    return (bar("AAPL", 0, 100.0), bar("MSFT", 0, 104.0))
 
 
 def fixture_universe() -> FakeUniverse:

@@ -180,6 +180,10 @@ def test_recommendation_stop_target_props_are_declared_and_unknown_prop_fails() 
         "stop_target_mode": "scaled",
         "stop_target_applied_stop_pct": 0.08,
         "stop_target_counterfactual_stop_pct": 0.05,
+        "stop_target_favorable_excursion_pct": 0.12,
+        "stop_target_favorable_excursion_horizon_days": 10,
+        "stop_target_favorable_excursion_sample_count": 80,
+        "stop_target_favorable_excursion_lookback_windows": 120,
         "stop_target_observed_drawdown_pct": 0.06,
     }
 

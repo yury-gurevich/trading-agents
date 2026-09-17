@@ -82,7 +82,7 @@ def test_a_structurally_fixed_gate_discloses_that_it_could_not_differ() -> None:
 
 
 def test_a_zero_stop_ratio_is_not_labelled_structurally_fixed() -> None:
-    """PM-OBS-04: undefined ratios do not claim structural reachability."""
+    """PM-OBS-04 / PM-NEV-04: invalid stops are validity failures, not policy."""
     item = recommendation("AAPL").model_copy(
         update={
             "suggested_stop_pct": 0.0,
@@ -105,18 +105,22 @@ def test_a_zero_stop_ratio_is_not_labelled_structurally_fixed() -> None:
         }
     )
 
-    report = stop_target_report(item, 0.0, 0.10, 1.5)
+    report = stop_target_report(item, 0.0, 0.10, 0.0)
 
     assert report.outcome.outcome == "failed"
     assert "base_stop_loss_pct=0.0000" in report.outcome.detail
     assert "comparison=INFORMATIVE" in report.outcome.detail
+    assert "comparison=DISCLOSURE_ONLY" not in report.outcome.detail
 
 
 def test_rejects_zero_stop_loss_as_undefined() -> None:
-    approved, rejected = _evaluate(stop_pct=0.0, target_pct=0.10)
+    """PM-NEV-04: floor 0 does not approve a non-positive stop."""
+    approved, rejected = _evaluate(stop_pct=0.0, target_pct=0.10, min_ratio=0.0)
 
     assert approved == ()
     assert rejected[0].reason == "invalid_stop_loss"
+    assert rejected[0].gate_report[-1].threshold == 0.0
+    assert "comparison=DISCLOSURE_ONLY" not in rejected[0].gate_report[-1].detail
 
 
 def test_approves_when_ratio_meets_minimum() -> None:
@@ -150,10 +154,10 @@ def test_reward_risk_gate_holds_nonpositive_stop_boundary() -> None:
         update={"suggested_stop_pct": 0.0, "suggested_target_pct": 0.10}
     )
 
-    report = stop_target_report(item, 0.05, 0.10, 1.5)
+    report = stop_target_report(item, 0.05, 0.10, 0.0)
 
     assert report.stop_pct == 0.0
     assert report.target_pct == 0.10
     assert report.outcome.value == 0.0
-    assert report.outcome.threshold == 1.5
+    assert report.outcome.threshold == 0.0
     assert report.outcome.passed is False

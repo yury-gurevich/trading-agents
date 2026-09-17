@@ -27,7 +27,7 @@ from orchestration.batch_trace import print_trace
 from orchestration.local_pipeline import cascade_once
 from orchestration.packs.trading_observatory_chain import pm
 from orchestration.start import place_run_request
-from orchestration.tests.helpers import bar
+from orchestration.tests.helpers import entry_bars
 
 if TYPE_CHECKING:
     import pytest
@@ -107,12 +107,7 @@ def _cascade(run_id: str, pm_settings: PortfolioManagerSettings) -> InMemoryGrap
         InProcessBus(),
         graph=graph,
         source=FakeDataSource(
-            bars=(
-                bar("AAPL", 4, 100.0),
-                bar("AAPL", 0, 116.0),
-                bar("MSFT", 4, 100.0),
-                bar("MSFT", 0, 116.0),
-            ),
+            bars=entry_bars(),
             sectors={"AAPL": "Technology", "MSFT": "Technology"},
             vix=12.0,
         ),

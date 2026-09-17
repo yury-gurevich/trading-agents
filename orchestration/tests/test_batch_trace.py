@@ -132,10 +132,7 @@ def test_print_trace_with_news_and_drops(capsys: pytest.CaptureFixture[str]) -> 
     FakeDataSource has news for AAPL.
     """
     bars = (
-        bar("AAPL", 4, 100.0),
-        bar("AAPL", 0, 116.0),
-        bar("MSFT", 6, 100.0),
-        bar("MSFT", 0, 110.0),
+        *entry_bars(),
         bar("NVDA", 4, 200.0),
         bar("NVDA", 0, 170.0),  # -15% return -> dropped by min_relative_strength
     )

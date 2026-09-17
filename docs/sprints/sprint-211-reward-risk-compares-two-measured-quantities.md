@@ -610,6 +610,39 @@ policy remains unconditional by ADR-0027 design: the target estimate is not
 conditioned on the analyst buy signal, and this limitation is disclosed rather than hidden.
 ---
 
+## Merge and deploy — planning agent, 2026-09-17
+
+**Merge:** `make gate-ran` from the S211 worktree printed `GATE PROVEN for
+5dc9d1c9e8852048751c159aba21b5ceabedf489` (CI + Security Findings success), matching `git rev-parse HEAD`.
+Merged `--no-ff` to `main` as `7d3ff519c06fd7df9ad38da38508e41b506dbb12` (`0.98.08`, tag `v0.98.08`).
+Post-merge CodeQL: success on `7d3ff51`.
+
+**Images:** manual `build-images.yml` run `35217747046`, dispatched on ref `v0.98.08` (= `7d3ff51`) with
+`image_tag=s211`: 15/15 jobs success.
+
+**Deploy:** `pwsh -NoProfile -File infra\deploy-agents.ps1 up -Tag s211` exited `0`:
+- preflight: per-target DSNs 17/17, Service Bus SAS 16/16, GHCR images 15/15;
+- env preserved on all 17 targets; `alembic upgrade head`; served topics and subscriptions;
+- master, 15 agents and `dispatcher-cron` (`30 22 * * 1-5` UTC) all `[OK]`.
+
+Readback: pre-deploy 16/16 apps on `s210`; post-deploy **16/16 apps on `s211`, all `Succeeded`**, and
+`dispatcher-cron` on `s211`, `Succeeded`.
+
+🟠 **No `DeployRecord` was written.** `scripts/record_deploy.py` refused (*"GitHub build evidence is required"*)
+because its reader only accepts image-build runs on branch `main`
+(`surfaces/dashboard/github_builds.py`, `_successful_main_image_runs`). This build was dispatched on the tag
+ref at the same SHA. Rebuilding from `main` would have stamped the later docs commit `c035592` as the
+deployed SHA, which is less truthful than no record. Next time, dispatch the `s<NN>` build on `main` while
+`main` still equals the merge commit.
+
+**Still owed: the live check** (Sequencing step 5), on the first scheduled run on `s211`
+(`sched-2026-09-17`, 22:30 UTC):
+- more than one distinct `reward_risk` value across candidates;
+- `comparison=DISCLOSURE_ONLY` at threshold 0;
+- no rejection reason `reward_risk_below_min`;
+- no `STRUCTURALLY_DETERMINED` on measured evidence.
+Record it in `docs/laws/functionality-checks.md`.
+
 ## Return notes
 
 - The target estimate is unconditional recent behaviour, not evidence conditioned on the analyst liking the

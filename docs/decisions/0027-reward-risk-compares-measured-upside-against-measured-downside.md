@@ -2,7 +2,7 @@
 type: Architecture Decision
 status: accepted
 closes: "The reward_risk gate has one distinct value (2.00) across 294 recordings because target and stop are both derived from the same regime base pair, so the ratio is identically base_take_profit_pct / base_stop_loss_pct. Should the gate be retired, or given an independent target derivation? And if the derivation changes, what happens to the 1.5 floor that was calibrated against a constant?"
-tags: [analyst, portfolio-manager, risk, reward-risk, stop-target, excursion, threshold, exp-010, s211, adr-0017, adr-0025, pm-nev, anlz-obs-05, dl-119]
+tags: [analyst, portfolio-manager, risk, reward-risk, stop-target, excursion, threshold, exp-010, exp-011, s211, adr-0017, adr-0025, pm-nev, anlz-obs-05, dl-119]
 amends: ADR-0025
 ---
 
@@ -78,7 +78,7 @@ fetched; the backfilled realised value is the check on it, not the input.
 
 ### 2 · The floor moves from 1.5 to **1.0**
 
-> 🚨 **Corrected 2026-09-17, before merge: the floor ships at `0.80`.** The table above measures a different ratio from the one this decision builds. See *Correction* at the end.
+> 🚨 **Corrected twice on 2026-09-17, before merge: the gate ships disclosure-only (floor `0`).** First the floor moved to `0.80` (*Correction*: the table above measures a different ratio). Then 10 years of evidence showed the ratio doesn't predict returns (*Correction 2*). See both at the end.
 
 `1.5` was never a judgement about reward against risk. It was a number that sat safely below a
 constant 2.00, and it has no meaning independent of that constant. Shipping the new derivation
@@ -202,3 +202,45 @@ changes the gate and what the deliberator is shown, not when positions close.
   gate would stop comparing the target with the stop actually placed, and it needs a further contract field
   for the adverse estimate.
 - **0.85.** Rejects 26-29 %, stricter than the filter that was approved.
+
+## Correction 2 — 2026-09-17, same evening, before merge: the gate is disclosure-only
+
+**What the first correction didn't test:** whether the ratio says anything about the trade.
+[EXP-011](../research/experiments/EXP-011-regime-markov-and-barrier-calibration.md) recomputed S211's exact stop
+and target on 10 years of consolidated-tape bars for the 98 names (47,485 decisions, 2017-2026). It measured
+the realised trade return with the full payoff: −stop, +target, or the 10th-session close.
+
+- **The ratio doesn't predict returns.** Names at or above 0.80 minus names below: **+0.03 %** per trade
+  [95 % CI −0.17 %, +0.23 %]. That's +0.10 % in 2017-2021 and **−0.08 %** in 2022-2026, and no ratio bucket
+  stands out.
+- **The rejection share at 0.80 swings from 0 % to 99 % a night.** Median **49 %**, p90 89 %, and more than half
+  the book on 47 % of nights. The first correction's 16-18 % was measured on three nights at the **10th
+  percentile**. A reasoned mechanism, consistent with 2018 and 2022: the stop reads 14 sessions and the
+  target about 6 months, so after a volatility spike the ratio collapses across the whole book.
+- **What the target does get right:** it was touched within 10 sessions **50.2 %** of the time, exactly as a
+  median should be. Decision 1 is sound.
+
+**§3's premise is measured and not found.** §3 accepted a rejection rate that moves with the market, on the
+reasoning that in poor regimes the correct behaviour is to trade less. That requires low-ratio names to be
+worse buys, and on this evidence they aren't.
+
+**Therefore (operator, 2026-09-17, *"Disclosure only"*):**
+
+1. **`min_reward_risk_ratio` = `0`.** The measured target, its evidence and the varying ratio appear in every
+   gate report, and no order is rejected on the ratio. A non-positive stop still rejects (`invalid_stop_loss`).
+   That is a validity check, not this policy.
+2. **The detail must say so.** With the floor at 0 the gate can't fail, so `PM-OBS-04` requires the detail to
+   disclose it rather than read `comparison=INFORMATIVE`.
+3. **This supersedes decision 2 and *Correction*'s 0.80.** Decision 1 (the derivation) and the stop invariant
+   stand. §3's absolute-floor rule stands for any future floor: re-enabling the gate needs evidence that the
+   ratio predicts returns, and a relative floor still needs a new ADR.
+4. This is the planning agent's original recommendation (*retire as a gate, keep as a disclosure*), now
+   adopted on measurement rather than argument.
+
+**Road not taken:**
+
+- **Keep 0.80.** Rejects a median 49 % of names a night for no measured benefit.
+- **A low floor such as 0.60** (a crash guard). It still filters on a quantity with no measured predictive
+  power, and "crash guard" is the stop's job.
+- **Hold S211 until more evidence.** Rejected: the derivation, the evidence fields and the honest disclosure
+  are worth shipping now. Only the rejection was unproven.

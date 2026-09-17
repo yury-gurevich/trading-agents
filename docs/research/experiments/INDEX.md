@@ -32,10 +32,11 @@ defence for any action it triggers.
 | [EXP-008](EXP-008-correlation-cutoff-replay.md) | Does the 0.70 correlation cutoff decide anything, and is it noise? | 2026-09-17 | Replay of 38 approvals (validated 38/38): **no cutoff from 0.70 down to 0.50 rejects anything** at today's book; weighted ρ⁺ rejects MDLZ ×5. Near 0.70 the verdict is sampling noise (CI spans 0.70 on 12/16 pairs; halves disagree 7/16), **not outlier days** (Δρ +0.001). Feeds work-queue item 68 → an ADR on gate meaning, not urgent |
 | [EXP-009](EXP-009-volatility-sizing-replay.md) | Should position size follow volatility, and does the regime label have anything to scale by? | 2026-09-17 | Replay of 61 approved buys (sizing reconstructed 61/61): iso-risk sizing cuts per-position risk dispersion 4.2× → 1.9× and worst loss −30 %, but lost **$445 more** this month (AMD alone −$255; calm names fell) — not free, one window can't settle it. 🚨 **Regime label `neutral` on 50/50 runs: no production source supplies VIX.** Feeds items 62/64 and new item 70 |
 | [EXP-010](EXP-010-reward-risk-floor-on-the-built-ratio.md) | What does the reward_risk floor reject on the ratio S211 actually built? | 2026-09-17 | ADR-0027's 1.0 floor was calibrated on favourable ÷ adverse excursion; S211 builds favourable excursion ÷ the ATR stop. Replayed on the branch code over 3 nights × 98 names: 1.0 rejects **55-68 %**, not ~21 %; **0.80 rejects 16-18 %**. Operator set 0.80; S211 returned before merge. Target median halves 8.6 % → 4.2 % (no exit reads it) |
+| [EXP-011](EXP-011-regime-markov-and-barrier-calibration.md) | Is the regime a Markov chain, and do simulated stop/target probabilities come true? | 2026-09-17 | 36 y of VIX + 10 y SIP bars × 98 names, 47,485 decisions. Raw regime label **not Markov** (G-test p≈10⁻¹³⁰; 37 switches/yr); a 3-close sticky label is. Regime-weighted barrier simulation adds ~1 % Brier skill; P(stop) over-dispersed. S211's median target touched **50.2 %** ✔. The target/stop ratio **does not predict returns** (passed − rejected +0.03 % [−0.17, +0.23]) and 0.80 would reject a median **49 %** per night → operator: gate **disclosure-only** |
 
 ## Adding an experiment
 
-1. Next id is `EXP-011`. Create `EXP-00N-<slug>.md` with the four headings above.
+1. Next id is `EXP-012`. Create `EXP-00N-<slug>.md` with the four headings above.
 2. Add a row here.
 3. Link the artifacts (transcripts, critique docs) from *Delivery*.
 4. If it triggers a parameter change, that change runs as a **parameter experiment** (charter report) —

@@ -126,6 +126,25 @@ distinction at the run level. This extends that amendment one level down, to the
 - **The LLM can subtract but never add.** The 2026-06-27 founding constraint is preserved and in fact
   strengthened — this decision reduces what it may subtract and adds nothing.
 
+## Sequencing — decisions 1+5 ship before 2+3+4, deliberately
+
+🚨 **Do not implement this ADR in one sprint.** Decisions **1** (verdict semantics) and **5** (the
+non-answer safety clause) ship together as [S214](../sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md);
+decisions **2**, **3** and **4** follow only after S214's tests read clean.
+
+**Why the split is not just sprint sizing.** Decision 3 tells the judge that `revise` no longer blocks.
+Decision 1 makes that true. Shipping both at once means any change in the verdict mix has two candidate
+causes — the judge behaving differently because it was *told* something, or the system behaving
+differently because the *consequence* changed — and the relabelling tripwire in test 3 becomes
+unreadable. **Decision 1 alone gives a clean baseline:** the judge goes on judging exactly as it has,
+believing what it has always believed, and only the downstream consequence moves. Then decision 3 can be
+measured against that baseline.
+
+🪤 **Decision 5 cannot be deferred.** It is not a separate feature; without it decision 1 converts
+today's fail-*closed* parse default into a silent fail-*open*. The two must land in the same commit.
+
+---
+
 ## How this will be tested
 
 The operator's instruction was *"we will test the decision later one by one."* Each is falsifiable:

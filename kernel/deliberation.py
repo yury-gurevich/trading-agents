@@ -10,7 +10,6 @@ External I/O: none directly (the model is reached via the injected LLMClient).
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -23,12 +22,20 @@ from kernel.deliberation_prompts import (
 from kernel.deliberation_prompts import (
     JUDGE_SYSTEM as JUDGE_SYSTEM,
 )
+from kernel.deliberation_verdicts import (
+    UnreadableVerdictError as UnreadableVerdictError,
+)
+from kernel.deliberation_verdicts import (
+    Verdict as Verdict,
+)
+from kernel.deliberation_verdicts import (
+    parse_verdict as _parse_verdict,
+)
 from kernel.llm import LLMCompletionStoppedError
 
 if TYPE_CHECKING:
     from kernel.llm import LLMClient
 
-_RULINGS = ("uphold", "overturn", "revise")
 DebateRole = Literal["defender", "challenger"]
 
 
@@ -70,14 +77,6 @@ class Turn:
 
 
 @dataclass(frozen=True)
-class Verdict:
-    """The Judge's ruling on the proposition."""
-
-    ruling: str
-    rationale: str
-
-
-@dataclass(frozen=True)
 class DebateResult:
     """The full record: the proposition, the transcript, and the verdict."""
 
@@ -98,21 +97,6 @@ def render_debate_prompt(proposition: Proposition, transcript: tuple[Turn, ...])
     if not transcript:
         lines.append("  (none yet)")
     return "\n".join(lines)
-
-
-def _parse_verdict(raw: str) -> Verdict:
-    """Parse the Judge's JSON; fall back to 'revise' when it is unreadable."""
-    if not raw.strip():
-        return Verdict("revise", "judge response empty — defaulting to revise")
-    try:
-        data = json.loads(raw)
-        ruling = str(data["ruling"]).strip().lower()
-        rationale = str(data.get("rationale", "")).strip()
-    except (json.JSONDecodeError, KeyError, TypeError):
-        return Verdict("revise", "judge response unparseable — defaulting to revise")
-    if ruling not in _RULINGS:
-        return Verdict("revise", f"unrecognised ruling {ruling!r}; defaulted to revise")
-    return Verdict(ruling, rationale)
 
 
 def debate_turn(
@@ -153,7 +137,7 @@ def judge_verdict(
             tool_schema={},
         )
     except LLMCompletionStoppedError as exc:
-        return Verdict("revise", f"judge response stopped: {exc}")
+        raise UnreadableVerdictError(f"judge response stopped: {exc}") from exc
     return _parse_verdict(raw)
 
 

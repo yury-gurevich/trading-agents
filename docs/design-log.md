@@ -128,6 +128,35 @@ become a causal claim.
 
 ---
 
+## DL-175 - unreadable judge rulings are parse failures, not `revise` policy - status: DECIDED (S214, 2026-09-18)
+
+**Decision. Kernel parses; the deliberator decides the trading consequence.** `kernel.deliberation`
+should not choose `revise` when the judge answer is empty, malformed, unrecognised, or provider-stopped.
+S214 changes the kernel verdict parser to report an unreadable ruling as a typed parse failure, while the
+deliberator manager's existing `fault_boundary` maps that failure to `fail_open_review(...)`. That keeps
+the policy at the agent boundary that writes `DeliberationRun`, lets direct kernel callers observe a bad
+judge answer as bad evidence, and uses the already-queryable `failed_open_tickers` / `failed_open_reason`
+path for live orders.
+
+**Decision. `DLIB-NEV-06` covers the non-answer safety rule; no new clause ID is owed.** The clause already
+forbids hiding a failed debate or peer call as a clean veto, and `DLIB-FAIL-01` already says LLM failures
+fail open for the affected order. S214 will amend the existing deliberator output/failure wording and
+test-plan rows rather than minting a narrower new `NEV` clause for the same invariant.
+
+**Rejected routes.**
+
+- Keep returning `Verdict("revise", ...)` from the kernel and teach `review_batch` not to veto it.
+  Rejected because it converts today's fail-closed parser default into a silent pass; the record would
+  look like a real judge finding instead of a failed judge answer.
+- Return `None` from `judge_verdict`. Rejected because it would widen every caller's success path,
+  including replay/eval helpers, and make missed checks easy. A typed exception is harder to ignore.
+- Map unreadable judge answers directly to `uphold`. Rejected because it is silent. The fail-open path
+  already records the order, reason, status, and fault.
+- Change execution's `drop_vetoed` to reinterpret `revise`. Rejected because execution law says it never
+  decides what to trade; the meaning of deliberator verdicts belongs upstream.
+
+---
+
 ## DL-172 - reward-risk target uses median trailing favourable excursion - status: DECIDED (S211, 2026-09-17)
 
 **Decision. Add a separate lookback-window count for the decision-time estimate.**

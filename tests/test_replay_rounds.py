@@ -112,12 +112,12 @@ def test_the_judge_verdict_is_parsed_by_the_live_parser() -> None:
     assert states[0].verdict.ruling == "overturn"
 
 
-def test_an_unparseable_ruling_defaults_to_revise_exactly_as_it_does_live() -> None:
-    """DLIB-TYP-03: replay must not admit a ruling the live parser would refuse."""
+def test_an_unparseable_ruling_fails_instead_of_fabricating_revise() -> None:
+    """DLIB-FAIL-04: replay must not fabricate a verdict the live parser refused."""
     states = _judged("not json at all")
 
-    assert states[0].verdict is not None
-    assert states[0].verdict.ruling == "revise"
+    assert states[0].verdict is None
+    assert states[0].failure == "unreadable_verdict:judge response unparseable"
 
 
 def test_a_missing_answer_fails_the_debate_instead_of_skipping_the_turn() -> None:

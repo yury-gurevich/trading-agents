@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -44,12 +44,14 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 + **DLIB-OUT-01** -- Each processed `PMRun` gets exactly one append-only
   `DeliberationRun` linked by `PMRun -DELIBERATED_BY-> DeliberationRun`.
-+ **DLIB-OUT-02** -- Each `DeliberationRun` records verdicts, vetoed tickers,
-  per-ticker debate turns, role models, narrative, and creation time.
++ **DLIB-OUT-02** -- Each `DeliberationRun` records verdicts, vetoed tickers
+  containing only `overturn` verdicts, per-ticker debate turns, role models,
+  narrative, and creation time.
 + **DLIB-OUT-03** -- Each LLM call writes a shared `LLMCall` with
   `calling_agent`, model, hashes, token counts, latency, and timestamp.
-+ **DLIB-OUT-04** -- Non-uphold verdicts may only subtract existing PM-approved
-  orders; uphold verdicts leave the order set unchanged.
++ **DLIB-OUT-04** -- `overturn` verdicts may only subtract existing
+  PM-approved orders; `revise` and `uphold` verdicts leave the order set
+  unchanged.
 + **DLIB-OUT-05** -- Each LLM call records the provider stop reason as compact
   audit metadata without storing prompt or completion payload text.
 
@@ -92,14 +94,16 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 
 ## Failure, Recovery & Rollback (`FAIL`)
 
-+ **DLIB-FAIL-01** -- Any LLM or peer-call failure is fail-open for the affected
-  order and records an uphold verdict with a failure rationale.
++ **DLIB-FAIL-01** -- Any LLM, peer-call, or unreadable judge-ruling failure
+  is fail-open for the affected order and records an uphold verdict with a
+  failure rationale.
 + **DLIB-FAIL-02** -- A graph-write failure records a fault; no compensating
   delete is attempted.
 + **DLIB-FAIL-03** -- After a crash, the manager retries any `PMRun` that still
   lacks a `DELIBERATED_BY` edge.
-+ **DLIB-FAIL-04** -- A provider-declared truncated or refused completion is a
-  failed LLM call with its stop reason named.
++ **DLIB-FAIL-04** -- A provider-declared truncated or refused completion, or a
+  judge response that cannot be read as one of the declared rulings, is a
+  failed LLM call with its stop or parse reason named.
 
 ## Type Alignment (`TYP`)
 
@@ -242,3 +246,8 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 + v1.7 -- S206 adds `DLIB-NEV-08`: rendered debate-context verdicts must name
   the check and enforcing agent that produced them, and descriptive stop-target
   evidence must not be rendered as a gate verdict.
++ v1.8 -- S214 narrows `vetoed_tickers` and order subtraction to `overturn`
+  verdicts only. `revise` remains recorded but no longer blocks an order, and
+  unreadable judge answers route through the existing loud fail-open path rather
+  than borrowing the `revise` ruling. Proves `DLIB-OUT-04` and corrects
+  DRIFT-066 without changing the `contracts/deliberator.py` ruling vocabulary.

@@ -158,13 +158,10 @@ def test_empty_debate_turn_raises_instead_of_entering_transcript() -> None:
         debate_turn(llm, _PROP, role="defender", round_number=1, transcript=())
 
 
-def test_stopped_judge_response_defaults_to_revise_with_reason() -> None:
-    """DLIB-FAIL-04 / DLIB-NEV-06: stopped judge answers are honest revises."""
-    verdict = judge_verdict(_StoppedLLM(), _PROP, transcript=())
-
-    assert verdict.ruling == "revise"
-    assert "max_tokens" in verdict.rationale
-    assert "unparseable" not in verdict.rationale
+def test_stopped_judge_response_is_not_a_verdict() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: stopped judge answers are failures."""
+    with pytest.raises(ValueError, match="max_tokens"):
+        judge_verdict(_StoppedLLM(), _PROP, transcript=())
 
 
 def test_parse_verdict_valid() -> None:
@@ -173,26 +170,24 @@ def test_parse_verdict_valid() -> None:
     assert v.rationale == "fatal risk"
 
 
-def test_parse_verdict_unparseable_defaults_to_revise() -> None:
-    v = _parse_verdict("not json at all")
-    assert v.ruling == "revise"
-    assert "unparseable" in v.rationale
+def test_parse_verdict_unparseable_raises() -> None:
+    """DLIB-FAIL-04 / DLIB-NEV-06: malformed judge output is not revise."""
+    with pytest.raises(ValueError, match="unparseable"):
+        _parse_verdict("not json at all")
 
 
-def test_parse_verdict_empty_defaults_to_revise_without_parser_blame() -> None:
+def test_parse_verdict_empty_raises_without_parser_blame() -> None:
     """DLIB-FAIL-04: a blank judge answer is empty, not malformed JSON."""
-    v = _parse_verdict("")
-    assert v.ruling == "revise"
-    assert "empty" in v.rationale
-    assert "unparseable" not in v.rationale
+    with pytest.raises(ValueError, match="empty") as exc:
+        _parse_verdict("")
+    assert "unparseable" not in str(exc.value)
 
 
-def test_parse_verdict_missing_ruling_defaults_to_revise() -> None:
-    v = _parse_verdict('{"rationale": "no ruling key"}')
-    assert v.ruling == "revise"
+def test_parse_verdict_missing_ruling_raises() -> None:
+    with pytest.raises(ValueError, match="unparseable"):
+        _parse_verdict('{"rationale": "no ruling key"}')
 
 
-def test_parse_verdict_unrecognised_ruling_defaults_to_revise() -> None:
-    v = _parse_verdict('{"ruling": "maybe", "rationale": "hmm"}')
-    assert v.ruling == "revise"
-    assert "unrecognised" in v.rationale
+def test_parse_verdict_unrecognised_ruling_raises() -> None:
+    with pytest.raises(ValueError, match="unrecognised"):
+        _parse_verdict('{"ruling": "maybe", "rationale": "hmm"}')

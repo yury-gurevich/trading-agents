@@ -1,7 +1,7 @@
 """Deliberation challenger-veto stage tests (DL-31 Part B).
 
 Agent: orchestration
-Role: prove the opt-in veto runs between PM and execution, that a non-uphold verdict
+Role: prove the opt-in veto runs between PM and execution, that an overturn verdict
       SUBTRACTS an order (execution honours it, EXEC-NEV-01) while the judge can never
       add one, that it is fail-open on an LLM outage, and that omitting the LLM leaves
       the deterministic cascade unchanged.
@@ -94,7 +94,7 @@ def test_uphold_all_submits_normally_and_records_no_vetoes() -> None:
 
 
 def test_overturn_subtracts_every_order_execution_honours_it() -> None:
-    """FORE-NEV-02 analogue / EXEC-NEV-01: a non-uphold verdict drops the order; the
+    """FORE-NEV-02 analogue / EXEC-NEV-01: overturn drops the order; the
     judge only subtracts — nothing is submitted that the PM did not approve."""
     graph = InMemoryGraphStore()
     _run(graph, FakeLLMClient({"review": _OVERTURN}))

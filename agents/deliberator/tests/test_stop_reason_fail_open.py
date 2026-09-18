@@ -92,23 +92,33 @@ def _order(ticker: str, run_id: str) -> OrderIntent:
 
 
 def _pm_node(graph: InMemoryGraphStore) -> Node:
+    return _pm_node_for(graph, "pm-two", ("AAPL", "MSFT"))
+
+
+def _pm_node_for(
+    graph: InMemoryGraphStore, run_id: str, tickers: tuple[str, ...]
+) -> Node:
     order_set = OrderIntentSet(
-        run_id="pm-two",
-        approved=(_order("AAPL", "pm-two"), _order("MSFT", "pm-two")),
+        run_id=run_id,
+        approved=tuple(_order(ticker, run_id) for ticker in tickers),
         rejected=(),
         explanation=Explanation(summary="sized"),
-        provenance=Provenance(run_id="pm-two", source_agent="portfolio_manager"),
+        provenance=Provenance(run_id=run_id, source_agent="portfolio_manager"),
     )
     return graph.merge_node(
-        "PMRun", "pm-two", {"order_intent_set": order_set.model_dump(mode="json")}
+        "PMRun", run_id, {"order_intent_set": order_set.model_dump(mode="json")}
     )
 
 
 def _manager(graph: InMemoryGraphStore) -> DeliberatorAgent:
+    return _manager_with_llm(graph, FakeLLMClient({"DECISION UNDER TEST": _UPHOLD}))
+
+
+def _manager_with_llm(graph: InMemoryGraphStore, llm: object) -> DeliberatorAgent:
     return DeliberatorAgent(
         InProcessBus(),
         graph=graph,
-        llm=FakeLLMClient({"DECISION UNDER TEST": _UPHOLD}),
+        llm=llm,  # type: ignore[arg-type]
         settings=DeliberatorSettings(
             role="manager", instance_name="deliberator-manager"
         ),

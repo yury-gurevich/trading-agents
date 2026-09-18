@@ -146,7 +146,7 @@ def test_the_operator_declares_its_own_recipe_not_the_deliberators() -> None:
 #: is the client protocol and the stop-reason error type — transport and control
 #: flow, never a string that reaches the model. Kept as an explicit set rather
 #: than a loosened assertion so adding to it is a reviewable act.
-_NOT_PROMPT_TEXT = {"kernel.llm"}
+_NOT_PROMPT_TEXT = {"kernel.deliberation_verdicts", "kernel.llm"}
 
 
 def _first_party_closure(roots: tuple[str, ...]) -> set[str]:

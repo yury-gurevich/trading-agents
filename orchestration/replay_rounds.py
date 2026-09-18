@@ -119,7 +119,10 @@ def _apply_one(state: DebateState, step: Step, result: BatchResult | None) -> No
         return
     role, number = step
     if role == JUDGE_ROLE:
-        state.verdict = _verdict(state, text)
+        try:
+            state.verdict = _verdict(state, text)
+        except ValueError as exc:
+            state.failure = f"unreadable_verdict:{exc}"
         return
     state.transcript = (*state.transcript, Turn(role, number, text))
 

@@ -40,7 +40,7 @@ the gate tell you.
   file.
 - **S212** (trace says why nothing was submitted) changes `orchestration/batch_trace.py`, adds a trace module,
   and changes `scripts/trace_run.py`. **S213 must not edit any of them.** The trace already prints the regime line
-  (`batch_trace.py:78`, label plus `vix`), and with VIX populated it shows the value unchanged. Showing the new
+  (`batch_trace.py:80`, label plus `vix`), and with VIX populated it shows the value unchanged. Showing the new
   VIX status in the trace is a follow-up after both merge (see *Out of scope*).
 - **ADR-0028 as first written would have contradicted the analyst and PM laws' exit guarantees.** That is
   already corrected in the ADR (*Correction* section). This spec follows the corrected version.
@@ -142,7 +142,7 @@ move risk?*) has nothing to act on, and the deliberator is told `vix_index=None`
 
 | Claim | Value | How it was measured |
 | --- | --- | --- |
-| Regimes with a VIX value | **0 / 50** scheduled runs, all `neutral`, 0 label changes | *[measured]* every `RegimeContext` snapshot `sched-2026-07-07` → `sched-2026-09-16` |
+| Regimes with a VIX value | **0 / 70** snapshots, all `neutral`, 0 label changes | *[re-measured 2026-09-18]* every `RegimeContext` on the live spine — the defect has grown from EXP-009's 50 / 50, not narrowed |
 | Production sources returning VIX | **none** — `alpaca_data.py:54`, `tiingo.py:46`, `fmp.py:46`, `stooq.py:42`, `fundamentals.py:73` all `vix=None` | *[measured]* code read; only `FakeDataSource` (`sources.py:122`) returns one |
 | Where regime inputs come from today | `CompositeDataSource.fetch_regime_inputs` → price source (Alpaca) | *[measured]* `composite.py:44-46`, `market_source_from_settings` at `composite.py:83` |
 | FMP is **not** in the live composite | `market_source_from_settings` builds Alpaca + Finnhub + Alpha Vantage only | *[measured]* `composite.py:83-112` |
@@ -154,7 +154,8 @@ move risk?*) has nothing to act on, and the deliberator is told `vix_index=None`
 | FMP bar for as-of session exists by 22:30 UTC | **unknown** | *[ASSUMED — not measured]* present by 03:58 UTC next day; the freshness rule tolerates one session either way; the post-deploy check records which case occurred |
 | Who halts on a regime incident ref | analyst (empty result, no exits) and PM (`provider_degraded`) | *[measured]* `agents/analyst/run.py:56`, `agents/portfolio_manager/run.py:123` |
 | Old snapshots stay readable | contract models use `ConfigDict(frozen=True)`, pydantic default `extra="ignore"` | *[measured]* `contracts/common.py:27-28`; new fields need **defaults** so the 50 historical snapshots still validate |
-| Consumers of the label | analyst summary text, deliberator prompt (`context_pm.py:63`), trace (`batch_trace.py:78`) — **no risk number** | *[measured]* repo search of non-test modules |
+| 🆕 The referee is shown the null | `context_pm.py:63` renders `label=neutral; vix_index=None` into **every** debate prompt | *[measured 2026-09-18]* the deliberator has reasoned about regime with an empty VIX on all 70 runs, including the S214 baseline now being measured |
+| Consumers of the label | analyst summary text, deliberator prompt (`context_pm.py:63`), trace (`batch_trace.py:80` — **was `:78`; S212's merge shifted it by two**) — **no risk number** | *[measured]* repo search of non-test modules |
 
 ---
 
@@ -408,15 +409,15 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| _to fill_ | | | |
+| *to fill* | | | |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** _to fill_
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
 
-**Contradictions found between a law and this spec:** _to fill_
+**Contradictions found between a law and this spec:** *to fill*
 
-**Laws found silent where a decision was needed:** _to fill_
+**Laws found silent where a decision was needed:** *to fill*
 
-**Clauses that were ⬜ and are now proven:** _to fill_
+**Clauses that were ⬜ and are now proven:** *to fill*
 
 ---
 
@@ -424,23 +425,23 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | _to fill_ | | | |
+| A1 | *to fill* | | | |
 
-**Tests added beyond the plan:** _to fill_
+**Tests added beyond the plan:** *to fill*
 
 ---
 
 ## Closeout — evidence
 
-**Status:** _to fill_
+**Status:** *to fill*
 
-**Tree the proofs ran in (and `.env` present?):** _to fill_
+**Tree the proofs ran in (and `.env` present?):** *to fill*
 
-**Result:** _to fill_
+**Result:** *to fill*
 
-**Files changed:** _to fill_
+**Files changed:** *to fill*
 
-**Design decisions:** _to fill_
+**Design decisions:** *to fill*
 
 **Proof — the red run first:**
 
@@ -454,20 +455,20 @@ _to fill_
 _to fill_
 ```
 
-**Guards planted:** _to fill_
+**Guards planted:** *to fill*
 
-**Module line counts:** _to fill_
+**Module line counts:** *to fill*
 
-**Vocabulary pack diff and deploy implication:** _to fill_
+**Vocabulary pack diff and deploy implication:** *to fill*
 
-**`make ci`:** _to fill_
+**`make ci`:** *to fill*
 
-**`make gate-ran`:** _to fill_
+**`make gate-ran`:** *to fill*
 
-**Not met / verified failing:** _to fill_
+**Not met / verified failing:** *to fill*
 
 ---
 
 ## Return notes
 
-- _to fill_
+- *to fill*

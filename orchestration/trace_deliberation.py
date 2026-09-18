@@ -24,9 +24,12 @@ def format_deliberation_trace(
     verdicts = deliberation_node.props.get("verdicts")
     vetoed_raw = deliberation_node.props.get("vetoed_tickers")
     reviewed = str(len(verdicts)) if isinstance(verdicts, Mapping) else "?"
+    revised = _revised_count(verdicts)
     vetoed = str(len(vetoed_raw)) if isinstance(vetoed_raw, tuple | list) else "?"
     status = _str_prop(execution_node, "deliberation_status") or "?"
-    lines: tuple[str, ...] = (f"reviewed={reviewed}  vetoed={vetoed}  status={status}",)
+    lines: tuple[str, ...] = (
+        f"reviewed={reviewed}  revised={revised}  vetoed={vetoed}  status={status}",
+    )
     vetoed_tickers = _tickers(vetoed_raw)
     if vetoed_tickers:
         lines += (f"tickers={','.join(vetoed_tickers)}",)
@@ -40,6 +43,12 @@ def _tickers(value: object) -> tuple[str, ...]:
     if not isinstance(value, tuple | list):
         return ()
     return tuple(str(ticker) for ticker in value)
+
+
+def _revised_count(value: object) -> str:
+    if not isinstance(value, Mapping):
+        return "?"
+    return str(sum(1 for verdict in value.values() if str(verdict).lower() == "revise"))
 
 
 def _withheld_count(

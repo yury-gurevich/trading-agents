@@ -84,7 +84,7 @@ def _assemble(
         if review.failed_open:
             failed_open_tickers.append(intent.ticker)
             failed_open_reasons.append(review.failed_open_reason)
-        if review.verdict != "uphold":
+        if review.verdict == "overturn":
             vetoed.append(intent.ticker)
     return ReviewBatch(
         verdicts,

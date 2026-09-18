@@ -30,7 +30,7 @@ def test_trace_omits_withheld_without_execution_status() -> None:
     """DLIB-OUT-02 / EXEC-OUT-09: absent ExecutionRun renders unknown status."""
     lines = format_deliberation_trace(_pm_node(("USB",)), _delib_node(("USB",)), None)
 
-    assert lines[0] == "reviewed=1  vetoed=1  status=?"
+    assert lines[0] == "reviewed=1  revised=0  vetoed=1  status=?"
     assert not _withheld(lines)
 
 
@@ -97,7 +97,7 @@ def _delib_node(vetoed: tuple[str, ...]) -> Node:
     return Node(
         "DeliberationRun",
         "delib",
-        {"verdicts": dict.fromkeys(vetoed, "revise"), "vetoed_tickers": vetoed},
+        {"verdicts": dict.fromkeys(vetoed, "overturn"), "vetoed_tickers": vetoed},
     )
 
 

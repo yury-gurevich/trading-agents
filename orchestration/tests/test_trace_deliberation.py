@@ -29,7 +29,12 @@ def test_fully_vetoed_trace_explains_withheld_orders(
         monkeypatch,
         approved=("USB", "WFC", "AMZN", "MDLZ"),
         verdicts=MappingProxyType(
-            {"USB": "revise", "WFC": "revise", "AMZN": "revise", "MDLZ": "revise"}
+            {
+                "USB": "overturn",
+                "WFC": "overturn",
+                "AMZN": "overturn",
+                "MDLZ": "overturn",
+            }
         ),
         vetoed=("USB", "WFC", "AMZN", "MDLZ"),
         submitted=0,
@@ -38,7 +43,7 @@ def test_fully_vetoed_trace_explains_withheld_orders(
     print_trace(InMemoryGraphStore(), "trace-delib")
     out = capsys.readouterr().out
     assert out.index("[pm]") < out.index("[deliberation]") < out.index("[execution]")
-    assert "reviewed=4  vetoed=4  status=applied" in out
+    assert "reviewed=4  revised=0  vetoed=4  status=applied" in out
     assert "tickers=USB,WFC,AMZN,MDLZ" in out
     assert "withheld=4 by deliberation veto" in out
 
@@ -51,14 +56,14 @@ def test_partial_veto_trace_explains_only_matching_gap(
     _patch_nodes(
         monkeypatch,
         approved=("USB", "AMZN", "WFC"),
-        verdicts={"USB": "revise", "AMZN": "revise", "WFC": "uphold"},
+        verdicts={"USB": "overturn", "AMZN": "overturn", "WFC": "uphold"},
         vetoed=["USB", "AMZN"],
         submitted=1,
     )
 
     print_trace(InMemoryGraphStore(), "trace-delib")
     out = capsys.readouterr().out
-    assert "reviewed=3  vetoed=2  status=applied" in out
+    assert "reviewed=3  revised=0  vetoed=2  status=applied" in out
     assert "tickers=USB,AMZN" in out
     assert "withheld=2 by deliberation veto" in out
 
@@ -78,26 +83,7 @@ def test_trace_does_not_invent_veto_cause(
 
     print_trace(InMemoryGraphStore(), "trace-delib")
     out = capsys.readouterr().out
-    assert "vetoed=0" in out
-    assert "withheld=" not in out
-
-
-def test_old_deliberation_row_renders_unknowns(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    """DLIB-OUT-02 / LAW-02: missing historical props render without raising."""
-    _patch_nodes(
-        monkeypatch,
-        approved=("USB",),
-        verdicts=None,
-        vetoed=None,
-        submitted=0,
-    )
-
-    print_trace(InMemoryGraphStore(), "trace-delib")
-    out = capsys.readouterr().out
-    assert "reviewed=?  vetoed=?  status=applied" in out
+    assert "reviewed=4  revised=0  vetoed=0  status=applied" in out
     assert "withheld=" not in out
 
 

@@ -388,17 +388,23 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Law file | Read in full? | Clauses that bind this sprint | Anything the law forbids that the spec asks for? |
 | --- | --- | --- | --- |
-| `agents/deliberator/laws/laws.md` | | | |
-| `agents/deliberator/laws/test-plan.md` | | | |
-| `agents/execution/laws/laws.md` | | | |
-| `docs/laws/conventions.md` | | | |
-| `docs/laws/drift-register.md` | | | |
+| `agents/deliberator/laws/laws.md` | Yes | `DLIB-OUT-02`, `DLIB-OUT-04`, `DLIB-NEV-06`, `DLIB-FAIL-01`, `DLIB-FAIL-04`, `DLIB-OBS-03` | No. The current wording permits/states the old non-uphold subtraction model, so it must be amended; it does not forbid the ADR-0029 narrowing. |
+| `agents/deliberator/laws/test-plan.md` | Yes | Existing rows for `DLIB-OUT-02`, `DLIB-NEV-06`, `DLIB-FAIL-01`, `DLIB-FAIL-04`; `DLIB-FAIL-04` currently cites kernel tests that expect default-to-revise | No. The row set is stale for this sprint's new safety rule and will be updated with falsifiable fail-open guards. |
+| `agents/execution/laws/laws.md` | Yes | `EXEC-NEV-01`, `EXEC-NEV-06`, `EXEC-OUT-09`, `EXEC-OBS-04` | No. Execution must honor an arrived upstream veto but never decide what to trade, which supports changing the deliberator's emitted `vetoed_tickers` rather than execution's interpretation. |
+| `docs/laws/conventions.md` | Yes | Sections 2, 3, 4, 7, 7a, 9, 10 | No. It requires stable IDs, cited functional tests, amendment changelog, and a central DRIFT row. |
+| `docs/laws/drift-register.md` | Yes | Existing `DLIB` rows 056/057/062 and central drift process; next row is `DRIFT-066` | No. The register has no existing row for the `revise`/`overturn` collapse, so S214 will file one. |
 
 **Does `DLIB-NEV-06` already cover the non-answer rule, or is a new clause owed?**
-*Answer:*
+*Answer:* `DLIB-NEV-06` already covers it. An unreadable, empty, unrecognised, or stopped judge answer is
+a failed judge/LLM call; recording it as a clean veto or ordinary `revise` would hide that failure. No new
+clause ID is owed, but `DLIB-FAIL-01`/`DLIB-FAIL-04` and the test-plan rows need amendment so the fail-open
+path is explicit and proven.
 
 **Did execution need a code change?**
-*Answer:*
+*Answer:* No execution behavior change is indicated. Source reading confirmed `drop_vetoed` removes only
+tickers already present in `DeliberationRun.vetoed_tickers`, while `deliberation_status` separately reports
+`applied_failed_open` from `failed_open_tickers`. Narrowing what the deliberator writes into
+`vetoed_tickers` therefore makes execution follow without moving the trade decision into execution.
 
 ---
 

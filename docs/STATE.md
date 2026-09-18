@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-18 15:49 AEST · **Version:** 0.98.09 · **🟩 S212 merged, main-gated, and live-checked; no deploy required.**
+**Last updated:** 2026-09-18 16:55 AEST · **Version:** 0.98.09 · **S214 active: revise stops vetoing; non-answers fail open loudly.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,18 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+**INTENT — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) active on branch
+`sprint-214-revise-is-a-finding`, base `980cb702d547e0356b44e482eafceb0be42a17b5`.** Build only
+ADR-0029 decisions 1 and 5: `vetoed_tickers` carries `overturn` verdicts only, `revise` remains fully
+recorded but no longer blocks, and unreadable/stopped judge non-answers route to the existing loud
+fail-open path. Scope exclusions: no `contracts/` edits, no prompt change, no findings register, no
+retroactive row reclassification, and execution behavior changes only if source reading disproves the
+upstream-veto boundary. Success factors: law-reading and DL-175 recorded before code, red-first guards
+A1-A7/A9-A10, deliberator law cycle plus DRIFT row, trace `revised=` visibility, touched modules under
+200 lines, redirected `make ci` green with 100.00 % coverage, branch push and exact-HEAD `make gate-ran`.
+Note: memory mentions `docs/local/STATE.md`, but this checkout has no `docs/local/`; `docs/STATE.md` is
+the live tracker named by `CLAUDE.md`.
 
 🟩 **PROVEN RESULT — [S212](sprints/sprint-212-a-trace-says-why-nothing-was-submitted.md) MERGED, MAIN-GATED, and LIVE-CHECKED (`0.98.09`, main `b275d87`), 2026-09-18 — work-queue items 66/67 closed as operator-observability repairs.** `scripts/trace_run.py` now treats `complete == trace_stage_total()` as success, and `orchestration/batch_trace.py` prints a conservative `[deliberation]` block between PM and execution with reviewed/vetoed/status/tickers plus `withheld=N by deliberation veto` only when approved buys, vetoed tickers, and submitted count reconcile exactly. Law reading and DL-174 are recorded; A1-A8 were red-first, DL-70 break checks were restored, no `agents/` or `contracts/` diff exists, touched modules are under 200 lines, and redirected local `make ci` exited 0 with `2811 passed, 6 skipped`, 100.00 % coverage, pip-audit clean, detect-secrets clean. 🟩 **Gates:** final branch `make gate-ran` proved `b275d87ce243786bd609de0e67f2471c74794e1f`; after fast-forwarding and pushing `main`, post-merge `make gate-ran` proved the same SHA with CI, CodeQL, Security Findings, Dependency Graph, and image build success. 🟩 **LIVE CHECK DISCHARGED on `sched-2026-09-16`** from the main checkout with `.env`: `trace_run.py --run-id sched-2026-09-16` exited 0 and rendered `[deliberation] reviewed=4 vetoed=4 status=applied`, `tickers=USB,WFC,AMZN,MDLZ`, `withheld=4 by deliberation veto`, followed by `RESULT 8/8 stages complete OK batch processed`. No deploy was required or performed because S212 changes operator tooling only.
 

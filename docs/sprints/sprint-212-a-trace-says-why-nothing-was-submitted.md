@@ -360,7 +360,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT and BRANCH-GATED at rebased evidence commit `cd15f3cdc6b2786d4039238926a96a0a9bf4a3db`; this gate-evidence update must be pushed and re-proven before merge.
+**Status:** MERGED, MAIN-GATED, and LIVE-CHECKED at main SHA `b275d87ce243786bd609de0e67f2471c74794e1f`. This evidence-only note is the last planned docs update; the final docs-only commit gets its exact-SHA gate proof in the handback rather than opening a recursive evidence commit.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-212-trace-says-why-nothing-was-submitted`; `Test-Path .env` returned `False`.
 
@@ -420,12 +420,44 @@ GATE PROVEN for cd15f3cdc6b2786d4039238926a96a0a9bf4a3db:
   Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** Final evidence-commit reproof pending after this update; merge not done; deployment not required; live operator check from main checkout not done in this worktree because `.env` is absent and the sprint explicitly keeps live spine access out of this build worktree.
+**Final branch evidence-commit reproof:** after this closeout's branch evidence update, `git rev-parse HEAD` printed `b275d87ce243786bd609de0e67f2471c74794e1f`; Security Findings run `35311542436` succeeded, CI run `35311542557` succeeded (`quality`, `test`, `security` with CodeQL), and `make gate-ran` exited `0`:
+
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for b275d87ce243786bd609de0e67f2471c74794e1f:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Merge and main proof:** from `C:\Users\yury_\Downloads\project\trading-agents`, `git merge --ff-only origin/sprint-212-trace-says-why-nothing-was-submitted` fast-forwarded `main` from `ed70b8a` to `b275d87`; `git push origin main` pushed `ed70b8a..b275d87`. On `main`, `gh run list --branch main --limit 6` showed Dependency Graph `35311943250`, Security Findings `35311940800`, CodeQL `35311940805`, Build and push agent images `35311940813`, and CI `35311940863` all `completed success`; `make gate-ran` exited `0`:
+
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for b275d87ce243786bd609de0e67f2471c74794e1f:
+  Build and push agent images: success (attempt 1)
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Configured Graph Update: uv in /. #1581497190: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Live operator check:** from the main checkout with `.env` present, `$env:PYTHONPATH='.'; uv run python scripts/trace_run.py --run-id sched-2026-09-16 > $env:TEMP\s212-live-trace.txt 2>&1; Write-Output $LASTEXITCODE` printed `0`. Evidence lines from the trace:
+
+```text
+[deliberation]
+  reviewed=4  vetoed=4  status=applied
+  tickers=USB,WFC,AMZN,MDLZ
+  withheld=4 by deliberation veto
+[execution]
+RESULT  8/8 stages complete  OK batch processed
+```
+
+**Not met / verified failing:** Deployment not required; S212 changes operator tooling only and no fleet retag was performed.
 
 ---
 
 ## Return notes
 
-- Branch local build and branch gate are green with no `agents/` or `contracts/` diff (`git diff --stat -- agents contracts` and `git diff --name-only -- agents contracts` produced no output). Final evidence commit must still be pushed and re-proven before merge.
-- The operator check still belongs after merge from the main checkout with `.env`: `trace_run.py --run-id sched-2026-09-16` should print `[deliberation] reviewed=4  vetoed=4` with USB, WFC, AMZN, MDLZ and exit 0.
-- S212 changes operator tooling only; no deploy is implied.
+- Branch local build, branch gate, main post-merge gates, and the live operator check are green. No `agents/` or `contracts/` diff was introduced (`git diff --stat -- agents contracts` and `git diff --name-only -- agents contracts` produced no output during closeout).
+- The live operator check on `sched-2026-09-16` now explains the zero-submission case without inventing evidence: deliberation reviewed 4, vetoed 4, named USB/WFC/AMZN/MDLZ, rendered `withheld=4 by deliberation veto`, and exited 0 with `8/8 stages complete`.
+- S212 changes operator tooling only; no deploy is implied and none was performed.

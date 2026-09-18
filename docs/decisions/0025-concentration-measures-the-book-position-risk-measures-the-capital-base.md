@@ -185,3 +185,59 @@ agent's recommendation is **retire**; the decision is deferred, not taken here.
   owes the law cycle in the same unit of work.**
 - 🪤 Until Decision A ships, **three** PM ratio gates remain unable to reject anything. Any acceptance
   reading that treats their `PASS` as evidence of bounded concentration is reading a constant.
+
+## Correction — 2026-09-18, on EXP-012: Decision B's direction is withdrawn
+
+**What the direction rested on.** Decision B accepted *"yes, volatility should scale position risk"* on
+two grounds: the referee argues it nightly and is **right about the code**, and it is textbook practice.
+Neither ground is a measurement of *this* system. The ADR said so itself and named the next step as a
+champion–challenger measurement, authorising no implementation.
+
+**Measured** ([EXP-012](../research/experiments/EXP-012-volatility-sizing-ten-year-replay.md): 47,549
+decisions, 98 names, 2017-2026, production stop and target rules):
+
+| | Fixed 1 % notional (champion) | Iso-risk |
+| --- | --- | --- |
+| Planned risk max ÷ min | 6.40x | **2.00x** |
+| Total P&L | **$107,525** | $95,906 |
+
+**B − A = −$11,619**, ticker-cluster bootstrap **[−$19,210, −$4,186]**, **100 %** of resamples negative.
+Down-legs favour iso-risk (+$3,006 in the 2018 Q4 leg, +$1,112 in the 2022 bear) but not the COVID crash
+(−$2,161), netting +$1,957 — nowhere near the cost. The mechanism is a return gradient in stop width:
+**volatile names returned about 5x calm ones** over the 10-session horizon (decile 2 +0.092 % → decile 9
++0.532 %), and iso-risk buys *down* that gradient by construction. No variant rescues it: the 2 % notional
+cap never binds, a 50/50 blend costs $7,972, and capping iso-risk at 1 % notional costs $24,541.
+
+**Therefore (planning agent, under operator delegation — *"make decisions in accordance to industry best
+practice. We will test the decision later one by one"*, 2026-09-18):**
+
+1. **Decision B's directional acceptance is withdrawn.** Fixed-fraction 1 % notional sizing **stands as
+   the champion**. Nothing shipped on Decision B, so nothing is unwound.
+2. **The withdrawal is scoped, not universal.** Volatility-scaled sizing remains standard practice and is
+   not being called wrong in general. It is measured **negative for this system's configuration**: a
+   10-session holding horizon and a 2 × ATR stop clamped to 2.5–8 %. 🪤 **Re-open it if any of those three
+   change** — a longer horizon in particular, since the low-volatility premium that makes iso-risk pay
+   elsewhere is absent at ten sessions.
+3. **Industry practice does not override a negative backtest of your own system.** This is the whole
+   reason Decision B refused to ship on argument. The measurement it demanded has now been taken and it
+   disagreed with the direction; honouring that is the point of having demanded it.
+4. **The 62/64 bundle is dissolved.** Decision B called items 62 and 64 *"the same question"*. They are
+   not. The regime half was settled separately by
+   [ADR-0028](0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md) (the regime now reads VIX
+   from FMP and declares itself degraded when it cannot); the sizing half is settled negatively here.
+5. **Decision A is untouched** and remains shipped (S210).
+
+**How this will be tested** (operator: *"we will test the decision later one by one"*): no code changes,
+so the test is a **null check** — sizing behaviour on the next scheduled runs must be unchanged, with
+`sizing` still reporting a fixed 1 % notional cap. Any future re-opening must clear EXP-012's bar on a
+population of **PM-approved** buys rather than grid decisions, which is the caveat that most limits this
+record.
+
+**Road not taken:**
+
+- **Adopt the 50/50 blend anyway**, buying half the dispersion cut for a third of the cost. Rejected: it
+  is still a measured loss, chosen for how it feels rather than what it returns. If dispersion is later
+  ruled to matter independently of return, this is the arm to price — but that is a new decision.
+- **Keep the direction "accepted" and simply not implement it.** Rejected: a standing directional ruling
+  that the evidence contradicts is exactly the kind of stale commitment that gets implemented later by
+  someone reading only the headline.

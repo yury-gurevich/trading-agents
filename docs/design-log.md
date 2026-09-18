@@ -8,7 +8,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-173 - the referee's middle verdict has no middle action, and its grounds are now measured true-but-inert - status: OPEN (2026-09-18, operator's call)
+## DL-173 - the referee's middle verdict has no middle action, and its grounds are now measured true-but-inert - status: DECIDED ([ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md), 2026-09-18)
 
 **Trigger.** Four consecutive scheduled sessions with **zero fills** (09-14, 09-16 x2, 09-17) while every
 stage ran green and `ACCEPTANCE PASS`. On `sched-2026-09-17` the PM approved 3 buys and the deliberator
@@ -85,11 +85,16 @@ order and it is judging the system.
 
 ### Status
 
-**OPEN - this is an authority question, not a defect, so it is the operator's** (charter OUT-2; capital
-path). No implementation is proposed and none is authorised. The measurement supporting it is complete
-and cited above; what remains is the ruling. If (a) or (b) is taken it graduates to an ADR amending
-[ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), whose scope is *whether* the veto blocks,
-not *what a given verdict means*.
+**DECIDED - [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md)**, 2026-09-18, by
+the planning agent under operator delegation (*"make decisions in accordance to industry best practice.
+We will test the decision later one by one"*). **Options (a) and (b) were both taken, plus a safety
+clause the options list missed:** `overturn` blocks and `revise` records; a block must name an
+order-specific fact; the judge is told what its verdicts do; findings deduplicate by ground; and 🚨 **a
+judge that cannot answer must not be recorded as `revise`** - without that clause, decision (a) would
+have turned today's fail-*closed* parse default into a silent fail-*open*. ADR-0029 amends
+[ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), whose scope was *whether* the veto blocks,
+not *what a given verdict means*. Expected block rate **53 % -> ~6 %**; the named relabelling tripwire is
+`overturn` share exceeding 20 %.
 
 ---
 

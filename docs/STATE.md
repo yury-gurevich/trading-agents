@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-18 20:39 AEST · **Version:** 0.98.10 · **S214 built: revise stops vetoing; non-answers fail open loudly.**
+**Last updated:** 2026-09-18 21:10 AEST · **Version:** 0.98.10 · **🟩 S214 MERGED and DEPLOYED `s214` — `revise` is now a finding, `overturn` the only block; ADR-0029's five tests begin with tonight's `sched-2026-09-18`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,9 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **MERGED and DEPLOYED — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) (`0.98.10`, merge `1a6f342`, tag `s214`), 2026-09-18 — [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) decisions **1** and **5** are live; 2, 3 and 4 remain unshipped by design.** `vetoed_tickers` now carries `overturn` only (`review_batch.py`), and an empty/unparseable/stopped judge answer raises `UnreadableVerdictError` from the new `kernel/deliberation_verdicts.py` and routes to loud fail-open instead of borrowing `revise` — without which decision 1 would have flipped a fail-*closed* default to a silent fail-*open*. `kernel/deliberation.py` **198 → 180** by split, not by trimming. Deliberator laws **v1.7 → v1.8** (`DLIB-OUT-02` + `DLIB-OUT-04` amended), rollup **21/56 → 22/56**, `DRIFT-066` filed; `contracts/` and `agents/execution/` both **untouched**, confirming the spec's prediction that narrowing the veto upstream needs no execution edit. 🟩 **Gate proven twice, by me, not asserted:** `GATE PROVEN` for branch `3a95e53` (CI + Security Findings) and again for the **merged** `1a6f342` with CI, **CodeQL**, Security Findings, image build and dependency graph all `success` — so no commit rides above a gated one. 🟩 **DEPLOYED by image-only retag, path proven before taken:** all **three** injected packs byte-identical between the deployed `7d3ff51` and `HEAD` (vocab `40ac81be…`, creds `f8f03950…`, issuer `2ed1f41c…`) and re-read from the live fleet *after* the retag on the apps that actually carry them — the S202 trap checked, not assumed. **17/17 targets on `:s214`**, 16/16 `Succeeded`, dispatcher cron `30 22 * * 1-5`, KEDA/scale **diffed byte-identical to the pre-deploy baseline, zero drift**. 🟩 `DeployRecord deploy:2026-09-18T11:04:47…:s214:1a6f342…` **written** — the s211 gap (work-queue **72**) avoided by dispatching the build on `main` while `main` still equalled the merge commit. 🟠 **Owed — ADR-0029's five tests, starting with `sched-2026-09-18` tonight:** null check, first scheduled run, fail-closed on a non-answer, do fills resume, and 🪤 **the relabelling tripwire — `overturn` share must stay near 6.3 % over the first 10 real-debate sessions; above 20 % the judge swapped words and the ADR is revisited, not the prompt tightened.**
+
 
 🟠 **BUILT — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) on branch
 `sprint-214-revise-is-a-finding`, version `0.98.10`.** ADR-0029 decisions 1 and 5 are implemented:
@@ -123,23 +126,7 @@ does not carry.
 
 🗄️ **Older shipped results — S202, S203 and the work-queue item 47 promotion are now in [state-archive/STATE-11.md](state-archive/STATE-11.md); S199, S200, S201 and the item-6b posture decision in [STATE-10.md](state-archive/STATE-10.md); S172, S173 Part A, S180, S191, S195–S198 and the CodeQL repair in [STATE-09.md](state-archive/STATE-09.md); everything earlier in [state-archive/INDEX.md](state-archive/INDEX.md).**
 
-🟠 **FLIP CONDITION 1 of 3 on `sched-2026-08-31`** — the posture landed, but `real_debate_count` was **0** and
-`failed_open_count == 0` only vacuously; PM approved nothing, so no debate ran. 🟩 **Its real purpose is now met
-another way:** S188's in-fleet tests show all three deliberators passing `anthropic` through master's Key Vault, so
-the credential path is proven and only **debate mechanics** still need item 3's K=4 run. Posture stays `advisory`.
-
-🟩 **PROVEN LIVE — ADR-0023's PM half, unattended, first time.** GOOG sized at 0.998 %; GOOGL then **failed** at
-1.67 % > 1 %. 🚨 Pre-S184 both passed, opening **two positions in one company** ([DL-122](design-log.md)).
-
-🚨 **NOT PROVEN — ADR-0023's falsifiable test** (the 73 % veto rate falls materially). **73 % stands as the last
-honest figure** ([DL-119](design-log.md) amendment). 🪤 `sched-2026-08-31` supplied **no** data — zero debates.
-
-🚨 **NOT PROVEN — S182 live.** 2026-08-21's stops carry `stop_pct_source=position`, written eight minutes before
-execution ran, so the fallback never fired. 🪤 **Do not re-check it that way** — run-start reconciliation closes it.
-
-**Shipped and deployed, detail in the sprint docs and design log.** **S184** merged `18c41b1` (`0.91.00`), `GATE PROVEN` at `8613d72`, PM rows `PM-NEV-07/08/09` 🟩, DRIFT-042..046 `CORRECTED`, deployed `s184` with `ENV PRESERVATION` 16/16 and zero drift. Two defects the merge exposed are fixed on `chore-gate-outcome-refuses-ambiguity`: `GateOutcome.passed` re-collapsed the states S184 had just separated and now raises; CodeQL **#187** was `py/mismatched-multiple-assignment`, **the same rule and package as #177 four days earlier**, because `codeql.yml` runs only on `main` (queue item 31). 🟢 **That trap did not fire this time** — `main` at `19dc2b2` is `GATE PROVEN` on CI, Security Findings **and CodeQL**, with **0** open error-level alerts. **S182** merged `2fc0672` (`0.90.16`), deployed `s182`. 🪤 A `verify-2026-08-20-s184-a` teardown reported false success because `ScanRun` is uuid-keyed and the verification query reused the teardown's own filter ([DL-124](design-log.md)); a second pass removed 24 nodes + 25 edges and the pollers' own predicates now read **0 pending** at every stage, 22 positions intact.
-
-🪤 **One live residue, not urgent:** **2 NFLX shares** from the S172 test harness, never vetoed (selling is a real trade). The `cancel_stop` `HTTP 422` half is **closed**.
+🗄️ **Older shipped results — the late-August deliberation/sizing residue (ADR-0023's PM half, the posture flip conditions, the 73 % veto figure, S182/S184 and the NFLX residue) are now in [state-archive/STATE-12.md](state-archive/STATE-12.md).** 🪤 The 73 % figure there is superseded by [DL-173](design-log.md) / [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md).
 
 ## Next
 

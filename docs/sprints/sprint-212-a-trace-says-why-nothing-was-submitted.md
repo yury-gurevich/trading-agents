@@ -360,7 +360,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT locally at rebased implementation commit `d330d6b0574371406e311559abf0f7588da1a2e6`; branch remote proof pending until the rewritten branch is pushed.
+**Status:** BUILT locally at rebased branch tip `1ea1bbdae82dda81858cb52eca38661605ffcc7a`; branch remote proof pending until the rewritten branch is pushed.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-212-trace-says-why-nothing-was-submitted`; `Test-Path .env` returned `False`.
 
@@ -409,7 +409,7 @@ uv run pytest orchestration\tests\test_batch_trace.py orchestration\tests\test_p
 
 **Module line counts:** `orchestration/batch_trace.py` 198; `orchestration/trace_deliberation.py` 83; `scripts/trace_run.py` 37; `orchestration/tests/test_trace_deliberation.py` 199; `orchestration/tests/test_trace_deliberation_edges.py` 133; `orchestration/tests/test_trace_run_cli.py` 84.
 
-**`make ci`:** after rebasing onto `origin/main` @ `2ef03befbf08ce4f80c44f0a183be2ececb9d5eb`, implementation commit `d330d6b0574371406e311559abf0f7588da1a2e6` ran `make ci > $env:TEMP\s212-ci-rebased-main3.txt 2>&1; Write-Output $LASTEXITCODE` and exited `0`. Log tail: `2811 passed, 6 skipped in 108.55s`, `Required test coverage of 100.0% reached. Total coverage: 100.00%`; `uv run pip-audit` -> `No known vulnerabilities found`; detect-secrets passed and untracked secret scan reported `no untracked files to scan`.
+**`make ci`:** after rebasing onto `origin/main` @ `ed70b8a9e656cdda90b72c9dcc3c5ee009af23a3`, branch tip `1ea1bbdae82dda81858cb52eca38661605ffcc7a` ran `make ci > $env:TEMP\s212-ci-rebased-main4.txt 2>&1; Write-Output $LASTEXITCODE` and exited `0`. Log tail: `2811 passed, 6 skipped in 89.29s`, `Required test coverage of 100.0% reached. Total coverage: 100.00%`; `uv run pip-audit` -> `No known vulnerabilities found`; detect-secrets passed and untracked secret scan reported `no untracked files to scan`.
 
 **`make gate-ran`:** Pending; branch not pushed yet. Must be filled after remote CI/Security Findings are terminal and then re-proven for the final evidence commit.
 

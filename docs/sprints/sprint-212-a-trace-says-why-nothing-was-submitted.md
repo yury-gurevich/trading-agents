@@ -360,7 +360,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT locally at rebased branch tip `1ea1bbdae82dda81858cb52eca38661605ffcc7a`; branch remote proof pending until the rewritten branch is pushed.
+**Status:** BUILT and BRANCH-GATED at rebased evidence commit `cd15f3cdc6b2786d4039238926a96a0a9bf4a3db`; this gate-evidence update must be pushed and re-proven before merge.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-212-trace-says-why-nothing-was-submitted`; `Test-Path .env` returned `False`.
 
@@ -411,14 +411,21 @@ uv run pytest orchestration\tests\test_batch_trace.py orchestration\tests\test_p
 
 **`make ci`:** after rebasing onto `origin/main` @ `ed70b8a9e656cdda90b72c9dcc3c5ee009af23a3`, branch tip `1ea1bbdae82dda81858cb52eca38661605ffcc7a` ran `make ci > $env:TEMP\s212-ci-rebased-main4.txt 2>&1; Write-Output $LASTEXITCODE` and exited `0`. Log tail: `2811 passed, 6 skipped in 89.29s`, `Required test coverage of 100.0% reached. Total coverage: 100.00%`; `uv run pip-audit` -> `No known vulnerabilities found`; detect-secrets passed and untracked secret scan reported `no untracked files to scan`.
 
-**`make gate-ran`:** Pending; branch not pushed yet. Must be filled after remote CI/Security Findings are terminal and then re-proven for the final evidence commit.
+**`make gate-ran`:** after the branch was force-with-lease pushed over `origin/main` @ `ed70b8a9e656cdda90b72c9dcc3c5ee009af23a3`, `gh run watch 35311035095 --exit-status` exited `0`; CI run `35311035095` succeeded (`security`, `quality`, `test`) and Security Findings run `35311035059` succeeded. From this worktree, `git rev-parse HEAD` printed `cd15f3cdc6b2786d4039238926a96a0a9bf4a3db`, and `make gate-ran` exited `0`:
 
-**Not met / verified failing:** Remote branch proof pending; merge not done; deployment not required; live operator check from main checkout not done in this worktree because `.env` is absent and the sprint explicitly keeps live spine access out of this build worktree.
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for cd15f3cdc6b2786d4039238926a96a0a9bf4a3db:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Not met / verified failing:** Final evidence-commit reproof pending after this update; merge not done; deployment not required; live operator check from main checkout not done in this worktree because `.env` is absent and the sprint explicitly keeps live spine access out of this build worktree.
 
 ---
 
 ## Return notes
 
-- Branch local build is green with no `agents/` or `contracts/` diff (`git diff --stat -- agents contracts` and `git diff --name-only -- agents contracts` produced no output).
+- Branch local build and branch gate are green with no `agents/` or `contracts/` diff (`git diff --stat -- agents contracts` and `git diff --name-only -- agents contracts` produced no output). Final evidence commit must still be pushed and re-proven before merge.
 - The operator check still belongs after merge from the main checkout with `.env`: `trace_run.py --run-id sched-2026-09-16` should print `[deliberation] reviewed=4  vetoed=4` with USB, WFC, AMZN, MDLZ and exit 0.
 - S212 changes operator tooling only; no deploy is implied.

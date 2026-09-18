@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-18 16:55 AEST · **Version:** 0.98.09 · **S214 active: revise stops vetoing; non-answers fail open loudly.**
+**Last updated:** 2026-09-18 20:39 AEST · **Version:** 0.98.10 · **S214 built: revise stops vetoing; non-answers fail open loudly.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,15 +37,17 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-**INTENT — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) active on branch
-`sprint-214-revise-is-a-finding`, base `980cb702d547e0356b44e482eafceb0be42a17b5`.** Build only
-ADR-0029 decisions 1 and 5: `vetoed_tickers` carries `overturn` verdicts only, `revise` remains fully
-recorded but no longer blocks, and unreadable/stopped judge non-answers route to the existing loud
-fail-open path. Scope exclusions: no `contracts/` edits, no prompt change, no findings register, no
-retroactive row reclassification, and execution behavior changes only if source reading disproves the
-upstream-veto boundary. Success factors: law-reading and DL-175 recorded before code, red-first guards
-A1-A7/A9-A10, deliberator law cycle plus DRIFT row, trace `revised=` visibility, touched modules under
-200 lines, redirected `make ci` green with 100.00 % coverage, branch push and exact-HEAD `make gate-ran`.
+🟠 **BUILT — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) on branch
+`sprint-214-revise-is-a-finding`, version `0.98.10`.** ADR-0029 decisions 1 and 5 are implemented:
+`vetoed_tickers` now carries `overturn` verdicts only, `revise` remains recorded as a finding without
+blocking, unreadable/empty/stopped judge non-answers take the loud fail-open path, and the operator
+trace shows `revised=` so objections remain visible. Deliberator laws moved v1.7 -> v1.8 and roll up
+22 / 56; `DRIFT-066` is filed/corrected; `contracts/` stayed untouched; execution source stayed
+unchanged. 🟩 **Local proof:** red-first guard run failed 17 / passed 30 before implementation;
+redirected `make ci` exited 0 with 2821 passed, 4 skipped, 100.00 % coverage, pip-audit clean and
+secrets checks passed. 🟩 **Branch proof before handback commit:** `make gate-ran` matched
+`e6b26b9030dda6d31a0dafaf2c58518004fbfe03` with CI and Security Findings success. No merge, deploy,
+or live proof is done.
 Note: memory mentions `docs/local/STATE.md`, but this checkout has no `docs/local/`; `docs/STATE.md` is
 the live tracker named by `CLAUDE.md`.
 

@@ -126,6 +126,17 @@ acting on them does not pay ([EXP-008](../research/experiments/EXP-008-correlati
 4. **Law cycle for the deliberator.** `DLIB-OUT-02` amended so it states that `vetoed_tickers` carries
    `overturn` only; a new clause for the non-answer rule if `DLIB-NEV-06` does not already cover it —
    **read it first and say which**. `test-plan.md` row per clause, changelog, rollup recount, DRIFT row.
+6. 🆕 **Keep the trace honest — this sprint breaks what S212 just built.** `format_deliberation_trace`
+   (`orchestration/trace_deliberation.py`, **83** lines, merged in S212) renders `vetoed=` from
+   `vetoed_tickers` only. Once `revise` leaves that list, a night like `sched-2026-09-17` renders
+   **`reviewed=3  vetoed=0`** and three substantive objections become **invisible** — the operator trace
+   built to answer *"why nothing was submitted"* goes blind to the most common verdict on the day this
+   sprint ships. **Add a `revised=` count** derived from the `verdicts` mapping, so the line reads e.g.
+   `reviewed=3  revised=3  vetoed=0  status=applied`. 🪤 **No law cycle is added by this:** S212
+   established that no `laws.md` governs the renderer (repo-wide search for `batch_trace` / `print_trace`
+   / `trace_run` finds none). The file has headroom; `orchestration/batch_trace.py` is at **198/200**, so
+   do **not** grow that one.
+
 5. **Keep every module under 200 lines.** `kernel/deliberation.py` is at **198**. If your change adds a
    line there, **split the module** — do not trim a docstring to fit.
 
@@ -204,6 +215,8 @@ All tests use an in-memory `GraphStore` / fixtures. **No `.env`, no network** �
 | A5 | 🪤 …and it is **loud** | as A4, through execution | `ExecutionRun.deliberation_status == "applied_failed_open"` and the fail-open fault is raised |
 | A6 | Empty and stopped judge responses | empty string; `LLMCompletionStoppedError` | Same treatment as A4 — one path, not three |
 | A7 | 🪤 Execution honours the narrowed veto unchanged | `DeliberationRun` with `vetoed_tickers=["X"]`, approved X + Y | `drop_vetoed` removes only X — proves execution needed no edit |
+| A9 | 🆕 The trace still shows a `revise` | `DeliberationRun` with `verdicts` `{X: revise, Y: revise, Z: uphold}` and `vetoed_tickers=[]` | The deliberation block reports **`revised=2`** and `vetoed=0`; the two tickers are not silently dropped from the operator's view |
+| A10 | 🪤 A missing `verdicts` mapping still renders | `DeliberationRun` with no `verdicts` prop | `revised=?` (or omitted, per your decision) and nothing raises — old rows predate this field |
 | A8 | Old rows still read | `DeliberationRun` predating this change | Nothing raises; no retroactive reclassification |
 
 🪤 **A4–A6 are the safety tests.** If they are weak, this sprint converts a fail-*closed* default into a
@@ -217,6 +230,7 @@ silent fail-*open*, which is the one outcome ADR-0029 refuses. Write them first.
 - [ ] Every verdict, rationale and transcript is still recorded — **nothing stops being written**.
 - [ ] A non-answer (empty / unparseable / unrecognised / stopped) produces `failed_open`, never `revise`,
       and reaches execution as `applied_failed_open` with its fault.
+- [ ] The operator trace reports a `revised=` count, so `revise` verdicts stay visible after they stop vetoing.
 - [ ] `contracts/` diff is **empty**.
 - [ ] Execution code unchanged, **or** the change is named and justified in the handback.
 - [ ] Design decisions recorded with rejected alternatives.
@@ -315,6 +329,12 @@ WHAT TO BUILD, and nothing else:
    in docs/design-log.md with rejected alternatives BEFORE implementing. Grep every caller of
    judge_verdict / deliberate / _parse_verdict first — kernel/deliberation_eval.py reads
    result.verdict.ruling.
+
+4. Keep the operator trace honest. orchestration/trace_deliberation.py (83 lines, added by S212)
+   renders `vetoed=` from vetoed_tickers only. Once revise leaves that list, a night like
+   sched-2026-09-17 renders "reviewed=3  vetoed=0" and three real objections vanish from the trace.
+   Add a `revised=` count read from the `verdicts` mapping. No law cycle is added by this — no
+   laws.md governs the renderer. Do NOT grow orchestration/batch_trace.py; it is at 198/200.
 
 DO NOT:
 - Do NOT implement ADR-0029 decisions 2, 3 or 4. No prompt change, no order-specific-ground rule,

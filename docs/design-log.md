@@ -8,6 +8,91 @@ and is marked CLOSED here.
 
 ---
 
+## DL-173 - the referee's middle verdict has no middle action, and its grounds are now measured true-but-inert - status: OPEN (2026-09-18, operator's call)
+
+**Trigger.** Four consecutive scheduled sessions with **zero fills** (09-14, 09-16 x2, 09-17) while every
+stage ran green and `ACCEPTANCE PASS`. On `sched-2026-09-17` the PM approved 3 buys and the deliberator
+vetoed all 3. This is the operator's bar (*"trades unattended for a sustained stretch"*) failing at the
+last gate before the broker, and it is not a defect in any single component.
+
+### What is measured
+
+1. **`revise` and `overturn` are different words for the same action.** `contracts/deliberator.py:18`
+   declares `Ruling = Literal["uphold", "overturn", "revise"]`, and
+   `agents/deliberator/review_batch.py:87` reduces it to binary: `if review.verdict != "uphold": vetoed.append(...)`.
+   Execution then drops every vetoed ticker unconditionally in `drop_vetoed`
+   (`agents/execution/deliberation_gate.py:83`). **All-time on the spine: `revise` 164, `uphold` 163,
+   `overturn` 22 over 349 reviewed orders in 63 runs** *[measured 2026-09-18]*. So the verdict that means
+   *"change this"* is **7.5x more common** than the one that means *"this is wrong"*, and nothing is ever
+   changed - the order simply dies as though overturned.
+2. **The referee's three standing grounds are all true, and all measured non-actionable.**
+   - `reward_risk` cannot fail -> true, and the ratio does not predict returns
+     ([EXP-011](research/experiments/EXP-011-regime-markov-and-barrier-calibration.md), 47,485 decisions).
+   - the correlation gate is a 0.70 cliff -> true, and **no cutoff from 0.70 to 0.50 changes a single
+     trade** ([EXP-008](research/experiments/EXP-008-correlation-cutoff-replay.md)).
+   - sizing caps dollars not risk -> true, and fixing it **costs $11,619 over ten years**
+     ([EXP-012](research/experiments/EXP-012-volatility-sizing-ten-year-replay.md), 100 % of bootstrap
+     resamples negative).
+   🚨 **Three independent experiments, three correct criticisms, three fixes that do not pay.** The
+   referee is not malfunctioning and it is not going to run out of true things to say.
+3. **It has recently stopped discriminating.** All-time, of 30 multi-order runs that vetoed anything,
+   **17 vetoed only some** and 13 vetoed the whole set - real discrimination. But **since 2026-09-14,
+   4 of the 5 acting runs vetoed the entire set** (09-14 2/2, 09-16 3/3, 09-16 4/4, 09-17 3/3; only
+   09-15 discriminated at 2/3) *[measured 2026-09-18]*. An all-or-nothing reviewer is not choosing
+   between candidates.
+4. 🪤 **A tempting explanation, measured and rejected.** `_parse_verdict` defaults to `revise` on an
+   empty, unparseable or stopped judge response (`kernel/deliberation.py:105-115,155`), so plumbing
+   failure and considered judgement share one token. If vetoes were mostly parse failures the streak
+   would be an outage, not a policy problem. **They are not:** across all 63 runs the narratives contain
+   **one** `unparseable` and **one** `defaulting to revise` *[measured 2026-09-18]*. The vetoes are real
+   judgements. The collapse is still worth fixing for its own sake, but it is not the cause.
+
+### The question
+
+**When the referee's objection is true but measured non-actionable, what should its verdict bind?**
+
+Today the answer is *everything*: a critique of gate design is expressed as the rejection of a specific
+trade, because rejecting a trade is the only channel the referee has. The system asks it to judge an
+order and it is judging the system.
+
+### Options
+
+- **(a) Split the channels - `overturn` blocks, `revise` records.** A `revise` becomes a durable design
+  objection (a `Flag` or finding) and does **not** stop the order; only `overturn` binds. Preserves
+  *"the LLM can subtract but never add"* (2026-06-27 founding note) and gives system critique somewhere
+  to go. 🪤 **The risk is real:** `revise` is 88 % of today's vetoes, so this re-enables trading by
+  reclassifying most blocks - it must not be adopted as a way to make the red light go away.
+- **(b) A veto must name a fact specific to this order.** A ground that applies identically to every
+  candidate is by construction not a discriminating verdict. Testable against the record: on 09-17 all
+  three vetoes shared one ground. Keeps `revise` binding but requires it to earn the block.
+- **(c) Prompt the referee to judge the trade, not the system.** Cheapest, and it is the operator's
+  existing 2026-09-18 prompt thread. 🪤 But it suppresses the symptom: the criticisms are correct and
+  the system should want to hear them, just not as trade rejections.
+- **(d) Change nothing and accept the book does not trade.** Recorded because it is the status quo and
+  someone must choose it deliberately rather than by default.
+
+### Ruled out
+
+- **`revise` -> resize the order smaller.** The 2026-06-27 founding note flagged this as *"edges toward
+  origination, so likely hard-block only"*, and ADR-0017 makes the analyst the sole author of exits.
+  Resizing would make the LLM a sizer, which is the one thing every prior decision refused.
+- **Flip `deliberation_posture` to `binding`, or away from it.** Measured irrelevant: `drop_vetoed` runs
+  **before** `apply_deliberation_posture`, so an arrived veto binds identically under both postures
+  ([DL-134](#dl-134), item 6b). The posture only bites on `proceeded_unvetoed`.
+- **Retune the gates the referee complains about.** That is what EXP-008/011/012 tested. None of the
+  three changes what trades, and one costs money.
+- **Treat the streak as a deliberator outage.** Refuted by fact 4 above.
+
+### Status
+
+**OPEN - this is an authority question, not a defect, so it is the operator's** (charter OUT-2; capital
+path). No implementation is proposed and none is authorised. The measurement supporting it is complete
+and cited above; what remains is the ruling. If (a) or (b) is taken it graduates to an ADR amending
+[ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), whose scope is *whether* the veto blocks,
+not *what a given verdict means*.
+
+---
+
 ## DL-172 - reward-risk target uses median trailing favourable excursion - status: DECIDED (S211, 2026-09-17)
 
 **Decision. Add a separate lookback-window count for the decision-time estimate.**

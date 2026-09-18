@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-211-reward-risk-measured-quantities`
-**Status:** BRANCH-GATED
+**Status:** MERGED `7d3ff51` (`0.98.08`, tag `v0.98.08`) · **DEPLOYED `s211`** 2026-09-17 — 17/17 targets on `:s211`, all `Succeeded` · **LIVE CHECK DISCHARGED** 2026-09-18 on `sched-2026-09-17`: three distinct `reward_risk` values (AMZN 0.8136, USB 0.8479, WFC 0.9484) against a constant 2.00 before, `comparison=DISCLOSURE_ONLY` at `threshold=0.0` throughout, zero `reward_risk_below_min` rejections, zero `STRUCTURALLY_DETERMINED`, evidence named as `target_basis=trailing_favorable_excursion` (horizon 10 d, sample 120). Recorded in [`docs/laws/functionality-checks.md`](../laws/functionality-checks.md). 🟠 **Still owed:** no `DeployRecord` was written for `s211` (work-queue item **72**).
 **Version:** *next available PATCH at merge* — **do not pin a number**
 **Effort:** L — two agents, a `contracts/` change, and **two law cycles**. The queue's old "small either way" was wrong.
 **Decisions:** [ADR-0027](../decisions/0027-reward-risk-compares-measured-upside-against-measured-downside.md) · [ADR-0025](../decisions/0025-concentration-measures-the-book-position-risk-measures-the-capital-base.md) · DL-172 · DRIFT-066 · closes work-queue item **60**

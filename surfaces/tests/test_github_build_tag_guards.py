@@ -119,7 +119,14 @@ def test_non_object_json_response_refuses() -> None:
 
 @pytest.mark.parametrize(
     ("suffix", "matches"),
-    [(b'"', True), (b"\n", True), (b" ", True), (b"", True), (b"-rc1", False)],
+    [
+        (b'"', True),
+        (b"\n", True),
+        (b" ", True),
+        (b"", True),
+        (b"-rc1", False),
+        *((suffix, False) for suffix in (b"a", b"Z", b"0", b"_")),
+    ],
 )
 def test_tag_boundary_matches_only_complete_docker_tags(
     suffix: bytes, *, matches: bool

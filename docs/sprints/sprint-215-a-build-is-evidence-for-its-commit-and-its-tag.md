@@ -463,23 +463,34 @@ FAILED surfaces/tests/test_github_build_tag_ancestry.py::test_tag_lookup_rejects
 
 ```text
 $ uv run pytest surfaces/tests/test_github_builds.py surfaces/tests/test_github_build_tag_ancestry.py surfaces/tests/test_github_build_tag_guards.py orchestration/tests/test_deploy_record_verification.py --no-cov -q
-.................................                                        [100%]
-33 passed in 1.68s
+.....................................                                    [100%]
+37 passed in 1.72s
+```
+
+**Proof — lowercase boundary red run:**
+
+```text
+$ uv run pytest surfaces/tests/test_github_build_tag_guards.py::test_tag_boundary_matches_only_complete_docker_tags --no-cov -q
+.....F...                                                                [100%]
+FAILED surfaces/tests/test_github_build_tag_guards.py::test_tag_boundary_matches_only_complete_docker_tags[a-False]
+1 failed, 8 passed in 1.90s
 ```
 
 **Guards planted:** A3: replaced the non-main ancestry predicate with `True`; the divergent smoke build became
 deploy evidence and `test_divergent_build_is_not_deploy_evidence` failed; restored the predicate. A5: inverted
 `ahead_by == 0`; `test_ancestry_uses_main_as_compare_base` failed for `ahead_by=3`; restored the predicate.
 A6: restored raw substring matching; `test_tag_lookup_rejects_prefixes_of_published_tag` failed because `s21`
-and `s2` matched `s214`; restored complete Docker-tag matching.
+and `s2` matched `s214`; restored complete Docker-tag matching. Lowercase follow-up: removed lowercase
+letters from `_DOCKER_TAG_CHARACTERS`; `test_tag_boundary_matches_only_complete_docker_tags[a-False]` failed
+with `1 failed, 8 passed`; restored `ascii_letters`.
 
-**Module line counts:** `github_builds.py` 170; `github_tag_builds.py` 93; `test_github_builds.py` 195;
-`test_github_build_tag_ancestry.py` 127; `test_github_build_tag_guards.py` 191. All are below the 200-line
+**Module line counts:** `github_builds.py` 170; `github_tag_builds.py` 94; `test_github_builds.py` 195;
+`test_github_build_tag_ancestry.py` 127; `test_github_build_tag_guards.py` 198. All are below the 200-line
 hard limit.
 
-**`make ci`:** `C:\Users\yury_\AppData\Local\Temp\sprint-215-ci-final.txt`; exit 0. `2854 passed, 6
-skipped`; coverage `100.00%`; `pip-audit`: `No known vulnerabilities found`; tracked and untracked
-detect-secrets checks passed (the latter scanned 3 new files).
+**`make ci`:** `C:\Users\yury_\AppData\Local\Temp\sprint-215-followup-ci.txt`; exit 0. `2858 passed,
+6 skipped`; coverage `100.00%`; `pip-audit`: `No known vulnerabilities found`; tracked and untracked
+detect-secrets checks passed (the latter had no untracked files to scan).
 
 **`make gate-ran`:** From
 `C:\Users\yury_\Downloads\project\trading-agents-sprint-215-build-evidence-commit-and-tag`, implementation
@@ -502,6 +513,7 @@ GATE PROVEN for b6e3f6167740ec77e8adec733cbf3921844eeba7:
 - The existing reader fixture lacked `head_branch`; it now supplies `main` explicitly rather than allowing
    a missing value to pass as main. The two existing candidate-SHA URL assertions were updated to the
    intentionally branchless route.
-- The documented public S211 commit SHA is an audited false positive in the detector baseline; the direct
-   Markdown pragma was not reliable through the Make-path hook. The next sprint should run its live read-only
-   check only after merge, as specified; this sprint did not dispatch, record, or deploy anything.
+- The detector-baseline hash `a8c16c0156aa3aee9c4b2a3ed05554f069c9c732` is the public S214 merge SHA
+   `1a6f3429a728b0348ed2059de52b535803cb3fa4`, not the S211 SHA. The direct Markdown pragma was not reliable
+   through the Make-path hook. The next sprint should run its live read-only check only after merge, as
+   specified; this sprint did not dispatch, record, or deploy anything.

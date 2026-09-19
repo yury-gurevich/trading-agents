@@ -8,6 +8,7 @@ External I/O: none directly; uses the injected reader's GitHub helpers.
 from __future__ import annotations
 
 from io import BytesIO
+from string import ascii_letters, digits
 from typing import TYPE_CHECKING
 from urllib.parse import quote
 from zipfile import BadZipFile, ZipFile
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from surfaces.dashboard.github_builds import GitHubActionsReader
 
 
-_DOCKER_TAG_CHARACTERS = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-")
+_DOCKER_TAG_CHARACTERS = frozenset((ascii_letters + digits + "_.-").encode())
 
 
 def image_builds_for_tag(

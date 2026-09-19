@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-19 14:46 AEST · **Version:** 0.98.12 · **📦 S216 SPECCED for Copilot: `.gitattributes` so a CRLF can no longer reach the repo, and one content-free renormalization of the 52 files that are CRLF today (item 69); markdownlint filed as item 73.**
+**Last updated:** 2026-09-19 15:12 AEST · **Version:** 0.98.12 · **🟩 Fleet on `s215` (S213 + S215 live); item 72 closed live. First regime-VIX run: `sched-2026-09-21`. 📦 S216 handed to Copilot.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -38,6 +38,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 
+
+🟩 **DEPLOYED — `s215`, 2026-09-19 15:10 AEST — S213 (regime VIX, item 70) and S215 (deploy evidence, item 72) are live.** Built from tag `v0.98.12` = merge `5ef4a4c` (run `35422844229`, 15/15 images). Image-only retag, because no injected pack and nothing under `infra/` changed since `s214`. 🟩 **Proven:** 16/16 apps + `dispatcher-cron` on `:s215`, all `Succeeded`, every app `min=0` with its 1 KEDA rule; `record_deploy.py` **exit 0** → `DeployRecord` `…:s215:5ef4a4c…`, the first for a tag-dispatched build, so **item 72 is closed live**. 🟠 **Owed:** item 70's measured `vix_status` arrives with `sched-2026-09-21`. No weekend test run is possible: the NYSE-session gate has no override.
 
 📦 **SPECCED, for Copilot — [S216](sprints/sprint-216-every-text-file-is-lf.md), 2026-09-19 — work-queue item 69.** 52 of 1,742 tracked files are stored CRLF or mixed. The exact change (`.gitattributes` `* text=auto eol=lf` + `git add --renormalize .`) was dry-run in a throwaway worktree: 52 files, an empty `--ignore-cr-at-eol` diff, 0 images touched, 0 CRLF left. The spec pins every step's expected output and all nine guard-test cases. No bump, no deploy. 🟠 **Next:** work-queue item 73 (markdownlint config + local pre-commit hook), after S216 merges.
 

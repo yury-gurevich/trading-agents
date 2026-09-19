@@ -8,7 +8,7 @@ External I/O: none here (concrete clients live in their own modules).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 if TYPE_CHECKING:
     from datetime import date
@@ -17,12 +17,26 @@ if TYPE_CHECKING:
     from contracts.provider import OHLCVBar
 
 
+RegimeVixStatus = Literal["measured", "prior_session", "missing"]
+
+
 @dataclass(frozen=True)
 class RegimeInputs:
     """Raw market-regime inputs fetched by the provider boundary."""
 
     as_of: date
     vix: float | None = None
+    vix_status: RegimeVixStatus = "missing"
+    vix_as_of: date | None = None
+    vix_reason: str | None = None
+
+
+class RegimeSource(Protocol):
+    """Boundary for sources that only supply market-regime inputs."""
+
+    def fetch_regime_inputs(self, as_of: date) -> RegimeInputs:
+        """Fetch raw inputs used to classify the market regime."""
+        ...  # pragma: no cover - protocol declaration only.
 
 
 class DataSource(Protocol):
@@ -119,7 +133,16 @@ class FakeDataSource:
         """Return fixture regime inputs or raise the requested fixture failure."""
         if self._fail_regime:
             raise RuntimeError("regime source unavailable")
-        return RegimeInputs(as_of=as_of, vix=self._vix)
+        if self._vix is None:
+            return RegimeInputs(
+                as_of=as_of,
+                vix_status="missing",
+                vix_as_of=None,
+                vix_reason="fixture_missing_vix",
+            )
+        return RegimeInputs(
+            as_of=as_of, vix=self._vix, vix_status="measured", vix_as_of=as_of
+        )
 
     def fetch_fundamentals(
         self,
@@ -129,11 +152,8 @@ class FakeDataSource:
         """Return the fixture metric subset for requested tickers, or raise."""
         if self._fail_fundamentals:
             raise RuntimeError("fundamentals source unavailable")
-        return {
-            ticker: self._fundamentals[ticker]
-            for ticker in tickers
-            if ticker in self._fundamentals
-        }
+        values = self._fundamentals
+        return {ticker: values[ticker] for ticker in tickers if ticker in values}
 
     def fetch_news(
         self,
@@ -143,29 +163,22 @@ class FakeDataSource:
         """Return the fixture headline subset for requested tickers, or raise."""
         if self._fail_news:
             raise RuntimeError("news source unavailable")
-        return {
-            ticker: self._news[ticker] for ticker in tickers if ticker in self._news
-        }
+        values = self._news
+        return {ticker: values[ticker] for ticker in tickers if ticker in values}
 
     def fetch_sentiment(self, tickers: tuple[str, ...]) -> dict[str, float]:
         """Return the fixture sentiment subset for requested tickers, or raise."""
         if self._fail_sentiment:
             raise RuntimeError("sentiment source unavailable")
-        return {
-            ticker: self._sentiment[ticker]
-            for ticker in tickers
-            if ticker in self._sentiment
-        }
+        values = self._sentiment
+        return {ticker: values[ticker] for ticker in tickers if ticker in values}
 
     def fetch_sectors(self, tickers: tuple[str, ...]) -> dict[str, str]:
         """Return the fixture sector subset for requested tickers, or raise."""
         if self._fail_sectors:
             raise RuntimeError("sectors source unavailable")
-        return {
-            ticker: self._sectors[ticker]
-            for ticker in tickers
-            if ticker in self._sectors
-        }
+        values = self._sectors
+        return {ticker: values[ticker] for ticker in tickers if ticker in values}
 
     def fetch_earnings(
         self,
@@ -175,8 +188,5 @@ class FakeDataSource:
         """Return the fixture earnings subset for requested tickers, or raise."""
         if self._fail_earnings:
             raise RuntimeError("earnings source unavailable")
-        return {
-            ticker: self._earnings[ticker]
-            for ticker in tickers
-            if ticker in self._earnings
-        }
+        values = self._earnings
+        return {ticker: values[ticker] for ticker in tickers if ticker in values}

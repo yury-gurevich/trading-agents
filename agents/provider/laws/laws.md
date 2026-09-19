@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -55,11 +55,14 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   **provenance**, then **publishes a `ready: <graph-ref>` event** (claim-check, ADR-0005). The
   consumer reads the facts from the store by reference; the message itself stays small.
 - `PROV-OUT-02` — For a regime request → a **regime context**: the classification, the inputs behind
-  it, **and the regime-derived policy defaults** (stop / target / holding baselines) that downstream
-  agents read, plus provenance. *(DRIFT-004 — PRD strong-guide, adopted.)*
+  it (including usable `^VIX`, the `^VIX` bar date, and whether that input is `measured`,
+  `prior_session`, or `missing`), **and the regime-derived policy defaults** (stop / target / holding
+  baselines) that downstream agents read, plus provenance. *(DRIFT-004 — PRD strong-guide, adopted;
+  DRIFT-067 — FMP `^VIX` freshness evidence corrected.)*
 - `PROV-OUT-03` — The output space is **total**: **SUCCESS** (clean), **DEGRADED** (partial/stale/
   missing — a *valid* response with the shortfall flagged, never silently empty), **FAULT** (the
-  boundary itself failed → a typed error, recorded). Exactly one of these, always one of these.
+  boundary itself failed → a typed error, recorded). A stale/missing regime input is DEGRADED warning
+  evidence on the regime context, not a run-halting incident ref; exactly one of these states exists.
 - `PROV-OUT-04` — Every served fact carries **provenance** (source, fetch-time, transformation) so any
   downstream output is reconstructable.
 - `PROV-OUT-05` — Graph effects are **append-only**: a new market-fact/regime record per request; it
@@ -310,7 +313,7 @@ status:
 - **DECIDED & applied** — DRIFT-001 (cache is load-bearing → `PROV-STA-01..04`), DRIFT-002 (sentiment
   is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
   `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
-  `PROV-OUT-06`).
+  `PROV-OUT-06`), DRIFT-067 (FMP `^VIX` regime freshness → `PROV-OUT-02`/`PROV-OUT-03`).
 - **CORRECTED (S69)** — DRIFT-006 (`PROV-OUT-01`: benchmark added as `DataRequest.benchmark_ticker` +
   `MarketData.benchmark`; `taint=False` for clean candidate quality; analyst uses `market.benchmark`
   directly), DRIFT-007 (`PROV-SEC-07`: `caller_authorized` gate in all three buses; provider
@@ -341,3 +344,7 @@ status:
 - **v1.1 — S187 parameter declaration reconciliation (2026-08-30).** Adds PARAM rows for
   `ingest_ohlcv_only` and `alpaca_data_feed` as `NO (mode selector)`, closing DRIFT-050. No clauses
   were added or proven; rollup counters deliberately do not move.
+- **v1.2 — S213 FMP `^VIX` regime freshness correction (2026-09-18).** Sharpens
+  `PROV-OUT-02`/`PROV-OUT-03` so regime context carries usable `^VIX`, its bar date, and freshness
+  status; stale/missing `^VIX` becomes warning evidence with no run-halting incident ref. Closes
+  DRIFT-067; no new clauses were declared.

@@ -26,10 +26,11 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-OUT-01 | Response carries validated facts + quality record + provenance for the requested fields. | happy | `test_provider_agent.py::test_get_market_data_round_trips_and_writes_provenance` | 🟩 |
-| PROV-OUT-02 | Regime request → regime context + its inputs + provenance. | happy | `test_domain.py::test_regime_classifier_covers_vix_bands` | 🟩 |
+| PROV-OUT-02 | Regime request → regime context + FMP `^VIX` inputs/freshness + provenance. | happy | `test_fmp_vix.py::test_fmp_vix_uses_same_session_bar_as_measured; test_sources.py::test_market_source_routes_regime_to_fmp_vix; test_provider_agent.py::test_get_regime_maps_vix_to_policy_and_graph` | 🟩 |
 | PROV-OUT-03a | Clean feed → SUCCESS quality. | success | `test_domain.py::test_integrity_clean_short_window_has_no_notes` | 🟩 |
 | PROV-OUT-03b | Stale/missing feed → DEGRADED, flagged, still a valid (non-empty-silent) response. | degraded | `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing` | 🟩 |
 | PROV-OUT-03c | Boundary failure → typed FAULT, recorded. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |
+| PROV-OUT-03 | Missing/stale regime `^VIX` → warning evidence on a valid response, no incident ref. | degraded | `test_provider_regime_vix.py::test_prior_session_vix_warns_without_regime_incident_ref; test_provider_regime_vix.py::test_missing_vix_warns_and_keeps_regime_usable` | 🟩 |
 | PROV-OUT-04 | A served fact's provenance lets you reconstruct source + fetch-time. | audit | Demoted S169-sweep: the cited test proves only that `provenance.graph_node_id` resolves to a `MarketSnapshot`. 🚨 `Provenance` has no source or transformation field and `MarketSnapshot` records `created_at` plus a boolean `used_fallback` - so fetch-time is reconstructable but **which vendor served the fact is not** (DRIFT-040). | ⬜ |
 | PROV-OUT-05 | A second request appends a new record; the prior record is unchanged. | append-only | _tbd_ | ⬜ |
 
@@ -37,9 +38,9 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| PROV-NEV-01 | A degraded fetch never yields an unflagged "clean" response. | degraded | `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing` | 🟩 |
+| PROV-NEV-01 | A degraded fetch never yields an unflagged "clean" response. | degraded | `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing; test_provider_regime_vix.py::test_missing_vix_warns_and_keeps_regime_usable` | 🟩 |
 | PROV-NEV-03 | No call is made to any non-declared endpoint (egress assertion). | adversarial | _tbd_ | ⬜ |
-| PROV-NEV-04 | No credential appears in any response, log line, or error. | leak-scan | `test_provider_agent.py::test_provider_outputs_do_not_leak_credentials` | 🟩 |
+| PROV-NEV-04 | No credential appears in any response, log line, or error. | leak-scan | `test_provider_agent.py::test_provider_outputs_do_not_leak_credentials; test_fmp_vix.py::test_fmp_vix_failure_reason_does_not_expose_api_key` | 🟩 |
 | PROV-NEV-05 | Boundary meta-test: provider imports no agent; writes only its own labels. | static + runtime | _tbd_ | ⬜ |
 | PROV-NEV-06 | An attempt implying overwrite of a prior record does not mutate it. | append-only | _tbd_ | ⬜ |
 | PROV-NEV-07 | A missing datum is reported as missing, never filled with a fabricated value. | degraded | `test_sector_source.py::test_parse_sector_missing_empty_or_non_string_yields_none` | 🟩 |
@@ -58,7 +59,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
-| PROV-FAIL-01 | Unreachable/garbled source → degraded/fault, never crash, never bad-as-good. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data` | 🟩 |
+| PROV-FAIL-01 | Unreachable/garbled source → degraded/fault, never crash, never bad-as-good. | fault | `test_provider_agent.py::test_source_failure_records_fault_and_returns_degraded_data; test_fmp_vix.py::test_fmp_vix_failures_return_missing_without_raising` | 🟩 |
 | PROV-FAIL-02 | Mixed availability → partial response, missing parts flagged per-item. | partial | `test_provider_fundamentals.py::test_fundamentals_failure_notes_without_tainting_ohlcv` | 🟩 |
 | PROV-FAIL-03 | After a failed request, a retry succeeds; no corrupt state remained. | recovery | _tbd_ | ⬜ |
 | PROV-FAIL-05 | DEP-FEED red ⇒ fail-loud (degraded/fault), no fabrication. | dep-red | _tbd_ | ⬜ |
@@ -76,7 +77,7 @@ Status: ⬜ gray (no passing test) · 🟩 green (≥1 passing test cites the ID
 | Law | What the test must prove | Scenario | Test | Status |
 | --- | --- | --- | --- | --- |
 | PROV-SEC-01 | It holds no authority beyond data-feed creds + its own labels (privilege inventory). | audit | _tbd_ | ⬜ |
-| PROV-SEC-02 | Keys are injected, never present in outputs/logs/errors. | leak-scan | `test_provider_agent.py::test_provider_outputs_do_not_leak_credentials` | 🟩 |
+| PROV-SEC-02 | Keys are injected, never present in outputs/logs/errors. | leak-scan | `test_provider_agent.py::test_provider_outputs_do_not_leak_credentials; test_fmp_vix.py::test_fmp_vix_failure_reason_does_not_expose_api_key` | 🟩 |
 | PROV-SEC-04 | A poisoned/over-broad request cannot cause a trade/order/fund effect (blast-radius). | adversarial | _tbd_ | ⬜ |
 | PROV-SEC-05 | A crafted request cannot redirect egress to an arbitrary URL (confused-deputy). | adversarial | _tbd_ | ⬜ |
 | PROV-SEC-07 | An unauthorized caller is refused by the capability gate. | authz | `test_provider_reconcile.py::test_unauthorized_caller_is_refused_by_the_capability_gate` | 🟩 |

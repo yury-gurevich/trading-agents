@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-18 21:10 AEST · **Version:** 0.98.10 · **🟩 S214 MERGED and DEPLOYED `s214` — `revise` is now a finding, `overturn` the only block; ADR-0029's five tests begin with tonight's `sched-2026-09-18`.**
+**Last updated:** 2026-09-19 04:40 AEST · **Version:** 0.98.11 · **🟠 S213 BUILT locally on `sprint-213-regime-measures-vix` — branch push and exact-SHA remote gate proof still pending.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,18 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟠 **BUILT LOCALLY — [S213](sprints/sprint-213-a-regime-says-what-vix-it-measured.md) on branch
+`sprint-213-regime-measures-vix`, worktree
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-213-regime-measures-vix`, base
+`origin/main` @ `bd854f2904d8ab6bddb237761a64d9fb41ee504e`, version `0.98.11`.** FMP `^VIX` is composed as
+the provider regime-input source; `RegimeContext` carries defaulted `vix_status` and `vix_as_of`; prior-session
+and missing VIX record warning faults without `provenance.incident_refs`, so the analyst/PM halt path is not
+triggered by a VIX shortfall. Provider laws moved to v1.2, `CONTRACT.version` to 0.6.0, `DRIFT-067` and
+`DL-176` are recorded, A1-A10 were planted and mutation-checked red, and the vocabulary pack is unchanged.
+🟩 **Local proof:** redirected `make ci` exited 0 with `2839 passed, 6 skipped`, 100.00 % coverage,
+pip-audit clean after locking `anyio` 4.14.2, and secret checks passed. 🟠 **Not done:** branch push,
+remote checks, `make gate-ran`, merge, deploy, and the first scheduled-run VIX freshness/live check.
 
 🟩 **MERGED and DEPLOYED — [S214](sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) (`0.98.10`, merge `1a6f342`, tag `s214`), 2026-09-18 — [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) decisions **1** and **5** are live; 2, 3 and 4 remain unshipped by design.** `vetoed_tickers` now carries `overturn` only (`review_batch.py`), and an empty/unparseable/stopped judge answer raises `UnreadableVerdictError` from the new `kernel/deliberation_verdicts.py` and routes to loud fail-open instead of borrowing `revise` — without which decision 1 would have flipped a fail-*closed* default to a silent fail-*open*. `kernel/deliberation.py` **198 → 180** by split, not by trimming. Deliberator laws **v1.7 → v1.8** (`DLIB-OUT-02` + `DLIB-OUT-04` amended), rollup **21/56 → 22/56**, `DRIFT-066` filed; `contracts/` and `agents/execution/` both **untouched**, confirming the spec's prediction that narrowing the veto upstream needs no execution edit. 🟩 **Gate proven twice, by me, not asserted:** `GATE PROVEN` for branch `3a95e53` (CI + Security Findings) and again for the **merged** `1a6f342` with CI, **CodeQL**, Security Findings, image build and dependency graph all `success` — so no commit rides above a gated one. 🟩 **DEPLOYED by image-only retag, path proven before taken:** all **three** injected packs byte-identical between the deployed `7d3ff51` and `HEAD` (vocab `40ac81be…`, creds `f8f03950…`, issuer `2ed1f41c…`) and re-read from the live fleet *after* the retag on the apps that actually carry them — the S202 trap checked, not assumed. **17/17 targets on `:s214`**, 16/16 `Succeeded`, dispatcher cron `30 22 * * 1-5`, KEDA/scale **diffed byte-identical to the pre-deploy baseline, zero drift**. 🟩 `DeployRecord deploy:2026-09-18T11:04:47…:s214:1a6f342…` **written** — the s211 gap (work-queue **72**) avoided by dispatching the build on `main` while `main` still equalled the merge commit. 🟠 **Owed — ADR-0029's five tests, starting with `sched-2026-09-18` tonight:** null check, first scheduled run, fail-closed on a non-answer, do fills resume, and 🪤 **the relabelling tripwire — `overturn` share must stay near 6.3 % over the first 10 real-debate sessions; above 20 % the judge swapped words and the ADR is revisited, not the prompt tightened.**
 

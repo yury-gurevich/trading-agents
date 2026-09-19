@@ -146,6 +146,8 @@ def test_get_regime_maps_vix_to_policy_and_graph() -> None:
 
     assert response.message_type == "response"
     assert response.payload["label"] == "extreme_volatility"
+    assert response.payload["vix_status"] == "measured"
+    assert response.payload["vix_as_of"] == "2026-01-03"
     assert response.payload["base_min_confidence"] == 0.6
     regime_key = response.payload["provenance"]["graph_node_id"].split(":", 1)[1]
     assert graph.get_node("Regime", regime_key) is not None
@@ -160,7 +162,11 @@ def test_provider_outputs_do_not_leak_credentials() -> None:
         bus,
         graph=graph,
         source=FakeDataSource(bars=(_bar("AAPL", 1),), vix=12.0),
-        settings=ProviderSettings(finnhub_api_key=token, fred_api_key=token),
+        settings=ProviderSettings(
+            finnhub_api_key=token,
+            fred_api_key=token,
+            fmp_api_key=token,
+        ),
     ).bind()
 
     market = bus.request(_message("get_market_data", _market_payload()))

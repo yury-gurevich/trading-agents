@@ -14,9 +14,12 @@ from types import MethodType
 
 import pytest
 
-from agents.provider.composite import CompositeDataSource
+from agents.provider.alpaca_data import AlpacaDataSource
+from agents.provider.composite import CompositeDataSource, market_source_from_settings
+from agents.provider.fmp_vix import FMPVixSource
 from agents.provider.fundamentals import FinnhubDataSource
 from agents.provider.fundamentals_parse import _FUNDAMENTAL_KEYS, _parse_metrics
+from agents.provider.settings import ProviderSettings
 from agents.provider.sources import FakeDataSource
 from contracts.common import Window
 
@@ -102,12 +105,34 @@ def test_composite_routes_each_call_to_the_right_source() -> None:
     price = FakeDataSource(vix=12.0, fundamentals={"AAPL": {"peTTM": 1.0}})
     funda = FakeDataSource(vix=99.0, fundamentals={"AAPL": {"roeTTM": 0.4}})
     senti = FakeDataSource(sentiment={"AAPL": 0.7})
-    composite = CompositeDataSource(price, funda, senti)
+    regime = FakeDataSource(vix=16.0)
+    composite = CompositeDataSource(price, funda, senti, regime_source=regime)
 
-    assert composite.fetch_regime_inputs(date(2024, 1, 2)).vix == 12.0
+    assert composite.fetch_regime_inputs(date(2024, 1, 2)).vix == 16.0
     assert composite.fetch_ohlcv(("AAPL",), _WINDOW) == ()
     assert composite.fetch_fundamentals(("AAPL",), _WINDOW) == {"AAPL": {"roeTTM": 0.4}}
     assert composite.fetch_sentiment(("AAPL",)) == {"AAPL": 0.7}
+
+
+def test_market_source_routes_regime_to_fmp_vix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PROV-OUT-02: production composite fetches regime ^VIX from FMP, not Alpaca."""
+
+    def forbidden_regime_source(_source: AlpacaDataSource, _as_of: date) -> object:
+        raise AssertionError("Alpaca must not supply VIX regime inputs")
+
+    def fake_download(_self: FMPVixSource) -> str:
+        return '[{"date":"2026-09-14","price":14.3}]'
+
+    monkeypatch.setattr(
+        AlpacaDataSource, "fetch_regime_inputs", forbidden_regime_source
+    )
+    monkeypatch.setattr(FMPVixSource, "_download", fake_download)
+
+    source = market_source_from_settings(ProviderSettings(fmp_api_key="k"))
+
+    assert source.fetch_regime_inputs(date(2026, 9, 14)).vix == 14.3
 
 
 def test_finnhub_source_parses_metrics_and_skips_empty_without_network() -> None:

@@ -8,6 +8,7 @@ External I/O: market-data APIs (stooq, finnhub, fred, edgar, finbert).
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import Field
 
@@ -104,6 +105,8 @@ class RegimeContext(_Frozen):
 
     label: RegimeLabel
     vix: float | None = Field(default=None, ge=0.0)
+    vix_status: Literal["measured", "prior_session", "missing"] = "missing"
+    vix_as_of: date | None = None
     as_of: datetime
     base_min_confidence: float = Field(ge=0.0, le=1.0)
     base_stop_loss_pct: float = Field(ge=0.0, le=1.0)
@@ -114,7 +117,7 @@ class RegimeContext(_Frozen):
 
 CONTRACT = AgentContract(
     name="provider",
-    version="0.5.0",
+    version="0.6.0",
     mission=(
         "Be the single boundary to the outside market world. Turn raw external "
         "feeds into clean, validated, cached market facts and the current regime, "

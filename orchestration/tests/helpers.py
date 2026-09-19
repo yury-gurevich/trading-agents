@@ -58,7 +58,20 @@ class ReboundingDataSource:
 
     def fetch_regime_inputs(self, as_of: date) -> RegimeInputs:
         """Return deterministic regime inputs."""
-        return RegimeInputs(as_of=as_of, vix=self.vix)
+        if self.vix is None:
+            return RegimeInputs(
+                as_of=as_of,
+                vix=None,
+                vix_status="missing",
+                vix_as_of=None,
+                vix_reason="fixture_missing_vix",
+            )
+        return RegimeInputs(
+            as_of=as_of,
+            vix=self.vix,
+            vix_status="measured",
+            vix_as_of=as_of,
+        )
 
     def fetch_fundamentals(
         self, tickers: tuple[str, ...], window: Window

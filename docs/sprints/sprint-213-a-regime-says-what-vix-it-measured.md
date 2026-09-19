@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-213-regime-measures-vix`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.98.11`
 **Effort:** M
 **Decisions:** implements [ADR-0028](../decisions/0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md) (read its **Correction** section) · closes work-queue item **70** · evidence [EXP-009](../research/experiments/EXP-009-volatility-sizing-replay.md) · DL and DRIFT numbers: next free **at branch time** (see *Sequencing*)
 
@@ -277,15 +277,15 @@ All tests are in-memory with the FMP transport **stubbed** (inject the opener or
 
 ## Success factors
 
-- [ ] A1–A10 pass, each cited to its clause; every guard planted, watched red, restored (stated per guard).
-- [ ] **A6 holds:** a missing VIX changes no analyst or PM output other than the regime's own fields.
-- [ ] `provenance.incident_refs` is `()` in every VIX shortfall case (A2–A5).
-- [ ] `git diff --stat -- agents/analyst agents/portfolio_manager agents/deliberator orchestration/batch_trace.py scripts/trace_run.py` is **empty**.
-- [ ] Law cycle complete: `PROV-OUT-02` amended, `laws.md` v1.2 + Changelog, test-plan rows, rollups derived in
+- [x] A1-A10 pass, each cited to its clause; every guard planted, watched red, restored (stated per guard).
+- [x] **A6 holds:** a missing VIX changes no analyst or PM output other than the regime's own fields.
+- [x] `provenance.incident_refs` is `()` in every VIX shortfall case (A2-A5).
+- [x] `git diff --stat -- agents/analyst agents/portfolio_manager agents/deliberator orchestration/batch_trace.py scripts/trace_run.py` is **empty**.
+- [x] Law cycle complete: `PROV-OUT-02` amended, `laws.md` v1.2 + Changelog, test-plan rows, rollups derived in
       both files, drift row, `CONTRACT.version` 0.6.0.
-- [ ] Vocabulary pack diff stated (expected: unchanged), plus the deploy implication derived from it.
-- [ ] Every touched module < 200 lines (`sources.py` is at 182).
-- [ ] `make ci` exit 0, 100.00 % coverage.
+- [x] Vocabulary pack diff stated (expected: unchanged), plus the deploy implication derived from it.
+- [x] Every touched module < 200 lines (`sources.py` is at 192).
+- [x] `make ci` exit 0, 100.00 % coverage.
 - [ ] 🟢 **Post-deploy, planning agent:** the first scheduled run after deploy has a `RegimeContext` with a
       numeric `vix`, a `vix_as_of`, and a `vix_status`, and the run went 8/8 with no `provider_degraded`. Record
       **which freshness case occurred at 22:30 UTC** in `docs/laws/functionality-checks.md`. That answers
@@ -315,8 +315,9 @@ reading shows a clause that should now require the new fields, extend the guard 
 
 - No agent imports another agent; kernel imports nothing above it (`import-linter`).
 - Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa`.
-  📌 Current sizes: `sources.py` **182**, `contracts/provider.py` **165**, `agent.py` **163**, `fmp.py` **140**,
-  `composite.py` **112**, `market_calendar.py` **93**, `domain/regime.py` **30**.
+  📌 Final touched sizes: `sources.py` **192**, `agent.py` **189**, `contracts/provider.py` **168**,
+  `fmp_vix.py` **130**, `composite.py` **123**, `kernel/fault_graph.py` **120**,
+  `market_calendar.py` **93**, `domain/regime.py` **30**.
 - Module docstring declares `Agent:` / `Role:` / `External I/O:`.
 - No magic numbers. The one-session tolerance is ADR-0028's rule, not a tunable. If you believe it should be
   tunable, record why in the design log and say so; a new tunable changes the deploy.
@@ -409,15 +410,28 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| FMP VIX source and composite routing | `agents/provider/laws/laws.md`; `agents/provider/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; ADR-0028 Correction | `PROV-NEV-03`, `PROV-NEV-04`, `PROV-NEV-07`, `PROV-FAIL-01`, `PROV-PERF-01`, `PROV-SEC-02`, `PROV-SEC-06`, provider `CAP` | Yes. Use a dedicated FMP VIX source that handles timeout/HTTP/JSON/empty/non-numeric failures internally and returns `missing`; do not let vendor failures raise into `_get_regime`. |
+| Regime inputs, classification and contract | Provider laws/test-plan; `docs/laws/conventions.md`; `tests/test_contract_required_fields.py`; `tests/test_contract_required_payload_fields.py` | `PROV-OUT-02`, `PROV-OUT-03`, `PROV-NEV-01`, `PROV-NEV-07`, `PROV-TYP-01`, `PROV-TYP-03` | Yes. Amend `PROV-OUT-02` to name VIX value, bar date and status; keep contract defaults so old snapshots validate as `missing`; move `CONTRACT.version` deliberately because DRIFT-060 says no gate will force it. |
+| Provider `_get_regime` warning path | Provider laws/test-plan; ADR-0028 Correction; `docs/laws/drift-register.md` | `PROV-OUT-03`, `PROV-NEV-01`, `PROV-FAIL-01`, `PROV-OBS-02`, `PROV-OBS-03` | Yes. VIX shortfall must be a warning `Fault` with structured status/reason context, not a `provenance.incident_refs` entry. `regime_source_degraded` keeps its old meaning for true boundary failure. |
+| Analyst and PM consumer invariant | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md` | `ANLZ-OUT-04`, `ANLZ-FAIL-01`, `ANLZ-FAIL-02`; `PM-OUT-04`, `PM-FAIL-01`, `PM-OBS-02` | Yes. Consumer laws stay read-only. Because both consumers halt on regime incident refs, S213 proves missing VIX leaves `incident_refs == ()` and does not produce `provider_degraded`. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes. `RegimeContext`
+adds defaulted `vix_status` and `vix_as_of`, and provider now guarantees which VIX bar it measured or that it
+measured none. This sprint owes provider laws v1.2, amended `PROV-OUT-02`, test-plan rows, rollups,
+`DRIFT-067`, and `contracts.provider.CONTRACT.version` 0.6.0.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None blocking. The pre-existing
+`PROV-NEV-08` vs `PROV-OUT-02` tension remains as ADR-0028 describes: NEV-08 forbids downstream-style
+sentiment/fundamental judgement, while DRIFT-004 already adopted provider regime classification into OUT-02.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** Provider law names degraded/fault totality but does not name
+VIX status/bar-date fields; this sprint amends `PROV-OUT-02`. No provider `TYP` clause currently enumerates
+`RegimeContext` fields, so the field guarantee is proven through provider functional tests rather than a central
+required-field row.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** None yet at pre-code record time. Planned: make the existing
+`PROV-OUT-02` proof production-composition aware and add a missing-source proof for `PROV-OUT-03` /
+`PROV-NEV-01`.
 
 ---
 
@@ -425,50 +439,121 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *to fill* | | | |
+| A1 | `test_fmp_vix_uses_same_session_bar_as_measured`; `test_get_regime_maps_vix_to_policy_and_graph` | `agents/provider/tests/test_fmp_vix.py`; `agents/provider/tests/test_provider_agent.py` | PASS | `PROV-OUT-02`, `PROV-OUT-03`, `PROV-NEV-07` |
+| A2 | `test_fmp_vix_marks_one_session_old_bar_as_prior_session`; `test_prior_session_vix_warns_without_regime_incident_ref` | `agents/provider/tests/test_fmp_vix.py`; `agents/provider/tests/test_provider_regime_vix.py` | PASS | `PROV-OUT-02`, `PROV-OUT-03`, `PROV-NEV-01`, `PROV-OBS-02`, `PROV-OBS-03` |
+| A3 | `test_fmp_vix_marks_multi_session_old_bar_as_missing`; `test_missing_vix_warns_and_keeps_regime_usable` | `agents/provider/tests/test_fmp_vix.py`; `agents/provider/tests/test_provider_regime_vix.py` | PASS | `PROV-OUT-03`, `PROV-NEV-01`, `PROV-NEV-07`, `PROV-OBS-02` |
+| A4 | `test_fmp_vix_failures_return_missing_without_raising` | `agents/provider/tests/test_fmp_vix.py` | PASS | `PROV-FAIL-01`, `PROV-OUT-03`, `PROV-NEV-01` |
+| A5 | `test_fmp_vix_ignores_future_bars` | `agents/provider/tests/test_fmp_vix.py` | PASS | `PROV-OUT-02`, `PROV-NEV-07` |
+| A6 | `test_graph_pull_missing_vix_does_not_halt_buys_or_exits` | `orchestration/tests/test_regime_vix_graph_pull.py` | PASS | `PROV-OUT-02`, `PROV-OUT-03`, `PROV-NEV-01`, `ANLZ-OUT-04`, `PM-OUT-04` |
+| A7 | `test_old_regime_context_snapshot_defaults_vix_freshness_fields` | `agents/provider/tests/test_provider_regime_vix.py` | PASS | `PROV-TYP-01`, `PROV-TYP-03`, `PROV-OUT-02` |
+| A8 | `test_market_source_routes_regime_to_fmp_vix` | `agents/provider/tests/test_sources.py` | PASS | `PROV-OUT-02`, `PROV-NEV-03`, `PROV-SEC-06` |
+| A9 | `test_fmp_vix_counts_holidays_as_non_sessions` | `agents/provider/tests/test_fmp_vix.py` | PASS | `PROV-OUT-02`, `PROV-NEV-07` |
+| A10 | `test_fmp_vix_failure_reason_does_not_expose_api_key` | `agents/provider/tests/test_fmp_vix.py` | PASS | `PROV-NEV-04`, `PROV-SEC-02` |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:** `test_fmp_vix_historical_payload_filters_bad_rows_and_future_only`,
+`test_fmp_vix_historical_payload_accepts_close_field`, and
+`test_composite_drains_distinct_regime_source_notes` cover FMP's alternate `historical` payload shape, `close`
+fallback parsing, and draining feed notes from a distinct regime source.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill*
+**Status:** BUILT locally and ready for branch push/reproof. Merge, deploy and live post-deploy proof are not done.
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-213-regime-measures-vix`;
+branch `sprint-213-regime-measures-vix`; `Test-Path .env` returned `False`.
 
-**Result:** *to fill*
+**Result:** Implemented FMP `^VIX` regime measurement through the production market source composition.
+`RegimeContext` now carries defaulted `vix_status` and `vix_as_of`; prior-session and missing VIX record warning
+faults with structured context while keeping `provenance.incident_refs == ()`. The provider law cycle is complete:
+provider laws v1.2, provider test-plan rows, rollups, `DRIFT-067`, and `CONTRACT.version` 0.6.0. `anyio` was
+upgraded in `uv.lock` to 4.14.2 after pip-audit reported two CVEs against 4.13.0.
 
-**Files changed:** *to fill*
+**Files changed:** Provider code (`agents/provider/{agent.py,composite.py,sources.py,fmp_vix.py}`),
+provider tests, orchestration graph-pull guard, `contracts/provider.py`, `kernel/fault_graph.py`, law/test-plan
+docs, sprint/state/design docs, `pyproject.toml`, and `uv.lock`. No source diff exists under
+`agents/analyst`, `agents/portfolio_manager`, `agents/deliberator`, `orchestration/batch_trace.py`, or
+`scripts/trace_run.py`.
 
-**Design decisions:** *to fill*
+**Design decisions:** `DL-176` records that VIX freshness travels on `RegimeInputs`, both `prior_session` and
+`missing` are warning faults, stale-beyond-one-session values are cleared, and VIX shortfall is not a
+`regime_source_degraded` incident.
 
 **Proof — the red run first:**
 
 ```text
-_to fill_
+Initial red before implementation:
+uv run pytest agents/provider/tests/test_fmp_vix.py agents/provider/tests/test_provider_regime_vix.py `
+  agents/provider/tests/test_sources.py orchestration/tests/test_regime_vix_graph_pull.py --no-cov
+ERROR agents/provider/tests/test_fmp_vix.py - ModuleNotFoundError: No module named 'agents.provider.fmp_vix'
+
+DL-70 mutation checks, each restored after failure:
+- Freshness/date-filter mutation (`<= as_of` changed to future-inclusive selection): 4 tests failed, including
+  `test_fmp_vix_marks_one_session_old_bar_as_prior_session`,
+  `test_fmp_vix_marks_multi_session_old_bar_as_missing`,
+  `test_fmp_vix_ignores_future_bars`, and `test_fmp_vix_counts_holidays_as_non_sessions`.
+- Vendor-failure leak mutation (failure reason returned raw exception text): A4/A10 failed and exposed the fake
+  token in the assertion path.
+- Incident-ref mutation (VIX shortfall appended `regime_source_degraded`): provider shortfall tests failed and
+  A6 lost its normal buy output.
+- Contract default mutation (`vix_status="measured"`): old snapshot compatibility test failed, expected
+  `"missing"`.
+- Composite routing mutation (regime delegated back to price source): A8 failed; production composition no longer
+  reached the FMP VIX source.
+- Price parser mutation (removed `price` support): same-session VIX and production-composition tests failed.
 ```
 
 **Proof — the green run:**
 
 ```text
-_to fill_
+make ci > ..\sprint-213-make-ci.log 2>&1
+
+TOTAL                                                     16835      0   3614      0  100.00%
+Coverage HTML written to dir htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2839 passed, 6 skipped in 85.70s (0:01:25) ==================
+uv run pip-audit
+No known vulnerabilities found
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 5 new file(s)
 ```
 
-**Guards planted:** *to fill*
+**Guards planted:** A1-A10 as listed in the test-plan table. The high-risk guards are A6
+(`test_graph_pull_missing_vix_does_not_halt_buys_or_exits`), A8
+(`test_market_source_routes_regime_to_fmp_vix`), A10
+(`test_fmp_vix_failure_reason_does_not_expose_api_key`), and A7
+(`test_old_regime_context_snapshot_defaults_vix_freshness_fields`); each was mutation-checked red and restored.
 
-**Module line counts:** *to fill*
+**Module line counts:** `contracts/provider.py` 168; `agents/provider/sources.py` 192;
+`agents/provider/fmp_vix.py` 130; `agents/provider/composite.py` 123; `agents/provider/agent.py` 189;
+`kernel/fault_graph.py` 120; `agents/provider/tests/test_fmp_vix.py` 146;
+`agents/provider/tests/test_provider_regime_vix.py` 134; `agents/provider/tests/test_composite_vix_notes.py` 25;
+`orchestration/tests/test_regime_vix_graph_pull.py` 56.
 
-**Vocabulary pack diff and deploy implication:** *to fill*
+**Vocabulary pack diff and deploy implication:** `git diff --stat -- orchestration/packs/trading_graph_vocabulary.json`
+is empty. No new settings/tunables/env keys were added; the existing FMP settings are reused. Deployment still
+requires the code image to be rebuilt/retagged after merge, but no graph vocabulary pack migration/full `up` is
+owed by this sprint's diff.
 
-**`make ci`:** *to fill*
+**`make ci`:** Exit 0 from `make ci > ..\sprint-213-make-ci.log 2>&1` in this worktree. The log is
+`C:\Users\yury_\Downloads\project\sprint-213-make-ci.log`; key proof lines are pasted above.
 
-**`make gate-ran`:** *to fill*
+**`make gate-ran`:** Pending until branch push and remote checks. Re-run after the evidence commit and compare
+against `git rev-parse HEAD`.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:** Merge, post-merge CodeQL, deployment, and the post-deploy planning-agent live
+check are not done. The 22:30 UTC freshness case remains unknown until the first scheduled run after deploy.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- Before merge, push `sprint-213-regime-measures-vix`, wait for remote checks to finish, then run `make gate-ran`
+  from this same worktree and compare its printed SHA with `git rev-parse HEAD`.
+- After merge/deploy, record the first scheduled run's `vix`, `vix_as_of`, `vix_status`, 8/8 stage result, and
+  absence of `provider_degraded` in `docs/laws/functionality-checks.md`.
+- Do not treat this local build as live closure; the post-deploy check is still the named success factor.

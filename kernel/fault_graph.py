@@ -114,6 +114,7 @@ def _fault_props(fault: AgentFault) -> dict[str, object]:
         "message": fault.message,
         "traceback": fault.traceback,
         "correlation_id": fault.correlation_id,
+        "context": fault.context,
         "occurred_at": fault.occurred_at.isoformat(),
         "status": "pending",
     }

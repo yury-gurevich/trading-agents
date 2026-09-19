@@ -8,6 +8,46 @@ and is marked CLOSED here.
 
 ---
 
+## DL-176 - VIX shortfall is warning evidence on the regime, not provider degradation - status: DECIDED (S213, 2026-09-18)
+
+**Decision. Regime input status travels on `RegimeInputs`.** S213 adds `vix_status`, `vix_as_of`, and a
+source-local `vix_reason` to the provider-side `RegimeInputs` value. That keeps `DataSource.fetch_regime_inputs`
+as the one port the provider already calls, lets `FakeDataSource` keep deterministic defaults, and gives
+`ProviderAgent._get_regime` the status/reason it needs without a parallel result type. The public contract gets
+only `RegimeContext.vix_status` and `vix_as_of`; the reason belongs in the warning fault context, not in every
+downstream prompt.
+
+**Decision. Warning faults are explicit `AgentFault`s, not `fault_boundary` captures.** `fault_boundary` records
+exceptions as severity `error`, and an exception in `_get_regime` already has the run-halting meaning
+`regime_source_degraded`. A `prior_session` or `missing` VIX is therefore submitted directly as a provider
+warning with structured context (`status`, `reason`, `as_of`, `vix_as_of`) and **no**
+`provenance.incident_refs`. Vendor failures in the VIX adapter return `missing` instead of raising; the old
+exception path remains only for a genuine regime boundary failure.
+
+**Decision. Stale VIX is cleared; prior-session VIX is kept.** `prior_session` is one trading session old and
+is still the freshest permitted regime input, so the label is computed from that VIX and the warning says which
+bar supplied it. Anything older than one session is `missing`: `vix` is cleared, the label is `neutral`, and the
+warning names staleness. This follows `PROV-NEV-07`: a stale value may be reported as stale evidence, but it is
+not presented as the current input.
+
+**Decision. FMP VIX is a small dedicated source.** Extending `agents/provider/fmp.py` would mix OHLCV validation
+and regime status handling, and `fmp.py` is not part of the live composite today. A dedicated `fmp_vix.py`
+parses `stable/historical-price-eod/light?symbol=^VIX`, contains timeout/HTTP/JSON/shape failures, and composes
+as the regime source beside the existing Alpaca/Finnhub/Alpha Vantage routes.
+
+**Rejected routes.**
+
+- Put VIX shortfall in `provenance.incident_refs`. Rejected because analyst and PM read any regime incident ref
+  as provider degradation and halt buys and exits.
+- Let FMP failures raise into `_get_regime`. Rejected for the same reason: the existing fault boundary would
+  produce `regime_source_degraded`.
+- Add `vix_status` to the `Regime` graph node properties. Rejected because the full `RegimeContext` snapshot
+  already carries contract fields, and a new graph property would move the vocabulary pack for no consumer.
+- Keep a stale numeric VIX when status is `missing`. Rejected because it lets a reader treat an out-of-window
+  value as current.
+
+---
+
 ## DL-173 - the referee's middle verdict has no middle action, and its grounds are now measured true-but-inert - status: DECIDED ([ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md), 2026-09-18)
 
 **Trigger.** Four consecutive scheduled sessions with **zero fills** (09-14, 09-16 x2, 09-17) while every

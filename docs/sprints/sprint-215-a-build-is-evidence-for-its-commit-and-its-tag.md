@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-215-build-evidence-commit-and-tag`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** closes work-queue item **72**, plus a tag-prefix defect found while packaging it (folded into the same row) · extends [S180](sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md)'s guarantee · no ADR · no DRIFT row expected (no law governs this code)
@@ -412,54 +412,96 @@ operator-tooling decisions are recorded in DL-177; this is not a law/code drift.
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | none (no clause governs this code) |
+| A1 | `test_tag_dispatched_build_of_main_ancestor_is_evidence` | `surfaces/tests/test_github_build_tag_ancestry.py` | PASS | none (no clause governs this code) |
+| A2 | `test_tag_dispatched_main_ancestor_records_a_deploy` | `surfaces/tests/test_github_build_tag_ancestry.py` | PASS | none (no clause governs this code) |
+| A3 | `test_divergent_build_is_not_deploy_evidence` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
+| A4 | `test_unreadable_or_malformed_ancestry_refuses` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
+| A5 | `test_ancestry_uses_main_as_compare_base` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
+| A6 | `test_tag_lookup_rejects_prefixes_of_published_tag` | `surfaces/tests/test_github_build_tag_ancestry.py` | PASS | none (no clause governs this code) |
+| A7 | `test_tag_boundary_matches_only_complete_docker_tags` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
+| A8 | `test_main_run_skips_compare_and_url_shapes_are_preserved` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
+| A9 | `test_main_run_skips_compare_and_url_shapes_are_preserved` | `surfaces/tests/test_github_build_tag_guards.py` | PASS | none (no clause governs this code) |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_non_object_json_response_refuses` proves a non-object GitHub JSON
+payload fails closed as `GitHubReadError`; it covers the new response-shape validation required for complete
+coverage.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):**
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-215-build-evidence-commit-and-tag`; no `.env`
+was present. No live graph, broker, or GitHub mutation was performed.
 
-**Result:** *(builder fills: what is now true, in the artefact's own words)*
+**Result:** For a supplied SHA, `GitHubActionsReader.image_builds_for_tag` accepts a successful build that
+published the requested complete Docker tag only when its commit is contained in `main`. Tag-dispatched S211
+build evidence is accepted after its commit reaches `main`; the divergent `smoke-test` build remains refused;
+`s21` and `s2` no longer match an `s214` publication. The no-SHA path and dashboard main-currency read remain
+main-only.
 
-**Files changed:** *(builder fills)*
+**Files changed:** the detector baseline; `docs/design-log.md`; this sprint handback; `pyproject.toml`;
+`uv.lock`; `surfaces/dashboard/github_builds.py`; new
+`surfaces/dashboard/github_tag_builds.py`; `surfaces/tests/test_github_builds.py`; new
+`surfaces/tests/test_github_build_tag_ancestry.py`; new `surfaces/tests/test_github_build_tag_guards.py`.
 
-**Design decisions:** *(builder fills: DL number + where the rejected alternatives are)*
+**Design decisions:** DL-177 in `docs/design-log.md`; rejected routes are recorded under its `Rejected routes`
+heading. No ADR and no law-cycle change: this remains operator tooling only.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes the failing A1/A2/A6 output from the unchanged code)
+FAILED surfaces/tests/test_github_build_tag_ancestry.py::test_tag_dispatched_build_of_main_ancestor_is_evidence - AssertionError: assert () == (MainImageBuild(...),)
+FAILED surfaces/tests/test_github_build_tag_ancestry.py::test_tag_dispatched_main_ancestor_records_a_deploy - orchestration.deploy_record.DeployRecordVerificationError: GitHub build evidence is required...
+FAILED surfaces/tests/test_github_build_tag_ancestry.py::test_tag_lookup_rejects_prefixes_of_published_tag - AssertionError: assert (MainImageBuild(...),) == ()
+3 failed in 32.98s
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes the passing output)
+$ uv run pytest surfaces/tests/test_github_builds.py surfaces/tests/test_github_build_tag_ancestry.py surfaces/tests/test_github_build_tag_guards.py orchestration/tests/test_deploy_record_verification.py --no-cov -q
+.................................                                        [100%]
+33 passed in 1.68s
 ```
 
-**Guards planted:** *(builder fills, per guard: what was broken, that it failed, that it was restored)*
+**Guards planted:** A3: replaced the non-main ancestry predicate with `True`; the divergent smoke build became
+deploy evidence and `test_divergent_build_is_not_deploy_evidence` failed; restored the predicate. A5: inverted
+`ahead_by == 0`; `test_ancestry_uses_main_as_compare_base` failed for `ahead_by=3`; restored the predicate.
+A6: restored raw substring matching; `test_tag_lookup_rejects_prefixes_of_published_tag` failed because `s21`
+and `s2` matched `s214`; restored complete Docker-tag matching.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `github_builds.py` 170; `github_tag_builds.py` 93; `test_github_builds.py` 195;
+`test_github_build_tag_ancestry.py` 127; `test_github_build_tag_guards.py` 191. All are below the 200-line
+hard limit.
 
-**`make ci`:** *(builder fills: redirect path, exit code, passed/skipped, coverage, pip-audit, detect-secrets)*
+**`make ci`:** `C:\Users\yury_\AppData\Local\Temp\sprint-215-ci-final.txt`; exit 0. `2854 passed, 6
+skipped`; coverage `100.00%`; `pip-audit`: `No known vulnerabilities found`; tracked and untracked
+detect-secrets checks passed (the latter scanned 3 new files).
 
-**`make gate-ran`:** *(builder fills: worktree path and full 40-char SHA)*
+**`make gate-ran`:** From
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-215-build-evidence-commit-and-tag`, implementation
+commit `b6e3f6167740ec77e8adec733cbf3921844eeba7`.
 
 ```text
-(builder pastes GATE PROVEN output)
+GATE PROVEN for b6e3f6167740ec77e8adec733cbf3921844eeba7:
+   CI: success (attempt 1)
+   Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** *(builder fills, or "none")*
+**Not met / verified failing:** None. The final handback commit must still be pushed and proven separately.
 
 ---
 
 ## Return notes
 
-- *(builder fills: scope held, or where it moved and why)*
-- *(builder fills: anything in the spec you disagreed with after reading the code)*
-- *(builder fills: anything the next sprint should know that the diff does not show)*
+- Scope held. `orchestration/deploy_record.py`, `scripts/record_deploy.py`, and dashboard currency
+   projections are unchanged; no deployment or live `DeployRecord` was created.
+- The existing reader fixture lacked `head_branch`; it now supplies `main` explicitly rather than allowing
+   a missing value to pass as main. The two existing candidate-SHA URL assertions were updated to the
+   intentionally branchless route.
+- The documented public S211 commit SHA is an audited false positive in the detector baseline; the direct
+   Markdown pragma was not reliable through the Make-path hook. The next sprint should run its live read-only
+   check only after merge, as specified; this sprint did not dispatch, record, or deploy anything.

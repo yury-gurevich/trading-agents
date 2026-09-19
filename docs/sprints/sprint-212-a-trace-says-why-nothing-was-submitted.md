@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-212-trace-says-why-nothing-was-submitted`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** closes work-queue items **66** and **67** · no ADR · no DRIFT row expected

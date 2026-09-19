@@ -34,7 +34,7 @@ from kernel import (
     MessageBus,
     claim_check_write,
 )
-from kernel.errors import fault_boundary
+from kernel.errors import AgentFault, fault_boundary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -144,6 +144,8 @@ class ProviderAgent(AgentBase):
         label = classify_regime(inputs, self._settings)
         as_of = datetime.combine(inputs.as_of, time.min, tzinfo=UTC)
         incident_refs = ("regime_source_degraded",) if capture.fault is not None else ()
+        if capture.fault is None and inputs.vix_status != "measured":
+            self._record_vix_shortfall(inputs)
         provenance = write_regime(
             self._graph,
             label=label,
@@ -154,10 +156,34 @@ class ProviderAgent(AgentBase):
         return RegimeContext(
             label=label,
             vix=inputs.vix,
+            vix_status=inputs.vix_status,
+            vix_as_of=inputs.vix_as_of,
             as_of=as_of,
             base_min_confidence=self._settings.base_min_confidence,
             base_stop_loss_pct=self._settings.base_stop_loss_pct,
             base_take_profit_pct=self._settings.base_take_profit_pct,
             base_max_holding_days=self._settings.base_max_holding_days,
             provenance=provenance,
+        )
+
+    def _record_vix_shortfall(self, inputs: RegimeInputs) -> None:
+        """Record a non-halting warning when regime VIX is stale or absent."""
+        context = {
+            "as_of": inputs.as_of.isoformat(),
+            "vix_status": inputs.vix_status,
+            "vix_as_of": (
+                inputs.vix_as_of.isoformat() if inputs.vix_as_of is not None else None
+            ),
+            "reason": inputs.vix_reason or inputs.vix_status,
+        }
+        self.sink.submit(
+            AgentFault(
+                source_agent="provider",
+                source_module="agents.provider.agent",
+                capability="get_regime",
+                severity="warning",
+                error_type="RegimeVixShortfall",
+                message=f"regime VIX {inputs.vix_status}: {context['reason']}",
+                context=context,
+            )
         )

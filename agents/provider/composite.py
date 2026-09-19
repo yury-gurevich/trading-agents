@@ -1,8 +1,8 @@
-"""Composite DataSource routing OHLCV/regime, fundamentals/news, and sentiment.
+"""Composite DataSource routing OHLCV, regime, fundamentals/news, and sentiment.
 
 Agent: provider
-Role: combine a price/regime source (Alpaca), a fundamentals/news source (Finnhub),
-and a sentiment source (Alpha Vantage).
+Role: combine a price source (Alpaca), a regime source (FMP ^VIX),
+a fundamentals/news source (Finnhub), and a sentiment source (Alpha Vantage).
 External I/O: none directly (delegates to the wrapped sources).
 """
 
@@ -16,24 +16,26 @@ if TYPE_CHECKING:
     from datetime import date
 
     from agents.provider.settings import ProviderSettings
-    from agents.provider.sources import DataSource, RegimeInputs
+    from agents.provider.sources import DataSource, RegimeInputs, RegimeSource
     from contracts.common import Window
     from contracts.provider import OHLCVBar
 
 
 class CompositeDataSource:
-    """Route price/regime to one source and fundamentals to another."""
+    """Route each provider call to its owned source adapter."""
 
     def __init__(
         self,
         price_source: DataSource,
         fundamentals_source: DataSource,
         sentiment_source: DataSource,
+        regime_source: RegimeSource | None = None,
     ) -> None:
-        """Wrap a price/regime, a fundamentals/news, and a sentiment source."""
+        """Wrap price, regime, fundamentals/news, and sentiment sources."""
         self._price_source = price_source
         self._fundamentals_source = fundamentals_source
         self._sentiment_source = sentiment_source
+        self._regime_source = regime_source or price_source
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -42,8 +44,8 @@ class CompositeDataSource:
         return self._price_source.fetch_ohlcv(tickers, window)
 
     def fetch_regime_inputs(self, as_of: date) -> RegimeInputs:
-        """Delegate regime-input fetches to the price source."""
-        return self._price_source.fetch_regime_inputs(as_of)
+        """Delegate regime-input fetches to the regime source."""
+        return self._regime_source.fetch_regime_inputs(as_of)
 
     def fetch_fundamentals(
         self, tickers: tuple[str, ...], window: Window
@@ -73,17 +75,21 @@ class CompositeDataSource:
 
     def consume_degraded_feed_notes(self) -> tuple[str, ...]:
         """Drain source-owned feed notes from wrapped sources."""
-        return (
+        notes = (
             *consume_degraded_feed_notes(self._price_source),
             *consume_degraded_feed_notes(self._fundamentals_source),
             *consume_degraded_feed_notes(self._sentiment_source),
         )
+        if self._regime_source is self._price_source:
+            return notes
+        return (*notes, *consume_degraded_feed_notes(self._regime_source))
 
 
 def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSource:
-    """Compose live feeds: Alpaca OHLCV + Finnhub fundamentals/news + AV sentiment."""
+    """Compose live feeds: Alpaca OHLCV + FMP ^VIX + Finnhub + AV sentiment."""
     from agents.provider.alpaca_data import AlpacaDataSource
     from agents.provider.av_sentiment import AlphaVantageSentimentSource
+    from agents.provider.fmp_vix import FMPVixSource
     from agents.provider.fundamentals import FinnhubDataSource
 
     return CompositeDataSource(
@@ -108,5 +114,10 @@ def market_source_from_settings(settings: ProviderSettings) -> CompositeDataSour
             api_key=settings.alphavantage_api_key,
             base_url=settings.alphavantage_base_url,
             timeout=settings.alphavantage_timeout,
+        ),
+        regime_source=FMPVixSource(
+            api_key=settings.fmp_api_key,
+            base_url=settings.fmp_base_url,
+            timeout=settings.fmp_timeout,
         ),
     )

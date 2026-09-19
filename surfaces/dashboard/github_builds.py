@@ -10,12 +10,10 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from io import BytesIO
 from typing import TYPE_CHECKING, Any, Protocol, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
-from zipfile import BadZipFile, ZipFile
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -79,38 +77,27 @@ class GitHubActionsReader:
     def image_builds_for_tag(
         self, tag: str, git_sha: str | None = None
     ) -> tuple[MainImageBuild, ...]:
-        """Read successful main workflow runs and keep those that published tag."""
-        clean_tag = tag.removeprefix(":").strip()
-        if not clean_tag:
-            raise GitHubReadError("GitHub image tag is required")
-        clean_sha = git_sha.strip().lower() if git_sha is not None else None
-        matches = tuple(
-            build
-            for build in (
-                self._build_from_run(row)
-                for row in self._successful_main_image_runs(
-                    per_page=100, git_sha=clean_sha
-                )
-            )
-            if self._run_log_mentions_tag(build.run_id, clean_tag)
-        )
-        if not matches and clean_sha is not None:
-            return ()
-        if not matches:
-            raise GitHubReadError(
-                f"GitHub returned no successful image build for tag {clean_tag}"
-            )
-        return matches
+        """Read successful qualifying workflow runs that published tag."""
+        from surfaces.dashboard.github_tag_builds import image_builds_for_tag
+
+        return image_builds_for_tag(self, tag, git_sha)
 
     def _successful_main_image_runs(
         self, *, per_page: int, git_sha: str | None = None
     ) -> list[dict[str, object]]:
+        return self._successful_image_runs(
+            per_page=per_page, git_sha=git_sha, branch="main"
+        )
+
+    def _successful_image_runs(
+        self, *, per_page: int, git_sha: str | None, branch: str | None
+    ) -> list[dict[str, object]]:
         workflow = quote(self._workflow, safe="")
-        query = {
-            "branch": "main",
-            "status": "success",
-            "per_page": str(per_page),
-        }
+        query: dict[str, str] = {}
+        if branch is not None:
+            query["branch"] = branch
+        query["status"] = "success"
+        query["per_page"] = str(per_page)
         if git_sha:
             query["head_sha"] = git_sha
         url = (
@@ -129,10 +116,13 @@ class GitHubActionsReader:
         request = self._request(url)
         try:
             with self._opener(request, timeout=self._timeout) as response:
-                return cast("dict[str, object]", json.load(response))
+                payload = json.load(response)
         except (HTTPError, URLError, TimeoutError, ValueError) as exc:
             code = getattr(exc, "code", "transport")
             raise GitHubReadError(f"GitHub build read failed ({code})") from None
+        if not isinstance(payload, dict):
+            raise GitHubReadError("GitHub build response was incomplete")
+        return cast("dict[str, object]", payload)
 
     def _read_bytes(self, url: str) -> bytes:
         request = self._request(url)
@@ -162,19 +152,6 @@ class GitHubActionsReader:
             )
         except (KeyError, TypeError, ValueError):
             raise GitHubReadError("GitHub build response was incomplete") from None
-
-    def _run_log_mentions_tag(self, run_id: int, tag: str) -> bool:
-        url = (
-            f"https://api.github.com/repos/{self._repository}/actions/runs/"
-            f"{run_id}/logs"
-        )
-        raw = self._read_bytes(url)
-        marker = f"trading-agents-master:{tag}".encode()
-        try:
-            with ZipFile(BytesIO(raw)) as archive:
-                return any(marker in archive.read(name) for name in archive.namelist())
-        except BadZipFile:
-            raise GitHubReadError("GitHub build log response was incomplete") from None
 
 
 def build_github_reader(

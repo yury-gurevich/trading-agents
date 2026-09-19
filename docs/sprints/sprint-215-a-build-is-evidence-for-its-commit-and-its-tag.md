@@ -393,15 +393,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| GitHub build reader, deploy evidence tests, and append-only writer | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; S180 | LAW-02 proof discipline; no agent clause | Yes. This is operator tooling outside every agent law/test plan, so tests cite no invented clause and the existing `DeployRecord` shape remains unchanged. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. It changes only
+the `surfaces/dashboard/` reader's evidence selection; it does not change `contracts/`, any agent, or a
+`DeployRecord` property. The corrected reader enforces S180's existing proof guarantee.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** No agent law governs GitHub build evidence. The four
+operator-tooling decisions are recorded in DL-177; this is not a law/code drift.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** None; no law clause governs this code.
 
 ---
 

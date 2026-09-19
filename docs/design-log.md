@@ -8,6 +8,29 @@ and is marked CLOSED here.
 
 ---
 
+## DL-178 - Git stores all tracked text with LF endings - status: DECIDED (S216, 2026-09-19 15:45 AEST)
+
+**Decision. Enforce LF at the Git index with `.gitattributes`.** The repository declares
+`* text=auto eol=lf`, with explicit `*.png binary` and `*.ico binary` reinforcement. Git therefore
+normalizes text on every `git add`, independent of the editor or operating system that wrote the
+working copy. A pytest guard reads `git ls-files --eol -z` and fails when the index stores CRLF or
+mixed text, while a separate assertion keeps the attributes rules present.
+
+**Rejected routes.**
+
+- `* text eol=lf` without `auto`. Rejected because it treats every file as text, including the
+  fifteen images, unless every binary extension is maintained manually.
+- A per-extension text list. Rejected because each new text extension remains unprotected until a
+  maintainer remembers to add it.
+- A new `make ci` step. Rejected because the established gate has twelve steps, its remote mirror
+  must retain that shape, and the pytest guard already runs inside the existing pytest step.
+- A pre-commit `mixed-line-ending` hook. Rejected because it only protects installations that have
+  the hook and only staged files, whereas Git attributes apply on every `git add`.
+- Checking working-tree (`w/`) endings. Rejected because Windows may retain CRLF on disk while Git
+  correctly stores LF; the index (`i/`) is the repository artifact that must be guarded.
+
+---
+
 ## DL-177 - build evidence follows an ancestor commit and an exact published tag - status: DECIDED (S215, 2026-09-19)
 
 **Decision. A successful build is deploy evidence when its head commit is contained in `main`.**

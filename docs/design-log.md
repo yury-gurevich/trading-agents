@@ -8,6 +8,54 @@ and is marked CLOSED here.
 
 ---
 
+## DL-179 - a subsystem the fleet cannot use stops the run, retries twice an hour apart, then waits for a human - status: DECIDED (operator, 2026-09-19 17:05 AEST; channel OPEN)
+
+**Operator decisions, 2026-09-19** (verbatim intent, work-queue items 57 and 58):
+
+- **57: "make it count. This is an UNRECOVERABLE error for the runtime."** A status listed in a
+  probe's `credential_failure_statuses` is authoritative: it classifies the failure as
+  **unrecoverable**, meaning the runtime cannot fix it and only a human can (bad key, drained account,
+  revoked access). This reverses S203's "record, not a filter" comment in `credential_probes.py`.
+- **58: "fleet should not start."** The master checks **every** subsystem for expected function
+  before a run. If anything is unfunded or inaccessible, the start is **delayed one hour, then one more
+  hour**, and then a **human is notified, and the human's answer decides whether and when the fleet
+  runs**. This retires `required: false` as a way to start without a vendor. It also retires DL-36's
+  "one automatic shot, then human" for this path: two timed retries replace the single shot.
+
+**Planner decisions within that intent** (technical, delegated):
+
+1. **The gate is fleet-level and sits before the run is placed**, not per-agent at activation. Today
+   each agent is tested when it asks the master for credentials, and a failure refuses only that
+   agent, so a run can start with half a fleet. The new preflight runs every probe in the credential
+   pack plus the spine (Postgres, Service Bus, Key Vault) before `RunRequest` placement.
+   Per-agent activation checks stay as they are, as a second line.
+2. **Classification.** A listed status means *unrecoverable*. `>= 500`, a timeout or a network error
+   means *transient*. An **unlisted** 4xx is *unrecoverable* too: failing closed is still right, and
+   an unpredicted 4xx is not something a retry fixes. Both classes take the same two retries, because
+   a human can top up a drained account inside the hour. Only the notification wording differs.
+3. **Notify at the first failure as well as at the hold.** The first message is a heads-up
+   ("retrying at HH:MM"). After the second retry fails, the run is **held**, and a second message asks
+   for a decision: run now, run at a given time, or skip the day. The hold never expires on its own
+   into a run.
+4. **Timing is safe.** The dispatcher fires 22:30 UTC, after the US close. The two retries end at
+   00:30 UTC, and the next session opens 13:30 UTC, so the delay costs nothing but freshness.
+5. **Every `required: false` probe becomes required**, including the OpenAI fallbacks and FMP, which
+   S213 now depends on for VIX. A vendor we no longer use gets *removed* from the pack, not
+   demoted to advisory.
+
+**OPEN: the notification channel.** Nothing in the fleet can reach a human today. There is no email,
+push or chat integration (searched 2026-09-19). The human's *answer* also needs a place to land, and
+the dashboard is the natural surface for it. The channel is the operator's choice.
+
+**Rejected routes.**
+
+- *Keep per-agent activation as the only gate.* Rejected: it refuses one agent and lets the run
+  start degraded, which is exactly what "fleet should not start" forbids.
+- *Unlisted 4xx becomes a transport fault (the item-57 alternative).* Rejected: it would make a
+  probe stop blocking for statuses nobody predicted, the opposite of "unrecoverable".
+- *Hold expires into a run after N hours.* Rejected: the operator's answer decides, so silence
+  means no run.
+
 ## DL-178 - Git stores all tracked text with LF endings - status: DECIDED (S216, 2026-09-19 15:45 AEST)
 
 **Decision. Enforce LF at the Git index with `.gitattributes`.** The repository declares

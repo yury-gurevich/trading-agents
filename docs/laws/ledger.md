@@ -48,7 +48,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | curator | ✅ v1.1 (LOCKED) | 23 / 47 | 🟨 partial — **23 of 47 clauses proven** after S205 rewrites and proves `CUR-TYP-01`; 24 have a gray row |
 | operator | ✅ v1.3 (LOCKED) | 16 / 50 | 🟨 partial — **16 of 50 clauses proven** after S205 rewrites and proves `OPR-TYP-01`; 34 have a gray row |
 | supervisor | ✅ v1.1 (LOCKED) | 22 / 48 | 🟨 partial — **22 of 48 clauses proven** after S205 rewrites and proves `SUP-TYP-01`; S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); 26 have a gray row |
-| master | ✅ v1.3 (LOCKED) | 16 / 44 | 🟨 partial — **16 of 44 clauses proven** after S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; S204 gives every clause a row and promotes missing rows to a hard gate · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
+| master | ✅ v1.4 (LOCKED) | 18 / 46 | 🟨 partial — **18 of 46 clauses proven** after S217 adds and proves `MST-OUT-04` whole-fleet readiness and `MST-FAIL-05` classification; S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; S204 gives every clause a row and promotes missing rows to a hard gate · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
 
 ## Layer 2 — Choreography
 

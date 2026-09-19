@@ -45,14 +45,25 @@ def test_build_app_accepts_custom_settings() -> None:
     assert agent._settings.handshake_max_retries == 3
 
 
+def test_fleet_preflight_interval_is_a_bounded_setting() -> None:
+    """Master checks the whole fleet at a bounded operator-configured interval."""
+    assert MasterSettings().fleet_preflight_interval_minutes == 60
+    with pytest.raises(ValueError, match="fleet_preflight_interval_minutes"):
+        MasterSettings(fleet_preflight_interval_minutes=4)
+    with pytest.raises(ValueError, match="fleet_preflight_interval_minutes"):
+        MasterSettings(fleet_preflight_interval_minutes=241)
+
+
 def test_build_app_loads_grant_policy_and_secret_map_from_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """build_app loads both the grant policy and secret map from their pack paths."""
     monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    monkeypatch.setenv("FINNHUB_API_KEY", "fk")
+    monkeypatch.setenv("FMP_API_KEY", "fm")
     # alpaca-data is the provider's one required credential (ADR-0006 amendment),
-    # so activation now resolves these two before it will hand the config over.
+    # so activation now resolves all five provider credentials before handover.
     monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
     monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()
@@ -87,8 +98,10 @@ def test_build_app_loads_pack_data_from_base64_env(
     ).decode()
     monkeypatch.setattr(credential_probes, "_default_http_transport", lambda _req: 200)
     monkeypatch.setenv("TIINGO_API_KEY", "tk")
+    monkeypatch.setenv("FINNHUB_API_KEY", "fk")
+    monkeypatch.setenv("FMP_API_KEY", "fm")
     # alpaca-data is the provider's one required credential (ADR-0006 amendment),
-    # so activation now resolves these two before it will hand the config over.
+    # so activation now resolves all five provider credentials before handover.
     monkeypatch.setenv("ALPACA_KEY_ID", "ak")  # pragma: allowlist secret
     monkeypatch.setenv("ALPACA_SECRET_KEY", "as")  # pragma: allowlist secret
     private, _ = generate_keypair()

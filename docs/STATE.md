@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-19 16:45 AEST · **Version:** 0.98.12 · **🟩 S216 merged (`9e39e40`, gate proven): 0 CRLF files, and `.gitattributes` + a guard test keep it that way (item 69 closed). Fleet on `s215`; item 70's live proof arrives with `sched-2026-09-21`.**
+**Last updated:** 2026-09-19 22:22 AEST · **Version:** 0.99.00 · **S217 built on `sprint-217-master-checks-the-fleet`: local gate passed; remote proof, merge, and intentionally no deployment remain.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟠 **BUILT, NOT MERGED / NOT DEPLOYED — [S217](sprints/sprint-217-the-master-checks-the-whole-fleet.md), `0.99.00`, 2026-09-19 22:22 AEST.** Master now runs a daemon fleet preflight across every grant-policy agent type: every pack probe is required, listed 4xx failures are `unrecoverable`, unlisted 4xx failures are `unexpected`, and transport failures are `transient`; each failed check becomes critical fault evidence and one `FleetPreflight` graph record. **Proven locally:** redirected `make ci` exited 0 with **2884 passed, 6 skipped, 100.00 %** coverage; pip-audit and both secret scans passed. The branch worktree has no `.env`; no live probe ran. **Not done:** final branch gate proof, merge, and deployment. S217 must not deploy alone; S218/S219 own downstream action and notification.
 
 
 

@@ -1,6 +1,6 @@
 # `Master` — Law Test-Plan
 
-**Prefix:** `MST` · **status:** LOCKED v1.3 · **aligned with:** laws.md LOCKED v1.3
+**Prefix:** `MST` · **status:** LOCKED v1.4 · **aligned with:** laws.md LOCKED v1.4
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -16,10 +16,11 @@
 | MST-STA-04 | `drain()` writes `drain_reason` to AgentInstance | `test_drain_marks_instance_in_graph` | 🟩 |
 | MST-NEV-02 | `drain` on unknown instance_id raises `KeyError` | `test_drain_unknown_instance_raises` | 🟩 |
 | MST-FAIL-04 | Credential-test transport failures are visible faults, not credential failures; activation may proceed, no pass is cached, and required failures are decided from credential rejection; optional credential failures do not block activation | `test_transport_failure_faults_without_blocking_or_caching`; `test_optional_credential_failure_is_recorded_without_blocking` | 🟩 |
+| MST-FAIL-05 | A listed credential-failure status is `unrecoverable`, another 4xx is `unexpected`, and a 5xx, timeout, or network error is `transient`; all three fail the fleet check | `test_credential_probe_classification.py::test_listed_credential_failure_status_is_unrecoverable`; `test_unlisted_credential_failure_status_is_unexpected`; `test_server_error_stays_a_transient_credential_failure` | 🟩 |
 | MST-SEC-04 | Credential-test evidence never contains raw secret values; activation records, escalations, faults, and refusal exceptions name credential/test labels and sanitized causes only | `test_secret_values_never_appear_in_credential_probe_records` | 🟩 |
 | MST-DEP-04 | A credential-bearing pack must supply a non-empty credential-test declaration at startup; missing declarations, empty declarations, and unknown probe kinds are rejected loudly instead of being treated as zero successful tests | `test_missing_credential_tests_for_secret_pack_is_loud`; `test_unknown_probe_kind_is_refused_loudly` | 🟩 |
 | MST-OBS-04 | Successful activation records applicable credential-test evidence on the `AgentInstance`: live-tested names, live-passed names, cached-pass names, optional failures, and transport failures | `test_activation_records_tested_credentials`; `test_optional_credential_failure_is_recorded_without_blocking`; `test_transport_failure_faults_without_blocking_or_caching` | 🟩 |
-| MST-IDN-02 | Master exclusively owns listed graph labels | architecture / import-linter | ⬜ |
+| MST-IDN-02 | Master exclusively owns the listed graph labels, including `FleetPreflight`; no other agent writes them | `test_fleet_preflight_packs.py::test_vocabulary_declares_fleet_preflight_and_its_properties` declares the new label only; whole-label exclusive ownership remains unproven | ⬜ |
 | MST-IDN-03 | Master sole Key Vault accessor | deferred S74 | ⬜ |
 | MST-IN-03 | Malformed EHLO → no graph write, fault emitted | integration test (deferred) | ⬜ |
 | MST-NEV-03 | No trading logic | static (contract) | ⬜ |
@@ -32,6 +33,7 @@
 | MST-TRG-01 | activate is triggered by EHLO on the handshake queue | _tbd_ | ⬜ |
 | MST-TRG-02 | drain is triggered by operator/supervisor or master's crash-recovery path | _tbd_ | ⬜ |
 | MST-OUT-03 | start() writes a Session node with started_at for crash recovery | _tbd_ | ⬜ |
+| MST-OUT-04 | `run_fleet_preflight` tests every pack-declared probe for every grant-policy agent type, writes one FleetPreflight node per check, passes only for passed/fresh-cached probes, and fails for credential or transport failures | `test_fleet_preflight.py::test_all_passing_probes_write_a_passing_fleet_preflight`; `test_transport_failure_fails_the_fleet_preflight`; `test_credential_failure_fails_the_fleet_preflight`; `test_fresh_costly_cache_counts_as_a_preflight_pass`; `test_a_probe_is_checked_once_per_agent_type` | 🟩 |
 | MST-IDM-02 | restart reads existing Session nodes before writing a new Session | _tbd_ | ⬜ |
 | MST-ORD-01 | start() must precede activate(); activate without a live session cannot link to session_id | _tbd_ | ⬜ |
 | MST-ORD-02 | master startup and live handshake queue precede trading-agent EHLO | _tbd_ | ⬜ |

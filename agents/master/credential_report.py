@@ -25,6 +25,14 @@ class CredentialTransportFailure:
 
 
 @dataclass(frozen=True)
+class CredentialFailure:
+    """A sanitized credential rejection with its pack-classified reason."""
+
+    name: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class CredentialTestReport:
     """Resolved config plus credential-test evidence for one activation."""
 
@@ -36,6 +44,7 @@ class CredentialTestReport:
     failed_required: tuple[str, ...]
     failed_optional: tuple[str, ...]
     transport_failures: tuple[CredentialTransportFailure, ...]
+    credential_failures: tuple[CredentialFailure, ...] = ()
 
 
 def credential_test_props(report: CredentialTestReport) -> dict[str, object]:

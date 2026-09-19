@@ -90,14 +90,9 @@ def test_the_openai_probe_budget_survives_a_reasoning_model(agent_type: str) -> 
     assert int(body["max_completion_tokens"]) >= 128
 
 
-def test_the_openai_probe_stays_advisory() -> None:
-    """The posture is unchanged by this sprint: a defect fix is not a promotion.
-
-    `required: false` is deliberate — `DELIBERATOR_LLM_PROVIDER=anthropic`, so
-    halting three deliberators on an unused vendor would be a posture change, and
-    S203 explicitly ruled it out of scope.
-    """
-    assert [_probe(a)["required"] for a in OPENAI_PROBE_AGENTS] == [False] * 3
+def test_the_openai_probe_is_required() -> None:
+    """S217 / MST-NEV-06: every declared OpenAI probe is fleet-required."""
+    assert [_probe(a)["required"] for a in OPENAI_PROBE_AGENTS] == [True] * 3
 
 
 def test_an_unlisted_4xx_still_fails_the_probe() -> None:
@@ -132,3 +127,4 @@ def test_an_unlisted_4xx_still_fails_the_probe() -> None:
 
     assert not isinstance(result, bool)
     assert result.status == "credential_failure"
+    assert result.reason == "unexpected:http_418"

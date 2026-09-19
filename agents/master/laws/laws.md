@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -16,7 +16,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   containers, distributes minimum-necessary credentials, and records the live fleet in the graph store.
   It has zero trading logic.
 - **MST-IDN-02** — Master exclusively owns graph labels: `AgentDefinition`, `AgentInstance`,
-  `Session`, `CapabilityGrant`. No other agent writes these labels.
+  `Session`, `CapabilityGrant`, `FleetPreflight`. No other agent writes these labels.
 - **MST-IDN-03** — Master is the only process with Azure Key Vault access (ADR-0007). No agent
   receives vault credentials directly; they receive only the resolved config needed for their
   declared capabilities.
@@ -46,6 +46,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `AgentInstance` node.
 - **MST-OUT-03** — On `start()`, writes a `Session` node with `started_at`. Used for
   crash-recovery detection (no `ended_at` → prior session crashed).
+- **MST-OUT-04** — `run_fleet_preflight` tests every pack-declared probe for every agent type in
+  the grant policy and writes one `FleetPreflight` node per check. The check passes only if every
+  probe passed or has a fresh costly-pass cache entry. A credential failure or a transport failure
+  fails it.
 
 ## Never (`NEV`)
 
@@ -99,6 +103,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-FAIL-04** — Credential-test transport failures are visible faults, not credential failures:
   activation may proceed, no pass is cached, and required failures are decided from credential
   rejection. Optional credential failures do not block activation.
+- **MST-FAIL-05** — A probe status listed in the probe's `credential_failure_statuses` is recorded
+  as `unrecoverable`. Any other 4xx is recorded as `unexpected`. A 5xx, timeout, or network error
+  is recorded as `transient`. All three fail the fleet check.
 
 ## Type contracts (`TYP`)
 
@@ -158,7 +165,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 {
   "graph": {
     "operations": ["append_write", "read"],
-    "labels_owned": ["AgentDefinition", "AgentInstance", "Session", "CapabilityGrant"],
+    "labels_owned": ["AgentDefinition", "AgentInstance", "Session", "CapabilityGrant", "FleetPreflight"],
     "access": "owner"
   },
   "key_vault": {
@@ -182,6 +189,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `credential_tests_path` | `""` | `str` | YES | Filesystem path fallback for the master credential-test declaration pack |
 | `credential_tests_b64` | `""` | `str` | YES | Base64 environment delivery for the master credential-test declaration pack |
 | `credential_pass_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a costly credential-test pass remains fresh during an activation wave |
+| `fleet_preflight_interval_minutes` | `60` | `int ≥ 5 ≤ 240` | YES | Minutes between master-owned whole-fleet readiness checks; bounds detection delay and repeated probe cost |
 
 ## Divergence register
 
@@ -200,3 +208,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.3 — S205 rewrites `MST-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `EHLOMessage`, `ACTIVATEMessage`, and `DRAINMessage`, while preserving the
   `_Frozen` and `AgentState`/`StrEnum` type assertions. No contract shape changes.
+- v1.4 — S217 adds master-owned `FleetPreflight` evidence (`MST-IDN-02` / `MST-OUT-04`) and
+  `MST-FAIL-05` classification for whole-fleet readiness. `MST-FAIL-04` is unchanged: activation
+  still permits a transport failure, while fleet readiness fails it by design (DL-179).

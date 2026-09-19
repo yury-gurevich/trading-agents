@@ -17,6 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
 from agents.master.credential_report import (
+    CredentialFailure,
     CredentialTestReport,
     CredentialTransportFailure,
 )
@@ -111,6 +112,7 @@ def resolve_and_test_report(
     failed_required: list[str] = []
     failed_optional: list[str] = []
     transport_failures: list[CredentialTransportFailure] = []
+    credential_failures: list[CredentialFailure] = []
     for test in tests:
         if test.agent_types and agent_type not in test.agent_types:
             continue
@@ -128,10 +130,12 @@ def resolve_and_test_report(
             transport_failures.append(
                 CredentialTransportFailure(test.name, result.reason)
             )
-        elif test.required:
-            failed_required.append(test.name)
         else:
-            failed_optional.append(test.name)
+            credential_failures.append(CredentialFailure(test.name, result.reason))
+            if test.required:
+                failed_required.append(test.name)
+            else:
+                failed_optional.append(test.name)
     return CredentialTestReport(
         config,
         tuple(applicable),
@@ -141,4 +145,5 @@ def resolve_and_test_report(
         tuple(failed_required),
         tuple(failed_optional),
         tuple(transport_failures),
+        tuple(credential_failures),
     )

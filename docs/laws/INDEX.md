@@ -50,7 +50,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | supervisor | ✅ LOCKED v1.1 (S205) | 22 / 48 | S205 rewrites and proves `SUP-TYP-01`; S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); counters are clauses proven / clauses declared |
 | curator | ✅ LOCKED v1.1 (S205) | 23 / 47 | S205 rewrites and proves `CUR-TYP-01`; counters are clauses proven / clauses declared |
 | researcher | ✅ LOCKED v1.1 (S205) | 20 / 43 | S205 rewrites and proves `RES-TYP-01`; counters are clauses proven / clauses declared |
-| master | ✅ LOCKED v1.3 (S205) | 16 / 44 | S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; RSA/Key Vault clauses deferred S74; S204 gives every clause a row and makes rowless clauses a hard gate |
+| master | ✅ LOCKED v1.4 (S217) | 18 / 46 | S217 adds and proves `MST-OUT-04` whole-fleet readiness and `MST-FAIL-05` classification; S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; RSA/Key Vault clauses deferred S74; S204 gives every clause a row and makes rowless clauses a hard gate |
 
 See [ledger.md](ledger.md) for the canonical version of this table.
 

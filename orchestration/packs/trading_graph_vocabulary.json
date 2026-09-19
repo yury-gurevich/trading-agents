@@ -28,6 +28,7 @@
     "FaultResolution",
     "FaultSuppression",
     "Fill",
+    "FleetPreflight",
     "Flag",
     "FlagResolution",
     "Foo",
@@ -453,6 +454,13 @@
       "submitted_at",
       "ticker",
       "time_in_force"
+    ],
+    "FleetPreflight": [
+      "agent_types_checked",
+      "checked_at",
+      "failure_count",
+      "failures",
+      "passed"
     ],
     "LLMCall": [
       "cache_read_tokens",

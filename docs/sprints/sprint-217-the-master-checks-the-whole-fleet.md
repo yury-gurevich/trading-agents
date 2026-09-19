@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-217-master-checks-the-fleet`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) (operator decisions on work-queue items 57 and 58, and the three-sprint design) · closes work-queue item **57** · first of three sprints for item **58**
@@ -332,15 +332,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `credential_probes.py` / `credential_test.py` | `agents/master/laws/laws.md`, `agents/master/laws/test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `MST-FAIL-04` remains activation-only; new `MST-FAIL-05`; `MST-NEV-06`; `MST-SEC-04` | Yes. The stricter fleet result is separate from activation's transport-failure semantics, and failure reasons must remain sanitized evidence. |
+| `fleet_preflight.py` | Same master law files and umbrella law files | new `MST-OUT-04`, `MST-FAIL-05`, `MST-IDN-02`, `MST-IDN-03`, `MST-NEV-06` | Yes. The master alone resolves secrets; a preflight must write its own owned label and reuse the costly-pass cache without re-probing it. |
+| `entrypoint.py` / `settings.py` | Same master law files and umbrella law files | `MST-ORD-02`, `MST-OUT-03`, new `MST-OUT-04` | Yes. The periodic loop belongs in the master process, and each iteration needs a fault boundary so one crash cannot stop later checks. |
+| Credential-test and vocabulary packs | `agents/master/laws/laws.md`, `agents/master/laws/test-plan.md` | `MST-NEV-06`, amended `MST-IDN-02` | Yes. Every declared probe must be required and `FleetPreflight` must be declared in the vocabulary in the same change. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes. It adds the fleet-wide preflight guarantee and a master-owned durable `FleetPreflight` label without changing a `contracts/` model; `MST-OUT-04`, `MST-FAIL-05`, and `MST-IDN-02` therefore require the prescribed amendment cycle.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None. `MST-FAIL-04` remains unchanged: a transport failure does not block an individual activation. The new fleet preflight deliberately treats the same failure as failed fleet readiness.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** The fleet-wide preflight guarantee was absent. The sprint resolves that absence through the specified new clauses rather than inferring policy from activation rules.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** `MST-OUT-04` is proven by the fleet-preflight unit and loop tests. `MST-FAIL-05` is proven by the listed/unlisted/5xx classification tests. `MST-IDN-02` remains honestly gray: the vocabulary test declares the new label, but whole-label exclusive ownership needs wider evidence.
 
 ---
 
@@ -348,52 +351,83 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_listed_credential_failure_status_is_unrecoverable` | `agents/master/tests/test_credential_probe_classification.py` | PASS | MST-FAIL-05 |
+| A2 | `test_unlisted_credential_failure_status_is_unexpected` | `agents/master/tests/test_credential_probe_classification.py` | PASS | MST-FAIL-05 |
+| A3 | `test_server_error_stays_a_transient_credential_failure` | `agents/master/tests/test_credential_probe_classification.py` | PASS | MST-FAIL-05 |
+| A4 | `test_all_passing_probes_write_a_passing_fleet_preflight` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04 |
+| A5 | `test_transport_failure_fails_the_fleet_preflight` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04 |
+| A6 | `test_credential_failure_fails_the_fleet_preflight` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04 |
+| A7 | `test_every_trading_credential_probe_is_required` | `agents/master/tests/test_fleet_preflight_packs.py` | PASS | MST-NEV-06 |
+| A8 | `test_secret_resolution_failure_is_sanitized` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04, MST-NEV-04 |
+| A9 | `test_fresh_costly_cache_counts_as_a_preflight_pass` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04, MST-NEV-06 |
+| A10 | `test_a_probe_is_checked_once_per_agent_type` | `agents/master/tests/test_fleet_preflight.py` | PASS | MST-OUT-04 |
+| A11 | `test_fleet_preflight_loop_survives_a_crashing_iteration` | `agents/master/tests/test_fleet_preflight_loop.py` | PASS | MST-OUT-04 |
+| A12 | Existing activation tests, including `test_transport_failure_faults_without_blocking_or_caching` | `agents/master/tests/test_credential_probes.py` | PASS | MST-NEV-06, MST-FAIL-04 |
+| A13 | `test_vocabulary_declares_fleet_preflight_and_its_properties` | `agents/master/tests/test_fleet_preflight_packs.py` | PASS | MST-IDN-02 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_duplicate_probe_failures_are_recorded_once` proves per-agent deduplication; `test_preflight_daemon_starts_the_fault_bounded_loop` proves daemon startup; the existing unlisted-4xx regression now asserts `unexpected:http_418`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills)*
+**Status:** BUILT locally; not merged or deployed.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-217-master-checks-the-fleet`; `.env` present: `False`.
 
-**Result:** *(builder fills)*
+**Result:** The master classifies listed 4xx responses as unrecoverable and other 4xx responses as unexpected; all 12 pack probes are required. It writes a master-owned `FleetPreflight` result across every grant-policy agent type, faults each failure critically, sanitizes secret-resolution errors, and repeats from a daemon loop. Activation retains its existing transport-failure semantics.
 
-**Files changed:** *(builder fills)*
+**Files changed:** Master probe/result/entrypoint/settings code; new fleet-preflight and scheduling modules; focused master tests; credential and graph-vocabulary packs; master law cycle and rollups; DL-180; package version `0.99.00` and `uv.lock`.
 
-**Design decisions:** *(builder fills)*
+**Design decisions:** DL-180 records the master-process daemon loop and treats a fresh costly-pass cache result as fleet-ready. Rejected alternatives remain an on-demand HTTP preflight endpoint, treating unlisted 4xx responses as transient, and deleting pack-declared failure statuses.
 
 **Proof — the red run first:**
 
 ```text
-(builder fills)
+Focused classification red run before implementation:
+listed 402 and unlisted 418 both lost their required classifications;
+503 remained transient. The red expectations isolated the missing parser behaviour.
+
+Guard A1: expected unrecoverable:http_402, observed unexpected:http_402.
+Guard A5: suppressing the transport failure produced passed=True.
+Guard A7: changing Tiingo to required=false failed the real-pack assertion.
+Guard A8: retaining the Key Vault exception message exposed vault.example and KEY in evidence.
+
+All four guard plants were restored before the green run.
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder fills)
+uv run pytest agents/master/tests orchestration/tests -q --no-cov
+435 passed
+
+make -C C:\Users\yury_\Downloads\project\trading-agents-sprint-217-master-checks-the-fleet ci
+exit code: 0
+2884 passed, 6 skipped in 94.63s
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+Detect secrets (untracked): scanning 6 new file(s)
 ```
 
-**Guards planted:** *(builder fills)*
+**Guards planted:** A1 parser classification, A5 transport-failure readiness, A7 all-required pack declaration, and A8 secret-exception sanitization each failed at the intended assertion and were restored; the full gate ran only after restoration.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `fleet_preflight.py` 130; `fleet_preflight_loop.py` 54; `entrypoint.py` 165; `test_fleet_preflight.py` 151. `check_module_size.py` passed in the full gate; every touched module is below 200 lines and the new preflight module is below 150.
 
-**`make ci`:** *(builder fills)*
+**`make ci`:** Exit 0 from the fresh redirected capture `C:\Users\yury_\AppData\Local\Temp\s217-ci-final.txt`; all 12 gate steps completed.
 
 **`make gate-ran`:**
 
 ```text
-(builder fills)
+Not run yet. This handback commit must be pushed first; the final branch SHA must then be proven from this worktree.
 ```
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** Remote gate proof is not yet run for the handback commit. Merge and deployment are intentionally not done; S217 must not deploy alone.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- No live credential probe ran: this isolated worktree has no `.env`, and all S217 proofs use fakes.
+- The branch remains unmerged and undeployed by design. The next action is push plus `make gate-ran` from this worktree; S218/S219 own downstream action and notification.

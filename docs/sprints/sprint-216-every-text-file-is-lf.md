@@ -58,7 +58,7 @@ that go straight to `main` without a gate.
 | --- | --- | --- |
 | CRLF or mixed files | **52** (38 `i/crlf`, 14 `i/mixed`): 11 `.py`, 19 `.md`, 9 `.ps1`, 3 `.yml`, 2 `.json`, 2 `.qls`, and one each of `.txt`, `.ini`, `.csv`, `.codeqlignore`, `.bicep`, `.secrets.baseline` | `git ls-files --eol` |
 | Every other file | 1,672 `i/lf`, 15 `i/-text` (14 `.png`, 1 `.ico`), 3 `i/none` (empty) | same |
-| **Dry run of this exact change** | `.gitattributes` (the 3 lines below) + `git add --renormalize .` stages **53** files. `git diff --cached --ignore-cr-at-eol` shows **only** `.gitattributes`. Index after: **1,725** `i/lf`, 15 `i/-text`, 3 `i/none`, **0** `i/crlf`, **0** `i/mixed`. **0** `.png`/`.ico` staged. `ruff format --check` on the 11 `.py`: `11 files already formatted` | throwaway detached worktree at `4bc2ea6`, deleted after |
+| **Dry run of this exact change** | `.gitattributes` (the 3 lines below) + `git add --renormalize .` stages **53** files. `git diff --cached --ignore-cr-at-eol` shows **only** `.gitattributes`. Index after: **1,725** `i/lf` *(at `4bc2ea6`; the rule that holds on any later `main` is **`i/lf` after = `i/lf` before + 53** — re-measured 2026-09-19 at `f253aff`: 1,673 before, so **1,726** after)*, 15 `i/-text`, 3 `i/none`, **0** `i/crlf`, **0** `i/mixed`. **0** `.png`/`.ico` staged. `ruff format --check` on the 11 `.py`: `11 files already formatted` | throwaway detached worktree at `4bc2ea6`, deleted after |
 | The pre-commit hooks will not edit the 52 | **0** have trailing whitespace; **0** lack a final newline | byte scan of all 52 |
 | Files that must stay CRLF | **0**: no `.bat`/`.cmd`; no signed `.ps1` (`SIG # Begin signature` appears nowhere) | `git ls-files`; grep |
 | Code that byte-compares or hashes these files | **none**. `remediation_selector_golden.json` is read with `json.loads(read_text())` (`scripts/remediation_gate.py:175`); `security/findings-baseline.json` is parsed as a JSON `--baseline` (`.github/workflows/security-findings.yml:80`); `universe_sp500.txt` is read line by line | grep |
@@ -157,7 +157,7 @@ No law clause governs this, so no clause ID is cited. Under 200 lines.
 
 | # | Do | Expected |
 | --- | --- | --- |
-| 1 | `git worktree add ../trading-agents-sprint-216-line-endings-lf -b sprint-216-line-endings-lf origin/main`, then work only in that directory | a worktree with **no** `.env` |
+| 1 | `git worktree add ../trading-agents-sprint-216-line-endings-lf -b sprint-216-line-endings-lf origin/main`, then work only in that directory. Then run `git ls-files --eol \| awk '{print $1}' \| sort \| uniq -c` and **write the numbers down** | a worktree with **no** `.env`; census shows `38 i/crlf` and `14 i/mixed` (**52** together), `15 i/-text`, `3 i/none`. Your `i/lf` number is the baseline step 10 checks against |
 | 2 | Write `tests/test_line_endings.py` exactly as specified. Run `uv run pytest tests/test_line_endings.py --no-cov -q` | **red**: the `.gitattributes` test fails (file missing), and the index test lists **52** paths. Paste the output |
 | 3 | Create `.gitattributes` with the 3 lines, then `git add .gitattributes` and `git commit -m "chore: add .gitattributes (text=auto eol=lf)"` | `1 file changed, 3 insertions(+)` |
 | 4 | `git diff --ignore-cr-at-eol --stat` | **empty**: no tracked file has a content change on disk. (`git status` may or may not list some of the 52 as modified; that depends on file timestamps, not content, so do not judge by it.) Anything shown here would be swept into the next commit: stop |
@@ -166,7 +166,7 @@ No law clause governs this, so no clause ID is cited. Under 200 lines.
 | 7 | `git diff --cached --name-only \| grep -cE '\.(png\|ico)$'` | **0** |
 | 8 | `git commit -m "chore: renormalize line endings to LF (content-free)"` | the pre-commit hooks pass without editing any file |
 | 9 | `git diff --ignore-cr-at-eol HEAD~1 HEAD` and `git show --stat HEAD \| tail -1` | **empty**, then `52 files changed, …`. Paste both |
-| 10 | `git ls-files --eol \| awk '{print $1}' \| sort \| uniq -c` | `15 i/-text`, `1725 i/lf`, `3 i/none`, and nothing else |
+| 10 | `git ls-files --eol \| awk '{print $1}' \| sort \| uniq -c` | `15 i/-text`, `3 i/none`, and `i/lf` equal to **the step-1 `i/lf` baseline + 53**, and nothing else. No `i/crlf`, no `i/mixed`. (1,725 at `4bc2ea6`; 1,726 from `f253aff` on, because this spec added one LF file. Docs commits landing after that raise it further, which is fine. Only the +53 is pinned) |
 | 11 | `uv run pytest tests/test_line_endings.py --no-cov -q` | **green** |
 | 12 | **DL-70:** delete the `* text=auto eol=lf` line, run step 11 (red), restore it, run step 11 again (green). Paste both | — |
 | 13 | Record DL-178 in `docs/design-log.md`; commit it together with the test | — |
@@ -260,7 +260,7 @@ including all nine parser cases in the spec's table.
 
 ORDER: test first (red: .gitattributes missing, 52 paths) -> commit .gitattributes alone ->
 "git diff --ignore-cr-at-eol --stat" must be empty -> git add --renormalize . (expect 52 staged, empty --ignore-cr-at-eol
-diff, 0 png/ico) -> commit -> eol census (15 i/-text, 1725 i/lf, 3 i/none) -> test green -> DL-70 (remove
+diff, 0 png/ico) -> commit -> eol census (15 i/-text, i/lf = before + 53, 3 i/none) -> test green -> DL-70 (remove
 the eol line, red, restore) -> DL-178 in docs/design-log.md, committed with the test ->
 make ci > <file> 2>&1; echo $?   (never pipe) -> push -> make gate-ran from the worktree, SHA equals
 git rev-parse HEAD -> fill the handback, Status: BUILT, commit, push, make gate-ran again.

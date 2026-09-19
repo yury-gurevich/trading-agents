@@ -60,3 +60,7 @@ trading-agents.code-workspace
 # Google Drive for Desktop — transient upload-staging folder (816 numbered temp
 # files); not project content, never tracked.
 .tmp.driveupload/
+
+# Local worktree layout: which standing worktrees `make worktrees` must not
+# report as stale. Paths differ per machine, so this is never shared.
+.worktree-keep

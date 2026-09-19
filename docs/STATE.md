@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-19 14:31 AEST · **Version:** 0.98.12 · **🟩 S215 MERGED, the first sprint built by GitHub Copilot: a tag-dispatched build of a commit on `main` is now deploy evidence, and a tag prefix no longer is.**
+**Last updated:** 2026-09-19 14:46 AEST · **Version:** 0.98.12 · **📦 S216 SPECCED for Copilot: `.gitattributes` so a CRLF can no longer reach the repo, and one content-free renormalization of the 52 files that are CRLF today (item 69); markdownlint filed as item 73.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -38,6 +38,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 
+
+📦 **SPECCED, for Copilot — [S216](sprints/sprint-216-every-text-file-is-lf.md), 2026-09-19 — work-queue item 69.** 52 of 1,742 tracked files are stored CRLF or mixed. The exact change (`.gitattributes` `* text=auto eol=lf` + `git add --renormalize .`) was dry-run in a throwaway worktree: 52 files, an empty `--ignore-cr-at-eol` diff, 0 images touched, 0 CRLF left. The spec pins every step's expected output and all nine guard-test cases. No bump, no deploy. 🟠 **Next:** work-queue item 73 (markdownlint config + local pre-commit hook), after S216 merges.
 
 🟩 **MERGED — [S215](sprints/sprint-215-a-build-is-evidence-for-its-commit-and-its-tag.md) (`0.98.12`, merge `5ef4a4c`), 2026-09-19 — work-queue item 72 code-fixed; the first sprint built by GitHub Copilot.** The deploy recorder now accepts a build whose commit GitHub's `compare` reports contained in `main`, whichever ref dispatched it, and matches tags whole. 🟩 **Proven:** `GATE PROVEN` for the branch tip `39be3b2` and for the merge `5ef4a4c`; live read-only check, old reader beside new: `s211`/`7d3ff51` `[]` → `[35217747046]` (the tag-dispatched build, item 72); `smoke-test`/`576ee57` `[]` → `[]` (never merged, still refused); `s21` and `s2` on `1a6f342` **false accept** `[35336964246]` → `[]`; `s176`/`74bdd7c` **false accept** of the `s176a` build `[31854512795]` → `[]`; controls `s214` and `s176a` accepted by both. 🪤 **Returned once:** the first handback's tag charset was uppercase-only, so `s176` still matched `s176a` — the spec's edge list had no letter suffix. 🩹 **This spec's own commit turned `main` red** (detect-secrets on a full SHA, local hook passed); fixed by `b6c3cd1`. No deploy (`surfaces/` is in no image). 🟠 **Owed:** S213's deploy, dispatched on its tag per the updated deploy-fleet step 2, is the closing proof — its `DeployRecord` closes item 72.
 

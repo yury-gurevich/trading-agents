@@ -1,0 +1,394 @@
+<!-- Agent: planning | Role: sprint handover -->
+# Sprint 218 — a fleet whose last check failed gets no run, and the dashboard says why
+
+**Phase:** Etalon-first continuous improvement (DL-19)
+**Branch:** `sprint-218-a-broken-fleet-gets-no-run`
+**Status:** SPEC
+**Version:** *next available MINOR at merge*
+**Effort:** M
+**Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180
+
+> **Why this bump kind.** The dispatcher gains a gate it did not have, and the dashboard gains a state
+> it could not show. That is a MINOR.
+
+**Builder:** GitHub Copilot. Every behaviour is pinned by a row in the test plan.
+**If a number you measure differs from one written here, stop and report. Do not adjust and continue.**
+
+🚨 **This sprint does not deploy on its own.** S219 (Telegram, and the answer buttons) is what tells
+the human. Deploying S218 without it would hold runs with nobody told.
+
+---
+
+## 🔴 MUST RULE — read the laws for every element you touch, BEFORE you write any code
+
+**This is a gate, not advice. Do not open an editor until step 5 is done.**
+
+| Location | What lives there | How to treat it |
+| --- | --- | --- |
+| `agents/master/laws/laws.md` (v1.4) | The master's locked constitution, including S217's `MST-OUT-04` and `MST-FAIL-05` | **LOCKED.** Read-only in this sprint |
+| `docs/laws/flow.md` | The umbrella law for the run's flow; the dispatcher is described at line 69 | Read-only |
+| `docs/laws/drift-register.md` | The one law-adjacent file you may append to | You will add one row (scope item 6) |
+
+### The rule
+
+1. **Before writing code**, read `agents/master/laws/laws.md`, `docs/laws/flow.md`,
+   [`docs/laws/conventions.md`](../laws/conventions.md) and [`docs/laws/drift-register.md`](../laws/drift-register.md).
+2. **Answer the law-cycle question below.**
+3. **Write the Law reading record** (at the bottom) **before** your first code change.
+4. **If a law contradicts this spec, STOP and report.**
+5. Tests for behaviour a clause governs cite the clause ID in their docstring (conventions §3).
+
+### 🩹 The law-cycle question — answered **NO, with one drift row**
+
+No `contracts/` file changes, and no agent makes a new guarantee: the master's behaviour is unchanged
+except the fault count (scope item 5), which no clause governs. The dispatcher and the dashboard have
+**no law book**, so the new dispatcher guarantee has nowhere to live. That silence is a finding: add a
+`drift-register.md` row (scope item 6). Do not create a law book in this sprint.
+
+### Element → law map
+
+| Element you will touch | Law file(s) to read first | Why it binds |
+| --- | --- | --- |
+| `orchestration/fleet_readiness.py` (new) | `agents/master/laws/laws.md` `MST-OUT-04`, `MST-IDN-02` | reads the master-owned `FleetPreflight`; must never write it |
+| `orchestration/scheduled_dispatch.py`, `scripts/dispatch_scheduled_run.py` | `docs/laws/flow.md` | the run's entry point |
+| `agents/master/fleet_preflight.py` | master `MST-OUT-04` | the fault fix only |
+| `surfaces/dashboard/projections_readiness.py` (new), `projections_verdict.py` | `docs/laws/flow.md` | read-only projection |
+| `infra/deploy-agents.ps1` | none | master window start |
+
+⚠️ **The one invariant: a ready fleet runs exactly as today.** When the latest `FleetPreflight`
+passed and is fresh, the dispatcher places the same `RunRequest` with the same id as before. If your
+change alters any existing dispatcher test for that case, stop and report.
+
+---
+
+## Goal
+
+After this sprint the dispatcher places the night's run **only if the master's latest fleet check
+passed and is fresh**. Otherwise it writes a `RunHold` node and places nothing. The dashboard's
+verdict light turns RED when the latest check failed or tonight's run is held, and its summary names
+what failed. The master wakes at 20:25 UTC instead of 22:25, so its hourly checks at about 20:25,
+21:25 and 22:25 give two retries before the 22:30 dispatch (DL-179 §6).
+
+## Why (context)
+
+Operator, 2026-09-19 (DL-179): *"fleet should not start. […] If anything is not funded or is not
+accessible then the start should be delayed first for one hour then for another hour, Human needs to
+notified and the human answer should determine if/when fleet runs."* And: *"It should show on the
+dashboard as well."* S217 made the master record the check. Nothing acts on it yet.
+
+### Measured, 2026-09-19 — on `main` @ `9f1955a`
+
+| Claim | Value | How it was measured |
+| --- | --- | --- |
+| Agents' scale window | `start 30 22`, `end 30 00` UTC | *[measured]* `az containerapp show -n scanner … scale.rules[0].custom.metadata` |
+| Master window start | `'25 22 * * *'` | *[measured]* `infra/deploy-agents.ps1:20` (`$MasterScaleStart`) |
+| Dispatcher cron | `30 22 * * 1-5` | *[measured]* `orchestration/packs/trading_tunables.json` → `dispatcher.cron` |
+| Master fleet-check interval | 60 min (`fleet_preflight_interval_minutes`) | *[measured]* S217, `agents/master/settings.py` |
+| S217 faults per failed check | **one per failed probe**; the S217 spec said one per failed check | *[measured]* `agents/master/fleet_preflight.py`, loop over `failures` calling `sink.submit` |
+| `FleetPreflight` key / props | `preflight:<checked_at ISO>`; `checked_at`, `passed`, `failure_count`, `failures`, `agent_types_checked` | *[measured]* `agents/master/fleet_preflight.py` |
+| Module sizes | `scheduled_dispatch.py` **126**, `scripts/dispatch_scheduled_run.py` **107**, `orchestration/settings.py` **69**, `projections_verdict.py` **157**, `app.py` **181**, `fleet_preflight.py` **145** | *[measured]* `wc -l` |
+| How the dashboard shows the verdict | the server sends `light` and `summary`; `static/verdict.js` renders them as given | *[measured]* `surfaces/dashboard/static/verdict.js` `render()` |
+| A dispatcher law book | **none exists** | *[measured]* no `laws.md` covers `orchestration/scheduled_dispatch.py` |
+
+---
+
+## Scope — and what is deliberately NOT here
+
+1. **`orchestration/fleet_readiness.py` (new, under 120 lines).**
+   - `@dataclass(frozen=True) class Readiness: state: Literal["ready", "failing", "unknown"]; preflight_key: str; checked_at: str; failures: tuple[str, ...]`.
+   - `fleet_readiness(graph, *, now, max_age_minutes) -> Readiness` reads `graph.list_nodes("FleetPreflight")`
+     and picks the latest by `checked_at`. There are three outcomes:
+     - None exists, or the latest is older than `max_age_minutes`: `unknown`, with an empty key when none exists.
+     - The latest has `passed` true: `ready`.
+     - Otherwise: `failing`, with its `failures`.
+   - Read only. It never writes `FleetPreflight` (`MST-IDN-02`).
+2. **The dispatcher gate.**
+   - Add `preflight_max_age_minutes: int = tunable(70, ge=10, le=240, unit="minutes", why=...)`
+     to `OrchestratorSettings`.
+   - In the placement path, after the calendar says `place`, read `fleet_readiness`:
+     - `ready` → place the run exactly as today. If a `RunHold` for this run id exists with
+       `state="held"`, merge `state="released"` and `released_at` onto it.
+     - `failing` or `unknown` → **do not place.** Merge a `RunHold` node with key `hold:<run_id>` and
+       props `run_id`, `as_of`, `held_at`, `state="held"`, `readiness_state`, `preflight_key` and
+       `failures`.
+   - Print `held <run_id> reason=<readiness_state> failures=<n>` and exit **0**. A hold is a decision,
+     not a crash. Put the gate in a new module if `scheduled_dispatch.py` would pass 150 lines.
+   - Re-firing the dispatcher the same day merges the same `hold:<run_id>` key (no duplicates). If the
+     fleet has become ready in the meantime, re-firing places the run and releases the hold.
+3. **Vocabulary.** Add `RunHold` to `labels` and its props (`run_id`, `as_of`, `held_at`, `state`,
+   `readiness_state`, `preflight_key`, `failures`, `released_at`) to `properties` in
+   `trading_graph_vocabulary.json`.
+4. **Dashboard.** New `surfaces/dashboard/projections_readiness.py` with a function
+   `readiness_override(graph, *, now, max_age_minutes)`. It returns `None` when there is nothing to
+   show. Otherwise it returns `{"state", "summary", "failures"}`, choosing the **first matching** case:
+   - A `RunHold` with `state="held"` whose `as_of` is the latest held day: summary
+     `"Tonight's run is held: <n> check(s) failing — <first failure>"`.
+   - The latest `FleetPreflight` failed and is at most 180 minutes old: summary
+     `"Fleet check failing (<n>) — <first failure>; next check in about an hour"`.
+
+   In `verdict_projection`, when the override is not `None`, force `light="RED"`, replace `summary`,
+   and add `readiness` to the payload. Otherwise the payload is unchanged, with no `readiness` key.
+   Keep `projections_verdict.py` under 170 lines by putting the logic in the new module. **No
+   frontend change**: `verdict.js` already renders the server's light and summary.
+   🪤 **UI wording carries no sprint numbers, DL ids or internal jargon** (DL-47). Show failure
+   strings as recorded (for example `unrecoverable:provider:fmp:unrecoverable:http_402`); prettifying
+   them is S219's.
+5. **S217 fault fix.** `run_fleet_preflight` submits **one** `critical` fault per **failed check**,
+   not per failed probe. The message names `failure_count=<n>` and the classes present, and `context`
+   carries the `failures` list. A passing check submits none.
+6. **Drift row.** Append to `docs/laws/drift-register.md`: the dispatcher now guarantees "no run
+   placed unless the latest fleet check passed within `preflight_max_age_minutes`", and **no law book
+   declares it**. Resolution: a law home for the dispatcher (a later sprint).
+7. **Master window.** In `infra/deploy-agents.ps1`, change the default `$MasterScaleStart` from
+   `'25 22 * * *'` to `'25 20 * * *'` and add a comment citing DL-179 §6. If a test in
+   `tests/test_deploy_script_invariants.py` pins the old value, update it and say so. Parse-check the
+   script: `pwsh -NoProfile -Command "$null = [scriptblock]::Create((Get-Content -Raw infra/deploy-agents.ps1))"`.
+
+### Out of scope (do NOT build this sprint)
+
+- **Telegram, notifications, answer buttons.** S219. No button, link or control is added to the
+  dashboard: an unwired control is forbidden (DL-47).
+- **Any "run at a later time" answer.** DL-179 §8.
+- **Waking the fleet on demand.** DL-179 §8.
+- **A law book for the dispatcher.** Only the drift row (scope item 6).
+- **Deploying.** The full `up` happens after S219.
+
+### The road not taken (LAW-06)
+
+- **The dispatcher runs the probes itself.** Rejected in DL-179: only the master touches Key Vault (`MST-IDN-03`).
+- **A hold exits non-zero.** Rejected: the job would show as failed in Azure and trigger its retry
+  policy. A hold is a correct decision. The stdout line and the `RunHold` node are the evidence.
+- **A frontend banner.** Rejected: the verdict hero already renders server wording. A second surface
+  for the same fact is a second thing to keep true.
+
+---
+
+## The design decisions this sprint has to make
+
+Record in `docs/design-log.md` (next free number; **DL-180 is the latest on `main`**, re-check at
+merge), with rejected alternatives, **before implementing**:
+
+1. **Freshness bound (70 minutes).** The check is hourly, so 70 minutes means "the most recent check",
+   with 10 minutes of slack. Rejected alternative: no bound, where a check from yesterday would pass
+   tonight.
+2. **`unknown` holds, like `failing`.** No evidence is not evidence of readiness. Rejected
+   alternative: `unknown` places the run, which would reopen the "a check that never ran reads as
+   passed" hole (S183, item 28).
+
+---
+
+## Blast radius — measured 2026-09-19
+
+| What | Detail |
+| --- | --- |
+| Files changed | `orchestration/fleet_readiness.py` (new), `orchestration/scheduled_dispatch.py` (126) or a new gate module, `orchestration/settings.py` (69), `scripts/dispatch_scheduled_run.py` (107), `agents/master/fleet_preflight.py` (145), `surfaces/dashboard/projections_readiness.py` (new), `surfaces/dashboard/projections_verdict.py` (157), `orchestration/packs/trading_graph_vocabulary.json`, `infra/deploy-agents.ps1`, `docs/laws/drift-register.md`, `docs/design-log.md`, tests |
+| Agents affected | master (fault count only); no agent imports another |
+| Contract change? | no |
+| Graph vocabulary change? | **yes**, `RunHold`, so the deploy is a full `up` (after S219) |
+| New env keys / tunables | `ORCHESTRATOR_PREFLIGHT_MAX_AGE_MINUTES` (default 70) |
+| Deploy implication | **none now**; full `up` after S219 |
+
+---
+
+## Steps, in order
+
+| # | Do | Expected |
+| --- | --- | --- |
+| 1 | `git worktree add ../trading-agents-sprint-218-a-broken-fleet-gets-no-run -b sprint-218-a-broken-fleet-gets-no-run origin/main`, then open **that folder** as the workspace | a worktree with **no** `.env` |
+| 2 | Read the laws; fill the Law reading record | — |
+| 3 | Record the design decisions in `docs/design-log.md` | — |
+| 4 | Write tests B1–B14. Run `uv run pytest orchestration/tests surfaces/tests agents/master/tests tests/test_dispatch_scheduled_run.py -q --no-cov` | **red**, and paste it. Each new test fails for the missing behaviour |
+| 5 | Implement scope items 1–7 | — |
+| 6 | Same pytest command | **green** |
+| 7 | **DL-70.** Plant each break below, watch its test go red, and restore it. Paste each red line | see "Guards to plant" |
+| 8 | `make ci > ci.txt 2>&1; echo $?`, **never piped** | exit **0**, 100.00 % coverage |
+| 9 | Push the branch; `make gate-ran` from the worktree | `GATE PROVEN`, and the printed SHA equals `git rev-parse HEAD` |
+| 10 | Fill the handback sections; set **Status:** `BUILT`; commit, push, `make gate-ran` again | `GATE PROVEN` for the final SHA |
+
+**Guards to plant (step 7):** (a) let `unknown` place the run, so B3 goes red; (b) drop the freshness
+bound, so B4 goes red; (c) submit faults per probe again, so B10 goes red; (d) remove the verdict
+override, so B11 goes red.
+
+---
+
+## Test plan
+
+| # | Test | Plants | Must prove |
+| --- | --- | --- | --- |
+| B1 | 🎯 ready fleet runs as today | latest `FleetPreflight` passed, 5 min old | the same `RunRequest` id is placed as before this sprint; **no** `RunHold` node |
+| B2 | 🎯 failing fleet is held | latest failed, 5 min old, 2 failures | no `RunRequest`; `RunHold` `hold:<run_id>` with `state="held"`, `readiness_state="failing"`, both failure strings; stdout `held <run_id> reason=failing failures=2`; exit 0 |
+| B3 | 🪤 no check at all is held | no `FleetPreflight` nodes | held, `readiness_state="unknown"`, `preflight_key=""` |
+| B4 | 🪤 a stale pass is held | latest passed, **71** min old, `max_age_minutes=70` | held, `readiness_state="unknown"` |
+| B5 | latest wins | an older failed check and a newer passed one | placed |
+| B6 | re-fire is idempotent | fire twice while failing | exactly one `RunHold` node, still `held` |
+| B7 | re-fire after recovery releases | fire while failing, then add a passing check and fire again | run placed; the hold now `state="released"` with `released_at` |
+| B8 | the calendar still wins | a non-session day with a failing check | `skipped`, and **no** `RunHold` |
+| B9 | the readiness reader never writes | a spy graph | `fleet_readiness` performs zero writes |
+| B10 | one fault per failed check (S217 fix) | three probes fail in one check | exactly **one** `critical` fault, message contains `failure_count=3`, context carries all three |
+| B11 | 🎯 dashboard: held turns the light RED | a `held` `RunHold` for the latest day | `/api/verdict` → `light="RED"`, summary starts `Tonight's run is held: 2 check(s) failing`, payload has `readiness.state="held"` |
+| B12 | dashboard: failing check turns it RED | latest check failed 30 min ago, no hold | `light="RED"`, summary starts `Fleet check failing (1)` |
+| B13 | dashboard: nothing to show leaves it unchanged | latest check passed | the payload is identical to the pre-sprint projection, with **no** `readiness` key |
+| B14 | 🪤 UI wording carries no internal ids | B11's and B12's summaries | no match for `S\d{3}`, `DL-\d+` or `MST-` |
+
+---
+
+## Success factors
+
+- [ ] A ready fleet gets the same run as before (B1). A failing, missing or stale check gets a `RunHold` and no run (B2–B4).
+- [ ] Holds are idempotent and released on recovery (B6, B7). The calendar still decides first (B8).
+- [ ] One fault per failed check (B10).
+- [ ] Dashboard RED with a plain-words reason when held or failing, and unchanged otherwise (B11–B14).
+- [ ] Master window default is `'25 20 * * *'`; the script parses.
+- [ ] Drift row filed; design decisions recorded with rejected alternatives.
+- [ ] Every guard planted, watched red, restored (step 7), stated per guard.
+- [ ] Every touched module < 200 lines; new modules < 150.
+- [ ] `make ci` exit 0, 100.00 % coverage; `GATE PROVEN` for the final SHA.
+
+---
+
+## Traps
+
+🪤 **Compare timestamps as datetimes, not strings.** `checked_at` is ISO with an offset. Parse it.
+Sorting strings works only while every value has the same format.
+🪤 **`now` is injected everywhere.** No test may depend on the wall clock.
+🪤 **Don't break the calendar skip.** A weekend must still print `skipped` and write nothing (B8).
+🪤 **The dashboard reads through `CachingGraphStore`.** Build tests through the WSGI app as the
+existing `surfaces/tests/test_dashboard_app.py` tests do, not only through the pure function.
+🪤 **No `.env` in the worktree.** Every proof is a unit test. State that in the closeout.
+
+---
+
+## Guardrails (every sprint)
+
+- No agent imports another agent; kernel imports nothing above it (`import-linter`).
+- Every module < 200 lines (warn at 150). Split, don't grow. No `# noqa` to bypass size.
+- Module docstring declares `Agent:` / `Role:` / `External I/O:`.
+- No magic numbers: `kernel.tunable(..., why=...)` with bounds. The 180-minute dashboard window is
+  a dashboard setting, not a literal.
+- Faults, not silent failure: `kernel.fault_boundary`.
+- `make ci` **all 12 steps** green, **100.00 % coverage floor**. **Never measure the gate through a pipe.**
+- Version bump: MINOR, `uv.lock` staged with it.
+- Every file you write ends with a newline.
+
+---
+
+## Sequencing after merge
+
+1. `make gate-ran` exits 0 for the handback SHA (the planner verifies).
+2. Merge to `main` (the planner).
+3. **No deploy.** One full `up` after S219 merges (DL-179 §9).
+
+---
+
+## Handover — paste this to Copilot
+
+```text
+Build sprint S218 exactly as written in docs/sprints/sprint-218-a-broken-fleet-gets-no-run.md.
+
+Branch: sprint-218-a-broken-fleet-gets-no-run, in its own worktree (step 1). Open THAT folder as your
+workspace before doing anything else.
+
+Order is binding:
+1. Read agents/master/laws/laws.md, docs/laws/flow.md, conventions.md and drift-register.md.
+   Fill the Law reading record BEFORE any code. The law-cycle answer is NO, plus one drift row.
+2. Record the two design decisions in docs/design-log.md (next free DL number; DL-180 is the latest).
+3. Write tests B1–B14 first and paste the red run.
+4. Implement scope items 1–7. Paste the green run.
+5. Plant the four guards (step 7), paste each red line, restore.
+6. make ci > ci.txt 2>&1; echo $?   — never through a pipe. Exit 0, 100.00% coverage.
+7. Push, then make gate-ran from the worktree. The printed SHA must equal git rev-parse HEAD.
+8. Fill every handback section, Status: BUILT, commit, push, make gate-ran again.
+
+DO NOT: deploy; merge; add any button, link or control to the dashboard; put sprint numbers or DL ids
+in UI text; write FleetPreflight from outside the master; make a hold exit non-zero; let a test read
+the wall clock. Every file you write ends with a newline.
+If any measured number differs from the spec, or a law contradicts it: STOP and report.
+```
+
+---
+
+## Handback contract — MANDATORY
+
+1. Fill the **Law reading record** *before* your first code change.
+2. Fill the **Test plan results** table. A test you chose not to write needs a reason, not a blank.
+3. Fill **Closeout — evidence** with real pasted output.
+4. Fill **Return notes**. **Name every place you deviated from the spec**, even if you think it is
+   harmless. S217's handback left one out.
+5. Set **Status:** to `BUILT`.
+6. State anything not met plainly as "verified failing" or "not done" (LAW-02).
+
+An incomplete handback is returned, not repaired (DL-48).
+
+---
+
+## Law reading record — fill BEFORE writing code
+
+| Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
+| --- | --- | --- | --- |
+| *(builder fills)* | | | |
+
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+
+**Contradictions found between a law and this spec:** *(builder fills)*
+
+**Laws found silent where a decision was needed:** *(builder fills)*
+
+**Clauses that were ⬜ and are now proven:** *(builder fills)*
+
+---
+
+## Test plan results — fill at handback
+
+| Plan # | Final test name | File | Status | Clause(s) cited |
+| --- | --- | --- | --- | --- |
+| *(builder fills)* | | | | |
+
+**Tests added beyond the plan:** *(builder fills)*
+
+---
+
+## Closeout — evidence
+
+**Status:** *(builder fills)*
+
+**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+
+**Result:** *(builder fills)*
+
+**Files changed:** *(builder fills)*
+
+**Design decisions:** *(builder fills)*
+
+**Proof — the red run first:**
+
+```text
+(builder fills)
+```
+
+**Proof — the green run:**
+
+```text
+(builder fills)
+```
+
+**Guards planted:** *(builder fills)*
+
+**Module line counts:** *(builder fills)*
+
+**`make ci`:** *(builder fills)*
+
+**`make gate-ran`:**
+
+```text
+(builder fills)
+```
+
+**Deviations from the spec:** *(builder fills — "none" only if there are none)*
+
+**Not met / verified failing:** *(builder fills)*
+
+---
+
+## Return notes
+
+- *(builder fills)*

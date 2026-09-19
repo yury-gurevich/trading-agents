@@ -8,7 +8,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-179 - a subsystem the fleet cannot use stops the run, retries twice an hour apart, then waits for a human - status: DECIDED (operator, 2026-09-19 17:05 AEST; channel OPEN)
+## DL-179 - a subsystem the fleet cannot use stops the run, retries twice an hour apart, then waits for a human - status: DECIDED (operator, 2026-09-19 17:05 AEST; channel decided 17:40 AEST: Telegram)
 
 **Operator decisions, 2026-09-19** (verbatim intent, work-queue items 57 and 58):
 
@@ -46,6 +46,13 @@ and is marked CLOSED here.
 **OPEN: the notification channel.** Nothing in the fleet can reach a human today. There is no email,
 push or chat integration (searched 2026-09-19). The human's *answer* also needs a place to land, and
 the dashboard is the natural surface for it. The channel is the operator's choice.
+
+**DECIDED, operator 2026-09-19 17:40 AEST: Telegram** (*"I actively use Telegram"*). It is one channel
+for both directions. The notice arrives on the operator's phone, and the answer comes back as a button
+(run now / run at a time / skip the day). The bot token and chat id are secrets: they reach the fleet via
+`.env` and Key Vault, never a tree file. Ruled out: **email plus dashboard buttons** (a second
+surface to answer on, and an Azure email service to run), and **dashboard only** (nothing pushes, so a hold
+can sit unseen until the next session).
 
 **Rejected routes.**
 

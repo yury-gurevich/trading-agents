@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-19 15:12 AEST · **Version:** 0.98.12 · **🟩 Fleet on `s215` (S213 + S215 live); item 72 closed live. First regime-VIX run: `sched-2026-09-21`. 📦 S216 handed to Copilot.**
+**Last updated:** 2026-09-19 16:45 AEST · **Version:** 0.98.12 · **🟩 S216 merged (`9e39e40`, gate proven): 0 CRLF files, and `.gitattributes` + a guard test keep it that way (item 69 closed). Fleet on `s215`; item 70's live proof arrives with `sched-2026-09-21`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -38,6 +38,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 
+
+🟩 **MERGED — [S216](sprints/sprint-216-every-text-file-is-lf.md), `9e39e40`, 2026-09-19 — work-queue item 69 closed; built by GitHub Copilot.** 🟩 **Proven:** handback gate `b1628de` = branch tip; merge `9e39e40` `GATE PROVEN` (CI, CodeQL, Security Findings). Renormalization commit: 52 files, CR-ignoring diff **0 lines**; `pyproject.toml` and `.secrets.baseline` content unchanged (no bump). Census on `main`: 1,727 `i/lf`, 15 `i/-text`, 3 `i/none`, **0** CRLF/mixed. 🪰 **Three builder stops, all correct, one of them my mis-written expectation**; the other two were a missing final newline, caught by the hooks. 🪤 **Spec lesson:** `git add --renormalize .` stages the *content* of every modified tracked file, so a builder's in-progress edit to the spec itself joins the "content-free" commit unless stashed. 🟠 **Next:** item 73 (markdownlint rules), now unblocked.
 
 🟩 **DEPLOYED — `s215`, 2026-09-19 15:10 AEST — S213 (regime VIX, item 70) and S215 (deploy evidence, item 72) are live.** Built from tag `v0.98.12` = merge `5ef4a4c` (run `35422844229`, 15/15 images). Image-only retag, because no injected pack and nothing under `infra/` changed since `s214`. 🟩 **Proven:** 16/16 apps + `dispatcher-cron` on `:s215`, all `Succeeded`, every app `min=0` with its 1 KEDA rule; `record_deploy.py` **exit 0** → `DeployRecord` `…:s215:5ef4a4c…`, the first for a tag-dispatched build, so **item 72 is closed live**. 🟠 **Owed:** item 70's measured `vix_status` arrives with `sched-2026-09-21`. No weekend test run is possible: the NYSE-session gate has no override.
 

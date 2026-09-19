@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-216-line-endings-lf`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *no bump*. Only line terminators change, plus one config file and one test, so no package behaviour moves (CLAUDE.md, Version scheme)
 **Effort:** S
 **Decisions:** closes work-queue item **69** · no ADR · no DRIFT row expected
@@ -318,7 +318,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-216-line-endings-lf` on `sprint-216-line-endings-lf`; `.env` absent (`Test-Path .env` returned `False`).
 

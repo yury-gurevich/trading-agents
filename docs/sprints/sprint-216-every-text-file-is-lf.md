@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-216-line-endings-lf`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *no bump*. Only line terminators change, plus one config file and one test, so no package behaviour moves (CLAUDE.md, Version scheme)
 **Effort:** S
 **Decisions:** closes work-queue item **69** · no ADR · no DRIFT row expected
@@ -296,13 +296,13 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| Repository line-ending guard | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | None: no agent law governs repository line endings. | Yes: the guard test cites no law clause and no law-cycle work is added. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. It changes no contracts or agent behaviour; the repository-level Git/index guard does not add an agent guarantee.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** No law governs repository line endings; the sprint scope explicitly supplies the required repository-level decision.
 
 ---
 
@@ -310,55 +310,79 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Case | Final test name | Status |
 | --- | --- | --- |
-| parser, nine cases | *(builder fills)* | |
-| `.gitattributes` rules | *(builder fills)* | |
-| no tracked file stored CRLF | *(builder fills)* | |
+| parser, nine cases | `test_offending_eol_paths` | PASS — 9 parameter cases passed. |
+| `.gitattributes` rules | `test_gitattributes_declares_lf_and_binaries` | PASS — green after creation; DL-70 removal failed as required, then passed after restoration. |
+| no tracked file stored CRLF | `test_no_tracked_file_is_stored_crlf` | PASS — normalized index returned no CRLF or mixed paths. |
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-216-line-endings-lf` on `sprint-216-line-endings-lf`; `.env` absent (`Test-Path .env` returned `False`).
 
 **Proof — step 2, the red run:**
 
 ```text
-(builder pastes)
+.........FF                                                              [100%]
+FAILED tests/test_line_endings.py::test_gitattributes_declares_lf_and_binaries
+AssertionError: missing C:\Users\yury_\Downloads\project\trading-agents-sprint-216-line-endings-lf\.gitattributes
+FAILED tests/test_line_endings.py::test_no_tracked_file_is_stored_crlf
+AssertionError: assert ['.codeqlignore', ...] == []
+2 failed, 9 passed in 14.06s
 ```
 
 **Proof — steps 6 and 9, the empty content diffs, and step 9's `git show --stat` line:**
 
 ```text
-(builder pastes)
+$ git diff --cached --ignore-cr-at-eol --stat
+[no output]
+$ git diff --ignore-cr-at-eol HEAD~1 HEAD
+[no output]
+$ git show --stat HEAD | tail -1
+ 52 files changed, 7231 insertions(+), 7231 deletions(-)
 ```
 
 **Proof — step 10, the eol census:**
 
 ```text
-(builder pastes)
+     15 i/-text
+   1726 i/lf
+      3 i/none
 ```
 
 **Proof — steps 11 and 12, green and the DL-70 break:**
 
 ```text
-(builder pastes)
+...........                                                              [100%]
+11 passed in 1.80s
+
+.........F.                                                              [100%]
+FAILED tests/test_line_endings.py::test_gitattributes_declares_lf_and_binaries
+AssertionError: assert '* text=auto eol=lf' in ['*.png binary', '*.ico binary']
+1 failed, 10 passed in 1.82s
+
+...........                                                              [100%]
+11 passed in 1.76s
 ```
 
-**`make ci`:** *(builder fills: redirect path, exit code, passed/skipped, coverage, pip-audit, detect-secrets)*
+**`make ci`:** `make ci > ci.txt 2>&1; echo $?` returned `True` in PowerShell (successful command). `ci.txt` recorded `2869 passed, 6 skipped`, `Required test coverage of 100.0% reached. Total coverage: 100.00%`, `No known vulnerabilities found`, and both tracked and untracked `Detect secrets` checks passed.
 
-**`make gate-ran`:** *(builder fills: worktree path and full 40-character SHA)*
+**`make gate-ran`:** `C:\Users\yury_\Downloads\project\trading-agents-sprint-216-line-endings-lf`, implementation SHA `68a2a396d8372e6eceae87c5dacaef1767df5985` (equal to `git rev-parse HEAD` before this closeout commit).
 
 ```text
-(builder pastes GATE PROVEN output)
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 68a2a396d8372e6eceae87c5dacaef1767df5985:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** *(builder fills, or "none")*
+**Not met / verified failing:** none.
 
 ---
 
 ## Return notes
 
-- *(builder fills: anything that differed from the spec, and what you did)*
-- *(builder fills: anything the planner should know that the diff does not show)*
+- The initial attributes-only commit hook added the required final newline to `.gitattributes`; after re-staging, the commit passed. The first renormalization commit attempt exposed the new untracked guard's missing final newline and fixed-executable `S603` suppression; the guard was corrected using the existing `scripts/check_untracked_secrets.py` convention, and the staged 52-file index was re-proven unchanged before the successful commit.
+- The planner re-verified that `M  tests/test_bus_azure.py` was an expected member of the staged 52-file normalization. No version bump, deploy, or merge occurred; `pyproject.toml` and `uv.lock` remain untouched.

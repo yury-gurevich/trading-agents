@@ -53,6 +53,46 @@ for both directions. The notice arrives on the operator's phone, and the answer 
 `.env` and Key Vault, never a tree file. Ruled out: **email plus dashboard buttons** (a second
 surface to answer on, and an Azure email service to run), and **dashboard only** (nothing pushes, so a hold
 can sit unseen until the next session).
+**Operator, 2026-09-19 17:50 AEST: "It should show on the dashboard as well."** A failing check and a
+held run appear on the dashboard as well as in Telegram, and the answer can be given from either. The
+dashboard buttons ship **wired** (DL-47: never show an unwired control).
+
+**Design, planner, 2026-09-19 (delegated technical decisions):**
+
+6. **The checks move ahead of the run. The run does not move later.** The agents' scale window is
+   **22:30–00:30 UTC** *[measured 2026-09-19, `scanner` KEDA rule: `start 30 22`, `end 30 00`]*.
+   Delaying a 22:30 start by 1 h + 1 h would place the run at 00:30, the minute every agent scales to
+   zero, so the run would stall. Instead the **master** wakes at **20:25 UTC** (window start moved
+   from 22:25; master only) and checks at 20:25, 21:25 and 22:25. Each failure is followed by a retry
+   one hour later, and the third failure is a **hold**. The dispatcher still fires at 22:30 and places
+   the run **only if the latest check passed and is fresh**. The operator's rule holds in substance:
+   two retries an hour apart, then a human decides, and never a run on a broken subsystem. The US close
+   is 20:00 UTC (EDT), so the first check is already after the session.
+7. **Cost of 6:** one app awake 2 h longer on weekdays, about **$1/month** *[ASSUMED from Container
+   Apps idle pricing, not measured; `/audit-costs` settles it after a week]*. Rejected alternative:
+   widening all 16 agents' window to 02:30, about **$11/month** *[ASSUMED, same basis]*, to delay the
+   run literally.
+8. **A human "run now" is honoured while the window is open.** A hold is decided at 22:25 and the
+   fleet is awake until 00:30. An answer after about 23:30 cannot finish a run inside the window.
+   The notice says so, and the only answers offered are **run now** and **skip today**. "Run at a
+   later time" needs a wake-on-demand mechanism that does not exist yet. It is recorded as the road
+   not taken, not built.
+9. **Three sprints, one deploy.** **S217:** the master's fleet check (every probe, every agent type,
+   the spine), the item-57 classification, every probe required, a `FleetPreflight` node, and the law
+   cycle. **S218:** the dispatcher placement gate, the `RunHold` record, the hourly schedule, the
+   master window move, and the dashboard display. **S219:** Telegram both ways plus the dashboard
+   answer buttons. 🚨 **Nothing deploys until S219 merges.** S217 + S218 alone would hold a run with
+   nobody told, which is worse than today.
+
+**Rejected routes (design).**
+
+- *Literal delay: start at 22:30, retry 23:30 and 00:30.* Rejected: the run lands at 00:30 as the
+  fleet scales to zero. Fixing that means paying about $11/month to keep all 16 agents awake, or
+  building a wake-on-demand mechanism.
+- *A new `/preflight` HTTP endpoint on the master, called by the dispatcher.* Rejected: it is a new
+  unauthenticated route that spends probe cost on demand. The master already owns the secrets and the
+  schedule, and graph-pull is the fleet's existing coordination pattern.
+- *The dispatcher runs the probes itself.* Rejected: MST-IDN-03. Only the master touches Key Vault.
 
 **Rejected routes.**
 

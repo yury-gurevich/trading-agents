@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-19 09:40 AEST · **Version:** 0.98.11 · **🟩 S213 MERGED — the regime now measures `^VIX` from FMP after 70 silent `neutral` runs; deploy held until Monday's fill check so the S214 tripwire window stays clean.**
+**Last updated:** 2026-09-19 11:55 AEST · **Version:** 0.98.11 · **📦 S215 SPECCED for GitHub Copilot, its first sprint: deploy evidence follows the built commit rather than the dispatch ref, and a tag matches only whole (work-queue item 72).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -38,6 +38,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Now
 
 
+
+📦 **SPECCED, handed to Copilot — [S215](sprints/sprint-215-a-build-is-evidence-for-its-commit-and-its-tag.md), 2026-09-19 — work-queue item 72, and the first sprint given to GitHub Copilot.** The deploy recorder refuses a truthful build and accepts a false one. It refuses S211's build `35217747046` (dispatched on tag `v0.98.08`, which points at the gated merge `7d3ff51`) because it lists only `main`-ref runs. It accepts `s2` and `s21` as evidence for the `s214` build because its tag check is a substring match (both **measured live**, read-only). The fix accepts a build whose commit GitHub's `compare` reports contained in `main` (`ahead_by == 0`), keeps refusing the never-merged `smoke-test` build (`576ee57…`, `diverged`), and matches tags whole. Operator tooling only: no law cycle, no contract, no deploy. 🟠 **Owed:** Copilot's handback, verification and merge, a read-only live check, then S213's deploy dispatched on its tag as the closing proof.
 
 🟩 **LIVE — first run on `:s214`, [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md) decision 1 proven in production.** `sched-2026-09-18`, 8/8 stages, `trace_run.py` **exit 0**. The deliberator returned `revise` on **all four** approved buys — `{BAC, USB, AMZN, MDLZ}`, its objections undiminished — and `vetoed_tickers` came back **empty**, so execution recorded `submitted=4 rejected=0 skipped=0`. 🎯 **Under `:s211` this identical night would have submitted 0**, as the four before it did: the zero-fill streak is broken at the submission stage. The trace reconciles as `[deliberation] reviewed=4  revised=4  vetoed=0  status=applied` — the late `revised=` addition is what keeps four live objections visible now that they no longer veto. 🪤 **Half proven, and it matters:** test 2 matches only **vacuously** (zero `overturn` verdicts, so the blocking path never ran) and test 5 (a non-answer routed to loud fail-open) was **not exercised**. 🟠 **Test 4 — the bar itself — is NOT proven:** four orders sit `pending` at the broker, submitted 22:47 UTC after Friday's close, and `accept.py` says `UNPROVEN — none filled yet`. **Fills cannot resolve before Monday 2026-09-21.** **Tripwire, session 1 of 10:** `overturn` share **6.2 %** vs the 6.3 % baseline — no relabelling, as expected while decision 3 stays unshipped. Recorded in [`laws/functionality-checks.md`](laws/functionality-checks.md).
 

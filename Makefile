@@ -1,5 +1,5 @@
 .PHONY: install lint format type test boundaries check ci gate-selftest gate-ran \
-	codeql-ast codeql-errors clean \
+	worktrees codeql-ast codeql-errors clean \
 	docker-build stack-up stack-down stack-deploy stack-rm
 
 PKGS = kernel contracts agents orchestration surfaces
@@ -62,6 +62,9 @@ gate-selftest:  ## Prove each gate can fail (plants a violation per check)
 
 gate-ran:       ## Assert HEAD has green workflow runs — run this BEFORE merging
 	uv run python scripts/assert_gate_ran.py
+
+worktrees:      ## Report merged worktrees and branches safe to remove (read-only)
+	uv run python scripts/check_worktrees.py
 
 codeql-ast:     ## Generate CodeQL AST artifacts for FILE=path/to/file.py
 ifndef FILE

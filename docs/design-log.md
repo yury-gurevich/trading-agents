@@ -8,6 +8,26 @@ and is marked CLOSED here.
 
 ---
 
+## DL-180 - fleet readiness is a master-owned scheduled fact that honors fresh costly-pass evidence - status: DECIDED (S217, 2026-09-19)
+
+**Decision.** `run_fleet_preflight` runs in a daemon thread owned by the master process: once
+after application construction, then at `fleet_preflight_interval_minutes`. It uses the same
+pack-injected grant policy, secret map, credential tests, and costly-pass cache as activation,
+but records one independent `FleetPreflight` fact. Each loop iteration is fault-bounded so a
+failure produces a visible fault and the next scheduled check still runs.
+
+A fresh costly-pass cache entry counts as a preflight pass. Re-running a costly probe every hour
+would spend the same bounded credential-test cost repeatedly and contradict the already-governing
+`MST-NEV-06` cache rule; a stale or absent entry runs the probe normally.
+
+**Rejected alternatives.** A dispatcher-owned or external scheduler was rejected because only
+master resolves the fleet's secrets (`MST-IDN-03`), and it would duplicate pack assembly outside
+the owner. A `/preflight` HTTP route was rejected by DL-179 because an unauthenticated request
+could spend probe cost on demand. An always-live recheck was rejected because it makes a costly
+cache inert and creates a second credential-test policy.
+
+---
+
 ## DL-179 - a subsystem the fleet cannot use stops the run, retries twice an hour apart, then waits for a human - status: DECIDED (operator, 2026-09-19 17:05 AEST; channel decided 17:40 AEST: Telegram)
 
 **Operator decisions, 2026-09-19** (verbatim intent, work-queue items 57 and 58):

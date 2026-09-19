@@ -87,6 +87,16 @@ class MasterSettings(AgentSettings):
         le=60,
         unit="minutes",
     )
+    fleet_preflight_interval_minutes: int = tunable(
+        60,
+        why=(
+            "Minutes between master-owned whole-fleet readiness checks; bounded so "
+            "credential failures are detected promptly without repeated probe cost."
+        ),
+        ge=5,
+        le=240,
+        unit="minutes",
+    )
 
     remediation_mode: str = tunable(
         "manual",

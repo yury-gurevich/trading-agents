@@ -8,6 +8,7 @@ External I/O: PostgreSQL via GraphStore, Azure Key Vault (optional), TCP port 80
 from __future__ import annotations
 
 import base64
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.master.agent import MasterAgent
@@ -16,6 +17,11 @@ from agents.master.credential_probes import (
     parse_credential_tests,
 )
 from agents.master.credential_test import PassCache
+from agents.master.fleet_preflight import (
+    FleetPreflightResult,
+    run_fleet_preflight,
+)
+from agents.master.fleet_preflight_loop import start_fleet_preflight_daemon
 from agents.master.grants import load_grant_policy, parse_grant_policy
 from agents.master.http_server import serve
 from agents.master.remediation_posture import refuse_unwired_automatic_remediation
@@ -163,6 +169,24 @@ def main() -> None:  # pragma: no cover
     ensure_reachable_or_halt(graph)
     log.info("[master] graph reachable")
     agent, key_pem = build_app(graph, pem, settings=settings, secret_store=secret_store)
+
+    def run_once() -> FleetPreflightResult:
+        return run_fleet_preflight(
+            graph=agent._graph,
+            sink=agent.sink,
+            secret_store=agent._secret_store,
+            secret_map=agent._secret_map,
+            grant_policy=agent._grant_policy,
+            credential_tests=agent._credential_tests,
+            pass_cache=agent._pass_cache,
+            now=datetime.now(UTC),
+        )
+
+    start_fleet_preflight_daemon(
+        run_once,
+        sink=agent.sink,
+        interval_minutes=settings.fleet_preflight_interval_minutes,
+    )
     log.info("[master] session=%s — serving on :8000", agent.session_id)
     serve(8000, agent, key_pem)
 

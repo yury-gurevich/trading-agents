@@ -67,10 +67,15 @@ preserve env vars, secrets, and KEDA scale rules — verified then.
    check would have passed. That is the DL-46 currency failure with the currency check looking one
    pack to the left.
 
-2. **Build all 15 images at the tag** (from `main` unless the operator says otherwise):
+2. **Build all 15 images at the tag, from the gated merge commit.** If `main` still equals that commit,
+   dispatch on `main`. If anything has landed above it, dispatch on its release tag instead, so the
+   build is not of an ungated commit (the S186 hazard). Since S215, `record_deploy.py` accepts a build
+   of any commit contained in `main`, whichever ref dispatched it; before S215 only `main`-ref builds
+   were accepted, which is why `s211` has no `DeployRecord`.
 
    ```bash
-   gh workflow run build-images.yml --ref main -f image_tag=<tag>
+   git tag v<version> <merge-sha> && git push origin v<version>    # only if the tag does not exist
+   gh workflow run build-images.yml --ref v<version> -f image_tag=<tag>   # or --ref main, see above
    gh run watch <run-id> --exit-status     # ~2 min; all 15 must push
    ```
 

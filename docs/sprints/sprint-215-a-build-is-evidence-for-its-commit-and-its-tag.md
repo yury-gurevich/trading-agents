@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-215-build-evidence-commit-and-tag`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** closes work-queue item **72**, plus a tag-prefix defect found while packaging it (folded into the same row) · extends [S180](sprint-180-a-deploy-record-must-name-the-commit-that-was-built.md)'s guarantee · no ADR · no DRIFT row expected (no law governs this code)
@@ -517,3 +517,27 @@ GATE PROVEN for b6e3f6167740ec77e8adec733cbf3921844eeba7:
    `1a6f3429a728b0348ed2059de52b535803cb3fa4`, not the S211 SHA. The direct Markdown pragma was not reliable
    through the Make-path hook. The next sprint should run its live read-only check only after merge, as
    specified; this sprint did not dispatch, record, or deploy anything.
+
+---
+
+## Planner verification — 2026-09-19
+
+**Status:** MERGED `5ef4a4c` (`--no-ff` of `39be3b2`), version `0.98.12`. **No deploy:** `surfaces/` is in no image.
+
+- **Returned once.** The first handback (`c7f115f`, gate proven) typed the tag charset uppercase-only, so
+  `s176` still matched a log that published `s176a`. The spec's A7 list never put a letter or digit after
+  the tag, so its tests passed; that gap was the spec's. Returned with the exact failing case and fixed
+  in `39be3b2` (`b"a"`, `b"Z"`, `b"0"`, `b"_"` cases, red first, DL-70 proven).
+- **Gate.** `GATE PROVEN for 39be3b28e88f3786bb5c68e46f042b63a14dca71` (CI, Security Findings), run from
+  the S215 worktree with `HEAD` checked. The merge tree is identical to that tip (`git diff 39be3b2
+  5ef4a4c` empty). Post-merge: `GATE PROVEN for 5ef4a4c08b0cdd5fac507d3ad4776aabb504221c` (image build,
+  CI, CodeQL, Security Findings).
+- **Live check**, main checkout, read-only, old reader beside new — recorded in
+  [`functionality-checks.md`](../laws/functionality-checks.md): `s211`/`7d3ff51` `[]` → `[35217747046]` (the tag-dispatched build, item 72); `smoke-test`/`576ee57` `[]` → `[]` (never merged, still refused); `s21` and `s2` on `1a6f342` **false accept** `[35336964246]` → `[]`; `s176`/`74bdd7c` **false accept** of the `s176a` build `[31854512795]` → `[]`; controls `s214` and `s176a` accepted by both.
+- **Found in review and fixed on `main` by the planner:** this spec's own commit `b61e602` turned
+  `main`'s CI red. detect-secrets flagged the full SHA `1a6f3429…` in the measured table although the
+  local hook passed it; `b6c3cd1` added the same baseline entry the builder had used on its branch.
+- **Residue, named:** `test_github_build_tag_guards.py` is at **198** lines, so its next change must
+  split it. `github_tag_builds.py` calls `GitHubActionsReader`'s private helpers, and
+  `github_builds.py` imports it inside the method to break the cycle: it works and is gated, and is a
+  candidate for tidying when the file next changes.

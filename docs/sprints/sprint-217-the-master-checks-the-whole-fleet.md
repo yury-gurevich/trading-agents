@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-217-master-checks-the-fleet`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) (operator decisions on work-queue items 57 and 58, and the three-sprint design) · closes work-queue item **57** · first of three sprints for item **58**
@@ -371,7 +371,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; not merged or deployed.
+**Status:** MERGED — `f252dca`, `GATE PROVEN` for the handback `dd20794` and for the merge (CI, CodeQL, Security Findings), 2026-09-19 22:39 AEST. Not deployed: S217 deploys with S218 and S219 (DL-179 §9). 🟠 **Planner finding at merge:** the handback raises **one critical fault per failed probe**; the spec said one per failed check. A network outage could raise about 12 critical faults an hour. The handback did not flag it. It goes to S218 as a scoped fix, because nothing deploys before then.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-217-master-checks-the-fleet`; `.env` present: `False`.
 

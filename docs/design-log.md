@@ -8,6 +8,40 @@ and is marked CLOSED here.
 
 ---
 
+## DL-177 - build evidence follows an ancestor commit and an exact published tag - status: DECIDED (S215, 2026-09-19)
+
+**Decision. A successful build is deploy evidence when its head commit is contained in `main`.**
+`image_builds_for_tag(tag, git_sha)` lists successful workflow runs for the supplied full SHA without
+the `branch=main` filter. A run dispatched from `main` is accepted immediately; any other ref must
+pass GitHub's `compare/main...{sha}` query with `ahead_by == 0`. This admits a tag-dispatched release
+build after its commit is merged, while refusing the measured `smoke-test` build on a divergent branch.
+
+**Decision. Ask GitHub for ancestry only for non-`main` runs.** A `main`-ref run was built from main at
+dispatch time. Comparing it would add a request per existing candidate and unnecessarily disturb the
+main-run fixtures. A missing `head_branch` is not treated as `main`: it is checked through the
+ancestry path and fails closed if GitHub cannot provide a readable comparison.
+
+**Decision. The no-SHA reader remains main-only.** The no-SHA path is used only to explain a deploy
+recording refusal and can otherwise download one log for every successful build. It keeps
+`branch=main`; only the supplied-SHA verification route widens its search.
+
+**Decision. Published tags match Docker-tag boundaries.** A matching log marker is followed by end of
+file or a byte outside `[A-Za-z0-9_.-]`. This accepts punctuation and whitespace delimiters while
+rejecting prefixes such as `s21` in `s214` and `s214` in `s214-rc1`.
+
+**Rejected routes.**
+
+- Drop `branch=main` with no ancestry check. Rejected because it accepts the never-merged
+  `smoke-test` build.
+- Accept refs that look like release tags. Rejected because a ref name says nothing about whether its
+  commit entered `main`.
+- Require a push-to-main build for the SHA. Rejected because path filtering can omit a valid commit
+  and a push run reports only the tip of a group of commits.
+- Compare every candidate run. Rejected because main-ref candidates already establish their dispatch
+  context and the extra requests offer no added protection.
+
+---
+
 ## DL-176 - VIX shortfall is warning evidence on the regime, not provider degradation - status: DECIDED (S213, 2026-09-18)
 
 **Decision. Regime input status travels on `RegimeInputs`.** S213 adds `vix_status`, `vix_as_of`, and a

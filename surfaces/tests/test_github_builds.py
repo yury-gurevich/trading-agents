@@ -89,11 +89,15 @@ def test_github_reader_finds_successful_builds_that_published_tag() -> None:
         "https://api.github.com/repos/owner/repo/actions/workflows/"
         "build-images.yml/runs?branch=main&status=success&per_page=100"
     )
+    candidate_runs_url = (
+        "https://api.github.com/repos/owner/repo/actions/workflows/"
+        "build-images.yml/runs?status=success&per_page=100&head_sha=s194-sha"
+    )
     assert seen == [
         runs_url,
         "https://api.github.com/repos/owner/repo/actions/runs/8/logs",
         "https://api.github.com/repos/owner/repo/actions/runs/7/logs",
-        f"{runs_url}&head_sha=s194-sha",
+        candidate_runs_url,
         "https://api.github.com/repos/owner/repo/actions/runs/7/logs",
     ]
 
@@ -121,8 +125,7 @@ def test_github_reader_returns_empty_for_missing_candidate_build() -> None:
     assert _reader(open_fake).image_builds_for_tag("s194", git_sha="missing-sha") == ()
     assert seen == [
         "https://api.github.com/repos/owner/repo/actions/workflows/"
-        "build-images.yml/runs?branch=main&status=success&per_page=100"
-        "&head_sha=missing-sha",
+        "build-images.yml/runs?status=success&per_page=100&head_sha=missing-sha",
     ]
 
 
@@ -175,7 +178,7 @@ def test_github_reader_rejects_missing_build_evidence(
 def _runs_response(*rows: tuple[str, int, str]) -> _Response:
     payload = {
         "workflow_runs": [
-            {"head_sha": sha, "id": run_id, "html_url": url}
+            {"head_sha": sha, "id": run_id, "head_branch": "main", "html_url": url}
             for sha, run_id, url in rows
         ]
     }

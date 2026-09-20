@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-20 11:34 AEST · **Version:** 0.100.00 · **🟩 S218 merged (`69f3601`, tagged `v0.100.00`; main's tip `049ba55` gate proven — the merge SHA's own CI was cancelled, item 31): a broken fleet gets no run and the dashboard says why. Item 58 needs only S219. Not deployed — S217–S219 go together, as a full `up`. Fleet on `s215`.**
+**Last updated:** 2026-09-20 14:02 AEST · **Version:** 0.100.00 on main; 0.101.00 on S219 branch · **🟩 S219 is BUILT locally (`005536b`), with 2936 passed / 6 skipped / 100.00 % coverage; branch CI and Security Findings are queued, so it is not merged or deployed. S217–S219 still go together by full `up`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when

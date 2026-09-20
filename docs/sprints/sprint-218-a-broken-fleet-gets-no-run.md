@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-218-a-broken-fleet-gets-no-run`
-**Status:** BUILT
+**Status:** RETURNED — amendment **R1** open (planner, 2026-09-20). Do not merge until R1's rows are green.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180
@@ -16,6 +16,120 @@
 
 🚨 **This sprint does not deploy on its own.** S219 (Telegram, and the answer buttons) is what tells
 the human. Deploying S218 without it would hold runs with nobody told.
+
+---
+
+## 🔴 AMENDMENT R1 — returned 2026-09-20, read this before anything else
+
+The build is good and the gate is green: `GATE PROVEN` for the branch tip `a9fcc4c` (CI + Security
+Findings), worktree clean. The append-only correction you found and recorded in **DL-181** is right,
+and both readers correctly go through `is_active_run_hold`. **Two defects remain, both measured on
+your branch, both in the dashboard half — the half this sprint's title promises.**
+
+### R1-a — a run held a second time the same day writes nothing, and can go unannounced
+
+`hold_unready_run` returns early on `existing is not None` **without asking whether that hold is
+still active**. So hold → release → hold again reuses the released node: nothing is written, and the
+returned `DispatchHold` carries the **first** hold's `readiness_state`, `preflight_key` and
+`failures`, while `released_at` stays set.
+
+Measured on `a9fcc4c`, three dispatcher fires in one day:
+
+| 3rd fire | Dispatcher | Dashboard | Node evidence |
+| --- | --- | --- | --- |
+| check **failing** | HELD | RED | `released_at` still set; `readiness_state` from hold #1 |
+| check **stale / unknown** | HELD | **GREEN** | `released_at` still set; `readiness_state` from hold #1 |
+
+🎯 **Row 2 is this sprint's goal failing:** the run is held and the dashboard is silent. It is
+fail-safe in direction — a run is wrongly *held*, never wrongly placed — so it is not urgent, but
+**S219 builds its notification on this record**, so a wrong record propagates into the human channel.
+
+Reachability: the cron fires once, so this needs a manual re-fire — i.e. an incident, which is
+exactly when the dashboard is being watched.
+
+### R1-b — a held run with no fleet check tells the operator that nothing is failing
+
+`_override` renders `"Tonight's run is held: {len(failures)} check(s) failing"`. When readiness is
+`unknown` there are **no** failures, so **B3's own scenario** (no `FleetPreflight` at all) renders:
+
+```text
+Tonight's run is held: 0 check(s) failing - no failure detail recorded
+```
+
+**"0 check(s) failing" reads as "nothing is wrong" while the run is held.** This is live on your
+branch today, independent of R1-a, and B11/B15 do not catch it because both plant failures. DL-47
+asks for plain words at a glance; this is the opposite.
+
+### Reproduce both, in this worktree, with no `.env`
+
+```python
+from datetime import UTC, datetime, timedelta
+from kernel.graph_memory import InMemoryGraphStore
+from orchestration.scheduled_dispatch_gate import hold_unready_run
+from surfaces.dashboard.projections_readiness import readiness_override
+
+g, RUN = InMemoryGraphStore(), "run-probe"
+t0 = datetime(2026, 9, 21, 22, 30, tzinfo=UTC)
+
+def preflight(key, passed, when, failures=()):
+    g.merge_node("FleetPreflight", key, {
+        "checked_at": when.isoformat(), "passed": passed,
+        "failure_count": len(failures), "failures": list(failures),
+        "agent_types_checked": ["scanner"]})
+
+preflight("p1", False, t0 - timedelta(minutes=5), ("unrecoverable:provider:fmp:http_402",))
+hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t0, max_age_minutes=70)   # held
+t1 = t0 + timedelta(minutes=60)
+preflight("p2", True, t1 - timedelta(minutes=5))
+hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t1, max_age_minutes=70)   # released, placed
+t2 = t1 + timedelta(minutes=120)                                               # p2 now stale
+h = hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t2, max_age_minutes=70)
+o = readiness_override(g, now=t2, max_age_minutes=70)
+print("dispatch:", "HELD" if h else "placed", "| dashboard:", "RED" if o else "GREEN")
+# R1-a today: dispatch: HELD | dashboard: GREEN
+```
+
+### Scope item 8 — the fix (both halves)
+
+1. **A released hold is not a hold.** When readiness is not `ready` and the existing node fails
+   `is_active_run_hold`, write a **new** append-only hold node instead of reusing the released one.
+   Key it so it can never collide with a released node — `hold:<run_id>:<n>` with `n` the count of
+   existing holds for that run, keeping the first at `hold:<run_id>` for B2/B6/B7 compatibility, or
+   an equivalent scheme you can state in one line. `DispatchHold.node_key` must name the node
+   actually written, never a stale one.
+   🪰 **B6 is unaffected:** a re-fire while *continuously* failing finds an active hold and
+   still reuses it, so "exactly one `RunHold` node" remains true for that case. If your key scheme
+   changes that, stop and report rather than editing B6.
+2. **Say what is actually wrong.** When a hold's `readiness_state` is `unknown`, the summary must
+   say the fleet check is **missing or stale**, not count failures. Suggested wording, adjust for
+   plain English but keep it free of ids: `"Tonight's run is held: no recent fleet check"`. The
+   `failing` wording is unchanged.
+
+**No new tunable, no vocabulary change, no law change** — `released_at` is already declared and
+DRIFT-068 already covers the dispatcher guarantee.
+
+### Tests to add
+
+| # | Test | Plants | Must prove |
+| --- | --- | --- | --- |
+| B16 | 🎯 re-hold after a release is a new, active hold | fire failing, fire passing (releases), fire failing again | a **second** `RunHold` exists and is active; `DispatchHold.node_key` names it; its `readiness_state` and `failures` are the **new** ones, not hold #1's; dashboard RED |
+| B17 | 🎯 a stale check after a release still turns the light RED | as B16 but the third fire has **no fresh check** (`unknown`) | dispatcher holds **and** `/api/verdict` is `light="RED"` — the case that is GREEN today |
+| B18 | 🪤 a held run with no check says so in plain words | B3's scenario: no `FleetPreflight` at all | summary does **not** contain `0 check(s)`; it names a missing or stale check; still passes B14's no-internal-ids check |
+
+**Guard to plant (step 7, additional):** (e) restore the `existing is not None` early return, so B16
+and B17 go red; (f) restore the failure-count wording for `unknown`, so B18 goes red.
+
+### Success factors (added to the list below)
+
+- [ ] A run held again after a release writes a new active hold carrying the new evidence (B16).
+- [ ] A held run is never invisible on the dashboard, including when the check is stale (B17).
+- [ ] A held run with no check explains itself without saying "0 check(s) failing" (B18).
+
+### What does **not** change
+
+Everything else in this spec stands, and every B1–B15 row must stay green. The version `0.100.00`
+is **correct**: the middle group was widened to three digits (operator, 2026-09-20), so `0.100.00`
+follows `0.99.00` and no re-bump is needed. Do not deploy; S219 still owns the human channel.
 
 ---
 
@@ -144,6 +258,8 @@ dashboard as well."* S217 made the master record the check. Nothing acts on it y
    `'25 22 * * *'` to `'25 20 * * *'` and add a comment citing DL-179 §6. If a test in
    `tests/test_deploy_script_invariants.py` pins the old value, update it and say so. Parse-check the
    script: `pwsh -NoProfile -Command "$null = [scriptblock]::Create((Get-Content -Raw infra/deploy-agents.ps1))"`.
+8. **🔴 See AMENDMENT R1 at the top of this spec** — a released hold is not a hold, and a
+   held run with no fleet check must say so instead of reporting `0 check(s) failing`. Tests B16–B18.
 
 ### Out of scope (do NOT build this sprint)
 
@@ -244,6 +360,9 @@ override, so B11 goes red.
 - [ ] Drift row filed; design decisions recorded with rejected alternatives.
 - [ ] Every guard planted, watched red, restored (step 7), stated per guard.
 - [ ] Every touched module < 200 lines; new modules < 150.
+- [ ] **R1:** a re-hold after a release is a new active hold with the new evidence (B16); a held
+      run is never invisible, including on a stale check (B17); a held run with no check does not
+      say `0 check(s) failing` (B18).
 - [ ] `make ci` exit 0, 100.00 % coverage; `GATE PROVEN` for the final SHA.
 
 ---

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-218-a-broken-fleet-gets-no-run`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180
@@ -106,8 +106,9 @@ dashboard as well."* S217 made the master record the check. Nothing acts on it y
    - Add `preflight_max_age_minutes: int = tunable(70, ge=10, le=240, unit="minutes", why=...)`
      to `OrchestratorSettings`.
    - In the placement path, after the calendar says `place`, read `fleet_readiness`:
-     - `ready` → place the run exactly as today. If a `RunHold` for this run id exists with
-       `state="held"`, merge `state="released"` and `released_at` onto it.
+     - `ready` → place the run exactly as today. If a `RunHold` for this run id has `state="held"`
+       and no `released_at`, merge `released_at` onto it. An active hold has `state="held"` and no
+       `released_at`; `state` remains append-only `"held"` evidence.
      - `failing` or `unknown` → **do not place.** Merge a `RunHold` node with key `hold:<run_id>` and
        props `run_id`, `as_of`, `held_at`, `state="held"`, `readiness_state`, `preflight_key` and
        `failures`.
@@ -197,7 +198,7 @@ merge), with rejected alternatives, **before implementing**:
 | 1 | `git worktree add ../trading-agents-sprint-218-a-broken-fleet-gets-no-run -b sprint-218-a-broken-fleet-gets-no-run origin/main`, then open **that folder** as the workspace | a worktree with **no** `.env` |
 | 2 | Read the laws; fill the Law reading record | — |
 | 3 | Record the design decisions in `docs/design-log.md` | — |
-| 4 | Write tests B1–B14. Run `uv run pytest orchestration/tests surfaces/tests agents/master/tests tests/test_dispatch_scheduled_run.py -q --no-cov` | **red**, and paste it. Each new test fails for the missing behaviour |
+| 4 | Write tests B1–B15. Run `uv run pytest orchestration/tests surfaces/tests agents/master/tests tests/test_dispatch_scheduled_run.py -q --no-cov` | **red**, and paste it. Each new test fails for the missing behaviour |
 | 5 | Implement scope items 1–7 | — |
 | 6 | Same pytest command | **green** |
 | 7 | **DL-70.** Plant each break below, watch its test go red, and restore it. Paste each red line | see "Guards to plant" |
@@ -221,7 +222,7 @@ override, so B11 goes red.
 | B4 | 🪤 a stale pass is held | latest passed, **71** min old, `max_age_minutes=70` | held, `readiness_state="unknown"` |
 | B5 | latest wins | an older failed check and a newer passed one | placed |
 | B6 | re-fire is idempotent | fire twice while failing | exactly one `RunHold` node, still `held` |
-| B7 | re-fire after recovery releases | fire while failing, then add a passing check and fire again | run placed; the hold now `state="released"` with `released_at` |
+| B7 | re-fire after recovery releases | fire while failing, then add a passing check and fire again | run placed; `released_at` is set and `is_active_run_hold` returns false |
 | B8 | the calendar still wins | a non-session day with a failing check | `skipped`, and **no** `RunHold` |
 | B9 | the readiness reader never writes | a spy graph | `fleet_readiness` performs zero writes |
 | B10 | one fault per failed check (S217 fix) | three probes fail in one check | exactly **one** `critical` fault, message contains `failure_count=3`, context carries all three |
@@ -229,6 +230,7 @@ override, so B11 goes red.
 | B12 | dashboard: failing check turns it RED | latest check failed 30 min ago, no hold | `light="RED"`, summary starts `Fleet check failing (1)` |
 | B13 | dashboard: nothing to show leaves it unchanged | latest check passed | the payload is identical to the pre-sprint projection, with **no** `readiness` key |
 | B14 | 🪤 UI wording carries no internal ids | B11's and B12's summaries | no match for `S\d{3}`, `DL-\d+` or `MST-` |
+| B15 | 🪤 released hold no longer overrides verdict | a `RunHold` with `state="held"` and `released_at` | payload unchanged, with no `readiness` key |
 
 ---
 
@@ -292,7 +294,7 @@ Order is binding:
 1. Read agents/master/laws/laws.md, docs/laws/flow.md, conventions.md and drift-register.md.
    Fill the Law reading record BEFORE any code. The law-cycle answer is NO, plus one drift row.
 2. Record the two design decisions in docs/design-log.md (next free DL number; DL-180 is the latest).
-3. Write tests B1–B14 first and paste the red run.
+3. Write tests B1–B15 first and paste the red run.
 4. Implement scope items 1–7. Paste the green run.
 5. Plant the four guards (step 7), paste each red line, restore.
 6. make ci > ci.txt 2>&1; echo $?   — never through a pipe. Exit 0, 100.00% coverage.
@@ -325,15 +327,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `orchestration/fleet_readiness.py` | `agents/master/laws/laws.md`; `docs/laws/conventions.md` | `MST-IDN-02`; `MST-OUT-04` | Yes. The reader is projection-only and never writes the master-owned `FleetPreflight` label. |
+| Dispatcher placement | `docs/laws/flow.md`; `docs/laws/conventions.md` | No dispatcher clause exists | Yes. The missing law home is recorded as DRIFT-068 rather than creating a law book in this sprint. |
+| Fleet preflight fault aggregation | `agents/master/laws/laws.md`; `docs/laws/conventions.md` | `MST-OUT-04`; `MST-FAIL-05` | No. The check still records one `FleetPreflight`; aggregation changes only its fault evidence. |
+| Dashboard readiness projection | `docs/laws/flow.md`; `docs/laws/conventions.md` | No dashboard clause exists | No. It remains a read-only view of the graph and introduces no new control. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/` file changes and no agent receives a new guarantee. The dispatcher gains an undeclared placement guarantee, recorded as DRIFT-068; a dispatcher law home is deferred. Recovery preserves append-only `RunHold` evidence and adds `released_at`; overwriting `state` is rejected by the graph-store invariant.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** The dispatcher placement gate has no law home. Recorded as DRIFT-068.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** None. This sprint cites existing master clauses for the reader and preflight regression tests but adds no clause.
 
 ---
 
@@ -341,54 +346,71 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| B1 | `test_latest_preflight_wins_over_an_older_failure` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B2 | `test_failing_fleet_holds_run_and_records_both_failures` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B3 | `test_absent_preflight_holds_with_unknown_readiness` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B4 | `test_stale_passing_preflight_holds_as_unknown` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B5 | `test_latest_preflight_wins_over_an_older_failure` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B6 | `test_failing_refire_merges_one_hold` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B7 | `test_recovery_releases_hold_and_places_run` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B8 | `test_calendar_skip_writes_no_hold_when_fleet_is_failing` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B9 | `test_readiness_reader_never_writes_master_owned_preflight` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | `MST-IDN-02` |
+| B10 | `test_many_failed_probes_emit_one_fleet_preflight_fault` | `agents/master/tests/test_fleet_preflight_faults.py` | PASS | `MST-OUT-04`; `MST-FAIL-05` |
+| B11 | `test_held_run_forces_red_dashboard_readiness_verdict` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B12 | `test_recent_failing_preflight_forces_red_dashboard_readiness_verdict` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B13 | `test_passing_preflight_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B14 | `test_readiness_summary_has_no_sprint_law_or_design_identifiers` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B15 | `test_released_hold_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest`, `test_held_run_without_failure_list_uses_a_safe_summary`, and `test_failure_helper_handles_non_mapping_properties` cover malformed graph evidence and restore 100.00 % coverage.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills)*
+**Status:** BUILT locally; no deploy. Remote gate proof is pending the branch commits and pushes below.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-218-a-broken-fleet-gets-no-run`; no `.env` was present.
 
-**Result:** *(builder fills)*
+**Result:** A fresh passing `FleetPreflight` preserves existing placement. Failing, absent, stale, malformed, or superseded preflight evidence prevents placement and persists one immutable `RunHold`; recovery adds `released_at`. The dashboard reports held or recent failing evidence as RED. The master emits one aggregate critical fault per failed check. Master scale start is `25 20 * * *`.
 
-**Files changed:** *(builder fills)*
+**Files changed:** Dispatcher readiness reader/gate/settings and tests; master preflight fault aggregation and tests; dashboard readiness projection/settings/tests; dispatch script; graph vocabulary and dispatcher Dockerfile closure; master scale schedule; version and lockfile; design/drift/sprint/state records.
 
-**Design decisions:** *(builder fills)*
+**Design decisions:** DL-181 records the 70-minute freshness bound, unknown-as-hold, and append-only `released_at` representation. DRIFT-068 records the dispatcher guarantee's missing law home.
 
 **Proof — the red run first:**
 
 ```text
-(builder fills)
+17 failed, 660 passed
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder fills)
+Focused implementation suite: 690 passed in 21.70s.
+Final full suite: 2903 passed, 6 skipped in 117.31s; total coverage 100.00%.
 ```
 
-**Guards planted:** *(builder fills)*
+**Guards planted:** (a) allowing absent preflight evidence to place failed B3 (`placed` rather than `held`); (b) removing the freshness bound failed B4 (`placed` rather than `held`); (c) restoring one fault per failed probe failed B10 (3 faults rather than 1); (d) removing the verdict override failed B11 (`GREEN` rather than `RED`). Each break was restored and the focused suite passed.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `fleet_readiness.py` 64; `scheduled_dispatch_gate.py` 63; `scheduled_dispatch.py` 147; `fleet_preflight.py` 141; `projections_readiness.py` 55; `projections_verdict.py` 167; `app.py` 184; `dispatch_scheduled_run.py` 118. The size gate passed; the original 214-line master test module was split to 193 lines plus a focused 34-line module.
 
-**`make ci`:** *(builder fills)*
+**`make ci`:** Exit 0 from the S218 worktree. `2903 passed, 6 skipped`; `TOTAL ... 100.00%`; `pip-audit`, tracked detect-secrets, and untracked detect-secrets passed.
 
 **`make gate-ran`:**
 
 ```text
-(builder fills)
+Pending branch commit and push.
 ```
 
-**Deviations from the spec:** *(builder fills — "none" only if there are none)*
+**Deviations from the spec:** The original state transition `held` to `released` is impossible under append-only graph properties. The corrected representation retains immutable `state="held"`, adds `released_at`, and defines active holds as held nodes without that property. The scope's vocabulary kept `released_at`; B15 was added. This builder-found spec defect is recorded in DL-181.
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. Remote `make gate-ran` proof is pending the required branch commits and pushes.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- The local full CI gate is proven at 100.00 % coverage. No `.env` was present and no live probe ran.
+- The state-transition defect was found against the actual append-only `GraphStore`, corrected before implementation, and recorded in DL-181.
+- Do not deploy or merge this branch. Push and prove the implementation commit, then the final handback commit, with `make gate-ran` from this worktree.

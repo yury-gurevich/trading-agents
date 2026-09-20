@@ -9,9 +9,11 @@ External I/O: injected GraphStore reads and optional injected AzureReader calls.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from surfaces.dashboard.projections import run_stages, run_verdict
+from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_recovery
 from surfaces.dashboard.projections_summary import (
     _as_int,
@@ -22,8 +24,6 @@ from surfaces.dashboard.projections_summary import (
 from surfaces.dashboard.projections_vitals import vitals_projection
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from kernel import GraphStore
     from surfaces.dashboard.azure_port import AzureReader
     from surfaces.dashboard.github_builds import GitHubReader
@@ -44,7 +44,17 @@ def verdict_projection(
     stages = run_stages(graph, run_id)
     vitals = vitals_projection(graph, azure, settings, run_id, now=now, github=github)
     recovery = run_recovery(graph, run_id)
-    return project_verdict(acceptance, stages, vitals, recovery)
+    projected = project_verdict(acceptance, stages, vitals, recovery)
+    override = readiness_override(
+        graph,
+        now=now or datetime.now(tz=UTC),
+        max_age_minutes=settings.readiness_failure_max_age_minutes,
+    )
+    if override is not None:
+        projected["light"] = "RED"
+        projected["summary"] = override["summary"]
+        projected["readiness"] = override
+    return projected
 
 
 def project_verdict(

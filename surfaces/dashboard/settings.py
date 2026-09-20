@@ -148,3 +148,13 @@ class DashboardSettings(AgentSettings):
     dispatcher_fire_utc: str = tunable(
         "22:30", why="Matches dispatcher-cron in infra/deploy-agents.ps1."
     )
+    readiness_failure_max_age_minutes: int = tunable(
+        180,
+        why=(
+            "Keep the dashboard readiness warning visible through the next "
+            "hourly check."
+        ),
+        ge=10,
+        le=360,
+        unit="minutes",
+    )

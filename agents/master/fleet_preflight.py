@@ -86,7 +86,8 @@ def run_fleet_preflight(
             "agent_types_checked": list(agent_types_checked),
         },
     )
-    for failure in failures:
+    if failures:
+        classes = sorted({failure.klass for failure in failures})
         sink.submit(
             AgentFault(
                 source_agent="master",
@@ -95,15 +96,10 @@ def run_fleet_preflight(
                 severity="critical",
                 error_type="FleetPreflightFailure",
                 message=(
-                    f"fleet preflight failure_count=1 klass={failure.klass} "
-                    f"agent_type={failure.agent_type} probe={failure.probe}"
+                    f"fleet preflight failure_count={len(failures)} "
+                    f"classes={','.join(classes)}"
                 ),
-                context={
-                    "klass": failure.klass,
-                    "agent_type": failure.agent_type,
-                    "probe": failure.probe,
-                    "reason": failure.reason,
-                },
+                context={"failures": failure_values},
             )
         )
     return FleetPreflightResult(not failures, tuple(failures))

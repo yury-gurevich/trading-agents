@@ -62,6 +62,7 @@
     "RemediationAttempt",
     "RemediationPlan",
     "ReportSnapshotResult",
+    "RunHold",
     "Run",
     "RunRequest",
     "ScanResult",
@@ -461,6 +462,16 @@
       "failure_count",
       "failures",
       "passed"
+    ],
+    "RunHold": [
+      "as_of",
+      "failures",
+      "held_at",
+      "preflight_key",
+      "readiness_state",
+      "released_at",
+      "run_id",
+      "state"
     ],
     "LLMCall": [
       "cache_read_tokens",

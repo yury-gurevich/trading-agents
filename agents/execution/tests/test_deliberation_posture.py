@@ -21,6 +21,7 @@ from kernel import InMemoryGraphStore, Node
 from kernel.config import describe
 
 if TYPE_CHECKING:
+    from contracts.execution import DeliberationPosture
     from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 
 
@@ -146,8 +147,18 @@ def test_arrived_veto_is_honored_identically_under_both_postures() -> None:
     }
 
 
-def test_default_posture_preserves_fail_open_submission_as_advisory() -> None:
-    """EXEC-OUT-09 / EXEC-OBS-04: default posture records expected fail-open."""
+@pytest.mark.parametrize(
+    ("posture", "severity"),
+    [("advisory", "warning"), ("binding", "error")],
+)
+def test_fail_open_submission_severity_follows_posture(
+    posture: DeliberationPosture, severity: str
+) -> None:
+    """EXEC-OUT-09 / EXEC-OBS-04: fail-open severity follows the declared posture.
+
+    Posture blocks only ``proceeded_unvetoed``, so the order proceeds either
+    way; ``binding`` became the default 2026-09-20 (item 6b, DL-185).
+    """
     payload = order_set(order("AAPL"))
     graph = InMemoryGraphStore()
     node = _seed_pm_run(graph, payload)
@@ -158,16 +169,20 @@ def test_default_posture_preserves_fail_open_submission_as_advisory() -> None:
     )
     graph.add_edge(node, delib, "DELIBERATED_BY")
 
-    execute_pm_node(node, graph=graph, broker=PaperBroker())
+    execute_pm_node(
+        node,
+        graph=graph,
+        broker=PaperBroker(),
+        settings=ExecutionSettings(deliberation_posture=posture),
+    )
 
     (execution,) = graph.list_nodes("ExecutionRun")
     (fill,) = graph.list_nodes("Fill")
-    fault = _fault_props(graph)
 
     assert fill.props["ticker"] == "AAPL"
     assert execution.props["deliberation_status"] == "applied_failed_open"
-    assert execution.props["deliberation_posture"] == "advisory"
-    assert fault["severity"] == "warning"
+    assert execution.props["deliberation_posture"] == posture
+    assert _fault_props(graph)["severity"] == severity
 
 
 def test_deliberation_posture_is_mode_selector_not_tunable() -> None:
@@ -179,6 +194,6 @@ def test_deliberation_posture_is_mode_selector_not_tunable() -> None:
     assert posture.minimum is None
     assert posture.maximum is None
     assert posture.unit is None
-    assert ExecutionSettings().deliberation_posture == "advisory"
+    assert ExecutionSettings().deliberation_posture == "binding"
     with pytest.raises(ValidationError):
         ExecutionSettings.model_validate({"deliberation_posture": "legacy"})

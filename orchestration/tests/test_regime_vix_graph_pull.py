@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import overbought_bars
+from agents.execution.settings import ExecutionSettings
 from kernel import InMemoryGraphStore
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import place_run_request
@@ -19,6 +20,8 @@ from orchestration.tests.test_unified_decision_run import (
     _position,
     _provider,
 )
+
+_ADVISORY = ExecutionSettings(deliberation_posture="advisory")
 
 
 def test_graph_pull_missing_vix_does_not_halt_buys_or_exits() -> None:
@@ -42,6 +45,7 @@ def test_graph_pull_missing_vix_does_not_halt_buys_or_exits() -> None:
         provider_agent=agent,
         broker=broker,
         analyst_settings=AnalystSettings(exit_confidence_floor=0.58),
+        execution_settings=_ADVISORY,
     )
 
     fills = {(fill.ticker, fill.side, fill.quantity) for fill in broker.fills()}

@@ -8,6 +8,57 @@ and is marked CLOSED here.
 
 ---
 
+## DL-185 - the referee's posture becomes `binding`, and the blast radius was larger than the spine showed - status: DECIDED (operator, 2026-09-20)
+
+**Decision.** `ExecutionSettings.deliberation_posture` default flips `advisory` -> `binding`
+(`agents/execution/settings.py:133`). Work-queue item **6b** closes. The operator chose this against
+the measurement below; the row's own blocker (item **59**) closed on 2026-09-16 into items 60,
+62, 63 and 65, all since closed, so the question was decidable for the first time.
+
+**What binding actually does**, read in the code rather than inferred:
+
+- `apply_deliberation_posture` drops **buy** intents, and only when status is `proceeded_unvetoed`
+  - no `DeliberationRun` at all after the grace. Exits always pass (S147 / ADR-0017).
+- `_severity()` (`agents/execution/deliberation_faults.py:90`) turns a fail-open submission from a
+  **warning** into an **error**.
+
+**Measured on the spine before deciding (75 `ExecutionRun` / 75 `DeliberationRun`):**
+
+- `proceeded_unvetoed` has occurred **3 times ever** - 2026-08-08, 08-10, 08-19 - and **not once in
+  the 32 days since**. So on the last five scheduled runs, binding changes nothing.
+- `failed_open` last fired **2026-09-11**, ending a four-night cluster (09-08 -> 09-11) in which
+  `real_debate_count` was **0** and **5 orders still reached the broker** with no referee review and
+  nothing on the board saying so. Under binding those four nights read **error**, not warning.
+- The five runs since (09-14 -> 09-18) are all `applied`, `failed_open_count=0`,
+  `real_debate_count` 2-4.
+
+🚨 **The blast radius was larger than the spine suggested, and only the gate showed it.**
+Flipping the default turned **seven** tests red across five files. None was a defect in the flip:
+six were fixtures that never configured a deliberator, so they silently relied on `advisory`; the
+seventh, `test_no_llm_means_no_veto_stage`, encodes a *policy* binding deliberately inverts - with no
+LLM wired there is no `DeliberationRun`, so under binding the cascade now buys nothing. That is
+binding working as designed, but it is a sharper statement than "3 occurrences in 32 days" implies:
+**any path without a deliberator stops buying.** In the deployed fleet the deliberators are present
+and credential-tested (S188), which is why the spine shows only 3.
+
+**How the tests were fixed** - each now pins the posture it actually means, rather than inheriting
+an unstated default: explicit `advisory` where the test is about submission, anchoring, VIX,
+monitor adoption or the cascade; the acceptance test already said "advisory" in its own name and now
+declares it; and the two fail-open posture tests collapse into one parametrized test asserting
+warning under `advisory` and error under `binding`.
+
+**Rejected:** (a) *set `EXECUTION_DELIBERATION_POSTURE=binding` on the fleet instead* - zero test
+churn and reversible without a redeploy, but it moves the declaration out of the repo and leaves the
+package default contradicting production, which is the accident DL-134 existed to end. (b) *flip
+only the acceptance half* - honest signal with no capital-risk change, but it is not a flag flip and
+would need its own sprint. (c) *stay advisory* - keeps an LLM-outage night quietly green, which
+09-08 -> 09-11 showed is exactly how 5 unreviewed orders reach the broker unremarked.
+
+🪤 **Not yet proven in the fleet.** This is a code default; nothing changes in production
+until a deploy carries it. No run has yet executed under `binding`.
+
+---
+
 ## DL-184 - a vulnerability that reaches no container is accepted, not chased - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
 
 **The break.** `make ci` step 10 (`pip-audit`) began failing 2026-09-20 with **no change to any

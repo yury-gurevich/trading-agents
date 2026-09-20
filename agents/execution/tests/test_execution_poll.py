@@ -15,6 +15,7 @@ from agents.execution.broker import BrokerFill
 from agents.execution.deliberation_gate import failed_open_tickers
 from agents.execution.paper_broker import PaperBroker
 from agents.execution.poll import execute_pm_node, find_pending
+from agents.execution.settings import ExecutionSettings
 from agents.execution.store import write_fills as store_write_fills
 from agents.execution.tests.broker_protocol_helpers import NoStopBrokerMixin
 from agents.execution.tests.helpers import order, order_set
@@ -28,6 +29,9 @@ if TYPE_CHECKING:
     from contracts.common import Money, Provenance
     from contracts.portfolio_manager import OrderIntentSet
     from kernel import GraphStore, Node
+
+
+_ADVISORY = ExecutionSettings(deliberation_posture="advisory")
 
 
 def _seed_pm_run(graph: InMemoryGraphStore, payload: OrderIntentSet) -> Node:
@@ -51,7 +55,7 @@ def test_find_pending_empty_when_no_pm_run() -> None:
 def test_execute_pm_node_submits_and_anchors() -> None:
     graph = InMemoryGraphStore()
     node = _seed_pm_run(graph, order_set(order("AAPL")))
-    execute_pm_node(node, graph=graph, broker=PaperBroker())
+    execute_pm_node(node, graph=graph, broker=PaperBroker(), settings=_ADVISORY)
     assert len(graph.list_nodes("Fill")) == 1
     assert len(graph.list_nodes("ExecutionRun")) == 1
     assert find_pending(graph) == []
@@ -129,7 +133,9 @@ def test_run_once_continues_after_poisoned_intent_and_anchors_execution(
 
     processed = run_once(
         lambda: find_pending(graph),
-        lambda item: execute_pm_node(item, graph=graph, broker=broker, sink=sink),
+        lambda item: execute_pm_node(
+            item, graph=graph, broker=broker, sink=sink, settings=_ADVISORY
+        ),
     )
 
     execution_node = graph.list_nodes("ExecutionRun")[0]

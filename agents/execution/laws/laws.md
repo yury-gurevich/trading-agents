@@ -353,7 +353,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `scaled_order_price_tolerance_floor_bps` | `25` | `int ≥ 0, ≤ 500` (bps) | YES | Stops the scaled challenger becoming so narrow that quiet names cannot trade at all |
 | `scaled_order_price_tolerance_ceiling_bps` | `250` | `int ≥ 0, ≤ 500` (bps) | YES | Keeps the challenger narrow enough that ADR-0018 still rejects a materially unevaluated open |
 | `deliberation_grace_seconds` | `900` | `int ≥ 0, ≤ 3600` (seconds) | YES | How long a buy-carrying PMRun waits for its DeliberationRun before submitting under the declared posture; exits never wait (S147 / ADR-0017) |
-| `deliberation_posture` | `"advisory"` | `Literal["advisory","binding"]` — config | NO (mode selector) | S185 operator policy selector; `advisory` records expected fail-open as warning, `binding` refuses buy exposure when no `DeliberationRun` arrives. Not a tunable — switching it changes which policy runs, not a value inside one |
+| `deliberation_posture` | `"binding"` | `Literal["advisory","binding"]` — config | NO (mode selector) | S185 operator policy selector; `advisory` records expected fail-open as warning, `binding` refuses buy exposure when no `DeliberationRun` arrives. **Default flipped to `binding` 2026-09-20 (operator, work-queue item 6b, DL-185)** once all three flip conditions were met non-vacuously. Not a tunable — switching it changes which policy runs, not a value inside one |
 | `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for broker-adopted positions with no PM stop lineage (ADR-0015 §3); matches the monitor-reconciliation paper-stage floor |
 
 ---

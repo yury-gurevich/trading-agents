@@ -8,6 +8,41 @@ and is marked CLOSED here.
 
 ---
 
+## DL-184 - a vulnerability that reaches no container is accepted, not chased - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
+
+**The break.** `make ci` step 10 (`pip-audit`) began failing 2026-09-20 with **no change to any
+dependency file** - a newly published advisory, **PYSEC-2026-2447** (CVE-2025-69872,
+GHSA-w8v5-vhqr-4h9v) against `diskcache` 5.6.3. It blocks every commit, including docs-only ones.
+
+**Measured exposure, not assumed.** `diskcache` is not a direct dependency. It arrives only through
+`dspy`, which sits in the **optional** `optimizer` extra (`pyproject.toml:42`). Three measurements:
+
+- **No fleet image installs that extra.** Across the Dockerfiles' `uv sync` lines the extras used are
+  `runtime` (29), `azure` (13), `forecaster` (2), `llm` (2). `optimizer` appears **zero** times, so
+  `diskcache` reaches **no deployed container**.
+- **No code imports it.** `dspy` has zero import hits across `kernel contracts agents orchestration
+  surfaces scripts tests`. It is installed in the developer venv and never executed.
+- **The precondition is an already-compromised host.** The advisory requires *write access to the
+  cache directory* to plant a pickle. Anyone holding that on a dev machine already has code
+  execution; the CVE adds no reachable capability.
+
+**No fix exists.** `fix_versions` is empty - the advisory covers diskcache *through* 5.6.3, which is
+the current release. There is no upgrade to take.
+
+**Decision.** Ignore this one advisory ID in `pip-audit`, in **both** the `Makefile` and `ci.yml`, so
+the two definitions stay identical. Bounded to the single ID: every other advisory, including a
+future diskcache one, still fails the gate. Proven after the change: `No known vulnerabilities found,
+2 ignored`, exit 0 measured by file redirection, not through a pipe.
+
+**Rejected:** (a) *drop the `optimizer` extra* - DSPy was adopted deliberately by ADR-0010 for prompt
+optimisation; removing it is a direction change, not a CVE response. (b) *leave the gate red* - a
+permanently failing gate is one nobody reads, which is how a real finding gets missed.
+
+**Retire trigger:** work-queue item 74 - remove the ignore when diskcache publishes a fixed release,
+or when the `optimizer` extra is dropped.
+
+---
+
 ## DL-183 - a ten-minute poll keeps the existing run window - status: DECIDED (S219, 2026-09-20)
 
 **Decision 1 -- notice wording.** A hold notice says: *"Choose Run now by 23:20 UTC. Your answer
@@ -400,7 +435,7 @@ order and it is judging the system.
   Resizing would make the LLM a sizer, which is the one thing every prior decision refused.
 - **Flip `deliberation_posture` to `binding`, or away from it.** Measured irrelevant: `drop_vetoed` runs
   **before** `apply_deliberation_posture`, so an arrived veto binds identically under both postures
-  ([DL-134](#dl-134), item 6b). The posture only bites on `proceeded_unvetoed`.
+  (DL-134, item 6b). The posture only bites on `proceeded_unvetoed`.
 - **Retune the gates the referee complains about.** That is what EXP-008/011/012 tested. None of the
   three changes what trades, and one costs money.
 - **Treat the streak as a deliberator outage.** Refuted by fact 4 above.
@@ -794,7 +829,7 @@ The spec offered two shapes for `remediation_mode="automatic"` on an unwired cat
 
 ## DL-165 - the tolerance band is promoted on external evidence, because the flip is what makes own-book evidence possible - status: DECIDED (operator, 2026-09-13)
 
-**Operator decision, 2026-09-13: promote the S149 volatility-scaled tolerance**, closing work-queue **item 47** and resolving [DL-76](#dl-76)'s pending promotion. Chosen over my recommendation to keep the flat band and close the item as decided-by-design.
+**Operator decision, 2026-09-13: promote the S149 volatility-scaled tolerance**, closing work-queue **item 47** and resolving DL-76's pending promotion. Chosen over my recommendation to keep the flat band and close the item as decided-by-design.
 
 ### The evidence problem that shaped the decision
 
@@ -840,13 +875,13 @@ The finding was never the rate but the **distribution**: 50 bps is one median ga
 
 ### Owed next
 
-The report prints `0.00` for both modes with no indication that the comparison could not have differed. That is a *legibility* defect, not a computation one — a reader concludes "no difference" where the truth is "cannot differ in this direction". Filed as **item 56**: label the structurally-uninformative case rather than reporting a confident zero. 🪰 This is [DL-152](#dl-152)'s shape once more — a producer that knew something it never said — and the sixth instance.
+The report prints `0.00` for both modes with no indication that the comparison could not have differed. That is a *legibility* defect, not a computation one — a reader concludes "no difference" where the truth is "cannot differ in this direction". Filed as **item 56**: label the structurally-uninformative case rather than reporting a confident zero. 🪰 This is [DL-152](#dl-152---an-earnings-map-that-covers-30-days-should-say-so-and-a-gate-should-be-allowed-to-answer---status-decided-2026-09-04)'s shape once more — a producer that knew something it never said — and the sixth instance.
 
 ---
 
 ## DL-164 - a probe that cannot fail is not an entry condition, and the gate it feeds has to bite the run - status: IMPLEMENTED (S202, 2026-09-13)
 
-Implements [DL-163](#dl-163) — both halves, in one sprint, because **measuring the fix changed its sequencing.**
+Implements [DL-163](#dl-163---the-entry-condition-existed-had-the-right-failure-code-and-probed-an-endpoint-that-cannot-fail---status-decided-operator-2026-09-13) — both halves, in one sprint, because **measuring the fix changed its sequencing.**
 
 ### What the measurement changed
 
@@ -964,12 +999,12 @@ it was filed as item 50.
 
 🪤 **But an entry condition alone does not close it, for two reasons, and this is the part worth keeping.**
 
-1. **Halting the deliberator is not the same as halting the run.** DL-36's policy is *failure halts*. A failed probe stops the deliberator from activating — and under `advisory` posture a run with **no** deliberator still submits, because `proceeded_unvetoed` is what `binding` bites on ([DL-134](#dl-134)). So the precondition has to gate the **run**, or the posture has to make an absent veto binding. Otherwise the probe turns a silent fail-open into a slightly earlier silent fail-open.
+1. **Halting the deliberator is not the same as halting the run.** DL-36's policy is *failure halts*. A failed probe stops the deliberator from activating — and under `advisory` posture a run with **no** deliberator still submits, because `proceeded_unvetoed` is what `binding` bites on ([DL-134](#dl-134---the-posture-switch-is-not-the-decision-dl-116-and-dl-119-were-arguing-about---status-decided-2026-08-30)). So the precondition has to gate the **run**, or the posture has to make an absent veto binding. Otherwise the probe turns a silent fail-open into a slightly earlier silent fail-open.
 2. **It cannot cover exhaustion mid-run.** Credit can drain between the first order and the fifth. Entry conditions make that the *rare* case instead of the primary one — which is exactly why the operator's "No" still has to be implemented as a backstop.
 
 **Sequencing that follows:** the probe fix is the primary defect (it would have prevented the actual four-night incident); the acceptance/posture change is the backstop for mid-run exhaustion. Do the probe first — it is cheaper, it is a pack edit, and it fails *before* orders exist rather than explaining afterwards why they were not reviewed.
 
-**The road not taken:** making `advisory` fail-open red outright. Rejected as the primary fix — [DL-125](#dl-125) measured the cost of that directly (six straight nights of a red gate for a non-defect, which trains the operator to read a real fault as noise). The precondition avoids the dilemma instead of choosing a side of it.
+**The road not taken:** making `advisory` fail-open red outright. Rejected as the primary fix — [DL-125](#dl-125---the-falsifiable-test-was-blocked-by-a-billing-failure-and-the-referee-is-down-until-2026-08-30---status-measured-2026-08-22) measured the cost of that directly (six straight nights of a red gate for a non-defect, which trains the operator to read a real fault as noise). The precondition avoids the dilemma instead of choosing a side of it.
 
 ---
 
@@ -1025,7 +1060,7 @@ A version string tells you *which build*; it does not tell you whether the rende
 
 **The decision: the recording comes first, and it carries a provenance stamp.**
 
-`cache_control` alone would have produced a discount nobody could verify — exactly [DL-152](#dl-152)'s pattern in a fifth shape (a declared property with no producer; S198's item 49 was the fourth). So `LLMCall` gains `cache_read_tokens`, `cache_write_tokens` **and `token_source`**, and the adapters feed it the provider's own `usage`.
+`cache_control` alone would have produced a discount nobody could verify — exactly [DL-152](#dl-152---an-earnings-map-that-covers-30-days-should-say-so-and-a-gate-should-be-allowed-to-answer---status-decided-2026-09-04)'s pattern in a fifth shape (a declared property with no producer; S198's item 49 was the fourth). So `LLMCall` gains `cache_read_tokens`, `cache_write_tokens` **and `token_source`**, and the adapters feed it the provider's own `usage`.
 
 **Why `token_source` is not redundant.** `tokens_in`/`tokens_out` already existed, so the fix could have silently replaced their *source* and changed nothing about the column names — no vocabulary change, no deploy. That was rejected: six words in and four out is a plausible *vendor* count as well as a word count, so a corrected row and a legacy row would be byte-identical on the numbers. The stamp is what makes the 1,177 existing rows readable as the estimates they are, and it is what lets `/audit-costs` report a **floor** rather than a price. Proven by `test_vendor_and_estimated_rows_are_distinguishable`.
 
@@ -1037,7 +1072,7 @@ A version string tells you *which build*; it does not tell you whether the rende
 - **Batch mode for the live nightly debate.** Rejected on measurement, operator decision 2026-09-13. Nightly `LLMCall` volume is **2, 1, 1, 1** over 2026-09-08..-11 — batching saves cents per night and costs the run its bounded wall clock (the Batch API gives no latency guarantee; the grace is 1,800 s and `request_timeout_seconds` is 30). The Batch API stays where the money is: the replay harness, which now also caches.
 - **`cache_control` on the operator's system prompt.** Rejected: caching is a prefix match and `tools` renders ahead of `system`; the operator's tool list varies per call (`parse_intent` vs `answer_question`), so the marker would write entries nobody reads at 1.25x. Pinned by a test so a later consistency edit has to argue with it.
 
-**The TTL is deliberately different in the two paths.** The live adapter takes the 5-minute default (requests 84 s apart — [DL-150](#dl-150) — and a read refreshes the timer, so 1h buys nothing but a doubled write). The batch harness takes `ttl: "1h"`, because a batch is processed across minutes to hours and a 5-minute entry would expire mid-round and be rewritten repeatedly. Both halves are pinned by tests, so the asymmetry reads as a decision rather than an inconsistency.
+**The TTL is deliberately different in the two paths.** The live adapter takes the 5-minute default (requests 84 s apart — DL-150 — and a read refreshes the timer, so 1h buys nothing but a doubled write). The batch harness takes `ttl: "1h"`, because a batch is processed across minutes to hours and a 5-minute entry would expire mid-round and be rewritten repeatedly. Both halves are pinned by tests, so the asymmetry reads as a decision rather than an inconsistency.
 
 🪤 **The expensive half was the failure path, and a planted guard found it.** Moving `set_usage` into the success-only branch — the obvious shape — turned the truncation test red at `assert 0 == 4096`. `effort` is `max`, so a completion ending in `max_tokens` has spent its entire output budget *before* raising; the estimate fallback then sees an empty response, so the most expensive calls the fleet makes would have been recorded as costing **zero output**. Usage is read on both paths.
 
@@ -1170,7 +1205,7 @@ two runs, consistent with run A's 16 real + 2 fail-open against run B's 18), and
 🚨 **The interval is the finding. 56 % on 16 pairs has a 95 % confidence interval of
 [33.2 %, 76.9 %].** That span contains 50 % *and* 75 %. So the measured number can support neither
 "barely distinguishable from chance" nor "acceptably consistent" — it is compatible with both. This
-does not refute [DL-104](#dl-104--the-vetos-verdicts-were-read-for-the-first-time-it-is-a-good-auditor-and-a-bad-gate)'s
+does not refute [DL-104](design-log.md)'s
 conclusion, which rested mainly on reading the *grounds* (2 of 15 survived checking) rather than on
 the rate. But the **56 % itself has since been cited in three decisions** — DL-105's sweep, the
 2026-08-13 timeout incident, and DL-140's rejected routes — and on 16 pairs it cannot carry that
@@ -1685,7 +1720,7 @@ headroom by half). At 84.3 s per order, serial:
 | **22** | **1,855 s** | 🚨 **breaches** |
 | 25 | 2,108 s | 🚨 breaches |
 
-**Why this is a decision and not just a number.** [DL-105](#dl-105)'s amendment wrote S172's trigger
+**Why this is a decision and not just a number.** DL-105's amendment wrote S172's trigger
 down: *build it when the measured serial cost at the target funnel width still exceeds the grace
 **after the two tunables have been swept***. At ≤21 orders it no longer does. Recent nights approved
 **2, 2, 9, 7**. 🚨 **So the trigger is met only if the target funnel width is ≥22 — which is an
@@ -1729,7 +1764,7 @@ and S173's replay must say so rather than treat hash equality as whole-context e
    source alone would draw the wrong conclusion about what the fleet actually runs.
 3. 🚨 **Quality has never been measured for either lever.** `effort` and `max_rounds` have been
    decided three times between them — DL-105's sweep, the 2026-08-13 timeout incident, and
-   [DL-140](#dl-140)'s rejected routes — and **every one of those decisions turned on wall clock or
+  [DL-140](#dl-140---s172s-k4-concurrency-measured-at-last-and-it-does-not-clear-its-own-bar---status-measured-2026-09-01)'s rejected routes — and **every one of those decisions turned on wall clock or
    fail-opens. None measured whether the verdicts changed.** The instrument that could is
    **item 9 / S173**, and its control arm is not optional: at **56 %** self-agreement, the same
    config disagrees with itself 44 % of the time, so a `high`-vs-`medium` difference is
@@ -4237,7 +4272,7 @@ takes `sched-2026-08-14` uncontested and produces it.
 end to end for the comparable run (dispatcher 02:28 -> last write 02:48:54 on 08-13). A run cut off
 mid-cascade at 00:30 would still burn the key, destroying the only clean single-variable comparison
 available. Extending the window across 16 apps to buy ~22 hours was rejected as a live config write
-for no proportionate gain - the [DL-100](#dl-100) shape.
+for no proportionate gain - the DL-100 shape.
 
 **Open, not decided:** whether the run id should key off the *session* date rather than the UTC
 date, which would let a pre-open manual run and the post-close scheduled run coexist. Not urgent -
@@ -9371,7 +9406,7 @@ The `:s166` veto-gate run recorded `real_debate_count=0, failed_open_count=18` w
 `LLMCall`s were logged across all three roles in the window (proponent 28, opponent 20, manager 10),
 so the peers *were* reachable. The 18 Faults say what actually happened:
 
-```
+```text
 Error code: 400 - invalid_request_error
 "You have reached your specified API usage limits.
  You will regain access on 2026-09-01 at 00:00 UTC."
@@ -9421,7 +9456,7 @@ S166 buy gate, or the Anthropic account usage limit.
 ## DL-98 · The LLM veto finally ran — eleven minutes after the orders were already at the broker · status: FIXED (2026-08-08, S166 / [ADR-0022](decisions/0022-the-veto-gates-buys-never-exits.md), 0.89.07)
 
 **The first production run in which the PM approved orders AND the deliberator reached a model.**
-[DL-80](#) is **closed** by it: `LLMCall` went **25 → 164**, the 139 new calls all `claude-opus-5`
+[DL-80](#dl-80--five-deployed-agents-have-never-run-and-the-llm-veto-has-never-vetoed--status-open-operator-escalated-2026-07-31) is **closed** by it: `LLMCall` went **25 → 164**, the 139 new calls all `claude-opus-5`
 from `deliberator-proponent`/`-opponent`, and the `DeliberationRun` records
 **`real_debate_count=18`, `failed_open_count=0`** with a real narrative (*"ABT: revise — both sides
 argue figures absent from this packet…"*). The debate works.
@@ -9489,7 +9524,7 @@ independently, always deployed, which is exactly why the race was real rather th
 
 ## DL-97 · A second copy of the sector reason strings, kept alive only by the test that called it · status: FIXED (2026-08-08, `chore-one-sector-rejection`, 0.89.06)
 
-**Found while splitting `risk.py`** ([DL-96](#)), reported then rather than folded in silently, and
+**Found while splitting `risk.py`** ([DL-96](#dl-96--the-pms-rejection-precedence-was-unpinned-and-a-refactor-is-exactly-when-that-changes--status-fixed-2026-08-08-chore-split-modules-before-the-block-08905)), reported then rather than folded in silently, and
 fixed here on the operator's call.
 
 `SectorBook.rejection` mapped a failing sector gate to `sector_name_count` /
@@ -9860,7 +9895,7 @@ real and attributable.
 
 ## DL-104 · The veto's verdicts were read for the first time: it is a good auditor and a bad gate · status: DECIDED (2026-08-10 — grace returned to 900 s for `sched-2026-08-10`)
 
-[DL-103](#dl-103--the-veto-now-works-and-finishing-takes-longer-than-it-is-allowed) closed noting
+[DL-103](#dl-103--the-veto-now-works-and-finishing-takes-longer-than-it-is-allowed--status-mitigated-grace-900--1800-s-2026-08-08-the-scaling-problem-is-open) closed noting
 that the veto's *quality* was unassessed — "only that they are real and attributable". This entry
 assesses it, before the first run on which the veto could actually bind.
 
@@ -9924,7 +9959,7 @@ specific and fair.
 **Conclusion: the veto is a genuinely useful auditor and a bad gate.** Roughly 2 of 15 grounds
 survive checking, one whole class is self-inflicted by its own context builder, and it disagrees
 with itself on 44 % of verdicts. Letting it bind would have cut ~18 orders to ~3 on mostly unsound
-reasoning, and cost another night of the selection data [DL-93](#dl-93) names as the object under
+reasoning, and cost another night of the selection data [DL-93](#dl-93--sizing-the-10-slot-cap-and-sell-what-is-losing--status-open-operator-raised-2026-08-06-decision-deferred-pending-the-sizingmargin-question) names as the object under
 test.
 
 **DECISION (operator, 2026-08-10): `EXECUTION_DELIBERATION_GRACE_SECONDS` returned 1800 → 900** on
@@ -9992,7 +10027,7 @@ they follow from opposite decisions about what the veto *is*:
 
 | If the veto is… | The answer is | Because |
 | --- | --- | --- |
-| **an auditor, permanently** ([DL-104](#dl-104)'s own finding) | the **Batch API** | An auditor never has to finish before orders go out. Submitting the day's debates as one batch does not optimise the scaling table — it **deletes it**: no grace window, no `le=3600` ceiling, no `DeliberationGraceExpired` fault-used-as-a-feature, and identical behaviour at 18 orders or 500 |
+| **an auditor, permanently** ([DL-104](#dl-104--the-vetos-verdicts-were-read-for-the-first-time-it-is-a-good-auditor-and-a-bad-gate--status-decided-2026-08-10--grace-returned-to-900-s-for-sched-2026-08-10)'s own finding) | the **Batch API** | An auditor never has to finish before orders go out. Submitting the day's debates as one batch does not optimise the scaling table — it **deletes it**: no grace window, no `le=3600` ceiling, no `DeliberationGraceExpired` fault-used-as-a-feature, and identical behaviour at 18 orders or 500 |
 | **something that may bind** | **concurrency** (S172) | A batch cannot gate what has already been submitted. Fan-out across independent orders is the only path to a veto that finishes inside a grace |
 
 🪤 **The fork cannot be decided today, and deciding it early is the trap.** DL-104 (a)–(c) established
@@ -10017,7 +10052,7 @@ whichever sprint lands first.
   platform/pack wall, and DL-36's master-as-sole-Key-Vault-accessor. The parallelism it buys is
   available in-process for a fraction of the change.
 - 🪤 **Both are Anthropic-only, and the deliberator is deliberately on `gpt-5.5` until 2026-09-01**
-  ([DL-99](#dl-99)). Either path is gated on that date or on resolving the key limit — the same
+  ([DL-99](#dl-99--the-debate-is-inert-until-2026-09-01-and-my-audit-said-zero-faults-while-18-were-being-written--status-code-fixed-s167-account-limit-remains-until-2026-09-01)). Either path is gated on that date or on resolving the key limit — the same
   date S170 already carries.
 
 **Three adapter findings, discovered while checking the above.** None were being looked for; all
@@ -10057,7 +10092,7 @@ it when the measured serial cost at the target funnel width still exceeds the gr
 tunables have been swept.* Building it first buys concurrency machinery for the *"may bind"* branch
 of a fork this entry deliberately defers — see the fork table above. 🪤 The sweep needs the fleet
 retagged off `:s171` to pick up `0.90.02`, and a full `up` still discards operator env until S169
-lands ([DL-100](#dl-100)).
+lands ([DL-100](#dl-100--a-provider-switch-that-is-four-switches-and-a-deploy-that-silently-unsets-them--status-closed-by-s169-code-proven-2026-08-14-live-proof-owed-at-the-next-full-up)).
 
 🟠 **The road not taken.**
 
@@ -10092,7 +10127,7 @@ verified, `DeployRecord deploy:2026-08-12T07:52:49…:s171a:e49349cb`.
 **Why the `DeployRecord` SHA is not a sufficient answer.** It carries the full SHA and stays
 authoritative, so traceability was never actually lost — that is exactly why this is easy to wave
 through. But the *name* is what a human reads on the status board and in `az` output, and a name
-that needs a graph lookup to disambiguate is [DL-46](#dl-46)'s currency failure in slow motion:
+that needs a graph lookup to disambiguate is DL-46's currency failure in slow motion:
 the entire point of the tag is that *being behind* is visible **at a glance**.
 
 🟠 **The road not taken.**

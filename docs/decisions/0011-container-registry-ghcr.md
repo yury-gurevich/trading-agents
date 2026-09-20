@@ -36,7 +36,7 @@ DockerHub account. ACR would add $5+/mo for infrastructure that GHCR provides fr
 
 One image per agent, namespaced by project:
 
-```
+```text
 ghcr.io/yury-gurevich/trading-agents-master:latest
 ghcr.io/yury-gurevich/trading-agents-scanner:latest
 ghcr.io/yury-gurevich/trading-agents-analyst:latest

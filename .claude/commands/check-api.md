@@ -10,7 +10,7 @@ Run `pwsh scripts/test-api-keys.ps1` from the repo root and render the results a
 
 1. Run the script:
 
-   ```
+   ```bash
    pwsh scripts/test-api-keys.ps1
    ```
 

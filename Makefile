@@ -1,5 +1,5 @@
 .PHONY: install lint format type test boundaries check ci gate-selftest gate-ran \
-	worktrees codeql-ast codeql-errors clean \
+	worktrees markdown codeql-ast codeql-errors clean \
 	docker-build stack-up stack-down stack-deploy stack-rm
 
 PKGS = kernel contracts agents orchestration surfaces
@@ -53,7 +53,10 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run python scripts/check_law_coverage.py
 	uv run python scripts/check_param_law_sync.py
 	uv run pytest
-	uv run pip-audit
+# DL-184: diskcache PYSEC-2026-2447 has no fix release and reaches no container
+# (it arrives via the optional `optimizer` extra, which no Dockerfile installs).
+# Bounded to this one ID - every other advisory still fails the gate.
+	uv run pip-audit --ignore-vuln PYSEC-2026-2447
 	uv run pre-commit run detect-secrets --all-files
 	uv run python scripts/check_untracked_secrets.py
 
@@ -65,6 +68,9 @@ gate-ran:       ## Assert HEAD has green workflow runs — run this BEFORE mergi
 
 worktrees:      ## Report merged worktrees and branches safe to remove (read-only)
 	uv run python scripts/check_worktrees.py
+
+markdown:       ## Lint every markdown file (scope: .markdownlint-cli2.jsonc, rules: .markdownlint.jsonc)
+	uv run pre-commit run markdownlint-cli2 --all-files
 
 codeql-ast:     ## Generate CodeQL AST artifacts for FILE=path/to/file.py
 ifndef FILE

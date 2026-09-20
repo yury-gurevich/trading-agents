@@ -23,7 +23,7 @@ product later. `ops/` closes that gap **before** the script count explodes.
 
 ## Reading the folder path tells you where you are
 
-```
+```text
 ops/
   README.md                 ← you are here: what the realm is
   INDEX.md                  ← navigation: laws, departments, framework files

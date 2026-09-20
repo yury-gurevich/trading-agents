@@ -61,7 +61,7 @@ is the promotion gate**. Nothing is "tuned" blindly — every change is justifie
 
 `ledger.md` is append-only. Every `ta` action and every charter change writes one row:
 
-```
+```text
 | ts (AEST) | subsystem | action | outcome | duration | cost | operator | note |
 ```
 

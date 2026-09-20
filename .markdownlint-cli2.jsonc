@@ -1,0 +1,21 @@
+// Which files the markdown linter reads. Rules live in `.markdownlint.jsonc`.
+//
+// This file exists so there is exactly ONE canonical invocation (`make markdown`).
+// Passing globs by hand is not equivalent and has already produced a false green:
+// on 2026-09-20 a hand-built file list exceeded the argument limit, the run linted
+// nothing, printed nothing, and `grep -c error` reported 0 — indistinguishable from
+// a clean repo. The glob belongs in the repo, not in a remembered command line.
+{
+  "globs": [
+    "**/*.md"
+  ],
+  "ignores": [
+    "node_modules",
+    ".venv",
+    // Mutation-testing scratch output: gitignored, not repo content.
+    "mutants",
+    // CodeQL report artifacts are GENERATED and, in `archive/`, are dated evidence.
+    // Reformatting them would edit a record of what a scan said on a given day.
+    "codeql/python-security/reports"
+  ]
+}

@@ -45,6 +45,14 @@ repos:
       - id: debug-statements
       - id: detect-private-key
 
+  # ── Markdown: the rules the repo keeps (.markdownlint.jsonc) ──
+  # Pinned, not `npx`: npx downloads an unpinned build on demand, so the version
+  # that judged a commit would drift and would not resolve offline.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+
   # ── Security: detect secrets ──
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0

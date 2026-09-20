@@ -110,7 +110,7 @@ layer in the code and a candidate for the same treatment as this doc.)
 
 The analyst builds a weighted composite:
 
-```
+```text
 score = technical(0.5) + fundamental(0.3) + sentiment(0.2)      (+ relative-strength inside technical, 0.2;
                                                                    + Alpha158 pillar, weight 0.0 = off)
 confidence = floor(0.3) + span(0.6) × normalised score

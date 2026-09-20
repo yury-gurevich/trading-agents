@@ -57,7 +57,7 @@ registered agent; this is the first time it gets a runtime).
 
 **The model lives behind a Protocol; the agent never imports torch.**
 
-```
+```text
 SentimentModel (Protocol)            domain/sentiment.py (pure, 100% tested)
   score_headlines(headlines)           ModelReading(value, confidence)
     -> tuple[float, ...]               aggregate(scores) -> ModelReading | None

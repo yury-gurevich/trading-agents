@@ -362,7 +362,7 @@ because the LLM calls never started.
 
 **Remote gate at the code/deploy proof commit:**
 
-```
+```text
 make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350
 GATE PROVEN for a7e7ad12911ca2dd76be51c6ef5bba0f6344e350:
   Build and push agent images: success

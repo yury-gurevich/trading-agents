@@ -7,8 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One group per commit, not per ref (work-queue item 31) - the same fix
+# codeql.yml already carries. A per-ref group let the next push on main cancel
+# a merge's CI, so a merge SHA could sit on main with no CI result at all and
+# `make gate-ran` run later would prove only whatever the tip had become.
+# Measured 2026-09-20: 17 of the last 200 main runs cancelled, four of them
+# merges - 69f3601, 7d3ff51, dc79d05, and 6a67924, which is the merge of the
+# chore that fixed this same defect in codeql.yml.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 # Least privilege: jobs only read the checkout. No job here writes to the repo,

@@ -95,13 +95,15 @@ someone who opens the dashboard, which runs on the operator's own machine.
 | Dispatcher cron | `30 22 * * 1-5` | *[measured]* `orchestration/packs/trading_tunables.json` → `dispatcher.cron` |
 | Agents' scale window | `start 30 22`, `end 30 00` UTC | *[measured 2026-09-19, S218]* scanner KEDA rule |
 | Dashboard HTTP shape | raw WSGI; **`/api/chat` is the only non-GET route** — everything else 405s | *[measured]* `surfaces/dashboard/app.py:62-67` |
-| Module sizes | `scheduled_dispatch.py` **147**, `app.py` **184**, `projections_verdict.py` **167**, dashboard `settings.py` **160**, `dispatch_scheduled_run.py` **118**, `scheduled_dispatch_gate.py` **71**, `fleet_readiness.py` **64** | *[measured]* `wc -l` |
+| Module sizes — **TOTAL lines, which is what the gate counts** | `orchestration/scheduled_dispatch.py` **147**, `surfaces/dashboard/app.py` **184**, `surfaces/dashboard/projections_verdict.py` **167**, `surfaces/dashboard/settings.py` **160**, `scripts/dispatch_scheduled_run.py` **118**, `orchestration/scheduled_dispatch_gate.py` **71**, `orchestration/fleet_readiness.py` **64** | *[measured 2026-09-20 on `f5c51de`]* `wc -l`, which agrees with `grep -c ''` and with `scripts/check_module_size.py:39` (`len(read_text().splitlines())`) |
 | `RunHold` today | key `hold:<run_id>`, then `hold:<run_id>:<n>`; props `run_id, as_of, held_at, state, readiness_state, preflight_key, failures, released_at` | *[measured]* S218, `orchestration/scheduled_dispatch_gate.py` |
 | Append-only rule | adding a **new** key to a node merges; changing an **existing** key's value is refused | *[measured]* `kernel/graph_postgres_queries.py:18-42` |
 
-🪤 **Two of those are traps.** `scheduled_dispatch.py` at **147** is three lines from the 150-line
-warning, and `app.py` at **184** is sixteen from the 200-line hard block. **New logic goes in new
+🪤 **Two of those are traps.** `orchestration/scheduled_dispatch.py` at **147** is three lines from the 150-line
+warning, and `surfaces/dashboard/app.py` at **184** is sixteen from the 200-line hard block. **New logic goes in new
 modules**, not into either of those.
+
+🚨 **Count TOTAL lines, including blank ones.** The gate does (`scripts/check_module_size.py:39`). Counting **non-blank** lines gives **115** and **161** for those two files — both correct, both the wrong metric, and both comfortably under a limit the file is actually close to. A builder stopped on exactly this discrepancy on 2026-09-20, which is the stop rule working as intended; the spec was at fault for not saying which count it meant.
 
 ---
 

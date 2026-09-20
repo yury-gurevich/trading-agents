@@ -8,6 +8,79 @@ and is marked CLOSED here.
 
 ---
 
+## DL-186 - the referee is given every quant's value and almost none of its meaning, and its sharpest argument was one we wrote for it - status: MEASURED (2026-09-20, operator question)
+
+**The question, from the operator:** a freshly started LLM conversation has no history, so how does
+the deliberator know (a) that this project's quants exist and what they mean *here*, and (b) what
+their values are? Read in the code rather than answered from memory.
+
+**(b) Values: yes, and there is nothing magical about it.** Each turn's user message carries a
+rendered CONTEXT/EVIDENCE block built by string interpolation in `agents/deliberator/context_pm.py`:
+analyst scores, `quant_metrics`, every PM gate outcome as `value`/`threshold`/outcome, and
+`Regime: label=...; vix_index=...`. `agents/deliberator/prompt_recipe.py` hashes the exact module set
+that produced the text, so the rendering is auditable.
+
+**(a) Meaning: largely NO, and the renderer says so out loud.** `context_values.py:81` emits
+`source-owned-units-scope-unknown{atr_pct=2.35, beta=1.383}`, and an unregistered gate renders
+`value_units_scope_unknown`. **There is no glossary of what a metric means in this system.** The model
+gets a name, a number, and an explicit declaration that nobody has stated the units or scope.
+
+Two things partly stand in, and neither is a substitute for a definition:
+
+- `_DEFINE_THEN_JUSTIFY` (`kernel/deliberation_prompts.py:8`) forces the model to define each parameter
+  it invokes before reasoning from it. That is an **honesty device, not a knowledge device**: it makes
+  a wrong assumption visible rather than preventing it.
+- A hand-written *"Preserve these distinctions"* list of six project-specific facts.
+
+🚨 **The asymmetry nobody had measured.** Champion system prompts:
+
+| Role | Size | Distinctions list | Compiled examples |
+| --- | --- | --- | --- |
+| Defender | **434 chars** | no | no |
+| Challenger | **6,764 chars** | yes | yes |
+| Judge | **6,341 chars** | yes | yes |
+
+The judge is additionally instructed: *"If the Challenger catches a grounded implementation-specific
+flaw from the evidence, do not uphold the decision."* So a meaningful part of the **78.9 % veto rate
+is designed in**, not discovered. That is a more likely driver than anything about model temperament.
+
+🪰 **The circularity, which matters for how past evidence is read.** The challenger's prompt
+contains the literal distinction *"fixed-fraction sizing is not volatility-adjusted"*. The
+`sched-2026-09-15` AMZN veto then argued *"sizing is a fixed-fraction notional cap, not
+volatility-adjusted for a beta-1.383/ATR-2.35 % name"*, and
+[ADR-0025](decisions/0025-concentration-measures-the-book-position-risk-measures-the-capital-base.md)
+Decision B quoted that veto as the referee being **right**. 🎯 **The flaw is real** - re-read
+2026-09-20, `size_quantity` (`agents/portfolio_manager/domain/sizing.py:25`) is
+`(portfolio_value * max_position_pct) // est_price`, a pure notional fraction with no stop distance in
+it. **But the argument was not independent discovery: we told it to preserve that distinction, it did,
+and we counted it as evidence.** ADR-0025 and [ADR-0031](decisions/0031-regime-scales-the-risk-budget-atr-keeps-the-stop.md)
+stand on the code reading, not on the veto; this records that the veto should never have been cited as
+a second, separate witness.
+
+**DSPy is not in the runtime.** `kernel/dspy_optimizer.py` lazily imports `dspy`, which lives in the
+optional `optimizer` extra that **zero Dockerfiles install**. The champion prompts are frozen Python
+string literals in `kernel/deliberation_prompts.py`, carrying their own birth certificate
+(*"Promoted from PromptArtifact task=deliberation.challenger,
+version=2026-07-08-s121-v5-challenger-gpt-5.5"*). `deliberation_prompt_artifacts.py` parses artifacts
+for that promotion pipeline; it does not load prompts at run time. So the semantics are a paragraph
+compiled once in July and pasted in, while the values are `name=number` stamped *scope unknown*.
+
+**On persona (operator's hypothesis, answered).** A domain persona - *"senior financial analyst at a
+trading firm covering the S&P 500"* - conditions the output distribution: register, vocabulary, which
+known things surface. It **adds no knowledge**, so it cannot supply the missing `atr_pct` definition;
+it makes a confident guess sound more authoritative. 🪤 **And in this system it may work
+against us:** the challenger prompt spends words on *"address that exact flaw **before generic finance
+caution**"*, which is precisely the prior a finance persona raises. **Rejected as a default**, kept as
+a testable hypothesis - work-queue item **75**.
+
+**The road not taken, recorded now so it is not re-derived.** Richer field descriptions (the DSPy
+signature shape the operator proposed) would close the semantics gap - and would also be *hints*. The
+distinctions list demonstrates how hard a sentence in the system prompt steers the verdict, so better
+definitions would improve grounding and deepen the told-it-what-to-find problem **at the same time**.
+That trade-off is the real design question and is not settled here.
+
+---
+
 ## DL-185 - the referee's posture becomes `binding`, and the blast radius was larger than the spine showed - status: DECIDED (operator, 2026-09-20)
 
 **Decision.** `ExecutionSettings.deliberation_posture` default flips `advisory` -> `binding`

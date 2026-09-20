@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-218-a-broken-fleet-gets-no-run`
-**Status:** RETURNED — amendment **R1** open (planner, 2026-09-20). Do not merge until R1's rows are green.
+**Status:** BUILT — amendment **R1** is locally proven (2026-09-20); its final handback SHA still requires remote gate proof. Do not merge or deploy.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180
@@ -528,22 +528,27 @@ An incomplete handback is returned, not repaired (DL-48).
 | B13 | `test_passing_preflight_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
 | B14 | `test_readiness_summary_has_no_sprint_law_or_design_identifiers` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
 | B15 | `test_released_hold_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B16 | `test_rehold_after_release_creates_active_hold_with_new_evidence` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
+| B17 | `test_stale_check_after_release_keeps_dashboard_red` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
+| B18 | `test_held_run_with_no_check_names_missing_fleet_check` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
 
-**Tests added beyond the plan:** `test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest`, `test_held_run_without_failure_list_uses_a_safe_summary`, and `test_failure_helper_handles_non_mapping_properties` cover malformed graph evidence and restore 100.00 % coverage.
+**Tests added beyond the plan:** `test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest`, `test_held_run_without_failure_list_uses_a_safe_summary`, and `test_failure_helper_handles_non_mapping_properties` cover malformed graph evidence and restore 100.00 % coverage. R1 adds B16-B18 in `test_dashboard_reholds.py`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** BUILT; no deploy. Initial implementation SHA is remotely gated; the final handback SHA still requires its own proof.
+**Status:** BUILT; no deploy. R1 is locally proven; this final handback SHA still requires its own remote proof.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-218-a-broken-fleet-gets-no-run`; no `.env` was present.
 
-**Result:** A fresh passing `FleetPreflight` preserves existing placement. Failing, absent, stale, malformed, or superseded preflight evidence prevents placement and persists one immutable `RunHold`; recovery adds `released_at`. The dashboard reports held or recent failing evidence as RED. The master emits one aggregate critical fault per failed check. Master scale start is `25 20 * * *`.
+**Result:** A fresh passing `FleetPreflight` preserves existing placement. Failing, absent, stale, malformed, or superseded preflight evidence prevents placement and persists one immutable `RunHold`; recovery adds `released_at`. The dashboard reports held or recent failing evidence as RED. The master emits one aggregate critical fault per failed check. Master scale start is `25 20 * * *`. R1 ensures a re-hold after release writes a new active fact, including when its readiness is stale, and explains unknown readiness as a missing recent fleet check.
 
 **Files changed:** Dispatcher readiness reader/gate/settings and tests; master preflight fault aggregation and tests; dashboard readiness projection/settings/tests; dispatch script; graph vocabulary and dispatcher Dockerfile closure; master scale schedule; version and lockfile; design/drift/sprint/state records.
 
 **Design decisions:** DL-181 records the 70-minute freshness bound, unknown-as-hold, and append-only `released_at` representation. DRIFT-068 records the dispatcher guarantee's missing law home.
+
+**R1 key scheme:** The first hold remains `hold:<run_id>` for B2/B6/B7 compatibility. When no active hold remains, the next fact is `hold:<run_id>:<n>`, where `n` is the current count of holds for that run; it cannot collide with a released fact and `DispatchHold.node_key` names the fact just written.
 
 **Proof — the red run first:**
 
@@ -551,18 +556,31 @@ An incomplete handback is returned, not repaired (DL-48).
 17 failed, 660 passed
 ```
 
+**Proof — R1 reproduction and red run:**
+
+```text
+dispatch: HELD | dashboard: GREEN
+3 failed in 2.18s
+B16: assert 'hold:sched-2026-09-20' == 'hold:sched-2026-09-20:1'
+B17: assert 'GREEN' == 'RED'
+B18: assert '0 check(s)' not in "Tonight's run is held: 0 check(s) failing — no failure detail recorded"
+```
+
 **Proof — the green run:**
 
 ```text
 Focused implementation suite: 690 passed in 21.70s.
 Final full suite: 2903 passed, 6 skipped in 117.31s; total coverage 100.00%.
+R1 focused S218 suite: 684 passed in 14.71s; B16-B18: 3 passed in 1.74s.
 ```
 
-**Guards planted:** (a) allowing absent preflight evidence to place failed B3 (`placed` rather than `held`); (b) removing the freshness bound failed B4 (`placed` rather than `held`); (c) restoring one fault per failed probe failed B10 (3 faults rather than 1); (d) removing the verdict override failed B11 (`GREEN` rather than `RED`). Each break was restored and the focused suite passed.
+**Guards planted:** (a) allowing absent preflight evidence to place failed B3 (`placed` rather than `held`); (b) removing the freshness bound failed B4 (`placed` rather than `held`); (c) restoring one fault per failed probe failed B10 (3 faults rather than 1); (d) removing the verdict override failed B11 (`GREEN` rather than `RED`). R1 (e) restored the released-base-hold early return: B16 reused `hold:sched-2026-09-20` and B17 was `GREEN` rather than `RED` (`2 failed, 1 deselected in 2.28s`). R1 (f) restored failure-count wording for unknown: B18 rendered `0 check(s) failing` (`1 failed, 2 deselected in 2.20s`). Each break was restored and its focused check passed.
 
-**Module line counts:** `fleet_readiness.py` 64; `scheduled_dispatch_gate.py` 63; `scheduled_dispatch.py` 147; `fleet_preflight.py` 141; `projections_readiness.py` 55; `projections_verdict.py` 167; `app.py` 184; `dispatch_scheduled_run.py` 118. The size gate passed; the original 214-line master test module was split to 193 lines plus a focused 34-line module.
+**Module line counts:** `fleet_readiness.py` 64; `scheduled_dispatch_gate.py` 60; `scheduled_dispatch.py` 147; `fleet_preflight.py` 141; `projections_readiness.py` 52; `projections_verdict.py` 167; `app.py` 184; `dispatch_scheduled_run.py` 118; R1 `test_dashboard_reholds.py` 127. The size gate passed; the original 214-line master test module was split to 193 lines plus a focused 34-line module.
 
 **`make ci`:** Exit 0 from the S218 worktree. `2903 passed, 6 skipped`; `TOTAL ... 100.00%`; `pip-audit`, tracked detect-secrets, and untracked detect-secrets passed.
+
+**R1 `make ci`:** Exit 0 from the S218 worktree. `2906 passed, 6 skipped in 93.49s`; `TOTAL ... 100.00%`; `pip-audit`, tracked detect-secrets, and untracked detect-secrets passed.
 
 **`make gate-ran`:**
 
@@ -575,7 +593,7 @@ GATE PROVEN for aea47810e1cc18008aa3f11f6d868c21c953b39a:
 
 **Deviations from the spec:** The original state transition `held` to `released` is impossible under append-only graph properties. The corrected representation retains immutable `state="held"`, adds `released_at`, and defines active holds as held nodes without that property. The scope's vocabulary kept `released_at`; B15 was added. This builder-found spec defect is recorded in DL-181.
 
-**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. The final handback commit and its own remote `make gate-ran` proof are pending.
+**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. The R1 handback commit and its own remote `make gate-ran` proof are pending.
 
 ---
 
@@ -583,4 +601,5 @@ GATE PROVEN for aea47810e1cc18008aa3f11f6d868c21c953b39a:
 
 - The local full CI gate is proven at 100.00 % coverage, and the implementation SHA `aea47810e1cc18008aa3f11f6d868c21c953b39a` is remotely proven by CI and Security Findings. No `.env` was present and no live probe ran.
 - The state-transition defect was found against the actual append-only `GraphStore`, corrected before implementation, and recorded in DL-181.
-- Do not deploy or merge this branch. Commit and push this final handback, then prove that final SHA with `make gate-ran` from this worktree.
+- R1 preserves released evidence and writes a later hold under a numbered key, so a stale re-hold cannot be invisible to the dashboard or S219's future notification path.
+- Do not deploy or merge this branch. Commit and push this R1 handback, then prove that final SHA with `make gate-ran` from this worktree.

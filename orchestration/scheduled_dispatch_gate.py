@@ -38,25 +38,34 @@ def hold_unready_run(
     """Write an append-only hold or release a prior hold for a ready fleet."""
     readiness = fleet_readiness(graph, now=now, max_age_minutes=max_age_minutes)
     hold_key = f"hold:{run_id}"
-    existing = graph.get_node("RunHold", hold_key)
+    holds = tuple(
+        node
+        for node in graph.list_nodes("RunHold")
+        if node.props.get("run_id") == run_id
+    )
+    active_hold = next((node for node in holds if is_active_run_hold(node)), None)
     if readiness.state == "ready":
-        if existing is not None and is_active_run_hold(existing):
+        if active_hold is not None:
             graph.merge_node(
-                "RunHold", hold_key, {"released_at": now.isoformat(timespec="seconds")}
+                "RunHold",
+                active_hold.key,
+                {"released_at": now.isoformat(timespec="seconds")},
             )
         return None
-    if existing is None:
-        existing = graph.merge_node(
-            "RunHold",
-            hold_key,
-            {
-                "run_id": run_id,
-                "as_of": as_of.isoformat(),
-                "held_at": now.isoformat(timespec="seconds"),
-                "state": "held",
-                "readiness_state": readiness.state,
-                "preflight_key": readiness.preflight_key,
-                "failures": list(readiness.failures),
-            },
-        )
-    return DispatchHold(readiness.state, existing.key, readiness.failures)
+    if active_hold is not None:
+        return DispatchHold(readiness.state, active_hold.key, readiness.failures)
+    node_key = hold_key if not holds else f"{hold_key}:{len(holds)}"
+    written = graph.merge_node(
+        "RunHold",
+        node_key,
+        {
+            "run_id": run_id,
+            "as_of": as_of.isoformat(),
+            "held_at": now.isoformat(timespec="seconds"),
+            "state": "held",
+            "readiness_state": readiness.state,
+            "preflight_key": readiness.preflight_key,
+            "failures": list(readiness.failures),
+        },
+    )
+    return DispatchHold(readiness.state, written.key, readiness.failures)

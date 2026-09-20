@@ -26,6 +26,12 @@ def readiness_override(
     ]
     if active_holds:
         hold = max(active_holds, key=lambda node: str(node.props.get("as_of", "")))
+        if hold.props.get("readiness_state") == "unknown":
+            return {
+                "state": "held",
+                "summary": "Tonight's run is held: no recent fleet check",
+                "failures": [],
+            }
         return _override("held", "Tonight's run is held", _failures(hold.props))
 
     readiness = fleet_readiness(graph, now=now, max_age_minutes=max_age_minutes)

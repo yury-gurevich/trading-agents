@@ -64,3 +64,7 @@ trading-agents.code-workspace
 # Local worktree layout: which standing worktrees `make worktrees` must not
 # report as stale. Paths differ per machine, so this is never shared.
 .worktree-keep
+
+# Redirected gate output. Sprint specs tell builders to write `make ci > ci.txt`
+# inside the worktree, so a `git add -A` would otherwise commit the log (S218).
+ci.txt

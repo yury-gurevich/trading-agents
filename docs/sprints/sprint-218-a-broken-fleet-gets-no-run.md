@@ -368,7 +368,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT locally; no deploy. Remote gate proof is pending the branch commits and pushes below.
+**Status:** BUILT; no deploy. Initial implementation SHA is remotely gated; the final handback SHA still requires its own proof.
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-218-a-broken-fleet-gets-no-run`; no `.env` was present.
 
@@ -400,17 +400,20 @@ Final full suite: 2903 passed, 6 skipped in 117.31s; total coverage 100.00%.
 **`make gate-ran`:**
 
 ```text
-Pending branch commit and push.
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for aea47810e1cc18008aa3f11f6d868c21c953b39a:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
 **Deviations from the spec:** The original state transition `held` to `released` is impossible under append-only graph properties. The corrected representation retains immutable `state="held"`, adds `released_at`, and defines active holds as held nodes without that property. The scope's vocabulary kept `released_at`; B15 was added. This builder-found spec defect is recorded in DL-181.
 
-**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. Remote `make gate-ran` proof is pending the required branch commits and pushes.
+**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. The final handback commit and its own remote `make gate-ran` proof are pending.
 
 ---
 
 ## Return notes
 
-- The local full CI gate is proven at 100.00 % coverage. No `.env` was present and no live probe ran.
+- The local full CI gate is proven at 100.00 % coverage, and the implementation SHA `aea47810e1cc18008aa3f11f6d868c21c953b39a` is remotely proven by CI and Security Findings. No `.env` was present and no live probe ran.
 - The state-transition defect was found against the actual append-only `GraphStore`, corrected before implementation, and recorded in DL-181.
-- Do not deploy or merge this branch. Push and prove the implementation commit, then the final handback commit, with `make gate-ran` from this worktree.
+- Do not deploy or merge this branch. Commit and push this final handback, then prove that final SHA with `make gate-ran` from this worktree.

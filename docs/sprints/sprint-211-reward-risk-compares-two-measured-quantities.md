@@ -621,6 +621,7 @@ Post-merge CodeQL: success on `7d3ff51`.
 `image_tag=s211`: 15/15 jobs success.
 
 **Deploy:** `pwsh -NoProfile -File infra\deploy-agents.ps1 up -Tag s211` exited `0`:
+
 - preflight: per-target DSNs 17/17, Service Bus SAS 16/16, GHCR images 15/15;
 - env preserved on all 17 targets; `alembic upgrade head`; served topics and subscriptions;
 - master, 15 agents and `dispatcher-cron` (`30 22 * * 1-5` UTC) all `[OK]`.
@@ -637,6 +638,7 @@ deployed SHA, which is less truthful than no record. Next time, dispatch the `s<
 
 **Still owed: the live check** (Sequencing step 5), on the first scheduled run on `s211`
 (`sched-2026-09-17`, 22:30 UTC):
+
 - more than one distinct `reward_risk` value across candidates;
 - `comparison=DISCLOSURE_ONLY` at threshold 0;
 - no rejection reason `reward_risk_below_min`;

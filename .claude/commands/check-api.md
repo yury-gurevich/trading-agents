@@ -9,9 +9,11 @@ Run `pwsh scripts/test-api-keys.ps1` from the repo root and render the results a
 ## Steps
 
 1. Run the script:
+
    ```
    pwsh scripts/test-api-keys.ps1
    ```
+
    Capture stdout and stderr together. If `pwsh` is not on PATH, try `~/pwsh/pwsh`.
 
 2. If the script exits with "`.env` not found", stop and tell the user:

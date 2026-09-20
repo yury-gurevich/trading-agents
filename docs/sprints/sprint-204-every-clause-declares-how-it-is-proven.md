@@ -457,6 +457,7 @@ had to be classified individually.
 **Rollups before → after:** Green/total counters stayed unchanged because the checker already counted law IDs in denominators: provider 16/62 → 16/62; analyst 25/48 → 25/48; scanner 18/41 → 18/41; portfolio_manager 29/48 → 29/48; execution 35/61 → 35/61; monitor 20/46 → 20/46; reporter 20/39 → 20/39; master 15/44 → 15/44. The changed number is rowless clauses: 101 → 0. Both `docs/laws/ledger.md` and `docs/laws/INDEX.md` were reconciled to that gate behavior.
 
 **Proof — assertion E watched passing, then failing:** Pre-change plant (`RPT-PERF-99`) with temporary reporter rollup adjustment, `make ci > $env:TEMP\s204-assertion-e-warn-only-ci.txt 2>&1`, shell observed `exit=0`:
+
 ```text
 [WARN] law coverage: 102 clause(s) have no test-plan row (assertion E warn-only)
 [WARN] agents/reporter/laws/test-plan.md: 2 missing row(s): RPT-PERF-99, RPT-TYP-03
@@ -465,7 +466,9 @@ Required test coverage of 100.0% reached. Total coverage: 100.00%
 No known vulnerabilities found
 Detect secrets...........................................................Passed
 ```
+
 Post-change re-plant after assertion E promotion, `make ci > $env:TEMP\s204-assertion-e-fails-ci.txt 2>&1`, shell observed non-zero:
+
 ```text
 [FAIL] law coverage: 1 clause(s) have no test-plan row (assertion E)
 [FAIL] agents/reporter/laws/test-plan.md: 1 missing row(s): RPT-PERF-99
@@ -473,6 +476,7 @@ make: *** [Makefile:53: ci] Error 1
 ```
 
 **Proof — the green run:** `make ci > C:\Users\yury_\AppData\Local\Temp\s204-clean-ci-final.txt 2>&1`, shell observed `exit=0`:
+
 ```text
 uv run ruff check . --output-format=github
 uv run ruff format --check .
@@ -491,11 +495,13 @@ Detect secrets...........................................................Passed
 ```
 
 **`make gate-ran`:** `make gate-ran` from `C:\Users\yury_\Downloads\project\trading-agents` printed:
+
 ```text
 GATE PROVEN for 4a5184fbf4edabce8148b04e5f9d44080d309019:
   CI: success (attempt 1)
   Security Findings: success (attempt 1)
 ```
+
 `git rev-parse HEAD` matched `4a5184fbf4edabce8148b04e5f9d44080d309019`.
 
 **Design decisions recorded:** `DL-112`.

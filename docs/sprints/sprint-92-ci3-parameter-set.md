@@ -11,6 +11,7 @@ the concrete "configurable, not settable" change. (Layer 3 of ADR-0013.)
 ## Scope
 
 **In:**
+
 - `ParameterSet` graph node: `{id, name, version, created_at, status (draft|champion|challenger|
   retired), overrides: {env_var → value}, note}`; values validated against the CI-1 catalogue bounds.
 - Loader: resolve a `ParameterSet` → apply its overrides to the process env/settings at run start

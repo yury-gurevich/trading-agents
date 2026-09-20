@@ -135,7 +135,6 @@ and the exit re-attempts for the outstanding quantity next run.
 - **Wiring the dispatch before settling the lifecycle** — a working dispatch on decision-time
   closure strands a position on every delivery failure; it would strand them faster.
 
-
 ---
 
 ## What actually shipped (amendment, 2026-07-24)

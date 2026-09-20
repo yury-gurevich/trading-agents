@@ -44,6 +44,7 @@ registered and used without modifying kernel, contracts, agents, or orchestratio
 - **`cli stage promote` command.** Does NOT call `operator.interpret`. Like `cli approve`,
   it pre-builds a `TypedIntent` directly and calls `supervisor.dispatch_intent`. This avoids
   LLM round-trip for an unambiguous structural command:
+
   ```python
   TypedIntent(
       family="stage",
@@ -52,6 +53,7 @@ registered and used without modifying kernel, contracts, agents, or orchestratio
       provenance=Provenance(run_id=correlation_id("stage", target_stage), source_agent="cli"),
   )
   ```
+
   The gate enforces the confirmation requirement (re-routes through the existing confirmation
   flag pattern if `confirmed != "true"`). This is identical to how `cli approve` works.
 
@@ -104,12 +106,14 @@ should reach ~154L; `cli_commands_queries.py` ~30L.
 ### A1. `agents/supervisor/domain/matrix.py`
 
 Two changes:
+
 1. Enable: `"stage": RouteSpec("execution", "promote_stage", True)`.
 2. Remove `"stage"` from `BUILD_PHASES` dict.
 
 ### A2. `agents/supervisor/domain/gate.py` — ≤ 90L after change
 
 Update `dispatch_intent` signature:
+
 ```python
 def dispatch_intent(
     graph: GraphStore, intent: TypedIntent, *, bus: MessageBus | None = None
@@ -154,6 +158,7 @@ path from existing gate.py imports or from `kernel/__init__.py` before writing.
 ### A3. `agents/supervisor/agent.py`
 
 Update `_dispatch_intent`:
+
 ```python
 result = dispatch_intent(self._graph, intent, bus=self.bus)
 ```
@@ -203,6 +208,7 @@ sub-subcommand is given.
 ### A6. Tests for stage wiring
 
 **`agents/supervisor/tests/test_stage_dispatch.py`** — ≤ 60L:
+
 - `dispatch_intent` with `family="stage"`, sufficient evidence, `confirmed="true"` →
   calls `execution.promote_stage`, returns `accepted=True, routed_to="execution.promote_stage"`.
 - `dispatch_intent` with insufficient evidence → returns `accepted=False, rejection` contains
@@ -215,6 +221,7 @@ Wait — without bus, the spec is now `available=True` but there's no bus. Add a
 dispatch requires bus context"`. This prevents silent no-ops.
 
 **`surfaces/tests/test_stage_promote_cli.py`** — ≤ 60L:
+
 - `cli stage promote broker_shadow` with seeded snapshots and approval → dispatches correctly.
 - `cli stage promote broker_shadow` without evidence → "refused: need N runs".
 - `cli stage promote broker_shadow` (first call, evidence ok) → "refused: confirmation required".

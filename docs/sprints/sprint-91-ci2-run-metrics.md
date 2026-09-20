@@ -11,6 +11,7 @@ attributed to the parameter set that produced it. (Layer 2 of ADR-0013.) First p
 ## Scope
 
 **In:**
+
 - `RunMetrics` graph node: `{process, parameter_set_id (nullable for now), run_id, as_of, metric_name,
   value, unit, created_at}`; edge `MEASURES` from `RunMetrics` → the run/snapshot node it scores.
 - A writer in `kernel`/provider that records ingest metrics from the batch: **degradation rate**

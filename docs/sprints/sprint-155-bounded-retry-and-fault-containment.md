@@ -443,6 +443,7 @@ gh run view 30706459592 --json databaseId,headSha,status,conclusion,workflowName
 Security Findings run 30706459592, headSha 67ba248..., conclusion success:
   gate job 91386325306 — success
 ```
+
 - Not met / deliberately deferred: no live graph, Azure, broker, or credentialed proof attempted;
   this sprint is local-only by brief. Existing >150 line warnings remain warnings and were not
   refactored outside S155 scope.

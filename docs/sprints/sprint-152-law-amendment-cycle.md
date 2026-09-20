@@ -277,4 +277,5 @@ been the riskier arrangement.
 loose end: it is a *read-model* problem (derive current status from `BrokerOrderStatus` facts) that
 no law edit can close, and it will re-surface the moment a partial fill occurs in production. Zero
 fills are in that state today, which is the only reason it is not urgent.
+
 - The standing convention as written into the return notes:

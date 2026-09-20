@@ -6,6 +6,7 @@ it's to *have the index* so none is a surprise (LAW-04) and each is recoverable 
 This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 
 ## Continuity / disaster
+
 | Scenario | Owner dept | Hard parts | PNR? |
 | --- | --- | --- | --- |
 | Region goes down / must evacuate | Platform + GRC | move graph + fleet to new region | yes (cutover) |
@@ -16,6 +17,7 @@ This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 | Accidental resource/RG deletion | Platform/GRC | restore from IaC + backup | (the delete was PNR) |
 
 ## Growth / change
+
 | Scenario | Owner | Notes |
 | --- | --- | --- |
 | Custom domain instead of generic FQDN | Networking | cert + DNS + ingress rebind |
@@ -24,6 +26,7 @@ This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 | Move Aura → self-host VM | Data | the permanent-store decision |
 
 ## Security / compliance
+
 | Scenario | Owner | Notes |
 | --- | --- | --- |
 | Scheduled credential rotation | Security & IAM | PAT/key/keypair cadence |
@@ -32,6 +35,7 @@ This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 | Retention / data-retirement policy | GRC + Data | delete with proof, within law |
 
 ## Cost (the chargeable-era ones)
+
 | Scenario | Owner | Notes |
 | --- | --- | --- |
 | Spend spike / budget cap hit | SRE + GRC | alert, identify, scale-to-zero / pause |
@@ -39,6 +43,7 @@ This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 | Pre-action cost estimate before a deploy | Service Desk | the CONFIRM gate (LAW-04 / CM-01) |
 
 ## Operational / lifecycle
+
 | Scenario | Owner | Notes |
 | --- | --- | --- |
 | Deploy fails mid-fleet (partial) | Release Eng | LAW-02 says partial = fail → roll back |
@@ -48,6 +53,7 @@ This list is itself a proposal (LAW-01): add, split, reprioritise freely.
 | Scheduled config backup | GRC + each dept | snapshot configs to a safe store |
 
 ## How to use this
+
 1. Pick a scenario → it belongs to a department → write its runbook under that dept.
 2. If it has an irreversible step → add it to `maintenance/points-of-no-return.md`.
 3. If it spends or is irreversible → it needs a LAW-04 CONFIRM in `ta`.

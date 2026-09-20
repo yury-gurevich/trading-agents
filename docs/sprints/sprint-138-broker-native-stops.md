@@ -234,6 +234,7 @@ position gets a fresh `stop:{new_ref}` from Part B next run.
   Detect secrets...........................................................Passed
   detect-secrets (untracked): scanning 12 new file(s)
   ```
+
   Post-evidence sanity: `git diff --check` exit code `0`; `uv run pre-commit run
   detect-secrets --files docs/sprints/sprint-138-broker-native-stops.md` exit code `0`.
 - **Stop-price formula + where extracted from:** extracted into

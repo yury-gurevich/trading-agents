@@ -147,6 +147,7 @@ New capability (a seeding utility). **0.49.00 → 0.50.00** (feat → MINOR).
 
 **Start.** From `main` (`git pull`; HEAD ≥ `a04c7ec`): `git checkout -b sprint-108-vault-seeder`. Read
 `agents/master/{key_vault,secret_map,credential_test}.py`, `agents/master/entrypoint.py` (how the KV store
+
 + SP auth are already built), `orchestration/packs/trading_secrets.json`, `scripts/deliberate.py`
 (`_build_llm`), `agents/provider/{tiingo,fmp,alpaca_data}.py`, `agents/execution/alpaca.py`, and the S104/
 S105/S107 rows in `docs/laws/functionality-checks.md`.

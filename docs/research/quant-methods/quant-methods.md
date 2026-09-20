@@ -69,15 +69,18 @@ The point of this doc is that **no number in a trade rationale should be a black
 | **Average volume** (scanner) | mean daily volume | *liquidity* — can you get in/out without moving the price? | `min_average_volume=500000` |
 
 ### F. Patterns — *recognisable shapes*
+
 **Swing-based chart patterns** (`pattern_lookback=60`, `pattern_min_swing_pct=2.0`): detects local
 highs/lows ("swings") and the structures they form. Lowest-confidence pillar; confirmation only.
 
 ### G. Fundamentals — *is the business sound?*
+
 `fundamental_rules.py` gates on per-ticker key metrics (the provider pulls them from Finnhub). The
 **fundamental pillar weight is 0.3** — a third of the technical score. (This is the thinnest-explained
 layer in the code and a candidate for the same treatment as this doc.)
 
 ### H. Sentiment — *what is the news tone?* (champion–challenger, ADR-0002)
+
 - **Loughran–McDonald lexicon** (champion) — a *finance-specific* word list (e.g. "liability" is
   negative in finance, neutral in English). Rule-based, deterministic, defensible.
 - **FinBERT** (challenger, advisory) — a transformer fine-tuned on financial text; richer but a
@@ -85,6 +88,7 @@ layer in the code and a candidate for the same treatment as this doc.)
 - Sentiment pillar weight **0.2**.
 
 ### I. The ML shadow — the forecaster
+
 - **LightGBM** gradient-boosted trees on no-lookahead price/return features (momentum/volatility
   windows, multi-horizon returns). Runs as a **shadow** — it predicts, we *measure*, it does not decide.
 - **Information Coefficient (IC)** = the Pearson correlation between the model's prediction and the
@@ -93,6 +97,7 @@ layer in the code and a candidate for the same treatment as this doc.)
   only earn weight when their IC beats the incumbent.
 
 ### J. Sizing & risk gates — *how much, and is the portfolio still sane?*
+
 | Gate | Measures | Knob |
 | --- | --- | --- |
 | **Fixed-fraction sizing** | `qty = (portfolio × max_position_pct) // price` — same % of capital regardless of the name's risk | `max_position_pct=0.10` |

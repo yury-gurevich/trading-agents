@@ -51,6 +51,7 @@ the provider sentiment never enters `score_candidate`/`_composite`/confidence; i
 ## Parts
 
 - **A** `sentiment_reading.py` — add `PROVIDER_SCORER = "provider"` and:
+
   ```python
   def provider_reading(ticker: str, score: float) -> SentimentReading:
       """Build the advisory provider (vendor) reading; counts are N/A for this scorer."""
@@ -59,8 +60,10 @@ the provider sentiment never enters `score_candidate`/`_composite`/confidence; i
           articles=0, positive=0, negative=0,
       )
   ```
+
 - **B** `agent.py::_analyze` — after the existing lexicon-reading collection, build provider readings
   from `market.sentiment` for every candidate that has a vendor score, and concatenate:
+
   ```python
   provider_readings = tuple(
       provider_reading(candidate.ticker, market.sentiment[candidate.ticker])
@@ -69,6 +72,7 @@ the provider sentiment never enters `score_candidate`/`_composite`/confidence; i
   )
   # ... pass sentiment_readings=lexicon_readings + provider_readings to write_analysis
   ```
+
   (Import `provider_reading`. The vendor score is already 0–1 aligned by S47, so it is directly
   comparable to the lexicon's.)
 - **C** `provider_client.py` — `fields=("ohlcv", "fundamentals", "news", "sentiment")`.

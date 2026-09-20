@@ -28,6 +28,7 @@ substrate could, in principle, run a manufacturing line (agents driving machiner
 a broker) under the same governance.
 
 Two forces are in tension:
+
 - **Generality built ahead of need is waste** (the platform trap). We have exactly one pack;
   speculative platform features would never ship.
 - **But the substrate must stay extractable** — a single trading concept leaking into the

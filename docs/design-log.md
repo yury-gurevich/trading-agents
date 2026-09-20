@@ -100,6 +100,8 @@ for both directions. The notice arrives on the operator's phone, and the answer 
 `.env` and Key Vault, never a tree file. Ruled out: **email plus dashboard buttons** (a second
 surface to answer on, and an Azure email service to run), and **dashboard only** (nothing pushes, so a hold
 can sit unseen until the next session).
+🟩 **Channel credential PROVEN 2026-09-20, before S219 was specced (DL-36: a credential is tested before it is handed to an agent).** Bot `@yury_trading_alerts_bot` created; `getMe` returned `ok` with `can_read_all_group_messages: false` (privacy mode on, which is what a DM-only channel wants). The operator pressed Start — required, because Telegram forbids a bot from messaging anyone who has not messaged it first, so an unstarted bot is a channel that silently cannot deliver. `getUpdates` then yielded the private chat id, and a real `sendMessage` was **delivered** (`message_id: 3`). Both values live in `.env` only; verified absent from every tracked file. 🪰 **What this rules out for S219:** the notification path cannot fail for want of a working credential, so any future silence is a code or wiring defect, not a secret problem. 🟠 **Owed:** the token is rotated via BotFather `/revoke` before the fleet sends real hold notices, and both values reach the fleet through Key Vault, not `.env`, at deploy.
+
 **Operator, 2026-09-19 17:50 AEST: "It should show on the dashboard as well."** A failing check and a
 held run appear on the dashboard as well as in Telegram, and the answer can be given from either. The
 dashboard buttons ship **wired** (DL-47: never show an unwired control).

@@ -51,3 +51,47 @@ test-plans, docs, two `tests/` modules and the version — nothing that ships in
 residue: [DRIFT-060](laws/drift-register.md) — nothing requires `CONTRACT.version` to move when required fields
 change; [DRIFT-061](laws/drift-register.md) — five execution output clauses name fields `contracts.execution`
 does not carry.
+
+---
+
+## S206 — built, verified on handback, and deployed `s206` (split out 2026-09-20)
+
+**Split out of [`../STATE.md`](../STATE.md) on 2026-09-20**, when the markdown and pip-audit
+chore pushed STATE.md past its own 200-line rule. Nothing here is live.
+
+🟩 **PROVEN RESULT — [S206](../sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
+BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders
+`stop_vs_regime_volatility gate:` or any `PASSED`/`FAILED` outcome for the unenforced stop/regime
+comparison; the line is now a descriptive `stop_target_regime basis:` carrying mode, applied/flat/scaled
+stop-target values and reward-risk ratios. The real confidence-floor verdict now names
+`enforced_by=analyst`, PM gate outcomes are unchanged, and `contracts/` stayed untouched. 🟩 **Proven:**
+T1 failed first on the old renderer naming `stop_vs_regime_volatility`; focused tests later reported
+20 passed; local `make ci` exit 0 with **2758 passed, 6 skipped, 100.00 %**; branch `make gate-ran`
+printed `GATE PROVEN` for `2807b446ca7789b0117c9548a88eb53f61e00aaa`. `DLIB-NEV-08` is green and the
+deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups.
+🟩 **Verified on handback rather than taken on trust, 2026-09-15:** `make gate-ran` re-run from the
+S206 worktree proved the **branch tip** `5a192a960b366ccbab25c31d518dd934acf4d17c`, not just the
+implementation commit the handback pasted (`2807b44`) — the S186 hazard, checked. T1 was **independently
+reproduced red** at the branch base `823e5cf` in a throwaway worktree, failing on exactly the two lines
+the handback claimed. `git diff --stat contracts/` empty, `context_pm.py` **129** lines, PATCH bump correct
+(no agent gained a capability). 🟩 **MERGED `8c6f74a`** — the only difference between the gate-proven tip
+and the merge commit is S207's three docs files, no code.
+🟩 **DEPLOYED `s206`, 2026-09-15 19:02 AEST, by image-only retag — and the path was proven, not assumed.**
+All **three** injected packs were diffed against the deployed `s203` commit `34eec3f` before choosing the
+path (S202's near-miss, checked): `trading_graph_vocabulary` `58769995…`, `trading_credential_tests`
+`f8f03950…`, `trading_issuer_map` `2ed1f41c…` — **byte-identical on both sides**, so a retag ships the whole
+payload. 🎯 **The blast radius was read rather than assumed too:** the entire executable diff since `s203`
+is S206's three deliberator modules; every other changed file under `agents/` is a `laws.md`/`test-plan.md`.
+🟩 **Verified:** 15/15 image jobs green at `ea6a3b4`, **16/16 apps on `:s206`** plus `dispatcher-cron`,
+**16/16 `Succeeded`**, cron `30 22 * * 1-5` intact, and scale/KEDA **and per-app env-var counts diffed
+byte-identical to the pre-deploy baseline**. `DeployRecord deploy:2026-09-15T09:02:01…:s206:ea6a3b4…`.
+🚨 **Caught mid-deploy and worth recording:** `deliberator-proponent` briefly showed **two** active
+revisions (`0000107` on `:s203`, `0000108` on `:s206`); re-read after the transition it is Single-mode with
+`0000108` sole active and ready. A one-shot read there would have reported a partial deploy.
+🟩 **Spine, bus and cadence checked, not inferred:** `spine ok`; 8 Service Bus routes present, none
+created; dispatcher `Succeeded` on every trading day back to 09-07.
+🎯 **Pre-flight on the thing that actually decides whether tomorrow's test means anything:** the
+**required** Anthropic activation probe — the exact `POST /v1/messages` body the pack injects — returned
+**200** against the live key at 09:0X UTC. The nine blind nights were `400 credit balance is too low`, and
+under S202 that now *halts* the deliberator rather than passing it, so a drained key would have produced
+another unreviewed night. It is funded. 🟠 **Still owed:** the run itself.

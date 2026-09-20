@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-20 16:40 AEST · **Version:** 0.101.00 · **🟩 DEPLOYED `s219` — S217+S218+S219 are live: a broken fleet gets no run, and the operator is told on Telegram and can answer. Item 58 closed. First live exercise Tue 22 Sep 08:30 Melbourne; notice path still unproven in production.**
+**Last updated:** 2026-09-20 18:55 AEST · **Version:** 0.101.00 · **🟩 DEPLOYED `s219` — S217+S218+S219 are live: a broken fleet gets no run, and the operator is told on Telegram and can answer. Item 58 closed. First live exercise Tue 22 Sep 08:30 Melbourne; notice path still unproven in production.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -87,42 +87,13 @@ the live tracker named by `CLAUDE.md`.
 
 ## Recent (most recent first — detail in each sprint doc)
 
-🟩 **PROVEN RESULT — [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)
-BUILT (`0.98.04`), 2026-09-15 — work-queue item 59 narrowed.** The deliberator no longer renders
-`stop_vs_regime_volatility gate:` or any `PASSED`/`FAILED` outcome for the unenforced stop/regime
-comparison; the line is now a descriptive `stop_target_regime basis:` carrying mode, applied/flat/scaled
-stop-target values and reward-risk ratios. The real confidence-floor verdict now names
-`enforced_by=analyst`, PM gate outcomes are unchanged, and `contracts/` stayed untouched. 🟩 **Proven:**
-T1 failed first on the old renderer naming `stop_vs_regime_volatility`; focused tests later reported
-20 passed; local `make ci` exit 0 with **2758 passed, 6 skipped, 100.00 %**; branch `make gate-ran`
-printed `GATE PROVEN` for `2807b446ca7789b0117c9548a88eb53f61e00aaa`. `DLIB-NEV-08` is green and the
-deliberator rollup moved **20 / 55 -> 21 / 56** in both law rollups.
-🟩 **Verified on handback rather than taken on trust, 2026-09-15:** `make gate-ran` re-run from the
-S206 worktree proved the **branch tip** `5a192a960b366ccbab25c31d518dd934acf4d17c`, not just the
-implementation commit the handback pasted (`2807b44`) — the S186 hazard, checked. T1 was **independently
-reproduced red** at the branch base `823e5cf` in a throwaway worktree, failing on exactly the two lines
-the handback claimed. `git diff --stat contracts/` empty, `context_pm.py` **129** lines, PATCH bump correct
-(no agent gained a capability). 🟩 **MERGED `8c6f74a`** — the only difference between the gate-proven tip
-and the merge commit is S207's three docs files, no code.
-🟩 **DEPLOYED `s206`, 2026-09-15 19:02 AEST, by image-only retag — and the path was proven, not assumed.**
-All **three** injected packs were diffed against the deployed `s203` commit `34eec3f` before choosing the
-path (S202's near-miss, checked): `trading_graph_vocabulary` `58769995…`, `trading_credential_tests`
-`f8f03950…`, `trading_issuer_map` `2ed1f41c…` — **byte-identical on both sides**, so a retag ships the whole
-payload. 🎯 **The blast radius was read rather than assumed too:** the entire executable diff since `s203`
-is S206's three deliberator modules; every other changed file under `agents/` is a `laws.md`/`test-plan.md`.
-🟩 **Verified:** 15/15 image jobs green at `ea6a3b4`, **16/16 apps on `:s206`** plus `dispatcher-cron`,
-**16/16 `Succeeded`**, cron `30 22 * * 1-5` intact, and scale/KEDA **and per-app env-var counts diffed
-byte-identical to the pre-deploy baseline**. `DeployRecord deploy:2026-09-15T09:02:01…:s206:ea6a3b4…`.
-🚨 **Caught mid-deploy and worth recording:** `deliberator-proponent` briefly showed **two** active
-revisions (`0000107` on `:s203`, `0000108` on `:s206`); re-read after the transition it is Single-mode with
-`0000108` sole active and ready. A one-shot read there would have reported a partial deploy.
-🟩 **Spine, bus and cadence checked, not inferred:** `spine ok`; 8 Service Bus routes present, none
-created; dispatcher `Succeeded` on every trading day back to 09-07.
-🎯 **Pre-flight on the thing that actually decides whether tomorrow's test means anything:** the
-**required** Anthropic activation probe — the exact `POST /v1/messages` body the pack injects — returned
-**200** against the live key at 09:0X UTC. The nine blind nights were `400 credit balance is too low`, and
-under S202 that now *halts* the deliberator rather than passing it, so a drained key would have produced
-another unreviewed night. It is funded. 🟠 **Still owed:** the run itself.
+🟩 **PROVEN RESULT - the gate was red for a reason nobody had filed, and every markdown file now passes.** Merged `e3ebabe`, `GATE PROVEN` for `903bc1d` (CI, CodeQL, Security Findings), `make ci` exit 0 measured by file redirection: **2938 passed, 4 skipped, 100.00 %**. No version bump - no package behaviour changed.
+
+🚨 **`pip-audit` had started failing with no dependency change**, so `main` was red and every commit blocked: **PYSEC-2026-2447** (CVE-2025-69872) against `diskcache` 5.6.3, which has **no fix release**. Measured reach before accepting it ([DL-184](design-log.md), work-queue item **74**): `diskcache` arrives only via `dspy` in the optional `optimizer` extra, and **zero** Dockerfiles install that extra (`runtime` 29, `azure` 13, `forecaster` 2, `llm` 2), so it reaches **no deployed container**; `dspy` has **zero** import hits in the packages; and the advisory needs write access to the cache directory, which already implies code execution. Ignored by that one ID in **both** `Makefile` and `ci.yml`. 🪤 **The ignore has no expiry** - nothing re-checks whether a fix shipped, which is why item 74 exists rather than a comment alone.
+
+🟢 **Work-queue item 73's remainder cleared.** The operator repaired the 21 dead intra-document links by hand; **MD051 is proven enabled** by planting a bad fragment, so a green run means something. Then 10 unlabelled fences, 9 table-column errors, a setext heading and an escaped-section heading. 🎯 **Three were real rendering bugs, not lint noise:** sprint-26's outer ```` ```markdown ```` fence wrapped a document containing its own ```` ```bash ```` fence, so CommonMark closed it early and **the rest of that file was being read as code**; sprint-211 had a `---` directly under a paragraph, which is a **setext H2 underline** silently turning that sentence into a heading; and six `s127-fixpack-backlog.md` rows had **lost their Issue column entirely** - marking a row FIXED had appended the fix note to Kind and deleted the problem statement, **all six recovered from git history** rather than reworded. 🪰 **A false green of my own, caught and corrected:** a hand-built file list exceeded the argument limit, so the run linted nothing, printed nothing, and `grep -c error` read **0** - indistinguishable from a clean repo. The scope now lives in `.markdownlint-cli2.jsonc` with one invocation, `make markdown`. Pre-commit hook added **pinned to v0.23.3**, not `npx` (which downloads an unpinned build on demand and fails offline), and **proven to fail** on a planted bad link.
+
+🗄️ **Older shipped results — S206's rendered-verdict repair, its handback verification and the `s206` deploy are now in [state-archive/STATE-12.md](state-archive/STATE-12.md).**
 
 🗄️ **Older shipped results — S205's type-clause rewrite and the S204 verification block are now in [state-archive/STATE-12.md](state-archive/STATE-12.md).**
 

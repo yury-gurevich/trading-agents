@@ -8,6 +8,60 @@ and is marked CLOSED here.
 
 ---
 
+## DL-188 - test data has three jobs, and synthetic data cannot do the one that matters most - status: DIRECTION (operator, 2026-09-20)
+
+**Operator's problem, in their terms.** *“The data we have is data that we get once a day. Several
+layers of filters may pass before the problem we are solving is encountered, and the combination we
+seek to test is filtered out by a very valid filter.”* They ask for **(a)** a test database and
+**(b)** synthetic data that would definitively prove a point.
+
+**The diagnosis is already paid for.** Items **65**, **61** and **62** are each *a gate that cannot
+reject anything*; [EXP-008](research/experiments/EXP-008-correlation-cutoff-replay.md) then measured
+why - across 17 runs / 38 approvals **no correlation cutoff from 0.70 down to 0.50 rejects a single
+order**. Item **36**'s refusal half needed a deliberately broken credential. Item **27**'s live proof
+is unreachable because reconciliation closes the window it was built for. The filter problem is not
+hypothetical; it is why those rows are stuck.
+
+**Three tools, three jobs - they must not be merged.**
+
+| Tool | Job | Status today |
+| --- | --- | --- |
+| **Stage-boundary injection** | reach the code path | already possible, probably the bulk of the 2,939 tests |
+| **Recorded-run fixtures** | realistic shape, deterministic | proven; five `*_fixtures.py` modules exist |
+| **Test database** | Postgres-only truth | `POSTGRES_TEST_DSN` hook exists, unset, one test skips |
+
+🎯 **Graph-pull makes the filter problem cheap to solve.** Every stage owns a
+`find_pending(graph)` - analyst, deliberator, execution, forecaster, monitor, PM - so a stage's input
+is **a node, not a market**. Testing a PM gate needs the `Recommendation` the PM polls for, written
+directly; the upstream filters are not defeated, they are **bypassed by construction**. No synthetic
+market is required for the case the operator describes.
+
+**The test database's job is narrower than it sounds.** Not pipeline testing - Postgres-specific
+truth: append-only semantics, `merge_node` refusing a changed value, migrations. Neon supports
+branching, so a branch off the existing database costs nothing and carries the real schema.
+
+🚨 **The hazard, and the reason (b) must never stand alone.** **Synthetic data proves the code
+does what you told it to do with the input you invented. It cannot tell you the input is reachable.**
+That is exactly how a gate passes its tests and never fires - work-queue items **53, 56, 41, 30**, the
+*a check that cannot fail* family. A synthetic correlation-cluster fixture would be green today, and
+the gate would still have rejected nothing in its life.
+
+**Proposed rule:** every synthetic test proving a gate *can* reject is paired with a **replay measuring
+how often the condition actually occurs**. *Mechanism* and *reachability* are separate claims and need
+separate evidence. EXP-008 is the template - it validated **38/38** against recorded results before
+trusting its own replay, then asked the reachability question and got **no** for every variant.
+
+🪤 **The subtler trap.** Synthetic data for a trading system is easy to write so that it proves
+the point you already hold. The value is in data that could **disprove** it. EXP-008's design - replay
+with variants, self-validate first - is falsifiable; a hand-built *“here is a correlated
+cluster”* fixture is not.
+
+**Not scheduled.** Direction for after the debt closes; no queue row, so it does not move the count.
+The cheapest first step when it is picked up is the test-DB branch, because the hook already exists and
+one test is skipping for want of it.
+
+---
+
 ## DL-187 - the product is a decision a non-expert can trust, and the explanation must be generated from what was measured - status: DIRECTION (operator, 2026-09-20)
 
 **Operator's thesis, recorded in their own terms.** Deliberation is where an *expert* decision is

@@ -8,6 +8,65 @@ and is marked CLOSED here.
 
 ---
 
+## DL-187 - the product is a decision a non-expert can trust, and the explanation must be generated from what was measured - status: DIRECTION (operator, 2026-09-20)
+
+**Operator's thesis, recorded in their own terms.** Deliberation is where an *expert* decision is
+needed: multivariate, resting on values that take years to learn to read as inter-related facts, and
+it is *"arguably the most important decision for a potential customer"*. The LLM is in the product for
+two reasons: **(a)** an expert on call at a reasonable price, and **(b)** to format the answer so
+someone with no domain knowledge can understand **and trust** it. The structural pitch against a human
+broker is explicit: *"the same numbers that a broker would use, without an ever-present fear of some
+financial interest that a broker can have offering an investment."*
+
+The operator also states the limit themselves: *"the only way to trust this project is to execute many
+successful trades... no report will compensate for lost money."* The explanation is not a substitute
+for a record. It is **where trust starts**, before the record exists.
+
+**Direction:** the final deliberation step should produce a short lay-readable account of *how the
+decision was reached*, not only the ruling.
+
+🚨 **The hazard this direction creates, named so it is designed against rather than discovered.**
+A fluent, cited, expert-sounding explanation is **not evidence that the decision was sound**, and a
+non-expert reader cannot tell the difference - that is the entire premise of the feature. Worse, the
+coupling runs the wrong way: **the better the explanation, the more trust it buys, independent of
+whether the decision was right.** Unmanaged, that is a persuasion engine.
+
+This is not hypothetical here. [DL-186](design-log.md) measured it the same day: the challenger is
+*told* to preserve *"fixed-fraction sizing is not volatility-adjusted"*, argued exactly that, and
+ADR-0025 cited the veto as the referee independently being right. Grounded-sounding, correctly
+reasoned, and circular.
+
+🪤 **And the conflict-of-interest pitch needs one qualification to stay honest.** The system has
+no financial incentive to mis-sell - that advantage over a broker is real. It is **not therefore
+unbiased**: its priors are hand-written. Defender 434 chars against challenger 6,764, and a judge told
+not to uphold once the challenger lands a grounded flaw, is a **designed-in lean toward vetoing**
+(work-queue item **75**). *No incentive to mis-sell* and *neutral* are different claims, and only the
+first is true.
+
+**The design constraint that follows.** The explanation must be **generated from the recorded decision
+and its gate outcomes**, not written freely alongside them - so it cannot cite ground the decision did
+not actually use. That is [S206](sprints/sprint-206-a-rendered-verdict-names-the-check-that-produced-it.md)'s
+rule (*a rendered verdict names the check that produced it*) and
+[S207](sprints/sprint-207-a-bound-cites-the-evidence-that-set-it.md)'s (*a bound cites the evidence
+that set it*) applied to a customer-facing surface. 🎯 **It must also state what was *not*
+checked.** That is the part that converts persuasion into warranted trust, and it is precisely what a
+broker never volunteers.
+
+💡 **Probable seam: this does not belong to the judge.** Measured 2026-09-20: `JUDGE_SYSTEM`
+requires `Reply ONLY as JSON: {"ruling": ..., "rationale": "<one line>"}` - one line, for an internal
+reader. Asking the judge to also persuade a lay audience couples the two things that must stay
+decoupled: **ruling quality** and **explanation quality**. A separate renderer reading the *recorded*
+`DeliberationRun` + PM gate outcomes keeps them apart and makes the explanation reproducible from the
+graph rather than re-generated. The reporter already owns a narrative surface
+(`build_trade_narrative`, `degraded_narrative`) but it reports *trades*, not *decisions*, so neither
+side of the fleet has this today.
+
+**Not scheduled.** No sprint, no queue row: this is direction for after the debt closes, and it
+interacts with item **75** (the defender/challenger asymmetry must be settled first - explaining a
+lean you have not measured is how the lean becomes the product).
+
+---
+
 ## DL-186 - the referee is given every quant's value and almost none of its meaning, and its sharpest argument was one we wrote for it - status: MEASURED (2026-09-20, operator question)
 
 **The question, from the operator:** a freshly started LLM conversation has no history, so how does

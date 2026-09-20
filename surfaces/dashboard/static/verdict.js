@@ -26,6 +26,7 @@
     $("verdict-next-fire").textContent = data.next_fire
       ? (window.tsShort ? window.tsShort(data.next_fire) : data.next_fire)
       : "unavailable";
+    renderHoldActions(hero, data.hold_actions);
 
     var warnings = data.warnings || [];
     var detail = $("warning-detail");
@@ -49,6 +50,32 @@
         item.textContent = warning.message;
       }
       rows.appendChild(item);
+    });
+  }
+
+  function renderHoldActions(hero, panel) {
+    var actions = hero.querySelector(".hold-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "hold-actions";
+      hero.appendChild(actions);
+    }
+    actions.replaceChildren();
+    if (!panel || !panel.actions) return;
+    panel.actions.forEach(function (action) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.textContent = action.label;
+      button.addEventListener("click", function () {
+        fetch("/api/hold/answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ run_id: panel.run_id, answer: action.answer })
+        }).then(function (response) {
+          if (response.ok) actions.replaceChildren();
+        });
+      });
+      actions.appendChild(button);
     });
   }
 

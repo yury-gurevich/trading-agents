@@ -38,5 +38,15 @@
     "kv_name": "postgres-dsn",
     "env_var": "POSTGRES_DSN",
     "probe": "postgres"
+  },
+  {
+    "kv_name": "telegram-bot-token",
+    "env_var": "TELEGRAM_BOT_TOKEN",
+    "probe": "telegram"
+  },
+  {
+    "kv_name": "telegram-chat-id",
+    "env_var": "TELEGRAM_CHAT_ID",
+    "probe": "telegram"
   }
 ]

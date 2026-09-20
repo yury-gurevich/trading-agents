@@ -24,10 +24,18 @@ COPY agents/scanner/universe.py agents/scanner/universe.py
 COPY orchestration/__init__.py orchestration/__init__.py
 COPY orchestration/fleet_readiness.py orchestration/fleet_readiness.py
 COPY orchestration/history_window.py orchestration/history_window.py
+COPY orchestration/hold_answers.py orchestration/hold_answers.py
 COPY orchestration/scheduled_dispatch.py orchestration/scheduled_dispatch.py
+COPY orchestration/scheduled_dispatch_actions.py orchestration/scheduled_dispatch_actions.py
 COPY orchestration/scheduled_dispatch_gate.py orchestration/scheduled_dispatch_gate.py
+COPY orchestration/scheduled_dispatch_human.py orchestration/scheduled_dispatch_human.py
+COPY orchestration/scheduled_dispatch_polling.py orchestration/scheduled_dispatch_polling.py
 COPY orchestration/settings.py orchestration/settings.py
 COPY orchestration/start.py orchestration/start.py
+COPY orchestration/telegram_client.py orchestration/telegram_client.py
+COPY orchestration/telegram_http.py orchestration/telegram_http.py
+COPY orchestration/telegram_port.py orchestration/telegram_port.py
+COPY orchestration/telegram_updates.py orchestration/telegram_updates.py
 COPY scripts/dispatch_scheduled_run.py scripts/dispatch_scheduled_run.py
 COPY scripts/universe_sp100.txt scripts/universe_sp100.txt
 

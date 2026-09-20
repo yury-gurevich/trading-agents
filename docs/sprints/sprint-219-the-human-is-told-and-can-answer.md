@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-219-the-human-is-told-and-can-answer`
-**Status:** SPEC
+**Status:** BUILT; branch handback SHA still needs remote gate proof. Do not merge or deploy.
 **Version:** *next available MINOR at merge* — the fleet gains a channel it did not have. Under the
 widened scheme (`MAJOR.MMM.PP`, operator 2026-09-20) that is `0.101.00` if `main` is still `0.100.00`.
 **Effort:** L — the largest of the three. Read "If you are running long" before you start.
@@ -356,34 +356,98 @@ Fill every section below before handing back. A placeholder left unfilled is a r
 
 | Law file | Version read | What it constrained here |
 | --- | --- | --- |
-| | | |
+| `agents/master/laws/laws.md` | LOCKED v1.4 | Master remains the sole Key Vault accessor and owns no Telegram channel; nothing under `agents/master/` changes. |
+| `docs/laws/flow.md` | current | The dispatcher remains outside the typed agent choreography; graph facts coordinate the hold and answer without a new agent edge. |
+| `docs/laws/conventions.md` | current | No agent guarantee or contract changes means no law cycle; any agent-law functional test still requires its clause citation. |
+| `docs/laws/drift-register.md` | current; DRIFT-068 OPEN | The existing dispatcher placement guarantee has no law home, so S219 records the notification-and-answer guarantee as DRIFT-069 rather than creating a dispatcher law book. |
 
 ## Test plan results — fill at handback
 
 | # | Test name | File | PASS/FAIL | Clause cited |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| C1 | `test_c1_ready_fleet_is_silent_and_unchanged` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-068; no dispatcher clause exists |
+| C2 | `test_c2_new_hold_sends_one_notice_and_marks_the_hold` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C3 | `test_c3_notice_has_act_by_and_exactly_two_callback_buttons` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C4 | `test_c4_second_fire_on_one_hold_sends_no_second_notice` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C5 | `test_c5_rehold_after_release_gets_its_own_notice` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C6 | `test_c6_run_now_places_despite_a_failing_preflight` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C7 | `test_c7_skip_today_writes_no_run_and_formats_operator_skip` | `orchestration/tests/test_scheduled_dispatch_notices.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C8 | `test_c8_same_telegram_update_is_written_once` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C9 | `test_c9_first_answer_wins_when_later_answer_disagrees` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C10 | `test_c10_every_handled_button_is_acknowledged` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C11 | `test_c11_handled_updates_are_confirmed_through_telegram_offset` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C12 | `test_c12_telegram_outage_records_a_fault_without_stopping_dispatch` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C13 | `test_c13_plain_text_updates_are_ignored` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C14 | `test_c14_yesterdays_answer_is_inert_for_todays_run` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C15 | `test_c15_calendar_skip_stays_silent_when_the_fleet_is_failing` | `orchestration/tests/test_scheduled_dispatch_polling.py` | PASS | DRIFT-068; no dispatcher clause exists |
+| C16 | `test_c16_dashboard_actions_exist_only_for_an_unanswered_active_hold` | `surfaces/tests/test_dashboard_hold_answers.py` | PASS | none; dashboard has no law home |
+| C17 | `test_c17_dashboard_post_writes_the_shared_fact_and_dispatcher_honours_it` | `surfaces/tests/test_dashboard_hold_answers.py` | PASS | DRIFT-069; no dispatcher clause exists |
+| C18 | `test_c18_operator_message_and_dashboard_labels_contain_no_internal_ids` | `surfaces/tests/test_dashboard_hold_answers.py` | PASS | none; dashboard has no law home |
 
 ---
 
 ## Closeout — evidence
 
-**Status:**
+**Status:** BUILT; no merge or deploy. Implementation commit `005536b` is pushed; its CI and
+Security Findings jobs were queued when checked. This handback commit needs its own remote proof.
 
-**Files changed:**
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-219-the-human-is-told-and-can-answer`; no `.env` was present.
 
-**Design decisions (`act_by` wording / cron expression / late answer):**
+**Files changed:** Dispatcher entrypoint, human dispatch controller, Telegram client/HTTP/protocol/parser,
+append-only answer facts, vocabulary/tunable/vault packs, dispatcher Docker import closure and Key Vault
+secret references, dashboard route/panel/selection/projection/controls, S219-focused tests, version/lock,
+and the design, drift, sprint, and state records. `agents/master/`, `contracts/`, and `kernel/` are untouched.
+
+**Design decisions (`act_by` wording / cron expression / late answer):** DL-183 records: “Choose Run now by
+23:20 UTC. Your answer is checked every 10 minutes. After 23:20 UTC, it is recorded but cannot start a run
+today.” The single supported job expression is `*/10 22-23 * * 1-5`, retaining the original 22:30 placement
+and allowing 10-minute polls through 23:20. Late answers remain immutable evidence; `skip_today` stays
+recorded and late `run_now` never starts a run, rather than extending the scale window or inventing wake-on-demand.
 
 **Proof — red run:**
 
-**Guards planted:**
+```text
+C5 before the controller existed: ModuleNotFoundError for orchestration.scheduled_dispatch_human.
+C14 provenance regression: expected answer as_of 2026-07-07; got 2026-07-08.
+C9 precedence guard: assert 'placed' == 'skipped' after selecting the later run_now answer.
+```
 
-**Proof — `make ci`:**
+**Proof — green run:**
+
+```text
+uv run pytest --no-cov orchestration/tests/test_scheduled_dispatch_notices.py orchestration/tests/test_scheduled_dispatch_polling.py surfaces/tests/test_dashboard_hold_answers.py
+19 passed in 1.88s
+```
+
+**Guards planted:** (a) notifying every fire made C4 red with `ValueError: property 'notice_message_id'
+cannot be overwritten`; (b) dropping update-id dedupe made C8 append two answer facts; (c) selecting the
+latest answer made C9 return `placed` rather than `skipped`; (d) removing `act_by` made C3 lose
+`23:20 UTC`; (e) re-raising the injected timeout made C12 expose `TimeoutError`; (f) removing the active-hold
+predicate made C16 show controls for a released hold. Each mutation was restored and its named test passed.
+
+**Module line counts:** `telegram_client.py` 101; `telegram_http.py` 25; `telegram_port.py` 35;
+`telegram_updates.py` 43; `hold_answers.py` 65; `scheduled_dispatch_actions.py` 86;
+`scheduled_dispatch_human.py` 128; `scheduled_dispatch_polling.py` 97; `hold_answer_panel.py` 42;
+`hold_answer_route.py` 72; `route_selection.py` 31. The size gate passed; protected
+`scheduled_dispatch.py` and `app.py` remain below their hard limit.
+
+**Proof — `make ci`:** Exit 0 from the S219 worktree. `2936 passed, 6 skipped in 90.46s`; total coverage
+`100.00%`; pip-audit, tracked detect-secrets, and untracked detect-secrets passed.
 
 **Proof — `make gate-ran`:**
 
-**Not met / verified failing:**
+```text
+GATE NOT PROVEN: Security Findings is queued, not completed — wait, do not merge;
+CI is queued, not completed — wait, do not merge
+```
+
+**Not met / verified failing:** The final remote gate proof is pending while both workflows are queued.
+Merge and deployment are intentionally not done; this sprint must deploy with S217 and S218 by full `up` only.
 
 ---
 
 ## Return notes
+
+- The complete local gate is proven and all Telegram tests use injected fakes; no `.env` or live network call was used.
+- `RunHoldAnswer` is append-only, source-neutral evidence. Telegram update IDs dedupe callbacks and the earliest legal answer remains effective.
+- Do not merge or deploy. After this handback commit is pushed, run `make gate-ran` from this worktree and compare its printed full SHA with `git rev-parse HEAD`.

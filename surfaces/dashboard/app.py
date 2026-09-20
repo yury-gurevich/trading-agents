@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs
 
-from surfaces.dashboard import projections, projections_state
+from surfaces.dashboard import hold_answer_route, projections, projections_state
 from surfaces.dashboard.bundle_azure import container_logs
 from surfaces.dashboard.chat import handle_chat
 from surfaces.dashboard.projections_fleet import fleet_projection
@@ -21,6 +21,7 @@ from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_verdict import verdict_projection
 from surfaces.dashboard.projections_vitals import vitals_projection
 from surfaces.dashboard.read_cache import CachingGraphStore
+from surfaces.dashboard.route_selection import run_day, selected_run
 from surfaces.dashboard.settings import DashboardSettings
 from surfaces.dashboard.static_response import static_response
 
@@ -64,6 +65,11 @@ def build_app(
         if path == "/api/chat":
             status, payload = handle_chat(environ, chat_context)
             return _json(start_response, status, payload)
+        if path == "/api/hold/answer":
+            status, payload = hold_answer_route.handle_hold_answer(
+                environ, graph, now=now
+            )
+            return _json(start_response, status, payload)
         if str(environ.get("REQUEST_METHOD", "GET")) != "GET":
             return _json(start_response, 405, {"error": "GET only"})
         if path == "/api/runs":
@@ -75,7 +81,7 @@ def build_app(
                 infra_projection(read_graph, azure, config, github=github),
             )
         if path == "/api/fleet":
-            run_id = _selected_run(read_graph, query)
+            run_id = selected_run(read_graph, query)
             return _json(
                 start_response, 200, fleet_projection(read_graph, azure, config, run_id)
             )
@@ -87,7 +93,7 @@ def build_app(
                 vitals_projection(read_graph, azure, config, vital_run, github=github),
             )
         if path == "/api/verdict":
-            verdict_run = query.get("run", [""])[0] or _selected_run(read_graph, query)
+            verdict_run = query.get("run", [""])[0] or selected_run(read_graph, query)
             if not verdict_run:
                 return _json(
                     start_response,
@@ -149,24 +155,9 @@ def _container_view(
         requested = settings.log_tail_default
     tail = max(1, min(requested, settings.log_tail_max))
     payload = container_logs(
-        azure, settings, parts[0], tail, run_day=_run_day(graph, query)
+        azure, settings, parts[0], tail, run_day=run_day(graph, query)
     )
     return _json(start_response, 200, payload)
-
-
-def _run_day(graph: GraphStore, query: dict[str, list[str]]) -> str:
-    """Resolve the selected run's day from its RunRequest, or empty."""
-    run_id = query.get("run", [""])[0]
-    node = projections.run_request_node(graph, run_id) if run_id else None
-    return str(node.props.get("requested_at", ""))[:10] if node else ""
-
-
-def _selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:
-    supplied = query.get("run_id", [""])[0]
-    if supplied:
-        return supplied
-    rows = projections.list_runs(graph)
-    return str(rows[0]["run_id"]) if rows else ""
 
 
 def _json(start_response: StartResponse, status: int, payload: object) -> list[bytes]:

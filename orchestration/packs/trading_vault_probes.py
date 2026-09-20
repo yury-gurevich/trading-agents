@@ -2,7 +2,8 @@
 
 Agent: orchestration
 Role: provide pack-specific live working-checks for injected vault seed entries.
-External I/O: optional HTTPS calls to market-data, broker, LLM, and PostgreSQL services.
+External I/O: optional HTTPS calls to market-data, broker, LLM, Telegram,
+and PostgreSQL services.
 """
 
 from __future__ import annotations
@@ -129,6 +130,22 @@ def probe_anthropic(env: Mapping[str, str]) -> ProbeResult:
 def probe_postgres(env: Mapping[str, str]) -> ProbeResult:
     """Check PostgreSQL with a live connection and ``SELECT 1``."""
     return run_probe("postgres", lambda: postgres_ready(env))
+
+
+@_probe("telegram")
+def probe_telegram(env: Mapping[str, str]) -> ProbeResult:
+    """Check a Telegram bot can read the configured recipient chat."""
+    return run_probe(
+        "telegram", lambda: http_json(_telegram_get_chat_request(env)) is not None
+    )
+
+
+def _telegram_get_chat_request(env: Mapping[str, str]) -> urllib.request.Request:
+    token = required(env, "TELEGRAM_BOT_TOKEN")
+    chat_id = required(env, "TELEGRAM_CHAT_ID")
+    return urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/getChat?chat_id={chat_id}"
+    )
 
 
 def _alpaca_data_source(env: Mapping[str, str]) -> AlpacaDataSource:

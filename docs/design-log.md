@@ -8,6 +8,65 @@ and is marked CLOSED here.
 
 ---
 
+## DL-182 - the answer is a graph fact, and the fleet has nowhere to receive a webhook - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
+
+**Three measurements taken while scoping S219, two of which contradict DL-179's stated plan.**
+
+1. **No fleet app has external ingress.** `infra/deploy-agents.ps1:723` creates every app with
+   `--ingress internal`, and the only FQDN the script reads back is the master's (`:738`).
+   *[measured 2026-09-20]*
+2. **The dashboard is not deployed at all.** `$AGENTS` (`infra/deploy-agents.ps1:46-53`) lists
+   **15** agents; with `master` that is the 16 apps plus the `dispatcher-cron` job. There is **no
+   `dashboard` entry and no Dockerfile anywhere under `surfaces/`**. `surfaces/dashboard` runs on the
+   operator's machine against the Neon spine. *[measured 2026-09-20]*
+3. **The dispatcher job already receives secrets as container env.** Its planned env is
+   `POSTGRES_DSN` plus the Service Bus vars (`:472-473`), set by the deploy script. A component other
+   than the master can therefore hold a credential without a handshake. *[measured 2026-09-20]*
+
+**Consequence for DL-179.** A **Telegram webhook is impossible** without new infrastructure: there is
+no public endpoint to receive one. And DL-179's *"the dashboard buttons ship wired"* is still
+achievable but not as described - the dashboard is a **local** surface, so its buttons cannot
+instruct a running fleet directly; they can only write to the shared spine, which the fleet reads.
+
+**Decision. The answer is a graph fact, and both surfaces write the same fact.**
+
+- The notice goes **out** over Telegram `sendMessage` when a `RunHold` is written.
+- The operator answers by pressing a Telegram inline button, or by pressing the equivalent button on
+  the local dashboard. Either way the outcome is one append-only `RunHoldAnswer` node on the spine.
+- The **next dispatcher fire** reads the answer and acts: `run_now` places the `RunRequest`,
+  `skip_today` records the skip and places nothing. Silence still means no run (DL-179).
+- Telegram's side is read by **polling `getUpdates` from the dispatcher job**, not a webhook. The job
+  already holds secrets this way, so **no master law cycle is needed and no new app is created.**
+
+**Why polling on the existing cron rather than a long-lived listener.** A job that stays alive for an
+hour waiting for a button is a new failure mode (a hung replica holding the schedule) for no gain:
+DL-179 §8 already establishes that an answer after about 23:30 cannot finish a run inside the
+22:30-00:30 window, so **sub-30-minute latency buys nothing**. Adding fires to the dispatcher cron is
+the mechanism the project already runs, and graph-pull is already how the fleet coordinates.
+🚨 **The notice must therefore state when the answer will be acted on**, or the operator
+presses a button and sees nothing happen for half an hour, which reads as a broken channel.
+
+**Credential.** Proven end to end 2026-09-20 (DL-179): `@yury_trading_alerts_bot`, chat id in `.env`,
+a real message delivered. The fleet gets both values the way the dispatcher gets `POSTGRES_DSN`.
+
+**Rejected routes.**
+
+- *Telegram webhook to a fleet endpoint.* Rejected on measurement 1: no external ingress exists.
+  Creating one means a public unauthenticated route into the fleet plus new infra, to save a latency
+  DL-179 §8 says is worthless.
+- *The master polls and owns the channel.* Architecturally tidy - it is awake 20:25-00:30 and owns
+  secrets - but its law book is **LOCKED v1.4**, so a new capability costs a full law cycle.
+  Measurement 3 shows the dispatcher can hold the credential without one. Revisit only if the master
+  needs the channel for something else.
+- *A new always-on notifier Container App.* Rejected: a 17th app and its cost, to replace a cron fire.
+- *A long-lived polling replica on the existing job.* Rejected: see above - a hung replica risks the
+  schedule itself, for latency that cannot be spent.
+- *Dashboard-only answering.* Rejected: the dashboard runs on the operator's machine, so a hold
+  arriving at 22:30 local-evening is unseen until the machine is next open - which is the exact
+  failure DL-179 filed.
+
+---
+
 ## DL-181 - the dispatcher requires a fresh successful fleet check and treats missing evidence as a hold - status: DECIDED (S218, 2026-09-20)
 
 **Decision.** The dispatcher reads the latest master-owned `FleetPreflight` before placing a

@@ -41,7 +41,8 @@ These rules are always on for this repository. **[`CLAUDE.md`](../CLAUDE.md) is 
 
 ## Versioning
 
-- Version format is `MAJOR.MM.PP` in `pyproject.toml`; stage `uv.lock` with every bump.
+- Version format is `MAJOR.MMM.PP` in `pyproject.toml`; stage `uv.lock` with every bump.
+- The middle group takes up to three digits, the last group two: `0.100.00` follows `0.99.00`.
 - A feature bumps the middle group and resets the last: `0.13.06` to `0.14.00`.
 - A fix, CVE patch or refactor bumps only the last group: `0.13.06` to `0.13.07`.
 - Docs-only changes, and read-only tooling that ships no package behaviour, take no bump.

@@ -20,9 +20,11 @@ were given.
    detect-secrets, untracked secrets. Never lower the floor. Never declare work green without running
    it, and confirm the remote gates after pushing.
 
-3. **Version scheme `MAJOR.MM.PP` in `pyproject.toml` — a hard rule.** *feat* bumps the **two
-   middle** digits; *fix* bumps the **last two**. A higher bump zeroes all lower groups
-   (`0.11.00`, not `0.11.04`). Stage `uv.lock` with the bump.
+3. **Version scheme `MAJOR.MMM.PP` in `pyproject.toml` — a hard rule.** The middle group is
+   **up to three digits** (widened 2026-09-20 at `0.99.00`); the last stays two. *feat* bumps the
+   **middle** group; *fix* bumps the **last two**. A higher bump zeroes all lower groups
+   (`0.11.00`, not `0.11.04`). Past versions are not re-padded, so `0.100.00` follows `0.99.00`
+   and tag order needs `--sort=-v:refname`, never a bare `sort`. Stage `uv.lock` with the bump.
 
 4. **Module size is a hard block at 200 lines** (warning at 150). Split modules; never use `# noqa`
    to bypass the check.

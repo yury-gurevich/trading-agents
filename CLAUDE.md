@@ -75,11 +75,15 @@ If you are unsure which side a change sits on, it is the full cycle.
 
 ## Version scheme — HARD RULE
 
-`MAJOR.MM.PP` in `pyproject.toml`.
+`MAJOR.MMM.PP` in `pyproject.toml`. The middle group is **up to three digits** (operator,
+2026-09-20, when `0.99.00` + feat had nowhere to go inside two). The last group stays two.
 
-- **feat** (new capability, new agent, new endpoint) → bump the **two middle digits** (MINOR).
+- **feat** (new capability, new agent, new endpoint) → bump the **middle group** (MINOR).
 - **fix** (bug, CVE patch, refactor) → bump the **last two digits** (PATCH).
 - A higher bump zeroes all lower groups: `0.11.00` not `0.11.04`.
+- **Past versions are not re-padded.** `0.99.00` stays as released; `0.100.00` follows it.
+  🪰 **That pair does not sort lexicographically** — `v0.100.00` sorts *before* `v0.99.00`
+  under a plain `sort`. Use `git tag --sort=-v:refname` or `sort -V`, never a bare `sort`.
 - **The version tracks the Python package.** A change that ships no package behaviour —
   docs, or a read-only script's rendering — takes **no bump at all**. Bumping for those
   inflates the history and makes a real fix indistinguishable from a cosmetic one.

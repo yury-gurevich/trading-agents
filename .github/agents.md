@@ -24,8 +24,9 @@ This file provides persistent context for GitHub Copilot about the repository's 
 - No `print()` in library code (use structured logging via kernel observability).
 - Append-only by convention for all transactional data.
 
-### Versioning (`MAJOR.MM.PP`)
+### Versioning (`MAJOR.MMM.PP`)
 
+- The middle group is **up to three digits**; the last group is two. `0.100.00` follows `0.99.00`.
 - Feature: bump the **middle** group, reset the last (`0.13.06` → `0.14.00`).
 - Fix: bump only the **last** group (`0.13.06` → `0.13.07`).
 - Docs-only or read-only tooling: no bump.

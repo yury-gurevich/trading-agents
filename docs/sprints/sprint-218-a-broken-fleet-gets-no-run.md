@@ -403,6 +403,52 @@ existing `surfaces/tests/test_dashboard_app.py` tests do, not only through the p
 
 ## Handover — paste this to Copilot
 
+🔴 **This is a RETURN, not a fresh build.** S218 is already implemented and its gate is green
+(`a9fcc4c`: CI + Security Findings). Do **not** rebuild it, re-run the B1–B15 cycle, or re-bump the
+version. The original build brief is kept below for reference only.
+
+```text
+S218 is BUILT and gate-proven, and is being returned for one amendment.
+
+Branch: sprint-218-a-broken-fleet-gets-no-run, in its own worktree. Open THAT folder.
+Pull first: the amendment is commit e7b1a41 on that branch.
+
+Read AMENDMENT R1 at the TOP of docs/sprints/sprint-218-a-broken-fleet-gets-no-run.md
+before anything else. It has two defects, a runnable reproduction, and scope item 8.
+
+Order is binding:
+1. Run the reproduction in R1 ("Reproduce both"). Confirm you see:
+     dispatch: HELD | dashboard: GREEN
+   If you see anything else, STOP and report - do not proceed on a different symptom.
+2. Write tests B16, B17 and B18 FIRST. Paste the red run.
+3. Implement scope item 8, both halves:
+     (a) a released hold is not a hold - write a NEW append-only hold node rather than
+         reusing a released one; DispatchHold.node_key must name the node written;
+     (b) when readiness_state is "unknown", the summary must say the fleet check is
+         missing or stale, not count failures.
+4. Paste the green run. B1-B15 must ALL still be green - if any goes red, STOP and report
+   rather than editing that row. B6 in particular should be unaffected.
+5. Plant guards (e) and (f) from R1, paste each red line, restore.
+6. make ci > ci.txt 2>&1; echo $?   - never through a pipe. Exit 0, 100.00% coverage.
+7. Push, then make gate-ran from the worktree. Printed SHA must equal git rev-parse HEAD.
+8. Update the Closeout, set Status: BUILT, commit, push, make gate-ran again on the
+   final SHA. Say in the Closeout which key scheme you chose for (a) and why.
+
+DO NOT:
+- change pyproject.toml. 0.100.00 is CORRECT: the version scheme's middle group was
+  widened to three digits on 2026-09-20, so 0.100.00 follows 0.99.00. No re-bump.
+- touch the graph vocabulary (released_at is already declared), the laws, or DRIFT-068.
+- add a tunable, a button, a link or any dashboard control.
+- put sprint numbers, DL ids or MST- ids in UI text (B14 still applies to B18's wording).
+- deploy or merge. S219 owns the human notification channel.
+- let a test read the wall clock.
+Every file you write ends with a newline.
+If any measured number differs from the spec, or a law contradicts it: STOP and report.
+```
+
+<details>
+<summary>Original build brief (superseded — kept for provenance)</summary>
+
 ```text
 Build sprint S218 exactly as written in docs/sprints/sprint-218-a-broken-fleet-gets-no-run.md.
 
@@ -425,6 +471,8 @@ in UI text; write FleetPreflight from outside the master; make a hold exit non-z
 the wall clock. Every file you write ends with a newline.
 If any measured number differs from the spec, or a law contradicts it: STOP and report.
 ```
+
+</details>
 
 ---
 

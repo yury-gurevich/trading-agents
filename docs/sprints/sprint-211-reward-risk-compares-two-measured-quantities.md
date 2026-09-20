@@ -608,6 +608,7 @@ because committing that printed SHA would move the SHA being proven.
 Merge, deployment, and live scheduled-run proof are not done in this branch handback. The below-floor
 policy remains unconditional by ADR-0027 design: the target estimate is not
 conditioned on the analyst buy signal, and this limitation is disclosed rather than hidden.
+
 ---
 
 ## Merge and deploy — planning agent, 2026-09-17

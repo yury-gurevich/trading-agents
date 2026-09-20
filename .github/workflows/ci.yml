@@ -96,7 +96,10 @@ jobs:
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - run: uv sync --frozen
       - name: pip-audit (Python vulnerabilities)
-        run: uv run pip-audit
+        # DL-184: diskcache PYSEC-2026-2447 has no fix release and reaches no
+        # container (optional `optimizer` extra, installed by no Dockerfile).
+        # Bounded to this one ID - every other advisory still fails the gate.
+        run: uv run pip-audit --ignore-vuln PYSEC-2026-2447
       - name: detect-secrets
         run: uv run pre-commit run detect-secrets --all-files
       - name: Initialize CodeQL

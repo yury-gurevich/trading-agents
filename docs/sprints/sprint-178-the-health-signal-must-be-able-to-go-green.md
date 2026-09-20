@@ -226,7 +226,7 @@ Restored: **9 passed**.
 
 **Backlog sweep: RUN AND PROVEN** on the live spine 2026-08-18 13:27 AEST, operator-approved.
 
-```
+```text
 BEFORE  healthy=False   pending_human_flags=46
 RESOLVED 46 legacy divergence flags
 AFTER   healthy=False   pending_human_flags=0

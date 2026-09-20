@@ -103,7 +103,7 @@ unmanaged".
 The two controls coincide at a computable point. Three names at the maximum position size fit inside
 the percentage cap exactly when:
 
-```
+```text
 names_cap × max_position_pct ÷ pct_cap  ≤  deployed ÷ equity
 
 sector:      3 × 0.01 ÷ 0.30  =  10 % of equity

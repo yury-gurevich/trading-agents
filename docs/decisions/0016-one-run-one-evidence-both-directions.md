@@ -22,7 +22,7 @@ evaluated by the monitor with prices only, and with no analyst, no PM, and no de
 The consequence is visible in the book. The same names were re-recommended and re-bought nightly
 with nothing ever trimmed:
 
-```
+```text
 BAC   171 -> 338 -> 503 shares
 USB   160 -> 320 -> 478
 WFC   116 -> 233 -> 348

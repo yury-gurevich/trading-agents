@@ -115,7 +115,7 @@ File: `surfaces/tests/test_p9_exit.py` — target ≤ 80L
 Replace the entire "Build phase" section at the bottom with a "Deployed stack" section
 that documents the live setup:
 
-```markdown
+````markdown
 ## Deployed stack
 
 | Component | Where |
@@ -156,7 +156,7 @@ Access:
 6. Faults by agent — same metric broken out by `agent` label
 7–10. (additional panels for throughput and agent breakdown)
 
-```
+````
 
 Do not change any section above "Build phase" — the principles and layer descriptions are
 authoritative design documentation.

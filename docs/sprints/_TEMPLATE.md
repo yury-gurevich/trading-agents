@@ -157,7 +157,7 @@ when you merge.
 | Contract change? | <yes/no — if yes, the law cycle above is mandatory> |
 | Graph vocabulary change? | <new label or property? → the deploy is a full `up`, not a retag> |
 | New env keys / tunables | <names — these make the deploy a full `up` too> |
-| Deploy implication | <image-only retag | full `up`> |
+| Deploy implication | <image-only retag \| full `up`> |
 
 ---
 

@@ -44,6 +44,14 @@ from scripts.gate_run_selection import latest_per_workflow  # noqa: E402
 # The workflows whose absence means the commit was never really gated. `gate`
 # lives in Security Findings; `quality`/`test`/`security` live in CI.
 REQUIRED_WORKFLOWS = ("CI", "Security Findings")
+# CodeQL is deliberately NOT required here, even though it now runs on branches
+# (work-queue item 31, 2026-09-20). It does not need to be: the loop below judges
+# every workflow it finds, so a CodeQL run that concludes anything but success
+# already fails the gate. Requiring its *presence* is a separate decision, and it
+# is held back because `Security Findings` reads CodeQL's alert state -- measured
+# 2026-09-04, it failed at 11:35:53 because CodeQL had not yet marked alert #178
+# fixed, 2 minutes ahead of it. Branch-scoped alert semantics are unmeasured
+# (DL-110 found them confusing), so let branch scans run and be judged first.
 # GitHub creates runs a few seconds after the push, not synchronously with it.
 WAIT_SECONDS = 120
 POLL_SECONDS = 10

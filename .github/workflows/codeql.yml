@@ -4,7 +4,13 @@ name: CodeQL
 # dependency CVEs. Runs on pushes/PRs to main and a weekly scheduled deep scan.
 on:
   push:
-    branches: [main]
+    # Branches too (work-queue item 31): analysing only main meant a branch
+    # could be GATE PROVEN while the analysis that finds a whole defect class
+    # had never run, and the defect was found by the *next* branch's red gate
+    # twice in four days (DL-110, DL-123). Actions minutes are free on a public
+    # repo and a scan is ~153 s, so the cost objection recorded in item 31 does
+    # not apply here.
+    branches: ["**", "!backup/**"]
   pull_request:
     branches: [main]
   schedule:

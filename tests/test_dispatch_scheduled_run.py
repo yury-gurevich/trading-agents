@@ -134,9 +134,7 @@ def test_dispatcher_image_copies_everything_its_entrypoint_imports() -> None:
     transitive read of the entrypoints can.
     """
     dockerfile = Path("orchestration/Dockerfile").read_text(encoding="utf-8")
-    required = _first_party_modules(
-        ("orchestration/scheduled_dispatch.py", "orchestration/start.py")
-    )
+    required = _first_party_modules(("scripts/dispatch_scheduled_run.py",))
 
     missing = sorted(
         path for path in required if f"COPY {path} {path}" not in dockerfile

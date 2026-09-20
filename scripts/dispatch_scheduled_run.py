@@ -27,8 +27,11 @@ from orchestration.scheduled_dispatch import (  # noqa: E402
     CalendarWindowExceededError,
     ScheduledDispatchResult,
     decide_scheduled_run,
-    place_scheduled_run,
 )
+from orchestration.scheduled_dispatch_human import (  # noqa: E402
+    dispatch_with_human_answer,
+)
+from orchestration.telegram_client import TelegramClient  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -68,7 +71,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         graph = _live_graph()
         try:
-            result = place_scheduled_run(graph, as_of=as_of)
+            result = dispatch_with_human_answer(
+                graph,
+                as_of=as_of,
+                now=datetime.now(tz=UTC),
+                telegram=TelegramClient(
+                    api_token=os.environ.get("TELEGRAM_BOT_TOKEN", ""),
+                    chat_id=os.environ.get("TELEGRAM_CHAT_ID", ""),
+                ),
+            )
         finally:
             close = getattr(graph, "close", None)
             if callable(close):

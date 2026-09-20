@@ -8,6 +8,26 @@ and is marked CLOSED here.
 
 ---
 
+## DL-183 - a ten-minute poll keeps the existing run window - status: DECIDED (S219, 2026-09-20)
+
+**Decision 1 -- notice wording.** A hold notice says: *"Choose Run now by 23:20 UTC. Your answer
+is checked every 10 minutes. After 23:20 UTC, it is recorded but cannot start a run today."* This
+states a truthful `act_by` time rather than suggesting a button acts immediately.
+
+**Decision 2 -- one cron expression.** `dispatcher.cron` becomes `*/10 22-23 * * 1-5`. Azure's
+scheduled job accepts one five-field expression, and this gives a bounded ten-minute polling
+cadence without a second job or an unsupported second schedule field. The dispatcher only makes
+placement decisions from 22:30 through 23:20 UTC, preserving the existing 22:30 ready-fleet
+launch while allowing a held run to be answered at each later fire.
+
+**Decision 3 -- late answers.** Telegram and dashboard answers arriving after 23:20 UTC are still
+recorded append-only and a late `skip_today` remains a recorded decision. A late `run_now` never
+places a run because it cannot complete in the scale window. Rejected: starting late anyway, which
+would repeat DL-179's rejected 00:30 scale-to-zero failure, and a later-time option, which needs
+the unavailable wake-on-demand mechanism.
+
+---
+
 ## DL-182 - the answer is a graph fact, and the fleet has nowhere to receive a webhook - status: DECIDED (planner, 2026-09-20, under delegated technical decisions)
 
 **Three measurements taken while scoping S219, two of which contradict DL-179's stated plan.**

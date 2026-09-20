@@ -96,6 +96,10 @@ def test_finnhub_probe_uses_sector_fetch(monkeypatch: pytest.MonkeyPatch) -> Non
         (probes.probe_openai, {"OPENAI_API_KEY": "x"}),
         (probes.probe_anthropic, {"ANTHROPIC_API_KEY": "x"}),
         (
+            probes.probe_telegram,
+            {"TELEGRAM_BOT_TOKEN": "token", "TELEGRAM_CHAT_ID": "123"},
+        ),
+        (
             probes.probe_alpaca_broker,
             {"ALPACA_API_KEY": "x", "ALPACA_API_SECRET": "y"},
         ),
@@ -171,5 +175,6 @@ def test_probe_registry_exports_expected_names() -> None:
         "fmp",
         "openai",
         "postgres",
+        "telegram",
         "tiingo",
     } <= set(probes.PROBES)

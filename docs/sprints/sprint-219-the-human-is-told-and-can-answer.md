@@ -356,7 +356,10 @@ Fill every section below before handing back. A placeholder left unfilled is a r
 
 | Law file | Version read | What it constrained here |
 | --- | --- | --- |
-| | | |
+| `agents/master/laws/laws.md` | LOCKED v1.4 | Master remains the sole Key Vault accessor and owns no Telegram channel; nothing under `agents/master/` changes. |
+| `docs/laws/flow.md` | current | The dispatcher remains outside the typed agent choreography; graph facts coordinate the hold and answer without a new agent edge. |
+| `docs/laws/conventions.md` | current | No agent guarantee or contract changes means no law cycle; any agent-law functional test still requires its clause citation. |
+| `docs/laws/drift-register.md` | current; DRIFT-068 OPEN | The existing dispatcher placement guarantee has no law home, so S219 records the notification-and-answer guarantee as DRIFT-069 rather than creating a dispatcher law book. |
 
 ## Test plan results — fill at handback
 

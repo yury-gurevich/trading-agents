@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from surfaces.dashboard.hold_answer_panel import hold_answer_panel
 from surfaces.dashboard.projections import run_stages, run_verdict
 from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_recovery
@@ -54,6 +55,9 @@ def verdict_projection(
         projected["light"] = "RED"
         projected["summary"] = override["summary"]
         projected["readiness"] = override
+        panel = hold_answer_panel(graph)
+        if panel is not None:
+            projected["hold_actions"] = panel
     return projected
 
 

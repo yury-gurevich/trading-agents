@@ -63,6 +63,7 @@
     "RemediationPlan",
     "ReportSnapshotResult",
     "RunHold",
+    "RunHoldAnswer",
     "Run",
     "RunRequest",
     "ScanResult",
@@ -464,14 +465,25 @@
       "passed"
     ],
     "RunHold": [
+      "answered_with",
       "as_of",
       "failures",
       "held_at",
+      "notice_message_id",
+      "notified_at",
       "preflight_key",
       "readiness_state",
       "released_at",
       "run_id",
       "state"
+    ],
+    "RunHoldAnswer": [
+      "answer",
+      "answered_at",
+      "as_of",
+      "run_id",
+      "source",
+      "update_id"
     ],
     "LLMCall": [
       "cache_read_tokens",

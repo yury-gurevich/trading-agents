@@ -288,6 +288,22 @@ function Get-KeyVaultSecretValue($vault, $secretName) {
   return $value.Trim()
 }
 
+function Get-TelegramConfig {
+  $vault = Get-KeyVaultName
+  $token = Get-KeyVaultSecretValue $vault "telegram-bot-token"
+  $chatId = Get-KeyVaultSecretValue $vault "telegram-chat-id"
+  if (-not $token -or -not $chatId) {
+    throw "Telegram secrets missing from Key Vault"
+  }
+  return [pscustomobject]@{
+    envVars = @(
+      "TELEGRAM_BOT_TOKEN=secretref:telegram-bot-token",
+      "TELEGRAM_CHAT_ID=secretref:telegram-chat-id"
+    )
+    secrets = @("telegram-bot-token=$token", "telegram-chat-id=$chatId")
+  }
+}
+
 function Get-TargetServiceBusConnectionString($target) {
   if ($UseSharedServiceBusDsn) { return Get-SharedServiceBusConnectionString }
   $envName = Get-ServiceBusConnectionEnvName $target
@@ -469,7 +485,7 @@ function Assert-FleetEnvPreserved {
     $planned = @(Get-AgentEnv $name "url" "pub" | ForEach-Object { ($_ -split "=", 2)[0] })
     $ok = (Assert-EnvPreserved $name (Get-LiveEnvNames $name) $planned) -and $ok
   }
-  $dispatcherPlanned = @("POSTGRES_DSN") +
+  $dispatcherPlanned = @("POSTGRES_DSN", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID") +
   @((Get-ServiceBusConfig "dispatcher").envVars | ForEach-Object { ($_ -split "=", 2)[0] })
   $ok = (Assert-EnvPreserved $DISPATCHER_JOB (Get-LiveJobEnvNames $DISPATCHER_JOB) $dispatcherPlanned) -and $ok
   Bot
@@ -487,9 +503,10 @@ function Get-FleetServiceBusTargets {
 function Deploy-DispatcherJob($ghcr, $graph, $serviceBus) {
   Top "DEPLOY DISPATCHER JOB"
   $cron = Resolve-DispatcherCron
+  $telegram = Get-TelegramConfig
   # Vocabulary is set separately below, never on this line (DL-85).
-  $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars)
-  $secrets = @($graph.secrets) + @($serviceBus.secrets)
+  $envv = @("POSTGRES_DSN=secretref:postgres-dsn") + @($serviceBus.envVars) + @($telegram.envVars)
+  $secrets = @($graph.secrets) + @($serviceBus.secrets) + @($telegram.secrets)
   $image = "$REGISTRY/$OWNER/trading-agents-dispatcher:$Tag"
   $exists = az containerapp job show --name $DISPATCHER_JOB --resource-group $RG `
     --subscription $SUB --query name -o tsv 2>$null

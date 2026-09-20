@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from orchestration.scheduled_dispatch import ScheduledDispatchResult
+
 
 def test_script_direct_execution_reaches_fail_loud_postgres_check() -> None:
     env = os.environ.copy()
@@ -161,3 +163,20 @@ def test_analyst_package_export_stays_lazy_for_slim_dispatcher_image() -> None:
 
     assert eager_imports == []
     assert all_exports == []
+
+
+def test_held_dispatch_prints_the_readiness_reason_and_failure_count() -> None:
+    import scripts.dispatch_scheduled_run as entrypoint
+
+    result = ScheduledDispatchResult(
+        action="held",
+        run_id="sched-2026-07-08",
+        reason="NYSE trading session",
+        readiness_state="failing",
+        failures=("one", "two"),
+    )
+
+    assert (
+        entrypoint.format_dispatch_result(result)
+        == "held sched-2026-07-08 reason=failing failures=2"
+    )

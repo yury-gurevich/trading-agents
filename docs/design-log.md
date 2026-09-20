@@ -8,6 +8,33 @@ and is marked CLOSED here.
 
 ---
 
+## DL-181 - the dispatcher requires a fresh successful fleet check and treats missing evidence as a hold - status: DECIDED (S218, 2026-09-20)
+
+**Decision.** The dispatcher reads the latest master-owned `FleetPreflight` before placing a
+calendar-approved `RunRequest`. A passed check is ready only when it is no more than 70 minutes old:
+the hourly check cadence plus ten minutes of scheduler slack establishes that it represents this
+run's fleet state. Timestamp comparisons parse the ISO value as a datetime, including its offset.
+
+**Rejected alternative.** No freshness bound was rejected because yesterday's passed check would
+otherwise authorize tonight's run after the fleet changed.
+
+**Decision.** Missing preflight evidence and stale preflight evidence are both `unknown`, and
+`unknown` produces a durable hold just like an explicit failure. Evidence that cannot establish
+readiness cannot authorize a run.
+
+**Rejected alternative.** Treating `unknown` as ready was rejected because it reopens the
+"check that never ran reads as passed" failure class from S183.
+
+**Builder-found specification defect.** Scope item 2 initially required the same `RunHold` node to
+move from `state="held"` to `state="released"`. `GraphStore.merge_node` is append-only and rejects
+overwriting a property, so the stated transition was unrepresentable. Corrected in this sprint:
+`state` remains immutable `"held"` evidence, `released_at` denotes release, and
+`is_active_run_hold` requires `state="held"` with no `released_at`. `released_at` remains in scope
+item 3's vocabulary property list; `"released"` is not a valid documented state. B7 now asserts the
+predicate, and B15 proves a released hold leaves the dashboard verdict unchanged.
+
+---
+
 ## DL-180 - fleet readiness is a master-owned scheduled fact that honors fresh costly-pass evidence - status: DECIDED (S217, 2026-09-19)
 
 **Decision.** `run_fleet_preflight` runs in a daemon thread owned by the master process: once

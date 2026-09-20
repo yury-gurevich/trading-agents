@@ -25,6 +25,7 @@ from dotenv import load_dotenv  # noqa: E402
 
 from orchestration.scheduled_dispatch import (  # noqa: E402
     CalendarWindowExceededError,
+    ScheduledDispatchResult,
     decide_scheduled_run,
     place_scheduled_run,
 )
@@ -82,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"{result.action} {result.run_id} reason={result.reason}")
+    print(format_dispatch_result(result))
     return 0
 
 
@@ -95,6 +96,16 @@ def _as_of_date(raw: str) -> date:
 def _configure_stdout() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+
+
+def format_dispatch_result(result: ScheduledDispatchResult) -> str:
+    """Render an intentional hold as a successful scheduler decision."""
+    if result.action == "held":
+        return (
+            f"held {result.run_id} reason={result.readiness_state} "
+            f"failures={len(result.failures)}"
+        )
+    return f"{result.action} {result.run_id} reason={result.reason}"
 
 
 def _live_graph() -> object:

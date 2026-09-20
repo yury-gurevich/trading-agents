@@ -17,7 +17,8 @@ param(
   [ValidateSet('preflight', 'up', 'postgres-flip', 'servicebus-flip', 'down')]
   [string]$Action = 'preflight',
   [string]$Tag = 'latest',
-  [string]$MasterScaleStart = '25 22 * * *',
+  # DL-179 §6: two hourly preflight retries complete before 22:30 UTC dispatch.
+  [string]$MasterScaleStart = '25 20 * * *',
   [string]$AgentScaleStart = '30 22 * * *',
   [string]$ScaleEnd = '30 00 * * *',
   [string]$ScaleTimezone = 'UTC',

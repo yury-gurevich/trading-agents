@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-218-a-broken-fleet-gets-no-run`
-**Status:** SPEC
+**Status:** BUILT — amendment **R1** is locally proven (2026-09-20); its final handback SHA still requires remote gate proof. Do not merge or deploy.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180
@@ -16,6 +16,120 @@
 
 🚨 **This sprint does not deploy on its own.** S219 (Telegram, and the answer buttons) is what tells
 the human. Deploying S218 without it would hold runs with nobody told.
+
+---
+
+## 🔴 AMENDMENT R1 — returned 2026-09-20, read this before anything else
+
+The build is good and the gate is green: `GATE PROVEN` for the branch tip `a9fcc4c` (CI + Security
+Findings), worktree clean. The append-only correction you found and recorded in **DL-181** is right,
+and both readers correctly go through `is_active_run_hold`. **Two defects remain, both measured on
+your branch, both in the dashboard half — the half this sprint's title promises.**
+
+### R1-a — a run held a second time the same day writes nothing, and can go unannounced
+
+`hold_unready_run` returns early on `existing is not None` **without asking whether that hold is
+still active**. So hold → release → hold again reuses the released node: nothing is written, and the
+returned `DispatchHold` carries the **first** hold's `readiness_state`, `preflight_key` and
+`failures`, while `released_at` stays set.
+
+Measured on `a9fcc4c`, three dispatcher fires in one day:
+
+| 3rd fire | Dispatcher | Dashboard | Node evidence |
+| --- | --- | --- | --- |
+| check **failing** | HELD | RED | `released_at` still set; `readiness_state` from hold #1 |
+| check **stale / unknown** | HELD | **GREEN** | `released_at` still set; `readiness_state` from hold #1 |
+
+🎯 **Row 2 is this sprint's goal failing:** the run is held and the dashboard is silent. It is
+fail-safe in direction — a run is wrongly *held*, never wrongly placed — so it is not urgent, but
+**S219 builds its notification on this record**, so a wrong record propagates into the human channel.
+
+Reachability: the cron fires once, so this needs a manual re-fire — i.e. an incident, which is
+exactly when the dashboard is being watched.
+
+### R1-b — a held run with no fleet check tells the operator that nothing is failing
+
+`_override` renders `"Tonight's run is held: {len(failures)} check(s) failing"`. When readiness is
+`unknown` there are **no** failures, so **B3's own scenario** (no `FleetPreflight` at all) renders:
+
+```text
+Tonight's run is held: 0 check(s) failing - no failure detail recorded
+```
+
+**"0 check(s) failing" reads as "nothing is wrong" while the run is held.** This is live on your
+branch today, independent of R1-a, and B11/B15 do not catch it because both plant failures. DL-47
+asks for plain words at a glance; this is the opposite.
+
+### Reproduce both, in this worktree, with no `.env`
+
+```python
+from datetime import UTC, datetime, timedelta
+from kernel.graph_memory import InMemoryGraphStore
+from orchestration.scheduled_dispatch_gate import hold_unready_run
+from surfaces.dashboard.projections_readiness import readiness_override
+
+g, RUN = InMemoryGraphStore(), "run-probe"
+t0 = datetime(2026, 9, 21, 22, 30, tzinfo=UTC)
+
+def preflight(key, passed, when, failures=()):
+    g.merge_node("FleetPreflight", key, {
+        "checked_at": when.isoformat(), "passed": passed,
+        "failure_count": len(failures), "failures": list(failures),
+        "agent_types_checked": ["scanner"]})
+
+preflight("p1", False, t0 - timedelta(minutes=5), ("unrecoverable:provider:fmp:http_402",))
+hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t0, max_age_minutes=70)   # held
+t1 = t0 + timedelta(minutes=60)
+preflight("p2", True, t1 - timedelta(minutes=5))
+hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t1, max_age_minutes=70)   # released, placed
+t2 = t1 + timedelta(minutes=120)                                               # p2 now stale
+h = hold_unready_run(g, run_id=RUN, as_of=t0.date(), now=t2, max_age_minutes=70)
+o = readiness_override(g, now=t2, max_age_minutes=70)
+print("dispatch:", "HELD" if h else "placed", "| dashboard:", "RED" if o else "GREEN")
+# R1-a today: dispatch: HELD | dashboard: GREEN
+```
+
+### Scope item 8 — the fix (both halves)
+
+1. **A released hold is not a hold.** When readiness is not `ready` and the existing node fails
+   `is_active_run_hold`, write a **new** append-only hold node instead of reusing the released one.
+   Key it so it can never collide with a released node — `hold:<run_id>:<n>` with `n` the count of
+   existing holds for that run, keeping the first at `hold:<run_id>` for B2/B6/B7 compatibility, or
+   an equivalent scheme you can state in one line. `DispatchHold.node_key` must name the node
+   actually written, never a stale one.
+   🪰 **B6 is unaffected:** a re-fire while *continuously* failing finds an active hold and
+   still reuses it, so "exactly one `RunHold` node" remains true for that case. If your key scheme
+   changes that, stop and report rather than editing B6.
+2. **Say what is actually wrong.** When a hold's `readiness_state` is `unknown`, the summary must
+   say the fleet check is **missing or stale**, not count failures. Suggested wording, adjust for
+   plain English but keep it free of ids: `"Tonight's run is held: no recent fleet check"`. The
+   `failing` wording is unchanged.
+
+**No new tunable, no vocabulary change, no law change** — `released_at` is already declared and
+DRIFT-068 already covers the dispatcher guarantee.
+
+### Tests to add
+
+| # | Test | Plants | Must prove |
+| --- | --- | --- | --- |
+| B16 | 🎯 re-hold after a release is a new, active hold | fire failing, fire passing (releases), fire failing again | a **second** `RunHold` exists and is active; `DispatchHold.node_key` names it; its `readiness_state` and `failures` are the **new** ones, not hold #1's; dashboard RED |
+| B17 | 🎯 a stale check after a release still turns the light RED | as B16 but the third fire has **no fresh check** (`unknown`) | dispatcher holds **and** `/api/verdict` is `light="RED"` — the case that is GREEN today |
+| B18 | 🪤 a held run with no check says so in plain words | B3's scenario: no `FleetPreflight` at all | summary does **not** contain `0 check(s)`; it names a missing or stale check; still passes B14's no-internal-ids check |
+
+**Guard to plant (step 7, additional):** (e) restore the `existing is not None` early return, so B16
+and B17 go red; (f) restore the failure-count wording for `unknown`, so B18 goes red.
+
+### Success factors (added to the list below)
+
+- [ ] A run held again after a release writes a new active hold carrying the new evidence (B16).
+- [ ] A held run is never invisible on the dashboard, including when the check is stale (B17).
+- [ ] A held run with no check explains itself without saying "0 check(s) failing" (B18).
+
+### What does **not** change
+
+Everything else in this spec stands, and every B1–B15 row must stay green. The version `0.100.00`
+is **correct**: the middle group was widened to three digits (operator, 2026-09-20), so `0.100.00`
+follows `0.99.00` and no re-bump is needed. Do not deploy; S219 still owns the human channel.
 
 ---
 
@@ -106,8 +220,9 @@ dashboard as well."* S217 made the master record the check. Nothing acts on it y
    - Add `preflight_max_age_minutes: int = tunable(70, ge=10, le=240, unit="minutes", why=...)`
      to `OrchestratorSettings`.
    - In the placement path, after the calendar says `place`, read `fleet_readiness`:
-     - `ready` → place the run exactly as today. If a `RunHold` for this run id exists with
-       `state="held"`, merge `state="released"` and `released_at` onto it.
+     - `ready` → place the run exactly as today. If a `RunHold` for this run id has `state="held"`
+       and no `released_at`, merge `released_at` onto it. An active hold has `state="held"` and no
+       `released_at`; `state` remains append-only `"held"` evidence.
      - `failing` or `unknown` → **do not place.** Merge a `RunHold` node with key `hold:<run_id>` and
        props `run_id`, `as_of`, `held_at`, `state="held"`, `readiness_state`, `preflight_key` and
        `failures`.
@@ -143,6 +258,8 @@ dashboard as well."* S217 made the master record the check. Nothing acts on it y
    `'25 22 * * *'` to `'25 20 * * *'` and add a comment citing DL-179 §6. If a test in
    `tests/test_deploy_script_invariants.py` pins the old value, update it and say so. Parse-check the
    script: `pwsh -NoProfile -Command "$null = [scriptblock]::Create((Get-Content -Raw infra/deploy-agents.ps1))"`.
+8. **🔴 See AMENDMENT R1 at the top of this spec** — a released hold is not a hold, and a
+   held run with no fleet check must say so instead of reporting `0 check(s) failing`. Tests B16–B18.
 
 ### Out of scope (do NOT build this sprint)
 
@@ -197,7 +314,7 @@ merge), with rejected alternatives, **before implementing**:
 | 1 | `git worktree add ../trading-agents-sprint-218-a-broken-fleet-gets-no-run -b sprint-218-a-broken-fleet-gets-no-run origin/main`, then open **that folder** as the workspace | a worktree with **no** `.env` |
 | 2 | Read the laws; fill the Law reading record | — |
 | 3 | Record the design decisions in `docs/design-log.md` | — |
-| 4 | Write tests B1–B14. Run `uv run pytest orchestration/tests surfaces/tests agents/master/tests tests/test_dispatch_scheduled_run.py -q --no-cov` | **red**, and paste it. Each new test fails for the missing behaviour |
+| 4 | Write tests B1–B15. Run `uv run pytest orchestration/tests surfaces/tests agents/master/tests tests/test_dispatch_scheduled_run.py -q --no-cov` | **red**, and paste it. Each new test fails for the missing behaviour |
 | 5 | Implement scope items 1–7 | — |
 | 6 | Same pytest command | **green** |
 | 7 | **DL-70.** Plant each break below, watch its test go red, and restore it. Paste each red line | see "Guards to plant" |
@@ -221,7 +338,7 @@ override, so B11 goes red.
 | B4 | 🪤 a stale pass is held | latest passed, **71** min old, `max_age_minutes=70` | held, `readiness_state="unknown"` |
 | B5 | latest wins | an older failed check and a newer passed one | placed |
 | B6 | re-fire is idempotent | fire twice while failing | exactly one `RunHold` node, still `held` |
-| B7 | re-fire after recovery releases | fire while failing, then add a passing check and fire again | run placed; the hold now `state="released"` with `released_at` |
+| B7 | re-fire after recovery releases | fire while failing, then add a passing check and fire again | run placed; `released_at` is set and `is_active_run_hold` returns false |
 | B8 | the calendar still wins | a non-session day with a failing check | `skipped`, and **no** `RunHold` |
 | B9 | the readiness reader never writes | a spy graph | `fleet_readiness` performs zero writes |
 | B10 | one fault per failed check (S217 fix) | three probes fail in one check | exactly **one** `critical` fault, message contains `failure_count=3`, context carries all three |
@@ -229,6 +346,7 @@ override, so B11 goes red.
 | B12 | dashboard: failing check turns it RED | latest check failed 30 min ago, no hold | `light="RED"`, summary starts `Fleet check failing (1)` |
 | B13 | dashboard: nothing to show leaves it unchanged | latest check passed | the payload is identical to the pre-sprint projection, with **no** `readiness` key |
 | B14 | 🪤 UI wording carries no internal ids | B11's and B12's summaries | no match for `S\d{3}`, `DL-\d+` or `MST-` |
+| B15 | 🪤 released hold no longer overrides verdict | a `RunHold` with `state="held"` and `released_at` | payload unchanged, with no `readiness` key |
 
 ---
 
@@ -242,6 +360,9 @@ override, so B11 goes red.
 - [ ] Drift row filed; design decisions recorded with rejected alternatives.
 - [ ] Every guard planted, watched red, restored (step 7), stated per guard.
 - [ ] Every touched module < 200 lines; new modules < 150.
+- [ ] **R1:** a re-hold after a release is a new active hold with the new evidence (B16); a held
+      run is never invisible, including on a stale check (B17); a held run with no check does not
+      say `0 check(s) failing` (B18).
 - [ ] `make ci` exit 0, 100.00 % coverage; `GATE PROVEN` for the final SHA.
 
 ---
@@ -282,6 +403,52 @@ existing `surfaces/tests/test_dashboard_app.py` tests do, not only through the p
 
 ## Handover — paste this to Copilot
 
+🔴 **This is a RETURN, not a fresh build.** S218 is already implemented and its gate is green
+(`a9fcc4c`: CI + Security Findings). Do **not** rebuild it, re-run the B1–B15 cycle, or re-bump the
+version. The original build brief is kept below for reference only.
+
+```text
+S218 is BUILT and gate-proven, and is being returned for one amendment.
+
+Branch: sprint-218-a-broken-fleet-gets-no-run, in its own worktree. Open THAT folder.
+Pull first: the amendment is commit e7b1a41 on that branch.
+
+Read AMENDMENT R1 at the TOP of docs/sprints/sprint-218-a-broken-fleet-gets-no-run.md
+before anything else. It has two defects, a runnable reproduction, and scope item 8.
+
+Order is binding:
+1. Run the reproduction in R1 ("Reproduce both"). Confirm you see:
+     dispatch: HELD | dashboard: GREEN
+   If you see anything else, STOP and report - do not proceed on a different symptom.
+2. Write tests B16, B17 and B18 FIRST. Paste the red run.
+3. Implement scope item 8, both halves:
+     (a) a released hold is not a hold - write a NEW append-only hold node rather than
+         reusing a released one; DispatchHold.node_key must name the node written;
+     (b) when readiness_state is "unknown", the summary must say the fleet check is
+         missing or stale, not count failures.
+4. Paste the green run. B1-B15 must ALL still be green - if any goes red, STOP and report
+   rather than editing that row. B6 in particular should be unaffected.
+5. Plant guards (e) and (f) from R1, paste each red line, restore.
+6. make ci > ci.txt 2>&1; echo $?   - never through a pipe. Exit 0, 100.00% coverage.
+7. Push, then make gate-ran from the worktree. Printed SHA must equal git rev-parse HEAD.
+8. Update the Closeout, set Status: BUILT, commit, push, make gate-ran again on the
+   final SHA. Say in the Closeout which key scheme you chose for (a) and why.
+
+DO NOT:
+- change pyproject.toml. 0.100.00 is CORRECT: the version scheme's middle group was
+  widened to three digits on 2026-09-20, so 0.100.00 follows 0.99.00. No re-bump.
+- touch the graph vocabulary (released_at is already declared), the laws, or DRIFT-068.
+- add a tunable, a button, a link or any dashboard control.
+- put sprint numbers, DL ids or MST- ids in UI text (B14 still applies to B18's wording).
+- deploy or merge. S219 owns the human notification channel.
+- let a test read the wall clock.
+Every file you write ends with a newline.
+If any measured number differs from the spec, or a law contradicts it: STOP and report.
+```
+
+<details>
+<summary>Original build brief (superseded — kept for provenance)</summary>
+
 ```text
 Build sprint S218 exactly as written in docs/sprints/sprint-218-a-broken-fleet-gets-no-run.md.
 
@@ -292,7 +459,7 @@ Order is binding:
 1. Read agents/master/laws/laws.md, docs/laws/flow.md, conventions.md and drift-register.md.
    Fill the Law reading record BEFORE any code. The law-cycle answer is NO, plus one drift row.
 2. Record the two design decisions in docs/design-log.md (next free DL number; DL-180 is the latest).
-3. Write tests B1–B14 first and paste the red run.
+3. Write tests B1–B15 first and paste the red run.
 4. Implement scope items 1–7. Paste the green run.
 5. Plant the four guards (step 7), paste each red line, restore.
 6. make ci > ci.txt 2>&1; echo $?   — never through a pipe. Exit 0, 100.00% coverage.
@@ -304,6 +471,8 @@ in UI text; write FleetPreflight from outside the master; make a hold exit non-z
 the wall clock. Every file you write ends with a newline.
 If any measured number differs from the spec, or a law contradicts it: STOP and report.
 ```
+
+</details>
 
 ---
 
@@ -325,15 +494,18 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `orchestration/fleet_readiness.py` | `agents/master/laws/laws.md`; `docs/laws/conventions.md` | `MST-IDN-02`; `MST-OUT-04` | Yes. The reader is projection-only and never writes the master-owned `FleetPreflight` label. |
+| Dispatcher placement | `docs/laws/flow.md`; `docs/laws/conventions.md` | No dispatcher clause exists | Yes. The missing law home is recorded as DRIFT-068 rather than creating a law book in this sprint. |
+| Fleet preflight fault aggregation | `agents/master/laws/laws.md`; `docs/laws/conventions.md` | `MST-OUT-04`; `MST-FAIL-05` | No. The check still records one `FleetPreflight`; aggregation changes only its fault evidence. |
+| Dashboard readiness projection | `docs/laws/flow.md`; `docs/laws/conventions.md` | No dashboard clause exists | No. It remains a read-only view of the graph and introduces no new control. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/` file changes and no agent receives a new guarantee. The dispatcher gains an undeclared placement guarantee, recorded as DRIFT-068; a dispatcher law home is deferred. Recovery preserves append-only `RunHold` evidence and adds `released_at`; overwriting `state` is rejected by the graph-store invariant.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** The dispatcher placement gate has no law home. Recorded as DRIFT-068.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** None. This sprint cites existing master clauses for the reader and preflight regression tests but adds no clause.
 
 ---
 
@@ -341,54 +513,93 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| B1 | `test_latest_preflight_wins_over_an_older_failure` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B2 | `test_failing_fleet_holds_run_and_records_both_failures` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B3 | `test_absent_preflight_holds_with_unknown_readiness` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B4 | `test_stale_passing_preflight_holds_as_unknown` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B5 | `test_latest_preflight_wins_over_an_older_failure` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B6 | `test_failing_refire_merges_one_hold` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B7 | `test_recovery_releases_hold_and_places_run` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B8 | `test_calendar_skip_writes_no_hold_when_fleet_is_failing` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | DRIFT-068 |
+| B9 | `test_readiness_reader_never_writes_master_owned_preflight` | `orchestration/tests/test_scheduled_dispatch_readiness.py` | PASS | `MST-IDN-02` |
+| B10 | `test_many_failed_probes_emit_one_fleet_preflight_fault` | `agents/master/tests/test_fleet_preflight_faults.py` | PASS | `MST-OUT-04`; `MST-FAIL-05` |
+| B11 | `test_held_run_forces_red_dashboard_readiness_verdict` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B12 | `test_recent_failing_preflight_forces_red_dashboard_readiness_verdict` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B13 | `test_passing_preflight_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B14 | `test_readiness_summary_has_no_sprint_law_or_design_identifiers` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B15 | `test_released_hold_leaves_existing_verdict_payload_unchanged` | `surfaces/tests/test_dashboard_readiness.py` | PASS | none; no dashboard law home |
+| B16 | `test_rehold_after_release_creates_active_hold_with_new_evidence` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
+| B17 | `test_stale_check_after_release_keeps_dashboard_red` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
+| B18 | `test_held_run_with_no_check_names_missing_fleet_check` | `surfaces/tests/test_dashboard_reholds.py` | PASS | DRIFT-068 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest`, `test_held_run_without_failure_list_uses_a_safe_summary`, and `test_failure_helper_handles_non_mapping_properties` cover malformed graph evidence and restore 100.00 % coverage. R1 adds B16-B18 in `test_dashboard_reholds.py`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills)*
+**Status:** BUILT; no deploy. R1 is locally proven; this final handback SHA still requires its own remote proof.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-218-a-broken-fleet-gets-no-run`; no `.env` was present.
 
-**Result:** *(builder fills)*
+**Result:** A fresh passing `FleetPreflight` preserves existing placement. Failing, absent, stale, malformed, or superseded preflight evidence prevents placement and persists one immutable `RunHold`; recovery adds `released_at`. The dashboard reports held or recent failing evidence as RED. The master emits one aggregate critical fault per failed check. Master scale start is `25 20 * * *`. R1 ensures a re-hold after release writes a new active fact, including when its readiness is stale, and explains unknown readiness as a missing recent fleet check.
 
-**Files changed:** *(builder fills)*
+**Files changed:** Dispatcher readiness reader/gate/settings and tests; master preflight fault aggregation and tests; dashboard readiness projection/settings/tests; dispatch script; graph vocabulary and dispatcher Dockerfile closure; master scale schedule; version and lockfile; design/drift/sprint/state records.
 
-**Design decisions:** *(builder fills)*
+**Design decisions:** DL-181 records the 70-minute freshness bound, unknown-as-hold, and append-only `released_at` representation. DRIFT-068 records the dispatcher guarantee's missing law home.
+
+**R1 key scheme:** The first hold remains `hold:<run_id>` for B2/B6/B7 compatibility. When no active hold remains, the next fact is `hold:<run_id>:<n>`, where `n` is the current count of holds for that run; it cannot collide with a released fact and `DispatchHold.node_key` names the fact just written.
 
 **Proof — the red run first:**
 
 ```text
-(builder fills)
+17 failed, 660 passed
+```
+
+**Proof — R1 reproduction and red run:**
+
+```text
+dispatch: HELD | dashboard: GREEN
+3 failed in 2.18s
+B16: assert 'hold:sched-2026-09-20' == 'hold:sched-2026-09-20:1'
+B17: assert 'GREEN' == 'RED'
+B18: assert '0 check(s)' not in "Tonight's run is held: 0 check(s) failing — no failure detail recorded"
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder fills)
+Focused implementation suite: 690 passed in 21.70s.
+Final full suite: 2903 passed, 6 skipped in 117.31s; total coverage 100.00%.
+R1 focused S218 suite: 684 passed in 14.71s; B16-B18: 3 passed in 1.74s.
 ```
 
-**Guards planted:** *(builder fills)*
+**Guards planted:** (a) allowing absent preflight evidence to place failed B3 (`placed` rather than `held`); (b) removing the freshness bound failed B4 (`placed` rather than `held`); (c) restoring one fault per failed probe failed B10 (3 faults rather than 1); (d) removing the verdict override failed B11 (`GREEN` rather than `RED`). R1 (e) restored the released-base-hold early return: B16 reused `hold:sched-2026-09-20` and B17 was `GREEN` rather than `RED` (`2 failed, 1 deselected in 2.28s`). R1 (f) restored failure-count wording for unknown: B18 rendered `0 check(s) failing` (`1 failed, 2 deselected in 2.20s`). Each break was restored and its focused check passed.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `fleet_readiness.py` 64; `scheduled_dispatch_gate.py` 60; `scheduled_dispatch.py` 147; `fleet_preflight.py` 141; `projections_readiness.py` 52; `projections_verdict.py` 167; `app.py` 184; `dispatch_scheduled_run.py` 118; R1 `test_dashboard_reholds.py` 127. The size gate passed; the original 214-line master test module was split to 193 lines plus a focused 34-line module.
 
-**`make ci`:** *(builder fills)*
+**`make ci`:** Exit 0 from the S218 worktree. `2903 passed, 6 skipped`; `TOTAL ... 100.00%`; `pip-audit`, tracked detect-secrets, and untracked detect-secrets passed.
+
+**R1 `make ci`:** Exit 0 from the S218 worktree. `2906 passed, 6 skipped in 93.49s`; `TOTAL ... 100.00%`; `pip-audit`, tracked detect-secrets, and untracked detect-secrets passed.
 
 **`make gate-ran`:**
 
 ```text
-(builder fills)
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for aea47810e1cc18008aa3f11f6d868c21c953b39a:
+  CI: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
-**Deviations from the spec:** *(builder fills — "none" only if there are none)*
+**Deviations from the spec:** The original state transition `held` to `released` is impossible under append-only graph properties. The corrected representation retains immutable `state="held"`, adds `released_at`, and defines active holds as held nodes without that property. The scope's vocabulary kept `released_at`; B15 was added. This builder-found spec defect is recorded in DL-181.
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** Deployment is intentionally not done; S219 supplies the human notification path. The R1 handback commit and its own remote `make gate-ran` proof are pending.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- The local full CI gate is proven at 100.00 % coverage, and the implementation SHA `aea47810e1cc18008aa3f11f6d868c21c953b39a` is remotely proven by CI and Security Findings. No `.env` was present and no live probe ran.
+- The state-transition defect was found against the actual append-only `GraphStore`, corrected before implementation, and recorded in DL-181.
+- R1 preserves released evidence and writes a later hold under a numbered key, so a stale re-hold cannot be invisible to the dashboard or S219's future notification path.
+- Do not deploy or merge this branch. Commit and push this R1 handback, then prove that final SHA with `make gate-ran` from this worktree.

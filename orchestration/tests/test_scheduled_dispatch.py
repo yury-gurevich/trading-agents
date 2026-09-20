@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -22,13 +22,29 @@ from orchestration.scheduled_dispatch import (
 )
 from orchestration.settings import OrchestratorSettings
 
+_NOW = datetime(2026, 9, 20, 22, 30, tzinfo=UTC)
+
+
+def _add_passing_preflight(graph: InMemoryGraphStore) -> None:
+    graph.merge_node(
+        "FleetPreflight",
+        "preflight:2026-09-20T22:25:00+00:00",
+        {
+            "checked_at": "2026-09-20T22:25:00+00:00",
+            "passed": True,
+            "failures": [],
+        },
+    )
+
 
 def test_trading_day_places_day_keyed_run_request() -> None:
     graph = InMemoryGraphStore()
+    _add_passing_preflight(graph)
 
     result = place_scheduled_run(
         graph,
         as_of=date(2026, 7, 8),
+        now=_NOW,
         universe_source=FakeUniverse({"sp500": ("AAPL", "MSFT", "NVDA", "SPY")}),
     )
 
@@ -40,6 +56,7 @@ def test_trading_day_places_day_keyed_run_request() -> None:
     assert node is not None
     assert node.props["run_id"] == result.run_id
     assert node.props["requested_at"] == "2026-07-08"
+    assert graph.list_nodes("RunHold") == ()
 
 
 def test_weekend_and_holiday_skip_with_stated_reason() -> None:
@@ -59,9 +76,10 @@ def test_weekend_and_holiday_skip_with_stated_reason() -> None:
 
 def test_double_fire_merges_to_one_run_request_node() -> None:
     graph = InMemoryGraphStore()
+    _add_passing_preflight(graph)
 
-    first = place_scheduled_run(graph, as_of=date(2026, 7, 8))
-    second = place_scheduled_run(graph, as_of=date(2026, 7, 8))
+    first = place_scheduled_run(graph, as_of=date(2026, 7, 8), now=_NOW)
+    second = place_scheduled_run(graph, as_of=date(2026, 7, 8), now=_NOW)
 
     assert first.node_key == second.node_key
     nodes = graph.list_nodes(RUN_REQUEST_LABEL)
@@ -76,12 +94,14 @@ def test_calendar_window_exceeded_raises_explicit_error() -> None:
 
 def test_empty_configured_universe_is_an_error() -> None:
     graph = InMemoryGraphStore()
+    _add_passing_preflight(graph)
     settings = OrchestratorSettings(universe="empty")
 
     with pytest.raises(ValueError, match="has no tickers"):
         place_scheduled_run(
             graph,
             as_of=date(2026, 7, 8),
+            now=_NOW,
             settings=settings,
             universe_source=FakeUniverse({"empty": ()}),
         )

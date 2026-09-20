@@ -8,6 +8,7 @@ External I/O: writes only the injected GraphStore.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal, Protocol
 
 from agents.provider.domain.market_calendar import (
@@ -15,6 +16,7 @@ from agents.provider.domain.market_calendar import (
     is_trading_session,
 )
 from agents.scanner.universe import FileUniverse
+from orchestration.scheduled_dispatch_gate import hold_unready_run
 from orchestration.settings import OrchestratorSettings
 from orchestration.start import place_run_request
 
@@ -66,11 +68,13 @@ class ScheduledDispatchDecision:
 class ScheduledDispatchResult:
     """Scheduled-run outcome after optional graph placement."""
 
-    action: Literal["placed", "skipped"]
+    action: Literal["placed", "skipped", "held"]
     run_id: str
     reason: str
     node_key: str | None = None
     tickers: tuple[str, ...] = ()
+    readiness_state: Literal["failing", "unknown"] | None = None
+    failures: tuple[str, ...] = ()
 
 
 _PROVIDER_CALENDAR = ProviderTradingCalendar()
@@ -106,6 +110,7 @@ def place_scheduled_run(
     calendar: TradingCalendar = _PROVIDER_CALENDAR,
     settings: OrchestratorSettings | None = None,
     universe_source: UniverseSource | None = None,
+    now: datetime | None = None,
 ) -> ScheduledDispatchResult:
     """Place the scheduled RunRequest, or cleanly skip non-trading sessions."""
     decision = decide_scheduled_run(as_of, calendar=calendar)
@@ -113,6 +118,22 @@ def place_scheduled_run(
         return ScheduledDispatchResult("skipped", decision.run_id, decision.reason)
 
     active_settings = settings or OrchestratorSettings()
+    hold = hold_unready_run(
+        graph,
+        run_id=decision.run_id,
+        as_of=as_of,
+        now=now or datetime.now(tz=UTC),
+        max_age_minutes=active_settings.preflight_max_age_minutes,
+    )
+    if hold is not None:
+        return ScheduledDispatchResult(
+            "held",
+            decision.run_id,
+            decision.reason,
+            hold.node_key,
+            readiness_state=hold.state,
+            failures=hold.failures,
+        )
     source = universe_source or FileUniverse()
     tickers = source.members(active_settings.universe)
     if not tickers:

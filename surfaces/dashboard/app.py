@@ -25,6 +25,8 @@ from surfaces.dashboard.settings import DashboardSettings
 from surfaces.dashboard.static_response import static_response
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from kernel import GraphStore
     from surfaces.context import SurfaceContext
     from surfaces.dashboard.azure_port import AzureReader
@@ -50,6 +52,7 @@ def build_app(
     chat_context: SurfaceContext | None = None,
     *,
     github: GitHubReader | None = None,
+    now: datetime | None = None,
 ) -> Callable[..., list[bytes]]:
     """Return the WSGI app over injected graph and optional Azure readers."""
     config = settings or DashboardSettings()
@@ -95,7 +98,7 @@ def build_app(
                 start_response,
                 200,
                 verdict_projection(
-                    read_graph, verdict_run, azure, config, github=github
+                    read_graph, verdict_run, azure, config, now=now, github=github
                 ),
             )
         if path.startswith("/api/containers/"):

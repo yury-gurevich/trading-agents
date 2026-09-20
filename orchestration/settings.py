@@ -37,6 +37,16 @@ class OrchestratorSettings(AgentSettings):
         le=1000000000.0,
         unit="USD",
     )
+    preflight_max_age_minutes: int = tunable(
+        70,
+        why=(
+            "Require the latest hourly fleet preflight with ten minutes of scheduling "
+            "slack before placing a trading run."
+        ),
+        ge=10,
+        le=240,
+        unit="minutes",
+    )
 
 
 class DeliberationQualitySettings(AgentSettings):

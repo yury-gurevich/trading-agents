@@ -11,6 +11,7 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.settings import ExecutionSettings
 from agents.provider import ProviderAgent
 from agents.provider import poll as provider_poll
 from agents.provider.settings import ProviderSettings
@@ -30,6 +31,9 @@ _CHAIN = (
     "MonitorRun",
     "Snapshot",
 )
+
+
+_ADVISORY = ExecutionSettings(deliberation_posture="advisory")
 
 
 def _provider(graph: InMemoryGraphStore) -> ProviderAgent:
@@ -119,7 +123,12 @@ def test_tail_monitor_still_adopts_this_run_fill() -> None:
     agent = _provider(graph)
     place_run_request(graph, run_id="tail", tickers=("AAPL", "MSFT"))
 
-    cascade_once(graph, provider_agent=agent, broker=PaperBroker())
+    cascade_once(
+        graph,
+        provider_agent=agent,
+        broker=PaperBroker(),
+        execution_settings=_ADVISORY,
+    )
 
     pm_run = walk_chain(graph, "tail")["PMRun"]
     assert any(

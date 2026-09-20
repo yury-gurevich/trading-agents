@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from agents.analyst.settings import AnalystSettings
 from agents.analyst.tests.helpers import overbought_bars
+from agents.execution.settings import ExecutionSettings
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from contracts.portfolio_manager import OrderIntentSet
@@ -22,6 +23,9 @@ from orchestration.tests.seeded_broker import SeededPaperBroker
 
 if TYPE_CHECKING:
     from agents.execution.paper_broker import PaperBroker
+
+
+_ADVISORY = ExecutionSettings(deliberation_posture="advisory")
 
 
 def test_graph_pull_cascade_sells_held_low_confidence_name() -> None:
@@ -41,6 +45,7 @@ def test_graph_pull_cascade_sells_held_low_confidence_name() -> None:
         provider_agent=agent,
         broker=broker,
         analyst_settings=AnalystSettings(exit_confidence_floor=0.58),
+        execution_settings=_ADVISORY,
     )
 
     market = graph.get_node("MarketData", "market-data:unified-sell")

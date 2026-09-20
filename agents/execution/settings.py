@@ -130,7 +130,7 @@ class ExecutionSettings(AgentSettings):
             "(S147 / ADR-0017): a sell-only run ignores this entirely."
         ),
     )
-    deliberation_posture: DeliberationPosture = "advisory"
+    deliberation_posture: DeliberationPosture = "binding"
     broker_stop_fallback_stop_pct: float = tunable(
         0.05,
         why=(

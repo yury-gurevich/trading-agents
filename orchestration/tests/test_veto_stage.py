@@ -11,6 +11,7 @@ External I/O: none.
 from __future__ import annotations
 
 from agents.execution.paper_broker import PaperBroker
+from agents.execution.settings import ExecutionSettings
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
@@ -74,6 +75,7 @@ def _run(
         broker=PaperBroker(),
         deliberation_llm=llm,  # type: ignore[arg-type]
         deliberation_judge_llm=judge_llm,  # type: ignore[arg-type]
+        execution_settings=ExecutionSettings(deliberation_posture="advisory"),
     )
 
 
@@ -174,7 +176,7 @@ def test_veto_is_fail_open_on_llm_outage() -> None:
 
 
 def test_no_llm_means_no_veto_stage() -> None:
-    """Omitting the LLM leaves the cascade unchanged — no DeliberationRun."""
+    """No LLM under advisory leaves the cascade unchanged - no DeliberationRun."""
     graph = InMemoryGraphStore()
     _run(graph, None)
     assert node_count(graph, "DeliberationRun") == 0

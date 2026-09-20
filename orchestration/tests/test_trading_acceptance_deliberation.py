@@ -136,6 +136,7 @@ def test_advisory_veto_that_reviewed_nothing_fails_acceptance() -> None:
         "acc-advisory-total-outage",
         with_deliberation=True,
         deliberation_llm=_RaisingLLM(),
+        execution_settings=ExecutionSettings(deliberation_posture="advisory"),
     )
 
     result = accept_run(graph, "acc-advisory-total-outage")

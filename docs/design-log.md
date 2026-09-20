@@ -132,6 +132,44 @@ against us:** the challenger prompt spends words on *"address that exact flaw **
 caution**"*, which is precisely the prior a finance persona raises. **Rejected as a default**, kept as
 a testable hypothesis - work-queue item **75**.
 
+🚨 **AMENDMENT, same day — the few-shot examples are the stronger steer, and they are
+one-sided.** The operator asked whether the *“for example”* narrative guides the model in the
+right direction. Measured, not eyeballed:
+
+| Role | Examples | What they demonstrate |
+| --- | --- | --- |
+| Defender | **0** | nothing |
+| Challenger | **8** | 8 objections; no case where the decision is sound |
+| Judge | **8** | 🚨 **`revise` × 8 — 100 %. Zero `uphold`, zero `overturn`.** |
+
+**The judge has never been shown a correct `uphold`.** Its only demonstrated ruling is `revise`, and
+few-shot examples steer harder than any instruction in a prompt.
+
+Against the live spine — **353 rulings across 64 `DeliberationRun`s carrying verdicts**:
+`revise` **168 (47.6 %)**, `uphold` **163 (46.2 %)**, `overturn` **22 (6.2 %)**, a **revise/overturn
+ratio of 7.6×** that reproduces the 7.5× [ADR-0029](decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md)
+was written to address. *(Different denominator from item 59's 223 reviewed over 29 real-debate runs;
+both stand, they count different populations.)*
+
+🎯 **The cause is traceable and is not malice — it is a sampling artifact.** The examples were
+compiled from the **Class-1 case library**, which [EXP-004](research/experiments/EXP-004-class1-cases-llm-judge.md)
+built *by construction* as a library of flaws: *“each flaw must be invisible from finance
+world-knowledge and revealed only by our implementation”*. A flaw library contains no sound
+decisions, so examples drawn from it can only ever demonstrate objecting. Nobody chose to bias the
+judge; the corpus had one class in it.
+
+🪤 **This re-frames ADR-0029 rather than contradicting it.** Narrowing the block to `overturn`
+was correct and remains correct. But it treated `revise` over-production as a *property of the
+referee*, when `revise` may be inflated because **it is the only ruling ever demonstrated**. If so,
+some share of those 168 findings is the model reproducing the examples, which makes the *finding
+count* a weaker signal than it reads as.
+
+🪰 **Measuring this cost me a false zero.** The first pass reported **0 rulings** with complete
+confidence: `verdicts` is a `mappingproxy`, `isinstance(x, dict)` is **False** for it, so the filter
+silently matched nothing. Corrected with `collections.abc.Mapping`. That is
+[[audit-with-contracts-predicates]] / DL-73 again — an audit on a raw type assumption, producing a
+clean, confident, wrong number.
+
 **The road not taken, recorded now so it is not re-derived.** Richer field descriptions (the DSPy
 signature shape the operator proposed) would close the semantics gap - and would also be *hints*. The
 distinctions list demonstrates how hard a sentence in the system prompt steers the verdict, so better

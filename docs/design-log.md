@@ -66,6 +66,8 @@ the mechanism the project already runs, and graph-pull is already how the fleet 
 🚨 **The notice must therefore state when the answer will be acted on**, or the operator
 presses a button and sees nothing happen for half an hour, which reads as a broken channel.
 
+🎯 **The answer window in the operator's own time, measured 2026-09-20 — this is what makes "a human decides" viable rather than theoretical.** 22:30–23:20 UTC is **08:30–09:20 Melbourne (AEST, UTC+10)**, a 50-minute window in waking hours. The master's two automatic retries land at **06:25 and 07:25 local**, so the operator is only asked after the fleet has failed to recover twice on its own. 🪰 **Melbourne moves to AEDT (UTC+11) around 4 October**, shifting the window to **09:30–10:20 local**; the UTC schedule does not change and nothing needs doing, but a reader comparing a notice timestamp to this note after that date will otherwise think it slipped an hour. Had this landed at 03:00 local the design would have been broken, and nothing in DL-179 checked it.
+
 **Credential.** Proven end to end 2026-09-20 (DL-179): `@yury_trading_alerts_bot`, chat id in `.env`,
 a real message delivered. The fleet gets both values the way the dispatcher gets `POSTGRES_DSN`.
 

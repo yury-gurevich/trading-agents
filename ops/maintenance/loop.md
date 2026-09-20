@@ -46,6 +46,7 @@ is the promotion gate**. Nothing is "tuned" blindly — every change is justifie
 > on the graph, gate = the operator. Both inherit LAW-01; neither auto-promotes.
 
 ### What "better" is measured on
+
 | Signal | Source | Better = |
 | --- | --- | --- |
 | failure rate | ledger outcomes | ↓ |
@@ -70,6 +71,7 @@ The ledger is the audit trail *and* the training set for Loop 2. Never edit past
 
 `points-of-no-return.md` is the consolidated, system-wide registry of every irreversible
 step (each charter's `OPS-PNR` rolls up here). Before any such step, `ta` must:
+
 1. show the blast radius, 2. snapshot current state, 3. require an interactive confirm.
 This is the "I do not want to go blind into a costly, unrecoverable move" guarantee.
 

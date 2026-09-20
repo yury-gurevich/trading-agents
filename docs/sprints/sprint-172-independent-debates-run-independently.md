@@ -311,6 +311,7 @@ blocker warned in the handover, not a code failure or a valid reason to switch p
 law-plan/ledger/drift docs, `docs/STATE.md`, and the version bump to `0.91.00` with `uv.lock`.
 
 **Implemented proof points:**
+
 - `debate_concurrency` is a tunable defaulting to `4`, bounded `ge=1/le=25`, with the vendor-rate-limit
   rationale. `orchestration/packs/trading_tunables.json` carries `DELIBERATOR_DEBATE_CONCURRENCY=4`.
 - Manager review now uses a bounded thread pool over independent approved orders. `K=1` takes the
@@ -360,6 +361,7 @@ because the LLM calls never started.
 `pip-audit` reported no known vulnerabilities; detect-secrets and untracked-secret checks passed.
 
 **Remote gate at the code/deploy proof commit:**
+
 ```
 make gate-ran SHA=a7e7ad12911ca2dd76be51c6ef5bba0f6344e350
 GATE PROVEN for a7e7ad12911ca2dd76be51c6ef5bba0f6344e350:

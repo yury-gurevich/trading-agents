@@ -11,6 +11,7 @@
 The infrastructure is already deployed and wired. What this sprint closes:
 
 **Already done (do not rebuild):**
+
 - `PrometheusMetrics` kernel adapter — `kernel/metrics_prometheus.py`
 - `surfaces/entrypoint.py` + `surfaces/metrics_server.py` — /metrics HTTP server
 - `surfaces/context.py` — `paper_context(metrics=)` passes `Metrics` to `InProcessBus`
@@ -34,12 +35,14 @@ with `MeteredFaultSink` before passing to `InProcessBus`. Faults then flow throu
 emission before being forwarded to the collecting sink.
 
 Current code (line ~99):
+
 ```python
 sink = CollectingFaultSink()
 bus = InProcessBus(sink=sink, metrics=metrics or NullMetrics())
 ```
 
 Replace with:
+
 ```python
 sink = CollectingFaultSink()
 active_sink = MeteredFaultSink(metrics, sink) if metrics else sink
@@ -133,10 +136,12 @@ docker compose up
 ```
 
 Requires:
+
 - `.env` file with `NEO4J_*` vars (copy from `.env.example`)
 - `infra/prometheus/prometheus.local.yml` — generate with `.\infra\setup-prometheus-auth.ps1`
 
 Access:
+
 - `/metrics` endpoint: `http://localhost:8000/metrics`
 - Prometheus UI: `http://localhost:9090`
 - Grafana: see URL in table above
@@ -150,6 +155,7 @@ Access:
 5. Faults by severity — `trading_agents_kernel_faults_total{severity="..."}`
 6. Faults by agent — same metric broken out by `agent` label
 7–10. (additional panels for throughput and agent breakdown)
+
 ```
 
 Do not change any section above "Build phase" — the principles and layer descriptions are

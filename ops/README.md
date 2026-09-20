@@ -70,6 +70,7 @@ as *operations → a department → data & storage → a procedure → migrate i
 
 The process is **assessable**: every run is logged with its outcome, timing, and cost, so
 we can ask "is there room for improvement?" A periodic **LLM-review loop** reads the ledger
+
 + script logs and proposes changes — reorder steps, add a missing gate, parallelize, retire
 a flaky step. The operator approves; the charter/script is updated. This mirrors the
 champion–challenger / eval-gate philosophy already adopted for prompts (ADR-0010): the ops

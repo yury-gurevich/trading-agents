@@ -16,6 +16,7 @@ and **B** (escalation record + human gate + one-shot counter) of DL-36. The LLM 
 and the execute→production→document pipeline (D) are **out** — deferred until their design questions close.
 
 **Operator decisions baked in (2026-07-01):**
+
 - **A+B together** — test-before-handover *and* the escalation/refuse/one-shot structure in one arc.
 - **Cheap live + cache costly** — side-effect-free tests run live every activation; costly/side-effecting
   ones (LLM ping, broker submit) use a cached recent pass or a gated flag, never a real call per activation.

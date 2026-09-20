@@ -470,6 +470,7 @@ remain read-only/out of scope; no analyst test status changed.
 - `orchestration/tests/test_graph_vocabulary_e2e.py::test_declared_vocabulary_admits_the_broker_native_stop_path`
   was re-run after the stricter Fill property guard exposed missing broker-stop Fill property
   declarations; this protects the S148/S142 stop path under S149's stricter vocabulary check.
+
 ---
 
 ## Closeout — evidence

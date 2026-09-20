@@ -220,6 +220,7 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: dict) -> dict:
 **Individual handlers:**
 
 `_cmd_command(ctx, args) → dict`:
+
 - Build `HumanCommand(text=args["text"], actor="assistant", channel="mcp")`
 - Inject `confirmed=true` into parameters if `args.get("confirmed")` is truthy
 - Send to `operator.interpret` via bus
@@ -228,18 +229,22 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: dict) -> dict:
 - Return `{"accepted": dispatch.accepted, "routed_to": dispatch.routed_to, "reason": dispatch.reason}`
 
 `_cmd_status(ctx, args) → dict`:
+
 - Send `StatusRequest(run_id=None)` to `supervisor.system_status` via bus
 - Return `{"healthy": report.healthy, "open_incidents": report.open_incidents, "pending_flags": report.pending_human_flags, "last_run": report.last_successful_run}`
 
 `_cmd_runs(ctx, args) → dict`:
+
 - Call `recent_runs(ctx.graph, limit=args.get("limit", 10))`
 - Return `{"runs": [{"run_id": r.run_id, "completed": r.completed, "steps": len(r.steps)} for r in runs]}`
 
 `_cmd_incidents(ctx, args) → dict`:
+
 - Call `open_faults(ctx.graph)`
 - Return `{"incidents": [{"fault_id": f.fault_id, "agent": f.source_agent, "capability": f.capability, "severity": f.severity, "message": f.message} for f in faults]}`
 
 `_cmd_explain(ctx, args) → dict`:
+
 - Send `NarrativeRequest(position_id=args["position_id"])` to `reporter.narrative` via bus
 - If bus error, return `{"error": f"narrative not available for {position_id}"}`
 - Return `{"position_id": narrative.position_id, "summary": narrative.story.summary, "evidence_refs": list(narrative.story.evidence_refs)}`

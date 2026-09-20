@@ -476,6 +476,7 @@ baseline; any new/unbaselined divergence is a hard `[FAIL]`.
 **Proof — the red run first:**
 
 - Initial tests before implementation:
+
   ```text
   uv run pytest agents/scanner/tests/test_scanner_settings.py tests/test_param_law_sync.py --no-cov
   collected 6 items
@@ -484,13 +485,17 @@ baseline; any new/unbaselined divergence is a hard `[FAIL]`.
   FAILED tests/test_param_law_sync.py::* - ModuleNotFoundError: No module named 'scripts.check_param_law_sync'
   6 failed
   ```
+
 - Guard proof, scanner registration temporarily reverted:
+
   ```text
   uv run python scripts/check_param_law_sync.py
   [FAIL] agents/scanner/settings.py:53: scanner.benchmark_ticker law declares YES; settings field is not registered via tunable(), expected registered via tunable()
   exit 1
   ```
+
 - Guard proof, execution PARAM row temporarily deleted:
+
   ```text
   uv run python scripts/check_param_law_sync.py
   [FAIL] agents/execution/settings.py:123: execution.deliberation_grace_seconds settings field has no PARAM row
@@ -521,6 +526,7 @@ exit 0
   `tunable()`.
 - Declared mode selectors and secret/config-only rows remain green.
 - `make gate-selftest` proved the new guard:
+
   ```text
   PASS  can-fail: param-law-sync — rejected (exit 1)
   gate self-test: 20/20 passed

@@ -42,6 +42,6 @@ Operational rule:
 
 Sources:
 
-- https://www.tiingo.com/pricing
-- https://www.tiingo.com/documentation/
-- https://www.tiingo.com/products/end-of-day-stock-price-data
+- <https://www.tiingo.com/pricing>
+- <https://www.tiingo.com/documentation/>
+- <https://www.tiingo.com/products/end-of-day-stock-price-data>

@@ -122,6 +122,7 @@ class PromoteStageResult(_Frozen):
 ```
 
 Add to `CONTRACT`:
+
 ```python
 Capability(
     "promote_stage",
@@ -132,6 +133,7 @@ Capability(
 ```
 
 Add `"StageTransition"` to `owns_graph`:
+
 ```python
 owns_graph=("Fill", "Reconciliation", "StageTransition"),
 ```
@@ -283,6 +285,7 @@ def _promote_stage(self, request: BaseModel) -> PromoteStageResult:
 Update `_stage_status` to call `current_stage_from_graph(self._graph, self._settings.stage)`.
 
 Update `_submit` to verify the current stage allows the submission:
+
 ```python
 stage = current_stage_from_graph(self._graph, self._settings.stage)
 if stage not in ("paper", "broker_shadow"):

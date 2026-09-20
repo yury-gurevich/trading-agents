@@ -158,6 +158,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   rendered its prompt, so whether a stored prompt hash is comparable to the
   current renderer is answerable without replaying the call. A call whose
   renderer was not recorded reads as unknown, never as the current one.
+
 ## Performance Envelope (`PERF`)
 
 + **DLIB-PERF-01** -- `max_rounds` bounds peer turns before execution.

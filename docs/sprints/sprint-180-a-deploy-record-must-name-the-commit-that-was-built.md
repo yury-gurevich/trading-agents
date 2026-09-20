@@ -302,6 +302,7 @@ result belongs only after merge to `main`, push, and `make gate-ran` from the wo
 | `pyproject.toml` / `uv.lock` | — | `0.94.06` → `0.94.07` (PATCH); `0.94.06` is already on `main` |
 
 **Design decisions:** DL-149 (reapplied after DL-150):
+
 - Decision 1: tag existence-and-identity — the given SHA must be among successful
   `build-images.yml` runs that produced the recorded tag; newest-build recency and SHA-only
   existence are both rejected.
@@ -311,6 +312,7 @@ result belongs only after merge to `main`, push, and `make gate-ran` from the wo
   records in this sprint because `DeployRecord` is dashboard currency evidence.
 
 **Proof — real test values (re-verified 2026-09-03):**
+
 - `gh run list --workflow build-images.yml --commit e0a144fc08b1d5fd8bc219f4ed48fef74fa8d120`
   returned one successful run, `33603577617`, created `2026-09-02T07:26:26Z`.
 - `gh run list --workflow build-images.yml --commit 8fbf3a41339d0a31aa9a057952fe5e6401280ac1`
@@ -353,6 +355,7 @@ result belongs only after merge to `main`, push, and `make gate-ran` from the wo
    leaking raw `RuntimeError: GitHub build read failed (test)`. Restored.
 
 **`make ci`:** exit 0. Final redirected run:
+
 - `orchestration\deploy_record.py 48 stmts, 12 branches, 100.00%`
 - `surfaces\dashboard\github_builds.py 93 stmts, 16 branches, 100.00%`
 - `TOTAL 15648 stmts, 3362 branches, 100.00%`

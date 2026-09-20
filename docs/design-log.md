@@ -1545,6 +1545,7 @@ S172's is renumbered **v1.3**.
 refused the commit. The generated number is the number.
 
 **Ruled out.**
+
 - *Merging at K=4 to "get the measurement in production"* -- a nightly scheduled run is not a harness,
   and an intermittent fail-open reaching real orders is the failure mode the veto exists to prevent.
 - *Leaving it unmerged until K>1 is proven* -- the position the queue held for two weeks. Rejected on
@@ -2126,6 +2127,7 @@ unfalsifiable, and the intermittency in Finding 1 cannot even be counted across 
 precisely why three attempts and two measurements have not settled this.
 
 **Ruled out, with reasons.**
+
 - **Declaring S172 mergeable on this run.** Rejected: 15/15 and 0 fail-opens is one good sample of
   an intermittent failure, and success factor 4 is still unmeasurable. A green sample is not a proof
   of absence.
@@ -2432,6 +2434,7 @@ named correlation keys to work from. The K=1 determinism replay (success factor 
 determinism is moot while 2 of 15 debates are lost.
 
 **Ruled out, with reasons.**
+
 - **Merging anyway because wall-clock improved.** Rejected: 815 s vs a projected 1,854 s is real, but
   success factor 4 is `orphaned_reply_count == 0` and it measured 6. Shipping a veto that silently
   discards peer replies is worse than a slow one.
@@ -3270,6 +3273,7 @@ selected mode, ATR availability, ATR value, applied stop/target, and counterfact
   experiment that changes proposal values.
 - Add a second stop-basis carrier outside `StopTargetEvidence` - rejected because it would duplicate
   the S150 evidence that is already persisted and vocabulary-declared.
+
 ## DL-125 - The falsifiable test was blocked by a billing failure, and the referee is down until 2026-08-30 - status: MEASURED (2026-08-22)
 
 🚨 **ADR-0023's prediction could not be tested, and will not be testable for about six sessions.**
@@ -3787,7 +3791,6 @@ Both scheduled runs after this entry was written were degraded by an API billing
 the deliberator never saw. **The correct statement is that ADR-0023's prediction has zero
 real-debate data on `s184` code** and will have none until credit returns on 2026-08-30. The 73 %
 across the four binding runs stands as the last honest figure.
-
 
 **The rejections are not noise, and they are not varied.** Across four consecutive nights the same
 complaint dominates: the PM has no issuer or correlation dimension. On the clean run **4 of 6**
@@ -9454,7 +9457,6 @@ S147 rejected: an LLM outage stalling exits. Candidate directions, none chosen: 
 applies to **buys only** (exits proceed, matching ADR-0017's asymmetry); the deliberator writing an
 *intent-to-deliberate* marker at PMRun time so absence and not-yet become distinguishable; or moving
 the veto ahead of the PM. Wants an ADR, not an inline patch.
-
 
 ### Fixed 2026-08-08 — the veto gates buys, never exits
 

@@ -49,6 +49,7 @@ Tag `latest` always points to the HEAD of `main`. Immutable SHA tags
 ### Push
 
 GitHub Actions workflow triggered on merge to `main`:
+
 - Matrix build across all 13 Dockerfiles in parallel
 - Authenticates with `GITHUB_TOKEN` (no secrets required for push)
 - Pushes both `:latest` and `:<sha>` tags
@@ -56,6 +57,7 @@ GitHub Actions workflow triggered on merge to `main`:
 ### Pull (Azure Container Apps)
 
 Azure Container Apps pulls on each deploy. Authentication:
+
 - A GitHub PAT with `read:packages` scope stored as repo secret `GHCR_PAT`
 - Passed to `az containerapp create/update --registry-server ghcr.io
   --registry-username <github-user> --registry-password $GHCR_PAT`

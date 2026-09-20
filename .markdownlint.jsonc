@@ -1,0 +1,58 @@
+// Which markdown rules this repo keeps (work-queue item 73).
+//
+// Written because nothing said. The IDE reformats markdown in the checkout
+// against its own defaults -- aligning tables, adding blank lines after
+// headings, and silently renaming duplicate headings -- and with no committed
+// config there was no way to say whether a reformat was a fix or damage.
+//
+// Rules are OFF where this repo has a deliberate style that the default would
+// fight, and ON where a violation is a real defect a reader would hit.
+// Measured 2026-09-20 over every tracked .md file: 39,227 findings at the
+// defaults, 37,868 of them MD013 alone.
+{
+  "default": true,
+
+  // -- OFF: deliberate house style ------------------------------------------
+  // Prose wraps near 100 and tables run far wider; 37,868 findings at the
+  // default 80 is noise that would bury the 64 real ones.
+  "MD013": false,
+  // Every doc opens with <!-- Agent: ... | Role: ... -->, which the
+  // module-header gate reads. Inline HTML is a convention here, not a lapse.
+  "MD033": false,
+  // **Bold lead-ins** are this repo's paragraph idiom (347 of them).
+  "MD036": false,
+  // Repeated section names are normal across sibling entries -- every design
+  // -log entry carries "Rejected routes". Only duplicates under the SAME
+  // parent are flagged. 🪤 Also: the IDE RENAMES duplicate headings silently,
+  // so a stricter setting here invites it to rewrite content.
+  "MD024": { "siblings_only": true },
+  // Mixed * and _ emphasis, ordered-list numbering, bullet characters and
+  // table pipe alignment are cosmetic and heavily IDE-driven.
+  "MD049": false,
+  "MD060": false,
+  "MD029": false,
+  "MD004": false,
+  // Code spans deliberately carry padding, e.g. `` ` ``.
+  "MD038": false,
+  // Tabs inside fenced blocks are real content (Makefile recipes).
+  "MD010": { "code_blocks": false },
+  // Blockquote paragraphs separated by blanks are used for asides.
+  "MD028": false,
+  // Files open with an HTML comment or frontmatter, not a heading.
+  "MD041": false,
+  // Headings end with ? or ! deliberately ("### Why not a hook?").
+  "MD026": false,
+  // 🚨 OFF because its AUTOFIXER CORRUPTS TEXT. Measured 2026-09-20: on dense
+  // lines carrying dollar amounts, `--fix` deleted the real word space before
+  // bold -- "still loses **$11,619**" became "still loses**$11,619**", which
+  // renders as "loses$11,619". Hit docs/work-queue.md, docs/design-log.md,
+  // docs/laws/functionality-checks.md and one sprint doc. Caught only by
+  // comparing non-blank content before and after; `git diff -w` does NOT show
+  // it, because the change is inside a line. All 12 findings were false
+  // positives of this shape.
+  "MD037": false
+
+  // -- ON: everything else, because a violation is a real defect ------------
+  // Notably MD051 (dead link fragments), MD042 (empty links) and MD056
+  // (table column count) each render wrongly for a reader.
+}

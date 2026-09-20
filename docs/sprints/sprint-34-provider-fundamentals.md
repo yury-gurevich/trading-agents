@@ -63,6 +63,7 @@ macro feed. This sprint is fundamentals-only.
 `agents/provider/sources.py`:
 
 - Add to the `DataSource` Protocol:
+
   ```python
   def fetch_fundamentals(
       self, tickers: tuple[str, ...], window: Window
@@ -70,6 +71,7 @@ macro feed. This sprint is fundamentals-only.
       """Fetch per-ticker fundamental metrics; empty dict per ticker on no data."""
       ...  # pragma: no cover - protocol declaration only.
   ```
+
   (`window` is taken for signature uniformity with `fetch_ohlcv`; Finnhub's metric endpoint is
   point-in-time and ignores the dates — that's fine.)
 - `FakeDataSource`: add a `fundamentals: dict[str, dict[str, float]] = {}` constructor fixture and a

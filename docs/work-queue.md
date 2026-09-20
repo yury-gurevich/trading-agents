@@ -7,7 +7,6 @@
 
 **Deploy, 2026-09-20 16:29 AEST — `s219`, S217+S218+S219 live.** This retires the "three of the fourteen are a deploy" note above: **58 closes**, **70**'s code is now on the fleet (its live `vix_status` proof arrives with `sched-2026-09-21`), and **64** unblocks on that same measurement. 🟠 **What the deploy did not prove:** the Telegram notice path has never fired in production. First exercise Mon 22:30 UTC = **Tue 22 Sep 08:30 Melbourne**.
 
-
 **Re-reviewed 2026-09-15 10:45 AEST** against `main` @ `6e046e1` (`0.98.02`) and the fleet on **`s198`**,
 triggered by reading `sched-2026-09-14`. Every open row was re-measured rather than carried. This review
 **adds item 59 and ranks it first**, and it displaces the previous ordering for one reason: 🚨 **the pack

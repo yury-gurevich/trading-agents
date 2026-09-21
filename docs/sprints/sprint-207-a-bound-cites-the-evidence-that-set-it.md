@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-207-a-bound-cites-the-evidence-that-set-it`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** LAW-05 `DD-01`/`DD-04` · [risk-parameter-bounds](../research/risk-parameter-bounds/INDEX.md) · `DRIFT-071`
@@ -431,17 +431,33 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| `kernel/config.py` | `ops/laws/LAW-05-defendable-decision.md`; `docs/laws/conventions.md` | `DD-01`, `DD-03`, `DD-04` | Yes. An envelope must require its evidence source at declaration; neither an undocumented band nor a new agent clause is acceptable. |
+| Portfolio-manager risk settings | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md` | `PARAM`; no PM clause changes | No. The existing settings declaration and locked law remain unchanged apart from provenance metadata on the thirteen scoped values. |
+| Provider risk settings | `agents/provider/laws/laws.md`; `agents/provider/laws/test-plan.md` | `PARAM`; no PROV clause changes | No. Regime defaults receive provenance metadata only; provider behaviour and its locked law remain unchanged. |
+| Analyst risk settings | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md` | `PARAM`; no ANLZ clause changes | No. Scaled-stop metadata remains a declaration beside the existing settings; no stop or target calculation changes. |
+| PARAM/settings sync | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | conventions sections 3, 7, 9; `DRIFT-052` | Yes. The new scan must be warning-only and live in the existing gate step, preserving the baseline's exit semantics. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(the spec says
 No to both, and No to a kernel clause because no `kernel/laws/` exists — confirm, and say if you
 disagree)*
 
+No. `contracts/` will remain untouched, no agent behaviour or guarantee changes, and `kernel/laws/`
+does not exist. The provenance declaration is a kernel substrate capability, so no agent-law amendment
+or kernel clause is due.
+
 **Contradictions found between a law and this spec:**
+
+None.
 
 **Laws found silent where a decision was needed:**
 
+None. LAW-05 supplies the evidence requirement; the absence of a kernel law book confirms that no
+agent-law cycle belongs in this sprint.
+
 **Clauses that were ⬜ and are now proven:** *(IDs, and the rollup the gate computed)*
+
+None. The tests added here prove the platform-level LAW-05 mechanism; they do not change an agent-law
+rollup.
 
 ---
 
@@ -449,70 +465,114 @@ disagree)*
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| T1 | | | PASS/FAIL | |
-| T2 | | | PASS/FAIL | |
-| T3 | | | PASS/FAIL | |
-| T4 | | | PASS/FAIL | |
-| T5 | | | PASS/FAIL | |
-| T6 | | | PASS/FAIL | |
-| T7 | | | PASS/FAIL | |
+| T1 | `test_describe_exposes_envelope_and_source` | `tests/test_config.py` | PASS | `DD-04` |
+| T2 | `test_value_outside_its_envelope_warns_with_source` | `tests/test_param_law_sync.py` | PASS | `DD-04` |
+| T3 | `test_value_inside_its_envelope_is_silent` | `tests/test_param_law_sync.py` | PASS | `DD-04` |
+| T4 | `test_envelope_breach_never_fails_the_gate` | `tests/test_param_law_sync.py` | PASS | `DD-04` |
+| T5 | `test_a_tunable_without_an_envelope_is_unchanged` | `tests/test_config.py` | PASS | `DD-01` |
+| T6 | `test_an_envelope_without_a_source_is_refused` | `tests/test_config.py` | PASS | `DD-04` |
+| T7 | `test_param_law_sync_still_passes` | `tests/test_param_law_sync.py` | PASS | conventions |
 
 **Tests added beyond the plan:**
+
+`test_exactly_thirteen_risk_settings_declare_evidence_envelopes` (`DD-04`) proves no setting
+outside the thirteen researched risk parameters acquired S207 provenance metadata.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT | MERGED)*
+**Status:** BUILT
 
 **Tree the proofs ran in (and `.env` present?):**
 
-**Result:** *(what is now true, in the artefact's own words — not the intent restated)*
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-207-a-bound-cites-the-evidence-that-set-it`; no
+`.env` was present. The full suite's six skips match the worktree-without-`.env` environment.
+
+**Result:** `tunable()` now stores optional numeric evidence envelopes with mandatory provenance;
+`describe()` exposes them; PARAM/settings sync reports an out-of-band default without failing; and
+the thirteen researched risk settings carry their research wording without moving a live value or
+field rail.
 
 **Files changed:**
 
-**Design decisions:** recorded as `DL-NNN`
+`kernel/config.py`; `scripts/param_law_sync.py`; `scripts/param_law_sync_envelopes.py`; the thirteen
+settings declarations across portfolio manager, provider, and analyst; focused tests; `DRIFT-071`;
+`DL-194`; version metadata; and this handback.
+
+**Design decisions:** recorded as `DL-194`; drift recorded and corrected as `DRIFT-071`.
 
 **Proof — the RED run first (T2 failing on `main`):**
 
 ```text
+6 failed, 13 passed in 37.13s
+
+All six failures were the missing envelope/source metadata and warning behaviour before S207's
+implementation, including T2.
 ```
 
 **Proof — the green run:**
 
 ```text
+tests/test_config.py ...........                                         [ 55%]
+tests/test_param_law_sync.py .........                                   [100%]
+
+============================= 20 passed in 1.82s ==============================
+
+================= 2991 passed, 6 skipped in 132.42s (0:02:12) =================
+Required test coverage of 100.0% reached. Total coverage: 100.00%
 ```
 
 **Proof — no bound or default moved** *(diff filtered to `ge=`/`le=`/`gt=`/default values; must be empty)*:
 
 ```text
+No changed ge=, gt=, le=, or default= declarations.
 ```
 
 **The envelope breach list** *(which of the thirteen warn, and why that is expected)*:
 
 ```text
+[WARN] portfolio_manager.max_position_pct value=0.10 envelope=(0.01, 0.05) source=FCA COLL 5.2 — UCITS investment powers and limits
+[WARN] portfolio_manager.max_positions value=10 envelope=(30.0, 60.0) source=Evans and Archer, forty years later
+[WARN] portfolio_manager.correlation_threshold value=0.5 envelope=(0.6, 0.8) source=Effect magnitudes — interpreting r = 0.7
+
+These are code defaults outside their cited research envelopes; warnings are the intended
+observation, not a gate failure or a request to change a live parameter.
 ```
 
 **`git diff --stat contracts/`:** *(must be empty)*
 
-**PARAM/settings baseline:** *(must still be exactly 57)*
+No output; no `contracts/` file changed.
 
-**Module line counts:** *(`kernel/config.py` must be below 150)*
+**PARAM/settings baseline:** `TOTAL_WARNINGS=60`; `ENVELOPE_WARNINGS=3`;
+`LEGACY_WARNINGS=57`.
 
-**`make ci`:** redirected to *(path)*. Exit code *(n)*. Still **14 steps**. *(N passed, M skipped)*,
-coverage *(100.00 %)*.
+**Module line counts:** `kernel/config.py` = 122 lines, below the 150-line warning threshold.
+
+**`make ci`:** redirected to
+`C:\Users\yury_\AppData\Local\Temp\s207-make-ci-final.txt`. Exit code `0`. Still **14 steps**.
+`2991 passed, 6 skipped`; coverage `100.00 %`; `pip-audit` reported no known vulnerabilities; both
+secret scans passed.
 
 **`make gate-ran`:** run from *(worktree path)* at *(full 40-char SHA)*:
 
 ```text
+Not done: the branch must first be committed and pushed. Remote proof is the next step.
 ```
 
 **Not met / verified failing:**
+
+Remote branch proof is not yet done. No merge or deploy was attempted.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(What you disagreed with in the spec after reading the laws.)*
-- *(What the next sprint should know that is not obvious from the diff.)*
+- Scope held: the mechanism is generic in `kernel`, while all finance values and provenance remain
+   in trading-pack settings. `contracts/`, agent laws, defaults, and field rails are untouched.
+- No disagreement with the spec after reading the laws. The research's en dashes are represented as
+   named Unicode escapes where Ruff rejects their literal spelling; the runtime citation strings match
+   the research text exactly.
+- The three out-of-envelope defaults are intentional new findings. A future ADR may decide whether
+   any existing `ge`/`le` rail should become a true safety rail; S207 deliberately only makes that
+   decision evidence-based.

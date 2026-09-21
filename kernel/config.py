@@ -25,6 +25,8 @@ def tunable(
     gt: float | None = None,
     le: float | None = None,
     unit: str | None = None,
+    envelope: tuple[float, float] | None = None,
+    source: str | None = None,
     validation_alias: AliasChoices | str | None = None,
 ) -> Any:  # noqa: ANN401 - returns a pydantic FieldInfo, assigned to a typed field
     """Declare a configurable constant.
@@ -35,14 +37,22 @@ def tunable(
     that influences processing or a forecast must be declared through this helper
     rather than written as a bare literal.
     """
-    extra: dict[str, Any] | None = {"unit": unit} if unit is not None else None
+    if envelope is not None and source is None:
+        raise ValueError("An evidence envelope requires a source.")
+    extra: dict[str, Any] = {}
+    if unit is not None:
+        extra["unit"] = unit
+    if envelope is not None:
+        extra["envelope"] = envelope
+    if source is not None:
+        extra["source"] = source
     return Field(
         default,
         description=why,
         ge=ge,
         gt=gt,
         le=le,
-        json_schema_extra=extra,
+        json_schema_extra=extra or None,
         validation_alias=validation_alias,
     )
 
@@ -74,6 +84,9 @@ class TunableDoc(BaseModel):
     minimum: float | None = None
     maximum: float | None = None
     unit: str | None = None
+    envelope_min: float | None = None
+    envelope_max: float | None = None
+    source: str | None = None
 
 
 def _limit(info: FieldInfo, attr: str) -> float | None:
@@ -91,6 +104,17 @@ def _lower_limit(info: FieldInfo) -> float | None:
     return inclusive if inclusive is not None else _limit(info, "gt")
 
 
+def _envelope(value: object) -> tuple[float, float] | None:
+    """Return validated numeric envelope metadata, when present."""
+    if (
+        not isinstance(value, tuple)
+        or len(value) != 2
+        or not all(isinstance(item, (int, float)) for item in value)
+    ):
+        return None
+    return float(value[0]), float(value[1])
+
+
 def describe(settings_cls: type[AgentSettings]) -> list[TunableDoc]:
     """Introspect a settings class into its tunable catalogue.
 
@@ -105,6 +129,7 @@ def describe(settings_cls: type[AgentSettings]) -> list[TunableDoc]:
             info.json_schema_extra if isinstance(info.json_schema_extra, dict) else {}
         )
         unit = extra.get("unit")
+        envelope = _envelope(extra.get("envelope"))
         catalogue.append(
             TunableDoc(
                 name=name,
@@ -114,6 +139,9 @@ def describe(settings_cls: type[AgentSettings]) -> list[TunableDoc]:
                 minimum=_lower_limit(info),
                 maximum=_limit(info, "le"),
                 unit=str(unit) if unit is not None else None,
+                envelope_min=float(envelope[0]) if envelope is not None else None,
+                envelope_max=float(envelope[1]) if envelope is not None else None,
+                source=str(extra["source"]) if "source" in extra else None,
             )
         )
     return catalogue

@@ -115,3 +115,68 @@ def test_escaped_pipe_type_does_not_corrupt_tunable_cell(tmp_path, capsys):
 
     assert _checker()([str(tmp_path)]) == 0
     assert capsys.readouterr().out == ""
+
+
+def test_value_outside_its_envelope_warns_with_source(tmp_path, capsys):
+    """DD-04: An out-of-envelope value reports its value, band, and evidence source."""
+
+    _write_probe(
+        tmp_path,
+        fields=(
+            '    risk_limit: int = tunable(10, why="Bound synthetic risk.", '
+            'envelope=(20.0, 30.0), source="Synthetic research.")\n'
+        ),
+        rows=("| `risk_limit` | `10` | `int` | YES | Bound synthetic risk. |",),
+    )
+
+    assert _checker()([str(tmp_path)]) == 0
+    assert capsys.readouterr().out == (
+        "[WARN] probe.risk_limit value=10 envelope=(20.0, 30.0) "
+        "source=Synthetic research.\n"
+    )
+
+
+def test_value_inside_its_envelope_is_silent(tmp_path, capsys):
+    """DD-04: An in-envelope value produces no envelope warning."""
+
+    _write_probe(
+        tmp_path,
+        fields=(
+            '    risk_limit: int = tunable(25, why="Bound synthetic risk.", '
+            'envelope=(20.0, 30.0), source="Synthetic research.")\n'
+        ),
+        rows=("| `risk_limit` | `25` | `int` | YES | Bound synthetic risk. |",),
+    )
+
+    assert _checker()([str(tmp_path)]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_envelope_breach_never_fails_the_gate(tmp_path, capsys):
+    """DD-04: An envelope breach is visible but does not veto the sync gate."""
+
+    _write_probe(
+        tmp_path,
+        fields=(
+            '    risk_limit: int = tunable(10, why="Bound synthetic risk.", '
+            'envelope=(20.0, 30.0), source="Synthetic research.")\n'
+        ),
+        rows=("| `risk_limit` | `10` | `int` | YES | Bound synthetic risk. |",),
+    )
+
+    assert _checker()([str(tmp_path)]) == 0
+    assert "[WARN] probe.risk_limit" in capsys.readouterr().out
+
+
+def test_param_law_sync_still_passes(capsys):
+    """Conventions: The pre-existing PARAM/settings baseline remains 57 warnings."""
+
+    assert _checker()([]) == 0
+    output = capsys.readouterr().out
+    legacy_warnings = [
+        line
+        for line in output.splitlines()
+        if "settings field has no PARAM row" in line
+        or "PARAM row has no settings field" in line
+    ]
+    assert len(legacy_warnings) == 57

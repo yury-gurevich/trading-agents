@@ -34,6 +34,8 @@ class PortfolioManagerSettings(AgentSettings):
         why="Cap one new order at ten percent of portfolio value for first-slice risk.",
         ge=0.0,
         le=1.0,
+        envelope=(0.01, 0.05),
+        source="FCA COLL 5.2 — UCITS investment powers and limits",
     )
     max_positions: int = tunable(
         10,
@@ -41,12 +43,16 @@ class PortfolioManagerSettings(AgentSettings):
         ge=1,
         le=500,
         unit="positions",
+        envelope=(30.0, 60.0),
+        source="Evans and Archer, forty years later",
     )
     cash_buffer_pct: Decimal = tunable(
         Decimal("0.05"),
         why="Hold back cash so sizing does not consume the full paper account.",
         ge=0.0,
         le=0.95,
+        envelope=(0.02, 0.10),
+        source="Convention only; 2\N{EN DASH}10 % typical for unlevered long books",
     )
     min_order_quantity: int = tunable(
         1,
@@ -83,6 +89,8 @@ class PortfolioManagerSettings(AgentSettings):
         ),
         ge=0.0,
         le=1.0,
+        envelope=(0.15, 0.30),
+        source="When is an index too concentrated? — LSEG",
     )
     max_names_per_sector: int = tunable(
         3,
@@ -103,6 +111,11 @@ class PortfolioManagerSettings(AgentSettings):
         ge=20,
         le=250,
         unit="days",
+        envelope=(60.0, 252.0),
+        source=(
+            "Common practice 60\N{EN DASH}252 sessions; "
+            "shorter tracks regime, longer is stabler"
+        ),
     )
     correlation_threshold: float = tunable(
         0.50,
@@ -112,6 +125,8 @@ class PortfolioManagerSettings(AgentSettings):
         ),
         ge=0.0,
         le=1.0,
+        envelope=(0.6, 0.8),
+        source="Effect magnitudes — interpreting r = 0.7",
     )
     correlation_ceiling: float = tunable(
         0.90,
@@ -130,6 +145,10 @@ class PortfolioManagerSettings(AgentSettings):
         ),
         ge=0.0,
         le=1.0,
+        envelope=(0.15, 0.30),
+        source=(
+            "Tighter than the sector cap by design, which is the correct relationship"
+        ),
     )
     min_correlation_bars: int = tunable(
         60,
@@ -141,4 +160,6 @@ class PortfolioManagerSettings(AgentSettings):
         ge=20,
         le=250,
         unit="bars",
+        envelope=(13.0, 60.0),
+        source="Sample size determination for correlation studies",
     )

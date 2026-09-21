@@ -25,12 +25,16 @@ class ProviderSettings(ProviderFeedSettings):
         why="Reference protective stop; bounded below the PRD maximum risk cap.",
         ge=0.0,
         le=0.08,
+        envelope=(0.025, 0.08),
+        source="Chandelier Exit — ATR multiplier and lookback",
     )
     base_take_profit_pct: float = tunable(
         0.10,
         why="Reference reward target paired with the default stop-loss policy.",
         ge=0.01,
         le=1.0,
+        envelope=(0.05, 0.15),
+        source="Break-even win rate for a given reward:risk",
     )
     base_max_holding_days: int = tunable(
         10,

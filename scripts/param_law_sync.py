@@ -21,6 +21,7 @@ from scripts.param_law_sync_baseline import (
     TUNABLE_MISMATCH,
     IssueKey,
 )
+from scripts.param_law_sync_envelopes import envelope_warnings
 from scripts.param_law_sync_sources import (
     Location,
     ParamRow,
@@ -71,12 +72,14 @@ def check_root(root: Path) -> ParamSyncReport:
     )
     report = ParamSyncReport()
     for agent in _discover_agents(root):
-        for issue in _agent_issues(root, agent):
+        settings_cls = _settings_class(root, agent)
+        for issue in _agent_issues(root, agent, settings_cls):
             message = _format_issue(root, issue)
             if issue.key in baseline:
                 report.warnings.append(message.replace("[FAIL]", "[WARN]", 1))
             else:
                 report.errors.append(message)
+        report.warnings.extend(envelope_warnings(agent, settings_cls.model_fields))
     return report
 
 
@@ -89,8 +92,11 @@ def _discover_agents(root: Path) -> list[str]:
     ]
 
 
-def _agent_issues(root: Path, agent: str) -> list[ParamIssue]:
-    settings_cls = _settings_class(root, agent)
+def _agent_issues(
+    root: Path,
+    agent: str,
+    settings_cls: type[AgentSettings],
+) -> list[ParamIssue]:
     fields = settings_cls.model_fields
     params = param_rows(root, agent)
     settings_locations = settings_field_locations(root, agent)

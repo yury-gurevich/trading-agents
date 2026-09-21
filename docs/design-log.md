@@ -8,6 +8,32 @@ and is marked CLOSED here.
 
 ---
 
+## DL-194 - evidence envelopes disclose out-of-band parameters without vetoing a sweep - status: DECIDED (S207, 2026-09-21)
+
+**Context.** `tunable(why=...)` explained a default, while the `ge`/`le`/`gt` bounds on thirteen
+risk-shaping settings carried no evidence. Twelve of those bounds only restated the type shape, so
+the project could not distinguish a defensible band from a permissive placeholder under LAW-05
+`DD-04`.
+
+**Decisions.**
+
+1. **Store an optional evidence envelope and its required source in `tunable()` metadata.** The
+   kernel only carries a numeric range and citation; the values and finance evidence remain inline
+   in the three trading-pack settings modules under ADR-0012.
+2. **Warn, do not fail.** PARAM/settings sync reports an out-of-band default with the parameter,
+   value, envelope, and source, but remains exit 0. An experiment under ADR-0013 must be able to
+   surface an interesting out-of-band value without a CI veto.
+3. **Do not tighten a field rail here.** The current `ge`/`le`/`gt` values and every default are
+   unchanged. A future real safety rail is an ADR decision informed by the warning record.
+
+**Rejected routes.**
+
+- *Put risk values or sample citations in `kernel/`.* Rejected: that crosses the platform/pack wall.
+- *Move envelopes to a pack file and add another synchronization gate.* Rejected: it separates a
+  parameter from its provenance and creates a second source of truth for rarely changing evidence.
+- *Add a new CI step or make a breach fail PARAM/settings sync.* Rejected: the existing step is the
+  right observation point, and a hard failure would block the continuous-improvement loop.
+
 ## DL-193 - the skip count is an environment fingerprint - status: DECIDED (S222, 2026-09-21)
 
 **Context.** S222's handback stated, in the field the spec added for exactly this purpose, that

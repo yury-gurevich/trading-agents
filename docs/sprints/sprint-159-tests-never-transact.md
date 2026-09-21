@@ -7,7 +7,7 @@
 **Version:** fix → **0.86.03** (PATCH: last two digits)
 **Effort:** S–M
 **Decisions:** [row T](../hardening-backlog.md) · [DL-70](../design-log.md) plant the violation ·
-[DL-57](../design-log.md)/[DL-59](../design-log.md) intent ≠ outcome · [LAW-02](../../ops/laws/LAW-02-proof.md)
+[DL-57](../design-log.md)/[DL-59](../design-log.md) intent ≠ outcome · [LAW-02](../../ops/laws/LAW-02-successful-execution.md)
 success is proven · [S133](sprint-133-servicebus-sas.md) entity-level SAS ·
 [S158](sprint-158-fail-open-must-be-loud.md) the bundle-miss fix on this same settings object
 

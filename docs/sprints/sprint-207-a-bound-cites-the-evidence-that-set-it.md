@@ -177,7 +177,7 @@ not veto its own improvement loop. Copy the shape the PARAM/settings gate alread
 
 ### 3. The platform/pack wall — the mechanism is kernel, the numbers are not
 
-[ADR-0012](../decisions/0012-platform-substrate-and-trading-pack.md): `kernel/` is domain-agnostic
+[ADR-0012](../decisions/0012-platform-domain-separation.md): `kernel/` is domain-agnostic
 substrate. **The `envelope=`/`source=` machinery belongs there; "UCITS caps an issuer at 5 %" does
 not.** The values live inline in each agent's settings file, which is already trading-pack code.
 🪤 **A default envelope, an example band, or a finance citation inside `kernel/config.py` is a wall

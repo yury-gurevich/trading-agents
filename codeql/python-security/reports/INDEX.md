@@ -42,5 +42,5 @@ otherwise run the query from the query-specific index first.
 .\scripts\clean_codeql_reports.ps1 -AllArchives -WhatIf
 ```
 
-See [codeql/python-security/README.md](../README.md) for full documentation of
+See [codeql/README.md](../../README.md) for full documentation of
 the query pack, configuration choices, and file layout.

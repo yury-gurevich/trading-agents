@@ -29,7 +29,7 @@ itself, [DL-98…DL-104](../design-log.md) for the reasoning, and
 sprint doc of its own** — the second-vendor work is recorded in `chore-openai-cutover.md` and DL-99.
 
 - **A deploy now keeps the switches it was given (fix, `0.90.10`, 2026-08-14 — closes
-  [DL-100](design-log.md), [S169](sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
+  [DL-100](../design-log.md), [S169](../sprints/sprint-169-one-switch-and-a-deploy-that-keeps-it.md)).**
   The three model tunables resolve from the **provider**, so `DELIBERATOR_LLM_PROVIDER` is the whole
   switch, and `role_models` records the resolved name — asserted on the written node. Operator
   tunables and the cron move into `orchestration/packs/trading_tunables.json`; `up` sweeps every
@@ -39,7 +39,7 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   `-DropEnv` the three `DELIBERATOR_*_MODEL=gpt-5.5` overrides or the fleet keeps masking the new path.
 
 - **The audit-clause sweep, and one guard that had never been exercised (docs + test-only,
-  2026-08-14 — [DL-111](design-log.md)).** The queue's *"17 audit-type rows"* measured **13**; **9**
+  2026-08-14 — [DL-111](../design-log.md)).** The queue's *"17 audit-type rows"* measured **13**; **9**
   were green and in scope and **5 were demoted**, the cited test proving something adjacent to the
   clause each time. Ledger reconciled (analyst 24→23, execution 32→30, provider 17→16). Two are
   **false in code**, now drift rows: **DRIFT-039** `portfolio_state_snapshot` exists nowhere in the
@@ -97,8 +97,8 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   outputs. 🪤 **The `effort` defect survived at 100 % coverage because the test asserted the stored
   attribute rather than what reached the wire** — the DL-97 shape again, and the reason the new test
   pins the request, not the object. Packaged
-  [S172](sprints/sprint-172-independent-debates-run-independently.md) (concurrency) and
-  [S173](sprints/sprint-173-a-verdict-must-be-reproducible.md) (verdict reproducibility on Batches).
+  [S172](../sprints/sprint-172-independent-debates-run-independently.md) (concurrency) and
+  [S173](../sprints/sprint-173-a-verdict-must-be-reproducible.md) (verdict reproducibility on Batches).
 
 ---
 
@@ -115,7 +115,7 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
   (`-File` semantics); the call operator `& ./infra/deploy-agents.ps1` is what binds the array.
 
 - **The veto read word counts as article counts, and the fleet caught up (fix, `0.90.11`,
-  2026-08-15 — [DL-112](design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
+  2026-08-15 — [DL-112](../design-log.md)).** `sched-2026-08-14` completed **8/8** and put 9 PM
   approvals to the deliberator; **8 came back vetoed and 1 order reached the broker**. Reading the
   verdicts: **5 of the 8 cite defects S175 had already fixed but which were not deployed** (the
   invented ATR fragment on AMZN/MDLZ; sector/batch absence read as zero exposure on AVGO/CSCO/GOOGL).
@@ -131,9 +131,9 @@ sprint doc of its own** — the second-vendor work is recorded in `chore-openai-
 
 Older sprints — **the two S176 deploys (`0.90.10`/`0.90.11`), the deliberation-constraint
 measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.01`) →
-[STATE-08.md](state-archive/STATE-08.md)**;
-`0.89` and below → [STATE-07.md](state-archive/STATE-07.md); earlier arcs (S36→S146) in
-[STATE-01…06](state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
+[STATE-08.md](../state-archive/STATE-08.md)**;
+`0.89` and below → [STATE-07.md](../state-archive/STATE-07.md); earlier arcs (S36→S146) in
+[STATE-01…06](../state-archive/INDEX.md). Full chronological list: `docs/sprints/README.md`.
 
 ---
 
@@ -167,15 +167,15 @@ measurement (`0.90.02`, DL-105) and the S166→S171 veto arc (`0.89.07`–`0.90.
 
 🟩 **SUPERSEDED BY `s190`** — `s187` deployed 2026-08-30, 16/16 verified; its runtime half landed on `sched-2026-08-31`.
 
-🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](design-log.md) outage is **over** (the
+🟩 **PROVEN — BOTH PROVIDERS RETURN HTTP 200, 2026-08-30**; the [DL-125](../design-log.md) outage is **over** (the
 Anthropic half was an **operator-set** spend limit, not credit). 🟩 **And now from inside the fleet too**, via S188.
 
 🟩 **SHIPPED AND DEPLOYED IN `s187`, both 2026-08-30** — detail in their sprint docs.
-**[S187](sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
+**[S187](../sprints/sprint-187-a-parameter-is-declared-once.md)** `7d36771` (`0.92.02`): `make ci` gained a **12th step**,
 PARAM/settings sync. 🚨 Its audit found **20× its scope** — 60 divergences across nine agents, 3 fixed and **57
-baselined warning-only** ([DL-133](design-log.md) decision 3, DRIFT-052, work-queue item 33).
-**[S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
-batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](design-log.md)).
+baselined warning-only** ([DL-133](../design-log.md) decision 3, DRIFT-052, work-queue item 33).
+**[S186](../sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md)** `81b82ee` (`0.92.01`):
+batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX **24 / 47** ([DL-132](../design-log.md)).
 🪤 Its gate proof named `4b0daaf` and I re-ran it on the tip — the docs-commit-on-top trap, which S188 nearly repeated.
 
 ---
@@ -183,22 +183,22 @@ batch-scoped duplicate-headline weighting, analyst laws **v1.2**, ledger + INDEX
 **Fourth entry appended 2026-09-02.** The 2026-09-01 *three owed items closed* block moved down from [`../STATE.md`](../STATE.md) under the under-200-line rule, once its results were settled and recorded in [DL-142](../design-log.md), [DL-143](../design-log.md), [DL-144](../design-log.md) and the functionality-check register. It covers the day work-queue items **36**, **39** and **40** were closed or filed, with no code change and no version bump.
 
 🟩 **PROVEN RESULT — THREE OWED ITEMS CLOSED, 2026-09-01. No code changed, no version moved.** 🟩 **Item 39** by prevention
-([DL-142](design-log.md)): `required_status_checks.strict` and `allow_update_branch` both **`false` → `true`**, so the gated head *is* the merged tree; exactly one field changed and both open PRs flipped to `BEHIND`.
-🟩 **Item 36's refusal half** with a control arm ([DL-144](design-log.md)): a wrong Alpaca key gave `ActivationRefused` with `AgentInstance` **unmoved**; the real key **activated**.
+([DL-142](../design-log.md)): `required_status_checks.strict` and `allow_update_branch` both **`false` → `true`**, so the gated head *is* the merged tree; exactly one field changed and both open PRs flipped to `BEHIND`.
+🟩 **Item 36's refusal half** with a control arm ([DL-144](../design-log.md)): a wrong Alpaca key gave `ActivationRefused` with `AgentInstance` **unmoved**; the real key **activated**.
 🟩 **S191 needed no cascade** — no deployed agent runs the acceptance view — so it was proven over **all 55 runs on the spine**, which is what surfaced item 40.
 
 ---
 
 **Fifth entry appended 2026-09-02.** Two settled `Now` blocks moved down from [`../STATE.md`](../STATE.md) under the under-200-line rule, which STATE had been bumping every session: **S189** (`0.94.00`, LLM stop reasons, shipped and deployed in `s190`) and **work-queue item 34** (`0.94.01`, deploy preflight imports its own steps). Both are closed with their detail in the sprint docs and design log.
 
-🟩 **PROVEN RESULT — [S189](sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
+🟩 **PROVEN RESULT — [S189](../sprints/sprint-189-an-empty-answer-says-why-it-is-empty.md) merged `934ffb5`
 (`0.94.00`), 2026-08-31.** A vendor-declared truncation or refusal is now a sanitized stop error, not an empty
 string: empty debate turns cannot enter transcripts, a stopped judge keeps fail-safe `revise` with an honest
 reason, every `LLMCall` carries `stop_reason`, and `max_tokens` gains `le=8192` (4096 had been both default
 *and* ceiling). **DL-119 contamination settled** — one empty judge call inside its four binding runs, an
-asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](design-log.md), DRIFT-054;
+asterisk not a retraction. Deliberator laws **v1.1**, rollup **9 / 51**, [DL-137](../design-log.md), DRIFT-054;
 `GATE PROVEN` for the merged SHA, post-merge CodeQL success. 🟩 Its temporary CodeQL baseline is already
-pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](design-log.md)).
+pruned **4 keys → 1**, **0 open error-level**, closure verified *first* ([DL-138](../design-log.md)).
 🟢 **Deployed `s190` 2026-09-01** — its `stop_reason` pack move is part of what forced the full `up`.
 
 🟩 **PROVEN RESULT — WORK-QUEUE ITEM 34 IS CLOSED, merged `6b4463c` (`0.94.01`), 2026-08-31.** `up`'s preflight runs
@@ -216,10 +216,10 @@ Moved verbatim to keep `STATE.md` under its 200-line rule. Both are fully shippe
 
 🟩 **PROVEN RESULT — FLEET DEPLOYED `s190` THEN `s191`, 2026-09-01** (from `s187`). 16/16 on tag, scale **diffed** to zero drift, cron intact, `DeployRecord` on the
 build run's own SHA. 🚨 **S190 could not travel alone** — the vocabulary pack had moved, so a retag would have met the fail-closed write guard mid-cascade
-(S148/[DL-85](design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**, **`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges
+(S148/[DL-85](../design-log.md)); the full `up` carried **S190 + S189 + S188 + item 34**, alembic a **no-op**, **`ENV PRESERVATION` 16/16**. 🪤 Two Dependabot merges
 had reached `main` ungated and the images came from them — now closed as item 39.
 
-🟩 **PROVEN RESULT — [S190](sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
+🟩 **PROVEN RESULT — [S190](../sprints/sprint-190-one-liveness-question-one-answer.md) MERGED `193e71b`
 (`0.94.02`), 2026-08-31.** `contracts/broker_lifecycle.py` is the single place execution broker-fact liveness is
 asked: a fired stop stops being counted as protection, a resting-stop `Fill` is no longer an open order, and the
 stale-order sweep compares **live broker stop to live graph stop**. Six status vocabularies collapse into one, and
@@ -232,15 +232,15 @@ after** (28/28, same order IDs). Torn down with `pg_teardown --run-id` — **ite
 
 ## Split from STATE.md 2026-09-13 (S202) — S188 and S172, both long since shipped
 
-🟩 **PROVEN RESULT — [S188](sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
+🟩 **PROVEN RESULT — [S188](../sprints/sprint-188-a-credential-is-tested-before-it-is-handed-over.md) merged `108475c`
 (`0.93.00`), 2026-08-30.** Master refuses activation on a rejected required credential, separates transport failure
 so a DNS blip cannot halt the fleet, records sanitized evidence on `AgentInstance`; laws **v1.2**, `GATE PROVEN` for
 the merged SHA, post-merge CodeQL clean. 🚨 A merge-review correction flipped the *primary* OHLCV credential to
-required ([DL-136](design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09-01:** 15/15 agents `active` and the
+required ([DL-136](../design-log.md) amendment). 🟩 **PROVEN IN THE FLEET 2026-09-01:** 15/15 agents `active` and the
 tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/2; 0 failed, 0 `Escalation`.
-🟩 **AND THE REFUSAL HALF, 2026-09-01** ([DL-144](design-log.md)) — a broken credential refuses, a control arm activates. **Item 36 is closed.**
+🟩 **AND THE REFUSAL HALF, 2026-09-01** ([DL-144](../design-log.md)) — a broken credential refuses, a control arm activates. **Item 36 is closed.**
 
-🚨 **[S172](sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](design-log.md), [DL-145](design-log.md)). Same image, same K=4, five hours apart:
+🚨 **[S172](../sprints/sprint-172-independent-debates-run-independently.md) MEASURED, THEN RE-MEASURED THE SAME DAY, AND THE PREMISE MOVED** ([DL-140](../design-log.md), [DL-145](../design-log.md)). Same image, same K=4, five hours apart:
 **15/15 debated, 0 fail-opens** where the first run had 13 and 2 — the correctness failure is **intermittent and did not reproduce**. But the speed miss did, **1.78x of a possible 4x**, which
 **separates the two symptoms and falsifies DL-140's guess** that they were one defect. 🚨 **The 2026-09-01 orphan count remains UNKNOWN, not zero:** pre-S194 rows/logs cannot re-derive it. 🟩 **S194 now records the per-run count on every future `DeliberationRun`, so S192 can diagnose from measured data instead of first building the instrument.**
 
@@ -251,16 +251,16 @@ tests **ran** — provider 4/4, execution 1/1, operator 1/1, each deliberator 2/
 Both were merged and deployed on 2026-09-02 and are closed; they moved here when S203's *Now*
 entry landed. Their links are unchanged, and both are still cited from `work-queue.md`.
 
-🟩 **PROVEN RESULT — [S194](sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
+🟩 **PROVEN RESULT — [S194](../sprints/sprint-194-a-number-nobody-records-is-a-number-nobody-has.md) MERGED `e0a144f` (`0.94.05`) **AND DEPLOYED `s194`**, 2026-09-02.** `DeliberationRun` records `orphaned_reply_count` as a
 **per-run delta**; the two-runs-one-client trap earned its place — the naive cumulative write failed `assert 3 == 1`. 🟩 **Verified independently:** `GATE PROVEN` for `e7699af` with the printed SHA checked
 against `HEAD`, delta at `poll.py:63/94`, `DLIB-OBS-04` present. 🟩 **Deployed by full `up` (never a retag — the pack moved):** `ENV PRESERVATION` **16/16**, alembic OK, **16/16 on `s194`**, **16/16 `Succeeded`**,
 cron `30 22 * * 1-5` intact, and scale/KEDA **diffed identical to the pre-deploy baseline apart from the tag**. 🎯 **The check that matters for a pack move:** the *deployed* `GRAPH_VOCABULARY_B64` decodes to
 **`d47e88b1…`, byte-identical to the repo pack**, with `orphaned_reply_count` declared — image and pack travelled together, so the fail-closed guard will accept the write. `DeployRecord` on the build run's own SHA.
 🟩 **It has now recorded:** `sched-2026-09-02` wrote **`orphaned_reply_count=0`** — the first datapoint S172's criterion has ever had (*Now*). 🚨 Two hazards stand from verifying, neither
-in the code ([DL-148](design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
+in the code ([DL-148](../design-log.md)): a **CRLF regression was reported as a fix** (three evidence docs, converted back) and **two different `v1.2` deliberator law versions** now exist, S194's on `main` and S172's on its
 branch — git may merge them **without a conflict**, so whoever merges S172 renumbers it to v1.3.
 
-🟩 **PROVEN RESULT — [S193](sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
+🟩 **PROVEN RESULT — [S193](../sprints/sprint-193-a-shim-that-never-runs-is-not-a-shim.md) MERGED `a9603d7` (`0.94.04`), 2026-09-02** — work-queue **item 40 closed**. `_accept_historical_passed` now accepts any
 `Mapping`, so S184's shim runs against the type the store actually returns; the tests round-trip through a real `GraphStore`, which is what nothing had ever done. 🟩 **Verified independently, not accepted:**
 `GATE PROVEN` for `72e063b` with the printed SHA checked against `HEAD`, PATCH bump correct, and **the sweep re-run here: 56 runs, `0 ERROR`, 54 `FAIL`, 2 `PASS`.** 🪤 The handback moved `FAIL` 16 → 54
 without explaining it; it accounts for exactly — the **38** formerly-unreadable runs are now readable and legitimately red on old data (16 + 38 = 54), and `PASS` 1 → 2 is the overnight run arriving.

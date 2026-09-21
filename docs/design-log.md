@@ -897,7 +897,7 @@ Split the recent runs by `deliberation_status`:
 
 🚨 **Every order that has reached the broker since 2026-09-01 did so because the referee was broken — 9 of 9.** The four fail-open nights are exactly item 55's blind-night signature (empty-string response hash, sub-second latency). So the operator's bar — *the pack trades unattended for a sustained stretch* — is currently satisfiable **only while the referee is down**, which is not a bar anyone wants cleared that way.
 
-All-time the rate has moved the wrong way: **28** real-debate runs, **220** reviewed, **174** vetoed = **79.1 %** (`revise` 152, `uphold` 46, `overturn` 22), against [DL-119](design-log.md)'s 73 %. [ADR-0023](decisions/0023-the-pm-gets-an-issuer-and-a-correlation-dimension.md) predicted S184's issuer/correlation dimension would lower it. **Measured false.**
+All-time the rate has moved the wrong way: **28** real-debate runs, **220** reviewed, **174** vetoed = **79.1 %** (`revise` 152, `uphold` 46, `overturn` 22), against [DL-119](design-log.md)'s 73 %. [ADR-0023](decisions/0023-concentration-is-issuer-and-correlation-not-a-vendor-label.md) predicted S184's issuer/correlation dimension would lower it. **Measured false.**
 
 ### 2. The leading veto ground is structurally guaranteed
 
@@ -943,7 +943,7 @@ Measured against the live spine on 2026-09-15 at `main` @ `deca4e9`, fleet on `:
 
 The spine holds **273** `OrderIntent` nodes, but only **35** carry gate outcomes at all. The other **238** are pre-S183/S184 records from 2026-07-07 to mid-August whose `gate_report` entries have `outcome: null`; outcome recording begins **2026-08-20**. So item 60's *"170 of 170"* and item 61's *"31 of 181"* are both counted over the wrong population. The honest denominator for any gate-outcome claim is **35 approved orders across 15 trading days**.
 
-The lesson is the one [S186](sprints/sprint-186-a-citation-is-checked-not-remembered.md) already taught in another form: a number carried between reviews is a number nobody re-derived.
+The lesson is the one [S186](sprints/sprint-186-a-headline-about-twenty-companies-is-not-news-about-one.md) already taught in another form: a number carried between reviews is a number nobody re-derived.
 
 ### 1. `reward_risk` is a constant, and not only in the observed sample
 
@@ -984,7 +984,7 @@ But all 35 recorded evaluations are `passed` - 0 failed, 0 not-evaluated - and t
 
 ### 4. What the census already shows, and why the 0.70 cutoff is not a defect
 
-[S197](sprints/sprint-197-an-evaluated-gate-names-what-it-examined.md)'s `PM-OBS-03` census is in production on 7 records, and it is doing its job:
+[S197](sprints/sprint-197-a-gate-says-what-it-examined.md)'s `PM-OBS-03` census is in production on 7 records, and it is doing its job:
 
 ```text
 2026-09-14 WFC  cluster_issuers=USB,WFC; examined_issuers=24; correlated_issuers=USB:0.7054;
@@ -4056,7 +4056,7 @@ the catalogue — twice. Whatever review caught the parameters did not think of 
 `Literal["paper", "broker_shadow", "live_manual", "live_autopilot"]`, so on its face the paper/live
 switch and the most consequential value in the system. But: the graph is authoritative
 (`current_stage_from_graph` prefers the latest `StageTransition`, falling back to the env value only
-when none exists), and [`run.py:51`](../../agents/execution/run.py#L51) rejects outright —
+when none exists), and [`run.py:51`](../agents/execution/run.py#L51) rejects outright —
 `if stage not in ("paper", "broker_shadow"): return live_gate_rejected(...)`. **Both live stages
 reject every order; the live submission path is not built.** So a stray `EXECUTION_STAGE` cannot
 trade real money. 🪤 **The defect is that it carries no recorded `why` and is invisible to the

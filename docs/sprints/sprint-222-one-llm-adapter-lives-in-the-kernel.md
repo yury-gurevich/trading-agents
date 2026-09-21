@@ -6,7 +6,7 @@
 **Status:** SPEC
 **Version:** *next available PATCH at merge*
 **Effort:** M
-**Decisions:** work-queue item **7** · `DL-191` (next free at spec time — re-check it at merge) · [DL-101](../design-log.md) filed the split · DL-100 fixed the per-provider model default
+**Decisions:** work-queue item **7** · `DL-191` records the clause-status correction; take the **next free** number for your own decisions and re-check it at merge · [DL-101](../design-log.md) filed the split · DL-100 fixed the per-provider model default
 
 > **Why this bump kind.** PATCH. Nothing gains a capability: the same two agents call the same two
 > vendors with the same guarantees. Code moves, duplication goes, and one import stops crossing a
@@ -27,11 +27,34 @@
 Binding clauses: **`DLIB-OUT-05`**, **`DLIB-FAIL-04`**, **`DLIB-SEC-02`**, **`DLIB-OBS-05`**,
 **`OPR-SEC-01`**, **`OPR-DEP-01`**.
 
+### Clause status — measured 2026-09-21, read this before you believe anything else
+
+| Clause | Status | What proves it today |
+| --- | --- | --- |
+| `DLIB-OUT-05` | 🟩 green | `test_stop_reason_fail_open.py` |
+| `DLIB-FAIL-04` | 🟩 green | `test_deliberator_anthropic.py` |
+| `DLIB-OBS-05` | 🟩 green | named in the deliberator test plan |
+| `DLIB-SEC-02` | 🔴 **⬜ gray** | **`_tbd_`** — the test-plan row literally says so |
+| `OPR-SEC-01` | 🔴 **⬜ gray** | — |
+| `OPR-DEP-01` | 🔴 **⬜ gray** | — |
+
+🚨 **CORRECTION, 2026-09-21.** An earlier draft of this spec said *“all are green today”*. That was
+**wrong and unmeasured**: `grep` finds **no test anywhere citing `DLIB-SEC-02`, `OPR-SEC-01` or
+`OPR-DEP-01`**, and most of the operator's `SEC`/`DEP` block is gray. 🎯 **The builder caught it by
+reading the law files and stopping, which is the MUST RULE working exactly as intended** — the
+rule earns its place here rather than in a checklist.
+
+**What this changes for you.** The *behaviour* exists in the code either way: the key is already kept
+out of logs, and the operator already calls only Anthropic. What is missing is a **test that says so**.
+Since this sprint moves precisely that code, it is the right moment to prove them — so **A5 and A10
+below turn all three gray clauses green**, and that is now in scope rather than a bonus.
+
 ### The rule
 
 1. **Before writing code**, read every law file in the map below — whole file, first time.
-2. Read each agent's `test-plan.md` beside its `laws.md`. The clauses above are **green today**; a
-   regression here **un-proves a green clause**, which is worse than a new bug.
+2. Read each agent's `test-plan.md` beside its `laws.md`. 🚨 **Three of the six are green and three are NOT** — the table below is measured, and an
+   earlier draft of this spec asserted all six were green without checking. Treat the two groups
+   differently: do not regress a green one, and do not claim a gray one was kept green.
 3. Read [`docs/laws/conventions.md`](../laws/conventions.md) and [`docs/laws/drift-register.md`](../laws/drift-register.md).
 4. **Answer the law-cycle question below** before step 5.
 5. **Write the Law reading record** (template at the bottom) **before** your first code change.
@@ -77,8 +100,8 @@ At merge there is **one** Anthropic adapter and **one** OpenAI adapter in the re
 `kernel/`, reached through one factory in `kernel/`. `agents/deliberator/llm_anthropic.py`,
 `agents/deliberator/llm_openai.py`, `agents/deliberator/llm_factory.py` and
 `agents/operator/llm_anthropic.py` no longer exist. `surfaces/dashboard/chat_binding.py` imports from
-`kernel`, not from an agent. Every clause listed above is still green, and no agent gained or lost a
-capability.
+`kernel`, not from an agent. The three green clauses are still green, the three gray ones are now
+**proven** by tests that cite them, and no agent gained or lost a capability.
 
 ## Why (context)
 
@@ -192,6 +215,7 @@ entries are prepended *and* appended. `DL-190` is taken (S221).
 | A7 | Per-provider default model is preserved | provider with no model named | anthropic → `claude-opus-5`, openai → `gpt-5.5`; never the other vendor's name (DL-100) |
 | A8 | `FakeLLMClient` is unchanged | existing users | `run_local.py` and the existing suites still pass against it |
 | A9 | Layering holds | `import-linter` | `kernel` imports nothing from `contracts`, `agents`, `orchestration` or `surfaces` |
+| A10 | 🎯 The operator's sole external call is Anthropic | the operator's construction path | no OpenAI client is reachable from the operator — cites `OPR-DEP-01` and moves it ⬜ → 🟩 |
 
 ---
 
@@ -200,7 +224,8 @@ entries are prepended *and* appended. `DL-190` is taken (S221).
 - [ ] `agents/deliberator/llm_anthropic.py`, `llm_openai.py`, `llm_factory.py` and `agents/operator/llm_anthropic.py` are **deleted**, and A1 would fail if any came back.
 - [ ] Both agents reach their vendor through one kernel factory; the operator still calls Anthropic only.
 - [ ] `surfaces/dashboard/chat_binding.py` imports nothing from `agents.*`'s adapter internals.
-- [ ] Every clause in the law map is still green, with its test citing the clause ID.
+- [ ] `DLIB-OUT-05`, `DLIB-FAIL-04` and `DLIB-OBS-05` are still green, each with its test citing the clause ID.
+- [ ] `DLIB-SEC-02`, `OPR-SEC-01` and `OPR-DEP-01` move ⬜ → 🟩: a passing functional test cites each one, its `test-plan.md` row names that test, and the rollups in `docs/laws/ledger.md` and `docs/laws/INDEX.md` follow. 🪰 **The rollup is derived — let `make ci` tell you the number.**
 - [ ] No new tunable, no PARAM row, no law amendment — or the sprint stopped and reported.
 - [ ] Design decisions recorded with rejected alternatives.
 - [ ] Every new guard planted, watched to fail, restored — stated per guard.
@@ -221,7 +246,8 @@ attribution is the point of the veto (DL-100).
 
 🪤 **A key leaks during a move, not during a design.** A reraise that adds context, a debug log added
 while porting, a `repr()` of a config object — all of them put the key somewhere new.
-`DLIB-SEC-02`/`OPR-SEC-01` are green today; keep them green with A5.
+`DLIB-SEC-02`/`OPR-SEC-01` are **gray** today — nothing would have told you if a key leaked. A5 is what
+makes them green, so write it before you move anything, not after.
 
 🪤 **The tests are the proof those clauses are green.** Moving code and leaving its tests behind
 un-proves a clause while `make ci` stays green, because coverage does not know which clause a test
@@ -281,8 +307,13 @@ MUST RULE - BEFORE YOU OPEN AN EDITOR
 Read agents/deliberator/laws/laws.md + test-plan.md and agents/operator/laws/laws.md + test-plan.md,
 plus docs/laws/conventions.md and docs/laws/drift-register.md. Fill the "Law reading record" at the
 bottom of the spec. Binding clauses: DLIB-OUT-05, DLIB-FAIL-04, DLIB-SEC-02, DLIB-OBS-05,
-OPR-SEC-01, OPR-DEP-01. ALL ARE GREEN TODAY - a regression un-proves a green clause, which is worse
-than a new bug. If a law contradicts the spec, STOP AND REPORT.
+OPR-SEC-01, OPR-DEP-01.
+STATUS, MEASURED 2026-09-21 - DLIB-OUT-05, DLIB-FAIL-04 and DLIB-OBS-05 are GREEN; DLIB-SEC-02,
+OPR-SEC-01 and OPR-DEP-01 are GRAY, and no test anywhere cites them (DLIB-SEC-02's test-plan row
+literally reads `_tbd_`). Do not regress a green one. The gray three get PROVEN by this sprint:
+A5 cites DLIB-SEC-02 and OPR-SEC-01, A10 cites OPR-DEP-01, each test-plan row names its test, and
+the rollups in docs/laws/ledger.md and docs/laws/INDEX.md follow - derived, so let make ci tell you
+the number. No laws.md amendment: the clause TEXT does not change, only its proof. If a law contradicts the spec, STOP AND REPORT.
 
 LAW-CYCLE ANSWER IS "No", AND HOLDING IT IS A SCOPE RULE
 contracts/ is untouched and no agent gains a guarantee. Where code LIVES is not a guarantee. BUT:
@@ -376,6 +407,8 @@ An incomplete handback is returned, not repaired (DL-48).
 **Laws found silent where a decision was needed:** *(fill)*
 
 **Clauses that were green and are still green:** *(fill — name the test that proves each, post-move)*
+
+**Clauses that were ⬜ and are now proven:** *(fill — `DLIB-SEC-02`, `OPR-SEC-01`, `OPR-DEP-01`, their tests, and the rollup `make ci` computed)*
 
 ---
 

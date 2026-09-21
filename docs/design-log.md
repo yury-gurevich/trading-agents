@@ -8,6 +8,42 @@ and is marked CLOSED here.
 
 ---
 
+## DL-191 - a spec may not assert a clause is proven; it must read the test plan - status: DECIDED (S222, 2026-09-21)
+
+**Context.** S222's MUST RULE told the builder to stop and report if a law contradicted the spec.
+It did, on its first pass, before editing anything: the spec asserted that all six binding clauses
+were **green today**, and three of them are not. Measured on `main` the same hour:
+`DLIB-OUT-05`, `DLIB-FAIL-04` and `DLIB-OBS-05` are green; **`DLIB-SEC-02`, `OPR-SEC-01` and
+`OPR-DEP-01` are gray**, `DLIB-SEC-02`'s test-plan row reads **`_tbd_`**, and `grep` finds **no
+test anywhere citing any of the three**.
+
+The claim was never measured. It was written in the same confident voice as the measured rows beside
+it, which is exactly the failure this repo has already named in sprint residue: a named assumption is
+a decision, a discovered one is a miss.
+
+**Decisions.**
+
+1. **A spec states clause status as a measured table, per clause, with the test that proves it** -
+   never as a blanket sentence. A clause with no test is written as gray with its row's own `_tbd_`,
+   so the builder reads the same fact the test plan holds.
+2. **The gray clauses are proven inside S222 rather than noted and left.** The sprint moves exactly
+   the code those clauses govern - the key handling and the operator's sole external call - so the
+   tests it already planned (A5, and a new A10) now cite `DLIB-SEC-02`, `OPR-SEC-01` and
+   `OPR-DEP-01`, their test-plan rows name those tests, and the rollups follow. No `laws.md`
+   amendment: the clause text does not change, only its proof.
+3. **The MUST RULE stays as written.** It cost one handback round trip and caught a false premise
+   before any code moved. That is the trade it exists to make.
+
+**Rejected routes.**
+
+- *Correct the sentence and carry on.* Rejected: it leaves three security and dependency clauses
+  asserted-but-unproven while the sprint has its hands on the only code that could prove them.
+- *Prove them in a separate follow-up sprint.* Rejected: the tests are already in S222's plan, and a
+  follow-up would have to re-derive the same context to write them.
+- *Drop the gray clauses from the binding list so the spec becomes true.* Rejected - it makes the
+  document consistent by making it less useful, and `OPR-SEC-01` is the clause that says the operator
+  holds no API keys.
+
 ## DL-190 - repository rules are checked without parsing Markdown code - status: DECIDED (S221, 2026-09-21)
 
 **Context.** `make markdown` reads local document structure only, so 123 dead relative links and a

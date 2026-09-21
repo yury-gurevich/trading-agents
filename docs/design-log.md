@@ -8,6 +8,38 @@ and is marked CLOSED here.
 
 ---
 
+## DL-190 - repository rules are checked without parsing Markdown code - status: DECIDED (S221, 2026-09-21)
+
+**Context.** `make markdown` reads local document structure only, so 123 dead relative links and a
+misformatted package version both passed the main gate. S221 adds two offline checks for rules already
+declared in `CLAUDE.md`; it does not create a new agent policy.
+
+**Decisions.**
+
+1. The link checker masks fenced blocks before it finds headings or links and masks inline code spans
+  before it finds links. GitHub anchors retain inline-code text while dropping its backticks, so heading
+  slugging keeps that content. The measured `` `probes[probe](env)` `` case is therefore syntax, not a
+  special-case ignore.
+2. A label is a path claim only when its complete visible text is a whitespace-free, POSIX-like filename
+  ending in an extension, such as `codeql/python-security/README.md` or `README.md`. It matches when
+  it resolves to the destination from the source directory, repository root, or `docs/` root; a bare
+  filename also matches its target basename. These are the four forms already used in tracked docs.
+  Ordinary prose and labels without a filename extension remain prose; that boundary catches the repair
+  lie without turning editorial link labels into false positives.
+3. The scan follows `git ls-files "*.md"` and excludes the same trees as `.markdownlint-cli2.jsonc`:
+  local dependency/virtualenv/scratch trees plus generated `codeql/python-security/reports/` evidence.
+  Explicit file operands exist only for unit and gate-self-test probes; the no-argument gate command
+  retains the tracked-file scope.
+
+**Rejected.** An ignore for the `probes[probe](env)` text was rejected because it would accept a parser
+false positive as permanent debt. An off-the-shelf checker was rejected because external-link checking
+requires network access and a platform-specific binary or package. A Markdownlint custom rule was
+rejected because `make markdown` is not in `make ci`. Labels containing ordinary prose were rejected as
+path claims because link text is not generally a filename. A baseline of old failures was rejected: the
+repaired tree has zero known breakage, so a baseline would only permit its return.
+
+---
+
 ## DL-189 - the correlation cluster applies disclosed rounded ramp weights - status: DECIDED (S220, 2026-09-21)
 
 **Context.** [ADR-0030](decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) accepts a

@@ -52,6 +52,8 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run python scripts/check_module_header.py $(PKGS) scripts
 	uv run python scripts/check_law_coverage.py
 	uv run python scripts/check_param_law_sync.py
+	uv run python scripts/check_markdown_links.py
+	uv run python scripts/check_version_scheme.py
 	uv run pytest
 # DL-184: diskcache PYSEC-2026-2447 has no fix release and reaches no container
 # (it arrives via the optional `optimizer` extra, which no Dockerfile installs).

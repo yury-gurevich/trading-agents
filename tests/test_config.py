@@ -6,6 +6,9 @@ import pytest
 from pydantic import ValidationError
 from pydantic_settings import SettingsConfigDict
 
+from agents.analyst.settings import AnalystSettings
+from agents.portfolio_manager.settings import PortfolioManagerSettings
+from agents.provider.settings import ProviderSettings
 from kernel import AgentSettings, describe, tunable
 
 
@@ -82,3 +85,78 @@ def test_describe_catalogues_exclusive_lower_bound():
     assert row.env_var == "STRICT_FRACTION"
     assert row.minimum == 0.0
     assert row.maximum == 1.0
+
+
+def test_describe_exposes_envelope_and_source():
+    """DD-04: Tunable documentation exposes its evidence envelope and source."""
+
+    class EnvelopeSettings(AgentSettings):
+        model_config = SettingsConfigDict(env_prefix="ENVELOPE_", frozen=True)
+
+        fraction: float = tunable(
+            0.6,
+            why="Synthetic configuration to prove evidence metadata.",
+            ge=0.0,
+            le=1.0,
+            envelope=(0.5, 0.8),
+            source="Synthetic evidence source.",
+        )
+
+    row = describe(EnvelopeSettings)[0]
+    assert row.envelope_min == 0.5
+    assert row.envelope_max == 0.8
+    assert row.source == "Synthetic evidence source."
+
+
+def test_a_tunable_without_an_envelope_is_unchanged():
+    """DD-01: Tunables without evidence metadata retain existing catalogue values."""
+
+    row = describe(_UnboundedSettings)[0]
+    assert row.envelope_min is None
+    assert row.envelope_max is None
+    assert row.source is None
+
+
+def test_an_envelope_without_a_source_is_refused():
+    """DD-04: An evidence envelope without provenance is rejected at declaration."""
+
+    with pytest.raises(ValueError, match="source"):
+        tunable(
+            0.6,
+            why="Synthetic configuration to prove provenance is mandatory.",
+            envelope=(0.5, 0.8),
+        )
+
+
+def test_exactly_thirteen_risk_settings_declare_evidence_envelopes():
+    """DD-04: S207 declares provenance for the thirteen researched risk settings.
+
+    Settings outside the researched set do not receive an evidence envelope.
+    """
+
+    documented = {
+        f"{settings_cls.__name__}.{row.name}"
+        for settings_cls in (
+            PortfolioManagerSettings,
+            ProviderSettings,
+            AnalystSettings,
+        )
+        for row in describe(settings_cls)
+        if row.source is not None
+    }
+
+    assert documented == {
+        "PortfolioManagerSettings.max_position_pct",
+        "PortfolioManagerSettings.max_positions",
+        "PortfolioManagerSettings.cash_buffer_pct",
+        "PortfolioManagerSettings.max_sector_pct",
+        "PortfolioManagerSettings.correlation_lookback_days",
+        "PortfolioManagerSettings.correlation_threshold",
+        "PortfolioManagerSettings.max_correlated_cluster_pct",
+        "PortfolioManagerSettings.min_correlation_bars",
+        "ProviderSettings.base_stop_loss_pct",
+        "ProviderSettings.base_take_profit_pct",
+        "AnalystSettings.scaled_stop_atr_multiplier",
+        "AnalystSettings.scaled_stop_floor_pct",
+        "AnalystSettings.scaled_stop_ceiling_pct",
+    }

@@ -56,6 +56,8 @@ class _StopTargetSettings(_IndicatorSettings):
         ge=0.0,
         le=5.0,
         unit="ratio",
+        envelope=(2.0, 3.0),
+        source="Chandelier Exit — ATR multiplier and lookback",
     )
     scaled_stop_floor_pct: float = tunable(
         0.025,
@@ -66,6 +68,8 @@ class _StopTargetSettings(_IndicatorSettings):
         ge=0.0,
         le=0.08,
         unit="pct",
+        envelope=(0.025, 0.08),
+        source="Derived from the declared max-risk cap, not external",
     )
     scaled_stop_ceiling_pct: float = tunable(
         0.08,
@@ -76,4 +80,6 @@ class _StopTargetSettings(_IndicatorSettings):
         ge=0.0,
         le=0.08,
         unit="pct",
+        envelope=(0.025, 0.08),
+        source="Derived from the declared max-risk cap, not external",
     )

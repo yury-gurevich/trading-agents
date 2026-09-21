@@ -59,7 +59,8 @@ def test_candidate_already_held_counts_same_issuer_without_pairing() -> None:
 
     assert outcome.outcome == "passed"
     assert outcome.value == 0.15
-    assert "cluster_issuers=AAPL" in outcome.detail
+    assert "candidate_issuer=AAPL" in outcome.detail
+    assert "correlated_issuers=none" in outcome.detail
 
 
 def test_repeated_pair_uses_cached_correlation() -> None:
@@ -83,7 +84,7 @@ def test_repeated_pair_uses_cached_correlation() -> None:
 
     assert first.outcome == "passed"
     assert second.detail == first.detail
-    assert "cluster_issuers=AAPL,MSFT" in second.detail
+    assert "correlated_issuers=MSFT:1.0000:w1.0000" in second.detail
 
 
 def test_degenerate_pair_does_not_expand_cluster() -> None:
@@ -122,7 +123,8 @@ def test_degenerate_pair_does_not_expand_cluster() -> None:
     )
     assert rejected == ()
     assert cluster.outcome == "passed"
-    assert "cluster_issuers=MSFT" in cluster.detail
+    assert "correlated_issuers=none" in cluster.detail
+    assert "below_threshold_top=AAPL:unmeasured" in cluster.detail
 
 
 def test_correlation_math_handles_empty_and_disjoint_inputs() -> None:

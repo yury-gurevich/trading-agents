@@ -65,7 +65,9 @@ def test_correlated_cluster_rejects_cross_label_order() -> None:
     assert names.outcome == "passed"
     assert cluster.outcome == "failed"
     assert cluster.value == 1.05
-    assert "cluster_issuers=AAPL,AMZN,MSFT" in cluster.detail
+    assert (
+        "correlated_issuers=AAPL:1.0000:w1.0000,MSFT:1.0000:w1.0000" in cluster.detail
+    )
 
 
 def test_one_unusable_pair_does_not_disable_the_whole_gate() -> None:
@@ -104,7 +106,7 @@ def test_one_unusable_pair_does_not_disable_the_whole_gate() -> None:
     assert approved == ()
     assert rejected[0].reason == "correlated_cluster_concentration"
     assert cluster.outcome == "failed"
-    assert "cluster_issuers=AMZN,MSFT" in cluster.detail
+    assert "correlated_issuers=MSFT:1.0000:w1.0000" in cluster.detail
     assert "skipped_pairs=1" in cluster.detail
 
 

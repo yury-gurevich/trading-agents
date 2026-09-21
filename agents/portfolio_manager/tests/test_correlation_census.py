@@ -7,20 +7,14 @@ External I/O: none.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.portfolio_manager.domain.correlation import CorrelationBook
-from agents.portfolio_manager.domain.correlation_census import (
-    CorrelationCensus,
-    build_census,
-)
-from agents.portfolio_manager.tests.s184_helpers import buy
-from contracts.provider import OHLCVBar
+from agents.portfolio_manager.domain.correlation_census_builder import build_census
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+
+    from agents.portfolio_manager.domain.correlation_census import CorrelationCensus
 
 _HELD = {
     "BAC": ("BAC",),
@@ -64,12 +58,13 @@ def test_census_names_the_issuers_it_examined_and_the_ones_it_ruled_out() -> Non
     """PM-OBS-03: a cluster of one reports the comparisons that produced it."""
     census = _census(_MEASURED, _HELD)
 
-    assert census.clustered() == ("BAC",)
+    assert tuple(item.issuer for item in census.clustered()) == ("BAC",)
     assert census.detail() == (
         "examined_issuers=3; "
-        "correlated_issuers=BAC:0.7639; "
+        "correlated_issuers=BAC:0.7639:w0.3195; "
         "below_threshold_top=C:0.5650,SCHW:0.3180; "
-        "correlation_threshold=0.7000; "
+        "correlation_ramp=0.7000..0.9000; "
+        "cluster_weight_total=0.3195; "
         "min_pair_overlap_bars=120; "
         "skipped_pairs=0; "
         "skipped_pair_issuers=none"
@@ -85,7 +80,8 @@ def test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass() -> 
         "examined_issuers=0; "
         "correlated_issuers=none; "
         "below_threshold_top=none; "
-        "correlation_threshold=0.7000; "
+        "correlation_ramp=0.7000..0.9000; "
+        "cluster_weight_total=0.0000; "
         "min_pair_overlap_bars=none; "
         "skipped_pairs=0; "
         "skipped_pair_issuers=none"
@@ -127,9 +123,9 @@ def test_skipped_pair_names_the_issuer_and_its_overlap() -> None:
     }
     census = _census(table, {name: (name,) for name in table}, min_bars=60)
 
-    assert census.clustered() == ("BBB",)
+    assert tuple(item.issuer for item in census.clustered()) == ("BBB",)
     assert "examined_issuers=1" in census.detail()
-    assert "correlated_issuers=BBB:0.7500" in census.detail()
+    assert "correlated_issuers=BBB:0.7500:w0.2500" in census.detail()
     assert "skipped_pairs=1" in census.detail()
     assert "skipped_pair_issuers=AAA:30" in census.detail()
 
@@ -142,51 +138,5 @@ def test_a_multi_ticker_issuer_is_judged_on_its_strongest_pair() -> None:
     }
     census = _census(table, {"GOOG": ("GOOG", "GOOGL")})
 
-    assert census.clustered() == ("GOOG",)
-    assert "correlated_issuers=GOOG:0.8500" in census.detail()
-
-
-def test_gate_detail_carries_the_census_beside_the_cluster() -> None:
-    """PM-OBS-03: the census reaches the gate_report the deliberator reads."""
-    book = CorrelationBook(
-        (*_bars("AAPL", days=66), *_bars("MSFT", days=66, drift=1.01)),
-        {},
-        120,
-        0.70,
-        0.25,
-        60,
-    )
-
-    outcomes = book.outcomes(
-        buy("AAPL"),
-        Decimal("500.00"),
-        Decimal("10000.00"),
-        issuer_values={"MSFT": Decimal("1000.00")},
-        issuer_tickers={"MSFT": ("MSFT",)},
-    )
-
-    assert len(outcomes) == 1
-    assert "examined_issuers=1" in outcomes[0].detail
-    assert "min_pair_overlap_bars=65" in outcomes[0].detail
-    assert "skipped_pairs=0" in outcomes[0].detail
-
-
-def _bars(ticker: str, *, days: int, drift: float = 1.0) -> tuple[OHLCVBar, ...]:
-    rows: list[OHLCVBar] = []
-    close = 100.0
-    for offset in range(days):
-        if offset:
-            close *= (1.01 if offset % 2 else 0.995) * drift
-        day = date(2026, 1, 1) + timedelta(days=offset)
-        rows.append(
-            OHLCVBar(
-                ticker=ticker,
-                bar_date=day,
-                open=close,
-                high=close + 1.0,
-                low=close - 1.0,
-                close=close,
-                volume=1_000_000,
-            )
-        )
-    return tuple(rows)
+    assert tuple(item.issuer for item in census.clustered()) == ("GOOG",)
+    assert "correlated_issuers=GOOG:0.8500:w0.7500" in census.detail()

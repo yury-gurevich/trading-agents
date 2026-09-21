@@ -105,10 +105,19 @@ class PortfolioManagerSettings(AgentSettings):
         unit="days",
     )
     correlation_threshold: float = tunable(
-        0.70,
+        0.50,
         why=(
-            "Pairwise close-return correlation at or above which two issuers are "
-            "treated as one correlated bet."
+            "Correlation-ramp floor: a held issuer at or below it contributes "
+            "nothing to the correlated cluster."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
+    correlation_ceiling: float = tunable(
+        0.90,
+        why=(
+            "Correlation-ramp ceiling: a held issuer at or above it contributes "
+            "its full value to the correlated cluster."
         ),
         ge=0.0,
         le=1.0,

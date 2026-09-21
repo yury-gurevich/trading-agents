@@ -10214,7 +10214,9 @@ report — hardening row Q) is owed at the next full deploy. The three temporary
 
 ---
 
-## DL-101 · The LLM layer is half in the substrate · status: OPEN (S170 packaged)
+## DL-101 · The LLM layer is half in the substrate · status: **CLOSED 2026-09-21 by [S222](sprints/sprint-222-one-llm-adapter-lives-in-the-kernel.md)** (was OPEN, S170 packaged)
+
+🟩 **Closed.** The vendor adapters and the provider factory now live in `kernel/`; the four agent-side modules named below are deleted and every consumer is repointed. 🎯 **The “duplicated” framing below was wrong, and S222 measured it:** the two Anthropic clients are *not* interchangeable — the deliberator's adapts free text with S189 stop-reason handling, the operator's adapts **tool use** and parses JSON, so deleting either breaks its caller. They became two thin public clients over one private transport instead ([DL-192](#dl-192---one-kernel-transport-keeps-anthropic-response-shapes-explicit---status-decided-s222-2026-09-21)). **The paths in the text below are historical**, kept as written for the record.
 
 The **port and the ledger** are kernel: `kernel/llm.py` (the `LLMClient` protocol) and
 `kernel/llm_ledger.py` (the append-only `LLMCall` node). Both model-calling agents genuinely route

@@ -549,6 +549,14 @@ No output; no `contracts/` file changed.
 
 **Module line counts:** `kernel/config.py` = 122 lines, below the 150-line warning threshold.
 
+> 🩹 **Corrected on review, 2026-09-21 — the file is 147 lines, not 122.** Measured two ways at
+> `c484aea`: `wc -l` and `check_module_size.py`'s own `splitlines()` both read **147**. The
+> conclusion the line was drawn from survives — 147 **is** below the 150 warning threshold — but
+> the margin is **3 lines, not 28**, which is the number that actually matters to whoever edits
+> `kernel/config.py` next: the first addition trips the warning and the file wants a split.
+> 🎯 Kept rather than overwritten, because a Closeout is evidence and a silently repaired number
+> teaches nothing. Nothing else in this block failed re-measurement.
+
 **`make ci`:** redirected to
 `C:\Users\yury_\AppData\Local\Temp\s207-make-ci-final.txt`. Exit code `0`. Still **14 steps**.
 `2991 passed, 6 skipped`; coverage `100.00 %`; `pip-audit` reported no known vulnerabilities; both

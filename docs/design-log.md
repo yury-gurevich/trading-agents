@@ -8,6 +8,48 @@ and is marked CLOSED here.
 
 ---
 
+## DL-195 - the first envelope warning contradicts a four-day-old ADR - status: OPEN (S207 review, 2026-09-21)
+
+**Context.** S207's envelope check ran for the first time on merge day and produced exactly three
+breaches. Two are code defaults the fleet overrides. The third is live, deliberate and recent:
+
+```text
+[WARN] portfolio_manager.max_position_pct   value=0.10  envelope=(0.01, 0.05)  source=FCA COLL 5.2
+[WARN] portfolio_manager.max_positions      value=10    envelope=(30.0, 60.0)  source=Evans and Archer
+[WARN] portfolio_manager.correlation_threshold value=0.5 envelope=(0.6, 0.8)   source=r = 0.7
+```
+
+**Finding 1 - the instrument reads the declared default, not the live value.** `envelope_warnings`
+calls `info.get_default()`. The S207 spec's scope said "comparing each **live value** against its
+envelope", and the build documented the deviation honestly in `STATE.md`, so this is a disclosed
+narrowing rather than a silent one. But the consequence is sharp: the fleet runs
+`max_position_pct=0.01` and `MAX_POSITIONS=60`, so **two of the three warnings are about values the
+fleet never uses**, while the two values it *does* use are checked by nothing. 🪤 The gate cannot see
+live values by construction - CI has no `.env`, which is the property the gate is trusted for - so
+the answer is not "read `.env` in CI". It is a separate, live-side check, or an explicit statement
+that envelopes bound *declarations* and something else bounds *deployments*.
+
+**Finding 2 - `correlation_threshold=0.50` is out of band against an ADR that set it four days ago.**
+[ADR-0030](decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) deliberately moved this
+parameter from a cluster **cutoff** at 0.70 to a ramp **floor** at 0.50, deployed in `0.103.02` on
+2026-09-21. The envelope `(0.6, 0.8)` cites "effect magnitudes - interpreting r = 0.7", which is
+evidence about *what counts as a strong correlation* - the question the parameter used to answer.
+🎯 **The parameter's meaning changed and its evidence did not follow.** So either the envelope must
+be re-derived for a ramp floor (where a deliberately low value is the point), or 0.50 needs
+defending against the cited band. 🚨 **Left unanswered this becomes a permanent `[WARN]` line**,
+which is the cries-wolf shape S207's own spec named as the risk, and the shape work-queue item 33
+already carries 57 instances of.
+
+**Finding 3 - two envelopes extend beyond their own field rails.**
+`correlation_lookback_days` declares `envelope=(60, 252)` against `le=250`, and
+`min_correlation_bars` declares `envelope=(13, 60)` against `ge=20`. Parts of both bands name values
+Pydantic would reject, so the instrument asserts a defensible range that is partly unreachable. Small,
+but it is the same class of defect S207 exists to expose, inside S207's own output.
+
+**Not in scope for a fix here.** All three are recorded rather than patched: S207 shipped the
+instrument, and changing a band or a rail on review would be the exact conflation - mechanism plus
+safety values in one move - that the spec refused. Ranked as work-queue item 79.
+
 ## DL-194 - evidence envelopes disclose out-of-band parameters without vetoing a sweep - status: DECIDED (S207, 2026-09-21)
 
 **Context.** `tunable(why=...)` explained a default, while the `ge`/`le`/`gt` bounds on thirteen

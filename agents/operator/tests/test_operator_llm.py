@@ -13,11 +13,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from agents.operator.llm_anthropic import (
-    AnthropicLLMClient,
+from kernel.llm_anthropic import (
     ConfigurationError,
-    _tool_input,
 )
+from kernel.llm_anthropic import (
+    OperatorAnthropicLLMClient as AnthropicLLMClient,
+)
+from kernel.llm_anthropic_responses import _tool_input
 
 
 def test_anthropic_client_requires_api_key() -> None:

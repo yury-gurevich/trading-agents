@@ -20,12 +20,6 @@ from decimal import Decimal
 import pytest
 
 from agents.deliberator.agent import DeliberatorAgent
-from agents.deliberator.llm_factory import (
-    DEFAULT_MODEL,
-    KEY_ENV,
-    UnknownProviderError,
-    default_model_for,
-)
 from agents.deliberator.peer_client import BusPeerClient
 from agents.deliberator.poll import review_pm_node
 from agents.deliberator.settings import DeliberatorSettings
@@ -33,6 +27,12 @@ from agents.deliberator.store import DELIBERATION_RUN_LABEL
 from contracts.common import Explanation, Money, Provenance
 from contracts.portfolio_manager import OrderIntent, OrderIntentSet
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus, Node
+from kernel.llm_factory import (
+    DEFAULT_MODEL,
+    KEY_ENV,
+    UnknownProviderError,
+    default_model_for,
+)
 
 _UPHOLD = '{"ruling": "uphold", "rationale": "clears review"}'
 

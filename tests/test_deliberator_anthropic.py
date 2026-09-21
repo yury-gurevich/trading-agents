@@ -11,9 +11,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import agents.deliberator.llm_anthropic as anthropic_adapter
-from agents.deliberator.llm_anthropic import AnthropicLLMClient, ConfigurationError
+import kernel.llm_anthropic as anthropic_adapter
 from kernel import LLMCompletionStoppedError
+from kernel.llm_anthropic import AnthropicLLMClient, ConfigurationError
 
 
 class _FakeMessages:

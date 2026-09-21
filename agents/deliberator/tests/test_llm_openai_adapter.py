@@ -18,11 +18,17 @@ from typing import Any
 import pytest
 
 
+@pytest.mark.parametrize(
+    ("effort", "expected_reasoning_effort"),
+    [("medium", "medium"), (None, None)],
+)
 def test_complete_sends_system_and_user_and_returns_text(
     monkeypatch: pytest.MonkeyPatch,
+    effort: str | None,
+    expected_reasoning_effort: str | None,
 ) -> None:
     """The adapter maps the port's system/user split onto chat messages."""
-    from agents.deliberator.llm_openai import OpenAILLMClient
+    from kernel.llm_openai import OpenAILLMClient
 
     sent: dict[str, Any] = {}
 
@@ -47,9 +53,7 @@ def test_complete_sends_system_and_user_and_returns_text(
     module.OpenAI = _SDK  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "openai", module)
 
-    client = OpenAILLMClient(
-        api_key="k", model="gpt-5.5", max_tokens=32, effort="medium"
-    )
+    client = OpenAILLMClient(api_key="k", model="gpt-5.5", max_tokens=32, effort=effort)
     answer = client.complete(system="be terse", user="review this", tool_schema={})
 
     assert answer == "uphold"
@@ -60,13 +64,16 @@ def test_complete_sends_system_and_user_and_returns_text(
     # DL-105: the adapter stored `effort` and never sent it, so the tunable read
     # as live and did nothing. Asserting on the *stored* attribute is what let
     # that survive at 100 % coverage — assert on what reaches the wire.
-    assert sent["reasoning_effort"] == "medium"
+    if expected_reasoning_effort is None:
+        assert "reasoning_effort" not in sent
+    else:
+        assert sent["reasoning_effort"] == expected_reasoning_effort
     assert client.last_stop_reason == "stop"
 
 
 def test_openai_length_without_text_raises_stop_reason() -> None:
     """DLIB-FAIL-04 / DLIB-NEV-06: truncation is failure, not empty answer."""
-    from agents.deliberator.llm_openai import _text
+    from kernel.llm_openai import _text
 
     response = types.SimpleNamespace(
         choices=[

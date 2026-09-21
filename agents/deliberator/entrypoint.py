@@ -77,9 +77,9 @@ def main() -> None:  # pragma: no cover
     """EHLO, build role, then run manager or served-peer loop forever."""
     import os
 
-    from agents.deliberator.llm_factory import build_llm, key_env_var
     from agents.deliberator.poll import find_pending, review_pm_node
     from kernel.graph_env import build_graph_from_env
+    from kernel.llm_factory import build_llm, key_env_var
     from kernel.work_loop import work_loop
 
     settings = DeliberatorSettings()

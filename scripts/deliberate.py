@@ -19,10 +19,10 @@ the debate Judge. This is distinct from the EXP-004 LLMJudgeScorer.
 from __future__ import annotations
 
 import argparse
-import importlib
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -40,9 +40,13 @@ from kernel import (  # noqa: E402
     score_understanding,
     understanding_rate,
 )
+from kernel.llm_factory import build_llm  # noqa: E402
 from orchestration.packs.trading_parameter_truths import (  # noqa: E402
     TRADING_PARAMETER_TRUTHS,
 )
+
+if TYPE_CHECKING:
+    from kernel.llm import LLMClient
 
 # Reasoning models (e.g. gpt-5) spend hidden reasoning tokens from the SAME
 # max_completion_tokens pool as visible output. A tight cap can be consumed
@@ -62,58 +66,6 @@ def anthropic_effort() -> str:
     at the same depth. ``max`` is the deepest rung of the API's own ladder.
     """
     return os.environ.get("ANTHROPIC_EFFORT", _ANTHROPIC_EFFORT).strip()
-
-
-class _AnthropicText:
-    """Free-text Anthropic adapter (the operator's client is tool-use only)."""
-
-    def __init__(
-        self, api_key: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
-    ) -> None:
-        anthropic = importlib.import_module("anthropic")
-        self._client = anthropic.Anthropic(api_key=api_key)
-        self._model = model
-        self._max_tokens = max_tokens
-        self._effort = anthropic_effort()
-
-    def complete(
-        self, *, system: str, user: str, tool_schema: dict[str, object]
-    ) -> str:
-        del tool_schema
-        resp = self._client.messages.create(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            output_config={"effort": self._effort},
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return "".join(getattr(block, "text", "") for block in resp.content)
-
-
-class _OpenAIText:
-    """Free-text OpenAI adapter."""
-
-    def __init__(
-        self, api_key: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
-    ) -> None:
-        openai = importlib.import_module("openai")
-        self._client = openai.OpenAI(api_key=api_key)
-        self._model = model
-        self._max_tokens = max_tokens
-
-    def complete(
-        self, *, system: str, user: str, tool_schema: dict[str, object]
-    ) -> str:
-        del tool_schema
-        resp = self._client.chat.completions.create(
-            model=self._model,
-            max_completion_tokens=self._max_tokens,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        )
-        return resp.choices[0].message.content or ""
 
 
 class _DemoFake:
@@ -154,17 +106,29 @@ def _judge_config() -> tuple[str, str]:
 
 def _provider_llm(
     provider: str, model: str, *, max_tokens: int = _DEBATE_MAX_TOKENS
-) -> _AnthropicText | _OpenAIText:
+) -> LLMClient:
     if provider == "openai":
         key = os.environ.get("OPENAI_API_KEY", "")
         if not key:
             raise SystemExit("OPENAI_API_KEY not set — cannot run --real")
-        return _OpenAIText(key, model, max_tokens=max_tokens)
+        return build_llm(
+            provider,
+            api_key=key,
+            model=model,
+            max_tokens=max_tokens,
+            effort=None,
+        )
     if provider == "anthropic":
         key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not key:
             raise SystemExit("ANTHROPIC_API_KEY not set — cannot run --real")
-        return _AnthropicText(key, model, max_tokens=max_tokens)
+        return build_llm(
+            provider,
+            api_key=key,
+            model=model,
+            max_tokens=max_tokens,
+            effort=anthropic_effort(),
+        )
     raise SystemExit(f"unsupported LLM provider {provider!r}")
 
 
@@ -174,9 +138,7 @@ def _load_dotenv() -> None:
     load_dotenv(_ROOT / ".env")
 
 
-def _build_llm(
-    real: bool, *, announce: bool = True
-) -> _AnthropicText | _OpenAIText | _DemoFake:
+def _build_llm(real: bool, *, announce: bool = True) -> LLMClient | _DemoFake:
     if not real:
         return _DemoFake()
     _load_dotenv()
@@ -189,9 +151,7 @@ def _build_llm(
 
 def build_role_llms(
     real: bool,
-) -> tuple[
-    _AnthropicText | _OpenAIText | _DemoFake, _AnthropicText | _OpenAIText | _DemoFake
-]:
+) -> tuple[LLMClient | _DemoFake, LLMClient | _DemoFake]:
     """Build the debate model and the separate debate Judge model."""
     if not real:
         return _DemoFake(), _DemoFake()

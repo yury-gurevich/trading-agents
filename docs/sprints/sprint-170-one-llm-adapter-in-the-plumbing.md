@@ -30,10 +30,10 @@ plumbing" is already true for the *audit* path. This sprint is not about that.
 
 | Still in an agent | Duplicate of |
 | --- | --- |
-| [`agents/deliberator/llm_anthropic.py`](../../agents/deliberator/llm_anthropic.py) | — |
-| [`agents/deliberator/llm_openai.py`](../../agents/deliberator/llm_openai.py) | — |
-| [`agents/deliberator/llm_factory.py`](../../agents/deliberator/llm_factory.py) | — |
-| [`agents/operator/llm_anthropic.py`](../../agents/operator/llm_anthropic.py) | **the deliberator's** |
+| [`kernel/llm_anthropic.py`](../../kernel/llm_anthropic.py), moved in S222 | — |
+| [`kernel/llm_openai.py`](../../kernel/llm_openai.py), moved in S222 | — |
+| [`kernel/llm_factory.py`](../../kernel/llm_factory.py), moved in S222 | — |
+| [`kernel/llm_anthropic.py`](../../kernel/llm_anthropic.py), moved in S222 | **the deliberator's** |
 
 The two `AnthropicLLMClient` classes share a name, a `ConfigurationError`, a constructor
 signature, the `importlib` SDK load and the empty-key guard. They differ in **one method**:

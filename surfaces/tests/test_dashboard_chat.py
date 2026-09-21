@@ -185,7 +185,7 @@ def test_chat_binding_requires_live_graph_and_key(
         is None
     )
     monkeypatch.setattr(
-        chat_binding, "AnthropicLLMClient", lambda **_kwargs: _ChatLLM()
+        chat_binding, "OperatorAnthropicLLMClient", lambda **_kwargs: _ChatLLM()
     )
     bound = chat_binding.bind_dashboard_chat(
         graph,

@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import pytest
 
-from agents.deliberator.llm_factory import KEY_ENV
 from agents.master.tests.helpers import trading_secret_map
+from kernel.llm_factory import KEY_ENV
 
 _DELIBERATORS = (
     "deliberator-manager",

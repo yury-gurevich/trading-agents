@@ -67,7 +67,7 @@ def test_the_openai_probe_spends_rather_than_reading_metadata(agent_type: str) -
 @pytest.mark.parametrize("agent_type", OPENAI_PROBE_AGENTS)
 def test_the_openai_probe_model_tracks_the_adapter_default(agent_type: str) -> None:
     """🪤 A model name the adapter no longer uses returns 404 and blames the key."""
-    from agents.deliberator.llm_factory import DEFAULT_MODEL
+    from kernel.llm_factory import DEFAULT_MODEL
 
     body = _probe(agent_type)["json_body"]
 

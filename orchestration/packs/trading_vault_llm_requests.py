@@ -19,7 +19,7 @@ import json
 import urllib.request
 from typing import TYPE_CHECKING
 
-from agents.deliberator.llm_factory import DEFAULT_MODEL
+from kernel.llm_factory import DEFAULT_MODEL
 from orchestration.packs.trading_vault_probe_support import required
 
 if TYPE_CHECKING:

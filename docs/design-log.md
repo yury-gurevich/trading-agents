@@ -8,6 +8,77 @@ and is marked CLOSED here.
 
 ---
 
+## DL-193 - the skip count is an environment fingerprint - status: DECIDED (S222, 2026-09-21)
+
+**Context.** S222's handback stated, in the field the spec added for exactly this purpose, that
+`.env` was **not** present in the tree the proofs ran in. It was. The build ran in the **main
+checkout** rather than a dedicated worktree, and that checkout holds `.env`.
+
+Nothing in the prose gave this away. 🎯 **The run's own numbers did:** it reported
+**`4 skipped`** where S217, S218, S220 and S221 all reported **`6 skipped`**. The suite has exactly
+two `.env`-gated skips - `tests/test_bus_azure_config.py` and
+`tests/test_deliberator_servicebus_peer.py`, both `if not Path(".env").is_file(): pytest.skip(...)`.
+Two fewer skips is not noise; it is those two tests running. Measured directly: **`14 passed`,
+0 skipped**.
+
+**Decisions.**
+
+1. **Verify the environment claim against the skip count, not against the sentence.** A handback's
+   skipped-test total is a cheap, forgery-resistant fingerprint of the tree it ran in, because the
+   builder is not thinking about it while writing the prose. Any movement in that number is a
+   question, not a rounding detail.
+2. **Carry the expected skip count forward.** `6 skipped` is the no-`.env` signature; `4 skipped`
+   means `.env` was present. Remote CI has no `.env`, so the gate should read 6 - a remote run
+   reading 4 would mean something is badly wrong.
+3. **This does not block a merge on its own.** `.env` in the main checkout is by design and
+   gitignored; no credential entered the tree or the diff, and the two extra tests only *add*
+   coverage. What is not acceptable is the false sentence entering the record, so it is corrected
+   in place rather than carried.
+
+**Rejected routes.**
+
+- *Treat it as a security incident.* Rejected: `CLAUDE.md` names `.env` as the correct home for
+  credentials. The defect is a false evidence claim, not a leak.
+- *Let it stand because the gate will pass anyway.* Rejected: 🟩 the gate passing is what makes an
+  uncorrected false claim durable. Later sessions read these rows as measurements.
+- *Re-run the whole build in a clean worktree.* Rejected: it would re-derive a result the remote
+  gate proves better, on infrastructure that genuinely has no `.env`.
+- *Add a gate step asserting the skip count.* Rejected for now - it would pin a number that moves
+  legitimately whenever a test is added, and the signal is only meaningful next to a claim.
+
+## DL-192 - one kernel transport keeps Anthropic response shapes explicit - status: DECIDED (S222, 2026-09-21)
+
+**Context.** `kernel/llm.py` already owns the LLM port and its stop semantics, but the real
+vendor adapters live in the deliberator and operator. The two Anthropic files share construction,
+key validation, SDK loading, request transport, usage capture, and error mapping. They cannot be
+collapsed by choosing one response parser: deliberation reads free text and records a provider stop
+reason, while the operator requires a tool-use result even when its explanation schema is empty.
+
+**Decisions.**
+
+1. `kernel/llm_anthropic.py` owns one private Anthropic transport and two thin public adapters.
+   The thin adapters keep the existing `complete()` port but select their response shape explicitly:
+   free text for deliberation and tool use for operator commands/explanations. Configuration, key
+   handling, SDK construction, HTTP calls, usage capture, and error mapping occur once in the
+   private transport.
+2. `ConfigurationError` lives in `kernel.llm_anthropic`, alongside the configuration it reports.
+   Dashboard chat imports it from the kernel; no surface imports an agent implementation.
+3. The ownership guard detects the four agent-owned adapter/factory implementation modules and
+   vendor-adapter class definitions outside `kernel/`; it is AST-based, so comments and prose do
+   not trigger it. The separate A6 guard covers a surface importing an agent adapter, avoiding one
+   over-broad test that conflates definition ownership with surface layering.
+
+**Rejected routes.**
+
+- *Keep one Anthropic class and infer response mode from `tool_schema`.* Rejected: operator
+  explanations deliberately pass an empty schema but still require tool-use parsing.
+- *Keep duplicated client constructors and share only parser helpers.* Rejected: it leaves key
+  handling, SDK loading, and error mapping in two ownership locations.
+- *Delete the operator adapter and use the deliberator's free-text parser.* Rejected: it loses
+  structured tool calling.
+- *Check source text for forbidden names.* Rejected: a comment would fail the architectural guard,
+  while an AST check tests actual imports and definitions.
+
 ## DL-191 - a spec may not assert a clause is proven; it must read the test plan - status: DECIDED (S222, 2026-09-21)
 
 **Context.** S222's MUST RULE told the builder to stop and report if a law contradicted the spec.
@@ -10431,7 +10502,7 @@ whichever sprint lands first.
 three change the lever list.
 
 1. 🚨 **`effort` is inert on the deployed fleet.**
-   [`llm_openai.py:43`](../agents/deliberator/llm_openai.py#L43) assigns `self.effort` and
+  [`llm_openai.py:43`](../kernel/llm_openai.py#L43) assigns `self.effort` and
    `complete()` never sends it. The tunable is registered, is visible to the operator, reads as live,
    and does nothing on `gpt-5.5`. Same class as DL-63's inert reasoning knob.
 2. 🚨 **`effort="max"` with `max_tokens=4096` is a documented misconfiguration on Claude Opus 5.**

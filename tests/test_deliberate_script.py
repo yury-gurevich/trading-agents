@@ -7,9 +7,6 @@ External I/O: none.
 
 from __future__ import annotations
 
-import importlib
-from types import SimpleNamespace
-
 import pytest
 import scripts.deliberate as subject
 
@@ -40,8 +37,19 @@ class _BuiltAnthropic(_BuiltText):
 
 
 def _patch_adapters(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(subject, "_OpenAIText", _BuiltOpenAI)
-    monkeypatch.setattr(subject, "_AnthropicText", _BuiltAnthropic)
+    def build(
+        provider: str,
+        *,
+        api_key: str,
+        model: str,
+        max_tokens: int,
+        effort: str | None,
+    ) -> _BuiltText:
+        del effort
+        implementation = _BuiltOpenAI if provider == "openai" else _BuiltAnthropic
+        return implementation(api_key, model, max_tokens=max_tokens)
+
+    monkeypatch.setattr(subject, "build_llm", build)
 
 
 def test_anthropic_effort_defaults_to_max(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -59,26 +67,38 @@ def test_anthropic_effort_honours_the_env_override(
 def test_anthropic_text_sends_effort_to_the_api(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The knob is inert unless output_config actually reaches the request."""
+    """The script forwards the Anthropic effort level to the kernel factory."""
     monkeypatch.delenv("ANTHROPIC_EFFORT", raising=False)
     sent: dict[str, object] = {}
 
-    class _Messages:
-        def create(self, **kwargs: object) -> object:
-            sent.update(kwargs)
-            return SimpleNamespace(content=[SimpleNamespace(text="ok")])
+    def build(provider: str, **kwargs: object) -> _BuiltAnthropic:
+        assert provider == "anthropic"
+        sent.update(kwargs)
+        return _BuiltAnthropic("key", "claude-opus-5")
 
-    class _Client:
-        def __init__(self, *, api_key: str) -> None:
-            del api_key
-            self.messages = _Messages()
+    monkeypatch.setattr(subject, "build_llm", build)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "key")
+    subject._provider_llm("anthropic", "claude-opus-5")
 
-    monkeypatch.setattr(
-        importlib, "import_module", lambda _n: SimpleNamespace(Anthropic=_Client)
-    )
-    client = subject._AnthropicText("key", "claude-opus-5")
-    assert client.complete(system="s", user="u", tool_schema={}) == "ok"
-    assert sent["output_config"] == {"effort": "max"}
+    assert sent["effort"] == "max"
+
+
+def test_openai_script_leaves_reasoning_effort_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The old OpenAI wrapper did not send a reasoning-effort override."""
+    sent: dict[str, object] = {}
+
+    def build(provider: str, **kwargs: object) -> _BuiltOpenAI:
+        assert provider == "openai"
+        sent.update(kwargs)
+        return _BuiltOpenAI("key", "gpt-5.5")
+
+    monkeypatch.setattr(subject, "build_llm", build)
+    monkeypatch.setenv("OPENAI_API_KEY", "key")
+    subject._provider_llm("openai", "gpt-5.5")
+
+    assert sent["effort"] is None
 
 
 def test_build_role_llms_defaults_judge_to_anthropic_opus(

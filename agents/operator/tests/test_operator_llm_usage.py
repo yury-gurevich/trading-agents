@@ -16,7 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from agents.operator.llm_anthropic import AnthropicLLMClient, _usage
+from kernel.llm_anthropic import OperatorAnthropicLLMClient as AnthropicLLMClient
+from kernel.llm_anthropic_responses import _usage
 
 
 class _FakeMessages:

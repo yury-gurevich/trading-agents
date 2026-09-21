@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-222-one-llm-adapter-lives-in-the-kernel`
-**Status:** BUILT
+**Status:** MERGED `7d5528e` (`0.103.02`) · `GATE PROVEN` for `7cea9de` · DEPLOYED 2026-09-21
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** work-queue item **7** · `DL-191` records the clause-status correction; take the **next free** number for your own decisions and re-check it at merge · [DL-101](../design-log.md) filed the split · DL-100 fixed the per-provider model default

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-207-a-bound-cites-the-evidence-that-set-it`
-**Status:** BUILT
+**Status:** MERGED `d0b4cee` (`0.104.00`) · `GATE PROVEN` for `c484aea` · work-queue item 63 closed · NOT DEPLOYED
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** LAW-05 `DD-01`/`DD-04` · [risk-parameter-bounds](../research/risk-parameter-bounds/INDEX.md) · `DRIFT-071`

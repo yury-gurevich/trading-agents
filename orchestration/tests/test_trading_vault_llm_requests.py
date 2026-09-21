@@ -17,7 +17,7 @@ import json
 
 import pytest
 
-from agents.deliberator.llm_factory import DEFAULT_MODEL
+from kernel.llm_factory import DEFAULT_MODEL
 from orchestration.packs import trading_vault_probes as probes
 from orchestration.packs.trading_vault_llm_requests import (
     anthropic_spend_request,

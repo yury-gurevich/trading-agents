@@ -15,8 +15,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import agents.deliberator.llm_anthropic as anthropic_adapter
-from agents.deliberator.llm_anthropic import AnthropicLLMClient
+import kernel.llm_anthropic as anthropic_adapter
+from kernel.llm_anthropic import AnthropicLLMClient
 
 
 class _FakeMessages:

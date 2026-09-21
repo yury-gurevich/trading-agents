@@ -44,7 +44,7 @@ Every clause starts gray in S153. Rows are present so no new law is invisible.
 | DLIB-TYP-02 | PM input validates as `OrderIntentSet`. | functional | _tbd_ | ⬜ |
 | DLIB-TYP-03 | Verdict rulings are constrained. | functional | _tbd_ | ⬜ |
 | DLIB-SEC-01 | Holds only scoped graph, bus, and LLM credentials. | functional | _tbd_ | ⬜ |
-| DLIB-SEC-02 | API key never logged, graphed, or returned. | functional | _tbd_ | ⬜ |
+| DLIB-SEC-02 | API key never logged, graphed, or returned. | functional | `tests/test_llm_adapter_security.py::test_anthropic_key_never_escapes_deliberator_or_operator` | 🟩 |
 | DLIB-SEC-03 | Peer capabilities accept only manager. | functional | _tbd_ | ⬜ |
 | DLIB-SEC-04 | Revocation leaves trading fail-open. | functional | _tbd_ | ⬜ |
 | DLIB-DEP-01 | Uses `DEP-POSTGRES` correctly. | functional | _tbd_ | ⬜ |

@@ -1,5 +1,5 @@
 # deliberator agent image — one image, three roles (manager / proponent / opponent).
-# `--extra llm` is required, not optional: agents/deliberator/llm_anthropic.py resolves
+# `--extra llm` is required, not optional: kernel/llm_anthropic.py resolves
 # the Anthropic SDK through importlib at call time, so a missing package fails at the
 # first debate turn rather than at import. The stage would come up healthy and produce
 # nothing — DL-80's exact failure shape, which this agent exists to end.

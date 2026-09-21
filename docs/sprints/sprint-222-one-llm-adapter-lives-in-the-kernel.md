@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-222-one-llm-adapter-lives-in-the-kernel`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** work-queue item **7** · `DL-191` records the clause-status correction; take the **next free** number for your own decisions and re-check it at merge · [DL-101](../design-log.md) filed the split · DL-100 fixed the per-provider model default
@@ -398,17 +398,20 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(fill)* | *(fill)* | *(fill)* | *(fill)* |
+| Deliberator Anthropic/OpenAI adapters and factory | `agents/deliberator/laws/laws.md`; `agents/deliberator/laws/test-plan.md` | `DLIB-OUT-05`, `DLIB-FAIL-04`, `DLIB-SEC-02`, `DLIB-OBS-05` | Yes. Free-text stop/refusal behaviour and its existing clause-citing tests must move intact; the previously gray key-handling clause now needs a sentinel proof. |
+| Operator Anthropic adapter | `agents/operator/laws/laws.md`; `agents/operator/laws/test-plan.md` | `OPR-SEC-01`, `OPR-DEP-01` | Yes. The construction path remains injected and Anthropic-only; no factory or OpenAI selection is added to the operator. |
+| Dashboard chat binding | `agents/operator/laws/laws.md`; `docs/laws/conventions.md` | `OPR-SEC-01`, `OPR-DEP-01` | Yes. `ConfigurationError` moves with the kernel adapter so the surface no longer reaches into an agent. |
+| Kernel LLM port, adapters, and factory | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `DLIB-OUT-05`, `DLIB-FAIL-04`, `DLIB-SEC-02`, `DLIB-OBS-05`, `OPR-SEC-01`, `OPR-DEP-01` | Yes. The kernel accepts only plain values and must not import an agent settings object; the factory remains a provider selection with no fallback. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(fill — the spec says No; confirm with the reason, and say explicitly that the operator gained no provider choice)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. `contracts/` remains untouched, and both agents retain their existing guarantees. The deliberator keeps its existing provider selection; the operator gains no provider choice and remains Anthropic-only (or uses injected `FakeLLMClient`).
 
-**Contradictions found between a law and this spec:** *(fill)*
+**Contradictions found between a law and this spec:** None after `f6b4204`: the per-clause measured status table correctly identifies the three green and three gray binding clauses.
 
-**Laws found silent where a decision was needed:** *(fill)*
+**Laws found silent where a decision was needed:** None. The existing clauses govern the moved behaviour; no amendment is needed because proof, not intent, is changing.
 
-**Clauses that were green and are still green:** *(fill — name the test that proves each, post-move)*
+**Clauses that were green and are still green:** Baseline: `DLIB-OUT-05` (`test_stop_reason_fail_open.py`), `DLIB-FAIL-04` (`tests/test_deliberator_anthropic.py`), and `DLIB-OBS-05` (named deliberator test-plan tests). The moved clients preserve the existing stop/refusal and usage tests; the full gate passed `2985` tests at `100.00 %` coverage.
 
-**Clauses that were ⬜ and are now proven:** *(fill — `DLIB-SEC-02`, `OPR-SEC-01`, `OPR-DEP-01`, their tests, and the rollup `make ci` computed)*
+**Clauses that were ⬜ and are now proven:** `DLIB-SEC-02` and `OPR-SEC-01` are proven by `tests/test_llm_adapter_security.py::test_anthropic_key_never_escapes_deliberator_or_operator`; `OPR-DEP-01` is proven by `tests/test_llm_adapter_security.py::test_operator_adapter_imports_anthropic_only`. The gate-derived rollups are deliberator `23 / 56` and operator `18 / 50`.
 
 ---
 
@@ -416,54 +419,83 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(fill)* | *(fill)* | *(fill)* | *(fill)* |
+| A1 | `test_vendor_adapter_implementations_live_only_in_kernel` | `tests/test_llm_adapter_ownership.py` | 🟩 passed | S222 ownership guard |
+| A2 | `test_anthropic_complete_extracts_tool_input`; `test_anthropic_complete_returns_plain_explanation_text` | `agents/operator/tests/test_operator_llm.py` | 🟩 passed | `OPR-DEP-01` behaviour preserved |
+| A3 | `test_anthropic_max_tokens_without_text_raises_stop_reason`; `test_anthropic_refusal_raises_with_guarded_category` | `tests/test_deliberator_anthropic.py` | 🟩 passed | `DLIB-FAIL-04`, `DLIB-OUT-05` |
+| A4 | `test_selected_provider_failure_never_builds_another_provider` | `tests/test_llm_adapter_ownership.py` | 🟩 passed | provider selection, no fallback |
+| A5 | `test_anthropic_key_never_escapes_deliberator_or_operator` | `tests/test_llm_adapter_security.py` | 🟩 passed | `DLIB-SEC-02`, `OPR-SEC-01` |
+| A6 | `test_surfaces_do_not_import_agent_llm_adapters` | `tests/test_llm_adapter_ownership.py` | 🟩 passed | surface ownership boundary |
+| A7 | `test_the_provider_alone_switches_every_role_model`; `test_an_explicit_model_still_wins` | `agents/deliberator/tests/test_provider_default_model.py` | 🟩 passed | DL-100 provider model defaults |
+| A8 | `test_build_role_llms_demo_uses_two_fake_clients` | `tests/test_deliberate_script.py` | 🟩 passed | `FakeLLMClient` remains unchanged |
+| A9 | `uv run lint-imports` | `make ci` | 🟩 passed | kernel import boundary |
+| A10 | `test_operator_adapter_imports_anthropic_only` | `tests/test_llm_adapter_security.py` | 🟩 passed | `OPR-DEP-01` |
 
-**Tests added beyond the plan:** *(fill)*
+**Tests added beyond the plan:** `tests/test_deliberate_script.py::test_openai_script_leaves_reasoning_effort_unset` preserves the existing script request shape after the shared OpenAI adapter made `effort` optional; the parametrized OpenAI wire-shape test covers both forwarded and omitted effort. A5 sets `caplog` to `DEBUG`, so request/header-dump leaks cannot evade the key-containment proof at pytest's default WARNING threshold.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(fill: BUILT | MERGED)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(fill)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents` on `sprint-222-one-llm-adapter-lives-in-the-kernel`; `.env` **was present** — this is the main checkout, not a separate worktree.
+🔴 **Corrected by the planner; the handback claimed no `.env`.** Measured: `tests/test_bus_azure_config.py` and `tests/test_deliberator_servicebus_peer.py` are the suite's only two `.env`-gated skips, and running them here gives **`14 passed`, 0 skipped**. That is exactly why this run reads **4 skipped** where S220 and S221 read **6**. No live vendor call was attempted or claimed: the Anthropic SDK is faked in both new tests and no vendor key was read.
 
-**Result:** *(fill — what is now true, in the artefact's own words)*
+**Result:** Vendor adapters now live only in `kernel/`: the two thin Anthropic clients retain explicit free-text and tool-use response paths over one private transport, OpenAI and provider selection are kernel-owned, the operator remains Anthropic-only, and provider failure never falls through to another vendor.
 
-**Files changed:** *(fill — including the four deletions)*
+**Files changed:** Added `kernel/llm_anthropic.py`, `kernel/llm_anthropic_responses.py`, `kernel/llm_openai.py`, `kernel/llm_factory.py`, ownership/security tests; deleted `agents/deliberator/llm_anthropic.py`, `agents/deliberator/llm_openai.py`, `agents/deliberator/llm_factory.py`, and `agents/operator/llm_anthropic.py`; repointed consumers, tests, docs, and lockfile.
 
-**Design decisions:** recorded as `DL-NNN` — *(fill)*
+**Design decisions:** recorded as `DL-192` — one private Anthropic transport with two thin, explicit response-shape clients; inferring mode from the tool schema, duplicating constructors, reusing the free-text parser, and source-text guards were rejected.
 
 **Proof — the red run first:**
 
 ```text
-(fill)
+FAILED tests/test_llm_adapter_ownership.py::test_vendor_adapter_implementations_live_only_in_kernel
+AssertionError: vendor adapter implementations outside kernel:
+   agents/deliberator/llm_anthropic.py
+   agents/deliberator/llm_factory.py
+   agents/deliberator/llm_openai.py
+   agents/operator/llm_anthropic.py
+1 failed in 1.34s
+
+FAILED tests/test_llm_adapter_security.py::test_anthropic_key_never_escapes_deliberator_or_operator
+AssertionError: assert 'S222-ANTHRO...KEY-SENTINEL' not in 'DebateTurnR...Y-SENTINEL\n'
+Captured log call:
+DEBUG    kernel.llm_anthropic:llm_anthropic.py:47 Anthropic API key=S222-ANTHROPIC-KEY-SENTINEL
+DEBUG    kernel.llm_anthropic:llm_anthropic.py:47 Anthropic API key=S222-ANTHROPIC-KEY-SENTINEL
+1 failed in 1.77s
 ```
 
 **Proof — the green run:**
 
 ```text
-(fill)
+Focused migration slice: 115 passed in 7.78s
+DEBUG key-containment restoration: 1 passed in 1.31s
+Generalized A1 ownership guard: 1 passed in 1.85s
+Post-review redirected gate: 2985 passed, 4 skipped in 291.93s (0:04:51)
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No known vulnerabilities found, 2 ignored
+detect-secrets and untracked-secret scans passed.
 ```
 
-**Guards planted:** *(fill, per guard)*
+**Guards planted:** A1 failed before the move on all four former agent modules, then passed; it now rejects any `agents/**/llm_*.py` and still AST-checks known vendor adapter classes. A4 was temporarily changed to add a fallback and failed with `DID NOT RAISE RuntimeError`; restored green. A5 temporarily logged the sentinel at DEBUG inside the Anthropic request path and failed because `caplog`, explicitly set to DEBUG, contained it; the log and retained temporary key field were removed, then the test passed green. A6 temporarily added `surfaces/dashboard/_s222_forbidden_adapter_import.py` and failed naming that offender; restored green. A10 temporarily imported OpenAI and failed with expected `['anthropic']`, actual `['openai']`; restored green.
 
-**Module line counts:** *(fill)*
+**Module line counts:** `kernel/llm_anthropic.py` 158; `kernel/llm_anthropic_responses.py` 65; `kernel/llm_openai.py` 102; `kernel/llm_factory.py` 70. All are below the 200-line hard block.
 
-**`make ci`:** *(fill — redirected to which path, exit code, counts, coverage, pip-audit, detect-secrets)*
+**`make ci`:** post-review exit 0, redirected to `C:\Users\yury_\AppData\Local\Temp\sprint-222-make-ci-post-review.txt`: Ruff, format, mypy, import-linter, module checks, law coverage, PARAM sync, Markdown links, version scheme, `2985 passed, 4 skipped`, `100.00 %` coverage, pip-audit clean with two documented exclusions, detect-secrets, and untracked-secret scan passed.
 
-**`make gate-ran`:** *(fill — run from which worktree, at which full 40-char SHA)*
+**`make gate-ran`:** not done: this BUILT branch is not yet committed or pushed, so there is no branch-tip SHA to prove remotely.
 
 ```text
-(fill)
+Not run. A remote proof is required after a commit is pushed from this worktree.
 ```
 
-**Not met / verified failing:** *(fill, or "none")*
+**Not met / verified failing:** Remote gate, merge, deploy, and live vendor proof are not done. They are intentionally post-build work. 🔴 **The handback's “no `.env`” claim was false and is corrected above:** the build ran in the main checkout, which has `.env`. Remote CI has none, so the gate remains the stronger signal — and the two `.env`-gated tests will skip there, putting the remote count back at **6 skipped**.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(How you kept free-text and tool-use distinguishable, and what you rejected.)*
-- *(What the next sprint should know — in particular, what giving the operator a provider choice would now cost.)*
+- Scope held: only the four named agent adapters/factory moved into kernel. `FakeLLMClient`, `kernel/llm_ledger.py`, and `kernel/llm_tokens.py` are unchanged; no contracts, tunables, PARAM rows, or law amendments were added.
+- One private Anthropic transport owns configuration, SDK loading, and dispatch. `AnthropicLLMClient` remains free-text and `OperatorAnthropicLLMClient` remains tool-use; schema-based mode inference was rejected because empty operator schemas still need tool-use parsing.
+- A future operator provider choice remains a separate law cycle: it would add a dependency under `OPR-DEP-01`, a tunable, a PARAM row, and new proof. No automatic vendor fallback is permitted.

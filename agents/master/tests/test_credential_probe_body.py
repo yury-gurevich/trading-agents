@@ -167,7 +167,7 @@ def test_the_probe_model_tracks_the_adapter_default(agent_type: str) -> None:
     therefore be the model the adapter actually resolves — asserted here so the
     two cannot drift apart silently.
     """
-    from agents.deliberator.llm_factory import DEFAULT_MODEL
+    from kernel.llm_factory import DEFAULT_MODEL
 
     entries = json.loads(PACK.read_text(encoding="utf-8"))[agent_type]
     (probe,) = [e for e in entries if e["name"] == "anthropic"]

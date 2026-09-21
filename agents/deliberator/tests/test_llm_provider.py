@@ -15,14 +15,14 @@ from typing import Any
 
 import pytest
 
-from agents.deliberator.llm_factory import (
+from agents.deliberator.settings import DeliberatorSettings
+from kernel import describe
+from kernel.llm_factory import (
     KEY_ENV,
     UnknownProviderError,
     build_llm,
     key_env_var,
 )
-from agents.deliberator.settings import DeliberatorSettings
-from kernel import describe
 
 
 class _FakeClient:
@@ -95,7 +95,7 @@ def test_a_missing_key_fails_before_any_call(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_openai_returns_the_assistant_text(monkeypatch: pytest.MonkeyPatch) -> None:
     """The adapter pulls text out of a chat completion and tolerates empties."""
-    from agents.deliberator.llm_openai import OpenAILLMClient, _text
+    from kernel.llm_openai import OpenAILLMClient, _text
 
     _install_fake(monkeypatch, "openai", "OpenAI")
     client = OpenAILLMClient(api_key="k", model="m")

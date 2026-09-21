@@ -10,8 +10,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from agents.operator.llm_anthropic import AnthropicLLMClient, ConfigurationError
 from agents.operator.settings import OperatorSettings
+from kernel.llm_anthropic import ConfigurationError, OperatorAnthropicLLMClient
 from surfaces.context import paper_context
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def bind_dashboard_chat(
         return None
     settings = OperatorSettings()
     try:
-        llm = AnthropicLLMClient(
+        llm = OperatorAnthropicLLMClient(
             api_key=api_key,
             model=settings.model,
             max_tokens=settings.max_tokens,

@@ -38,12 +38,12 @@
 | OPR-TYP-01 | 🟩 | `tests/test_contract_required_fields.py::test_operator_payload_fields_required_by_law` |
 | OPR-TYP-02 | ⬜ | — |
 | OPR-TYP-03 | ⬜ | — |
-| OPR-SEC-01 | ⬜ | — |
+| OPR-SEC-01 | 🟩 | `tests/test_llm_adapter_security.py::test_anthropic_key_never_escapes_deliberator_or_operator` |
 | OPR-SEC-02 | ⬜ | — |
 | OPR-SEC-03 | ⬜ | — |
 | OPR-SEC-04 | ⬜ | — |
 | OPR-SEC-05 | ⬜ | — |
-| OPR-DEP-01 | ⬜ | — |
+| OPR-DEP-01 | 🟩 | `tests/test_llm_adapter_security.py::test_operator_adapter_imports_anthropic_only` |
 | OPR-DEP-02 | ⬜ | — |
 | OPR-DEP-03 | ⬜ | — |
 | OPR-OBS-01 | ⬜ | — |

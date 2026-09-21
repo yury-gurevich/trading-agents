@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import types
 
-from agents.deliberator.llm_openai import _usage
+from kernel.llm_openai import _usage
 
 
 def _response(

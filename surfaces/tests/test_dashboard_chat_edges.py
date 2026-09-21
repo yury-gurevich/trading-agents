@@ -11,8 +11,8 @@ import json
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from agents.operator.llm_anthropic import ConfigurationError
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
+from kernel.llm_anthropic import ConfigurationError
 from surfaces.context import SurfaceContext, build_test_context
 from surfaces.dashboard import build_app, chat_binding
 from surfaces.dashboard.chat import _quick_result, _turn, handle_chat
@@ -90,7 +90,7 @@ def test_chat_binding_configuration_failure_is_disconnected(
     def fail(**_kwargs: object) -> object:
         raise ConfigurationError("adapter unavailable")
 
-    monkeypatch.setattr(chat_binding, "AnthropicLLMClient", fail)
+    monkeypatch.setattr(chat_binding, "OperatorAnthropicLLMClient", fail)
     result = chat_binding.bind_dashboard_chat(
         InMemoryGraphStore(),
         {

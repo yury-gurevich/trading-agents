@@ -11,8 +11,8 @@ from typing import Literal
 
 from pydantic_settings import SettingsConfigDict
 
-from agents.deliberator.llm_factory import default_model_for
 from kernel import AgentSettings, tunable
+from kernel.llm_factory import default_model_for
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
 DebateRole = Literal["defender", "challenger"]

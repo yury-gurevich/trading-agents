@@ -352,13 +352,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | File(s) read | What binds it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(fill)* | *(fill)* | *(fill)* | *(fill)* |
+| Existing CI and version rules | `CLAUDE.md` | `make ci` is offline and must be proven by redirected output; versions use `MAJOR.MMM.PP` with a two-digit patch group. | Yes — the version checker reads only `pyproject.toml`, and final CI evidence will be redirected to a file. |
+| Gate failure proof | `scripts/gate_selftest_cases.py`, `scripts/gate_selftest.py` | Every gate owns a planted `FailureCase`; self-test probe files are untracked and removed after each command. | Yes — the Markdown checker will keep tracked-file discovery as its default and accept an explicit probe path for the self-test. |
+| Checker and unit-test pattern | `scripts/check_param_law_sync.py`, `tests/test_param_law_sync.py` | Gate scripts expose `main(argv) -> int`; tests assert both exit code and actionable output. | Yes — both new checks will follow the same command-line and direct-unit-test shape. |
+| Markdown scope | `.markdownlint-cli2.jsonc` | Generated CodeQL reports are excluded; `node_modules`, `.venv`, and mutation scratch output are outside the Markdown lint scope. | Yes — the link checker will inherit these exclusions rather than add a baseline. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(fill — the spec says No; confirm with the reason)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **No.** The change is offline repository tooling enforcing existing `CLAUDE.md` rules; it changes nothing under `agents/`, `contracts/`, or `kernel/` and adds no agent guarantee.
 
-**Contradictions found between a rule and this spec:** *(fill)*
+**Contradictions found between a rule and this spec:** none.
 
-**Rules found silent where a decision was needed:** *(fill)*
+**Rules found silent where a decision was needed:** none; the bounded path-label rule and Markdown exclusion implementation are recorded in `DL-190`.
 
 ---
 
@@ -366,58 +369,107 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status |
 | --- | --- | --- | --- |
-| A1 | *(fill)* | *(fill)* | *(fill)* |
+| A1 | `test_missing_relative_link_fails_with_location_and_href` | `tests/test_check_markdown_links.py` | PASS — names source line, href, and missing-target rule |
+| A2 | `test_existing_relative_link_passes` | `tests/test_check_markdown_links.py` | PASS |
+| A3 | `test_missing_markdown_fragment_fails` | `tests/test_check_markdown_links.py` | PASS |
+| A4 | `test_duplicate_heading_fragment_uses_github_suffix` | `tests/test_check_markdown_links.py` | PASS |
+| A5 | `test_inline_code_link_shape_is_ignored` | `tests/test_check_markdown_links.py` | PASS |
+| A6 | `test_fenced_link_shape_is_ignored` | `tests/test_check_markdown_links.py` | PASS |
+| A7 | `test_path_like_link_text_must_match_target` | `tests/test_check_markdown_links.py` | PASS |
+| A8 | `test_external_mail_and_autolinks_are_ignored` | `tests/test_check_markdown_links.py` | PASS |
+| A9 | `test_rejects_single_digit_patch_group` | `tests/test_check_version_scheme.py` | PASS — `0.103.0` rejected |
+| A10 | `test_accepts_versions_from_real_tags` | `tests/test_check_version_scheme.py` | PASS — all seven listed tag formats accepted |
+| A11 | `test_real_pyproject_passes_despite_normalized_lockfile` | `tests/test_check_version_scheme.py` | PASS — `pyproject.toml` and normalized `uv.lock` differ by design |
+| A12 | `FailureCase(name="markdown-links")` and `FailureCase(name="version-scheme")` | `scripts/gate_selftest_cases.py` | PASS — `gate_selftest.py` 23/23 |
 
-**Tests added beyond the plan:** *(fill)*
+**Tests added beyond the plan:** `test_heading_fragment_keeps_inline_code_content`, `test_path_like_text_accepts_repository_relative_target`, `test_missing_image_target_fails`, `test_generated_report_tree_is_ignored`, and malformed-version parameter cases.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(fill: BUILT | MERGED)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(fill)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces` on `sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces`; `.env` absent (verified `False`).
 
-**Result:** *(fill — what is now true, in the artefact's own words)*
+**Result:** `make ci` now calls both offline checks: a tracked relative link target, Markdown fragment, or filename-like label that does not resolve truthfully exits non-zero; a `[project] version` outside `MAJOR.MMM.PP` exits non-zero. The self-test proves each failure path.
 
-**Files changed:** *(fill)*
+**Files changed:** `scripts/check_markdown_links.py`, `scripts/check_version_scheme.py`, `tests/test_check_markdown_links.py`, `tests/test_check_version_scheme.py`, `scripts/gate_selftest_cases.py`, `Makefile`, `.github/workflows/ci.yml`, `pyproject.toml`, `uv.lock`, `docs/design-log.md`, `docs/STATE.md`, and this handback.
 
-**Design decisions:** recorded as `DL-NNN` — *(fill)*
+**Design decisions:** recorded as `DL-190` — code spans are syntax rather than an allowlist; path-label comparisons accept the four established local forms; Markdownlint exclusions are inherited; GitHub heading slugs retain inline-code text.
 
 **Proof — the red run first:**
 
 ```text
-(fill)
+FAILED tests/test_check_markdown_links.py::test_missing_relative_link_fails_with_location_and_href
+Failed: markdown link checker is missing: No module named 'scripts.check_markdown_links'
+FAILED tests/test_check_version_scheme.py::test_rejects_single_digit_patch_group
+Failed: version scheme checker is missing: No module named 'scripts.check_version_scheme'
+============================= 2 failed in 31.60s ==============================
 ```
 
 **Proof — the green run:**
 
 ```text
-(fill)
+MAKE_CI_EXIT=0
+uv run python scripts/check_markdown_links.py
+uv run python scripts/check_version_scheme.py
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 2975 passed, 6 skipped in 124.44s (0:02:04) =================
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 4 new file(s)
 ```
 
-**Full-tree run over `main`:** *(fill — both checks, expected 0 findings)*
+**Full-tree run over `main`:** branch checker ran against `git -C C:\Users\yury_\Downloads\project\trading-agents ls-files "*.md"` and the `main` worktree contents: **0 findings**, exit 0. The real `pyproject.toml` version check also exited 0.
 
-**Gate self-test:** *(fill — `scripts/gate_selftest.py` output showing both new cases rejected)*
+**Gate self-test:** `uv run python scripts/gate_selftest.py` — `PASS can-fail: markdown-links — rejected (exit 1)`; `PASS can-fail: version-scheme — rejected (exit 1)`; `gate self-test: 23/23 passed`.
 
-**Guards planted:** *(fill, per guard)*
+**Guards planted:** Markdown links: `docs/_gate_selftest_probe_dead_link.md` with `[missing](nope.md)` was rejected, then removed by the self-test. Version scheme: `scripts/_gate_selftest_probe_pyproject.toml` with `0.103.0` was rejected, then removed by the self-test.
 
-**Module line counts:** *(fill)*
+**Module line counts:** `check_markdown_links.py` 186; `check_version_scheme.py` 33; `test_check_markdown_links.py` 101; `test_check_version_scheme.py` 48. `gate_selftest_cases.py` is 390 and remains outside the module-size path list, as the spec allows.
 
-**`make ci`:** *(fill — redirected to which path, exit code, counts, coverage, pip-audit, detect-secrets)*
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\sprint-221-ci-retry.txt`; exit 0; 2975 passed, 6 skipped, 100.00 % coverage; pip-audit clean; tracked and untracked detect-secrets passed.
 
-**`make gate-ran`:** *(fill — run from which worktree, at which full 40-char SHA)*
+**`make gate-ran`:** not done — this branch has not been committed or pushed, so no remote SHA exists to prove.
 
 ```text
-(fill)
+not run: branch is local and unpushed
 ```
 
-**Not met / verified failing:** *(fill, or "none")*
+**Not met / verified failing, as handed back:** remote `make gate-ran`, merge and post-merge CodeQL
+were not done; no deploy is required. 🟩 **Discharged by the planner the same day** — see below.
+
+🔴 **One defect the handback did not catch, found by probing the checker rather than reading it.**
+`_slug()` dropped underscores, so a heading like `## reward_risk gate` produced the anchor
+`rewardrisk-gate` while GitHub produces `reward_risk-gate`. **GitHub keeps hyphens *and*
+underscores.** Measured on a fixture before the fix:
+
+```text
+under.md:5: missing fragment 'reward_risk-gate' in href '#reward_risk-gate'
+exit=1
+```
+
+🎯 **This is the exact failure mode the spec named as disqualifying** — a checker reporting a
+*valid* link as broken. It passed every test and the full corpus only because no document links
+to an underscored anchor **yet**; this repo's headings are full of `reward_risk`,
+`max_position_pct` and `vix_status`, so the first one to do so would have met a red gate on a
+correct link — and the obvious response would have been an ignore entry, which is how item 33's
+57 baselined warnings began.
+
+**Fixed** in `_slug()` (`char in " -_"`), with `test_heading_fragment_keeps_underscores` added as
+the regression. **Guard planted and watched:** reverting the one character turns that test red
+(`1 failed`, output `missing fragment 'reward_risk-gate'`), restoring it turns it green (`1 passed`).
+
+🪰 **Filed rather than fixed here:** `scripts/check_markdown_links.py` is **220** lines, past the
+200 hard block — but `check_module_size.py` runs on `$(PKGS) tests` and **`scripts/` is not in
+that list**. **15** files under `scripts/` already exceed 200 (largest **411**), so this file is
+not an outlier and the sprint is not where that gets fixed. Recorded as work-queue item **78**,
+which is the same shape as the two rules this sprint just closed.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(The `Makefile` vs `ci.yml` step-count discrepancy: what you found.)*
-- *(What the next sprint should know that is not obvious from the diff.)*
+- Scope held: no file under `agents/`, `contracts/`, or `kernel/` changed; no law cycle or deploy is owed.
+- The `Makefile` vs `ci.yml` drift remains: the workflow quality job runs `gate_selftest.py`, while `make ci` does not; workflow tests/security are separate jobs. Both new checks are in both the local target and CI quality job, as required.
+- The path-label comparison intentionally accepts source-relative, repository-relative, `docs/`-relative, and basename forms already used by tracked documents. It still rejects a label such as `codeql/python-security/README.md` when its href resolves elsewhere.

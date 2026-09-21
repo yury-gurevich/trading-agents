@@ -172,6 +172,42 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         must_output=("probe.undocumented", "probe.missing_from_settings"),
     ),
     FailureCase(
+        name="markdown-links",
+        why=(
+            "S221: Markdownlint checks fragments only inside one document, so a "
+            "relative link to a missing tracked file previously passed the gate"
+        ),
+        files={f"docs/{PROBE_PREFIX}_dead_link.md": "[missing](nope.md)\n"},
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_markdown_links.py",
+            f"docs/{PROBE_PREFIX}_dead_link.md",
+        ],
+        must_output=("dead_link.md:1", "nope.md", "missing target"),
+    ),
+    FailureCase(
+        name="version-scheme",
+        why=(
+            "S220: version 0.103.0 passed every lane despite the declared "
+            "MAJOR.MMM.PP scheme requiring a two-digit patch group"
+        ),
+        files={
+            f"scripts/{PROBE_PREFIX}_pyproject.toml": (
+                '[project]\nversion = "0.103.0"\n'
+            )
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_version_scheme.py",
+            f"scripts/{PROBE_PREFIX}_pyproject.toml",
+        ],
+        must_output=("0.103.0", "MAJOR.MMM.PP"),
+    ),
+    FailureCase(
         name="untracked-secrets",
         why=(
             "DL-55: --all-files resolves through git, so a brand-new file was "

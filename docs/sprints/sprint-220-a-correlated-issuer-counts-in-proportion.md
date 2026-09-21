@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-220-a-correlated-issuer-counts-in-proportion`
-**Status:** BUILT
+**Status:** MERGED
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0030](../decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) settles ramp-vs-cliff · [EXP-008](../research/experiments/EXP-008-correlation-cutoff-replay.md) is the measurement · `DL-189` (take the next free number and re-check it at merge) is the implementation thread · work-queue item **68**
@@ -469,7 +469,7 @@ gate-integration census coverage to `test_correlation_census_gate.py`; it did no
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):**
 `C:\Users\yury_\Downloads\project\trading-agents-sprint-220-a-correlated-issuer-counts-in-proportion`
@@ -536,15 +536,31 @@ ruff, format, mypy, import-linter, module size/header, law coverage, PARAM/setti
 (`2950 passed, 6 skipped`, 100.00% coverage), pip-audit, tracked and untracked secret scans all
 passed. Existing PARAM checker warnings were warn-only and unrelated to S220.
 
-**`make gate-ran`:** not run -- no commit or push exists yet, so no branch SHA can be proven remotely.
+**`make gate-ran`:** run by the planner from the S220 worktree at `01af4c9fc5d8ef17fa323ca5b827bf6082f61d1a`, checked against `git rev-parse HEAD`
+in that same worktree:
 
 ```text
-not applicable before commit/push
+GATE PROVEN for 01af4c9fc5d8ef17fa323ca5b827bf6082f61d1a:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
 ```
 
-**Not met / verified failing:** The planner-side EXP-008 replay is not run: this worktree has no
-`.env`. Merge, push, remote `make gate-ran`, post-merge CodeQL, the required full `up`, live pack
-read-back, and first scheduled-run proof are not done.
+**Merged** `f3993d6` to `main` 2026-09-21, tagged `v0.103.00`.
+
+**Not met / verified failing, as handed back:** the planner-side EXP-008 replay, merge, push,
+remote `make gate-ran`, post-merge CodeQL, the full `up`, live pack read-back and first
+scheduled-run proof were all not done. 🟩 **Discharged by the planner the same day:** the
+replay ran and met its bar (recorded above), the branch was committed and pushed, `GATE PROVEN`
+on all three checks, merged `f3993d6`, tagged `v0.103.00`. 🟠 **Still owed:** the **full `up`** with a
+live pack read-back, and the first scheduled run whose gate detail carries
+`correlation_ramp=0.5000..0.9000`. Work-queue item 68 stays open until that run exists.
+
+🔴 **One defect the handback did not catch, corrected before the commit:** `pyproject.toml` read
+`version = "0.103.0"`. The scheme is `MAJOR.MMM.PP` and the last group is **two** digits, so it is
+`0.103.00` — `CLAUDE.md` calls breaking it a blocker. 🎯 **`make ci` was exit 0 over it**, because
+no gate step reads the version at all; it was caught by reading the diff. Filed as work-queue item
+**77** and specced as [S221](sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces.md).
 
 ---
 

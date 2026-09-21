@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -101,12 +101,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   default for a single-class name and is **not** a not-evaluated outcome. The map's completeness is
   a pack-data concern, not an agent one.
 - **PM-NEV-08** — Never approves an order that would push the weight of one **correlated cluster**
-  above `max_correlated_cluster_pct`. A cluster is the candidate issuer plus every held issuer whose
-  pairwise return correlation with it, over `correlation_lookback_days`, is at least
-  `correlation_threshold`. Correlation is computed from bars the run already carries; the PM never
-  fetches market data to obtain it (`PM-NEV-02`). This clause is the correlation penalty; the
-  label-bucket count of `PM-NEV-06` is not. The cluster weight is measured against **deployed
-  capital**, not total equity.
+  above `max_correlated_cluster_pct`. A cluster is the candidate issuer plus every examined held
+  issuer weighted by its pairwise return correlation over `correlation_lookback_days`: contribution
+  is zero at or below `correlation_threshold` (the ramp floor), one at or above
+  `correlation_ceiling`, and linear between. A ceiling at or below the floor degrades to a disclosed
+  binary test at the floor rather than failing or silently assigning full value. Correlation is
+  computed from bars the run already carries; the PM never fetches market data to obtain it
+  (`PM-NEV-02`). This clause is the correlation penalty; the label-bucket count of `PM-NEV-06` is
+  not. The cluster weight is measured against **deployed capital**, not total equity.
 - **PM-NEV-09** — Never records a concentration gate it could not evaluate as passed. When the
   sector label is missing, fewer than `min_correlation_bars` overlapping bars exist for every
   usable correlation pair, or deployment is below the derived floor needed for a deployed-book
@@ -226,12 +228,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **PM-OBS-02** — Faults (provider degradation, per-evaluation errors) are routed to the
   central fault channel. Every rejection has an attributed reason; no silence, no mystery.
 - **PM-OBS-03** — A concentration gate that *did* evaluate reports the size of the comparison
-  behind its verdict. The correlated-cluster outcome names how many held issuers were examined,
-  which of them reached `correlation_threshold` and at what measured value, the strongest near
-  misses below it, and the smallest pairwise overlap any of those comparisons used. `PM-NEV-09`
-  separates *not evaluated* from *passed*; this clause separates *evaluated and found nothing*
-  from *evaluated nothing*, which is the pair a cluster of one collapses without it. The census
-  is evidence, not a summary: it is rendered into the same `detail` that reaches the deliberator.
+  behind its verdict. The correlated-cluster outcome names how many held issuers were examined, the
+  ramp floor and ceiling, each issuer with a positive contribution with both measured correlation
+  and applied rounded weight, the total applied weight, the strongest zero-weight comparisons, and
+  the smallest pairwise overlap any of those comparisons used. `PM-NEV-09` separates *not
+  evaluated* from *passed*; this clause separates *evaluated and found nothing* from *evaluated
+  nothing*, which is the pair a cluster of one collapses without it. The census is evidence, not a
+  summary: it is rendered into the same `detail` that reaches the deliberator.
 - **PM-OBS-04** — Every evaluated PM gate that renders a `PASSED` or `FAILED` verdict discloses
   whether the opposite verdict was reachable from the evidence it had. A gate whose verdict is
   structurally fixed by the input stop/target policy percentages says so in `detail`, names the
@@ -299,7 +302,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `max_sector_pct` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maximum deployed-book weight in any single sector label, counted over held **and** in-run issuers |
 | `max_names_per_sector` | `3` | `int ≥ 0, ≤ 500` | YES | Max distinct issuers per sector label; a label-bucket cap, **not** the correlation penalty (`PM-NEV-08`); set it for the granularity the sector source actually returns; 0 disables |
 | `correlation_lookback_days` | `120` | `int ≥ 20, ≤ 250` (days) | YES | Bars used for the pairwise return correlation — long enough to be stable, short enough to track the current regime; runs already carry ~200 bars, so this costs no fetch |
-| `correlation_threshold` | `0.70` | `float ≥ 0.0, ≤ 1.0` | YES | Pairwise return correlation at or above which two issuers are treated as one bet |
+| `correlation_threshold` | `0.50` | `float ≥ 0.0, ≤ 1.0` | YES | Correlation-ramp floor: a held issuer at or below it contributes nothing to the cluster |
+| `correlation_ceiling` | `0.90` | `float ≥ 0.0, ≤ 1.0` | YES | Correlation-ramp ceiling: a held issuer at or above it contributes its full value to the cluster |
 | `max_correlated_cluster_pct` | `0.25` | `float ≥ 0.0, ≤ 1.0` | YES | Max deployed-book weight in one correlated cluster; tighter than `max_sector_pct` because a measured cluster is a truer bet boundary than a label |
 | `min_correlation_bars` | `60` | `int ≥ 20, ≤ 250` (bars) | YES | Minimum overlapping bars for a usable estimate; below it the pair is **not evaluated** (`PM-NEV-09`), never silently passed |
 | `issuer_map` | pack data | `mapping ticker → issuer key` | NO (pack data) | Owned by the trading pack (ADR-0012), not the agent; collapses share classes of one issuer to one key. Absence means single-class, which is the common case |
@@ -391,3 +395,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `::test_positive_reward_risk_floor_still_rejects_below_floor`,
   `::test_positive_reward_risk_floor_is_informative_not_structural`, and
   `::test_reward_risk_floor_is_read_from_the_tunable_value`.
+- v1.8 — amendment (DL-189 / S220, 2026-09-21). `PM-NEV-08` changes the correlated cluster from
+  binary membership at 0.70 to ADR-0030's `0.50..0.90` linear contribution ramp; the new
+  `correlation_ceiling` PARAM row declares its full-weight endpoint. `PM-OBS-03` now requires the
+  applied rounded contribution per issuer and total weight in the same gate detail. EXP-008 found
+  the binary line sampling-noise-sensitive and replayed the ramp with zero retroactive rejections.
+  Cited tests: `test_correlation_ramp.py::test_ceiling_correlation_counts_a_held_issuer_in_full`,
+  `::test_cluster_ratio_is_recomputable_from_rendered_weights`,
+  `::test_staples_near_misses_are_weighted_without_failing_the_cap`, and
+  `::test_degenerate_ramp_is_binary_at_the_floor_and_declared`.

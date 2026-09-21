@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-220-a-correlated-issuer-counts-in-proportion`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [ADR-0030](../decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) settles ramp-vs-cliff · [EXP-008](../research/experiments/EXP-008-correlation-cutoff-replay.md) is the measurement · `DL-189` (take the next free number and re-check it at merge) is the implementation thread · work-queue item **68**
@@ -298,6 +298,18 @@ needs `.env`, which a worktree does not have. A8 is its **unit-scale stand-in**,
 this explicitly: 0/38 was measured on a 17-run history, not promised for the future. If the re-replay
 rejects anything, the merge stops and the finding goes to a new ADR — not to a quiet threshold nudge.
 
+🟩 **RUN AND MET, 2026-09-21 — planner-side, from the main checkout (the only tree with `.env`).**
+Re-replayed on a **larger** book than ADR-0030 was decided on: **22 runs / 45 approvals** against the
+original 17 / 38. Validation first — replayed cluster membership **identical 45/45**, cluster value
+within 5 % **45/45** — then the counterfactual: the ramp rejects **0 of 45** with a worst share of
+**0.098**, against binary 0.70's **0.106**. 🎯 **The bar was the cliff's `0.102`; the cliff itself has
+since drifted to `0.106` while the ramp held at `0.098`,** so the ramp reads this book *more* tightly
+than the shape it replaces, by a margin that widened rather than closed. 🪤 **Control held too:**
+weighted ρ⁺ — the option ADR-0030 rejected — now rejects **6** MDLZ approvals (was 5) at a worst
+share of **0.301**. Full table and the noise re-measurement (95 % interval spans 0.70 on **14 of 18**
+near-line pairs, up from 12 of 16) are recorded in
+[EXP-008](../research/experiments/EXP-008-correlation-cutoff-replay.md#re-replay-before-the-s220-merge---2026-09-21).
+
 **After deploy:** the closing evidence is the first scheduled run on the new image whose gate detail
 carries `correlation_ramp=0.5000..0.9000` with a non-empty `correlated_issuers` on a candidate the
 cliff would have read as `none`. Until that run exists, item 68 is code-fixed, not closed — and no
@@ -421,15 +433,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(fill)* | *(fill)* | *(fill)* | *(fill)* |
+| Correlation ramp, census, and gate | PM `laws.md`, PM `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md`, `docs/laws/ledger.md` | `PM-NEV-08`, `PM-NEV-09`, `PM-OBS-01`, `PM-OBS-03`, `PM-OBS-04` | Yes: positive contribution is not evidence that the gate was evaluable; all unusable pairs must keep the existing `NOT_EVALUATED` outcome. |
+| Settings and deployed pack | PM `laws.md`, PM `test-plan.md`, `docs/laws/conventions.md` | PM PARAM table; `PM-NEV-08` | Yes: the two ramp endpoints must be declared in both settings and the pack, and the pack move requires a full `up` later. |
+| Law amendment and evidence | PM `laws.md`, PM `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md`, `docs/laws/ledger.md` | `PM-NEV-08`, `PM-OBS-03`; conventions §§3, 4, 7, 7a, 9 | Yes: amend the existing green clauses and test-plan summaries faithfully; no new law ID is needed. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(fill — the spec says Yes on the guarantee, No on `contracts/`; confirm and list what you did)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes: it adds the guarantee that every examined held issuer contributes in proportion to measured correlation. `contracts/` remains untouched; `GateOutcome` keeps its existing four fields. This sprint will amend `PM-NEV-08`, `PM-OBS-03`, and the PARAM table, update their test-plan rows and the derived rollups, and file the disclosure-vocabulary drift.
 
-**Contradictions found between a law and this spec:** *(fill)*
+**Contradictions found between a law and this spec:** None.
 
-**Laws found silent where a decision was needed:** *(fill)*
+**Laws found silent where a decision was needed:** None. ADR-0030 settles the ramp shape and the existing clauses prescribe the observable and not-evaluated boundaries.
 
-**Clauses that were ⬜ and are now proven:** *(fill — and the rollup in ledger.md + INDEX.md)*
+**Clauses that were ⬜ and are now proven:** None; this amends existing green `PM-NEV-08` and `PM-OBS-03`. Their evidence will be re-proven and the `31 / 50` PM rollup re-derived by `make ci`.
 
 ---
 
@@ -437,54 +451,108 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(fill)* | *(fill)* | *(fill)* | *(fill)* |
+| A1 | `test_midpoint_correlation_contributes_half_the_held_issuer_value` | `test_correlation_census_gate.py` | passed; red first | `PM-NEV-08`, `PM-OBS-03` |
+| A2 | `test_ceiling_correlation_counts_a_held_issuer_in_full` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-OBS-03` |
+| A3 | `test_unmeasured_or_below_floor_issuer_counts_nothing_but_is_disclosed` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-OBS-03` |
+| A4 | `test_cluster_ratio_is_recomputable_from_rendered_weights` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-OBS-03` |
+| A5 | `test_staples_near_misses_are_weighted_without_failing_the_cap` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-OBS-03` |
+| A6 | `test_degenerate_ramp_is_binary_at_the_floor_and_declared` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-OBS-03` |
+| A7 | `test_every_pair_unusable_still_reports_not_evaluated` | `test_correlation_concentration.py` | passed, preserved existing guard | `PM-NEV-09`, `PM-OBS-04` |
+| A8 | `test_recorded_cluster_fixture_verdicts_remain_passed_under_ramp` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08`, `PM-NEV-09` |
+| A9 | `test_a_census_of_nothing_says_so_rather_than_rendering_as_a_clean_pass` | `test_correlation_census.py` | passed, preserved existing guard | `PM-OBS-03` |
+| A10 | `test_deployed_tunables_pack_declares_the_ramp_endpoints` | `test_correlation_ramp.py` | passed; guard red/restored | `PM-NEV-08` |
 
-**Tests added beyond the plan:** *(fill)*
+**Tests added beyond the plan:** None. The required module-size split moved the pre-existing
+gate-integration census coverage to `test_correlation_census_gate.py`; it did not add behavior.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(fill: BUILT | MERGED)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(fill)*
+**Tree the proofs ran in (and `.env` present?):**
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-220-a-correlated-issuer-counts-in-proportion`
+on `sprint-220-a-correlated-issuer-counts-in-proportion`; no `.env` present.
 
-**Result:** *(fill — what is now true, in the artefact's own words)*
+**Result:** `correlated_cluster_pct` now applies each examined held issuer's rounded four-decimal
+weight from the disclosed `correlation_ramp=0.5000..0.9000`; the same weight is rendered and used
+in Decimal cluster-value arithmetic. A missing usable pair remains `NOT_EVALUATED`, never a
+weight-zero pass.
 
-**Files changed:** *(fill)*
+**Files changed:** PM correlation ramp, census/builder, gate, settings/wiring, pack, focused tests,
+PM law v1.8/test-plan, law rollups/drift, `DL-189`, this handback, `STATE.md`, project version, and
+`uv.lock`.
 
-**Design decisions:** recorded as `DL-NNN` — *(fill)*
+**Design decisions:** recorded as `DL-189` -- rounded applied weights, contribution-view
+`clustered()`, disclosed binary degenerate mode, and retained `below_threshold_top`.
 
 **Proof — the red run first:**
 
 ```text
-(fill)
+Before implementation, A1 against the binary path:
+FAILED test_midpoint_correlation_contributes_half_the_held_issuer_value
+AssertionError: assert 0.55 == 0.3
+1 failed, 7 deselected in 1.08s
+
+A2 clamp mutation: assert 0.10999 == 0.11 (1 failed).
+A3 below-floor mutation: assert 0.11 == 0.01 (1 failed, 1 passed).
+A4 applied-weight mutation: Decimal('3100.00') did not equal rendered-weight arithmetic
+Decimal('2000.000000') (1 failed).
+A5 intermediate-ramp mutation: staples detail became correlated_issuers=none (1 failed).
+A6 equality-degenerate mutation: ABOVE was absent from correlated_issuers (1 failed).
+A8 cap mutation: WFC and MDLZ changed from passed to failed (2 failed).
+A10 pack mutation: assert 0.51 == 0.5 (1 failed).
 ```
 
 **Proof — the green run:**
 
 ```text
-(fill)
+uv run pytest agents/portfolio_manager/tests -q --no-cov
+148 passed in 2.51s
+
+make ci > C:\Users\yury_\AppData\Local\Temp\s220-ci-final.txt 2>&1
+make ci exit: 0
+Success: no issues found in 969 source files
+2950 passed, 6 skipped in 128.12s
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 4 new file(s)
 ```
 
-**Guards planted:** *(fill, per guard)*
+**Guards planted:** A1 binary midpoint (red first, then green); A2 full-ceiling clamp (red then
+green); A3 below-floor zero/disclosure (red then green); A4 rendered-vs-applied arithmetic (red then
+green); A5 staples contributions (red then green); A6 degenerate binary mode (red then green); A8
+recorded no-shock verdicts (red then green); A10 deployed pack endpoints (red then green). A7 and
+A9 were existing guards, re-proven by the complete PM and repository suites.
 
-**Module line counts:** *(fill)*
+**Module line counts:** `correlation.py` 185; `correlation_census.py` 139;
+`correlation_census_builder.py` 88; `correlation_ramp.py` 39; `risk.py` 163; `run.py` 143;
+`settings.py` 144. All are below the 200-line hard block.
 
-**`make ci`:** *(fill — redirected to which path, exit code, counts, coverage, pip-audit, detect-secrets)*
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s220-ci-final.txt`, exit 0;
+ruff, format, mypy, import-linter, module size/header, law coverage, PARAM/settings sync, pytest
+(`2950 passed, 6 skipped`, 100.00% coverage), pip-audit, tracked and untracked secret scans all
+passed. Existing PARAM checker warnings were warn-only and unrelated to S220.
 
-**`make gate-ran`:** *(fill — run from which worktree, at which full 40-char SHA)*
+**`make gate-ran`:** not run -- no commit or push exists yet, so no branch SHA can be proven remotely.
 
 ```text
-(fill)
+not applicable before commit/push
 ```
 
-**Not met / verified failing:** *(fill, or "none")*
+**Not met / verified failing:** The planner-side EXP-008 replay is not run: this worktree has no
+`.env`. Merge, push, remote `make gate-ran`, post-merge CodeQL, the required full `up`, live pack
+read-back, and first scheduled-run proof are not done.
 
 ---
 
 ## Return notes
 
-- *(Scope held / where it moved and why.)*
-- *(What you disagreed with in the spec after reading the laws.)*
-- *(What the next sprint should know that is not obvious from the diff.)*
+- Scope held: no `contracts/`, cap, deployment-floor, or sizing changes. CI found two modules over
+   the hard block, so census construction and its gate-integration tests were split by responsibility.
+- No disagreement with the laws or ADR-0030; `PM-NEV-09` remains unchanged and re-proven.
+- The pack changes, so deployment is a full `up`, never an image-only retag. Before merge, re-run
+   EXP-008 with live credentials and stop if any retrospective approval changes or the worst share
+   exceeds 0.102.

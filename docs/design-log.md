@@ -8,6 +8,35 @@ and is marked CLOSED here.
 
 ---
 
+## DL-189 - the correlation cluster applies disclosed rounded ramp weights - status: DECIDED (S220, 2026-09-21)
+
+**Context.** [ADR-0030](decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) accepts a
+linear correlation ramp after [EXP-008](research/experiments/EXP-008-correlation-cutoff-replay.md)
+measured the 0.70 binary cutoff as sampling-noise-sensitive and inert across 38 recorded approvals.
+The implementation needs four local choices so its evidence remains reproducible.
+
+**Decisions.**
+
+1. A contribution is rounded to four decimal places at the point of use. The rounded value is both
+  rendered and converted through `Decimal(str(weight))` for cluster arithmetic. Rendering a rounded
+  value while applying unrounded float precision would make the recorded gate detail unrecomputable.
+2. `clustered()` becomes a contribution view: it contains every examined held issuer with a positive
+  applied weight, ordered by descending weight then issuer. The gate and census are its callers;
+  there is no remaining set-membership consumer that needs binary semantics.
+3. A pack-injected `ceiling <= floor` is a disclosed binary test at the floor, not an exception or
+  implicit full-weight cluster. The detail adds `:degenerate`, so the output declares that it could
+  not apply a slope.
+4. `below_threshold_top` keeps its name. It still means an examined issuer contributed nothing; only
+  `correlation_threshold` changes to the explicit `correlation_ramp` vocabulary.
+
+**Rejected.** Applying raw weights then rounding only for display was rejected because it breaks
+artefact arithmetic. Retaining binary membership alongside the contribution view was rejected as
+two conflicting cluster definitions. Settings-level rejection of a degenerate pair was rejected
+because both values are pack-injected at runtime. Renaming `below_threshold_top` was rejected as
+reader-visible churn without a semantic change.
+
+---
+
 ## DL-188 - test data has three jobs, and synthetic data cannot do the one that matters most - status: DIRECTION (operator, 2026-09-20)
 
 **Operator's problem, in their terms.** *“The data we have is data that we get once a day. Several

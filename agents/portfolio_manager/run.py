@@ -92,6 +92,7 @@ def run_evaluation(
             ),
             correlation_lookback_days=settings.correlation_lookback_days,
             correlation_threshold=settings.correlation_threshold,
+            correlation_ceiling=settings.correlation_ceiling,
             max_correlated_cluster_pct=settings.max_correlated_cluster_pct,
             min_correlation_bars=settings.min_correlation_bars,
         )

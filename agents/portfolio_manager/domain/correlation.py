@@ -12,10 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.domain import deployment_floor
-from agents.portfolio_manager.domain.correlation_census import (
-    CorrelationCensus,
-    build_census,
-)
+from agents.portfolio_manager.domain.correlation_census_builder import build_census
 from agents.portfolio_manager.domain.correlation_math import (
     pair_correlation,
     returns_by_ticker,
@@ -27,6 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from datetime import date
 
+    from agents.portfolio_manager.domain.correlation_census import CorrelationCensus
     from contracts.analyst import Recommendation
     from contracts.provider import OHLCVBar
 
@@ -43,6 +41,7 @@ class CorrelationBook:
     threshold: float
     max_cluster_pct: float | None
     min_bars: int
+    ceiling: float = 0.90
     _returns: dict[str, dict[date, float]] = field(init=False)
     _pair_cache: dict[tuple[str, str], tuple[float | None, int]] = field(
         default_factory=dict
@@ -98,12 +97,16 @@ class CorrelationBook:
             pair=self._pair,
             threshold=self.threshold,
             min_bars=self.min_bars,
+            ceiling=self.ceiling,
         )
         if census.all_pairs_unusable():
             return (self._not_evaluated(item.ticker, census),)
-        cluster = {issuer, *census.clustered()}
+        cluster = {issuer, *(item.issuer for item in census.clustered())}
         value = cost + issuer_values.get(issuer, _ZERO)
-        value += sum(issuer_values.get(key, _ZERO) for key in cluster if key != issuer)
+        value += sum(
+            issuer_values.get(item.issuer, _ZERO) * Decimal(str(item.contribution))
+            for item in census.clustered()
+        )
         ratio = _ratio(value, denominator_value)
         return (
             GateOutcome(

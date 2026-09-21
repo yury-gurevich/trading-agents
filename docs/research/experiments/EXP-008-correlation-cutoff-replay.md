@@ -152,6 +152,49 @@ Last night's decisive pairs:
 - Pair noise is measured on 16 pairs, one run each. That is enough to show the line is unstable, not to
   estimate a rate.
 
+## Re-replay before the S220 merge - 2026-09-21
+
+[ADR-0030](../../decisions/0030-the-correlation-gate-is-a-ramp-not-a-cliff.md) made this a **merge
+gate**, not a formality: *"0 of 38 was measured on a 17-run history, not promised for the future."*
+Re-run on the book as it stands, with the committed appendix scripts unchanged, from the main
+checkout (the only tree with `.env`; the S220 build worktree has none).
+
+**The sample grew**: **22** runs / **45** approvals carrying a `correlated_cluster_pct` outcome,
+against the 17 / 38 measured on 2026-09-17 - `sched-2026-09-17` and `sched-2026-09-18` are new.
+
+🟩 **Validation first, before any counterfactual.** Replayed cluster membership is **identical on
+45 / 45** recorded approvals and cluster value is within 5 % on **45 / 45**. The replay reproduces
+the gate that actually ran; only then is it allowed to answer what a different shape would have done.
+
+| Variant | Orders | Rejections (cap 0.25) | Median share | Worst share | Mean clustered |
+| --- | --- | --- | --- | --- | --- |
+| binary 0.70 (champion) | 45 | **0** | 0.051 | **0.106** | 0.47 |
+| binary 0.65 | 45 | 0 | 0.072 | 0.148 | 0.60 |
+| binary 0.60 | 45 | 0 | 0.082 | 0.152 | 0.96 |
+| binary 0.50 | 45 | 0 | 0.093 | 0.206 | 1.33 |
+| **ramp 0.5→0.9 (S220)** | 45 | **0** | 0.066 | **0.098** | 1.33 |
+| weighted ρ⁺ | 45 | **6** (all MDLZ) | 0.164 | **0.301** | 14.69 |
+
+🟩 **Both conditions met.** Zero retroactive rejections, and the ramp's worst share **0.098** is under
+the bar ADR-0030 set (the cliff's then-measured `0.102`) *and* under the cliff's **current** `0.106`.
+🎯 **The cliff's worst share moved and the ramp's did not** - 0.102 → 0.106 for binary 0.70 as five
+more approvals landed, while the ramp held at 0.098. The ramp is the tighter reading of this book,
+not the looser one, and that gap widened rather than closed.
+
+🪤 **The rejected option got worse, which is the useful control.** Weighted ρ⁺ now rejects **6** MDLZ
+approvals (was 5) with a worst share of **0.301** against a 0.25 cap - so the retroactive shock
+ADR-0030 refused is real, growing, and specific to one name.
+
+**Noise, re-measured on 18 near-line pairs** (0.50 ≤ ρ < 0.90, was 16): the 95 % interval spans 0.70
+on **14 of 18**, split halves disagree about the 0.70 side on **8 of 18**, dropping five shock days
+flips **2 of 18**, and Spearman flips **3 of 18**. The case against a single cutoff strengthened with
+the larger sample.
+
+**Reproduce it:** run Appendix A then Appendix B from the repository root with `PYTHONPATH` set to the
+root, in a tree that has `.env`. 🪤 `uv run python <abs-path-outside-the-repo>` does **not** put the
+repo on `sys.path`; without `PYTHONPATH` the loader dies on `ModuleNotFoundError: kernel` before it
+reaches the spine.
+
 ## Appendix A - loader (`corr_replay_load.py`)
 
 Run from the repo root with `.env` present: `PYTHONPATH=. uv run python corr_replay_load.py`, then `corr_replay.py`.

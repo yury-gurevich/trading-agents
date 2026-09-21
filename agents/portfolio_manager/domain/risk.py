@@ -46,7 +46,8 @@ def evaluate_recommendations(
     issuer_map: Mapping[str, str] | None = None,
     correlation_bars: tuple[OHLCVBar, ...] = (),
     correlation_lookback_days: int = 120,
-    correlation_threshold: float = 0.70,
+    correlation_threshold: float = 0.50,
+    correlation_ceiling: float = 0.90,
     max_correlated_cluster_pct: float | None = None,
     min_correlation_bars: int = 60,
 ) -> tuple[tuple[OrderIntent, ...], tuple[RejectedOrder, ...]]:
@@ -69,6 +70,7 @@ def evaluate_recommendations(
         correlation_threshold,
         max_correlated_cluster_pct,
         min_correlation_bars,
+        correlation_ceiling,
     )
     open_tickers = {ticker.upper() for ticker in portfolio.positions}
     open_issuers = {book.issuer_for(ticker) for ticker in open_tickers}

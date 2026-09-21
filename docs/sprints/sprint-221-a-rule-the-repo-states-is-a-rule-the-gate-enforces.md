@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces`
-**Status:** SPEC
+**Status:** MERGED
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** work-queue items **76** and **77** · `DL-190` (take the next free number and re-check it at merge) · both rules already exist in `CLAUDE.md`; this sprint adds no policy
@@ -388,7 +388,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces` on `sprint-221-a-rule-the-repo-states-is-a-rule-the-gate-enforces`; `.env` absent (verified `False`).
 

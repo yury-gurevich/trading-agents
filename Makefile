@@ -56,10 +56,11 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run python scripts/check_markdown_links.py
 	uv run python scripts/check_version_scheme.py
 	uv run pytest
-# DL-184: diskcache PYSEC-2026-2447 has no fix release and reaches no container
-# (it arrives via the optional `optimizer` extra, which no Dockerfile installs).
-# Bounded to this one ID - every other advisory still fails the gate.
-	uv run pip-audit --ignore-vuln PYSEC-2026-2447
+# Audits the whole lock - every extra, every group - not the interpreter's
+# installed set, which in CI omits the extras the fleet images install (DL-199).
+# Accepted advisories live in scripts/dependency_audit_baseline.py, and every
+# premise behind an acceptance is re-measured here on each run (DL-184).
+	uv run python scripts/check_dependency_audit.py
 	uv run pre-commit run detect-secrets --all-files
 	uv run python scripts/check_untracked_secrets.py
 

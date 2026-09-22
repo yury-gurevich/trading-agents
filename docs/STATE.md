@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-22 19:02 AEST · **Version:** **0.104.01 deployed** / **0.104.01 on `main`** — fleet and `main` are level for the first time since S207 · **🟩 `sched-2026-09-21` ran **8/8** with **0** faults and discharged three owed live proofs — the correlation ramp (item 68), a measured `vix_status` (item 70), and the fleet-preflight notice path's first production exercise. Friday's four fills flipped `sched-2026-09-18` to `ACCEPTANCE PASS`.**
+**Last updated:** 2026-09-22 20:05 AEST · **Version:** **0.104.01 deployed** / **0.104.02 on `main`** — work-queue item **80** closed; the fix is display-only but ships in the images, so the fleet renders the old string until the next deploy · **🟩 `sched-2026-09-21` ran **8/8** with **0** faults and discharged three owed live proofs — the correlation ramp (item 68), a measured `vix_status` (item 70), and the fleet-preflight notice path's first production exercise. Friday's four fills flipped `sched-2026-09-18` to `ACCEPTANCE PASS`.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when

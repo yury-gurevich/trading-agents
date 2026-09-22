@@ -59,7 +59,7 @@ function Get-TzLabel([DateTime]$Moment) {
   return 'AEST'
 }
 
-function Format-Clock([DateTime]$Moment) { (Get-Date $Moment -Format 'h:mm tt').ToLower() }
+function Format-Clock([DateTime]$Moment) { Get-Date $Moment -Format 'HH:mm' }
 function Format-Day([DateTime]$Moment) { Get-Date $Moment -Format 'ddd d MMM' }
 
 function Format-Span([TimeSpan]$Span) {

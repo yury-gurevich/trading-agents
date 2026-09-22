@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -185,6 +185,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `bars_for_full_confidence` | `60` | `int ≥ 1 ≤ 365` | YES | Bar count at which price reading reaches full confidence |
 | `return_squash_scale` | `0.05` | `float ≥ 0.001 ≤ 1.0` | YES | Logistic scale mapping predicted return onto [0, 1] |
 | `system_prompt` | `""` | `str` | YES | Champion slot for DSPy-compiled macro-event extraction prompt (ADR-0010); pre-declared; empty until P13 LLM path ships |
+| `retrain_window_days` | `60` | `int ≥ 20 ≤ 252` | YES | Trailing distinct-date window (trading days) for the rolling IC-decay check |
+| `retrain_trigger_fraction` | `0.5` | `float > 0.0 ≤ 1.0` | YES | Fraction of the reference metric below which a retrain is recommended |
+| `retrain_horizon_days` | `20` | `int ≥ 1 ≤ 60` | YES | Forward-return horizon the decay trigger and champion comparison score at; the S110 baseline is strongest at h=20 (IC-IR 0.27) |
+| `retrain_min_cases` | `500` | `int ≥ 50` | YES | Minimum aligned recent-window observations before a decay verdict is meaningful |
+| `factor_name` | `""` | `str` | YES | Approved catalogue factor to shadow; empty keeps approved-factor shadowing disabled |
+| `factor_params` | `""` | `str` | YES | Operator-approved catalogue params for that factor, e.g. `lookback=60` |
+| `factor_model_id` | `""` | `str` | YES | Optional explicit factor scorecard key; empty derives it from the selection |
 
 ## Divergence register
 
@@ -199,3 +206,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.2 — S205 rewrites `FORE-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `ShadowPrediction` and `Scorecard`. `FORE-TYP-03` remains a separate
   serialization-shape clause. No contract shape changes.
+- v1.3 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares the four IC-decay
+  retrain knobs and the three approved-factor shadowing fields, all already `tunable()` in
+  `settings.py`. No clause moves.

@@ -9,8 +9,8 @@ here **grows**, when a file **not** here crosses the 200-line block, and when an
 entry here has been split below the block and not deleted - so the list can only
 shrink, and a file that leaves can never come back silently.
 
-🪤 It is deliberately not the shape of the PARAM baseline (work-queue item 33),
-which prints 57 warnings that pass. Every line here can fail the gate.
+🪤 It is deliberately not the shape the PARAM baseline had (work-queue item 33,
+retired by DL-203): 57 warnings that passed. Every line here can fail the gate.
 
 Retire the whole file by splitting the last entry out of it.
 """
@@ -29,7 +29,6 @@ LEGACY_MAX_LINES: dict[str, int] = {
     "scripts/deliberation_replay_batch.py": 240,
     "scripts/evaluate_return_model.py": 288,
     "scripts/gate_selftest_cases.py": 346,
-    "scripts/param_law_sync.py": 212,
     "scripts/remediation_gate.py": 206,
     "scripts/retrain_return_model_helpers.py": 200,
     "scripts/run_local.py": 227,

@@ -14,13 +14,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scripts.param_law_sync_baseline import (
-    LEGACY_BASELINE,
-    MISSING_PARAM,
-    MISSING_SETTING,
-    TUNABLE_MISMATCH,
-    IssueKey,
-)
 from scripts.param_law_sync_envelopes import envelope_warnings
 from scripts.param_law_sync_sources import (
     Location,
@@ -41,6 +34,10 @@ if TYPE_CHECKING:
 
     from pydantic.fields import FieldInfo
 
+MISSING_PARAM = "settings field has no PARAM row"
+MISSING_SETTING = "PARAM row has no settings field"
+TUNABLE_MISMATCH = "Tunable column disagrees with settings metadata"
+
 
 @dataclass(frozen=True)
 class ParamIssue:
@@ -49,10 +46,6 @@ class ParamIssue:
     kind: str
     location: Location
     detail: str
-
-    @property
-    def key(self) -> IssueKey:
-        return (self.agent, self.kind, self.name)
 
 
 @dataclass
@@ -66,19 +59,11 @@ class ParamSyncReport:
 
 
 def check_root(root: Path) -> ParamSyncReport:
-    resolved = root.resolve()
-    baseline: frozenset[IssueKey] = (
-        LEGACY_BASELINE if resolved == _ROOT.resolve() else frozenset()
-    )
     report = ParamSyncReport()
     for agent in _discover_agents(root):
         settings_cls = _settings_class(root, agent)
         for issue in _agent_issues(root, agent, settings_cls):
-            message = _format_issue(root, issue)
-            if issue.key in baseline:
-                report.warnings.append(message.replace("[FAIL]", "[WARN]", 1))
-            else:
-                report.errors.append(message)
+            report.errors.append(_format_issue(root, issue))
         report.warnings.extend(envelope_warnings(agent, settings_cls.model_fields))
     return report
 

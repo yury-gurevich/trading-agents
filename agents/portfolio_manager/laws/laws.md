@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -306,7 +306,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `correlation_ceiling` | `0.90` | `float ≥ 0.0, ≤ 1.0` | YES | Correlation-ramp ceiling: a held issuer at or above it contributes its full value to the cluster |
 | `max_correlated_cluster_pct` | `0.25` | `float ≥ 0.0, ≤ 1.0` | YES | Max deployed-book weight in one correlated cluster; tighter than `max_sector_pct` because a measured cluster is a truer bet boundary than a label |
 | `min_correlation_bars` | `60` | `int ≥ 20, ≤ 250` (bars) | YES | Minimum overlapping bars for a usable estimate; below it the pair is **not evaluated** (`PM-NEV-09`), never silently passed |
-| `issuer_map` | pack data | `mapping ticker → issuer key` | NO (pack data) | Owned by the trading pack (ADR-0012), not the agent; collapses share classes of one issuer to one key. Absence means single-class, which is the common case |
+
+*`issuer_map` (ticker → issuer key) is **pack data, not a setting**: owned by the trading pack
+(ADR-0012) and loaded outside the settings model, so it has no row above. It collapses share
+classes of one issuer to one key; absence means single-class, which is the common case.*
 
 ---
 
@@ -404,3 +407,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `::test_cluster_ratio_is_recomputable_from_rendered_weights`,
   `::test_staples_near_misses_are_weighted_without_failing_the_cap`, and
   `::test_degenerate_ramp_is_binary_at_the_floor_and_declared`.
+- v1.9 — amendment (DL-203 / work-queue item 33, 2026-09-23). `PARAM` only: `issuer_map` leaves
+  the table for a note beneath it. It is pack data loaded outside the settings model (ADR-0012), and
+  a `PARAM` row names a settings field — the row was one of the 57 divergences DRIFT-052 held as
+  warnings. What the map means and who owns it are unchanged; no clause moves.

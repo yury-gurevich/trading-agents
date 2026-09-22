@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -190,6 +190,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `credential_tests_b64` | `""` | `str` | YES | Base64 environment delivery for the master credential-test declaration pack |
 | `credential_pass_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a costly credential-test pass remains fresh during an activation wave |
 | `fleet_preflight_interval_minutes` | `60` | `int ≥ 5 ≤ 240` | YES | Minutes between master-owned whole-fleet readiness checks; bounds detection delay and repeated probe cost |
+| `grant_policy_path` | `""` | `str` | YES | Filesystem path to the pack's grant-policy JSON; empty = the substrate ships no grants, so every agent type is unknown until a pack supplies one |
+| `grant_policy_b64` | `""` | `str` | YES | Base64 grant-policy JSON injected at deploy time; wins over `grant_policy_path` and keeps the master image pack-agnostic |
+| `secret_map_path` | `""` | `str` | YES | Filesystem path to the pack's secret-map JSON; empty = no agent type is entitled to any secret until a pack supplies the table |
+| `secret_map_b64` | `""` | `str` | YES | Base64 secret-map JSON injected at deploy time; wins over `secret_map_path` and keeps the master image pack-agnostic |
+| `secret_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a fetched Key Vault secret stays cached for repeated references; 0 = never expires |
+| `remediation_mode` | `"manual"` | `str` | YES | How a credential-test failure is handled (DL-36): `manual` refuses and escalates to a human; `automatic` allows one remediation shot, then forces manual |
+| `auto_remediation_scope` | `"safe_only"` | `str` | YES | Which catalogue remediations may run automatically under `remediation_mode=automatic`: `safe_only` (non-destructive only) or `all` |
+| `max_auto_remediation_attempts` | `1` | `int ≥ 0 ≤ 3` | YES | Automatic remediation runs allowed per failure signature before human review is forced; one shot by default |
 
 ## Divergence register
 
@@ -211,3 +219,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.4 — S217 adds master-owned `FleetPreflight` evidence (`MST-IDN-02` / `MST-OUT-04`) and
   `MST-FAIL-05` classification for whole-fleet readiness. `MST-FAIL-04` is unchanged: activation
   still permits a transport failure, while fleet readiness fails it by design (DL-179).
+- v1.5 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares the grant-policy and
+  secret-map delivery fields (`*_path` / `*_b64`, the pattern the credential-test rows already use),
+  `secret_cache_ttl_minutes` and the three DL-36 remediation controls. No clause moves.

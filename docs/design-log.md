@@ -10,6 +10,75 @@ and is marked CLOSED here.
 
 ---
 
+## DL-203 - 57 warnings that could not fail were 57 parameters the law did not name - status: DECIDED (planner, 2026-09-23, operator asked for item 33)
+
+**The debt.** S187 (DL-133 decision 3) measured 60 name-presence divergences between agent `PARAM`
+tables and settings models, fixed 3, and baselined **57** as warning-only. **Re-measured on
+2026-09-23 before touching anything: still exactly 57** - analyst 22, provider 12, master 8,
+forecaster 7, researcher 3, execution 2, deliberator 1, portfolio_manager 1, scanner 1. 54 were settings fields with no row; 3 were rows
+naming no field. They printed as `[WARN]` on every `make ci` for 24 days and moved by zero.
+
+**Decision 1 - a secret is declared by name, as `NO (secret)`.** Work-queue item 33 called this
+*"a decision, not a typing exercise"*. It had already been made once: the execution law declares
+`alpaca_api_key` / `alpaca_secret_key` exactly that way, so the provider was the inconsistent law,
+not the rule. The seven provider credentials sit in their own table, value `—`, no value anywhere.
+The Type column says `str` because that is what the code declares; hardening to `SecretStr`
+belongs to the security pass the operator deferred on 2026-09-20, not to this.
+
+**Decision 2 - two rows were deleted, not satisfied.** `close_quantity` and
+`close_reference_price` were the one-share / $1.00 close fixtures retired in 0.73.01 (ADR-0015,
+DL-58); a close sells the quantity actually held. Adding settings fields to make the rows true would
+have resurrected a retired fixture to satisfy a stale law. The law was describing deleted code, so
+the law moved.
+
+**Decision 3 - `issuer_map` is pack data, and leaves the table.** It is read by
+`agents/portfolio_manager/issuer_map.py` from the environment, outside `PortfolioManagerSettings`,
+and ADR-0012 puts it with the trading pack. It stays documented, as a note under the table.
+
+**Decision 4 - the baseline is deleted, not emptied.** An empty allowlist kept "for next time" is how
+the next 57 would arrive. Every PARAM/settings divergence now fails `make ci`, at the repo root as
+everywhere else. `scripts/param_law_sync.py` fell from 212 to **197** lines as the allowlist left
+it, so its DL-202
+size-baseline entry is deleted too: that list is **15**, down from 16.
+
+**Where the rows came from.** Every new row is copied from the field's own declaration - default,
+bounds, unit and the `why=` of its `tunable()` - and its Tunable cell follows the code, which is what
+the checker enforces: 47 `tunable()` fields read `YES`, the one plain URL reads `NO`, the seven
+credentials `NO (secret)`. Nine laws take a `PARAM`-only amendment and a version; no clause was
+added, changed or proven. 🪤 **Two rows state an absence rather than a use:** `fred_api_key` (the
+deferred FRED feed, `PROV-IN-06`) and `tiingo_api_key` are declared and **no runtime provider path
+reads either** - Tiingo is built only by the pack's vault probe and `scripts/export_tiingo_bars.py`.
+The rows say so instead of inventing a purpose.
+
+🪰 **Noted, not changed:** master's `remediation_mode` / `auto_remediation_scope` and the
+deliberator's `llm_provider` select *which* behaviour runs - the shape the analyst and execution laws
+call `NO (mode selector)` - but the code declares them through `tunable()`, so their rows read `YES`.
+The deliberator's is an argued choice (DL-99); master's never was. Reclassifying them is a code change
+to a deployed agent and is not needed to close this item.
+
+**Proven.** `make ci` exit 0 in the branch worktree - **3,061 passed, 6 skipped, 100.00 %**
+coverage. `check_param_law_sync.py` now prints **2** lines, both S223's deliberate envelope breaches
+(it printed 59: those 2 plus the 57). Two tests in `tests/test_param_law_sync_repo.py`: the repo has
+no divergence and exactly those two warnings; and a real field that *was* baselined
+(`analyst.atr_period`), stripped of its row, now **fails** with exactly one error and no warning.
+`make gate-selftest` **31/31**, with `param-law-sync` still rejected (exit 1). The size ratchet
+prints **15** `[LEGACY]` entries, down from 16. `0.109.01`: a fix bump, because the gate now fails
+on what it used to pass.
+
+**Rejected routes.**
+
+- *Exempt credentials from the check by name or type.* Rejected: a pattern exemption also hides the
+  next non-secret field that matches it, and the execution law already showed the by-name form works.
+- *Re-add `close_quantity` / `close_reference_price` as settings.* Rejected: see Decision 2.
+- *Let `NO (pack data)` rows skip the settings check.* Rejected: an exemption keyed on a cell's text
+  lets any stale row opt out by relabelling itself.
+- *Move the issuer-map loader into `PortfolioManagerSettings`* (`issuer_map_b64` /
+  `issuer_map_path`, master's pattern). Not needed to close the item, and a code change to a deployed
+  agent; worth doing if the pack ever ships more portfolio-manager data.
+- *Keep an empty `LEGACY_BASELINE`.* Rejected: see Decision 4.
+
+---
+
 ## DL-202 - a size block that reads 5 of 6 folders is a size block for 5 of 6 folders - status: DECIDED (planner, 2026-09-23, under delegated technical decisions)
 
 **The break.** `check_module_size.py` ran on `$(PKGS) tests`, so `scripts/` was never checked,

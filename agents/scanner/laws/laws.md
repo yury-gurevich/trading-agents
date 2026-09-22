@@ -1,6 +1,6 @@
 # `Scanner` — Laws
 
-**Prefix:** `SCAN` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `SCAN` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Reduce the full tradable universe to a small, ranked, explained set of candidates
 > worth deeper analysis — nothing more.
@@ -237,6 +237,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `max_beta` | `2.5` | `float ≥ 0.0, ≤ 10.0` | YES | Exclude names with excessive systematic risk |
 | `beta_min_observations` | `3` | `int ≥ 2, ≤ 252` (obs) | YES | Minimum aligned returns before the beta cap is trusted to gate |
 | `earnings_exclusion_days` | `5` | `int ≥ 0, ≤ 60` (days) | YES | Exclude names with earnings within this window to avoid gap risk |
+| `bypass_scanner_filter` | `False` | `bool` | YES | When on, tickers the filters would drop still flow downstream, tagged bypassed, so a drop can be scored against what actually happened (DL-09 counterfactual) |
 
 ---
 
@@ -263,3 +264,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.2 — S205 rewrites `SCAN-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `CandidateSet`, `Candidate`, `FilterTrace`, and `FilterVerdict`; the clause
   now names both `skipped_filters` fields and closes DRIFT-047. No contract shape changes.
+- v1.3 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares `bypass_scanner_filter`,
+  the DL-09 counterfactual switch. No clause moves.

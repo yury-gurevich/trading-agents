@@ -1,6 +1,6 @@
 # `Deliberator` -- Laws
 
-**Prefix:** `DLIB` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `DLIB` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Adversarially review PM-approved orders with a bounded proponent/opponent debate
 > and a manager verdict before execution, subtracting unsafe orders only when the
@@ -192,6 +192,7 @@ ADR-0020; declaring is not proving, so every clause starts gray.
 | `role` | `manager` | enum | YES | Selects one of the three image identities |
 | `instance_name` | empty | string | YES | Allows an explicit fleet app identity |
 | `max_rounds` | `2` | int >= 1 <= 5 | YES | More than one live round while bounded |
+| `llm_provider` | `anthropic` | string | YES | Which vendor answers deliberation calls; switching is an operator act, never an automatic fallback, so which model reviewed an order stays answerable (DL-99) |
 | `defender_model` | empty | string | YES | Proponent role model; empty resolves the provider default |
 | `challenger_model` | empty | string | YES | Opponent role model; empty resolves the provider default |
 | `judge_model` | empty | string | YES | Manager verdict model; empty resolves the provider default |
@@ -252,3 +253,6 @@ ADR-0020; declaring is not proving, so every clause starts gray.
   unreadable judge answers route through the existing loud fail-open path rather
   than borrowing the `revise` ruling. Proves `DLIB-OUT-04` and corrects
   DRIFT-066 without changing the `contracts/deliberator.py` ruling vocabulary.
++ v1.9 -- DL-203 / work-queue item 33 declares `llm_provider`, the vendor
+  selector the role-model rows already resolve their defaults against. PARAM
+  row only; no clause moves.

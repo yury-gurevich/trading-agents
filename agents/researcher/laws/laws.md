@@ -1,6 +1,6 @@
 # `Researcher` — Laws
 
-**Prefix:** `RES` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `RES` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Mine accumulated evidence for parameter and strategy improvements and propose bounded,
 > measurable changes into the human-review queue — never apply them itself.
@@ -163,6 +163,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `confidence_step` | `0.05` | `float ≥ 0.01 ≤ 0.20` | YES | Gradual threshold moves keep effects measurable |
 | `confidence_low_water` | `0.40` | `float ≥ 0.0 ≤ 1.0` | YES | Below this average confidence, demand stronger signals |
 | `confidence_high_water` | `0.70` | `float ≥ 0.0 ≤ 1.0` | YES | Above this average confidence, allow more candidates |
+| `backtest_top_k` | `20` | `int ≥ 5 ≤ 100` | YES | Portfolio breadth for walk-forward proposal evidence: equal-weight top-K by score |
+| `backtest_slippage_bps` | `10.0` | `float ≥ 0.0 ≤ 100.0` (bps) | YES | Per-unit-turnover cost charged in the walk-forward simulator; keeps evidence honest about churn |
+| `backtest_holdout_fraction` | `0.30` | `float ≥ 0.3 ≤ 0.5` | YES | Trailing share of the window reported separately as out-of-sample consistency (R001 risk register: OOS ≥ 30 %) |
 
 ## Divergence register
 
@@ -176,3 +179,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.1 — S205 rewrites `RES-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `ParameterChangeProposal`, `ProposedChange`, and `BacktestEvidence`. No
   contract shape changes.
+- v1.2 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares the three walk-forward
+  backtest knobs (`backtest_top_k`, `backtest_slippage_bps`, `backtest_holdout_fraction`). No
+  clause moves.

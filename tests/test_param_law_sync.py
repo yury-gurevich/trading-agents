@@ -166,22 +166,3 @@ def test_envelope_breach_never_fails_the_gate(tmp_path, capsys):
 
     assert _checker()([str(tmp_path)]) == 0
     assert "[WARN] probe.risk_limit" in capsys.readouterr().out
-
-
-def test_param_law_sync_keeps_the_expected_warning_baseline(capsys):
-    """Conventions: Envelope repair leaves the 57-warning legacy baseline intact."""
-
-    assert _checker()([]) == 0
-    output = capsys.readouterr().out
-    warnings = [line for line in output.splitlines() if line.startswith("[WARN]")]
-    envelope_warnings = [line for line in warnings if "envelope=" in line]
-    legacy_warnings = [
-        line
-        for line in output.splitlines()
-        if "settings field has no PARAM row" in line
-        or "PARAM row has no settings field" in line
-    ]
-
-    assert len(envelope_warnings) == 2
-    assert len(warnings) == 59
-    assert len(legacy_warnings) == 57

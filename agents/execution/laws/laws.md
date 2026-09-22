@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -339,8 +339,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | --- | --- | --- | --- | --- |
 | `stage` | `"paper"` | `str` — config-file only | NO (config) | Stage is set by the operator in the config file, not in code; promotion requires `promote_stage` |
 | `slippage_bps` | `0` | `int ≥ 0, ≤ 100` (basis points) | YES | Simulated slippage on paper fills; 0 = no adjustment |
-| `close_quantity` | `1` | `int ≥ 1` (shares) | YES | Default close quantity when monitor does not specify |
-| `close_reference_price` | `1.00` | `Decimal ≥ 0` (USD) | YES | Reference price for close orders in test/paper mode |
 | `min_promotion_runs` | `10` | `int ≥ 1` | YES | Minimum completed runs before promotion past "broker_shadow" is allowed |
 | `min_approval_rate` | `0.70` | `float ∈ (0, 1]` | YES | Minimum fraction of approved (non-gate-rejected) fills over min_promotion_runs |
 | `alpaca_api_key` | — | `SecretStr` | NO (secret) | Alpaca paper API key; never logged or returned |
@@ -423,3 +421,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   liveness, so a stop that fired before the same run's broker-status refresh is not reported as a
   `BrokerStopIdentityMismatch`. Adds fired-stop and graph-only mismatch guards, records DRIFT-064,
   and leaves the green rollup unchanged.
+- **v1.7 — DL-203 / work-queue item 33 (2026-09-23).** `PARAM` only: removes `close_quantity`
+  and `close_reference_price`. They were the one-share / $1.00 close fixtures retired in 0.73.01
+  (ADR-0015, DL-58) — a close sells the quantity actually held — so the law was still declaring two
+  settings that no longer exist. No clause moves.

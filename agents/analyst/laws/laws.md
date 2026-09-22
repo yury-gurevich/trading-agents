@@ -1,6 +1,6 @@
 # `Analyst` — Laws
 
-**Prefix:** `ANLZ` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `ANLZ` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Score scanner candidates into evidence-backed trade recommendations — or explain clearly
 > why none qualify today.
@@ -280,6 +280,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `min_history_bars` | `2` | `int ≥ 2, ≤ 60` (bars) | YES | At least two closes before any indicator is meaningful |
 | `confidence_floor` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Maps composite 0 → this floor; keeps weak evidence below the regime gate |
 | `confidence_span` | `0.60` | `float ≥ 0.0, ≤ 1.0` | YES | Maps composite 100 → floor + span; strong evidence clears the default regime threshold |
+| `exit_confidence_floor` | `0.50` | `float ≥ 0.0, ≤ 1.0` | YES | A held name exits only when its confidence falls clearly below the entry floor; a deliberate ADR-0016 placeholder until exit-strategy work has evidence carrying both directions |
 | `technical_weight` | `0.50` | `float ≥ 0.0, ≤ 1.0` | YES | Reference composite weight for the technical pillar |
 | `fundamental_weight` | `0.30` | `float ≥ 0.0, ≤ 1.0` | YES | Reference weight for the fundamental pillar; renormalised over present pillars |
 | `sentiment_weight` | `0.20` | `float ≥ 0.0, ≤ 1.0` | YES | Reference weight for the sentiment pillar; renormalised over present pillars |
@@ -295,9 +296,27 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `scaled_stop_atr_multiplier` | `2.0` | `float` (ratio) | YES | Challenger stop near 2× decision-time ATR; S150 evidence showed this equalises ordinary touch rates before the risk cap clamps the widest names |
 | `scaled_stop_floor_pct` | `0.025` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Stops volatility-scaled stops becoming too tight on very quiet or tiny-ATR names while still allowing a narrower-than-flat challenger |
 | `scaled_stop_ceiling_pct` | `0.08` | `float ≥ 0.0, ≤ 0.08` (fraction) | YES | Respects the PRD/regime maximum stop risk; the challenger must not silently widen a stop past the declared risk cap. **The cap binds position size, not stop distance — [ADR-0019](../../../docs/decisions/0019-risk-cap-binds-position-size-not-stop-distance.md)** |
-
-*Indicator-specific tunables (MACD spans, Bollinger window, EMA periods, etc.) are declared
-in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` justifications.*
+| `rsi_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Wilder's canonical RSI lookback |
+| `macd_fast` | `12` | `int ≥ 2, ≤ 100` (bars) | YES | Standard MACD fast EMA span |
+| `macd_slow` | `26` | `int ≥ 3, ≤ 200` (bars) | YES | Standard MACD slow EMA span; must exceed the fast span |
+| `macd_signal` | `9` | `int ≥ 2, ≤ 100` (bars) | YES | Standard MACD signal EMA span over the MACD line |
+| `bollinger_window` | `20` | `int ≥ 2, ≤ 200` (bars) | YES | Standard Bollinger-band SMA window |
+| `bollinger_sigma` | `2.0` | `float ≥ 0.5, ≤ 4.0` (σ) | YES | Standard two-standard-deviation band width |
+| `sma_long_period` | `200` | `int ≥ 20, ≤ 400` (bars) | YES | The conventional long-term trend reference; also the long leg of the golden cross |
+| `ema_short_period` | `20` | `int ≥ 2, ≤ 200` (bars) | YES | Fast EMA leg of the crossover trend signal; must trail the long leg |
+| `ema_long_period` | `50` | `int ≥ 3, ≤ 400` (bars) | YES | Slow EMA leg of the crossover trend signal; the trend baseline |
+| `atr_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Wilder's canonical Average True Range lookback |
+| `stoch_k_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Standard stochastic %K lookback |
+| `stoch_d_period` | `3` | `int ≥ 1, ≤ 20` (bars) | YES | Standard stochastic %D smoothing over the %K series |
+| `williams_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Standard Williams %R lookback |
+| `choppiness_period` | `14` | `int ≥ 2, ≤ 100` (bars) | YES | Standard Choppiness Index lookback |
+| `obv_signal_period` | `20` | `int ≥ 2, ≤ 100` (bars) | YES | Smoothing window for the OBV signal line the rule compares against |
+| `golden_cross_short_period` | `50` | `int ≥ 2, ≤ 200` (bars) | YES | Fast SMA leg of the 50/200 golden cross; the long leg reuses `sma_long_period` |
+| `rsi2_period` | `2` | `int ≥ 2, ≤ 10` (bars) | YES | Connors' short RSI lookback for the mean-reversion oversold signal |
+| `nw_bandwidth` | `8.0` | `float ≥ 0.5, ≤ 50.0` | YES | Gaussian kernel width for the Nadaraya-Watson price smoother |
+| `nw_lookback` | `50` | `int ≥ 10, ≤ 200` (bars) | YES | Window the Nadaraya-Watson kernel estimate is computed over |
+| `pattern_lookback` | `60` | `int ≥ 20, ≤ 200` (bars) | YES | Window the geometric chart-pattern swing search scans |
+| `pattern_min_swing_pct` | `2.0` | `float ≥ 0.5, ≤ 10.0` (percent) | YES | Swing significance and pattern-matching tolerance |
 
 ---
 
@@ -354,3 +373,7 @@ in `AnalystSettings` / `_IndicatorSettings` and are all `tunable` with `why=` ju
   `::test_trailing_favorable_estimate_is_absent_until_one_window_settles`,
   `test_measured_stop_targets.py::test_measured_target_evidence_keeps_stop_values_unchanged`, and
   `::test_unavailable_measured_target_is_rejected_not_flattened`.
+- v1.6 — amendment (DL-203 / work-queue item 33, 2026-09-23). `PARAM` only: declares the 21
+  indicator spans in `settings_indicators.py` and `exit_confidence_floor`, replacing the note that
+  said they existed without naming them. They were 22 of the 57 divergences DRIFT-052 held as
+  warnings since S187. No clause was added, changed or proven; the green count does not move.

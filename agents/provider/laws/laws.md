@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -279,6 +279,9 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | `max_news_per_ticker` | `20` | `int [1, 100]` | YES | Cap headlines per ticker so a noisy feed cannot dominate the downstream sentiment pillar. |
 | `finnhub_request_budget_per_minute` | `55` | `int requests/minute [0, 600]` | YES | Pace per-ticker Finnhub calls just under the 60 req/min free-tier cap; `0` disables pacing for controlled proofs. |
 | `finnhub_degraded_note_ticker_cap` | `5` | `int [1, 50]` | YES | Bound attributed feed-degradation notes while naming representative tickers. |
+| `finnhub_earnings_lookahead_days` | `30` | `int days [1, 180]` | YES | Forward window scanned for each ticker's next earnings date. |
+| `ingest_chunk_size` | `0` | `int tickers [0, 500]` | YES | Universe sub-batch size for paced ingest; `0` disables chunking (one single-shot batch). |
+| `ingest_chunk_delay_seconds` | `60.0` | `float seconds [0.0, 600.0]` | YES | Pause between ingest chunks so the aggregate per-minute call rate stays under the free-tier ceiling (Finnhub ~60/min, 4 calls/ticker). |
 
 **Provider mode selectors (non-tunable — choose which provider workflow or feed runs):**
 
@@ -295,6 +298,7 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | `fmp_timeout` | `15` | `int seconds [1, 60]` | YES | Bound the FMP EOD HTTPS call so a slow feed cannot hang the run. |
 | `tiingo_timeout` | `15` | `int seconds [1, 60]` | YES | Bound the Tiingo EOD HTTPS call so a slow feed cannot hang the run. |
 | `alphavantage_timeout` | `25` | `int seconds [1, 60]` | YES | Bound the Alpha Vantage sentiment call; AV is slower than other feeds at peak hours. |
+| `alpaca_data_timeout` | `15` | `int seconds [1, 60]` | YES | Bound the Alpaca bars HTTPS call so a slow feed cannot hang the run. |
 
 **Service base URLs (non-tunable — changing routes to a different service entirely):**
 
@@ -304,6 +308,19 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | `fmp_base_url` | `https://financialmodelingprep.com` | `str` | NO | FMP REST API root; structural — changing connects to a different service. |
 | `tiingo_base_url` | `https://api.tiingo.com` | `str` | NO | Tiingo REST API root; structural — changing connects to a different service. |
 | `alphavantage_base_url` | `https://www.alphavantage.co` | `str` | NO | Alpha Vantage REST API root; structural — changing connects to a different service. |
+| `alpaca_data_base_url` | `https://data.alpaca.markets` | `str` | NO | Alpaca market-data REST root; structural — changing connects to a different service. |
+
+**Credentials (non-tunable — declared by name only; every field is `repr=False` and its value arrives through the environment, never through this table):**
+
+| Name | Value | Type | Tunable | Rationale |
+| --- | --- | --- | --- | --- |
+| `alpaca_api_key` | — | `str` | NO (secret) | Authenticates the Alpaca market-data (OHLCV bars) feed. |
+| `alpaca_api_secret` | — | `str` | NO (secret) | Paired secret for `alpaca_api_key`. |
+| `finnhub_api_key` | — | `str` | NO (secret) | Authenticates the Finnhub fundamentals, news and earnings feed. |
+| `alphavantage_api_key` | — | `str` | NO (secret) | Authenticates the Alpha Vantage news-sentiment feed. |
+| `fmp_api_key` | — | `str` | NO (secret) | Authenticates the FMP feed that supplies `^VIX` regime bars. |
+| `tiingo_api_key` | — | `str` | NO (secret) | Tiingo EOD key (ADR-0006 fallback, DL-37 raw history); no runtime provider path reads it today. |
+| `fred_api_key` | — | `str` | NO (secret) | Reserved for the deferred FRED feed (`PROV-IN-06`); nothing reads it today. |
 
 ## Divergence register
 
@@ -348,3 +365,9 @@ status:
   `PROV-OUT-02`/`PROV-OUT-03` so regime context carries usable `^VIX`, its bar date, and freshness
   status; stale/missing `^VIX` becomes warning evidence with no run-halting incident ref. Closes
   DRIFT-067; no new clauses were declared.
+- **v1.3 — DL-203 / work-queue item 33 (2026-09-23).** `PARAM` only: declares the 12 settings
+  fields S187 left baselined — `alpaca_data_timeout`, `alpaca_data_base_url`,
+  `finnhub_earnings_lookahead_days`, the two paced-ingest knobs, and seven credentials in a new
+  table as `NO (secret)`, by name only, following the execution law's precedent. `fred_api_key` and
+  `tiingo_api_key` are declared although no runtime provider path reads either; their rows say so
+  rather than inventing a use. No clause moves.

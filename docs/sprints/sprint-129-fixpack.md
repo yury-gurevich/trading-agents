@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-129-fixpack`
-**Status:** ready for handover (packaged 2026-07-19)
+**Status:** MERGED — `3be1ee8` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-19)
 **Effort:** M
 
 ---

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-165-score-every-name-not-five`
-**Status:** SPEC — packaged 2026-08-07. 🟢 **Item 3 is already DONE and live** — `SCANNER_CANDIDATE_CAP` set to **25** on the deployed scanner 2026-08-07 (env var, no code, no deploy, no pack move; `env_prefix="SCANNER_"`). Verified: cap=25, `minReplicas=0`, `daily-agent-window` start `30 22 * * 1-5`, image `:s164` — all unchanged. **The remaining sprint is items 1, 2, 4, 5**, and item 1 is the S160 wall
+**Status:** MERGED — merged to `main` in `34ca6ae1` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-07. 🟢 **Item 3 is already DONE and live** — `SCANNER_CANDIDATE_CAP` set to **25** on the deployed scanner 2026-08-07 (env var, no code, no deploy, no pack move; `env_prefix="SCANNER_"`). Verified: cap=25, `minReplicas=0`, `daily-agent-window` start `30 22 * * 1-5`, image `:s164` — all unchanged. **The remaining sprint is items 1, 2, 4, 5**, and item 1 is the S160 wall
 **Version:** fix → **0.89.03** (PATCH — **changed during the sprint**: the law-first read showed
 `SCAN-OBS-01` *already* requires the `ScanRun` to be reconstructable **including the `FilterTrace`**,
 so this makes an existing clause true rather than adding capability. Same call S164 made. If you

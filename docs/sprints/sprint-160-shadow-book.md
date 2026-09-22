@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-160-shadow-book`
-**Status:** SPEC **revision 2** — makes selection quality measurable without spending capital.
+**Status:** MERGED — `2865c5e` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: SPEC **revision 2** — makes selection quality measurable without spending capital.
 🛑 **Revision 1 was stopped at the law-first gate and the stop was correct** — no locked
 constitution owns a `RecommendationOutcome` label. Revision 2 removes the label entirely: the
 scorecard is a **read-only derivation that persists nothing**, joining `accept.py` /

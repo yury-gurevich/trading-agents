@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-150-volatility-scaled-stops`
-**Status:** SPEC — measured challenger to the flat stop distance; **ships OFF by default**
+**Status:** MERGED — merged to `main` in `ca977977` (item 22 review, 2026-09-23); the line read: SPEC — measured challenger to the flat stop distance; **ships OFF by default**
 **Version:** feat → **0.84.00** (MINOR; `0.83.00` is S149)
 **Effort:** M
 **Depends on:** **S149 must be merged first.** It adds the PM-side `atr_pct` extraction this sprint

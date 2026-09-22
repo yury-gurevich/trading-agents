@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-204-every-clause-declares-how-it-is-proven` <!-- create BEFORE any code -->
-**Status:** BUILT
+**Status:** MERGED — `24d61f0` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** 0.98.01
 **Effort:** L
 **Decisions:** work-queue **item 10** (hardening row **O**) · [DRIFT-058](../laws/drift-register.md) applied to the law book itself · conventions **§3** (Layer-0 green bill) · work-queue **item 30** deliberately **not** here — see Out of scope

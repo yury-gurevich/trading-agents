@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 23 — P7 researcher: propose bounded parameter changes (P7 begins)
 
-**Status:** planned · **Branch:** `sprint-23-p7-researcher` · **Build phase:** P7 · **Effort: M**
+**Status:** MERGED — `820aea13` on `main` (feat: add P7 researcher proposals) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-23-p7-researcher` · **Build phase:** P7 · **Effort: M**
 
 ## Goal
 

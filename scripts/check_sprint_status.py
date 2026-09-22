@@ -1,7 +1,7 @@
-"""Classify declared sprint statuses without changing their source documents.
+"""Check that every sprint document declares its build status, and the README agrees.
 
 Agent: tooling
-Role: report each sprint document's declared build status and ratchet refusals.
+Role: report each sprint document's declared build status and fail on any refusal.
 External I/O: reads docs/sprints Markdown files and writes reports to stdout.
 """
 
@@ -11,7 +11,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 
 # Run directly (`python scripts/check_sprint_status.py`) only `scripts/` is on
 # sys.path, not the repo root, so the sibling import below needs the root first.
@@ -20,48 +20,34 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from scripts.sprint_status_index import leading_token, readme_cells  # noqa: E402
 from scripts.sprint_status_report import (  # noqa: E402
     relative_path,
     render_report,
 )
 from scripts.sprint_status_types import (  # noqa: E402
-    Baseline,
     CanonicalStatus,
     Classification,
     DocumentStatus,
     GateResult,
-    Status,
     StatusReport,
 )
 
 _STATUS_MARKER: Final = "**Status:**"
-_EXCLUDED_FILENAMES: Final = frozenset(
-    {"INDEX.md", "README.md", "_TEMPLATE.md", "status-unmapped.md"}
-)
-
-_SYNONYMS: Final[dict[str, CanonicalStatus]] = {
-    "spec": "SPEC",
-    "planned": "SPEC",
-    "queued": "SPEC",
-    "ready": "SPEC",
-    "built": "BUILT",
-    "implemented": "BUILT",
-    "merged": "MERGED",
-    "shipped": "MERGED",
-}
-
-
-_BASELINE: Final = Baseline(unmapped=20, missing=20)
+_EXCLUDED_FILENAMES: Final = frozenset({"INDEX.md", "README.md", "_TEMPLATE.md"})
+# Exactly the template's vocabulary, spelled exactly. Item 22 Part B migrated every
+# synonym S224 accepted (`shipped`, `planned`, ...), so a new one is a refusal.
+_VOCABULARY: Final[frozenset[CanonicalStatus]] = frozenset({"SPEC", "BUILT", "MERGED"})
 
 
 def classify_status_line(line: str) -> Classification:
     """Classify only the first word after the status marker."""
     remainder = line.removeprefix(_STATUS_MARKER).lstrip()
     match = re.match(r"(?P<token>\S+)(?P<evidence>.*)", remainder)
-    if match is None:
+    if match is None or match.group("token") not in _VOCABULARY:
         return Classification(status="UNMAPPED", evidence="")
-    status = _SYNONYMS.get(match.group("token").casefold(), "UNMAPPED")
-    return Classification(status=status, evidence=match.group("evidence"))
+    token = cast("CanonicalStatus", match.group("token"))
+    return Classification(status=token, evidence=match.group("evidence"))
 
 
 def scan_root(root: Path) -> StatusReport:
@@ -87,18 +73,16 @@ def scan_root(root: Path) -> StatusReport:
     return StatusReport(root=resolved, entries=tuple(entries))
 
 
-def check_root(root: Path, baseline: Baseline | None = None) -> GateResult:
-    """Return errors only when a refusal count grows beyond its baseline."""
+def check_root(root: Path) -> GateResult:
+    """Fail on any refusal, and on any README row that disagrees with its spec."""
     report = scan_root(root)
-    allowed = baseline if baseline is not None else _baseline_for(report.root)
-    errors = (
-        (_growth_error(report, "UNMAPPED", allowed.unmapped),)
-        if report.count("UNMAPPED") > allowed.unmapped
-        else ()
+    errors = tuple(
+        f"[FAIL] {entry.status}: {relative_path(report, entry)} — "
+        f"{entry.line or '<no **Status:** line>'}"
+        for entry in report.entries
+        if entry.status in ("UNMAPPED", "MISSING")
     )
-    if report.count("MISSING") > allowed.missing:
-        errors += (_growth_error(report, "MISSING", allowed.missing),)
-    return GateResult(report=report, errors=errors)
+    return GateResult(report=report, errors=errors + _readme_disagreements(report))
 
 
 def main(argv: list[str]) -> int:
@@ -114,6 +98,27 @@ def main(argv: list[str]) -> int:
     for error in result.errors:
         print(error)
     return 0 if result.ok else 1
+
+
+def _readme_disagreements(report: StatusReport) -> tuple[str, ...]:
+    readme = report.root / "docs" / "sprints" / "README.md"
+    cells = readme_cells(readme) if readme.is_file() else {}
+    errors: list[str] = []
+    for entry in report.entries:
+        if entry.status in ("UNMAPPED", "MISSING"):
+            continue
+        cell = cells.get(entry.path.name)
+        if cell is None:
+            errors.append(
+                f"[FAIL] NO README ROW: {relative_path(report, entry)} "
+                f"declares {entry.status}"
+            )
+        elif leading_token(cell) != entry.status:
+            errors.append(
+                f"[FAIL] README DISAGREES: {relative_path(report, entry)} declares "
+                f"{entry.status}, its README row reads: {cell}"
+            )
+    return tuple(errors)
 
 
 def _sprint_documents(root: Path) -> list[Path]:
@@ -132,22 +137,6 @@ def _first_status_line(path: Path) -> str | None:
             if line.startswith(_STATUS_MARKER)
         ),
         None,
-    )
-
-
-def _baseline_for(root: Path) -> Baseline:
-    return _BASELINE if root == _ROOT.resolve() else Baseline()
-
-
-def _growth_error(report: StatusReport, status: Status, baseline: int) -> str:
-    paths = ", ".join(
-        relative_path(report, entry)
-        for entry in report.entries
-        if entry.status == status
-    )
-    return (
-        f"[FAIL] {status} count {report.count(status)} exceeds baseline {baseline}: "
-        f"{paths}"
     )
 
 

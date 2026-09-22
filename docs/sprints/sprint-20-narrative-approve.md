@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 20 — Trade narrative display + approve command (P6 continues)
 
-**Status:** shipped · **Branch:** `sprint-20-narrative-approve` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** MERGED — shipped · **Branch:** `sprint-20-narrative-approve` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 

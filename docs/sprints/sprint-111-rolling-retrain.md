@@ -3,7 +3,7 @@
 
 **Phase:** qlib workflow adoption (Q1c — R001 addendum 2026-07-04)
 **Branch:** `sprint-111-rolling-retrain`
-**Status:** shipped on branch (`sprint-111-rolling-retrain`) — code + Tiingo live check complete;
+**Status:** MERGED — shipped on branch (`sprint-111-rolling-retrain`) — code + Tiingo live check complete;
 pending operator review/merge
 **Effort:** M
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-161-pm-knows-what-it-paid`
-**Status:** SPEC — closes the margin defect that gates every DL-93 decision
+**Status:** MERGED — `802b1c6` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: SPEC — closes the margin defect that gates every DL-93 decision
 **Version:** feat → **0.88.00** (MINOR: new execution-recorded fact + new PM input)
 **Effort:** M
 **Decisions:** [DL-93](../design-log.md) sizing/cap/sell-policy · [DL-44](../design-log.md) broker is

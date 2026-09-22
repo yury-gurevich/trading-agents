@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 44 — Provider Tiingo OHLCV feed (full-S&P-500 live default)
 
-**Status:** planned · **Branch:** `sprint-44-provider-tiingo-feed` · **Build phase:** provider infra (DRIFT-009 closeout · ADR-0006) · **Effort: M**
+**Status:** MERGED — `25dda634` on `main` (feat(provider): Tiingo live OHLCV feed as the full-S&P-500 default (S4) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-44-provider-tiingo-feed` · **Build phase:** provider infra (DRIFT-009 closeout · ADR-0006) · **Effort: M**
 
 ## Goal
 

@@ -1,7 +1,7 @@
 # Sprint 95 — CI-6: optimiser (sweep within bounds)
 
 **Branch:** `sprint-95-ci6-optimiser`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 **Phase:** P15 → ADR-0012 platform/pack wall (deploy follow-up to S84+S85)
 **Branch:** `sprint-86-deploy-pack-policy-wiring`
-**Status:** shipped (0.23.03)
+**Status:** MERGED — shipped (0.23.03)
 
 ---
 

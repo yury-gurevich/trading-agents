@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-188-a-credential-is-tested-before-it-is-handed-over`
-**Status:** BUILT
+**Status:** MERGED — `5dec736` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** `0.93.00`
 **Effort:** M
 **Decisions:** DL-36 (the policy this finally implements) · [DL-134](../design-log.md) (the addendum that found it unwired) · [DL-136](../design-log.md) (S188 credential-test declaration + failure classification)

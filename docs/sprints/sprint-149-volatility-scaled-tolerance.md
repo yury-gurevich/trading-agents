@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-149-volatility-scaled-tolerance`
-**Status:** SPEC — measured challenger to S148's flat tolerance; **ships OFF by default**
+**Status:** MERGED — merged to `main` in `eee68d1c` (item 22 review, 2026-09-23); the line read: SPEC — measured challenger to S148's flat tolerance; **ships OFF by default**
 **Version:** feat → **0.83.00** (MINOR; `0.82.00` is S148)
 **Effort:** M
 **Depends on:** **S148 must be merged first** — this sprint modifies the tolerance S148 introduces.

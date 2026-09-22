@@ -3,7 +3,7 @@
 
 **Phase:** qlib workflow adoption (Q3 — R001 addendum 2026-07-04, re-scoped self-built)
 **Branch:** `sprint-112-researcher-backtest-evidence`
-**Status:** shipped on branch — pending operator review/merge; S111 is merged (`45f6c34`) and the
+**Status:** MERGED — shipped on branch — pending operator review/merge; S111 is merged (`45f6c34`) and the
 committed Tiingo exporter is on `main`
 **Effort:** M
 

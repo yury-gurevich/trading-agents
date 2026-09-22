@@ -4,14 +4,10 @@ from hashlib import sha256
 from pathlib import Path
 
 import pytest
+from scripts import check_sprint_status as checker
+from scripts.sprint_status_index import leading_token, readme_cells
 
-
-def _checker():
-    try:
-        from scripts import check_sprint_status
-    except ImportError as exc:
-        pytest.fail(f"sprint status checker is missing: {exc}")
-    return check_sprint_status
+_EXCLUDED = {"INDEX.md", "README.md", "_TEMPLATE.md"}
 
 
 def _write_doc(root: Path, name: str, content: str) -> Path:
@@ -21,32 +17,19 @@ def _write_doc(root: Path, name: str, content: str) -> Path:
     return path
 
 
-@pytest.mark.parametrize(
-    ("token", "expected"),
-    [
-        ("SPEC", "SPEC"),
-        ("planned", "SPEC"),
-        ("queued", "SPEC"),
-        ("ready", "SPEC"),
-        ("BUILT", "BUILT"),
-        ("implemented", "BUILT"),
-        ("MERGED", "MERGED"),
-        ("shipped", "MERGED"),
-    ],
-)
-def test_t1_known_leading_token_classifies_to_canonical_status(token, expected):
-    checker = _checker()
+def _write_readme(root: Path, *rows: tuple[str, str]) -> None:
+    lines = ["| Sprint | Goal | Status |", "| --- | --- | --- |"]
+    lines += [f"| [{name}]({name}) | goal | {cell} |" for name, cell in rows]
+    _write_doc(root, "README.md", "\n".join(lines) + "\n")
 
-    result = checker.classify_status_line(
-        f"**Status:** {token} `abc123` · DEPLOYED `s211`"
-    )
 
-    assert result.status == expected
+@pytest.mark.parametrize("token", ["SPEC", "BUILT", "MERGED"])
+def test_t1_vocabulary_tokens_round_trip(token):
+    assert checker.classify_status_line(f"**Status:** {token}").status == token
 
 
 def test_t2_evidence_after_leading_token_is_preserved_unchanged():
-    checker = _checker()
-    evidence = " `abc123` · DEPLOYED `s211`"
+    evidence = " — `abc123` · DEPLOYED `s211`"
 
     result = checker.classify_status_line(f"**Status:** MERGED{evidence}")
 
@@ -54,39 +37,88 @@ def test_t2_evidence_after_leading_token_is_preserved_unchanged():
     assert result.evidence == evidence
 
 
-def test_t3_unknown_leading_token_is_unmapped_not_guessed():
-    checker = _checker()
-
-    result = checker.classify_status_line("**Status:** mostly done, see notes")
-
-    assert result.status == "UNMAPPED"
+@pytest.mark.parametrize(
+    "token",
+    ["shipped", "planned", "queued", "ready", "implemented", "Merged", "BUILT;"],
+)
+def test_t3_a_retired_synonym_is_now_a_refusal(token):
+    """Item 22 Part B migrated every synonym S224 accepted, so none is read again."""
+    assert checker.classify_status_line(f"**Status:** {token}").status == "UNMAPPED"
 
 
 def test_t4_document_without_status_is_missing_not_spec(tmp_path):
-    checker = _checker()
     _write_doc(tmp_path, "sprint-no-status.md", "# No declared state\n")
 
-    report = checker.scan_root(tmp_path)
-
-    assert report.entries[0].status == "MISSING"
+    assert checker.scan_root(tmp_path).entries[0].status == "MISSING"
 
 
-@pytest.mark.parametrize("token", ["SPEC", "BUILT", "MERGED"])
-def test_t5_vocabulary_tokens_round_trip(token):
-    checker = _checker()
+def test_t5_one_unmapped_document_fails_and_names_itself(tmp_path):
+    _write_doc(tmp_path, "sprint-vague.md", "**Status:** mostly done\n")
+    _write_readme(tmp_path, ("sprint-vague.md", "MERGED"))
 
-    assert checker.classify_status_line(f"**Status:** {token}").status == token
+    result = checker.check_root(tmp_path)
 
-
-@pytest.mark.parametrize("token", ["shipped", "SHIPPED", "Shipped"])
-def test_t6_shipped_synonym_is_case_insensitive(token):
-    checker = _checker()
-
-    assert checker.classify_status_line(f"**Status:** {token}").status == "MERGED"
+    assert not result.ok
+    assert "UNMAPPED: docs/sprints/sprint-vague.md" in "\n".join(result.errors)
 
 
-def test_t7_checker_never_writes_a_sprint_document(tmp_path):
-    checker = _checker()
+def test_t6_new_document_without_status_fails_and_names_itself(tmp_path, capsys):
+    _write_doc(tmp_path, "sprint-new-missing.md", "# No status\n")
+
+    assert checker.main([str(tmp_path)]) == 1
+
+    assert "MISSING: docs/sprints/sprint-new-missing.md" in capsys.readouterr().out
+
+
+def test_t7_a_readme_row_that_disagrees_fails_and_quotes_the_cell(tmp_path):
+    """S205, S207 and S223 merged while their README rows still read SPEC."""
+    _write_doc(tmp_path, "sprint-merged.md", "**Status:** MERGED `abc123`\n")
+    _write_readme(tmp_path, ("sprint-merged.md", "**SPEC**"))
+
+    result = checker.check_root(tmp_path)
+
+    assert result.errors == (
+        "[FAIL] README DISAGREES: docs/sprints/sprint-merged.md declares MERGED, "
+        "its README row reads: **SPEC**",
+    )
+
+
+def test_t8_a_document_with_no_readme_row_fails(tmp_path):
+    _write_doc(tmp_path, "sprint-unlisted.md", "**Status:** SPEC\n")
+
+    result = checker.check_root(tmp_path)
+
+    assert result.errors == (
+        "[FAIL] NO README ROW: docs/sprints/sprint-unlisted.md declares SPEC",
+    )
+
+
+def test_t9_agreeing_rows_pass_whether_or_not_the_token_is_bold(tmp_path):
+    _write_doc(tmp_path, "sprint-a.md", "**Status:** MERGED — shipped\n")
+    _write_doc(tmp_path, "sprint-b.md", "**Status:** SPEC\n")
+    _write_readme(
+        tmp_path, ("sprint-a.md", "**MERGED** (0.1.00)"), ("sprint-b.md", "SPEC")
+    )
+
+    assert checker.check_root(tmp_path).ok
+
+
+def test_t10_an_escaped_pipe_inside_a_cell_is_not_a_cell_boundary(tmp_path):
+    """S185's row had an unescaped `advisory | binding`, so its last cell was wrong."""
+    readme = tmp_path / "README.md"
+    readme.write_text(
+        "| [s](s.md) | a `x \\| y` goal | **MERGED** `abc` |\nnot a row\n",
+        encoding="utf-8",
+    )
+
+    assert readme_cells(readme) == {"s.md": "**MERGED** `abc`"}
+
+
+def test_t11_a_cell_with_no_word_has_no_token():
+    assert leading_token("— 🟢") is None
+
+
+def test_t12_checker_never_writes_a_sprint_document(tmp_path):
     _write_doc(tmp_path, "sprint-known.md", "**Status:** BUILT evidence\n")
     _write_doc(tmp_path, "sprint-unknown.md", "**Status:** mostly done\n")
     _write_doc(tmp_path, "sprint-missing.md", "# No status\n")
@@ -97,57 +129,20 @@ def test_t7_checker_never_writes_a_sprint_document(tmp_path):
 
     assert checker.main(["--report", str(tmp_path)]) == 0
 
-    after = {path: sha256(path.read_bytes()).hexdigest() for path in before}
-    assert after == before
+    assert {p: sha256(p.read_bytes()).hexdigest() for p in before} == before
 
 
-def test_t8_unmapped_count_above_baseline_fails_and_names_document(tmp_path):
-    checker = _checker()
-    _write_doc(tmp_path, "sprint-new-unmapped.md", "**Status:** mostly done\n")
-
-    result = checker.check_root(tmp_path, baseline=checker.Baseline())
-
-    assert not result.ok
-    assert "sprint-new-unmapped.md" in "\n".join(result.errors)
-
-
-def test_t9_unmapped_count_below_baseline_passes(tmp_path):
-    checker = _checker()
-    _write_doc(tmp_path, "sprint-remaining-unmapped.md", "**Status:** mostly done\n")
-
-    result = checker.check_root(tmp_path, baseline=checker.Baseline(unmapped=2))
-
-    assert result.ok
-
-
-def test_t10_real_corpus_reports_every_sprint_document(capsys):
-    checker = _checker()
+def test_t13_real_corpus_has_no_refusal_and_no_disagreement(capsys):
+    """Item 22 Part B: every spec declares a status, and its README row agrees."""
     root = Path(__file__).resolve().parents[1]
-    expected_documents = len(
-        [
-            path
-            for path in (root / "docs" / "sprints").glob("*.md")
-            if path.name
-            not in {"INDEX.md", "README.md", "_TEMPLATE.md", "status-unmapped.md"}
-        ]
-    )
+    expected = [
+        path
+        for path in (root / "docs" / "sprints").glob("*.md")
+        if path.name not in _EXCLUDED
+    ]
 
-    assert checker.main(["--report", str(root)]) == 0
+    assert checker.main([str(root)]) == 0
 
     output = capsys.readouterr().out
-    assert f"docs_seen={expected_documents}" in output
-    report = checker.scan_root(root)
-    assert all(
-        entry.path.name
-        not in {"INDEX.md", "README.md", "_TEMPLATE.md", "status-unmapped.md"}
-        for entry in report.entries
-    )
-
-
-def test_t11_new_document_without_status_fails_and_names_document(tmp_path, capsys):
-    checker = _checker()
-    _write_doc(tmp_path, "sprint-new-missing.md", "# No status\n")
-
-    assert checker.main([str(tmp_path)]) == 1
-
-    assert "sprint-new-missing.md" in capsys.readouterr().out
+    assert f"docs_seen={len(expected)} " in output
+    assert "UNMAPPED=0 MISSING=0" in output

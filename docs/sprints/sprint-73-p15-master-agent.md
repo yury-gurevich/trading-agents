@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-73-p15-master-agent`
-**Status:** shipped
+**Status:** MERGED — shipped
 
 ---
 

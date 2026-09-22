@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36, supporting)
 **Branch:** `sprint-105-master-secret-cache`
-**Status:** shipped (0.45.00 → 0.46.00)
+**Status:** MERGED — shipped (0.45.00 → 0.46.00)
 **Effort:** S
 
 ---

@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 25 — P8 market pack + stage command wiring (P8 closes)
 
-**Status:** planned · **Branch:** `sprint-25-p8-market-pack` · **Build phase:** P8 · **Effort: M**
+**Status:** MERGED — merged to `main` in `28f8f6da` (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-25-p8-market-pack` · **Build phase:** P8 · **Effort: M**
 
 ## Goal
 

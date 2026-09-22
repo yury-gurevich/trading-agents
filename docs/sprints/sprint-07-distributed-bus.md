@@ -1,6 +1,6 @@
 # Sprint 07 — Distributed (Celery) bus backend (finishes the P1 bus)
 
-**Status:** shipped (merged to `main` @ `4f4f0f2`; P1 bus exit met) · **Branch:** `sprint-07-distributed-bus` · **Build phase:** P1 (kernel runtime — bus completion)
+**Status:** MERGED — shipped (merged to `main` @ `4f4f0f2`; P1 bus exit met) · **Branch:** `sprint-07-distributed-bus` · **Build phase:** P1 (kernel runtime — bus completion)
 
 ## Goal
 

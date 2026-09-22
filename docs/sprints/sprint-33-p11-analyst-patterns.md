@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 33 — P11 analyst: patterns, smoothing & calendar (NW kernel / geometric patterns / turnaround)
 
-**Status:** planned · **Branch:** `sprint-33-p11-analyst-patterns` · **Build phase:** P11 · **Effort: L**
+**Status:** MERGED — `75f77df9` on `main` (docs: close Sprint 33 — analyst patterns/smoothing/calendar shipped (P) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-33-p11-analyst-patterns` · **Build phase:** P11 · **Effort: L**
 
 ## Goal
 

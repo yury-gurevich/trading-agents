@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-155-bounded-retry-and-fault-containment`
-**Status:** SPEC — packaged 2026-08-01
+**Status:** MERGED — merged to `main` in `4091d6c6` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-01
 **Version:** fix → **0.85.01** (PATCH: last two digits)
 **Effort:** M
 **Decisions:** [DL-79](../design-log.md) **(the outage this generalises — read it first)** ·

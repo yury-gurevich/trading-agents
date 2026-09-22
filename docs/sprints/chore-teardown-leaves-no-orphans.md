@@ -1,6 +1,8 @@
 <!-- Agent: tooling | Role: chore spec + closeout for DL-94 -->
 # chore-teardown-leaves-no-orphans — a teardown that under-deletes must not exit 0
 
+**Status:** MERGED — merged to `main` in `9d6243c3` (item 22 review, 2026-09-23)
+
 **Closes:** [DL-94](../design-log.md) · **Type:** fix · **Version:** 0.89.04 · **Branch:**
 `chore-teardown-leaves-no-orphans` · **Deploys:** nothing (tooling only; the fleet stays on `:s165`)
 

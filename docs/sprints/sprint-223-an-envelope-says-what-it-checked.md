@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-223-an-envelope-says-what-it-checked`
-**Status:** BUILT
+**Status:** MERGED — `b18014e7` on `main` (fix(s223): an envelope names the value it checked and cannot exceed it) (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** DL-196 (this sprint's fork) · [DL-195](../design-log.md) (the three breaches, filed on the S207 merge) · work-queue item **79**

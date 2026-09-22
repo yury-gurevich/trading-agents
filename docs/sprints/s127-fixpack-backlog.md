@@ -1,6 +1,8 @@
 <!-- Agent: planning | Role: fix-sprint backlog -->
 # S127 fixpack — issue collection
 
+**Status:** MERGED — a backlog, not a spec: all 12 rows are marked FIXED, shipped through S127 and S129 (item 22 review, 2026-09-23)
+
 Running list of small, confirmed defects and cleanups batched for the next fix sprint.
 **How it works:** anyone appends a row while the issue is fresh; the planning agent packages
 S127 from this list when it justifies a sprint. One row per issue; link the evidence. Genuine

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-186-a-headline-about-twenty-companies-is-not-news-about-one`
-**Status:** BUILT
+**Status:** MERGED — `4b0daaf` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-127](../design-log.md) the decision and its measurement · [DL-117](../design-log.md)

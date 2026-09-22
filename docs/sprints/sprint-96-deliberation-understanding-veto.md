@@ -1,7 +1,7 @@
 # Sprint 96 — Deliberation: define-then-justify + scored understanding, then challenger-veto
 
 **Branch:** `sprint-96-deliberation-understanding-veto`
-**Status:** Part A SHIPPED (0.40.00) · Part B mechanism SHIPPED (0.41.00, opt-in, off by default) · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B)**
+**Status:** MERGED — tag `v0.40.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: Part A SHIPPED (0.40.00) · Part B mechanism SHIPPED (0.41.00, opt-in, off by default) · **Phase:** Deliberation → runtime (DL-31) · **Effort: L (split A/B)**
 
 > **Part B shipped (mechanism):** `orchestration/veto.py` (opt-in challenger-veto stage between PM and
 > execution — debates each approved order, records a `DeliberationRun` with per-order verdicts + the

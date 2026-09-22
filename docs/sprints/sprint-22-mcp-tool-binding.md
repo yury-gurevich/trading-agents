@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 22 — MCP tool-binding (P1 closes)
 
-**Status:** planned · **Branch:** `sprint-22-mcp-tool-binding` · **Build phase:** P1 remainder · **Effort: M**
+**Status:** MERGED — `e09838e0` on `main` (Implement Sprint 22 MCP tool binding) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-22-mcp-tool-binding` · **Build phase:** P1 remainder · **Effort: M**
 
 ## Goal
 

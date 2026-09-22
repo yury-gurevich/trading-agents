@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 42 — Provider earnings-calendar feed (P11, unblocks the scanner earnings-window exclusion)
 
-**Status:** ✅ shipped (2026-06-18, on `main`) · **Build phase:** P11 · **Effort: M** · executed directly (no coding agent this cycle)
+**Status:** MERGED — ✅ shipped (2026-06-18, on `main`) · **Build phase:** P11 · **Effort: M** · executed directly (no coding agent this cycle)
 
 > **Handback (shipped).** Built as scoped, provider-only. `DataSource.fetch_earnings(tickers, window)`
 > added to the Protocol + `FakeDataSource` (fixture + `fail_earnings`); real

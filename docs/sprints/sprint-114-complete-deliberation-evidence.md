@@ -3,7 +3,7 @@
 
 **Phase:** deliberation quality — critical path (DL-41, operator priority 2026-07-05)
 **Branch:** `sprint-114-complete-deliberation-evidence`
-**Status:** shipped — implemented on `sprint-114-complete-deliberation-evidence`; awaiting operator review/merge
+**Status:** MERGED — shipped — implemented on `sprint-114-complete-deliberation-evidence`; awaiting operator review/merge
 **Effort:** M
 
 ---

@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 46 — Persisted sentiment-reading node (scorecard alignment substrate)
 
-**Status:** shipped · **Branch:** `sprint-46-analyst-sentiment-reading` · **Build phase:** P12 (checklist item 2) · **Effort: M**
+**Status:** MERGED — shipped · **Branch:** `sprint-46-analyst-sentiment-reading` · **Build phase:** P12 (checklist item 2) · **Effort: M**
 
 ## Goal
 

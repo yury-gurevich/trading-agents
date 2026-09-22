@@ -1,6 +1,6 @@
 # Sprint 15 — Scheduler + supervisor message lineage (P4 exit)
 
-**Status:** planned · **Branch:** `sprint-15-supervisor` · **Build phase:** P4 (orchestration) · **Effort: M**
+**Status:** MERGED — `8abbe3cb` on `main` (Implement Sprint 15 supervisor lineage) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-15-supervisor` · **Build phase:** P4 (orchestration) · **Effort: M**
 
 ## Goal
 

@@ -1,7 +1,7 @@
 # Sprint 66 — P14.7: Dispatcher → trigger-emitter + watchdog
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** planned
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: planned
 **Branch:** `sprint-66-p14-dispatcher-trigger-emitter`
 **Effort:** M
 **Prerequisite:** S65 shipped (all agents dual-mode; full pub/sub pipeline proven).

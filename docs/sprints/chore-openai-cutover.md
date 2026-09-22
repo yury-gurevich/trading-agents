@@ -1,6 +1,8 @@
 <!-- Agent: deliberator | Role: chore spec — make the S168 provider switch reachable on the fleet -->
 # chore-openai-cutover — give the deliberator the key it needs
 
+**Status:** MERGED — merged to `main` in `8b30624e` (item 22 review, 2026-09-23)
+
 **Depends on:** S168 (`v0.90.00`, merge `c36b7d3`) — the code is shipped and proven; this chore only
 makes it *reachable* on the fleet · **Type:** chore · **Version:** no package bump for the grant
 change alone (config + pack); bump only if Python changes

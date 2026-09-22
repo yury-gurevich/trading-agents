@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-134-assertion-hardening`
-**Status:** ready for handover (packaged 2026-07-21)
+**Status:** MERGED — merged to `main` in `d8312605` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-21)
 **Effort:** M
 **Sequence:** executes **before S133** (operator directive 2026-07-21) — fixes-first, and this
 touches real-money decision code; S133 (Service Bus SAS, lower severity) follows it.

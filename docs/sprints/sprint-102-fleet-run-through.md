@@ -3,7 +3,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35 — the payoff sprint of the arc)
 **Branch:** `sprint-102-fleet-run-through`
-**Status:** shipped — merged `3049955` (0.62.00, 2026-07-08); closeout evidence below
+**Status:** MERGED — shipped — merged `3049955` (0.62.00, 2026-07-08); closeout evidence below
 **Effort:** M/L (one small CI-tested wire + live infra validation)
 
 ---

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-185-the-veto-posture-is-declared-not-arithmetic`
-**Status:** BUILT — local proof complete; remote `make gate-ran` is post-push evidence.
+**Status:** MERGED — `5bea06d` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT — local proof complete; remote `make gate-ran` is post-push evidence.
 **Version:** 0.92.00
 **Effort:** M
 **Decisions:** [DL-104](../design-log.md) (d) the row this closes · [DL-116](../design-log.md) the

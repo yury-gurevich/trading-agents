@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-159-tests-never-transact`
-**Status:** SPEC — closes hardening **row T**, whose open question is now answered
+**Status:** MERGED — `56a157b` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: SPEC — closes hardening **row T**, whose open question is now answered
 **Version:** fix → **0.86.03** (PATCH: last two digits)
 **Effort:** S–M
 **Decisions:** [row T](../hardening-backlog.md) · [DL-70](../design-log.md) plant the violation ·

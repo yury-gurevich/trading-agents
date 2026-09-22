@@ -1,6 +1,8 @@
 <!-- Agent: supervisor | Role: sprint spec — make the critical-flag health signal able to return to green, so it can carry news again -->
 # S178 — the health signal must be able to go green
 
+**Status:** MERGED — `fd802c2` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue item 17 · **Opens from:** `/reconcile-broker`, 2026-08-15 ·
 **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file** ·

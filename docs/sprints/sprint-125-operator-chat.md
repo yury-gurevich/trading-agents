@@ -3,7 +3,7 @@
 
 **Phase:** Operations dashboard (DL-47 slice 4; S122–S124 shipped, 0.66.00→0.68.00)
 **Branch:** `sprint-125-operator-chat`
-**Status:** ready for handover (packaged 2026-07-12)
+**Status:** MERGED — merged to `main` in `9420b785` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-12)
 **Effort:** M
 
 ---

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-153-deliberator-agent`
-**Status:** SPEC — packaged 2026-07-31, **refreshed 2026-08-01** against the live spine and the
+**Status:** MERGED — merged to `main` in `f32581a2` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-07-31, **refreshed 2026-08-01** against the live spine and the
 S152/S154 merges; ready to hand to a coding agent
 **Version:** feat → **0.85.00** (MINOR: two middle digits — a new agent is a new capability).
 Base is **0.84.06** at time of writing; if `main` has moved, bump from wherever it actually is —

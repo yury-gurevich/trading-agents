@@ -1,6 +1,8 @@
 <!-- Agent: tooling | Role: chore spec + closeout for DL-97 -->
 # chore-one-sector-rejection — the sector reason strings exist in one place
 
+**Status:** MERGED — merged to `main` in `9417df39` (item 22 review, 2026-09-23)
+
 **Closes:** [DL-97](../design-log.md) · **Type:** fix · **Version:** 0.89.06 · **Branch:**
 `chore-one-sector-rejection` · **Deploys:** nothing (the fleet stays on `:s165`)
 

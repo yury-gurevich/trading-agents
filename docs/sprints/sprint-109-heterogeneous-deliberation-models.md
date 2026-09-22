@@ -2,7 +2,7 @@
 
 **Phase:** LLM interaction quality (ADR-0010 / DL-24)
 **Branch:** `sprint-109-heterogeneous-deliberation-models`
-**Status:** shipped (0.51.00 → 0.52.00; **live-Opus closeout deferred** — see Closeout evidence)
+**Status:** MERGED — shipped (0.51.00 → 0.52.00; **live-Opus closeout deferred** — see Closeout evidence)
 **Effort:** M
 
 ---

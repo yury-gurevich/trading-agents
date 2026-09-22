@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 59 — Forecaster: LightGBM booster training + price-return IC scorecard
 
-**Status:** active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow`
+**Status:** MERGED — `ef018079` on `main` (feat(forecaster): LightGBM training pipeline + return IC scorecard — q) (item 22 review, 2026-09-23); the line read: active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow`
 **Build phase:** qlib Phase Q1 follow-on · **Effort: M**
 **Prerequisite:** S58 shipped (forecaster `forecast_return` runtime in place).
 

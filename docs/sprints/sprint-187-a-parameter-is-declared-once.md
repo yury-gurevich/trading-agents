@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-187-a-parameter-is-declared-once`
-**Status:** BUILT
+**Status:** MERGED — `7d36771` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** `0.92.02`
 **Effort:** S (plus one law cycle)
 **Decisions:** [DL-120](../design-log.md) the sweep whose headline was wrong and whose remainder this

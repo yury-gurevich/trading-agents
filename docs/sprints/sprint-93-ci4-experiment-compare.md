@@ -1,7 +1,7 @@
 # Sprint 93 — CI-4: experiment + compare
 
 **Branch:** `sprint-93-ci4-experiment-compare`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
 
 ## Goal
 

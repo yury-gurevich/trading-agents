@@ -1,6 +1,6 @@
 # Sprint 03 — Neo4j GraphStore: retire the relational adapter, stand up the graph spine
 
-**Status:** shipped (merged to `main` @ `ba2f42c`) · **Branch:** `sprint-03-neo4j-store` · **Build phase:** P1 (storage pivot)
+**Status:** MERGED — shipped (merged to `main` @ `ba2f42c`) · **Branch:** `sprint-03-neo4j-store` · **Build phase:** P1 (storage pivot)
 
 ## Goal
 

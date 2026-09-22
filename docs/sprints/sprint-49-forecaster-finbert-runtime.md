@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 49 — Forecaster agent first runtime: FinBERT sentiment shadow scorer (P12)
 
-**Status:** shipped (2026-06-17, commit `82ecb31`) · **Branch:** `sprint-49-forecaster-finbert-runtime` · **Build phase:** P12 (the FinBERT challenger — the reserved forecaster agent's first runtime) · **Effort: L**
+**Status:** MERGED — shipped (2026-06-17, commit `82ecb31`) · **Branch:** `sprint-49-forecaster-finbert-runtime` · **Build phase:** P12 (the FinBERT challenger — the reserved forecaster agent's first runtime) · **Effort: L**
 
 > **Handback (shipped).** Built as scoped — the forecaster agent's first runtime, 9 modules under
 > `agents/forecaster/` (agent 119L, store 76L, domain/sentiment 52L, provider_client 47L, settings 37L,

@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 19 — GraphStore `list_nodes` + position lifecycle (P6 continues)
 
-**Status:** shipped · **Branch:** `sprint-19-list-nodes-lifecycle` · **Build phase:** P6 (surfaces) · **Effort: M**
+**Status:** MERGED — shipped · **Branch:** `sprint-19-list-nodes-lifecycle` · **Build phase:** P6 (surfaces) · **Effort: M**
 
 ## Goal
 

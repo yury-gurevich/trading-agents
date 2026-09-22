@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-202-a-probe-that-cannot-fail-proves-nothing`
-**Status:** BUILT
+**Status:** MERGED — `c1ff150e` on `main` (feat(s202): a credential probe that cannot fail is not an entry condit) (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** S
 **Decisions:** work-queue **item 50** (closed) · [DL-163](../design-log.md) (operator decision) · [DL-164](../design-log.md) (implementation, re-sequenced) · **DRIFT-058** (new, CORRECTED) · [DL-125](../design-log.md) non-regression · work-queue **item 53** (new)

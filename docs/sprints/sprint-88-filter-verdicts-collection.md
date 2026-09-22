@@ -2,7 +2,7 @@
 
 **Phase:** P15 / trading-pack — filter-quality measurement (DL-09)
 **Branch:** `sprint-88-filter-verdicts-collection`
-**Status:** shipped (0.24.00)
+**Status:** MERGED — shipped (0.24.00)
 
 ---
 

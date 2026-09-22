@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-218-a-broken-fleet-gets-no-run`
-**Status:** BUILT — amendment **R1** is locally proven (2026-09-20); its final handback SHA still requires remote gate proof. Do not merge or deploy.
+**Status:** MERGED — merged to `main` in `69f36016` (item 22 review, 2026-09-23); the line read: BUILT — amendment **R1** is locally proven (2026-09-20); its final handback SHA still requires remote gate proof. Do not merge or deploy.
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-179](../design-log.md) §6–§9 (the schedule and the three-sprint plan) · second of three sprints for work-queue item **58** · builds on S217 / DL-180

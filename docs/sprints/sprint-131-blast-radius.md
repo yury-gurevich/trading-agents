@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-131-blast-radius`
-**Status:** ready for handover (packaged 2026-07-20)
+**Status:** MERGED — merged to `main` in `0ca74596` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-20)
 **Effort:** M
 
 ---

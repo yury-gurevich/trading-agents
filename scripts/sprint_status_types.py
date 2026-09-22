@@ -46,14 +46,6 @@ class DocumentStatus:
 
 
 @dataclass(frozen=True)
-class Baseline:
-    """Counts that may shrink but never grow."""
-
-    unmapped: int = 0
-    missing: int = 0
-
-
-@dataclass(frozen=True)
 class StatusReport:
     """Every document scanned under one root."""
 
@@ -74,5 +66,5 @@ class GateResult:
 
     @property
     def ok(self) -> bool:
-        """True when nothing grew past its baseline."""
+        """True when every document declares a status its README row agrees with."""
         return not self.errors

@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-108-vault-seeder`
-**Status:** shipped
+**Status:** MERGED — shipped
 **Effort:** M–L
 
 ---

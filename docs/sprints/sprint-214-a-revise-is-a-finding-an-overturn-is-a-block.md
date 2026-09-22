@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-214-revise-is-a-finding`
-**Status:** BUILT
+**Status:** MERGED — merged to `main` in `1a6f3429` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S–M
 **Decisions:** implements [ADR-0029](../decisions/0029-a-revise-is-a-finding-an-overturn-is-a-block.md)

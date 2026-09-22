@@ -1,6 +1,8 @@
 <!-- Agent: execution | Role: sprint spec + closeout for DL-98 -->
 # S166 — the veto gates buys, never exits
 
+**Status:** MERGED — merged to `main` in `afc50889` (item 22 review, 2026-09-23)
+
 **Closes:** [DL-98](../design-log.md) · **Decides:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md)
 · **Type:** fix · **Version:** 0.89.07 · **Branch:** `sprint-166-the-veto-gates-buys`
 · **Deploys:** image-only retag (no pack change)

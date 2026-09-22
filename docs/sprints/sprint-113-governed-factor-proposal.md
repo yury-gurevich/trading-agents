@@ -3,7 +3,7 @@
 
 **Phase:** qlib workflow adoption (Q5 — R001 addendum 2026-07-04, governed factor-mining loop = Moonshot #3)
 **Branch:** `sprint-113-governed-factor-proposal`
-**Status:** ready for handover — from `main` (S112 merged `feb7f87`, S109 re-run merged `b60fc6f`)
+**Status:** MERGED — tag `v0.57.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover — from `main` (S112 merged `feb7f87`, S109 re-run merged `b60fc6f`)
 **Effort:** M
 
 ---

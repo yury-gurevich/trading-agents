@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-163-an-exit-cancels-its-own-stop`
-**Status:** SPEC — packaged 2026-08-07; **blocks [chore-flatten-and-resize](chore-flatten-and-resize.md)**
+**Status:** MERGED — merged to `main` in `a46449eb` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-07; **blocks [chore-flatten-and-resize](chore-flatten-and-resize.md)**
 **Version:** fix → **0.89.01** (PATCH: a defect in the exit path, no new capability)
 **Effort:** S
 **Decisions:** [DL-95](../design-log.md) the finding this closes · [DL-93](../design-log.md) the deadlock it unblocks ·

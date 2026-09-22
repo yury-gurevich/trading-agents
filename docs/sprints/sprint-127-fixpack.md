@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19); first sprint after the DL-47 arc closed
 **Branch:** `sprint-127-fixpack`
-**Status:** ready for handover (packaged 2026-07-15)
+**Status:** MERGED — merged to `main` in `32c73cc3` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-15)
 **Effort:** M
 
 ---

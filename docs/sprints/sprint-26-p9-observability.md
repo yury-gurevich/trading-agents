@@ -1,5 +1,7 @@
 # Sprint 26 — P9: Observability stack
 
+**Status:** MERGED — its README row records it shipped; no merge commit or tag was found to cite (item 22 review, 2026-09-23)
+
 **Phase:** P9 — Observability stack (closes P9)
 **Branch:** `sprint-26-p9-observability`
 **Depends on:** Sprint 25 shipped (main, `3d3d9b1`)

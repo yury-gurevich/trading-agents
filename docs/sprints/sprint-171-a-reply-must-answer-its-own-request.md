@@ -1,6 +1,8 @@
 <!-- Agent: deliberator | Role: sprint spec — correlate peer replies so a verdict belongs to its own order -->
 # S171 — a reply must answer its own request
 
+**Status:** MERGED — `9a22102` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** [DL-102](../design-log.md) · **Type:** fix ·
 **Target version:** next available **PATCH** at merge — **do not pin it in this file** ·
 **Branch:** `sprint-171-a-reply-must-answer-its-own-request`

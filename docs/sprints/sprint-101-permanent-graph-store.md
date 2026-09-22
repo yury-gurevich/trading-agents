@@ -4,7 +4,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-101-permanent-graph-store`
-**Status:** planned
+**Status:** SPEC — planned
 **Effort:** M (ops-heavy; not CI-tested)
 
 ---

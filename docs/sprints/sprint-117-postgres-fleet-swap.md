@@ -3,7 +3,7 @@
 
 **Phase:** DL-43 Postgres migration (step 2 of 3: S116 adapter ✅ → **swap** → S118 rip-out)
 **Branch:** `sprint-117-postgres-fleet-swap`
-**Status:** closed on branch — not merged/pushed (S116 merged `5f11b93`, 0.60.00)
+**Status:** MERGED — tag `v0.60.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: closed on branch — not merged/pushed (S116 merged `5f11b93`, 0.60.00)
 **Effort:** S/M
 
 ---

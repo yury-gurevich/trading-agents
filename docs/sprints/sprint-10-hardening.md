@@ -1,6 +1,6 @@
 # Sprint 10 — Audit-truth & rigor hardening (before execution)
 
-**Status:** shipped (merged to `main` @ `3bd1c25`) · **Branch:** `sprint-10-hardening` · **Build phase:** P3 (foundation hardening) · **Effort: L**
+**Status:** MERGED — shipped (merged to `main` @ `3bd1c25`) · **Branch:** `sprint-10-hardening` · **Build phase:** P3 (foundation hardening) · **Effort: L**
 
 ## Goal
 

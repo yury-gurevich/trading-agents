@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-74-p15-rsa-entrypoints`
-**Status:** shipped
+**Status:** MERGED — shipped
 
 ---
 

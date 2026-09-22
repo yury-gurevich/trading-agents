@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 34 — Provider fundamentals feed (Finnhub metrics → MarketData.fundamentals)
 
-**Status:** planned · **Branch:** `sprint-34-provider-fundamentals` · **Build phase:** P11 · **Effort: M**
+**Status:** MERGED — `15655bdd` on `main` (docs: close Sprint 34 — provider fundamentals feed shipped (P11)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-34-provider-fundamentals` · **Build phase:** P11 · **Effort: M**
 
 ## Goal
 

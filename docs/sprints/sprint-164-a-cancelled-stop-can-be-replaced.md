@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-164-a-cancelled-stop-can-be-replaced`
-**Status:** SPEC — packaged 2026-08-07; **the last gate before [chore-flatten-and-resize](chore-flatten-and-resize.md)**
+**Status:** MERGED — merged to `main` in `f3b2fcfc` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-07; **the last gate before [chore-flatten-and-resize](chore-flatten-and-resize.md)**
 **Version:** fix → **0.89.02** (PATCH: closes `DRIFT-038`, no new capability)
 **Effort:** S
 **Decisions:** [DRIFT-038](../laws/drift-register.md) the row this closes ·

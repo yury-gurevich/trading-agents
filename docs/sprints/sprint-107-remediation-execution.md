@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-107-remediation-execution`
-**Status:** shipped
+**Status:** MERGED — shipped
 **Effort:** XL — **designed to split** (see *Sequencing* below): **D-1** eval-gated selector, then
 **D-2** execution pipeline + concurrency + wiring.
 

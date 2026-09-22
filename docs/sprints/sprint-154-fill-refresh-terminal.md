@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-154-fill-refresh-terminal`
-**Status:** SPEC — 🟠 **not an outage.** Every run is green; the defect is unbounded write growth
+**Status:** MERGED — merged to `main` in `676362a6` (item 22 review, 2026-09-23); the line read: SPEC — 🟠 **not an outage.** Every run is green; the defect is unbounded write growth
 and an unbounded fault, both invisible to the acceptance gate
 **Version:** fix → **0.84.05** (PATCH: last two digits)
 **Effort:** S

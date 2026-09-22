@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-152-law-amendment-cycle`
-**Status:** SPEC — packaged 2026-07-31, **not yet handed to a coding agent**
+**Status:** MERGED — merged to `main` in `4524da53` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-07-31, **not yet handed to a coding agent**
 **Version:** fix → next available **PATCH** (`0.84.04` if `0.84.02`/`0.84.03` have landed; confirm
 against `main` before starting — two chores were in flight when this was written)
 **Effort:** M

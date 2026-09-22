@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-206-a-rendered-verdict-names-the-check-that-produced-it`
-**Status:** SHIPPED
+**Status:** MERGED — SHIPPED
 **Version:** `0.98.04`
 **Effort:** M
 **Decisions:** [DL-167](../design-log.md) the open thread · `DRIFT-062` the row this opens · work-queue item **59**

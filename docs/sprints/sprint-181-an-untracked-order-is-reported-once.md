@@ -319,7 +319,7 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Status:** implemented on branch `sprint-181-an-untracked-order-is-reported-once` as `0.90.15`.
+**Status:** MERGED — `7ffc730` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: implemented on branch `sprint-181-an-untracked-order-is-reported-once` as `0.90.15`.
 Branch push / remote gate proof happens after this closeout commit; merge, deploy, and the
 post-deploy `FaultResolution` are not claimed here.
 

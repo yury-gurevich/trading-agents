@@ -3,7 +3,7 @@
 
 **Phase:** DL-43 Postgres migration (step 1 of 3: adapter → S117 fleet swap → S118 rip-out)
 **Branch:** `sprint-116-postgres-graphstore`
-**Status:** ready for handover — from `main` (S115 merged `ab66caf`, 0.58.00)
+**Status:** MERGED — tag `v0.59.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover — from `main` (S115 merged `ab66caf`, 0.58.00)
 **Effort:** M
 
 ---

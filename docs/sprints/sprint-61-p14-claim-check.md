@@ -1,7 +1,7 @@
 # Sprint 61 — P14.2: Claim-check helper
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** planned
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: planned
 **Branch:** `sprint-61-p14-claim-check`
 **Effort:** S–M
 **Prerequisite:** S60 shipped (pub/sub on both bus backends).

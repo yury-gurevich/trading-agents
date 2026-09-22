@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 24 — P8 stage gate machinery (P8 begins)
 
-**Status:** planned · **Branch:** `sprint-24-p8-stage-gate` · **Build phase:** P8 · **Effort: M**
+**Status:** MERGED — `b0f23d70` on `main` (feat: add P8 execution stage gate) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-24-p8-stage-gate` · **Build phase:** P8 · **Effort: M**
 
 ## Goal
 

@@ -1,7 +1,7 @@
 # Sprint 60 — P14.1: Kernel pub/sub primitive
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** active
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: active
 **Branch:** `sprint-60-p14-kernel-pubsub`
 **Effort:** S
 **Prerequisite:** S59 shipped; S60 is the first in the 8-sprint P14 sequence.

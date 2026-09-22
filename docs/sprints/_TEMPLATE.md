@@ -20,7 +20,10 @@ HOW TO USE THIS FILE
 **Status:** SPEC
 <!-- 🩹 Machine-checkable, exactly one of: SPEC | BUILT | MERGED. Work-queue item 22 exists because
      closeouts used three different wordings and nothing could answer "is this spec built?".
-     One line, one vocabulary. Update it at handback and again at merge. -->
+     One line, one vocabulary. Update it at handback and again at merge — and in the same commit
+     change this sprint's README.md row, whose status cell must lead with the same token.
+     `make ci` fails on a synonym (`shipped`, `planned`, ...) or on a README row that disagrees:
+     item 22 Part B found 69 merged specs still declaring SPEC, and every BUILT one merged. -->
 **Version:** *next available <PATCH|MINOR> at merge*
 <!-- 🩹 DO NOT PIN A NUMBER. Three specs were renumbered in one day, and S183 shipped a bump that
      would have LOWERED main's version. State the KIND and let the merge pick the digits.

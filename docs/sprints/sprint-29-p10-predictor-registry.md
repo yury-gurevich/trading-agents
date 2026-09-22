@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 29 — P10 curator: predictor registry + promotion gate (closes P10)
 
-**Status:** planned · **Branch:** `sprint-29-p10-predictor-registry` · **Build phase:** P10 (exit) · **Effort: M**
+**Status:** MERGED — `175a07b8` on `main` (feat: curator predictor registry — promote_predictor gate + audit (P10) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-29-p10-predictor-registry` · **Build phase:** P10 (exit) · **Effort: M**
 
 ## Goal
 

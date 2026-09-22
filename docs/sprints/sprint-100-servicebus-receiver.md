@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-100-servicebus-receiver`
-**Status:** closed on branch for operator review (re-based 2026-07-07 onto the 0.60.01 codebase; shipped branch version 0.61.00)
+**Status:** MERGED — tag `v0.61.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: closed on branch for operator review (re-based 2026-07-07 onto the 0.60.01 codebase; shipped branch version 0.61.00)
 **Effort:** M–L
 
 ---

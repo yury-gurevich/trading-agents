@@ -1,6 +1,8 @@
 <!-- Agent: deliberator | Role: sprint spec — stop the veto asserting evidence it did not compute, and stop an unreviewed order counting as an approved one -->
 # S175 — the veto says only what it can prove
 
+**Status:** MERGED — `b90c09f` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue items 4 and 6 · **Opens from:** [DL-104](../design-log.md) (a), (b), (d) ·
 **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file** ·

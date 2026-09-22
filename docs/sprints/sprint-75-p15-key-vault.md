@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-75-p15-key-vault`
-**Status:** shipped
+**Status:** MERGED — shipped
 
 ---
 

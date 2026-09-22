@@ -241,7 +241,7 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Status:** implemented on branch
+**Status:** MERGED — `2fc0672` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: implemented on branch
 `sprint-182-a-new-position-is-protected-on-the-run-that-opens-it` as `0.90.16`.
 Branch push / remote gate proof happens after this closeout commit; merge, deploy, and live-fill
 proof are not claimed here.

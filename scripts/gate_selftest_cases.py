@@ -187,7 +187,7 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
             "scripts/check_sprint_status.py",
             f"scripts/{PROBE_PREFIX}_sprint_status",
         ],
-        must_output=("sprint-probe.md", "MISSING count"),
+        must_output=("sprint-probe.md", "MISSING:"),
     ),
     FailureCase(
         name="markdown-links",

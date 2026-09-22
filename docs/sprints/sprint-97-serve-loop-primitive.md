@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-97-serve-loop-primitive`
-**Status:** in progress (0.42.00 → 0.43.00)
+**Status:** MERGED — merged to `main` in `389e8fe4` (item 22 review, 2026-09-23); the line read: in progress (0.42.00 → 0.43.00)
 **Effort:** M
 
 ---

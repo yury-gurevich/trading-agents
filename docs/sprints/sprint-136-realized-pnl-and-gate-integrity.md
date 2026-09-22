@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-136-realized-pnl-and-gate-integrity`
-**Status:** ready for handover (packaged 2026-07-24)
+**Status:** MERGED — merged to `main` in `b4351832` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-24)
 **Effort:** M
 **Decisions:** [ADR-0015 §1 + amendment](../decisions/0015-exit-lifecycle-and-stop-ownership.md)
 

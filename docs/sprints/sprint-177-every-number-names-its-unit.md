@@ -1,6 +1,8 @@
 <!-- Agent: deliberator | Role: sprint spec — make every value rendered into the debate packet state its own unit and scope -->
 # S177 — every number in the packet names its unit and its scope
 
+**Status:** MERGED — merged to `main` in `bc2a1ee5` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue items 16 and 18 · **Opens from:** [DL-112](../design-log.md),
 [DL-104](../design-log.md) (a)(b) · **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file** ·

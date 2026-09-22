@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-137-exit-authority`
-**Status:** SHIPPED 0.76.00 — merged `29a36f4`, fleet `:s141`, functionality check PROVEN
+**Status:** MERGED — SHIPPED 0.76.00 — merged `29a36f4`, fleet `:s141`, functionality check PROVEN
 **Effort:** M
 **Decisions:** [ADR-0017](../decisions/0017-exit-authority-alpha-proposes-risk-disposes.md)
 (closes the open question ADR-0015's amendment surfaced)

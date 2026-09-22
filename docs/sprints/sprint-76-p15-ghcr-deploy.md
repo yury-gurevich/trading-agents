@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-76-p15-ghcr-deploy`
-**Status:** planned
+**Status:** MERGED — its README row records it shipped; no merge commit or tag was found to cite (item 22 review, 2026-09-23); the line read: planned
 
 ---
 

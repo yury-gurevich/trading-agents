@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-79-agent-work-loops`
-**Status:** shipped as a vertical slice (0.18.00) — provider→scanner only; analyst→reporter → S80
+**Status:** MERGED — shipped as a vertical slice (0.18.00) — provider→scanner only; analyst→reporter → S80
 
 > **Scope correction (DL-08b, 2026-06-22).** The original plan below assumed every agent
 > reads its inputs from the graph. The code did not: scanner/analyst fetch market data via

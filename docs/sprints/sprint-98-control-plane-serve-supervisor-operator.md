@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-98-control-plane-serve-supervisor-operator`
-**Status:** in progress (0.43.00 → 0.44.00)
+**Status:** MERGED — tag `v0.44.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: in progress (0.43.00 → 0.44.00)
 **Effort:** M
 
 ---

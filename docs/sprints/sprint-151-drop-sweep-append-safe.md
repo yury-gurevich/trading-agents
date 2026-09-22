@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-151-drop-sweep-append-safe`
-**Status:** SPEC — 🔴 **live outage.** `sched-2026-07-30` reached **2/8 stages**; the fleet ran the
+**Status:** MERGED — merged to `main` in `8f57f5f3` (item 22 review, 2026-09-23); the line read: SPEC — 🔴 **live outage.** `sched-2026-07-30` reached **2/8 stages**; the fleet ran the
 full window and produced **5,762 identical faults** and nothing else
 **Version:** fix → **0.84.01** (PATCH: last two digits)
 **Effort:** S–M

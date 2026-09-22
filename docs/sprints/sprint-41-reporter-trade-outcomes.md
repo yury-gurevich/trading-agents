@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 41 — Reporter: profit-factor and expectancy (P11)
 
-**Status:** ✅ shipped (2026-06-18, on `main` — no coding agent this cycle) · **Build phase:** P11 · **Effort: S**
+**Status:** MERGED — ✅ shipped (2026-06-18, on `main` — no coding agent this cycle) · **Build phase:** P11 · **Effort: S**
 
 > **Handback (2026-06-18).** Implemented as specified. New `agents/reporter/domain/trade_outcomes.py`
 > (70L): `collect_trade_outcomes` pairs positions to close decisions by `position_id`, buckets by

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-138-broker-native-stops`
-**Status:** ready for handover (packaged 2026-07-25)
+**Status:** MERGED — merged to `main` in `ca57fff0` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-25)
 **Effort:** L
 **Decisions:** [ADR-0015 §3](../decisions/0015-exit-lifecycle-and-stop-ownership.md) ·
 [ADR-0017](../decisions/0017-exit-authority-alpha-proposes-risk-disposes.md) · design-log **DL-61**

@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split) → ADR-0012 platform/pack wall
 **Branch:** `sprint-84-platform-pack-grant-policy`
-**Status:** shipped (0.23.01)
+**Status:** MERGED — shipped (0.23.01)
 
 ---
 

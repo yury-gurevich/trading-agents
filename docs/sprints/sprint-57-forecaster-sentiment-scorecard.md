@@ -1,7 +1,7 @@
 # Sprint 57 — Forecaster: sentiment scorecard harness
 
 **Phase:** P12 (sentiment champion–challenger) — the comparison machinery.
-**Status:** shipped (implemented directly — no coding agent this cycle).
+**Status:** MERGED — shipped (implemented directly — no coding agent this cycle).
 **Version:** forecaster CONTRACT `0.1.0 → 0.2.0`; project `feat` `0.5.0 → 0.6.0`.
 
 ## Goal

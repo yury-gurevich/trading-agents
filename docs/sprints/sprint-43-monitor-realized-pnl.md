@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 43 — Monitor: realized PnL on close (accuracy upgrade for reporter metrics)
 
-**Status:** ✅ shipped (2026-06-18, branch `sprint-43-monitor-realized-pnl`) · **Build phase:** P11 · **Effort: S–M** · executed directly (no coding agent this cycle)
+**Status:** MERGED — ✅ shipped (2026-06-18, branch `sprint-43-monitor-realized-pnl`) · **Build phase:** P11 · **Effort: S–M** · executed directly (no coding agent this cycle)
 
 > **Handback (shipped).** Built as scoped. Pure `realized_pnl_cents(exit, entry, quantity) =
 > (exit − entry) × quantity` in `exit_rules.py` (integer cents, never raises). The per-position

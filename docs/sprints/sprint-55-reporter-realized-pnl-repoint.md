@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 55 — Reporter re-point to real $ PnL (closes P11)
 
-**Status:** ✅ shipped (2026-06-18, branch `sprint-55-reporter-realized-pnl-repoint`) · **Build phase:** P11 (final slice) · **Effort: S** · executed directly (no coding agent this cycle)
+**Status:** MERGED — ✅ shipped (2026-06-18, branch `sprint-55-reporter-realized-pnl-repoint`) · **Build phase:** P11 (final slice) · **Effort: S** · executed directly (no coding agent this cycle)
 
 > **Handback (shipped).** Re-points the reporter's trade-outcome metrics from S41's trigger-derived
 > **percentage approximation** to the **real realized `pnl_cents`** the monitor records on every

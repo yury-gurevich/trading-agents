@@ -3,7 +3,7 @@
 
 **Phase:** Operations dashboard (DL-47 slice 3; S122 shipped 0.66.00, S123 shipped 0.67.00)
 **Branch:** `sprint-124-dashboard-verdict`
-**Status:** ready for handover (packaged 2026-07-11)
+**Status:** MERGED — `b9ed20e` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-11)
 **Effort:** M
 
 ---

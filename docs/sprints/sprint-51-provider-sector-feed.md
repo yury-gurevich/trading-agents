@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 51 — Provider sector feed (P11, unblocks the PM sector cap)
 
-**Status:** shipped (2026-06-17, commit `3951e42`) · **Branch:** `sprint-51-provider-sector-feed` · **Build phase:** P11 (decision-logic depth — the data substrate for the PM sector-concentration cap) · **Effort: M**
+**Status:** MERGED — shipped (2026-06-17, commit `3951e42`) · **Branch:** `sprint-51-provider-sector-feed` · **Build phase:** P11 (decision-logic depth — the data substrate for the PM sector-concentration cap) · **Effort: M**
 
 > **Handback (shipped).** Built as scoped, provider-only. `DataSource.fetch_sectors` added to the Protocol
 >

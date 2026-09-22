@@ -1,6 +1,8 @@
 <!-- Agent: tooling | Role: chore spec + closeout for the S162 module-size debt -->
 # chore-split-modules-before-the-block — split the trio S162 trimmed to fit
 
+**Status:** MERGED — merged to `main` in `63cba7a0` (item 22 review, 2026-09-23)
+
 **Closes:** the S162 module-size debt · **Opens:** [DL-96](../design-log.md) · **Type:** fix ·
 **Version:** 0.89.05 · **Branch:** `chore-split-modules-before-the-block` · **Deploys:** nothing
 (the fleet stays on `:s165`)

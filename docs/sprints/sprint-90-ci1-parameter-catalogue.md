@@ -1,7 +1,7 @@
 # Sprint 90 — CI-1: unified parameter catalogue
 
 **Branch:** `sprint-90-ci1-parameter-catalogue`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: S**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: S**
 
 ## Goal
 

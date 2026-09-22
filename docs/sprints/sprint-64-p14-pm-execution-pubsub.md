@@ -1,7 +1,7 @@
 # Sprint 64 — P14.5: Portfolio manager + execution pub/sub dual-mode
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** planned
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: planned
 **Branch:** `sprint-64-p14-pm-execution-pubsub`
 **Effort:** M
 **Prerequisite:** S63 shipped.

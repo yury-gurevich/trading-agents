@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-106-remediation-planner`
-**Status:** shipped (0.46.00 → 0.47.00)
+**Status:** MERGED — shipped (0.46.00 → 0.47.00)
 **Effort:** L
 
 ---

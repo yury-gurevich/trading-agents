@@ -1,5 +1,7 @@
 # S171 handover note — paste this at the start of the Codex conversation
 
+**Status:** MERGED — companion handover note to S171, which merged (0.90.01) (item 22 review, 2026-09-23)
+
 You are implementing **one sprint** in the `trading-agents` repo, end to end: code, tests, green
 gate, commit, closeout. Work on a branch. Do not merge to `main` without the remote gate green.
 

@@ -1,6 +1,6 @@
 # Sprint 13 — Reporter agent (run snapshot + per-trade narrative)
 
-**Status:** shipped (merged to `main` @ `ab328a5`) · **Branch:** `sprint-13-reporter` · **Build phase:** P3 (decision loop) · **Effort: M**
+**Status:** MERGED — shipped (merged to `main` @ `ab328a5`) · **Branch:** `sprint-13-reporter` · **Build phase:** P3 (decision loop) · **Effort: M**
 
 ## Goal
 

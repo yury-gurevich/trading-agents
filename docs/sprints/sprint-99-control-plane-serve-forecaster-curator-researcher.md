@@ -2,7 +2,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35)
 **Branch:** `sprint-99-control-plane-serve-forecaster-curator-researcher`
-**Status:** shipped (handover refreshed 2026-07-03 for the 0.50.00 codebase; supersedes the pre-S104 draft)
+**Status:** MERGED — shipped (handover refreshed 2026-07-03 for the 0.50.00 codebase; supersedes the pre-S104 draft)
 **Effort:** M
 
 ---

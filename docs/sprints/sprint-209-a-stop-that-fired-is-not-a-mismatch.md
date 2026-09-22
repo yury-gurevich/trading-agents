@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-209-stop-fired-not-mismatch`
-**Status:** code merged `032cd8e` · DEPLOYED `s209`, 2026-09-16 · live fired-stop proof **MET 2026-09-17** on `sched-2026-09-16` (CMCSA + USB stops fired, 0 mismatch faults)
+**Status:** MERGED — `032cd8e` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: code merged `032cd8e` · DEPLOYED `s209`, 2026-09-16 · live fired-stop proof **MET 2026-09-17** on `sched-2026-09-16` (CMCSA + USB stops fired, 0 mismatch faults)
 **Version:** `0.98.06`
 **Effort:** S — but **not** the "small" the work queue promised: the code is ~4 lines, the **law cycle is the sprint**.
 **Decisions:** DL-170 · DRIFT-064 · builds, deploys and **closes** work-queue item **42** (live closure proven 2026-09-17)

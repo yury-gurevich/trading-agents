@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 39 — Analyst signal-diversity selection (surface the top, pillar-diverse signals)
 
-**Status:** shipped · **Branch:** `sprint-39-analyst-signal-diversity` · **Build phase:** P11 · **Effort: S**
+**Status:** MERGED — shipped · **Branch:** `sprint-39-analyst-signal-diversity` · **Build phase:** P11 · **Effort: S**
 
 > Implemented directly by the planning agent on explicit request ("plan and execute"), not handed to a
 > coding agent. Green at the full gate before merge.

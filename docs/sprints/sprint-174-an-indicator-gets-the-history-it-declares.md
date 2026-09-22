@@ -1,6 +1,8 @@
 <!-- Agent: provider | Role: sprint spec — deliver the history the indicators declare, and stop asserting inputs that were never used -->
 # S174 — an indicator gets the history it declares
 
+**Status:** MERGED — `0916a1b` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** item 2 of the work queue · **Opens from:** [DL-104](../design-log.md) class 3 (the one
 veto class that checked out correct) · **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file**; three specs have

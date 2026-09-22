@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-199-a-token-count-from-the-vendor`
-**Status:** BUILT
+**Status:** MERGED — `2e9355ac` on `main` (fix(s199): a recorded LLM cost is the provider's own number, and says) (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-161](../design-log.md) the token/cache decision · [DL-160](../design-log.md) the 3.2× pricing error this closes · [DL-150](../design-log.md) the original word-count correction · work-queue **item 43**

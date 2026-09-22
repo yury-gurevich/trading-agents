@@ -1,6 +1,6 @@
 # Sprint 01 — Kernel runtime: in-process bus + AgentBase
 
-**Status:** shipped (merged to `main` @ `97c9db7`) · **Branch:** `sprint-01-kernel-runtime` · **Build phase:** P1 (first slice)
+**Status:** MERGED — shipped (merged to `main` @ `97c9db7`) · **Branch:** `sprint-01-kernel-runtime` · **Build phase:** P1 (first slice)
 
 ## Goal
 

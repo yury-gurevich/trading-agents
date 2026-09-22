@@ -3,7 +3,7 @@
 
 **Phase:** qlib workflow adoption (Q5 part B — closes the governed factor-mining loop, Moonshot #3)
 **Branch:** `sprint-115-factor-shadow-signal`
-**Status:** ready for handover — from `main` (S113 merged `3ec2d9e`, 0.57.00)
+**Status:** MERGED — tag `v0.58.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover — from `main` (S113 merged `3ec2d9e`, 0.57.00)
 **Effort:** M
 
 ---

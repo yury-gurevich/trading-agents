@@ -2,7 +2,7 @@
 
 **Branch:** `sprint-70-per-agent-law-backfill`
 **Phase:** Law cycle
-**Status:** shipped
+**Status:** MERGED — shipped
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Phase:** P15 → ADR-0012 platform/pack wall
 **Branch:** `sprint-85-platform-pack-secret-map`
-**Status:** shipped (0.23.02)
+**Status:** MERGED — shipped (0.23.02)
 
 ---
 

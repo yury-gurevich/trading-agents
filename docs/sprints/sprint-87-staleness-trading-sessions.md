@@ -2,7 +2,7 @@
 
 **Phase:** P15 / trading-pack correctness
 **Branch:** `sprint-87-staleness-trading-sessions`
-**Status:** shipped (0.23.04)
+**Status:** MERGED — shipped (0.23.04)
 
 ---
 

@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 37 — Analyst sentiment pillar (the deterministic lexicon champion)
 
-**Status:** planned · **Branch:** `sprint-37-analyst-sentiment-pillar` · **Build phase:** P12 · **Effort: M**
+**Status:** MERGED — `401280dc` on `main` (feat(analyst): sentiment pillar — Loughran-McDonald lexicon champion () (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-37-analyst-sentiment-pillar` · **Build phase:** P12 · **Effort: M**
 
 ## Goal
 

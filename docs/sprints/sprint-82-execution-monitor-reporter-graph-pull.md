@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-82-execution-monitor-reporter-graph-pull`
-**Status:** shipped (0.21.00)
+**Status:** MERGED — shipped (0.21.00)
 
 ---
 

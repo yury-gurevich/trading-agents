@@ -1,5 +1,7 @@
 # Sprint 69 — Provider law cycle: lock the template
 
+**Status:** MERGED — merged to `main` in `cd7fdd2d` (item 22 review, 2026-09-23)
+
 **Branch:** `sprint-69-provider-law-cycle`
 **Version bump:** 0.10.0 → 0.11.0 (feat/MINOR — law infrastructure is production
 behaviour change: caller authz gate + benchmark field)

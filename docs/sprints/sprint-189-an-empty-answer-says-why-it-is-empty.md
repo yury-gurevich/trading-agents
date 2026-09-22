@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-189-an-empty-answer-says-why-it-is-empty`
-**Status:** BUILT
+**Status:** MERGED — `aedb8d4` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** `0.94.00` (MINOR bump on branch)
 **Effort:** M
 **Decisions:** work-queue item 35 (the row this closes, and corrects) · [DL-99](../design-log.md) (why the second provider exists) · a new DL for the four design decisions below

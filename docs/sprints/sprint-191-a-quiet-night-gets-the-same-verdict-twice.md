@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-191-a-quiet-night-gets-the-same-verdict-twice`
-**Status:** BUILT
+**Status:** MERGED — `97e9fb5` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [ADR-0022](../decisions/0022-the-veto-gates-buys-never-exits.md) the veto gates buys, never exits · `DL-141` (take it, then re-check at merge) · work-queue item 38

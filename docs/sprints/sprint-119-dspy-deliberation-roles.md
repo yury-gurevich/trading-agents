@@ -4,7 +4,7 @@
 **Phase:** Deliberation quality (DL-42 — the layer above the closed DL-41; second real instance of
 the ADR-0010 `PromptOptimizer` port after S107's remediation selector)
 **Branch:** `sprint-119-dspy-deliberation-roles`
-**Status:** ready for handover (packaged 2026-07-08)
+**Status:** MERGED — tag `v0.64.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-08)
 **Effort:** M/L
 
 ---

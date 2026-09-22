@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 68 — Analyst: Alpha158 feature pillar (Qlib Phase Q2)
 
-**Status:** planned · **Branch:** `sprint-68-analyst-alpha158-pillar`
+**Status:** MERGED — `d12efa38` on `main` (feat(analyst): Alpha158 feature pillar — qlib Phase Q2 (S68)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-68-analyst-alpha158-pillar`
 **Build phase:** qlib Phase Q2 · **Effort: M (3–5 days)**
 **Prerequisite:** S59 shipped (Q1 proven; LightGBM behind agent boundary established).
 

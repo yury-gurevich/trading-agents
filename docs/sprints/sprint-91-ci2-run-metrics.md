@@ -1,7 +1,7 @@
 # Sprint 91 — CI-2: RunMetrics on the graph
 
 **Branch:** `sprint-91-ci2-run-metrics`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
 
 ## Goal
 

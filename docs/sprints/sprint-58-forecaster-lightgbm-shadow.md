@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 58 — Forecaster: LightGBM price/return shadow signal (qlib Phase Q1)
 
-**Status:** active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow` · **Build phase:** qlib Phase Q1 (research [R001](../research/qlib-integration/qlib-integration.md)) · **Effort: M**
+**Status:** MERGED — `25a8d2cd` on `main` (feat(forecaster): LightGBM price/return shadow signal — qlib Phase Q1) (item 22 review, 2026-09-23); the line read: active (2026-06-19) · **Branch:** `sprint-58-forecaster-lightgbm-shadow` · **Build phase:** qlib Phase Q1 (research [R001](../research/qlib-integration/qlib-integration.md)) · **Effort: M**
 
 ## The two decisions that shape this sprint (read first)
 

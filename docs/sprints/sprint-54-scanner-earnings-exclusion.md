@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 54 — Scanner earnings-window exclusion (P11, consumes the S42 feed)
 
-**Status:** ✅ shipped (2026-06-18, branch `sprint-54-scanner-earnings-exclusion`) · **Build phase:** P11 · **Effort: S** · executed directly (no coding agent this cycle)
+**Status:** MERGED — ✅ shipped (2026-06-18, branch `sprint-54-scanner-earnings-exclusion`) · **Build phase:** P11 · **Effort: S** · executed directly (no coding agent this cycle)
 
 > **Handback (shipped).** The consumer half of the earnings two-sprint pair (S42 = provider feed).
 > The scanner now requests the `"earnings_calendar"` field and **drops candidates whose next earnings

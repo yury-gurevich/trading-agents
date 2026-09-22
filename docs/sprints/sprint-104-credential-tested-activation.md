@@ -2,7 +2,7 @@
 
 **Phase:** Credential-validated activation (DL-36)
 **Branch:** `sprint-104-credential-tested-activation`
-**Status:** shipped (0.44.01 → 0.45.00) — A+B core (test-before-handover + Escalation/refuse + mode/one-shot structure). Live domain-test injection (pack) + C/D deferred.
+**Status:** MERGED — shipped (0.44.01 → 0.45.00) — A+B core (test-before-handover + Escalation/refuse + mode/one-shot structure). Live domain-test injection (pack) + C/D deferred.
 **Effort:** L
 
 ---

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-200-a-prompt-says-which-code-rendered-it`
-**Status:** BUILT
+**Status:** MERGED — `7761735a` on `main` (fix(s200): a recorded prompt names the code that rendered it, and the) (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-162](../design-log.md) · work-queue **item 44** · **[DRIFT-056](../laws/drift-register.md) corrected** · **[DRIFT-057](../laws/drift-register.md) filed and corrected**

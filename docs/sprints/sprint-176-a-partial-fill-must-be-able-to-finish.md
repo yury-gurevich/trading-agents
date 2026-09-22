@@ -1,6 +1,8 @@
 <!-- Agent: execution | Role: sprint spec — let a partial fill advance to filled without breaking append-only, and retire one dead capability declaration -->
 # S176 — a partial fill must be able to finish
 
+**Status:** MERGED — `57f540f` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue item 5 (hardening row P) + [DRIFT-033](../laws/drift-register.md) ·
 **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file** ·

@@ -1,6 +1,8 @@
 <!-- Agent: deliberator | Role: sprint spec — make the provider switch one act, and make it survive a deploy -->
 # S169 — a provider switch is one switch, and a deploy cannot silently unset it
 
+**Status:** MERGED — tag `v0.90.10` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** [DL-100](../design-log.md) · **Type:** fix ·
 **Target version:** the next available PATCH at merge — two defect fixes, no new capability. Shipped as **`0.90.10`** (the pinned `0.90.01`, then `0.90.02`, were both taken while this sat in the queue; pinning a number in a spec is what caused three renumberings in one day) ·
 **Branch:** `sprint-169-one-switch-and-a-deploy-that-keeps-it`

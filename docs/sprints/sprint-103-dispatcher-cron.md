@@ -3,7 +3,7 @@
 
 **Phase:** Fleet Activation (DL-30 / DL-35 — the arc's end state: a self-driving platform)
 **Branch:** `sprint-103-dispatcher-cron`
-**Status:** shipped — merged `6caa2f6` (0.63.00, 2026-07-08); closeout evidence below
+**Status:** MERGED — shipped — merged `6caa2f6` (0.63.00, 2026-07-08); closeout evidence below
 **Effort:** M
 
 ---

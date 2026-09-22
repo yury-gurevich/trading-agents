@@ -1,6 +1,6 @@
 # Sprint 14 — Dispatcher (P4 begins: event-driven daily loop)
 
-**Status:** planned · **Branch:** `sprint-14-dispatcher` · **Build phase:** P4 (orchestration) · **Effort: M**
+**Status:** MERGED — `7790aa4f` on `main` (Implement Sprint 14 dispatcher) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-14-dispatcher` · **Build phase:** P4 (orchestration) · **Effort: M**
 
 ## Goal
 

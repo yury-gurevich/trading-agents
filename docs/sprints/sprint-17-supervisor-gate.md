@@ -1,6 +1,6 @@
 # Sprint 17 — Supervisor capability gate (P5 exit)
 
-**Status:** planned · **Branch:** `sprint-17-supervisor-gate` · **Build phase:** P5 (operator + supervisor safety) · **Effort: M**
+**Status:** MERGED — `78a3a933` on `main` (Implement Sprint 17 supervisor gate) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-17-supervisor-gate` · **Build phase:** P5 (operator + supervisor safety) · **Effort: M**
 
 ## Goal
 

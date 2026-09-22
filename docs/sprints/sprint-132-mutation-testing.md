@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-132-mutation-testing`
-**Status:** ready for handover (packaged 2026-07-20)
+**Status:** MERGED — merged to `main` in `15c23d6f` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-20)
 **Effort:** M (mutation runs are slow; scope is bounded to compensate)
 
 ---

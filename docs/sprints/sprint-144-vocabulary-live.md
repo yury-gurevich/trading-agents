@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-144-vocabulary-live`
-**Status:** SHIPPED 0.80.00 — merged `d215a76`, `make ci` 1851 passed / 100.00 %, all four remote
+**Status:** MERGED — SHIPPED 0.80.00 — merged `d215a76`, `make ci` 1851 passed / 100.00 %, all four remote
 gates green before merge, functionality check PROVEN on the live Neon store. **Fleet enablement
 still open** — one dated action after tonight's ADR-0015 §3 proof (see Closeout).
 **Effort:** M

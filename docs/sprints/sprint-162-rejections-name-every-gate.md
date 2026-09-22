@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-162-rejections-name-every-gate`
-**Status:** SHIPPED — merged to `main` 2026-08-07 after independent re-verification of `376fb6b`
+**Status:** MERGED — SHIPPED — merged to `main` 2026-08-07 after independent re-verification of `376fb6b`
 **Version:** feat → **0.89.00** (MINOR: new evidence carried on an existing contract)
 **Effort:** M
 **Decisions:** [S161](sprint-161-pm-knows-what-it-paid.md) the sizing fix this makes provable ·

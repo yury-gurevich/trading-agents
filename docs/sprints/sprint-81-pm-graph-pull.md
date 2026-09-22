@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-81-pm-graph-pull`
-**Status:** shipped (0.20.00)
+**Status:** MERGED — shipped (0.20.00)
 
 ---
 

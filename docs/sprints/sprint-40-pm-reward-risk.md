@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 40 — Portfolio manager reward/risk gate (P11)
 
-**Status:** shipped · **Branch:** `sprint-40-pm-reward-risk` · **Build phase:** P11 · **Effort: S**
+**Status:** MERGED — shipped · **Branch:** `sprint-40-pm-reward-risk` · **Build phase:** P11 · **Effort: S**
 
 > Implemented directly by the planning agent ("plan next sprint and when happy code it"). Green at the
 > full gate; 595 tests, floor 100.00.

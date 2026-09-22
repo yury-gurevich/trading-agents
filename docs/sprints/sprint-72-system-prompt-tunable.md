@@ -2,7 +2,7 @@
 
 **Branch:** `sprint-72-system-prompt-tunable`
 **Phase:** ADR-0010 immediate consequence
-**Status:** shipped
+**Status:** MERGED — shipped
 
 ## Goal
 

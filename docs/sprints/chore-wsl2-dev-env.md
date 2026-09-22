@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) — dev-environment tooling, not a feature
 **Branch:** `chore-wsl2-dev-env`
-**Status:** ready for handover (packaged 2026-07-21)
+**Status:** SPEC — ready for handover (packaged 2026-07-21)
 **Effort:** M (repo part S; operator/environment part M)
 **Sequence:** execute **only when the sprint queue is empty** — after S134 (0.71.06) and
 S133 (0.71.07) have merged. The line-ending renormalisation touches ~every text file, so it

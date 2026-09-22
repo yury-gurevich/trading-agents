@@ -1,6 +1,6 @@
 # Sprint 16 — Operator agent (P5 begins: intent parsing + model-call ledger)
 
-**Status:** planned · **Branch:** `sprint-16-operator` · **Build phase:** P5 (operator + supervisor safety) · **Effort: M**
+**Status:** MERGED — `0b5aaa8c` on `main` (Implement Sprint 16 operator agent) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-16-operator` · **Build phase:** P5 (operator + supervisor safety) · **Effort: M**
 
 ## Goal
 

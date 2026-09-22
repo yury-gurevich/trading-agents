@@ -271,7 +271,7 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Status:** IMPLEMENTED — local proof complete; first pushed implementation tip remote-gated.
+**Status:** MERGED — `4187770` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: IMPLEMENTED — local proof complete; first pushed implementation tip remote-gated.
 
 **Result:** Scanner filter evidence is now three-state. `Candidate` and `FilterVerdict` carry
 `skipped_filters`, and the debate packet renders the skipped list beside the survived list. A ticker

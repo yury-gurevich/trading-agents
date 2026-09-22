@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-145-exit-replay-append-safe`
-**Status:** SPEC — 🔴 **execution is currently bricked in production; this is a fix, not a feature**
+**Status:** MERGED — `2c49f88` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: SPEC — 🔴 **execution is currently bricked in production; this is a fix, not a feature**
 **Version:** fix → **0.80.02** (PATCH: last two digits; `0.80.01` is current)
 **Effort:** M
 **Decisions:** [DL-71](../design-log.md) · exit key from 0.74.01 · [DL-44](../design-log.md) broker

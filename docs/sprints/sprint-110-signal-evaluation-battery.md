@@ -3,7 +3,7 @@
 
 **Phase:** qlib workflow adoption (Q1b — R001 addendum 2026-07-04)
 **Branch:** `sprint-110-signal-evaluation-battery`
-**Status:** shipped on branch (`sprint-110-signal-evaluation-battery`) — code + Tiingo live check
+**Status:** MERGED — shipped on branch (`sprint-110-signal-evaluation-battery`) — code + Tiingo live check
 complete; data source re-scoped to Tiingo (DL-37: reference Postgres decommissioned, verified
 2026-07-04)
 **Effort:** M

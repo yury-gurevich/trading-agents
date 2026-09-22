@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-148-decision-valid-one-session`
-**Status:** SPEC — 🔴 **the largest measured cost in the system: ≈ −$2,850 across two exits**
+**Status:** MERGED — merged to `main` in `314fb8b0` (item 22 review, 2026-09-23); the line read: SPEC — 🔴 **the largest measured cost in the system: ≈ −$2,850 across two exits**
 **Version:** feat → **0.82.00** (MINOR: two middle digits, zeroing the patch group)
 **Effort:** M
 **Decisions:** [ADR-0018](../decisions/0018-decision-validity-same-session-or-dropped.md) **(this

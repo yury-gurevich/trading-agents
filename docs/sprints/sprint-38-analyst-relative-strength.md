@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 38 — Analyst relative strength (benchmark-relative momentum, blended into the technical pillar)
 
-**Status:** shipped · **Branch:** `sprint-38-analyst-relative-strength` · **Build phase:** P11 · **Effort: S–M**
+**Status:** MERGED — shipped · **Branch:** `sprint-38-analyst-relative-strength` · **Build phase:** P11 · **Effort: S–M**
 
 > Implemented directly by the planning agent ("plan next sprint and when happy code it"). Green at the
 > full gate; 592 tests, floor 100.00. **One design change from the plan below:** the benchmark is

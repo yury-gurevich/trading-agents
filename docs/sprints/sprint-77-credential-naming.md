@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-77-credential-naming`
-**Status:** planned
+**Status:** MERGED — `79461c59` on `main` (fix(s77): align secret_map output keys to agent settings env_prefix) (item 22 review, 2026-09-23); the line read: planned
 
 ---
 

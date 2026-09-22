@@ -2,7 +2,7 @@
 
 **Phase:** P15 (multi-agent container split)
 **Branch:** `sprint-83-graph-pull-orchestration`
-**Status:** shipped (0.22.00)
+**Status:** MERGED — shipped (0.22.00)
 
 ---
 

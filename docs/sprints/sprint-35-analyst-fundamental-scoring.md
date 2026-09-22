@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 35 — Analyst fundamental scoring (a second pillar over MarketData.fundamentals)
 
-**Status:** planned · **Branch:** `sprint-35-analyst-fundamental-scoring` · **Build phase:** P11 · **Effort: M**
+**Status:** MERGED — `ce50da4a` on `main` (docs: close Sprint 35 — analyst fundamental scoring shipped (P11)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-35-analyst-fundamental-scoring` · **Build phase:** P11 · **Effort: M**
 
 ## Goal
 

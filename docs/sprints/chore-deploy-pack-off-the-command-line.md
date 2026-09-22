@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `chore-deploy-pack-off-the-command-line`
-**Status:** SPEC — packaged 2026-08-02, **blocking the `:s155` deploy**
+**Status:** MERGED — merged to `main` in `976d27ec` (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-02, **blocking the `:s155` deploy**
 **Version:** fix → **0.85.04** (PATCH: last two digits)
 **Effort:** S–M
 **Decisions:** [DL-68](../design-log.md) `GRAPH_VOCABULARY_B64` exists because no image ships

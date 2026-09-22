@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 30 — P11 analyst: technical scoring core (RSI/MACD/Bollinger/SMA/EMA)
 
-**Status:** planned · **Branch:** `sprint-30-p11-analyst-technical-core` · **Build phase:** P11 · **Effort: L**
+**Status:** MERGED — `2d59f235` on `main` (feat: analyst technical scoring core — RSI/MACD/Bollinger/SMA/EMA (P11) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-30-p11-analyst-technical-core` · **Build phase:** P11 · **Effort: L**
 
 ## Goal
 

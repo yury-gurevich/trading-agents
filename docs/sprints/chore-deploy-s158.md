@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** none — this is a deploy, not a repo change (see *Version* below)
-**Status:** SPEC — packaged 2026-08-04, **awaiting operator approval to execute**
+**Status:** MERGED — executed 2026-08-04 per its README row; an operational chore has no branch, so MERGED records it done (item 22 review, 2026-09-23); the line read: SPEC — packaged 2026-08-04, **awaiting operator approval to execute**
 **Version:** **no bump.** A retag ships no package behaviour; the code was versioned at `0.86.01`
 when S158 merged. Bumping for a deploy would make a real fix indistinguishable from a cosmetic one
 (CLAUDE.md, *Version scheme*).

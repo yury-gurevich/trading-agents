@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-210-concentration-divides-by-the-book`
-**Status:** BUILT
+**Status:** MERGED — `1d515d8` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge* — **do not pin a number**, S209 is in flight and will move it
 **Effort:** M — the code is small and touches three gates; the **PM law cycle is half the sprint**
 **Decisions:** [ADR-0025](../decisions/0025-concentration-measures-the-book-position-risk-measures-the-capital-base.md) · [ADR-0026](../decisions/0026-a-small-book-is-allowed-to-be-concentrated.md) · DL-171 · DRIFT-065 · closes work-queue item **65**

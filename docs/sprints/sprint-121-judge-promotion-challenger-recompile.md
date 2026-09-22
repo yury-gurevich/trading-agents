@@ -4,7 +4,7 @@
 **Phase:** Deliberation quality (DL-42 follow-through — first prompt **promotion** on the
 ADR-0010 champion-challenger rails)
 **Branch:** `sprint-121-judge-promotion-challenger-recompile`
-**Status:** ready for handover (packaged 2026-07-08; execute after S120 merges)
+**Status:** MERGED — tag `v0.65.01` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-08; execute after S120 merges)
 **Effort:** S/M
 
 ---

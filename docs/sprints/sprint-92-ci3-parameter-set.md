@@ -1,7 +1,7 @@
 # Sprint 92 — CI-3: ParameterSet (configurable, not settable)
 
 **Branch:** `sprint-92-ci3-parameter-set`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
 
 ## Goal
 

@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 28 — P10 curator: training trigger (advisory predictor + frozen evidence)
 
-**Status:** planned · **Branch:** `sprint-28-p10-training-trigger` · **Build phase:** P10 · **Effort: M**
+**Status:** MERGED — `13944ace` on `main` (feat: curator training trigger — advisory baseline predictor (P10)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-28-p10-training-trigger` · **Build phase:** P10 · **Effort: M**
 
 ## Goal
 

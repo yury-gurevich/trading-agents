@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 32 — P11 analyst: volume + event signals (OBV / golden cross / RSI-2)
 
-**Status:** planned · **Branch:** `sprint-32-p11-analyst-volume-event` · **Build phase:** P11 · **Effort: M**
+**Status:** MERGED — `036c38d9` on `main` (docs: close Sprint 32 — analyst volume/event signals shipped (P11)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-32-p11-analyst-volume-event` · **Build phase:** P11 · **Effort: M**
 
 ## Goal
 

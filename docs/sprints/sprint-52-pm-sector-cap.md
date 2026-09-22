@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 52 — Portfolio-manager sector-concentration cap (P11)
 
-**Status:** shipped (2026-06-17, commit `6f23ff1`) · **Branch:** `sprint-52-pm-sector-cap` · **Build phase:** P11 (decision-logic depth — the PM's second risk gate, twin of S40) · **Effort: M**
+**Status:** MERGED — shipped (2026-06-17, commit `6f23ff1`) · **Branch:** `sprint-52-pm-sector-cap` · **Build phase:** P11 (decision-logic depth — the PM's second risk gate, twin of S40) · **Effort: M**
 
 > **Handback (shipped).** Built as scoped. `evaluate_recommendations` gained **defaulted** `sectors` /
 > `max_sector_pct` kwargs — the 3 existing direct-caller tests were untouched. The cap tracks

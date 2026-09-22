@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 31 — P11 analyst: oscillators + volatility (ATR/Stochastic/Williams %R/Choppiness)
 
-**Status:** planned · **Branch:** `sprint-31-p11-analyst-oscillators` · **Build phase:** P11 · **Effort: M**
+**Status:** MERGED — `524968d9` on `main` (docs: close Sprint 31 — analyst oscillators + volatility shipped (P11)) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-31-p11-analyst-oscillators` · **Build phase:** P11 · **Effort: M**
 
 ## Goal
 

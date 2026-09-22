@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-219-the-human-is-told-and-can-answer`
-**Status:** BUILT; branch handback SHA still needs remote gate proof. Do not merge or deploy.
+**Status:** MERGED — merged to `main` in `25bd0531` (item 22 review, 2026-09-23); the line read: BUILT; branch handback SHA still needs remote gate proof. Do not merge or deploy.
 **Version:** *next available MINOR at merge* — the fleet gains a channel it did not have. Under the
 widened scheme (`MAJOR.MMM.PP`, operator 2026-09-20) that is `0.101.00` if `main` is still `0.100.00`.
 **Effort:** L — the largest of the three. Read "If you are running long" before you start.

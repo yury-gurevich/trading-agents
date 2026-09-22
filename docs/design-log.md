@@ -10,6 +10,92 @@ and is marked CLOSED here.
 
 ---
 
+## DL-204 - a status the gate could read was false on 90 of the 190 specs it read - status: DECIDED (planner, 2026-09-23, operator asked for item 22 Part B)
+
+**The debt.** S224 (DL-197) made "is this spec built?" machine-answerable and deliberately left
+the migration for a human: `**Status:** <TOKEN> — <original line verbatim>` on the classified
+docs, with 20 `UNMAPPED` and 20 `MISSING` as refusals to review. Part B as written assumed the
+classified docs were *correct and only badly spelled*.
+
+🚨 **Measured before any rewrite: they were not.** The corpus has two hand-kept records of one
+fact: each spec's first `**Status:**` line and its README row's last cell. Of the **190** docs
+S224 had classified, **90 were wrong**: **69** declared `SPEC` (or `planned`, `ready`, …) and
+**all 21** that declared `BUILT` belonged to sprints already merged. The README was wrong the other
+way too: S205, S207 and S223 were merged while their rows read `SPEC`, and S131–S134 still read
+`HANDOFF … pushed unmerged`. A mechanical Part B would have written `SPEC` in front of S14's "planned", making a
+false answer look authoritative. That is the harm item 22 exists to prevent (S171 recommended
+after it shipped).
+
+**Decision 1 - git decides, and every correction cites its evidence in the line.** Neither record
+is the source of truth, so each disagreement was settled against `origin/main`, in this order:
+(a) a first-parent merge commit of the spec's own branch (37 docs); (b) a SHA or version tag the
+sprint's **own README cell** cites, confirmed as an ancestor of `main` (43); (c) a SHA in the
+spec's own `MERGED` line; (d) a code commit whose subject names the sprint, **read by hand**
+(37: e.g. `7790aa4f Implement Sprint 14 dispatcher`, `e59c6a53 … (S60-S67)`); (e) only for
+S26 and S76, the README row's "shipped" with no citable commit, and the line says so. 124 lines
+were corrected this way. Each reads `**Status:** <TOKEN> — <evidence> (item 22 review,
+2026-09-23); the line read: <original verbatim>`. 83 more took the fixed DL-197 form unchanged
+(the synonym was already true); 23 were already canonical and are untouched.
+
+🪤 **Two evidence rules were tried and dropped before anything was written.** A SHA anywhere in a
+spec's status line is *not* evidence for that spec: S113 reads "from `main` (S112 merged
+`feb7f87`)", which is the predecessor's merge. And "the latest commit whose subject mentions
+S<n>" picked `plan: sprint 41 …` and `plan(s77-s79) …`, i.e. planning commits. Both were caught
+by reading the candidate list, not by a test. Hence the order above.
+
+**Decision 2 - the 40 refusals were decided, not inferred.** The 20 `MISSING` docs got a line (all
+but S170 were merged). Of the 20 `UNMAPPED`, 6 were an emoji before a true word (`✅ shipped`)
+and kept their prose behind the token; the other 14 resolve as: `active` / `in progress` (S58–S60,
+S97, S98) → `MERGED` on their commits; `closed on branch — not merged` (S100, S117, S118) →
+`MERGED`, since the README cites their tags on `main`; `live check complete` (S128), `code merged`
+(S209), `BUILT;` (S219) and `Part A SHIPPED` (S96) → `MERGED` on their merges and tags; `CLOSED`
+(S173, Part A merged) → `MERGED`; `BLOCKED` (chore-flatten-and-resize, later executed) → `MERGED`.
+DL-197 rejected *a classifier* inferring from git; this is a reviewer reading git once, citing it,
+and leaving the prose beside the answer.
+
+**Decision 3 - no fourth token.** "Deferred", "absorbed", "superseded" and "never reproduced" are
+all *not built*, so they are `SPEC` with the reason in the prose: S90–S95 (deferred), S101
+(absorbed by S116–S118), S170 (DL-101 closed by S222 instead), S192 (DL-145, not reproduced),
+chore-wsl2-dev-env (merge `7127e720` carried only its packaging). An executed operational chore
+with no branch (chore-deploy-s158, chore-flatten-and-resize) is `MERGED`: the terminal state.
+Two non-specs were given a line and a README row rather than an exclusion, because a list of
+exclusions only grows: `s127-fixpack-backlog` (all 12 rows FIXED) and `sprint-171-HANDOVER`.
+
+**Decision 4 - the README must agree, and both S224 allowances are deleted.** Result:
+**230 docs: 220 `MERGED`, 10 `SPEC`, 0 `BUILT`, 0 refusals.** So `make ci` now fails on (i) any
+leading word that is not exactly `SPEC`, `BUILT` or `MERGED` (the synonym table is gone:
+`shipped` is a refusal again); (ii) any spec with no line; (iii) any spec with no README row; and
+(iv) any README row whose status cell does not lead with the spec's token. The 20 + 20 baseline is
+deleted, not zeroed (DL-203 decision 4's reasoning), and with no refusals left `status-unmapped.md`
+has nothing to report, so it is deleted too. That removes the freshness gap found at S224 review
+instead of adding a `--write` mode to maintain it. The template tells the next sprint to change
+both places in one commit.
+
+🪰 **Found on the way:** S185's README row had an unescaped `advisory | binding` inside backticks,
+which GitHub renders as an extra column, so its status cell was the wrong text. It is escaped now,
+and the reader splits only on unescaped pipes (test T10).
+
+🪰 **Noted, not changed:** most specs from S185 on carry a second `**Status:**` line in their
+Closeout; the gate reads only the first. The closeout line records the *handback* state and may
+honestly still say `BUILT` after merge, so it is not reconciled. Retitling it is a template change
+for when it causes a wrong answer, not now.
+
+**Rejected routes.**
+
+- *Apply DL-197's form to the 190 classified docs as specified.* Rejected: 90 of them would have
+  carried a machine-readable false status, with the correct one sitting in the README.
+- *Make the README the source of truth, or derive it from the specs.* Rejected: it was wrong in
+  both directions (S205/S207/S223 vs S131–S134), and a generated column hides the drift the gate
+  is there to show.
+- *A permanent git cross-check in `make ci`.* Rejected: CI clones shallow, old sprints predate
+  branch merges, and the branch names were deleted. A one-time review with cited evidence, then
+  two records that must agree, is checkable offline.
+- *Exclude the backlog and the handover note by filename.* Rejected: see Decision 3.
+- *Keep `status-unmapped.md` and add a `--write` mode.* Rejected: an always-empty generated file is
+  a maintenance surface with nothing to say.
+
+---
+
 ## DL-203 - 57 warnings that could not fail were 57 parameters the law did not name - status: DECIDED (planner, 2026-09-23, operator asked for item 33)
 
 **The debt.** S187 (DL-133 decision 3) measured 60 name-presence divergences between agent `PARAM`

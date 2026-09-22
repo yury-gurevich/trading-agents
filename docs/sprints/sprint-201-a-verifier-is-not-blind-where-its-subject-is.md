@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-201-a-teardown-verifier-is-not-blind-where-the-deleter-is`
-**Status:** BUILT
+**Status:** MERGED — `7c4f11b3` on `main` (fix(s201): a teardown's self-check is not blind where the teardown is) (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** work-queue **item 52** (closed) · work-queue **item 51** (**retracted**) · hardening row **T** (new) · [DL-94](../design-log.md) recurring

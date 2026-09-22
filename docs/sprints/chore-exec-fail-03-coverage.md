@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `chore-exec-fail-03-coverage`
-**Status:** SHIPPED — see [Closeout](#closeout)
+**Status:** MERGED — SHIPPED — see [Closeout](#closeout)
 **Version:** fix → **0.85.06** (PATCH: last two digits)
 **Effort:** S
 **Decisions:** [ADR-0021](../decisions/0021-clause-summary-mirrors-the-law.md) a clause summary

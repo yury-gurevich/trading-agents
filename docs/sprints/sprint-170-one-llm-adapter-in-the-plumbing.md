@@ -1,6 +1,8 @@
 <!-- Agent: kernel | Role: sprint spec — finish moving the LLM vendor layer into the substrate -->
 # S170 — one LLM adapter set, in the plumbing, for every agent that calls a model
 
+**Status:** SPEC — never executed as written — DL-101 was closed by S222 (`7d5528e`) instead (item 22 review, 2026-09-23)
+
 **Closes:** [DL-101](../design-log.md) · **Type:** fix (consolidation; no new capability) ·
 **Target version:** next available **PATCH** at merge — **do not pin it in this file** ·
 **Branch:** `sprint-170-one-llm-adapter-in-the-plumbing`

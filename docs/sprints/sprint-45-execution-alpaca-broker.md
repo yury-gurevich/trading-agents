@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 45 — Execution Alpaca paper broker (real fills behind the Broker port)
 
-**Status:** planned · **Branch:** `sprint-45-execution-alpaca-broker` · **Build phase:** execution / DEP-BROKER (ADR-0006) · **Effort: M–L**
+**Status:** MERGED — `dee6a505` on `main` (feat(execution): Alpaca paper broker behind the Broker port (S45, ADR-) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-45-execution-alpaca-broker` · **Build phase:** execution / DEP-BROKER (ADR-0006) · **Effort: M–L**
 
 ## Goal
 

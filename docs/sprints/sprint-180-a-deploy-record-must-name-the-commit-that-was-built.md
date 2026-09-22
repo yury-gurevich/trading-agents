@@ -1,6 +1,8 @@
 <!-- Agent: tooling | Role: sprint spec — make record_deploy verify its SHA against the build it claims -->
 # S180 — a deploy record must name the commit that was actually built
 
+**Status:** MERGED — `5359667` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue item 21 · **Opens from:** the `s179` deploy, 2026-08-18 ·
 **Type:** fix ·
 **Target version:** next available **PATCH** at merge — **do not pin it in this file** ·

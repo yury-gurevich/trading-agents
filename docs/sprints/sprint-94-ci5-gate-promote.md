@@ -1,7 +1,7 @@
 # Sprint 94 — CI-5: gate + promote
 
 **Branch:** `sprint-94-ci5-gate-promote`
-**Status:** queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
+**Status:** SPEC — queued · **Phase:** P16 (continuous improvement, ADR-0013) · **Effort: M**
 
 ## Goal
 

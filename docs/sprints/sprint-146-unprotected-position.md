@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-146-unprotected-position`
-**Status:** SPEC — 🟠 **96 ABT shares (~$10k) have carried no protective stop since a 403**
+**Status:** MERGED — `7b06662` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: SPEC — 🟠 **96 ABT shares (~$10k) have carried no protective stop since a 403**
 **Version:** fix → **0.80.03** (PATCH: last two digits; `0.80.02` is current)
 **Effort:** M
 **Decisions:** [ADR-0015](../decisions/) §3 broker stops · [DL-62](../design-log.md) gap-down

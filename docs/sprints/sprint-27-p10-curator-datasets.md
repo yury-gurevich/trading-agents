@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 27 — P10 curator: dataset assembly by provenance traversal (P10 begins)
 
-**Status:** planned · **Branch:** `sprint-27-p10-curator-datasets` · **Build phase:** P10 · **Effort: M–L**
+**Status:** MERGED — `ba85c694` on `main` (feat: curator agent — dataset assembly by provenance traversal (P10 be) (item 22 review, 2026-09-23); the line read: planned · **Branch:** `sprint-27-p10-curator-datasets` · **Build phase:** P10 · **Effort: M–L**
 
 ## Goal
 

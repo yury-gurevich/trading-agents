@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-130-base-image`
-**Status:** ready for handover (packaged 2026-07-19)
+**Status:** MERGED — merged to `main` in `8aefe2af` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-19)
 **Effort:** S/M
 
 ---

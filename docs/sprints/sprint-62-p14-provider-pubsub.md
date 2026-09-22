@@ -1,7 +1,7 @@
 # Sprint 62 — P14.3: Provider pub/sub dual-mode
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** planned
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: planned
 **Branch:** `sprint-62-p14-provider-pubsub`
 **Effort:** M
 **Prerequisite:** S61 shipped (claim-check helpers available).

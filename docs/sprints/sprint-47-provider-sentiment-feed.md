@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 47 — Provider serves vendor sentiment into MarketData.sentiment (P12)
 
-**Status:** shipped · **Branch:** `sprint-47-provider-sentiment-feed` · **Build phase:** P12 (provider-sentiment challenger) · **Effort: M–L**
+**Status:** MERGED — shipped · **Branch:** `sprint-47-provider-sentiment-feed` · **Build phase:** P12 (provider-sentiment challenger) · **Effort: M–L**
 
 ## Goal
 

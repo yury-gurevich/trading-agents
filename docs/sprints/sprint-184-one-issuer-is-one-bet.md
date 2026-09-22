@@ -379,7 +379,7 @@ CONSTRAINTS
 
 ## Closeout — evidence
 
-**Status:** BUILT locally on `sprint-184-one-issuer-is-one-bet`; remote `make gate-ran` is post-push
+**Status:** MERGED — `18c41b1` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT locally on `sprint-184-one-issuer-is-one-bet`; remote `make gate-ran` is post-push
 proof and must be quoted in the final handoff for the pushed `HEAD`.
 
 **Result:** Implemented PM issuer aggregation, measured correlated-cluster concentration, explicit

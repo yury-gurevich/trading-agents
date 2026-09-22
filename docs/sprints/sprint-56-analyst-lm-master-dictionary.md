@@ -1,7 +1,7 @@
 # Sprint 56 — Analyst: full Loughran–McDonald master dictionary
 
 **Phase:** P12 (sentiment champion–challenger) — champion deepened.
-**Status:** shipped (implemented directly — no coding agent this cycle).
+**Status:** MERGED — shipped (implemented directly — no coding agent this cycle).
 **Version:** `feat` → project `0.4.0 → 0.5.0` (MINOR, HARD RULE).
 
 ## Goal

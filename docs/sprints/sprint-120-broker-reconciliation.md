@@ -3,7 +3,7 @@
 
 **Phase:** Production hardening of the self-driving fleet (DL-44; first defect of the standing-run era)
 **Branch:** `sprint-120-broker-reconciliation`
-**Status:** ready for handover (packaged 2026-07-08; execute after S119 merges)
+**Status:** MERGED — tag `v0.65.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-08; execute after S119 merges)
 **Effort:** M
 
 ---

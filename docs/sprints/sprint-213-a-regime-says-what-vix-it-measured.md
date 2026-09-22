@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-213-regime-measures-vix`
-**Status:** BUILT
+**Status:** MERGED — merged to `main` in `028382d2` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** `0.98.11`
 **Effort:** M
 **Decisions:** implements [ADR-0028](../decisions/0028-the-regime-reads-vix-from-fmp-and-says-when-it-cannot.md) (read its **Correction** section) · closes work-queue item **70** · evidence [EXP-009](../research/experiments/EXP-009-volatility-sizing-replay.md) · DL and DRIFT numbers: next free **at branch time** (see *Sequencing*)

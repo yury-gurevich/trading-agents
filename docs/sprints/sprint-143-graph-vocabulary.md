@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-143-graph-vocabulary`
-**Status:** SHIPPED 0.79.00 — merged `798bfd4`, `make ci` 1841 passed / 100.00 %, both remote gates
+**Status:** MERGED — SHIPPED 0.79.00 — merged `798bfd4`, `make ci` 1841 passed / 100.00 %, both remote gates
 green. **Not deployed** — no fleet behaviour change (see Closeout).
 **Effort:** M
 **Decisions:** [DL-66](../design-log.md) · implements the constraint half of

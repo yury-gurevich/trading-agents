@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 48 — Analyst persists the provider-sentiment shadow reading (P12)
 
-**Status:** shipped (2026-06-17, commit `9c24a57`) · **Branch:** `sprint-48-analyst-provider-sentiment-reading` · **Build phase:** P12 (provider-sentiment challenger — completes it) · **Effort: S–M**
+**Status:** MERGED — shipped (2026-06-17, commit `9c24a57`) · **Branch:** `sprint-48-analyst-provider-sentiment-reading` · **Build phase:** P12 (provider-sentiment challenger — completes it) · **Effort: S–M**
 
 > **Handback (shipped).** Implemented exactly as scoped: Part A `PROVIDER_SCORER` + `provider_reading`;
 > Part B `_analyze` concatenates `lexicon_readings + provider_readings` built from `market.sentiment`;

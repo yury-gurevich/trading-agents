@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-147-fresh-book-before-decision`
-**Status:** SPEC — closes the **upstream cause** of the 2026-07-27 outage
+**Status:** MERGED — merged to `main` in `2989acb2` (item 22 review, 2026-09-23); the line read: SPEC — closes the **upstream cause** of the 2026-07-27 outage
 **Version:** feat → **0.81.00** (MINOR: two middle digits, zeroing the patch group)
 **Effort:** M–L
 **Decisions:** [DL-71](../design-log.md) option B (this sprint *is* option B) ·

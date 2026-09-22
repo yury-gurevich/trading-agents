@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-135-unified-decision-run`
-**Status:** ✅ shipped 2026-07-23 (0.74.00) — merged `1b858e7`, deployed `:s136`
+**Status:** MERGED — ✅ shipped 2026-07-23 (0.74.00) — merged `1b858e7`, deployed `:s136`
 **Effort:** M
 **Decision:** [ADR-0016](../decisions/0016-one-run-one-evidence-both-directions.md) (amends ADR-0015)
 

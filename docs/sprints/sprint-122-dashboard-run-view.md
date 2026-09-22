@@ -3,7 +3,7 @@
 
 **Phase:** Operations dashboard (DL-47 — the PRD's product surface #1; first of four slices)
 **Branch:** `sprint-122-dashboard-run-view`
-**Status:** ready for handover (packaged 2026-07-10; amended same day — `/bundle` endpoint added
+**Status:** MERGED — tag `v0.66.00` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-10; amended same day — `/bundle` endpoint added
 per DL-47 req. 11 before any code started)
 **Effort:** M
 

@@ -1,6 +1,8 @@
 <!-- Agent: kernel | Role: sprint spec for the DL-99 fixables -->
 # S167 — a fault count cannot lie, and a fail-open says why
 
+**Status:** MERGED — tag `v0.89.08` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** the two code-shaped halves of [DL-99](../design-log.md) · **Type:** fix ·
 **Target version:** 0.89.08 (PATCH — defect fixes, no new capability) ·
 **Branch:** `sprint-167-a-fault-count-cannot-lie`

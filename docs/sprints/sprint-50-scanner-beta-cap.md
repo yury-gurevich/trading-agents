@@ -1,7 +1,7 @@
 <!-- Agent: planning | Role: sprint handover -->
 # Sprint 50 — Scanner beta computation + beta-cap filter (P11)
 
-**Status:** shipped (2026-06-17, commit `51ee2b6`) · **Branch:** `sprint-50-scanner-beta-cap` · **Build phase:** P11 (decision-logic depth — scanner side) · **Effort: M**
+**Status:** MERGED — shipped (2026-06-17, commit `51ee2b6`) · **Branch:** `sprint-50-scanner-beta-cap` · **Build phase:** P11 (decision-logic depth — scanner side) · **Effort: M**
 
 > **Handback (shipped).** Built as scoped. New: `domain/beta.py` (55L, pure `compute_beta` via
 > `statistics.variance`/`covariance` over aligned daily returns), `provider_client.py` (79L — extracted

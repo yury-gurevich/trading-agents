@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-203-a-check-that-cannot-fail-says-so` *(already created from `e4ef0b8`)*
-**Status:** BUILT
+**Status:** MERGED — `e890f93` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: BUILT
 **Version:** `0.98.02` (PATCH)
 **Effort:** M
 **Decisions:** work-queue **items 53, 56, 41** · [DL-152](../design-log.md) (the recurring shape) · [DRIFT-058](../laws/drift-register.md) (the lesson this generalises) · a new drift row is **owed** — see the law-cycle answer

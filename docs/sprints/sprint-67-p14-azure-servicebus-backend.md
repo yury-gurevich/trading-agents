@@ -1,7 +1,7 @@
 # Sprint 67 — P14.8: Azure Service Bus backend
 
 **Phase:** P14 — Inter-agent comms re-architecture (ADR-0005)
-**Status:** planned
+**Status:** MERGED — `e59c6a53` on `main` (feat(p14): event-driven pub/sub re-architecture + Azure Service Bus ba) (item 22 review, 2026-09-23); the line read: planned
 **Branch:** `sprint-67-p14-azure-servicebus-backend`
 **Effort:** M–L
 **Prerequisite:** S66 shipped (full event-driven pipeline on in-process bus).

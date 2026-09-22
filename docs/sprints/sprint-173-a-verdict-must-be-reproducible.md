@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-173-a-verdict-must-be-reproducible`
-**Status:** CLOSED — Part A merged and proven; Part B ran one round and was stopped on price (DL-160)
+**Status:** MERGED — `f875f525` on `main` (fix(s173): a round is split by payload bytes, because one 74 MB POST d) (item 22 review, 2026-09-23); the line read: CLOSED — Part A merged and proven; Part B ran one round and was stopped on price (DL-160)
 **Version:** 0.97.00
 **Effort:** L
 **Produced:** [DL-158](../design-log.md) — five dependent rounds and the price · [DL-159](../design-log.md) — the exclusion predicate, the floor, and the re-derived baseline · [DRIFT-056](../laws/drift-register.md)

@@ -3,7 +3,7 @@
 
 **Phase:** Operations dashboard (DL-47 slice 2 of 4; S122 shipped 0.66.00)
 **Branch:** `sprint-123-dashboard-fleet-infra`
-**Status:** ready for handover (packaged 2026-07-10)
+**Status:** MERGED — `2ad656e` (cited by its README row) is on `main` (item 22 review, 2026-09-23); the line read: ready for handover (packaged 2026-07-10)
 **Effort:** M–L
 
 ---

@@ -1,6 +1,8 @@
 <!-- Agent: supervisor | Role: sprint spec — give faults a retirement path so `healthy` can return to true -->
 # S179 — a fault must be able to stop being an incident
 
+**Status:** MERGED — `4c8eeb0` (cited by its README row) is on `main` (item 22 review, 2026-09-23)
+
 **Closes:** work-queue item 19 · **Opens from:** `/diagnose-run` + the `probe-s178-flaglifecycle`
 run, 2026-08-18 · **Type:** fix ·
 **Target version:** next available PATCH at merge — **do not pin it in this file** ·

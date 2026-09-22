@@ -1,7 +1,7 @@
 <!-- Agent: tooling | Role: chore spec + closeout for work-queue item 74 -->
 # chore-an-accepted-advisory-re-checks-itself — the gate states what it tolerates, and re-measures why
 
-**Status:** BUILT
+**Status:** MERGED `750ac98`
 
 **Closes:** [work-queue item 74](../work-queue.md) · **Opens:** [DL-199](../design-log.md) ·
 **Type:** feat · **Version:** 0.107.00 · **Branch:** `chore-an-accepted-advisory-re-checks-itself` ·
@@ -152,7 +152,18 @@ Both secret scans read `Passed`. 🪤 **The first run of this gate on this very 
 `detect-secrets` reads the phrase *"detect-secrets: Passed"* as a keyword assignment — the
 [docs-push hazard](../work-queue.md) again, caught locally this time by the untracked-file sweep.
 
-**`make gate-ran`:** filled at merge.
+**`make gate-ran`:** run from `C:/Users/yury_/Downloads/project/ta-chore-74`, whose `HEAD` is
+the commit being proven - the printed SHA was checked against `git rev-parse HEAD`:
+
+```text
+GATE PROVEN for cc314df0a2dd6f9f0af072131e0a696d3aa963ef:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Merged** `750ac98`, tagged `v0.107.00`, 2026-09-22 22:34 AEST. Nothing deployed: gate tooling
+only, so the fleet stays on `b18014e`.
 
 **Not met / verified failing:** none.
 

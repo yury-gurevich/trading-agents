@@ -48,6 +48,12 @@ _FAKE_DSN = (
     "postgresql://someuser:"  # pragma: allowlist secret
     "notarealpassword@example.invalid/db"
 )
+# The planted report for the accepted-advisory re-check: the advisory this repo
+# accepts, but carrying a fix release, which retires the acceptance.
+_FIXED_ADVISORY_REPORT = (
+    '{"dependencies": [{"name": "diskcache", "version": "5.6.3", "vulns": '
+    '[{"id": "PYSEC-2026-2447", "aliases": [], "fix_versions": ["5.6.4"]}]}]}\n'
+)
 _LAW_PROBE_ROOT = f"scripts/{PROBE_PREFIX}_law_coverage"
 _LAW_PROBE_LAWS = """# Probe laws
 
@@ -254,6 +260,23 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         must_output=("urllib3",),
     ),
     FailureCase(
+        name="accepted-advisory-re-check",
+        why=(
+            "an accepted advisory whose fix has shipped must stop being accepted; "
+            "the ignore it replaced had no mechanism that could notice (DL-199)"
+        ),
+        files={f"scripts/{PROBE_PREFIX}_audit.json": _FIXED_ADVISORY_REPORT},
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_dependency_audit.py",
+            "--audit-json",
+            f"scripts/{PROBE_PREFIX}_audit.json",
+        ],
+        must_output=("a fix has shipped",),
+    ),
+    FailureCase(
         name="gate-ran-rejects-abbreviated-sha",
         why=(
             "row M: the GitHub API's head_sha filter returns total_count: 0 for an "
@@ -390,11 +413,25 @@ INVARIANTS: tuple[Invariant, ...] = (
         must_contain=("scripts/check_untracked_secrets.py",),
     ),
     Invariant(
-        name="pip-audit-not-ignored-by-ci",
-        why="the local CVE gate must fail make ci instead of being ignored",
+        name="dependency-audit-not-ignored-by-ci",
+        why=(
+            "the local CVE gate must fail make ci instead of being ignored, and "
+            "an --ignore-vuln flag would route acceptance around the baseline "
+            "that re-measures it (DL-199)"
+        ),
         path="Makefile",
-        must_contain=("\tuv run pip-audit",),
-        must_not_contain=("\t-uv run pip-audit",),
+        must_contain=("\tuv run python scripts/check_dependency_audit.py",),
+        must_not_contain=("\t-uv run", "--ignore-vuln"),
+    ),
+    Invariant(
+        name="dependency-audit-wired-in-ci",
+        why=(
+            "CI enumerates security commands independently from the Makefile, so "
+            "both paths must audit the lock rather than the installed set"
+        ),
+        path=".github/workflows/ci.yml",
+        must_contain=("scripts/check_dependency_audit.py",),
+        must_not_contain=("--ignore-vuln",),
     ),
     Invariant(
         name="dependabot-pins-python-to-3-13",

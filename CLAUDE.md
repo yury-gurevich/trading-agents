@@ -24,7 +24,7 @@ check `agents/<name>/laws/laws.md` if a law question is involved.
 
 ---
 
-## CI gate — always run all 14 steps
+## CI gate — always run all 15 steps
 
 ```bash
 make ci                 # to the terminal, or:
@@ -33,13 +33,14 @@ make ci > /tmp/ci.txt 2>&1 ; echo $?     # redirect to a FILE, then read it
 
 Never declare a change "green" on the strength of intent. **Run `make ci` locally before you
 push your own work** — it keeps a broken push off the remote — and confirm the remote gate afterwards.
-The gate has 14 steps: ruff, format, mypy, import-linter, module size, module header,
-law coverage, PARAM/settings sync, markdown links, version scheme, pytest (100 % coverage floor),
-pip-audit, detect-secrets, untracked secrets. *(S221 added the last two of those checks, 2026-09-21;
-the count read 12 until then — re-count from the `ci:` target, never from this sentence.)*
+The gate has 15 steps: ruff, format, mypy, import-linter, module size, module header,
+law coverage, PARAM/settings sync, sprint status, markdown links, version scheme,
+pytest (100 % coverage floor), dependency audit, detect-secrets, untracked secrets.
+*(The count read 12 before S221, and this sentence said 14 while the target already ran 15 — it had
+missed S224's sprint-status step. **Re-count from the `ci:` target, never from this sentence.**)*
 
 **Verifying someone else's handback is the exception: `make gate-ran` is the proof, not a local
-re-run** (operator, 2026-08-31). Remote CI runs the same 14 steps on clean infrastructure with **no
+re-run** (operator, 2026-08-31). Remote CI runs the same 15 steps on clean infrastructure with **no
 `.env`**, so a green gate for the merged SHA is a *stronger* signal than a local pass, and repeating
 it locally only re-derives a fact you already hold. 🪤 **What the re-run never checked is where
 the defects actually were:** the SHA being proven (a docs commit added *above* the gated commit merges

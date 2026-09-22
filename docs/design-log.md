@@ -10,6 +10,66 @@ and is marked CLOSED here.
 
 ---
 
+## DL-199 - the gate audited the interpreter, not the lock - status: DECIDED (planner, 2026-09-22, under delegated technical decisions)
+
+**Context.** Work-queue item **74** asked for one thing: the `--ignore-vuln PYSEC-2026-2447` added by
+DL-184 has no expiry, and nothing re-checks whether a fix has shipped. Building that re-check
+turned up why the ignore was never load-bearing in the first place.
+
+**Measured 2026-09-22, in a clean worktree.** `uv sync --frozen` installs the dev group and **no
+optional extra**, so `diskcache` is not in CI's environment at all. A bare `pip-audit` there reports
+`No known vulnerabilities found`, exit 0 - with or without the ignore. Three consequences, all
+measured rather than reasoned:
+
+- **The `ci.yml` ignore has never suppressed anything.** The advisory only ever failed the *local*
+  gate, whose venv happens to carry `optimizer` from a hand-run `uv sync --extra optimizer`.
+- **CI never audited the extras the fleet actually installs.** `runtime`, `azure`, `llm` and
+  `forecaster` are in every deployed image and in no CI audit. A vulnerability in `anthropic`,
+  `azure-identity` or `torch` would have passed the security lane in silence.
+- **The two "identical" definitions were identical in text only.** DL-184 kept the Makefile and
+  `ci.yml` flags in sync, which is worth nothing when the two commands audit different package sets.
+
+**Decision 1 - the audit's scope is the lockfile, with every extra and every group.**
+`uv export --frozen --all-extras --all-groups` (2,333 pinned lines) piped to `pip-audit --no-deps`.
+The lock is the same everywhere, so local and CI now answer the same question, and the audited set
+is a strict superset of what any container installs. **Measured cost of widening: none.** Across the
+whole lock exactly one package is vulnerable - `diskcache`, the one already accepted.
+
+**Decision 2 - an acceptance is a record with premises, not a flag.** The accepted list moves out of
+two command lines into `scripts/dependency_audit_baseline.py`, where each entry names its package,
+aliases, deciding record, reason, retire trigger, and the optional extra that is its only route in.
+`scripts/check_dependency_audit.py` re-measures all of it on every run and fails when any premise
+stops holding: a fix release appears, the advisory stops being reported, or a Dockerfile starts
+installing that extra. The accepted line is also **printed on every green run**, so the gate output
+states what it is tolerating and why instead of a Makefile comment knowing it alone.
+
+**Decision 3 - no calendar expiry.** Rejected on purpose. A date fires when nothing has changed,
+which re-creates exactly the harm DL-184 refused - a permanently failing gate nobody reads - and is
+the shape of item 33's 57 unread warnings. The premises above are event-driven: they go red the day
+the world changes, and stay silent otherwise.
+
+**Rejected routes.**
+
+- **Keep `--ignore-vuln` and add a separate re-check script.** Rejected: the ignore list would then
+  live in three places (Makefile, `ci.yml`, baseline) and the two command lines could still drift
+  from the thing that audits them.
+- **Keep auditing the installed environment.** Rejected: it is whatever the developer last synced.
+  That is the defect, not the baseline.
+- **Audit runtime extras only.** Rejected: it would shrink today's coverage, which includes the dev
+  toolchain, to buy nothing - the full lock already costs one audit.
+- **Drop the `optimizer` extra.** Still rejected, for DL-184's reason: DSPy was adopted by ADR-0010,
+  and removing it is a direction change, not a CVE response.
+
+**Proven.** Gate self-test case `accepted-advisory-re-check` plants a report in which
+`PYSEC-2026-2447` carries fix release `5.6.4` and requires the gate to reject it; 28/28 cases pass.
+Ten unit tests in `tests/test_check_dependency_audit.py` cover each premise, alias matching, and
+pip-audit's habit of reporting one advisory twice.
+
+**Retire trigger for the acceptance itself is unchanged** (DL-184, item 74): diskcache publishes a
+fix, or the `optimizer` extra is dropped. The difference is that the gate now notices either one.
+
+---
+
 ## DL-198 - a TYPE_CHECKING guard does not make an import cycle safe - status: DECIDED (S224 review, 2026-09-22)
 
 **Context.** S224's `check_sprint_status.py` came back at **227** lines, over the 200-line hard block.

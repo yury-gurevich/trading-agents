@@ -101,11 +101,13 @@ jobs:
           python-version-file: ".python-version"
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       - run: uv sync --frozen
-      - name: pip-audit (Python vulnerabilities)
-        # DL-184: diskcache PYSEC-2026-2447 has no fix release and reaches no
-        # container (optional `optimizer` extra, installed by no Dockerfile).
-        # Bounded to this one ID - every other advisory still fails the gate.
-        run: uv run pip-audit --ignore-vuln PYSEC-2026-2447
+      - name: Dependency audit (locked packages + accepted advisories)
+        # Audits the exported lock with every extra and group. A bare
+        # `pip-audit` here would audit `uv sync --frozen`, which installs no
+        # optional extra, so the packages the fleet images install were never
+        # audited in CI at all (DL-199). Acceptances and their premises live in
+        # scripts/dependency_audit_baseline.py and are re-measured (DL-184).
+        run: uv run python scripts/check_dependency_audit.py
       - name: detect-secrets
         run: uv run pre-commit run detect-secrets --all-files
       - name: Initialize CodeQL

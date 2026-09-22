@@ -293,7 +293,7 @@ az containerapp job execution list -n dispatcher-cron -g trading-agents -o table
 ```
 
 `infra/deploy-agents.ps1 down` is the rollback/cost-stop escape hatch. It deletes the
-`dispatcher-cron` job and all 13 apps; it is not the normal S103 end state.
+`dispatcher-cron` job and all 16 apps; it is not the normal S103 end state.
 
 ## Architecture
 

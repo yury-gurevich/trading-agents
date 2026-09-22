@@ -1,6 +1,6 @@
 ---
 name: check-fleet
-description: Fleet health + deploy-currency audit — are all 13 Container Apps + dispatcher job healthy, on the code you think they are on (DL-46), activated, and able to reach the spine and bus? Use for "is the fleet ok", "are we running latest", pre/post-deploy verification.
+description: Fleet health + deploy-currency audit — are all 16 Container Apps (master + the 15 in deploy-agents.ps1's $AGENTS) + dispatcher job healthy, on the code you think they are on (DL-46), activated, and able to reach the spine and bus? Use for "is the fleet ok", "are we running latest", pre/post-deploy verification.
 ---
 
 # Check the fleet
@@ -18,6 +18,10 @@ healthy-idle from broken.
    az containerapp job show -n dispatcher-cron -g trading-agents --query "properties.template.containers[0].image" -o tsv
    gh run list --workflow build-images.yml --limit 5
    ```
+
+   **Expect 16 apps + the job.** The roster is `master` plus the 15 keys of `$AGENTS` in
+   `infra/deploy-agents.ps1` — 17 deploy targets built from 15 images (the deliberator runs
+   three apps from one image). A short count is a missing app, not an idle one.
 
    Every app + the job should share one tag; compare its build date against the latest merge to
    `main` that touched `agents/ kernel/ contracts/ orchestration/`. **Behind = finding**, even if

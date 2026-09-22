@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-223-an-envelope-says-what-it-checked`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** DL-196 (this sprint's fork) · [DL-195](../design-log.md) (the three breaches, filed on the S207 merge) · work-queue item **79**
@@ -113,7 +113,7 @@ of not looking.
 | Live `PORTFOLIO_MANAGER_MAX_POSITIONS` | **60** | *[measured 2026-09-22]* same command |
 | Live `PORTFOLIO_MANAGER_CORRELATION_THRESHOLD` | **0.50** | *[measured 2026-09-22]* same command |
 | 🎯 Both "false alarm" live values are **inside** their own envelopes | 0.01 ∈ (0.01, 0.05); 60 ∈ (30, 60) | *[measured 2026-09-22]* live values above against the declared bands in `settings.py` |
-| Envelopes declared repo-wide | **16** | *[measured 2026-09-22]* `describe()` swept over every `*Settings` class in the analyst, PM and provider settings modules |
+| Envelopes declared repo-wide | **13** | *[corrected 2026-09-22]* `describe()` swept over every `*Settings` class in the analyst, PM and provider settings modules. The spec-time **16** was never produced by this sweep; **13** has been pinned since S207 by `test_exactly_thirteen_risk_settings_declare_evidence_envelopes` (`tests/test_config.py`) |
 | Of which extend past their own rails | **2** | *[measured 2026-09-22]* same sweep: `correlation_lookback_days` `(60, 252)` vs `le=250`; `min_correlation_bars` `(13, 60)` vs `ge=20` — **both in the PM, both named by item 79** |
 | `kernel/config.py` line count | **147** | *[measured 2026-09-22]* `wc -l` — **3 lines below the 150 warning**, which S207's review already corrected once |
 | `agents/portfolio_manager/settings.py` line count | **165** | *[measured 2026-09-22]* `wc -l` — already past the 150 warning |
@@ -132,7 +132,7 @@ of not looking.
 2. **🪤 A band cannot name a value its rails reject.** `kernel.tunable()` raises at declaration when
    `envelope[0]` is below `ge`/`gt` or `envelope[1]` is above `le`. The message names the field, the
    band and the rail it breaks.
-3. **The two rails breaches are corrected** so every one of the 16 declared envelopes passes the new
+3. **The two rails breaches are corrected** so every one of the 13 declared envelopes passes the new
    rule: `correlation_lookback_days` `(60, 252)` → a band inside `ge=20, le=250`;
    `min_correlation_bars` `(13, 60)` → a band inside `ge=20, le=250`. **Correct the band, never the
    rail** — the rails are the safety limits and are not this sprint's business.
@@ -230,7 +230,7 @@ collides even when the number was free at branch time.
 | A3 | 🪤 An envelope extending above `le` is refused at declaration | `tunable(120, why=…, ge=20, le=250, envelope=(60.0, 252.0), source=…)` | Same, for the upper rail |
 | A4 | 🪤 The negative control — a valid band is still accepted | An envelope strictly inside its rails, **and** one exactly equal to them | No raise. **A rule that rejects valid bands is worse than the defect** |
 | A5 | 🪤 A band with no rails at all is still accepted | `tunable(…, envelope=(1.0, 2.0), source=…)` with no `ge`/`le` | No raise — absent rails are not a violated rail |
-| A6 | 🎯 Every real declared envelope passes the new rule | `describe()` swept over the analyst, PM and provider settings classes | **16** envelopes inspected, **0** rails breaches (was **2**) |
+| A6 | 🎯 Every real declared envelope passes the new rule | `describe()` swept over the analyst, PM and provider settings classes | **13** envelopes inspected, **0** rails breaches (was **2**) |
 | A7 | 🎯 `correlation_threshold` is inside its re-derived band and cites the right evidence | The real PM settings class | `0.50` within the declared envelope, and the `source` references ADR-0030 / EXP-008 rather than the r = 0.7 effect-magnitude note |
 | A8 | 🪤 The counts move exactly as intended, and no further | The real `check_param_law_sync` run | Envelope breaches **3 → 2**; legacy baseline **still exactly 57**; total `[WARN]` **60 → 59**; exit code still **0** |
 
@@ -240,7 +240,7 @@ collides even when the number was free at branch time.
 
 - [ ] A reader of any `[WARN]` envelope line can tell it is a declared default, proven by A1 asserting the string.
 - [ ] `kernel.tunable()` raises for an envelope outside its rails (A2, A3) and does **not** raise for a valid one (A4, A5).
-- [ ] All **16** declared envelopes pass the new rule; the two PM bands are corrected, and **no rail was moved** (A6).
+- [ ] All **13** declared envelopes pass the new rule; the two PM bands are corrected, and **no rail was moved** (A6).
 - [ ] `correlation_threshold` `0.50` sits inside a band sourced to ADR-0030 / EXP-008 (A7).
 - [ ] Envelope breaches **3 → 2**, legacy baseline **still 57**, checker exit still **0** (A8).
 - [ ] **No `tunable()` default changed and no live value moved** — state this explicitly, having checked.
@@ -256,7 +256,7 @@ collides even when the number was free at branch time.
 
 🪤 **A declaration-time raise is a process-start failure, everywhere.** Every agent imports its
 settings at import time, so a band this rule rejects does not fail a test — it fails the container.
-This is safe **only because it was measured**: exactly **2** of **16** declared envelopes breach
+This is safe **only because it was measured**: exactly **2** of **13** declared envelopes breach
 today, both in the PM, and both are fixed in this sprint. **Before you merge, re-run the sweep** — if
 a new envelope landed on `main` meanwhile, it must be fixed here or the rule waits.
 
@@ -353,7 +353,7 @@ DO NOT:
   and it is explicitly out of scope.
 
 TRAPS, named so you do not hit them:
-- A declaration-time raise fails CONTAINER STARTUP, not just a test. Exactly 2 of 16 declared
+- A declaration-time raise fails CONTAINER STARTUP, not just a test. Exactly 2 of 13 declared
   envelopes breach today (both in the PM, both above). Re-run the sweep before merging in case a
   new envelope landed on main meanwhile.
 - The warnings going to zero is FAILURE, not success. Two breaches (max_position_pct default 0.10,
@@ -397,15 +397,17 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *unfilled* | *unfilled* | *unfilled* | *unfilled* |
+| PM envelope/source metadata in `agents/portfolio_manager/settings.py` | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; ADR-0030 | `PM-NEV-08` defines `correlation_threshold` as the ramp floor; `PM-OBS-03` requires disclosed ramp evidence; the PM PARAMETERS row already declares `0.50` as that floor. The cited PM-NEV-08 / PM-OBS-03 ramp proofs are 🟩. | Yes. It confirms that `(0.50, 0.70)` updates stale evidence for an existing ramp-floor meaning; it does not change an agent guarantee or require a law cycle. |
+| `kernel.tunable()` envelope-rail validation | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | No agent clause binds kernel declaration validation. Conventions §§4, 7, and 9 require locked laws to remain untouched and genuine law drift to be recorded. | No. The rule is declaration integrity tooling, not an agent behaviour guarantee; it must stay outside `contracts/` and `laws.md`. |
+| Envelope warning scope in `scripts/param_law_sync_envelopes.py` | `docs/laws/conventions.md`; `docs/laws/drift-register.md` | No agent clause binds the offline checker; DRIFT-071 records S207's evidence-envelope purpose and its warning-only semantics. | Yes. The checker must explicitly name `FieldInfo.get_default()`'s declared-default scope, while remaining offline and warning-only. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *unfilled*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. It changes no file under `contracts/`; PM defaults and live values remain unchanged; the PM law already declares `correlation_threshold=0.50` as the ramp floor. The kernel rail check prevents incoherent declarations but adds no agent guarantee.
 
-**Contradictions found between a law and this spec:** *unfilled*
+**Contradictions found between a law and this spec:** None. The specification's recommended threshold band follows ADR-0030's existing ramp-floor decision and the PM law's current wording.
 
-**Laws found silent where a decision was needed:** *unfilled*
+**Laws found silent where a decision was needed:** None. The wording, validation-module placement, and evidence band are implementation decisions governed by the sprint and ADR-0030, not missing agent-law guarantees.
 
-**Clauses that were ⬜ and are now proven:** *unfilled*
+**Clauses that were ⬜ and are now proven:** None. This sprint changes no agent behaviour and does not claim a law proof transition.
 
 ---
 
@@ -413,69 +415,128 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A2 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A3 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A4 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A5 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A6 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A7 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
-| A8 | *unfilled* | *unfilled* | *unfilled* | *unfilled* |
+| A1 | `test_value_outside_its_envelope_names_its_declared_default` | `tests/test_param_law_sync.py` | PASS | DD-04; tooling, no agent-law clause |
+| A2 | `test_envelope_below_inclusive_lower_rail_is_refused` | `tests/test_tunable_envelopes.py` | PASS | DD-04; tooling, no agent-law clause |
+| A3 | `test_envelope_above_upper_rail_is_refused` | `tests/test_tunable_envelopes.py` | PASS | DD-04; tooling, no agent-law clause |
+| A4 | `test_valid_and_unrailed_envelopes_are_accepted` | `tests/test_tunable_envelopes.py` | PASS | DD-04; tooling, no agent-law clause |
+| A5 | `test_valid_and_unrailed_envelopes_are_accepted` | `tests/test_tunable_envelopes.py` | PASS | DD-04; tooling, no agent-law clause |
+| A6 | `test_all_declared_envelopes_stay_inside_their_rails` | `tests/test_tunable_envelopes.py` | PASS for all 13 actual declarations; the plan's 16-count premise is verified false | DD-04; tooling, no agent-law clause |
+| A7 | `test_correlation_threshold_envelope_cites_the_ramp_evidence` | `tests/test_tunable_envelopes.py` | PASS | DD-04; tooling, no agent-law clause |
+| A8 | `test_param_law_sync_keeps_the_expected_warning_baseline` | `tests/test_param_law_sync.py` | PASS | Conventions §9 / DRIFT-071; tooling, no agent-law clause |
 
-**Tests added beyond the plan:** *unfilled*
+**Tests added beyond the plan:** `test_envelope_below_exclusive_lower_rail_is_refused` in
+`tests/test_tunable_envelopes.py` proves the required `gt` boundary: an envelope that includes the
+exclusive lower rail is refused at declaration.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *unfilled*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *unfilled*
+**Tree the proofs ran in (and `.env` present?):**
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-223-an-envelope-says-what-it-checked`; `.env` present: `False`.
 
-**Result:** *unfilled*
+**Result:** `make ci` exit `0`; 2,997 passed, 6 skipped, 100.00% coverage. The offline checker
+exits `0` with 2 honest envelope warnings and the unchanged 57-warning legacy baseline. No default,
+live value, or field rail changed.
 
-**Files changed:** *unfilled*
+**Files changed:** `kernel/tunable_envelope.py`, `kernel/config.py`,
+`scripts/param_law_sync_envelopes.py`, `agents/portfolio_manager/settings.py`,
+`tests/test_tunable_envelopes.py`, `tests/test_param_law_sync.py`,
+`docs/design-log.md`, this sprint handback, `pyproject.toml`, and `uv.lock`.
 
-**Design decisions:** recorded as `DL-196` — *unfilled*
+**Design decisions:** recorded as `DL-196` — `declared_default=...` names the checked scope; a
+dedicated kernel helper keeps `config.py` at 148 lines; `(0.50, 0.70)` cites ADR-0030 / EXP-008.
 
 **Proof — the red run first:**
 
 ```text
-unfilled
+uv run pytest tests/test_config.py tests/test_param_law_sync.py -q
+FAILED tests/test_config.py::test_envelope_below_inclusive_lower_rail_is_refused
+   Failed: DID NOT RAISE ValueError
+FAILED tests/test_config.py::test_envelope_below_exclusive_lower_rail_is_refused
+   Failed: DID NOT RAISE ValueError
+FAILED tests/test_config.py::test_envelope_above_upper_rail_is_refused
+   Failed: DID NOT RAISE ValueError
+FAILED tests/test_config.py::test_all_declared_envelopes_stay_inside_their_rails
+   AssertionError: assert 13 == 16
+FAILED tests/test_config.py::test_correlation_threshold_envelope_cites_the_ramp_evidence
+   assert (0.6, 0.8) == (0.5, 0.7)
+FAILED tests/test_param_law_sync.py::test_value_outside_its_envelope_names_its_declared_default
+   AssertionError: declared_default output expected, value output received
+FAILED tests/test_param_law_sync.py::test_param_law_sync_keeps_the_expected_warning_baseline
+   AssertionError: assert 3 == 2
+7 failed, 19 passed in 35.30s
 ```
+
+📌 **Path note, added at merge review.** The red run above cites
+`tests/test_config.py` because the six new tests were written there first; they were moved
+into `tests/test_tunable_envelopes.py` before the green run, and `tests/test_config.py` is
+**unmodified** by this sprint. The paste is left verbatim rather than rewritten — the test
+names and failures are the ones that ran.
 
 **Proof — the green run:**
 
 ```text
-unfilled
+uv run pytest --no-cov tests/test_config.py tests/test_tunable_envelopes.py tests/test_param_law_sync.py -q
+26 passed in 1.82s
+
+make ci > C:\Users\yury_\AppData\Local\Temp\s223-make-ci-green.txt 2>&1
+ci_exit=0
+2997 passed, 6 skipped in 117.52s
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No known vulnerabilities found
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 2 new file(s)
 ```
 
 **The four counts, before and after:**
 
 ```text
-unfilled — envelope breaches, total [WARN] lines, legacy baseline, checker exit code
+before: envelope breaches=3, total [WARN]=60, legacy baseline=57, checker exit=0
+after:  envelope breaches=2, total [WARN]=59, legacy baseline=57, checker exit=0
 ```
 
-**Guards planted:** *unfilled — per guard: what was planted, that it failed, that it was restored*
+**Guards planted:** `ge`, `gt`, and `le` branches were disabled together: their three direct tests
+failed `DID NOT RAISE`, then passed `3 passed` after restoration. The warning was changed back to
+`value=`: A1 failed against `declared_default=`, then passed after restoration. The threshold source
+was changed back to the old effect-magnitude text: A7 failed because `ADR-0030` was absent, then
+passed after restoration. The threshold band was changed back to `(0.6, 0.8)`: A8 failed `3 == 2`,
+then passed after restoration.
 
-**Module line counts:** *unfilled*
+**Module line counts:** `kernel/config.py=148`, `kernel/tunable_envelope.py=33`,
+`scripts/param_law_sync_envelopes.py=37`, `agents/portfolio_manager/settings.py=168`,
+`tests/test_config.py=162`, `tests/test_tunable_envelopes.py=112`, and
+`tests/test_param_law_sync.py=187`.
 
-**`make ci`:** redirected to *unfilled*. Exit code *unfilled*. *unfilled* passed, *unfilled*
-skipped, coverage *unfilled*. pip-audit *unfilled*. detect-secrets *unfilled*.
+**`make ci`:** redirected to `C:\Users\yury_\AppData\Local\Temp\s223-make-ci-green.txt`. Exit
+code `0`. `2997` passed, `6` skipped, coverage `100.00%`. pip-audit: no known vulnerabilities.
+detect-secrets and untracked-secret scans: passed.
 
-**`make gate-ran`:** run from *unfilled* at *unfilled*:
+**`make gate-ran`:** not run. The branch is uncommitted and unpushed, so no remote SHA exists to
+prove:
 
 ```text
-unfilled
+not run — commit and push the sprint branch, then run from this worktree and compare its printed SHA to HEAD.
 ```
 
-**Not met / verified failing:** *unfilled*
+**Not met / verified failing:** The handover's stated 16-envelope count is verified false: the
+settings sweep finds 13 (3 analyst, 8 PM, 2 provider), matching S207's existing declaration test.
+All 13 pass the new rail rule; no three envelopes were invented merely to satisfy the stale premise.
+`make gate-ran` is not done because this handback has not been committed or pushed.
 
 ---
 
 ## Return notes
 
-- *Scope held, or where it moved and why.*
-- *What you disagreed with in the spec after reading the laws — in particular, whether you read
-  EXP-008 as supporting a different band for the ramp floor.*
-- *What the next sprint should know that is not obvious from the diff.*
+- Scope held. No file under `contracts/` changed; no agent law changed; no default, live value, or
+   `ge`/`gt`/`le` rail changed; no live settings were read; the 57 legacy PARAM/settings divergences
+   remain untouched. Package version advanced one PATCH to `0.104.01`; no deploy is owed.
+- The laws agree with the sprint's ramp-floor reading. EXP-008 supports `(0.50, 0.70)`: all three
+   cutoffs in that range produced zero rejections over 17 runs and 38 approvals, and ADR-0030 makes
+   `0.50` the floor. No different band is warranted.
+- The only disagreement is factual, not architectural: there are 13 declared envelopes, not 16.
+   The checked count is now pinned to the actual declarations; adding three new bands was rejected
+   as scope expansion. Live-value validation remains a separate deployment-side concern, as CI must
+   stay independent of `.env`.

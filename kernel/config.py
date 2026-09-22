@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from kernel.tunable_envelope import validate_envelope
+
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo
 
@@ -37,8 +39,7 @@ def tunable(
     that influences processing or a forecast must be declared through this helper
     rather than written as a bare literal.
     """
-    if envelope is not None and source is None:
-        raise ValueError("An evidence envelope requires a source.")
+    validate_envelope(envelope, source, ge=ge, gt=gt, le=le)
     extra: dict[str, Any] = {}
     if unit is not None:
         extra["unit"] = unit

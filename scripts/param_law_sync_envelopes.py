@@ -27,11 +27,11 @@ def envelope_warnings(
         if envelope is None:
             continue
         minimum, maximum = (float(value) for value in envelope)
-        value: Any = info.get_default()
-        if minimum <= float(value) <= maximum:
+        declared_default: Any = info.get_default()
+        if minimum <= float(declared_default) <= maximum:
             continue
         warnings.append(
-            f"[WARN] {agent}.{name} value={value} "
+            f"[WARN] {agent}.{name} declared_default={declared_default} "
             f"envelope=({minimum}, {maximum}) source={extra['source']}"
         )
     return warnings

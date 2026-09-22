@@ -111,7 +111,7 @@ class PortfolioManagerSettings(AgentSettings):
         ge=20,
         le=250,
         unit="days",
-        envelope=(60.0, 252.0),
+        envelope=(60.0, 250.0),
         source=(
             "Common practice 60\N{EN DASH}252 sessions; "
             "shorter tracks regime, longer is stabler"
@@ -125,8 +125,11 @@ class PortfolioManagerSettings(AgentSettings):
         ),
         ge=0.0,
         le=1.0,
-        envelope=(0.6, 0.8),
-        source="Effect magnitudes — interpreting r = 0.7",
+        envelope=(0.50, 0.70),
+        source=(
+            "ADR-0030 / EXP-008: cutoffs 0.50, 0.60, and 0.70 had zero "
+            "rejections across 17 runs and 38 approvals"
+        ),
     )
     correlation_ceiling: float = tunable(
         0.90,
@@ -160,6 +163,6 @@ class PortfolioManagerSettings(AgentSettings):
         ge=20,
         le=250,
         unit="bars",
-        envelope=(13.0, 60.0),
+        envelope=(20.0, 60.0),
         source="Sample size determination for correlation studies",
     )

@@ -8,6 +8,51 @@ and is marked CLOSED here.
 
 ---
 
+## DL-196 - envelope evidence distinguishes a declaration from a deployment - status: DECIDED (S223, 2026-09-22)
+
+**Context.** S207's envelope checker calls `FieldInfo.get_default()`, but its warning rendered the
+result as `value=...`. Two of the three first-run warnings therefore look like fleet-risk findings
+while actually describing defaults that the production pack overrides. The third warning is real:
+ADR-0030 changed `correlation_threshold` from a cutoff to a ramp floor at `0.50`, while its old
+envelope and source still describe a `0.70` cutoff. The same sweep also found two envelopes that
+name values their fields' own Pydantic rails reject.
+
+**Decisions.**
+
+1. Envelope warnings render the inspected value as `declared_default=...`. This names both its
+   scope and origin without implying that CI observed a live deployment. CI deliberately remains
+   offline and does not read environment overrides.
+2. Add the rail check as a small `kernel/tunable_envelope.py` helper, called by `kernel.tunable()`.
+   `kernel/config.py` is already 147 lines against the 150-line warning; a pure validator keeps
+   configuration construction readable and makes the rule independently testable without pushing
+   that module into the warning band.
+3. Re-derive the ramp floor envelope as `(0.50, 0.70)`, sourced to ADR-0030 / EXP-008. EXP-008's
+   comparison table found zero cap rejections at each binary cutoff `0.50`, `0.60`, and `0.70`
+   across 17 runs and 38 approvals, while ADR-0030 makes `0.50` the ramp floor. This is evidence
+   for the parameter's current meaning, not the old cutoff.
+
+**Rejected routes.**
+
+- *Keep `value=...` or shorten it to `default=...`.* Rejected: neither phrase makes it plain that
+  the checker read a declaration rather than a fleet value.
+- *Read live environment values in CI.* Rejected: CI's lack of `.env` is its trusted independence
+  boundary; deployment validation requires a separate live-side mechanism.
+- *Add the rail check to `kernel/config.py`.* Rejected: its measured line-count headroom is three
+  lines, and the independently testable validation rule has no reason to live in construction code.
+- *Widen rails or remove the threshold envelope.* Rejected: rails are the safety limits, and
+  removing the envelope would silence rather than correct a stale evidence claim.
+- *Use `(0.50, 0.80)`.* Rejected: `0.80` was not part of EXP-008's tested zero-rejection range for
+  the floor, so it would fit a desired number rather than the measured evidence.
+
+**Measured constraint.** The specified count of 16 declared envelopes is false on the branch: the
+same `describe()` sweep over analyst, PM, and provider settings finds 13 (3 analyst, 8 PM, 2
+provider), matching S207's existing declaration test. S223 must validate all 13 actual declarations;
+inventing three new envelopes merely to satisfy the stale count would exceed its metadata-repair
+scope. The warning baseline remains independently measured at 3 envelope warnings plus 57 legacy
+PARAM/settings warnings.
+
+---
+
 ## DL-195 - the first envelope warning contradicts a four-day-old ADR - status: OPEN (S207 review, 2026-09-21)
 
 **Context.** S207's envelope check ran for the first time on merge day and produced exactly three

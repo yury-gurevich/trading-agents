@@ -10,6 +10,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-202 - a size block that reads 5 of 6 folders is a size block for 5 of 6 folders - status: DECIDED (planner, 2026-09-23, under delegated technical decisions)
+
+**The break.** `check_module_size.py` ran on `$(PKGS) tests`, so `scripts/` was never checked,
+although `check_module_header.py` *did* cover it. Work-queue item 78 measured 15 offenders on
+2026-09-21. **Re-measured on 2026-09-23 it was worse and still moving:** **16** files at or over the
+200-line block (the check fails at `>=`, so 17 counting a file sitting exactly on 200), the largest
+`gate_selftest_cases.py` at **486**, and **23** files in the 150-200 warn band, not the 6 the row
+recorded. The folder had grown from 83 files to 93.
+
+🪤 **Demonstrated live, by me, hours earlier.** `scripts/replay_dataset.py` shipped at **205** lines
+in the item-64 chore and nothing objected. An unchecked folder does not stay still while the check is
+being planned.
+
+**Decision 1 - the scope grows now, rather than after a 16-file refactor.** The row's plan was *"a
+chore then a one-line path change, in that order"*: split everything first, then extend the gate.
+Rejected, because the hole stays open for the length of a large, low-value refactor and the offender
+list grows while it runs - which is exactly what happened between the row being written and read.
+
+**Decision 2 - a ratchet, not an exemption.** `scripts/module_size_baseline.py` freezes each existing
+offender at its measured count. `check_module_size.py` fails when a listed file **grows by one line**,
+when an unlisted file crosses 200, when a listed file has been split **below** 200 and its entry not
+deleted, and when a listed file no longer exists. So the list can only shrink, and a file that leaves
+it cannot come back quietly.
+
+🎯 **The distinction that matters, and it is the reason this is not more of item 33:** every line in
+this baseline can **fail** the gate. Item 33's 57 PARAM rows print as warnings and pass, which is why
+nobody reads them. A baseline whose entries cannot fail is a mute button; one whose entries fail on
+change is a ledger.
+
+**Decision 3 - split the worst offender rather than baseline the growth.** Adding the new self-test
+case pushed `gate_selftest_cases.py` from 486 to **503**, and the ratchet correctly refused it. The
+file split into a case table (**346**), an invariant table (**146**) and shared types (**37**), the
+DL-198 shape - types below both tables and the runner, so nothing imports a caller back. The
+loader I had oversized the same night split too: `replay_dataset.py` **205 -> 142** plus
+`replay_dataset_sources.py` **86**, and it left the baseline entirely.
+
+**Proven.** Gate self-test gains `module-size-reads-scripts` (a planted 230-line script must be
+rejected) and two invariants asserting the Makefile and `ci.yml` both carry the `scripts` argument -
+31/31. Eight unit tests in `tests/test_check_module_size.py` cover each ratchet branch, including
+that every shipped baseline entry still names a real file that is still over the block.
+
+**Rejected routes.**
+
+- *Split all 16 first, then widen.* Rejected: see Decision 1.
+- *Exempt `scripts/` explicitly.* Rejected: that is the status quo with a comment on it.
+- *Raise the baseline number when a legacy file grows.* Rejected structurally - the checker's own
+  error message forbids it, and the test asserts every entry is still over the block.
+- *Warn instead of fail for legacy files.* Rejected: that is item 33's shape, and item 33 is open
+  precisely because warnings accumulate unread.
+
+---
+
 ## DL-201 - an ADR assigned an owner to a quantity that had just been declined - status: DECIDED (planner, 2026-09-22, under delegated technical decisions)
 
 **The break.** Work-queue item 64's remaining task was *"measure the multiplier for the risk budget"*,

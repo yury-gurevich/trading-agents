@@ -43,7 +43,7 @@ jobs:
       - name: import-linter (agents are islands)
         run: uv run lint-imports
       - name: Module size guard
-        run: uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests
+        run: uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
       - name: Module header guard
         run: uv run python scripts/check_module_header.py kernel contracts agents scripts
       - name: Law coverage ledger

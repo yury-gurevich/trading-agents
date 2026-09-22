@@ -24,20 +24,20 @@ import csv
 import io
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
-import requests
 from dotenv import load_dotenv
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-VIX_URL = "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
-BARS_URL = "https://data.alpaca.markets/v2/stocks/bars"
-START = "2016-01-01"
+from scripts.replay_dataset_sources import (  # noqa: E402
+    daily_bars,
+    live_universe,
+    vix_history,
+)
 
 
 def _cache_dir() -> Path:
@@ -52,69 +52,6 @@ def _cache_dir() -> Path:
 
 
 CACHE = _cache_dir()
-
-
-def vix_history(timeout: int = 60) -> dict[str, float]:
-    """Return Cboe's daily VIX closes, keyed YYYY-MM-DD. No key required."""
-    response = requests.get(VIX_URL, timeout=timeout)
-    response.raise_for_status()
-    closes: dict[str, float] = {}
-    for row in csv.DictReader(io.StringIO(response.text)):
-        month, day, year = row["DATE"].split("/")
-        closes[f"{year}-{int(month):02d}-{int(day):02d}"] = float(row["CLOSE"])
-    return closes
-
-
-def live_universe() -> tuple[str, list[str]]:
-    """Return the run id and tickers of the latest scheduled run's snapshot."""
-    from agents.portfolio_manager.poll import _market_and_regime
-    from kernel.graph_env import build_graph_from_env
-
-    graph = build_graph_from_env()
-    runs = sorted(
-        graph.list_nodes("AnalystRun"),
-        key=lambda node: str(node.props.get("created_at")),
-    )
-    for analyst_run in reversed(runs):
-        market, _regime, run_id = _market_and_regime(graph, analyst_run)
-        if market is not None and run_id.startswith("sched-"):
-            return run_id, sorted({bar.ticker.upper() for bar in market.bars})
-    raise RuntimeError("no scheduled run with a MarketData snapshot")
-
-
-def daily_bars(tickers: list[str], end: str, timeout: int = 60) -> dict[str, list[Any]]:
-    """Return split- and dividend-adjusted SIP daily bars per ticker."""
-    headers = {
-        "APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"],
-        "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"],
-    }
-    bars: dict[str, list[Any]] = {}
-    token = None
-    while True:
-        params = {
-            "symbols": ",".join(tickers),
-            "timeframe": "1Day",
-            "start": START,
-            "end": end,
-            "adjustment": "all",
-            "feed": "sip",
-            "limit": 10000,
-        }
-        if token:
-            params["page_token"] = token
-        response = requests.get(
-            BARS_URL, headers=headers, params=params, timeout=timeout
-        )
-        response.raise_for_status()
-        body = response.json()
-        for symbol, rows in (body.get("bars") or {}).items():
-            bars.setdefault(symbol, []).extend(
-                (row["t"][:10], row["o"], row["h"], row["l"], row["c"]) for row in rows
-            )
-        token = body.get("next_page_token")
-        if not token:
-            return bars
-        time.sleep(0.3)
 
 
 def _write(path: Path, header: list[str], rows: list[list[Any]]) -> int:

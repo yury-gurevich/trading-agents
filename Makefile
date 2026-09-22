@@ -48,7 +48,7 @@ ci:             ## Simulate the GitHub CI quality/security lane locally
 	uv run ruff format --check .
 	uv run mypy $(PKGS)
 	uv run lint-imports
-	uv run python scripts/check_module_size.py $(PKGS) tests
+	uv run python scripts/check_module_size.py $(PKGS) tests scripts
 	uv run python scripts/check_module_header.py $(PKGS) scripts
 	uv run python scripts/check_law_coverage.py
 	uv run python scripts/check_param_law_sync.py

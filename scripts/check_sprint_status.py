@@ -10,9 +10,8 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Literal
+from typing import Final
 
 # Run directly (`python scripts/check_sprint_status.py`) only `scripts/` is on
 # sys.path, not the repo root, so the sibling import below needs the root first.
@@ -25,17 +24,20 @@ from scripts.sprint_status_report import (  # noqa: E402
     relative_path,
     render_report,
 )
-from scripts.sprint_status_report import (  # noqa: E402
-    render_unmapped_report as render_unmapped_report,  # re-exported for callers
+from scripts.sprint_status_types import (  # noqa: E402
+    Baseline,
+    CanonicalStatus,
+    Classification,
+    DocumentStatus,
+    GateResult,
+    Status,
+    StatusReport,
 )
 
 _STATUS_MARKER: Final = "**Status:**"
 _EXCLUDED_FILENAMES: Final = frozenset(
     {"INDEX.md", "README.md", "_TEMPLATE.md", "status-unmapped.md"}
 )
-
-CanonicalStatus = Literal["SPEC", "BUILT", "MERGED"]
-Status = Literal["SPEC", "BUILT", "MERGED", "UNMAPPED", "MISSING"]
 
 _SYNONYMS: Final[dict[str, CanonicalStatus]] = {
     "spec": "SPEC",
@@ -47,45 +49,6 @@ _SYNONYMS: Final[dict[str, CanonicalStatus]] = {
     "merged": "MERGED",
     "shipped": "MERGED",
 }
-
-
-@dataclass(frozen=True)
-class Classification:
-    status: Status
-    evidence: str
-
-
-@dataclass(frozen=True)
-class DocumentStatus:
-    path: Path
-    status: Status
-    line: str | None
-    evidence: str
-
-
-@dataclass(frozen=True)
-class Baseline:
-    unmapped: int = 0
-    missing: int = 0
-
-
-@dataclass(frozen=True)
-class StatusReport:
-    root: Path
-    entries: tuple[DocumentStatus, ...]
-
-    def count(self, status: Status) -> int:
-        return sum(entry.status == status for entry in self.entries)
-
-
-@dataclass(frozen=True)
-class GateResult:
-    report: StatusReport
-    errors: tuple[str, ...]
-
-    @property
-    def ok(self) -> bool:
-        return not self.errors
 
 
 _BASELINE: Final = Baseline(unmapped=20, missing=20)

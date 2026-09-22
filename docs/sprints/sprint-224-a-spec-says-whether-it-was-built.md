@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-224-a-spec-says-whether-it-was-built`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** MERGED `c33985b` (`0.106.00`) · tagged `v0.106.00`, 2026-09-22
+**Version:** `0.106.00`
 **Effort:** S
 **Decisions:** work-queue item **22** (partial — Part A only) · `docs/sprints/_TEMPLATE.md` already fixed the vocabulary
 

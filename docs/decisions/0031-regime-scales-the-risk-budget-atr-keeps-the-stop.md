@@ -93,3 +93,53 @@ position-risk arithmetic.
   name — the failure mode that makes naive risk sizing dangerous.
 - The PM law book owes a clause cycle in the implementing sprint: the agent's sizing guarantee changes
   from a notional fraction to a risk fraction under a named ceiling.
+
+## Correction — 2026-09-22, on EXP-013: the quantity this ADR assigned does not exist
+
+**What this ADR rested on.** It assigned the regime the **risk budget** — *"how much capital is at
+risk per position"* — and said `max_position_pct` stays a flat ceiling owned by neither measure,
+because the ceiling is *"a backstop against risk-based sizing producing an enormous position behind a
+very tight stop"*. Both statements presume risk-based sizing is coming. The Consequences section said
+so directly: the regime attaches to it **"when that lands"**.
+
+🪰 **It cannot land, and it had already been declined two days before this ADR was written.**
+[ADR-0025's Correction](0025-concentration-measures-the-book-position-risk-measures-the-capital-base.md)
+(2026-09-18) withdrew Decision B on [EXP-012](../research/experiments/EXP-012-volatility-sizing-ten-year-replay.md):
+iso-risk sizing lost **$11,619** over 47,549 decisions with 100 % of bootstrap resamples negative, and
+fixed 1 % notional sizing stands as champion. **This ADR cites EXP-012 zero times.** That is the
+failure — not the reasoning, which is sound given its premise, but that the premise had been removed
+and the ADR did not read the record before assigning an owner.
+
+**So the live question was the one this ADR left to neither owner**, and it has now been measured
+([EXP-013](../research/experiments/EXP-013-regime-scaled-sizing-replay.md), 47,533 decisions,
+2017-2026, $0): **should the regime scale the notional cap?**
+
+| Arm (deployed stop bracket) | Total, pct-points | Delta |
+| --- | --- | --- |
+| champion (flat 1.0) | 29,926 | — |
+| mild (1.1/1.0/0.9/0.8/0.6) | 28,108 | −1,818 |
+| strong (1.2/1.0/0.8/0.6/0.4) | 26,769 | **−3,157** |
+
+Bootstrap on the strong arm: **95 % CI [−3,699, −2,574], 100 % negative.** The mechanism is the one
+EXP-012 named: forward 10-session return **rises** with regime stress (`neutral` 0.287 % →
+`extreme_volatility` 1.880 %) and so does return per unit of dispersion (0.057 → 0.217), so cutting
+size when stressed buys *down* the return gradient.
+
+**Therefore (planning agent, under delegated technical decisions; the policy call remains the
+operator's):**
+
+1. **The decision table's middle row is void.** There is no risk budget for the regime to own, and
+   none is authorised. The ATR row and the flat-ceiling row stand.
+2. **The regime should not scale the notional cap either** — measured negative in direction, not
+   merely insignificant.
+3. **The regime label stays as evidence, not as a multiplier.** It is recorded, `measured` rather
+   than defaulted since S213, and readable by the referee and the operator. Item **64**'s complaint
+   — *a label that moves no risk number* — is answered: on this configuration it should not move one.
+4. **The ceiling's justification is restated.** `max_position_pct` is not a backstop against
+   risk-based sizing that is never coming; it is the **primary** sizing control, and the only one.
+5. **Scope, as with ADR-0025's Correction.** This is measured for a 10-session horizon and a 2 × ATR
+   stop clamped 2.5–8 %, on a survivorship-biased universe. 🪤 **Re-open if any of those change.**
+
+**Road not taken:** *retract this ADR outright.* Rejected — its ATR/ceiling assignment is still the
+right shape and would have to be re-derived, and the record of how a premise went stale between two
+ADRs written two days apart is worth keeping visible. A retraction would hide it.

@@ -10,6 +10,58 @@ and is marked CLOSED here.
 
 ---
 
+## DL-201 - an ADR assigned an owner to a quantity that had just been declined - status: DECIDED (planner, 2026-09-22, under delegated technical decisions)
+
+**The break.** Work-queue item 64's remaining task was *"measure the multiplier for the risk budget"*,
+per [ADR-0031](decisions/0031-regime-scales-the-risk-budget-atr-keeps-the-stop.md) (2026-09-20). The
+risk budget is a quantity that exists only under risk-based sizing. **Risk-based sizing had been
+withdrawn on 2026-09-18** by ADR-0025's Correction, on EXP-012's evidence (-$11,619 over 47,549
+decisions, 100 % of bootstrap resamples negative). ADR-0031 says the regime attaches to the risk
+budget *"when that lands"*. It cannot land.
+
+🪰 **ADR-0031 cites EXP-012 zero times**, two days after it. The reasoning inside ADR-0031 is sound
+given its premise; the miss is that the premise had been removed and the record was not re-read
+before an owner was assigned. 🎯 **The generalisable shape:** a decision that depends on another
+decision's *direction* has to re-read that direction at write time, not at the time it was first
+heard. Both documents were correct when written and jointly wrong within 48 hours.
+
+**Measured instead** ([EXP-013](research/experiments/EXP-013-regime-scaled-sizing-replay.md), 47,533
+decisions, 2017-2026, cached bars, $0): the only live question is whether the regime should scale the
+**notional** cap, which is the sizing knob that exists. It should not.
+
+- The label is not stuck - **409 changes in 2,475 sessions**, all five labels used - but its median
+  run is **2 sessions against a 10-session holding horizon**.
+- Forward return **rises** with stress: `neutral` **0.287 %** -> `extreme_volatility` **1.880 %**,
+  and so does return per unit of dispersion (**0.057** -> **0.217**). `neutral` is the worst bucket
+  on both.
+- Every *less-risk-when-stressed* arm loses: mild **-1,818**, strong **-3,157** pct-points;
+  ticker-cluster bootstrap **95 % CI [-3,699, -2,574], 100 % negative**.
+- The stop bracket is already doing the volatility job: stop-out rates are flat across regimes
+  (29.8-34.0 %) because the stop is ATR-scaled, 3.60 % mean in `risk_on` to 7.30 % in
+  `extreme_volatility`.
+
+**Decision.** The regime label stays as **evidence, not as a multiplier**. ADR-0031's middle row is
+void; its ATR and flat-ceiling rows stand, with the ceiling restated as the **primary** sizing
+control rather than a backstop against sizing that is not coming. Item 64 closes by measurement.
+
+**Rejected routes.**
+
+- *Measure the risk-budget multiplier anyway, so item 64's task is discharged as written.* Rejected:
+  it would price a knob on a quantity the project decided not to build - motion, not progress.
+- *Retract ADR-0031.* Rejected: its ATR/ceiling assignment is right and would need re-deriving, and
+  the record of how a premise went stale between two ADRs two days apart is worth keeping visible.
+- *Treat the negative result as "insignificant, so harmless to ship".* Rejected: it is negative in
+  **direction** with a bootstrap that never crosses zero, and the mechanism is understood.
+- *Adopt the inverted arm* (more size when stressed, +3,157). Rejected outright and not proposed: it
+  is the same survivorship-biased sample read backwards, and it would raise risk into exactly the
+  states an operator would want it lowered. It is priced only to show the gradient's sign.
+
+🪤 **The caveat that most bounds this, and it cuts against the finding: survivorship.** The universe
+is today's 98 names back-projected through 2018 Q4, COVID and 2022 - every panic in the sample was
+followed by recovery *for names still listed in 2026*.
+
+---
+
 ## DL-200 - the two stop paths were indistinguishable, so item 27's proof was unobtainable - status: DECIDED (S225, 2026-09-22)
 
 **The question item 27 asked.** S182 gave execution a second way to protect a holding: derive the

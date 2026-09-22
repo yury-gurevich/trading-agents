@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-225-a-stop-says-which-lineage-protected-it`
-**Status:** BUILT
+**Status:** MERGED `fe26574e`
 **Version:** `0.108.00` (MINOR)
 **Effort:** M
 **Decisions:** [DL-200](../design-log.md) · [DRIFT-072](../laws/drift-register.md) · closes
@@ -162,7 +162,33 @@ first.
 
 **`make ci`:** redirected to a file, never piped. Exit code **0**. `3052 passed, 6 skipped`, coverage `100.00 %`. Dependency audit: `No unaccepted vulnerabilities; 1 accepted advisory re-checked`. Both secret scans read `Passed`. The PARAM/settings step prints its **57** baselined warnings (item 33) and exits 0, unchanged by this sprint.
 
-**`make gate-ran`:** filled at merge.
+**`make gate-ran`:** run from `C:/Users/yury_/Downloads/project/ta-s225`, whose `HEAD` was the
+commit proven - printed SHA checked against `git rev-parse HEAD`:
+
+```text
+GATE PROVEN for 96ac04ef9f4146e8bf29f8e95e7450e8f0675a3c:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+**Merged** `fe26574e`, tagged `v0.108.00`. `main` then proved green at that merge commit too -
+`GATE PROVEN for fe26574ec92f5528a1ff708ade818300d5087492`, CI + CodeQL + Security Findings +
+the image build, all success on attempt 1.
+
+**Deployed `s225`, 2026-09-22 23:44 AEST - full `up`, as the pack decision required.** Measured
+before deciding: `trading_graph_vocabulary.json` moved `579a40a3...` -> `63d3a5eb...`, while
+`trading_credential_tests` and `trading_issuer_map` were byte-identical, so nothing else was
+silently stale (the S202 near-miss shape). Verified after: **16 of 16** apps on `s225`, 16
+`Succeeded`, every app `minReplicas=0` with 1 KEDA rule intact, `dispatcher-cron` on `s225`
+with `*/10 22-23 * * 1-5` unchanged (DL-183). 🎯 **And the injected pack was checked, not
+assumed:** `GRAPH_VOCABULARY_B64` decodes to `63d3a5eb...` on execution, monitor and master -
+the repo's hash - so `derived_from` is declared where the fail-closed write guard reads it.
+`DeployRecord deploy:2026-09-22T13:43:33...:s225:fe26574e...` written.
+
+**Owed - the functionality check.** No production run has written `derived_from` yet. The first
+is `sched-2026-09-22`, 22:30 UTC tonight = **Tue 23 Sep 08:30 Melbourne**; the row belongs in
+[`functionality-checks.md`](../laws/functionality-checks.md) once it has.
 
 **Not met / verified failing:** the live proof item 27 originally asked for is **not** supplied and
 **cannot be** under current ordering — stated plainly rather than quietly dropped. What replaced it

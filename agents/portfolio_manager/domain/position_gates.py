@@ -12,6 +12,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.rejection_reasons import POSITION_GATE_REASONS
 from contracts.portfolio_manager import GateOutcome, GateStatus, RejectedOrder
 
 if TYPE_CHECKING:
@@ -106,14 +107,8 @@ def position_rejection(
     ticker: str, outcomes: tuple[GateOutcome, ...]
 ) -> RejectedOrder | None:
     """Preserve the existing PM rejection order and reason strings."""
-    reasons = {
-        "sizing": "sizing",
-        "min_order_quantity": "below_min_quantity",
-        "max_positions": "max_positions",
-        "cash_available": "insufficient_cash",
-    }
     for outcome in outcomes:
-        reason = reasons.get(outcome.name)
+        reason = POSITION_GATE_REASONS.get(outcome.name)
         if reason is not None and outcome.outcome == GateStatus.FAILED:
             return RejectedOrder(ticker=ticker, reason=reason, gate_report=outcomes)
     return None

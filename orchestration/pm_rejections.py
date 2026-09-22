@@ -9,21 +9,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from agents.portfolio_manager.domain.rejection_reasons import REASON_TO_GATE
+
 if TYPE_CHECKING:
     from contracts.portfolio_manager import RejectedOrder
-
-_REASON_GATE = {
-    "below_min_quantity": "min_order_quantity",
-    "max_positions": "max_positions",
-    "insufficient_cash": "cash_available",
-    "invalid_stop_loss": "reward_risk",
-    "reward_risk_below_min": "reward_risk",
-    "sector_name_count": "max_names_per_sector",
-    "sector_concentration": "max_sector_pct",
-    "sector_not_evaluated": "max_sector_pct",
-    "correlated_cluster_concentration": "correlated_cluster_pct",
-    "correlation_not_evaluated": "correlated_cluster_pct",
-}
 
 
 def format_pm_rejection(rejection: RejectedOrder) -> str:
@@ -35,7 +24,7 @@ def format_pm_rejection(rejection: RejectedOrder) -> str:
 
 
 def _secondary_failure_suffix(rejection: RejectedOrder) -> str:
-    primary_gate = _REASON_GATE.get(rejection.reason)
+    primary_gate = REASON_TO_GATE.get(rejection.reason)
     failed = tuple(
         outcome.name
         for outcome in rejection.gate_report

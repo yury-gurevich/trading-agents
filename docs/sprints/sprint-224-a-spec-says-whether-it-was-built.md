@@ -269,44 +269,74 @@ your checker reported, and the path to the unmapped report.
 
 <!-- The coding agent fills everything below. Leave no placeholder. -->
 
-**Status at handback:** *(SPEC | BUILT — update this line)*
+**Status at handback:** BUILT
 
 ## Law reading record — fill BEFORE writing code
 
 | File read | What it required of this sprint |
 | --- | --- |
-| *(fill)* | *(fill)* |
+| `docs/sprints/_TEMPLATE.md` | The status line is machine-checkable and its vocabulary is exactly `SPEC \| BUILT \| MERGED`; preserve the line's evidence and do not invent another token. |
+| `docs/laws/conventions.md` | The checker is repo tooling, not an agent capability or contract change, so no agent law cycle or clause-cited functional test is owed. Its report must remain evidence-based rather than inferring a state from prose. |
+
+**Law-cycle decision:** No. This sprint changes no `contracts/` file and adds no agent guarantee; it makes the template's existing status vocabulary mechanically observable.
 
 ## Test plan results — fill at handback
 
 | # | Test name | File | Result |
 | --- | --- | --- | --- |
-| T1 | *(fill)* | *(fill)* | *(fill)* |
+| T1 | `test_t1_known_leading_token_classifies_to_canonical_status` | `tests/test_sprint_status.py` | PASS — all eight explicit aliases map to a canonical token |
+| T2 | `test_t2_evidence_after_leading_token_is_preserved_unchanged` | `tests/test_sprint_status.py` | PASS |
+| T3 | `test_t3_unknown_leading_token_is_unmapped_not_guessed` | `tests/test_sprint_status.py` | PASS |
+| T4 | `test_t4_document_without_status_is_missing_not_spec` | `tests/test_sprint_status.py` | PASS |
+| T5 | `test_t5_vocabulary_tokens_round_trip` | `tests/test_sprint_status.py` | PASS — `SPEC`, `BUILT`, `MERGED` |
+| T6 | `test_t6_shipped_synonym_is_case_insensitive` | `tests/test_sprint_status.py` | PASS — `shipped`, `SHIPPED`, `Shipped` |
+| T7 | `test_t7_checker_never_writes_a_sprint_document` | `tests/test_sprint_status.py` | PASS — SHA-256 hashes unchanged before and after report mode |
+| T8 | `test_t8_unmapped_count_above_baseline_fails_and_names_document` | `tests/test_sprint_status.py` | PASS |
+| T9 | `test_t9_unmapped_count_below_baseline_passes` | `tests/test_sprint_status.py` | PASS |
+| T10 | `test_t10_real_corpus_reports_every_sprint_document` | `tests/test_sprint_status.py` | PASS — 228 discovered; index, template, README, and report excluded |
+| T11 | `test_t11_new_document_without_status_fails_and_names_document` | `tests/test_sprint_status.py` | PASS |
 
 ## Closeout — evidence
 
-**Result:** *(fill — `make ci` exit code, counts, coverage)*
+**Result:** `make ci` exit 0. `3023 passed, 6 skipped`; coverage `100.00%`; `pip-audit` and both secret sweeps passed. The classifier reports `docs_seen=228 SPEC=79 BUILT=21 MERGED=88 UNMAPPED=20 MISSING=20`.
 
-**Files changed:** *(fill)*
+**Files changed:** `scripts/check_sprint_status.py`, `tests/test_sprint_status.py`, `scripts/gate_selftest_cases.py`, `Makefile`, `.github/workflows/ci.yml`, `docs/sprints/status-unmapped.md`, `docs/design-log.md`, `pyproject.toml`, `uv.lock`, and this required handback. No classified document's `**Status:**` line changed.
 
-**Design decisions:** *(fill — the synonym table and why each mapping is defensible)*
+**Design decisions:** The canonical vocabulary remains exactly `SPEC | BUILT | MERGED`. The visible synonym table is `planned`/`queued`/`ready` -> `SPEC`, `implemented` -> `BUILT`, and `shipped` -> `MERGED`, case-insensitively; each is an existing simple state word in the corpus. Unknown, punctuated, emoji-prefixed, and compound leading forms are `UNMAPPED`. Part B's unexecuted migration form is `**Status:** <TOKEN> — <original line verbatim>`; DL-197 records this and the rejected inference routes.
 
 **Proof — the red run first:**
 
 ```text
-(fill)
+$ uv run pytest --no-cov tests/test_sprint_status.py
+collected 15 items
+tests/test_sprint_status.py FFFFFFFFFFFFFFF
+FAILED ... sprint status checker is missing: cannot import name 'check_sprint_status' from 'scripts'
+============================= 15 failed =============================
 ```
 
 **Proof — the green run:**
 
 ```text
-(fill)
+$ uv run pytest --no-cov tests/test_sprint_status.py
+collected 22 items
+tests/test_sprint_status.py ......................
+============================= 22 passed in 1.37s ==============================
+
+$ uv run python scripts/gate_selftest.py
+gate self-test: 26/26 passed
+
+$ make ci > $env:TEMP\sprint-224-make-ci-final-utf8.txt 2>&1; Write-Output $LASTEXITCODE
+0
+================= 3023 passed, 6 skipped in 95.96s (0:01:35) ==================
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No known vulnerabilities found
+Detect secrets...........................................................Passed
 ```
 
-**Corpus counts reported by the checker:** *(fill — docs seen, classified per token, UNMAPPED, MISSING)*
+**Corpus counts reported by the checker:** `docs_seen=228 SPEC=79 BUILT=21 MERGED=88 UNMAPPED=20 MISSING=20`. The committed refusal report is `docs/sprints/status-unmapped.md`.
 
-**Not met / verified failing:** *(fill, or state "none")*
+**Not met / verified failing:** `make gate-ran` is not run: no commit has been created or pushed. No deploy is owed.
 
 ## Return notes
 
-*(fill — anything you disagreed with, and any case for a fourth vocabulary token)*
+No case for a fourth vocabulary token. `CLOSED`, `BLOCKED`, `active`, emojis, and compound forms remain documented refusals for a human Part B decision; silently treating any as a fourth status would violate the template's fixed vocabulary.

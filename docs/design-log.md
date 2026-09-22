@@ -1,10 +1,46 @@
 # Design log — in-flight discussions, options, and what we ruled out
 
+<!-- markdownlint-configure-file {"MD024":{"siblings_only":true},"MD026":false,"MD029":false,"MD037":false} -->
+
 The home for design reasoning **before** it hardens into an ADR. Captures the question, the
 options weighed (including the ones rejected and *why*), and the current status. This is the
 LAW-05 ("every choice has a recorded why") and LAW-01 ("everything is a proposal") record for
 threads that are discussed but not yet decided. When an entry resolves, it graduates to an ADR
 and is marked CLOSED here.
+
+---
+
+## DL-197 - a status classifier refuses prose it cannot name - status: DECIDED (S224, 2026-09-22)
+
+**Context.** A sprint document's prose is the human record and its `**Status:**` line frequently
+carries evidence after the leading word. Before S224, no command could tell whether a spec was
+built: 228 sprint/chore documents held 177 distinct full status lines, with 20 absent lines and
+20 first tokens outside the template's fixed vocabulary. Inferring a state from that prose would
+make a wrong machine-readable result look trustworthy.
+
+**Decisions.**
+
+1. Classify the leading token only, case-insensitively. `SPEC`, `BUILT`, and `MERGED` are the only
+   canonical results; all evidence after that token is retained verbatim in the report.
+2. The explicit alias table is `planned`/`queued`/`ready` -> `SPEC`, `implemented` -> `BUILT`, and
+   `shipped` -> `MERGED`. Each is a status word already used in the corpus; punctuation, emojis,
+   compound forms, and every unlisted word remain `UNMAPPED` rather than expanding the vocabulary.
+3. The Part B migration shape is fixed now, but not applied: `**Status:** <TOKEN> — <original line
+   verbatim>`. A human must first read `docs/sprints/status-unmapped.md`; the 20 `UNMAPPED` and 20
+   `MISSING` documents are not changed by this decision.
+4. CI permits the current refusal baseline to shrink but fails when either count grows. The
+   generated refusal report is excluded from discovery, so the report cannot classify itself.
+
+**Rejected routes.**
+
+- *Infer a token from evidence, git history, or a later word in the line.* Rejected: each makes a
+  second source of truth and can report a state the document did not declare.
+- *Map `CLOSED`, `BLOCKED`, `active`, emojis, or `BUILT;` as synonyms.* Rejected: none is one of the
+  template's three tokens, and each needs a human policy decision rather than a silent mapping.
+- *Fail CI for every current refusal.* Rejected: it would turn the classifier into a 40-document
+  migration and remove the deliberate human review boundary before Part B.
+- *Apply the migration while generating the report.* Rejected: reading and rewriting in one action
+  is the silent-corruption failure S224 exists to avoid.
 
 ---
 

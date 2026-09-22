@@ -172,6 +172,26 @@ FAILURE_CASES: tuple[FailureCase, ...] = (
         must_output=("probe.undocumented", "probe.missing_from_settings"),
     ),
     FailureCase(
+        name="sprint-status",
+        why=(
+            "S224: a new sprint document with no declared status must fail the "
+            "ratchet rather than silently becoming an inferred SPEC"
+        ),
+        files={
+            f"scripts/{PROBE_PREFIX}_sprint_status/docs/sprints/sprint-probe.md": (
+                "# Probe\n"
+            ),
+        },
+        command=[
+            "uv",
+            "run",
+            "python",
+            "scripts/check_sprint_status.py",
+            f"scripts/{PROBE_PREFIX}_sprint_status",
+        ],
+        must_output=("sprint-probe.md", "MISSING count"),
+    ),
+    FailureCase(
         name="markdown-links",
         why=(
             "S221: Markdownlint checks fragments only inside one document, so a "
@@ -341,6 +361,24 @@ INVARIANTS: tuple[Invariant, ...] = (
         why="quality/test/security must run on every branch, not only on PRs",
         path=".github/workflows/ci.yml",
         must_contain=("push:", 'branches: ["**", "!backup/**"]'),
+    ),
+    Invariant(
+        name="sprint-status-gate-wired-locally",
+        why=(
+            "S224: a local check that is absent from make ci can never prove "
+            "the repository gate rejects a new unmapped status"
+        ),
+        path="Makefile",
+        must_contain=("scripts/check_sprint_status.py",),
+    ),
+    Invariant(
+        name="sprint-status-gate-wired-in-ci",
+        why=(
+            "S224: CI enumerates quality commands independently from the "
+            "Makefile, so both paths must retain the status classifier"
+        ),
+        path=".github/workflows/ci.yml",
+        must_contain=("scripts/check_sprint_status.py",),
     ),
     Invariant(
         name="untracked-scan-wired-into-ci",

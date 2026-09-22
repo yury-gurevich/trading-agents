@@ -9,8 +9,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
+from agents.execution.broker_stop_types import (
+    BrokerStopThresholdError,
+    BrokerStopThresholdPlan,
+    BrokerStopThresholdPlans,
+)
 from contracts.positions import (
     PositionStopThreshold,
     active_position_nodes,
@@ -18,36 +23,11 @@ from contracts.positions import (
 )
 
 if TYPE_CHECKING:
+    from agents.execution.broker_stop_types import StopPctSource
     from contracts.common import Ticker
     from kernel import GraphStore, Node
 
-StopPctSource = Literal["position", "fallback"]
-
 _CENT_QUANT = Decimal("1")
-
-
-@dataclass(frozen=True)
-class BrokerStopThresholdPlan:
-    """One threshold plus its position/fallback stop percent source."""
-
-    threshold: PositionStopThreshold
-    stop_pct_source: StopPctSource
-
-
-@dataclass(frozen=True)
-class BrokerStopThresholdError:
-    """One active ticker that cannot currently produce a stop threshold."""
-
-    ticker: Ticker
-    reason: str
-
-
-@dataclass(frozen=True)
-class BrokerStopThresholdPlans:
-    """All stop threshold plans plus per-ticker errors."""
-
-    plans: tuple[BrokerStopThresholdPlan, ...]
-    errors: tuple[BrokerStopThresholdError, ...]
 
 
 @dataclass(frozen=True)
@@ -126,6 +106,7 @@ def _threshold_plan_or_raise(
             stop_pct=next(iter(stop_pcts)),
         ),
         stop_pct_source=source,
+        derived_from="active_position",
     )
 
 

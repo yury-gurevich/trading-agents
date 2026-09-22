@@ -10,6 +10,65 @@ and is marked CLOSED here.
 
 ---
 
+## DL-200 - the two stop paths were indistinguishable, so item 27's proof was unobtainable - status: DECIDED (S225, 2026-09-22)
+
+**The question item 27 asked.** S182 gave execution a second way to protect a holding: derive the
+stop from a filled buy's `Fill` + `OrderIntent` lineage when the monitor has not yet written the
+`Position` (DL-118). The item owed a live proof that this path had ever fired. A 2026-08-21 run was
+checked and read as *not* supplying it, on the grounds that each stop carried `stop_pct_source=position`.
+
+**That reading was wrong, and the field cannot support it.** `stop_pct_source` records where the
+stop *percent* came from - the node's own `stop_pct` versus the settings fallback - in **both**
+paths. `filled_entry_stops._stop_pct` returns `"position"` whenever the `OrderIntent` carries a
+`stop_pct`, which is the normal case. So the value observed on 2026-08-21 is equally what the Fill
+path writes, and the run neither proved nor disproved which path ran.
+
+**Nothing else discriminated either, by design.** Both builders produce the same
+`BrokerStopThresholdPlan`, and the Fill path deliberately computes the *same* `position_ref` the
+monitor will later produce, so that the eventual `Position` does not double-place (DL-118's fourth
+rejected route). Identical facts were the feature. The cost was that `EXEC-OBS-03` - *"the
+protective-stop lifecycle is fully reconstructable"* - was not true of the one dimension item 27
+needed, while reading 🟩 on nine cited tests. Recorded as **DRIFT-072**.
+
+**Measured on the live spine, 2026-09-22, before any change.** `position_ref` is
+`sha256(sorted Position keys)[:16]`, so the preimage can be recovered: hash every subset of a
+ticker's `Position` keys and look each stop's ref up. Result over the whole spine:
+
+- **55 of 55** stops ever placed hash from **broker-adopted** `Position` keys (`broker:TICKER:...`
+  or the older `broker-reconciled:TICKER`). The Fill path predicts `{run_id}:{ticker}` keys, which
+  cannot produce those refs.
+- **0** hash from keys that do not exist, which is what a Fill-path stop would look like if the
+  monitor never adopted.
+- **23** of those were placed after S182 deployed on 2026-08-20.
+- `Position` rows split **67 broker-adopted / 4 run-lineage**.
+
+**So the pending-`Fill` path has never fired in production, and the reason is structural.** Run-start
+broker reconciliation (DL-44) adopts every holding into an active `Position` before execution reaches
+`place_broker_stops`, so the ticker always has an active plan and `blocked_tickers` keeps the Fill
+path out. The window S182 was built for is closed by a later mechanism, not by S182 failing.
+
+**Decision - record the derivation, do not remove the path.** Every placed stop now writes
+`derived_from` (`active_position` | `pending_fill`) on both the `BrokerStopOrder` fact and the stop
+`Fill`. The question becomes one property read instead of hash archaeology, and a shift in the race
+becomes visible the night it happens. The Fill path stays: it is the only protection if reconciliation
+is degraded or a fill lands after adoption within the same run, and it costs nothing while idle.
+
+**Rejected routes.**
+
+- *Wait for a lucky run to supply the proof.* Rejected: measured, that run cannot occur under current
+  ordering. Item 27 would have waited indefinitely for an event the pipeline prevents.
+- *Retire the S182 path as dead code.* Rejected: "never observed" is not "unreachable". Its trigger
+  is a degraded reconciliation, which is exactly when protection matters most.
+- *Discriminate by `position_ref` shape in a report instead of recording a field.* Rejected: it works
+  only while the two key shapes differ, and it infers the path rather than recording it - the same
+  category of evidence that produced the wrong 2026-08-21 conclusion.
+- *Move stop placement after monitor adoption.* Still rejected, for DL-118's reason: it needs a second
+  execution pass or a new orchestration edge.
+- *Add a new law clause.* Rejected: `EXEC-OBS-03` already promises full reconstructability. This makes
+  an existing LOCKED clause true, so it is a drift row plus test rows, not an amendment.
+
+---
+
 ## DL-199 - the gate audited the interpreter, not the lock - status: DECIDED (planner, 2026-09-22, under delegated technical decisions)
 
 **Context.** Work-queue item **74** asked for one thing: the `--ignore-vuln PYSEC-2026-2447` added by

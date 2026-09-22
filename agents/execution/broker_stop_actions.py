@@ -1,8 +1,10 @@
-"""Low-level broker-stop submit, write, and cancel actions.
+"""Low-level broker-stop submit and cancel actions.
 
 Agent: execution
-Role: keep stop-order side effects and graph facts behind small helpers.
+Role: keep stop-order side effects behind small helpers, and record provenance.
 External I/O: injected Broker and GraphStore backends.
+
+The graph facts these actions append live in broker_stop_writes.py (S225).
 """
 
 from __future__ import annotations
@@ -12,23 +14,36 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.execution.broker import BrokerFill, BrokerRejectedError
-from agents.execution.fill_attempts import fill_attempt_chain, select_fill_attempt
+from agents.execution.broker_stop_types import StopProvenance
+from agents.execution.broker_stop_writes import (
+    PROTECTED_BY_EDGE,
+    STOP_FILL_EDGE,
+    link_positions,
+    write_stop_fill,
+    write_stop_order,
+)
 from contracts.broker_stops import BROKER_STOP_ORDER_LABEL, BrokerStopOrder
 from contracts.common import Money
-from contracts.positions import (
-    PositionStopThreshold,
-    active_position_nodes,
-    position_basis_for_ref,
-)
 from contracts.stop_rule import stop_price_cents
 from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker
-    from kernel import FaultSink, GraphStore, Node
+    from contracts.positions import PositionStopThreshold
+    from kernel import FaultSink, GraphStore
 
-PROTECTED_BY_EDGE = "PROTECTED_BY"
-STOP_FILL_EDGE = "STOPS_WITH"
+__all__ = [
+    "PROTECTED_BY_EDGE",
+    "STOP_FILL_EDGE",
+    "cancel_stop",
+    "place_stop",
+]
+
+# An unplanned call protects an already-adopted position: that is what every
+# caller outside the two threshold builders is doing.
+_DEFAULT_PROVENANCE = StopProvenance(
+    stop_pct_source="position", derived_from="active_position"
+)
 
 
 def place_stop(
@@ -38,21 +53,21 @@ def place_stop(
     threshold: PositionStopThreshold,
     key: str,
     *,
-    stop_pct_source: str = "position",
+    provenance: StopProvenance = _DEFAULT_PROVENANCE,
 ) -> BrokerFill:
     """Submit and record one broker-native stop for a position threshold."""
     stop_cents = stop_price_cents(threshold.opened_price_cents, threshold.stop_pct)
     fill = _submit_stop(broker, sink, threshold, key, stop_cents)
-    fill_node = _write_stop_fill(
-        graph, threshold, key, fill, stop_cents, stop_pct_source=stop_pct_source
+    fill_node = write_stop_fill(
+        graph, threshold, key, fill, stop_cents, provenance=provenance
     )
     if fill.status == "rejected":
         return fill
-    stop = _write_stop_order(
-        graph, threshold, key, fill, stop_cents, stop_pct_source=stop_pct_source
+    stop = write_stop_order(
+        graph, threshold, key, fill, stop_cents, provenance=provenance
     )
     graph.add_edge(fill_node, stop, STOP_FILL_EDGE)
-    _link_positions(graph, threshold, stop)
+    link_positions(graph, threshold, stop)
     return fill
 
 
@@ -110,81 +125,6 @@ def _submit_stop(
             status="rejected",
             reason=str(exc),
         )
-
-
-def _write_stop_fill(
-    graph: GraphStore,
-    threshold: PositionStopThreshold,
-    key: str,
-    fill: BrokerFill,
-    stop_cents: int,
-    *,
-    stop_pct_source: str,
-) -> Node:
-    props = {
-        "ticker": threshold.ticker,
-        "side": "sell",
-        "quantity": threshold.quantity,
-        "price_cents": stop_cents,
-        "price_currency": fill.price.currency,
-        "broker_order_id": fill.broker_order_id,
-        "status": fill.status,
-        "reason": fill.reason,
-        "position_ref": threshold.position_ref,
-        "stop_order_key": key,
-        "stop_pct": threshold.stop_pct,
-        "stop_pct_source": stop_pct_source,
-    }
-    attempt = select_fill_attempt(
-        graph,
-        key,
-        props,
-        force_new=fill.status == "rejected" and bool(fill_attempt_chain(graph, key)),
-    )
-    return graph.merge_node(
-        "Fill",
-        attempt.key,
-        attempt.props,
-    )
-
-
-def _write_stop_order(
-    graph: GraphStore,
-    threshold: PositionStopThreshold,
-    key: str,
-    fill: BrokerFill,
-    stop_cents: int,
-    *,
-    stop_pct_source: str = "position",
-) -> Node:
-    return graph.merge_node(
-        BROKER_STOP_ORDER_LABEL,
-        key,
-        {
-            "ticker": threshold.ticker,
-            "position_ref": threshold.position_ref,
-            "stop_price_cents": stop_cents,
-            "stop_pct": threshold.stop_pct,
-            "stop_pct_source": stop_pct_source,
-            "broker_order_id": fill.broker_order_id,
-            "placed_at": datetime.now(tz=UTC).isoformat(),
-        },
-    )
-
-
-def _link_positions(
-    graph: GraphStore, threshold: PositionStopThreshold, stop: Node
-) -> None:
-    basis = position_basis_for_ref(
-        graph, position_ref=threshold.position_ref, ticker=threshold.ticker
-    )
-    if basis is None:
-        return
-    by_key = {node.key: node for node in active_position_nodes(graph)}
-    for lot in basis.lots:
-        position = by_key.get(lot.node_key)
-        if position is not None:
-            graph.add_edge(position, stop, PROTECTED_BY_EDGE)
 
 
 def _money_from_cents(cents: int) -> Money:

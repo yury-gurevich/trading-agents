@@ -11,15 +11,13 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING
 
-from agents.execution.broker_stop_thresholds import (
-    BrokerStopThresholdPlan,
-    StopPctSource,
-)
+from agents.execution.broker_stop_types import BrokerStopThresholdPlan
 from contracts.broker_lifecycle import is_filled_buy_fill
 from contracts.position_refs import position_ref_for_keys
 from contracts.positions import PositionStopThreshold
 
 if TYPE_CHECKING:
+    from agents.execution.broker_stop_types import StopPctSource
     from kernel import GraphStore, Node
 
 _CENT_QUANT = Decimal("1")
@@ -119,6 +117,7 @@ def _threshold_plan(
             stop_pct=next(iter(stop_pcts)),
         ),
         stop_pct_source=source,
+        derived_from="pending_fill",
     )
 
 

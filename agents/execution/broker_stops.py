@@ -11,10 +11,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from agents.execution.broker_stop_actions import cancel_stop, place_stop
-from agents.execution.broker_stop_thresholds import (
-    BrokerStopThresholdPlan,
-    broker_stop_thresholds,
-)
+from agents.execution.broker_stop_thresholds import broker_stop_thresholds
 from agents.execution.filled_entry_stops import filled_entry_stop_thresholds
 from agents.execution.settings import ExecutionSettings
 from contracts.broker_stops import (
@@ -27,6 +24,7 @@ from kernel import AgentFault
 
 if TYPE_CHECKING:
     from agents.execution.broker import Broker, BrokerFill
+    from agents.execution.broker_stop_types import BrokerStopThresholdPlan
     from contracts.portfolio_manager import OrderIntentSet
     from kernel import FaultSink, GraphStore, Node
 
@@ -136,7 +134,7 @@ def _place_stop(
         sink,
         threshold,
         key,
-        stop_pct_source=plan.stop_pct_source,
+        provenance=plan.provenance,
     )
 
 

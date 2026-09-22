@@ -132,6 +132,17 @@ function Invoke-Az([string[]]$azArgs) {
 # call that changed it. Row Q's recommended fix: a mutating call's stream carries
 # banners and notices, while `show` answers one question with one value. A deploy
 # is the one operation with no cheap undo, so its report is worth a second call.
+#
+# 🪤 This is not only about provisioning state — the same rule covers CONFIG.
+# Measured 2026-09-22: `az containerapp update ... --query properties.template.scale`
+# returned the cron rule's metadata as four EMPTY STRINGS (start, end, timezone,
+# desiredReplicas) while `az containerapp show` on the same app, seconds later,
+# returned every value intact and identical to an untouched sibling app. The
+# update response simply does not populate that block. Read as state, it says the
+# wake window has been wiped, which is indistinguishable from the real thing:
+# an app that never wakes runs nothing and reports no error. That false reading
+# cost two needless "restore" calls chasing config damage that had never happened.
+# Whatever the question is — provisioning state, image, scale, env — ask `show`.
 function Get-AppState([string]$name) {
   return Invoke-Az @(
     "containerapp", "show", "--name", $name, "--resource-group", $RG,

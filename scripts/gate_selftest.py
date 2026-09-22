@@ -25,9 +25,9 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.gate_selftest_cases import (  # noqa: E402
-    FAILURE_CASES,
-    INVARIANTS,
+from scripts.gate_selftest_cases import FAILURE_CASES  # noqa: E402
+from scripts.gate_selftest_invariants import INVARIANTS  # noqa: E402
+from scripts.gate_selftest_types import (  # noqa: E402
     PROBE_PREFIX,
     FailureCase,
     Invariant,

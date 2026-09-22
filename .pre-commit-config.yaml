@@ -68,7 +68,7 @@ repos:
         language: system
         entry: uv run python scripts/check_module_size.py
         types: [python]
-        files: ^(kernel|contracts|agents|orchestration|surfaces|tests)/
+        files: ^(kernel|contracts|agents|orchestration|surfaces|tests|scripts)/
         exclude: (/__init__\.py$|alembic/versions/)
 
       - id: check-module-header

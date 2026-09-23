@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-23 15:37 AEST · **Version:** **0.108.00 deployed** (`s225`) / **0.109.05 on `main`** — the gap is gate tooling, docs and the dashboard; no runtime code changed · **🎯 The dashboard and its operator chat now agree with themselves: an unfilled run reads "awaiting fills", not "passed", and "open incidents" lists what health counts (0), not 6,439 historical faults. **1 open (75, queued) + 1 parked (71).****
+**Last updated:** 2026-09-23 16:11 AEST · **Version:** **0.108.00 deployed** (`s225`) / **0.109.05 on `main`** — the gap is gate tooling, docs and the dashboard; no runtime code changed · **🎯 The next leg is proposed, not accepted: [next-leg-plan.md](next-leg-plan.md) — a scoreboard, then a ten-year replay, then an edge-or-no-edge decision; 28 units on branch A, 24 on branch B. Why: the paper account is +2.13 % against SPY's +3.43 % since 2026-07-07 at ~22 % invested, and nothing in the repo measured that. 1 open (75, queued) + 1 parked (71).**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -121,7 +121,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
 
-🎯 **2026-09-23 — one open item left: [22](work-queue.md) Part B.** Stamp `**Status:** <TOKEN> — <original line>` onto the **190** sprint docs the checker can classify, after a human reads the **40** it refuses (20 unmapped, 20 with no status line). Item **71** stays parked and item **75** is queued for after the debt, both by operator direction. The narrative below is the 2026-09-15 review, kept as written.
+🎯 **2026-09-23 16:11 AEST — the queue is empty of debt; the next leg is PROPOSED in [next-leg-plan.md](next-leg-plan.md) ([DL-209](design-log.md)), awaiting the operator.** Item 22 closed this morning (`0.109.02`). The plan is not a second tracker: accepted items become work-queue rows. Its first leg, **P16 (scoreboard)**, is 4 units, and its first item, **E16.1 (an equity snapshot per run)**, is the first sprint to spec once the plan is accepted. Item **71** stays parked and item **75** queued, both by operator direction. The narrative below is the 2026-09-15 review, kept as written.
 
 🎯 **Re-ranked 2026-09-15 against the live spine, then re-counted after S205 merged.**
 **14 items open** against the operator's **Friday 2026-09-18** empty-by date. The review put **item 59**

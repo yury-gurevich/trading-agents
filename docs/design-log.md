@@ -10,6 +10,47 @@ and is marked CLOSED here.
 
 ---
 
+## DL-209 - the next leg is measured against the index, not against itself - status: PROPOSED (planner, 2026-09-23, operator: "is the app finished? what makes it better?")
+
+**Question.** With the queue down to one queued and one parked item, where does development go next?
+
+**What was measured first** (Alpaca paper account, read-only, 2026-09-23). Since the first fill on
+2026-07-07 the portfolio returned **+2.13 %** against SPY's **+3.43 %** over the same window, with about
+**22 %** of capital invested ($79.7k of $102.1k in cash); 259 fills across 35 symbols. With 22 % exposure,
+holding SPY would have returned about 0.75 %, so the result is not bad, but the sample cannot separate
+skill from luck. **Nothing in the repo computes an equity curve or a benchmark**: reporter metrics stop
+at profit factor and expectancy, and the PRD's G1–G5 contain no return goal. Nothing handles
+survivorship: the replay dataset is today's ~98 names projected back ten years.
+
+**Proposed.** The leg in [next-leg-plan.md](next-leg-plan.md): P16 scoreboard, then P17 a
+survivorship-free full-pipeline walk-forward (EXP-014) with a fidelity check against the live window,
+then an operator gate (edge or no edge) that picks between putting the edge to work (P18A) and freezing
+the pack as a reference workload (P18B). P19 takes the operator out of the loop (Telegram brief, safe
+two-way commands, a 20-session G1/G3 scorecard). P20 builds a second, non-trading pack to make ADR-0012's
+wall real. The estimate is 28 units on branch A and 24 on branch B, where one unit is one sprint.
+
+**Ruled out, and why.**
+
+- **Keep tuning the trading pack first** (more gates, deliberator prompts, item 75). Every tuning
+  result so far is judged by gate behaviour, not return. Without P16/P17, tuning optimises something
+  unmeasured.
+- **Second pack first.** It is the strategic prize, but starting it while the trading pack's value is
+  unknown splits attention across two unproven things. It comes after the gate, and becomes the main line
+  of work if the answer is "no edge".
+- **Phone app first (PRD Phase C in full).** A native or PWA app is large, and the need behind it (the
+  operator out of the loop) is met more cheaply by the Telegram channel that already exists (S219).
+- **Judge the edge from live paper results alone.** At one run per session it would take many months
+  to reach significance. The ten-year replay answers in about two weeks of work, and its fidelity check
+  keeps it honest.
+- **Another CI gate or tracker for this plan.** The plan is not a status board; accepted items become
+  work-queue rows. The standing rule proposed with it is a **process freeze**: no new gate or tracking
+  surface unless a defect reached the broker or the fleet.
+
+**Open until the operator accepts.** Whether to adopt the plan; the P20 pack choice (planner recommends a
+repo-steward pack); and later the G-EDGE decision, which is capital-risk policy and theirs.
+
+---
+
 ## DL-208 - "open incidents" lists what health counts, not every fault ever raised - status: DECIDED (planner, 2026-09-23, operator: "Wrong query??")
 
 **What the operator saw.** "Open incidents" in the dashboard's operator chat returned a wall of old

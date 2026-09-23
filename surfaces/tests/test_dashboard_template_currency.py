@@ -67,6 +67,10 @@ class _BuildReader:
         del git_sha
         return (MainImageBuild("main-sha", 293, f"https://github.example/{tag}"),)
 
+    def runtime_changes(self, base_sha: str, head_sha: str) -> tuple[str, ...]:
+        # The record names the newest build, so no tree comparison is ever due.
+        raise AssertionError((base_sha, head_sha))
+
 
 class _Azure:
     def __init__(

@@ -10,6 +10,78 @@ and is marked CLOSED here.
 
 ---
 
+## DL-205 - a deploy warning must name code the fleet runs, and a stage count must read the pack - status: DECIDED (planner, 2026-09-23, operator asked for the fix)
+
+**What the operator saw.** `sched-2026-09-22` was a clean run: 9 of 9 stages, 2 orders queued for
+the open, broker and graph in sync. The dashboard still carried two warnings — *"Fleet deploy
+currency is behind"* and a pipeline row reading *"9/7 stages reached — needs attention"* — and the
+operator's first question was "are we behind??". Neither warning was true.
+
+**Measured — deploy currency.** The fleet ran `s225` (`fe26574e`); the newest main image build was
+`889ea9fe`, ten commits later. [S126](sprints/sprint-126-resume-and-tripwire.md) decision 5(b)
+judges "behind" whenever those two SHAs differ, and `build-images.yml` rebuilds on any change under
+`agents/**` or to `pyproject.toml`. So nine `agents/*/laws/laws.md` edits and a version bump
+(`0.108.00` → `0.109.02`) were enough. The images copy `kernel/`, `contracts/`, the agent's own
+folder, `pyproject.toml` and `uv.lock`. Across the range `kernel/` and `contracts/` were untouched,
+and both lock files differed only in the project's own version line. No image code reads markdown:
+an AST scan of the 468 image source files finds **0** non-docstring strings that name a `.md` file.
+S126's closeout recorded this exact shape as the tripwire proving itself ("tracking the new build
+with no code change"). It proved the tripwire fires, not that what it fired on was drift.
+
+**Measured — the stage count.** `projections_fleet.py` hard-coded `7`, written when the pack had
+seven stages. The pack's `SPEC` now lists **nine** (position sync and deliberation were added). All
+**41** scheduled runs from 2026-07-27 to 2026-09-22 reached 9 of 9, including the **8** where the
+PM approved nothing, so every one of them rendered "9/7 — needs attention".
+
+**Decision 1 — amends S126 decision 5(b): a newer main build is "behind" only if a file the fleet
+runs differs.** When the fleet matches the latest `DeployRecord` but main has been rebuilt since,
+the dashboard reads both commits' file trees (GitHub `git/trees?recursive=1`, two reads) and keeps
+the paths the build workflow triggers on. It then drops markdown, anything under a `tests/`
+directory, and a `pyproject.toml` / `uv.lock` difference that disappears once the
+`name = "trading-agents"` → `version = …` line is removed (read from both blobs). Anything left means
+**behind**, with the first 20 paths and the count as evidence. Nothing left means **current**, and
+the message says later commits changed only documents, tests or the version number. A failed read is
+**unverified**, following S126's own tri-state rule: a failed read is never reported as a definite
+state. Commits are immutable, so each pair is read once per process: the live first read took
+**4.4 s** and the repeat **0.000 s**.
+
+**Decision 2 — the classification is pinned by tests, not trusted.** The path tuple must equal the
+workflow's push filter verbatim; every Dockerfile `COPY` source must fall inside it; and no image code
+may name a markdown file outside a docstring. Adding an image path, a Dockerfile source or a runtime
+`.md` read therefore fails the gate instead of quietly widening what "inert" covers.
+
+**Decision 3 — the stage total is the length of the run's own stage list.** `run_stages` always
+returns one row per `SPEC` entry, reached or not, so the denominator follows the pack. The row reads
+good only when every stage is reached.
+
+**Live proof (branch, before merge).** `s225` → `889ea9fe`: **no runtime difference**, so current.
+The previous deploy `7039bfb` → `s225`: **7 runtime files**, the execution stop modules plus
+`trading_graph_vocabulary.json`, so behind. That is the direction the tripwire exists for, and it
+still fires. The branch dashboard on the live spine: pipeline row **"9/9 stages reached"**, good.
+
+**Rejected routes.**
+
+- *Redeploy to clear the warning.* It would ship identical behaviour under a new label, and the
+  warning would return at the next docs or gate merge.
+- *GitHub's compare API.* One call, but its file list stops at 300 files for the whole comparison.
+  This range already had 256 (223 of them docs), so a docs-heavy week would truncate it silently,
+  and "nothing runtime changed" could not be proven.
+- *`git diff` from the dashboard process.* Exact and fast, but a stale local clone answers about
+  the wrong commits, and DL-47 req 15 wants the dashboard to stop depending on the coding checkout.
+- *Narrow `build-images.yml`'s path filter.* It edits a production workflow and still rebuilds on
+  every version bump, which is most merges.
+- *Compare image digests.* S126 ruled this out (registry credential plus digest plumbing), and each
+  build's metadata differs anyway.
+- *Count any `pyproject.toml` / `uv.lock` change as runtime.* Every fix bumps the version, so the
+  new rule would never fire on the common case, which includes today's.
+
+🪤 **Residue, named.** "Inert" is a claim about how images are used. The markdown half is pinned by
+the test above; the `tests/` half is not, so a runtime import from a `tests` package would go
+unnoticed here. `.github/workflows/build-images.yml` itself always counts as a runtime change, which
+is conservative, since it can change how every image is built.
+
+---
+
 ## DL-204 - a status the gate could read was false on 90 of the 190 specs it read - status: DECIDED (planner, 2026-09-23, operator asked for item 22 Part B)
 
 **The debt.** S224 (DL-197) made "is this spec built?" machine-answerable and deliberately left

@@ -34,7 +34,7 @@ def fleet_projection(
     instances = _latest_instances(graph)
     recovery = run_recovery(graph, run_id)
     agents = _agent_rows(instances, recovery)
-    reached = sum(bool(stage["reached"]) for stage in run_stages(graph, run_id))
+    reached = [bool(stage["reached"]) for stage in run_stages(graph, run_id)]
     replicas = [row.get("replicas") for row in apps]
     replica_total = sum(value for value in replicas if isinstance(value, int))
     stages = [
@@ -70,8 +70,8 @@ def fleet_projection(
         _stage(
             "pipeline",
             "Graph-pull cascade ran",
-            f"{reached}/7 stages reached",
-            "good" if reached == 7 else "warn",
+            f"{sum(reached)}/{len(reached)} stages reached",
+            "good" if reached and all(reached) else "warn",
         ),
         _stage(
             "fleet",

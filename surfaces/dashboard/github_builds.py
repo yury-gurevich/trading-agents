@@ -47,6 +47,10 @@ class GitHubReader(Protocol):
         """Return successful image builds that published tag."""
         raise NotImplementedError  # pragma: no cover - protocol declaration only.
 
+    def runtime_changes(self, base_sha: str, head_sha: str) -> tuple[str, ...]:
+        """Return image-runtime paths whose content differs between two commits."""
+        raise NotImplementedError  # pragma: no cover - protocol declaration only.
+
 
 class GitHubActionsReader:
     """Small GitHub REST adapter using a caller-supplied token."""
@@ -81,6 +85,12 @@ class GitHubActionsReader:
         from surfaces.dashboard.github_tag_builds import image_builds_for_tag
 
         return image_builds_for_tag(self, tag, git_sha)
+
+    def runtime_changes(self, base_sha: str, head_sha: str) -> tuple[str, ...]:
+        """Compare two commits' file trees, keeping only what images run."""
+        from surfaces.dashboard.github_tree_diff import runtime_changes
+
+        return runtime_changes(self, base_sha, head_sha)
 
     def _successful_main_image_runs(
         self, *, per_page: int, git_sha: str | None = None

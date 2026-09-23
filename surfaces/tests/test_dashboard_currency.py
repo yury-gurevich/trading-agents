@@ -19,9 +19,25 @@ from surfaces.dashboard.projections_currency import deploy_currency_projection
 
 
 class _BuildReader:
-    def __init__(self, sha: str = "main-sha", *, fail: bool = False) -> None:
+    def __init__(
+        self,
+        sha: str = "main-sha",
+        *,
+        fail: bool = False,
+        changes: tuple[str, ...] = ("kernel/graph.py",),
+        fail_diff: bool = False,
+    ) -> None:
         self.sha = sha
         self.fail = fail
+        self.changes = changes
+        self.fail_diff = fail_diff
+        self.compared: list[tuple[str, str]] = []
+
+    def runtime_changes(self, base_sha: str, head_sha: str) -> tuple[str, ...]:
+        self.compared.append((base_sha, head_sha))
+        if self.fail_diff:
+            raise GitHubReadError("GitHub build read failed (test)")
+        return self.changes
 
     def latest_main_image_build(self) -> MainImageBuild:
         if self.fail:
@@ -75,6 +91,8 @@ def test_currency_current_and_both_behind_comparisons() -> None:
     evidence = cast("dict[str, object]", old_sha["evidence"])
     assert evidence["fleet_matches_record"] is True
     assert evidence["main_matches_record"] is False
+    assert evidence["runtime_changes"] == ["kernel/graph.py"]
+    assert evidence["runtime_change_count"] == 1
 
 
 @pytest.mark.parametrize("case", ["azure", "record", "token", "read"])

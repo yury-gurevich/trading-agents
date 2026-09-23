@@ -15,6 +15,9 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
     from surfaces.dashboard.github_builds import GitHubReader
 
+# Enough changed paths to show what moved; the count carries the full size.
+_CHANGE_SAMPLE = 20
+
 
 def deploy_currency_projection(
     graph: GraphStore,
@@ -23,7 +26,12 @@ def deploy_currency_projection(
     *,
     azure_verified: bool,
 ) -> dict[str, object]:
-    """Judge current/behind/unverified from two explicit comparisons."""
+    """Judge current/behind/unverified from explicit comparisons.
+
+    A newer main build alone is not "behind": version bumps and law or test
+    edits rebuild images without changing what runs, so the two commits'
+    runtime files are compared before the fleet is called behind.
+    """
     tags = sorted({str(row["image_tag"]) for row in containers if row.get("image")})
     record = _latest_record(graph)
     evidence: dict[str, object] = {
@@ -32,6 +40,8 @@ def deploy_currency_projection(
         "latest_main_build": None,
         "fleet_matches_record": None,
         "main_matches_record": None,
+        "runtime_changes": None,
+        "runtime_change_count": None,
     }
     if not azure_verified or not tags:
         return _result(
@@ -58,11 +68,41 @@ def deploy_currency_projection(
     sha = str(record.props["git_sha"])
     evidence["fleet_matches_record"] = tags == [tag]
     evidence["main_matches_record"] = sha == build.git_sha
-    if evidence["fleet_matches_record"] and evidence["main_matches_record"]:
+    if not evidence["fleet_matches_record"]:
+        return _result("behind", "Fleet images are behind or mixed.", evidence)
+    if evidence["main_matches_record"]:
         return _result(
             "current", "Fleet matches the newest main image build.", evidence
         )
-    return _result("behind", "Fleet images are behind or mixed.", evidence)
+    return _judge_rebuilt_main(github, sha, build.git_sha, evidence)
+
+
+def _judge_rebuilt_main(
+    github: GitHubReader, deployed_sha: str, main_sha: str, evidence: dict[str, object]
+) -> dict[str, object]:
+    """Main was rebuilt after the deploy: behind only if code the fleet runs moved."""
+    try:
+        changed = github.runtime_changes(deployed_sha, main_sha)
+    except GitHubReadError as exc:
+        return _result(
+            "unverified",
+            f"Main was rebuilt after the deploy; what changed could not be read: {exc}",
+            evidence,
+        )
+    evidence["runtime_changes"] = list(changed[:_CHANGE_SAMPLE])
+    evidence["runtime_change_count"] = len(changed)
+    if changed:
+        return _result(
+            "behind",
+            f"Main changed {len(changed)} file(s) the fleet runs since the deploy.",
+            evidence,
+        )
+    return _result(
+        "current",
+        "Fleet runs the code on main; later commits changed only documents, "
+        "tests or the version number.",
+        evidence,
+    )
 
 
 def _latest_record(graph: GraphStore) -> Node | None:

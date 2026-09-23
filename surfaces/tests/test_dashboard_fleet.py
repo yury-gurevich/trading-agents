@@ -11,10 +11,12 @@ from datetime import date
 from typing import Any, cast
 
 from kernel import InMemoryGraphStore
+from orchestration.packs.trading_observatory_views import SPEC
 from orchestration.start import place_run_request
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.tests.dashboard_fakes import FakeAzureReader
 from surfaces.tests.test_dashboard_costs import _settings
+from surfaces.tests.test_dashboard_projections import cascade_graph
 
 
 def _graph() -> InMemoryGraphStore:
@@ -67,6 +69,19 @@ def test_fleet_projects_latest_activation_and_recovery_ladder() -> None:
     assert stages[3]["status"] == "good"
     assert str(stages[3]["detail"]).endswith("recorded to date")
     assert stages[4]["status"] == "warn"
+
+
+def test_pipeline_row_counts_the_packs_stages_not_a_fixed_seven() -> None:
+    """A clean run reads good; the total follows the pack, so 9 is never "9/7"."""
+    full = fleet_projection(cascade_graph("ok"), FakeAzureReader(), _settings(), "ok")
+    bare = fleet_projection(_graph(), FakeAzureReader(), _settings(), "fleet")
+    full_row = cast("list[dict[str, str]]", full["stages"])[4]
+    bare_row = cast("list[dict[str, str]]", bare["stages"])[4]
+
+    assert full_row["detail"] == f"{len(SPEC)}/{len(SPEC)} stages reached"
+    assert full_row["status"] == "good"
+    assert bare_row["detail"] == f"0/{len(SPEC)} stages reached"
+    assert bare_row["status"] == "warn"
 
 
 def test_fleet_degrades_without_azure_and_handles_empty_graph() -> None:

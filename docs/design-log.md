@@ -10,6 +10,64 @@ and is marked CLOSED here.
 
 ---
 
+## DL-206 - the dashboard's schedule is read from its sources, not remembered - status: DECIDED (planner, 2026-09-23, operator said "take it further")
+
+**Found by hunting DL-205's defect class.** Both of DL-205's false warnings were a dashboard copy of a
+fact that lives elsewhere. The dashboard's other copies turned up three more, all in the schedule and
+all opened by `aea47810` (2026-09-20, "gate scheduled runs on fleet readiness"), which changed the
+deployment without the dashboard noticing.
+
+1. **The master window.** `master_window_start_utc` read 22:25 and claimed to match
+   `deploy-agents.ps1`. The script's `$MasterScaleStart` has been `25 20 * * *` since `aea47810`,
+   and the live `daily-master-window` rule reads the same (measured on Azure). On
+   `sched-2026-09-22`, the master's startup lines (Key Vault, graph reachable, session start) landed
+   at 20:25:32 UTC. Its fleet preflights ran at 20:25:32 and 21:25:48, before the window opened, with
+   **381** master log rows between 20:20 and 22:25, all outside it. The hour that mattered most was
+   the operator's likeliest look: between 06:25 and 08:25 Melbourne, the "latest window" was still
+   *yesterday's*.
+2. **Next fire.** `next_fire` added a day to 22:30 regardless of the calendar, so every Friday evening
+   it promised a Saturday fire, and on a holiday it promised a run that would be skipped. The existing
+   test pinned the false answer: after Friday 2026-07-10, `2026-07-11T22:30`, a Saturday.
+3. **The cron row.** The dispatcher is now a ten-minute ticker (`*/10 22-23 * * 1-5`) that places
+   only from 22:30 (`_ACTION_START`, `scheduled_dispatch_actions.py:29`). On `sched-2026-09-22` its
+   logs show 22:00, 22:10 and 22:20 skipped and 22:30:14 placed. The fleet row took the run day's
+   first-*listed* execution, and Azure lists newest first, so it read "Fired on schedule: 23:50 —
+   Succeeded", eighty minutes after the tick that placed the run.
+
+Measured correct and left alone: `agent_window_start_utc` (22:30) and `window_end_utc` (00:30)
+match the live rules, and `dispatcher_fire_utc` (22:30) matches `_ACTION_START`.
+
+**Decision 1 — the four schedule settings are pinned by a test to their sources.** The three windows
+are pinned to `deploy-agents.ps1`'s parameter defaults (plus `$ScaleTimezone` = UTC) and the fire time
+to `_ACTION_START`. Each `why` now names its source instead of asserting a match nobody checked.
+
+**Decision 2 — next fire uses the dispatcher's own calendar** (`ProviderTradingCalendar`): it is the
+next session day whose 22:30 is still ahead. Past the calendar's end (2027-12-31) it is `None`, since
+the dispatcher itself refuses to schedule there.
+
+**Decision 3 — the cron row shows the placing tick:** the run day's earliest tick at or after the fire
+time; failing that, the day's latest tick; failing that, the latest of all (the old fallback).
+
+**Rejected routes.**
+
+- *Read the windows from the live Azure scale rules.* That is the deployed truth, but it costs one
+  more ARM read per refresh and a cron parser for a value that only changes with a deploy. The pin
+  catches a script change at the gate, where it is cheap.
+- *Compute next fire from the pack's cron.* The cron ticks from 22:00; what the operator needs is when
+  a run can be placed, and the action window decides that, not the cron.
+- *Record a placement time on `RunRequest`.* It would make the placing tick exact instead of inferred,
+  but it changes a contract the whole fleet writes: a fleet change for a display fix.
+- *Keep the weekday-blind next fire and label it.* A promise that is false every weekend does not
+  become true by being labelled.
+
+🪤 **Residue, named.** The placing tick is inferred, not recorded: a run held at 22:30 and placed later
+on an operator answer still shows the 22:30 tick. That tick did fire on schedule, and the pipeline row
+says whether the run ran. The log views are tail-bounded (200 rows in the drawer, 40 per container in
+the bundle) and show the window's *latest* rows, so on a busy night the 20:25 startup rows can still
+fall outside the tail. The window is now right; the tail is a separate bound.
+
+---
+
 ## DL-205 - a deploy warning must name code the fleet runs, and a stage count must read the pack - status: DECIDED (planner, 2026-09-23, operator asked for the fix)
 
 **What the operator saw.** `sched-2026-09-22` was a clean run: 9 of 9 stages, 2 orders queued for

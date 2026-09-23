@@ -42,7 +42,7 @@ def _settings() -> DashboardSettings:
         log_tail_default=200,
         log_tail_max=500,
         bundle_log_tail=40,
-        master_window_start_utc="22:25",
+        master_window_start_utc="20:25",
         agent_window_start_utc="22:30",
         window_end_utc="00:30",
         dispatcher_fire_utc="22:30",

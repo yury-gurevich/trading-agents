@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from surfaces.dashboard.azure_port import AzureReadError
 from surfaces.dashboard.projections import run_stages
 from surfaces.dashboard.projections_state import run_recovery
+from surfaces.dashboard.time_windows import scheduled_execution
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -30,7 +31,7 @@ def fleet_projection(
     """Project run-scoped lifecycle stages and current activation state."""
     apps, jobs, azure_available = _azure_rows(azure, settings.azure_job_name)
     run_day = _run_day(graph, run_id)
-    execution = _job_for_day(jobs, run_day)
+    execution = scheduled_execution(jobs, run_day, settings)
     instances = _latest_instances(graph)
     recovery = run_recovery(graph, run_id)
     agents = _agent_rows(instances, recovery)
@@ -104,13 +105,6 @@ def _azure_rows(
 def _run_day(graph: GraphStore, run_id: str) -> str:
     node = graph.get_node("RunRequest", f"run-request:{run_id}")
     return str(node.props.get("requested_at", "")) if node else ""
-
-
-def _job_for_day(rows: list[AzureRow], run_day: str) -> AzureRow | None:
-    return next(
-        (row for row in rows if str(row.get("start_time", "")).startswith(run_day)),
-        rows[0] if rows else None,
-    )
 
 
 def _latest_instances(graph: GraphStore) -> dict[str, Node]:

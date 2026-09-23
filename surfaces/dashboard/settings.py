@@ -137,16 +137,18 @@ class DashboardSettings(AgentSettings):
         unit="rows per container",
     )
     master_window_start_utc: str = tunable(
-        "22:25", why="Matches daily-master-window in infra/deploy-agents.ps1."
+        "20:25",
+        why="Matches $MasterScaleStart in infra/deploy-agents.ps1 (test-pinned).",
     )
     agent_window_start_utc: str = tunable(
-        "22:30", why="Matches daily-agent-window in infra/deploy-agents.ps1."
+        "22:30",
+        why="Matches $AgentScaleStart in infra/deploy-agents.ps1 (test-pinned).",
     )
     window_end_utc: str = tunable(
-        "00:30", why="Matches the cron scale-window end in deployment."
+        "00:30", why="Matches $ScaleEnd in infra/deploy-agents.ps1 (test-pinned)."
     )
     dispatcher_fire_utc: str = tunable(
-        "22:30", why="Matches dispatcher-cron in infra/deploy-agents.ps1."
+        "22:30", why="The dispatcher's first placing tick, _ACTION_START (test-pinned)."
     )
     readiness_failure_max_age_minutes: int = tunable(
         180,

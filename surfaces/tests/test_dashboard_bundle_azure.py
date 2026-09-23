@@ -66,7 +66,7 @@ def test_container_logs_run_day_scopes_window_and_bad_day_falls_back() -> None:
     )
     assert scoped["scope"] == "run"
     window = cast("dict[str, str]", scoped["window"])
-    assert window["start"].startswith("2026-07-08T22:25")
+    assert window["start"].startswith("2026-07-08T20:25")
     assert window["end"].startswith("2026-07-09T00:30")
     fallback = container_logs(
         FakeAzureReader(), _settings(), "execution", 200, now=NOW, run_day="not-a-day"

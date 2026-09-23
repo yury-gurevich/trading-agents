@@ -116,14 +116,15 @@ def test_vitals_do_not_add_usd_hardware_to_aud_llm() -> None:
 def test_utc_windows_cross_midnight_and_validate_settings() -> None:
     settings = _settings()
     start, end = run_window("2026-07-09", settings)
-    assert start.isoformat() == "2026-07-09T22:25:00+00:00"
+    assert start.isoformat() == "2026-07-09T20:25:00+00:00"
     assert end.isoformat() == "2026-07-10T00:30:00+00:00"
     before = datetime(2026, 7, 10, 12, tzinfo=UTC)
     assert latest_window(settings, before)[0].date().isoformat() == "2026-07-09"
     after = datetime(2026, 7, 10, 23, tzinfo=UTC)
     assert latest_window(settings, after)[0].date().isoformat() == "2026-07-10"
-    assert next_fire(settings, before).startswith("2026-07-10T22:30")
-    assert next_fire(settings, after).startswith("2026-07-11T22:30")
+    assert str(next_fire(settings, before)).startswith("2026-07-10T22:30")
+    # 2026-07-10 is a Friday: the next placing fire is Monday, not Saturday.
+    assert str(next_fire(settings, after)).startswith("2026-07-13T22:30")
     bad = settings.model_copy(update={"master_window_start_utc": "bad"})
     with pytest.raises(ValueError, match="expected HH:MM"):
         run_window("2026-07-09", bad)

@@ -1,7 +1,7 @@
 """UTC scale-window helpers for dashboard logs and next-fire vitals.
 
 Agent: surfaces
-Role: derive run-scoped and latest fleet windows from deployment-aligned settings.
+Role: derive fleet windows, the next fire and the placing tick from the schedule.
 External I/O: none.
 """
 
@@ -10,7 +10,11 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
+from orchestration.scheduled_dispatch import ProviderTradingCalendar
+
 if TYPE_CHECKING:
+    from orchestration.scheduled_dispatch import TradingCalendar
+    from surfaces.dashboard.azure_port import AzureRow
     from surfaces.dashboard.settings import DashboardSettings
 
 
@@ -38,13 +42,46 @@ def latest_window(
     return run_window(day.isoformat(), settings)
 
 
-def next_fire(settings: DashboardSettings, now: datetime | None = None) -> str:
-    """Return the next dispatcher fire as an ISO UTC timestamp."""
+def next_fire(
+    settings: DashboardSettings,
+    now: datetime | None = None,
+    calendar: TradingCalendar | None = None,
+) -> str | None:
+    """Return the next placing fire as an ISO UTC timestamp, sessions only.
+
+    The cron ticks every weekday, but the dispatcher places a run only on a NYSE
+    session, so weekends and holidays are skipped with its own calendar. None
+    means past that calendar's end, where the dispatcher refuses to schedule.
+    """
     current = now or datetime.now(tz=UTC)
-    fire = datetime.combine(current.date(), _time(settings.dispatcher_fire_utc), UTC)
-    if fire <= current:
-        fire += timedelta(days=1)
-    return fire.isoformat()
+    sessions = calendar or ProviderTradingCalendar()
+    day = current.date()
+    while day <= sessions.window_end():
+        fire = datetime.combine(day, _time(settings.dispatcher_fire_utc), UTC)
+        if fire > current and sessions.is_trading_session(day):
+            return fire.isoformat()
+        day += timedelta(days=1)
+    return None
+
+
+def scheduled_execution(
+    rows: list[AzureRow], run_day: str, settings: DashboardSettings
+) -> AzureRow | None:
+    """Return the dispatcher tick that could place the run, not the day's last.
+
+    The cron ticks every ten minutes and only ticks from the fire time on may
+    place, so the earliest run-day tick at or after it placed (or held) the run.
+    Without one: the run day's latest tick, then the latest tick of all.
+    """
+    fire = f"{run_day}T{_time(settings.dispatcher_fire_utc):%H:%M}"
+    day = sorted(
+        (row for row in rows if str(row.get("start_time", "")).startswith(run_day)),
+        key=lambda row: str(row.get("start_time", "")),
+    )
+    due = [row for row in day if str(row.get("start_time", "")) >= fire]
+    if due:
+        return due[0]
+    return day[-1] if day else (rows[0] if rows else None)
 
 
 def window_label(settings: DashboardSettings) -> str:

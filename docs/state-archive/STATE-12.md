@@ -121,3 +121,21 @@ another unreviewed night. It is funded. 🟠 **Still owed:** the run itself.
 🟩 **PROVEN RESULT - the referee's posture is `binding`, and item 70's input half is proven live.** Merged `ffa7467`, `GATE PROVEN` for `81c7d27` (CI, CodeQL, Security Findings), `make ci` exit 0 by file redirection: **2939 passed, 100.00 %**. `v0.102.00` tagged. 🪤 **Neither reaches production until a deploy carries them** - the posture is a code default and S213's VIX code has never executed in the fleet.
 
 🎯 **Item 6b closed ([DL-185](../design-log.md)).** Decided on the spine, not the row: `proceeded_unvetoed` - the only state in which `binding` blocks a buy - has occurred **3 times ever** and **not once in 32 days**, so the last five runs are unaffected; while `failed_open` last fired **2026-09-11**, ending a four-night cluster with `real_debate_count=0` in which **5 orders reached the broker unreviewed and the board said nothing**. 🚨 **The blast radius was larger than the spine showed, and only the gate found it:** the flip turned **7 tests red across 5 files** - six fixtures silently relying on `advisory`, and one (`test_no_llm_means_no_veto_stage`) encoding a policy `binding` deliberately inverts, so **any path with no deliberator wired now buys nothing**. Every test now pins the posture it means instead of inheriting an unstated default.
+
+---
+
+**Added 2026-09-23** from `STATE.md`'s *Now*, to keep it under its 200-line rule when DL-207/DL-208 merged. This is S214's pre-merge handback note, superseded by its *MERGED and DEPLOYED* entry, which stays live.
+
+🟠 **BUILT — [S214](../sprints/sprint-214-a-revise-is-a-finding-an-overturn-is-a-block.md) on branch
+`sprint-214-revise-is-a-finding`, version `0.98.10`.** ADR-0029 decisions 1 and 5 are implemented:
+`vetoed_tickers` now carries `overturn` verdicts only, `revise` remains recorded as a finding without
+blocking, unreadable/empty/stopped judge non-answers take the loud fail-open path, and the operator
+trace shows `revised=` so objections remain visible. Deliberator laws moved v1.7 -> v1.8 and roll up
+22 / 56; `DRIFT-066` is filed/corrected; `contracts/` stayed untouched; execution source stayed
+unchanged. 🟩 **Local proof:** red-first guard run failed 17 / passed 30 before implementation;
+redirected `make ci` exited 0 with 2821 passed, 4 skipped, 100.00 % coverage, pip-audit clean and
+secrets checks passed. 🟩 **Branch proof before handback commit:** `make gate-ran` matched
+`e6b26b9030dda6d31a0dafaf2c58518004fbfe03` with CI and Security Findings success. No merge, deploy,
+or live proof is done.
+Note: memory mentions `docs/local/STATE.md`, but this checkout has no `docs/local/`; `docs/STATE.md` is
+the live tracker named by `CLAUDE.md`.

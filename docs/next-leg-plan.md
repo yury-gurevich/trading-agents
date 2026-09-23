@@ -1,8 +1,10 @@
 <!-- Agent: planning | Role: the proposed next development leg — phases P16–P20, their work items and unit-of-work estimates -->
 # Next leg — from "it runs" to "it earns, and the platform is real"
 
-**Status:** PROPOSED, 2026-09-23, planner. Not yet accepted by the operator. The reasoning and the
-roads not taken are in [DL-209](design-log.md).
+**Status:** ACCEPTED by the operator, 2026-09-23 (*"plan is very sound — approved"*). P20 builds the
+**repo-steward pack** (operator agreed with the recommendation), and the G-EDGE call stays the
+operator's. The reasoning and the roads not taken are in [DL-209](design-log.md). The first sprint is
+[S226](sprints/sprint-226-a-run-says-whether-the-book-beat-the-index.md) (E16.1).
 
 **What this document is.** A plan for the next leg of development, written to be cut into
 **extension sprints**. Each work item below (`E16.1`, `E17.2`, …) is sized to become **one sprint
@@ -43,6 +45,15 @@ With 22 % exposure, holding SPY alone would have returned about 0.75 %, so the r
 entirely self-audit: gate tooling, status docs and dashboard consistency. The next leg should point the
 same evidence discipline at the question that decides everything else: **is there an edge?**
 
+🩹 **Correction, same day, measured while specifying E16.1: the +2.13 % blends two different books.**
+Until 2026-08-07 the account held **$208k of stock on $103k of equity: ~2× gross, on margin**
+(DL-93, flattened by `chore-flatten-and-resize`; 0 holdings on 2026-08-10). The current configuration
+starts on **2026-08-10**. From then to 2026-09-22 (30 session pairs), measured from execution's own
+`BrokerPositionSnapshot` facts: portfolio **−0.46 %**, SPY **+0.05 %**, SPY at the book's exposure
+**+0.04 %**, excess **−0.50 %**, average exposure **21 %**, max drawdown **−0.86 %**. So the gain since
+July was earned on the leveraged book, and the current one is slightly behind a flat market. Six weeks
+still proves nothing either way, which is what P17 is for. The table above is kept as first written.
+
 **What already exists to build on** **[measured 2026-09-23]**:
 
 - **Replay dataset.** `scripts/replay_dataset.py` caches about 263k daily bars plus VIX in OneDrive,
@@ -54,6 +65,10 @@ same evidence discipline at the question that decides everything else: **is ther
   rank IC, quantile spread, decay.
 - **Reporter metrics** (`agents/reporter/domain/metrics.py`): approval, execution, close triggers,
   profit factor and expectancy. There is **no equity curve and no benchmark**.
+- **The raw inputs for one, found while specifying E16.1:** execution writes account equity, cash and
+  per-holding market value on `BrokerPositionSnapshot` every run (**97** `fresh` since 2026-08-06),
+  and the provider stores SPY bars on each run's `MarketData` (since 2026-09-04, ~203 bars of history
+  each).
 - **Telegram notices**, one way, live since S219.
 - **Survivorship handling: none.** Searching `agents`, `kernel`, `contracts` and `scripts` for
   "survivorship" finds nothing.
@@ -87,14 +102,14 @@ below is one of these.
 
 | Leg | Question it answers | Units | Elapsed (effort, then wait) | Depends on |
 | --- | --- | --- | --- | --- |
-| **P16** Scoreboard | Are we beating the index, today? | **4** | ~1 week + 1 run ⏳ | — |
+| **P16** Scoreboard | Are we beating the index, today? | **2.5** *(was 4; re-cut 2026-09-23)* | ~3 days + 1 run ⏳ | — |
 | **P17** Historical proof | Is there an edge over ten years, out of sample? | **7** | ~2 weeks | P16 (shared metric code) |
 | 🚦 **Gate G-EDGE** | Operator reads EXP-014 and picks branch A or B | 0 | one decision | P17 |
 | **P18A** Put the edge to work | How much capital, which pillars, what next signal? | **5** | ~1.5 weeks | G-EDGE = A |
 | **P18B** Freeze the pack | Keep a quiet reference workload; stop tuning | **1** | 1 day | G-EDGE = B |
 | **P19** Operator out of the loop | Can it run a month with nobody looking? | **4** | ~1 week + 20 sessions ⏳ | P16 (brief shows the scoreboard) |
 | **P20** Second pack | Is the platform general, or is it a trading app? | **8** | ~2–3 weeks | ADR-0012; best after G-EDGE |
-| **Total** |  | **28 (branch A) / 24 (branch B)** | **~6–11 weeks (A) / ~5–10 weeks (B)** at 0.5–1 unit per working day **[assumed]** |  |
+| **Total** |  | **26.5 (branch A) / 22.5 (branch B)** | **~5–11 weeks (A) / ~4.5–9 weeks (B)** at 0.5–1 unit per working day **[assumed]** |  |
 
 **Recommended order.** P16, then P17, then 🚦. **P19's first item (E19.1) can run alongside P17**: it
 touches none of the same modules, and every day it runs is a day of unattended evidence banked. P20
@@ -111,18 +126,23 @@ P16 ──► P17 ──► 🚦 G-EDGE ──► A: P18A ──► P20
 
 ## 4. Legs and work items
 
-### P16 — Scoreboard: "are we beating the index?" · 4 units
+### P16 — Scoreboard: "are we beating the index?" · 2.5 units
 
 **Exit:** the dashboard shows portfolio return, SPY return and exposure-matched SPY since inception
-and over rolling 20- and 60-session windows. On a scheduled run the equity figure reconciles to Alpaca
-to the cent. The operator chat can answer "are we beating the market?" from graph facts only.
+(2026-08-10) and over a rolling 20-session window. On a scheduled run the equity figure reconciles to
+Alpaca to the cent. The operator chat can answer "are we beating the market?" from graph facts only.
+
+🩹 **Re-cut 2026-09-23, when E16.1 was specified.** The first draft assumed a new `EquitySnapshot` label
+and an Alpaca backfill. Measured instead: execution already records equity, cash and per-holding
+market value on every run, and the provider already stores SPY bars on `MarketData`. So there is no
+new label, no full `up`, and no backfill. A backfill would also score the ~2× margin book that DL-93
+flattened. The old E16.1–E16.4 collapse into two items.
 
 | ID | Item | Size | Notes |
 | --- | --- | --- | --- |
-| E16.1 | **Equity snapshot per run.** At run start, the agent that already reads the broker snapshot for reconciliation (DL-44) also records an `EquitySnapshot` fact: equity, cash, long market value, broker as-of. | M (1.5) | New vocabulary type, so a **full `up`**, not a retag (the S202 lesson). Which agent writes it: **[assumed]** monitor; confirm against the reconciler. ⏳ 1 run. |
-| E16.2 | **Performance metrics, one definition.** A pure metrics module: time-weighted return, benchmark return, exposure-matched benchmark (average exposure × SPY), excess return, max drawdown, realized vs unrealized P&L. The same code will score the P17 replay. | M (1) | One definition for live and replay (the DL-208 lesson). The benchmark ticker is **pack config**, never substrate (ADR-0012). |
-| E16.3 | **Backfill from broker history.** A one-time read-only script loads Alpaca portfolio history since 2026-07-07 as `EquitySnapshot` facts marked `source=backfill`, so the scoreboard starts with 2.5 months instead of zero. | S (0.5) | Alpaca date traps apply: 1D bars are labelled +1 day in UTC. |
-| E16.4 | **Surface it.** A glance tile on the dashboard (**vs SPY**: green, amber or red on excess return), a chat tool answer, and one line in the nightly Telegram notice. | S (1) | Glance-first; no S-numbers in the UI (DL-47). |
+| E16.1 | **The reporter measures the book against the index.** A pure performance function (time-weighted return, benchmark return, exposure-matched benchmark, excess, average exposure, max drawdown, rolling window) in `agents/reporter/domain/`, fed from `BrokerPositionSnapshot` and `MarketData`, bounded to the run's as-of date, written into the run's `Snapshot`. | M (1.5) | **Specced as [S226](sprints/sprint-226-a-run-says-whether-the-book-beat-the-index.md).** It owes a reporter law cycle (`contracts/` change). Image-only retag. The same function scores P17's replay. |
+| E16.2 | **Surface it.** A glance tile on the dashboard (**vs SPY**: green, amber or red on excess return), a chat tool answer, and one line in the nightly Telegram notice. | S (1) | Glance-first; no S-numbers in the UI (DL-47). 🪤 **Law question first:** `RPT-SEC-02` forbids the reporter logging P&L to external systems, and Telegram is one. The dispatcher sends the notice, not the reporter, but the spirit of the clause applies. Decide it in the spec, with the operator if it needs a policy call. |
+| ~~E16.3~~ | ~~Backfill from broker history~~ | — | **Ruled out 2026-09-23:** the history before 2026-08-10 is a different, leveraged book. |
 
 ### P17 — Historical proof: a full-pipeline walk-forward replay · 7 units
 
@@ -137,7 +157,7 @@ ADR-0029 only `overturn` blocks an order, and overturns ran at **6.2 %** of revi
 | --- | --- | --- | --- |
 | E17.1 | **Spike: can we buy a survivorship-free universe?** Measure point-in-time S&P 500 membership (FMP historical constituents **[assumed available on our plan]**) and bar coverage for delisted names (Alpaca **[assumed thin]**, Tiingo **[assumed good]**, within the 500 symbols/month limit). | S (1) | **Measure first; highest risk in the leg.** If coverage is below ~90 % of member-days, the fallback is to bound the bias: replay the survivors and report the result as an upper bound. |
 | E17.2 | **Point-in-time universe + cache.** Extend `replay_dataset.py` with daily membership and delisted bars. The cache stays in OneDrive, never the repo: the repo is public and SIP bars are licensed. | M (1.5) | `scripts/` is size-gated since 2026-09-23: split rather than grow. |
-| E17.3 | **Replay harness.** Day by day over the cache, drive the **real** scanner → analyst → PM domain functions (no bus, no graph), fill at the next open with slippage, apply stops and time exits as monitor would, and produce a daily equity curve scored by E16.2's metrics. | L (2.5) | Reuses `run_walkforward` pieces. **[assumed]** the domain functions can be called without the bus; if a stage reads the graph mid-decision, an adapter is part of this item. Scripts may import agents (the `backtest_proposal.py` precedent); agents never import each other. |
+| E17.3 | **Replay harness.** Day by day over the cache, drive the **real** scanner → analyst → PM domain functions (no bus, no graph), fill at the next open with slippage, apply stops and time exits as monitor would, and produce a daily equity curve scored by E16.1's performance function. | L (2.5) | Reuses `run_walkforward` pieces. **[assumed]** the domain functions can be called without the bus; if a stage reads the graph mid-decision, an adapter is part of this item. Scripts may import agents (the `backtest_proposal.py` precedent); agents never import each other. |
 | E17.4 | **Fidelity check.** Replay 2026-07-07 → today and compare with what actually happened: approved-order membership, then fills and P&L. The bar, modelled on ADR-0030's 45/45: **≥ 90 % membership**, with every difference explained (deliberator overturns, broker rejections, data differences). | M (1) | **Without this the backtest is fiction.** If fidelity fails, P17 stops here and the gap becomes the work. |
 | E17.5 | **EXP-014 plus the verdict ADR.** A 10-year walk-forward with purged, non-overlapping test windows; bootstrap CI on excess return; drop-one-pillar ablations (technical, fundamental, relative strength, sentiment); a 5 bps / 10 bps / 25 bps slippage sweep. | M (1) | The ADR is the input to 🚦. The same survivorship caveat that EXP-013 carried must be **closed** here, not repeated. |
 
@@ -184,7 +204,7 @@ to produce the new pack's agents, not only the hand-built trading ones.
 
 | ID | Item | Size | Notes |
 | --- | --- | --- | --- |
-| E20.1 | **Choose the pack.** Criteria: no broker, cheap data, a daily cadence, a verifiable outcome. Candidates: (a) a research/news watch pack; (b) a repo-steward pack that watches this repo's CI and doc drift (dogfooding, moonshot #7); (c) a personal-finance reconciler. | 0 | **Operator's choice.** The planner recommends (b): it has real data, a real outcome and no licence cost. |
+| E20.1 | ✅ **Decided 2026-09-23: the repo-steward pack** (operator agreed). **Choose the pack.** Criteria: no broker, cheap data, a daily cadence, a verifiable outcome. Candidates: (a) a research/news watch pack; (b) a repo-steward pack that watches this repo's CI and doc drift (dogfooding, moonshot #7); (c) a personal-finance reconciler. | 0 | **Operator's choice.** The planner recommends (b): it has real data, a real outcome and no licence cost. |
 | E20.2 | **Fix the named leaks.** Master's `DEFAULT_GRANTS` becomes a grant policy the pack supplies; `contracts/` splits into substrate and pack; an `import-linter` contract enforces the wall. | L (2.5) | Touches master and every agent's imports, so a **full `up`** with pack read-back. ⏳ 1 run. |
 | E20.3 | **Build the pack via genesis.** Two or three agents with laws from `docs/laws/_TEMPLATE.md`, contracts, and a bus topology. Measure the substrate diff, with a target of 0. | L (3) | Every substrate edit this item needs is a leak found, recorded as a DL and fixed in the substrate, not worked around in the pack. |
 | E20.4 | **Both packs on one fleet.** Deploy, schedule, and prove both packs run on one night with isolated grants and one master. | M (1.5) | ⏳ 1–2 runs. |

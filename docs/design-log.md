@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-209 - the next leg is measured against the index, not against itself - status: PROPOSED (planner, 2026-09-23, operator: "is the app finished? what makes it better?")
+## DL-209 - the next leg is measured against the index, not against itself - status: DECIDED (operator, 2026-09-23: "plan is very sound - approved"; P20 = repo-steward pack; G-EDGE stays the operator's)
 
 **Question.** With the queue down to one queued and one parked item, where does development go next?
 
@@ -48,6 +48,23 @@ wall real. The estimate is 28 units on branch A and 24 on branch B, where one un
 
 **Open until the operator accepts.** Whether to adopt the plan; the P20 pack choice (planner recommends a
 repo-steward pack); and later the G-EDGE decision, which is capital-risk policy and theirs.
+
+**Decided, 2026-09-23.** The operator accepted the plan, agreed the P20 pack is the repo-steward pack,
+and agreed G-EDGE is their call when EXP-014 lands. Items filed as work-queue rows **81–84**.
+
+**Amendment, same day: measured while specifying E16.1 ([S226](sprints/sprint-226-a-run-says-whether-the-book-beat-the-index.md)).**
+
+- **The headline number blended two books.** Until 2026-08-07 the account held $208k of stock on $103k
+  of equity (~2x gross, cash -$104,967): the DL-93 margin finding, flattened on 2026-08-10. From
+  2026-08-10 to 2026-09-22, read from execution's `BrokerPositionSnapshot` facts over 30 session pairs:
+  portfolio **-0.46 %**, SPY **+0.05 %**, exposure-matched SPY **+0.04 %**, excess **-0.50 %**, average
+  exposure **21 %**. The scoreboard's inception is therefore **2026-08-10**, not the first fill.
+- **P16 shrinks from 4 units to 2.5.** Execution already records equity, cash and holdings market value
+  every run, and the provider already stores SPY bars on `MarketData`. So there is no new `EquitySnapshot`
+  label (it would be a second definition of equity), no full `up`, and no Alpaca backfill (ruled out: it
+  would score the leveraged book). Totals: 26.5 units on branch A, 22.5 on branch B.
+- **A law question moves into E16.2:** `RPT-SEC-02` forbids the reporter logging P&L to external
+  systems, and the Telegram line crosses that boundary.
 
 ---
 

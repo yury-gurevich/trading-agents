@@ -117,7 +117,7 @@ def test_index_and_assets_serve() -> None:
     assert headers["Content-Type"].startswith("text/html")
     assert b"trading-agents" in body
     assert b"verdict-hero" in body
-    assert b"/chat.css?v=125-1" in body
+    assert b"/chat.css?v=20260923-resume-style" in body
     assert b"/chat.js?v=125-1" in body
     assert b"selfHealRefetchMs" in body
     assert invoke(app, "/app.css")[1]["Content-Type"].startswith("text/css")

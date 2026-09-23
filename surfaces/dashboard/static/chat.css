@@ -5,8 +5,14 @@
   box-shadow:0 10px 40px rgba(40,30,10,.18); overflow:hidden;
 }
 #chat [hidden] { display:none !important; }
-.resume-action { display:none; margin-top:10px; }
+/* Styled like .flag-ack: a bare <button> renders as a white browser default on the dark theme. */
+.resume-action {
+  display:none; margin-top:10px; font:600 11px var(--sans); color:var(--accent-ink);
+  background:var(--card); border:1px solid var(--accent); border-radius:7px;
+  padding:4px 9px; cursor:pointer;
+}
 body.resume-wired .resume-action { display:inline-block; }
+.resume-action:hover { background:var(--card-2); }
 .chat-head {
   width:100%; display:flex; align-items:center; gap:8px; padding:11px 16px;
   color:var(--ink); background:var(--card); border:0; cursor:pointer;

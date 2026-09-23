@@ -10,6 +10,35 @@ and is marked CLOSED here.
 
 ---
 
+## DL-207 - an unproven run does not say "passed", and a wired button looks like one - status: DECIDED (planner, 2026-09-23, operator asked "can you fix the dashboard")
+
+**What was on the screen.** A headless render against the live spine for `sched-2026-09-22` showed
+the verdict card saying *"2 orders placed, none filled yet"* with one warning. On the same page the
+header chip said **"✓ RUN PASSED"**, the result box **"Run result: passed — Every stage did its job"**,
+and the section nav **"run passed"**. DL-59 decided UNPROVEN is *not a fault, and never silent*. The
+API honours that (`verdict: "UNPROVEN"`, `passed: true`), but `app.js` keyed all three on `passed`
+and read `verdict` only for NO_TRADE. The "Resume from …" buttons rendered as bright white browser
+defaults, because `chat.css` only toggled their display. They appear only when the operator chat
+binds, which it had not done since the local `anthropic` package broke on 2026-09-19, so nobody saw
+them.
+
+**Decision — the assets read the verdict, not the flag.** UNPROVEN renders amber: **"◷ AWAITING
+FILLS"** in the header, "awaiting fills" in the nav, and **"Run result: not proven yet"** with the
+reason. `.resume-action` takes `.flag-ack`'s look. Each changed asset gets a new cache-busting
+version; `app.js` had none.
+
+**Rejected routes.**
+
+- *Report `passed: false` for UNPROVEN.* `passed` is what keeps the binary light GREEN for a run
+  queued for the open (DL-59). The display was wrong, not the fact.
+- *Hide the resume buttons until they are styled.* They are wired controls (`chat.js` handles them),
+  and hiding a working control to avoid styling it is the wrong trade.
+
+🪤 **Residue, named.** The wording is pinned by string tests on the assets and proven by a headless
+render, not by a JavaScript test runner, which the repo does not have.
+
+---
+
 ## DL-206 - the dashboard's schedule is read from its sources, not remembered - status: DECIDED (planner, 2026-09-23, operator said "take it further")
 
 **Found by hunting DL-205's defect class.** Both of DL-205's false warnings were a dashboard copy of a

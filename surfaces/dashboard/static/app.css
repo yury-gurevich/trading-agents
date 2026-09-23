@@ -39,6 +39,7 @@ select#run:focus-visible, button:focus-visible { outline:2px solid var(--accent)
   padding:4px 12px; border-radius:999px; }
 .pill.pass { background:var(--good-bg); color:var(--good); }
 .pill.fail { background:var(--crit-bg); color:var(--crit); }
+.pill.wait { background:var(--warn-bg); color:var(--warn); }
 .chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500;
   padding:2px 8px; border-radius:999px; background:var(--idle-bg); color:var(--ink-2); white-space:nowrap; }
 .chip.good { background:var(--good-bg); color:var(--good); }
@@ -119,6 +120,7 @@ h2 { font-family:var(--serif); font-weight:600; font-size:23px; line-height:1.2;
   background:var(--card); box-shadow:var(--shadow); }
 .gatecard.fail { border-left:4px solid var(--crit); }
 .gatecard.pass { border-left:4px solid var(--good); }
+.gatecard.wait { border-left:4px solid var(--warn); }
 .gatecard h3 { font-family:var(--serif); margin:0 0 4px; font-size:16px; }
 .gatecard p { margin:4px 0; color:var(--ink-2); max-width:78ch; font-size:13px; }
 

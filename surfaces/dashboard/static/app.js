@@ -46,25 +46,34 @@
   function renderVerdict(v) {
     var verdict = v.verdict || (v.passed ? "PASS" : "FAIL");
     var noTrade = verdict === "NO_TRADE";
+    // UNPROVEN still reports passed=true (it is not a fault), but it is not a pass
+    // until the broker fills the orders — never say "passed" for it.
+    var unproven = verdict === "UNPROVEN";
     var pill = $("verdictpill");
     pill.hidden = false;
-    pill.className = "pill " + (v.passed ? "pass" : "fail");
-    pill.textContent = noTrade ? "✓ COMPLETED · NO TRADES" :
+    pill.className = "pill " + (unproven ? "wait" : (v.passed ? "pass" : "fail"));
+    pill.textContent = noTrade ? "✓ COMPLETED · NO TRADES" : unproven ? "◷ AWAITING FILLS" :
       (v.passed ? "✓ RUN PASSED" : "✕ RUN FAILED");
     var dot = $("raildot-trading"), lbl = $("raillbl-trading");
-    dot.className = "dot " + (v.passed ? "good" : "crit");
-    lbl.textContent = noTrade ? "completed · no trades" : (v.passed ? "run passed" : "run failed");
+    dot.className = "dot " + (unproven ? "warn" : (v.passed ? "good" : "crit"));
+    lbl.textContent = noTrade ? "completed · no trades" : unproven ? "awaiting fills" :
+      (v.passed ? "run passed" : "run failed");
 
     var fails = v.breaches.filter(function (b) { return b.severity === "fail"; });
     var warns = v.breaches.filter(function (b) { return b.severity !== "fail"; });
     var html;
+    var warnLines = warns.length ? "<p class='mono'>" + warns.map(function (b) { return "WARN  " + esc(b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p>" : "";
     if (noTrade) {
       html = "<div class='gatecard pass'><h3>Run result: completed — no trades</h3>" +
         "<p>" + esc(v.annotation) + "</p></div>";
+    } else if (unproven) {
+      html = "<div class='gatecard wait'><h3>Run result: not proven yet</h3>" +
+        "<p>Every stage did its job. The orders it placed are waiting at the broker, so the " +
+        "result is decided once they fill — for a run after the close, at the next open.</p>" +
+        warnLines + "</div>";
     } else if (v.passed) {
       html = "<div class='gatecard pass'><h3>Run result: passed</h3>" +
-        "<p>Every stage did its job within its boundaries.</p>" +
-        (warns.length ? "<p class='mono'>" + warns.map(function (b) { return "WARN  " + esc(b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p>" : "") + "</div>";
+        "<p>Every stage did its job within its boundaries.</p>" + warnLines + "</div>";
     } else {
       html = "<div class='gatecard fail'><h3>Run result: failed</h3>" +
         "<p class='mono'>" + v.breaches.map(function (b) { return esc(b.severity.toUpperCase() + "  " + b.stage + "." + b.key + ": " + b.detail); }).join("<br>") + "</p></div>";

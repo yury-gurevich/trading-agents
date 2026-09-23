@@ -10,6 +10,38 @@ and is marked CLOSED here.
 
 ---
 
+## DL-208 - "open incidents" lists what health counts, not every fault ever raised - status: DECIDED (planner, 2026-09-23, operator: "Wrong query??")
+
+**What the operator saw.** "Open incidents" in the dashboard's operator chat returned a wall of old
+errors: Anthropic credit-balance failures, August debate replies, stop mismatches. Measured on
+the live spine it was **6,439 lines**, every Fault recorded from 2026-07-23 to 2026-09-16 (5,958
+errors, 481 warnings). In the same chat, "Status" said *System health is green*, and the kernel's
+count of open incidents was **0**.
+
+**Cause.** `surfaces/queries/faults.py:open_faults` returned *all* Fault nodes. Its docstring said so:
+"P6 has no fault resolution state." The kernel later gained exactly that: `live_fault_incidents`,
+meaning unresolved (`FaultResolution` or `status=resolved`) **error/critical** Faults in the **latest
+graph-run day**. Health, the supervisor and the status tool all adopted it; the incidents list, the
+CLI `incidents` command and the MCP tool behind the chat never did.
+
+**Decision — "open" has one definition.** `open_faults` keeps its name and shape (newest first,
+occurrence and suppression counts) but lists only `live_fault_incidents`, so the list and the count
+cannot disagree; a test pins `system_health(graph).open_faults == len(open_faults(graph))`. Live,
+after the change: "Open incidents" answers **"No open incidents."** (223 bytes, against 414,863).
+
+**Rejected routes.**
+
+- *A time window ("faults from the last 24 h").* It would be a third definition of open, and it
+  would still list warnings and resolved faults.
+- *Keep the history and paginate it.* A history is useful, but "open incidents" must answer the
+  question it names; a history view is its own tool, if it is ever asked for.
+
+🪤 **Noted, not changed.** The newest Fault on the spine is from 2026-09-16, so nothing has been
+recorded as a Fault for a week. That is consistent with a quiet fleet, but it was not proven here
+that faults are still being written.
+
+---
+
 ## DL-207 - an unproven run does not say "passed", and a wired button looks like one - status: DECIDED (planner, 2026-09-23, operator asked "can you fix the dashboard")
 
 **What was on the screen.** A headless render against the live spine for `sched-2026-09-22` showed

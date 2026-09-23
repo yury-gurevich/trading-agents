@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from kernel.fault_incidents import live_fault_incidents
 from kernel.fault_query import fault_occurrences
 
 if TYPE_CHECKING:
@@ -31,7 +32,13 @@ class FaultView:
 
 
 def open_faults(graph: GraphStore) -> tuple[FaultView, ...]:
-    """Return all Fault nodes newest first; P6 has no fault resolution state."""
+    """Return open incidents newest first: exactly the set health counts.
+
+    Open is the kernel's live definition — unresolved error or critical Faults
+    in the latest graph-run day. Every other Fault is history: listing all of
+    them made "open incidents" dump 6,439 faults while health said 0 (2026-09-23).
+    """
+    live = {node.key for node in live_fault_incidents(graph)}
     faults = [
         FaultView(
             fault_id=occurrence.node.key[:12],
@@ -44,5 +51,6 @@ def open_faults(graph: GraphStore) -> tuple[FaultView, ...]:
             suppressed_count=occurrence.suppressed_count,
         )
         for occurrence in fault_occurrences(graph)
+        if occurrence.node.key in live
     ]
     return tuple(faults)

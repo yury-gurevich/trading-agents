@@ -84,6 +84,21 @@ def scheduled_execution(
     return day[-1] if day else (rows[0] if rows else None)
 
 
+def next_master_wake(settings: DashboardSettings, now: datetime) -> str | None:
+    """Return when the master next wakes, or None while it is awake.
+
+    The master checks the fleet only inside its window, so outside it the next
+    check is the next window's start, not "about an hour" away.
+    """
+    start, end = latest_window(settings, now)
+    if start <= now < end:
+        return None
+    wake = datetime.combine(now.date(), _time(settings.master_window_start_utc), UTC)
+    if wake <= now:
+        wake += timedelta(days=1)
+    return wake.isoformat()
+
+
 def window_label(settings: DashboardSettings) -> str:
     """Render the deployed master-start through scale-end interval."""
     return f"{settings.master_window_start_utc}-{settings.window_end_utc} UTC"

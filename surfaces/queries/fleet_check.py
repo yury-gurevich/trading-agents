@@ -20,6 +20,11 @@ _HELD = "Tonight's run is held \N{EM DASH} the fleet check is failing"
 _HELD_UNKNOWN = "Tonight's run is held \N{EM DASH} no recent fleet check"
 _FAILING = "Tonight's run will be held unless the next fleet check passes"
 
+#: How long a failed fleet check stays true. The master checks only inside its
+#: daily scale window (20:25-00:30 UTC), so the last result stands until the next
+#: window's first check, up to ~20 hours later; a day bounds it (DL-213).
+LAST_CHECK_HORIZON_MINUTES = 1440
+
 
 def readiness_override(
     graph: GraphStore, *, now: datetime, max_age_minutes: int

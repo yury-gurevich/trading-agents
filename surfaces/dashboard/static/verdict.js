@@ -66,9 +66,12 @@
       item.textContent = line;
       list.appendChild(item);
     });
+    var when = window.tsShort || function (value) { return value; };
+    var next = readiness.next_check
+      ? "next check " + when(readiness.next_check) + ", when the master wakes"
+      : "the master re-checks about every hour";
     $("fleet-alert-meta").textContent = readiness.checked_at
-      ? "Last checked " + (window.tsShort ? window.tsShort(readiness.checked_at) : readiness.checked_at) +
-        " · the master re-checks about every hour"
+      ? "Last checked " + when(readiness.checked_at) + " · " + next
       : "";
     renderHoldActions($("fleet-alert-actions"), panel);
   }

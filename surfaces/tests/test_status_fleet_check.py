@@ -97,3 +97,18 @@ def test_dispatch_rewrites_raised_and_returned_vendor_errors(
     assert str(raised["error"]).startswith("The language model refused the request")
     assert str(returned["error"]).startswith("The language model refused the request")
     assert returned["run_id"] == "r1"
+
+
+def test_status_keeps_a_failed_check_until_the_next_one_replaces_it() -> None:
+    """The master sleeps outside its window, so a five-hour-old failure stands."""
+    graph = InMemoryGraphStore()
+    checked_at = (datetime.now(tz=UTC) - timedelta(hours=5)).isoformat()
+    graph.merge_node(
+        "FleetPreflight",
+        f"preflight:{checked_at}",
+        {"checked_at": checked_at, "passed": False, "failures": ["x:y:z:http_400"]},
+    )
+
+    status = dispatch_tool(build_context(graph=graph), "status", {})
+
+    assert status["fleet_check"] == "failing"

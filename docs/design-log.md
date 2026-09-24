@@ -10,6 +10,32 @@ and is marked CLOSED here.
 
 ---
 
+## DL-213 - a failed fleet check stands until the next one replaces it, and the alert says when that is - status: DECIDED (planner, 2026-09-24, found verifying DL-212 live)
+
+**Measured while proving DL-212 on the restarted dashboard (12:03 AEST).** *System status* still said
+*"System health is green."* The code was live; the evidence was old. The newest `FleetPreflight`
+was **00:26 UTC** - none since - because the master only runs inside its scale window
+(`$MasterScaleStart` **20:25** to `$ScaleEnd` **00:30** UTC, 06:25-10:30 Melbourne). DL-212's status
+used the dispatcher's `preflight_max_age_minutes` (**70**), so a 97-minute-old failure read as
+*unknown* and the line vanished. The banner used `readiness_failure_max_age_minutes` (**180**), so it
+would have vanished at ~03:26 UTC and left the page quiet for ~17 hours before the next check - while
+its own text promised *"the master re-checks about every hour"*.
+
+**Decided.**
+
+- **Display staleness is not dispatch staleness.** The dispatcher is right to refuse a check older
+  than 70 minutes *at fire time*; a person reading the page needs the last result until the next one
+  replaces it. Both display surfaces now use a day (`LAST_CHECK_HORIZON_MINUTES` for status; the
+  dashboard tunable's default becomes **1440**, bound raised to 2880).
+- **The alert names the next check.** Outside the master's window it reads *"next check <time>, when
+  the master wakes"* (`next_master_wake`, from the dashboard's existing `master_window_start_utc` /
+  `window_end_utc`); inside it keeps *"about every hour"*.
+
+**Ruled out.** *Wake the master hourly all day* - a standing replica costs money against a check whose
+answer cannot change until someone acts; the gap is a display defect, not a monitoring one.
+
+---
+
 ## DL-212 - the chat's status names a failing fleet check, and a vendor error reads as a sentence - status: DECIDED (planner, 2026-09-24, operator's screenshot after DL-211)
 
 **What the operator's screenshot showed** (11:50 AEST, the old dashboard still running): in the chat,

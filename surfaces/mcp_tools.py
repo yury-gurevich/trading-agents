@@ -14,11 +14,13 @@ from typing import TYPE_CHECKING
 from contracts.reporter import NarrativeRequest, TradeNarrative
 from contracts.supervisor import MasterReport, StatusRequest
 from kernel import AgentMessage
-from orchestration.settings import OrchestratorSettings
 from surfaces.operator_tools import command_tool, operator_explanation
 from surfaces.plain_errors import plain_error
 from surfaces.queries.faults import open_faults
-from surfaces.queries.fleet_check import readiness_override
+from surfaces.queries.fleet_check import (
+    LAST_CHECK_HORIZON_MINUTES,
+    readiness_override,
+)
 from surfaces.queries.runs import recent_runs
 
 if TYPE_CHECKING:
@@ -61,7 +63,7 @@ def _cmd_status(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
     fleet = readiness_override(
         ctx.graph,
         now=datetime.now(tz=UTC),
-        max_age_minutes=OrchestratorSettings().preflight_max_age_minutes,
+        max_age_minutes=LAST_CHECK_HORIZON_MINUTES,
     )
     summary = report.summary.summary
     if fleet is not None:

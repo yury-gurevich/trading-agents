@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-227-an-llm-outage-holds-the-buys-not-the-run`
-**Status:** BUILT
+**Status:** MERGED `a4ab16d5`
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-214](../design-log.md) (the proposal) · work-queue item **85** · partially reverses item **58** (operator-approved, 2026-09-24) · touches DRIFT-068 (the dispatcher has no law book)
@@ -400,7 +400,7 @@ Support coverage beyond the plan: `test_malformed_posture_pack_degrades_nothing`
 
 **Status:**
 
-BUILT.
+MERGED `a4ab16d5` (fast-forward; merged SHA = gated SHA), tag `v0.111.00`, 2026-09-25 00:40 AEST. `make gate-ran` → `GATE PROVEN for a4ab16d57fb6730e7fc91f4c1c29918733bbf61a` — CI, CodeQL, Security Findings, all success on attempt 1. The planner rebased the branch onto `main` (`96aad94d`) before gating; the only conflict was the `docs/STATE.md` header, which kept both updates. **Not deployed.** The live proof is still owed: the first real LLM-only outage has to place a degraded run.
 
 **Tree the proofs ran in (and `.env` present?):**
 

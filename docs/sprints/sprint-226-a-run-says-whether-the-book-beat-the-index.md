@@ -424,7 +424,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT on branch `sprint-226-a-run-says-whether-the-book-beat-the-index`; not merged.
+**Status:** BUILT and BRANCH-GATED on branch `sprint-226-a-run-says-whether-the-book-beat-the-index`; not merged.
 
 **Tree the proofs ran in (and `.env` present?):** Red proof ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-red-proof` from `main` `59c0818ad3858dde795162bb77eb9d108f1dced0` with no `.env`. Green unit, line-count, and local gate proofs ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-a-run-says-whether-the-book-beat-the-index` with no `.env`. The read-only reference re-report ran from the S226 worktree against an in-memory graph copy after loading the main checkout `.env`; it performed no live writes.
 
@@ -504,7 +504,19 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 9 new file(s)
 ```
 
-**`make gate-ran`:** PENDING - branch has not yet been pushed.
+**`make gate-ran`:** First branch proof from `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-a-run-says-whether-the-book-beat-the-index`; `.env` absent; output matched the worktree `HEAD`.
+
+```text
+$ make gate-ran
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for beb52e12ce873845f6ebdf0ddf63cab62abdce0d:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+
+$ git rev-parse HEAD
+beb52e12ce873845f6ebdf0ddf63cab62abdce0d
+```
 
 **Not met / verified failing:** Not merged to `main`; not deployed; no next scheduled run has emitted a production `Snapshot` with the new metrics yet; no post-deploy functionality-check row was appended.
 
@@ -512,6 +524,6 @@ detect-secrets (untracked): scanning 9 new file(s)
 
 ## Return notes
 
-- S226 is built and locally reporter-proven. The remaining lifecycle steps are branch push, remote gates, `make gate-ran`, merge, image-only retag/deploy, and the next-run live `Snapshot` check.
+- S226 is built and branch-gated. The remaining lifecycle steps are merge, image-only retag/deploy, and the next-run live `Snapshot` check.
 - The contract field uses `Field(default_factory=dict)` instead of a literal `{}` so the mutable default passes the repo's ruff rules while preserving the required empty-map default behavior.
 - There is no `docs/local/STATE.md` in this checkout; the sprint state update is recorded in `docs/STATE.md`.

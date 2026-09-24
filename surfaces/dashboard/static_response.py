@@ -51,10 +51,8 @@ def _index(
 ) -> list[bytes]:
     ms = int(settings.self_heal_refetch_seconds * 1000)
     marker = "</head>"
-    config = (
-        "<script>window.dashboardConfig = "
-        f"{json.dumps({'selfHealRefetchMs': ms})};</script>"
-    )
+    page = {"selfHealRefetchMs": ms, "timeZone": settings.operator_timezone}
+    config = f"<script>window.dashboardConfig = {json.dumps(page)};</script>"
     body = target.read_text(encoding="utf-8").replace(marker, f"  {config}\n{marker}")
     start_response("200 OK", [("Content-Type", "text/html; charset=utf-8")])
     return [body.encode("utf-8")]

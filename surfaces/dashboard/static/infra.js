@@ -24,7 +24,8 @@
   }
   /* Operator-readable Melbourne 24-hour stamp: "2026-09-25 08:30". The operator reads
      Melbourne time, never UTC; a stamp with no offset is UTC. Non-timestamps pass through. */
-  var melbourne = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne",
+  var zone = (window.dashboardConfig && window.dashboardConfig.timeZone) || "UTC";
+  var melbourne = new Intl.DateTimeFormat("en-AU", { timeZone: zone,
     year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
     hourCycle: "h23" });
   function ts(value) {
@@ -34,7 +35,8 @@
     if (isNaN(date.getTime())) return text;
     var p = {};
     melbourne.formatToParts(date).forEach(function (part) { p[part.type] = part.value; });
-    return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute;
+    return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute +
+      (zone === "UTC" ? " UTC" : "");
   }
   window.tsShort = ts;
 
@@ -114,7 +116,9 @@
     data.remediation_plans.forEach(function (p) { ladder.push(chip(p.auto_eligible ? "warn" : "idle", "plan · " + p.remediation + " · " + p.status)); });
     $("fleetladder").innerHTML = ladder.join(" ");
     $("agentstates").innerHTML = data.agents.map(function (a) {
-      return chip(a.escalation ? "crit" : (a.state === "active" ? "good" : "warn"), a.agent + " · " + a.state + (a.escalation ? " · " + a.escalation : ""));
+      var bad = a.escalation || a.check;
+      return chip(bad ? "crit" : (a.state === "active" ? "good" : "warn"), a.agent + " · " + a.state +
+        (a.check ? " · check failing: " + a.check : "") + (a.escalation ? " · " + a.escalation : ""));
     }).join(" ");
     var worst = data.stages.some(function (s) { return s.status === "crit"; }) ? "crit" :
       data.stages.some(function (s) { return s.status === "warn"; }) ? "warn" :

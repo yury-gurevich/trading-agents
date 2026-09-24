@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from orchestration.scheduled_dispatch import ProviderTradingCalendar
 
@@ -99,9 +100,15 @@ def next_master_wake(settings: DashboardSettings, now: datetime) -> str | None:
     return wake.isoformat()
 
 
-def window_label(settings: DashboardSettings) -> str:
-    """Render the deployed master-start through scale-end interval."""
-    return f"{settings.master_window_start_utc}-{settings.window_end_utc} UTC"
+def window_label(
+    settings: DashboardSettings, start_utc: str, now: datetime | None = None
+) -> str:
+    """Render a UTC scale window in the operator's own time for today."""
+    day = (now or datetime.now(tz=UTC)).date()
+    zone = ZoneInfo(settings.operator_timezone)
+    start = datetime.combine(day, _time(start_utc), UTC).astimezone(zone)
+    end = datetime.combine(day, _time(settings.window_end_utc), UTC).astimezone(zone)
+    return f"{start:%H:%M}-{end:%H:%M} {settings.operator_timezone.rsplit('/', 1)[-1]}"
 
 
 def _time(value: str) -> time:

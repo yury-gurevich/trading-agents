@@ -150,6 +150,10 @@ class DashboardSettings(AgentSettings):
     dispatcher_fire_utc: str = tunable(
         "22:30", why="The dispatcher's first placing tick, _ACTION_START (test-pinned)."
     )
+    operator_timezone: str = tunable(
+        "Australia/Melbourne",
+        why="The operator reads their own local 24-hour time, never UTC (DL-216).",
+    )
     readiness_failure_max_age_minutes: int = tunable(
         1440,
         why=(

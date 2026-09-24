@@ -16,13 +16,14 @@ from orchestration.scheduled_dispatch import (
     decide_scheduled_run,
 )
 from orchestration.scheduled_dispatch_actions import (
-    ACT_BY_TEXT,
+    act_by_text,
     is_action_time,
     outside_window,
     place_override,
     place_scheduled,
 )
 from orchestration.scheduled_dispatch_polling import fault_safe, poll_answers
+from orchestration.settings import OrchestratorSettings
 
 if TYPE_CHECKING:
     from datetime import date, datetime
@@ -30,7 +31,6 @@ if TYPE_CHECKING:
     from agents.scanner.universe import UniverseSource
     from kernel import GraphStore, Node
     from orchestration.scheduled_dispatch import TradingCalendar
-    from orchestration.settings import OrchestratorSettings
     from orchestration.telegram_port import TelegramPort
 
 
@@ -80,7 +80,8 @@ def dispatch_with_human_answer(
         universe_source=universe_source,
     )
     if result.action == "held":
-        _notify_new_hold(graph, telegram, result, now)
+        zone = (settings or OrchestratorSettings()).operator_timezone
+        _notify_new_hold(graph, telegram, result, now, zone)
     return result
 
 
@@ -100,6 +101,7 @@ def _notify_new_hold(
     telegram: TelegramPort,
     result: ScheduledDispatchResult,
     now: datetime,
+    timezone: str,
 ) -> None:
     hold = graph.get_node("RunHold", result.node_key or "")
     if hold is None or "notified_at" in hold.props:
@@ -108,7 +110,9 @@ def _notify_new_hold(
         graph,
         telegram,
         lambda: telegram.send_hold_notice(
-            run_id=result.run_id, failures=result.failures, act_by=ACT_BY_TEXT
+            run_id=result.run_id,
+            failures=result.failures,
+            act_by=act_by_text(now, timezone),
         ),
         None,
     )

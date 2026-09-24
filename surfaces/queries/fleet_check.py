@@ -65,6 +65,30 @@ def _alert(
     }
 
 
+def mark_refused_agents(
+    graph: GraphStore, agents: list[dict[str, object]], *, now: datetime
+) -> int:
+    """Tag each agent row the latest failing fleet check names; return the count.
+
+    Activation rows record what happened on the selected run; this records what
+    the master found since, so "active" never stands alone over a refused agent.
+    """
+    readiness = fleet_readiness(
+        graph, now=now, max_age_minutes=LAST_CHECK_HORIZON_MINUTES
+    )
+    if readiness.state != "failing":
+        return 0
+    refused: dict[str, str] = {}
+    for failure in readiness.failures:
+        parts = failure.split(":")
+        if len(parts) >= 4:
+            refused.setdefault(parts[1], f"{parts[2]} {_reason(parts[3:])}")
+    for row in agents:
+        if row.get("agent") in refused:
+            row["check"] = refused[str(row["agent"])]
+    return sum(1 for row in agents if "check" in row)
+
+
 def problem_lines(failures: tuple[str, ...]) -> list[str]:
     """Group `<kind>:<agent>:<check>:<reason>` failures into one line per cause.
 

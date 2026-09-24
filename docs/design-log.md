@@ -10,6 +10,40 @@ and is marked CLOSED here.
 
 ---
 
+## DL-216 - everything the operator reads is in their own time, and an agent the fleet check refused says so - status: DECIDED (planner, 2026-09-24, operator: "if there are any discrepancies, or debt, do them now not later")
+
+**The debt, all named earlier the same day and none of it new.** DL-211 moved the dashboard's stamps to
+Melbourne but left three UTC strings the operator reads, and named one misleading row:
+
+1. The Telegram hold notice - the one message that asks the operator to act - said *"Choose Run now by
+   23:20 UTC"* (`ACT_BY_TEXT`, a constant in the dispatcher).
+2. The dashboard's scale-window cards read *"20:25-00:30 UTC"* and *"22:30-00:30 UTC"*.
+3. `ts()` hard-coded `Australia/Melbourne` in the page's JavaScript - the operator's locale written into
+   platform code, against ADR-0012's wall.
+4. *Fleet lifecycle* listed the four agents the master had just refused as **active** (last night's
+   activation), and the *agents* stage read green *15/15 active*.
+
+**Decided.**
+
+- **One `operator_timezone` tunable** (default `Australia/Melbourne`) on the dashboard and on the
+  dispatcher's `OrchestratorSettings`. The dashboard hands it to the page through `dashboardConfig`; the
+  page falls back to UTC, labelled as UTC, when it is absent. The locale is configuration, not code.
+- **The notice reads *"09:20 Melbourne (23:20 UTC)"*** - local first, UTC kept because the dispatcher's
+  window is defined in UTC, DST-aware (*10:20* from 2026-10-04). A runtime image without zone data, or an
+  unusable zone name, falls back to *"23:20 UTC"* rather than failing the notice.
+- **Scale windows render in local time for today** (*06:25-10:30 Melbourne*, *08:30-10:30 Melbourne*).
+- **`mark_refused_agents`** tags each agent row the latest failing check names (*operator · active · check
+  failing: anthropic answered HTTP 400*), and the *agents* stage turns amber with *"N refused by the fleet
+  check"*. It reads the same one-day horizon as the banner (DL-213).
+
+**Deploy note.** Item 1 is dispatcher code: it reaches Telegram only with the next image deploy. The
+dashboard items are live as soon as the local dashboard restarts.
+
+**Ruled out.** *Ship `tzdata` into every image* - it adds a dependency to fix one string, and the
+fallback keeps the notice correct in UTC; revisit if the fallback is ever observed in production.
+
+---
+
 ## DL-215 - performance is recomputed from as-of-bounded facts - status: DECIDED (S226, 2026-09-23)
 
 *Renumbered at merge (planner, 2026-09-24): the builder filed this as DL-210, a number `main` had already

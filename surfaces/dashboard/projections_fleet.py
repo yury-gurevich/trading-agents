@@ -7,12 +7,14 @@ External I/O: injected GraphStore reads and AzureReader calls only.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from surfaces.dashboard.azure_port import AzureReadError
 from surfaces.dashboard.projections import run_stages
 from surfaces.dashboard.projections_state import run_recovery
 from surfaces.dashboard.time_windows import scheduled_execution
+from surfaces.queries.fleet_check import mark_refused_agents
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -35,6 +37,7 @@ def fleet_projection(
     instances = _latest_instances(graph)
     recovery = run_recovery(graph, run_id)
     agents = _agent_rows(instances, recovery)
+    refused = mark_refused_agents(graph, agents, now=datetime.now(tz=UTC))
     reached = [bool(stage["reached"]) for stage in run_stages(graph, run_id)]
     replicas = [row.get("replicas") for row in apps]
     replica_total = sum(value for value in replicas if isinstance(value, int))
@@ -54,12 +57,11 @@ def fleet_projection(
         _stage(
             "agents",
             "EHLO then tested ACTIVATE",
-            f"{sum(row['state'] == 'active' for row in agents)}/{len(agents)} active",
-            (
-                "good"
-                if agents and all(row["state"] == "active" for row in agents)
-                else "warn"
-            ),
+            f"{sum(row['state'] == 'active' for row in agents)}/{len(agents)} active"
+            + (f" \u00b7 {refused} refused by the fleet check" if refused else ""),
+            "good"
+            if agents and not refused and all(r["state"] == "active" for r in agents)
+            else "warn",
         ),
         _stage(
             "control plane",

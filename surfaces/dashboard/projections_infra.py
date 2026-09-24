@@ -77,10 +77,8 @@ def infra_projection(
             settings, job_rows, job_error or template_error, template_image, now
         ),
         "scale_windows": {
-            "master": window_label(settings),
-            "agents": (
-                f"{settings.agent_window_start_utc}-{settings.window_end_utc} UTC"
-            ),
+            "master": window_label(settings, settings.master_window_start_utc, now),
+            "agents": window_label(settings, settings.agent_window_start_utc, now),
         },
         "containers": containers,
         "hardware_cost": hardware(azure, _resource_scope(settings)),

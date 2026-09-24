@@ -19,6 +19,11 @@ class OrchestratorSettings(AgentSettings):
 
     model_config = SettingsConfigDict(env_prefix="ORCHESTRATOR_", frozen=True)
 
+    operator_timezone: str = tunable(
+        "Australia/Melbourne",
+        why="The operator reads their own local 24-hour time, never UTC (DL-216).",
+    )
+
     universe: str = tunable(
         "sp500",
         why="Paper-stage default scan universe when a trigger does not specify one.",

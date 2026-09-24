@@ -7,8 +7,9 @@ External I/O: reads and writes the injected GraphStore.
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import UTC, datetime, time
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from agents.scanner.universe import FileUniverse
 from orchestration.scheduled_dispatch import (
@@ -19,15 +20,28 @@ from orchestration.settings import OrchestratorSettings
 from orchestration.start import place_run_request
 
 if TYPE_CHECKING:
-    from datetime import date, datetime
+    from datetime import date
 
     from agents.scanner.universe import UniverseSource
     from kernel import GraphStore, Node
     from orchestration.scheduled_dispatch import TradingCalendar
 
-ACT_BY_TEXT = "23:20 UTC"
 _ACTION_START = time(22, 30)
 _ACT_BY = time(23, 20)
+
+
+def act_by_text(now: datetime, timezone: str) -> str:
+    """Name the answer deadline in the operator's time first, UTC second.
+
+    A runtime image without zone data still gets a correct UTC deadline.
+    """
+    utc = f"{_ACT_BY:%H:%M} UTC"
+    try:
+        zone = ZoneInfo(timezone)
+    except (ZoneInfoNotFoundError, ValueError):
+        return utc
+    deadline = datetime.combine(now.date(), _ACT_BY, UTC).astimezone(zone)
+    return f"{deadline:%H:%M} {timezone.rsplit('/', 1)[-1]} ({utc})"
 
 
 def is_action_time(now: datetime) -> bool:

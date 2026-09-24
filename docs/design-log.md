@@ -10,6 +10,55 @@ and is marked CLOSED here.
 
 ---
 
+## DL-210 - the Anthropic key is drained until Sunday, and the master's credential probe now refuses the debate rather than failing it open - status: RECORDED (operator, 2026-09-24: "hard stop" until the limit resets Sunday 2026-09-27)
+
+**What the operator reported.** The run failed because the Anthropic access limit ran out; it
+resets on Sunday 2026-09-27. A hard stop.
+
+**Measured** (planner, 2026-09-24 01:04 UTC, the main checkout's `.env`):
+
+| Check | Result |
+| --- | --- |
+| One-token `messages.create` on `ANTHROPIC_API_KEY` | `400 invalid_request_error - "Your credit balance is too low to access the Anthropic API"` |
+| `sched-2026-09-23` batch trace | **8/8 stages, OK**; 1 buy submitted |
+| Its `DeliberationRun` (22:41 UTC) | `real_debate_count=1`, `failed_open_count=0` - the key still worked then |
+| Faults since 2026-09-22 | **0** |
+
+So the key drained **after 22:41 UTC on 2026-09-23**; what spent it is *not measured*. 🪤 The error
+text names no date - unlike DL-99's `"You will regain access on 2026-09-01"`, a credit-balance
+error does not promise its own reset. The Sunday date is the operator's, not the API's: **re-probe
+before Monday's run** rather than assuming it.
+
+**Why this is not DL-99 again.** In August a drained key only failed the debate *open* (S147):
+the peers started, every call raised, the fail-open verdict stood. Since the master's credential
+probes, `anthropic` is a **required** probe for `operator`, `deliberator-manager`,
+`deliberator-proponent` and `deliberator-opponent`
+(`orchestration/packs/trading_credential_tests.json`), and a required failure raises
+`ActivationRefused` after writing an escalation (`agents/master/activation_credentials.py`). So
+until the key is refilled those four agents **never start**:
+
+- *Buys* - execution waits `deliberation_grace_seconds=900` for a `DeliberationRun`, then submits
+  anyway (`agents/execution/settings.py`) - *as documented, not yet observed with no run at all*.
+  The veto is inert, as in DL-99.
+- *Exits* never wait (S147 / ADR-0017); broker stops stay live.
+- *Operator chat* is dark; the dashboard should show the escalation, which is true, not noise.
+
+**Affected:** `sched-2026-09-24` and `sched-2026-09-25`. First run after the reset: `sched-2026-09-28`.
+
+**Ruled out, and why.**
+
+- *Switch the deliberator to OpenAI for two nights* (`llm_provider`, DL-100) - the same probe file
+  requires `openai` too, a switch is a deploy, and LLM spend is tight; two unvetoed nights on a
+  ~21 %-invested paper book do not justify it.
+- *Pause the fleet* - it would stop exits and reconciliation as well as buys; the paper book is
+  better protected running unvetoed than not running. The operator can still choose it.
+- *Top up the credit* - money is the operator's call; they named Sunday.
+
+**Owed:** re-probe the key before `sched-2026-09-28`, then read that run's `DeliberationRun` for
+`real_debate_count > 0`. S226 is unaffected - it needs no LLM.
+
+---
+
 ## DL-209 - the next leg is measured against the index, not against itself - status: DECIDED (operator, 2026-09-23: "plan is very sound - approved"; P20 = repo-steward pack; G-EDGE stays the operator's)
 
 **Question.** With the queue down to one queued and one parked item, where does development go next?

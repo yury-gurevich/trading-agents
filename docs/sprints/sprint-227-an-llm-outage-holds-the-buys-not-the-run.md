@@ -400,7 +400,7 @@ Support coverage beyond the plan: `test_malformed_posture_pack_degrades_nothing`
 
 **Status:**
 
-MERGED `a4ab16d5` (fast-forward; merged SHA = gated SHA), tag `v0.111.00`, 2026-09-25 00:40 AEST. `make gate-ran` → `GATE PROVEN for a4ab16d57fb6730e7fc91f4c1c29918733bbf61a` — CI, CodeQL, Security Findings, all success on attempt 1. The planner rebased the branch onto `main` (`96aad94d`) before gating; the only conflict was the `docs/STATE.md` header, which kept both updates. **Not deployed.** The live proof is still owed: the first real LLM-only outage has to place a degraded run.
+MERGED `a4ab16d5` (fast-forward; merged SHA = gated SHA), tag `v0.111.00`, 2026-09-25 00:40 AEST. `make gate-ran` → `GATE PROVEN for a4ab16d57fb6730e7fc91f4c1c29918733bbf61a` — CI, CodeQL, Security Findings, all success on attempt 1. The planner rebased the branch onto `main` (`96aad94d`) before gating; the only conflict was the `docs/STATE.md` header, which kept both updates. **Deployed as `s227` = `3b960066`, 2026-09-25 01:06 AEST.** The merge build's dispatcher image failed its smoke on a missing `us_equities_sp500.py`, which the chore fix covers ([DL-218](../design-log.md)). The live proof is still owed: the first real LLM-only outage has to place a degraded run.
 
 **Tree the proofs ran in (and `.env` present?):**
 

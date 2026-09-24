@@ -36,4 +36,10 @@ realized returns. Parked: feature not fix, waitlist-only. Sources:
 <https://typesafe.ai/blog/introducing-system-one-models-and-jev>,
 <https://en.wikipedia.org/wiki/Jev_(AI_model)>
 
-**Status:** uncommitted.
+**Operator, 2026-09-24:** *"want to see how good it is. Will build parallel prediction path (non
+breaking) and see if the LLM and JEV agree on the decision. I mean every stage of every decision."*
+So the intended test is wider than the replay above: a **shadow path** beside the live one, where
+every typed decision at every stage is also put to Jev, with agreement against the LLM recorded per
+stage and per decision. Jev never decides anything on that path.
+
+**Status:** uncommitted — the operator wants it built; not yet specced or ranked.

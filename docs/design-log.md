@@ -79,7 +79,7 @@ while extra decimal places add noise to a headline whose reconstructable metrics
 
 ---
 
-## DL-214 - an LLM-only outage should hold the buys, not the whole run - status: PROPOSED (operator, 2026-09-24: "not right now, but put it as next item after S226 comes back and checked in"; work-queue item 85)
+## DL-214 - an LLM-only outage should hold the buys, not the whole run - status: APPROVED, SPECCED as S227 (operator, 2026-09-24: "not right now, but put it as next item after S226 comes back and checked in", then "yes, create a sprint for Codex"; work-queue item 85)
 
 **Question** (operator): *would LLM issues prevent us from fetching an order confirmation from Alpaca?*
 Technically no - reading an order is a plain broker call. In practice yes: fills are read, recorded and
@@ -251,6 +251,10 @@ until the key is refilled those four agents **never start**:
   no debate, **no monitor pass and no position sync** until a preflight passes. The dashboard's
   *"Fleet check failing (4)"* is this gate, and it is telling the truth.
 - *Exits already at the broker* stay live - stops are broker-side orders.
+- 🔴 **Second correction, found while specifying S227:** even without the hold, buys would **not** have
+  submitted unvetoed. Execution's deployed posture is `binding` (S185), which **drops** buys when no
+  `DeliberationRun` arrives within the grace and writes an error fault. That path has never run in
+  production (`ExecutionRun`: `applied/binding` 3, `proceeded_unvetoed/binding` 0).
 - 🪤 **An order placed before the drain can fill with no stop behind it.** Execution places a
   position's protective stop on the run *after* the fill (SCHW/CSCO: filled 13:31 UTC, stops placed
   22:42 UTC). `sched-2026-09-23`'s **BMY buy (16 @ limit 61.82, day)** can fill at tonight's open, and

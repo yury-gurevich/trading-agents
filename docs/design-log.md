@@ -10,7 +10,7 @@ and is marked CLOSED here.
 
 ---
 
-## DL-210 - the Anthropic key is drained until Sunday, and the master's credential probe now refuses the debate rather than failing it open - status: RECORDED (operator, 2026-09-24: "hard stop" until the limit resets Sunday 2026-09-27)
+## DL-210 - the Anthropic key is drained until Sunday, and the fleet preflight now holds the run rather than letting the debate fail open - status: RECORDED (operator, 2026-09-24: "hard stop" until the limit resets Sunday 2026-09-27)
 
 **What the operator reported.** The run failed because the Anthropic access limit ran out; it
 resets on Sunday 2026-09-27. A hard stop.
@@ -37,21 +37,28 @@ probes, `anthropic` is a **required** probe for `operator`, `deliberator-manager
 `ActivationRefused` after writing an escalation (`agents/master/activation_credentials.py`). So
 until the key is refilled those four agents **never start**:
 
-- *Buys* - execution waits `deliberation_grace_seconds=900` for a `DeliberationRun`, then submits
-  anyway (`agents/execution/settings.py`) - *as documented, not yet observed with no run at all*.
-  The veto is inert, as in DL-99.
-- *Exits* never wait (S147 / ADR-0017); broker stops stay live.
-- *Operator chat* is dark; the dashboard should show the escalation, which is true, not noise.
+- 🔴 **Corrected the same day - the run does not happen at all.** The first version of this entry
+  said buys would submit unvetoed after the 900 s grace. That traced the *activation* half and
+  stopped. The master's hourly `FleetPreflight` records the same four failures (**failing** at
+  23:26 and 00:26 UTC; **passed** at 22:26 UTC), and the deployed dispatcher (`s225`, which contains
+  S218) **holds every scheduled run whose latest preflight did not pass**
+  (`orchestration/fleet_readiness.py`, `orchestration/scheduled_dispatch.py`). So there are no buys,
+  no debate, **no monitor pass and no position sync** until a preflight passes. The dashboard's
+  *"Fleet check failing (4)"* is this gate, and it is telling the truth.
+- *Exits already at the broker* stay live - stops are broker-side orders.
+- 🪤 **An order placed before the drain can fill with no stop behind it.** Execution places a
+  position's protective stop on the run *after* the fill (SCHW/CSCO: filled 13:31 UTC, stops placed
+  22:42 UTC). `sched-2026-09-23`'s **BMY buy (16 @ limit 61.82, day)** can fill at tonight's open, and
+  its stop would then wait for the first un-held run - `sched-2026-09-28`, after Monday's close.
+- *Operator chat* is dark.
 
-**Affected:** `sched-2026-09-24` and `sched-2026-09-25`. First run after the reset: `sched-2026-09-28`.
+**Held:** `sched-2026-09-24` and `sched-2026-09-25`. First run after the reset: `sched-2026-09-28`.
 
 **Ruled out, and why.**
 
-- *Switch the deliberator to OpenAI for two nights* (`llm_provider`, DL-100) - the same probe file
-  requires `openai` too, a switch is a deploy, and LLM spend is tight; two unvetoed nights on a
-  ~21 %-invested paper book do not justify it.
-- *Pause the fleet* - it would stop exits and reconciliation as well as buys; the paper book is
-  better protected running unvetoed than not running. The operator can still choose it.
+- *Pause the fleet* - moot; the S218 gate is already holding the runs.
+- *Switch the deliberator to OpenAI* (`llm_provider`, DL-100) - it would not clear the `operator`
+  probe, which is Anthropic-only (`OPR-DEP-01`), so the preflight would still fail and the run still hold.
 - *Top up the credit* - money is the operator's call; they named Sunday.
 
 **Owed:** re-probe the key before `sched-2026-09-28`, then read that run's `DeliberationRun` for

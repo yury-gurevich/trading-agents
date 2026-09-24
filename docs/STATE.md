@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-24 12:25 AEST · **Version:** **0.108.00 deployed** (`s225`) / **0.109.08 on `main`** — the gap is gate tooling, docs and the dashboard; no runtime code changed · **🛑 The Anthropic API key is drained until Sunday 2026-09-27 (operator: hard stop, [DL-210](design-log.md)): the fleet preflight fails on four probes and the S218 gate **holds** `sched-2026-09-24`/`-25` — no run at all; broker stops stay live. S226 needs no LLM and stays next.**
+**Last updated:** 2026-09-24 12:40 AEST · **Version:** **0.108.00 deployed** (`s225`) / **0.109.08 on `main`** — the gap is gate tooling, docs and the dashboard; no runtime code changed · **🛑 The Anthropic API key is drained until Sunday 2026-09-27 (operator: hard stop, [DL-210](design-log.md)): the fleet preflight fails on four probes and the S218 gate **holds** `sched-2026-09-24`/`-25` — no run at all; broker stops stay live. S226 needs no LLM and stays next.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…08.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+📌 **FILED — work-queue item 85 / [DL-214](design-log.md), 2026-09-24 12:40 AEST: a degraded run for LLM-only outages, ranked by the operator next after S226 is merged and checked in.** The S218 gate holds the whole run when only LLM agents fail, so fills, broker sync and stop placement stop too — BMY can fill tonight with no stop until `sched-2026-09-28`. It partially reverses item 58, so the spec asks the operator.
 
 🟩 **MERGED — [DL-212](design-log.md) `0.109.07` (`759fe23e`) and [DL-213](design-log.md) `0.109.08` (`918cdd61`), 2026-09-24 — the chat and the banner say what the fleet check says, for as long as it is true.** `GATE PROVEN` for each SHA (CI, CodeQL, Security Findings, attempt 1); `make ci` exit 0 — **3,109** then **3,114 passed, 6 skipped, 100.00 %**. **Operator's screenshot** showed *System status* → *System health is green.* and *Explain this run* → raw SDK JSON. DL-212: status leads with the fleet-check line; vendor errors read *The language model refused the request (HTTP 400): …*. **Verifying it live found DL-213:** the master checks only inside 20:25–00:30 UTC, so the 00:26 failure went stale for status after 70 min and would have left the banner at ~03:26 UTC, ~17 h before the next check. Both now hold the last result for a day, and the banner names *next check 06:25, when the master wakes*. **Proven live after restarting the local dashboard at 12:2x:** *System status* → *Tonight's run will be held unless the next fleet check passes: anthropic answered HTTP 400 — 4 agents can't start: …* / *System health is green.*; banner `failing`, checked 10:26, next check 06:25 Melbourne.
 

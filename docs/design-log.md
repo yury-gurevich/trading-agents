@@ -10,6 +10,34 @@ and is marked CLOSED here.
 
 ---
 
+## DL-214 - an LLM-only outage should hold the buys, not the whole run - status: PROPOSED (operator, 2026-09-24: "not right now, but put it as next item after S226 comes back and checked in"; work-queue item 85)
+
+**Question** (operator): *would LLM issues prevent us from fetching an order confirmation from Alpaca?*
+Technically no - reading an order is a plain broker call. In practice yes: fills are read, recorded and
+stop-protected only inside a run, and the S218 gate holds the **whole** run when any required check
+fails. With the Anthropic key drained (DL-210), the only failures are the four LLM agents,
+yet broker sync, fill recording and stop placement are held with them.
+
+**The live cost.** `sched-2026-09-23`'s BMY buy (16 @ limit 61.82, day; last close 61.18) is at the
+broker and can fill at tonight's open. Its protective stop is placed by the *next* run - held until
+`sched-2026-09-28`.
+
+**Proposed.** When every failing check belongs to an agent the non-buy path does not need, the
+dispatcher places a **degraded** run: position sync, fill recording, stop placement and the monitor
+run; new buys are held. The run records its degraded posture so acceptance does not read it as a clean
+night.
+
+**Open, for the spec.** (1) This partially reverses **item 58** (*the fleet does not start with any
+subsystem unfunded*) - the operator decided that, so the spec asks, not assumes. (2) Which agents a
+degraded run needs must come from the pack, not a hard-coded list (ADR-0012). (3) Whether *sells* the
+monitor raises still need the deliberator - ADR-0022 says the veto gates buys, never exits, so likely
+not.
+
+**Ruled out for now.** *Fetch fills outside a run* (a standalone broker poller) - it would duplicate
+execution's fill path and its lineage writes; the run already owns that, the gate is what is too coarse.
+
+---
+
 ## DL-213 - a failed fleet check stands until the next one replaces it, and the alert says when that is - status: DECIDED (planner, 2026-09-24, found verifying DL-212 live)
 
 **Measured while proving DL-212 on the restarted dashboard (12:03 AEST).** *System status* still said

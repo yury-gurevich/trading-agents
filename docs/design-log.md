@@ -10,6 +10,53 @@ and is marked CLOSED here.
 
 ---
 
+## DL-211 - a failing fleet check is a page alert about tonight's run, not the selected run's verdict - status: DECIDED (planner, 2026-09-24, operator: "change the location of this message", and asked why nothing else was screaming)
+
+**What was on the screen** (headless render, 2026-09-24 11:28 AEST, during DL-210's drain). The hero
+labelled *Selected run* read, in its RED headline, *"Fleet check failing (4) —
+unrecoverable:deliberator-manager:anthropic:unrecoverable:http_400; next check in about an hour"* -
+over `sched-2026-09-23`, a run that did its job. Everything else on the page was green or neutral:
+header *AWAITING FILLS*, every vital chip green, *next fire 2026-09-24 22:30 UTC* in grey, the run
+cards all ticked, *Run result: not proven yet*.
+
+**Why nothing else reacted - three causes, all measured:**
+
+1. **Only one consumer.** S218 wired `readiness_override` into `verdict_projection` alone; no vital,
+   rail or chip read it. The check's only voice was an overwrite of another object's headline.
+2. **It is a forecast, and the loud channels are for facts.** The dispatcher writes a `RunHold` - and
+   S219's Telegram asks the human - only when the cron fires at 22:30 UTC. Before then a failing
+   `FleetPreflight` is a prediction, and no `Fault` is written, so health stays green by definition.
+3. **The next-fire chip reads the cron, not the gate.** It said the run would fire at 22:30 when the
+   gate had already decided it would not.
+
+**Decided.**
+
+- The fleet check becomes a **page-level banner above the run hero** (`#fleet-alert`): headline
+  *"Tonight's run will be held unless the next fleet check passes"* (failing) or *"Tonight's run is
+  held — …"* (held), one line per cause grouped from the failure strings (*"anthropic answered HTTP
+  400 — 4 agents can't start: …"*), the last-check time, and the hold-answer buttons.
+- **The run hero keeps its own run's verdict.** `readiness` still rides the verdict payload, but it no
+  longer rewrites `light` or `summary`.
+- **The next-fire chip and the hero's *Next fire* say *"— will be held"*** and turn red while the
+  alert stands (`next_fire_held` on `/api/vitals`, which now receives the app clock like `/api/verdict`).
+- **Every dashboard timestamp renders in Melbourne 24-hour**, DST-aware, via the one `ts()` formatter.
+  The operator asked "my time" twice on 2026-09-24 against a chip reading UTC.
+
+**Ruled out.**
+
+- *Keep the hero RED and also add the banner* - two RED surfaces for one cause, and the hero would go
+  on contradicting its own run cards, the exact DL-207 failure.
+- *Write a `Fault` for a failing preflight so health goes red* - it would turn a forecast into an
+  incident and double-count once the hold is written; the hold plus Telegram is the incident.
+- *Send Telegram at the first failing check* - S219's retry-then-ask ladder is deliberate (item 58);
+  paging on a check that may pass within the hour is the cry-wolf DL-125 warned about.
+
+**Residue, named.** The *Fleet lifecycle* rail still lists the four agents *active* from last night's
+activation - it shows what happened, not what will; the banner now says what will. Server-side strings
+that carry their own `UTC` (the hold panel's *act by*) are unchanged.
+
+---
+
 ## DL-210 - the Anthropic key is drained until Sunday, and the fleet preflight now holds the run rather than letting the debate fail open - status: RECORDED (operator, 2026-09-24: "hard stop" until the limit resets Sunday 2026-09-27)
 
 **What the operator reported.** The run failed because the Anthropic access limit ran out; it

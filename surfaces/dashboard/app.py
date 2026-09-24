@@ -90,7 +90,9 @@ def build_app(
             return _json(
                 start_response,
                 200,
-                vitals_projection(read_graph, azure, config, vital_run, github=github),
+                vitals_projection(
+                    read_graph, azure, config, vital_run, now=now, github=github
+                ),
             )
         if path == "/api/verdict":
             verdict_run = query.get("run", [""])[0] or selected_run(read_graph, query)

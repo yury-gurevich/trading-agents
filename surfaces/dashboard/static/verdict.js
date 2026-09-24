@@ -23,10 +23,10 @@
     $("verdict-summary").textContent = data.summary;
     var day = String(data.run_id || "").match(/\d{4}-\d{2}-\d{2}/);
     $("verdict-run-day").textContent = day ? day[0] : (data.run_id || "—");
-    $("verdict-next-fire").textContent = data.next_fire
+    $("verdict-next-fire").textContent = (data.next_fire
       ? (window.tsShort ? window.tsShort(data.next_fire) : data.next_fire)
-      : "unavailable";
-    renderHoldActions(hero, data.hold_actions);
+      : "unavailable") + (data.readiness ? " — will be held" : "");
+    renderFleetAlert(data.readiness, data.hold_actions);
 
     var warnings = data.warnings || [];
     var detail = $("warning-detail");
@@ -53,13 +53,27 @@
     });
   }
 
-  function renderHoldActions(hero, panel) {
-    var actions = hero.querySelector(".hold-actions");
-    if (!actions) {
-      actions = document.createElement("div");
-      actions.className = "hold-actions";
-      hero.appendChild(actions);
-    }
+  /* The fleet check describes tonight's run, so it is a page banner, not the run verdict. */
+  function renderFleetAlert(readiness, panel) {
+    var alert = $("fleet-alert");
+    alert.hidden = !readiness;
+    if (!readiness) return;
+    $("fleet-alert-headline").textContent = readiness.headline;
+    var list = $("fleet-alert-problems");
+    list.replaceChildren();
+    (readiness.problems || []).forEach(function (line) {
+      var item = document.createElement("li");
+      item.textContent = line;
+      list.appendChild(item);
+    });
+    $("fleet-alert-meta").textContent = readiness.checked_at
+      ? "Last checked " + (window.tsShort ? window.tsShort(readiness.checked_at) : readiness.checked_at) +
+        " · the master re-checks about every hour"
+      : "";
+    renderHoldActions($("fleet-alert-actions"), panel);
+  }
+
+  function renderHoldActions(actions, panel) {
     actions.replaceChildren();
     if (!panel || !panel.actions) return;
     panel.actions.forEach(function (action) {

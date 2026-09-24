@@ -22,10 +22,19 @@
     return "<div class='card'><h4>" + esc(title) + "</h4><div class='statline'><span class='big'>" +
       esc(big) + "</span>" + badge + "</div><div class='sub'>" + sub + "</div></div>";
   }
-  /* Operator-readable UTC stamp: "2026-07-13 22:30 UTC"; non-timestamps pass through. */
+  /* Operator-readable Melbourne 24-hour stamp: "2026-09-25 08:30". The operator reads
+     Melbourne time, never UTC; a stamp with no offset is UTC. Non-timestamps pass through. */
+  var melbourne = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+    hourCycle: "h23" });
   function ts(value) {
-    var m = String(value == null ? "" : value).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-    return m ? m[1] + " " + m[2] + " UTC" : String(value == null ? "" : value);
+    var text = String(value == null ? "" : value);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)) return text;
+    var date = new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(text) ? text : text + "Z");
+    if (isNaN(date.getTime())) return text;
+    var p = {};
+    melbourne.formatToParts(date).forEach(function (part) { p[part.type] = part.value; });
+    return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute;
   }
   window.tsShort = ts;
 
@@ -132,7 +141,8 @@
       vital(feeds.count ? "warn" : "good", feeds.count + " feeds degraded"),
       vital(data.spine.status === "reachable" && data.bus.status === "reachable" ? "good" : "warn", "spine " + data.spine.status + " · bus " + data.bus.status),
       vital(deploy.status === "current" ? "good" : "warn", imageText), vital(cost.total == null ? "warn" : "good", costText),
-      vital("idle", "next fire " + ts(data.next_fire))].join("");
+      vital(data.next_fire_held ? "crit" : "idle", "next fire " + ts(data.next_fire) +
+        (data.next_fire_held ? " — will be held" : ""))].join("");
   }
 
   function vital(status, text) {

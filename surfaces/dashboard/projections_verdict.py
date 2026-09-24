@@ -51,9 +51,9 @@ def verdict_projection(
         now=now or datetime.now(tz=UTC),
         max_age_minutes=settings.readiness_failure_max_age_minutes,
     )
+    # The fleet check is about tonight's run, not the selected one: it travels
+    # beside the run's own verdict for the page banner and never overwrites it.
     if override is not None:
-        projected["light"] = "RED"
-        projected["summary"] = override["summary"]
         projected["readiness"] = override
         panel = hold_answer_panel(graph)
         if panel is not None:

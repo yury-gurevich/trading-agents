@@ -8,18 +8,18 @@ External I/O: injected GraphStore reads and AzureReader calls only.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from contracts.feed_notes import degraded_feed_name
 from orchestration.batch_trace import walk_chain
 from surfaces.dashboard.projections import list_runs
 from surfaces.dashboard.projections_infra import infra_projection
+from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_positions
 from surfaces.queries.flags import pending_flags
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from kernel import GraphStore
     from surfaces.dashboard.azure_port import AzureReader
     from surfaces.dashboard.github_builds import GitHubReader
@@ -90,6 +90,12 @@ def vitals_projection(
             "untracked_llm_models": llm["untracked_models"],
         },
         "next_fire": cast("dict[str, object]", infra["job"])["next_fire"],
+        "next_fire_held": readiness_override(
+            graph,
+            now=now or datetime.now(tz=UTC),
+            max_age_minutes=settings.readiness_failure_max_age_minutes,
+        )
+        is not None,
     }
 
 

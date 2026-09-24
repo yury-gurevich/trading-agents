@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>trading-agents · Operations</title>
   <link rel="stylesheet" href="/app.css?v=20260923-awaiting-fills" />
-  <link rel="stylesheet" href="/verdict.css?v=20260712-compact-message-2" />
+  <link rel="stylesheet" href="/verdict.css?v=20260924-fleet-alert" />
   <link rel="stylesheet" href="/chat.css?v=20260923-resume-style" />
 </head>
 <body>
@@ -36,6 +36,14 @@
   </nav>
 
   <main>
+    <div class="fleet-alert" id="fleet-alert" role="alert" hidden>
+      <p class="fleet-alert-kicker">Fleet &middot; tonight's run</p>
+      <div class="fleet-alert-headline" id="fleet-alert-headline"></div>
+      <ul class="fleet-alert-problems" id="fleet-alert-problems"></ul>
+      <p class="fleet-alert-meta" id="fleet-alert-meta"></p>
+      <div class="hold-actions" id="fleet-alert-actions"></div>
+    </div>
+
     <div class="verdict-hero" id="verdict-hero" data-light="loading" aria-live="polite">
       <div class="master-light" aria-hidden="true">
         <span class="light-orb"><span class="light-core"></span></span>
@@ -129,8 +137,8 @@
     </div>
   </aside>
 
-  <script src="/infra.js?v=20260714-ts"></script>
-  <script src="/verdict.js?v=20260714-ts"></script>
+  <script src="/infra.js?v=20260924-melbourne"></script>
+  <script src="/verdict.js?v=20260924-fleet-alert"></script>
   <script src="/app.js?v=20260923-awaiting-fills"></script>
   <script src="/chat.js?v=125-1"></script>
 </body>

@@ -36,7 +36,9 @@ def apply_deliberation_posture(
     Fail-open deliberation remains a loud ``applied_failed_open`` fact; S185 only
     changes the no-DeliberationRun branch for explicit binding posture.
     """
-    if posture != "binding" or status != "proceeded_unvetoed":
+    if status != "held_degraded" and (
+        posture != "binding" or status != "proceeded_unvetoed"
+    ):
         return PostureFilteredOrderSet(order_set=order_set, blocked_count=0)
     survivors = tuple(intent for intent in order_set.approved if intent.action != "buy")
     blocked = len(order_set.approved) - len(survivors)

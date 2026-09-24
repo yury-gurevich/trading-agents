@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from orchestration.fleet_readiness import fleet_readiness, is_active_run_hold
+from orchestration.packs.trading_run_postures import degradable_agent_types
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 _HELD = "Tonight's run is held \N{EM DASH} the fleet check is failing"
 _HELD_UNKNOWN = "Tonight's run is held \N{EM DASH} no recent fleet check"
 _FAILING = "Tonight's run will be held unless the next fleet check passes"
+_DEGRADED = "Tonight's run will place no new buys unless the next fleet check passes"
 
 #: How long a failed fleet check stays true. The master checks only inside its
 #: daily scale window (20:25-00:30 UTC), so the last result stands until the next
@@ -44,9 +46,16 @@ def readiness_override(
         headline = _HELD_UNKNOWN if unknown else _HELD
         return _alert("held", headline, failures, "")
 
-    readiness = fleet_readiness(graph, now=now, max_age_minutes=max_age_minutes)
+    readiness = fleet_readiness(
+        graph,
+        now=now,
+        max_age_minutes=max_age_minutes,
+        degradable_agents=degradable_agent_types(),
+    )
     if readiness.state == "failing":
         return _alert("failing", _FAILING, readiness.failures, readiness.checked_at)
+    if readiness.state == "degraded":
+        return _alert("degraded", _DEGRADED, readiness.failures, readiness.checked_at)
     return None
 
 
@@ -74,9 +83,12 @@ def mark_refused_agents(
     the master found since, so "active" never stands alone over a refused agent.
     """
     readiness = fleet_readiness(
-        graph, now=now, max_age_minutes=LAST_CHECK_HORIZON_MINUTES
+        graph,
+        now=now,
+        max_age_minutes=LAST_CHECK_HORIZON_MINUTES,
+        degradable_agents=degradable_agent_types(),
     )
-    if readiness.state != "failing":
+    if readiness.state not in {"failing", "degraded"}:
         return 0
     refused: dict[str, str] = {}
     for failure in readiness.failures:

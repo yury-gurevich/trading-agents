@@ -1,0 +1,24 @@
+{
+  "postures": {
+    "degraded": {
+      "degradable_agents": [
+        {
+          "agent_type": "deliberator-manager",
+          "reason": "The deliberation veto gates buys only; exits and broker protection do not need this agent."
+        },
+        {
+          "agent_type": "deliberator-opponent",
+          "reason": "The deliberation veto gates buys only; exits and broker protection do not need this agent."
+        },
+        {
+          "agent_type": "deliberator-proponent",
+          "reason": "The deliberation veto gates buys only; exits and broker protection do not need this agent."
+        },
+        {
+          "agent_type": "operator",
+          "reason": "Operator chat and explanations are not pipeline stages for sync, exits, stops, or monitoring."
+        }
+      ]
+    }
+  }
+}

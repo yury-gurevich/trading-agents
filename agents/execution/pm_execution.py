@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.execution.deliberation_faults import (
+    record_degraded_hold,
     record_failed_open_submit,
     record_unvetoed_submit,
 )
@@ -92,6 +93,13 @@ def execute_pm_node(
             order_set.run_id,
             result.submitted,
             settings,
+            blocked_count=filtered.blocked_count,
+        )
+    if status == "held_degraded":
+        record_degraded_hold(
+            sink,
+            order_set.run_id,
+            result.submitted,
             blocked_count=filtered.blocked_count,
         )
     if status == "applied_failed_open":

@@ -90,18 +90,26 @@ def vitals_projection(
             "untracked_llm_models": llm["untracked_models"],
         },
         "next_fire": cast("dict[str, object]", infra["job"])["next_fire"],
-        "next_fire_held": readiness_override(
-            graph,
-            now=now or datetime.now(tz=UTC),
-            max_age_minutes=settings.readiness_failure_max_age_minutes,
-        )
-        is not None,
+        "next_fire_held": _next_fire_held(
+            graph, now=now or datetime.now(tz=UTC), settings=settings
+        ),
     }
 
 
 def _latest_run_id(graph: GraphStore) -> str:
     rows = list_runs(graph)
     return str(rows[0]["run_id"]) if rows else ""
+
+
+def _next_fire_held(
+    graph: GraphStore, *, now: datetime, settings: DashboardSettings
+) -> bool:
+    readiness = readiness_override(
+        graph,
+        now=now,
+        max_age_minutes=settings.readiness_failure_max_age_minutes,
+    )
+    return readiness is not None and readiness.get("state") != "degraded"
 
 
 def _sync(graph: GraphStore, run_id: str) -> dict[str, object]:

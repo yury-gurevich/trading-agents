@@ -43,6 +43,11 @@ class _TelegramWithError:
     ) -> int | None:
         return None
 
+    def send_degraded_notice(
+        self, *, run_id: str, failures: tuple[str, ...]
+    ) -> int | None:
+        return None
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         return ()
 

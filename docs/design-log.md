@@ -10,6 +10,51 @@ and is marked CLOSED here.
 
 ---
 
+## DL-217 - degraded runs are a pack-declared posture, not a weaker fleet check - status: DECIDED (S227, 2026-09-24)
+
+**Question.** S227 lets a run proceed when only LLM-only agents are unavailable, but that must not turn
+the S218 fleet gate into a soft "some checks passed" rule. Where does the exception live, what is the
+posture called, and how does execution know the difference between a declared degraded run and a
+normal run whose veto simply has not arrived?
+
+**Decision 1 - a baked trading posture pack declares degradable agents.** Add a new image-baked pack
+file under `orchestration/packs/` whose degraded posture lists agent types and reasons. The dispatcher
+loads that pack and degrades only when **every** fresh failing check names an agent in that declaration.
+
+**Rejected - hard-code the four current agent names.** That widens ADR-0012's known leak and makes the
+next pack's LLM roster a code change. **Rejected - use an injected pack.** The injected vocabulary,
+credential-test and issuer-map packs are deployment state; changing one would turn this sprint into a
+full `up`, while this policy belongs to the image and is safe to retag with the code that interprets it.
+
+**Decision 2 - posture names are shared contract constants.** Add `RUN_POSTURE_NORMAL` and
+`RUN_POSTURE_DEGRADED` in `contracts/` so orchestration and execution compare one vocabulary while
+keeping the graph schema unchanged.
+
+**Rejected - string literals in each layer.** It is small today, but it creates exactly the drift that
+made `deliberation_status` need a law-backed vocabulary later. The constants do not add a
+property-enforced graph field.
+
+**Decision 3 - absent `run_posture` reads as normal; new normal scheduled runs stay byte-identical.**
+Legacy `RunRequest` nodes have no posture and must mean normal. The dispatcher writes
+`run_posture="degraded"` and `degraded_by=[...]` only for degraded runs; passing checks keep the
+existing normal `RunRequest` shape.
+
+**Rejected - write `"normal"` on every new run.** Explicit is attractive, but it changes every normal
+run fact when the only new state the graph needs is the exceptional posture.
+
+**Decision 4 - parse every failure, allow every master status kind, require every agent declared.** A
+degradable failure is structured as `<kind>:<agent_type>:<check>:<reason...>`, with `<kind>` in the
+master's failure vocabulary (`unrecoverable`, `unexpected`, `transient`) and `<agent_type>` present in
+the posture pack. Unknown kinds, master-level failures, unparseable strings, missing checks and stale
+checks all hold.
+
+**Rejected - only `unrecoverable` may degrade.** A transient outage of a pack-declared LLM agent still
+  means that agent cannot participate in this run, and the safe non-buy path does not need it.
+  **Rejected - degrade on any parseable failure.** The safe default stays hold; all failures must be declared
+degradable, not merely one.
+
+---
+
 ## DL-216 - everything the operator reads is in their own time, and an agent the fleet check refused says so - status: DECIDED (planner, 2026-09-24, operator: "if there are any discrepancies, or debt, do them now not later")
 
 **The debt, all named earlier the same day and none of it new.** DL-211 moved the dashboard's stamps to

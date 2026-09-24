@@ -22,6 +22,12 @@ class TelegramPort(Protocol):
         """Send the two-choice notification for one newly held run."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def send_degraded_notice(
+        self, *, run_id: str, failures: tuple[str, ...]
+    ) -> int | None:
+        """Send a no-buttons notice for one degraded run."""
+        ...  # pragma: no cover - protocol declaration only.
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         """Return valid callback answers awaiting local recording."""
         ...  # pragma: no cover - protocol declaration only.

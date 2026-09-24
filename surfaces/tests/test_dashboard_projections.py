@@ -15,6 +15,8 @@ import surfaces.dashboard.projections as proj
 from agents.execution.paper_broker import PaperBroker
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
+from contracts.provider import RUN_REQUEST_LABEL
+from contracts.run_posture import RUN_POSTURE_DEGRADED
 from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.observatory import Breach
@@ -26,7 +28,9 @@ if TYPE_CHECKING:
     import pytest
 
 
-def cascade_graph(run_id: str = "dash-ok") -> InMemoryGraphStore:
+def cascade_graph(
+    run_id: str = "dash-ok", *, degraded: bool = False, deliberation: bool = True
+) -> InMemoryGraphStore:
     """A full clean in-process run — the PASS fixture."""
     graph = InMemoryGraphStore()
     agent = ProviderAgent(
@@ -36,14 +40,25 @@ def cascade_graph(run_id: str = "dash-ok") -> InMemoryGraphStore:
         settings=ProviderSettings(max_staleness_days=7),
     )
     place_run_request(graph, run_id=run_id, tickers=("AAPL", "MSFT"))
+    if degraded:
+        graph.merge_node(
+            RUN_REQUEST_LABEL,
+            f"run-request:{run_id}",
+            {"run_posture": RUN_POSTURE_DEGRADED, "degraded_by": ["x"]},
+        )
+    llm = (
+        FakeLLMClient(
+            {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
+        )
+        if deliberation
+        else None
+    )
     list(
         cascade_once(
             graph,
             provider_agent=agent,
             broker=PaperBroker(),
-            deliberation_llm=FakeLLMClient(
-                {"DECISION UNDER TEST": '{"ruling": "uphold", "rationale": "ok"}'}
-            ),
+            deliberation_llm=llm,
         )
     )
     return graph
@@ -113,6 +128,20 @@ def test_unreached_stage_projects_as_not_reached() -> None:
     stages = proj.run_stages(graph, "partial")
     assert all(s["reached"] is False for s in stages)
     assert stages[0]["checks"] == []
+
+
+def test_degraded_run_deliberation_stage_is_skipped_not_unreached() -> None:
+    graph = cascade_graph("dash-degraded", degraded=True, deliberation=False)
+
+    stages = proj.run_stages(graph, "dash-degraded")
+    verdict = proj.run_verdict(graph, "dash-degraded")
+
+    deliberation = next(stage for stage in stages if stage["name"] == "deliberation")
+    assert deliberation["reached"] is True
+    assert deliberation["outputs"] == ["skipped - degraded run"]
+    assert verdict["verdict"] != "FAIL"
+    breaches = cast("list[dict[str, object]]", verdict["breaches"])
+    assert not any(breach["stage"] == "deliberation" for breach in breaches)
 
 
 def _no_trade_result() -> TradingAcceptanceResult:

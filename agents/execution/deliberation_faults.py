@@ -55,6 +55,36 @@ def record_unvetoed_submit(
     )
 
 
+def record_degraded_hold(
+    sink: FaultSink,
+    pm_run_id: str,
+    submitted: int,
+    *,
+    blocked_count: int,
+) -> None:
+    """Warning when a degraded run holds buys but still submits exits."""
+    sink.submit(
+        AgentFault(
+            source_agent="execution",
+            source_module="agents.execution.deliberation_faults",
+            capability="execute_pm_node",
+            severity="warning",
+            error_type="DeliberationHeldDegraded",
+            message=(
+                f"{pm_run_id}: posture=degraded submitted {submitted} order(s) "
+                f"and held {blocked_count} buy order(s); no DeliberationRun "
+                "is expected for this run"
+            ),
+            context={
+                "pm_run_id": pm_run_id,
+                "submitted": submitted,
+                "blocked_count": blocked_count,
+                "run_posture": "degraded",
+            },
+        )
+    )
+
+
 def record_failed_open_submit(
     sink: FaultSink,
     pm_run_id: str,

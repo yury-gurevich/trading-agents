@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from orchestration.batch_chain import walk_chain
 from orchestration.observatory import StageView, render
+from orchestration.packs.trading_deliberation_view import skipped_degraded
 from orchestration.packs.trading_observatory_views import SPEC
 
 if TYPE_CHECKING:
@@ -24,6 +25,11 @@ def observe_run(graph: GraphStore, run_id: str) -> tuple[StageView, ...]:
     for name, label, trigger, extractor in SPEC:
         node = nodes.get(label)
         if node is None:
+            if name == "deliberation":
+                skipped = skipped_degraded(nodes.get("RunRequest"))
+                if skipped is not None:
+                    views.append(skipped)
+                    continue
             views.append(StageView(name, trigger, {}, reached=False))
         else:
             views.append(extractor(graph, node))

@@ -63,6 +63,25 @@ class TelegramClient:
             return None
         return message_id
 
+    def send_degraded_notice(
+        self, *, run_id: str, failures: tuple[str, ...]
+    ) -> int | None:
+        """Send one degraded-run notice without answer buttons."""
+        failures_text = "; ".join(failures) or "no failure detail recorded"
+        text = (
+            f"Run {run_id} is degraded. Checks: {failures_text}. "
+            "No new buys tonight; sync, stops and the monitor run."
+        )
+        response = self._request(
+            "sendMessage", {"chat_id": self._chat_id, "text": text}
+        )
+        result = response.get("result") if response else None
+        message_id = result.get("message_id") if isinstance(result, Mapping) else None
+        if not isinstance(message_id, int):
+            self.last_error = "telegram_message_id_missing"
+            return None
+        return message_id
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         """Return valid callback answers while ignoring all other update shapes."""
         response = self._request("getUpdates", {})

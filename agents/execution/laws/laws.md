@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -101,7 +101,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **EXEC-OUT-09** — Every graph-pull `ExecutionRun` records the deliberation posture that was
   in force (`advisory` or `binding`), the deliberation status that occurred
   (`applied`, `applied_failed_open`, `not_required`, `waiting`, or
-  `proceeded_unvetoed`), and the count of buy intents blocked by that posture. The status answers
+  `proceeded_unvetoed`, or `held_degraded`), and the count of buy intents blocked by that posture. The status answers
   what happened to the review; the posture answers the operator policy that decided what to do
   about it. *(Declares capability decided in S185 / DL-128.)*
 
@@ -126,6 +126,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   are skipped with evidence instead of reaching the broker. Exits are never delayed or dropped by
   deliberation posture, and an arrived veto is still honoured exactly as an upstream block.
   *(Declares capability decided in S185 / DL-128; preserves ADR-0017 and ADR-0022.)*
+- **EXEC-NEV-07** — When the linked `RunRequest` declares `run_posture="degraded"`, execution
+  never submits a buy intent and never waits for deliberation before holding that buy. Exits and
+  protective-stop placement are never delayed, skipped, or weakened by the degraded posture. The
+  missing deliberation review is recorded as expected degraded evidence, not as an invisible
+  omission. *(Declares capability decided in S227 / DL-217; preserves ADR-0022.)*
 
 ---
 
@@ -425,3 +430,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   and `close_reference_price`. They were the one-share / $1.00 close fixtures retired in 0.73.01
   (ADR-0015, DL-58) — a close sells the quantity actually held — so the law was still declaring two
   settings that no longer exist. No clause moves.
+- **v1.8 — S227 degraded run posture (2026-09-24).** Adds `EXEC-NEV-07`: a degraded
+  `RunRequest` holds every buy without waiting for deliberation while exits and protective stops
+  continue immediately. Amends `EXEC-OUT-09` with the `held_degraded` deliberation status. Proves
+  the new clause without adding any `ExecutionRun` vocabulary property, and preserves the ADR-0022
+  exit boundary.

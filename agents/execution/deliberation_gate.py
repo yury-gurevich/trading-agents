@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from contracts.portfolio_manager import OrderIntentSet
+from contracts.run_posture import RUN_POSTURE_DEGRADED, run_posture
 
 if TYPE_CHECKING:
     from agents.execution.settings import ExecutionSettings
@@ -33,9 +34,15 @@ DELIBERATED_EDGE = "DELIBERATED_BY"
 #: `applied` a real veto was present; `applied_failed_open` a DeliberationRun
 #: exists but one or more ticker reviews failed open; `not_required` nothing to
 #: veto or sells only; `waiting` a buy is held inside the grace window;
-#: `proceeded_unvetoed` the grace expired and the run submitted without a veto.
+#: `held_degraded` a degraded run holds buys without waiting; `proceeded_unvetoed`
+#: the grace expired and the run submitted without a veto.
 DeliberationStatus = Literal[
-    "applied", "applied_failed_open", "not_required", "waiting", "proceeded_unvetoed"
+    "applied",
+    "applied_failed_open",
+    "not_required",
+    "waiting",
+    "held_degraded",
+    "proceeded_unvetoed",
 ]
 
 
@@ -76,6 +83,8 @@ def deliberation_status(
         return "applied"
     if not has_buy(order_set):
         return "not_required"
+    if is_degraded_run(graph, order_set):
+        return "held_degraded"
     age = _age_seconds(pm_run, now=now)
     if age is None or age >= grace_seconds:
         return "proceeded_unvetoed"
@@ -105,6 +114,12 @@ def _failed_open_tickers(delib: Node) -> tuple[str, ...]:
     if not isinstance(raw, (list, tuple, set)):
         return ()
     return tuple(item for item in raw if isinstance(item, str))
+
+
+def is_degraded_run(graph: GraphStore, order_set: OrderIntentSet) -> bool:
+    """Return whether the PMRun's RunRequest declares the degraded posture."""
+    run = graph.get_node("RunRequest", f"run-request:{order_set.run_id}")
+    return run_posture(run.props if run else None) == RUN_POSTURE_DEGRADED
 
 
 def _age_seconds(pm_run: Node, *, now: datetime) -> float | None:

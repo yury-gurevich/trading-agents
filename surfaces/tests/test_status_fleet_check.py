@@ -36,8 +36,34 @@ def _failing_graph() -> InMemoryGraphStore:
             "checked_at": checked_at,
             "passed": False,
             "failures": [
+                *(
+                    f"unrecoverable:{agent}:anthropic:unrecoverable:http_400"
+                    for agent in ("deliberator-manager", "operator")
+                ),
+                "unrecoverable:provider:fmp:unrecoverable:http_402",
+            ],
+        },
+    )
+    return graph
+
+
+def _degraded_graph() -> InMemoryGraphStore:
+    graph = InMemoryGraphStore()
+    checked_at = (datetime.now(tz=UTC) - timedelta(minutes=10)).isoformat()
+    graph.merge_node(
+        "FleetPreflight",
+        f"preflight:{checked_at}",
+        {
+            "checked_at": checked_at,
+            "passed": False,
+            "failures": [
                 f"unrecoverable:{agent}:anthropic:unrecoverable:http_400"
-                for agent in ("deliberator-manager", "operator")
+                for agent in (
+                    "deliberator-manager",
+                    "deliberator-opponent",
+                    "deliberator-proponent",
+                    "operator",
+                )
             ],
         },
     )
@@ -62,6 +88,19 @@ def test_status_without_a_failing_check_is_unchanged() -> None:
 
     assert status["fleet_check"] == "passing"
     assert status["summary"] == "System health is green."
+
+
+def test_status_names_degraded_fleet_check_as_no_new_buys() -> None:
+    status = dispatch_tool(build_context(graph=_degraded_graph()), "status", {})
+
+    assert status["fleet_check"] == "degraded"
+    first, second = str(status["summary"]).split("\n")
+    assert first == (
+        "Tonight's run will place no new buys unless the next fleet check passes: "
+        "anthropic answered HTTP 400 — 4 agents can't start: "
+        "deliberator-manager, deliberator-opponent, deliberator-proponent, operator."
+    )
+    assert second == "System health is green."
 
 
 def test_vendor_status_error_reads_as_one_sentence() -> None:

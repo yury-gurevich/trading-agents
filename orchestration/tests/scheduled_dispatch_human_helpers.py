@@ -32,7 +32,9 @@ class FakeTelegram:
 
     answers: tuple[TelegramAnswer, ...] = ()
     fails: bool = False
+    degraded_returns_none: bool = False
     sent: list[dict[str, object]] = field(default_factory=list)
+    degraded_sent: list[dict[str, object]] = field(default_factory=list)
     acknowledgements: list[tuple[str, str]] = field(default_factory=list)
     confirmations: list[int] = field(default_factory=list)
     polls: int = 0
@@ -43,6 +45,15 @@ class FakeTelegram:
         self._raise_if_needed()
         self.sent.append({"run_id": run_id, "failures": failures, "act_by": act_by})
         return len(self.sent)
+
+    def send_degraded_notice(
+        self, *, run_id: str, failures: tuple[str, ...]
+    ) -> int | None:
+        self._raise_if_needed()
+        self.degraded_sent.append({"run_id": run_id, "failures": failures})
+        if self.degraded_returns_none:
+            return None
+        return len(self.degraded_sent)
 
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         self._raise_if_needed()

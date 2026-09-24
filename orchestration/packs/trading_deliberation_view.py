@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from contracts.portfolio_manager import OrderIntentSet
+from contracts.run_posture import RUN_POSTURE_DEGRADED, run_posture
 from orchestration.observatory import Check, StageView
 from orchestration.packs.trading_deliberation_attribution import advisory_attribution
 
@@ -19,6 +20,20 @@ if TYPE_CHECKING:
 
 DELIBERATED_EDGE = "DELIBERATED_BY"
 EXECUTED_EDGE = "EXECUTED_BY"
+
+
+def skipped_degraded(run_request: Node | None) -> StageView | None:
+    """Render degraded-run deliberation absence as an intentional skip."""
+    if run_request is None or run_posture(run_request.props) != RUN_POSTURE_DEGRADED:
+        return None
+    return StageView(
+        "deliberation",
+        "PMRun(pm)",
+        {"reviewed": 0, "debates": 0, "skipped_degraded": 1},
+        reached=True,
+        checks=(),
+        outputs=("skipped - degraded run",),
+    )
 
 
 def deliberation(graph: GraphStore, node: Node) -> StageView:

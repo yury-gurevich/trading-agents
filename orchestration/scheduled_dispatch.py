@@ -16,11 +16,16 @@ from agents.provider.domain.market_calendar import (
     is_trading_session,
 )
 from agents.scanner.universe import FileUniverse
+from contracts.provider import RUN_REQUEST_LABEL
+from contracts.run_posture import RUN_POSTURE_DEGRADED, RUN_POSTURE_NORMAL, RunPosture
+from orchestration.fleet_readiness import fleet_readiness
+from orchestration.packs.trading_run_postures import degradable_agent_types
 from orchestration.scheduled_dispatch_gate import hold_unready_run
 from orchestration.settings import OrchestratorSettings
 from orchestration.start import place_run_request
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
     from datetime import date
 
     from agents.scanner.universe import UniverseSource
@@ -75,6 +80,7 @@ class ScheduledDispatchResult:
     tickers: tuple[str, ...] = ()
     readiness_state: Literal["failing", "unknown"] | None = None
     failures: tuple[str, ...] = ()
+    run_posture: RunPosture = RUN_POSTURE_NORMAL
 
 
 _PROVIDER_CALENDAR = ProviderTradingCalendar()
@@ -111,6 +117,7 @@ def place_scheduled_run(
     settings: OrchestratorSettings | None = None,
     universe_source: UniverseSource | None = None,
     now: datetime | None = None,
+    degradable_agents: Collection[str] | None = None,
 ) -> ScheduledDispatchResult:
     """Place the scheduled RunRequest, or cleanly skip non-trading sessions."""
     decision = decide_scheduled_run(as_of, calendar=calendar)
@@ -118,12 +125,22 @@ def place_scheduled_run(
         return ScheduledDispatchResult("skipped", decision.run_id, decision.reason)
 
     active_settings = settings or OrchestratorSettings()
+    checked_at = now or datetime.now(tz=UTC)
+    readiness = fleet_readiness(
+        graph,
+        now=checked_at,
+        max_age_minutes=active_settings.preflight_max_age_minutes,
+        degradable_agents=degradable_agent_types()
+        if degradable_agents is None
+        else degradable_agents,
+    )
     hold = hold_unready_run(
         graph,
         run_id=decision.run_id,
         as_of=as_of,
-        now=now or datetime.now(tz=UTC),
+        now=checked_at,
         max_age_minutes=active_settings.preflight_max_age_minutes,
+        readiness=readiness,
     )
     if hold is not None:
         return ScheduledDispatchResult(
@@ -142,6 +159,21 @@ def place_scheduled_run(
     node = place_run_request(
         graph, run_id=decision.run_id, tickers=tickers, as_of=as_of
     )
+    run_posture: RunPosture = (
+        RUN_POSTURE_DEGRADED if readiness.state == "degraded" else RUN_POSTURE_NORMAL
+    )
+    if run_posture == RUN_POSTURE_DEGRADED:
+        graph.merge_node(
+            RUN_REQUEST_LABEL,
+            node.key,
+            {"run_posture": run_posture, "degraded_by": list(readiness.failures)},
+        )
     return ScheduledDispatchResult(
-        "placed", decision.run_id, decision.reason, node.key, tickers
+        "placed",
+        decision.run_id,
+        decision.reason,
+        node.key,
+        tickers,
+        failures=readiness.failures if run_posture == RUN_POSTURE_DEGRADED else (),
+        run_posture=run_posture,
     )

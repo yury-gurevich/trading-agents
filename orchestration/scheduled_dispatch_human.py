@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from contracts.provider import RUN_REQUEST_LABEL
+from contracts.run_posture import RUN_POSTURE_DEGRADED
 from orchestration.fleet_readiness import is_active_run_hold
 from orchestration.hold_answers import effective_answer
 from orchestration.scheduled_dispatch import (
@@ -82,6 +84,8 @@ def dispatch_with_human_answer(
     if result.action == "held":
         zone = (settings or OrchestratorSettings()).operator_timezone
         _notify_new_hold(graph, telegram, result, now, zone)
+    elif result.action == "placed" and result.run_posture == RUN_POSTURE_DEGRADED:
+        _notify_degraded_run(graph, telegram, result, now)
     return result
 
 
@@ -123,6 +127,34 @@ def _notify_new_hold(
             {
                 "notified_at": now.isoformat(timespec="seconds"),
                 "notice_message_id": message_id,
+            },
+        )
+
+
+def _notify_degraded_run(
+    graph: GraphStore,
+    telegram: TelegramPort,
+    result: ScheduledDispatchResult,
+    now: datetime,
+) -> None:
+    run = graph.get_node(RUN_REQUEST_LABEL, result.node_key or "")
+    if run is None or "degraded_notified_at" in run.props:
+        return
+    message_id = fault_safe(
+        graph,
+        telegram,
+        lambda: telegram.send_degraded_notice(
+            run_id=result.run_id, failures=result.failures
+        ),
+        None,
+    )
+    if message_id is not None:
+        graph.merge_node(
+            RUN_REQUEST_LABEL,
+            run.key,
+            {
+                "degraded_notified_at": now.isoformat(timespec="seconds"),
+                "degraded_notice_message_id": message_id,
             },
         )
 

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19)
 **Branch:** `sprint-227-an-llm-outage-holds-the-buys-not-the-run`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-214](../design-log.md) (the proposal) · work-queue item **85** · partially reverses item **58** (operator-approved, 2026-09-24) · touches DRIFT-068 (the dispatcher has no law book)
@@ -351,15 +351,26 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| | | | |
+| Dispatcher fleet posture and run placement | `agents/master/laws/laws.md` fleet-check section; `docs/laws/drift-register.md` DRIFT-068 | `MST-OUT-04`, `MST-FAIL-05`; DRIFT-068 says dispatcher placement has no law home | Yes. Master law still treats unrecoverable/unexpected/transient failures as failed fleet checks; degradation must be a dispatcher placement posture only, fresh-check bounded, and only when every failure parses to a pack-declared degradable agent. DRIFT-068 must be appended rather than creating dispatcher laws here. |
+| Execution degraded-run behaviour | `agents/execution/laws/laws.md`; `agents/execution/laws/test-plan.md` | `EXEC-TRG-07`, `EXEC-NEV-01`, `EXEC-NEV-06`, `EXEC-OUT-09`, `EXEC-OBS-03`, `EXEC-OBS-04` | Yes. Execution must read the posture from the existing `RunRequest`, keep sells and protective stops immediate, avoid any new `ExecutionRun` property, and add/prove a new execution clause for degraded runs rather than relying on missing `DeliberationRun` inference. |
+| Law amendment and proof rules | `docs/laws/conventions.md`; `agents/execution/laws/test-plan.md`; `docs/laws/INDEX.md` | Conventions §2, §3, §4, §7, §7a; execution ledger row in `docs/laws/INDEX.md` | Yes. The new guarantee needs an append-only clause ID, version/changelog movement, a faithful test-plan row, clause IDs in functional-test docstrings, and rollup updates in both law index surfaces. |
+| Dispatcher law silence | `docs/laws/drift-register.md` DRIFT-068 | DRIFT-068 | Yes. The missing dispatcher law book is tracked drift; this sprint only appends the new degraded-posture guarantee to DRIFT-068. |
 
 **Law-cycle question — does this sprint change `contracts/` or add a new guarantee?**
 
+Yes. This sprint adds a new execution guarantee: on a degraded `RunRequest`, execution submits no buys and exits/protective stops do not wait. It may also add shared run-posture constants in `contracts/`; that stays inside the same execution law cycle.
+
 **Contradictions found between a law and this spec:**
+
+None found. The master law continues to say all fleet-check failures fail the check; the spec changes dispatcher run placement for a narrow, declared degraded posture rather than redefining master readiness.
 
 **Laws found silent where a decision was needed:**
 
+Dispatcher placement has no law book for the new guarantee that degraded posture is allowed only when every failing check belongs to a pack-declared degradable agent. DRIFT-068 is the required home for that silence this sprint.
+
 **Clauses that were ⬜ and are now proven:**
+
+`EXEC-NEV-07` is now declared and proven green.
 
 ---
 
@@ -367,9 +378,21 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| A1 | `test_llm_only_failing_check_places_degraded_run_and_releases_hold` | `orchestration/tests/test_scheduled_dispatch_degraded_readiness.py` | PASS | `MST-OUT-04`, `MST-FAIL-05`, `DRIFT-068` |
+| A2 | `test_non_degradable_failure_keeps_llm_outage_held` | `orchestration/tests/test_scheduled_dispatch_degraded_readiness.py` | PASS | `MST-FAIL-05`, `DRIFT-068` |
+| A3 | `test_unparseable_master_stale_and_missing_checks_still_hold` | `orchestration/tests/test_scheduled_dispatch_degraded_readiness.py` | PASS | `MST-OUT-04`, `MST-FAIL-05`, `DRIFT-068` |
+| A4 | `test_passing_check_places_normal_run_without_posture_property` | `orchestration/tests/test_scheduled_dispatch_degraded_readiness.py` | PASS | `DRIFT-068` |
+| A5 | `test_degradable_set_comes_from_the_pack_declaration` | `orchestration/tests/test_scheduled_dispatch_degraded_readiness.py` | PASS | `DRIFT-068` |
+| B1 | `test_degraded_run_drops_buys_without_waiting_and_submits_sell` | `agents/execution/tests/test_deliberation_posture_degraded.py` | PASS | `EXEC-OUT-09`, `EXEC-NEV-07`, `EXEC-OBS-04` |
+| B2 | `test_normal_run_still_waits_then_blocks_buy_after_grace` | `agents/execution/tests/test_deliberation_posture_degraded.py` | PASS | `EXEC-NEV-06`, `EXEC-OBS-04` |
+| B3 | `test_degraded_run_still_places_protective_stops` | `agents/execution/tests/test_deliberation_posture_degraded.py` | PASS | `EXEC-NEV-07`, `EXEC-OBS-03` |
+| C1 | `test_degraded_run_sends_one_informational_notice_and_no_hold`; `test_degraded_notice_has_no_callback_buttons` | `orchestration/tests/test_scheduled_dispatch_degraded_notices.py` | PASS | `DRIFT-068` |
+| D1 | `test_degraded_preflight_says_no_new_buys_without_holding`; `test_status_names_degraded_fleet_check_as_no_new_buys` | `surfaces/tests/test_dashboard_degraded_readiness.py`; `surfaces/tests/test_status_fleet_check.py` | PASS | `DRIFT-068` |
+| D2 | `test_degraded_run_deliberation_stage_is_skipped_not_unreached` | `surfaces/tests/test_dashboard_projections.py` | PASS | `DRIFT-068` |
 
 **Tests added beyond the plan:**
+
+Support coverage beyond the plan: `test_malformed_posture_pack_degrades_nothing`; `test_degraded_notice_missing_message_id_does_not_mark_notified`; `test_degraded_notice_records_missing_message_id`; and the existing dispatcher-image copy guard now covers the new posture-pack module/resource.
 
 ---
 
@@ -377,44 +400,189 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Status:**
 
+BUILT.
+
 **Tree the proofs ran in (and `.env` present?):**
+
+Worktree `C:\Users\yury_\Downloads\project\trading-agents-sprint-227-llm-outage-holds-buys`, branch `sprint-227-an-llm-outage-holds-the-buys-not-the-run`, starting SHA `687954494f1327ef66e44a89eeb164d02e95b7b7`; `.env present: no`.
 
 **Step 3 measurement (acceptance and dashboard with no `DeliberationRun`, before the change):**
 
 ```text
+cascade=position_sync:1, provider:1, scanner:1, analyst:1, forecaster:1, portfolio_manager:1, execution:1, monitor:1, reporter:1
+pm_approved=[('AAPL', 'buy'), ('MSFT', 'buy')]
+deliberation_runs=0
+execution_status=proceeded_unvetoed
+execution_submitted=0
+execution_blocked=2
+acceptance_verdict=FAIL
+acceptance_passed=False
+ACCEPTANCE  FAIL
+  FAIL  deliberation.*stage*: NOT REACHED
+dashboard_deliberation_stage={'name': 'deliberation', 'trigger': 'PMRun(pm)', 'reached': False, 'observed': {}, 'outputs': [], 'checks': []}
+dashboard_light=RED
+dashboard_summary=Run stopped before deliberation � 8/9 stages completed.
+dashboard_faults=[{'code': 'acceptance', 'message': 'Acceptance failed'}, {'code': 'stalled', 'message': 'Run stalled before deliberation'}]
+dashboard_warning_count=0
 ```
 
 **Result:**
 
+Implemented the degraded posture end to end. A fresh fleet check with only pack-declared LLM/operator failures now places a degraded `RunRequest` with `run_posture="degraded"` and `degraded_by`, releases active holds, sends one informational Telegram notice with no answer buttons, and renders dashboard/status wording as "no new buys" instead of "held". Stale, missing, unparseable, master-level, and non-degradable failures still hold.
+
+Execution reads degraded posture only from the linked `RunRequest`, never from a missing `DeliberationRun`; on degraded runs it holds buys immediately, submits sells, places protective stops, records `deliberation_status="held_degraded"`, and emits a warning fault. Normal runs omit `run_posture`, and no new `ExecutionRun` property or injected pack was added.
+
 **Files changed:**
+
+Code: `contracts/run_posture.py`; `orchestration/Dockerfile`; `orchestration/fleet_readiness.py`; `orchestration/scheduled_dispatch*.py`; `orchestration/telegram_*.py`; `orchestration/packs/trading_run_postures.*`; `orchestration/packs/trading_deliberation_view.py`; `orchestration/packs/trading_observatory.py`; `agents/execution/deliberation_*.py`; `agents/execution/pm_execution.py`; `surfaces/queries/fleet_check.py`; `surfaces/dashboard/projections_vitals.py`; `surfaces/dashboard/static/verdict.js`.
+
+Tests/docs: dispatcher readiness/notice tests, execution deliberation-posture tests, dashboard/status tests, execution laws/test-plan, law rollups, DRIFT-068, DL-217, sprint README/state/spec handback, version `0.111.00` and `uv.lock`.
 
 **Design decisions:**
 
+Recorded as `DL-217` after re-checking that the next free design-log number was still 217. Decisions 1-4 are pinned there: baked orchestration posture pack; shared `contracts/run_posture.py` constants; normal runs omit `run_posture` and absent reads normal; degradable parsing requires every fresh failure to parse as `<kind>:<agent>:<check>:<reason>` for a pack-declared agent, with `unrecoverable`, `unexpected`, and `transient` accepted.
+
 **Proof — the red run first:**
 
+Captured before the later module-size split; the same planned assertions now live in the final files named in the test-plan table.
+
 ```text
+uv run pytest --no-cov orchestration/tests/test_scheduled_dispatch_readiness.py::test_llm_only_failing_check_places_degraded_run_and_releases_hold orchestration/tests/test_scheduled_dispatch_readiness.py::test_non_degradable_failure_keeps_llm_outage_held orchestration/tests/test_scheduled_dispatch_readiness.py::test_unparseable_master_stale_and_missing_checks_still_hold agents/execution/tests/test_deliberation_posture.py::test_degraded_run_drops_buys_without_waiting_and_submits_sell orchestration/tests/test_scheduled_dispatch_notices.py::test_degraded_run_sends_one_informational_notice_and_no_hold
+
+collected 5 items
+orchestration\tests\test_scheduled_dispatch_readiness.py F..             [ 60%]
+agents\execution\tests\test_deliberation_posture.py F                    [ 80%]
+orchestration\tests\test_scheduled_dispatch_notices.py F                 [100%]
+
+FAILED orchestration/tests/test_scheduled_dispatch_readiness.py::test_llm_only_failing_check_places_degraded_run_and_releases_hold
+E   AssertionError: assert 'held' == 'placed'
+FAILED agents/execution/tests/test_deliberation_posture.py::test_degraded_run_drops_buys_without_waiting_and_submits_sell
+E   AssertionError: assert [] == ['pm-run-fixture']
+FAILED orchestration/tests/test_scheduled_dispatch_notices.py::test_degraded_run_sends_one_informational_notice_and_no_hold
+E   AssertionError: assert ('held', 'held') == ('placed', 'placed')
+3 failed, 2 passed in 19.38s
 ```
 
 **Proof — the green run:**
 
 ```text
+uv run pytest --no-cov orchestration/tests/test_scheduled_dispatch_readiness.py orchestration/tests/test_scheduled_dispatch_degraded_readiness.py agents/execution/tests/test_deliberation_posture.py agents/execution/tests/test_deliberation_posture_degraded.py orchestration/tests/test_scheduled_dispatch_notices.py orchestration/tests/test_scheduled_dispatch_degraded_notices.py surfaces/tests/test_dashboard_projections.py::test_degraded_run_deliberation_stage_is_skipped_not_unreached surfaces/tests/test_dashboard_degraded_readiness.py::test_degraded_preflight_says_no_new_buys_without_holding surfaces/tests/test_status_fleet_check.py::test_status_names_a_failing_fleet_check_above_the_health_line surfaces/tests/test_status_fleet_check.py::test_status_names_degraded_fleet_check_as_no_new_buys tests/test_dispatch_scheduled_run.py::test_dispatcher_image_copies_everything_its_entrypoint_imports orchestration/tests/test_scheduled_dispatch_human_edges.py::test_fault_safe_records_port_reported_error
+
+collected 42 items
+orchestration\tests\test_scheduled_dispatch_readiness.py .........       [ 21%]
+orchestration\tests\test_scheduled_dispatch_degraded_readiness.py ...... [ 35%]
+agents\execution\tests\test_deliberation_posture.py .......              [ 52%]
+agents\execution\tests\test_deliberation_posture_degraded.py ...         [ 59%]
+orchestration\tests\test_scheduled_dispatch_notices.py .......           [ 76%]
+orchestration\tests\test_scheduled_dispatch_degraded_notices.py ....     [ 85%]
+surfaces\tests\test_dashboard_projections.py .                           [ 88%]
+surfaces\tests\test_dashboard_degraded_readiness.py .                    [ 90%]
+surfaces\tests\test_status_fleet_check.py ..                             [ 95%]
+tests\test_dispatch_scheduled_run.py .                                   [ 97%]
+orchestration\tests\test_scheduled_dispatch_human_edges.py .             [100%]
+
+42 passed in 3.25s
 ```
 
 **Guards planted:**
 
+A2 guard break/restore:
+
+```text
+Mutation: changed _all_failures_degradable from all(...) to any(...).
+
+uv run pytest --no-cov orchestration/tests/test_scheduled_dispatch_degraded_readiness.py::test_non_degradable_failure_keeps_llm_outage_held
+
+FAILED orchestration/tests/test_scheduled_dispatch_degraded_readiness.py::test_non_degradable_failure_keeps_llm_outage_held
+E   AssertionError: assert 'placed' == 'held'
+1 failed in 1.58s
+
+Restored all(...):
+1 passed in 1.29s
+```
+
+B1 guard break/restore:
+
+```text
+Mutation: disabled the execution degraded-posture branch.
+
+uv run pytest --no-cov agents/execution/tests/test_deliberation_posture_degraded.py::test_degraded_run_drops_buys_without_waiting_and_submits_sell
+
+FAILED agents/execution/tests/test_deliberation_posture_degraded.py::test_degraded_run_drops_buys_without_waiting_and_submits_sell
+E   AssertionError: assert [] == ['pm-run-fixture']
+1 failed in 1.68s
+
+Restored degraded-posture branch:
+1 passed in 1.31s
+```
+
 **Module line counts:**
 
+```text
+contracts/run_posture.py 25
+orchestration/packs/trading_run_postures.py 28
+orchestration/fleet_readiness.py 95
+orchestration/scheduled_dispatch_gate.py 77
+orchestration/scheduled_dispatch.py 179
+orchestration/telegram_port.py 41
+orchestration/telegram_client.py 120
+orchestration/scheduled_dispatch_human.py 164
+agents/execution/deliberation_gate.py 162
+agents/execution/deliberation_posture.py 48
+agents/execution/deliberation_faults.py 124
+agents/execution/pm_execution.py 109
+orchestration/packs/trading_deliberation_view.py 162
+orchestration/packs/trading_observatory.py 41
+surfaces/queries/fleet_check.py 140
+surfaces/dashboard/projections_vitals.py 136
+agents/execution/tests/test_deliberation_posture.py 199
+agents/execution/tests/test_deliberation_posture_degraded.py 135
+orchestration/tests/test_scheduled_dispatch_readiness.py 190
+orchestration/tests/test_scheduled_dispatch_degraded_readiness.py 171
+orchestration/tests/test_scheduled_dispatch_notices.py 163
+orchestration/tests/test_scheduled_dispatch_degraded_notices.py 106
+surfaces/tests/test_dashboard_readiness.py 191
+surfaces/tests/test_dashboard_degraded_readiness.py 68
+surfaces/tests/test_dashboard_projections.py 198
+surfaces/tests/test_status_fleet_check.py 153
+```
+
 **`make ci`:**
+
+```text
+make ci > C:\Users\yury_\Downloads\project\sprint-227-make-ci.txt 2>&1
+exit code: 0
+
+TOTAL                                                           17900      0   3898      0  100.00%
+Coverage HTML written to dir htmlcov
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 3154 passed, 6 skipped in 144.07s (0:02:24) =================
+uv run python scripts/check_dependency_audit.py
+accepted: PYSEC-2026-2447 (diskcache 5.6.3) - reachable only via the 'optimizer' extra, installed by 0 of 15 Dockerfiles; no fix release exists, nothing imports dspy, and the attack needs write access to the cache directory - which is code execution already [DL-184] - retire when diskcache publishes a fixed release, or the optimizer extra is dropped
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+uv run pre-commit run detect-secrets --all-files
+Detect secrets...........................................................Passed
+uv run python scripts/check_untracked_secrets.py
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 7 new file(s)
+```
 
 **`make gate-ran`:**
 
 ```text
+not run: branch is BUILT only, not pushed/gated; merge/deploy are explicitly forbidden for this handback.
 ```
 
 **Not met / verified failing:**
+
+Remote gate, `make gate-ran`, merge, deploy, and live proof are not done. This handback is BUILT only.
 
 ---
 
 ## Return notes
 
--
+- BUILT on the isolated sprint worktree, not merged or deployed.
+- Version bumped to `0.111.00`; `uv.lock` updated.
+- Execution law cycle completed as `v1.8`: added/proved `EXEC-NEV-07`, amended `EXEC-OUT-09`, updated Changelog, test-plan row, `docs/laws/ledger.md`, and `docs/laws/INDEX.md`.
+- Dispatcher guarantee remains in DRIFT-068; no dispatcher law book was created.
+- No injected pack changed and no new `ExecutionRun` property was added, so deploy implication remains image-only retag after normal remote gates.

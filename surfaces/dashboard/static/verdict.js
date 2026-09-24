@@ -25,7 +25,7 @@
     $("verdict-run-day").textContent = day ? day[0] : (data.run_id || "—");
     $("verdict-next-fire").textContent = (data.next_fire
       ? (window.tsShort ? window.tsShort(data.next_fire) : data.next_fire)
-      : "unavailable") + (data.readiness ? " — will be held" : "");
+      : "unavailable") + readinessSuffix(data.readiness);
     renderFleetAlert(data.readiness, data.hold_actions);
 
     var warnings = data.warnings || [];
@@ -51,6 +51,11 @@
       }
       rows.appendChild(item);
     });
+  }
+
+  function readinessSuffix(readiness) {
+    if (!readiness) return "";
+    return readiness.state === "degraded" ? " — no new buys" : " — will be held";
   }
 
   /* The fleet check describes tonight's run, so it is a page banner, not the run verdict. */

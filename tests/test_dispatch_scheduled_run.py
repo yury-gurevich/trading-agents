@@ -108,6 +108,9 @@ def _first_party_modules(entrypoints: tuple[str, ...]) -> set[str]:
     """Transitively close the entrypoints over their agents/ and orchestration/ imports.
 
     kernel/ and contracts/ are copied whole, so only these two trees need naming.
+    Importing `a.b.c` also executes `a/__init__.py` and `a/b/__init__.py`, so each
+    module's parent packages join the closure (S227: `orchestration/packs/__init__.py`
+    imported a module the image did not carry).
     """
     seen: set[str] = set()
     queue = list(entrypoints)
@@ -117,12 +120,20 @@ def _first_party_modules(entrypoints: tuple[str, ...]) -> set[str]:
             continue
         seen.add(path)
         module = ast.parse(Path(path).read_text(encoding="utf-8"))
-        for node in _runtime_imports(module):
+        imports = _runtime_imports(module)
+        if path.endswith("__init__.py"):  # a lazy __getattr__ import does not run
+            imports = [node for node in imports if node in module.body]
+        for node in imports:
             if node.module is None or not node.module.startswith(
                 ("agents.", "orchestration.")
             ):
                 continue
-            queue.append(f"{node.module.replace('.', '/')}.py")
+            parts = node.module.split(".")
+            queue.append(f"{'/'.join(parts)}.py")
+            queue.extend(
+                f"{'/'.join(parts[:depth])}/__init__.py"
+                for depth in range(1, len(parts) + 1)
+            )
     return seen
 
 

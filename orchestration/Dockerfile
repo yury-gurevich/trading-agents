@@ -28,6 +28,7 @@ COPY orchestration/hold_answers.py orchestration/hold_answers.py
 COPY orchestration/packs/__init__.py orchestration/packs/__init__.py
 COPY orchestration/packs/trading_run_postures.py orchestration/packs/trading_run_postures.py
 COPY orchestration/packs/trading_run_postures.json orchestration/packs/trading_run_postures.json
+COPY orchestration/packs/us_equities_sp500.py orchestration/packs/us_equities_sp500.py
 COPY orchestration/scheduled_dispatch.py orchestration/scheduled_dispatch.py
 COPY orchestration/scheduled_dispatch_actions.py orchestration/scheduled_dispatch_actions.py
 COPY orchestration/scheduled_dispatch_gate.py orchestration/scheduled_dispatch_gate.py

@@ -10,6 +10,35 @@ and is marked CLOSED here.
 
 ---
 
+## DL-218 - the dispatcher image's import check skipped package `__init__` files - status: DECIDED (chore, 2026-09-25)
+
+**What happened.** S227 merged green (`a4ab16d5`, `GATE PROVEN`), and then the merge build failed on
+**one image of 15**: the dispatcher's calendar-skip smoke. The Dockerfile copied
+`orchestration/packs/__init__.py` for the new `trading_run_postures` loader, and that `__init__`
+imports `orchestration/packs/us_equities_sp500.py`, which the slim image did not carry. So every
+dispatcher fire would have died at import: **no run placed at all**, which is worse than the outage
+S227 exists to soften. The deployed fleet (`s226a`) was never exposed, because the image was never
+published.
+
+**Why CI was green.** `test_dispatcher_image_copies_everything_its_entrypoint_imports` (the S195
+guard) closes the entrypoint over its `from agents.*/orchestration.* import` statements, but
+importing `a.b.c` also executes `a/__init__.py` and `a/b/__init__.py`, and those were never read.
+**Measured:** a simulated slim image (only the Dockerfile's `COPY` set, the repo root removed from
+`sys.path`) reproduces the build's `ModuleNotFoundError` on the old Dockerfile and prints
+`skipped sched-2026-07-04` on the fixed one.
+
+**Decision.** (1) The closure adds each module's parent-package `__init__.py`, counting only its
+**top-level** imports: a lazy `__getattr__` import does not run at package import, and counting
+those would demand ~190 unrelated files. The corrected test named exactly one missing file.
+(2) Copy that file into the image. (3) The smoke step gets `set +e`, as the agent smoke already has:
+under `bash -e` the failing `$(docker run ...)` exited before `printf`, so the build log had no
+traceback.
+
+**Ruled out.** *Make `orchestration/packs/__init__.py` lazy.* That fixes this one import, but the
+test would stay blind to the next package `__init__` that grows an import. *Run the real image
+locally in CI.* Already done: the build's smoke caught this, after the merge. The point is to catch it
+before merging, at `make ci`.
+
 ## DL-217 - degraded runs are a pack-declared posture, not a weaker fleet check - status: DECIDED (S227, 2026-09-24)
 
 **Question.** S227 lets a run proceed when only LLM-only agents are unavailable, but that must not turn

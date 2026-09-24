@@ -11,10 +11,10 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, Any
 
+from agents.reporter.narrative_result import degraded_narrative
 from agents.reporter.result import (
     build_snapshot,
     build_trade_narrative,
-    degraded_narrative,
     degraded_snapshot,
 )
 from agents.reporter.settings import ReporterSettings
@@ -91,7 +91,12 @@ class ReporterAgent(AgentBase):
             capability="report",
             reraise=False,
         ) as capture:
-            result = build_snapshot(self._graph, report_request.run_id)
+            result = build_snapshot(
+                self._graph,
+                report_request.run_id,
+                settings=self._settings,
+                sink=self.sink,
+            )
         if capture.fault is not None:
             return degraded_snapshot(
                 self._graph,

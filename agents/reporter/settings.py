@@ -7,6 +7,8 @@ External I/O: process environment and the .env file.
 
 from __future__ import annotations
 
+from datetime import date
+
 from pydantic_settings import SettingsConfigDict
 
 from kernel import AgentSettings, tunable
@@ -26,4 +28,22 @@ class ReporterSettings(AgentSettings):
         ge=200,
         le=10000,
         unit="chars",
+    )
+    performance_inception: date = tunable(
+        date(2026, 8, 10),
+        why=(
+            "DL-93 flattened the prior leveraged margin book on this date, so "
+            "benchmark performance starts with the resized book."
+        ),
+        unit="date",
+    )
+    performance_rolling_sessions: int = tunable(
+        20,
+        why=(
+            "A trading-month window shows recent benchmark-relative performance "
+            "without replacing the since-inception score."
+        ),
+        ge=5,
+        le=120,
+        unit="sessions",
     )

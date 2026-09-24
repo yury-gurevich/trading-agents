@@ -56,7 +56,7 @@ def test_reporter_payload_fields_required_by_law() -> None:
     _assert_fields(
         reporter.RunSnapshot,
         "run_id portfolio_metrics signal_metrics regime_attribution headline "
-        "provenance",
+        "performance_metrics provenance",
     )
     _assert_fields(reporter.TradeNarrative, "position_id story provenance")
 

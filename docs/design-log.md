@@ -10,6 +10,38 @@ and is marked CLOSED here.
 
 ---
 
+## DL-210 - performance is recomputed from as-of-bounded facts - status: DECIDED (S226, 2026-09-23)
+
+**Question.** How can the reporter say whether a run's book beat its benchmark without silently
+substituting facts learned after that run?
+
+**Decision 1 - choose MarketData by the run's as-of date.** The performance input adapter uses the
+`MarketData` node with the greatest `window_end` no later than the UTC date of `PMRun.created_at`.
+It reads only fresh `BrokerPositionSnapshot` points dated from inception through that date. This
+allows a run with no own benchmark-bearing ingest to be reported while preserving historical
+reproducibility.
+
+**Rejected - latest MarketData.** It may reproduce today's number by accident, but changes the
+answer for an old run whenever later bars arrive.
+
+**Decision 2 - keep calculation in reporter domain code.** The calculator is a graph- and
+bus-free `agents/reporter/domain/performance.py` function. The reporter owns this pack-specific
+projection, and the pure boundary leaves it importable by the later replay harness without moving
+pack vocabulary into `kernel`.
+
+**Rejected - move it into `kernel`.** Benchmark-relative portfolio performance is not a
+cross-pack runtime primitive; putting it there would weaken ADR-0012's pack boundary.
+
+**Decision 3 - use a concise ASCII headline.** A usable result renders
+`vs <ticker>: <excess> pts over <sessions> sessions at <exposure>% invested`, with two decimal
+places. Values that round to zero render as `0.00`, never `-0.00`; the no-data branch names the
+inception and input reason.
+
+**Rejected - raw SPY-only wording or more precision.** Raw SPY ignores the book's cash exposure,
+while extra decimal places add noise to a headline whose reconstructable metrics retain precision.
+
+---
+
 ## DL-209 - the next leg is measured against the index, not against itself - status: DECIDED (operator, 2026-09-23: "plan is very sound - approved"; P20 = repo-steward pack; G-EDGE stays the operator's)
 
 **Question.** With the queue down to one queued and one parked item, where does development go next?

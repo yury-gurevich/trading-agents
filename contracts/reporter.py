@@ -7,6 +7,8 @@ External I/O: none.
 
 from __future__ import annotations
 
+from pydantic import Field
+
 from contracts.common import Explanation, Provenance, _Frozen
 from kernel.contract import AgentContract, Capability
 
@@ -26,6 +28,7 @@ class RunSnapshot(_Frozen):
     portfolio_metrics: dict[str, float]
     signal_metrics: dict[str, float]
     regime_attribution: dict[str, float]
+    performance_metrics: dict[str, float] = Field(default_factory=dict)
     headline: Explanation
     provenance: Provenance
 

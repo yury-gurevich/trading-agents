@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING
 from agents.reporter.domain.lineage import (
     collect_run_lineage,
     collect_trade_lineage,
+    linked_pm_source,
     run_id,
-    run_id_from_position_id,
 )
 from agents.reporter.domain.metrics import (
     collect_portfolio_metrics,
@@ -22,20 +22,40 @@ from agents.reporter.domain.metrics import (
 )
 from agents.reporter.domain.narrative import compose_story
 from agents.reporter.domain.trade_outcomes import collect_trade_outcomes
-from agents.reporter.store import write_snapshot, write_trade_narrative
+from agents.reporter.narrative_result import (
+    degraded_narrative,
+    narrative_result,
+    trim_summary,
+)
+from agents.reporter.performance_inputs import (
+    degraded_performance,
+    performance_projection,
+)
+from agents.reporter.settings import ReporterSettings
+from agents.reporter.snapshot_result import snapshot_headline
+from agents.reporter.store import write_snapshot
 from contracts.common import Explanation
 from contracts.reporter import RunSnapshot, TradeNarrative
+from kernel import CollectingFaultSink
+from kernel.errors import fault_boundary
 
 if TYPE_CHECKING:
-    from kernel import GraphStore, Node
+    from kernel import FaultSink, GraphStore
 
 
-def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
+def build_snapshot(
+    graph: GraphStore,
+    run_id: str,
+    *,
+    settings: ReporterSettings | None = None,
+    sink: FaultSink | None = None,
+) -> RunSnapshot:
     """Build and persist one run snapshot from the provenance graph."""
     pm_run = graph.get_node("PMRun", run_id)
     if pm_run is None:
         return degraded_snapshot(graph, run_id, f"No PMRun found for {run_id}.")
-    lineage_run = _linked_pm_source(graph, pm_run)
+    settings = settings or ReporterSettings()
+    lineage_run = linked_pm_source(graph, pm_run)
     lineage = collect_run_lineage(graph, lineage_run)
     portfolio = collect_portfolio_metrics(
         pm_run, lineage.positions, lineage.close_decisions, lineage.fills
@@ -46,11 +66,34 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
         lineage.recommendations, rejection_count=len(lineage.rejections)
     )
     regime = collect_regime_attribution(lineage.scan_runs, lineage.market_snapshots)
-    headline = _headline(portfolio, signal)
+    performance = degraded_performance(
+        inception=settings.performance_inception,
+        rolling_sessions=settings.performance_rolling_sessions,
+        reason="performance inputs unavailable",
+    )
+    with fault_boundary(
+        sink or CollectingFaultSink(),
+        agent="reporter",
+        module="agents.reporter.result",
+        capability="report.performance",
+        reraise=False,
+    ):
+        performance = performance_projection(
+            graph,
+            pm_run,
+            inception=settings.performance_inception,
+            rolling_sessions=settings.performance_rolling_sessions,
+        )
+    headline = snapshot_headline(portfolio, signal, performance.headline_clause)
     provenance = write_snapshot(
         graph,
         run_id=run_id,
-        metrics_blob={"portfolio": portfolio, "signal": signal, "regime": regime},
+        metrics_blob={
+            "portfolio": portfolio,
+            "signal": signal,
+            "regime": regime,
+            "performance": performance.metrics,
+        },
         headline_summary=headline.summary,
     )
     return RunSnapshot(
@@ -58,6 +101,7 @@ def build_snapshot(graph: GraphStore, run_id: str) -> RunSnapshot:
         portfolio_metrics=portfolio,
         signal_metrics=signal,
         regime_attribution=regime,
+        performance_metrics=performance.metrics,
         headline=headline,
         provenance=provenance,
     )
@@ -80,8 +124,11 @@ def build_trade_narrative(
         lineage.scan_run,
         lineage.close_decision,
     )
-    return _narrative_result(
-        graph, run_id(position), position_id, _trim(story, max_chars)
+    return narrative_result(
+        graph,
+        run_id=run_id(position),
+        position_id=position_id,
+        summary=trim_summary(story, max_chars),
     )
 
 
@@ -105,51 +152,3 @@ def degraded_snapshot(graph: GraphStore, run_id: str, message: str) -> RunSnapsh
         headline=headline,
         provenance=provenance,
     )
-
-
-def degraded_narrative(
-    graph: GraphStore, position_id: str, *, max_chars: int
-) -> TradeNarrative:
-    """Build and persist a non-crashing degraded narrative."""
-    summary = f"No Position found for {position_id}; trade story data unavailable."
-    return _narrative_result(
-        graph,
-        run_id_from_position_id(position_id),
-        position_id,
-        _trim(summary, max_chars),
-    )
-
-
-def _narrative_result(
-    graph: GraphStore, run_id: str, position_id: str, summary: str
-) -> TradeNarrative:
-    provenance = write_trade_narrative(
-        graph, run_id=run_id, position_id=position_id, story=summary
-    )
-    return TradeNarrative(
-        position_id=position_id,
-        story=Explanation(summary=summary, evidence_refs=("reporter.graph",)),
-        provenance=provenance,
-    )
-
-
-def _headline(portfolio: dict[str, float], signal: dict[str, float]) -> Explanation:
-    return Explanation(
-        summary=(
-            f"{portfolio['positions_opened']:.0f} positions opened; "
-            f"{portfolio['positions_closed']:.0f} closed; "
-            f"{signal['recommendation_count']:.0f} recommendations stitched."
-        ),
-        evidence_refs=("portfolio_manager", "execution", "monitor", "analyst"),
-    )
-
-
-def _trim(summary: str, max_chars: int) -> str:
-    return summary if len(summary) <= max_chars else summary[:max_chars]
-
-
-def _linked_pm_source(graph: GraphStore, pm_run: Node) -> Node:
-    """Return immutable source evidence when a resumed PM artifact is linked."""
-    key = pm_run.props.get("linked_from_key")
-    source = graph.get_node("PMRun", str(key)) if key else None
-    return source or pm_run

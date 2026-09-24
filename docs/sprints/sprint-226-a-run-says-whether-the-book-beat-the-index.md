@@ -3,7 +3,7 @@
 
 **Phase:** Next leg, P16 scoreboard ([next-leg-plan.md](../next-leg-plan.md) item E16.1)
 **Branch:** `sprint-226-a-run-says-whether-the-book-beat-the-index`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-209](../design-log.md) (the next leg, accepted 2026-09-23) · the builder records this sprint's design decisions as the next free DL number
@@ -386,15 +386,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `agents/reporter/domain/performance.py` | reporter `laws.md`, reporter `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `RPT-OUT-07`, `RPT-NEV-03`, `RPT-IDN-01` | Yes: define a pure, total projection that returns zero-valued metrics for insufficient usable pairs rather than raising or influencing a decision. |
+| `agents/reporter/performance_inputs.py` | reporter `laws.md`, reporter `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `RPT-IDM-03`, `RPT-NEV-02`, `RPT-CAP` | Yes: inputs must be read-only and explicitly bounded to the UTC PMRun as-of date; MarketData is selected by `window_end`, never by recency alone. |
+| `agents/reporter/result.py` | reporter `laws.md`, reporter `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `RPT-OUT-01`, `RPT-FAIL-01`, `RPT-FAIL-04`, `RPT-ORD-01` | Yes: keep the existing snapshot path intact and isolate performance in its own `fault_boundary`, with no dependency on prior reporter output. |
+| `agents/reporter/settings.py` | reporter `laws.md`, reporter `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `RPT-PARAM` | Yes: both processing controls require bounded `tunable()` declarations and matching PARAM rows. |
+| `contracts/reporter.py` | reporter `laws.md`, reporter `test-plan.md`, `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `RPT-TYP-01`, `RPT-TYP-03` | Yes: use a defaulted `performance_metrics` mapping so existing claim-checked snapshots remain deserializable. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes to both. `RunSnapshot` gains a backward-compatible `performance_metrics` mapping, and the reporter gains date-bounded benchmark-performance guarantees. This sprint therefore amends the locked reporter law to v1.2, adds the three scoped clauses, updates the named existing clauses, CAP/PARAM rows, test-plan rows, and both derived rollups.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None. The existing reporter law confines the reporter to read-only projection, which matches the scope; its absence of benchmark-performance guarantees is addressed by this explicit law cycle.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** None beyond the explicitly scoped new guarantee. The handover supplies the required decision and mandates its same-sprint amendment, so no separate drift row is warranted.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** `RPT-OUT-07`, `RPT-IDM-03`, `RPT-FAIL-04`, and the amended limbs of `RPT-OUT-01`, `RPT-TYP-01`, and `RPT-ORD-01`.
 
 ---
 
@@ -402,48 +406,112 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_performance_worked_example` | `agents/reporter/tests/test_performance.py` | GREEN | `RPT-OUT-07` |
+| A2 | `test_performance_inputs_do_not_read_after_pmrun_as_of` | `agents/reporter/tests/test_performance.py` | GREEN; mutation-proven red | `RPT-IDM-03` |
+| A3 | `test_performance_inputs_exclude_pre_inception_margin_book` | `agents/reporter/tests/test_performance.py` | GREEN | `RPT-OUT-07` |
+| A4 | `test_performance_uses_earliest_fresh_snapshot_per_date` | `agents/reporter/tests/test_performance_snapshot.py` | GREEN | `RPT-OUT-07`, `RPT-IDM-03` |
+| A5 | `test_performance_skips_missing_benchmark_pair_then_continues` | `agents/reporter/tests/test_performance_metrics.py` | GREEN | `RPT-OUT-07` |
+| A6 | `test_performance_returns_zero_when_no_pair_is_usable`; `test_snapshot_names_too_little_data_without_raising` | `agents/reporter/tests/test_performance_metrics.py`; `agents/reporter/tests/test_performance_snapshot.py` | GREEN | `RPT-NEV-03`, `RPT-OUT-07` |
+| A7 | `test_snapshot_names_missing_benchmark_without_raising` | `agents/reporter/tests/test_performance_snapshot.py` | GREEN | `RPT-NEV-03`, `RPT-FAIL-04` |
+| A8 | `test_snapshot_contains_performance_fault_without_losing_other_groups` | `agents/reporter/tests/test_performance_snapshot.py` | GREEN | `RPT-FAIL-04`, `RPT-OUT-01` |
+| A9 | `test_legacy_snapshot_without_performance_metrics_deserializes` | `agents/reporter/tests/test_performance_compat.py` | GREEN | `RPT-TYP-03`, `RPT-TYP-01` |
+| A10 | `test_performance_rolling_metrics_use_only_last_configured_pairs` | `agents/reporter/tests/test_performance_metrics.py` | GREEN | `RPT-OUT-07` |
+| A11 | `test_performance_calculator_import_is_pure` | `agents/reporter/tests/test_performance_metrics.py` | GREEN | `RPT-CAP`, `RPT-OUT-07` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_snapshot_ignores_prior_reporter_performance_output` (`RPT-ORD-01`), malformed-input edge coverage in `test_performance_inputs_edges.py` (`RPT-IDM-03`), the no-fresh-snapshot fallback (`RPT-NEV-03`), the zero-equity drawdown guard (`RPT-OUT-07`), and the reporter field assertion in `test_reporter_payload_fields_required_by_law` (`RPT-TYP-01`).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT, then MERGED at merge)*
+**Status:** BUILT on branch `sprint-226-a-run-says-whether-the-book-beat-the-index`; not merged.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** Red proof ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-red-proof` from `main` `59c0818ad3858dde795162bb77eb9d108f1dced0` with no `.env`. Green unit, line-count, and local gate proofs ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-a-run-says-whether-the-book-beat-the-index` with no `.env`. The read-only reference re-report ran from the S226 worktree against an in-memory graph copy after loading the main checkout `.env`; it performed no live writes.
 
-**Result:** *(builder fills)*
+**Result:** Built the reporter performance group from existing `BrokerPositionSnapshot` and as-of-bounded `MarketData`, exposed it as `RunSnapshot.performance_metrics`, and kept the numbers out of all decision paths and user surfaces. The live reference re-report of `sched-2026-09-22` matched the sprint values to 0.0001 percentage points: portfolio `-0.464357`, benchmark `0.054332`, exposure-matched `0.039868`, excess `-0.504225`, average exposure `21.107334`, max drawdown `-0.863749`, sessions `30`, gaps `0`.
 
-**Files changed:** *(builder fills)*
+**Files changed:** Reporter runtime and tests (`agents/reporter/__init__.py`, `agent.py`, `result.py`, `settings.py`, `domain/lineage.py`, new `domain/performance.py`, `performance_inputs.py`, `narrative_result.py`, `snapshot_result.py`, reporter performance tests), reporter contract (`contracts/reporter.py`), law/test-plan/rollups, sprint/state docs, version files (`pyproject.toml`, `uv.lock`), and `tests/test_contract_required_fields.py`.
 
-**Design decisions:** *(builder fills: the DL number, and where the rejected alternatives are)*
+**Design decisions:** [DL-210](../design-log.md#dl-210---performance-is-recomputed-from-as-of-bounded-facts---status-decided-s226-2026-09-23) records the as-of-bounded `MarketData` selection, pure-domain calculation, separate reporter fault boundary, and the rejected alternatives: latest-only `MarketData`, kernel placement, and feeding performance into decisions.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+tree=C:\Users\yury_\Downloads\project\trading-agents-sprint-226-red-proof; .env absent
+$ uv run pytest agents\reporter\tests\test_performance.py --no-cov
+collected 3 items
+
+agents\reporter\tests\test_performance.py FFF                            [100%]
+
+FAIL agents\reporter\tests\test_performance.py::test_performance_worked_example
+ModuleNotFoundError: No module named 'agents.reporter.domain.performance'
+FAIL agents\reporter\tests\test_performance.py::test_performance_inputs_do_not_read_after_pmrun_as_of
+ModuleNotFoundError: No module named 'agents.reporter.performance_inputs'
+FAIL agents\reporter\tests\test_performance.py::test_performance_inputs_exclude_pre_inception_margin_book
+ModuleNotFoundError: No module named 'agents.reporter.performance_inputs'
+3 failed in 7.68s
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+tree=C:\Users\yury_\Downloads\project\trading-agents-sprint-226-a-run-says-whether-the-book-beat-the-index; .env absent
+$ uv run pytest agents\reporter\tests tests\test_contract_required_fields.py --no-cov
+collected 62 items
+...
+agents\reporter\tests\test_performance.py ...                            [ 14%]
+agents\reporter\tests\test_performance_compat.py .                       [ 16%]
+agents\reporter\tests\test_performance_inputs_edges.py ..                [ 19%]
+agents\reporter\tests\test_performance_metrics.py .....                  [ 27%]
+agents\reporter\tests\test_performance_snapshot.py ......                [ 37%]
+...
+tests\test_contract_required_fields.py ......                            [100%]
+62 passed in 1.78s
+
+read-only reference check, in-memory graph copy, main .env loaded, live_writes=0:
+portfolio_return_pct=-0.464357 benchmark_return_pct=0.054332 exposure_matched_return_pct=0.039868 excess_return_pct=-0.504225 average_exposure_pct=21.107334 max_drawdown_pct=-0.863749 performance_sessions=30.000000 performance_gap_sessions=0.000000
+0 positions opened; 0 closed; 0 recommendations stitched. vs SPY: -0.50 pts over 30 sessions at 21% invested
 ```
 
-**Guards planted:** *(builder fills)*
+**Guards planted:** A1-A3 were red first on a separate main-based red-proof worktree. A2 was then mutation-proven by temporarily removing the `window_end > as_of` filter; the test failed because the future `MarketData` changed the as-of close from `101.0` to `90.0`, then passed after restoration:
 
-**Module line counts:** *(builder fills)*
+```text
+$ uv run pytest agents\reporter\tests\test_performance.py::test_performance_inputs_do_not_read_after_pmrun_as_of --no-cov
+E   assert {datetime.date(2026, 8, 12): 90.0} == {datetime.date(2026, 8, 12): 101.0}
+FAILED agents/reporter/tests/test_performance.py::test_performance_inputs_do_not_read_after_pmrun_as_of
 
-**`make ci`:** *(builder fills: redirect path, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+$ uv run pytest agents\reporter\tests\test_performance.py::test_performance_inputs_do_not_read_after_pmrun_as_of --no-cov
+1 passed in 0.90s
+```
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, and the output)*
+**Module line counts:** `agents/reporter/result.py` 154; `agents/reporter/performance_inputs.py` 190; `agents/reporter/domain/performance.py` 128; `agents/reporter/domain/lineage.py` 179; `agents/reporter/snapshot_result.py` 49; `agents/reporter/tests/test_performance_snapshot.py` 163; `agents/reporter/tests/test_performance_inputs_edges.py` 104.
 
-**Not met / verified failing:** *(builder fills)*
+**`make ci`:** Redirected to `C:\Users\yury_\Downloads\project\s226-make-ci.log` from the S226 worktree with `.env` absent; exit code `0`.
+
+```text
+uv run ruff check . --output-format=github
+uv run ruff format --check .
+uv run mypy kernel contracts agents orchestration surfaces
+uv run python scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts
+uv run python scripts/check_law_coverage.py
+uv run python scripts/check_param_law_sync.py
+uv run python scripts/check_sprint_status.py
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+3119 passed, 6 skipped in 111.81s (0:01:51)
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 9 new file(s)
+```
+
+**`make gate-ran`:** PENDING - branch has not yet been pushed.
+
+**Not met / verified failing:** Not merged to `main`; not deployed; no next scheduled run has emitted a production `Snapshot` with the new metrics yet; no post-deploy functionality-check row was appended.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- S226 is built and locally reporter-proven. The remaining lifecycle steps are branch push, remote gates, `make gate-ran`, merge, image-only retag/deploy, and the next-run live `Snapshot` check.
+- The contract field uses `Field(default_factory=dict)` instead of a literal `{}` so the mutable default passes the repo's ruff rules while preserving the required empty-map default behavior.
+- There is no `docs/local/STATE.md` in this checkout; the sprint state update is recorded in `docs/STATE.md`.

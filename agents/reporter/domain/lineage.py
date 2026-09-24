@@ -138,6 +138,13 @@ def run_id_from_position_id(position_id: str) -> str:
     return position_id.split(":", 1)[0]
 
 
+def linked_pm_source(graph: GraphStore, pm_run: Node) -> Node:
+    """Return immutable source evidence when a resumed PM artifact is linked."""
+    key = pm_run.props.get("linked_from_key")
+    source = graph.get_node("PMRun", str(key)) if key else None
+    return source or pm_run
+
+
 def _market_lineage(
     graph: GraphStore, recommendations: tuple[Node, ...]
 ) -> tuple[tuple[Node, ...], tuple[Node, ...]]:

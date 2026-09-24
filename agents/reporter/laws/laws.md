@@ -1,6 +1,6 @@
 # `Reporter` — Laws
 
-**Prefix:** `RPT` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `RPT` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Stitch each completed run and each trade into durable, human-readable metrics and
 > narrative — the truth surface the dashboard and operator read.
@@ -38,7 +38,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Outputs (`OUT`)
 
 - **RPT-OUT-01** — `report` returns `RunSnapshot { run_id, portfolio_metrics, signal_metrics,
-  regime_attribution, headline, provenance }`.
+  regime_attribution, performance_metrics, headline, provenance }`.
 - **RPT-OUT-02** — `portfolio_metrics` includes at minimum `profit_factor`, `expectancy_cents`,
   `closed_trades_with_pnl`; derived from `CloseDecision.pnl_cents` across all trigger types.
 - **RPT-OUT-03** — `narrative` returns `TradeNarrative { position_id, story, provenance }`.
@@ -48,6 +48,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `report` completes, so the dispatcher can observe pipeline completion.
 - **RPT-OUT-06** — Degraded path: if graph traversal fails, a `degraded_snapshot` (minimal
   provenance, empty metrics) is returned and the fault is recorded. Never a crash.
+- **RPT-OUT-07** — `report` returns `performance_metrics`: return on the book against the
+  benchmark, from `performance_inception` to the run's as-of date. It is computed only from facts
+  other agents wrote: fresh `BrokerPositionSnapshot` equity and holdings, and benchmark bars on
+  `MarketData`.
 
 ## Prohibitions (`NEV`)
 
@@ -71,10 +75,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   mutated.
 - **RPT-IDM-02** — `run_id` is threaded from the `ReportRequest` into the Snapshot provenance and
   the `report.snapshot.ready` event.
+- **RPT-IDM-03** — The performance as-of date is the UTC date of `PMRun.created_at`. No fact dated
+  after it is read, so re-reporting an old run reproduces its figures even after the graph grows.
 
 ## Ordering & concurrency (`ORD`)
 
-- **RPT-ORD-01** — No cross-run dependency. Each `report(run_id)` is independent.
+- **RPT-ORD-01** — No cross-run ordering dependency. Reading upstream facts recorded by earlier
+  runs is allowed; depending on the reporter's own earlier output is not.
 - **RPT-ORD-02** — Concurrent calls for the same `run_id` produce duplicate Snapshot nodes; no
   data corruption because all writes are append-only.
 
@@ -86,14 +93,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `degraded_narrative` is returned.
 - **RPT-FAIL-03** — All faults are non-terminal: the pipeline continues whether or not the
   reporter succeeds.
+- **RPT-FAIL-04** — Performance input or calculation failure is contained. The rest of the
+  snapshot is still produced, `performance_metrics` reports zero sessions, and a fault is recorded.
 
 ## Type alignment (`TYP`)
 
 - **RPT-TYP-01** — The reporter payload types carry, at minimum, the fields its own clauses
   require; the clause, not `contracts/reporter.py`, is the authority on what must be present.
   `RunSnapshot` carries `run_id`, `portfolio_metrics`, `signal_metrics`, `regime_attribution`,
-  `headline`, and `provenance` (`RPT-OUT-01`/`RPT-OUT-02`/`RPT-OUT-06`). `TradeNarrative` carries
-  `position_id`, `story`, and `provenance` (`RPT-OUT-03`).
+  `performance_metrics`, `headline`, and `provenance`
+  (`RPT-OUT-01`/`RPT-OUT-02`/`RPT-OUT-06`/`RPT-OUT-07`). `TradeNarrative` carries `position_id`,
+  `story`, and `provenance` (`RPT-OUT-03`).
 - **RPT-TYP-02** — `portfolio_metrics` is a `dict[str, float]`; `expectancy_cents` is float
   (integer cents represented as float); no type coercion silently drops precision.
 - **RPT-TYP-03** — `ReportSnapshotResult` graph node payload matches `RunSnapshot` schema so
@@ -140,7 +150,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     "labels_owned": ["Snapshot", "TradeNarrative", "ReportSnapshotResult"],
     "labels_read": [
       "PMRun", "OrderIntent", "Fill", "CloseDecision", "Position",
-      "Recommendation", "ScanRun", "Candidate", "AnalystRun", "MonitorRun"
+      "Recommendation", "ScanRun", "Candidate", "AnalystRun", "MonitorRun",
+      "BrokerPositionSnapshot", "MarketData"
     ]
   }
 }
@@ -151,6 +162,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
 | `max_narrative_length_chars` | `2000` | `int ≥ 200 ≤ 10000` | YES | Cap narrative length for dashboard rendering; future-proofs against deeper graph |
+| `performance_inception` | `2026-08-10` | `date` | YES | Start benchmark scoring after DL-93 flattened and resized the prior leveraged margin book (`REPORTER_PERFORMANCE_INCEPTION`) |
+| `performance_rolling_sessions` | `20` | `int ≥ 5 ≤ 120` | YES | Trading-month rolling window beside since-inception performance (`REPORTER_PERFORMANCE_ROLLING_SESSIONS`) |
 
 ## Divergence register
 
@@ -164,3 +177,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.1 — S205 rewrites `RPT-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `RunSnapshot` and `TradeNarrative`. `RPT-TYP-03` remains a separate
   claim-check serialization-shape clause. No contract shape changes.
+- v1.2 — S226 adds benchmark-relative performance metrics bounded to the PM run as-of date,
+  records the needed CAP/PARAM rows, and makes performance failures contained within `report`.

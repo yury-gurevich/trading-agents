@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 
 from surfaces.dashboard.hold_answer_panel import hold_answer_panel
 from surfaces.dashboard.projections import run_stages, run_verdict
-from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_recovery
 from surfaces.dashboard.projections_summary import (
     _as_int,
@@ -23,6 +22,8 @@ from surfaces.dashboard.projections_summary import (
     _summary,
 )
 from surfaces.dashboard.projections_vitals import vitals_projection
+from surfaces.dashboard.time_windows import next_master_wake
+from surfaces.queries.fleet_check import readiness_override
 
 if TYPE_CHECKING:
     from kernel import GraphStore
@@ -46,15 +47,19 @@ def verdict_projection(
     vitals = vitals_projection(graph, azure, settings, run_id, now=now, github=github)
     recovery = run_recovery(graph, run_id)
     projected = project_verdict(acceptance, stages, vitals, recovery)
+    current = now or datetime.now(tz=UTC)
     override = readiness_override(
         graph,
-        now=now or datetime.now(tz=UTC),
+        now=current,
         max_age_minutes=settings.readiness_failure_max_age_minutes,
     )
+    # The fleet check is about tonight's run, not the selected one: it travels
+    # beside the run's own verdict for the page banner and never overwrites it.
     if override is not None:
-        projected["light"] = "RED"
-        projected["summary"] = override["summary"]
-        projected["readiness"] = override
+        projected["readiness"] = {
+            **override,
+            "next_check": next_master_wake(settings, current),
+        }
         panel = hold_answer_panel(graph)
         if panel is not None:
             projected["hold_actions"] = panel

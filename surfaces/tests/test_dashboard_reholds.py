@@ -109,10 +109,11 @@ def test_rehold_after_release_creates_active_hold_with_new_evidence() -> None:
     assert is_active_run_hold(latest) is True
     assert latest.props["readiness_state"] == "failing"
     assert tuple(latest.props["failures"]) == new_failures
-    assert _payload(graph, now=reheld_at)["light"] == "RED"
+    readiness = cast("dict[str, object]", _payload(graph, now=reheld_at)["readiness"])
+    assert readiness["state"] == "held"
 
 
-def test_stale_check_after_release_keeps_dashboard_red() -> None:
+def test_stale_check_after_release_keeps_the_hold_visible() -> None:
     """DRIFT-068: a stale check after release creates a visible unknown hold."""
 
     graph = cascade_graph("app-run")
@@ -139,7 +140,7 @@ def test_stale_check_after_release_keeps_dashboard_red() -> None:
 
     assert rehold is not None
     assert rehold.state == "unknown"
-    assert payload["light"] == "RED"
+    assert "readiness" in payload
     assert rehold.node_key == "hold:sched-2026-09-20:1"
     assert cast("dict[str, object]", payload["readiness"])["state"] == "held"
 
@@ -150,7 +151,8 @@ def test_held_run_with_no_check_names_missing_fleet_check() -> None:
     graph = cascade_graph("app-run")
     assert _hold(graph, now=_NOW) is not None
 
-    summary = str(_payload(graph, now=_NOW)["summary"])
+    readiness = cast("dict[str, object]", _payload(graph, now=_NOW)["readiness"])
+    summary = str(readiness["summary"])
 
     assert "0 check(s)" not in summary
     assert "no recent fleet check" in summary

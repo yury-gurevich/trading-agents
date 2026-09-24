@@ -10,7 +10,10 @@ and is marked CLOSED here.
 
 ---
 
-## DL-210 - performance is recomputed from as-of-bounded facts - status: DECIDED (S226, 2026-09-23)
+## DL-215 - performance is recomputed from as-of-bounded facts - status: DECIDED (S226, 2026-09-23)
+
+*Renumbered at merge (planner, 2026-09-24): the builder filed this as DL-210, a number `main` had already
+given to the Anthropic drain while S226 was in flight.*
 
 **Question.** How can the reporter say whether a run's book beat its benchmark without silently
 substituting facts learned after that run?
@@ -39,6 +42,196 @@ inception and input reason.
 
 **Rejected - raw SPY-only wording or more precision.** Raw SPY ignores the book's cash exposure,
 while extra decimal places add noise to a headline whose reconstructable metrics retain precision.
+
+## DL-214 - an LLM-only outage should hold the buys, not the whole run - status: PROPOSED (operator, 2026-09-24: "not right now, but put it as next item after S226 comes back and checked in"; work-queue item 85)
+
+**Question** (operator): *would LLM issues prevent us from fetching an order confirmation from Alpaca?*
+Technically no - reading an order is a plain broker call. In practice yes: fills are read, recorded and
+stop-protected only inside a run, and the S218 gate holds the **whole** run when any required check
+fails. With the Anthropic key drained (DL-210), the only failures are the four LLM agents,
+yet broker sync, fill recording and stop placement are held with them.
+
+**The live cost.** `sched-2026-09-23`'s BMY buy (16 @ limit 61.82, day; last close 61.18) is at the
+broker and can fill at tonight's open. Its protective stop is placed by the *next* run - held until
+`sched-2026-09-28`.
+
+**Proposed.** When every failing check belongs to an agent the non-buy path does not need, the
+dispatcher places a **degraded** run: position sync, fill recording, stop placement and the monitor
+run; new buys are held. The run records its degraded posture so acceptance does not read it as a clean
+night.
+
+**Open, for the spec.** (1) This partially reverses **item 58** (*the fleet does not start with any
+subsystem unfunded*) - the operator decided that, so the spec asks, not assumes. (2) Which agents a
+degraded run needs must come from the pack, not a hard-coded list (ADR-0012). (3) Whether *sells* the
+monitor raises still need the deliberator - ADR-0022 says the veto gates buys, never exits, so likely
+not.
+
+**Ruled out for now.** *Fetch fills outside a run* (a standalone broker poller) - it would duplicate
+execution's fill path and its lineage writes; the run already owns that, the gate is what is too coarse.
+
+---
+
+## DL-213 - a failed fleet check stands until the next one replaces it, and the alert says when that is - status: DECIDED (planner, 2026-09-24, found verifying DL-212 live)
+
+**Measured while proving DL-212 on the restarted dashboard (12:03 AEST).** *System status* still said
+*"System health is green."* The code was live; the evidence was old. The newest `FleetPreflight`
+was **00:26 UTC** - none since - because the master only runs inside its scale window
+(`$MasterScaleStart` **20:25** to `$ScaleEnd` **00:30** UTC, 06:25-10:30 Melbourne). DL-212's status
+used the dispatcher's `preflight_max_age_minutes` (**70**), so a 97-minute-old failure read as
+*unknown* and the line vanished. The banner used `readiness_failure_max_age_minutes` (**180**), so it
+would have vanished at ~03:26 UTC and left the page quiet for ~17 hours before the next check - while
+its own text promised *"the master re-checks about every hour"*.
+
+**Decided.**
+
+- **Display staleness is not dispatch staleness.** The dispatcher is right to refuse a check older
+  than 70 minutes *at fire time*; a person reading the page needs the last result until the next one
+  replaces it. Both display surfaces now use a day (`LAST_CHECK_HORIZON_MINUTES` for status; the
+  dashboard tunable's default becomes **1440**, bound raised to 2880).
+- **The alert names the next check.** Outside the master's window it reads *"next check <time>, when
+  the master wakes"* (`next_master_wake`, from the dashboard's existing `master_window_start_utc` /
+  `window_end_utc`); inside it keeps *"about every hour"*.
+
+**Ruled out.** *Wake the master hourly all day* - a standing replica costs money against a check whose
+answer cannot change until someone acts; the gap is a display defect, not a monitoring one.
+
+---
+
+## DL-212 - the chat's status names a failing fleet check, and a vendor error reads as a sentence - status: DECIDED (planner, 2026-09-24, operator's screenshot after DL-211)
+
+**What the operator's screenshot showed** (11:50 AEST, the old dashboard still running): in the chat,
+*System status* answered **"System health is green."** while the fleet check was failing, and *Explain
+this run* answered with the raw SDK text *"Error code: 400 - {'type': 'error', 'error': {'type':
+'invalid_request_error', 'message': 'Your credit balance is too low …'}, 'request_id': …}"*.
+
+**Causes, measured.**
+
+1. *Status* is the supervisor's health, which counts live faults and critical flags
+   (`surfaces/queries/health.py`, DL-208). A failing `FleetPreflight` writes neither, so health is
+   green by its own definition - the same blind spot DL-211 found in the dashboard, one surface over.
+2. The operator relays `str(exc)` over the bus as an error message; `surfaces/mcp_tools.dispatch_tool`
+   passed that text through, as it did for any exception.
+
+**Decided.**
+
+- `status` (the MCP/CLI tool behind the chat's *System status*) prepends the fleet-check line from the
+  same `readiness_override` the banner uses - now `surfaces/queries/fleet_check.py`, moved out of the
+  dashboard package so CLI and chat share one wording - and adds `fleet_check: failing|held|passing`.
+  Staleness uses the dispatcher's own `preflight_max_age_minutes`, so status says what the gate will do.
+- `dispatch_tool` rewrites a vendor status error - raised or returned - into *"The language model
+  refused the request (HTTP 400): <the vendor's message>"*. Any other error text passes through.
+
+**Ruled out.**
+
+- *Make the supervisor's health go red on a failing check* - health is law-governed (supervisor
+  book) and means "faults and flags"; widening it changes every consumer and the operator's incident
+  count. The surface adds the line instead; health keeps its meaning.
+- *Catch the vendor exception type in the operator* - the text crosses the bus as a string, so a typed
+  catch would need an operator law cycle for a wording fix. The pattern is the SDKs' documented
+  `Error code: N - body` form, shared by Anthropic and OpenAI; unknown text is never rewritten.
+
+---
+
+## DL-211 - a failing fleet check is a page alert about tonight's run, not the selected run's verdict - status: DECIDED (planner, 2026-09-24, operator: "change the location of this message", and asked why nothing else was screaming)
+
+**What was on the screen** (headless render, 2026-09-24 11:28 AEST, during DL-210's drain). The hero
+labelled *Selected run* read, in its RED headline, *"Fleet check failing (4) —
+unrecoverable:deliberator-manager:anthropic:unrecoverable:http_400; next check in about an hour"* -
+over `sched-2026-09-23`, a run that did its job. Everything else on the page was green or neutral:
+header *AWAITING FILLS*, every vital chip green, *next fire 2026-09-24 22:30 UTC* in grey, the run
+cards all ticked, *Run result: not proven yet*.
+
+**Why nothing else reacted - three causes, all measured:**
+
+1. **Only one consumer.** S218 wired `readiness_override` into `verdict_projection` alone; no vital,
+   rail or chip read it. The check's only voice was an overwrite of another object's headline.
+2. **It is a forecast, and the loud channels are for facts.** The dispatcher writes a `RunHold` - and
+   S219's Telegram asks the human - only when the cron fires at 22:30 UTC. Before then a failing
+   `FleetPreflight` is a prediction, and no `Fault` is written, so health stays green by definition.
+3. **The next-fire chip reads the cron, not the gate.** It said the run would fire at 22:30 when the
+   gate had already decided it would not.
+
+**Decided.**
+
+- The fleet check becomes a **page-level banner above the run hero** (`#fleet-alert`): headline
+  *"Tonight's run will be held unless the next fleet check passes"* (failing) or *"Tonight's run is
+  held — …"* (held), one line per cause grouped from the failure strings (*"anthropic answered HTTP
+  400 — 4 agents can't start: …"*), the last-check time, and the hold-answer buttons.
+- **The run hero keeps its own run's verdict.** `readiness` still rides the verdict payload, but it no
+  longer rewrites `light` or `summary`.
+- **The next-fire chip and the hero's *Next fire* say *"— will be held"*** and turn red while the
+  alert stands (`next_fire_held` on `/api/vitals`, which now receives the app clock like `/api/verdict`).
+- **Every dashboard timestamp renders in Melbourne 24-hour**, DST-aware, via the one `ts()` formatter.
+  The operator asked "my time" twice on 2026-09-24 against a chip reading UTC.
+
+**Ruled out.**
+
+- *Keep the hero RED and also add the banner* - two RED surfaces for one cause, and the hero would go
+  on contradicting its own run cards, the exact DL-207 failure.
+- *Write a `Fault` for a failing preflight so health goes red* - it would turn a forecast into an
+  incident and double-count once the hold is written; the hold plus Telegram is the incident.
+- *Send Telegram at the first failing check* - S219's retry-then-ask ladder is deliberate (item 58);
+  paging on a check that may pass within the hour is the cry-wolf DL-125 warned about.
+
+**Residue, named.** The *Fleet lifecycle* rail still lists the four agents *active* from last night's
+activation - it shows what happened, not what will; the banner now says what will. Server-side strings
+that carry their own `UTC` (the hold panel's *act by*) are unchanged.
+
+---
+
+## DL-210 - the Anthropic key is drained until Sunday, and the fleet preflight now holds the run rather than letting the debate fail open - status: RECORDED (operator, 2026-09-24: "hard stop" until the limit resets Sunday 2026-09-27)
+
+**What the operator reported.** The run failed because the Anthropic access limit ran out; it
+resets on Sunday 2026-09-27. A hard stop.
+
+**Measured** (planner, 2026-09-24 01:04 UTC, the main checkout's `.env`):
+
+| Check | Result |
+| --- | --- |
+| One-token `messages.create` on `ANTHROPIC_API_KEY` | `400 invalid_request_error - "Your credit balance is too low to access the Anthropic API"` |
+| `sched-2026-09-23` batch trace | **8/8 stages, OK**; 1 buy submitted |
+| Its `DeliberationRun` (22:41 UTC) | `real_debate_count=1`, `failed_open_count=0` - the key still worked then |
+| Faults since 2026-09-22 | **0** |
+
+So the key drained **after 22:41 UTC on 2026-09-23**; what spent it is *not measured*. 🪤 The error
+text names no date - unlike DL-99's `"You will regain access on 2026-09-01"`, a credit-balance
+error does not promise its own reset. The Sunday date is the operator's, not the API's: **re-probe
+before Monday's run** rather than assuming it.
+
+**Why this is not DL-99 again.** In August a drained key only failed the debate *open* (S147):
+the peers started, every call raised, the fail-open verdict stood. Since the master's credential
+probes, `anthropic` is a **required** probe for `operator`, `deliberator-manager`,
+`deliberator-proponent` and `deliberator-opponent`
+(`orchestration/packs/trading_credential_tests.json`), and a required failure raises
+`ActivationRefused` after writing an escalation (`agents/master/activation_credentials.py`). So
+until the key is refilled those four agents **never start**:
+
+- 🔴 **Corrected the same day - the run does not happen at all.** The first version of this entry
+  said buys would submit unvetoed after the 900 s grace. That traced the *activation* half and
+  stopped. The master's hourly `FleetPreflight` records the same four failures (**failing** at
+  23:26 and 00:26 UTC; **passed** at 22:26 UTC), and the deployed dispatcher (`s225`, which contains
+  S218) **holds every scheduled run whose latest preflight did not pass**
+  (`orchestration/fleet_readiness.py`, `orchestration/scheduled_dispatch.py`). So there are no buys,
+  no debate, **no monitor pass and no position sync** until a preflight passes. The dashboard's
+  *"Fleet check failing (4)"* is this gate, and it is telling the truth.
+- *Exits already at the broker* stay live - stops are broker-side orders.
+- 🪤 **An order placed before the drain can fill with no stop behind it.** Execution places a
+  position's protective stop on the run *after* the fill (SCHW/CSCO: filled 13:31 UTC, stops placed
+  22:42 UTC). `sched-2026-09-23`'s **BMY buy (16 @ limit 61.82, day)** can fill at tonight's open, and
+  its stop would then wait for the first un-held run - `sched-2026-09-28`, after Monday's close.
+- *Operator chat* is dark.
+
+**Held:** `sched-2026-09-24` and `sched-2026-09-25`. First run after the reset: `sched-2026-09-28`.
+
+**Ruled out, and why.**
+
+- *Pause the fleet* - moot; the S218 gate is already holding the runs.
+- *Switch the deliberator to OpenAI* (`llm_provider`, DL-100) - it would not clear the `operator`
+  probe, which is Anthropic-only (`OPR-DEP-01`), so the preflight would still fail and the run still hold.
+- *Top up the credit* - money is the operator's call; they named Sunday.
+
+**Owed:** re-probe the key before `sched-2026-09-28`, then read that run's `DeliberationRun` for
+`real_debate_count > 0`. S226 is unaffected - it needs no LLM.
 
 ---
 

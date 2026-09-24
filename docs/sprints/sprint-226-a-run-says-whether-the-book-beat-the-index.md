@@ -432,7 +432,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Files changed:** Reporter runtime and tests (`agents/reporter/__init__.py`, `agent.py`, `result.py`, `settings.py`, `domain/lineage.py`, new `domain/performance.py`, `performance_inputs.py`, `narrative_result.py`, `snapshot_result.py`, reporter performance tests), reporter contract (`contracts/reporter.py`), law/test-plan/rollups, sprint/state docs, version files (`pyproject.toml`, `uv.lock`), and `tests/test_contract_required_fields.py`.
 
-**Design decisions:** [DL-210](../design-log.md#dl-210---performance-is-recomputed-from-as-of-bounded-facts---status-decided-s226-2026-09-23) records the as-of-bounded `MarketData` selection, pure-domain calculation, separate reporter fault boundary, and the rejected alternatives: latest-only `MarketData`, kernel placement, and feeding performance into decisions.
+**Design decisions:** [DL-215](../design-log.md#dl-215---performance-is-recomputed-from-as-of-bounded-facts---status-decided-s226-2026-09-23) records the as-of-bounded `MarketData` selection, pure-domain calculation, separate reporter fault boundary, and the rejected alternatives: latest-only `MarketData`, kernel placement, and feeding performance into decisions.
 
 **Proof — the red run first:**
 

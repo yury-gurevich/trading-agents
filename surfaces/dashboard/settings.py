@@ -151,12 +151,12 @@ class DashboardSettings(AgentSettings):
         "22:30", why="The dispatcher's first placing tick, _ACTION_START (test-pinned)."
     )
     readiness_failure_max_age_minutes: int = tunable(
-        180,
+        1440,
         why=(
-            "Keep the dashboard readiness warning visible through the next "
-            "hourly check."
+            "Keep a failed fleet check visible until the next one replaces it. The "
+            "master checks only inside its daily window, so that can be ~20 h away."
         ),
         ge=10,
-        le=360,
+        le=2880,
         unit="minutes",
     )

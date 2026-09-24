@@ -1,7 +1,7 @@
 """Dashboard readiness-override tests.
 
 Agent: surfaces
-Role: show held or failing fleet readiness in the master verdict.
+Role: show held or failing fleet readiness as a page alert beside the run verdict.
 External I/O: none.
 """
 
@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, cast
 
 from surfaces.dashboard import build_app
-from surfaces.dashboard.projections_readiness import _failures
+from surfaces.queries.fleet_check import _failures, problem_lines
 from surfaces.tests.dashboard_fakes import FakeAzureReader
 from surfaces.tests.test_dashboard_app import invoke
 from surfaces.tests.test_dashboard_costs import _settings
@@ -64,33 +64,68 @@ def _failed_graph() -> InMemoryGraphStore:
     return graph
 
 
-def test_held_run_forces_red_dashboard_readiness_verdict() -> None:
+def test_held_run_is_a_page_alert_and_leaves_the_run_verdict_alone() -> None:
+    baseline = _payload(cascade_graph("app-run"))
     payload = _payload(_held_graph())
 
-    assert payload["light"] == "RED"
-    assert str(payload["summary"]).startswith(
-        "Tonight's run is held: 2 check(s) failing"
+    assert payload["light"] == baseline["light"]
+    assert payload["summary"] == baseline["summary"]
+    readiness = cast("dict[str, object]", payload["readiness"])
+    assert readiness["state"] == "held"
+    assert readiness["headline"] == (
+        "Tonight's run is held — the fleet check is failing"
     )
-    assert payload["readiness"] == {
-        "state": "held",
-        "summary": payload["summary"],
-        "failures": [
-            "unrecoverable:provider:fmp:unrecoverable:http_402",
-            "transient:master:vault:TimeoutError",
-        ],
-    }
+    assert readiness["problems"] == [
+        "fmp answered HTTP 402 — 1 agent can't start: provider",
+        "vault failed: TimeoutError — 1 agent can't start: master",
+    ]
+    assert readiness["failures"] == [
+        "unrecoverable:provider:fmp:unrecoverable:http_402",
+        "transient:master:vault:TimeoutError",
+    ]
 
 
-def test_recent_failing_preflight_forces_red_dashboard_readiness_verdict() -> None:
+def test_recent_failing_preflight_warns_tonight_without_touching_the_run() -> None:
+    baseline = _payload(cascade_graph("app-run"))
     payload = _payload(_failed_graph())
 
-    assert payload["light"] == "RED"
-    assert str(payload["summary"]).startswith("Fleet check failing (1)")
-    assert payload["readiness"] == {
-        "state": "failing",
-        "summary": payload["summary"],
-        "failures": ["unrecoverable:provider:fmp:unrecoverable:http_402"],
-    }
+    assert payload["light"] == baseline["light"]
+    assert payload["summary"] == baseline["summary"]
+    readiness = cast("dict[str, object]", payload["readiness"])
+    assert readiness["state"] == "failing"
+    assert readiness["headline"] == (
+        "Tonight's run will be held unless the next fleet check passes"
+    )
+    assert readiness["checked_at"] == "2026-09-20T22:00:00+00:00"
+    assert readiness["problems"] == [
+        "fmp answered HTTP 402 — 1 agent can't start: provider"
+    ]
+
+
+def test_one_credential_refused_for_four_agents_reads_as_one_cause() -> None:
+    failures = (
+        *(
+            f"unrecoverable:{agent}:anthropic:unrecoverable:http_400"
+            for agent in ("deliberator-manager", "deliberator-opponent", "operator")
+        ),
+        "not-a-structured-failure",
+    )
+
+    assert problem_lines(failures) == [
+        "anthropic answered HTTP 400 — 3 agents can't start: "
+        "deliberator-manager, deliberator-opponent, operator",
+        "not-a-structured-failure",
+    ]
+
+
+def test_vitals_mark_the_next_fire_held_only_while_the_check_fails() -> None:
+    def held(graph: InMemoryGraphStore) -> object:
+        app = build_app(graph, FakeAzureReader(), _settings(), now=_NOW)
+        body = json.loads(invoke(app, "/api/vitals?run=app-run")[2])
+        return body["next_fire_held"]
+
+    assert held(_failed_graph()) is True
+    assert held(cascade_graph("app-run")) is False
 
 
 def test_passing_preflight_leaves_existing_verdict_payload_unchanged() -> None:
@@ -134,13 +169,11 @@ def test_held_run_without_failure_list_uses_a_safe_summary() -> None:
 
     payload = _payload(graph)
 
-    assert payload["readiness"] == {
-        "state": "held",
-        "summary": (
-            "Tonight's run is held: 0 check(s) failing — no failure detail recorded"
-        ),
-        "failures": [],
-    }
+    readiness = cast("dict[str, object]", payload["readiness"])
+    assert readiness["summary"] == (
+        "Tonight's run is held — the fleet check is failing: no failure detail recorded"
+    )
+    assert readiness["failures"] == []
 
 
 def test_failure_helper_handles_non_mapping_properties() -> None:

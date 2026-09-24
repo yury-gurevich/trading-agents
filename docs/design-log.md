@@ -43,6 +43,8 @@ inception and input reason.
 **Rejected - raw SPY-only wording or more precision.** Raw SPY ignores the book's cash exposure,
 while extra decimal places add noise to a headline whose reconstructable metrics retain precision.
 
+---
+
 ## DL-214 - an LLM-only outage should hold the buys, not the whole run - status: PROPOSED (operator, 2026-09-24: "not right now, but put it as next item after S226 comes back and checked in"; work-queue item 85)
 
 **Question** (operator): *would LLM issues prevent us from fetching an order confirmation from Alpaca?*

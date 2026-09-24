@@ -3,7 +3,7 @@
 
 **Phase:** Next leg, P16 scoreboard ([next-leg-plan.md](../next-leg-plan.md) item E16.1)
 **Branch:** `sprint-226-a-run-says-whether-the-book-beat-the-index`
-**Status:** BUILT
+**Status:** MERGED `e8959675`
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-209](../design-log.md) (the next leg, accepted 2026-09-23) · the builder records this sprint's design decisions as the next free DL number
@@ -424,7 +424,7 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Closeout — evidence
 
-**Status:** BUILT and BRANCH-GATED on branch `sprint-226-a-run-says-whether-the-book-beat-the-index`; not merged.
+**Status:** MERGED `e8959675` (tag `v0.110.00`, 2026-09-24) — built and branch-gated at `c433c414`; the planner merged `main` into the branch (DL-210 → DL-215 renumber, version kept `0.110.00`) and `GATE PROVEN` the merge commit before the fast-forward. Not deployed.
 
 **Tree the proofs ran in (and `.env` present?):** Red proof ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-red-proof` from `main` `59c0818ad3858dde795162bb77eb9d108f1dced0` with no `.env`. Green unit, line-count, and local gate proofs ran in `C:\Users\yury_\Downloads\project\trading-agents-sprint-226-a-run-says-whether-the-book-beat-the-index` with no `.env`. The read-only reference re-report ran from the S226 worktree against an in-memory graph copy after loading the main checkout `.env`; it performed no live writes.
 

@@ -42,4 +42,12 @@ So the intended test is wider than the replay above: a **shadow path** beside th
 every typed decision at every stage is also put to Jev, with agreement against the LLM recorded per
 stage and per decision. Jev never decides anything on that path.
 
+**Access provisioned 2026-09-24.** The operator supplied an API key: it lives in `.env` as
+`TYPESAFE_API_KEY` and in Key Vault (`trading-agents-kv`) as `typesafe-api-key`, and the two match.
+Probe: `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer`, model `jev-latest`, one
+`noul` question → **HTTP 200 in 1.25 s**, served by `jev-1.13.0`, answer 0.97, 287 input / 22 output
+tokens. 🟠 **Not yet wired:** no vault-seed entry, no secret-map grant, no master credential probe — those
+belong to the sprint that builds the shadow path, so master can test the key before any agent gets it
+(DL-36).
+
 **Status:** uncommitted — the operator wants it built; not yet specced or ranked.

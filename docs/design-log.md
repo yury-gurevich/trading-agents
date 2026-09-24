@@ -10,6 +10,41 @@ and is marked CLOSED here.
 
 ---
 
+## DL-212 - the chat's status names a failing fleet check, and a vendor error reads as a sentence - status: DECIDED (planner, 2026-09-24, operator's screenshot after DL-211)
+
+**What the operator's screenshot showed** (11:50 AEST, the old dashboard still running): in the chat,
+*System status* answered **"System health is green."** while the fleet check was failing, and *Explain
+this run* answered with the raw SDK text *"Error code: 400 - {'type': 'error', 'error': {'type':
+'invalid_request_error', 'message': 'Your credit balance is too low …'}, 'request_id': …}"*.
+
+**Causes, measured.**
+
+1. *Status* is the supervisor's health, which counts live faults and critical flags
+   (`surfaces/queries/health.py`, DL-208). A failing `FleetPreflight` writes neither, so health is
+   green by its own definition - the same blind spot DL-211 found in the dashboard, one surface over.
+2. The operator relays `str(exc)` over the bus as an error message; `surfaces/mcp_tools.dispatch_tool`
+   passed that text through, as it did for any exception.
+
+**Decided.**
+
+- `status` (the MCP/CLI tool behind the chat's *System status*) prepends the fleet-check line from the
+  same `readiness_override` the banner uses - now `surfaces/queries/fleet_check.py`, moved out of the
+  dashboard package so CLI and chat share one wording - and adds `fleet_check: failing|held|passing`.
+  Staleness uses the dispatcher's own `preflight_max_age_minutes`, so status says what the gate will do.
+- `dispatch_tool` rewrites a vendor status error - raised or returned - into *"The language model
+  refused the request (HTTP 400): <the vendor's message>"*. Any other error text passes through.
+
+**Ruled out.**
+
+- *Make the supervisor's health go red on a failing check* - health is law-governed (supervisor
+  book) and means "faults and flags"; widening it changes every consumer and the operator's incident
+  count. The surface adds the line instead; health keeps its meaning.
+- *Catch the vendor exception type in the operator* - the text crosses the bus as a string, so a typed
+  catch would need an operator law cycle for a wording fix. The pattern is the SDKs' documented
+  `Error code: N - body` form, shared by Anthropic and OpenAI; unknown text is never rewritten.
+
+---
+
 ## DL-211 - a failing fleet check is a page alert about tonight's run, not the selected run's verdict - status: DECIDED (planner, 2026-09-24, operator: "change the location of this message", and asked why nothing else was screaming)
 
 **What was on the screen** (headless render, 2026-09-24 11:28 AEST, during DL-210's drain). The hero

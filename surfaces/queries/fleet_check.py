@@ -1,4 +1,4 @@
-"""Read-only fleet-readiness alert for the dashboard's page-level banner.
+"""Read-only fleet-readiness alert shared by the dashboard banner and status answers.
 
 Agent: surfaces
 Role: project dispatcher holds and master fleet-check failures for operators.

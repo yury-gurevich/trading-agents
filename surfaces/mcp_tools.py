@@ -8,13 +8,17 @@ External I/O: MessageBus calls through the injected surface context.
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from contracts.reporter import NarrativeRequest, TradeNarrative
 from contracts.supervisor import MasterReport, StatusRequest
 from kernel import AgentMessage
+from orchestration.settings import OrchestratorSettings
 from surfaces.operator_tools import command_tool, operator_explanation
+from surfaces.plain_errors import plain_error
 from surfaces.queries.faults import open_faults
+from surfaces.queries.fleet_check import readiness_override
 from surfaces.queries.runs import recent_runs
 
 if TYPE_CHECKING:
@@ -37,9 +41,12 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: ToolResult) -> Tool
     if handler is None:
         return {"error": f"unknown tool: {name}"}
     try:
-        return handler(ctx, arguments)
+        result = handler(ctx, arguments)
     except Exception as exc:
-        return {"error": str(exc)}
+        return {"error": plain_error(str(exc))}
+    if "error" in result:
+        return {**result, "error": plain_error(str(result["error"]))}
+    return result
 
 
 def _cmd_status(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
@@ -49,12 +56,23 @@ def _cmd_status(ctx: SurfaceContext, args: ToolResult) -> ToolResult:
             ctx, "supervisor", "system_status", StatusRequest().model_dump()
         ).payload
     )
+    # Health counts faults and flags; a failing fleet check writes neither, so
+    # status would read green over a run the dispatcher is about to hold (DL-212).
+    fleet = readiness_override(
+        ctx.graph,
+        now=datetime.now(tz=UTC),
+        max_age_minutes=OrchestratorSettings().preflight_max_age_minutes,
+    )
+    summary = report.summary.summary
+    if fleet is not None:
+        summary = f"{fleet['summary']}.\n{summary}"
     return {
         "healthy": report.healthy,
         "open_incidents": report.open_incidents,
         "pending_flags": report.pending_human_flags,
         "last_run": report.last_successful_run,
-        "summary": report.summary.summary,
+        "fleet_check": fleet["state"] if fleet is not None else "passing",
+        "summary": summary,
     }
 
 

@@ -15,9 +15,9 @@ from contracts.feed_notes import degraded_feed_name
 from orchestration.batch_trace import walk_chain
 from surfaces.dashboard.projections import list_runs
 from surfaces.dashboard.projections_infra import infra_projection
-from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_positions
 from surfaces.queries.flags import pending_flags
+from surfaces.queries.fleet_check import readiness_override
 
 if TYPE_CHECKING:
     from kernel import GraphStore

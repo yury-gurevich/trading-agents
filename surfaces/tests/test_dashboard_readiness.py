@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, cast
 
 from surfaces.dashboard import build_app
-from surfaces.dashboard.projections_readiness import _failures, problem_lines
+from surfaces.queries.fleet_check import _failures, problem_lines
 from surfaces.tests.dashboard_fakes import FakeAzureReader
 from surfaces.tests.test_dashboard_app import invoke
 from surfaces.tests.test_dashboard_costs import _settings

@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 
 from surfaces.dashboard.hold_answer_panel import hold_answer_panel
 from surfaces.dashboard.projections import run_stages, run_verdict
-from surfaces.dashboard.projections_readiness import readiness_override
 from surfaces.dashboard.projections_state import run_recovery
 from surfaces.dashboard.projections_summary import (
     _as_int,
@@ -23,6 +22,7 @@ from surfaces.dashboard.projections_summary import (
     _summary,
 )
 from surfaces.dashboard.projections_vitals import vitals_projection
+from surfaces.queries.fleet_check import readiness_override
 
 if TYPE_CHECKING:
     from kernel import GraphStore

@@ -32,6 +32,9 @@ and **`RPT-SEC-02`** (never logs P&L to external systems). `surfaces/` has **no 
 binding rules are DL-47's dashboard requirements in [`design-log.md`](../design-log.md) (search
 `## DL-47`), above all **req 5** (the run selector scopes everything) and **req 14** (no S-numbers or DL
 chips in the UI).
+🩹 **[S229](sprint-229-every-component-that-decides-answers-to-a-law-book.md) is ranked ahead of this
+sprint and gives `surfaces/` a law book (`surfaces/laws/laws.md`, prefix `SRF`).** If it has merged when
+you build, that book binds: read it first, and cite its clauses in your test docstrings.
 
 ### The rule
 

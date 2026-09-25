@@ -207,49 +207,45 @@ pwsh infra/deploy-agents.ps1 up -Tag latest `
   -DispatcherCron '30 22 * * *'
 ```
 
-To pause scheduled runs without deleting the fleet, disable the schedule and set the app window's
-desired replicas to zero:
+To pause the fleet **without deleting it** ([DL-219](design-log.md), measured 2026-09-25). Two
+traps shaped these steps. `az resource update` on the job fails with `ContainerAppSecretInvalid`,
+because a read returns secrets without values and the write-back sends them empty. And setting a
+wake window to `desiredReplicas=0` **does not drain a window that is already open**: KEDA treats the
+cron trigger as active until the window ends and keeps one replica, measured 20 minutes after the
+change. Stop the apps instead; `stop` drains to 0 replicas within about 30 seconds.
 
 ```powershell
+# 1. No run can be placed: switch the dispatcher to a manual trigger (PATCH, not resource update).
 $jobId = az containerapp job show -n dispatcher-cron -g trading-agents --query id -o tsv
-az resource update --ids $jobId --set properties.configuration.triggerType=Manual
+'{"properties":{"configuration":{"triggerType":"Manual","manualTriggerConfig":{"parallelism":1,"replicaCompletionCount":1}}}}' |
+  Set-Content "$env:TEMP\jobpatch.json"
+az rest --method patch --url "https://management.azure.com$jobId`?api-version=2024-03-01" --body "@$env:TEMP\jobpatch.json"
 
-$apps = @(
-  @{ name='master'; rule='daily-master-window'; start='25 22 * * *' },
-  @{ name='scanner'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='analyst'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='portfolio-manager'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='execution'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='monitor'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='reporter'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='forecaster'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='operator'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='supervisor'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='curator'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='researcher'; rule='daily-agent-window'; start='30 22 * * *' },
-  @{ name='provider'; rule='daily-agent-window'; start='30 22 * * *' }
-)
-foreach ($app in $apps) {
-  az containerapp update -n $app.name -g trading-agents --min-replicas 0 --max-replicas 1 `
-    --scale-rule-name $app.rule --scale-rule-type cron `
-    --scale-rule-metadata "timezone=UTC" "start=$($app.start)" "end=30 00 * * *" `
-                          "desiredReplicas=0"
+# 2. Pods to zero now: stop every app (all 16, read from Azure, not from a list here).
+foreach ($id in (az containerapp list -g trading-agents --query "[].id" -o tsv)) {
+  az rest --method post --url "https://management.azure.com$id/stop?api-version=2024-03-01"
 }
 ```
 
-To resume, set the same scale rules back to `desiredReplicas=1`, then re-enable the schedule:
+To bring the pods down after a run **but keep the schedule**, do step 2 only, then start the apps
+again **after** the window closes (00:30 UTC). A stopped app ignores its wake window, so it sleeps
+through the next run until it is started. Starting it inside an open window wakes it straight back up.
+
+To resume, start every app, then put the dispatcher back on its schedule:
 
 ```powershell
-foreach ($app in $apps) {
-  az containerapp update -n $app.name -g trading-agents --min-replicas 0 --max-replicas 1 `
-    --scale-rule-name $app.rule --scale-rule-type cron `
-    --scale-rule-metadata "timezone=UTC" "start=$($app.start)" "end=30 00 * * *" `
-                          "desiredReplicas=1"
+foreach ($id in (az containerapp list -g trading-agents --query "[].id" -o tsv)) {
+  az rest --method post --url "https://management.azure.com$id/start?api-version=2024-03-01"
 }
-az resource update --ids $jobId `
-  --set properties.configuration.triggerType=Schedule `
-        properties.configuration.scheduleTriggerConfig.cronExpression='30 22 * * *'
+'{"properties":{"configuration":{"triggerType":"Schedule","manualTriggerConfig":null,"scheduleTriggerConfig":{"cronExpression":"*/10 22-23 * * 1-5","parallelism":1,"replicaCompletionCount":1}}}}' |
+  Set-Content "$env:TEMP\jobpatch.json"
+az rest --method patch --url "https://management.azure.com$jobId`?api-version=2024-03-01" --body "@$env:TEMP\jobpatch.json"
 ```
+
+`pwsh infra/status.ps1` shows either state: *NEXT RUN none — paused* for the dispatcher, and
+*stopped* in the POWER column for an app. 🪤 The previous version of this section listed 13 apps (the
+fleet has 16) and a master start of 22:25 UTC (it is 20:25). Read the live values; never copy them
+from here.
 
 To fire the same dispatcher image manually:
 

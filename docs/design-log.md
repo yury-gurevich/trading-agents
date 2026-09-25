@@ -10,6 +10,67 @@ and is marked CLOSED here.
 
 ---
 
+## DL-220 - E16.2's Telegram line moves to E19.1, and the scoreboard vital's colour rule - status: DECIDED (planner, 2026-09-25; the builder extends it in S228)
+
+**What was found.** The next-leg plan's E16.2 promised *"one line in the nightly Telegram notice"* and
+flagged `RPT-SEC-02` (the reporter never logs P&L to external systems) as the law question to settle
+first. Measured while specifying [S228](sprints/sprint-228-the-operator-sees-whether-the-book-beats-the-index.md):
+**there is no nightly notice.** `orchestration/scheduled_dispatch_human.py` sends exactly two messages,
+`send_hold_notice` and `send_degraded_notice`, and both fire only when something is wrong. The
+per-session message the plan had in mind is E19.1's daily brief, which the plan already says *"shows
+the P16 scoreboard"*.
+
+**Decision.** (1) S228 builds the dashboard vital and the chat answer only. The Telegram scoreboard
+line is **E19.1's**, and so is the `RPT-SEC-02` decision: whether a P&L figure may leave the
+operator's machine through a vendor channel. That is a policy question for the operator, raised in
+E19.1's spec. (2) The chat answer is a **deterministic graph read**, never an LLM call, so S228 sends
+no P&L anywhere. (3) The vital colours on since-inception excess over exposure-matched SPY: **green at
+≥ 0, red at ≤ −1.00 pts, amber between**, grey when there is no scoreboard. The red line is a bounded
+`DashboardSettings` field, not a literal.
+
+**Why −1.00 pts.** *Assumed, not measured:* six weeks of a 21 %-invested book cannot say what a "bad"
+gap is, and the current −0.28 pts is inside ordinary noise. A full point behind at that exposure is
+no longer rounding. It is a display threshold, and it moves with a setting when P17 gives it a basis.
+
+**Ruled out.** Building a nightly notice inside S228: that is half of E19.1, with its own notification
+budget. Routing the chat through the operator agent for nicer prose: P&L to a vendor, a cost per
+question, and a new failure mode for a question the graph already answers. Colouring on the rolling-20
+excess: it is shown in the detail, but the headline number the reporter prints is since-inception, and
+two numbers competing for one colour would contradict each other on some days.
+
+## DL-219 - "bring the fleet down" after a finished run: stop the apps, keep the schedule - status: DECIDED (ops, 2026-09-25)
+
+**What happened.** After `sched-2026-09-24` finished (8/8, no orders, 09:27 AEST) the operator asked
+to bring the fleet down: 16 pods sat idle in the wake window until 00:30 UTC. The planner followed
+`docs/deployment.md`'s pause, and it failed three ways. **(1)** `az resource update` on
+`dispatcher-cron` returned `ContainerAppSecretInvalid`: a read returns secrets without values, so the
+write-back sends them empty. It failed silently under `2>$null`, and the trigger stayed `Schedule`.
+**(2)** Setting every wake window to `desiredReplicas=0` created a new revision per app and drained
+nothing: **16 of 16 still had one replica 20 minutes later**. KEDA treats the cron trigger as active
+until the window ends, whatever `desiredReplicas` says. **(3)** The runbook listed 13 apps (there are
+16) and a master start of 22:25 UTC (it is 20:25 since `aea47810`).
+
+**What worked, measured.** A `PATCH` carrying only the trigger fields switched the job to `Manual`.
+The Container Apps `stop` action took each app to `Stopped` with **0 replicas within ~30 s**; tried on
+`scanner` first, then the other 15.
+
+**Correction by the operator.** The operator's next message, *"NEXT RUN is not showing anything. Just
+put next run date there"*, showed the request was pods down, not runs paused. The dispatcher went back
+to `*/10 22-23 * * 1-5` (the same `PATCH`, all fields matching the pre-change snapshot), and the apps
+restart **after** the window closes: a stopped app ignores its wake window, so it would sleep through
+the next run, and starting one inside an open window wakes it straight back up.
+
+**Decision.** For "down after a run", stop the apps and leave the dispatcher alone. For a real pause,
+also switch the dispatcher to `Manual`. `deployment.md` now carries both, with the live app list read
+from Azure rather than typed into the doc. `infra/status.ps1` now says *paused* and *stopped*
+instead of `cron ''` and `awake`, and dates NEXT RUN from the dispatcher's `_ACTION_START` (22:30 UTC)
+rather than its first 22:00 tick.
+
+**Ruled out.** `deploy-agents.ps1 down`: it deletes the 16 apps and the job, and needs a full `up` to
+undo. Waiting for 00:30 UTC: the operator asked for the pods down now. Changing the windows' start and
+end so that "now" falls outside them: that works, but it rewrites the schedule itself, where a stop
+changes nothing that has to be remembered and restored.
+
 ## DL-218 - the dispatcher image's import check skipped package `__init__` files - status: DECIDED (chore, 2026-09-25)
 
 **What happened.** S227 merged green (`a4ab16d5`, `GATE PROVEN`), and then the merge build failed on

@@ -141,6 +141,30 @@ function Get-NextFire([string]$Cron, [DateTime]$FromUtc) {
   return $null
 }
 
+function Get-ActionStartMinutes {
+  # The dispatcher ticks from 22:00 UTC but places a run only from its action start, so the
+  # first cron tick is not the run. Read the start from the dispatcher's own source rather
+  # than keep a copy here — a copied schedule fact is DL-205/206's defect class. Returns
+  # $null when the file cannot be read, and the board then says it is showing the tick.
+  $src = Join-Path $PSScriptRoot '..\orchestration\scheduled_dispatch_actions.py'
+  try { $hit = Select-String -Path $src -Pattern '^_ACTION_START\s*=\s*time\((\d+),\s*(\d+)\)' -ErrorAction Stop }
+  catch { return $null }
+  if (-not $hit) { return $null }
+  $g = $hit.Matches[0].Groups
+  return ([int]$g[1].Value * 60 + [int]$g[2].Value)
+}
+
+function Get-NextRun([string]$Cron, [DateTime]$FromUtc, $ActionStart) {
+  # First cron tick at or after the action start. Ticks before it place nothing.
+  $t = Get-NextFire $Cron $FromUtc
+  if ($null -eq $ActionStart) { return $t }
+  for ($i = 0; $t -and $i -lt 200; $i++) {
+    if (($t.Hour * 60 + $t.Minute) -ge $ActionStart) { return $t }
+    $t = Get-NextFire $Cron $t
+  }
+  return $null
+}
+
 function Test-InWindow([string]$Start, [string]$End) {
   # KEDA cron window "M H * * *" -> is UTC now inside it? Wraps past midnight.
   $s = @(($Start ?? '') -split '\s+'); $e = @(($End ?? '') -split '\s+')
@@ -172,10 +196,10 @@ function Show-Board {
   $build = Get-Json @('gh', 'run', 'list', '--workflow', 'build-images.yml', '--limit', '1',
     '--json', 'status,conclusion,event,headBranch,createdAt')
   $apps = Get-Json @('az', 'containerapp', 'list', '-g', $RG, '--subscription', $SUB, '--query',
-    '[].{name:name, state:properties.provisioningState, image:properties.template.containers[0].image, winStart:properties.template.scale.rules[0].custom.metadata.start, winEnd:properties.template.scale.rules[0].custom.metadata.end}',
+    '[].{name:name, state:properties.provisioningState, run:properties.runningStatus, image:properties.template.containers[0].image, winStart:properties.template.scale.rules[0].custom.metadata.start, winEnd:properties.template.scale.rules[0].custom.metadata.end}',
     '-o', 'json')
   $jobInfo = Get-Json @('az', 'containerapp', 'job', 'show', '-n', $JobName, '-g', $RG, '--subscription', $SUB,
-    '--query', '{image:properties.template.containers[0].image, cron:properties.configuration.scheduleTriggerConfig.cronExpression}',
+    '--query', '{image:properties.template.containers[0].image, trigger:properties.configuration.triggerType, cron:properties.configuration.scheduleTriggerConfig.cronExpression}',
     '-o', 'json')
   $execs = Get-Json @('az', 'containerapp', 'job', 'execution', 'list', '-n', $JobName, '-g', $RG,
     '--subscription', $SUB, '--query',
@@ -203,6 +227,11 @@ function Show-Board {
   $warnings = [System.Collections.Generic.List[string]]::new()
   $mixed = $tags.Count -gt 1
   if ($mixed) { $warnings.Add("fleet is on more than one image — see the IMAGE column below") }
+  $paused = $jobInfo -and $jobInfo.trigger -ne 'Schedule'
+  if ($paused) { $warnings.Add("$JobName is on a $($jobInfo.trigger) trigger — no run will be placed") }
+  # A stopped app ignores its wake window, so it would sleep through the next run (2026-09-25).
+  $stopped = @(@($apps) | Where-Object { $_ -and $_.run -eq 'Stopped' })
+  if ($stopped.Count) { $warnings.Add("$($stopped.Count) app(s) stopped — their wake window will not start them") }
 
   try { if ($Watch) { Clear-Host } } catch { Write-Host "" }
   $light = if ($problems.Count) { 'RED' } else { 'GREEN' }
@@ -238,12 +267,17 @@ function Show-Board {
   # ── Nightly schedule ─────────────────────────────────────────────────────────
   Write-Host ""
   if ($jobInfo) {
-    $next = Get-NextFire $jobInfo.cron $nowUtc
+    $actionStart = Get-ActionStartMinutes
+    $next = if ($paused) { $null } else { Get-NextRun $jobInfo.cron $nowUtc $actionStart }
     Write-Host "  NEXT RUN   " -ForegroundColor Yellow -NoNewline
-    if ($next) {
+    if ($paused) {
+      Write-Host "none — paused" -ForegroundColor Yellow -NoNewline
+      Write-Host ("   {0} is on a {1} trigger" -f $JobName, $jobInfo.trigger) -ForegroundColor DarkGray
+    } elseif ($next) {
       $nl = Convert-Display $next
       Write-Host ("{0}, {1} {2}" -f (Format-Day $nl), (Format-Clock $nl), (Get-TzLabel $next)) -ForegroundColor Cyan -NoNewline
-      Write-Host ("   in {0}" -f (Format-Span ($next - $nowUtc))) -ForegroundColor DarkGray
+      $note = if ($null -eq $actionStart) { '   (first dispatcher tick — action start unreadable)' } else { '' }
+      Write-Host ("   in {0}{1}" -f (Format-Span ($next - $nowUtc)), $note) -ForegroundColor DarkGray
     } else {
       Write-Host ("cron '{0}'" -f $jobInfo.cron) -ForegroundColor DarkGray
     }
@@ -312,6 +346,7 @@ function Show-Board {
     }
     $label = switch ($inWin) { $true { 'awake' } $false { 'asleep' } default { '?' } }
     $wc = if ($inWin -eq $true) { 'Cyan' } else { 'DarkGray' }
+    if ($a.run -eq 'Stopped') { $label = 'stopped'; $wc = 'Red' }
     Write-Host ("{0,-9}" -f $label) -ForegroundColor $wc -NoNewline
     $from = Format-WindowClock $a.winStart
     $to = Format-WindowClock $a.winEnd
@@ -322,8 +357,13 @@ function Show-Board {
     Write-Host ("    {0,-$appW}" -f $JobName) -ForegroundColor White -NoNewline
     if ($mixed) { Write-Host ("{0,-$imgW}" -f (& $short (& $tag $jobInfo.image))) -ForegroundColor Yellow -NoNewline }
     if ($Replicas) { Write-Host ("{0,-6}" -f '-') -ForegroundColor DarkGray -NoNewline }
-    Write-Host ("{0,-9}" -f 'on cron') -ForegroundColor DarkGray -NoNewline
-    Write-Host "fires every 10 min inside the window" -ForegroundColor DarkGray
+    if ($paused) {
+      Write-Host ("{0,-9}" -f 'paused') -ForegroundColor Yellow -NoNewline
+      Write-Host ("{0} trigger — fires only when started by hand" -f $jobInfo.trigger) -ForegroundColor DarkGray
+    } else {
+      Write-Host ("{0,-9}" -f 'on cron') -ForegroundColor DarkGray -NoNewline
+      Write-Host "fires every 10 min inside the window" -ForegroundColor DarkGray
+    }
   }
   Write-Host ""
   return $problems.Count

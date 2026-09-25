@@ -300,6 +300,24 @@ paper broker and a recorded response shape. The live replace is the planner's ch
 1. 🩹 **Moved from "before merge" to "before deploy"** (operator, 2026-09-25: *"merge"*). A merge builds images but reaches no
    fleet, so the live check protects the deploy, not the merge. **Planner, before deploy:** replace a `new` throwaway paper order after 08:00 UTC and confirm the
    response shape the adapter assumes (new id, old `replaced`, `replaced_by`/`replaces`).
+   🟩 **PROVEN 2026-09-25 18:03 AEST (08:03 UTC), planner, on Alpaca paper, through the adapter's own
+   `replace_stop_order` and `broker_from_settings(ExecutionSettings())` — 9 / 9 checks.** A 1-share
+   `buy` stop on F at $50 (GTC, placed by `submit_stop`) read `pending_new`, then `new` within 5 s.
+   `PATCH /v2/orders/f11df8b8…` with `{"stop_price": "51.00", "client_order_id": "s230-livecheck-4e22c579-b"}`
+   returned a **new** order `e194711f…`, status `new`, `stop_price` 51, `replaces` = the old id, and **the
+   caller's `client_order_id`** (so the builder's open question is closed: Alpaca honours it, and
+   `GET /v2/orders:by_client_order_id` finds the replacement by its own key). The old order read
+   `replaced`, `replaced_by` = the new id, `replaced_at` set. The adapter mapped the response to
+   `status=pending`, `order_status=new`, `idempotency_key` = the new key. The replacement was cancelled;
+   **0** open F orders and 0 F positions afterwards. `status_of("replaced")` → `rejected` with reason
+   `replaced`, exactly what `paper_broker_orders.py` models, and no consumer misreads it: the
+   `UnprotectedPosition` report walks only the run's own submissions and the drop sweep skips stop orders.
+   **No adapter change.** Re-measured replace list, same hour, read-only through `broker_stop_thresholds`
+   → `_mismatched` and `_realign`'s two guards: **9 of 25**, all `new`, none at or above the price —
+   tighten AMZN 243.31→244.95, BAC 54.98→55.17, BMY 58.33→58.85, MDLZ 57.77→58.44, SCHW 95.83→96.02,
+   USB 57.47→58.06 (0.6 % under its 58.40 last); widen CSCO 101.14→100.84, DOW 26.58→25.98,
+   META 703.28→686.33. The other 16 rest at their decided 5 %. No injected pack moved `3b960066`→`b96f7a70`
+   and its image build is **15 / 15** success, so the deploy is an image-only retag.
 2. `make ci` green locally, branch pushed, **`make gate-ran` exits 0** from the worktree at the proven
    commit; check the printed SHA against `git rev-parse HEAD`.
 3. Merge to `main` locally and push. Not from the branch's own worktree. Post-merge CodeQL.

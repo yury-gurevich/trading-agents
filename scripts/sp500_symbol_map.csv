@@ -1,0 +1,10 @@
+kind,line,symbol,from,to,evidence
+rename,CPAY,FLT,2024-03-25,,alpaca name_change FLT->CPAY 2024-03-25
+rename,EG,RE,2023-07-10,,alpaca name_change RE->EG 2023-07-10
+rename,ECHO,SATS,2026-06-24,,alpaca name_change SATS->ECHO 2026-06-24
+bars,PSKY,CBS,2016-01-04,2019-12-04,alpaca CBS bars end 2019-12-04; VIAC bars start 2019-12-05
+bars,PSKY,VIAC,2019-12-05,2022-02-16,alpaca name_change VIAC->PARA 2022-02-17
+bars,PSKY,PARA,2022-02-17,2025-08-06,alpaca PSKY bars start 2025-08-07
+bars,VTRS,MYL,2016-01-04,2020-11-16,alpaca MYL bars end 2020-11-16; name_change VTRSV->VTRS 2020-11-17
+bars,LIN,PX,2016-01-04,2018-10-30,alpaca LIN bars start 2018-10-31; PX bars after that are another issuer
+bars,APTV,DLPH,2016-01-04,2017-12-04,alpaca DLPH single request 2016-01-04..2017-12-29; switch date ASSUMED (Aptiv rename)

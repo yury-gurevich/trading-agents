@@ -10,6 +10,36 @@ and is marked CLOSED here.
 
 ---
 
+## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)
+
+**Question.** How should the E17.2 builder represent Wikipedia membership, map ticker identities, verify
+Alpaca bars, and store a reproducible cache without importing licensed data into the repo?
+
+**Decision.** A member is a stable `line` with one or more ticker episodes. The reconstruction starts
+from the current constituents, applies `rename` rows while undoing the change log backwards, then replays
+the same dated changes forwards over the supplied session list. A `rename` row is an internal ticker
+switch for one line, so `OLD` and `NEW` are consecutive episodes and never concurrent members; ordinary
+remove/add rows remain separate episodes, which is what protects reused tickers.
+
+**Bars.** Episode windows are converted to source-symbol windows after applying `bars` rows from the CSV
+map. Alpaca batches are a speed hint only: for every source window, the builder compares returned bar
+dates with the window's sessions and re-fetches that symbol alone if the batch is empty or misses any
+window session. Only the single-symbol result may prove `no bars`, `starts late`, `ends early`, or `gap`,
+and rows outside the assigned window are discarded.
+
+**Coverage and files.** Coverage is member-sessions over SPY sessions, not weekdays. Shortfalls are
+classified from sessions and returned dates alone: no rows -> `no bars`, first row after the first
+session -> `starts late`, last row before the last session -> `ends early`, otherwise missing interior
+sessions -> `gap`. The cache files are gzipped CSV for sessions, membership, and bars, JSON for coverage,
+and gzipped JSON for the fetched page snapshot; `--from-snapshot` rebuilds membership from those saved
+pages and never fetches Wikipedia.
+
+**Ruled out.** Deriving expected bar count from weekdays was rejected because R008 already measured that
+as false. Trusting multi-symbol Alpaca batches was rejected because DOW and DLPH disappeared from batch
+responses while returning alone. Hard-coded ticker exceptions were rejected because the symbol map is the
+auditable evidence boundary. Reconstructing directly into one row per ticker was rejected because ticker
+reuse would attach bars to the wrong issuer.
+
 ## DL-226 - the survivorship-free universe comes from Wikipedia's change log and Alpaca SIP bars - status: DECIDED (E17.1, 2026-09-25)
 
 **Question** (next-leg plan, E17.1, the leg's highest-risk item): can we source point-in-time S&P 500

@@ -19,9 +19,10 @@ membership and bars for removed names, at ~90 % of member-days, on the plans we 
 return **402/403** on our plan (the legacy ones serve only pre-2025-08-31 subscriptions), Finnhub's
 **403**. Wikipedia's *Historical components of the S&P 500* (split out of the constituents article on
 2026-08-11) reconstructs membership whose count stays **503–508** back to 2016; 3 records fail to
-reconcile, all renames. Alpaca SIP daily bars cover **95.3 %** of **1,421,814** member-days: removed names
-**93.4 %**, current members **95.7 %**, the survivors' shortfall being renames (PSKY, DOW, VTRS, LIN,
-APTV). 14 of 15 acquired names' bars stop at the deal; MON's ticker was reused.
+reconcile, all renames. Alpaca SIP daily bars cover **98.9 %** of **1,369,517** member-sessions: removed
+names **96.8 %**, current members **99.4 %**, the survivors' shortfall being renames (PSKY, VTRS, LIN,
+APTV) and a batch artifact (DOW). 🩹 *First recorded as 95.3 % / 93.4 % / 95.7 %, over weekdays;
+corrected the same day to sessions (SPY's 2,697 bar dates).* 14 of 15 acquired names' bars stop at the deal; MON's ticker was reused.
 
 **Decision.** Membership from the Wikipedia log, frozen as a dated, attributed snapshot; bars from
 Alpaca SIP, cached outside the repo; plus a rename map and a ticker-reuse guard, both E17.2's. The

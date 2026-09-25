@@ -15,7 +15,6 @@ from agents.execution.broker import (
     BrokerAccount,
     BrokerFill,
     BrokerPosition,
-    BrokerRejectedError,
 )
 from agents.execution.paper_broker_math import (
     account_from_fills,
@@ -23,6 +22,11 @@ from agents.execution.paper_broker_math import (
     paper_price,
     positions_from_fills,
     within_tolerance,
+)
+from agents.execution.paper_broker_orders import (
+    reject_order,
+    replace_stop_order,
+    replay_order,
 )
 from contracts.common import Money
 
@@ -42,8 +46,14 @@ class PaperBroker:
         order_price_tolerance_bps: int = 0,
         reject_tickers: set[Ticker] | None = None,
         starting_cash: Money = _DEFAULT_ACCOUNT_CASH,
+        stop_order_status: str = "new",
     ) -> None:
-        """Create a broker that de-dupes by idempotency key."""
+        """Create a broker that de-dupes by idempotency key.
+
+        `stop_order_status` is the raw status a resting stop reports: `new`, or
+        `accepted` as Alpaca shows a stop placed after the close (S230).
+        """
+        self._stop_order_status = stop_order_status
         self._slippage_bps = slippage_bps
         self._order_price_tolerance_bps = order_price_tolerance_bps
         self._reject_tickers = reject_tickers or set()
@@ -68,9 +78,11 @@ class PaperBroker:
         """Fill immediately at the deterministic paper price, or return a replay."""
         current = self._fills.get(idempotency_key)
         if current is not None:
-            return _replay(current)
+            return replay_order(current)
         if ticker in self._reject_tickers:
-            return self._reject(idempotency_key, ticker, side, quantity, limit_price)
+            reject_order(
+                self._fills, idempotency_key, ticker, side, quantity, limit_price
+            )
         simulated_price = paper_price(limit_price, side, self._slippage_bps)
         tolerance = (
             self._order_price_tolerance_bps if tolerance_bps is None else tolerance_bps
@@ -116,9 +128,11 @@ class PaperBroker:
         """Rest a stop order without filling it immediately."""
         current = self._fills.get(idempotency_key)
         if current is not None:
-            return _replay(current)
+            return replay_order(current)
         if ticker in self._reject_tickers:
-            return self._reject(idempotency_key, ticker, side, quantity, stop_price)
+            reject_order(
+                self._fills, idempotency_key, ticker, side, quantity, stop_price
+            )
         fill = BrokerFill(
             idempotency_key=idempotency_key,
             ticker=ticker,
@@ -129,9 +143,18 @@ class PaperBroker:
             status="pending",
             order_type="stop",
             time_in_force=tif,
+            order_status=self._stop_order_status,
         )
         self._fills[idempotency_key] = fill
         return fill
+
+    def replace_stop(
+        self, broker_order_id: str, stop_price_cents: int, *, idempotency_key: str
+    ) -> BrokerFill:
+        """Move a resting stop in place; an `accepted` order is refused (422)."""
+        return replace_stop_order(
+            self._fills, broker_order_id, stop_price_cents, idempotency_key
+        )
 
     def cancel(self, broker_order_id: str) -> None:
         """Record cancellation of an open paper order."""
@@ -152,32 +175,3 @@ class PaperBroker:
     def account(self) -> BrokerAccount:
         """Return deterministic paper account state for run-start sizing facts."""
         return account_from_fills(tuple(self._fills.values()), self._initial_cash_cents)
-
-    def _reject(
-        self,
-        idempotency_key: str,
-        ticker: Ticker,
-        side: Literal["buy", "sell"],
-        quantity: int,
-        price: Money,
-    ) -> BrokerFill:
-        fill = BrokerFill(
-            idempotency_key=idempotency_key,
-            ticker=ticker,
-            side=side,
-            quantity=quantity,
-            price=price,
-            broker_order_id=f"paper:{idempotency_key}",
-            status="rejected",
-            reason="paper_broker_rejected",
-            order_type="limit",
-            time_in_force="day",
-        )
-        self._fills[idempotency_key] = fill
-        raise BrokerRejectedError(fill)
-
-
-def _replay(fill: BrokerFill) -> BrokerFill:
-    if fill.status == "rejected":
-        raise BrokerRejectedError(fill)
-    return fill

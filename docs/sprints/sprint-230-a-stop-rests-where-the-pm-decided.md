@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked above features
 **Branch:** `sprint-230-a-stop-rests-where-the-pm-decided`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-222](../design-log.md) (the measurement) · work-queue item **87** · DL-156 (the stop mode flipped to `scaled`, 2026-09-05) · [DL-200](../design-log.md) / S225 (why every stop comes from a broker-adopted Position) · ADR-0015 §3 (resting protective stops) · ADR-0017 (the stop is an unconditional floor) · design decisions go to **DL-223**
@@ -388,17 +388,44 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+Written before the first code change. Read in full: `agents/execution/laws/{laws.md,test-plan.md}`
+(LOCKED v1.8), `agents/monitor/laws/{laws.md,test-plan.md}` (LOCKED v1.1), the analyst book's stop
+clauses and PARAM rows (`agents/analyst/laws/laws.md`, grep-read for `stop`, `held`, `breach`, `exit`,
+`Position`), `docs/laws/conventions.md`, `docs/laws/drift-register.md`.
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| new `contracts/stop_width.py` | execution, monitor, analyst books | `EXEC-OBS-03` (reconstructable stop lifecycle), execution `PARAM broker_stop_fallback_stop_pct` ("no PM stop lineage"), monitor `PARAM default_stop_pct` ("if OrderIntent lineage is missing stop_pct"), `MON-NEV-05` | **Yes.** Both fallback PARAM rows already say the fallback is for *missing lineage*, so the resolver reads lineage first and names the fallback `fallback`, never `position`. The monitor's own adoption-time fallback (recorded on the Position) is what an adopted Position with no lineage falls back to, so the three readers agree by construction; execution's PARAM covers only a Position that records no width at all (unchanged behaviour). |
+| `contracts/positions.py` `_stop_lot` (analyst's held-stop inputs) | analyst book | none: the analyst book has no held-position stop clause | Recorded as a silence (below). The reader changes to the resolver; the analyst's raising behaviour for a lot with no width is kept. |
+| `contracts/broker_lifecycle.py`, `contracts/broker_stops.py` | execution `EXEC-OBS-03`, `EXEC-OBS-05` | liveness asked in one place; cancellation (and now replacement) is a marker, never a deletion | **Yes.** `replaced` joins `TERMINAL_BROKER_ORDER_STATUSES` and a `replaced_at` marker ends a fact's liveness inside `is_live_broker_stop_fact`, the one place liveness is asked. No second liveness predicate. |
+| `agents/execution/broker_stop_*`, new replace module | execution `EXEC-OBS-03`, `EXEC-NEV-07`, `EXEC-DEP-04`, `EXEC-IDN-03` | stop placement is an immutable fact; stops never weakened by degraded posture; broker cancel + stop placement dependency; execution alone writes `BrokerStopOrder` | **Yes.** The replacement runs inside `place_broker_stops`, which `EXEC-NEV-07` already guarantees runs in degraded posture, so no posture branch is added. New facts go on `BrokerStopOrder` only (undeclared props), so no `Fill` vocabulary change. |
+| `agents/execution/broker.py`, `alpaca*.py`, `paper_broker.py` | execution `EXEC-DEP-03/04`, CAP block | the broker dependency lists `place_stop_order`, `cancel_order` — **not** `replace_order` | **Yes.** `EXEC-DEP-04` and the CAP `broker.operations` list must gain order replacement in the law cycle. |
+| `agents/monitor/domain/positions.py` | monitor `MON-NEV-05`, `MON-STA-02`, `MON-IDM-01` | reads fills/OrderIntents, never mutates them; exit rules are pure functions of position props + price | Reader only: `exit_position` takes the graph and reads through the resolver. No monitor write changes; `_create_broker_position` untouched. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, both.**
+`contracts/` gains `stop_width.py`, a `replaced` terminal status and a `replaced_at` liveness marker;
+execution gains the guarantee that a live stop resting away from its decided price is replaced in
+place, never cancel-then-place. Owed: a new execution clause (`EXEC-OBS-06`), `EXEC-DEP-04` + CAP
+widened for order replacement, the fallback `PARAM` rationale reworded, test-plan rows, docstring
+citations, both rollups, and a drift row.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none that stop the sprint. One wording point: the
+spec's port signature is `replace_stop(broker_order_id, stop_price_cents)`. The execution law says every
+broker call carries a stable key (`EXEC-NEV-03` is about submissions, and `BrokerStopOrder.key` *is* the
+stop's `client_order_id`). The port therefore takes a keyword `idempotency_key` for the new order's
+`client_order_id`, so the replacement's key equals its graph fact's key and the refresh and sweep find it
+without following a link. Recorded in DL-223.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** (1) The **analyst book has no held-position stop
+clause at all** — no `stop_breached`, no ADR-0017 reference — although `contracts/positions.py`
+feeds the analyst's held-stop check. Recorded as **DRIFT-074** (OPEN); not amended here (the analyst
+book is LOCKED and the silence predates this sprint). (2) No execution clause said what happens when a live stop's
+price differs from its decided price; `EXEC-OBS-06` fills it. (3) `EXEC-DEP-04`/CAP did not declare order
+replacement.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none were ⬜ among the binding set (`EXEC-OBS-03`,
+`EXEC-OBS-05`, `EXEC-DEP-04`, `EXEC-NEV-07` are 🟩). `MON-NEV-05` stays ⬜ — this sprint adds no test
+that proves the monitor never mutates another agent's nodes. New: `EXEC-OBS-06` (see Test plan results).
 
 ---
 
@@ -406,50 +433,191 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_the_resolver_returns_the_width_the_pm_decided` | `tests/test_stop_width.py` | 🟩 pass (red first) | `EXEC-OBS-06` |
+| A2 | `test_an_older_lot_of_another_size_does_not_match` | `tests/test_stop_width.py` | 🟩 pass | `EXEC-OBS-06` |
+| A3 | `test_no_exact_match_falls_back_and_says_so` | `tests/test_stop_width.py` | 🟩 pass | `EXEC-OBS-06` |
+| A4 | `test_all_three_readers_agree_on_the_decided_stop` | `tests/test_stop_width.py` | 🟩 pass (red first) | `EXEC-OBS-06` |
+| A5 | `test_a_fill_path_position_keeps_its_own_width` | `tests/test_stop_width.py` | 🟩 pass | `EXEC-OBS-06` |
+| A6 | `test_a_mismatched_new_stop_is_replaced_in_place` | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass (red first) | `EXEC-OBS-06`, `EXEC-OBS-03` |
+| A7 | `test_an_accepted_stop_is_not_replaced` | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass | `EXEC-OBS-06` |
+| A8 | `test_a_stop_is_never_moved_to_or_above_the_market` | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass | `EXEC-OBS-06` |
+| A9 | `test_a_failed_replace_keeps_the_old_stop_and_retries`; `test_a_failed_replace_leaves_no_marker` | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass | `EXEC-OBS-06`, `EXEC-OBS-03` |
+| A10 | `test_a_replaced_order_is_not_live`; `test_a_replaced_at_marker_ends_the_fact_without_deleting_it` | `tests/test_broker_stop_replaced.py` | 🟩 pass | `EXEC-OBS-05`, `EXEC-OBS-03` |
+| A11 | `test_a_matching_stop_is_left_alone` (asserts zero `replace_stop` calls **and** zero `fills()` reads) | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass | `EXEC-OBS-06` |
+| A12 | `test_replacement_is_idempotent_across_runs` | `agents/execution/tests/test_broker_stop_realign.py` | 🟩 pass | `EXEC-OBS-06` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `tests/test_stop_width.py::test_an_exact_buy_that_decided_no_width_is_not_lineage`,
+`::test_a_verification_fill_is_never_lineage` (the spec's trap: only `pm-run-*` fills are lineage),
+`::test_a_position_with_no_width_needs_a_fallback`; `tests/test_broker_stop_replaced.py::test_the_free_key_skips_every_existing_attempt`;
+`agents/execution/tests/test_broker_stop_replace_adapters.py` — the Alpaca PATCH shape against a recorded
+response (`EXEC-DEP-04`), Alpaca's 422 surfacing verbatim, a rejected replacement raising, the paper
+broker modelling the 422 and an unknown order, unreadable broker orders (no replace, fault) and an order
+the broker does not list (skipped as `unknown`, fault). Two existing assertions in
+`test_alpaca_broker.py` gained `order_status=` because `fill_from_order` now carries the raw status.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT (version **0.111.02**, PATCH over `main`'s 0.111.01; `uv.lock` updated with it).
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** the isolated git worktree
+`.claude/worktrees/agent-adc55cf3a03d1feb8` on branch `sprint-230-a-stop-rests-where-the-pm-decided`,
+**no `.env`** (checked: `ls .env` → no such file), no network. No live Alpaca, Azure or Postgres call was made.
 
-**Result:** *(builder fills)*
+**Result:** on the live-shape fixture the resolver returns `(0.0402588750356905, "lineage")` instead of
+`(0.05, …)`; the analyst's held-stop inputs, execution's placement threshold and the monitor's watchdog all
+read `stop_pct 0.0402588750356905` and a **5806**-cent stop; the resting 57.47 stop moves to **58.06** by one
+`replace_stop` call with no cancel and exactly one live stop before and after; the old fact carries
+`replaced_at` / `replaced_by`, the new one `replaces`, `stop_pct_source=lineage`, `derived_from=active_position`.
+`accepted` orders, moves to or above the price, unreadable/unlisted orders and broker refusals all keep the
+old stop live and raise a warning fault. A second run replaces nothing.
 
-**Files changed:** *(builder fills)*
+**Files changed:** new `contracts/stop_width.py`, `agents/execution/broker_stop_realign.py`,
+`agents/execution/alpaca_replace.py`, `agents/execution/paper_broker_orders.py`; changed
+`contracts/{positions,broker_lifecycle,broker_stops}.py`, `agents/execution/{broker,alpaca,alpaca_orders,paper_broker,broker_stop_thresholds,broker_stop_types,broker_stop_writes,broker_stops}.py`,
+`agents/monitor/{decide.py,domain/positions.py}`; tests: new `tests/test_stop_width.py`,
+`tests/test_broker_stop_replaced.py`, `agents/execution/tests/{stop_realign_helpers,test_broker_stop_realign,test_broker_stop_replace_adapters}.py`,
+changed `agents/execution/tests/{broker_protocol_helpers,test_alpaca_broker}.py`; law: execution `laws.md`
+(v1.9) + `test-plan.md`, `docs/laws/{ledger,INDEX,drift-register}.md`; `docs/design-log.md` (DL-223);
+`pyproject.toml`, `uv.lock`; this spec and its `README.md` row. **Not touched:** `_create_broker_position`,
+any `Position` node, the PM's stop decision, any tunable value, and every S229 file.
 
-**Design decisions:** recorded as [`DL-223`](../design-log.md) — *(builder fills)*
+**Design decisions:** recorded as [`DL-223`](../design-log.md) — one resolver with an exact quantity **and**
+broker-price lineage match (nearest / quantity-only / lot replay rejected); an adopted Position without
+lineage keeps its adoption-time width and says `fallback`, so the three readers agree whatever the tunables
+say; a 1-cent tolerance as a named constant (deterministic integer cents, proven flutter-free by A11/A12);
+`replace_stop(broker_order_id, stop_price_cents, *, idempotency_key)` — the keyword names the new order's
+`client_order_id`, equal to the new fact's key, so the refresh and the sweep find it without a link; the raw
+broker status rides on `BrokerFill.order_status`; the adapters split into `alpaca_replace.py` and
+`paper_broker_orders.py`.
 
-**Proof — the red run first:**
+**Proof — the red run first** (before any implementation; the capability did not exist):
 
 ```text
-(builder pastes)
+$ uv run pytest tests/test_stop_width.py::test_the_resolver_returns_the_width_the_pm_decided \
+    tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop ... --no-cov -q
+__________________ ERROR collecting tests/test_stop_width.py __________________
+E   ModuleNotFoundError: No module named 'contracts.stop_width'
+ERROR tests/test_stop_width.py
+1 error in 8.05s          (exit 4 — A1 and A4 cannot even import the resolver)
+
+$ uv run pytest agents/execution/tests/test_broker_stop_realign.py::test_a_mismatched_new_stop_is_replaced_in_place --no-cov -q
+E   TypeError: PaperBroker.__init__() got an unexpected keyword argument 'stop_order_status'
+FAILED agents/execution/tests/test_broker_stop_realign.py::test_a_mismatched_new_stop_is_replaced_in_place
+1 failed in 2.85s         (exit 1 — no broker can report `new`, and no port can replace)
 ```
+
+The behavioural reds are the DL-70 plants below (A1 reads `0.05 != 0.0402588750356905`).
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+$ uv run pytest tests/test_stop_width.py tests/test_broker_stop_replaced.py \
+    agents/execution/tests/test_broker_stop_realign.py \
+    agents/execution/tests/test_broker_stop_replace_adapters.py --no-cov -q -rA
+PASSED tests/test_stop_width.py::test_the_resolver_returns_the_width_the_pm_decided
+PASSED tests/test_stop_width.py::test_all_three_readers_agree_on_the_decided_stop
+PASSED tests/test_stop_width.py::test_an_older_lot_of_another_size_does_not_match
+PASSED tests/test_stop_width.py::test_no_exact_match_falls_back_and_says_so
+PASSED tests/test_stop_width.py::test_a_fill_path_position_keeps_its_own_width
+PASSED tests/test_stop_width.py::test_an_exact_buy_that_decided_no_width_is_not_lineage
+PASSED tests/test_stop_width.py::test_a_verification_fill_is_never_lineage
+PASSED tests/test_stop_width.py::test_a_position_with_no_width_needs_a_fallback
+PASSED tests/test_broker_stop_replaced.py::test_a_replaced_order_is_not_live
+PASSED tests/test_broker_stop_replaced.py::test_a_replaced_at_marker_ends_the_fact_without_deleting_it
+PASSED tests/test_broker_stop_replaced.py::test_the_free_key_skips_every_existing_attempt
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_a_mismatched_new_stop_is_replaced_in_place
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_an_accepted_stop_is_not_replaced
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_a_stop_is_never_moved_to_or_above_the_market
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_a_failed_replace_keeps_the_old_stop_and_retries
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_a_failed_replace_leaves_no_marker
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_a_matching_stop_is_left_alone
+PASSED agents/execution/tests/test_broker_stop_realign.py::test_replacement_is_idempotent_across_runs
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_alpaca_replace_patches_the_stop_price_under_the_new_key
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_alpaca_refusal_carries_the_broker_message
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_alpaca_rejected_replacement_raises
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_paper_broker_models_alpacas_refusal_of_an_accepted_stop
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_unreadable_broker_orders_leave_every_stop_and_fault
+PASSED agents/execution/tests/test_broker_stop_replace_adapters.py::test_a_stop_the_broker_does_not_list_is_skipped_as_unknown
+24 passed in 1.30s
 ```
 
-**Guards planted:** *(builder fills, per guard)*
+**Guards planted** (each planted, watched red, restored; restoration confirmed by `grep -c "DL-70 PLANT"` = 0
+in both files and the original line back in place):
 
-**Module line counts:** *(builder fills)*
+| Guard | Plant | Test | Red output |
+| --- | --- | --- | --- |
+| Resolver reads lineage | `contracts/stop_width.py`: `decided = None` instead of `_lineage_stop_pct(...)` | A1 | `AssertionError: assert DecidedStop(s...ce='fallback') == (0.0402588750...05, 'lineage')` · `At index 0 diff: 0.05 != 0.0402588750356905` — 1 failed |
+| Never replace an `accepted` order | `broker_stop_realign.py`: `if status is None:` instead of `if status != REPLACEABLE_ORDER_STATUS:` | A7 | `AssertionError: assert [('paper:stop...6:USB', 5806)] == []` — replace was called — 1 failed |
+| Never to or above the price | `broker_stop_realign.py`: `if False:` instead of the `decided * quantity >= market_value` guard | A8 | `AssertionError: assert [('paper:stop...6:USB', 5806)] == []` — the stop was moved above 58.00 — 1 failed |
 
-**`make ci`:** *(builder fills: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**Module line counts** (all under 200): `contracts/stop_width.py` 115 (new), `contracts/positions.py` 190
+(was 187), `contracts/broker_lifecycle.py` 168 (162), `contracts/broker_stops.py` 117 (105);
+`agents/execution/broker.py` 133 (124), `alpaca.py` **184** (was 189 — the HTTP-error helpers moved out),
+`alpaca_orders.py` 146 (136), `alpaca_replace.py` 65 (new), `paper_broker.py` **177** (was 183 — rejection
+and replay moved out), `paper_broker_orders.py` 86 (new), `broker_stop_thresholds.py` 137 (142),
+`broker_stops.py` 189 (185), `broker_stop_actions.py` 131 (unchanged), `broker_stop_writes.py` 119 (104),
+`broker_stop_realign.py` 180 (new), `broker_stop_types.py` 67 (65); `agents/monitor/domain/positions.py` 93
+(88), `agents/monitor/decide.py` 59. Tests: `stop_realign_helpers.py` 176, `test_broker_stop_realign.py` 156,
+`test_broker_stop_replace_adapters.py` 172, `test_alpaca_broker.py` 195, `broker_protocol_helpers.py` 52,
+`tests/test_stop_width.py` 143, `tests/test_broker_stop_replaced.py` 85.
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, pasted output)*
+**`make ci`:** `make ci > <scratchpad>/ci.txt 2>&1; echo $?` → **exit 0** (redirected, never piped).
+**3178 passed, 6 skipped**, **100.00 %** coverage (TOTAL 18099 statements / 3940 branches, 0 missed);
+ruff check + format clean; mypy "no issues found in 1010 source files"; import-linter **4 kept, 0 broken**;
+module size, module header, law coverage, PARAM/settings sync, sprint status, markdown links and version
+scheme steps passed; dependency audit "No unaccepted vulnerabilities; 1 accepted advisory re-checked"
+(PYSEC-2026-2447, DL-184); detect-secrets tracked **Passed**, untracked **Passed**. Re-run on the final
+tree after the handback edits (`ci2.txt`): **exit 0**, **3178 passed, 6 skipped**, **100.00 %**, 4 kept /
+0 broken, audit and both detect-secrets steps passed, and the sprint-status step reads this spec as `BUILT`.
 
-**Declared `Fill` property added?** *(builder fills: yes/no — decides retag vs full `up`)*
+**`make gate-ran`:** **not done by the builder.** It needs the pushed branch's remote `CI` and
+`Security Findings` runs to conclude, and it must be run from this worktree at the proven full SHA. Owed
+by the planner before merge (spec *Sequencing after merge*, step 2).
 
-**Not met / verified failing:** *(builder fills)*
+**Declared `Fill` property added?** **No.** The new markers (`replaced_at`, `replaced_by`,
+`replaced_by_broker_order_id`, `replaces`, `replaces_broker_order_id`) are on `BrokerStopOrder`, which has
+no declared properties; the new stop `Fill` carries only already-declared keys. `BrokerFill.order_status`
+is an in-process field and is never written to the graph. Deploy is an image rebuild + retag, not a full `up`.
+
+**Not met / verified failing:** (1) `make gate-ran` — not done (above). (2) The live Alpaca replace probe
+(new id, old `replaced`, `replaced_by`/`replaces`) — not done; the worktree has no network, it is the
+planner's pre-merge check. The Alpaca adapter is proven only against a recorded response shape. (3)
+`MON-NEV-05` stays ⬜. (4) DRIFT-074 (the analyst book's missing held-stop clause) is recorded OPEN, not
+fixed.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- **Divergence from the spec's port signature:** `replace_stop(broker_order_id, stop_price_cents, *,
+  idempotency_key)`. The keyword is the new order's `client_order_id` (= the new `BrokerStopOrder` key,
+  `stop:<ref>:<ticker>#N`), so the status refresh and the stale-order sweep find the replacement by its own
+  key and id and never follow a link; the trap about lookups keyed by the old id is closed that way. If the
+  planner's live probe shows Alpaca ignoring a caller-supplied `client_order_id` on PATCH, the sweep still
+  skips the new order (a non-pipeline key) and the fact still carries the new broker id; only the refresh's
+  by-key lookup falls back to the by-order-id lookup it already has.
+- **`fallback` semantics (DL-223 §3):** an adopted Position with no exact lineage keeps the width recorded on
+  it at adoption (the monitor's `default_stop_pct`) and reports `fallback`; execution's
+  `broker_stop_fallback_stop_pct` applies only to a Position with no width at all — which is what execution
+  did before, now worded that way in the `PARAM` row. All three readers therefore agree for every Position
+  that carries a width.
+- **[ASSUMED, worth measuring before deploy]** guard (a) reads raw order status from `broker.fills()`, i.e.
+  Alpaca `GET /v2/orders?status=all&limit=500`. A resting stop older than the account's 500 most recent orders
+  would not be listed; it is then **skipped loudly** (`StopReplaceSkipped`, `order_status=unknown`), never
+  replaced blind. The refresh and the drop sweep already depend on the same window.
+- **Out of scope, noted:** the S182 pending-`Fill` path (`filled_entry_stops.py`) still labels an
+  `OrderIntent`-derived width `position`, not `lineage`. It has never fired in production (DL-200), and
+  changing it would rewrite an S225 test assertion (`test_the_percent_source_does_not_answer_which_lineage_placed_the_stop`).
+  A one-line follow-up if wanted.
+- A replaced order's old stop `Fill` is refreshed to `broker_status=rejected`, reason `replaced` — the same
+  path a cancelled stop already takes (Alpaca's `replaced` maps to the port's `rejected`, as `canceled`
+  does); `replaced` is now terminal in `contracts/broker_lifecycle.py`, so a raw `replaced` status can never
+  read live.
+- **First run after deploy:** each mismatched `new` stop is replaced (9 on 2026-09-25; re-measure). A
+  position whose decided stop is at or above its price on the day raises `StopReplaceRefused` (warning) and
+  keeps its 5 % stop for the operator to decide.
+- **S229 rebase:** `docs/laws/{ledger,INDEX,drift-register}.md` and `docs/design-log.md` will conflict
+  textually. This sprint took **DL-223**, **DRIFT-073** and **DRIFT-074** (S229's spec cites DRIFT-068 only)
+  — re-check both at merge.

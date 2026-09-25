@@ -10,6 +10,87 @@ and is marked CLOSED here.
 
 ---
 
+## DL-223 - one resolver for the decided stop, and an in-place replace for a stop resting elsewhere - status: DECIDED (S230, 2026-09-25)
+
+**Question.** DL-222 measured every broker stop at the 5 % fallback while the PM decided 3.90–7.29 %
+for the buys since 2026-09-05. Where is the decided width recovered, and how does a stop already resting
+at the wrong price move without ever leaving the position unprotected?
+
+**Decisions.**
+
+1. **One resolver in `contracts/stop_width.py`: `decided_stop_pct(graph, position, *, fallback=None)`
+   returns `(stop_pct, source)` with `source` in `lineage | position | fallback`.** The analyst's
+   held-stop inputs (`contracts/positions.py`), execution's stop placement
+   (`broker_stop_thresholds.py`) and the monitor's watchdog (`monitor/domain/positions.py`) all call
+   it, so they cannot disagree about a stop (DL-208's failure).
+2. **The lineage match rule: exact quantity *and* exact `broker_price_cents`.** For a Position whose
+   `provenance` is `reconciled-from-broker`, the resolver takes the filled production buys of that
+   ticker (`source_run_id` starting `pm-run-`, so verification fills never count), keeps the ones whose
+   `quantity` equals the Position's `quantity` **and** whose `broker_price_cents` equals its
+   `opened_price_cents`, picks the most recent (`submitted_at`, then key), and returns its `OrderIntent`
+   `stop_pct` as `lineage`. Measured 25 / 25 on the live book (DL-222). No exact match returns
+   `fallback`.
+   - *Rejected: nearest match* (closest price or quantity). A holding that is two lots averaged would
+     borrow one lot's width and apply it to both, which is a guess dressed as lineage.
+   - *Rejected: quantity only.* Two buys of the same size at different prices are different decisions,
+     and the adopted Position's price is the broker's average entry, so price is the discriminating half.
+   - *Rejected: replaying Fills into lots.* Resting-stop Fills carry the placement date, so "buys since
+     the last sell" reads every held ticker as empty (the planner hit this while measuring).
+3. **What `fallback` means.** An adopted Position with no exact lineage falls back to the width the
+   monitor recorded on it at adoption (`default_stop_pct`, whose PARAM row already reads "fallback if
+   OrderIntent lineage is missing"), and says `fallback`, never `position` — `position` had hidden this
+   defect since S225. A caller's `fallback` argument applies only to a Position that records no width at
+   all, which is execution's existing use of `broker_stop_fallback_stop_pct`; the analyst and the monitor
+   pass none and keep raising on such a lot. So the three readers agree for every Position that carries a
+   width, whatever the two tunables are set to.
+4. **Replace tolerance: ≥ 1 cent, a named constant.** The compared prices are both integer cents from
+   `contracts/stop_rule.stop_price_cents`: the live fact's `stop_price_cents` (exactly what was sent) and
+   the price recomputed from the same `opened_price_cents` and the same `OrderIntent.stop_pct`. The
+   rounding (`round(stop_pct * 10000)` basis points, then floor division) is deterministic, so the same
+   inputs give the same cents every run; any difference is real. **A1–A12 prove there is no one-cent
+   flutter:** A12 runs placement twice and sees exactly one replace, and A11 sees a stop already at the
+   decided price draw zero broker calls.
+5. **Replace, never cancel-then-place.** `Broker.replace_stop(broker_order_id, stop_price_cents, *,
+   idempotency_key)` maps to Alpaca's atomic `PATCH /v2/orders/{id}`. The keyword `idempotency_key`
+   (a divergence from the spec's two-argument signature) is the new order's `client_order_id`, equal to
+   the new `BrokerStopOrder` key, so the stale-order sweep and the status refresh find the new order by
+   its own key and id and never need to follow a link from the old one. The old fact gets
+   `replaced_at` / `replaced_by` markers (never a deletion, `EXEC-OBS-03`); the new fact records
+   `replaces`, the decided `stop_pct`, `stop_pct_source` and `derived_from`. `replaced` is a terminal
+   broker status and `replaced_at` ends a fact's liveness, both inside `contracts/broker_lifecycle.py`
+   (`EXEC-OBS-05`: liveness asked in one place). The new fact is written before the old one is marked, so
+   the graph never shows zero live stops for the position.
+   - *Rejected: cancel, then place.* It opens an unprotected window, and Alpaca releases a cancelled
+     order's reserved quantity asynchronously, so the new sell stop can be refused and the position left
+     bare until the next run.
+6. **Guards.** (a) Only an order whose raw broker status is `new` is replaced; Alpaca refuses an
+   `accepted` order with `422` (measured 2026-09-25). `BrokerFill` gains `order_status`, the broker's raw
+   status, because the port's `pending` folds `new` and `accepted` together. The status is read with one
+   `fills()` call, made only when some stop is mismatched, so a matched book draws no broker call.
+   (b) A stop is never moved to or above the current price (`stop * quantity >= market_value` from the
+   run's fresh `BrokerPositionSnapshot`, exact integer comparison); the old stop stays and a warning
+   `StopReplaceRefused` fault names the ticker, the decided stop and the price, because moving it would be
+   an immediate exit taken by reconciliation and that capital decision is the operator's (ADR-0017).
+   (c) A replace that raises leaves the old stop live and unmarked, records a fault, and is retried on the
+   next run.
+7. **Where `replace_stop` lives without growing the near-limit adapters.** The Alpaca request shape goes
+   in `alpaca_orders.py` (`replace_body`), the call itself in a new `alpaca_replace.py` that the adapter
+   delegates to in a few lines; the paper broker's replace, including the modelled `422`, lives in a new
+   `paper_broker_replace.py`. Execution's replace flow lives in a new `broker_stop_realign.py`, so
+   `broker_stops.py` only collects the mismatched plans.
+
+**Ruled out as well.** *Fix it at adoption only* (`_create_broker_position` reads lineage): the 25
+existing Positions keep `0.05` because `merge_node` returns an existing node untouched, and the three
+readers would still each trust the node. *Fix it in execution only*: the analyst and the monitor would
+still read 5 %. *A one-off script to re-place the 25 stops*: the graph's stop facts would diverge from the
+broker and every future adopted buy would repeat the defect. *Moving a stop to or above the market when
+the decided width is already breached*: see guard (b).
+
+**Status.** DECIDED and built in S230. The first run after deploy replaces each mismatched `new` stop; the
+list must be re-measured on the day because prices move (spec *Sequencing after merge*).
+
+---
+
 ## DL-222 - the broker stop is the 5 % fallback, not the stop the PM decided - status: MEASURED, fix queued (2026-09-25)
 
 **How it was found.** The operator asked why badly performing stocks were not sold. The answer to the

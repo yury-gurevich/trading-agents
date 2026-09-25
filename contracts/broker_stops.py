@@ -54,6 +54,18 @@ def next_broker_stop_order_key(
         ordinal += 1
 
 
+def free_broker_stop_order_key(
+    graph: GraphStore, position_ref: str, ticker: Ticker
+) -> str:
+    """Return the first attempt key with no fact yet, e.g. for a replacement stop."""
+    ordinal = _BASE_ATTEMPT_ORDINAL
+    while True:
+        key = _broker_stop_order_attempt_key(position_ref, ticker, ordinal)
+        if graph.get_node(BROKER_STOP_ORDER_LABEL, key) is None:
+            return key
+        ordinal += 1
+
+
 def active_broker_stop_refs(graph: GraphStore) -> frozenset[str]:
     """Return position_refs protected by live BrokerStopOrder facts."""
     return frozenset(order.position_ref for order in active_broker_stop_orders(graph))

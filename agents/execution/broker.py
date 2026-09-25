@@ -45,6 +45,9 @@ class BrokerFill:
     order_decision_atr_pct: float | None = None
     order_volatility_present: bool | None = None
     order_volatility_fallback: bool | None = None
+    # The broker's raw order status (Alpaca `new`, `accepted`, ...). `status` folds
+    # `new` and `accepted` into `pending`, and only a `new` order is replaceable.
+    order_status: str | None = None
 
 
 @dataclass(frozen=True)
@@ -100,6 +103,12 @@ class Broker(Protocol):
         tif: str = "gtc",
     ) -> BrokerFill:
         """Submit one resting stop order under a stable idempotency key."""
+        ...  # pragma: no cover - protocol declaration only.
+
+    def replace_stop(
+        self, broker_order_id: str, stop_price_cents: int, *, idempotency_key: str
+    ) -> BrokerFill:
+        """Move a resting stop in place; the new order carries `idempotency_key`."""
         ...  # pragma: no cover - protocol declaration only.
 
     def cancel(self, broker_order_id: str) -> None:

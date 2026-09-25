@@ -1,6 +1,6 @@
 # `Execution` — Laws
 
-**Prefix:** `EXEC` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
+**Prefix:** `EXEC` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
 
 > Be the single, auditable, idempotent broker boundary. Execute only what the portfolio
 > manager has approved and the stage gate allows.
@@ -248,9 +248,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   fill failures, not a crash.
 - **EXEC-DEP-04** — `DEP-POSTGRES`: graph append-write for the broker-boundary evidence labels
   `BrokerStopOrder`, `BrokerPositionSnapshot` and `BrokerOrderStatus`; read for stop liveness
-  and holdings reconciliation. `DEP-BROKER` additionally requires order cancellation and
-  stop-order placement, not submission alone. *(Declares capability decided in ADR-0015 §3,
-  ADR-0018 and DL-44.)*
+  and holdings reconciliation. `DEP-BROKER` additionally requires order cancellation,
+  stop-order placement and in-place stop replacement, not submission alone. *(Declares capability
+  decided in ADR-0015 §3, ADR-0018 and DL-44; replacement added by S230 / DL-223.)*
 
 ---
 
@@ -278,6 +278,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `cancelled_at`; a resting-stop `Fill` is not an open order; and the stale-order sweep asks the
   broker and graph the same stop-identity question rather than comparing liveness views. *(Declares
   the S190 / DL-139 correction for DRIFT-055 and the S209 / DL-170 correction for DRIFT-064.)*
+- **EXEC-OBS-06** — The protective stop resting at the broker is the stop the PM decided. Its width
+  is read through the one shared stop-width resolver: a broker-adopted position takes the `stop_pct`
+  of the one filled production buy that equals it exactly in quantity and broker price, and with no
+  exact match it takes the fallback; every stop fact records its `stop_pct_source` (`lineage`,
+  `position` or `fallback`). A live stop whose price differs from the decided price by one cent or
+  more is **replaced in place**, never cancelled and re-placed, so the position is never without a
+  live stop: the old `BrokerStopOrder` fact gains `replaced_at` / `replaced_by` markers (never a
+  deletion) and the new fact records `replaces`. A replacement is refused, with a warning fault and
+  the old stop left live, when the broker order is not `new`, when the decided stop is at or above the
+  current price, or when the broker refuses it; a refused or failed replacement is retried on the
+  next run. *(Declares capability decided in S230 / DL-223; closes the defect DL-222 measured.)*
 
 ---
 
@@ -321,6 +332,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
       "list_fills",
       "list_positions",
       "place_stop_order",
+      "replace_order",
       "cancel_order"
     ],
     "provider": "alpaca",
@@ -357,7 +369,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `scaled_order_price_tolerance_ceiling_bps` | `250` | `int ≥ 0, ≤ 500` (bps) | YES | Keeps the challenger narrow enough that ADR-0018 still rejects a materially unevaluated open |
 | `deliberation_grace_seconds` | `900` | `int ≥ 0, ≤ 3600` (seconds) | YES | How long a buy-carrying PMRun waits for its DeliberationRun before submitting under the declared posture; exits never wait (S147 / ADR-0017) |
 | `deliberation_posture` | `"binding"` | `Literal["advisory","binding"]` — config | NO (mode selector) | S185 operator policy selector; `advisory` records expected fail-open as warning, `binding` refuses buy exposure when no `DeliberationRun` arrives. **Default flipped to `binding` 2026-09-20 (operator, work-queue item 6b, DL-185)** once all three flip conditions were met non-vacuously. Not a tunable — switching it changes which policy runs, not a value inside one |
-| `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for broker-adopted positions with no PM stop lineage (ADR-0015 §3); matches the monitor-reconciliation paper-stage floor |
+| `broker_stop_fallback_stop_pct` | `0.05` | `float > 0.0, ≤ 1.0` (fraction) | YES | Downside floor for a held position with no PM stop lineage that records no stop width of its own (ADR-0015 §3). A position with lineage never uses it (`EXEC-OBS-06`); an adopted position with no lineage keeps the width recorded at adoption, the monitor-reconciliation paper-stage floor this matches |
 
 ---
 
@@ -435,3 +447,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   continue immediately. Amends `EXEC-OUT-09` with the `held_degraded` deliberation status. Proves
   the new clause without adding any `ExecutionRun` vocabulary property, and preserves the ADR-0022
   exit boundary.
+- **v1.9 — S230 a stop rests where the PM decided (2026-09-25).** Adds `EXEC-OBS-06`: the broker
+  stop's width is read through the shared stop-width resolver (PM lineage first, the fallback only
+  without it, the source recorded on every stop fact), and a live stop resting one cent or more off
+  its decided price is replaced in place, never cancelled and re-placed, with `replaced_at` /
+  `replaced_by` / `replaces` markers and three refusal guards (not `new`; at or above the price; broker
+  refusal). Widens `EXEC-DEP-04` and the CAP `broker.operations` with order replacement, and rewords the
+  `broker_stop_fallback_stop_pct` rationale so it says when the fallback applies — the value and bounds
+  are unchanged. *Why:* DL-222 measured all 25 live stops at the 5 % fallback while the PM had decided
+  3.90–7.29 % for every buy since 2026-09-05; recorded as DRIFT-073. No `Fill` vocabulary property
+  added.

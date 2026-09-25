@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.monitor.domain.exit_rules import ExitPosition
+from contracts.stop_width import decided_stop_pct
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -61,11 +62,15 @@ def position_from_fill(
     )
 
 
-def exit_position(node: Node) -> ExitPosition:
-    """Return an exit-rule position object from a stored graph node."""
+def exit_position(graph: GraphStore, node: Node) -> ExitPosition:
+    """Return an exit-rule position whose stop is the decided width (DL-223).
+
+    The width comes from the shared resolver, so the watchdog reads the same
+    stop that execution rests at the broker and the analyst checks.
+    """
     return ExitPosition(
         opened_price_cents=int(node.props["opened_price_cents"]),
-        stop_pct=float(node.props["stop_pct"]),
+        stop_pct=decided_stop_pct(graph, node).stop_pct,
     )
 
 

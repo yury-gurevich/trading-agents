@@ -29,7 +29,7 @@ def evaluate_one(
     """Evaluate one open position; return whether its stop is breached."""
     ticker = str(position.props["ticker"])
     observation, trigger = evaluate_position(
-        exit_position(position), current_price_cents
+        exit_position(graph, position), current_price_cents
     )
     breached = observation == "stop_breached"
     write_check(

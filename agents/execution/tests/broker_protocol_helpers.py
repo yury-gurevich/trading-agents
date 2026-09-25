@@ -33,6 +33,12 @@ class NoStopBrokerMixin:
         """Fail loudly if a test unexpectedly places a broker stop."""
         raise AssertionError("test broker should not submit stop orders")
 
+    def replace_stop(
+        self, broker_order_id: str, stop_price_cents: int, *, idempotency_key: str
+    ) -> BrokerFill:
+        """Fail loudly if a test unexpectedly replaces a broker stop."""
+        raise AssertionError("test broker should not replace stop orders")
+
     def cancel(self, broker_order_id: str) -> None:
         """Fail loudly if a test unexpectedly cancels a broker stop."""
         raise AssertionError("test broker should not cancel stop orders")

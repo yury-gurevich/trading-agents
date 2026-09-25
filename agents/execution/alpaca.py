@@ -15,7 +15,7 @@ import urllib.request
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from agents.execution import alpaca_orders
+from agents.execution import alpaca_orders, alpaca_replace
 from agents.execution.alpaca_account import account_from_payload
 from agents.execution.alpaca_positions import positions_from_payload
 from agents.execution.broker import (
@@ -40,6 +40,8 @@ _order_body = alpaca_orders.order_body
 _stop_order_body = alpaca_orders.stop_order_body
 _fill_from_order = alpaca_orders.fill_from_order
 _price_of = alpaca_orders.price_of
+_http_error_message = alpaca_replace.http_error_message
+_http_error_body = alpaca_replace.http_error_body
 
 
 class AlpacaBroker:
@@ -107,6 +109,14 @@ class AlpacaBroker:
             raise BrokerRejectedError(fill)
         return fill
 
+    def replace_stop(
+        self, broker_order_id: str, stop_price_cents: int, *, idempotency_key: str
+    ) -> BrokerFill:
+        """Move a resting stop in place with Alpaca's atomic PATCH (S230)."""
+        return alpaca_replace.replace_stop_order(
+            self._request, broker_order_id, stop_price_cents, idempotency_key
+        )
+
     def fills(self) -> tuple[BrokerFill, ...]:
         """Return broker-known order outcomes for reconciliation."""
         zero = Money(amount=Decimal("0"))
@@ -172,18 +182,3 @@ class AlpacaBroker:
             request, timeout=self._timeout
         ) as resp:
             return json.loads(resp.read().decode("utf-8"))
-
-
-def _http_error_message(exc: urllib.error.HTTPError) -> str:
-    body = _http_error_body(exc)
-    if body:
-        return f"HTTP Error {exc.code}: {exc.reason}: {body}"
-    return str(exc)
-
-
-def _http_error_body(exc: urllib.error.HTTPError) -> str:
-    try:
-        body = exc.read()
-    except OSError:
-        return ""
-    return body.decode("utf-8", errors="replace").strip()

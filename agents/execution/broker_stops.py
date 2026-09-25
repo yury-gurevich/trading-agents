@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from agents.execution.broker_stop_actions import cancel_stop, place_stop
+from agents.execution.broker_stop_realign import realign_broker_stops
 from agents.execution.broker_stop_thresholds import broker_stop_thresholds
 from agents.execution.filled_entry_stops import filled_entry_stop_thresholds
 from agents.execution.settings import ExecutionSettings
@@ -46,7 +47,7 @@ def place_broker_stops(
     *,
     fallback_stop_pct: float | None = None,
 ) -> None:
-    """Place missing sell stops for active positions not being sold this run."""
+    """Place missing sell stops, and move live ones resting off their decided price."""
     broker_quantities = _fresh_snapshot_quantities(snapshot)
     if broker_quantities is None:
         return
@@ -60,6 +61,7 @@ def place_broker_stops(
     plan_set = broker_stop_thresholds(graph, fallback_stop_pct=fallback)
     plans = {plan.threshold.ticker: plan for plan in plan_set.plans}
     error_tickers: set[str] = set()
+    protected: list[BrokerStopThresholdPlan] = []
     for error in plan_set.errors:
         error_tickers.add(error.ticker)
         if error.ticker not in sold_tickers:
@@ -98,6 +100,7 @@ def place_broker_stops(
             )
             continue
         if threshold.position_ref in protected_refs:
+            protected.append(active_plan)
             continue
         fill = _place_stop(graph, broker, sink, active_plan)
         if fill is None:
@@ -116,6 +119,7 @@ def place_broker_stops(
                 f"stop submission rejected: {fill.reason or fill.status}",
                 position_ref=threshold.position_ref,
             )
+    realign_broker_stops(graph, broker, sink, protected, snapshot)
 
 
 def _place_stop(

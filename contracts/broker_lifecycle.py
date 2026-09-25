@@ -43,17 +43,23 @@ if TYPE_CHECKING:
 
 BROKER_STOP_ORDER_TYPES = frozenset({"stop", "stop_limit"})
 TERMINAL_FILL_BROKER_STATUSES = frozenset({"filled", "rejected"})
+# `replaced`: Alpaca's status for an order superseded by an in-place replace (S230).
 TERMINAL_BROKER_ORDER_STATUSES = frozenset(
-    {"canceled", "cancelled", "expired", "filled", "rejected"}
+    {"canceled", "cancelled", "expired", "filled", "rejected", "replaced"}
 )
 RESOLVED_UNFILLED_BROKER_STATUSES = frozenset({"canceled", "cancelled", "expired"})
 COMPLETED_EXIT_BROKER_STATUSES = frozenset({"filled", "partial", "partially_filled"})
 FILLED_BROKER_STATUSES = frozenset({"filled"})
+_ENDED_MARKERS = ("cancelled_at", "replaced_at")
 
 
 def is_live_broker_stop_fact(graph: GraphStore, stop: Node) -> bool:
-    """Return whether a BrokerStopOrder still protects a position."""
-    if _truthy_str(stop.props.get("cancelled_at")) is not None:
+    """Return whether a BrokerStopOrder still protects a position.
+
+    `cancelled_at` and `replaced_at` are append-only markers (EXEC-OBS-03); either
+    one ends the fact's liveness here, the one place it is asked (EXEC-OBS-05).
+    """
+    if any(_truthy_str(stop.props.get(name)) for name in _ENDED_MARKERS):
         return False
     fill = sibling_fill_for_broker_stop(graph, stop)
     if fill is None:

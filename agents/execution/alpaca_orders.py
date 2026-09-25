@@ -63,6 +63,15 @@ def stop_order_body(
     }
 
 
+def replace_body(stop_price_cents: int, idempotency_key: str) -> dict[str, object]:
+    """Return the PATCH payload that moves a resting stop to a new price (S230).
+
+    `client_order_id` names the new order, so it can be found by its own key.
+    """
+    stop_price = Decimal(stop_price_cents) * CENT
+    return {"stop_price": str(stop_price), "client_order_id": idempotency_key}
+
+
 def fill_from_order(
     order: object, idempotency_key: str, reference: Money
 ) -> BrokerFill:
@@ -82,6 +91,7 @@ def fill_from_order(
         submitted_at=_optional_str(order.get("submitted_at")),
         order_type=_optional_str(order.get("type")),
         time_in_force=_optional_str(order.get("time_in_force")),
+        order_status=_optional_str(order.get("status")),
     )
 
 

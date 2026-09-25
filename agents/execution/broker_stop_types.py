@@ -17,7 +17,9 @@ if TYPE_CHECKING:
     from contracts.common import Ticker
     from contracts.positions import PositionStopThreshold
 
-StopPctSource = Literal["position", "fallback"]
+# Where a stop's percent came from (contracts/stop_width.py, DL-223). `position`
+# alone once hid that an adopted Position's own width was the fallback (DL-222).
+StopPctSource = Literal["lineage", "position", "fallback"]
 
 # Which lineage produced the plan. EXEC-OBS-03 requires the protective-stop
 # lifecycle to be fully reconstructable, and until S225 it was not: both the

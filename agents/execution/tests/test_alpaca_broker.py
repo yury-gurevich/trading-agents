@@ -71,6 +71,7 @@ def test_fill_from_order_parses_all_fill_fields_exactly() -> None:
         Money(amount=Decimal("199.125")),
         "pf1",
         "partial",
+        order_status="partially_filled",
     )
 
 
@@ -90,7 +91,15 @@ def test_fill_from_order_keeps_rejected_reason_exactly() -> None:
         id="r2", side="sell", qty="4", status="canceled", filled_avg_price=""
     )
     assert alpaca._fill_from_order(order, "run6:AAPL:sell", _REF) == BrokerFill(
-        "run6:AAPL:sell", "AAPL", "sell", 4, _REF, "r2", "rejected", "canceled"
+        "run6:AAPL:sell",
+        "AAPL",
+        "sell",
+        4,
+        _REF,
+        "r2",
+        "rejected",
+        "canceled",
+        order_status="canceled",
     )
 
 

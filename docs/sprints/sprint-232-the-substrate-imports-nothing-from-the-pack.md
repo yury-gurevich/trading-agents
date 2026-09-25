@@ -9,14 +9,28 @@
 agent's imports to change. Both expectations are measured false below
 **Decisions:** [ADR-0012](../decisions/0012-platform-domain-separation.md) (the wall, declared) ·
 [DL-12](../design-log.md) (the grant leak, closed in S84–S86) · work-queue **84** · this sprint files
-**DRIFT-075** · the builder records its decisions as the next free DL number (**DL-227** today)
+**DRIFT-075** · the builder records its decisions as the next free DL number (**DL-228**: DL-227 is S231's)
 
 > **Why this bump kind.** No new capability. ADR-0012 already forbids the substrate to import or name
 > the pack, and `MST-NEV-05`/`MST-DEP-03` already promise it for the master. This sprint moves a small
 > amount of vocabulary, turns one roster into pack data, and adds the enforcement that makes the promise
 > checkable. A refactor that makes an existing promise true is a PATCH.
 
-**Builder:** this cloud session (Claude Code), after the operator reviews this spec. If the work goes
+> 🩹 **Planner review, 2026-09-26 (local planner session): cleared to build.**
+> **Design decision 1 is confirmed: the kernel.** Technical calls are delegated to the planner, so the
+> operator is told rather than asked. The rejected homes are argued below, and the kernel already hosts
+> `AgentContract`, `Capability`, `AgentFault` and `Envelope`.
+> **Re-measured on `main` @ `89dcbb08`, which changes 0 code files since `c51bf9e`:** row 1 (0
+> `DEFAULT_GRANTS` in any `.py`), row 8 (10 lines: 3 production, 7 tests), row 10 (68 first-party modules,
+> exactly `contracts`, `contracts.common`, `contracts.master` from the pack), row 11 (the islands
+> contract lists 12, with neither master nor deliberator), row 17 (both hashes equal), the guardrail sizes
+> and `agents/master/Dockerfile:9` all reproduce.
+> 🩹 **One correction: DL-227 is taken by S231**, which merges first. Record this sprint's decisions as
+> **DL-228** and re-check at merge. S231 touches no file in this blast radius (`scripts/sp500_*`,
+> `replay_universe*`, `replay_dataset_sources.py`, and their tests). It bumps to `0.113.00`, so this PATCH
+> lands at the next free PATCH above that.
+
+**Builder:** this cloud session (Claude Code); the planner's review above clears it to start. If the work goes
 to Codex instead, the handover block below is self-contained.
 **The build environment has no `.env`, no Azure access and no live graph. Every proof in this sprint is
 on fixtures, and no handback may claim live evidence.**
@@ -280,8 +294,9 @@ scans, `lint-imports` and a planted fixture. Nothing here is live.
    new `MST-DEP-05`. Each clause asserts only what a test or the gate can falsify.
 7. **The pack-neutral text of the master `CONTRACT`** once it lives in the kernel.
 
-🪤 **Take the next free DL number, then re-check it at merge.** The newest entry today is **DL-226**, and
-the drift register's newest ID is **DRIFT-074**.
+🪤 **Take the next free DL number, then re-check it at merge.** The newest entry was **DL-226** when this
+was specced; S231 has since taken **DL-227**, so this sprint's is **DL-228**. The drift register's newest
+ID is **DRIFT-074**.
 
 ---
 
@@ -437,8 +452,8 @@ Spec: docs/sprints/sprint-232-the-substrate-imports-nothing-from-the-pack.md (re
 
 Branch: sprint-232-the-substrate-imports-nothing-from-the-pack. Never main.
 You have NO .env, NO Azure access and NO live graph. Prove everything on fixtures; claim nothing live.
-Do not start until the operator has confirmed design decision 1 (the substrate vocabulary goes into
-the kernel).
+Design decision 1 is confirmed (planner review, 2026-09-26): the substrate vocabulary goes into the
+kernel. Record the design decisions as DL-228 (DL-227 is S231's).
 
 MUST RULE before any code: read agents/master/laws/laws.md + test-plan.md,
 agents/deliberator/laws/laws.md + test-plan.md, docs/laws/conventions.md,

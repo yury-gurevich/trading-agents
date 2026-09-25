@@ -52,7 +52,7 @@ def constituents_table_fixture() -> str:
       <tr>
         <td>BRK.B</td><td>Berkshire Example</td><td>Financials</td>
         <td>Holding</td><td>Omaha, Nebraska</td>
-        <td>February 16, 2010</td><td>0001067983</td><td>1839</td>
+        <td>2010-02-16</td><td>0001067983</td><td>1839</td>
       </tr>
     </table>
     """
@@ -65,7 +65,7 @@ def universe_pages_fixture(symbols: tuple[str, ...] = ("AAA", "BBB")) -> dict[st
         <tr>
           <td>{symbol}</td><td>{symbol} Example</td><td>Sector</td>
           <td>Industry</td><td>Somewhere</td>
-          <td>January 1, 2019</td><td>0001</td><td>2000</td>
+          <td>2019-01-01</td><td>0001</td><td>2000</td>
         </tr>
         """
         for symbol in symbols

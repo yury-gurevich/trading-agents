@@ -175,8 +175,10 @@ def _revision_id(html: str) -> str:
 
 
 def _parse_optional_date(value: str) -> date | None:
+    # Constituents write ISO dates (503 of 503, revision 1376729338); the changes
+    # table writes "September 22, 2025" (409 of 409). Measured live 2026-09-26.
     value = value.strip()
-    return _parse_date(value) if value else None
+    return date.fromisoformat(value) if value else None
 
 
 def _parse_date(value: str) -> date:

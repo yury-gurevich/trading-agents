@@ -3,7 +3,7 @@
 
 **Phase:** Law cycle (the S70/S71 backfill, for the two components they did not cover)
 **Branch:** `sprint-229-every-component-that-decides-answers-to-a-law-book`
-**Status:** BUILT
+**Status:** MERGED `a372b48f` · tag `v0.111.02` · planner review and functionality check 2026-09-25
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** closes [DRIFT-068](../laws/drift-register.md) (the dispatcher has no law home) · work-queue item **86** · [DL-221](../design-log.md) (where non-agent law books live, and how the gate finds them) · ranked by the operator **ahead of** [S228](sprint-228-the-operator-sees-whether-the-book-beats-the-index.md) (*"a quick sprint to cover this gap before we go further"*, 2026-09-25)

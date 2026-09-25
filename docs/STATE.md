@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-25 23:40 AEST · **Version:** **0.112.02 deployed** (`s228b`) = `main` · **🎯 E17.2 specced for Codex as [S231](sprints/sprint-231-the-replay-universe-is-the-index-as-it-stood.md); tonight's run (Sat 08:30 AEST) owes S230's and item 88's functionality checks.**
+**Last updated:** 2026-09-26 09:05 AEST · **Version:** **0.112.02 deployed** (`s228b`) = `main` · **🎯 `sched-2026-09-25` checked: S230 moved all 9 stops to the PM's price and item 88 closed; S231 is with Codex, E20.2 in a cloud session.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…13.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **CHECKED — `sched-2026-09-25`, the first run on S230 and DL-224, 2026-09-26 ~09:00 AEST, read-only from `main`.** `trace_run.py` **8/8**, `ACCEPTANCE PASS`; PM approved 0 of 26, monitor held 25. **S230:** all **9** stops rest at the PM's decided price (replaced 22:41 UTC: AMZN, BAC, BMY, MDLZ, SCHW, USB tightened; CSCO, DOW, META widened; USB not refused, last 59.33 against 58.06). The 9 old facts carry `replaced_at`, the 9 new ones `stop_pct_source=lineage`; **0 faults**; audit A1/A2 **25/25**; the next run's replace list, computed read-only, is **0 of 25**. 🟠 Alpaca still lists the 9 old orders as **`pending_replace`** (this replace ran after Friday's close, while the 08:03 UTC probe resolved at once), so item **87** closes when `sched-2026-09-28` reads them `replaced` and replaces 0. **Item 88 closed:** the stored Snapshot equals an independent latest-per-date recomputation on all 12 keys; 2026-09-24's point is the 22:41:57 sync (10,196,502 cents), and the old earliest rule would have read excess −0.47 pts where the Snapshot reads **−0.43**. Rows in [functionality-checks.md](laws/functionality-checks.md).
 
 ☁️ **IN FLIGHT — P20 E20.2 in a claude.ai/code cloud session (the operator's $100 cloud credit), 2026-09-25 ~23:55 AEST; S232 reserved for its spec.** Step 1 only: the sprint spec from the template on branch `sprint-232-<slug>`, a measured blast radius, then stop for planner review; no merge or deploy from the cloud (no `.env`, no Azure). 🪤 ADR-0012's first named leak is already fixed (`agents/master/grants.py` loads `trading_grants.json` by path), so the open leak is the `contracts/` split plus the `import-linter` wall. In parallel: Codex builds [S231](sprints/sprint-231-the-replay-universe-is-the-index-as-it-stood.md).
 

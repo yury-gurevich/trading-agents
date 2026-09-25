@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked above features
 **Branch:** `sprint-230-a-stop-rests-where-the-pm-decided`
-**Status:** BUILT
+**Status:** MERGED `b96f7a70` · tag `v0.111.03` · not deployed; the live replace check gates the deploy
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-222](../design-log.md) (the measurement) · work-queue item **87** · DL-156 (the stop mode flipped to `scaled`, 2026-09-05) · [DL-200](../design-log.md) / S225 (why every stop comes from a broker-adopted Position) · ADR-0015 §3 (resting protective stops) · ADR-0017 (the stop is an unconditional floor) · design decisions go to **DL-223**
@@ -297,7 +297,8 @@ paper broker and a recorded response shape. The live replace is the planner's ch
 
 ## Sequencing after merge
 
-1. **Planner, before merge:** replace a `new` throwaway paper order after 08:00 UTC and confirm the
+1. 🩹 **Moved from "before merge" to "before deploy"** (operator, 2026-09-25: *"merge"*). A merge builds images but reaches no
+   fleet, so the live check protects the deploy, not the merge. **Planner, before deploy:** replace a `new` throwaway paper order after 08:00 UTC and confirm the
    response shape the adapter assumes (new id, old `replaced`, `replaced_by`/`replaces`).
 2. `make ci` green locally, branch pushed, **`make gate-ran` exits 0** from the worktree at the proven
    commit; check the printed SHA against `git rev-parse HEAD`.

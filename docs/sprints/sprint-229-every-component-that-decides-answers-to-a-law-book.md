@@ -502,10 +502,22 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 6 new file(s)
 ```
 
-**`make gate-ran`:** pending final SHA after commit/push.
+**`make gate-ran`:** pre-evidence branch proof from worktree
+`C:\Users\yury_\Downloads\project\trading-agents-sprint-229-every-component-that-decides-answers-to-a-law-book`
+at `a9cc00ddd371737d98f7abecdc4017d2310f74ee`:
 
-**Not met / verified failing:** Remote gate and exact-SHA `make gate-ran` are pending until this
-handback is committed and pushed.
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for a9cc00ddd371737d98f7abecdc4017d2310f74ee:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+The final exact-SHA proof necessarily postdates this committed evidence update and is reported in
+the sprint handback.
+
+**Not met / verified failing:** None for branch-built scope. Not merged, not deployed, not live-proven.
 
 ---
 

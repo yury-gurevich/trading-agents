@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.2**
 **Branch:** `sprint-231-the-replay-universe-is-the-index-as-it-stood`
-**Status:** SPEC
+**Status:** MERGED · tag `v0.113.00` · 2026-09-26 · planner's live build owed
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-226](../design-log.md) (the source: Wikipedia's change log + Alpaca SIP bars) ·
@@ -417,13 +417,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Files read | Rules that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `scripts/sp500_*.py`, `scripts/replay_universe.py`, tests | `CLAUDE.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-226; `docs/research/survivorship-free-universe/measurement.md`; this spec | No agent law book binds `scripts/`; modules need headers, stay below 200 lines, avoid magic numbers, and cite S231 test-plan rows. | Yes: kept the implementation split across small script modules and cited S231 rows instead of law IDs. |
+| `scripts/replay_dataset_sources.py` | its docstring; `scripts/replay_dataset.py` docstring; this spec | Only add a backward-compatible `start` keyword defaulting to `START`; keep the existing live-universe cache build behavior unchanged. | Yes: changed only the `daily_bars` signature and request `start` parameter. |
+| `scripts/replay_dataset.py`, `scripts/exp013_regime_sizing.py` | both files read before edits | The existing `bars.csv.gz`, `vix.csv.gz`, and `load()` behavior stay untouched because EXP-011..013 reproduce through that cache. | Yes: no edits to `replay_dataset.py`, `exp013_regime_sizing.py`, or existing cache files. |
+| cache/output handling | `scripts/replay_dataset.py` docstring; DL-226; R008 measurement | Alpaca SIP bars are licensed and the repo is public, so generated `sp500_*` files and fetched pages live only outside the worktree. | Yes: added repo-cache refusal and synthetic fixtures only. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. Scope is `scripts/` and `tests/` plus the required sprint/design/state documentation; no `contracts/`, no agent law book, no image, and no new agent guarantee.
 
-**Contradictions found between a rule and this spec:** *(builder fills)*
+**Contradictions found between a rule and this spec:** None.
 
-**Rules found silent where a decision was needed:** *(builder fills)*
+**Rules found silent where a decision was needed:** None; implementation choices are recorded as DL-227 before code.
 
 ---
 
@@ -431,48 +434,75 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Row cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_changes_table_parses_measured_structure` | `tests/test_sp500_wiki.py` | PASS | S231-A1 |
+| A2 | `test_constituents_table_parses_by_id_and_keeps_dots` | `tests/test_sp500_wiki.py` | PASS | S231-A2 |
+| A3 | `test_membership_reconstruction_matches_known_history` | `tests/test_sp500_membership.py` | PASS | S231-A3 |
+| A4 | `test_rename_row_prevents_double_count` | `tests/test_sp500_membership.py` | PASS; guard failed when rename mapping was disabled | S231-A4 |
+| A5 | `test_unreconciled_records_are_listed` | `tests/test_sp500_membership.py` | PASS | S231-A5 |
+| A6 | `test_ticker_reuse_keeps_bars_inside_each_episode` | `tests/test_sp500_bars.py` | PASS | S231-A6 |
+| A7 | `test_bars_row_switches_source_inside_range_only` | `tests/test_sp500_bars.py` | PASS | S231-A7 |
+| A8 | `test_batch_drop_is_refetched_before_missing` | `tests/test_sp500_bars.py` | PASS; guard failed when single-symbol verification was removed | S231-A8 |
+| A9 | `test_coverage_counts_sessions_and_classifies_shortfalls` | `tests/test_sp500_coverage.py` | PASS | S231-A9 |
+| A10 | `test_coverage_floor_fails_build_below_floor` | `tests/test_sp500_coverage.py` | PASS | S231-A10 |
+| A11 | `test_universe_build_leaves_existing_replay_cache_untouched` | `tests/test_replay_universe.py` | PASS | S231-A11 |
+| A12 | `test_universe_build_refuses_repo_cache_before_fetching` | `tests/test_replay_universe.py` | PASS; guard failed when repo-cache refusal was disabled | S231-A12 |
+| A13 | `test_from_snapshot_rebuilds_without_wikipedia_fetch` | `tests/test_replay_universe.py` | PASS | S231-A13 |
+| A14 | `test_daily_bars_start_default_is_backward_compatible` | `tests/test_replay_universe.py` | PASS | S231-A14 |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** None.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-231-the-replay-universe-is-the-index-as-it-stood`, branch `sprint-231-the-replay-universe-is-the-index-as-it-stood`; `.env` absent (`Test-Path .env` -> `False`).
 
-**Result:** *(builder fills)*
+**Result:** Built the fixture-proven S&P 500 point-in-time replay-universe builder. No live Wikipedia or Alpaca build ran.
 
-**Files changed:** *(builder fills)*
+**Files changed:** `scripts/sp500_wiki.py`, `scripts/sp500_membership.py`, `scripts/sp500_symbol_map.csv`, `scripts/sp500_bars.py`, `scripts/sp500_coverage.py`, `scripts/replay_universe.py`, `scripts/replay_universe_cache.py`, `scripts/replay_dataset_sources.py`, `tests/sp500_fixtures.py`, `tests/test_sp500_wiki.py`, `tests/test_sp500_membership.py`, `tests/test_sp500_bars.py`, `tests/test_sp500_coverage.py`, `tests/test_replay_universe.py`, `docs/design-log.md`, `docs/STATE.md`, this sprint doc, `docs/sprints/README.md`, `pyproject.toml`, `uv.lock`.
 
-**Design decisions:** recorded as DL-*(builder fills)* in [`design-log.md`](../design-log.md) — *(builder fills)*
+**Design decisions:** recorded as DL-227 in [`design-log.md`](../design-log.md) — line episodes, batch verification, shortfall reasons, cache file formats, and rejected alternatives.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+uv run pytest tests/test_sp500_wiki.py tests/test_sp500_membership.py --no-cov
+collected 3 items
+tests\test_sp500_wiki.py FF
+tests\test_sp500_membership.py F
+FAILED ... ModuleNotFoundError: No module named 'scripts.sp500_wiki'
+FAILED ... ModuleNotFoundError: No module named 'scripts.sp500_membership'
+3 failed in 3.45s
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+uv run pytest tests/test_sp500_wiki.py tests/test_sp500_membership.py tests/test_sp500_bars.py tests/test_sp500_coverage.py tests/test_replay_universe.py --no-cov
+collected 14 items
+tests\test_sp500_wiki.py ..
+tests\test_sp500_membership.py ...
+tests\test_sp500_bars.py ...
+tests\test_sp500_coverage.py ..
+tests\test_replay_universe.py ....
+14 passed in 1.99s
 ```
 
-**Guards planted:** *(builder fills, per guard)*
+**Guards planted:** A4 broken by disabling rename mapping -> `AssertionError: assert 3 == 2`; restored. A8 broken by removing single-symbol re-fetch -> `AssertionError: assert ('DROP',) in [('DROP', 'EMPTY', 'KEEP')]`; restored. A12 broken by disabling repo-cache refusal -> `Failed: DID NOT RAISE RuntimeError`; restored and generated in-repo cache files removed.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `sp500_wiki.py` 195; `sp500_membership.py` 179; `sp500_bars.py` 163; `sp500_coverage.py` 102; `replay_universe.py` 161; `replay_universe_cache.py` 138; `replay_dataset_sources.py` 90; tests all <= 145.
 
-**`make ci`:** *(builder fills: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**`make ci`:** `make ci > $env:TEMP\s231-ci.txt 2>&1`, exit 0. `3233 passed, 6 skipped`, coverage `100.00 %`; dependency audit: `No unaccepted vulnerabilities; 1 accepted advisory re-checked`; detect-secrets tracked and untracked passed (`detect-secrets (untracked): scanning 13 new file(s)`).
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, pasted output)*
+**`make gate-ran`:** not done. Local branch is committed; remote push/CI/gate proof was not run from this no-network build worktree.
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** Live build not done by design; no network or `.env`. Remote push and `make gate-ran` not done.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- The planner must run the live `replay_universe.py build --end <yesterday>` after merge with `.env`; this branch proved only synthetic fixtures and injected fakes.
+- No `bars.csv.gz`, `vix.csv.gz`, generated membership, fetched Wikipedia HTML, or Alpaca bar file was committed.

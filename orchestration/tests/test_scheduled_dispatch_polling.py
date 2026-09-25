@@ -24,7 +24,7 @@ from orchestration.tests.scheduled_dispatch_human_helpers import (
 
 
 def test_c8_same_telegram_update_is_written_once() -> None:
-    """C8: replayed Telegram updates do not duplicate RunHoldAnswer evidence."""
+    """DSP-ORD-02: replayed Telegram updates do not duplicate RunHoldAnswer evidence."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)
@@ -38,7 +38,7 @@ def test_c8_same_telegram_update_is_written_once() -> None:
 
 
 def test_c9_first_answer_wins_when_later_answer_disagrees() -> None:
-    """C9: later answer facts remain visible but cannot reverse the first answer."""
+    """DSP-ORD-02: later answers stay visible but do not override the first."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)
@@ -118,7 +118,7 @@ def test_c11_handled_updates_are_confirmed_through_telegram_offset() -> None:
 
 
 def test_c12_telegram_outage_records_a_fault_without_stopping_dispatch() -> None:
-    """C12: Telegram failure degrades to a held run and durable fault evidence."""
+    """DSP-STA-02 / DSP-FAIL-01 / DSP-OBS-01: Telegram failure records a fault."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
 
@@ -129,7 +129,7 @@ def test_c12_telegram_outage_records_a_fault_without_stopping_dispatch() -> None
 
 
 def test_c13_plain_text_updates_are_ignored() -> None:
-    """C13: free-text Telegram messages cannot become operator run decisions."""
+    """DSP-IN-04: free-text Telegram messages cannot become operator run decisions."""
     module = import_module("orchestration.telegram_client")
 
     def sender(_method: str, _payload: dict[str, object], _timeout: float) -> object:
@@ -142,7 +142,7 @@ def test_c13_plain_text_updates_are_ignored() -> None:
 
 
 def test_c14_yesterdays_answer_is_inert_for_todays_run() -> None:
-    """C14: an answer for another run id cannot decide today's placement."""
+    """DSP-IN-04: an answer for another run id cannot decide today's placement."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)
@@ -159,7 +159,7 @@ def test_c14_yesterdays_answer_is_inert_for_todays_run() -> None:
 
 
 def test_c15_calendar_skip_stays_silent_when_the_fleet_is_failing() -> None:
-    """C15: a non-session day is skipped before Telegram or readiness handling."""
+    """DSP-TRG-02: non-session days skip before Telegram/readiness handling."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     telegram = FakeTelegram()
@@ -173,7 +173,7 @@ def test_c15_calendar_skip_stays_silent_when_the_fleet_is_failing() -> None:
 
 
 def test_late_run_now_is_recorded_but_never_placed() -> None:
-    """DL-183: a late answer remains evidence but cannot start an unsafe run."""
+    """DSP-TRG-01 / DSP-PERF-01: a late answer remains evidence but cannot place."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)

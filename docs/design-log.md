@@ -130,6 +130,38 @@ two can be built in parallel. The spec must decide where the decided `stop_pct` 
 the 25 live stops are re-placed at their decided width. That last part changes live broker
 orders, so it needs the operator's approval at deploy time.
 
+## DL-221 - Non-agent law books live beside their component, and the gate reads declared roots - status: DECIDED (S229, 2026-09-25)
+
+**What was found.** The locked law system covered the fourteen agents, but two decision-making
+components were outside the gate: the scheduled dispatcher and the operator surfaces. The coverage
+gate discovered only `agents/*/laws/laws.md`, and PARAM sync guessed settings from `agents/<name>/`.
+Putting new books anywhere else would have made them decorative unless the gate learned those roots.
+
+**Decision.** (1) Component law books live with the component they govern: dispatcher placement under
+`orchestration/laws/dispatcher/`, and operator surfaces under `surfaces/laws/`. Discovery is a
+declared set of roots: `agents/*/laws`, `orchestration/laws/*`, and `surfaces/laws`. It is not a
+recursive search for any `laws.md`; `ops/laws/` and `docs/laws/` remain process and umbrella law
+folders, not component books. (2) Non-agent books still keep every template section. If a section is
+agent-shaped and does not apply, the book says "not applicable" in one line and why; the schema is not
+trimmed to fit the component. PARAM sync uses explicit owner-to-settings mapping for non-agent books:
+`dispatcher` maps to `orchestration/settings.py`, and `surfaces` maps to
+`surfaces/dashboard/settings.py`. (3) The S229 dispatcher book governs scheduled run placement and the
+human-hold loop: `scheduled_dispatch*.py`, the readiness gate, answers, and notices. The older
+`orchestration.dispatcher.Dispatcher` served-path wrapper is named out of scope for this book because
+it publishes `run.trigger` and records the final snapshot once invoked; it does not own the daily
+calendar, fleet-readiness, degraded-run, or human-override decisions that DRIFT-068/069 describe.
+
+**Ruled out.** Putting the books under fake `agents/dispatcher/` or `agents/surfaces/` would make
+agent-island tooling treat non-agents as agents. A single `orchestration/laws/laws.md` would blur
+multiple components and fail the template's ownership question. Recursive discovery of every
+`laws.md` would accidentally pull in process laws and umbrella law docs. Leaving non-agent books
+ungated would repeat the failure mode this sprint exists to close. Folding
+`orchestration.dispatcher.Dispatcher` into the same v1 book was also rejected: it would couple the
+graph-pull placement law to an event-driven integration wrapper and invite clauses about binding all
+agents, broker/provider injection, and narrative writing, which are outside S229's measured gap.
+
+---
+
 ## DL-220 - E16.2's Telegram line moves to E19.1, and the scoreboard vital's colour rule - status: DECIDED (planner, 2026-09-25; the builder extends it in S228)
 
 **What was found.** The next-leg plan's E16.2 promised *"one line in the nightly Telegram notice"* and

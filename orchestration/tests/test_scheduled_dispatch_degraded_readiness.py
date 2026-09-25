@@ -35,7 +35,7 @@ _LLM_ONLY_FAILURES = (
 
 
 def test_llm_only_failing_check_places_degraded_run_and_releases_hold() -> None:
-    """MST-OUT-04 / MST-FAIL-05 / DRIFT-068: declared LLM-only failure degrades."""
+    """MST-OUT-04/MST-FAIL-05/DSP-IN-03/DSP-OUT-04: LLM-only outage degrades."""
     graph = InMemoryGraphStore()
     graph.merge_node(
         "RunHold",
@@ -70,7 +70,7 @@ def test_llm_only_failing_check_places_degraded_run_and_releases_hold() -> None:
 
 
 def test_non_degradable_failure_keeps_llm_outage_held() -> None:
-    """MST-FAIL-05 / DRIFT-068: one undeclared failure is still a hard hold."""
+    """MST-FAIL-05 / DSP-IN-03: one undeclared failure is still a hard hold."""
     graph = InMemoryGraphStore()
     failures = (
         *_LLM_ONLY_FAILURES,
@@ -89,7 +89,7 @@ def test_non_degradable_failure_keeps_llm_outage_held() -> None:
 
 
 def test_unparseable_master_stale_and_missing_checks_still_hold() -> None:
-    """MST-OUT-04 / MST-FAIL-05 / DRIFT-068: only fresh declared failures degrade."""
+    """MST-OUT-04 / MST-FAIL-05 / DSP-IN-03: only fresh declared failures degrade."""
     cases = (
         (("not-structured",), _NOW - timedelta(minutes=5), "failing"),
         (
@@ -117,7 +117,7 @@ def test_unparseable_master_stale_and_missing_checks_still_hold() -> None:
 
 
 def test_passing_check_places_normal_run_without_posture_property() -> None:
-    """DRIFT-068: normal scheduled placement stays byte-identical."""
+    """DSP-OUT-01 / DSP-OUT-04: normal scheduled placement stays byte-identical."""
     graph = InMemoryGraphStore()
     _preflight(graph, checked_at=_NOW - timedelta(minutes=5), passed=True)
 
@@ -132,7 +132,7 @@ def test_passing_check_places_normal_run_without_posture_property() -> None:
 
 
 def test_degradable_set_comes_from_the_pack_declaration() -> None:
-    """DRIFT-068: omitted pack agents are not degraded by code defaults."""
+    """DSP-IN-03: omitted pack agents are not degraded by code defaults."""
     graph = InMemoryGraphStore()
     _preflight(
         graph,

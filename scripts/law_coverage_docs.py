@@ -21,10 +21,9 @@ COUNTER_RE = re.compile(r"(?P<green>\d+)\s*/\s*(?P<total>\d+)")
 
 
 def discover_agent_books(root: Path) -> tuple[AgentBook, ...]:
-    """Parse every agent law/test-plan pair under ``root``."""
+    """Parse every law/test-plan pair under declared component roots."""
     books: list[AgentBook] = []
-    for laws_path in sorted((root / "agents").glob("*/laws/laws.md")):
-        agent = laws_path.parents[1].name
+    for agent, laws_path in _law_book_paths(root):
         plan_path = laws_path.with_name("test-plan.md")
         books.append(
             AgentBook(
@@ -36,6 +35,16 @@ def discover_agent_books(root: Path) -> tuple[AgentBook, ...]:
             )
         )
     return tuple(books)
+
+
+def _law_book_paths(root: Path) -> Iterator[tuple[str, Path]]:
+    for laws_path in sorted((root / "agents").glob("*/laws/laws.md")):
+        yield laws_path.parents[1].name, laws_path
+    for laws_path in sorted((root / "orchestration" / "laws").glob("*/laws.md")):
+        yield laws_path.parent.name, laws_path
+    surfaces_path = root / "surfaces" / "laws" / "laws.md"
+    if surfaces_path.is_file():
+        yield "surfaces", surfaces_path
 
 
 def parse_law_ids(path: Path) -> set[str]:

@@ -34,6 +34,7 @@ def _strings(value: object) -> list[str]:
 
 
 def test_static_assets_contain_no_internal_identifiers() -> None:
+    """SRF-OUT-05 / SRF-NEV-02: static assets contain no internal identifiers."""
     offenders = {
         path.name: match.group()
         for path in _STATIC.iterdir()
@@ -45,6 +46,7 @@ def test_static_assets_contain_no_internal_identifiers() -> None:
 
 
 def test_api_display_strings_contain_no_internal_identifiers() -> None:
+    """SRF-OUT-05 / SRF-NEV-02: API display strings contain no internal identifiers."""
     app = build_app(cascade_graph("guard"), FakeAzureReader(), _settings())
     paths = [
         "/api/runs",

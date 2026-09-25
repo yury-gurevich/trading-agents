@@ -22,6 +22,7 @@ _SUBJECT = "stale-confirm-intent-warning"
 
 
 def test_flag_acknowledgement_uses_chat_confirmation_and_resolves_flag() -> None:
+    """SRF-NEV-01/SRF-STA-01/SRF-ORD-02/SRF-OBS-01: flag ack audits."""
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id=_RUN, tickers=("AAPL",), as_of=date(2026, 7, 14))
     graph.merge_node(

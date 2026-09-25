@@ -48,6 +48,7 @@ def _place(graph: InMemoryGraphStore) -> ScheduledDispatchResult:
 
 
 def test_failing_fleet_holds_run_and_records_both_failures() -> None:
+    """DSP-IDN-02 / DSP-IN-03 / DSP-OUT-03: failed readiness writes a held run."""
     graph = InMemoryGraphStore()
     failures = ("unrecoverable:provider:fmp:http_402", "transient:master:vault:Timeout")
     _preflight(
@@ -68,6 +69,7 @@ def test_failing_fleet_holds_run_and_records_both_failures() -> None:
 
 
 def test_absent_preflight_holds_with_unknown_readiness() -> None:
+    """DSP-IN-03: missing preflight evidence holds with unknown readiness."""
     graph = InMemoryGraphStore()
 
     result = _place(graph)
@@ -79,6 +81,7 @@ def test_absent_preflight_holds_with_unknown_readiness() -> None:
 
 
 def test_stale_passing_preflight_holds_as_unknown() -> None:
+    """DSP-IN-03: stale passing evidence cannot place today's run."""
     graph = InMemoryGraphStore()
     _preflight(graph, checked_at=_NOW - timedelta(minutes=71), passed=True)
 
@@ -89,6 +92,7 @@ def test_stale_passing_preflight_holds_as_unknown() -> None:
 
 
 def test_latest_preflight_wins_over_an_older_failure() -> None:
+    """DSP-ORD-01: the latest valid preflight displaces older failures."""
     graph = InMemoryGraphStore()
     _preflight(
         graph,
@@ -105,6 +109,7 @@ def test_latest_preflight_wins_over_an_older_failure() -> None:
 
 
 def test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest() -> None:
+    """DSP-ORD-01: malformed/older preflights cannot displace latest valid."""
     graph = InMemoryGraphStore()
     _preflight(graph, checked_at=_NOW - timedelta(minutes=5), passed=True)
     graph.merge_node(
@@ -129,6 +134,7 @@ def test_invalid_or_out_of_order_preflight_facts_do_not_displace_latest() -> Non
 
 
 def test_failing_refire_merges_one_hold() -> None:
+    """DSP-OUT-03 / DSP-IDM-02: repeated failed fires reuse one active hold."""
     graph = InMemoryGraphStore()
     _preflight(
         graph,
@@ -144,6 +150,7 @@ def test_failing_refire_merges_one_hold() -> None:
 
 
 def test_recovery_releases_hold_and_places_run() -> None:
+    """DSP-STA-01: recovery releases the old hold and places the run."""
     graph = InMemoryGraphStore()
     _preflight(graph, checked_at=_NOW - timedelta(minutes=5), passed=False)
     _place(graph)
@@ -159,6 +166,7 @@ def test_recovery_releases_hold_and_places_run() -> None:
 
 
 def test_calendar_skip_writes_no_hold_when_fleet_is_failing() -> None:
+    """DSP-TRG-02: calendar skip runs before readiness can write a hold."""
     graph = InMemoryGraphStore()
     _preflight(graph, checked_at=_NOW - timedelta(minutes=5), passed=False)
 
@@ -169,7 +177,7 @@ def test_calendar_skip_writes_no_hold_when_fleet_is_failing() -> None:
 
 
 def test_readiness_reader_never_writes_master_owned_preflight() -> None:
-    """MST-IDN-02: orchestration reads but never writes FleetPreflight evidence."""
+    """MST-IDN-02/DSP-IDN-02/DSP-NEV-01: dispatcher never writes preflight."""
 
     class SpyGraph:
         def __init__(self) -> None:

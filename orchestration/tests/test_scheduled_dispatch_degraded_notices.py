@@ -26,7 +26,7 @@ _LLM_ONLY_FAILURES = (
 
 
 def test_degraded_run_sends_one_informational_notice_and_no_hold() -> None:
-    """DRIFT-068: degraded placement tells the operator once without answer buttons."""
+    """DSP-OUT-05 / DSP-OBS-01: degraded placement tells the operator once."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False, failures=_LLM_ONLY_FAILURES)
     telegram = FakeTelegram()
@@ -63,7 +63,7 @@ def test_degraded_notice_missing_message_id_does_not_mark_notified() -> None:
 
 
 def test_degraded_notice_has_no_callback_buttons() -> None:
-    """DRIFT-068: degraded notice is informational, not an answer request."""
+    """DSP-OUT-05: degraded notice is informational, not an answer request."""
     module = import_module("orchestration.telegram_client")
     sent: list[tuple[str, dict[str, object], float]] = []
 

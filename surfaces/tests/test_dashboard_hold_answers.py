@@ -39,7 +39,7 @@ def _hold(graph: InMemoryGraphStore, *, released: bool = False) -> None:
 
 
 def test_c16_dashboard_actions_exist_only_for_an_unanswered_active_hold() -> None:
-    """C16: dashboard controls are absent without a live unanswered hold."""
+    """SRF-OUT-06: dashboard controls are absent without a live unanswered hold."""
     module = import_module("surfaces.dashboard.hold_answer_panel")
     empty = InMemoryGraphStore()
     active = InMemoryGraphStore()
@@ -67,7 +67,7 @@ def test_c16_dashboard_actions_exist_only_for_an_unanswered_active_hold() -> Non
 
 
 def test_c17_dashboard_post_writes_the_shared_fact_and_dispatcher_honours_it() -> None:
-    """C17: dashboard and Telegram use the same answer fact and outcome path."""
+    """SRF-IN-02 / SRF-STA-01 / SRF-OBS-01: dashboard writes the shared answer fact."""
     graph = InMemoryGraphStore()
     _hold(graph)
     preflight(graph, passed=False)
@@ -94,7 +94,7 @@ def test_c17_dashboard_post_writes_the_shared_fact_and_dispatcher_honours_it() -
 
 
 def test_c18_operator_message_and_dashboard_labels_contain_no_internal_ids() -> None:
-    """C18: human-facing S219 wording never leaks sprint or law identifiers."""
+    """SRF-OUT-05 / SRF-NEV-02: human-facing wording never leaks internal ids."""
     client_module = import_module("orchestration.telegram_client")
     panel_module = import_module("surfaces.dashboard.hold_answer_panel")
     sent: list[dict[str, object]] = []

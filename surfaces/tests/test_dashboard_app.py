@@ -49,6 +49,7 @@ def invoke(
 
 
 def test_container_logs_route_scopes_to_selected_run() -> None:
+    """SRF-OUT-01: container logs scope to the selected run or say latest."""
     app = build_app(cascade_graph("app-run"), FakeAzureReader(), _settings())
     scoped = json.loads(invoke(app, "/api/containers/execution/logs?run=app-run")[2])
     assert scoped["scope"] == "run"
@@ -65,6 +66,7 @@ def test_runs_list_route() -> None:
 
 
 def test_master_verdict_route_uses_run_query() -> None:
+    """SRF-IN-01 / SRF-OUT-01: verdict routes use the selected run query."""
     app = build_app(cascade_graph("app-run"), FakeAzureReader(), _settings())
     status, _, body = invoke(app, "/api/verdict?run=app-run")
     assert status == "200 OK"
@@ -83,6 +85,7 @@ def test_master_verdict_route_uses_run_query() -> None:
 
 
 def test_every_run_view_responds() -> None:
+    """SRF-TYP-02: every known run view returns JSON for the selected run."""
     app = build_app(cascade_graph("app-run"))
     for view in VIEWS:
         status, _, body = invoke(app, f"/api/runs/app-run/{view}")
@@ -91,6 +94,7 @@ def test_every_run_view_responds() -> None:
 
 
 def test_unknown_run_is_404() -> None:
+    """SRF-IN-01 / SRF-TYP-02: unknown run ids return a clear 404."""
     app = build_app(InMemoryGraphStore())
     status, _, body = invoke(app, "/api/runs/ghost/verdict")
     assert status == "404 Not Found"
@@ -106,11 +110,13 @@ def test_unknown_view_and_deep_path_are_404() -> None:
 
 
 def test_non_get_is_405() -> None:
+    """SRF-TYP-02: unsupported methods return 405 rather than dispatching."""
     app = build_app(InMemoryGraphStore())
     assert invoke(app, "/api/runs", method="POST")[0] == "405 Method Not Allowed"
 
 
 def test_index_and_assets_serve() -> None:
+    """SRF-OUT-06: dashboard assets expose the wired chat and resume controls."""
     app = build_app(InMemoryGraphStore())
     status, headers, body = invoke(app, "/")
     assert status == "200 OK"
@@ -139,6 +145,7 @@ def test_missing_static_and_traversal_are_404() -> None:
 
 
 def test_s123_routes_use_fake_azure_and_tail_bounds() -> None:
+    """SRF-PERF-01: Azure-backed routes bound and default log tail reads."""
     graph = cascade_graph("app-run")
     azure = FakeAzureReader()
     app = build_app(graph, azure, _settings())
@@ -161,6 +168,7 @@ def test_s123_routes_use_fake_azure_and_tail_bounds() -> None:
 
 
 def test_s123_degraded_routes_still_return_http_200() -> None:
+    """SRF-FAIL-01 / SRF-DEP-02: unavailable optional readers degrade explicitly."""
     graph = cascade_graph("app-run")
     app = build_app(graph, None, _settings())
     infra = json.loads(invoke(app, "/api/infra")[2])

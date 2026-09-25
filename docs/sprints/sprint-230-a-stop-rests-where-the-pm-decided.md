@@ -459,7 +459,7 @@ the broker does not list (skipped as `unknown`, fault). Two existing assertions 
 
 ## Closeout — evidence
 
-**Status:** BUILT (version **0.111.02**, PATCH over `main`'s 0.111.01; `uv.lock` updated with it).
+**Status:** BUILT (built as **0.111.02**, PATCH over `main`'s 0.111.01; `uv.lock` updated with it). 🩹 *Planner, at the merge-in of `main` (2026-09-25): S229 merged first as `0.111.02`, so this branch is re-bumped to **0.111.03**.*
 
 **Tree the proofs ran in (and `.env` present?):** the isolated git worktree
 `.claude/worktrees/agent-adc55cf3a03d1feb8` on branch `sprint-230-a-stop-rests-where-the-pm-decided`,

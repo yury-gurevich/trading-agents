@@ -19,6 +19,7 @@ from surfaces.mcp_tools import dispatch_tool
 
 
 def test_command_tool_requires_explicit_confirmation() -> None:
+    """SRF-NEV-01: MCP command intents require explicit confirmation."""
     ctx = build_context(llm=_run_llm())
 
     first = dispatch_tool(ctx, "command", {"text": "run the daily scan"})
@@ -33,6 +34,7 @@ def test_command_tool_requires_explicit_confirmation() -> None:
 
 
 def test_command_tool_refusal_returns_reason() -> None:
+    """SRF-FAIL-02: command refusals return the operator-readable reason."""
     ctx = build_context(
         llm=FakeLLMClient({"unsafe": '{"outcome":"refused","reason":"unsafe"}'})
     )
@@ -44,6 +46,7 @@ def test_command_tool_refusal_returns_reason() -> None:
 
 
 def test_status_and_runs_tools_return_json_dicts() -> None:
+    """SRF-TYP-01: MCP status and run tools return JSON-serialisable dicts."""
     graph = InMemoryGraphStore()
     graph.merge_node(
         "Message",
@@ -77,6 +80,7 @@ def test_incidents_and_explain_tools_return_seeded_data() -> None:
 
 
 def test_error_paths_and_tool_catalog() -> None:
+    """SRF-IN-04/SRF-TRG-02/SRF-NEV-03/SRF-FAIL-02/SRF-TYP-01: tool bounds."""
     ctx = build_context()
     unbound = SurfaceContext(InMemoryGraphStore(), InProcessBus())
 
@@ -99,7 +103,7 @@ def test_error_paths_and_tool_catalog() -> None:
 
 
 def test_tool_request_handlers_are_registered_on_the_server() -> None:
-    """mcp 2.0 replaced the decorators with explicit handler registration.
+    """SRF-TRG-02: mcp 2.0 handlers are registered for the tool catalogue.
 
     The 1.x `@server.list_tools()` / `@server.call_tool()` decorators no longer
     exist, so a silently unregistered method would leave the surface answering

@@ -20,7 +20,7 @@ def test_open_faults_handles_empty_graph() -> None:
 
 
 def test_open_faults_lists_only_live_incidents_newest_first() -> None:
-    """Warnings, older run days and resolved faults are history, not incidents.
+    """SRF-OUT-02: warnings, older run days and resolved faults are history.
 
     The list must be exactly what health counts: it once dumped every fault
     ever raised (6,439) while health reported 0 open incidents.

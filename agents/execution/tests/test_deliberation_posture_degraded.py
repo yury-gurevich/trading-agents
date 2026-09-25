@@ -27,7 +27,11 @@ from contracts.broker_stops import active_broker_stop_refs
 from contracts.common import Money
 from kernel import InMemoryGraphStore
 
-_NOW = datetime(2026, 9, 24, 22, 30, tzinfo=UTC)
+# `find_pending` reads the wall clock, so the grace window is measured from real now.
+# A pinned date expired 900 s after it was written: from 2026-09-24 22:45 UTC the
+# normal-run test failed and the degraded-run test passed without exercising the
+# bypass it exists to prove.
+_NOW = datetime.now(tz=UTC)
 
 
 def test_degraded_run_drops_buys_without_waiting_and_submits_sell() -> None:

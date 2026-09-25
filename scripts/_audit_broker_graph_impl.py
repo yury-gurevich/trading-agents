@@ -14,6 +14,7 @@ from scripts._audit_broker_graph_drops import (
     is_stop_order,
     unprotected_dropped_exit_rows,
 )
+from scripts._broker_probe_orders import probe_order_reason
 
 from agents.execution.fill_attempts import fill_attempt_chain
 from contracts.positions import is_active_position_node
@@ -21,11 +22,6 @@ from contracts.positions import is_active_position_node
 if TYPE_CHECKING:
     from agents.execution.broker import BrokerFill, BrokerPosition
     from kernel import GraphStore, Node
-
-_ALLOWLIST = {
-    "dep-broker-probe-": "dependency probe order; no pipeline Fill expected",
-    "probe-s138-": "S138 broker-stop live probe order; no pipeline Fill expected",
-}
 
 
 @dataclass(frozen=True)
@@ -124,7 +120,7 @@ def _audit_orphan_fills(
     graph: GraphStore, broker_orders: tuple[BrokerFill, ...], rows: list[AuditRow]
 ) -> None:
     for order in sorted(broker_orders, key=lambda item: item.idempotency_key):
-        reason = _allowlist_reason(order.idempotency_key)
+        reason = probe_order_reason(order.idempotency_key)
         if reason is not None:
             rows.append(AuditRow("A3", "SKIP", order.idempotency_key, reason))
             continue
@@ -179,10 +175,3 @@ def _pending_closing_sell_quantities(orders: tuple[BrokerFill, ...]) -> dict[str
         ):
             quantities[order.ticker] = quantities.get(order.ticker, 0) + order.quantity
     return quantities
-
-
-def _allowlist_reason(client_order_id: str) -> str | None:
-    for prefix, reason in _ALLOWLIST.items():
-        if client_order_id.startswith(prefix):
-            return reason
-    return None

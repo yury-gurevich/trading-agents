@@ -10,6 +10,29 @@ and is marked CLOSED here.
 
 ---
 
+## DL-226 - the survivorship-free universe comes from Wikipedia's change log and Alpaca SIP bars - status: DECIDED (E17.1, 2026-09-25)
+
+**Question** (next-leg plan, E17.1, the leg's highest-risk item): can we source point-in-time S&P 500
+membership and bars for removed names, at ~90 % of member-days, on the plans we pay for?
+
+**Measured** ([R008](research/survivorship-free-universe/measurement.md)). FMP's constituent endpoints
+return **402/403** on our plan (the legacy ones serve only pre-2025-08-31 subscriptions), Finnhub's
+**403**. Wikipedia's *Historical components of the S&P 500* (split out of the constituents article on
+2026-08-11) reconstructs membership whose count stays **503–508** back to 2016; 3 records fail to
+reconcile, all renames. Alpaca SIP daily bars cover **95.3 %** of **1,421,814** member-days: removed names
+**93.4 %**, current members **95.7 %**, the survivors' shortfall being renames (PSKY, DOW, VTRS, LIN,
+APTV). 14 of 15 acquired names' bars stop at the deal; MON's ticker was reused.
+
+**Decision.** Membership from the Wikipedia log, frozen as a dated, attributed snapshot; bars from
+Alpaca SIP, cached outside the repo; plus a rename map and a ticker-reuse guard, both E17.2's. The
+~90 % bar is met, so P17 runs survivorship-free rather than reporting a survivors-only upper bound.
+
+**Ruled out.** *Buy FMP's constituent data:* a plan upgrade for data the public log already gives to
+within ~3 names; revisit only if E17.4's fidelity check traces a miss to membership. *Tiingo as the
+delisted source:* Alpaca already covers the bulk, and Tiingo has neither of the two names Alpaca
+lacks, under a 500-symbol monthly cap. *Survivors-only replay:* it would omit 17.0 % of member-days,
+the very bias P17 exists to remove.
+
 ## DL-225 - the CLI and MCP name the runs the dashboard names - status: DECIDED (chore, 2026-09-25)
 
 **What was found** (operator: *"you mentioned issues with dashboard code, can you look at it"*),

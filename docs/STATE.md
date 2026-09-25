@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-25 19:45 AEST · **Version:** **0.112.01 deployed** (`s228a`) = `main` · **🎯 Fleet on `s228a`: S230's stop replacement and the reporter's corrected day point both run for the first time tonight (Sat 08:30 AEST); both functionality checks are owed after it.**
+**Last updated:** 2026-09-25 21:10 AEST · **Version:** **0.112.01 deployed** (`s228a`) / **0.112.02 on `main`** · **🎯 DL-225 merged: the CLI, MCP and chat status name the real runs; the supervisor half needs a retag (operator); tonight's run (Sat 08:30 AEST) owes S230's and item 88's functionality checks.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…13.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **MERGED — [DL-225](design-log.md), `0.112.02`, fast-forwarded to `b78292cc`, tagged `v0.112.02`, 2026-09-25 ~21:05 AEST — not deployed.** Chore `chore-mcp-cli-runs-are-graph-pull-runs` (operator: *"look at the dashboard code"*). 📏 **Measured live first:** the MCP `runs` tool and CLI `runs`/`run` listed **6** supervisor intents (flag approvals) as runs and said *not found* for `sched-2026-09-24`; the supervisor's `last_successful_run` (the chat's `last_run`) named `snapshot:verify-2026-09-01-s192-k4-110200`, because **0 of 80** Snapshots carry the `created_at` it sorted by; and 🐛 **`import surfaces.mcp_server` failed on `main`**, a cycle S228's `performance_tool` import introduced that every in-process test hid. **Now:** one run list (moved to `surfaces/queries/runs.py`, the dashboard re-exports it), CLI `run` prints the chain's headline and asks no agent, the supervisor orders by `PMRun.created_at` and names the `RunRequest` (SUP laws **v1.2**), and fresh-interpreter import tests guard the entry modules. Guards planted: the old ordering returns `snapshot:verify-zzz`; the old import fails `mcp_tools` and `mcp_server`; both restored. `make ci` exit 0 (**3,219 passed, 6 skipped, 100.00 %**); `GATE PROVEN` for `b78292ccf57cb99c5bb7d30b17783a38dbfc9c7f`. **Re-probed live on the branch:** runs `sched-2026-09-24`, `manual-2026-09-24`, …; last run `sched-2026-09-24` from both. 🟠 **Owed:** the supervisor fix reaches the chat only after a retag (operator approval); the CLI/MCP half is local and live now.
 
 🟩 **DEPLOYED — `s228a` = `381ce4f8` (`v0.112.01`), 2026-09-25 19:41 AEST — the work-queue 88 reporter fix (S228 rides along, but `surfaces/` ships in no image). Operator approved (*"yes"*).** Build `36119108502` from the `v0.112.01` tag, **15 / 15** success; image-only retag, the three injected packs unchanged since `s230`. 🟩 **Verified on live Azure:** **16 / 16** apps on `s228a`, `Succeeded`, `Running`; scale blocks JSON-identical to the pre-retag snapshot (0 mismatches); `dispatcher-cron` on `s228a`, configuration identical, cron `*/10 22-23 * * 1-5`. `DeployRecord deploy:2026-09-25T09:41:37…:s228a:381ce4f8…`. 🟠 **Owed on `sched-2026-09-25`:** S230's check (9 stops at their decided price) and item 88's (the Snapshot's series uses each date's latest fresh snapshot). Rollback: retag to `s230`.
 

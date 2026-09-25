@@ -11,23 +11,9 @@ from datetime import date
 
 import pytest
 
-from agents.reporter.performance_inputs import read_performance_inputs
 from agents.reporter.result import build_snapshot
 from agents.reporter.settings import ReporterSettings
 from kernel import CollectingFaultSink, InMemoryGraphStore, Node
-
-
-def test_performance_uses_earliest_fresh_snapshot_per_date() -> None:
-    """RPT-OUT-07: daily performance point is the earliest fresh account snapshot."""
-    graph = InMemoryGraphStore()
-    pm_run = graph.merge_node("PMRun", "pm-run", {"created_at": "2026-08-11T22:30:00Z"})
-    _snapshot(graph, "early", "2026-08-10T22:30:00Z", 1_000_000, status="fresh")
-    _snapshot(graph, "late", "2026-08-10T22:44:00Z", 2_000_000, status="fresh")
-    _snapshot(graph, "stale", "2026-08-10T22:20:00Z", 3_000_000, status="stale")
-
-    inputs = read_performance_inputs(graph, pm_run, inception=date(2026, 8, 10))
-
-    assert inputs.points == ((date(2026, 8, 10), 1_000_000, 500_000),)
 
 
 def test_snapshot_names_no_fresh_snapshots_without_raising() -> None:

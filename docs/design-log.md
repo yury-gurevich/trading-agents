@@ -10,6 +10,44 @@ and is marked CLOSED here.
 
 ---
 
+## DL-224 - a day's performance point is its latest snapshot, bounded by the run's instant - status: DECIDED (work-queue 88, 2026-09-25)
+
+**What was found.** S228's functionality check reconciled `sched-2026-09-24`'s Snapshot equity
+(**10,200,072** cents) against the broker snapshots of that date. It matched the day's *earliest*
+fresh one: `manual-2026-09-24`'s run-start sync at **14:15 UTC**, intraday. The scheduled run's own
+post-close sync read **10,196,728**. `performance_inputs._snapshot_points` kept the earliest fresh
+snapshot per UTC date (S226's spec, with no stated reason beyond its test), so on a day with two runs
+the series set intraday equity against SPY's *closing* bar. On one-run days the rule was harmless:
+the run's sync is the date's only snapshot before the report.
+
+**Decision.** One point per UTC date: the **latest** fresh snapshot created **no later than
+`PMRun.created_at`**. For the run's own date that is its run-start sync (post-close for a scheduled
+run); for earlier dates, the one nearest the close. The instant bound is what keeps `RPT-IDM-03`'s
+promise: with a date-only bound, a later sync on the run's own date would change a re-report.
+Reporter laws **v1.3**.
+
+**Measured effect (live spine, read-only, 2026-09-25).** All **33** dates since inception carry at
+least two fresh snapshots: every run writes a run-start sync and a post-execution one ~12 minutes
+later. On **6** dates the old rule read an intraday or pre-market probe as the day's point: 08-18
+(04:22 UTC), 08-19 (06:38), 08-20 (04:55), 09-04 (06:11), 09-16 (13:27) and 09-24 (14:15), the worst
+off by **$230** (09-16). On the other 27 the point moves between two post-close syncs of one run, by
+−$14 to +$16 of after-hours marking. Re-reporting `sched-2026-09-24` under the new rule: equity
+10,200,072 → **10,196,728**, excess −0.2787 → **−0.2700** pts, book −0.4523 → **−0.4850 %**,
+exposure-matched −0.1737 → **−0.2149 %**, rolling excess −0.5892 → **−0.6098** pts; sessions 32
+unchanged. Stored Snapshots are not rewritten; the next run recomputes the whole series.
+
+**Known limits, not fixed here.** (a) The run's own date uses its run-start sync (the post-execution
+one is created after `PMRun.created_at`), while the next run reads that date's post-execution sync:
+a few dollars' asymmetry, the price of `RPT-IDM-03`. (b) A run that spills past midnight UTC dates
+its sync to the next UTC day (2026-08-13's run synced at 02:29 UTC), so the point sits on the wrong
+session; neither rule addresses that, and no run has spilled since.
+
+**Ruled out.** *Only snapshots after the US close:* the reporter would need the market calendar and
+its daylight-saving shift, which is pack knowledge the reporter does not hold. *Keep earliest and
+exclude manual runs:* a manual run is a legitimate sync, and the defect is which point stands for the
+close, not who wrote it. *Latest per date with a date-only bound:* re-reporting a run later the same
+day would change its figures, breaking `RPT-IDM-03`; the guard test fails red on exactly that.
+
 ## DL-223 - one resolver for the decided stop, and an in-place replace for a stop resting elsewhere - status: DECIDED (S230, 2026-09-25)
 
 **Question.** DL-222 measured every broker stop at the 5 % fallback while the PM decided 3.90–7.29 %

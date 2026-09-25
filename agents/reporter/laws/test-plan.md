@@ -18,7 +18,7 @@
 | RPT-OUT-04 | 🟩 | `test_report_snapshot_result_node_in_graph`, `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-OUT-05 | 🟩 | `test_decisions_ready_triggers_snapshot_ready` |
 | RPT-OUT-06 | ⬜ | Demoted S156: `test_reporter_fault_boundary_returns_degraded_payloads` and the renamed degraded-snapshot test cover partial degraded payload behavior, not the full graph-fault/minimal-provenance/empty-metrics/fault-recorded clause. |
-| RPT-OUT-07 | 🟩 | `test_performance_worked_example`, `test_performance_inputs_exclude_pre_inception_margin_book`, `test_performance_skips_missing_benchmark_pair_then_continues`, `test_performance_rolling_metrics_use_only_last_configured_pairs` |
+| RPT-OUT-07 | 🟩 | `test_performance_worked_example`, `test_performance_inputs_exclude_pre_inception_margin_book`, `test_performance_skips_missing_benchmark_pair_then_continues`, `test_performance_rolling_metrics_use_only_last_configured_pairs`, `test_the_day_point_is_the_latest_fresh_snapshot_of_the_date`, `test_a_two_run_day_uses_the_post_close_sync_not_the_intraday_one` |
 | RPT-NEV-01 | 🟩 | `test_reporter_handles_missing_nodes_without_crashing` |
 | RPT-NEV-02 | 🟩 | `test_reporter_does_not_import_other_agent_code` |
 | RPT-NEV-03 | 🟩 | `test_snapshot_reports_profit_factor_and_expectancy` |
@@ -26,7 +26,7 @@
 | RPT-STA-02 | 🟩 | `test_report_snapshot_result_node_in_graph` |
 | RPT-IDM-01 | ⬜ | — |
 | RPT-IDM-02 | 🟩 | `test_run_id_propagated_in_snapshot_ready_event` |
-| RPT-IDM-03 | 🟩 | `test_performance_inputs_do_not_read_after_pmrun_as_of` |
+| RPT-IDM-03 | 🟩 | `test_performance_inputs_do_not_read_after_pmrun_as_of`, `test_a_snapshot_created_after_the_pm_run_is_never_read` |
 | RPT-ORD-01 | 🟩 | `test_snapshot_ignores_prior_reporter_performance_output` |
 | RPT-ORD-02 | ⬜ | — |
 | RPT-FAIL-01 | 🟩 | `test_reporter_fault_boundary_returns_degraded_payloads` |

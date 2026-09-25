@@ -1,6 +1,6 @@
 # `Reporter` — Laws
 
-**Prefix:** `RPT` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
+**Prefix:** `RPT` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
 
 > Stitch each completed run and each trade into durable, human-readable metrics and
 > narrative — the truth surface the dashboard and operator read.
@@ -51,7 +51,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **RPT-OUT-07** — `report` returns `performance_metrics`: return on the book against the
   benchmark, from `performance_inception` to the run's as-of date. It is computed only from facts
   other agents wrote: fresh `BrokerPositionSnapshot` equity and holdings, and benchmark bars on
-  `MarketData`.
+  `MarketData`. Each UTC date contributes one point: the **latest** fresh snapshot of that date,
+  the one nearest the close its benchmark bar measures.
 
 ## Prohibitions (`NEV`)
 
@@ -76,7 +77,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **RPT-IDM-02** — `run_id` is threaded from the `ReportRequest` into the Snapshot provenance and
   the `report.snapshot.ready` event.
 - **RPT-IDM-03** — The performance as-of date is the UTC date of `PMRun.created_at`. No fact dated
-  after it is read, so re-reporting an old run reproduces its figures even after the graph grows.
+  after it is read, and no `BrokerPositionSnapshot` created after `PMRun.created_at` is read, so
+  re-reporting an old run reproduces its figures even after the graph grows, including on its own date.
 
 ## Ordering & concurrency (`ORD`)
 
@@ -179,3 +181,6 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   claim-check serialization-shape clause. No contract shape changes.
 - v1.2 — S226 adds benchmark-relative performance metrics bounded to the PM run as-of date,
   records the needed CAP/PARAM rows, and makes performance failures contained within `report`.
+- v1.3 — work-queue 88 (DL-224): `RPT-OUT-07` names the day's point as its latest fresh snapshot, not
+  the earliest, which on a two-run day was an intraday sync set against a closing bar; `RPT-IDM-03`
+  bounds snapshots by `PMRun.created_at` itself, so the latest-per-date rule stays reproducible.

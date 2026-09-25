@@ -40,9 +40,12 @@ class PerformanceProjection:
 def read_performance_inputs(
     graph: GraphStore, pm_run: Node, *, inception: date
 ) -> PerformanceInputs:
-    """Read only performance facts known on the PM run's UTC date."""
-    as_of = _utc_date(pm_run.props["created_at"])
-    points = _snapshot_points(graph, inception=inception, as_of=as_of)
+    """Read only performance facts known when the PM run was created."""
+    cutoff = _utc_datetime(pm_run.props["created_at"])
+    if cutoff is None:
+        raise ValueError("PMRun.created_at must be an ISO-8601 timestamp")
+    as_of = cutoff.date()
+    points = _snapshot_points(graph, inception=inception, cutoff=cutoff)
     benchmark_closes, benchmark_ticker = _benchmark(graph, as_of=as_of)
     return PerformanceInputs(points, benchmark_closes, benchmark_ticker, as_of)
 
@@ -79,15 +82,19 @@ def degraded_performance(
 
 
 def _snapshot_points(
-    graph: GraphStore, *, inception: date, as_of: date
+    graph: GraphStore, *, inception: date, cutoff: datetime
 ) -> tuple[PerformancePoint, ...]:
-    earliest: dict[date, tuple[datetime, PerformancePoint]] = {}
+    # One point per UTC date: the latest fresh snapshot, the nearest to the close the
+    # benchmark bar measures. Only snapshots created by the PM run's instant count, so
+    # a re-report reproduces its figures (RPT-IDM-03). The earliest-per-date rule read
+    # an intraday sync on a two-run day (work-queue 88, DL-224).
+    latest: dict[date, tuple[datetime, PerformancePoint]] = {}
     for snapshot in graph.list_nodes("BrokerPositionSnapshot"):
         props = snapshot.props
         if props.get("status") != "fresh" or props.get("account_status") != "fresh":
             continue
         created_at = _utc_datetime(props.get("created_at"))
-        if created_at is None or not inception <= created_at.date() <= as_of:
+        if created_at is None or created_at > cutoff or created_at.date() < inception:
             continue
         equity_cents = props.get("account_equity_cents")
         if not isinstance(equity_cents, int):
@@ -97,11 +104,11 @@ def _snapshot_points(
             equity_cents,
             _long_value_cents(props.get("holdings")),
         )
-        previous = earliest.get(created_at.date())
-        if previous is None or created_at < previous[0]:
-            earliest[created_at.date()] = (created_at, point)
+        previous = latest.get(created_at.date())
+        if previous is None or created_at > previous[0]:
+            latest[created_at.date()] = (created_at, point)
     return tuple(
-        point for _, point in sorted(earliest.values(), key=lambda item: item[0])
+        point for _, point in sorted(latest.values(), key=lambda item: item[0])
     )
 
 
@@ -150,13 +157,6 @@ def _long_value_cents(holdings: object) -> int:
         if isinstance(holding, Mapping)
         and isinstance(holding.get("market_value_cents"), int)
     )
-
-
-def _utc_date(value: object) -> date:
-    parsed = _utc_datetime(value)
-    if parsed is None:
-        raise ValueError("PMRun.created_at must be an ISO-8601 timestamp")
-    return parsed.date()
 
 
 def _utc_datetime(value: object) -> datetime | None:

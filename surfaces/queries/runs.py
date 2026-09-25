@@ -1,8 +1,13 @@
-"""Dispatcher run read models.
+"""Graph-pull run read models for the CLI and MCP tools.
 
 Agent: surfaces
-Role: project dispatcher Message lineage into run summaries.
-External I/O: none.
+Role: summarise graph-pull run chains for the CLI and the MCP `runs` tool.
+External I/O: injected GraphStore reads only.
+
+The run list here is the dashboard's run selector too, and each run's stages come
+from the shared chain walker, so every surface names the same runs. The earlier model
+grouped supervisor `Message` nodes, which on graph-pull runs are operator intents,
+never runs (DL-225).
 """
 
 from __future__ import annotations
@@ -10,25 +15,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from surfaces.queries._graph import nodes_by_label
+from contracts.provider import RUN_REQUEST_LABEL
+from orchestration.batch_chain import CHAIN, walk_chain
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
-_STEP_ORDER = {
-    "scan": 0,
-    "analyze": 1,
-    "evaluate": 2,
-    "submit": 3,
-    "check_positions": 4,
-    "report": 5,
-    "narrative": 6,
-}
+STAGES = tuple(label for _, label in CHAIN)
 
 
 @dataclass(frozen=True)
 class StepRecord:
-    """One dispatcher step recorded by the supervisor."""
+    """One stage artifact a run's chain reached."""
 
     name: str
     status: str
@@ -36,76 +34,62 @@ class StepRecord:
 
 @dataclass(frozen=True)
 class RunSummary:
-    """Surface summary of one dispatcher run."""
+    """Surface summary of one graph-pull run."""
 
     run_id: str
     steps: tuple[StepRecord, ...]
     completed: bool
-    message_count: int
-    snapshot_available: bool
+    headline: str | None
+
+
+def list_runs(graph: GraphStore) -> list[dict[str, object]]:
+    """All known runs, newest first — the run-selector feed."""
+    rows: list[dict[str, object]] = [
+        {
+            "run_id": str(node.props.get("run_id", "")),
+            "requested_at": str(node.props.get("requested_at", "")),
+        }
+        for node in graph.list_nodes(RUN_REQUEST_LABEL)
+    ]
+    rows.sort(key=lambda r: (str(r["requested_at"]), str(r["run_id"])), reverse=True)
+    return rows
+
+
+def latest_run_id(graph: GraphStore) -> str:
+    """The run the dashboard selects when none is named: the one definition."""
+    rows = list_runs(graph)
+    return str(rows[0]["run_id"]) if rows else ""
 
 
 def recent_runs(graph: GraphStore, limit: int = 10) -> tuple[RunSummary, ...]:
-    """Return the most recent dispatcher runs from Message nodes, newest first."""
-    summaries = tuple(
-        _summary(graph, run_id, nodes) for run_id, nodes in _groups(graph)
+    """Return the most recent graph-pull runs, newest requested first."""
+    return tuple(
+        _summary(str(row["run_id"]), walk_chain(graph, str(row["run_id"])))
+        for row in list_runs(graph)[: max(limit, 0)]
     )
-    ordered = sorted(
-        summaries,
-        key=lambda item: _latest_key(graph, item.run_id),
-        reverse=True,
-    )
-    return tuple(ordered[:limit])
 
 
 def run_detail(graph: GraphStore, run_id: str) -> RunSummary | None:
-    """Return one run summary by id, if dispatcher Messages exist for it."""
-    nodes = tuple(
-        node
-        for node in nodes_by_label(graph, "Message")
-        if str(node.props.get("run_id", "")) == run_id
-    )
-    if not nodes:
-        return None
-    return _summary(graph, run_id, nodes)
+    """Return one run's summary, or None when no RunRequest has that id."""
+    chain = walk_chain(graph, run_id) if run_id else {}
+    return _summary(run_id, chain) if chain else None
 
 
-def _groups(graph: GraphStore) -> tuple[tuple[str, tuple[Node, ...]], ...]:
-    grouped: dict[str, list[Node]] = {}
-    for node in nodes_by_label(graph, "Message"):
-        run_id = str(node.props.get("run_id", ""))
-        if run_id:
-            grouped.setdefault(run_id, []).append(node)
-    return tuple((run_id, tuple(nodes)) for run_id, nodes in grouped.items())
+def last_reported_run(graph: GraphStore) -> str | None:
+    """Return the newest requested run whose chain reached a Snapshot."""
+    for row in list_runs(graph):
+        run_id = str(row["run_id"])
+        if "Snapshot" in walk_chain(graph, run_id):
+            return run_id
+    return None
 
 
-def _summary(graph: GraphStore, run_id: str, nodes: tuple[Node, ...]) -> RunSummary:
-    steps = tuple(
-        StepRecord(
-            name=str(node.props.get("step", "")),
-            status=str(node.props.get("status", "attempted")),
-        )
-        for node in sorted(nodes, key=_step_order)
-    )
-    completed = any(step.name == "narrative" for step in steps)
+def _summary(run_id: str, chain: dict[str, Node]) -> RunSummary:
+    snapshot = chain.get("Snapshot")
+    headline = snapshot.props.get("headline_summary") if snapshot else None
     return RunSummary(
         run_id=run_id,
-        steps=steps,
-        completed=completed,
-        message_count=len(nodes),
-        snapshot_available=graph.get_node("Snapshot", f"snapshot:{run_id}") is not None,
+        steps=tuple(StepRecord(label, "done") for label in STAGES if label in chain),
+        completed=snapshot is not None,
+        headline=headline if isinstance(headline, str) else None,
     )
-
-
-def _step_order(node: Node) -> tuple[int, str]:
-    name = str(node.props.get("step", ""))
-    return (_STEP_ORDER.get(name, len(_STEP_ORDER)), name)
-
-
-def _latest_key(graph: GraphStore, run_id: str) -> str:
-    nodes = tuple(
-        node
-        for node in nodes_by_label(graph, "Message")
-        if str(node.props.get("run_id", "")) == run_id
-    )
-    return max(str(node.props.get("created_at", node.key)) for node in nodes)

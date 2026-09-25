@@ -10,6 +10,36 @@ and is marked CLOSED here.
 
 ---
 
+## DL-225 - the CLI and MCP name the runs the dashboard names - status: DECIDED (chore, 2026-09-25)
+
+**What was found** (operator: *"you mentioned issues with dashboard code, can you look at it"*),
+measured on the live spine, read-only. **(1)** The MCP `runs` tool (*"List recent dispatcher runs"*)
+and the CLI `runs`/`run` commands grouped supervisor `Message` nodes by `run_id`. On graph-pull runs
+those are operator intents: the tool listed **6** "runs", all flag approvals, the newest 2026-09-23,
+and `run sched-2026-09-24` said *not found*. **(2)** The supervisor's `last_successful_run` (the chat's
+and the CLI's `last_run`) ordered Snapshots by a `created_at` the reporter never writes (**0 of 80**
+carry it), so the key sort named **`snapshot:verify-2026-09-01-s192-k4-110200`**; the surfaces'
+`system_health.last_run_id` had the same flaw. **(3)** `surfaces.performance_tool` (S228) imported
+`surfaces.dashboard.projections`, whose package `__init__` pulls in the chat, which imports
+`mcp_tools` half-loaded: `import surfaces.mcp_server` failed on `main`. Every in-process test passed
+because the session imported the dashboard first. **(4)** `cli run` asked the reporter over the bus
+to *generate* a report when the Message model found no Snapshot: a side effect from a read.
+
+**Decision.** One definition of a run. `list_runs` and `latest_run_id` move to
+`surfaces/queries/runs.py` (the dashboard re-exports them, so the dependency runs dashboard → queries,
+which also removes the cycle), and `recent_runs`/`run_detail` summarise `RunRequest` chains through
+the shared walker. `cli run` prints the chain's Snapshot headline and never asks an agent. The
+supervisor orders Snapshots by their `PMRun.created_at` (one `PMRun` listing, no per-Snapshot query)
+and names the winner by its `RunRequest`'s run id, walking up the seven chain edges, which it repeats
+locally because agents may not import `orchestration` (the operator agent does the same). A
+fresh-interpreter test imports each surface entry module first.
+
+**Ruled out.** *Keep the Message model beside the chain model:* two definitions of a run, and on the
+live spine the Message model shows only intents. *Stamp `created_at` on Snapshots:* right for new
+nodes, but the 80 existing ones would still sort by key, and the PMRun already carries the time.
+*Fix the cycle with a function-local import:* it hides the dependency instead of pointing it the
+right way.
+
 ## DL-224 - a day's performance point is its latest snapshot, bounded by the run's instant - status: DECIDED (work-queue 88, 2026-09-25)
 
 **What was found.** S228's functionality check reconciled `sched-2026-09-24`'s Snapshot equity

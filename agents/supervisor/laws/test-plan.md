@@ -17,7 +17,7 @@
 | SUP-TRG-05 | ⬜ | — |
 | SUP-TRG-06 | ⬜ | — |
 | SUP-OUT-01 | 🟩 | `test_capability_matrix_routes_available_and_refuses_unavailable`, `test_approve_intent_resolves_matching_flag`, `test_confirmation_gate_writes_and_resolves_flag` |
-| SUP-OUT-02 | 🟩 | `test_system_status_reports_empty_fault_flag_and_snapshot_states` |
+| SUP-OUT-02 | 🟩 | `test_system_status_reports_empty_fault_flag_and_snapshot_states`, `test_last_successful_run_is_ordered_by_pm_run_time_not_by_key`, `test_a_snapshot_with_no_run_request_is_named_by_its_key` |
 | SUP-OUT-03 | 🟩 | `test_flag_for_human_writes_idempotent_pending_flag` |
 | SUP-OUT-04 | 🟩 | `test_record_dispatch_run_writes_one_message_per_step` |
 | SUP-OUT-05 | 🟩 | `test_report_fault_writes_one_fault_node` |

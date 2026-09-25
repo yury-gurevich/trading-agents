@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from kernel.fault_incidents import live_fault_incidents
 from surfaces.queries._graph import nodes_by_label
+from surfaces.queries.runs import last_reported_run
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
@@ -36,7 +37,7 @@ def system_health(graph: GraphStore) -> HealthSummary:
         healthy=open_faults == 0 and critical_flags == 0,
         open_faults=open_faults,
         pending_flags=pending_flags,
-        last_run_id=_last_run_id(graph),
+        last_run_id=last_reported_run(graph),
     )
 
 
@@ -56,14 +57,3 @@ def _flag_ref(node: Node) -> tuple[str, str]:
         str(node.props.get("subject_ref", node.key)),
         str(node.props.get("severity", "")),
     )
-
-
-def _last_run_id(graph: GraphStore) -> str | None:
-    snapshots = nodes_by_label(graph, "Snapshot")
-    if not snapshots:
-        return None
-    latest = max(
-        snapshots,
-        key=lambda node: str(node.props.get("created_at", node.key)),
-    )
-    return str(latest.props.get("run_id", latest.key.removeprefix("snapshot:")))

@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from contracts.operator import CommandResult, HumanCommand
-from contracts.reporter import RunSnapshot
 from contracts.supervisor import DispatchResult, MasterReport, StatusRequest
 from kernel import AgentMessage
 from surfaces.queries.faults import open_faults
@@ -52,9 +51,7 @@ def cmd_run(args: argparse.Namespace, ctx: SurfaceContext) -> str:
     run = run_detail(ctx.graph, run_id)
     if run is None:
         return f"run {run_id} not found"
-    snapshot = ctx.graph.get_node("Snapshot", f"snapshot:{run_id}")
-    report = None if snapshot is not None else _report(ctx, run_id)
-    return render_run_detail(run, report)
+    return render_run_detail(run)
 
 
 def cmd_positions(args: argparse.Namespace, ctx: SurfaceContext) -> str:
@@ -102,21 +99,6 @@ def _status(ctx: SurfaceContext) -> MasterReport:
         )
     )
     return MasterReport.model_validate(response.payload)
-
-
-def _report(ctx: SurfaceContext, run_id: str) -> RunSnapshot | None:
-    response = ctx.bus.request(
-        AgentMessage(
-            sender="cli",
-            recipient="reporter",
-            message_type="request",
-            capability="report",
-            payload={"run_id": run_id},
-        )
-    )
-    if response.message_type == "error":
-        return None
-    return RunSnapshot.model_validate(response.payload)
 
 
 def _interpret(ctx: SurfaceContext, text: str) -> CommandResult:

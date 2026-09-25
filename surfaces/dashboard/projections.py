@@ -18,10 +18,14 @@ from orchestration.batch_trace import walk_chain
 from orchestration.observatory import breaches
 from orchestration.packs.trading_acceptance import accept_run
 from orchestration.packs.trading_observatory import observe_run
+from surfaces.queries.runs import latest_run_id, list_runs
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
     from orchestration.observatory import StageView
+
+# Re-exported: the run list and the latest run have one definition, in queries.
+__all__ = ["latest_run_id", "list_runs"]
 
 _NO_TRADE_ANNOTATION = (
     "All {rejected} candidates were rejected below the confidence bar; the run "
@@ -35,25 +39,6 @@ _CONFIDENCE_FLOOR = re.compile(
 def run_request_node(graph: GraphStore, run_id: str) -> Node | None:
     """Return the RunRequest node for a run id, if the run exists."""
     return graph.get_node(RUN_REQUEST_LABEL, f"run-request:{run_id}")
-
-
-def list_runs(graph: GraphStore) -> list[dict[str, object]]:
-    """All known runs, newest first — the run-selector feed."""
-    rows: list[dict[str, object]] = [
-        {
-            "run_id": str(node.props.get("run_id", "")),
-            "requested_at": str(node.props.get("requested_at", "")),
-        }
-        for node in graph.list_nodes(RUN_REQUEST_LABEL)
-    ]
-    rows.sort(key=lambda r: (str(r["requested_at"]), str(r["run_id"])), reverse=True)
-    return rows
-
-
-def latest_run_id(graph: GraphStore) -> str:
-    """The run the dashboard selects when none is named: the one definition."""
-    rows = list_runs(graph)
-    return str(rows[0]["run_id"]) if rows else ""
 
 
 def run_verdict(graph: GraphStore, run_id: str) -> dict[str, object]:

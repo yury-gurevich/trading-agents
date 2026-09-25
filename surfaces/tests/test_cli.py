@@ -11,9 +11,8 @@ import json
 from io import StringIO
 from typing import TYPE_CHECKING
 
-from kernel import FakeLLMClient, InMemoryGraphStore, InProcessBus
+from kernel import FakeLLMClient, InMemoryGraphStore
 from surfaces.cli import main
-from surfaces.context import SurfaceContext
 from surfaces.context import test_context as build_context
 
 if TYPE_CHECKING:
@@ -25,38 +24,11 @@ def test_cli_status_renders_health(capsys: pytest.CaptureFixture[str]) -> None:
     assert "healthy" in capsys.readouterr().out
 
 
-def test_cli_runs_renders_seeded_run_and_empty_table() -> None:
-    graph = InMemoryGraphStore()
-    _seed_message(graph, "cli-run", "scan")
-    output = StringIO()
-
-    main(["runs"], context=build_context(graph=graph), stdout=output)
+def test_cli_runs_renders_an_empty_table() -> None:
+    """SRF-ORD-01: no RunRequest means no runs, not an error."""
     empty = StringIO()
     main(["runs"], context=build_context(), stdout=empty)
-
-    assert "cli-run" in output.getvalue()
     assert "no runs" in empty.getvalue()
-
-
-def test_cli_run_reports_snapshot_or_missing_run() -> None:
-    graph = InMemoryGraphStore()
-    _seed_message(graph, "needs-report", "scan")
-    output = StringIO()
-    main(["run", "needs-report"], context=build_context(graph=graph), stdout=output)
-    missing = StringIO()
-    main(["run", "absent"], context=build_context(graph=graph), stdout=missing)
-
-    assert "No PMRun found for needs-report." in output.getvalue()
-    assert "run absent not found" in missing.getvalue()
-
-
-def test_cli_run_handles_reporter_error() -> None:
-    graph = InMemoryGraphStore()
-    _seed_message(graph, "unbound", "scan")
-    output = StringIO()
-    context = SurfaceContext(graph, InProcessBus())
-    main(["run", "unbound"], context=context, stdout=output)
-    assert "snapshot unavailable" in output.getvalue()
 
 
 def test_cli_positions_renders_empty_and_open_position() -> None:
@@ -145,19 +117,6 @@ def test_cli_command_refusal_skips_supervisor_dispatch() -> None:
 
     assert "outcome         refused" in output.getvalue()
     assert "accepted" not in output.getvalue()
-
-
-def _seed_message(graph: InMemoryGraphStore, run_id: str, step: str) -> None:
-    graph.merge_node(
-        "Message",
-        f"{run_id}:{step}",
-        {
-            "run_id": run_id,
-            "step": step,
-            "status": "attempted",
-            "created_at": "2026-06-11T00:00:00+00:00",
-        },
-    )
 
 
 def _seed_position(graph: InMemoryGraphStore) -> None:

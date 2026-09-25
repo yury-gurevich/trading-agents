@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from surfaces.dashboard.projections import latest_run_id
 from surfaces.queries.performance import run_performance
 from surfaces.queries.performance_text import summary
+from surfaces.queries.runs import latest_run_id
 
 if TYPE_CHECKING:
     from surfaces.context import SurfaceContext

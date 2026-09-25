@@ -16,6 +16,7 @@ from surfaces.context import SurfaceContext
 from surfaces.context import test_context as build_context
 from surfaces.mcp_server import TOOLS, list_tools, server
 from surfaces.mcp_tools import dispatch_tool
+from surfaces.tests.performance_fixtures import seed_run
 
 
 def test_command_tool_requires_explicit_confirmation() -> None:
@@ -48,18 +49,14 @@ def test_command_tool_refusal_returns_reason() -> None:
 def test_status_and_runs_tools_return_json_dicts() -> None:
     """SRF-TYP-01: MCP status and run tools return JSON-serialisable dicts."""
     graph = InMemoryGraphStore()
-    graph.merge_node(
-        "Message",
-        "run-a:scan",
-        {"run_id": "run-a", "step": "scan", "created_at": "2026-06-11"},
-    )
+    seed_run(graph, "run-a", performance=None)
     ctx = build_context(graph=graph)
 
     status = dispatch_tool(ctx, "status", {})
     runs = dispatch_tool(ctx, "runs", {"limit": 1})
 
     assert {"healthy", "open_incidents", "pending_flags"} <= set(status)
-    assert runs["runs"] == [{"run_id": "run-a", "completed": False, "steps": 1}]
+    assert runs["runs"] == [{"run_id": "run-a", "completed": True, "steps": 7}]
 
 
 def test_incidents_and_explain_tools_return_seeded_data() -> None:

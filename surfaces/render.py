@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from surfaces.queries.runs import STAGES
+
 if TYPE_CHECKING:
     from contracts.operator import CommandResult
-    from contracts.reporter import RunSnapshot
     from contracts.supervisor import DispatchResult, MasterReport
     from surfaces.queries.flags import FlagView
     from surfaces.queries.lifecycle import PositionLifecycle, RunNarrative
@@ -38,27 +39,18 @@ def render_runs(runs: tuple[RunSummary, ...]) -> str:
     """Render a compact dispatcher-run table."""
     if not runs:
         return "no runs"
-    lines = [_row(("run_id", "steps", "completed", "snapshot"))]
+    lines = [_row(("run_id", "stages", "last_stage", "reported"))]
     for run in runs:
-        step_names = ",".join(step.name for step in run.steps)
-        lines.append(
-            _row(
-                (
-                    run.run_id,
-                    step_names,
-                    str(run.completed),
-                    str(run.snapshot_available),
-                )
-            )
-        )
+        last = run.steps[-1].name if run.steps else "none"
+        stages = f"{len(run.steps)}/{len(STAGES)}"
+        lines.append(_row((run.run_id, stages, last, str(run.completed))))
     return "\n".join(lines)
 
 
-def render_run_detail(run: RunSummary, snapshot: RunSnapshot | None) -> str:
-    """Render one run plus an optional reporter snapshot."""
+def render_run_detail(run: RunSummary) -> str:
+    """Render one run plus the headline its Snapshot carries, if it was reported."""
     lines = [render_runs((run,))]
-    headline = None if snapshot is None else snapshot.headline.summary
-    lines.append(f"{'headline'.ljust(16)}{headline or 'snapshot unavailable'}")
+    lines.append(f"{'headline'.ljust(16)}{run.headline or 'snapshot unavailable'}")
     return "\n".join(lines)
 
 

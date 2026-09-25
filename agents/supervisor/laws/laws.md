@@ -1,6 +1,6 @@
 # `Supervisor` — Laws
 
-**Prefix:** `SUP` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `SUP` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Route messages between agents, enforce the capability matrix and hard-NO safety surface,
 > flag anomalies for human review, and produce the master health/decision report.
@@ -45,7 +45,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **SUP-OUT-01** — `dispatch_intent` returns `DispatchResult { accepted, routed_to, rejection,
   provenance }`.
 - **SUP-OUT-02** — `system_status` returns `MasterReport { healthy, open_incidents,
-  pending_human_flags, last_successful_run, summary, provenance }`.
+  pending_human_flags, last_successful_run, summary, provenance }`. `last_successful_run` names
+  the newest reported run, ordered by its `PMRun.created_at`, as the run id of its `RunRequest`
+  (the `Snapshot` key when no `RunRequest` is upstream).
 - **SUP-OUT-03** — `flag_for_human` returns `DispatchResult`; a `Flag` graph node is written.
 - **SUP-OUT-04** — `record_dispatch_run` returns `DispatchResult`; a `Message`-lineage node is
   written for each step.
@@ -176,3 +178,5 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.1 — S205 rewrites `SUP-TYP-01` from a file-as-oracle contract assertion into explicit
   required fields for `DispatchResult`, `MasterReport`, accepted `contracts.operator.TypedIntent`,
   and `FlagRequest`. No contract shape changes.
+- v1.2 — DL-225: `SUP-OUT-02` states what `last_successful_run` names. It had ordered Snapshots by
+  a `created_at` the reporter never writes, so the key sort named a three-week-old verify run.

@@ -18,28 +18,10 @@ from surfaces.queries import (
     system_health,
 )
 from surfaces.queries._graph import nodes_by_label
+from surfaces.tests.performance_fixtures import seed_run
 
 if TYPE_CHECKING:
     from kernel import Node
-
-
-def test_recent_runs_returns_newest_completed_summaries() -> None:
-    graph = InMemoryGraphStore()
-    _seed_run(graph, "old-run", "2026-06-10T00:00:00+00:00")
-    _seed_run(graph, "new-run", "2026-06-11T00:00:00+00:00")
-    graph.merge_node("Snapshot", "snapshot:new-run", {"run_id": "new-run"})
-    graph.merge_node("Message", "missing-run-id", {"step": "scan"})
-    graph.merge_node("Fault", "fault:ignored", {})
-
-    runs = recent_runs(graph)
-
-    assert [run.run_id for run in runs] == ["new-run", "old-run"]
-    assert runs[0].completed is True
-    assert runs[0].message_count == len(_STEPS)
-    assert runs[0].snapshot_available is True
-    assert [step.name for step in runs[0].steps] == list(_STEPS)
-    assert recent_runs(graph, limit=1) == (runs[0],)
-    assert run_detail(graph, "new-run") == runs[0]
 
 
 def test_recent_runs_handles_empty_and_non_local_graphs() -> None:
@@ -63,8 +45,8 @@ def test_system_health_counts_faults_flags_and_last_run() -> None:
         "resolution:flag:critical:critical",
         {"subject_ref": "critical", "severity": "critical"},
     )
-    graph.merge_node("Snapshot", "snapshot:old", {"run_id": "old", "created_at": "1"})
-    graph.merge_node("Snapshot", "snapshot:new", {"run_id": "new", "created_at": "2"})
+    seed_run(graph, "old", requested_at="2026-09-23T22:30:00+00:00")
+    seed_run(graph, "new", requested_at="2026-09-24T22:30:00+00:00")
 
     health = system_health(graph)
 
@@ -107,20 +89,6 @@ def test_open_positions_and_positions_for_run_project_broker_close_state() -> No
     assert run_views[1].close_trigger == "stop"
 
 
-def _seed_run(graph: InMemoryGraphStore, run_id: str, created_at: str) -> None:
-    for step in _STEPS:
-        graph.merge_node(
-            "Message",
-            f"{run_id}:{step}",
-            {
-                "run_id": run_id,
-                "step": step,
-                "status": "completed",
-                "created_at": created_at,
-            },
-        )
-
-
 def _position(
     graph: InMemoryGraphStore,
     key: str,
@@ -142,17 +110,6 @@ def _position(
             "broker_absent": broker_absent,
         },
     )
-
-
-_STEPS = (
-    "scan",
-    "analyze",
-    "evaluate",
-    "submit",
-    "check_positions",
-    "report",
-    "narrative",
-)
 
 
 class _ListOnlyGraph:

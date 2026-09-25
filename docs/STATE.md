@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-25 20:25 AEST · **Version:** **0.111.03 deployed** (`s230`) / **0.112.01 on `main`** · **🎯 The reporter's scoreboard now reads each day at its latest snapshot (work-queue 88, merged, deploy awaits the operator); S228 merged; tonight's run (Sat 08:30 AEST) is S230's first stop replacement.**
+**Last updated:** 2026-09-25 19:45 AEST · **Version:** **0.112.01 deployed** (`s228a`) = `main` · **🎯 Fleet on `s228a`: S230's stop replacement and the reporter's corrected day point both run for the first time tonight (Sat 08:30 AEST); both functionality checks are owed after it.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…13.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **DEPLOYED — `s228a` = `381ce4f8` (`v0.112.01`), 2026-09-25 19:41 AEST — the work-queue 88 reporter fix (S228 rides along, but `surfaces/` ships in no image). Operator approved (*"yes"*).** Build `36119108502` from the `v0.112.01` tag, **15 / 15** success; image-only retag, the three injected packs unchanged since `s230`. 🟩 **Verified on live Azure:** **16 / 16** apps on `s228a`, `Succeeded`, `Running`; scale blocks JSON-identical to the pre-retag snapshot (0 mismatches); `dispatcher-cron` on `s228a`, configuration identical, cron `*/10 22-23 * * 1-5`. `DeployRecord deploy:2026-09-25T09:41:37…:s228a:381ce4f8…`. 🟠 **Owed on `sched-2026-09-25`:** S230's check (9 stops at their decided price) and item 88's (the Snapshot's series uses each date's latest fresh snapshot). Rollback: retag to `s230`.
 
 🟩 **MERGED — work-queue 88 / [DL-224](design-log.md), `0.112.01`, fast-forwarded to `381ce4f8`, tagged `v0.112.01`, 2026-09-25 ~20:20 AEST — not deployed.** Chore `chore-reporter-day-point-is-the-close` (operator: *"fix in the reporter"*). Each UTC date's point is now its **latest** fresh `BrokerPositionSnapshot` created no later than `PMRun.created_at`, not the earliest. 📏 **Measured on the live spine:** all 33 dates carry two or more fresh snapshots; on **6** (08-18, 08-19, 08-20, 09-04, 09-16, 09-24) the old rule read an intraday or pre-market probe, worst **$230**. A read-only re-report of `sched-2026-09-24`: equity 10,200,072 → **10,196,728**, excess −0.28 → **−0.27** pts, exposure-matched −0.17 → **−0.21 %**. Reporter laws **v1.3** (`RPT-OUT-07`, `RPT-IDM-03`). Red first (the 2026-09-24 case read 10,200,072); guard planted (a date-only bound fails the reproducibility test), restored. `make ci` exit 0 (**3,211 passed, 6 skipped, 100.00 %**); `GATE PROVEN` for `381ce4f818fbcec4a59f062638fb3c6bbd479954` (CI, CodeQL, Security Findings, attempt 1). 🟠 **Owed:** the reporter image retag (operator approval); stored Snapshots are not rewritten, the next report recomputes the series.
 

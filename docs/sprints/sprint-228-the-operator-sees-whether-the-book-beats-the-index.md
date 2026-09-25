@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P16, item **E16.2**
 **Branch:** `sprint-228-the-operator-sees-whether-the-book-beats-the-index`
-**Status:** BUILT — branch `sprint-228-the-operator-sees-whether-the-book-beats-the-index`, `0.112.00`, built by the planner (operator: *"go ahead build it"*)
+**Status:** MERGED `d07be9e8` · tag `v0.112.00` · no deploy (the dashboard runs locally); live check done 2026-09-25
 **Version:** *next available MINOR at merge*
 **Effort:** S
 **Decisions:** [DL-220](../design-log.md) (Telegram moves to E19.1; the tile's colour rule) · work-queue item **81** · reads what [S226](sprint-226-a-run-says-whether-the-book-beat-the-index.md) / `RPT-OUT-07` writes · DL-47 (glance-first dashboard)
@@ -302,6 +302,16 @@ prove with the fixture and say so.
    sessions, 21 %**, amber; and the Snapshot's `equity_cents` must equal that run's
    `BrokerPositionSnapshot` equity to the cent (the P16 exit's reconciliation clause). Record it in
    `docs/laws/functionality-checks.md`.
+   🟩 **Done 2026-09-25 ~19:30 AEST** on `main` = `d07be9e8` with `.env`, read-only against the live
+   spine. `GATE PROVEN` for `d07be9e821ab72bc2870fd4ae3a3a7ebc00ed9da` (CI, CodeQL, Security Findings,
+   attempt 1) from the sprint worktree, then a fast-forward, so the merged SHA is the proven one.
+   `sched-2026-09-24` → amber, `vs SPY −0.28 pts · 32 sessions · 21 % invested`, and the chat tool's
+   sentence as in A8; `sched-2026-09-23` → *no scoreboard for this run*. 🪤 **The reconciliation clause
+   holds for the day, not for the run:** `equity_cents` **10,200,072** equals the *earliest* fresh
+   `BrokerPositionSnapshot` of 2026-09-24, `manual-2026-09-24`'s intraday one (14:15 UTC); the
+   scheduled run's own post-close snapshot read **10,196,728**. The reporter keeps one point per UTC
+   day, the earliest, so on a two-run day the daily series carries intraday equity against SPY's close.
+   A reporter question, filed as work-queue **88**, not a surfaces defect.
 
 ---
 

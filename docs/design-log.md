@@ -10,6 +10,45 @@ and is marked CLOSED here.
 
 ---
 
+## DL-222 - the broker stop is the 5 % fallback, not the stop the PM decided - status: MEASURED, fix queued (2026-09-25)
+
+**How it was found.** The operator asked why badly performing stocks were not sold. The answer to the
+question is by design ([ADR-0017](decisions/0017-exit-authority-alpha-proposes-risk-disposes.md)):
+a held name exits only on its stop or when the analyst's confidence falls below
+`exit_confidence_floor` (0.50). On 2026-09-25 all 25 held names scored **0.56–0.69** and the worst,
+USB at **−3.47 %**, sat **1.59 %** above its stop. Measuring the stops found the defect.
+
+**Measured, 2026-09-25 (Alpaca open orders + `PMRun.order_intent_set`, live spine).** All **25** open
+sell-stops sit **5.00–5.02 %** below average entry. The PM approved different stops for every
+recent buy (DL-156 flipped the stop mode to `scaled` on 2026-09-05):
+
+| Buy | PM `stop_pct` | Broker stop |
+| --- | --- | --- |
+| MDLZ (`sched-2026-09-18`) | 3.90 % | 5.0 % |
+| USB (`sched-2026-09-18`) | 4.03 % | 5.0 % |
+| AMZN (`sched-2026-09-18`) | 4.36 % | 5.0 % |
+| BAC (`sched-2026-09-18`) | 4.68 % | 5.0 % |
+| BMY (`sched-2026-09-23`) | 4.15 % | 5.0 % |
+| DOW (`sched-2026-09-21`) | 7.13 % | 5.0 % |
+| META (`sched-2026-09-21`) | 7.29 % | 5.0 % |
+
+**Mechanism.** S225 / [DL-200](design-log.md) measured that **55 of 55** stops ever placed hash from
+**broker-adopted** `Position` keys: adoption at run start wins the race with the S182 fill path.
+`agents/monitor/reconcile.py:_create_broker_position` writes those Positions with
+`stop_pct = settings.default_stop_pct` (**0.05**), `degraded: True`, and never reads the
+`OrderIntent` lineage. Execution then places the stop from that Position and reports
+`stop_pct_source=position`, which is true and hides that the Position's own value is a fallback.
+Before 2026-09-05 flat mode was also 5 %, so nothing differed; **every buy since the DL-156 flip has
+carried the wrong stop.** Calm names stop wider than decided; volatile names stop tighter and get
+shaken out on ordinary noise, which is the exact failure DL-77 measured flat stops for.
+
+**Status.** A live risk-control defect reaching the broker: it outranks features (work-queue
+**87**). It touches `agents/monitor` and `agents/execution`, and S229 touches no product code, so the
+two can be built in parallel. The spec must decide where the decided `stop_pct` is recovered
+(the adopted Position reading the lineage, or execution preferring the `OrderIntent`) and whether
+the 25 live stops are re-placed at their decided width. That last part changes live broker
+orders, so it needs the operator's approval at deploy time.
+
 ## DL-220 - E16.2's Telegram line moves to E19.1, and the scoreboard vital's colour rule - status: DECIDED (planner, 2026-09-25; the builder extends it in S228)
 
 **What was found.** The next-leg plan's E16.2 promised *"one line in the nightly Telegram notice"* and

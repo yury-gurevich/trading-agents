@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked above features
 **Branch:** `sprint-230-a-stop-rests-where-the-pm-decided`
-**Status:** MERGED `b96f7a70` · tag `v0.111.03` · not deployed; the live replace check gates the deploy
+**Status:** MERGED `b96f7a70` · tag `v0.111.03` · deployed `s230` 2026-09-25 18:22 AEST (image-only retag, operator-approved); first-run functionality check owed
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-222](../design-log.md) (the measurement) · work-queue item **87** · DL-156 (the stop mode flipped to `scaled`, 2026-09-05) · [DL-200](../design-log.md) / S225 (why every stop comes from a broker-adopted Position) · ADR-0015 §3 (resting protective stops) · ADR-0017 (the stop is an unconditional floor) · design decisions go to **DL-223**
@@ -328,6 +328,13 @@ paper broker and a recorded response shape. The live replace is the planner's ch
    decided price (re-measure the list; on 2026-09-25 it was 9), the old orders `replaced`, no
    `UnprotectedPosition` fault, `audit_broker_graph.py` A1/A2 clean, and a second run replaces nothing.
    Record it in `docs/laws/functionality-checks.md`.
+   🟩 **Step 4 done 2026-09-25 18:22 AEST** (operator: *"deploy, of course"*): build `36111780860` from
+   `v0.111.03` = `b96f7a70` at `s230`, **15 / 15** success, every entrypoint smoke green; image-only retag
+   (vocabulary `63d3a5eb`, credential-tests `97f083bf`, issuer-map `2ed1f41c` identical to `s227`). Verified
+   on live Azure: **16 / 16** apps on `s230`, `Succeeded`, `Running`; scale blocks JSON-identical to the
+   pre-retag snapshot (0 mismatches); `dispatcher-cron` on `s230`, configuration identical, cron
+   `*/10 22-23 * * 1-5`. `DeployRecord deploy:2026-09-25T08:22:26…:s230:b96f7a70…`. No execution replica
+   was forced up, so tonight's `sched-2026-09-25` is the first run to replace. Rollback: retag to `s227`.
 
 ---
 

@@ -1,7 +1,7 @@
 """Dashboard status-line vitals projection.
 
 Agent: surfaces
-Role: summarize flags, sync, feed degradation, reachability, images, cost, and fire.
+Role: summarize the scoreboard, flags, sync, feeds, reachability, images, cost, fire.
 External I/O: injected GraphStore reads and AzureReader calls only.
 """
 
@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 from contracts.feed_notes import degraded_feed_name
 from orchestration.batch_trace import walk_chain
-from surfaces.dashboard.projections import list_runs
+from surfaces.dashboard.projections import latest_run_id
 from surfaces.dashboard.projections_infra import infra_projection
+from surfaces.dashboard.projections_performance import performance_vital
 from surfaces.dashboard.projections_state import run_positions
 from surfaces.queries.flags import pending_flags
 from surfaces.queries.fleet_check import readiness_override
@@ -36,7 +37,7 @@ def vitals_projection(
     github: GitHubReader | None = None,
 ) -> dict[str, object]:
     """Project every DL-47 status-line vital from current read-side evidence."""
-    selected = run_id or _latest_run_id(graph)
+    selected = run_id or latest_run_id(graph)
     # Resolution-aware: Flag props are append-only, so status alone lies once
     # a FlagResolution exists (2026-07-14: the vital read 6 with 1 truly open).
     pending = len(pending_flags(graph))
@@ -61,6 +62,7 @@ def vitals_projection(
     )
     return {
         "run_id": selected,
+        "performance": performance_vital(graph, selected, settings),
         "pending_flags": pending,
         "broker_graph": sync,
         "degraded_feeds": degraded,
@@ -94,11 +96,6 @@ def vitals_projection(
             graph, now=now or datetime.now(tz=UTC), settings=settings
         ),
     }
-
-
-def _latest_run_id(graph: GraphStore) -> str:
-    rows = list_runs(graph)
-    return str(rows[0]["run_id"]) if rows else ""
 
 
 def _next_fire_held(

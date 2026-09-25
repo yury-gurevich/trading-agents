@@ -190,6 +190,40 @@ question, and a new failure mode for a question the graph already answers. Colou
 excess: it is shown in the detail, but the headline number the reporter prints is since-inception, and
 two numbers competing for one colour would contradict each other on some days.
 
+**Build decisions (S228, 2026-09-25).** **(4) "Latest run" has one definition.** The dashboard already
+had two copies of it (`projections_vitals._latest_run_id` and `route_selection.selected_run`), both
+`list_runs(graph)[0]`. It is now one public `projections.latest_run_id`; the vital, the route selection
+and the chat tool's default all call it. *Ruled out:* a third copy inside the tool, which is the DL-207
+contradiction (button and vital disagreeing on one screen) waiting to happen. **(5) Unavailable looks
+unlike zero.** A run with no Snapshot, no performance group or a missing key is `unavailable`: grey
+dot, the words *"no scoreboard for this run"*, and **no numeric field at all** in the payload.
+`performance_sessions == 0` (the reporter's `RPT-FAIL-04` shape) is `no_sessions`: grey, *"no
+scoreboard sessions yet"*. *Ruled out:* rendering `0.00` or `—` beside a number label, which reads as
+"level with the market". **(6) Rounding** follows the reporter's headline (`snapshot_result.py`): two
+decimals for points and percent, whole percent for exposure, and `-0.00` shown as `0.00`. The tone is
+decided on the **same rounded excess the operator reads**, so a `-0.004` excess is `0.00` and green,
+never an amber `0.00`. *Ruled out:* toning on the raw float, which could colour a displayed `0.00`
+amber. **(7) The benchmark's name is read, not assumed.** The Snapshot carries no benchmark field; the
+reporter writes its name only into `headline_summary` (`vs SPY: …`). The surfaces take the name from
+that clause and fall back to *"the market"*. *Ruled out:* a literal `"SPY"` in the surfaces, a second
+definition of the benchmark. **(8) The vital renders from its own route.** `infra.js` rewrites the
+whole vitals line on every refresh and must not grow, so the vital has its own slot and
+`static/performance.js`, fed by `GET /api/runs/<run>/performance` (graph-only, unknown run → 404 like
+the other run views). `vitals_projection` carries the same entry from the same function. *Ruled out:*
+fetching `/api/vitals` twice (it waits on Azure reads) and a `MutationObserver` on the vitals line.
+**(9) The surfaces law book is amended, not bypassed.** S229 locked `SRF-TRG-02` with the MCP
+catalogue as exactly five tools and the `PARAM` table as the full settings list, after this spec
+expected "no law cycle". A sixth tool and a new setting therefore amend the book to **v1.1**:
+`SRF-TRG-02` lists `performance`, a new `SRF-OUT-07` states the scoreboard rule (the reporter's numbers
+only, unavailable never zero, no model call), and `PARAM` gains the threshold row. *Ruled out:* adding
+the tool while leaving the locked clause false, and dropping the MCP tool to dodge the amendment (the
+chat quick-ask dispatches through the same catalogue). **(10) The recent-window clause names no
+length.** The spec's sentence said *"Last 20 sessions"*, but the Snapshot does not record the
+reporter's rolling window; `20` in the surfaces would be a third definition of a reporter setting. The
+answer says *"Over the most recent sessions"* and the detail row *"Excess, recent sessions"*.
+*Ruled out:* importing the reporter's settings into the local dashboard, whose environment is not the
+fleet's.
+
 ## DL-219 - "bring the fleet down" after a finished run: stop the apps, keep the schedule - status: DECIDED (ops, 2026-09-25)
 
 **What happened.** After `sched-2026-09-24` finished (8/8, no orders, 09:27 AEST) the operator asked

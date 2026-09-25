@@ -15,6 +15,7 @@ from contracts.reporter import NarrativeRequest, TradeNarrative
 from contracts.supervisor import MasterReport, StatusRequest
 from kernel import AgentMessage
 from surfaces.operator_tools import command_tool, operator_explanation
+from surfaces.performance_tool import performance_tool
 from surfaces.plain_errors import plain_error
 from surfaces.queries.faults import open_faults
 from surfaces.queries.fleet_check import (
@@ -38,6 +39,7 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: ToolResult) -> Tool
         "runs": _cmd_runs,
         "incidents": _cmd_incidents,
         "explain": _cmd_explain,
+        "performance": performance_tool,
     }
     handler = handlers.get(name)
     if handler is None:

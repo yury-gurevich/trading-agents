@@ -25,7 +25,4 @@ def run_day(graph: GraphStore, query: dict[str, list[str]]) -> str:
 def selected_run(graph: GraphStore, query: dict[str, list[str]]) -> str:
     """Return a supplied run id or the current latest run id."""
     supplied = query.get("run_id", [""])[0]
-    if supplied:
-        return supplied
-    rows = projections.list_runs(graph)
-    return str(rows[0]["run_id"]) if rows else ""
+    return supplied or projections.latest_run_id(graph)

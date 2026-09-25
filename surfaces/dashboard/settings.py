@@ -164,3 +164,13 @@ class DashboardSettings(AgentSettings):
         le=2880,
         unit="minutes",
     )
+    performance_behind_threshold_pts: float = tunable(
+        1.0,
+        why=(
+            "The vs-market vital turns red this far behind exposure-matched SPY "
+            "(DL-220): a display line, assumed, until the replay gives it a basis."
+        ),
+        ge=0.1,
+        le=10.0,
+        unit="pts",
+    )

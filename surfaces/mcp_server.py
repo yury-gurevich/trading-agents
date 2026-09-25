@@ -77,6 +77,22 @@ TOOLS: list[types.Tool] = [
             "required": ["position_id"],
         },
     ),
+    types.Tool(
+        name="performance",
+        description=(
+            "Say whether the book is ahead of or behind the market for a run, "
+            "from the reporter's stored scoreboard."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "run_id": {
+                    "type": "string",
+                    "description": "Run id; defaults to the latest run.",
+                }
+            },
+        },
+    ),
 ]
 
 server = Server("trading-agents")

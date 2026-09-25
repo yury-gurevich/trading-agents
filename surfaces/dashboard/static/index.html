@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>trading-agents · Operations</title>
-  <link rel="stylesheet" href="/app.css?v=20260923-awaiting-fills" />
+  <link rel="stylesheet" href="/app.css?v=20260925-scoreboard" />
   <link rel="stylesheet" href="/verdict.css?v=20260924-fleet-alert" />
   <link rel="stylesheet" href="/chat.css?v=20260923-resume-style" />
 </head>
@@ -17,6 +17,7 @@
     </div>
     <span class="pill" id="verdictpill" hidden></span>
     <div class="spacer"></div>
+    <div class="vitals" id="vital-performance" aria-label="The book against the market"></div>
     <div class="vitals" id="vitals" aria-label="Vital indicators"></div>
   </header>
 
@@ -128,6 +129,7 @@
         <button type="button" data-ask="Explain this run">Explain this run</button>
         <button type="button" data-ask="System status">System status</button>
         <button type="button" data-ask="Open incidents">Open incidents</button>
+        <button type="button" data-ask="vs the market">vs the market</button>
       </div>
       <form class="chat-in" id="chat-form" hidden>
         <label class="sr-only" for="chat-input">Ask the operator</label>
@@ -141,5 +143,6 @@
   <script src="/verdict.js?v=20260924-next-check"></script>
   <script src="/app.js?v=20260923-awaiting-fills"></script>
   <script src="/chat.js?v=125-1"></script>
+  <script src="/performance.js?v=20260925-scoreboard"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -33,7 +33,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **SRF-TRG-01** — Dashboard GET routes and CLI read commands project evidence only on request.
   Dashboard POST routes are limited to chat and hold-answer handling.
 - **SRF-TRG-02** — MCP requests are limited to the registered tool catalogue: `command`, `status`,
-  `runs`, `incidents`, and `explain`.
+  `runs`, `incidents`, `explain`, and `performance`.
 
 ## Outputs (`OUT`)
 
@@ -51,6 +51,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **SRF-OUT-06** — The dashboard must not present an unwired control as active. Hold-answer controls
   appear only for active unanswered holds, and chat/resume assets carry the wired state expected by
   the route tests.
+- **SRF-OUT-07** — The book-against-the-market vital and the `performance` answer print the
+  reporter's stored scoreboard (`Snapshot.metrics["performance"]`, found through the run chain) for
+  the selected run, or the latest run when none is named. They round and colour it and compute no
+  return of their own. A run without a usable scoreboard reads unavailable and shows no number, never
+  zero. The answer is a graph read: no agent request and no model call.
 
 ## Prohibitions (`NEV`)
 
@@ -174,6 +179,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `dispatcher_fire_utc` | `"22:30"` | `str` | YES | The dispatcher's first placing tick, `_ACTION_START`, and is test-pinned. |
 | `operator_timezone` | `"Australia/Melbourne"` | `str` | YES | The operator reads their own local 24-hour time, never UTC. |
 | `readiness_failure_max_age_minutes` | `1440` | `int >= 10 <= 2880` | YES | Keep a failed fleet check visible until the next one replaces it. |
+| `performance_behind_threshold_pts` | `1.0` | `float >= 0.1 <= 10` | YES | The vs-market vital turns red this far behind exposure-matched SPY: an assumed display line until the replay gives it a basis. |
 
 ## Divergence register
 
@@ -183,5 +189,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Changelog
 
+- v1.1 — S228: `SRF-TRG-02` lists the `performance` tool; `SRF-OUT-07` added for the scoreboard vital
+  and chat answer; `PARAM` gains `performance_behind_threshold_pts` (DL-220 decision 9).
 - v1 — S229 authored surfaces law book for dashboard, CLI, MCP, chat, and operator-intent write
   boundaries. DRIFT-022 remains corrected and is cited by selected-run scoping clauses.

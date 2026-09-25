@@ -52,6 +52,14 @@ select#run:focus-visible, button:focus-visible { outline:2px solid var(--accent)
   padding:3px 8px; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); }
 .vital b { font-weight:600; color:var(--ink); }
 .vital.crit { border-color:var(--crit); } .vital.crit b { color:var(--crit); }
+#vital-performance { position:relative; }
+.perfvital { cursor:pointer; } .perfvital:disabled { cursor:default; }
+.perfdetail { position:absolute; right:0; top:calc(100% + 6px); z-index:30; min-width:280px;
+  padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card);
+  box-shadow:var(--shadow); font:500 11px var(--mono); color:var(--ink-2); }
+.perfrow { display:flex; justify-content:space-between; gap:14px; padding:2px 0; }
+.perfrow b { color:var(--ink); font-weight:600; }
+.perfdetail p { margin:8px 0 0; font:400 12px/1.45 var(--sans); color:var(--ink); }
 .dot { width:7px; height:7px; border-radius:50%; flex:none; }
 .dot.good { background:var(--good); } .dot.warn { background:var(--warn); }
 .dot.crit { background:var(--crit); } .dot.idle { background:var(--idle); }

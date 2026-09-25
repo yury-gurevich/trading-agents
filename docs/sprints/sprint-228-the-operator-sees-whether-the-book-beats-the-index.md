@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P16, item **E16.2**
 **Branch:** `sprint-228-the-operator-sees-whether-the-book-beats-the-index`
-**Status:** SPEC
+**Status:** BUILT — branch `sprint-228-the-operator-sees-whether-the-book-beats-the-index`, `0.112.00`, built by the planner (operator: *"go ahead build it"*)
 **Version:** *next available MINOR at merge*
 **Effort:** S
 **Decisions:** [DL-220](../design-log.md) (Telegram moves to E19.1; the tile's colour rule) · work-queue item **81** · reads what [S226](sprint-226-a-run-says-whether-the-book-beat-the-index.md) / `RPT-OUT-07` writes · DL-47 (glance-first dashboard)
@@ -374,15 +374,29 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `surfaces/queries/performance*.py`, `projections_performance.py`, `performance_tool.py` | `agents/reporter/laws/laws.md` + `test-plan.md`; `surfaces/laws/laws.md` + `test-plan.md` | `RPT-OUT-07`, `RPT-IDM-03`, `RPT-FAIL-04`, `RPT-SEC-02`; `SRF-OUT-01`, `SRF-OUT-05`, `SRF-FAIL-02`, `SRF-TYP-01` | Yes: `RPT-FAIL-04` writes zero-session metrics, so zero sessions is its own `no_sessions` status that shows no number. |
+| `mcp_tools.py`, `mcp_server.py`, `chat.py`, `index.html`, `performance.js` | `surfaces/laws/laws.md` | `SRF-TRG-02`, `SRF-IN-04`, `SRF-NEV-03`, `SRF-OUT-06`, `SRF-OUT-03` | **Yes: `SRF-TRG-02` fixes the catalogue at five tools**, so a sixth needs the book amended (below). |
+| `settings.py` | `surfaces/laws/laws.md` `PARAM`; `docs/laws/conventions.md` | the `PARAM` table lists every `DashboardSettings` field (gate-enforced) | Yes: the threshold needs a `PARAM` row. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **No `contracts/`
+change and no agent change, but yes, a law cycle on the surfaces book.** The spec expected "No"
+because it predates S229, which locked `SRF-TRG-02` at five tools and made the `PARAM` table
+gate-enforced for `DashboardSettings`. The book is amended to **v1.1**: `SRF-TRG-02` lists
+`performance`, new clause **`SRF-OUT-07`** (the reporter's numbers only, unavailable never zero, no
+model call), a `PARAM` row for `performance_behind_threshold_pts`, a changelog line, and the ledger and
+INDEX at **28 / 35** (DL-220 decision 9).
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** `SRF-TRG-02` (five tools) against scope item 4
+(a sixth). Resolved by amending the book, not by leaving the clause false.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** the surfaces book said nothing about the scoreboard;
+`SRF-OUT-07` fills it. `SRF-OUT-03` speaks of LLM chat answers; the deterministic quick asks (`status`,
+`incidents`, now `performance`) were already outside it, and `SRF-OUT-07` states that this one makes no
+model call.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none were ⬜ among those relied on. New and proven:
+`SRF-OUT-07`. `RPT-SEC-02` stays ⬜ in the reporter's plan: this sprint keeps it satisfied (A8 proves
+no agent or model is reached), but it is the reporter's clause and E19.1's decision.
 
 ---
 
@@ -390,48 +404,105 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_a1_run_performance_reads_the_reporters_numbers_unchanged` | `surfaces/tests/test_performance_scoreboard.py` | 🟩 (red first) | `RPT-OUT-07`, `SRF-OUT-07` |
+| A2 | `test_a2_a_run_behind_by_028_is_amber_with_the_plain_line` | same | 🟩 | `SRF-OUT-07` |
+| A3 | `test_a3_a_run_without_the_group_reads_unavailable_not_zero`; `test_a3_a_partial_group_and_a_missing_snapshot_read_unavailable` | same | 🟩 (guard planted) | `RPT-FAIL-04`, `SRF-OUT-07` |
+| A4 | `test_a4_zero_sessions_reads_no_sessions` | same | 🟩 | `RPT-FAIL-04`, `SRF-OUT-07` |
+| A5 | `test_a5_the_snapshot_is_found_by_the_chain_not_by_run_id` | same | 🟩 (guard planted) | `SRF-OUT-07` |
+| A6 | `test_a6_tone_boundaries_at_the_default_red_line` (7 cases, incl. `-0.004`); `test_a6_moving_the_red_line_moves_the_tone` | same | 🟩 | `SRF-OUT-07` |
+| A7 | `test_a7_the_vital_follows_the_selected_run` | same | 🟩 | `SRF-OUT-01`, `SRF-OUT-07` |
+| A8 | `test_a8_the_chat_answers_from_the_graph_with_no_model_call`; `test_a8_ahead_and_level_read_in_plain_words` | `surfaces/tests/test_performance_chat.py` | 🟩 | `SRF-OUT-07`, `RPT-SEC-02` |
+| A9 | `test_a9_the_quick_ask_is_wired_to_the_tool`; `test_a9_the_chat_quick_ask_answers_for_the_selected_run` | same | 🟩 | `SRF-OUT-06`, `SRF-OUT-07` |
+| A10 | `test_a10_an_unknown_run_answers_unavailable_in_plain_words` | same | 🟩 | `SRF-FAIL-02`, `SRF-OUT-07` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** `test_the_benchmark_name_comes_from_the_reporters_headline`
+(DL-220 decision 7); `test_the_vital_route_serves_the_selected_run_and_404s_unknown_runs`
+(`SRF-IN-01`); `surfaces/tests/test_performance_text.py` (level lead, no-sessions answer, gap
+sessions, the `-0.00` rule). `test_mcp_server.py::test_error_paths_and_tool_catalog` now expects six
+tools.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** the worktree
+`../trading-agents-sprint-228-the-operator-sees-whether-the-book-beats-the-index`, **no `.env`**. Every
+proof here is on fixtures; the live-spine check is the post-merge functionality check.
 
-**Result:** *(builder fills)*
+**Result:** the dashboard has a *vs SPY* vital for the selected run, coloured by the DL-220 rule, with
+the nine numbers and the sentence on click; the chat's *vs the market* and the MCP `performance` tool
+answer from the Snapshot with no agent or model call; a pre-scoreboard run reads *no scoreboard for
+this run* with no number. **Rendered headless** (Edge) from the worktree on the A1 fixture: the vital
+reads `vs SPY −0.28 pts · 32 sessions · 21 % invested`, amber; the chat answer reads the A8 sentence.
+Not rendered on live data (no `.env` here).
 
-**Files changed:** *(builder fills)*
+**Files changed:** new `surfaces/queries/performance.py` (84), `surfaces/queries/performance_text.py`
+(103), `surfaces/dashboard/projections_performance.py` (63), `surfaces/performance_tool.py` (39),
+`surfaces/dashboard/static/performance.js` (52); edited `projections.py` (one `latest_run_id`),
+`route_selection.py` and `projections_vitals.py` (use it; vitals carries `performance`), `app.py`
+(`/api/runs/<run>/performance`), `settings.py`, `mcp_tools.py`, `mcp_server.py`, `chat.py`,
+`index.html`, `app.css`; `surfaces/laws/{laws,test-plan}.md` v1.1; `docs/laws/{ledger,INDEX}.md`;
+`docs/design-log.md` (DL-220); tests. **No change to `agents/`, `contracts/`, any Dockerfile or
+`infra/`.** `static/infra.js` untouched (188).
 
-**Design decisions:** recorded as [`DL-220`](../design-log.md) — *(builder fills)*
+**Design decisions:** recorded as [`DL-220`](../design-log.md) decisions 4–10: one `latest_run_id`
+(the dashboard had two copies); unavailable carries no number; rounding and the tone on the displayed
+value; the benchmark's name read from the reporter's headline; the vital on its own route and slot;
+the surfaces book amended to v1.1; the recent-window clause names no length.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+surfaces\tests\test_performance_scoreboard.py:13: in <module>
+    from surfaces.dashboard.projections_performance import (
+E   ModuleNotFoundError: No module named 'surfaces.dashboard.projections_performance'
+ERROR surfaces/tests/test_performance_scoreboard.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+uv run pytest surfaces/tests/test_performance_text.py surfaces/tests/test_performance_scoreboard.py surfaces/tests/test_performance_chat.py
+26 passed
 ```
 
-**Guards planted:** *(builder fills, per guard)*
+**Guards planted:** **A3**: a missing group returned as `measured` zeros gave `assert 'measured' ==
+'unavailable'`, `1 failed`; restored. **A5**: the Snapshot looked up by `snapshot:<run_id>` made A1 and
+A5 both fail with `assert 'unavailable' == 'measured'`; restored (`cmp` identical), 22 passed.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `app.py` 180, `settings.py` 176, `test_performance_scoreboard.py` 158,
+`mcp_server.py` 151, `mcp_tools.py` 150, `test_performance_chat.py` 143, `chat.py` 141,
+`projections.py` 137, `projections_vitals.py` 133 (was 136), `performance_text.py` 103; all < 200.
 
-**`make ci`:** *(builder fills: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**`make ci`:** redirected to a file, **exit 0**: **3,209 passed, 6 skipped, 100.00 %**; law coverage
+and PARAM sync pass on the v1.1 book; `No unaccepted vulnerabilities; 1 accepted advisory re-checked`;
+detect-secrets tracked and untracked **Passed**. The first run was exit 2 (ruff: line lengths, and the
+typographic minus in string literals, now `chr(0x2212)`), the second 99.96 % (five wording branches
+untested, now pinned by `test_performance_text.py`).
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, pasted output)*
+**`make gate-ran`:** run from this worktree after the push, on the branch tip that carries this
+block; its full SHA and output are recorded in the merge entry in `docs/STATE.md`, because writing
+them here would change the SHA being proven.
 
-**Not met / verified failing:** *(builder fills)*
+**Not met / verified failing:** the live-spine render and the P16 reconciliation clause (Snapshot
+`equity_cents` against the run's `BrokerPositionSnapshot` equity) are the planner's post-merge
+functionality check: not done from this worktree, which has no `.env`.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- 🩹 **The spec's law-cycle answer was stale.** It was written before S229 locked `SRF-TRG-02` at five
+  tools; the book is amended to v1.1 in this sprint (DL-220 decision 9).
+- 🪤 **"Latest run" was already defined twice** (`projections_vitals._latest_run_id`,
+  `route_selection.selected_run`); now one `projections.latest_run_id`.
+- The spec's sentence said *"Last 20 sessions"*; the Snapshot does not carry the rolling window, so the
+  answer says *"Over the most recent sessions"* (DL-220 decision 10). If the operator wants the number,
+  the reporter should write it into the performance group: a reporter change, not a surfaces one.
+- `surfaces/queries/runs.py:96` and `surfaces/cli_commands.py:55` still read `snapshot:<run_id>`, which
+  finds nothing on graph-pull runs; left alone as the spec asked. They look dead for graph-pull runs.
+- The vital is its own slot at the front of the status line, fed by `/api/runs/<run>/performance`,
+  because `infra.js` rewrites the whole vitals line on every refresh.

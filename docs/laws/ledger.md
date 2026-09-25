@@ -50,7 +50,7 @@ and torn down to zero. Historical Neo4j rows remain valid evidence for the pre-S
 | supervisor | ✅ v1.1 (LOCKED) | 22 / 48 | 🟨 partial — **22 of 48 clauses proven** after S205 rewrites and proves `SUP-TYP-01`; S179 proves append-only `FaultResolution` retirement (`SUP-OBS-03`); 26 have a gray row |
 | master | ✅ v1.5 (LOCKED) | 18 / 46 | 🟨 partial — **18 of 46 clauses proven** after S217 adds and proves `MST-OUT-04` whole-fleet readiness and `MST-FAIL-05` classification; S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; S204 gives every clause a row and promotes missing rows to a hard gate · RSA signing + Key Vault + integration clauses deferred (S73/S74) |
 | dispatcher | ✅ v1 (LOCKED) | 25 / 30 | 🟨 partial — **25 of 30 clauses proven** in S229. Covers scheduled run placement, readiness holds, degraded placement, human answers and notices; names `orchestration.dispatcher.Dispatcher` out of scope by DL-221; closes DRIFT-068 and DRIFT-069. |
-| surfaces | ✅ v1 (LOCKED) | 27 / 34 | 🟨 partial — **27 of 34 clauses proven** in S229. Covers dashboard, CLI, MCP, chat and operator-intent write boundaries; selected-run scoping cites DRIFT-022 as already corrected. |
+| surfaces | ✅ v1.1 (LOCKED) | 28 / 35 | 🟨 partial — **27 of 34 clauses proven** in S229; S228 added and proved `SRF-OUT-07` (the scoreboard vital and chat answer). Covers dashboard, CLI, MCP, chat and operator-intent write boundaries; selected-run scoping cites DRIFT-022 as already corrected. |
 
 *2026-09-23 — [DL-203](../design-log.md) (work-queue item 33) amended nine of these laws in
 their `PARAM` tables only — analyst, deliberator, execution, forecaster, master,

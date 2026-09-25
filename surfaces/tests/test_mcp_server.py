@@ -98,6 +98,7 @@ def test_error_paths_and_tool_catalog() -> None:
         "runs",
         "incidents",
         "explain",
+        "performance",
     }
     assert asyncio.run(list_tools()).tools == TOOLS
 

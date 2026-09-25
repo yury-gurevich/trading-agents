@@ -50,6 +50,12 @@ def list_runs(graph: GraphStore) -> list[dict[str, object]]:
     return rows
 
 
+def latest_run_id(graph: GraphStore) -> str:
+    """The run the dashboard selects when none is named: the one definition."""
+    rows = list_runs(graph)
+    return str(rows[0]["run_id"]) if rows else ""
+
+
 def run_verdict(graph: GraphStore, run_id: str) -> dict[str, object]:
     """Acceptance verdict + breaches + the no-trade annotation."""
     result = accept_run(graph, run_id)

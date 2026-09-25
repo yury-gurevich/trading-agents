@@ -21,6 +21,7 @@ _QUICK_TOOLS = {
     "explain this run": "explain",
     "system status": "status",
     "open incidents": "incidents",
+    "vs the market": "performance",
 }
 
 
@@ -86,7 +87,7 @@ def _dispatch(
             tool,
             {"subject": message, "run_id": run_id, "request_id": request_id},
         )
-    if tool in ("status", "incidents"):
+    if tool in ("status", "incidents", "performance"):
         result = dispatch_tool(context, tool, {"run_id": run_id})
         return _quick_result(tool, result)
     return dispatch_tool(
@@ -108,6 +109,8 @@ def _quick_result(tool: str, result: dict[str, object]) -> dict[str, object]:
         return {"outcome": "refused", "message": str(result["error"])}
     if tool == "status":
         text = str(result.get("summary", "System status is unavailable."))
+    elif tool == "performance":
+        text = str(result.get("summary", "The scoreboard is unavailable."))
     else:
         rows = result.get("incidents", [])
         if not isinstance(rows, list) or not rows:

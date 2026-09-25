@@ -18,6 +18,7 @@ from surfaces.dashboard.bundle_azure import container_logs
 from surfaces.dashboard.chat import handle_chat
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
+from surfaces.dashboard.projections_performance import performance_vital
 from surfaces.dashboard.projections_verdict import verdict_projection
 from surfaces.dashboard.projections_vitals import vitals_projection
 from surfaces.dashboard.read_cache import CachingGraphStore
@@ -128,7 +129,7 @@ def _run_view(
     start_response: StartResponse,
 ) -> list[bytes]:
     parts = path.removeprefix("/api/runs/").split("/")
-    if len(parts) != 2 or parts[1] not in (*_RUN_VIEWS, "bundle"):
+    if len(parts) != 2 or parts[1] not in (*_RUN_VIEWS, "bundle", "performance"):
         return _json(start_response, 404, {"error": f"unknown route {path}"})
     run_id, view = parts
     if projections.run_request_node(graph, run_id) is None:
@@ -136,6 +137,8 @@ def _run_view(
     if view == "bundle":
         payload = projections_state.run_bundle(graph, run_id, azure, settings)
         return _json(start_response, 200, payload)
+    if view == "performance":
+        return _json(start_response, 200, performance_vital(graph, run_id, settings))
     return _json(start_response, 200, _RUN_VIEWS[view](graph, run_id))
 
 

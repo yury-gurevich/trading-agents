@@ -14,7 +14,7 @@ from surfaces.dashboard.hold_answer_route import _as_of, _json_body, handle_hold
 
 
 def test_route_rejects_wrong_method_invalid_payload_and_missing_hold() -> None:
-    """S219: dashboard answers require POST, legal data, and a live hold."""
+    """SRF-IN-02: dashboard answers require POST, legal data, and a live hold."""
     graph = InMemoryGraphStore()
     assert handle_hold_answer({}, graph, now=None) == (405, {"error": "POST only"})
     assert handle_hold_answer({"REQUEST_METHOD": "POST"}, graph, now=None) == (

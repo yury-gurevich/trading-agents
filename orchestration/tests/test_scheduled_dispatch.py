@@ -38,6 +38,7 @@ def _add_passing_preflight(graph: InMemoryGraphStore) -> None:
 
 
 def test_trading_day_places_day_keyed_run_request() -> None:
+    """DSP-IDN-01 / DSP-OUT-01: a trading session places one day-keyed run."""
     graph = InMemoryGraphStore()
     _add_passing_preflight(graph)
 
@@ -60,6 +61,7 @@ def test_trading_day_places_day_keyed_run_request() -> None:
 
 
 def test_weekend_and_holiday_skip_with_stated_reason() -> None:
+    """DSP-IDN-01 / DSP-IN-01 / DSP-TRG-02 / DSP-OUT-02: non-sessions skip cleanly."""
     weekend = decide_scheduled_run(date(2026, 7, 4))
     holiday_graph = InMemoryGraphStore()
 
@@ -75,6 +77,7 @@ def test_weekend_and_holiday_skip_with_stated_reason() -> None:
 
 
 def test_double_fire_merges_to_one_run_request_node() -> None:
+    """DSP-IDM-02: repeated ready fires merge to one scheduled RunRequest."""
     graph = InMemoryGraphStore()
     _add_passing_preflight(graph)
 
@@ -88,11 +91,13 @@ def test_double_fire_merges_to_one_run_request_node() -> None:
 
 
 def test_calendar_window_exceeded_raises_explicit_error() -> None:
+    """DSP-IN-01: dates beyond the known calendar fail explicitly."""
     with pytest.raises(CalendarWindowExceededError, match="beyond the NYSE calendar"):
         decide_scheduled_run(date(2028, 1, 3))
 
 
 def test_empty_configured_universe_is_an_error() -> None:
+    """DSP-IN-02 / DSP-FAIL-02: empty universes fail before placement."""
     graph = InMemoryGraphStore()
     _add_passing_preflight(graph)
     settings = OrchestratorSettings(universe="empty")
@@ -108,4 +113,5 @@ def test_empty_configured_universe_is_an_error() -> None:
 
 
 def test_scheduled_run_id_is_stable() -> None:
+    """DSP-IDM-01: scheduled run ids derive only from the session date."""
     assert scheduled_run_id(date(2026, 7, 8)) == "sched-2026-07-08"

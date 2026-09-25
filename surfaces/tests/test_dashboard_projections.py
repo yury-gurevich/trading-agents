@@ -65,6 +65,7 @@ def cascade_graph(
 
 
 def test_list_runs_newest_first() -> None:
+    """SRF-ORD-01: runs list newest requested run first."""
     graph = InMemoryGraphStore()
     place_run_request(graph, run_id="old", tickers=("AAPL",), as_of=date(2026, 7, 1))
     place_run_request(graph, run_id="new", tickers=("AAPL",), as_of=date(2026, 7, 9))

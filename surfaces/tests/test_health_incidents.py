@@ -13,6 +13,7 @@ from surfaces.queries import system_health
 
 
 def test_system_health_agrees_with_supervisor_fault_incident_scope() -> None:
+    """SRF-OUT-02: surface health shares the supervisor incident predicate."""
     graph = InMemoryGraphStore()
     graph.merge_node(
         "BrokerPositionSnapshot",

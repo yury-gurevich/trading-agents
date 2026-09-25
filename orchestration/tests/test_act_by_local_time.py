@@ -19,6 +19,7 @@ from orchestration.tests.scheduled_dispatch_human_helpers import (
 
 
 def test_act_by_reads_melbourne_first_and_follows_daylight_saving() -> None:
+    """DSP-OBS-02: act-by text names Melbourne time first across DST."""
     standard = datetime(2026, 9, 24, 22, 30, tzinfo=UTC)
     daylight = datetime(2026, 10, 5, 22, 30, tzinfo=UTC)
 
@@ -27,6 +28,7 @@ def test_act_by_reads_melbourne_first_and_follows_daylight_saving() -> None:
 
 
 def test_act_by_falls_back_to_utc_without_usable_zone_data() -> None:
+    """DSP-OBS-02: invalid zone data keeps a correct UTC fallback."""
     now = datetime(2026, 9, 24, 22, 30, tzinfo=UTC)
 
     assert act_by_text(now, "Nowhere/Atlantis") == "23:20 UTC"
@@ -34,6 +36,7 @@ def test_act_by_falls_back_to_utc_without_usable_zone_data() -> None:
 
 
 def test_a_new_hold_notice_carries_the_local_deadline() -> None:
+    """DSP-OBS-02: a new hold notice carries the local deadline."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False, failures=("unrecoverable:provider:credential",))
     telegram = FakeTelegram()

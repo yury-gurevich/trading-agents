@@ -11,6 +11,7 @@ from surfaces.tests.test_dashboard_chat import _chat_app, _post
 
 
 def test_resume_round_trip_echoes_consequence_and_places_audited_child() -> None:
+    """SRF-NEV-01/SRF-STA-01/SRF-OBS-01: resume is confirmed and audited."""
     app, graph, _ = _chat_app()
 
     gate_response = _post(app, "Resume from provider")

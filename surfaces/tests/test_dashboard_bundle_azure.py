@@ -18,6 +18,7 @@ NOW = datetime(2026, 7, 10, 12, tzinfo=UTC)
 
 
 def test_bundle_has_per_container_logs_and_real_image_tags() -> None:
+    """SRF-OBS-02 / SRF-PERF-01: bundles carry bounded logs and image evidence."""
     azure = FakeAzureReader()
     logs, images = bundle_artifacts(azure, _settings(), "2026-07-09")
     log_rows = cast("dict[str, list[object]]", logs["containers"])
@@ -31,6 +32,7 @@ def test_bundle_has_per_container_logs_and_real_image_tags() -> None:
 
 
 def test_bundle_partial_log_failure_and_unavailable_mode() -> None:
+    """SRF-FAIL-01 / SRF-OBS-02: partial or unavailable evidence is explicit."""
     logs, images = bundle_artifacts(
         FakeAzureReader(fail_logs_for="execution"), _settings(), "2026-07-09"
     )
@@ -61,6 +63,7 @@ def test_bundle_without_job_still_contains_app_evidence() -> None:
 
 
 def test_container_logs_run_day_scopes_window_and_bad_day_falls_back() -> None:
+    """SRF-OUT-01: log windows scope to the selected run day or say latest."""
     scoped = container_logs(
         FakeAzureReader(), _settings(), "execution", 200, now=NOW, run_day="2026-07-08"
     )
@@ -75,6 +78,7 @@ def test_container_logs_run_day_scopes_window_and_bad_day_falls_back() -> None:
 
 
 def test_single_container_logs_good_and_degraded() -> None:
+    """SRF-FAIL-01: single-container logs degrade explicitly."""
     good = container_logs(FakeAzureReader(), _settings(), "execution", 200, now=NOW)
     assert good["available"] is True
     assert good["scope"] == "latest"

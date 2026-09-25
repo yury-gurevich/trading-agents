@@ -59,7 +59,7 @@ class _TelegramWithError:
 
 
 def test_place_override_rejects_empty_universe() -> None:
-    """S219: a run-now override cannot place an empty universe."""
+    """DSP-IN-02 / DSP-FAIL-02: a run-now override cannot place an empty universe."""
     with pytest.raises(ValueError, match="has no tickers"):
         place_override(
             InMemoryGraphStore(),
@@ -93,7 +93,7 @@ def test_place_scheduled_passes_the_injected_calendar() -> None:
 
 
 def test_fault_safe_records_port_reported_error() -> None:
-    """S219: a falsy Telegram result with last_error becomes a graph fault."""
+    """DSP-FAIL-01: a falsy Telegram result with last_error becomes a graph fault."""
     graph = InMemoryGraphStore()
 
     result = fault_safe(graph, _TelegramWithError(), lambda: "ignored", "fallback")

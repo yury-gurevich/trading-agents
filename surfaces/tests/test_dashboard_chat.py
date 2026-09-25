@@ -1,9 +1,4 @@
-"""Dashboard operator-chat endpoint and audit-ledger tests.
-
-Agent: surfaces
-Role: prove every chat outcome, run grounding, explicit confirmation, and isolation.
-External I/O: none; graph, LLM, and WSGI requests are in-memory fakes.
-"""
+"""Agent: surfaces | Role: prove dashboard chat | External I/O: in-memory fakes."""
 
 from __future__ import annotations
 
@@ -82,6 +77,7 @@ def _chat_app() -> tuple[Any, InMemoryGraphStore, _ChatLLM]:
 
 
 def test_chat_full_outcome_table_and_explicit_confirmation() -> None:
+    """SRF-NEV-01: consequential chat intents require explicit confirmation."""
     app, _, _ = _chat_app()
     assert json.loads(invoke(app, "/api/chat")[2]) == {"connected": True}
 
@@ -106,6 +102,7 @@ def test_chat_full_outcome_table_and_explicit_confirmation() -> None:
 
 
 def test_chat_answer_is_run_grounded_and_writes_priced_ledger_nodes() -> None:
+    """SRF-OUT-03 / SRF-OBS-01: chat answers are run-grounded and audited."""
     app, graph, llm = _chat_app()
     turn = _post(app, "how did we go last night")["turn"]
 
@@ -120,6 +117,7 @@ def test_chat_answer_is_run_grounded_and_writes_priced_ledger_nodes() -> None:
 
 
 def test_repeated_chat_message_appends_a_fresh_priced_exchange() -> None:
+    """SRF-STA-02 / SRF-IDM-01: repeated chat appends fresh priced evidence."""
     app, graph, _ = _chat_app()
 
     first = _post(app, "how did we go last night")["turn"]
@@ -132,6 +130,7 @@ def test_repeated_chat_message_appends_a_fresh_priced_exchange() -> None:
 
 
 def test_chat_suggested_asks_use_existing_bounded_tools() -> None:
+    """SRF-TYP-01: suggested asks stay on existing bounded chat tools."""
     app, _, _ = _chat_app()
     explained = _post(app, "Explain this run")["turn"]
     status = _post(app, "System status")["turn"]
@@ -143,6 +142,7 @@ def test_chat_suggested_asks_use_existing_bounded_tools() -> None:
 
 
 def test_chat_unbound_invalid_requests_and_method_guard() -> None:
+    """SRF-IN-03 / SRF-FAIL-02 / SRF-DEP-02: chat fails closed in plain words."""
     app = build_app(InMemoryGraphStore())
     unavailable = json.loads(invoke(app, "/api/chat")[2])
     post_unavailable = json.loads(

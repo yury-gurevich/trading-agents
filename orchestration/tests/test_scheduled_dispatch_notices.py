@@ -44,7 +44,7 @@ def test_c1_ready_fleet_is_silent_and_unchanged() -> None:
 
 
 def test_c2_new_hold_sends_one_notice_and_marks_the_hold() -> None:
-    """C2: a newly held run has one notice and durable notification evidence."""
+    """DSP-OUT-05 / DSP-OBS-01: a newly held run has one notice and evidence."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False, failures=("unrecoverable:provider:credential",))
     telegram = FakeTelegram()
@@ -59,7 +59,7 @@ def test_c2_new_hold_sends_one_notice_and_marks_the_hold() -> None:
 
 
 def test_c3_notice_has_act_by_and_exactly_two_callback_buttons() -> None:
-    """C3: the Telegram notice states its action time and both legal answers."""
+    """DSP-OUT-05: the notice states action time and both legal answers."""
     module = import_module("orchestration.telegram_client")
     sent: list[tuple[str, dict[str, object], float]] = []
 
@@ -95,7 +95,7 @@ def test_c3_notice_has_act_by_and_exactly_two_callback_buttons() -> None:
 
 
 def test_c4_second_fire_on_one_hold_sends_no_second_notice() -> None:
-    """C4: notification is once per active hold, not once per cron fire."""
+    """DSP-OUT-05: notification is once per active hold, not once per cron fire."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     telegram = FakeTelegram()
@@ -107,7 +107,7 @@ def test_c4_second_fire_on_one_hold_sends_no_second_notice() -> None:
 
 
 def test_c5_rehold_after_release_gets_its_own_notice() -> None:
-    """C5: a released hold is untouched and a new hold is independently announced."""
+    """DSP-STA-01: a released hold is untouched and a new hold is announced."""
     graph = InMemoryGraphStore()
     telegram = FakeTelegram()
     preflight(graph, passed=False)
@@ -125,7 +125,7 @@ def test_c5_rehold_after_release_gets_its_own_notice() -> None:
 
 
 def test_c6_run_now_places_despite_a_failing_preflight() -> None:
-    """C6: an effective run-now answer overrides the readiness hold."""
+    """DSP-IN-04 / DSP-OBS-01: an effective run-now answer overrides the hold."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)
@@ -143,7 +143,7 @@ def test_c6_run_now_places_despite_a_failing_preflight() -> None:
 
 
 def test_c7_skip_today_writes_no_run_and_formats_operator_skip() -> None:
-    """C7: skip-today is a successful operator decision, not a dispatcher error."""
+    """DSP-IN-04 / DSP-OUT-02: skip-today is an operator decision, not an error."""
     graph = InMemoryGraphStore()
     preflight(graph, passed=False)
     active_hold(graph)

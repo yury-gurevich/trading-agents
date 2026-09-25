@@ -3,7 +3,7 @@
 
 **Phase:** Law cycle (the S70/S71 backfill, for the two components they did not cover)
 **Branch:** `sprint-229-every-component-that-decides-answers-to-a-law-book`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** closes [DRIFT-068](../laws/drift-register.md) (the dispatcher has no law home) · work-queue item **86** · [DL-221](../design-log.md) (where non-agent law books live, and how the gate finds them) · ranked by the operator **ahead of** [S228](sprint-228-the-operator-sees-whether-the-book-beats-the-index.md) (*"a quick sprint to cover this gap before we go further"*, 2026-09-25)
@@ -377,15 +377,29 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| New dispatcher law book | `docs/laws/_TEMPLATE.md`; `docs/laws/conventions.md`; `docs/laws/INDEX.md`; `docs/laws/ledger.md`; `docs/laws/drift-register.md`; `docs/laws/flow.md`; `agents/master/laws/laws.md`; `agents/master/laws/test-plan.md`; `agents/execution/laws/laws.md`; `docs/sprints/sprint-70-per-agent-law-backfill.md` | Template sections stay present; conventions §2/§3/§7a/§9; `MST-OUT-04`; `MST-FAIL-05`; `EXEC-NEV-07`; DRIFT-068/069; flow says dispatcher is outside the trading-spine agents and does not replace `supervisor` | Yes: one dispatcher book should cover only run placement and the human-hold loop, naming other orchestration code out of scope rather than pretending all `orchestration/` is one component. |
+| New surfaces law book | `docs/laws/_TEMPLATE.md`; `docs/laws/conventions.md`; `docs/laws/INDEX.md`; `docs/laws/ledger.md`; `docs/laws/drift-register.md`; `docs/laws/flow.md`; `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; `docs/design-log.md` DL-47/DL-207/DL-208/DL-220 | Template sections stay present; conventions §2/§3/§7a/§9; `RPT-SEC-02`; DL-47 reqs 5, 13, 14, 15; DL-207 confirmation/control truth; DL-208 one definition of open incidents | Yes: surface laws must separate read-only display from the named audited operator-intent write paths, and must cite DRIFT-022 as already corrected rather than reopen it. |
+| Law coverage gate | `docs/laws/conventions.md`; `docs/laws/_TEMPLATE.md`; `docs/laws/INDEX.md`; `docs/sprints/sprint-70-per-agent-law-backfill.md` | Green iff a passing functional test docstring cites the clause; every clause has a row; orphan rows are invalid; component books must be deliberate roots, not any `laws.md` recursively | Yes: discovery should be a declared root list that includes `agents/*/laws`, `orchestration/laws/*`, and `surfaces/laws` only. |
+| PARAM/settings sync gate | `docs/laws/conventions.md`; `docs/laws/ledger.md`; S187 memory note on PARAM reconciliation; master PARAM table as model | PARAM rows document every setting with tunable/non-tunable status; mapping for non-agent books must be explicit: `dispatcher` -> `orchestration/settings.py`, `surfaces` -> `surfaces/dashboard/settings.py` | Yes: non-agent settings ownership should be a small map, not path guessing from the book name. |
+| Existing dispatcher and surfaces tests | `docs/laws/conventions.md`; `agents/master/laws/test-plan.md`; `docs/sprints/sprint-70-per-agent-law-backfill.md` | A cited green row needs a test whose docstring names the clause and would fail if the clause broke | Yes: cite only existing tests that falsify the clause; anything merely adjacent stays gray or becomes a small targeted guard test if it fits the sprint cap. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/`
+change. It adds no product behaviour, but it declares existing dispatcher and surfaces guarantees in
+new law books, so the full law cycle applies: books, test-plan rows, docstring citations, drift rows,
+rollups, gate discovery, PARAM sync, LOCKED v1.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None found in the required reading before code
+reconciliation. Existing books remain read-only.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** Dispatcher placement and hold-answer behaviour had
+no law home (DRIFT-068/069). Surfaces also had no component law home for read/write boundaries,
+confirmation, run scoping, or operator-language rules; DL-47/DL-207/DL-208 carry those decisions but
+the gate did not read them as law.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** The new dispatcher book is 25 / 30 green, and the new
+surfaces book is 27 / 34 green. Remaining gray rows are unproven documentation-of-scope,
+dependency/secret boundary, or output-contract claims that did not have a test that would fail if
+the clause broke.
 
 ---
 
@@ -393,48 +407,113 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_component_law_book_uncited_green_is_checked` | `tests/test_law_coverage_component_books.py` | 🟩 old gate passed the planted non-agent book; new gate fails it | `DSP-FIX-01` fixture |
+| A2 | `test_component_law_book_orphan_row_fails` | `tests/test_law_coverage_component_books.py` | 🟩 | fixture orphan row |
+| A3 | `test_component_law_book_missing_row_is_reported` | `tests/test_law_coverage_component_books.py` | 🟩 | fixture missing row |
+| A4 | `test_law_book_discovery_uses_declared_non_recursive_roots` | `tests/test_law_coverage_component_books.py` | 🟩 discovers agents + `dispatcher` + `surfaces`; ignores `ops/laws` and `docs/laws` | discovery guard |
+| A5 | `test_surfaces_book_syncs_against_mapped_dashboard_settings` | `tests/test_param_law_sync_component_books.py` | 🟩 mapped `surfaces` book fails on a mismatched `Tunable` cell | PARAM sync |
+| A6 | Real dispatcher book | `orchestration/laws/dispatcher/{laws.md,test-plan.md}` | 🟩 `check_law_coverage.py` exit 0; derived count 25 / 30 | `DSP-*` |
+| A7 | Real surfaces book | `surfaces/laws/{laws.md,test-plan.md}` | 🟩 `check_law_coverage.py` exit 0; derived count 27 / 34 | `SRF-*` |
+| A8 | DRIFT-068 closure row | `docs/laws/drift-register.md` | 🟩 row is CLOSED and cites `DSP-IN-03`, `DSP-OUT-03`, `DSP-OUT-04`, `DSP-ORD-01`, `DSP-IDM-02` | `DSP-*` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** None beyond the two planned gate-test files. Existing
+orchestration/surfaces tests received docstring citations only.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-229-every-component-that-decides-answers-to-a-law-book`; `.env` not read or printed.
 
-**Result:** *(builder fills)*
+**Result:** Dispatcher and surfaces law books authored from the template, reconciled against code and
+tests, LOCKED v1, wired into law coverage and PARAM/settings gates.
 
-**Files changed:** *(builder fills)*
+**Files changed:** new law folders; docs/law rollups and drift rows; gate discovery/mapping scripts;
+new gate tests; existing test docstrings; PATCH version bump. No product module changed. Gate-only
+scope note: `scripts/param_law_sync.py` consumes the new explicit source mapping and did not grow
+(197 lines).
 
-**Design decisions:** recorded as [`DL-221`](../design-log.md) — *(builder fills)*
+**Design decisions:** recorded as [`DL-221`](../design-log.md) before authoring. Rejected fake
+`agents/` homes, recursive discovery, one broad orchestration book, deleting template sections, and
+fixing divergences inside this sprint.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+uv run pytest tests/test_law_coverage_component_books.py tests/test_param_law_sync_component_books.py --no-cov
+collected 5 items
+tests\test_law_coverage_component_books.py FFFF
+tests\test_param_law_sync_component_books.py F
+
+Old behavior: non-agent fixture books were outside discovery. A1/A2/A3 returned 0 for violations,
+A4 discovered only ('probe',), and A5 returned 0 instead of failing the mapped component mismatch.
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+uv run pytest tests/test_law_coverage_component_books.py tests/test_param_law_sync_component_books.py --no-cov
+5 passed in 2.40s
+
+uv run python scripts\check_law_coverage.py
+exit 0, no output
+
+uv run python scripts\check_param_law_sync.py
+exit 0, with only the two pre-existing portfolio-manager envelope warnings.
 ```
 
-**Guards planted:** *(builder fills, per guard)*
+**Guards planted:** DL-70 plant 1 removed the only `DSP-IDM-01` test citation and full
+`make ci > ci.txt` failed at law coverage:
 
-**Module line counts:** *(builder fills)*
+```text
+uv run python scripts/check_law_coverage.py
+[FAIL] orchestration/laws/dispatcher/test-plan.md:25: DSP-IDM-01 no resolved test docstring names DSP-IDM-01: orchestration/tests/test_scheduled_dispatch.py::test_scheduled_run_id_is_stable
+make: *** [Makefile:53: ci] Error 1
+```
 
-**`make ci`:** *(builder fills: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+DL-70 plant 2 changed the `SRF` PARAM `log_tail_default` `Tunable` cell from `YES` to `NO`, and
+full `make ci > ci.txt` failed at PARAM sync:
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, pasted output)*
+```text
+uv run python scripts/check_param_law_sync.py
+[FAIL] surfaces/laws/laws.md:168: surfaces.log_tail_default law declares NO; settings field is registered via tunable(), expected not registered via tunable()
+make: *** [Makefile:54: ci] Error 1
+```
 
-**Not met / verified failing:** *(builder fills)*
+Both plants were restored.
+
+**Module line counts:** `scripts/check_law_coverage.py` 228 (unchanged legacy ceiling);
+`scripts/param_law_sync.py` 197 (not grown); `scripts/law_coverage_docs.py` 185;
+`scripts/param_law_sync_sources.py` 153; touched near-ceiling tests:
+`orchestration/tests/test_scheduled_dispatch_polling.py` 199,
+`orchestration/tests/test_scheduled_dispatch_readiness.py` 198,
+`surfaces/tests/test_dashboard_chat.py` 198. All touched Python modules are below 200 lines.
+
+**`make ci`:** `cmd /c "make ci > ci.txt 2>&1"` from the sprint worktree exited 0.
+
+```text
+================= 3159 passed, 6 skipped in 93.27s (0:01:33) ==================
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 6 new file(s)
+```
+
+**`make gate-ran`:** pending final SHA after commit/push.
+
+**Not met / verified failing:** Remote gate and exact-SHA `make gate-ran` are pending until this
+handback is committed and pushed.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- Dispatcher divergences found: none new. `DRIFT-068` and `DRIFT-069` are CLOSED by the new
+  `DSP` book; `orchestration.dispatcher.Dispatcher` is explicitly out of scope by DL-221.
+- Surfaces divergences found: none new. `DRIFT-022` was already corrected and is cited by `SRF-OUT-01`
+  rather than reopened.
+- Branch-built status only until merge: main is unchanged, no deployment is required, and no live
+  proof is claimed for this docs/gate sprint.

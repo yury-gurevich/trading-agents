@@ -39,6 +39,32 @@ def write_book(
     _write_rollups(root, agent, rollup or _counter(rows))
 
 
+def write_component_book(
+    root: Path,
+    *,
+    component: str = "dispatcher",
+    law_root: str = "orchestration",
+    laws: tuple[str, ...] = ("DSP-IDN-01",),
+    rows: tuple[tuple[str, str, str], ...] = (
+        ("DSP-IDN-01", "`orchestration/tests/test_dispatcher.py::test_good`", GREEN),
+    ),
+    tests: dict[str, str] | None = None,
+    rollup: tuple[int, int] | None = None,
+) -> None:
+    law_dir = _component_law_dir(root, law_root, component)
+    test_dir = root / law_root / "tests"
+    law_dir.mkdir(parents=True)
+    test_dir.mkdir(parents=True)
+    law_dir.joinpath("laws.md").write_text(_laws(laws, "bold"), encoding="utf-8")
+    law_dir.joinpath("test-plan.md").write_text(_plan(rows, "master"), encoding="utf-8")
+    test_sources = _component_tests(laws[0]) if tests is None else tests
+    for name, source in test_sources.items():
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(dedent(source).lstrip(), encoding="utf-8")
+    _write_rollups(root, component, rollup or _counter(rows))
+
+
 def _laws(ids: tuple[str, ...], marker: str) -> str:
     lines = ["# Probe laws", ""]
     for clause_id in ids:
@@ -47,6 +73,12 @@ def _laws(ids: tuple[str, ...], marker: str) -> str:
         else:
             lines.append(f"- **{clause_id}** — The probe does the required thing.")
     return "\n".join(lines) + "\n"
+
+
+def _component_law_dir(root: Path, law_root: str, component: str) -> Path:
+    if law_root == "surfaces":
+        return root / "surfaces" / "laws"
+    return root / law_root / "laws" / component
 
 
 def _plan(rows: tuple[tuple[str, str, str], ...], schema: str) -> str:
@@ -79,13 +111,23 @@ def _default_tests() -> dict[str, str]:
     }
 
 
+def _component_tests(clause_id: str) -> dict[str, str]:
+    return {
+        "orchestration/tests/test_dispatcher.py": f'''
+            def test_good():
+                """{clause_id}: proves the component clause."""
+                assert True
+        '''
+    }
+
+
 def _counter(rows: tuple[tuple[str, str, str], ...]) -> tuple[int, int]:
     return sum(status == GREEN for _, _, status in rows), len(rows)
 
 
 def _write_rollups(root: Path, agent: str, counter: tuple[int, int]) -> None:
     laws_dir = root / "docs" / "laws"
-    laws_dir.mkdir(parents=True)
+    laws_dir.mkdir(parents=True, exist_ok=True)
     green, total = counter
     laws_dir.joinpath("ledger.md").write_text(
         "\n".join(

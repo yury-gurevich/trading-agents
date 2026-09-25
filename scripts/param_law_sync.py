@@ -19,14 +19,17 @@ from scripts.param_law_sync_sources import (
     Location,
     ParamRow,
     agent_settings_location,
+    law_book_names,
     param_rows,
+    settings_class_name,
     settings_field_locations,
+    settings_module_name,
+    settings_module_path,
 )
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
-
 from kernel import AgentSettings  # noqa: E402
 
 if TYPE_CHECKING:
@@ -69,12 +72,7 @@ def check_root(root: Path) -> ParamSyncReport:
 
 
 def _discover_agents(root: Path) -> list[str]:
-    agents_root = root / "agents"
-    return [
-        path.parents[1].name
-        for path in sorted(agents_root.glob("*/laws/laws.md"))
-        if (path.parents[1] / "settings.py").is_file()
-    ]
+    return law_book_names(root)
 
 
 def _agent_issues(
@@ -117,6 +115,7 @@ def _agent_issues(
 
 def _settings_class(root: Path, agent: str) -> type[AgentSettings]:
     module = _load_settings_module(root, agent)
+    class_name = settings_class_name(agent)
     candidates = [
         item
         for item in module.__dict__.values()
@@ -126,6 +125,7 @@ def _settings_class(root: Path, agent: str) -> type[AgentSettings]:
         and item.__name__.endswith("Settings")
         and item.__module__ == module.__name__
         and not item.__name__.startswith("_")
+        and (class_name is None or item.__name__ == class_name)
     ]
     if len(candidates) != 1:
         names = ", ".join(item.__name__ for item in candidates) or "<none>"
@@ -137,8 +137,8 @@ def _settings_class(root: Path, agent: str) -> type[AgentSettings]:
 
 def _load_settings_module(root: Path, agent: str) -> ModuleType:
     if root.resolve() == _ROOT.resolve():
-        return importlib.import_module(f"agents.{agent}.settings")
-    path = root / "agents" / agent / "settings.py"
+        return importlib.import_module(settings_module_name(agent))
+    path = settings_module_path(root, agent)
     spec = importlib.util.spec_from_file_location(f"_param_law_sync_{agent}", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"{agent}: cannot load settings module")

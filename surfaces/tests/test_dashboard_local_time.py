@@ -21,6 +21,7 @@ from surfaces.tests.test_dashboard_costs import _settings
 
 
 def test_scale_windows_render_in_melbourne_time_across_daylight_saving() -> None:
+    """SRF-OUT-04: dashboard window labels render Melbourne 24-hour time."""
     settings = _settings()
     before = datetime(2026, 9, 24, tzinfo=UTC)
     after = datetime(2026, 10, 5, tzinfo=UTC)
@@ -31,6 +32,7 @@ def test_scale_windows_render_in_melbourne_time_across_daylight_saving() -> None
 
 
 def test_the_page_is_told_which_zone_to_render() -> None:
+    """SRF-OUT-04: the page receives the Melbourne rendering zone."""
     app = build_app(InMemoryGraphStore(), FakeAzureReader(), _settings())
 
     page = invoke(app, "/")[2].decode("utf-8")

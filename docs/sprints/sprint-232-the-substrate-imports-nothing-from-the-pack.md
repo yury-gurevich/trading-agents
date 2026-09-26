@@ -826,4 +826,5 @@ pack module*, naming the line.
 without `contracts/` (smoke green). Image-only retag: no injected pack moved. 16 / 16 on `s232`, `Succeeded`, `Running`, scale blocks
 JSON-identical, `dispatcher-cron` changed only its image; `DeployRecord deploy:2026-09-26T08:47:36…:s232:f685260e…`. **Step 4, live:** the
 master's `s232` revision (08:40:48 UTC) wrote `FleetPreflight` `passed=True` twice with 0 failures, and every agent type registered
-`active` with it (08:41:23–08:47:25 UTC); 0 Faults. **Owed:** `ACCEPTANCE PASS` on `sched-2026-09-28`; the Service Bus routes at the next `up`.
+`active` with it (08:41:23–08:47:25 UTC); 0 Faults. **Full `up`, 2026-09-26 22:45–23:07 AEST:** `Prepare-ServiceBusRoutes`, reading the pack roster, planned the same 8 routes and
+created 0 topics and 0 subscriptions. **Owed:** `ACCEPTANCE PASS` on `sched-2026-09-28`.

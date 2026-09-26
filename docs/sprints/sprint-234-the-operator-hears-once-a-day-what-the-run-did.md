@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.1**
 **Branch:** `sprint-234-the-operator-hears-once-a-day-what-the-run-did`
-**Status:** MERGED `76e226d5` · tag `v0.114.00` · 2026-09-26 · not deployed (operator approval owed)
+**Status:** MERGED `76e226d5` · tag `v0.114.00` · deployed `s234` 2026-09-26 · first real brief owed
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-230](../design-log.md) (operator, 2026-09-26: the brief may carry P&L amounts) ·
@@ -686,5 +686,7 @@ Needs you: nothing
 ```
 
 Both as the handback predicted (−$24.40 compares two stored rules, DL-224); BMY's fill matches the
-broker's 2026-09-24 open fill. **Owed:** the dispatcher deploy (operator approval), then step 5's
-functionality check on the first scheduled run after it.
+broker's 2026-09-24 open fill.
+
+**Deployed `s234`, 2026-09-26 17:45 AEST** (operator: *"deploy"*). Build `36227337349` from `v0.114.00`, 15 / 15. Image-only retag (the three injected packs unchanged since `s228b`), all 16 apps with the job: the dashboard's currency check needs one tag. Verified on live Azure: 16 / 16 on `s234`, `Succeeded`, `Running`; scale blocks JSON-identical to the pre-retag snapshot; `dispatcher-cron` changed only its image. `DeployRecord deploy:2026-09-26T07:45:41…:s234:76e226d5…`. Rollback: `s228b`. **Owed:** step 5, on
+`sched-2026-09-28` (the first brief ~08:50 AEST Tue 29 Sep).

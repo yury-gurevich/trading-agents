@@ -1,6 +1,6 @@
 # `Dispatcher` — Laws
 
-**Prefix:** `DSP` · **status:** LOCKED v1 · **Owner:** Yury Gurevich
+**Prefix:** `DSP` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
 
 > Decide whether the scheduled daily graph-pull run is placed, skipped, held, or placed in degraded posture.
 
@@ -20,6 +20,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **DSP-IDN-03** — `orchestration.dispatcher.Dispatcher` is outside this book: it is the older
   event-driven wrapper that publishes `run.trigger` once invoked and records the final snapshot. This
   book governs `scheduled_dispatch*.py`, readiness gating, hold answers, and notices.
+- **DSP-IDN-04** — The scheduled dispatcher sends one daily brief per scheduled run it placed
+  (`orchestration/daily_brief*.py`): a plain-text report to the operator of what the run did. It
+  reports and never decides: no brief changes a placement, a hold, a notice, or any fact another
+  component owns.
 
 ## Inputs (`IN`)
 
@@ -41,6 +45,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   cannot place a run.
 - **DSP-TRG-02** — Calendar skip is evaluated before readiness, Telegram polling, notices, or hold
   writes.
+- **DSP-TRG-03** — Every fire whose `as_of` is its own UTC date attempts that day's brief after the
+  calendar skip and before the action-window return, so fires after `_ACT_BY` attempt it too; a fire
+  for a past session briefs nothing. It sends once the run's `Snapshot` exists. On the day's last fire
+  (`LAST_FIRE=23:50 UTC`, the cron's last tick) a placed run with no `Snapshot` gets one RED brief
+  instead. A skipped run, or a held run with no `RunRequest`, gets no brief.
 
 ## Outputs (`OUT`)
 
@@ -53,6 +62,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `RunRequest`, releases any active hold, and leaves normal placements byte-compatible.
 - **DSP-OUT-05** — A newly held run sends one operator notice with exactly the two legal answer
   buttons. A degraded placement sends one informational notice and no answer buttons.
+- **DSP-OUT-06** — A brief is plain text, with the fire's time in the operator's zone (UTC only
+  without zone data). It carries the pack's acceptance verdict (`accept_run`) and a `degraded` mark
+  for a degraded run; the equity the run's `Snapshot` stored and its change since the previous
+  scheduled run with a `Snapshot` (by `PMRun.created_at`), or that there is no figure; the benchmark
+  clause of the `Snapshot`'s `headline_summary`; the orders the run placed; the fills that became
+  known (`broker_status_refreshed_at`) since that previous run, a resting stop's fill read as stopped
+  out; and the open incidents and critical flags the supervisor's health derives. Every figure is read
+  as stored, never recomputed. A RED brief says the run did not finish, names the last stage that
+  finished, and carries the run's orders and the same needs-you counts.
 
 ## Prohibitions (`NEV`)
 
@@ -73,6 +91,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `sched-YYYY-MM-DD`.
 - **DSP-IDM-02** — Re-firing the same scheduled placement is idempotent: ready runs merge to one
   `RunRequest`, and failing runs merge to one active `RunHold`.
+- **DSP-IDM-03** — At most one brief per run id. A fire sends only while the run's `RunRequest`
+  carries no `brief_sent_at`; a successful send writes `brief_sent_at`, `brief_message_id`, and
+  `brief_verdict` (the verdict the brief carried, `NOT_FINISHED` for a RED brief) on that
+  `RunRequest`. A failed send writes nothing, so a later fire retries.
 
 ## Ordering & concurrency (`ORD`)
 
@@ -87,6 +109,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   caller-selected fallbacks.
 - **DSP-FAIL-02** — An empty configured universe fails loudly rather than placing an empty
   `RunRequest`.
+- **DSP-FAIL-03** — Composing or sending a brief can fail only into a fault: an exception, a send the
+  port reports failed, or a brief module the image lacks becomes one `Fault`, and the fire goes on. A
+  brief never changes the placement outcome and never crashes the fire.
 
 ## Type alignment (`TYP`)
 
@@ -97,12 +122,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **DSP-SEC-01** — Telegram credentials are held by the injected Telegram port; scheduled-dispatch
   logic receives only the port interface and never logs or returns raw credentials.
+- **DSP-SEC-02** — P&L amounts leave the dispatcher only in the daily brief, only to the configured
+  operator chat, and only through the injected Telegram port (DL-230). The job's printed output and
+  every fault carry no amount: a brief's fault names its step and an error type, never a value.
 
 ## Dependencies (`DEP`)
 
 - **DSP-DEP-01** — The scheduled dispatcher depends on the graph store (`DEP-POSTGRES`), UTC clock
   (`DEP-CLOCK`), provider-owned market calendar, configured universe source, and Telegram port for
-  optional operator notices and answers.
+  optional operator notices, answers, and the daily brief. For the brief its graph reads include the
+  run's chain to its `Snapshot`, `Fill`, `Fault` and `Flag` facts with their resolutions, and the
+  pack's acceptance verdict.
 
 ## Observability & audit (`OBS`)
 
@@ -124,14 +154,20 @@ green only when a functional test cites its ID (conventions §3). Tests + status
     "operations": ["read", "append_write"],
     "labels_owned": ["RunHold"],
     "labels_written": ["RunRequest", "RunHold", "RunHoldAnswer", "Fault"],
-    "access": "bounded dispatcher placement"
+    "labels_read": [
+      "FleetPreflight", "RunRequest", "RunHold", "RunHoldAnswer", "MarketData", "ScanRun",
+      "AnalystRun", "PMRun", "DeliberationRun", "OrderIntent", "ExecutionRun", "MonitorRun",
+      "Snapshot", "Fill", "Fault", "FaultResolution", "Flag", "FlagResolution",
+      "BrokerPositionSnapshot"
+    ],
+    "access": "bounded dispatcher placement; the brief marks only its own RunRequest"
   },
   "calendar": {
     "operations": ["read_session_status"],
     "source": "provider-owned NYSE calendar"
   },
   "telegram": {
-    "operations": ["send_notice", "poll_answer", "ack_answer", "confirm_offset"],
+    "operations": ["send_notice", "poll_answer", "ack_answer", "confirm_offset", "send_brief"],
     "access": "injected port"
   }
 }
@@ -157,3 +193,11 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - v1 — S229 authored dispatcher scheduled-placement and human-hold law book; closed DRIFT-068 and
   DRIFT-069 by declaring the readiness/degraded and notice/answer guarantees.
+- v1.1 — S234 (E19.1, DL-230, DL-231): the daily brief. New `DSP-IDN-04`, `DSP-TRG-03`,
+  `DSP-OUT-06`, `DSP-IDM-03`, `DSP-SEC-02` (the operator's DL-230 decision that amounts may leave,
+  and only here), and `DSP-FAIL-03`; `DSP-DEP-01` and `CAP` amended for the brief's reads, its
+  `send_brief` port operation, and `labels_read`. The reporter's security clause is unchanged: the
+  reporter still sends nothing (DL-230). This book names no other book's clause IDs, because the
+  coverage gate reads every clause-shaped ID in it as this book's own. `DSP-IDN-03`'s scope sentence
+  and the purpose line predate the brief (DRIFT-077). `DSP-SEC-01` is now proven across every port
+  operation.

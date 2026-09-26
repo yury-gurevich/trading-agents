@@ -116,7 +116,7 @@ def test_needs_you_counts_read_as_words() -> None:
 
 
 def test_the_time_is_the_operators_and_utc_without_zone_data() -> None:
-    """DSP-OUT-06 / DSP-OBS-02: Melbourne time first, following daylight saving.
+    """DSP-OUT-06: the fire's time is Melbourne's, following daylight saving.
 
     Without usable zone data the stamp says UTC, as the hold notice's deadline does.
     """

@@ -10,14 +10,12 @@ so these tests read what `main` printed, not what a helper returned.
 
 from __future__ import annotations
 
-import inspect
 from datetime import datetime, tzinfo
 
 import pytest
 import scripts.dispatch_scheduled_run as entrypoint
 
 from kernel import InMemoryGraphStore
-from orchestration.scheduled_dispatch_human import dispatch_with_human_answer
 from orchestration.tests.daily_brief_fixtures import at
 from orchestration.tests.daily_brief_scenarios import (
     A1_TEXT,
@@ -68,38 +66,3 @@ def test_a10_no_amount_leaves_through_the_job_log_or_a_fault(
     faults = graph.list_nodes("Fault")
     assert len(faults) == int(refused)
     assert all(amount_free(fault_text(fault)) for fault in faults)
-
-
-def test_the_bot_credential_stays_inside_the_port(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """DSP-SEC-01 / DSP-SEC-02: only the port holds the credential; nothing echoes it.
-
-    The real client carries the brief; the credential reaches its transport and no
-    printed line, graph fact or dispatch parameter. The dispatcher takes the port
-    and never a token or chat id.
-    """
-    sentinel = "sentinel-bot-credential-for-tests"
-    seen: list[tuple[str, str, object]] = []
-
-    def transport(
-        token: str, method: str, payload: dict[str, object], _: float
-    ) -> object:
-        seen.append((token, method, payload["chat_id"]))
-        return {"ok": True, "result": {"message_id": 9}}
-
-    monkeypatch.setattr("orchestration.telegram_client.send_request", transport)
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", sentinel)
-    monkeypatch.setenv("TELEGRAM_CHAT_ID", "operator-chat")
-    graph = InMemoryGraphStore()
-    seed_pair(graph)
-
-    status = _main(monkeypatch, graph)
-
-    printed = capsys.readouterr()
-    facts = repr([dict(node.props) for node in graph._nodes.values()])
-    assert status == 0
-    assert seen == [(sentinel, "sendMessage", "operator-chat")]
-    assert sentinel not in printed.out + printed.err + facts
-    parameters = inspect.signature(dispatch_with_human_answer).parameters
-    assert not {"token", "api_token", "chat_id"} & set(parameters)

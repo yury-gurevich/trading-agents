@@ -20,7 +20,7 @@ from orchestration.tests.scheduled_dispatch_human_helpers import FakeTelegram, p
 
 
 def test_a1_a_finished_run_gets_its_brief() -> None:
-    """DSP-OUT-06 / DSP-IDN-04: one brief carries the run's facts, then its marker.
+    """DSP-OUT-06 / DSP-IDN-04 / DSP-IDM-03: one brief with the facts, then its marker.
 
     A run like sched-2026-09-25: PASS, equity 10,197,632 against the previous
     briefed run's 10,200,072, the reporter's clause, no orders, no fills, nothing
@@ -56,7 +56,7 @@ def test_a2_a_second_fire_sends_nothing() -> None:
 
 
 def test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire() -> None:
-    """DSP-TRG-03: no brief before the Snapshot; one RED brief on the 23:50 fire.
+    """DSP-TRG-03 / DSP-IDM-03: no brief before the Snapshot; one RED brief at 23:50.
 
     The run stopped after execution. The 22:40 fire stays silent because the run
     may still finish; the day's last fire names the last stage that finished.
@@ -85,7 +85,7 @@ def test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire() -> None:
 
 
 def test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries() -> None:
-    """DSP-FAIL-03 / DSP-STA-02 / DSP-SEC-02: a failed send is only a fault.
+    """DSP-FAIL-03 / DSP-STA-02 / DSP-SEC-02 / DSP-IDM-03: a failed send is a fault.
 
     The port first raises (quoting the text it failed to send), then answers with
     no message id. Each becomes a Fault that carries no amount, no marker is

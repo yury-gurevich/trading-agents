@@ -39,27 +39,37 @@ _SATURDAY = date(2026, 9, 26)
 
 
 def test_a4_the_brief_survives_the_windows_early_return() -> None:
-    """DSP-TRG-03 / DSP-PERF-01: a 23:30 fire briefs and still places nothing.
+    """DSP-TRG-03 / DSP-PERF-01 / DSP-IDN-04: a 23:30 fire briefs and decides nothing.
 
     Past `_ACT_BY` the fire returns before placement; the brief step sits before
-    that return, and the fire's result is exactly its result with no brief due.
+    that return, and the fire's result is exactly its result with no brief due. The
+    only change to the graph is the three marker properties on the run's own
+    RunRequest: the brief reports and touches no other fact.
     """
     no_brief = InMemoryGraphStore()
     seed_pair(no_brief, briefed=True)
     graph = InMemoryGraphStore()
     seed_pair(graph)
+    before = {key: dict(node.props) for key, node in graph._nodes.items()}
     telegram = FakeTelegram()
 
     result = fire(graph, telegram, at(23, 30))
 
+    after = {key: dict(node.props) for key, node in graph._nodes.items()}
     assert len(telegram.briefs) == 1
     assert result == fire(no_brief, FakeTelegram(), at(23, 30))
     assert result.action == "skipped"
-    assert graph.list_nodes("RunHold") == ()
+    changed = {key for key in after if after[key] != before.get(key)}
+    assert changed == {("RunRequest", "run-request:sched-2026-09-25")}
+    added = (
+        after[("RunRequest", "run-request:sched-2026-09-25")].keys()
+        - before[("RunRequest", "run-request:sched-2026-09-25")].keys()
+    )
+    assert added == {"brief_sent_at", "brief_message_id", "brief_verdict"}
 
 
 def test_a5_no_brief_for_a_skipped_or_a_never_placed_run() -> None:
-    """DSP-TRG-02 / DSP-TRG-03: a calendar skip and an unplaced hold stay silent.
+    """DSP-TRG-02 / DSP-TRG-03 / DSP-IDN-04: a skip and an unplaced hold stay silent.
 
     The Saturday run carries a finished chain, so only the order of the fire (the
     calendar skip first) keeps it silent. The held day has no RunRequest; its hold

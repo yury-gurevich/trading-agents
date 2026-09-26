@@ -51,7 +51,7 @@ Each agent's law files live at `agents/<name>/laws/`:
 | curator | ✅ LOCKED v1.1 (S205) | 23 / 47 | S205 rewrites and proves `CUR-TYP-01`; counters are clauses proven / clauses declared |
 | researcher | ✅ LOCKED v1.2 (DL-203) | 20 / 43 | DL-203 reconciles `PARAM` only; S205 rewrites and proves `RES-TYP-01`; counters are clauses proven / clauses declared |
 | master | ✅ LOCKED v1.5 (DL-203) | 18 / 46 | DL-203 reconciles `PARAM` only; S217 adds and proves `MST-OUT-04` whole-fleet readiness and `MST-FAIL-05` classification; S205 rewrites and proves `MST-TYP-01`; S188 adds and proves credential-test handover guards; RSA/Key Vault clauses deferred S74; S204 gives every clause a row and makes rowless clauses a hard gate |
-| dispatcher | ✅ LOCKED v1 (S229) | 25 / 30 | Component book under `orchestration/laws/dispatcher/`; scheduled placement and human-hold loop only; `orchestration.dispatcher.Dispatcher` named out of scope by DL-221; closes DRIFT-068 and DRIFT-069 |
+| dispatcher | ✅ LOCKED v1.1 (S234) | 32 / 36 | Component book under `orchestration/laws/dispatcher/`; scheduled placement, the human-hold loop and the daily brief (S234, DL-230/DL-231); `orchestration.dispatcher.Dispatcher` named out of scope by DL-221; closes DRIFT-068 and DRIFT-069 |
 | surfaces | ✅ LOCKED v1.1 (S229, S228) | 28 / 35 | Component book under `surfaces/laws/`; dashboard, CLI, MCP, chat and operator-intent write boundaries; selected-run scoping cites corrected DRIFT-022 |
 
 See [ledger.md](ledger.md) for the canonical version of this table.

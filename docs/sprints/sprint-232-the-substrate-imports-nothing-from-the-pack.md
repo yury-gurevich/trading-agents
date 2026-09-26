@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P20, item **E20.2**
 **Branch:** `sprint-232-the-substrate-imports-nothing-from-the-pack`
-**Status:** MERGED `f685260e` · tag `v0.114.01` · 2026-09-26 · not deployed (operator approval owed)
+**Status:** MERGED `f685260e` · tag `v0.114.01` · deployed `s232` 2026-09-26 · live boot 🟩, run acceptance owed
 **Version:** `0.114.01` at merge (built as `0.113.01`; S233 took it, and S234's MINOR moved `main` to `0.114.00`)
 **Effort:** M. The plan sized E20.2 at **L (2.5)** because it expected the grant table to move and every
 agent's imports to change. Both expectations are measured false below
@@ -822,5 +822,8 @@ first-party modules and **0** from the pack; both prompt-recipe hashes equal row
 kept, and a real `import contracts.common` planted in `agents/master/store.py` breaks *Substrate imports no
 pack module*, naming the line.
 
-**Owed:** the deploy (operator approval; image-only retag, all 15 images rebuild and the master's loses
-`contracts/`), then the functionality check in *Sequencing after merge* step 4.
+**Deployed `s232`, 2026-09-26 18:47 AEST** (operator: *"go for it"*). Build `36230411700` from `v0.114.01`, 15 / 15, the master image
+without `contracts/` (smoke green). Image-only retag: no injected pack moved. 16 / 16 on `s232`, `Succeeded`, `Running`, scale blocks
+JSON-identical, `dispatcher-cron` changed only its image; `DeployRecord deploy:2026-09-26T08:47:36…:s232:f685260e…`. **Step 4, live:** the
+master's `s232` revision (08:40:48 UTC) wrote `FleetPreflight` `passed=True` twice with 0 failures, and every agent type registered
+`active` with it (08:41:23–08:47:25 UTC); 0 Faults. **Owed:** `ACCEPTANCE PASS` on `sched-2026-09-28`; the Service Bus routes at the next `up`.

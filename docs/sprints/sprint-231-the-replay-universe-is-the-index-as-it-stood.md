@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.2**
 **Branch:** `sprint-231-the-replay-universe-is-the-index-as-it-stood`
-**Status:** MERGED · tag `v0.113.00` · 2026-09-26 · planner's live build owed
+**Status:** MERGED `5132e7d6` · tag `v0.113.00` · 2026-09-26 · live build: coverage 🟩 99.68 %, identity 🔴 on 2 of 732 lines (E17.2b owed)
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-226](../design-log.md) (the source: Wikipedia's change log + Alpaca SIP bars) ·
@@ -506,3 +506,23 @@ tests\test_replay_universe.py ....
 
 - The planner must run the live `replay_universe.py build --end <yesterday>` after merge with `.env`; this branch proved only synthetic fixtures and injected fakes.
 - No `bars.csv.gz`, `vix.csv.gz`, generated membership, fetched Wikipedia HTML, or Alpaca bar file was committed.
+
+---
+
+## Planner — merge and live build (2026-09-26)
+
+**Merge.** `GATE PROVEN` for Codex's `b8b19946`; merged over `main`'s chore `0.112.03` as `23edbe22`
+(STATE kept both sides, version `0.113.00`); `GATE PROVEN` for `5132e7d6`, which `main` now points at.
+
+**The live build found a parse defect.** Wikipedia's constituents table writes *Date added* as ISO (503 of
+503 rows); the fixture had the long form, and the build stopped at `'1957-03-04'`. Fixed in `5132e7d6`,
+red first, before the merge reached `main`.
+
+**Result, `--from-snapshot`, end 2026-09-24:** 732 episodes, count 503–507, 0 unreconciled, coverage
+**99.68 %**, 52 shortfalls with reasons; the existing replay cache is byte-identical.
+
+**🔴 Identity, not asked by this spec and measured anyway:** under Alpaca's default symbol mapping, CTRA
+holds Contura Energy from 2018-11-09 to 2021-10-01 and DD another issuer from 2016-01-04 to 2017-08-31.
+Pinning `asof` to each episode's last member day fixes both and recovers 2,323 member-sessions. The map
+cannot say `asof` yet, and four source switches carry an unadjusted corporate action. Recorded as
+[DL-227](../design-log.md)'s amendment; the fix is E17.2b, and E17.3 must not read this cache first.

@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from scripts._broker_probe_orders import probe_order_reason
+
 from agents.execution.fill_attempts import fill_attempt_chain
 from agents.execution.store import write_fills
 from contracts.common import Explanation, Provenance
@@ -21,10 +23,6 @@ if TYPE_CHECKING:
     from kernel import GraphStore
 
 _UTC_SUFFIX = "Z"
-_ALLOWLIST = {
-    "dep-broker-probe-": "dependency probe order; no pipeline Fill expected",
-    "probe-s138-": "S138 broker-stop live probe order; no pipeline Fill expected",
-}
 
 
 @dataclass(frozen=True)
@@ -64,7 +62,7 @@ def repair_graph(
     for fill in sorted(broker_fills, key=lambda item: item.idempotency_key):
         if not _within_since(fill, since):
             continue
-        reason = _allowlist_reason(fill.idempotency_key)
+        reason = probe_order_reason(fill.idempotency_key)
         if reason is not None:
             ignored += 1
             rows.append(_row(fill, "ignored", reason))
@@ -132,13 +130,6 @@ def _pm_run_key(fill: BrokerFill) -> str | None:
 def _within_since(fill: BrokerFill, since: datetime) -> bool:
     submitted = parse_time(fill.submitted_at)
     return submitted is None or submitted >= since
-
-
-def _allowlist_reason(client_order_id: str) -> str | None:
-    for prefix, reason in _ALLOWLIST.items():
-        if client_order_id.startswith(prefix):
-            return reason
-    return None
 
 
 def _row(fill: BrokerFill, verdict: str, reason: str) -> RepairRow:

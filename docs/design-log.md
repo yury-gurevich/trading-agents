@@ -10,6 +10,55 @@ and is marked CLOSED here.
 
 ---
 
+## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)
+
+**Question.** How should the E17.2 builder represent Wikipedia membership, map ticker identities, verify
+Alpaca bars, and store a reproducible cache without importing licensed data into the repo?
+
+**Decision.** A member is a stable `line` with one or more ticker episodes. The reconstruction starts
+from the current constituents, applies `rename` rows while undoing the change log backwards, then replays
+the same dated changes forwards over the supplied session list. A `rename` row is an internal ticker
+switch for one line, so `OLD` and `NEW` are consecutive episodes and never concurrent members; ordinary
+remove/add rows remain separate episodes, which is what protects reused tickers.
+
+**Bars.** Episode windows are converted to source-symbol windows after applying `bars` rows from the CSV
+map. Alpaca batches are a speed hint only: for every source window, the builder compares returned bar
+dates with the window's sessions and re-fetches that symbol alone if the batch is empty or misses any
+window session. Only the single-symbol result may prove `no bars`, `starts late`, `ends early`, or `gap`,
+and rows outside the assigned window are discarded.
+
+**Coverage and files.** Coverage is member-sessions over SPY sessions, not weekdays. Shortfalls are
+classified from sessions and returned dates alone: no rows -> `no bars`, first row after the first
+session -> `starts late`, last row before the last session -> `ends early`, otherwise missing interior
+sessions -> `gap`. The cache files are gzipped CSV for sessions, membership, and bars, JSON for coverage,
+and gzipped JSON for the fetched page snapshot; `--from-snapshot` rebuilds membership from those saved
+pages and never fetches Wikipedia.
+
+**Ruled out.** Deriving expected bar count from weekdays was rejected because R008 already measured that
+as false. Trusting multi-symbol Alpaca batches was rejected because DOW and DLPH disappeared from batch
+responses while returning alone. Hard-coded ticker exceptions were rejected because the symbol map is the
+auditable evidence boundary. Reconstructing directly into one row per ticker was rejected because ticker
+reuse would attach bars to the wrong issuer.
+
+**Amendment 2026-09-26 (planner, S231's live build): Alpaca's default symbol mapping crosses issuers, so
+E17.3 may not read this cache yet.** The builder requests bars without `asof`, and Alpaca resolves each
+symbol through its present-day lineage. Measured over all **732** episodes by re-fetching each ticker
+pinned `asof` its episode's last member day and comparing closes (one issuer under two adjustments differs
+by a constant ratio): **2 lines hold another issuer's prices.** CTRA from 2018-11-09 to 2021-10-01 is
+Contura Energy (stored 57.62 → 2.84 while Cabot traded 15–19; a constant 0.81 ratio to AMR, Contura's
+successor), and DD from 2016-01-04 to 2017-08-31 moves day to day against old DuPont (ratio 0.48–0.51,
+daily jumps up to 3 %). The coverage report counts both as covered. The same pin **recovers 2,323**
+member-sessions reported missing: STI 990, CTRA 720, ANDV 397, TE 125, SNDK 91 (STI and TE were R008's
+*no bars* residue). Four more need map rows that the CSV can express only once a row carries `asof`:
+BBWI from LB (1,405), FTI pinned 2017-01-13 (261), AA pinned 2016-10-05 (192), UAA from UA (66). 🪤 **A
+source switch carries an unadjusted corporate action:** APTV −15.7 % on 2017-12-05 (the DLPH row; the
+Delphi Technologies spin), VTRS −21.1 % on 2020-11-17 (the MYL row), and the candidate rows BBWI
+−26.5 % (the Victoria's Secret spin) and UAA −48.8 % (the class C dividend). **Ruled out:** a `bars` row
+alone (the CSV has no `asof`, and COG under the default mapping stops at 2018-11-08), and trusting the
+coverage ratio (a conflated series is *covered*). **Owed, E17.2b:** fetch each episode pinned `asof` its
+last day, an `asof` column on map rows, a policy for a corporate action at a source switch, and a build
+step that fails when an episode's ratio to its pinned series moves.
+
 ## DL-226 - the survivorship-free universe comes from Wikipedia's change log and Alpaca SIP bars - status: DECIDED (E17.1, 2026-09-25)
 
 **Question** (next-leg plan, E17.1, the leg's highest-risk item): can we source point-in-time S&P 500

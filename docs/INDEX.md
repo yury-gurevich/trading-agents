@@ -14,7 +14,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [build-plan.md](build-plan.md) | What are all the phases, and how far through P1–P15 are we? |
 | [next-leg-plan.md](next-leg-plan.md) | What comes after the build? The proposed next leg (P16–P20: scoreboard, ten-year replay, edge gate, operator out of the loop, second pack), with unit-of-work estimates, to be cut into sprints |
 | [design-log.md](design-log.md) | What design threads are still OPEN (not yet ADRs)? What options did we weigh and rule out? |
-| [state-archive/](state-archive/INDEX.md) | Frozen older STATE history, split out to keep STATE.md scannable (S36→P0 … S223 across fourteen files) — read its INDEX first |
+| [state-archive/](state-archive/INDEX.md) | Frozen older STATE history, split out to keep STATE.md scannable (S36→P0 … S225 across fifteen files) — read its INDEX first |
 
 ---
 
@@ -40,7 +40,7 @@ question is listed there, go straight to the linked file. Don't read everything.
 | [sprints/](sprints/INDEX.md) | Which sprints shipped? Which phase are we in? What is queued? |
 | [reports/](reports/INDEX.md) | Where is the committed live-check evidence (proofs, transcripts, screenshots) for each sprint since S119? |
 | [design/](design/INDEX.md) | What interactive design specs exist (e.g. the DL-47 dashboard mockup)? |
-| [state-archive/](state-archive/INDEX.md) | What did STATE.md say about a sprint that has since been archived? (S36→P0 … S223, frozen) |
+| [state-archive/](state-archive/INDEX.md) | What did STATE.md say about a sprint that has since been archived? (S36→P0 … S225, frozen) |
 
 ---
 

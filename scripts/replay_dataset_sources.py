@@ -46,12 +46,15 @@ def live_universe() -> tuple[str, list[str]]:
     )
     for analyst_run in reversed(runs):
         market, _regime, run_id = _market_and_regime(graph, analyst_run)
-        if market is not None and run_id.startswith("sched-"):
-            return run_id, sorted({bar.ticker.upper() for bar in market.bars})
+        resolved_run_id = str(run_id or "")
+        if market is not None and resolved_run_id.startswith("sched-"):
+            return resolved_run_id, sorted({bar.ticker.upper() for bar in market.bars})
     raise RuntimeError("no scheduled run with a MarketData snapshot")
 
 
-def daily_bars(tickers: list[str], end: str, timeout: int = 60) -> dict[str, list[Any]]:
+def daily_bars(
+    tickers: list[str], end: str, timeout: int = 60, start: str = START
+) -> dict[str, list[Any]]:
     """Return split- and dividend-adjusted SIP daily bars per ticker."""
     headers = {
         "APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"],
@@ -60,10 +63,10 @@ def daily_bars(tickers: list[str], end: str, timeout: int = 60) -> dict[str, lis
     bars: dict[str, list[Any]] = {}
     token = None
     while True:
-        params = {
+        params: dict[str, str | int] = {
             "symbols": ",".join(tickers),
             "timeframe": "1Day",
-            "start": START,
+            "start": start,
             "end": end,
             "adjustment": "all",
             "feed": "sip",
@@ -80,7 +83,8 @@ def daily_bars(tickers: list[str], end: str, timeout: int = 60) -> dict[str, lis
             bars.setdefault(symbol, []).extend(
                 (row["t"][:10], row["o"], row["h"], row["l"], row["c"]) for row in rows
             )
-        token = body.get("next_page_token")
+        raw_token = body.get("next_page_token")
+        token = str(raw_token) if raw_token else None
         if not token:
             return bars
         time.sleep(0.3)

@@ -10,6 +10,44 @@ and is marked CLOSED here.
 
 ---
 
+## DL-229 - S233 pins replay bar windows by window end and chains source switches on raw closes - status: DECIDED (S233, 2026-09-26)
+
+**Question.** How should E17.2b repair S231's replay cache so each line holds one issuer's prices when
+Alpaca's default symbol lineage can resolve a historical ticker to today's issuer, and when a line
+changes source across a corporate action?
+
+**Decision.** Every replay bar window is fetched with Alpaca `asof` equal to that window's last day.
+The default `daily_bars(tickers, end)` request remains unchanged for `bars.csv.gz`; only callers that
+pass `asof` send it. Source switches are chained into the stored cache on unadjusted boundary closes:
+the latest window remains at its fetched level, and earlier windows are rescaled backwards so each
+switch day's close-to-close ratio equals the raw traded ratio. The coverage payload records every
+switch with symbols, dates, raw move, SPY-relative move, and any map-row `action`.
+
+**Map and guard ownership.** The committed symbol map remains the evidence boundary: add the measured
+BBWI/LB, UAA/UA, AA/AA, FTI/FTI, and SW/WRK rows, correct DLPH's end date, and add an optional
+`action` column. A `bars` row owns the switches at its boundaries; a `rename` row owns the switch on
+its `from` date. If two rows can claim one switch, prefer the row that supplies the earlier source,
+because that is the row whose action justifies the cross-source price move; duplicate ownership is a
+build error rather than an implicit tie-break. Switch raw moves more than 10 percentage points away
+from SPY require an `action`. Same-source single-day moves more than 50 percentage points away from
+SPY require a `(line, date)` entry in `sp500_known_moves.csv`, where `date` is the move's second
+session.
+
+**Implementation shape.** Chain factors are applied to the stored OHLC rows, with the switch records
+kept as the audit trail, so cache readers do not need to re-chain. Raw boundary closes are fetched via
+the same `daily_bars` boundary with `adjustment="raw"` and `asof` pinned to each side's own window end.
+Chaining and guards live in new `scripts/` modules so the S231 files near the 200-line block do not
+grow past it.
+
+**Ruled out.** A map-row `asof` column was rejected because every measured case is reproduced by the
+uniform `asof = window.last` rule. Single-symbol fetching for the whole build was rejected because the
+pinned batch probe measured equivalent returns and batching keeps the live build tractable. Chaining
+on adjusted closes was rejected because adjustment bases created false switch moves. Storing factors
+beside unchained bars was rejected because it would make every cache reader responsible for replaying
+the chain. Silently accepting unowned hard switches or unlisted large moves was rejected because that
+is the same shape as S231's false coverage: the dataset would look complete while identity remained
+unproven.
+
 ## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)
 
 **Question.** How should the E17.2 builder represent Wikipedia membership, map ticker identities, verify

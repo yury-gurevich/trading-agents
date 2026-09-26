@@ -172,6 +172,18 @@ dashboard. Both are recorded here as known residue, not silently left; a pack th
 registers nothing against `market_pack.py`, and no second pack deliberates yet, so neither leak has a
 consumer today that this sprint's DL-70 guards would need to defend against.
 
+**Discovered in the build environment. This applies to any sprint built in a claude.ai cloud
+session, not only this one.** Two gate steps cannot finish there. (1) `make gate-ran` shells out to
+`gh`, which the cloud container does not have (`FileNotFoundError: 'gh'`, measured twice, 2026-09-25
+and 2026-09-26). The session can read the run conclusions through the GitHub connector, but that is
+an observation, not the gate, so the planner runs `make gate-ran` before merging. (2) `uv lock`
+cannot complete, because the session's egress policy blocks `download.pytorch.org`, the `forecaster`
+extra's pinned index. A version bump then leaves `uv.lock` stale, and every `uv run` tries to re-lock
+and fails. This sprint's builder hand-edited only `uv.lock`'s own version line
+(`0.113.0` → `0.113.1`) and flagged it, so the planner owes a real `uv lock` before merge. Either
+limit is removed by giving cloud sessions `gh` or allowing that host, and each is the operator's call.
+Until then, a cloud handback names both steps as owed.
+
 ---
 
 ## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)

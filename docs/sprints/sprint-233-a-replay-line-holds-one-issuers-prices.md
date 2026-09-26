@@ -491,7 +491,7 @@ $files = @(Get-ChildItem tests -Filter 'test_sp500*.py') + @(Get-ChildItem tests
 
 **`make ci`:** `make ci > $env:TEMP\s233-ci.txt 2>&1; $LASTEXITCODE | Set-Content $env:TEMP\s233-ci.exit; exit $LASTEXITCODE` -> exit `0`. Log: `C:\Users\yury_\AppData\Local\Temp\s233-ci.txt`. Evidence: `3248 passed, 6 skipped`; `TOTAL 18211 0 3968 0 100.00%`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`; dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`; detect-secrets passed; untracked secret scan passed.
 
-**`make gate-ran`:** *planner, after push — see the planner review below*
+**`make gate-ran`:** planner, 2026-09-26 14:35 AEST, from `merge-sprint-233` at `b13e3ba7`: `GATE PROVEN for b13e3ba7…` (CI, CodeQL, Security Findings, attempt 1). `main` fast-forwarded to that SHA, tagged `v0.113.01`.
 
 **Not met / verified failing:** Not done: push, remote gate, `make gate-ran`, merge, deployment, and live replay build. Those are planner/post-merge steps; this worktree has no `.env` and no network/live proof by design.
 

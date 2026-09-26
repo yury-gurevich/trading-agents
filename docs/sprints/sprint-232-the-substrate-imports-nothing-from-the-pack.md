@@ -281,7 +281,8 @@ scans, `lint-imports` and a planted fixture. Nothing here is live.
 **Record these in `docs/design-log.md` with their rejected alternatives BEFORE implementing (LAW-06).**
 
 1. **Where the substrate vocabulary lives.** This spec recommends the kernel. 🚩 **The operator decides at
-   review.** The builder does not start until the choice is confirmed.
+   review.** The builder does not start until the choice is confirmed. ✅ **Decided: the kernel**
+   (operator, 2026-09-26; [DL-228](../design-log.md) Decision 1).
 2. **The module names:** `kernel/payload.py` and `kernel/handshake.py`, unless the reviewer renames
    them.
 3. **How the re-export works:** one base class, aliased as `_Frozen`, with explicit re-exports that mypy
@@ -293,6 +294,10 @@ scans, `lint-imports` and a planted fixture. Nothing here is live.
 6. **The amended master wording** of `MST-NEV-01`, `MST-SEC-03`, `MST-DEP-03` and `MST-TYP-01`, and the
    new `MST-DEP-05`. Each clause asserts only what a test or the gate can falsify.
 7. **The pack-neutral text of the master `CONTRACT`** once it lives in the kernel.
+8. **Whether the served roster belongs in this sprint or in E20.3.** Raised at review. The operator
+   delegated it (2026-09-26: *"make a rational and document it"*). ✅ **Decided: this sprint.** The
+   reasons for and against, why the case for it wins, and what would reverse it are in
+   [DL-228](../design-log.md) Decision 8.
 
 🪤 **Take the next free DL number, then re-check it at merge.** The newest entry was **DL-226** when this
 was specced; S231 has since taken **DL-227**, so this sprint's is **DL-228**. The drift register's newest

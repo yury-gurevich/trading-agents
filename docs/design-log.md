@@ -71,7 +71,7 @@ type would be a build-time error, not a silent override) — deferred until a se
 pack Python under `uv run --extra azure`, and `orchestration/packs/__init__.py` imports
 `us_equities_sp500` — DL-218's failure shape); leaving the roster for E20.3 to find (ADR-0012 already
 names "the agent roster" as a leak shape, so leaving a known instance in place would make E20.3's count
-of substrate edits dishonest).
+of substrate edits dishonest). The full reasoning for keeping it in this sprint is Decision 8.
 
 **Decision 6 — the amended master wording.** `MST-NEV-01`'s subject becomes "the grant policy the pack
 supplies" (its guarantee — never activate an unknown type — is unchanged; `DEFAULT_GRANTS` was deleted
@@ -94,6 +94,46 @@ container" to "every pack agent container." The `never` list's *"perform trading
 orders"* becomes *"perform any pack agent's business logic or act on its behalf"* — the same
 prohibition (master does no domain work), stated without naming a domain. Nothing else in `CONTRACT`
 changes; `name="master"` and `version="0.1.0"` are the master's own identity, not trading vocabulary.
+
+**Decision 8 — the served roster is fixed in E20.2, not left for E20.3.** The operator delegated this
+one (2026-09-26: *"Do not know enough to comment. make a rational and document it"*); the builder
+decided it on the evidence below. The question: the roster (`SERVED_AGENT_TYPES` and the three
+deliberator role constants, 9 literals in `kernel/serve_transport.py`) is a leak ADR-0012 did not list,
+found while measuring E20.2. Fix it here, or leave it for E20.3 to find while building the second pack?
+
+- **For fixing it here.** (1) ADR-0012's decision text forbids exactly this: *"the agent roster … is
+  pack-provided input to the substrate, never hardcoded in it"*. It has the shape of `DEFAULT_GRANTS`,
+  and DL-12 already chose the fix for that shape (pack JSON read by path), so no new design was needed.
+  (2) P20's exit is zero substrate edits after E20.2, and E20.3 is where that count is taken. A leak
+  known before E20.3 starts, left in place and then "found", would make the count measure what we
+  chose to leave rather than what we failed to see. (3) It is small and provable on fixtures: one
+  kernel module (72 → 51 lines), three readers (two deploy scripts and one test), a JSON file and a
+  62-line loader. The Service Bus route list and the SAS-grant plan built from the pack file equal
+  those built from the old constants (A6, four tests), and `sb_sas_plan.py` shrank, 212 → 211.
+  (4) It lets the name-level wall test (A3) run with no exemption list; an exemption would be a declared
+  leak inside the guard meant to catch leaks. (5) Every image rebuilds anyway, because `kernel/`
+  changes, so it adds no deploy of its own.
+- **Against.** (1) It goes beyond the plan's wording for E20.2, which named only the grants, `contracts/`
+  and the wall. (2) It touches deploy tooling. `servicebus_prepare_routes.py` runs during
+  `deploy-agents.ps1 up`, and `sb_sas_plan.py` plans the Service Bus SAS grants; an image-only retag
+  exercises neither, so a defect would stay hidden until the next full `up`. (3) Whether the
+  repo-steward pack serves any agent over Service Bus is unknown until E20.3 designs it. If it serves
+  none, the move buys the P20 exit nothing beyond ADR-0012 cleanliness.
+- **Why "for" wins.** Risk (2) is controlled rather than accepted blind. A6 pins both plans to today's
+  literal values, so the next `up` prepares the same topics, subscriptions and grants. The loader reads
+  JSON by path, never importing `orchestration` under `--extra azure` (DL-218's failure shape). A
+  failure is loud: `Prepare-ServiceBusRoutes` throws *"Service Bus route preparation failed"* and stops
+  the deploy. (1) is a scope addition inside the plan's own intent: "fix the named leaks", where the
+  ADR names rosters. (3) cuts both ways. If the second pack serves an agent, deferring costs a kernel
+  edit in E20.3, which is exactly what the exit forbids; fixing it now costs one small, proven
+  relocation either way.
+- **What would reverse it.** Either of two findings: a topic, subscription or grant that differs at the
+  first full `up` after merge (the functionality check compares them with today's), or a reader of the
+  roster beyond the three measured (A6's own test aside). A fourth reader would mean the measured blast
+  radius was wrong: stop and re-scope.
+- **Rejected: defer to E20.3.** This keeps E20.2 to the plan's words and leaves deploy tooling untouched
+  until a second pack exists. But it ships a known ADR-0012 violation past the sprint that declares the
+  wall enforced, it needs A3 to carry an exemption, and it pre-loads E20.3's count of substrate edits.
 
 **Ruled out, sprint-wide.** A gate step that checks every 🧱 test-plan row names a contract that lists
 its agent — rejected under the process freeze (next-leg-plan §5); the two known rows (`MST-NEV-05`,

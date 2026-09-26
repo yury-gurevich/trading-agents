@@ -60,7 +60,7 @@ already written. The pack does not move.
 
 ### 2 · DRIFT-033 — a declaration naming a system that no longer exists
 
-[`contracts/master.py:99`](../../contracts/master.py) declares
+[`contracts/master.py:99`](../../kernel/handshake.py) declares
 `external_io=("key_vault", "neo4j")`. The Neo4j runtime was deleted in S118 and ADR-0014 made
 Postgres the system of record. **Measured 2026-08-13:** that string is still the **only** `neo4j`
 reference in `kernel/`, `agents/`, `orchestration/` or `contracts/`. A declaration naming a dead

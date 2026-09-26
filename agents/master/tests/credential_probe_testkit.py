@@ -11,8 +11,8 @@ import json
 from typing import TYPE_CHECKING
 
 from agents.master.agent import MasterAgent
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from agents.master.credential_test import CredentialTest, PassCache

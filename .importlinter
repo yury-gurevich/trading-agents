@@ -26,6 +26,32 @@ modules =
     agents.curator
     agents.operator
     agents.supervisor
+    agents.deliberator
+    agents.master
+
+[importlinter:contract:substrate-imports-no-pack]
+name = Substrate imports no pack module
+type = forbidden
+source_modules =
+    kernel
+    agents.master
+forbidden_modules =
+    contracts
+    agents.provider
+    agents.scanner
+    agents.analyst
+    agents.forecaster
+    agents.portfolio_manager
+    agents.execution
+    agents.monitor
+    agents.reporter
+    agents.researcher
+    agents.curator
+    agents.operator
+    agents.supervisor
+    agents.deliberator
+    orchestration
+    surfaces
 
 [importlinter:contract:agents-import-only-kernel-and-contracts]
 name = Agents may not reach into surfaces or orchestration

@@ -29,9 +29,9 @@ from agents.master.store import (
     write_capability_grant,
     write_session,
 )
-from contracts.master import ACTIVATEMessage, DRAINMessage, EHLOMessage
 from kernel import CollectingFaultSink, FaultSink, GraphStore
 from kernel.errors import fault_boundary
+from kernel.handshake import ACTIVATEMessage, DRAINMessage, EHLOMessage
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

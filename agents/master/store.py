@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from contracts.master import AgentState
+from kernel.handshake import AgentState
 
 if TYPE_CHECKING:
     from agents.master.remediation import RemediationPlan

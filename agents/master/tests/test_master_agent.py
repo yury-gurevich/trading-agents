@@ -12,8 +12,8 @@ import pytest
 from agents.master.agent import MasterAgent
 from agents.master.store import write_agent_definition
 from agents.master.tests.helpers import trading_policy
-from contracts.master import AgentState, EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import AgentState, EHLOMessage
 
 
 @pytest.fixture

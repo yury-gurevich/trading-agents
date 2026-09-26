@@ -1,0 +1,28 @@
+{
+  "served_agent_types": [
+    "curator",
+    "deliberator-proponent",
+    "deliberator-opponent",
+    "forecaster",
+    "operator",
+    "researcher",
+    "supervisor"
+  ],
+  "deliberator_peer_agent_types": [
+    "deliberator-proponent",
+    "deliberator-opponent"
+  ],
+  "deliberator_manager_type": "deliberator-manager",
+  "deliberator_reply_agent_types": [
+    "deliberator-manager"
+  ],
+  "image_dir_by_agent_type": {
+    "curator": "curator",
+    "deliberator-proponent": "deliberator",
+    "deliberator-opponent": "deliberator",
+    "forecaster": "forecaster",
+    "operator": "operator",
+    "researcher": "researcher",
+    "supervisor": "supervisor"
+  }
+}

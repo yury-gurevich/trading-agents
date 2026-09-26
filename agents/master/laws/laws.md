@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -53,8 +53,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Never (`NEV`)
 
-- **MST-NEV-01** — Master never activates an agent whose `agent_type` is not in `DEFAULT_GRANTS`.
-  Rogue or unknown containers cannot receive credentials.
+- **MST-NEV-01** — Master never activates an agent whose `agent_type` is not in the grant policy
+  the pack supplies. Rogue or unknown containers cannot receive credentials.
 - **MST-NEV-02** — Master never distributes credentials beyond what the agent's declared capability
   requires. A scanner never receives broker API keys; a reporter never receives LLM credentials.
 - **MST-NEV-03** — Master never places orders, calls market APIs, or produces any trading artifact.
@@ -110,7 +110,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 ## Type contracts (`TYP`)
 
 - **MST-TYP-01** — The master handshake payload types carry, at minimum, the fields its own clauses
-  require; the clause, not `contracts/master.py`, is the authority on what must be present.
+  require; the clause, not `kernel/handshake.py`, is the authority on what must be present.
   `EHLOMessage` carries `ephemeral_boot_id`, `agent_type`, and `capability_declaration`
   (`MST-IN-01`). `ACTIVATEMessage` carries `instance_id`, `agent_type`, `capability_grants`,
   `config`, and `signature` (`MST-OUT-01`/`MST-SEC-01`/`MST-SEC-02`). `DRAINMessage` carries
@@ -126,8 +126,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   agent image at build time and used to verify ACTIVATE before accepting it.
 - **MST-SEC-02** — Each agent receives only the config/credentials for its declared `capability_grants`.
   The full `.env` is never passed to any non-master container.
-- **MST-SEC-03** — `DEFAULT_GRANTS` in `grants.py` is the authoritative privilege table.
-  Changes to it require a code review commit, not a runtime config change.
+- **MST-SEC-03** — The pack's grant policy is the only privilege table master consults; the master
+  image ships none, and master reads the policy once, when it starts.
 - **MST-SEC-04** — Credential-test evidence never contains raw secret values. Activation records,
   escalations, faults, and refusal exceptions name credential/test labels and sanitized causes only.
 
@@ -137,11 +137,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   before halting safely instead of crash-looping.
 - **MST-DEP-02** — Azure Key Vault must be reachable before master can resolve credentials for
   ACTIVATE. Wired in S74; stub config `{}` used in S73.
-- **MST-DEP-03** — No dependency on any trading agent's code. All agent knowledge is in
-  `DEFAULT_GRANTS` and `AgentDefinition` graph nodes.
+- **MST-DEP-03** — No dependency on any trading agent's code. All agent knowledge is in the pack
+  data injected at start-up (grant policy, secret map, credential tests) plus `AgentDefinition`
+  graph nodes.
 - **MST-DEP-04** — A credential-bearing pack must supply a non-empty credential-test declaration at
   startup. Missing declarations, empty declarations, and unknown probe kinds are rejected loudly
   instead of being treated as zero successful tests.
+- **MST-DEP-05** — Master imports only the substrate (`kernel` and its own package) and never a
+  pack module. It never imports `contracts`, another agent's package, `orchestration`, or
+  `surfaces`.
 
 ## Observability (`OBS`)
 
@@ -222,3 +226,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.5 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares the grant-policy and
   secret-map delivery fields (`*_path` / `*_b64`, the pattern the credential-test rows already use),
   `secret_cache_ttl_minutes` and the three DL-36 remediation controls. No clause moves.
+- v1.6 — S232 / DL-228 / ADR-0012 / DL-12 (2026-09-26): `MST-NEV-01`, `MST-SEC-03` and `MST-DEP-03`
+  rewritten to name the pack data the master now consults (`DEFAULT_GRANTS` was deleted in S84).
+  `MST-SEC-03` drops the *"cannot be changed by runtime config"* claim, which the `PARAM` table's own
+  `Tunable YES` rows already contradicted (DRIFT-058's lesson: a clause whose check cannot fail).
+  `MST-TYP-01` renames its cited path to `kernel/handshake.py` (the master handshake contract moved
+  out of `contracts/`, into the kernel, alongside `Provenance`/`Explanation`/the frozen base). New
+  `MST-DEP-05`: master imports only the substrate, never a pack module.

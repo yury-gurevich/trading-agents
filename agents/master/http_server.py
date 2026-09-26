@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from contracts.master import EHLOMessage
 from kernel.crypto import sign_pss
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from agents.master.agent import MasterAgent

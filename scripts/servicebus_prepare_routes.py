@@ -18,14 +18,13 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from dotenv import load_dotenv  # noqa: E402
-
-from kernel.bus_azure_config import AzureServiceBusSettings  # noqa: E402
-from kernel.serve_transport import (  # noqa: E402
+from scripts.served_agent_roster import (  # noqa: E402
     DELIBERATOR_REPLY_AGENT_TYPES,
     SERVED_AGENT_TYPES,
-    reply_topic,
-    request_topic,
 )
+
+from kernel.bus_azure_config import AzureServiceBusSettings  # noqa: E402
+from kernel.serve_transport import reply_topic, request_topic  # noqa: E402
 
 
 class ServiceBusAdmin(Protocol):

@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from kernel.serve_transport import (
+from scripts.served_agent_roster import (
     SERVED_AGENT_TYPES,
     image_dir_for_served_agent,
-    request_topic,
 )
+
+from kernel.serve_transport import request_topic
 
 
 def test_served_agent_images_install_azure_extra() -> None:

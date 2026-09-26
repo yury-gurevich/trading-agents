@@ -21,8 +21,8 @@ from agents.master.credential_test import (
     resolve_and_test,
     resolve_and_test_report,
 )
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

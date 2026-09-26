@@ -1,6 +1,6 @@
 # `Master` — Law Test-Plan
 
-**Prefix:** `MST` · **status:** LOCKED v1.4 · **aligned with:** laws.md LOCKED v1.4
+**Prefix:** `MST` · **status:** LOCKED v1.6 · **aligned with:** laws.md LOCKED v1.6
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
@@ -40,15 +40,16 @@
 | MST-FAIL-01 | graph unavailable on activate is faulted and re-raised without acknowledging EHLO | _tbd_ | ⬜ |
 | MST-FAIL-02 | graph unavailable on drain is faulted and re-raised while the agent continues running | _tbd_ | ⬜ |
 | MST-FAIL-03 | single-point-of-failure mitigation is a risk charter: thin master, state in Postgres, and platform restart are architectural claims, not an agent-local observation | Charter: no single functional observation can prove the RISK-1 mitigation envelope; failures are covered by the narrower FAIL rows. | 📜 |
-| MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState carry the required fields and type assertions | `tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law` | 🟩 |
+| MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState carry the required fields and type assertions | `tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law`; `tests/test_substrate_handshake_wire.py::test_the_frozen_base_and_evidence_types_are_the_same_objects` | 🟩 |
 | MST-TYP-02 | ACTIVATE capability_grants is a JSON-safe map and never contains product names | _tbd_ | ⬜ |
 | MST-SEC-02 | each agent receives only credentials for declared capability_grants, never the full .env | _tbd_ | ⬜ |
-| MST-SEC-03 | DEFAULT_GRANTS is the authoritative privilege table and cannot be changed by runtime config | _tbd_ | ⬜ |
+| MST-SEC-03 | The pack's grant policy is the only privilege table master consults; the master image ships none, and master reads it once, when it starts | _tbd_ | ⬜ |
 | MST-OBS-01 | every activate() writes a queryable AgentInstance node | _tbd_ | ⬜ |
 | MST-OBS-02 | every drain() records drain_reason on AgentInstance | _tbd_ | ⬜ |
 | MST-OBS-03 | graph and Key Vault errors reach the fault channel through fault_boundary | _tbd_ | ⬜ |
 | MST-PERF-01 | activate() writes one AgentInstance plus N CapabilityGrant nodes and meets the stated p99 budget | _tbd_ | ⬜ |
-| MST-NEV-05 | master has no dependency on trading-agent code | import-linter: "Agents may not import one another" | 🧱 |
-| MST-DEP-03 | master depends on no trading-agent code; knowledge stays in DEFAULT_GRANTS and AgentDefinition rows | import-linter: "Agents may not import one another" | 🧱 |
+| MST-NEV-05 | master has no dependency on trading-agent code | import-linter: `agents-are-islands` (now lists `agents.master`) + `substrate-imports-no-pack`; not vacuous per `tests/test_substrate_import_wall.py::test_planted_leaks_are_caught_by_the_repos_own_config` | 🧱 |
+| MST-DEP-03 | master depends on no trading-agent code; knowledge stays in the pack data injected at start-up (grant policy, secret map, credential tests) plus AgentDefinition rows | import-linter: `agents-are-islands` (now lists `agents.master`) + `substrate-imports-no-pack`; not vacuous per `tests/test_substrate_import_wall.py::test_planted_leaks_are_caught_by_the_repos_own_config` | 🧱 |
+| MST-DEP-05 | master imports only the substrate (kernel and its own package) and never a pack module | `tests/test_substrate_import_closure.py::test_master_import_closure_holds_no_pack_module` | 🟩 |
 
 Functional tests live in `agents/master/tests/test_master_agent.py`.

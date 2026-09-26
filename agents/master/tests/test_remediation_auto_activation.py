@@ -17,8 +17,8 @@ from agents.master.key_vault import CachingSecretStore
 from agents.master.remediation import Remediation
 from agents.master.remediation_execution import RefetchFromKeyVaultExecutor
 from agents.master.settings import MasterSettings
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

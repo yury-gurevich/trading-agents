@@ -9,12 +9,12 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-import contracts.master as master
 import contracts.operator as operator
 import contracts.reporter as reporter
 import contracts.researcher as researcher
 import contracts.scanner as scanner
 import contracts.supervisor as supervisor
+import kernel.handshake as master
 from contracts.common import _Frozen
 
 

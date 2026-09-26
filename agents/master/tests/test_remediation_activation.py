@@ -21,8 +21,8 @@ from agents.master.remediation import (
 )
 from agents.master.settings import MasterSettings
 from agents.master.store import write_escalation, write_remediation_plan
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

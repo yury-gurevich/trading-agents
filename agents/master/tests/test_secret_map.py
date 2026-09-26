@@ -16,8 +16,8 @@ from agents.master.agent import MasterAgent
 from agents.master.key_vault import EnvVarSecretStore, NullSecretStore
 from agents.master.secret_map import load_secret_map, resolve_config
 from agents.master.tests.helpers import trading_policy, trading_secret_map
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
+from kernel.handshake import EHLOMessage
 
 if TYPE_CHECKING:
     from pathlib import Path

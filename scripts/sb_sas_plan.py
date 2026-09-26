@@ -26,14 +26,13 @@ from scripts.sb_sas_scan import (  # noqa: E402
     scan_source,
     source_paths,
 )
-
-from kernel.serve_transport import (  # noqa: E402
+from scripts.served_agent_roster import (  # noqa: E402
     DELIBERATOR_MANAGER_TYPE,
     DELIBERATOR_PEER_AGENT_TYPES,
     SERVED_AGENT_TYPES,
-    reply_topic,
-    request_topic,
 )
+
+from kernel.serve_transport import reply_topic, request_topic  # noqa: E402
 
 SERVICEBUS_TARGETS = tuple(agent for agent in ROLE_TARGETS if agent != "ops")
 DEFAULT_REPLY_TOPIC_SUFFIX = ".reply"

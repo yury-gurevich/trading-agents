@@ -86,3 +86,51 @@ Two forces are in tension:
 - ADR-0007 (container-per-agent + master) — the substrate's deployment model.
 - ADR-0010 (LLM quality gate) — the champion-challenger pattern #7 lifts to the business level.
 - `ops/laws/LAW-01` (continuous improvement) — why this is revisable; `LAW-05` — why it's recorded.
+
+## Correction — 2026-09-26, S232 (P20 E20.2): the named leaks close, and one this ADR did not name
+
+**Leak 1 (`DEFAULT_GRANTS` hardcodes the trading roster) closed three months ago and this ADR never
+re-measured it.** [DL-12](../design-log.md) records S84–S86 (2026-06-22): the grant table and secret
+map moved to `orchestration/packs/trading_*.json`, loaded by path, and the master image ships neither
+— the pack policy travels as deploy-time config (`MASTER_GRANT_POLICY_B64` etc.). Measured again at
+S232's spec (2026-09-25): `DEFAULT_GRANTS` appears in **0** `.py` files. The master's own law book had
+not caught up — `MST-NEV-01`, `MST-SEC-03` and `MST-DEP-03` still named the deleted constant, and
+`MST-SEC-03` asserted the table *"cannot be changed by runtime config"* while its own `PARAM` table
+marked the delivery fields `Tunable YES`. S232's law cycle (master laws v1.6, [DRIFT-075](../laws/drift-register.md))
+corrects all three clauses to name the pack data actually consulted.
+
+**Leak 2 (`contracts/` mixes generic base classes with trading DTOs) closes in S232.** The substrate
+vocabulary — `_Frozen`, `Provenance`, `Explanation` (three names in `contracts/common.py`) and the
+master's handshake messages (`contracts/master.py`, 107 lines) — moves into `kernel/payload.py` and
+`kernel/handshake.py`. `contracts/common.py` re-exports the three names explicitly (mypy strict); every
+other import site is unchanged. The master's 10 remaining imports of `contracts.master` are repointed,
+`agents/master/Dockerfile` drops `COPY contracts/`, and `.importlinter` gains a `substrate-imports-no-pack`
+contract (source: `kernel`, `agents.master`) alongside a widened `agents-are-islands` (adds
+`agents.master`, `agents.deliberator` — 14 modules).
+
+**A third leak this ADR never named, of the same kind: the served-agent roster.** `kernel/serve_transport.py`
+hardcoded 9 pack agent-type string literals (`SERVED_AGENT_TYPES`, the deliberator peer/manager types,
+and `"deliberator"` in the image-directory lookup) — the same shape as leak 1 (*"the agent roster …
+is pack-provided input to the substrate, never hardcoded in it"*, Decision 2), just not in `agents/master`.
+S232 moves it to `orchestration/packs/trading_served_agents.json`, read by path from a new
+`scripts/served_agent_roster.py` loader (never imported by the substrate). `kernel/serve_transport.py`
+keeps only the genuinely generic pieces: `request_topic`, `reply_topic`, `consumer_from_env`.
+
+**Deferred residue (recorded, not closed — see S232's Out of scope and DL-228):**
+
+- `kernel/deliberation_prompts.py` — trading prompts inside the kernel. Moving the module would change
+  a module name hashed into every `LLMCall`'s prompt-recipe digest (`kernel/prompt_recipe.py` hashes
+  `__name__`), breaking comparability with every already-recorded debate. Stays until a second pack
+  actually deliberates.
+- `kernel/market_pack.py` — a market-shaped protocol only the trading dashboard reads. Stays until a
+  pack that is not a market needs the kernel to register something there.
+- Master tests reading trading pack files by path (`agents/master/tests/helpers.py`) — a data
+  dependency, not an import; moving 12 files buys the wall nothing.
+- The supervisor and the operator still carry trading rosters (per this ADR's first-cut table, both
+  stay pack); whether a second pack needs a substrate supervisor is E20.3's question.
+
+**What this correction does not do.** It does not reverse the Decision above, and it does not claim
+*de facto* enforcement is complete — `import-linter` reads imports, not names: the deliberation prompts
+and the market-pack protocol are trading content that still loads through `kernel/__init__.py`, and a
+green wall does not mean *"the substrate knows nothing of trading."* The *de jure → de facto* re-opening
+this ADR deferred to a second pack remains E20.5's to record.

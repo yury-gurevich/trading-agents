@@ -1,6 +1,6 @@
 """Master bootstrap agent contract — fleet lifecycle and identity management.
 
-Agent: master
+Agent: kernel
 Role: contract — typed boundary (capabilities, owned data, never-do).
 External I/O: Azure Key Vault (secrets).
 """
@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from contracts.common import _Frozen
 from kernel.contract import AgentContract, Capability
+from kernel.payload import _Frozen
 
 
 class AgentState(StrEnum):
@@ -68,7 +68,7 @@ CONTRACT = AgentContract(
     name="master",
     version="0.1.0",
     mission=(
-        "Bootstrap and lifecycle-manage every trading-system agent container: "
+        "Bootstrap and lifecycle-manage every pack agent container: "
         "receive EHLO, verify capability declarations, distribute minimum-privilege "
         "secrets via ACTIVATE, and maintain the operational fleet registry."
     ),
@@ -101,7 +101,7 @@ CONTRACT = AgentContract(
     never=(
         "distribute secrets that exceed an agent's declared capability needs",
         "activate an agent whose EHLO does not match a known AgentDefinition",
-        "perform trading logic or place orders",
+        "perform any pack agent's business logic or act on its behalf",
         "share the Key Vault credential or master private key with any other agent",
     ),
 )

@@ -6,7 +6,6 @@ RUN python -m pip install --no-cache-dir "uv==0.4.29"
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --extra runtime --extra azure --no-dev
 COPY kernel/ kernel/
-COPY contracts/ contracts/
 COPY agents/master/ agents/master/
 
 FROM dhi.io/python:3.13

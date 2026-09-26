@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P20, item **E20.2**
 **Branch:** `sprint-232-the-substrate-imports-nothing-from-the-pack`
-**Status:** SPEC
-**Version:** *next available PATCH at merge*
+**Status:** BUILT
+**Version:** `0.113.01` (PEP 440 in `uv.lock`: `0.113.1`) — next PATCH above `main`'s `0.113.00`
 **Effort:** M. The plan sized E20.2 at **L (2.5)** because it expected the grant table to move and every
 agent's imports to change. Both expectations are measured false below
 **Decisions:** [ADR-0012](../decisions/0012-platform-domain-separation.md) (the wall, declared) ·
@@ -563,53 +563,230 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_master_import_closure_holds_no_pack_module` | `tests/test_substrate_import_closure.py` | 🟩 PASS | `MST-DEP-05` |
+| A2 | `test_planted_leaks_are_caught_by_the_repos_own_config`; `test_clean_fixture_tree_passes_the_repos_own_config` | `tests/test_substrate_import_wall.py` | 🟩 PASS | `MST-NEV-05`, `MST-DEP-03`, `MST-DEP-05`, `DLIB-NEV-05` |
+| A3 | `test_no_substrate_module_names_a_pack_agent` | `tests/test_substrate_no_pack_literals.py` | 🟩 PASS | `MST-DEP-05` |
+| A4 | `test_the_frozen_base_and_evidence_types_are_the_same_objects`; existing `test_master_payload_fields_required_by_law` (repointed) | `tests/test_substrate_handshake_wire.py`; `tests/test_contract_required_fields.py` | 🟩 PASS | `MST-TYP-01` |
+| A5 | `test_the_ehlo_dict_kernel_bootstrap_sends_still_parses`; `test_the_activate_message_wire_shape_is_unchanged`; `test_a_pack_payload_carrying_provenance_and_explanation_is_unchanged` | `tests/test_substrate_handshake_wire.py` | 🟩 PASS | `MST-TYP-01` |
+| A6 | `test_the_roster_equals_todays_constants`; `test_the_request_and_reply_route_list_is_unchanged`; `test_every_served_type_maps_to_an_image_directory_with_a_dockerfile`; `test_the_sas_plan_built_from_the_roster_equals_the_plan_from_literals` | `tests/test_served_agent_roster_plan_stability.py` | 🟩 PASS | — (no law book binds `kernel/serve_transport.py`/`scripts/`; ADR-0012 §Decision 2) |
+| A7 | `test_master_dockerfile_copies_no_contracts_directory`; `test_every_closure_module_lies_under_a_copied_path` | `tests/test_master_dockerfile_closure.py` | 🟩 PASS | — (production image; no law book) |
+| A8 | Handback measurement (not a committed test, per spec): both `PROMPT_RECIPE_HASH` values printed and compared with row 17 — equal, unchanged. Existing `test_the_deliberator_declares_every_module_that_builds_its_prompt` (`tests/test_prompt_recipe.py`) passes unchanged, confirming `kernel.payload` never enters the deliberator's declared-module closure (`context_values.py` imports `Explanation` only under `TYPE_CHECKING`) | `tests/test_prompt_recipe.py` (existing, unmodified) | 🟩 PASS (measurement below) | — |
+| A9 | Existing `test_activate_unknown_agent_type_raises`, `test_activate_uses_injected_grant_policy`, `test_substrate_default_knows_no_agent_types` pass unchanged (repointed import only) | `agents/master/tests/test_master_agent.py` (existing, unmodified bodies) | 🟩 PASS | `MST-NEV-01` (first test); the latter two remain uncited — they prove parts of the amended `MST-SEC-03`/`MST-DEP-03` but not each clause whole (see Law reading record) |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** none. Every new test file maps to a lettered plan item (A1–A7); A8 and A9 are measurements/regressions against existing tests, per the spec's own instruction that A8 is "a handback measurement, not a committed test."
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `/home/user/trading-agents` (this cloud builder
+session's checkout of `sprint-232-the-substrate-imports-nothing-from-the-pack`, merged with
+`origin/main`). No `.env` file present (confirmed: `ls .env` → "No such file or directory"), no Azure
+access, no live graph. Every proof below is on fixtures or the repo's own static/AST tooling.
 
-**Result:** *(builder fills)*
+**Result:** Built as specced. The substrate vocabulary (`_Frozen`, `Provenance`, `Explanation`,
+`AgentState`, `EHLOMessage`, `ACTIVATEMessage`, `DRAINMessage`, the master `CONTRACT`) moved into
+`kernel/payload.py` (new) and `kernel/handshake.py` (via `git mv contracts/master.py`).
+`contracts/common.py` re-exports the three shared names explicitly. The master's 10 import lines onto
+`contracts.master` and 1 onto `contracts.common` (via `_Frozen`) are repointed; `agents/master/Dockerfile`
+drops `COPY contracts/`. `.importlinter` widens `agents-are-islands` to 14 modules (adds
+`agents.master`, `agents.deliberator`) and adds `substrate-imports-no-pack`. The served-agent roster
+moves to `orchestration/packs/trading_served_agents.json`, read by path from the new
+`scripts/served_agent_roster.py` loader; `kernel/serve_transport.py` keeps only `request_topic`,
+`reply_topic`, `consumer_from_env`. Master laws bump to LOCKED v1.6 (`MST-NEV-01`, `MST-SEC-03`,
+`MST-DEP-03`, `MST-TYP-01` amended; `MST-DEP-05` added); `test-plan.md` to v1.6; `DLIB-NEV-05` moves
+⬜ → 🧱; `DRIFT-075` recorded; ADR-0012 carries a dated Correction. One deviation from the letter of the
+handover, forced by this environment, is recorded under "Not met" below: `uv.lock`'s `trading-agents`
+version line was hand-edited rather than produced by a successful `uv lock` run, because `uv lock`
+cannot complete in this sandbox (see below).
 
-**Files changed:** *(builder fills)*
+**Files changed:** `kernel/payload.py` (new, 44), `kernel/handshake.py` (moved from
+`contracts/master.py`, 107), `contracts/common.py` (67, was 90), `kernel/serve_transport.py` (51, was
+72), `agents/master/agent.py` (182), `agents/master/http_server.py` (90), `agents/master/store.py`
+(194), `agents/master/Dockerfile` (17), `.importlinter` (84, was 58), `agents/master/tests/` (7 files:
+`credential_probe_testkit.py`, `test_credential_test.py`, `test_master_agent.py` (197),
+`test_master_entrypoint.py`, `test_remediation_activation.py`, `test_remediation_auto_activation.py`,
+`test_secret_map.py`), `tests/test_contract_required_fields.py` (114), `tests/test_served_agent_images.py`
+(94), `scripts/sb_sas_plan.py` (211, was 212), `scripts/servicebus_prepare_routes.py` (118),
+`scripts/served_agent_roster.py` (new, 62), `orchestration/packs/trading_served_agents.json` (new).
+New tests: `tests/test_substrate_import_closure.py` (45), `tests/test_substrate_import_wall.py` (86),
+`tests/test_substrate_no_pack_literals.py` (81), `tests/test_substrate_handshake_wire.py` (75),
+`tests/test_served_agent_roster_plan_stability.py` (103), `tests/test_master_dockerfile_closure.py`
+(61). Law/docs: `agents/master/laws/laws.md` (235), `agents/master/laws/test-plan.md` (55),
+`agents/deliberator/laws/test-plan.md` (one row), `docs/laws/drift-register.md` (`DRIFT-075`),
+`docs/laws/ledger.md`, `docs/laws/INDEX.md` (rollups, `make ci`-derived), `docs/decisions/0012-platform-domain-separation.md`
+(Correction section), `docs/design-log.md` (`DL-228`), `docs/sprints/sprint-176-a-partial-fill-must-be-able-to-finish.md`
+(one dead-link fix, target only, wording untouched), `pyproject.toml` (version, `flake8-type-checking`
+config), `uv.lock` (version line, hand-edited — see "Not met").
 
-**Design decisions:** recorded as DL-*(builder fills)* in [`design-log.md`](../design-log.md) —
-*(builder fills)*
+**Design decisions:** recorded as DL-228 in [`design-log.md`](../design-log.md) — the kernel as the
+substrate vocabulary's home (confirmed by the planner), `kernel/payload.py`/`kernel/handshake.py` as
+module names, the explicit re-export shape, the `.importlinter` contract text, the roster JSON shape
+and its path-based loader (with the two-pack combination question answered but not built), the amended
+master wording, and the pack-neutral `CONTRACT` text — each with its rejected alternatives.
 
-**Proof — the red run first:**
+**Proof — the red run first** (A1 and A3; A2 produced the same "4 kept, 0 broken" red the spec
+predicted and is shown in the Guards section below to avoid duplication):
 
 ```text
-(builder pastes)
+$ uv run pytest tests/test_substrate_import_closure.py tests/test_substrate_no_pack_literals.py -vv --no-cov
+FAILED tests/test_substrate_import_closure.py::test_master_import_closure_holds_no_pack_module - AssertionError: assert ['contracts', 'contracts.common', 'contracts.master'] == []
+
+  Left contains 3 more items, first extra item: 'contracts'
+
+  Full diff:
+  - []
+  + [
+  +     'contracts',
+  +     'contracts.common',
+  +     'contracts.master',
+  + ]
+FAILED tests/test_substrate_no_pack_literals.py::test_no_substrate_module_names_a_pack_agent - assert ["kernel/serve_transport.py:22: 'deliberator-manager'", "kernel/serve_transport.py:24: 'deliberator-proponent'", "kernel/serve_transport.py:25: 'deliberator-opponent'", "kernel/serve_transport.py:29: 'curator'", "kernel/serve_transport.py:31: 'forecaster'", "kernel/serve_transport.py:32: 'operator'", "kernel/serve_transport.py:33: 'researcher'", "kernel/serve_transport.py:34: 'supervisor'", "kernel/serve_transport.py:51: 'deliberator'"] == []
+
+  Left contains 9 more items, first extra item: "kernel/serve_transport.py:22: 'deliberator-manager'"
+  ...
+2 failed in <1s
 ```
+
+This matches the spec's predicted red exactly: row 10 (`contracts`, `contracts.common`, `contracts.master`
+in the closure) and row 14 (9 literals, all in `kernel/serve_transport.py`, same line numbers: 22, 24,
+25, 29, 31, 32, 33, 34, 51).
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+$ uv run pytest tests/test_substrate_import_closure.py tests/test_substrate_import_wall.py \
+    tests/test_substrate_no_pack_literals.py tests/test_substrate_handshake_wire.py \
+    tests/test_served_agent_roster_plan_stability.py tests/test_master_dockerfile_closure.py \
+    tests/test_served_agent_images.py tests/test_prompt_recipe.py tests/test_contract_required_fields.py \
+    -v --no-cov
+============================= test session starts ==============================
+collecting ... collected 33 items
+[... 33 passed ...]
+============================== 33 passed in 2.41s ==============================
+
+$ uv run lint-imports
+Analyzed 588 files, 1972 dependencies.
+Agents may not import one another (talk only via messages) KEPT
+Substrate imports no pack module KEPT
+Agents may not reach into surfaces or orchestration KEPT
+Kernel is pure plumbing — no domain, no contracts, no agents KEPT
+Contracts declare schemas only — never import agents or runtime layers KEPT
+Contracts: 5 kept, 0 broken.
 ```
 
-**Guards planted:** *(builder fills, per guard)*
+**Guards planted (DL-70) — each broken, watched red, then restored, per guard:**
 
-**Prompt-recipe hashes after the change:** *(builder fills: both values, compared with row 17)*
+- **A1** — planted `import contracts` (plus an `assert contracts` to survive unused-import removal)
+  into `agents/master/agent.py`. `test_master_import_closure_holds_no_pack_module` went red:
+  `assert ['contracts'] == []`. Reverted to the committed file; test green again.
+- **A2** — removed `agents.deliberator`/`agents.master` from `agents-are-islands` and dropped the
+  `substrate-imports-no-pack` contract from `.importlinter` (restoring it to the pre-sprint text).
+  `test_planted_leaks_are_caught_by_the_repos_own_config` went red: `lint-imports` returned exit 0,
+  "4 kept, 0 broken" — the exact base-red the spec measured (row 11). Restored `.importlinter`; both
+  tests green again, `lint-imports` back to "5 kept, 0 broken".
+- **A3** — planted `_DL_70_GUARD_PLANT = "curator"` into `kernel/serve_transport.py`.
+  `test_no_substrate_module_names_a_pack_agent` went red: `["kernel/serve_transport.py:22: 'curator'"]
+  == []`. Reverted; test green again.
+- **A6** — changed `orchestration/packs/trading_served_agents.json`'s `forecaster` image directory to
+  `"wrong-dl-70-guard-plant"`. `test_every_served_type_maps_to_an_image_directory_with_a_dockerfile`
+  went red: `assert 'wrong-dl-70-guard-plant' == 'forecaster'`. Reverted the JSON; all four tests in
+  `tests/test_served_agent_roster_plan_stability.py` green again.
 
-**Module line counts:** *(builder fills)*
+**Prompt-recipe hashes after the change:** deliberator
+`31fe77975825cb3dadcc7989ed8c7d37ee571dc719dc612a795c671c189b1480`; operator
+`3fcfed8fe7d67a881da04268d7119c5aab55402a8458927c4bb600262c94c259`. **Both equal row 17 exactly — no
+movement.** `tests/test_prompt_recipe.py::test_the_deliberator_declares_every_module_that_builds_its_prompt`
+passes unchanged: `kernel.payload` never enters the declared closure, because
+`agents/deliberator/context_values.py` imports `Explanation` only under `TYPE_CHECKING`
+(verified by reading the file, per the spec's trap).
 
-**`make ci`:** *(builder fills: file, exit code, passed/skipped, coverage, dependency audit,
-detect-secrets)*
+**Module line counts** (touched or baselined; all under 200 except the frozen baseline):
+`kernel/payload.py` 44, `kernel/handshake.py` 107, `contracts/common.py` 67 (was 90),
+`kernel/serve_transport.py` 51 (was 72), `agents/master/agent.py` 182, `agents/master/http_server.py`
+90, `agents/master/store.py` 194, `agents/master/tests/test_master_agent.py` 197, `scripts/sb_sas_plan.py`
+**211** (baselined at 212, did not grow), `scripts/servicebus_prepare_routes.py` 118,
+`scripts/served_agent_roster.py` 62, `tests/test_served_agent_images.py` 94,
+`tests/test_contract_required_fields.py` 114, `.importlinter` 84, `agents/master/Dockerfile` 17.
+`scripts/check_module_size.py kernel contracts agents orchestration surfaces tests scripts` exits 0.
 
-**`make gate-ran`:** *(builder fills: worktree path, full SHA, pasted output — or a plain statement that
-it could not run here)*
+**`make ci`:** `make ci > /tmp/ci.txt 2>&1; echo $?` → **exit 0**. `3254 passed, 6 skipped` (the 6
+skips are pre-existing, `.env`/live-network gated, unrelated to this sprint). `Required test coverage
+of 100.0% reached. Total coverage: 100.00%`. Dependency audit: `No unaccepted vulnerabilities; 1
+accepted advisory re-checked` (the pre-existing `diskcache` acceptance, unrelated). `detect-secrets`:
+`Passed` on tracked files, and `detect-secrets (untracked): scanning 9 new file(s)` → `Passed`.
+`lint-imports`: `5 kept, 0 broken`. Every one of the 15 steps ran and none failed.
 
-**Not met / verified failing:** *(builder fills)*
+**`make gate-ran`:** Attempted; could not run. `scripts/assert_gate_ran.py` calls the `gh` CLI directly
+(`subprocess.run(["gh", "api", endpoint], ...)`), which is not installed in this build environment:
+
+```text
+$ make gate-ran
+...
+FileNotFoundError: [Errno 2] No such file or directory: 'gh'
+make: *** [Makefile:71: gate-ran] Error 1
+```
+
+Per the spec's own fallback, the handback says so; the planner runs `make gate-ran` after the branch
+below is pushed and the remote gate has had time to complete.
+
+**Not met / verified failing:**
+
+- **`uv lock` could not run in this sandbox.** `uv lock` resolves the full dependency graph for every
+  declared extra, including `forecaster`'s `torch` pin from the custom `pytorch-cpu` index
+  (`https://download.pytorch.org/whl/cpu`). That host is blocked by this session's egress policy —
+  `curl $HTTPS_PROXY/__agentproxy/status` shows repeated `connect_rejected` / "gateway answered 403 to
+  CONNECT (policy denial)" entries for `download.pytorch.org:443`, and the proxy's own guidance is
+  explicit: *"Do not retry or route around it — report the blocked host."* `uv lock --offline` also
+  fails (`torch was not found in the cache`, since the `forecaster` extra was never installed in this
+  session). Consequence discovered while diagnosing: with `pyproject.toml`'s version bumped and
+  `uv.lock` left at the old version, **every** `uv run` invocation started failing outright (uv
+  detected the lockfile was stale and tried to re-lock, hitting the same blocked host) — this would
+  have made `make ci` itself unrunnable here. I hand-edited the single self-referential version field
+  in `uv.lock` (`trading-agents`'s own `version`, `"0.113.0"` → `"0.113.1"`, matching `uv`'s own PEP 440
+  normalization of `pyproject.toml`'s `"0.113.01"` — confirmed by
+  `tests/test_check_version_scheme.py::test_real_pyproject_passes_despite_normalized_lockfile`, which
+  asserts the two strings legitimately differ). No dependency, version pin, or hash anywhere else in
+  `uv.lock` was touched, and none needed to be — this sprint adds no dependency. `uv sync --frozen`
+  (what remote CI actually runs) succeeds cleanly against the hand-edited lockfile. **This is not the
+  `uv lock` run the spec asked for; it is the narrowest fix that keeps the tool usable under a policy
+  block I am directed not to route around.** Flagging plainly per LAW-02 rather than claiming a
+  `uv lock` success that did not happen. The planner (or the operator, with network access) should run
+  a real `uv lock` at the first opportunity to confirm this by-hand edit is the only drift.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- **Every Measured row re-checked and held.** Rows 1, 4, 5, 6, 7, 8, 10, 11, 13, 14, 17 were
+  re-derived independently during this build (import counts, the closure, the literal scan, the
+  fixture's "4 kept, 0 broken", the prompt-recipe hashes) and matched the spec exactly — no number
+  differed, so the STOP rule never triggered.
+- **The one genuine surprise was environmental, not a spec number.** Bumping `pyproject.toml`'s
+  version without a matching `uv.lock` update made every `uv run` invocation fail outright (uv tries
+  to re-lock on a detected mismatch), and a real `uv lock` cannot complete here because
+  `download.pytorch.org` (the `forecaster` extra's pinned index) is blocked by this session's egress
+  policy. Fixed the narrowest way possible — the one self-referential version field in `uv.lock`,
+  matching `uv`'s own PEP 440 normalization — and flagged it plainly in Closeout rather than silently
+  running `uv lock` from memory or masking the gap. Recommend the planner (or the operator, off
+  network) runs a real `uv lock` at the next opportunity to confirm nothing else drifted.
+- **DL-228 vs DL-227:** confirmed at merge-time (post-merge with `origin/main`) that DL-227 belongs to
+  S231 and DL-228 was still free; DRIFT-074 was the newest drift entry, so DRIFT-075 was correctly
+  free too.
+- **`agents-are-islands` and `substrate-imports-no-pack` overlap on `agents.master`'s forbidden set**
+  by design (recommended in the spec: keep both, "it costs nothing"). Confirmed on the live tree:
+  widening both together produces `5 kept, 0 broken`, no new violation from the overlap.
+- **One historical dead link, not a content rewrite.** `docs/sprints/sprint-176-…md` held a literal
+  markdown link (`[...](../../contracts/master.py)`) that `check_markdown_links.py` correctly flagged
+  once the file moved. Repointed only the href to `../../kernel/handshake.py`; the visible link text
+  and all surrounding prose (a historical record of DRIFT-033) are untouched — this is a mechanical
+  link fix, not the "rewriting historical docs" the spec's trap warns against, and the trap's own
+  wording ("They are records; do not rewrite them") is about content, not a dangling href a live gate
+  step checks on every run.
+- **Sequencing after merge (spec's own next steps, not done here):** `make gate-ran` from the branch
+  worktree once pushed; the planner's merge to `main`; an image-only retag with operator approval; and
+  the live functionality check (master activates every agent type with no `contracts/` in its image,
+  `FleetPreflight passed=True`, `ACCEPTANCE PASS`, `Prepare-ServiceBusRoutes` unchanged at the next
+  `up`). None of this is claimable from a sandbox with no `.env`, no Azure and no live graph.

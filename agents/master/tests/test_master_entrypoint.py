@@ -21,9 +21,9 @@ from agents.master.tests.helpers import (
     TRADING_GRANTS_PATH,
     TRADING_SECRETS_PATH,
 )
-from contracts.master import EHLOMessage
 from kernel import InMemoryGraphStore
 from kernel.crypto import generate_keypair
+from kernel.handshake import EHLOMessage
 
 
 def test_build_app_starts_master_session() -> None:

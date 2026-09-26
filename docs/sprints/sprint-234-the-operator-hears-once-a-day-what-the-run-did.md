@@ -401,17 +401,41 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-26, in worktree `s234` on `f2e97d56`, before the first code change. Whole files read:
+dispatcher `laws.md` (LOCKED v1) and `test-plan.md`; reporter `laws.md` (LOCKED v1.3) and
+`test-plan.md`; supervisor `laws.md` (LOCKED v1.2) and `test-plan.md` rows `SUP-OUT-02`/`SUP-OBS-02`;
+`docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-230, DL-224, DL-225, DL-220, DL-218, DL-70.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *builder fills* | | | |
+| `orchestration/scheduled_dispatch_human.py` (164) | dispatcher `laws.md` + `test-plan.md` | `DSP-TRG-02` 🟩, `DSP-TRG-01` 🟩, `DSP-PERF-01` 🟩, `DSP-IDM-02` 🟩, `DSP-OUT-01`/`-02`/`-05` 🟩, **`DSP-TYP-01` ⬜** | **Yes.** The step goes after the calendar skip *and* the answer marking, immediately before `is_action_time`, so the hold, poll and answer order is byte-identical (`DSP-TRG-02`) and fires after 23:20 still reach it (row 3). `ScheduledDispatchResult` gains no field. `DSP-TYP-01` is ⬜, so result equality is asserted by A4/A6, not assumed |
+| new `orchestration/daily_brief*.py` | dispatcher book; reporter book (`RPT-SEC-02` ⬜, `RPT-OUT-07` 🟩, `RPT-IDM-03` 🟩, `RPT-FAIL-04` 🟩, `RPT-OUT-06` ⬜, `RPT-STA-02` 🟩); DL-224, DL-225, DL-230, DL-220 | `DSP-NEV-02` ⬜, `DSP-SEC-01` ⬜, `DSP-OBS-02` 🟩; the six new clauses; `RPT-SEC-02` stays unamended | **Yes.** `RPT-FAIL-04`'s contained failure stores `equity_cents: 0.0` with zero sessions and `RPT-OUT-06`'s degraded Snapshot has no `performance` group, so a figure counts only with sessions > 0 (DL-220: unavailable never reads as zero). Runs are ordered by `PMRun.created_at` (DL-225). Only `sched-*` runs are references: a manual run's Snapshot dates an intraday sync (DL-224) |
+| `orchestration/telegram_client.py` (120), `telegram_port.py` (41) | dispatcher book | `DSP-SEC-01` ⬜, `DSP-STA-02` 🟩, `DSP-FAIL-01` 🟩 | **Yes.** `fault_safe` stores `str(exc)` and the traceback on the `Fault`, so a port exception that carried the text would put an amount in a fault. The brief records its own fault naming only the step and an error type (`DSP-SEC-02`). `send_brief` mirrors `send_degraded_notice`: never raises, sets `last_error` |
+| `scripts/dispatch_scheduled_run.py` (129) | `DSP-SEC-02` (new); measured row 16 | `DSP-SEC-01` ⬜ | **No code change.** The brief's text never enters `ScheduledDispatchResult`, so `format_dispatch_result` cannot print it; A10 drives `main` to prove it rather than asserting it |
+| `orchestration/Dockerfile` | DL-218; the closure test (row 7) | — | **Yes.** Importing `agents.supervisor.domain.health` runs `agents/supervisor/__init__.py`, which imports `SupervisorAgent`: 10 files row 6's 48 does not count (DL-231) |
+| `agents/supervisor/domain/health.py` (read only) | supervisor book | `SUP-OUT-02` 🟩, **`SUP-OBS-02` ⬜** | **Yes, a finding.** `SUP-OBS-02` says `open_incidents` derives from `Flag` nodes; `compute_health` counts live `Fault` incidents (DL-208). The brief prints `compute_health`'s numbers as they are: **DRIFT-076** |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *builder fills*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, a new
+guarantee; no `contracts/` change.** Dispatcher laws LOCKED v1 → v1.1: `DSP-IDN-04`, `DSP-TRG-03`,
+`DSP-OUT-06`, `DSP-IDM-03`, `DSP-SEC-02`, `DSP-FAIL-03` new; `DSP-DEP-01` and `CAP` amended.
+`RPT-SEC-02` is not amended (DL-230).
 
-**Contradictions found between a law and this spec:** *builder fills*
+**Contradictions found between a law and this spec:** none. Checked: `DSP-IDN-01` ("decides one
+outcome") and `DSP-NEV-02` (no broker) hold, because the brief reads graph facts and decides
+nothing; `DSP-OUT-01`'s "no degraded-posture properties" is placement's write, and the three brief
+properties arrive later on a finished run; `DSP-IDM-02`'s re-merge keeps them, because placement
+re-writes the same values.
 
-**Laws found silent where a decision was needed:** *builder fills*
+**Laws found silent where a decision was needed:** (1) `DSP-IDN-03` says the book governs
+`scheduled_dispatch*.py`, readiness, answers and notices, and is silent on the brief's modules.
+Decided: the new `DSP-IDN-04` names `daily_brief*.py`; `DSP-IDN-03` is not in the spec's amendment
+list, so it stays and **DRIFT-077** records it. (2) No clause says which run a fire concerns when
+`--as-of` names a past session (functionality checks do this). Decided (DL-231): a fire briefs only
+its own UTC day; `DSP-TRG-03` states it, so this law cycle closes the silence. **Clauses relied on
+that are ⬜:** `DSP-TYP-01`, `DSP-SEC-01`, `DSP-NEV-02`, `DSP-DEP-01`, `RPT-SEC-02`, `RPT-OUT-06`,
+`SUP-OBS-02`.
 
-**Clauses that were ⬜ and are now proven:** *builder fills*
+**Clauses that were ⬜ and are now proven:** *builder fills at handback*
 
 ---
 

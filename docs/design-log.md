@@ -10,6 +10,101 @@ and is marked CLOSED here.
 
 ---
 
+## DL-231 - the daily brief is one guarded step before the window's early return, and it reads the reporter's figures as stored - status: DECIDED (S234, 2026-09-26)
+
+**Question.** S234 (E19.1) left four decisions to the builder: which module composes and which
+selects; what "the previous briefed run" is when a day was skipped, held or failed; how the dispatcher
+image carries the verdict's import closure; and the exact text, including the RED brief and the
+degraded marker. Two more came out of designing it: what the RED brief's verdict is, and which run a
+fire may brief.
+
+**Decision 1 - five modules, one of them pure.** `daily_brief_text.py` composes the message from a
+frozen `BriefFacts` and nothing else (no graph, no clock read): it is the only place a line is worded.
+`daily_brief_facts.py` and `daily_brief_fills.py` select the facts: the verdict from `accept_run`,
+needs-you from `compute_health`, the money and the scoreboard clause from the Snapshots as stored,
+orders and fills from `Fill` nodes. `daily_brief.py` decides whether this fire briefs, sends once
+through the port and writes the marker. `daily_brief_guard.py` is the only one the fire imports at
+load time; it imports `daily_brief` inside its `try` and turns any failure into a `Fault` whose
+message names the step and an error type, never a value. *Ruled out:* one module (past the 200-line
+block, and a composer that cannot be tested without a graph); the text built inside `TelegramClient`
+as the notices are (the port would own the content, and the preview could not print what the port
+sends); `fault_safe` for the send (it stores `str(exc)` and the traceback on the `Fault`, so a port
+whose exception quoted the text would put an amount in a fault, which `DSP-SEC-02` forbids).
+
+**Decision 2 - the previous briefed run is the latest earlier scheduled run with a Snapshot**, ordered
+by `PMRun.created_at` (Snapshots carry no time, DL-225). One reference serves the equity change and
+the lower bound of the fills window, so both lines cover the same period, and the text names it. A
+reference whose Snapshot has no measured figure (no `performance` group, or zero sessions) prints
+`(no earlier figure)`; nothing is skipped past it. Only `sched-*` runs are references: a manual run's
+Snapshot dates an intraday sync (DL-224). *Ruled out:* **the latest `RunRequest` carrying
+`brief_sent_at`.** On the first brief after deploy no run carries one, so the fills window would have
+no lower bound (all 108 filled `Fill`s); a RED-briefed run carries the marker but no Snapshot and
+perhaps no `PMRun`, so it bounds nothing; and the text would follow the dispatcher's send history
+rather than the runs, so the planner's preview before deploy could not show what a later fire sends.
+*Accepted cost:* a finished run whose brief never sent (every fire failed) is still the next brief's
+reference, so the fills that became known in its window reach no brief. The failed fires' faults are
+counted in the next brief's needs-you line.
+
+**Decision 3 - the image copies file by file.** The closure test (DL-218) names every module the
+brief imports, lazily or not: **46** from the verdict (row 6's 48, less `orchestration/packs/__init__.py`
+and `us_equities_sp500.py`, already copied), **10** from `compute_health`'s package (importing
+`agents.supervisor.domain.health` runs `agents/supervisor/__init__.py`, which imports
+`SupervisorAgent`), and the **5** brief modules: 61 lines, not the spec's "about 48". Row 6 (48, 31
+of them `agents.portfolio_manager.*`) and row 13 (the module imports only `kernel.fault_incidents`)
+both reproduce exactly; the estimate left out the package `__init__`, DL-218's own class. *Measured:*
+the brief adds no third-party package to the entrypoint's closure. *Ruled out:* whole-directory copies
+of `orchestration/`, `agents/portfolio_manager/` and `agents/supervisor/`: of their 253 tracked files
+the closure needs 72, so **181** the dispatcher never imports (tests, laws, other entrypoints) would
+enter the image, and it would depend on whatever those trees hold instead of on a list the test checks.
+
+**Decision 4 - the text.** Plain text, one message; lines joined by newlines, items in a line by ` · `.
+
+```text
+🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50
+Equity $101,976.32 (−$24.40 since sched-2026-09-24)
+vs SPY: -0.43 pts over 33 sessions at 21% invested
+Orders: none
+Filled: none
+Needs you: nothing
+```
+
+The header is the verdict's colour and word (🟢 `PASS`/`NO_TRADE`, 🟡 `UNPROVEN`, 🔴 `FAIL`), the run
+id and the fire's time in the operator's zone (`UTC` when the zone cannot load, as `act_by_text`
+does), plus ` · degraded` when the `RunRequest` carries `run_posture=degraded`. The change is the
+difference of the two stored `equity_cents`, each rounded to integer cents, with the dashboard's
+typographic minus, `+` for a gain and `$0.00` unsigned; `Equity: not in this run's report` when this
+run's Snapshot has no measured figure. The scoreboard is the reporter's clause (`vs SPY: …` or
+`Performance: …`) cut from `headline_summary` as stored, else `Scoreboard: not in this run's report`.
+Orders read `BUY 16 BMY ≤ $61.82 · SELL 10 XOM ≥ $110.00` (the limit as the bound the order accepts,
+` rejected` when its `Fill` says so); fills read `BUY 16 BMY @ $61.75 · SELL 20 XOM @ $58.10 stopped
+out` (the broker's fill price; `stopped out` for a resting stop, `is_resting_stop_fill`). Needs-you is
+`nothing` or `2 open incidents · 1 critical flag`. The RED brief is `🔴 NOT FINISHED · <run> · <time>`,
+`Last stage finished: execution` (or `No stage finished`), the orders line and needs-you. It carries
+no money (the equity lives in the Snapshot) and no fills (they fall in the next finished run's window).
+
+**Decision 5 - the RED brief does not call `accept_run`.** A run with no Snapshot is `FAIL` by
+construction (the reporter stage is unreached, a blocking breach), so the call adds only a dependency:
+the one message for a broken night would hinge on the heavy verdict path, the likeliest thing to be
+broken on such a night. Its header states what the dispatcher saw, no report by the last fire, and
+`brief_verdict` records `NOT_FINISHED`. *Ruled out:* `FAIL` from `accept_run` (sent only when the
+verdict path works); `FAIL` hardcoded (a second copy of the verdict's rule, DL-208's failure).
+
+**Decision 6 - a fire briefs only its own day.** The step runs only when `as_of` is the fire's UTC
+date. Functionality checks fire `--as-of` a past session (functionality-checks.md, 2026-08-07), and
+every run before the deploy has a Snapshot and no marker, so without this the first such fire would
+brief an old run. *Ruled out:* briefing whatever run the fire names.
+
+**Where the time goes.** The step runs before placement, but on a day's first placement it costs one
+read: a run cannot have a Snapshot before its `RunRequest` exists. The heavy path (the verdict,
+needs-you, the listings) runs only once the Snapshot exists, on fires whose placement is an
+idempotent re-merge or, after 23:20, none.
+
+**Known limits.** (a) If the marker write fails after Telegram accepted the message, the next fire
+sends again: a duplicate over silence, and the failed write is a fault. (b) A RED brief that fails on
+the 23:50 fire is not retried; there is no later fire. (c) A run that finishes after its RED brief
+gets no second message (one brief per run). (d) Two overlapping fires could both send; the degraded
+notice has the same exposure, and fires take seconds.
+
 ## DL-230 - the daily brief may carry P&L amounts to the operator's Telegram chat - status: DECIDED (operator, 2026-09-26)
 
 **Question.** E19.1's daily brief goes out over Telegram, a vendor channel. `RPT-SEC-02` says the

@@ -53,7 +53,12 @@ def live_universe() -> tuple[str, list[str]]:
 
 
 def daily_bars(
-    tickers: list[str], end: str, timeout: int = 60, start: str = START
+    tickers: list[str],
+    end: str,
+    timeout: int = 60,
+    start: str = START,
+    asof: str | None = None,
+    adjustment: str = "all",
 ) -> dict[str, list[Any]]:
     """Return split- and dividend-adjusted SIP daily bars per ticker."""
     headers = {
@@ -68,10 +73,12 @@ def daily_bars(
             "timeframe": "1Day",
             "start": start,
             "end": end,
-            "adjustment": "all",
+            "adjustment": adjustment,
             "feed": "sip",
             "limit": 10000,
         }
+        if asof is not None:
+            params["asof"] = asof
         if token:
             params["page_token"] = token
         response = requests.get(

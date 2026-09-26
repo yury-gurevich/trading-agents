@@ -32,11 +32,19 @@ from scripts.sp500_bars import (  # noqa: E402
     fetch_bars_for_windows,
     windows_from_episodes,
 )
+from scripts.sp500_chain import chain_source_switches  # noqa: E402
 from scripts.sp500_coverage import coverage_report, require_floor  # noqa: E402
+from scripts.sp500_guards import (  # noqa: E402
+    known_move_counts,
+    load_known_moves,
+    require_switch_actions,
+    review_same_source_moves,
+)
 from scripts.sp500_membership import (  # noqa: E402
     load_symbol_map,
     reconstruct_membership,
 )
+from scripts.sp500_replay_build import action_lookup, raw_close_fetcher  # noqa: E402
 from scripts.sp500_wiki import (  # noqa: E402
     CHANGES_URL,
     CONSTITUENTS_URL,
@@ -66,18 +74,31 @@ def build_universe(
     write_pages(cache_dir, pages)
     constituents_page = parse_constituents_page(pages["constituents"]["html"])
     changes_page = parse_changes_page(pages["changes"]["html"])
-    sessions = _sessions(end_day, bar_fetcher)
+    sessions, spy_closes = _sessions(end_day, bar_fetcher)
     map_rows = load_symbol_map()
     membership = reconstruct_membership(
         constituents_page.rows, changes_page.rows, sessions, map_rows
     )
     windows = windows_from_episodes(membership.episodes, map_rows)
     fetched = fetch_bars_for_windows(windows, sessions, bar_fetcher)
-    report = coverage_report(membership.episodes, fetched.rows, sessions)
+    chained = chain_source_switches(
+        fetched.rows,
+        raw_close_fetcher(bar_fetcher),
+        spy_closes,
+        action_lookup(map_rows),
+    )
+    require_switch_actions(chained.switches)
+    known_moves = load_known_moves()
+    reviewed_moves = review_same_source_moves(
+        chained.rows, spy_closes, known_moves, membership.episodes
+    )
+    report = coverage_report(membership.episodes, chained.rows, sessions)
     require_floor(report)
-    coverage = coverage_payload(report, membership, fetched.refetched)
-    write_universe_cache(cache_dir, sessions, membership, fetched.rows, coverage)
-    return Universe(sessions, membership.episodes, fetched.rows, coverage)
+    coverage = coverage_payload(
+        report, membership, fetched.refetched, chained.switches, reviewed_moves
+    )
+    write_universe_cache(cache_dir, sessions, membership, chained.rows, coverage)
+    return Universe(sessions, membership.episodes, chained.rows, coverage)
 
 
 def load_universe(cache: Path | None = None) -> Universe:
@@ -88,6 +109,9 @@ def describe(cache: Path | None = None) -> str:
     universe = load_universe(cache)
     reconciliation = universe.coverage["reconciliation"]
     coverage = universe.coverage["coverage"]
+    switches = universe.coverage.get("switches", [])
+    reviewed_moves = universe.coverage.get("reviewed_moves", [])
+    known_counts = known_move_counts(load_known_moves())
     lines = [
         f"cache: {cache or replay_dataset.CACHE}",
         (
@@ -101,6 +125,12 @@ def describe(cache: Path | None = None) -> str:
             f"{coverage['covered_sessions']}/{coverage['member_sessions']} "
             f"({coverage['ratio']:.2%}), shortfalls {len(coverage['shortfalls'])}"
         ),
+        (
+            "switches: "
+            f"{len(switches)} recorded, "
+            f"{sum(1 for row in switches if row.get('action'))} with action"
+        ),
+        f"known moves: {len(reviewed_moves)} reviewed, file {known_counts}",
     ]
     return "\n".join(lines)
 
@@ -138,11 +168,14 @@ def _fetch_pages(page_fetcher: PageFetcher) -> dict[str, dict[str, str]]:
     }
 
 
-def _sessions(end: str, bar_fetcher: BarFetcher) -> tuple[date, ...]:
-    rows = bar_fetcher([SESSION_SYMBOL], end=end, start=UNIVERSE_START).get(
+def _sessions(
+    end: str, bar_fetcher: BarFetcher
+) -> tuple[tuple[date, ...], dict[date, float]]:
+    rows = bar_fetcher([SESSION_SYMBOL], end=end, start=UNIVERSE_START, asof=end).get(
         SESSION_SYMBOL, ()
     )
-    return tuple(date.fromisoformat(str(row[0])[:10]) for row in rows)
+    spy_closes = {date.fromisoformat(str(row[0])[:10]): float(row[4]) for row in rows}
+    return tuple(sorted(spy_closes)), spy_closes
 
 
 def _refuse_repo_cache(cache_dir: Path) -> None:

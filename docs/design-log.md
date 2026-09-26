@@ -10,6 +10,109 @@ and is marked CLOSED here.
 
 ---
 
+## DL-231 - the daily brief is one guarded step before the window's early return, and it reads the reporter's figures as stored - status: DECIDED (S234, 2026-09-26)
+
+**Question.** S234 (E19.1) left four decisions to the builder: which module composes and which
+selects; what "the previous briefed run" is when a day was skipped, held or failed; how the dispatcher
+image carries the verdict's import closure; and the exact text, including the RED brief and the
+degraded marker. Two more came out of designing it: what the RED brief's verdict is, and which run a
+fire may brief.
+
+**Decision 1 - five modules, one of them pure.** `daily_brief_text.py` composes the message from a
+frozen `BriefFacts` and nothing else (no graph, no clock read): it is the only place a line is worded.
+`daily_brief_facts.py` and `daily_brief_fills.py` select the facts: the verdict from `accept_run`,
+needs-you from `compute_health`, the money and the scoreboard clause from the Snapshots as stored,
+orders and fills from `Fill` nodes. `daily_brief.py` decides whether this fire briefs, sends once
+through the port and writes the marker. `daily_brief_guard.py` is the only one the fire imports at
+load time; it imports `daily_brief` inside its `try` and turns any failure into a `Fault` whose
+message names the step and an error type, never a value. *Ruled out:* one module (past the 200-line
+block, and a composer that cannot be tested without a graph); the text built inside `TelegramClient`
+as the notices are (the port would own the content, and the preview could not print what the port
+sends); `fault_safe` for the send (it stores `str(exc)` and the traceback on the `Fault`, so a port
+whose exception quoted the text would put an amount in a fault, which `DSP-SEC-02` forbids).
+
+**Decision 2 - the previous briefed run is the latest earlier scheduled run with a Snapshot**, ordered
+by `PMRun.created_at` (Snapshots carry no time, DL-225). One reference serves the equity change and
+the lower bound of the fills window, so both lines cover the same period, and the text names it. A
+reference whose Snapshot has no measured figure (no `performance` group, or zero sessions) prints
+`(no earlier figure)`; nothing is skipped past it. Only `sched-*` runs are references: a manual run's
+Snapshot dates an intraday sync (DL-224). *Ruled out:* **the latest `RunRequest` carrying
+`brief_sent_at`.** On the first brief after deploy no run carries one, so the fills window would have
+no lower bound (all 108 filled `Fill`s); a RED-briefed run carries the marker but no Snapshot and
+perhaps no `PMRun`, so it bounds nothing; and the text would follow the dispatcher's send history
+rather than the runs, so the planner's preview before deploy could not show what a later fire sends.
+*Accepted cost:* a finished run whose brief never sent (every fire failed) is still the next brief's
+reference, so the fills that became known in its window reach no brief. The failed fires' faults are
+counted in the next brief's needs-you line.
+
+**Decision 3 - the image copies file by file.** The closure test (DL-218) names every module the
+brief imports, lazily or not: **46** from the verdict (row 6's 48, less `orchestration/packs/__init__.py`
+and `us_equities_sp500.py`, already copied), **10** from `compute_health`'s package (importing
+`agents.supervisor.domain.health` runs `agents/supervisor/__init__.py`, which imports
+`SupervisorAgent`), and the **5** brief modules: 61 lines, not the spec's "about 48". Row 6 (48, 31
+of them `agents.portfolio_manager.*`) and row 13 (the module imports only `kernel.fault_incidents`)
+both reproduce exactly; the estimate left out the package `__init__`, DL-218's own class. *Measured:*
+the brief adds no third-party package to the entrypoint's closure. 🪤 **Found building it: the closure
+test was blind to `from a.b import c` when `c` is a module.** `from agents.portfolio_manager.domain
+import deployment_floor` names `domain/deployment_floor.py`, which the test never reached, so a
+Dockerfile that satisfied it would have killed every brief at import. Measured on a simulated slim
+image (only the Dockerfile's `COPY` set, the repo root off `sys.path`): with the file the A1 fire sends
+the brief; without it the fire still places and the brief is one fault, `brief failed (ImportError)`,
+while the image's calendar-skip smoke stays green. The test now also follows `a/b/c.py` and
+`a/b/c/__init__.py`; on `main` before the brief it demands nothing new, so the running image was never
+exposed. *Ruled out:* whole-directory copies
+of `orchestration/`, `agents/portfolio_manager/` and `agents/supervisor/`: of their 253 tracked files
+the closure needs 72, so **181** the dispatcher never imports (tests, laws, other entrypoints) would
+enter the image, and it would depend on whatever those trees hold instead of on a list the test checks.
+
+**Decision 4 - the text.** Plain text, one message; lines joined by newlines, items in a line by ` · `.
+
+```text
+🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50
+Equity $101,976.32 (−$24.40 since sched-2026-09-24)
+vs SPY: -0.43 pts over 33 sessions at 21% invested
+Orders: none
+Filled: none
+Needs you: nothing
+```
+
+The header is the verdict's colour and word (🟢 `PASS`/`NO_TRADE`, 🟡 `UNPROVEN`, 🔴 `FAIL`), the run
+id and the fire's time in the operator's zone (`UTC` when the zone cannot load, as `act_by_text`
+does), plus ` · degraded` when the `RunRequest` carries `run_posture=degraded`. The change is the
+difference of the two stored `equity_cents`, each rounded to integer cents, with the dashboard's
+typographic minus, `+` for a gain and `$0.00` unsigned; `Equity: not in this run's report` when this
+run's Snapshot has no measured figure. The scoreboard is the reporter's clause (`vs SPY: …` or
+`Performance: …`) cut from `headline_summary` as stored, else `Scoreboard: not in this run's report`.
+Orders read `BUY 16 BMY ≤ $61.82 · SELL 10 XOM ≥ $110.00` (the limit as the bound the order accepts,
+` rejected` when its `Fill` says so); fills read `BUY 16 BMY @ $61.75 · SELL 20 XOM @ $58.10 stopped
+out` (the broker's fill price; `stopped out` for a resting stop, `is_resting_stop_fill`). Needs-you is
+`nothing` or `2 open incidents · 1 critical flag`. The RED brief is `🔴 NOT FINISHED · <run> · <time>`,
+`Last stage finished: execution` (or `No stage finished`), the orders line and needs-you. It carries
+no money (the equity lives in the Snapshot) and no fills (they fall in the next finished run's window).
+
+**Decision 5 - the RED brief does not call `accept_run`.** A run with no Snapshot is `FAIL` by
+construction (the reporter stage is unreached, a blocking breach), so the call adds only a dependency:
+the one message for a broken night would hinge on the heavy verdict path, the likeliest thing to be
+broken on such a night. Its header states what the dispatcher saw, no report by the last fire, and
+`brief_verdict` records `NOT_FINISHED`. *Ruled out:* `FAIL` from `accept_run` (sent only when the
+verdict path works); `FAIL` hardcoded (a second copy of the verdict's rule, DL-208's failure).
+
+**Decision 6 - a fire briefs only its own day.** The step runs only when `as_of` is the fire's UTC
+date. Functionality checks fire `--as-of` a past session (functionality-checks.md, 2026-08-07), and
+every run before the deploy has a Snapshot and no marker, so without this the first such fire would
+brief an old run. *Ruled out:* briefing whatever run the fire names.
+
+**Where the time goes.** The step runs before placement, but on a day's first placement it costs one
+read: a run cannot have a Snapshot before its `RunRequest` exists. The heavy path (the verdict,
+needs-you, the listings) runs only once the Snapshot exists, on fires whose placement is an
+idempotent re-merge or, after 23:20, none.
+
+**Known limits.** (a) If the marker write fails after Telegram accepted the message, the next fire
+sends again: a duplicate over silence, and the failed write is a fault. (b) A RED brief that fails on
+the 23:50 fire is not retried; there is no later fire. (c) A run that finishes after its RED brief
+gets no second message (one brief per run). (d) Two overlapping fires could both send; the degraded
+notice has the same exposure, and fires take seconds.
+
 ## DL-230 - the daily brief may carry P&L amounts to the operator's Telegram chat - status: DECIDED (operator, 2026-09-26)
 
 **Question.** E19.1's daily brief goes out over Telegram, a vendor channel. `RPT-SEC-02` says the
@@ -32,6 +135,76 @@ orchestration layer.
 
 **Accepted risk.** Telegram's servers see the amounts. The account is a paper account, and the operator
 accepted the channel. A live account would reopen this question.
+
+## DL-229 - S233 pins replay bar windows by window end and chains source switches on raw closes - status: DECIDED (S233, 2026-09-26)
+
+**Question.** How should E17.2b repair S231's replay cache so each line holds one issuer's prices when
+Alpaca's default symbol lineage can resolve a historical ticker to today's issuer, and when a line
+changes source across a corporate action?
+
+**Decision.** Every replay bar window is fetched with Alpaca `asof` equal to that window's last day.
+The default `daily_bars(tickers, end)` request remains unchanged for `bars.csv.gz`; only callers that
+pass `asof` send it. Source switches are chained into the stored cache on unadjusted boundary closes:
+the latest window remains at its fetched level, and earlier windows are rescaled backwards so each
+switch day's close-to-close ratio equals the raw traded ratio. The coverage payload records every
+switch with symbols, dates, raw move, SPY-relative move, and any map-row `action`.
+
+**Map and guard ownership.** The committed symbol map remains the evidence boundary: add the measured
+BBWI/LB, UAA/UA, AA/AA, FTI/FTI, and SW/WRK rows, correct DLPH's end date, and add an optional
+`action` column. A `bars` row owns the switches at its boundaries; a `rename` row owns the switch on
+its `from` date. If two rows can claim one switch, prefer the row that supplies the earlier source,
+because that is the row whose action justifies the cross-source price move; duplicate ownership is a
+build error rather than an implicit tie-break. Switch raw moves more than 10 percentage points away
+from SPY require an `action`. Same-source single-day moves more than 50 percentage points away from
+SPY require a `(line, date)` entry in `sp500_known_moves.csv`, where `date` is the move's second
+session.
+
+**Implementation shape.** Chain factors are applied to the stored OHLC rows, with the switch records
+kept as the audit trail, so cache readers do not need to re-chain. Raw boundary closes are fetched via
+the same `daily_bars` boundary with `adjustment="raw"` and `asof` pinned to each side's own window end.
+Chaining and guards live in new `scripts/` modules so the S231 files near the 200-line block do not
+grow past it.
+
+**Ruled out.** A map-row `asof` column was rejected because every measured case is reproduced by the
+uniform `asof = window.last` rule. Single-symbol fetching for the whole build was rejected because the
+pinned batch probe measured equivalent returns and batching keeps the live build tractable. Chaining
+on adjusted closes was rejected because adjustment bases created false switch moves. Storing factors
+beside unchained bars was rejected because it would make every cache reader responsible for replaying
+the chain. Silently accepting unowned hard switches or unlisted large moves was rejected because that
+is the same shape as S231's false coverage: the dataset would look complete while identity remained
+unproven.
+
+**Amendment 2026-09-26 — the planner's live build (status unchanged: DECIDED).** The first build on the
+merge (`5634ae4f`, 13:04 AEST) exited 1 on the move guard with 8 unlisted moves. Measured, raw vs
+adjusted, each pinned `asof` its window's last day:
+
+- **6 were not moves.** `review_same_source_moves` paired rows by line and symbol, so a line's exit close
+  met its re-entry close years later: DD 2017-08-31 → 2019-06-03, FSLR 2017-03-17 → 2022-12-19, ILMN
+  2024-06-21 → 2026-09-21, PCG 2019-01-17 → 2022-10-03, and two where the ticker names another company
+  at re-entry (public record, not measured): Q (Quintiles IMS 2017 → Qnity 2025) and SNDK (the SanDisk
+  Western Digital bought in 2016 → the one it spun off in 2025). The guard now takes the membership
+  episodes and compares a pair only inside one (`3450a9df`); with the episode check planted out, the
+  new FSLR-shaped test fails naming `FSLR FSLR 2022-12-19`, the live build's own line.
+- **2 are Alpaca adjustment errors**, TGNA's shape: APTV 2017-12-05 raw −14.9 %, adjusted −71.6 % (the
+  Delphi Technologies spin), and WRK 2016-05-16 raw −6.9 %, adjusted −84.5 % (the Ingevity spin). Both
+  listed as `adjustment-error`.
+- 🩹 **The spec's row 5 was wrong.** SW's ~$190 bars before 2016-05-16 were WestRock's own, inflated
+  4.4× by that adjustment error: S231's SW series and the new WRK-sourced one hold identical returns
+  over 2016–2024 (0 days differ). The WRK row stays (it names the source and owns the deal switch,
+  raw −10.3 %), and SW 2016-05-16 is listed, against the spec's *do not list SW* trap, whose premise
+  this measurement removes.
+- **The seeded moves re-measured:** MRNA, FRC, SIVB, GL, PCG and ABMD are events (raw equals
+  adjusted). **RTX is an `adjustment-error`**, not a `distribution` (raw −41.9 %, adjusted −71.0 %).
+  **APA 2020-03-09 reads −46.8 points** vs SPY; this guard measures percentage points away from SPY
+  (the decision above), where the spec's row 13 took the ratio over SPY's (−50.3 %). The points rule
+  stands, and APA's row is removed: a listed move that never fires is a row nobody reviews.
+- **A listed move that no longer fires** (decision 4's second half, unanswered above) is not a build
+  error; `--describe` prints the reviewed count beside the file's counts, which agree today (10 and 10).
+- 🪤 **Found, measured harmless:** the chain splits a line where the **symbol** changes, so a map row
+  whose symbol equals its successor's (AA, FTI) is never chained. Both boundaries were measured: AA
+  2016-10-05 → 06 stores +1.9 % (the raw ×3.06 is old Alcoa's 1-for-3 reverse split, adjusted away),
+  and FTI 2017-01-13 → 17 stores −1.39 %, equal to raw. A future same-symbol row needs the chain to split
+  on windows, not symbols.
 
 ## DL-228 · S232 moves the substrate's handshake vocabulary into the kernel and the served roster into pack data · status: DECIDED (S232, 2026-09-26)
 

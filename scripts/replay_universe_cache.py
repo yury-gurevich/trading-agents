@@ -22,7 +22,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from scripts.sp500_bars import BarWindow
+    from scripts.sp500_chain import SwitchRecord
     from scripts.sp500_coverage import CoverageReport
+    from scripts.sp500_guards import MoveReview
     from scripts.sp500_membership import MembershipResult
 
 
@@ -113,6 +115,8 @@ def coverage_payload(
     report: CoverageReport,
     membership: MembershipResult,
     refetched: tuple[BarWindow, ...],
+    switches: tuple[SwitchRecord, ...] = (),
+    reviewed_moves: tuple[MoveReview, ...] = (),
 ) -> dict[str, Any]:
     return {
         "coverage": {**asdict(report), "ratio": report.ratio},
@@ -122,6 +126,8 @@ def coverage_payload(
             "unreconciled": [asdict(row) for row in membership.unreconciled],
         },
         "refetched": [asdict(window) for window in refetched],
+        "switches": [asdict(row) for row in switches],
+        "reviewed_moves": [asdict(row) for row in reviewed_moves],
     }
 
 

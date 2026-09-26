@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from contracts.provider import RUN_REQUEST_LABEL
 from contracts.run_posture import RUN_POSTURE_DEGRADED
+from orchestration.daily_brief_guard import brief_safely
 from orchestration.fleet_readiness import is_active_run_hold
 from orchestration.hold_answers import effective_answer
 from orchestration.scheduled_dispatch import (
@@ -60,6 +61,9 @@ def dispatch_with_human_answer(
     answer = effective_answer(graph, run_id=decision.run_id)
     if answer is not None:
         _mark_answer(graph, hold, answer)
+    brief_safely(
+        graph, telegram, run_id=decision.run_id, as_of=as_of, now=now, settings=settings
+    )
     if not is_action_time(now):
         return outside_window(decision.run_id, decision.reason, hold)
     if answer == "skip_today":

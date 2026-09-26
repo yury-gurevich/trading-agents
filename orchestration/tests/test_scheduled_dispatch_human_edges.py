@@ -48,6 +48,9 @@ class _TelegramWithError:
     ) -> int | None:
         return None
 
+    def send_brief(self, *, text: str) -> int | None:
+        return None
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         return ()
 

@@ -23,9 +23,9 @@ def test_ticker_reuse_keeps_bars_inside_each_episode() -> None:
     )
 
     def fake_bars(
-        symbols: list[str], *, end: str, start: str
+        symbols: list[str], *, end: str, start: str, **kwargs: object
     ) -> dict[str, list[tuple[str, float, float, float, float]]]:
-        del end, start
+        del end, start, kwargs
         return {
             symbol: [_bar(date(2020, 1, day)) for day in range(1, 7)]
             for symbol in symbols
@@ -47,8 +47,9 @@ def test_bars_row_switches_source_inside_range_only() -> None:
     )
 
     def fake_bars(
-        symbols: list[str], *, end: str, start: str
+        symbols: list[str], *, end: str, start: str, **kwargs: object
     ) -> dict[str, list[tuple[str, float, float, float, float]]]:
+        del kwargs
         start_day, end_day = date.fromisoformat(start), date.fromisoformat(end)
         days = [day for day in sessions if start_day <= day <= end_day]
         return {symbol: [_bar(day) for day in days] for symbol in symbols}
@@ -76,9 +77,9 @@ def test_batch_drop_is_refetched_before_missing() -> None:
     calls: list[tuple[str, ...]] = []
 
     def fake_bars(
-        symbols: list[str], *, end: str, start: str
+        symbols: list[str], *, end: str, start: str, **kwargs: object
     ) -> dict[str, list[tuple[str, float, float, float, float]]]:
-        del end, start
+        del end, start, kwargs
         calls.append(tuple(symbols))
         if len(symbols) > 1:
             return {"KEEP": [_bar(day) for day in sessions], "EMPTY": []}

@@ -33,8 +33,11 @@ class FakeTelegram:
     answers: tuple[TelegramAnswer, ...] = ()
     fails: bool = False
     degraded_returns_none: bool = False
+    brief_raises: bool = False
+    brief_returns_none: bool = False
     sent: list[dict[str, object]] = field(default_factory=list)
     degraded_sent: list[dict[str, object]] = field(default_factory=list)
+    briefs: list[str] = field(default_factory=list)
     acknowledgements: list[tuple[str, str]] = field(default_factory=list)
     confirmations: list[int] = field(default_factory=list)
     polls: int = 0
@@ -54,6 +57,16 @@ class FakeTelegram:
         if self.degraded_returns_none:
             return None
         return len(self.degraded_sent)
+
+    def send_brief(self, *, text: str) -> int | None:
+        self._raise_if_needed()
+        self.briefs.append(text)
+        if self.brief_raises:
+            # A careless port quotes what it failed to send; no fault may repeat it.
+            raise RuntimeError(f"telegram refused the brief: {text}")
+        if self.brief_returns_none:
+            return None
+        return 100 + len(self.briefs)
 
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         self._raise_if_needed()

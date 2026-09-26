@@ -28,6 +28,10 @@ class TelegramPort(Protocol):
         """Send a no-buttons notice for one degraded run."""
         ...  # pragma: no cover - protocol declaration only.
 
+    def send_brief(self, *, text: str) -> int | None:
+        """Send one daily brief, as composed, to the configured operator chat."""
+        ...  # pragma: no cover - protocol declaration only.
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         """Return valid callback answers awaiting local recording."""
         ...  # pragma: no cover - protocol declaration only.

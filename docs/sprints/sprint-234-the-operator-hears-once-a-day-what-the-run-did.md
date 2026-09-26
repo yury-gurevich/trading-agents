@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.1**
 **Branch:** `sprint-234-the-operator-hears-once-a-day-what-the-run-did`
-**Status:** SPEC
+**Status:** MERGED `76e226d5` · tag `v0.114.00` · deployed `s234` 2026-09-26 · first real brief owed
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-230](../design-log.md) (operator, 2026-09-26: the brief may carry P&L amounts) ·
@@ -401,17 +401,46 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-26, in worktree `s234` on `f2e97d56`, before the first code change. Whole files read:
+dispatcher `laws.md` (LOCKED v1) and `test-plan.md`; reporter `laws.md` (LOCKED v1.3) and
+`test-plan.md`; supervisor `laws.md` (LOCKED v1.2) and `test-plan.md` rows `SUP-OUT-02`/`SUP-OBS-02`;
+`docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-230, DL-224, DL-225, DL-220, DL-218, DL-70.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *builder fills* | | | |
+| `orchestration/scheduled_dispatch_human.py` (164) | dispatcher `laws.md` + `test-plan.md` | `DSP-TRG-02` 🟩, `DSP-TRG-01` 🟩, `DSP-PERF-01` 🟩, `DSP-IDM-02` 🟩, `DSP-OUT-01`/`-02`/`-05` 🟩, **`DSP-TYP-01` ⬜** | **Yes.** The step goes after the calendar skip *and* the answer marking, immediately before `is_action_time`, so the hold, poll and answer order is byte-identical (`DSP-TRG-02`) and fires after 23:20 still reach it (row 3). `ScheduledDispatchResult` gains no field. `DSP-TYP-01` is ⬜, so result equality is asserted by A4/A6, not assumed |
+| new `orchestration/daily_brief*.py` | dispatcher book; reporter book (`RPT-SEC-02` ⬜, `RPT-OUT-07` 🟩, `RPT-IDM-03` 🟩, `RPT-FAIL-04` 🟩, `RPT-OUT-06` ⬜, `RPT-STA-02` 🟩); DL-224, DL-225, DL-230, DL-220 | `DSP-NEV-02` ⬜, `DSP-SEC-01` ⬜, `DSP-OBS-02` 🟩; the six new clauses; `RPT-SEC-02` stays unamended | **Yes.** `RPT-FAIL-04`'s contained failure stores `equity_cents: 0.0` with zero sessions and `RPT-OUT-06`'s degraded Snapshot has no `performance` group, so a figure counts only with sessions > 0 (DL-220: unavailable never reads as zero). Runs are ordered by `PMRun.created_at` (DL-225). Only `sched-*` runs are references: a manual run's Snapshot dates an intraday sync (DL-224) |
+| `orchestration/telegram_client.py` (120), `telegram_port.py` (41) | dispatcher book | `DSP-SEC-01` ⬜, `DSP-STA-02` 🟩, `DSP-FAIL-01` 🟩 | **Yes.** `fault_safe` stores `str(exc)` and the traceback on the `Fault`, so a port exception that carried the text would put an amount in a fault. The brief records its own fault naming only the step and an error type (`DSP-SEC-02`). `send_brief` mirrors `send_degraded_notice`: never raises, sets `last_error` |
+| `scripts/dispatch_scheduled_run.py` (129) | `DSP-SEC-02` (new); measured row 16 | `DSP-SEC-01` ⬜ | **No code change.** The brief's text never enters `ScheduledDispatchResult`, so `format_dispatch_result` cannot print it; A10 drives `main` to prove it rather than asserting it |
+| `orchestration/Dockerfile` | DL-218; the closure test (row 7) | — | **Yes.** Importing `agents.supervisor.domain.health` runs `agents/supervisor/__init__.py`, which imports `SupervisorAgent`: 10 files row 6's 48 does not count (DL-231) |
+| `agents/supervisor/domain/health.py` (read only) | supervisor book | `SUP-OUT-02` 🟩, **`SUP-OBS-02` ⬜** | **Yes, a finding.** `SUP-OBS-02` says `open_incidents` derives from `Flag` nodes; `compute_health` counts live `Fault` incidents (DL-208). The brief prints `compute_health`'s numbers as they are: **DRIFT-076** |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *builder fills*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, a new
+guarantee; no `contracts/` change.** Dispatcher laws LOCKED v1 → v1.1: `DSP-IDN-04`, `DSP-TRG-03`,
+`DSP-OUT-06`, `DSP-IDM-03`, `DSP-SEC-02`, `DSP-FAIL-03` new; `DSP-DEP-01` and `CAP` amended.
+`RPT-SEC-02` is not amended (DL-230).
 
-**Contradictions found between a law and this spec:** *builder fills*
+**Contradictions found between a law and this spec:** none. Checked: `DSP-IDN-01` ("decides one
+outcome") and `DSP-NEV-02` (no broker) hold, because the brief reads graph facts and decides
+nothing; `DSP-OUT-01`'s "no degraded-posture properties" is placement's write, and the three brief
+properties arrive later on a finished run; `DSP-IDM-02`'s re-merge keeps them, because placement
+re-writes the same values.
 
-**Laws found silent where a decision was needed:** *builder fills*
+**Laws found silent where a decision was needed:** (1) `DSP-IDN-03` says the book governs
+`scheduled_dispatch*.py`, readiness, answers and notices, and is silent on the brief's modules.
+Decided: the new `DSP-IDN-04` names `daily_brief*.py`; `DSP-IDN-03` is not in the spec's amendment
+list, so it stays and **DRIFT-077** records it. (2) No clause says which run a fire concerns when
+`--as-of` names a past session (functionality checks do this). Decided (DL-231): a fire briefs only
+its own UTC day; `DSP-TRG-03` states it, so this law cycle closes the silence. **Clauses relied on
+that are ⬜:** `DSP-TYP-01`, `DSP-SEC-01`, `DSP-NEV-02`, `DSP-DEP-01`, `RPT-SEC-02`, `RPT-OUT-06`,
+`SUP-OBS-02`.
 
-**Clauses that were ⬜ and are now proven:** *builder fills*
+**Clauses that were ⬜ and are now proven:** **`DSP-SEC-01`**, by
+`tests/test_dispatcher_credential.py::test_the_bot_credential_never_leaves_the_port_on_any_path`: the
+real `TelegramClient` carries a hold notice, an answer (poll, acknowledge, confirm), a degraded notice
+and the brief through `main`; the credential reaches the transport on every call and no printed line,
+graph fact or dispatch parameter. `DSP-DEP-01` stays ⬜: the new `CAP` conformance test proves its
+graph and port halves only (named as partial in its row).
 
 ---
 
@@ -419,48 +448,245 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *builder fills* | | | |
+| A1 | `test_a1_a_finished_run_gets_its_brief` | `orchestration/tests/test_daily_brief_dispatch.py` | 🟩 pass; **red first** at `5ed442a` | `DSP-OUT-06`, `DSP-IDN-04`, `DSP-IDM-03` |
+| A2 | `test_a2_a_second_fire_sends_nothing` (fires 22:50, 23:00, 23:50) | `orchestration/tests/test_daily_brief_dispatch.py` | 🟩 pass | `DSP-IDM-03` |
+| A3 | `test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire` | `orchestration/tests/test_daily_brief_dispatch.py` | 🟩 pass; **red first** at `5ed442a` | `DSP-TRG-03`, `DSP-IDM-03` |
+| A4 | `test_a4_the_brief_survives_the_windows_early_return` (also: the graph's only change is the three marker properties) | `orchestration/tests/test_daily_brief_boundaries.py` | 🟩 pass | `DSP-TRG-03`, `DSP-PERF-01`, `DSP-IDN-04` |
+| A5 | `test_a5_no_brief_for_a_skipped_or_a_never_placed_run` (the skipped day carries a finished chain) | `orchestration/tests/test_daily_brief_boundaries.py` | 🟩 pass | `DSP-TRG-02`, `DSP-TRG-03`, `DSP-IDN-04` |
+| A6 | `test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries` (the port raises quoting the text, then returns `None`) | `orchestration/tests/test_daily_brief_dispatch.py` | 🟩 pass; **red first** at `5ed442a` | `DSP-FAIL-03`, `DSP-STA-02`, `DSP-SEC-02`, `DSP-IDM-03` |
+| A7 | `test_a7_a_malformed_snapshot_is_a_fault_and_nothing_else` ×2 (metrics not a mapping; equity not a number) | `orchestration/tests/test_daily_brief_boundaries.py` | 🟩 pass | `DSP-FAIL-03`, `DSP-SEC-02` |
+| A8 | `test_a8_only_fills_that_became_known_since_the_previous_brief` (both edges, a naive time, a pending fill, `submitted_at` inside and refresh outside, an unreadable time) | `orchestration/tests/test_daily_brief_facts.py` | 🟩 pass | `DSP-OUT-06` |
+| A9 | `test_a9_money_is_integer_cents_with_separators_and_a_signed_change`; `test_a9_orders_and_fills_read_as_the_broker_holds_them`; graph-side `test_orders_are_this_runs_fills_including_a_resumed_runs`, `test_no_reference_figure_reads_no_earlier_figure` ×5 | `orchestration/tests/test_daily_brief_text.py`; `orchestration/tests/test_daily_brief_facts.py` | 🟩 pass | `DSP-OUT-06` |
+| A10 | `test_a10_no_amount_leaves_through_the_job_log_or_a_fault` ×2 (sent; port raised) through `main` | `tests/test_dispatch_brief_script.py` | 🟩 pass | `DSP-SEC-02` |
+| A11 | `test_dispatcher_image_copies_everything_its_entrypoint_imports`, its reader now following `from a.b import c` to a submodule | `tests/test_dispatch_scheduled_run.py`, `tests/image_closure.py` | 🟩 pass | none (DL-218's guard) |
+| A12 | `test_a12_needs_you_is_what_health_counts_and_degraded_says_so` (through the real `compute_health`) | `orchestration/tests/test_daily_brief_facts_edges.py` | 🟩 pass | `DSP-OUT-06` |
+| A13 | `test_a13_the_preview_prints_the_brief_and_sends_and_writes_nothing` (a graph that refuses writes; building a Telegram client raises) | `tests/test_brief_preview.py` | 🟩 pass | `DSP-OUT-06`, `DSP-IDM-03` |
 
-**Tests added beyond the plan:** *builder fills*
+**Tests added beyond the plan:** `test_a_missing_brief_module_is_a_fault_and_the_fire_places`,
+`test_a_fault_the_graph_refuses_still_never_stops_the_fire`, `test_a_refire_for_a_past_session_briefs_nothing`
+(`orchestration/tests/test_daily_brief_boundaries.py`); `test_the_reference_is_the_previous_scheduled_run_by_pm_time` (a manual run, a later run, a
+Snapshot with no PMRun, one with no RunRequest, and a second Snapshot of the same run are none of them a
+reference) (`orchestration/tests/test_daily_brief_facts.py`); `test_this_runs_missing_figure_prints_no_amount` ×2,
+`test_the_scoreboard_is_the_reporters_clause_as_stored` ×2, `test_unreadable_facts_are_named_data_errors_not_guesses`,
+`test_a_red_brief_names_the_stage_and_what_the_run_ordered` (`orchestration/tests/test_daily_brief_facts_edges.py`); `test_the_measured_run_reads_exactly_as_specified`,
+`test_the_header_colour_is_the_verdicts` ×4, `test_needs_you_counts_read_as_words`,
+`test_the_time_is_the_operators_and_utc_without_zone_data` (`orchestration/tests/test_daily_brief_text.py`); three `send_brief` port tests
+(`orchestration/tests/test_telegram_brief.py`: plain text to the configured chat only; failures as values
+keeping the transport error; a refused send's fault names the port's error word, and a port whose error
+carries text is reduced to `no message id`); `tests/test_brief_preview.py` RED preview, unknown run, no
+`POSTGRES_DSN`; `tests/test_dispatcher_credential.py` (`DSP-SEC-01`, above);
+`orchestration/tests/test_dispatcher_capability.py::test_every_fire_stays_inside_the_declared_capability`
+(the `CAP` block parsed from the law book and held against what six real fires read, write and send).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *builder fills: BUILT*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *builder fills*
+**Tree the proofs ran in (and `.env` present?):** worktree `/home/user/s234` (a cloud session), branch
+`sprint-234-the-operator-hears-once-a-day-what-the-run-did` from `origin/main` @ `f2e97d56`. **No `.env`**,
+no fleet or Neon access: every proof is on in-memory graphs and fake or transport-replaced Telegram ports.
 
-**Result:** *builder fills*
+**Result:** the scheduled dispatcher sends one deterministic brief per scheduled run once its Snapshot
+exists, and one RED brief at the 23:50 UTC fire for a placed run with none; the brief never reaches
+placement. Measured in code, not live: the preview and the first real send are the planner's.
 
-**Files changed:** *builder fills*
+**Files changed:** `orchestration/daily_brief.py`, `daily_brief_facts.py`, `daily_brief_fills.py`,
+`daily_brief_guard.py`, `daily_brief_text.py` (new); `orchestration/scheduled_dispatch_human.py` (+1
+import, +3 lines: the call); `orchestration/telegram_port.py`, `telegram_client.py` (`send_brief`);
+`orchestration/Dockerfile` (+61 `COPY`, 39 → 100); `scripts/brief_preview.py` (new);
+`tests/test_dispatch_scheduled_run.py` and `tests/image_closure.py` (the closure reader, split out and
+following submodules); tests and fixtures under `orchestration/tests/` and `tests/`; dispatcher
+`laws.md` and `test-plan.md` (v1.1); `docs/laws/ledger.md`, `docs/laws/INDEX.md` (32 / 36);
+`docs/laws/drift-register.md` (DRIFT-076, DRIFT-077); `docs/design-log.md` (DL-231); this spec and the
+sprint README row; `pyproject.toml` 0.113.00 → **0.114.00** and `uv.lock` (one line). Not changed:
+`scripts/dispatch_scheduled_run.py`, the cron, the action window, holds, notices, placement, any Snapshot.
 
-**Design decisions:** *builder fills: DL-231*
+**Design decisions:** [DL-231](../design-log.md): five modules with a pure composer; the previous briefed
+run is the latest earlier *scheduled* run with a Snapshot, by `PMRun.created_at`; file-by-file `COPY`
+(61, not ~48: the supervisor package `__init__` adds 10); the exact text; the RED brief does not call
+`accept_run` (`brief_verdict` `NOT_FINISHED`); a fire briefs only its own UTC day. Plus the closure
+test's blind spot, found and fixed.
 
-**Proof — the red run first:**
+**Proof — the red run first** (`5ed442a`: the three tests against the unchanged dispatcher, exit 1):
 
 ```text
-builder fills
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____________________ test_a1_a_finished_run_gets_its_brief _____________________
+orchestration/tests/test_daily_brief_dispatch.py:83: in test_a1_a_finished_run_gets_its_brief
+    assert telegram.briefs == [_A1_TEXT]
+E   AssertionError: assert [] == ['🟢 PASS · sc...you: nothing']
+E
+E     Right contains one more item: '🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50\nEquity $101,976.32 (−$24.40 since sched-2026-09-24)\nvs SPY: -0.43
+E     Use -v to get more diff
+________ test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire _________
+orchestration/tests/test_daily_brief_dispatch.py:106: in test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire
+    assert telegram.briefs == [
+E   AssertionError: assert [] == ['🔴 NOT FINIS...you: nothing']
+E
+E     Right contains one more item: '🔴 NOT FINISHED · sched-2026-09-25 · Sat 26 Sep 09:50\nLast stage finished: execution\nOrders: none\nNeeds you: no
+E     Use -v to get more diff
+_____ test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries _____
+orchestration/tests/test_daily_brief_dispatch.py:140: in test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries
+    assert len(faults) == 2
+E   assert 0 == 2
+E    +  where 0 = len(())
+=========================== short test summary info ============================
+FAILED orchestration/tests/test_daily_brief_dispatch.py::test_a1_a_finished_run_gets_its_brief
+FAILED orchestration/tests/test_daily_brief_dispatch.py::test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire
+FAILED orchestration/tests/test_daily_brief_dispatch.py::test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries
+3 failed in 0.53s
 ```
 
-**Proof — the green run:**
+**Proof — the green run:** see `make ci` below (the same three tests pass at every later commit; the
+full suite line is quoted there). In the simulated slim image (only the Dockerfile's `COPY` set, the
+repo root off `sys.path`), the calendar-skip smoke prints `skipped sched-2026-07-04` and an A1-shaped
+fire sends exactly A1's text with no fault:
 
 ```text
-builder fills
+smoke exit 0 | skipped sched-2026-07-04 reason=2026-07-04 is not a NYSE trading session
+drive exit 0
+result: placed sched-2026-09-25
+briefs sent: 1
+🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50
+Equity $101,976.32 (−$24.40 since sched-2026-09-24)
+vs SPY: -0.43 pts over 33 sessions at 21% invested
+Orders: none
+Filled: none
+Needs you: nothing
+marker: {'brief_sent_at': '2026-09-25T22:50:00+00:00', 'brief_message_id': 101, 'brief_verdict': 'PASS'}
 ```
 
-**Guards planted:** *builder fills*
+The same simulation without `agents/portfolio_manager/domain/deployment_floor.py`: `result: placed`,
+`briefs sent: 0`, `FAULT: daily brief not sent for sched-2026-09-25: brief failed (ImportError)`, smoke
+still green.
 
-**Module line counts:** *builder fills*
+**Guards planted** (each applied to the committed file, its test run, the file restored with `git
+checkout`; every restore re-ran green, and `git status` was clean after the last):
 
-**`make ci`:** *builder fills*
+| # | Plant | Test | Planted | Restored |
+| --- | --- | --- | --- | --- |
+| 1 | the brief call moved after the action-window return | A4 | **red**: `assert 0 == 1` (no brief at 23:30) | green |
+| 2 | the marker check dropped (`if request is None:`) | A2 | **red**: two extra briefs at 23:00 and 23:50 | green |
+| 3 | a send exception escapes: the step's `except` around `send_brief` removed **and** the guard narrowed to `ImportError` | A6 | **red**: `RuntimeError: telegram refused the brief: …` out of the fire | green |
+| 3a/3b | either layer alone removed | A6 | green, both: each layer alone contains a send failure | — |
+| 4 | the equity printed in the job line (`sys.stdout.write(f"brief {run_id} equity={…}")` in the step) | A10 | **red**, both params: `+ brief sched-2026-09-25 equity=10197632` | green |
+| 5 | the fault quotes the exception (`f"send failed ({exc})"`) | A6 | **red**: an amount in the Fault | green |
+| 6 | the Dockerfile loses `deployment_floor.py` | A11 | **red**: `dispatcher image omits imported modules: ['agents/portfolio_manager/domain/deployment_floor.py']`; **main's old closure test passes the same Dockerfile** | green |
+| 7 | `CAP` forgets the `Fill` read | CAP test | **red**: `Extra items in the left set: 'Fill'` | green |
 
-**`make gate-ran`:** *planner, after push*
+**Module line counts:** `daily_brief.py` 87, `daily_brief_facts.py` 166 ⚠, `daily_brief_fills.py` 101,
+`daily_brief_guard.py` 71, `daily_brief_text.py` 179 ⚠, `scheduled_dispatch_human.py` **168** (was 164),
+`scheduled_dispatch.py` **179** (unchanged), `telegram_client.py` 133, `telegram_port.py` 45,
+`scripts/brief_preview.py` 81, `scripts/dispatch_scheduled_run.py` 129 (unchanged),
+`tests/test_dispatch_scheduled_run.py` 143 (was 191; 198 before its reader moved to
+`tests/image_closure.py`, 68). ⚠ = over the 150 warning, under the 200 block.
 
-**Not met / verified failing:** *builder fills*
+**`make ci`:** `make ci > ci_fix.txt 2>&1 ; echo $?` in the worktree at **`faf22492`** (the last
+commit that changes anything but this document) → **exit 0**, 1,788 lines, every one of the 15 steps
+run: ruff check clean; `1310 files already formatted`; mypy `Success: no issues found in 1037 source
+files`; `Contracts: 4 kept, 0 broken.`; module size warnings only; module header, law coverage,
+PARAM/settings sync, sprint status, markdown links and version scheme silent (pass); pytest
+**`3284 passed, 6 skipped`**, `Required test coverage of 100.0% reached. Total coverage: 100.00%`;
+`No unaccepted vulnerabilities; 1 accepted advisory re-checked`; `Detect secrets ... Passed`;
+`detect-secrets (untracked): no untracked files to scan`. The same result at `b38c61f7` and `1ec3effa`
+before it. `scripts/gate_selftest.py` (run by CI, not by `make ci`): `31/31 passed`. `faf22492` moved
+`compose_brief` out of the send's `try` (a composing error had been labelled `send failed`); the DL-70
+plants were re-run on it with the same outcomes.
+
+**`make gate-ran`:** tried after the push, from this worktree at `1ec3effa`: **exit 2**,
+`FileNotFoundError: [Errno 2] No such file or directory: 'gh'`. **`gh` is not installed in this cloud
+session**, so the gate proof is the planner's, on the final SHA. Observed through the GitHub API for the
+full SHA `1ec3effaad82af8e9ff2372868f43e53ad26ee4c` (an observation, not the gate): CI `36216038414`
+success, Security Findings `36216038313` success, CodeQL `36216038393` success.
+
+**Not met / verified failing:**
+
+- **`uv.lock` was not regenerated by `uv lock`**: it needs `download.pytorch.org` (the forecaster extra's
+  torch index), which this environment's network policy refuses (403), and offline the torch metadata is
+  not cached. The one line a version-only bump changes (`version = "0.113.0"` → `"0.114.0"`, the shape of
+  S231's bump) was edited to match, and `uv sync --frozen` passes. **Not verified by `uv lock`**: run it
+  at merge (expected no-op).
+- **No live proof:** the preview on the live graph and the first real send are the planner's.
+- **`DSP-DEP-01` stays ⬜** (partial, named in its row).
 
 ---
 
 ## Return notes
 
-- *builder fills*
+- **Numbers to re-check at merge.** DL-231 was free on `main` at build time (S232 holds DL-228, S233
+  DL-229). DRIFT-076/077 follow S232's reserved DRIFT-075. Version **0.114.00** was the next MINOR at
+  build time; if S232 or S233 merges first with a MINOR, re-bump and re-lock. Rollups read 32 / 36.
+- **The closure test was blind to `from a.b import c`** (DL-218's class, one import form wider). With the
+  Dockerfile the old test accepted, every brief would have died at import: contained as a fault, the
+  feature silently dead, the build smoke green. The corrected reader demands nothing new on `main`, so
+  the running image was never exposed. The slim-image simulation that found it
+  (copy the `COPY` set, run a fire) could be a CI step; it is not added here.
+- **The spec's "about 48 lines" is 61**: row 6 (48, 31 PM) and row 13 reproduce exactly; the estimate
+  omitted that importing `agents.supervisor.domain.health` runs `agents/supervisor/__init__.py`, which
+  imports `SupervisorAgent` (10 files).
+- **Two findings recorded, not fixed:** DRIFT-076 (`SUP-OBS-02` says `open_incidents` derives from
+  `Flag`s; `compute_health` counts `Fault` incidents) and DRIFT-077 (`DSP-IDN-03`'s scope sentence and
+  the book's purpose line predate the brief). Neither book was in S234's amendment list.
+- **A coverage-gate quirk:** any clause-shaped ID written in a `laws.md` counts as that book's own
+  clause, so the dispatcher changelog cannot name the reporter's clause by ID (it read 37 clauses with
+  one missing row until reworded).
+- **Needs-you counts the brief's own faults.** A send that failed at 22:50 is a live `Fault`, so the
+  brief that succeeds at 23:00 says `1 open incident`: honest, and resolvable like any other.
+- **Planner's preview:** `PYTHONPATH=. python scripts/brief_preview.py --run-id sched-2026-09-25` from a
+  tree with the live `.env`. It prints the full brief (or the RED one for an unfinished run) with the
+  current time in the header, and builds no Telegram client. sched-2026-09-25 against sched-2026-09-24
+  should read −$24.40 (two rules, DL-224); sched-2026-09-24 should read `(no earlier figure)`.
+- **First real send:** the first fire after the Snapshot exists, most likely 22:50 UTC (08:50 AEST).
+  The job log line is unchanged (`placed …` or `skipped …`).
+- **The script tests drive `main` at 23:30** (outside the window), because `main` places with the real
+  file universe and the fixtures place one ticker.
+
+---
+
+## Planner review and merge — 2026-09-26
+
+**Merged.** `main` (with S233, `0.113.01`) merged into the branch as `76e226d5`: conflicts only in
+`pyproject.toml`/`uv.lock` (S234's MINOR stands, **`0.114.00`**) and the sprints README rows.
+**`uv lock --check` exits 0**, so the hand-edited lock the cloud session could not regenerate is what
+`uv lock` writes. DL-231 and DRIFT-076/077 are still free on `main`. `make ci` on `76e226d5`: exit 0,
+**3,294 passed, 6 skipped, 100.00 %**, contracts 4 kept / 0 broken. **`GATE PROVEN` for `76e226d5…`**
+(CI, CodeQL, Security Findings, attempt 1), read from the merge worktree at that SHA; `main`
+fast-forwarded to it and tagged `v0.114.00`.
+
+**Re-measured, not taken from the handback:** the module line counts (one file off by one line);
+the Dockerfile's 39 → 100 `COPY` lines; no file under `orchestration/packs/` changed, so the deploy is an
+image-only retag; a brief `Fault` is severity `error`, so it cannot trip execution's stage gate (only
+`critical` counts); a degraded run omits only the deliberators and the operator, so its reporter still
+writes a Snapshot and it gets a normal brief, not a RED one. 🎯 **The closure-test blind spot
+reproduces:** with `deployment_floor.py` dropped from the Dockerfile, `main`'s old reader passes and the
+new one fails naming that file.
+
+**Preview on the live graph** (step 3, `brief_preview.py` from the merge tree with the main checkout's
+`.env`, 15:52 AEST, read-only):
+
+```text
+🟢 PASS · sched-2026-09-25 · Sat 26 Sep 15:52
+Equity $101,976.32 (−$24.40 since sched-2026-09-24)
+vs SPY: -0.43 pts over 33 sessions at 21% invested
+Orders: none
+Filled: none
+Needs you: nothing
+```
+
+```text
+🟢 PASS · sched-2026-09-24 · Sat 26 Sep 15:52
+Equity $102,000.72 (no earlier figure)
+vs SPY: -0.28 pts over 32 sessions at 21% invested
+Orders: none
+Filled: BUY 16 BMY @ $61.40
+Needs you: nothing
+```
+
+Both as the handback predicted (−$24.40 compares two stored rules, DL-224); BMY's fill matches the
+broker's 2026-09-24 open fill.
+
+**Deployed `s234`, 2026-09-26 17:45 AEST** (operator: *"deploy"*). Build `36227337349` from `v0.114.00`, 15 / 15. Image-only retag (the three injected packs unchanged since `s228b`), all 16 apps with the job: the dashboard's currency check needs one tag. Verified on live Azure: 16 / 16 on `s234`, `Succeeded`, `Running`; scale blocks JSON-identical to the pre-retag snapshot; `dispatcher-cron` changed only its image. `DeployRecord deploy:2026-09-26T07:45:41…:s234:76e226d5…`. Rollback: `s228b`. **Owed:** step 5, on
+`sched-2026-09-28` (the first brief ~08:50 AEST Tue 29 Sep).

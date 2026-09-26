@@ -1,0 +1,10 @@
+line,date,kind,evidence
+MRNA,2026-08-19,event,"measured row 14: raw and adjusted agree, $62.96 to $174.38 on 199M shares"
+TGNA,2017-06-01,adjustment-error,"measured row 15: Alpaca applied the Cars.com distribution like a split"
+RTX,2020-04-03,distribution,"row 16 public record: UTX-Raytheon merger with Carrier/Otis distributions; raw not measured"
+FRC,2023-03-13,event,"row 16 public record: bank failure; raw not measured"
+SIVB,2023-03-09,event,"row 16 public record: bank failure; raw not measured"
+GL,2024-04-11,event,"row 16 public record: short report; raw not measured"
+PCG,2019-01-14,event,"row 16 public record: PG&E bankruptcy filing; raw not measured"
+ABMD,2022-11-01,event,"row 16 public record: J&J ABIOMED bid; raw not measured"
+APA,2020-03-09,event,"row 16 public record: March 2020 oil crash; raw not measured"

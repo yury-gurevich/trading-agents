@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.2b** (finishes E17.2)
 **Branch:** `sprint-233-a-replay-line-holds-one-issuers-prices`
-**Status:** SPEC
+**Status:** MERGED · tag `v0.113.01` · 2026-09-26 · planner's live build owed
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-227](../design-log.md) (S231's design and its 2026-09-26 amendment, which this sprint
@@ -407,15 +407,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *builder fills* | | | |
+| `scripts/replay_dataset_sources.py` / `daily_bars` | `CLAUDE.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md`; DL-227 + 2026-09-26 amendment; `scripts/replay_dataset.py` docstring licensing rule | No agent law book binds `scripts/`; conventions require cited tests and locked-law/drift discipline; `CLAUDE.md` binds module headers, 200-line limit, no secrets, redirected `make ci`; replay dataset docstring forbids committing Alpaca SIP data and protects the default `bars.csv.gz` request. | Yes: keep `asof` optional and absent by default; add only synthetic tests; do not touch `replay_dataset.py` / `load()`. |
+| `scripts/sp500_bars.py` and new chain/guard modules | DL-227 Bars; S233 test plan A1/A3-A8; `CLAUDE.md` size/header rules | Batch requests are a speed hint; every window must be verified/refetched singly; S233 supersedes the DL-227 amendment's proposed map `asof` column with the uniform rule `asof = window.last`; switches chain on raw closes and guards raise loudly. | Yes: keep `sp500_bars.py` below the 200-line block by moving switch chaining / move review into new modules. |
+| `scripts/sp500_membership.py` and `scripts/sp500_symbol_map.csv` | DL-227; R008; S233 measured table rows 5, 9, 10, 12 | Symbol map is the auditable boundary for rename/bar-source facts; rows must carry measured evidence; optional `action` is only for switch-guard explanation. | Yes: add optional `action` loading compatibly and do not add an `asof` column. |
+| `scripts/replay_universe.py`, cache, coverage, describe output | DL-227 Coverage and files; S233 scope items 5-7; `scripts/replay_dataset.py` licensing rule | Cache remains out-of-worktree; coverage is over SPY sessions; coverage payload must carry refetches and now switch evidence; `--describe` reports switch and known-move summaries. | Yes: pin SPY session fetch, keep closes, and add only metadata/guard summaries, not licensed prices. |
+| tests for S233 A1-A11 | `docs/laws/conventions.md` section 7; S233 test plan | Functional tests cite the sprint-plan row in their docstrings; fixtures are synthetic only. | Yes: plant A1/A3/A4 red first and keep all later guard proofs falsifiable. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *builder fills*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. This sprint changes scripts/tests/docs only; no agent, no `contracts/`, no image, and no new agent guarantee.
 
-**Contradictions found between a law and this spec:** *builder fills*
+**Contradictions found between a law and this spec:** None. DL-227's 2026-09-26 amendment listed an `asof` column as owed, but S233 is the later decision and explicitly rejects it in favor of the uniform `asof = window.last` rule; that is a design refinement, not a law/spec contradiction.
 
-**Laws found silent where a decision was needed:** *builder fills*
+**Laws found silent where a decision was needed:** No agent law book governs `scripts/`; the sprint spec explicitly makes its test plan the contract for this tooling-only work. No drift-register row was needed because no agent guarantee or law-owned behavior is added.
 
-**Clauses that were ⬜ and are now proven:** *builder fills*
+**Clauses that were ⬜ and are now proven:** None; this sprint proves S233 test-plan rows, not agent law clauses.
 
 ---
 
@@ -423,48 +427,78 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *builder fills* | | | |
+| A1 | `test_every_bar_window_fetch_is_pinned_to_window_last_day` | `tests/test_sp500_replay_identity.py` | PASS | `S233-A1` |
+| A2 | `test_daily_bars_start_default_is_backward_compatible` | `tests/test_replay_universe.py` | PASS | `S231-A14 / S233-A2` |
+| A3 | `test_reused_ticker_keeps_issuer_when_asof_is_pinned` | `tests/test_sp500_replay_identity.py` | PASS | `S233-A3` |
+| A4 | `test_switch_is_chained_on_raw_boundary_closes` | `tests/test_sp500_replay_identity.py` | PASS | `S233-A4` |
+| A5 | `test_chaining_runs_backwards_through_multiple_switches` | `tests/test_sp500_replay_identity.py` | PASS | `S233-A5` |
+| A6 | `test_hard_switch_requires_named_action` | `tests/test_sp500_replay_guards.py` | PASS | `S233-A6` |
+| A7 | `test_unlisted_big_same_source_move_fails_and_listed_passes` | `tests/test_sp500_replay_guards.py` | PASS | `S233-A7` |
+| A8 | `test_move_under_review_limit_is_not_reviewed` | `tests/test_sp500_replay_guards.py` | PASS | `S233-A8` |
+| A9 | `test_symbol_map_loads_optional_action_column` | `tests/test_sp500_replay_guards.py` | PASS | `S233-A9` |
+| A10 | `test_committed_dlph_row_ends_before_aptv_starts` | `tests/test_sp500_replay_guards.py` | PASS | `S233-A10` |
+| A11 | `test_universe_build_leaves_existing_replay_cache_untouched` | `tests/test_replay_universe.py` | PASS | `S231-A11 / S233-A11` |
 
-**Tests added beyond the plan:** *builder fills*
+**Tests added beyond the plan:** None.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *builder fills: BUILT*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *builder fills*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-233-a-replay-line-holds-one-issuers-prices`; `.env` absent (`Test-Path .env` -> `False`).
 
-**Result:** *builder fills*
+**Result:** Built on branch `sprint-233-a-replay-line-holds-one-issuers-prices`. No network/live Alpaca proof was run. All proofs are synthetic fixtures.
 
-**Files changed:** *builder fills*
+**Files changed:** `scripts/replay_dataset_sources.py`, `scripts/sp500_bars.py`, `scripts/sp500_membership.py`, `scripts/sp500_symbol_map.csv`, `scripts/replay_universe.py`, `scripts/replay_universe_cache.py`, new `scripts/sp500_chain.py`, `scripts/sp500_guards.py`, `scripts/sp500_replay_build.py`, `scripts/sp500_known_moves.csv`, tests, version files, and docs handback surfaces.
 
-**Design decisions:** *builder fills: DL-229*
+**Design decisions:** DL-229 recorded before implementation; re-check before handback: `docs/design-log.md` now leads with DL-229.
 
 **Proof — the red run first:**
 
 ```text
-builder fills
+uv run pytest tests/test_sp500_replay_identity.py -q --no-cov
+FFF                                                                      [100%]
+FAILED tests/test_sp500_replay_identity.py::test_every_bar_window_fetch_is_pinned_to_window_last_day
+E   KeyError: 'asof'
+FAILED tests/test_sp500_replay_identity.py::test_reused_ticker_keeps_issuer_when_asof_is_pinned
+E   assert [57.62, 57.62] == [18.0, 18.0]
+FAILED tests/test_sp500_replay_identity.py::test_switch_is_chained_on_raw_boundary_closes
+E   ModuleNotFoundError: No module named 'scripts.sp500_chain'
+3 failed in 3.47s
 ```
 
 **Proof — the green run:**
 
 ```text
-builder fills
+uv run pytest tests/test_sp500_replay_identity.py tests/test_sp500_replay_guards.py tests/test_sp500_bars.py tests/test_sp500_membership.py tests/test_replay_universe.py -q --no-cov
+........................                                                 [100%]
+
+$files = @(Get-ChildItem tests -Filter 'test_sp500*.py') + @(Get-ChildItem tests -Filter 'test_replay*.py'); uv run pytest @($files.FullName) -q --no-cov
+....................................................................     [100%]
+68 passed in 2.90s
 ```
 
-**Guards planted:** *builder fills*
+**Guards planted:** DL-70 plants all went red, then were restored:
 
-**Module line counts:** *builder fills*
+- Removed `asof` from the batch call: A1 failed with `KeyError: 'asof'`.
+- Chained on adjusted closes: A4 failed with obtained switch ratio `0.8` vs expected raw ratio `1.030589719331441`.
+- Dropped the switch `action` check: A6 failed with `Failed: DID NOT RAISE SystemExit`.
+- Dropped the known-moves missing-entry lookup: A7 failed with `Failed: DID NOT RAISE SystemExit`.
 
-**`make ci`:** *builder fills*
+**Module line counts:** `replay_dataset_sources.py` 84; `sp500_bars.py` 137; `sp500_membership.py` 154; `replay_universe.py` 168; `replay_universe_cache.py` 122; `sp500_chain.py` 117; `sp500_guards.py` 98; `sp500_replay_build.py` 59; `test_sp500_replay_identity.py` 105; `test_sp500_replay_guards.py` 96; `test_replay_universe.py` 120; `test_sp500_bars.py` 86.
+
+**`make ci`:** `make ci > $env:TEMP\s233-ci.txt 2>&1; $LASTEXITCODE | Set-Content $env:TEMP\s233-ci.exit; exit $LASTEXITCODE` -> exit `0`. Log: `C:\Users\yury_\AppData\Local\Temp\s233-ci.txt`. Evidence: `3248 passed, 6 skipped`; `TOTAL 18211 0 3968 0 100.00%`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`; dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`; detect-secrets passed; untracked secret scan passed.
 
 **`make gate-ran`:** *planner, after push*
 
-**Not met / verified failing:** *builder fills*
+**Not met / verified failing:** Not done: push, remote gate, `make gate-ran`, merge, deployment, and live replay build. Those are planner/post-merge steps; this worktree has no `.env` and no network/live proof by design.
 
 ---
 
 ## Return notes
 
-- *builder fills*
+- BUILT only. The branch is ready for planner push/gate/merge; `main` is unchanged by this handback.
+- No Alpaca SIP bars or cache files were committed; only synthetic fixture prices and evidence text were added.
+- Live cache identity and coverage proof remains the planner's post-merge step, including `bars.csv.gz` / `vix.csv.gz` SHA checks.

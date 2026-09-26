@@ -27,6 +27,7 @@ class SymbolMapRow:
     from_date: date
     to_date: date | None
     evidence: str
+    action: str = ""
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,7 @@ def load_symbol_map(path: Path = MAP_PATH) -> tuple[SymbolMapRow, ...]:
                 from_date=date.fromisoformat(row["from"]),
                 to_date=date.fromisoformat(row["to"]) if row["to"] else None,
                 evidence=row["evidence"],
+                action=row.get("action", ""),
             )
             for row in csv.DictReader(handle)
         )

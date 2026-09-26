@@ -53,8 +53,9 @@ def attempt_brief(
         facts = brief_facts(graph, run_id, nodes, now=now, timezone=timezone)
     except BriefDataError as exc:
         return f"compose failed ({exc})"  # names a field, never its value
+    text = compose_brief(facts)
     try:
-        message_id = telegram.send_brief(text=compose_brief(facts))
+        message_id = telegram.send_brief(text=text)
     except Exception as exc:  # the port's text may quote the brief: keep the type only
         return f"send failed ({type(exc).__name__})"
     if message_id is None:

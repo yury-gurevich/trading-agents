@@ -157,6 +157,13 @@ main worktree while the branch lives in another and it prints `GATE PROVEN` for 
 truthful, and about a different commit. Measured 2026-08-11, caught only because the printed SHA was
 read. Always check the SHA in the output against `git rev-parse HEAD`.
 
+☁️ **A claude.ai cloud session cannot finish two steps of this sequence** (measured 2026-09-25/26,
+[DL-228](docs/design-log.md)). `make gate-ran` shells out to `gh`, which the container lacks, and any
+`uv lock` that must re-resolve (a version bump, a dependency change) fails reaching
+`download.pytorch.org`, which the session's egress policy blocks. A cloud handback names both as
+**owed** and says exactly how `uv.lock` was touched; the planner runs both before merging. Run results
+read through the GitHub connector are an observation, never `GATE PROVEN`.
+
 ---
 
 ## Law conventions (when working on agent laws)

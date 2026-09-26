@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.2b** (finishes E17.2)
 **Branch:** `sprint-233-a-replay-line-holds-one-issuers-prices`
-**Status:** MERGED · tag `v0.113.01` · 2026-09-26 · planner's live build owed
+**Status:** MERGED · tag `v0.113.01` · 2026-09-26 · live build 🟩 99.99 %, identity checked
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-227](../design-log.md) (S231's design and its 2026-09-26 amendment, which this sprint
@@ -491,7 +491,7 @@ $files = @(Get-ChildItem tests -Filter 'test_sp500*.py') + @(Get-ChildItem tests
 
 **`make ci`:** `make ci > $env:TEMP\s233-ci.txt 2>&1; $LASTEXITCODE | Set-Content $env:TEMP\s233-ci.exit; exit $LASTEXITCODE` -> exit `0`. Log: `C:\Users\yury_\AppData\Local\Temp\s233-ci.txt`. Evidence: `3248 passed, 6 skipped`; `TOTAL 18211 0 3968 0 100.00%`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`; dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`; detect-secrets passed; untracked secret scan passed.
 
-**`make gate-ran`:** *planner, after push*
+**`make gate-ran`:** *planner, after push — see the planner review below*
 
 **Not met / verified failing:** Not done: push, remote gate, `make gate-ran`, merge, deployment, and live replay build. Those are planner/post-merge steps; this worktree has no `.env` and no network/live proof by design.
 
@@ -502,3 +502,43 @@ $files = @(Get-ChildItem tests -Filter 'test_sp500*.py') + @(Get-ChildItem tests
 - BUILT only. The branch is ready for planner push/gate/merge; `main` is unchanged by this handback.
 - No Alpaca SIP bars or cache files were committed; only synthetic fixture prices and evidence text were added.
 - Live cache identity and coverage proof remains the planner's post-merge step, including `bars.csv.gz` / `vix.csv.gz` SHA checks.
+
+---
+
+## Planner review and live build — 2026-09-26
+
+**Review of the handback (`d81c1a2e`).** Scope held: `scripts/`, `tests/`, docs; no agent, contract,
+image, `load()` or `bars.csv.gz` change; no Alpaca data committed; PATCH correct. No S231 test was
+removed (A14's docstring gained `S233-A2`). 🩹 **Every module line count in the Closeout reads 20–30
+low** (for example `sp500_bars.py` "137" is 164, `replay_universe.py` "168" was 191); the size gate
+counts total lines. All stay under 200. DL-229 left the second half of design decision 4 (a listed move
+that no longer fires) unanswered; the amendment answers it.
+
+**First live build — exit 1.** On the merge `5634ae4f` (13:04 AEST), the move guard named 8 unlisted
+moves. Six were a line's exit close against its re-entry close years later, because the guard paired
+rows by line and symbol only (DD, FSLR, ILMN, PCG 2022, Q, SNDK). **Fixed in `3450a9df`:** the guard
+takes the membership episodes and compares a pair only inside one; with that check planted out, the
+new test fails naming `FSLR FSLR 2022-12-19`, the live build's own line. The other two are Alpaca
+adjustment errors, measured raw vs adjusted (APTV 2017-12-05, WRK 2016-05-16), now listed. Every seeded
+move was re-measured: RTX is an `adjustment-error` (raw −41.9 %, adjusted −71.0 %), and APA (−46.8
+points vs SPY, under the limit) is removed. Detail in [DL-229](../design-log.md)'s amendment.
+`make ci` on `3450a9df`: exit 0, **3,249 passed, 6 skipped, 100.00 %**.
+
+**Second live build — exit 0.** `replay_universe.py build --end 2026-09-24 --from-snapshot` from the
+merge worktree with the main checkout's `.env`, 14:10–14:22 AEST:
+
+| Pass condition | Result |
+| --- | --- |
+| coverage ≥ 99.9 %, 0 unreconciled | **99.993 %** (1,359,653 / 1,359,748), 0 unreconciled; 43 shortfalls, all *ends early* |
+| CTRA, DD, PSKY, SW read their own issuers | CTRA matches Cabot (`COG` pinned) on 725 of 727 days; DD matches E.I. du Pont raw except 4 ex-dividend days; PSKY's Paramount years close 9.25–34.75 (was up to 110,500); SW is WestRock (its early ~$190 level is Alpaca's Ingevity adjustment error, listed) |
+| identity against the old cache | all 732 episodes diffed on daily returns against S231's cache, copied aside first: **14 differ, each a named fix** (CTRA, DD, PSKY issuers; LIN, VTRS switch days; APTV's listed error; 8 lines only gain sessions: AA, ANDV, BBWI, FTI, SNDK, STI, TE, UAA) |
+| every switch chained and recorded; UAA, BBWI, SW carry an `action`; no other above the limit | 12 switches, 3 with an action; the largest other is PARA → PSKY at +6.4 % |
+| every seeded known move re-measured | 10 reviewed, 10 listed (4 `adjustment-error`, 6 `event`) |
+| `bars.csv.gz` / `vix.csv.gz` unchanged; `git status` clean | SHA-256 `12374e3e…` and `e5d4fe62…` before and after; no cache file in the tree |
+
+🪤 **The DL-227 probe as written is tautological here.** It re-fetches each episode pinned `asof` its
+last day, which is how this build fetches, so it would agree by construction. The diff against the
+old cache plus the four independent spot checks above replace it.
+
+**Verdict: E17.2b is done; E17.3 may read the cache.** Named residue: the 43 *ends early* shortfalls,
+and the 4 `adjustment-error` days, which E17.3's return engine must treat explicitly.

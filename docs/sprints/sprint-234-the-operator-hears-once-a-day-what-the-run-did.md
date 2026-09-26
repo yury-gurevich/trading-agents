@@ -584,17 +584,23 @@ checkout`; every restore re-ran green, and `git status` was clean after the last
 `tests/test_dispatch_scheduled_run.py` 143 (was 191; 198 before its reader moved to
 `tests/image_closure.py`, 68). ⚠ = over the 150 warning, under the 200 block.
 
-**`make ci`:** `make ci > ci_b38c61f.txt 2>&1 ; echo $?` in the worktree at **`b38c61f7`** (the last
+**`make ci`:** `make ci > ci_fix.txt 2>&1 ; echo $?` in the worktree at **`faf22492`** (the last
 commit that changes anything but this document) → **exit 0**, 1,788 lines, every one of the 15 steps
 run: ruff check clean; `1310 files already formatted`; mypy `Success: no issues found in 1037 source
 files`; `Contracts: 4 kept, 0 broken.`; module size warnings only; module header, law coverage,
 PARAM/settings sync, sprint status, markdown links and version scheme silent (pass); pytest
 **`3284 passed, 6 skipped`**, `Required test coverage of 100.0% reached. Total coverage: 100.00%`;
 `No unaccepted vulnerabilities; 1 accepted advisory re-checked`; `Detect secrets ... Passed`;
-`detect-secrets (untracked): no untracked files to scan`. `scripts/gate_selftest.py` (run by CI, not by
-`make ci`): `31/31 passed`.
+`detect-secrets (untracked): no untracked files to scan`. The same result at `b38c61f7` and `1ec3effa`
+before it. `scripts/gate_selftest.py` (run by CI, not by `make ci`): `31/31 passed`. `faf22492` moved
+`compose_brief` out of the send's `try` (a composing error had been labelled `send failed`); the DL-70
+plants were re-run on it with the same outcomes.
 
-**`make gate-ran`:** *planner, after push*
+**`make gate-ran`:** tried after the push, from this worktree at `1ec3effa`: **exit 2**,
+`FileNotFoundError: [Errno 2] No such file or directory: 'gh'`. **`gh` is not installed in this cloud
+session**, so the gate proof is the planner's, on the final SHA. Observed through the GitHub API for the
+full SHA `1ec3effaad82af8e9ff2372868f43e53ad26ee4c` (an observation, not the gate): CI `36216038414`
+success, Security Findings `36216038313` success, CodeQL `36216038393` success.
 
 **Not met / verified failing:**
 

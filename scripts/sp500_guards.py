@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from scripts.sp500_bars import BarRow
     from scripts.sp500_chain import SwitchRecord
+    from scripts.sp500_membership import Episode
 
 SWITCH_MOVE_LIMIT = 0.10  # Row 12: largest ordinary measured switch was +6.4%.
 MOVE_REVIEW_LIMIT = 0.50  # Row 13: 10 measured same-source moves need review.
@@ -79,12 +80,15 @@ def review_same_source_moves(
     rows: tuple[BarRow, ...],
     spy_closes: dict[date, float],
     known_moves: tuple[KnownMove, ...],
+    episodes: tuple[Episode, ...] | list[Episode],
 ) -> tuple[MoveReview, ...]:
     known = {(row.line, row.date): row for row in known_moves}
     reviews: list[MoveReview] = []
     missing: list[str] = []
     for left, right in pairwise(rows):
         if left.line != right.line or left.symbol != right.symbol:
+            continue
+        if not _same_episode(episodes, left.line, left.date, right.date):
             continue
         stock_ratio = right.close / left.close
         spy_ratio = spy_closes[right.date] / spy_closes[left.date]
@@ -109,6 +113,16 @@ def review_same_source_moves(
         detail = ", ".join(missing)
         raise SystemExit(f"same-source move lacks known-move entry: {detail}")
     return tuple(reviews)
+
+
+def _same_episode(
+    episodes: tuple[Episode, ...] | list[Episode], line: str, first: date, last: date
+) -> bool:
+    # Live build 2026-09-26: a line's exit close and its re-entry close years later
+    # (FSLR, PCG, ILMN) or another issuer's (SNDK, Q) read as a one-day move.
+    return any(
+        row.line == line and row.first <= first and last <= row.last for row in episodes
+    )
 
 
 def known_move_counts(moves: tuple[KnownMove, ...]) -> dict[str, int]:

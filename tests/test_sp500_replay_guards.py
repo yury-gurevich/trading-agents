@@ -18,6 +18,7 @@ from scripts.sp500_guards import (
     require_switch_actions,
     review_same_source_moves,
 )
+from scripts.sp500_membership import Episode
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,14 +65,16 @@ def test_unlisted_big_same_source_move_fails_and_listed_passes() -> None:
         BarRow("SW", "SW", second, 15.0, 15.0, 15.0, 15.0),
     )
     spy = {first: 100.0, second: 101.0}
+    episodes = _one_episode("SW", first, second)
 
     with pytest.raises(SystemExit, match="SW SW 2016-05-16"):
-        review_same_source_moves(rows, spy, ())
+        review_same_source_moves(rows, spy, (), episodes)
 
     reviewed = review_same_source_moves(
         rows,
         spy,
         (KnownMove("SW", second, "adjustment-error", "synthetic guard proof"),),
+        episodes,
     )
 
     assert [(row.line, row.date, row.kind) for row in reviewed] == [
@@ -87,7 +90,27 @@ def test_move_under_review_limit_is_not_reviewed() -> None:
         BarRow("CALM", "CALM", second, 52.0, 52.0, 52.0, 52.0),
     )
 
-    assert review_same_source_moves(rows, {first: 100.0, second: 101.0}, ()) == ()
+    spy = {first: 100.0, second: 101.0}
+    episodes = _one_episode("CALM", first, second)
+
+    assert review_same_source_moves(rows, spy, (), episodes) == ()
+
+
+def test_move_across_an_episode_gap_is_not_a_move() -> None:
+    """S233-A7: only sessions inside one episode are compared (FSLR, 2026-09-26)."""
+    out, entry, after = date(2017, 3, 17), date(2022, 12, 19), date(2022, 12, 20)
+    rows = (
+        BarRow("FSLR", "FSLR", out, 30.0, 30.0, 30.0, 30.0),
+        BarRow("FSLR", "FSLR", entry, 150.0, 150.0, 150.0, 150.0),
+        BarRow("FSLR", "FSLR", after, 20.0, 20.0, 20.0, 20.0),
+    )
+    spy = {out: 100.0, entry: 100.0, after: 100.0}
+    episodes = (
+        Episode("FSLR", "FSLR", date(2016, 1, 4), out),
+        Episode("FSLR", "FSLR", entry, date(2026, 9, 24)),
+    )
+    with pytest.raises(SystemExit, match=r"same-source move .*: FSLR FSLR 2022-12-20$"):
+        review_same_source_moves(rows, spy, (), episodes)
 
 
 def test_symbol_map_loads_optional_action_column(tmp_path: Path) -> None:
@@ -118,3 +141,7 @@ def test_committed_dlph_row_ends_before_aptv_starts() -> None:
     rows = {(row.kind, row.line, row.symbol): row for row in load_symbol_map()}
 
     assert rows[("bars", "APTV", "DLPH")].to_date == date(2017, 11, 16)
+
+
+def _one_episode(line: str, first: date, last: date) -> tuple[Episode, ...]:
+    return (Episode(line, line, first, last),)

@@ -89,7 +89,9 @@ def build_universe(
     )
     require_switch_actions(chained.switches)
     known_moves = load_known_moves()
-    reviewed_moves = review_same_source_moves(chained.rows, spy_closes, known_moves)
+    reviewed_moves = review_same_source_moves(
+        chained.rows, spy_closes, known_moves, membership.episodes
+    )
     report = coverage_report(membership.episodes, chained.rows, sessions)
     require_floor(report)
     coverage = coverage_payload(

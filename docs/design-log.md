@@ -10,6 +10,107 @@ and is marked CLOSED here.
 
 ---
 
+## DL-228 · S232 moves the substrate's handshake vocabulary into the kernel and the served roster into pack data · status: DECIDED (S232, 2026-09-26)
+
+**Question.** ADR-0012 declared the substrate/pack wall *de jure* in June 2026 and named two leaks.
+Measured 2026-09-25: one leak is already closed (DL-12, S84–S86), one is real and small (10 import
+lines, `agents.master* → contracts.master`), and there is a third the ADR never named (9 pack
+agent-type string literals in `kernel/serve_transport.py`). Where does the substrate's handshake
+vocabulary live, and how does the served roster stop being a kernel constant, without moving anything
+that is genuinely pack content?
+
+**Decision 1 — the substrate vocabulary moves into the kernel.** Confirmed by the operator at the
+planner review (2026-09-26); technical calls are delegated to the planner. The kernel already hosts
+`AgentContract`, `Capability`, `AgentFault` and `Envelope` (substrate vocabulary with no trading
+content), so `_Frozen`, `Provenance`, `Explanation`, `AgentState`, `EHLOMessage`, `ACTIVATEMessage`,
+`DRAINMessage` and the master `CONTRACT` join them there. **Rejected:** a `contracts/platform/`
+subpackage (the substrate would still live inside the pack's package, and the master image would
+still need a partial `COPY`); a new top-level `substrate/` package (a sixth root package and a `COPY`
+line in 15 Dockerfiles, for vocabulary the kernel can already hold); leaving the vocabulary in
+`contracts/` and moving the *trading* modules out instead (rewrites 829 statements in 467 files and
+touches all 15 Dockerfiles, only to relocate the side that is not moving).
+
+**Decision 2 — module names.** `kernel/payload.py` (new: `_Frozen`, `Provenance`, `Explanation`,
+moved verbatim from `contracts/common.py`, docstrings included) and `kernel/handshake.py` (new, via
+`git mv contracts/master.py`: `AgentState`, `EHLOMessage`, `ACTIVATEMessage`, `DRAINMessage`, the
+master `CONTRACT`). No reviewer rename requested.
+
+**Decision 3 — the re-export.** One base class, not two. `contracts/common.py` imports `_Frozen`,
+`Provenance`, `Explanation` from `kernel.payload` and re-exports them with explicit `X as X` aliases
+(mypy strict disables implicit re-export). `_Frozen` keeps its private name at the new path so `D101`
+does not require a docstring. **Rejected:** rewriting all 134 import statements in 133 files to import
+from `kernel.payload` directly — 40 of them would split into two import statements (one substrate, one
+trading), and the deliberator's context modules are among them, which would move `PROMPT_RECIPE_HASH`
+(out of scope, and a live-audit-breaking side effect for zero benefit). **Rejected:** keeping a second,
+separately-defined `_Frozen` in `contracts/common.py` — two frozen bases would make
+`issubclass(x, _Frozen)` answer differently depending on which module a test imports from (the trap
+this sprint's spec names explicitly).
+
+**Decision 4 — the wall's contract text.** `.importlinter` gains one new forbidden contract,
+`substrate-imports-no-pack` (`source_modules`: `kernel`, `agents.master`; `forbidden_modules`:
+`contracts`, the 13 other `agents.*` packages, `orchestration`, `surfaces`), alongside the existing
+kernel contract, which stays unchanged — it costs nothing to keep and already proves a related but
+narrower property. `agents-are-islands` widens from 12 to 14 modules, adding `agents.deliberator` and
+`agents.master` (measured: 0 violations on today's tree with both added).
+
+**Decision 5 — the roster file and its loader.** `orchestration/packs/trading_served_agents.json`
+holds `served_agent_types`, `deliberator_peer_agent_types`, `deliberator_manager_type`,
+`deliberator_reply_agent_types`, and `image_dir_by_agent_type` (an explicit map, not a naming
+convention — the pack states which directory serves each type, so no loader logic has to guess that
+the three deliberator roles share one image). A new loader, `scripts/served_agent_roster.py`, reads
+this JSON **by path** (`parse_served_agent_roster(text)` / `load_served_agent_roster(path)`, mirroring
+`agents/master/grants.py`'s `parse_grant_policy`/`load_grant_policy` pattern) and exposes the same
+constants `kernel/serve_transport.py` used to export, so `sb_sas_plan.py`, `servicebus_prepare_routes.py`
+and `tests/test_served_agent_images.py` swap one import line for another. `kernel/serve_transport.py`
+keeps `request_topic`, `reply_topic` and `consumer_from_env` — those three are genuinely generic string
+formatting and transport selection, not roster data. **How two packs' rosters would combine (not
+built):** a second pack's roster would be its own JSON file; a multi-pack loader would take a list of
+paths and merge their `agent_type` keys with a collision check (two packs claiming the same served
+type would be a build-time error, not a silent override) — deferred until a second served pack exists.
+**Rejected:** a Python module in `orchestration/packs/` (the deploy script would then need to import
+pack Python under `uv run --extra azure`, and `orchestration/packs/__init__.py` imports
+`us_equities_sp500` — DL-218's failure shape); leaving the roster for E20.3 to find (ADR-0012 already
+names "the agent roster" as a leak shape, so leaving a known instance in place would make E20.3's count
+of substrate edits dishonest).
+
+**Decision 6 — the amended master wording.** `MST-NEV-01`'s subject becomes "the grant policy the pack
+supplies" (its guarantee — never activate an unknown type — is unchanged; `DEFAULT_GRANTS` was deleted
+in S84, three months before this sprint). `MST-SEC-03` is rewritten to assert only what code can
+falsify: *"the pack's grant policy is the only privilege table, the master image ships none, and
+master reads it once, when it starts."* It drops the *"cannot be changed by runtime config"* claim
+entirely — the same book's own `PARAM` table marks `grant_policy_b64`/`grant_policy_path` `Tunable
+YES`, so that claim was already false and nothing enforces it (DRIFT-058's lesson: a clause whose
+check cannot fail proves only that the oracle ran, never fails). `MST-DEP-03`'s subject becomes "the
+pack data injected at start-up (grant policy, secret map, credential tests) plus the `AgentDefinition`
+graph nodes" — the guarantee (no dependency on trading-agent code) is unchanged; only the store the
+knowledge lives in is named accurately (it names three pack-data sources now, not one deleted
+constant). `MST-TYP-01` names `kernel/handshake.py` in place of `contracts/master.py`. New
+**`MST-DEP-05`**: master imports only the substrate (`kernel` and its own package) and never a pack
+module — the guarantee this sprint actually adds, proven by A1 (a fresh interpreter's import closure
+holds no `contracts*`, no other `agents.*`, no `orchestration*`, no `surfaces*`).
+
+**Decision 7 — the pack-neutral `CONTRACT` text.** The mission changes "every trading-system agent
+container" to "every pack agent container." The `never` list's *"perform trading logic or place
+orders"* becomes *"perform any pack agent's business logic or act on its behalf"* — the same
+prohibition (master does no domain work), stated without naming a domain. Nothing else in `CONTRACT`
+changes; `name="master"` and `version="0.1.0"` are the master's own identity, not trading vocabulary.
+
+**Ruled out, sprint-wide.** A gate step that checks every 🧱 test-plan row names a contract that lists
+its agent — rejected under the process freeze (next-leg-plan §5); the two known rows (`MST-NEV-05`,
+`MST-DEP-03`) are corrected by hand this sprint, and A2 is the proof they are not vacuous. Declaring
+the wall with module lists alone and moving no code — rejected because `contracts/common.py` mixes
+both sides name-by-name and import-linter reasons about whole modules. Moving `Window` into the kernel
+alongside the other three — rejected; it is a date-range DTO the substrate never uses (ADR-0012 §3, no
+speculative generality). Moving `kernel/deliberation_prompts.py` or `kernel/market_pack.py` (both hold
+trading content already inside the kernel) — rejected for this sprint: the former is hashed into every
+`LLMCall`'s prompt-recipe digest (`kernel/prompt_recipe.py` hashes `__name__`), so moving it would
+break comparability with every already-recorded debate; the latter is read only by the trading
+dashboard. Both are recorded here as known residue, not silently left; a pack that is not a market
+registers nothing against `market_pack.py`, and no second pack deliberates yet, so neither leak has a
+consumer today that this sprint's DL-70 guards would need to defend against.
+
+---
+
 ## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)
 
 **Question.** How should the E17.2 builder represent Wikipedia membership, map ticker identities, verify

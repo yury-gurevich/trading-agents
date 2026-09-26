@@ -1,10 +1,15 @@
-kind,line,symbol,from,to,evidence
-rename,CPAY,FLT,2024-03-25,,alpaca name_change FLT->CPAY 2024-03-25
-rename,EG,RE,2023-07-10,,alpaca name_change RE->EG 2023-07-10
-rename,ECHO,SATS,2026-06-24,,alpaca name_change SATS->ECHO 2026-06-24
-bars,PSKY,CBS,2016-01-04,2019-12-04,alpaca CBS bars end 2019-12-04; VIAC bars start 2019-12-05
-bars,PSKY,VIAC,2019-12-05,2022-02-16,alpaca name_change VIAC->PARA 2022-02-17
-bars,PSKY,PARA,2022-02-17,2025-08-06,alpaca PSKY bars start 2025-08-07
-bars,VTRS,MYL,2016-01-04,2020-11-16,alpaca MYL bars end 2020-11-16; name_change VTRSV->VTRS 2020-11-17
-bars,LIN,PX,2016-01-04,2018-10-30,alpaca LIN bars start 2018-10-31; PX bars after that are another issuer
-bars,APTV,DLPH,2016-01-04,2017-12-04,alpaca DLPH single request 2016-01-04..2017-12-29; switch date ASSUMED (Aptiv rename)
+kind,line,symbol,from,to,evidence,action
+rename,CPAY,FLT,2024-03-25,,alpaca name_change FLT->CPAY 2024-03-25,
+rename,EG,RE,2023-07-10,,alpaca name_change RE->EG 2023-07-10,
+rename,ECHO,SATS,2026-06-24,,alpaca name_change SATS->ECHO 2026-06-24,
+bars,PSKY,CBS,2016-01-04,2019-12-04,alpaca CBS bars end 2019-12-04; VIAC bars start 2019-12-05,
+bars,PSKY,VIAC,2019-12-05,2022-02-16,alpaca name_change VIAC->PARA 2022-02-17,
+bars,PSKY,PARA,2022-02-17,2025-08-06,alpaca PSKY bars start 2025-08-07,
+bars,VTRS,MYL,2016-01-04,2020-11-16,alpaca MYL bars end 2020-11-16; name_change VTRSV->VTRS 2020-11-17,
+bars,LIN,PX,2016-01-04,2018-10-30,alpaca LIN bars start 2018-10-31; PX bars after that are another issuer,
+bars,APTV,DLPH,2016-01-04,2017-11-16,measured row 10: pinned asof 2017-11-16 returns Delphi Automotive before APTV starts 2017-11-17,
+bars,BBWI,LB,2016-01-04,2021-08-02,measured row 9: LB pinned asof 2021-08-02 returns 1405 missing BBWI sessions,Victoria's Secret spin
+bars,UAA,UA,2016-01-04,2016-04-07,measured row 9: UA pinned asof 2016-04-07 returns 66 missing UAA sessions,class C share dividend
+bars,AA,AA,2016-01-04,2016-10-05,measured row 9: AA pinned asof 2016-10-05 returns 192 old Alcoa sessions before the 2016-10-06 reverse split,
+bars,FTI,FTI,2016-01-04,2017-01-13,measured row 9: FTI pinned asof 2017-01-13 returns 261 FMC Technologies sessions before the Technip merger,
+bars,SW,WRK,2016-01-04,2024-07-05,measured row 5: WRK pinned asof 2024-07-05 returns 2140 WestRock sessions,WestRock-Smurfit deal cash component

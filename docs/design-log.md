@@ -136,6 +136,76 @@ orchestration layer.
 **Accepted risk.** Telegram's servers see the amounts. The account is a paper account, and the operator
 accepted the channel. A live account would reopen this question.
 
+## DL-229 - S233 pins replay bar windows by window end and chains source switches on raw closes - status: DECIDED (S233, 2026-09-26)
+
+**Question.** How should E17.2b repair S231's replay cache so each line holds one issuer's prices when
+Alpaca's default symbol lineage can resolve a historical ticker to today's issuer, and when a line
+changes source across a corporate action?
+
+**Decision.** Every replay bar window is fetched with Alpaca `asof` equal to that window's last day.
+The default `daily_bars(tickers, end)` request remains unchanged for `bars.csv.gz`; only callers that
+pass `asof` send it. Source switches are chained into the stored cache on unadjusted boundary closes:
+the latest window remains at its fetched level, and earlier windows are rescaled backwards so each
+switch day's close-to-close ratio equals the raw traded ratio. The coverage payload records every
+switch with symbols, dates, raw move, SPY-relative move, and any map-row `action`.
+
+**Map and guard ownership.** The committed symbol map remains the evidence boundary: add the measured
+BBWI/LB, UAA/UA, AA/AA, FTI/FTI, and SW/WRK rows, correct DLPH's end date, and add an optional
+`action` column. A `bars` row owns the switches at its boundaries; a `rename` row owns the switch on
+its `from` date. If two rows can claim one switch, prefer the row that supplies the earlier source,
+because that is the row whose action justifies the cross-source price move; duplicate ownership is a
+build error rather than an implicit tie-break. Switch raw moves more than 10 percentage points away
+from SPY require an `action`. Same-source single-day moves more than 50 percentage points away from
+SPY require a `(line, date)` entry in `sp500_known_moves.csv`, where `date` is the move's second
+session.
+
+**Implementation shape.** Chain factors are applied to the stored OHLC rows, with the switch records
+kept as the audit trail, so cache readers do not need to re-chain. Raw boundary closes are fetched via
+the same `daily_bars` boundary with `adjustment="raw"` and `asof` pinned to each side's own window end.
+Chaining and guards live in new `scripts/` modules so the S231 files near the 200-line block do not
+grow past it.
+
+**Ruled out.** A map-row `asof` column was rejected because every measured case is reproduced by the
+uniform `asof = window.last` rule. Single-symbol fetching for the whole build was rejected because the
+pinned batch probe measured equivalent returns and batching keeps the live build tractable. Chaining
+on adjusted closes was rejected because adjustment bases created false switch moves. Storing factors
+beside unchained bars was rejected because it would make every cache reader responsible for replaying
+the chain. Silently accepting unowned hard switches or unlisted large moves was rejected because that
+is the same shape as S231's false coverage: the dataset would look complete while identity remained
+unproven.
+
+**Amendment 2026-09-26 — the planner's live build (status unchanged: DECIDED).** The first build on the
+merge (`5634ae4f`, 13:04 AEST) exited 1 on the move guard with 8 unlisted moves. Measured, raw vs
+adjusted, each pinned `asof` its window's last day:
+
+- **6 were not moves.** `review_same_source_moves` paired rows by line and symbol, so a line's exit close
+  met its re-entry close years later: DD 2017-08-31 → 2019-06-03, FSLR 2017-03-17 → 2022-12-19, ILMN
+  2024-06-21 → 2026-09-21, PCG 2019-01-17 → 2022-10-03, and two where the ticker names another company
+  at re-entry (public record, not measured): Q (Quintiles IMS 2017 → Qnity 2025) and SNDK (the SanDisk
+  Western Digital bought in 2016 → the one it spun off in 2025). The guard now takes the membership
+  episodes and compares a pair only inside one (`3450a9df`); with the episode check planted out, the
+  new FSLR-shaped test fails naming `FSLR FSLR 2022-12-19`, the live build's own line.
+- **2 are Alpaca adjustment errors**, TGNA's shape: APTV 2017-12-05 raw −14.9 %, adjusted −71.6 % (the
+  Delphi Technologies spin), and WRK 2016-05-16 raw −6.9 %, adjusted −84.5 % (the Ingevity spin). Both
+  listed as `adjustment-error`.
+- 🩹 **The spec's row 5 was wrong.** SW's ~$190 bars before 2016-05-16 were WestRock's own, inflated
+  4.4× by that adjustment error: S231's SW series and the new WRK-sourced one hold identical returns
+  over 2016–2024 (0 days differ). The WRK row stays (it names the source and owns the deal switch,
+  raw −10.3 %), and SW 2016-05-16 is listed, against the spec's *do not list SW* trap, whose premise
+  this measurement removes.
+- **The seeded moves re-measured:** MRNA, FRC, SIVB, GL, PCG and ABMD are events (raw equals
+  adjusted). **RTX is an `adjustment-error`**, not a `distribution` (raw −41.9 %, adjusted −71.0 %).
+  **APA 2020-03-09 reads −46.8 points** vs SPY; this guard measures percentage points away from SPY
+  (the decision above), where the spec's row 13 took the ratio over SPY's (−50.3 %). The points rule
+  stands, and APA's row is removed: a listed move that never fires is a row nobody reviews.
+- **A listed move that no longer fires** (decision 4's second half, unanswered above) is not a build
+  error; `--describe` prints the reviewed count beside the file's counts, which agree today (10 and 10).
+- 🪤 **Found, measured harmless:** the chain splits a line where the **symbol** changes, so a map row
+  whose symbol equals its successor's (AA, FTI) is never chained. Both boundaries were measured: AA
+  2016-10-05 → 06 stores +1.9 % (the raw ×3.06 is old Alcoa's 1-for-3 reverse split, adjusted away),
+  and FTI 2017-01-13 → 17 stores −1.39 %, equal to raw. A future same-symbol row needs the chain to split
+  on windows, not symbols.
+
 ## DL-227 - S231 stores point-in-time membership as line episodes with verified bar windows - status: DECIDED (S231, 2026-09-25)
 
 **Question.** How should the E17.2 builder represent Wikipedia membership, map ticker identities, verify

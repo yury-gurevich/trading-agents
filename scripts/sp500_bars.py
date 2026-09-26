@@ -97,17 +97,18 @@ def fetch_bars_for_windows(
         group = tuple(group_iter)
         for chunk in _chunks(group, batch_size):
             symbols = sorted({window.symbol for window in chunk})
-            batch = daily_bars(
-                symbols, end=_first_end(chunk), start=_first_start(chunk)
-            )
+            end = _first_end(chunk)
+            batch = daily_bars(symbols, end=end, start=_first_start(chunk), asof=end)
             for window in chunk:
                 window_rows = _rows_for(batch, window)
                 if _is_short(window_rows, window, sessions):
                     refetched.append(window)
+                    asof = window.last.isoformat()
                     single = daily_bars(
                         [window.symbol],
-                        end=window.last.isoformat(),
+                        end=asof,
                         start=window.first.isoformat(),
+                        asof=asof,
                     )
                     window_rows = _rows_for(single, window)
                 rows.extend(window_rows)

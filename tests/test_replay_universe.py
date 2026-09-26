@@ -98,10 +98,10 @@ def test_from_snapshot_rebuilds_without_wikipedia_fetch(tmp_path: Path) -> None:
 def test_daily_bars_start_default_is_backward_compatible(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """S231-A14: daily_bars defaults start to START and honors explicit start."""
+    """S231-A14 / S233-A2: defaults stay unchanged; explicit asof/raw are sent."""
     from scripts import replay_dataset_sources as sources
 
-    starts: list[str] = []
+    params: list[dict[str, object]] = []
 
     class Response:
         def raise_for_status(self) -> None:
@@ -112,7 +112,7 @@ def test_daily_bars_start_default_is_backward_compatible(
 
     def fake_get(*args: object, **kwargs: object) -> Response:
         del args
-        starts.append(kwargs["params"]["start"])  # type: ignore[index]
+        params.append(dict(kwargs["params"]))  # type: ignore[arg-type]
         return Response()
 
     monkeypatch.setenv("ALPACA_API_KEY", "key")
@@ -120,15 +120,26 @@ def test_daily_bars_start_default_is_backward_compatible(
     monkeypatch.setattr("scripts.replay_dataset_sources.requests.get", fake_get)
 
     sources.daily_bars(["AAA"], "2020-01-02")
-    sources.daily_bars(["AAA"], "2020-01-02", start="2020-01-01")
+    sources.daily_bars(
+        ["AAA"],
+        "2020-01-02",
+        start="2020-01-01",
+        asof="2020-01-02",
+        adjustment="raw",
+    )
 
-    assert starts == [sources.START, "2020-01-01"]
+    assert params[0]["start"] == sources.START
+    assert params[0]["adjustment"] == "all"
+    assert "asof" not in params[0]
+    assert params[1]["start"] == "2020-01-01"
+    assert params[1]["adjustment"] == "raw"
+    assert params[1]["asof"] == "2020-01-02"
 
 
 def _bars(
-    symbols: list[str], *, end: str, start: str
+    symbols: list[str], *, end: str, start: str, **kwargs: object
 ) -> dict[str, list[tuple[str, float, float, float, float]]]:
-    del end, start
+    del end, start, kwargs
     sessions = (date(2020, 1, 1), date(2020, 1, 2))
     return {symbol: [_bar(day) for day in sessions] for symbol in symbols}
 

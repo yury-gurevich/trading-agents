@@ -7,64 +7,16 @@ External I/O: none; Telegram is injected.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from kernel import InMemoryGraphStore
-from orchestration.tests.daily_brief_fixtures import (
-    PREVIOUS_DAY,
-    at,
-    fire,
-    metrics_with,
-    performance,
-    seed_run,
+from orchestration.tests.daily_brief_fixtures import at, fire, seed_run
+from orchestration.tests.daily_brief_scenarios import (
+    A1_TEXT,
+    amount_free,
+    fault_text,
+    run_request,
+    seed_pair,
 )
 from orchestration.tests.scheduled_dispatch_human_helpers import FakeTelegram, preflight
-
-if TYPE_CHECKING:
-    from kernel import Node
-
-_RUN_KEY = "run-request:sched-2026-09-25"
-_A1_TEXT = "\n".join(
-    (
-        "\U0001f7e2 PASS · sched-2026-09-25 · Sat 26 Sep 08:50",
-        "Equity $101,976.32 (−$24.40 since sched-2026-09-24)",
-        "vs SPY: -0.43 pts over 33 sessions at 21% invested",
-        "Orders: none",
-        "Filled: none",
-        "Needs you: nothing",
-    )
-)
-# Every textual form the two stored figures could take outside the message.
-AMOUNTS = ("$", "101,976", "101976", "10197632", "24.40", "10200072", "102,000")
-
-
-def seed_pair(graph: InMemoryGraphStore, *, briefed: bool = False) -> None:
-    """sched-2026-09-24 (briefed, 10,200,072) and sched-2026-09-25 (10,197,632)."""
-    seed_run(
-        graph,
-        PREVIOUS_DAY,
-        pm_created="2026-09-24T22:40:00+00:00",
-        metrics=metrics_with(performance(10_200_072.0)),
-        briefed=True,
-    )
-    seed_run(graph, pm_created="2026-09-25T22:41:00+00:00", briefed=briefed)
-    preflight(graph, passed=True, checked_at=at(22, 45))
-
-
-def run_request(graph: InMemoryGraphStore) -> Node:
-    """Return the fixture day's RunRequest."""
-    node = graph.get_node("RunRequest", _RUN_KEY)
-    assert node is not None
-    return node
-
-
-def amount_free(fault: Node) -> bool:
-    """Whether a Fault's text carries none of the brief's amounts."""
-    text = " ".join(
-        str(fault.props.get(name))
-        for name in ("error_type", "message", "traceback", "context")
-    )
-    return not any(amount in text for amount in AMOUNTS)
 
 
 def test_a1_a_finished_run_gets_its_brief() -> None:
@@ -80,11 +32,27 @@ def test_a1_a_finished_run_gets_its_brief() -> None:
 
     fire(graph, telegram, at(22, 50))
 
-    assert telegram.briefs == [_A1_TEXT]
+    assert telegram.briefs == [A1_TEXT]
     run = run_request(graph)
     assert run.props["brief_sent_at"] == "2026-09-25T22:50:00+00:00"
     assert run.props["brief_message_id"] == 101
     assert run.props["brief_verdict"] == "PASS"
+
+
+def test_a2_a_second_fire_sends_nothing() -> None:
+    """DSP-IDM-03: one brief per run id; the marker silences every later fire.
+
+    The later fires include 23:50, so a briefed run is never re-sent as RED either.
+    """
+    graph = InMemoryGraphStore()
+    seed_pair(graph)
+    telegram = FakeTelegram()
+
+    for minute in ((22, 50), (23, 0), (23, 50)):
+        fire(graph, telegram, at(*minute))
+
+    assert telegram.briefs == [A1_TEXT]
+    assert run_request(graph).props["brief_message_id"] == 101
 
 
 def test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire() -> None:
@@ -139,7 +107,7 @@ def test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries() -> No
     faults = graph.list_nodes("Fault")
     assert len(faults) == 2
     assert all("daily brief" in str(fault.props["message"]) for fault in faults)
-    assert all(amount_free(fault) for fault in faults)
+    assert all(amount_free(fault_text(fault)) for fault in faults)
     assert "brief_sent_at" not in run_request(graph).props
 
     telegram.brief_returns_none = False

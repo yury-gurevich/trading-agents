@@ -82,6 +82,19 @@ class TelegramClient:
             return None
         return message_id
 
+    def send_brief(self, *, text: str) -> int | None:
+        """Send the daily brief as plain text to the configured chat, no buttons."""
+        response = self._request(
+            "sendMessage", {"chat_id": self._chat_id, "text": text}
+        )
+        result = response.get("result") if response else None
+        message_id = result.get("message_id") if isinstance(result, Mapping) else None
+        if not isinstance(message_id, int):
+            # Keep a transport error word when there is one; it says more.
+            self.last_error = self.last_error or "telegram_message_id_missing"
+            return None
+        return message_id
+
     def poll_answers(self) -> tuple[TelegramAnswer, ...]:
         """Return valid callback answers while ignoring all other update shapes."""
         response = self._request("getUpdates", {})

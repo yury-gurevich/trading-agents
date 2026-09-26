@@ -15,27 +15,25 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.scanner.universe import FakeUniverse
-from contracts.analyst import RecommendationSet
-from contracts.common import Explanation, Money, Provenance
-from contracts.portfolio_manager import OrderIntent, OrderIntentSet, RejectedOrder
-from contracts.position_sync import POSITION_SYNC_EDGE, POSITION_SYNC_PHASE
-from contracts.provider import RUN_REQUEST_LABEL, DataQualityTrace, MarketData
+from contracts.common import Explanation, Money
+from contracts.portfolio_manager import OrderIntent
+from contracts.position_sync import POSITION_SYNC_EDGE
+from contracts.provider import RUN_REQUEST_LABEL
 from contracts.run_posture import RUN_POSTURE_DEGRADED
-from contracts.scanner import Candidate, CandidateSet, FilterTrace
 from orchestration.scheduled_dispatch_human import dispatch_with_human_answer
 from orchestration.start import place_run_request
-from orchestration.tests.shadow_book_helpers import bar, recommendation
+from orchestration.tests.daily_brief_payloads import TICKER, stage_payloads
 
 if TYPE_CHECKING:
     from kernel import InMemoryGraphStore, Node
     from orchestration.scheduled_dispatch import ScheduledDispatchResult
-    from orchestration.tests.scheduled_dispatch_human_helpers import FakeTelegram
+    from orchestration.telegram_port import TelegramPort
 
 DAY = date(2026, 9, 25)
 PREVIOUS_DAY = date(2026, 9, 24)
 # sched-2026-09-25's reporter clause, as measured (spec row 8).
 CLAUSE = "vs SPY: -0.43 pts over 33 sessions at 21% invested"
-# The chain in the order walk_chain reads it; the head sync marker is a MonitorRun.
+# The chain in walk_chain's order; the head position-sync marker is a MonitorRun.
 STAGES = (
     ("PositionSync", "MonitorRun", POSITION_SYNC_EDGE),
     ("MarketData", "MarketData", "INGESTED_BY"),
@@ -46,7 +44,6 @@ STAGES = (
     ("MonitorRun", "MonitorRun", "MONITORED_BY"),
     ("Snapshot", "Snapshot", "REPORTED_BY"),
 )
-TICKER = "AAPL"
 
 
 def at(hour: int, minute: int, day: date = DAY) -> datetime:
@@ -54,27 +51,27 @@ def at(hour: int, minute: int, day: date = DAY) -> datetime:
     return datetime(day.year, day.month, day.day, hour, minute, tzinfo=UTC)
 
 
-def pm_key(day: date) -> str:
-    """Return the fixture PMRun key for a scheduled day."""
-    return f"pm-run-{day:%Y%m%d}"
+def pm_key(day: date, prefix: str = "sched") -> str:
+    """Return the fixture PMRun key for one run of a day."""
+    return f"pm-run-{prefix}-{day:%Y%m%d}"
 
 
 def performance(equity_cents: float, *, sessions: float = 33.0) -> dict[str, float]:
-    """Return a performance group with the keys the reporter writes."""
-    return {
-        "portfolio_return_pct": 1.98,
-        "benchmark_return_pct": 3.1,
-        "exposure_matched_return_pct": 2.41,
-        "excess_return_pct": -0.43,
-        "average_exposure_pct": 21.0,
-        "max_drawdown_pct": -1.2,
-        "rolling_portfolio_return_pct": 0.5,
-        "rolling_exposure_matched_return_pct": 0.9,
-        "rolling_excess_return_pct": -0.4,
-        "performance_sessions": sessions,
-        "performance_gap_sessions": 0.0,
-        "equity_cents": equity_cents,
-    }
+    """Return a performance group with every key the reporter writes."""
+    names = [
+        "portfolio_return_pct",
+        "benchmark_return_pct",
+        "exposure_matched_return_pct",
+        "excess_return_pct",
+        "average_exposure_pct",
+        "max_drawdown_pct",
+        "rolling_portfolio_return_pct",
+        "rolling_exposure_matched_return_pct",
+        "rolling_excess_return_pct",
+        "performance_gap_sessions",
+    ]
+    group = dict.fromkeys(names, 0.0)
+    return group | {"performance_sessions": sessions, "equity_cents": equity_cents}
 
 
 def metrics_with(group: object) -> dict[str, object]:
@@ -82,11 +79,8 @@ def metrics_with(group: object) -> dict[str, object]:
     blob: dict[str, object] = {
         "portfolio": {"positions_opened": 0.0, "positions_closed": 0.0},
         "signal": {"recommendation_count": 1.0},
-        "regime": {},
     }
-    if group is not None:
-        blob["performance"] = group
-    return blob
+    return blob if group is None else blob | {"performance": group}
 
 
 def seed_run(
@@ -100,9 +94,11 @@ def seed_run(
     approved: tuple[OrderIntent, ...] = (),
     degraded: bool = False,
     briefed: bool = False,
+    prefix: str = "sched",
 ) -> Node:
-    """Place one scheduled run and write its chain up to ``through``."""
-    run_id = f"sched-{day.isoformat()}"
+    """Place one run (scheduled by default) and write its chain up to ``through``."""
+    run_id = f"{prefix}-{day.isoformat()}"
+    pm = pm_key(day, prefix)
     request = place_run_request(graph, run_id=run_id, tickers=(TICKER,), as_of=day)
     marks: dict[str, object] = {}
     if degraded:
@@ -115,35 +111,37 @@ def seed_run(
         }
     if marks:
         request = graph.merge_node(RUN_REQUEST_LABEL, request.key, marks)
-    blob = metrics_with(performance(10_197_632.0)) if metrics is None else metrics
+    payloads = stage_payloads(run_id, pm, day, approved, pm_created)
+    payloads["Snapshot"] = {
+        "run_id": pm,
+        "metrics": metrics_with(performance(10_197_632.0))
+        if metrics is None
+        else metrics,
+        "headline_summary": f"0 positions opened; 0 closed; 1 recommendations "
+        f"stitched. {clause}",
+    }
     names = [name for name, _, _ in STAGES]
     parent = request
     for name, label, edge in STAGES[: names.index(through) + 1]:
-        key, props = _stage(name, run_id, day, approved)
-        if name == "PMRun":
-            props["created_at"] = pm_created
-        if name == "Snapshot":
-            props = {
-                "run_id": pm_key(day),
-                "metrics": blob,
-                "headline_summary": "0 positions opened; 0 closed; "
-                f"1 recommendations stitched. {clause}",
-            }
-        node = graph.merge_node(label, key, props)
+        key = {"PMRun": pm, "Snapshot": f"snapshot:{pm}"}.get(
+            name, f"{name.lower()}:{run_id}"
+        )
+        node = graph.merge_node(label, key, payloads[name])
         graph.add_edge(request if name == "PositionSync" else parent, node, edge)
         if name == "PMRun" and not degraded:
-            _deliberation(graph, node, approved)
-        if name != "PositionSync":
-            parent = node
+            verdicts = {item.ticker: "uphold" for item in approved}
+            deliberation = graph.merge_node(
+                "DeliberationRun",
+                f"deliberation:{node.key}",
+                {"verdicts": verdicts, "debates": verdicts, "vetoed_tickers": []},
+            )
+            graph.add_edge(node, deliberation, "DELIBERATED_BY")
+        parent = request if name == "PositionSync" else node
     return request
 
 
 def fire(
-    graph: InMemoryGraphStore,
-    telegram: FakeTelegram,
-    now: datetime,
-    *,
-    day: date = DAY,
+    graph: InMemoryGraphStore, telegram: TelegramPort, now: datetime, *, day: date = DAY
 ) -> ScheduledDispatchResult:
     """Run one dispatcher fire for ``day`` at ``now`` through the public seam."""
     return dispatch_with_human_answer(
@@ -164,115 +162,3 @@ def order(ticker: str, quantity: int, price: str) -> OrderIntent:
         est_price=Money(amount=Decimal(price)),
         rationale=Explanation(summary=f"fixture {ticker}"),
     )
-
-
-def _stage(
-    name: str, run_id: str, day: date, approved: tuple[OrderIntent, ...]
-) -> tuple[str, dict[str, object]]:
-    key = pm_key(day) if name == "PMRun" else f"{name.lower()}:{run_id}"
-    if name == "Snapshot":
-        key = f"snapshot:{pm_key(day)}"
-    return key, _PROPS[name](run_id, day, approved)
-
-
-def _deliberation(
-    graph: InMemoryGraphStore, pm_run: Node, approved: tuple[OrderIntent, ...]
-) -> None:
-    node = graph.merge_node(
-        "DeliberationRun",
-        f"deliberation:{pm_run.key}",
-        {
-            "verdicts": {item.ticker: "uphold" for item in approved},
-            "debates": {item.ticker: "fixture" for item in approved},
-            "vetoed_tickers": [],
-        },
-    )
-    graph.add_edge(pm_run, node, "DELIBERATED_BY")
-
-
-def _provenance(run_id: str, agent: str) -> Provenance:
-    return Provenance(run_id=run_id, source_agent=agent)
-
-
-def _sync(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del run_id, day, approved
-    return {"phase": POSITION_SYNC_PHASE, "position_book_status": "fresh"}
-
-
-def _market(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del approved
-    market = MarketData(
-        bars=(bar(TICKER, day, 100.0),),
-        quality=DataQualityTrace(requested=1, returned=1),
-        provenance=_provenance(run_id, "provider"),
-    )
-    return {"snapshot": market.model_dump(mode="json"), "tickers": [TICKER]}
-
-
-def _scan(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del day, approved
-    candidates = CandidateSet(
-        run_id=run_id,
-        candidates=(Candidate(ticker=TICKER, rank=1, score=1.0, survived_filters=()),),
-        filter_trace=FilterTrace(universe_size=1, evaluated=1),
-        explanation=Explanation(summary="fixture scan"),
-        provenance=_provenance(run_id, "scanner"),
-    )
-    return {"candidate_set": candidates.model_dump(mode="json")}
-
-
-def _analyst(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del day, approved
-    recommendations = RecommendationSet(
-        run_id=run_id,
-        recommendations=(recommendation(TICKER),),
-        rejections=(),
-        explanation=Explanation(summary="fixture analyst"),
-        provenance=_provenance(run_id, "analyst"),
-    )
-    return {"recommendation_set": recommendations.model_dump(mode="json")}
-
-
-def _pm(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del run_id
-    rejected = () if approved else (RejectedOrder(ticker=TICKER, reason="full"),)
-    intents = OrderIntentSet(
-        run_id=pm_key(day),
-        approved=approved,
-        rejected=rejected,
-        explanation=Explanation(summary="fixture pm"),
-        provenance=_provenance(pm_key(day), "portfolio_manager"),
-    )
-    return {"order_intent_set": intents.model_dump(mode="json")}
-
-
-def _execution(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del run_id, day
-    return {
-        "submitted": len(approved),
-        "rejected": 0,
-        "deliberation_posture": "advisory",
-        "deliberation_status": "applied" if approved else "not_required",
-    }
-
-
-def _monitor(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del run_id, day, approved
-    return {"positions_checked": 10, "closes": 0, "holds": 10}
-
-
-def _snapshot(run_id: str, day: date, approved: tuple[OrderIntent, ...]) -> dict:
-    del run_id, day, approved
-    return {}
-
-
-_PROPS = {
-    "PositionSync": _sync,
-    "MarketData": _market,
-    "ScanRun": _scan,
-    "AnalystRun": _analyst,
-    "PMRun": _pm,
-    "ExecutionRun": _execution,
-    "MonitorRun": _monitor,
-    "Snapshot": _snapshot,
-}

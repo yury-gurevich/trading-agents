@@ -52,7 +52,15 @@ and `us_equities_sp500.py`, already copied), **10** from `compute_health`'s pack
 `SupervisorAgent`), and the **5** brief modules: 61 lines, not the spec's "about 48". Row 6 (48, 31
 of them `agents.portfolio_manager.*`) and row 13 (the module imports only `kernel.fault_incidents`)
 both reproduce exactly; the estimate left out the package `__init__`, DL-218's own class. *Measured:*
-the brief adds no third-party package to the entrypoint's closure. *Ruled out:* whole-directory copies
+the brief adds no third-party package to the entrypoint's closure. 🪤 **Found building it: the closure
+test was blind to `from a.b import c` when `c` is a module.** `from agents.portfolio_manager.domain
+import deployment_floor` names `domain/deployment_floor.py`, which the test never reached, so a
+Dockerfile that satisfied it would have killed every brief at import. Measured on a simulated slim
+image (only the Dockerfile's `COPY` set, the repo root off `sys.path`): with the file the A1 fire sends
+the brief; without it the fire still places and the brief is one fault, `brief failed (ImportError)`,
+while the image's calendar-skip smoke stays green. The test now also follows `a/b/c.py` and
+`a/b/c/__init__.py`; on `main` before the brief it demands nothing new, so the running image was never
+exposed. *Ruled out:* whole-directory copies
 of `orchestration/`, `agents/portfolio_manager/` and `agents/supervisor/`: of their 253 tracked files
 the closure needs 72, so **181** the dispatcher never imports (tests, laws, other entrypoints) would
 enter the image, and it would depend on whatever those trees hold instead of on a list the test checks.

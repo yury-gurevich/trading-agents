@@ -110,7 +110,9 @@ def _first_party_modules(entrypoints: tuple[str, ...]) -> set[str]:
     kernel/ and contracts/ are copied whole, so only these two trees need naming.
     Importing `a.b.c` also executes `a/__init__.py` and `a/b/__init__.py`, so each
     module's parent packages join the closure (S227: `orchestration/packs/__init__.py`
-    imported a module the image did not carry).
+    imported a module the image did not carry). `from a.b import c` imports the
+    submodule `a/b/c.py` when there is one (S234: `from agents.portfolio_manager.domain
+    import deployment_floor` named a file this closure never reached).
     """
     seen: set[str] = set()
     queue = list(entrypoints)
@@ -133,6 +135,11 @@ def _first_party_modules(entrypoints: tuple[str, ...]) -> set[str]:
             queue.extend(
                 f"{'/'.join(parts[:depth])}/__init__.py"
                 for depth in range(1, len(parts) + 1)
+            )
+            queue.extend(
+                f"{'/'.join(parts)}/{alias.name}{suffix}"
+                for alias in node.names
+                for suffix in (".py", "/__init__.py")
             )
     return seen
 

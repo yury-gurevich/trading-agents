@@ -584,7 +584,15 @@ checkout`; every restore re-ran green, and `git status` was clean after the last
 `tests/test_dispatch_scheduled_run.py` 143 (was 191; 198 before its reader moved to
 `tests/image_closure.py`, 68). ⚠ = over the 150 warning, under the 200 block.
 
-**`make ci`:** *pending: filled from the run's file below*
+**`make ci`:** `make ci > ci_b38c61f.txt 2>&1 ; echo $?` in the worktree at **`b38c61f7`** (the last
+commit that changes anything but this document) → **exit 0**, 1,788 lines, every one of the 15 steps
+run: ruff check clean; `1310 files already formatted`; mypy `Success: no issues found in 1037 source
+files`; `Contracts: 4 kept, 0 broken.`; module size warnings only; module header, law coverage,
+PARAM/settings sync, sprint status, markdown links and version scheme silent (pass); pytest
+**`3284 passed, 6 skipped`**, `Required test coverage of 100.0% reached. Total coverage: 100.00%`;
+`No unaccepted vulnerabilities; 1 accepted advisory re-checked`; `Detect secrets ... Passed`;
+`detect-secrets (untracked): no untracked files to scan`. `scripts/gate_selftest.py` (run by CI, not by
+`make ci`): `31/31 passed`.
 
 **`make gate-ran`:** *planner, after push*
 

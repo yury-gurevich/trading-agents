@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.1**
 **Branch:** `sprint-234-the-operator-hears-once-a-day-what-the-run-did`
-**Status:** BUILT (2026-09-26, cloud session; branch pushed, the planner gates and merges)
+**Status:** MERGED `76e226d5` · tag `v0.114.00` · 2026-09-26 · not deployed (operator approval owed)
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-230](../design-log.md) (operator, 2026-09-26: the brief may carry P&L amounts) ·
@@ -518,14 +518,14 @@ ____________________ test_a1_a_finished_run_gets_its_brief _____________________
 orchestration/tests/test_daily_brief_dispatch.py:83: in test_a1_a_finished_run_gets_its_brief
     assert telegram.briefs == [_A1_TEXT]
 E   AssertionError: assert [] == ['🟢 PASS · sc...you: nothing']
-E     
-E     Right contains one more item: '🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50\nEquity $101,976.32 (−$24.40 since sched-2026-09-24)\nvs SPY: -0.43 
+E
+E     Right contains one more item: '🟢 PASS · sched-2026-09-25 · Sat 26 Sep 08:50\nEquity $101,976.32 (−$24.40 since sched-2026-09-24)\nvs SPY: -0.43
 E     Use -v to get more diff
 ________ test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire _________
 orchestration/tests/test_daily_brief_dispatch.py:106: in test_a3_nothing_before_the_snapshot_then_red_on_the_last_fire
     assert telegram.briefs == [
 E   AssertionError: assert [] == ['🔴 NOT FINIS...you: nothing']
-E     
+E
 E     Right contains one more item: '🔴 NOT FINISHED · sched-2026-09-25 · Sat 26 Sep 09:50\nLast stage finished: execution\nOrders: none\nNeeds you: no
 E     Use -v to get more diff
 _____ test_a6_a_failed_send_changes_nothing_else_and_the_next_fire_retries _____
@@ -643,3 +643,48 @@ success, Security Findings `36216038313` success, CodeQL `36216038393` success.
   The job log line is unchanged (`placed …` or `skipped …`).
 - **The script tests drive `main` at 23:30** (outside the window), because `main` places with the real
   file universe and the fixtures place one ticker.
+
+---
+
+## Planner review and merge — 2026-09-26
+
+**Merged.** `main` (with S233, `0.113.01`) merged into the branch as `76e226d5`: conflicts only in
+`pyproject.toml`/`uv.lock` (S234's MINOR stands, **`0.114.00`**) and the sprints README rows.
+**`uv lock --check` exits 0**, so the hand-edited lock the cloud session could not regenerate is what
+`uv lock` writes. DL-231 and DRIFT-076/077 are still free on `main`. `make ci` on `76e226d5`: exit 0,
+**3,294 passed, 6 skipped, 100.00 %**, contracts 4 kept / 0 broken. **`GATE PROVEN` for `76e226d5…`**
+(CI, CodeQL, Security Findings, attempt 1), read from the merge worktree at that SHA; `main`
+fast-forwarded to it and tagged `v0.114.00`.
+
+**Re-measured, not taken from the handback:** the module line counts (one file off by one line);
+the Dockerfile's 39 → 100 `COPY` lines; no file under `orchestration/packs/` changed, so the deploy is an
+image-only retag; a brief `Fault` is severity `error`, so it cannot trip execution's stage gate (only
+`critical` counts); a degraded run omits only the deliberators and the operator, so its reporter still
+writes a Snapshot and it gets a normal brief, not a RED one. 🎯 **The closure-test blind spot
+reproduces:** with `deployment_floor.py` dropped from the Dockerfile, `main`'s old reader passes and the
+new one fails naming that file.
+
+**Preview on the live graph** (step 3, `brief_preview.py` from the merge tree with the main checkout's
+`.env`, 15:52 AEST, read-only):
+
+```text
+🟢 PASS · sched-2026-09-25 · Sat 26 Sep 15:52
+Equity $101,976.32 (−$24.40 since sched-2026-09-24)
+vs SPY: -0.43 pts over 33 sessions at 21% invested
+Orders: none
+Filled: none
+Needs you: nothing
+```
+
+```text
+🟢 PASS · sched-2026-09-24 · Sat 26 Sep 15:52
+Equity $102,000.72 (no earlier figure)
+vs SPY: -0.28 pts over 32 sessions at 21% invested
+Orders: none
+Filled: BUY 16 BMY @ $61.40
+Needs you: nothing
+```
+
+Both as the handback predicted (−$24.40 compares two stored rules, DL-224); BMY's fill matches the
+broker's 2026-09-24 open fill. **Owed:** the dispatcher deploy (operator approval), then step 5's
+functionality check on the first scheduled run after it.

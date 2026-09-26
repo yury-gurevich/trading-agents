@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P20, item **E20.2**
 **Branch:** `sprint-232-the-substrate-imports-nothing-from-the-pack`
-**Status:** BUILT
-**Version:** `0.113.01` (PEP 440 in `uv.lock`: `0.113.1`) — next PATCH above `main`'s `0.113.00`
+**Status:** MERGED `f685260e` · tag `v0.114.01` · 2026-09-26 · not deployed (operator approval owed)
+**Version:** `0.114.01` at merge (built as `0.113.01`; S233 took it, and S234's MINOR moved `main` to `0.114.00`)
 **Effort:** M. The plan sized E20.2 at **L (2.5)** because it expected the grant table to move and every
 agent's imports to change. Both expectations are measured false below
 **Decisions:** [ADR-0012](../decisions/0012-platform-domain-separation.md) (the wall, declared) ·
@@ -795,3 +795,32 @@ below is pushed and the remote gate has had time to complete.
   the live functionality check (master activates every agent type with no `contracts/` in its image,
   `FleetPreflight passed=True`, `ACCEPTANCE PASS`, `Prepare-ServiceBusRoutes` unchanged at the next
   `up`). None of this is claimable from a sandbox with no `.env`, no Azure and no live graph.
+
+---
+
+## Planner review and merge — 2026-09-26
+
+**Reviewed.** Scope matches the spec's map: 46 files, no security-baseline edit. `CLAUDE.md` gains an
+accurate note (S234's cloud session hit the same `gh` and `uv lock` limits). `pyproject.toml`'s lint
+change adds the moved base class to ruff's runtime-evaluated list, so it tightens, not loosens. The master
+runs `agents.master.entrypoint` from `kernel/` and `agents/master/` only; its indented imports are all
+`TYPE_CHECKING` blocks naming the substrate, and its only dynamic imports are vendor SDKs. The dispatcher
+image copies `kernel/` and `contracts/` whole, so S234's file-by-file list is unaffected.
+
+**Merged.** `main` (S233, S234) merged in as `d470cd78`: the version re-bumped to **`0.114.01`**
+(`uv lock --check` exit 0, so the hand-edited lock is what `uv lock` writes, and the owed re-lock is
+settled); law rollups master v1.6 from here, dispatcher v1.1 from S234; DL-229 above DL-228; DRIFT-075 to
+077 unique. 🐛 **`make ci` then failed one test on Windows:** `test_every_closure_module_lies_under_a_copied_path`
+compared `str(Path(...))`, which is `agents\master` on Windows, with the Dockerfile's `agents/master/`.
+It passed on Linux (the cloud session, remote CI). Fixed in `f685260e` with `as_posix()`; with the
+master's own `COPY` removed it still fails, naming `agents.master`. `make ci` exit 0 (**3,309 passed,
+6 skipped, 100.00 %**, 5 contracts kept). **`GATE PROVEN` for `f685260e…`** (CI, CodeQL, Security
+Findings, attempt 1); `main` fast-forwarded to it and tagged `v0.114.01`.
+
+**Re-measured, not taken from the handback:** the master's closure in a fresh interpreter loads 67
+first-party modules and **0** from the pack; both prompt-recipe hashes equal row 17; `lint-imports` reads 5
+kept, and a real `import contracts.common` planted in `agents/master/store.py` breaks *Substrate imports no
+pack module*, naming the line.
+
+**Owed:** the deploy (operator approval; image-only retag, all 15 images rebuild and the master's loses
+`contracts/`), then the functionality check in *Sequencing after merge* step 4.

@@ -56,6 +56,6 @@ def test_every_closure_module_lies_under_a_copied_path() -> None:
         if name in ("kernel", "agents"):
             continue
         relative = Path(*name.split("."))
-        assert any(str(relative).startswith(prefix.rstrip("/")) for prefix in copied), (
-            f"{name} is not under any copied path {copied}"
-        )
+        assert any(
+            relative.as_posix().startswith(prefix.rstrip("/")) for prefix in copied
+        ), f"{name} is not under any copied path {copied}"

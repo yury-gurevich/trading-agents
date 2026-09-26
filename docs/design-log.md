@@ -10,6 +10,29 @@ and is marked CLOSED here.
 
 ---
 
+## DL-230 - the daily brief may carry P&L amounts to the operator's Telegram chat - status: DECIDED (operator, 2026-09-26)
+
+**Question.** E19.1's daily brief goes out over Telegram, a vendor channel. `RPT-SEC-02` says the
+reporter never logs trade details, P&L or position data to external systems. May the brief carry P&L,
+and in what form? DL-220 moved this question from E16.2 to E19.1 as the operator's.
+
+**Decision (operator: *"Yes, with amounts"*).** The brief may carry dollar amounts (equity, the change
+since the previous brief, the orders placed and filled) and the vs-SPY scoreboard, sent only to the
+operator's configured Telegram chat, only by the scheduled dispatcher, once per scheduled run.
+
+**Where the law lands.** The sender is the dispatcher, so the guarantee and its boundary go into the
+`DSP` book (S234's law cycle: the brief, its one-per-run idempotency, and the channel it may use).
+`RPT-SEC-02` is **not** amended: its subject is the reporter, which still sends nothing, so the clause
+stays true, and conventions §4 forbids amending a law for its wording.
+
+**Ruled out.** *Percentages and the vs-SPY line only*: offered, and declined by the operator.
+*No P&L at all*: offered, and declined. *The reporter sends the brief*: it would contradict
+`RPT-SEC-02`, and the reporter cannot see the acceptance verdict, which lives in the pack's
+orchestration layer.
+
+**Accepted risk.** Telegram's servers see the amounts. The account is a paper account, and the operator
+accepted the channel. A live account would reopen this question.
+
 ## DL-228 · S232 moves the substrate's handshake vocabulary into the kernel and the served roster into pack data · status: DECIDED (S232, 2026-09-26)
 
 **Question.** ADR-0012 declared the substrate/pack wall *de jure* in June 2026 and named two leaks.

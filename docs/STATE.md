@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-26 12:03 AEST · **Version:** **0.112.02 deployed** (`s228b`); `main` = `0.113.00` · **🎯 E17.2b specced for Codex as [S233](sprints/sprint-233-a-replay-line-holds-one-issuers-prices.md): every replay line holds one issuer's prices; S232 is cleared to build.**
+**Last updated:** 2026-09-26 12:31 AEST · **Version:** **0.112.02 deployed** (`s228b`); `main` = `0.113.00` · **🎯 Three sprints in flight: S233 with Codex, S232 building in a cloud routine, S234 (the daily brief) specced.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…13.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,10 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+📦 **SPECCED — [S234](sprints/sprint-234-the-operator-hears-once-a-day-what-the-run-did.md), P19 E19.1, 2026-09-26, for Codex after S233.** The operator decided the Telegram brief may carry **dollar amounts** ([DL-230](design-log.md); `RPT-SEC-02` stays as written, its subject being the reporter). One deterministic message per scheduled run from the dispatcher, once the Snapshot exists: verdict (`accept_run`), equity and its change, the reporter's own vs-SPY clause, orders, fills since the last brief (by `broker_status_refreshed_at`, measured to move only on a status change), and needs-you (`compute_health`). 📏 Measured: runs finish 22:42–22:46 UTC, so the 22:50 fire sends; 🪤 the fire returns early outside 22:30–23:20, so the brief must run before that line; the verdict's import closure is 48 modules, which the dispatcher image must copy. Dispatcher laws v1.1 (six new clauses); image-only retag (`RunRequest` declares no vocabulary properties).
+
+☁️ **IN FLIGHT — [S232](sprints/sprint-232-the-substrate-imports-nothing-from-the-pack.md) in a claude.ai cloud routine, started 12:25 AEST** ([session](https://claude.ai/code/session_01Ek5vxNcR6osECmTLVPGbta)), Sonnet 5, no connectors; it merges `main` into its branch first and hands back BUILT for the planner to gate and merge.
 
 📦 **SPECCED — [S233](sprints/sprint-233-a-replay-line-holds-one-issuers-prices.md), P17 E17.2b, 2026-09-26, for Codex (operator: *"go for it"*).** Measured before speccing, with the S231 builder rerun live with every request pinned `asof` its window's last day: coverage **99.68 % → 99.96 %**, CTRA and DD corrected, and two defects the first probe could not see: **PSKY's 2022–2025 closes ran to 110,500** (pinned: 9–35), and **SW has no WestRock** (2016 bars at ~$190 from no issuer; `WRK` pinned gives 2,140 real sessions). Pinning moves the adjustment base, so a switch must be chained on **raw** closes (VTRS −17.3 % adjusted, +3.6 % raw). The S231 DLPH row ends 12 sessions late (pinned to 2017-11-16 it is Delphi Automotive, 474 sessions). Two guards: a switch beyond 10 % needs a named `action` (UAA, BBWI, SW), and a single-day move beyond 50 % of SPY's must be a listed event (10 measured; MRNA's +176 % is real on 199 M shares, TGNA's −79 % is Alpaca applying a spin like a split). Scripts only, PATCH, no deploy.
 

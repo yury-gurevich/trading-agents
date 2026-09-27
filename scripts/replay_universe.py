@@ -14,6 +14,8 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
+from dotenv import load_dotenv
+
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -147,6 +149,7 @@ def main(argv: list[str]) -> int:
         "--describe", action="store_true", help="print the cached report"
     )
     arguments = parser.parse_args(argv)
+    load_dotenv(_ROOT / ".env")
     if arguments.describe:
         print(describe())
         return 0

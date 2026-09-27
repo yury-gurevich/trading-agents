@@ -87,7 +87,7 @@ def fetch_sectors(
     timeout: int = 15,
 ) -> tuple[tuple[str, str, str], ...]:
     """Fetch Finnhub sectors once per distinct symbol, preserving line mapping."""
-    key = api_key or os.environ["FINNHUB_API_KEY"]
+    key = api_key or os.environ["PROVIDER_FINNHUB_API_KEY"]  # the fleet's name
     rows = tuple(sorted({_line_symbol(item) for item in symbols}))
     sectors: dict[str, str] = {}
     client = get or _requests_get_text

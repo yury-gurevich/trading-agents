@@ -21,7 +21,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts import replay_dataset  # noqa: E402
-from scripts.replay_dataset_sources import daily_bars  # noqa: E402
+from scripts.replay_dataset_sources import daily_bars, vix_history  # noqa: E402
 from scripts.replay_universe_cache import (  # noqa: E402
     Universe,
     coverage_payload,
@@ -76,6 +76,7 @@ def build_universe(
     cache: Path | None = None,
     page_fetcher: PageFetcher = fetch_source_pages,
     bar_fetcher: BarFetcher = daily_bars,
+    vix_fetcher: Callable[[], dict[str, float]] = vix_history,
 ) -> Universe:
     cache_dir = cache or replay_dataset.CACHE
     _refuse_repo_cache(cache_dir)
@@ -109,7 +110,7 @@ def build_universe(
         report, membership, fetched.refetched, chained.switches, reviewed_moves
     )
     write_universe_cache(cache_dir, sessions, membership, chained.rows, coverage)
-    build_context_files(cache_dir, sessions, bar_fetcher)
+    build_context_files(cache_dir, sessions, bar_fetcher, vix_fetcher)
     return Universe(sessions, membership.episodes, chained.rows, coverage)
 
 

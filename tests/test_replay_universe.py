@@ -18,6 +18,16 @@ import pytest
 from tests.sp500_fixtures import universe_pages_fixture
 
 
+@pytest.fixture(autouse=True)
+def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every source here is injected; a real HTTP call is a test defect."""
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError(f"network call in a unit test: {kwargs.get('url')}")
+
+    monkeypatch.setattr("requests.Session.request", refuse)
+
+
 def test_universe_build_leaves_existing_replay_cache_untouched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -37,7 +47,10 @@ def test_universe_build_leaves_existing_replay_cache_untouched(
     monkeypatch.setattr(replay_dataset, "CACHE", tmp_path)
 
     build_universe(
-        cache=tmp_path, page_fetcher=universe_pages_fixture, bar_fetcher=_bars
+        cache=tmp_path,
+        page_fetcher=universe_pages_fixture,
+        bar_fetcher=_bars,
+        vix_fetcher=_vix,
     )
 
     assert {path.name for path in tmp_path.iterdir()} == {
@@ -54,6 +67,8 @@ def test_universe_build_leaves_existing_replay_cache_untouched(
     assert (tmp_path / "vix.csv.gz").read_bytes() == before["vix.csv.gz"]
     assert (tmp_path / "bars.csv.gz").read_bytes() == before["bars.csv.gz"]
     assert replay_dataset.load()[1]["LEGACY"][0] == ("2020-01-01", 1.0, 2.0, 3.0, 4.0)
+    vix = gzip.decompress((tmp_path / "sp500_vix.csv.gz").read_bytes()).decode()
+    assert "2020-01-02,17.5" in vix.splitlines()
 
 
 def test_universe_build_refuses_repo_cache_before_fetching() -> None:
@@ -82,7 +97,10 @@ def test_from_snapshot_rebuilds_without_wikipedia_fetch(tmp_path: Path) -> None:
     from scripts.replay_universe import build_universe
 
     first = build_universe(
-        cache=tmp_path, page_fetcher=universe_pages_fixture, bar_fetcher=_bars
+        cache=tmp_path,
+        page_fetcher=universe_pages_fixture,
+        bar_fetcher=_bars,
+        vix_fetcher=_vix,
     )
 
     def forbidden_fetch() -> dict[str, str]:
@@ -93,6 +111,7 @@ def test_from_snapshot_rebuilds_without_wikipedia_fetch(tmp_path: Path) -> None:
         from_snapshot=True,
         page_fetcher=forbidden_fetch,
         bar_fetcher=_bars,
+        vix_fetcher=_vix,
     )
 
     assert second.episodes == first.episodes
@@ -162,6 +181,10 @@ def _bars(
     del end, start, kwargs
     sessions = (date(2020, 1, 1), date(2020, 1, 2))
     return {symbol: [_bar(day) for day in sessions] for symbol in symbols}
+
+
+def _vix() -> dict[str, float]:
+    return {"2020-01-02": 17.5}
 
 
 def _bar(day: date) -> tuple[str, float, float, float, float]:

@@ -743,7 +743,8 @@ pushed SHA and checks the printed SHA against `git rev-parse HEAD`.
   `test_from_snapshot_rebuilds_without_wikipedia_fetch`) fetch VIX from `cdn.cboe.com`, which the
   session's egress policy refuses (403). They fail identically on a clean `origin/main` worktree
   (`e5b7d70`) here, and this sprint does not touch them (A13). Every other step and test is green.
-  The remote gate, which has network, is the proof for them.
+  The remote gate, which has network, is the proof for them. Root cause and fix: *Return notes*,
+  last item (branch `chore-replay-universe-vix-offline`).
 - `make gate-ran`: owed (above). Remote CI results read through the GitHub connector are an
   observation, not `GATE PROVEN`.
 - The live export and the verdict are the planner's; nothing here ran against the spine.
@@ -793,6 +794,32 @@ pushed SHA and checks the printed SHA against `git rev-parse HEAD`.
   what `portfolio_from_graph` reads, and the export names `held_positions` for such a session. Not
   measured live.
 - S235's smoke numbers predate the Part A `position_values` fix, as the first handback said.
+- **The two `cdn.cboe.com` failures: root cause and fix, on a separate branch (not part of S237).**
+  *Cause:* S235 (`5bceb3a`) added `build_context_files(cache_dir, sessions, bar_fetcher,
+  vix_fetcher=vix_history)` to `scripts/sp500_context.py`, where the real Cboe download is the
+  default, and `build_universe` (`scripts/replay_universe.py:112`) called it with the bar fetcher
+  only; `build_universe` had no VIX parameter at all. So the two `build_universe` tests in
+  `tests/test_replay_universe.py`, which inject their page and bar sources, could not inject VIX,
+  and every run downloaded
+  `https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv`. Wherever the
+  network is open (the planner's machine, GitHub CI) this passed silently; the cloud session's
+  egress policy refuses the host (403), so it failed here first. `tests/test_sp500_context.py`
+  injects `vix_fetcher`, which is why only these two tests were affected.
+  *Fix:* branch `chore-replay-universe-vix-offline`, `ebbb78e5`, from `main` `e5b7d70`, pushed,
+  not merged. `build_universe` takes `vix_fetcher` and passes it through (the real download stays
+  the command-line default; the file is 199 lines). Both tests inject a stub and assert its value
+  reaches `sp500_vix.csv.gz`, and an autouse guard in the module fails any real HTTP call and
+  names the URL, so a leak like this now fails everywhere, not only where egress is blocked.
+  Version `0.116.01` → `0.116.02` (fix).
+  *Proof:* red first (`unexpected keyword argument 'vix_fetcher'`, 2 failed); guard planted
+  (parameter kept, passthrough dropped: both tests fail on the guard's "network call in a unit
+  test"), restored, green; `UV_FROZEN=1 make ci` in that worktree exits **0**, all 15 steps,
+  `3397 passed, 6 skipped`, coverage 100.00 %.
+  *Owed:* `uv lock` (it cannot re-resolve here, since `download.pytorch.org` is blocked, so
+  `uv.lock` still reads `0.116.01`; CI syncs with `--frozen`), and `make gate-ran`. Both branches
+  change the `pyproject.toml` version: if S237 merges first, the chore becomes `0.117.01` and the
+  lock is refreshed again. No STATE.md or design-log line was written on the chore branch, to avoid
+  conflicting with this branch's STATE.md edit.
 
 ---
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 23:25 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.01` · **🎯 S237 merged (`v0.117.00`): on the fleet's own inputs the replay equals live on the six latest sessions; the fidelity verdict waits for four clean sessions (after `sched-2026-10-01`). Measured: fixing item 89 lifts approvals from ~2 to ~13 a session. Tuesday 29 Sep's run still owes S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 07:15 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.01` · **🎯 S238 specced for item 89: flipping the feed to SIP alone would have failed every run (measured 403: Alpaca reads the fleet's bare-date `end` as inside the free plan's 15-minute window), so the fix clamps the request's end; on SIP 0 of 99 names fall below the volume floor, against 65 on IEX. Tuesday 29 Sep's run still owes S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+📦 **SPECCED — [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) (work-queue 89, live defect), 2026-09-28, for Codex or a cloud session.** INTENT: the provider reads SIP by default and a SIP request never ends inside the plan's 15-minute window; provider laws v1.4 (`PROV-OUT-07`), DRIFT-080; PATCH. 🎯 **Measured first, and the planned fix failed:** `feed=sip` with the fleet's bare-date `end` returns **403** (`subscription does not permit querying recent SIP data`), even on a Sunday, so the one-line flip would have failed every run's price fetch; `end` = now − 16 min returns 200 (LLY average 3.02 M against IEX 115.9 k). On SIP **0 of 99** names fall below the 500,000 floor (65 on IEX). The default moves in `ProviderFeedSettings`, not `trading_tunables.json`, because that file is a fidelity decision path and would reset DL-237's clean set ([DL-233](design-log.md) amendment, six decisions). Deploy: image retag, the operator's call, after `sched-2026-09-28`. The planner owes F1–F3 (live, `.env`) before merging.
 
 🟩 **MERGED — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), `14e02002`, tag `v0.117.00`, 2026-09-27; no deploy.** Codex's first build was returned (it compared live with live); an Opus cloud session rebuilt it. PROVEN: `GATE PROVEN`; live export of 56 sessions; the replay agrees with live on every row of 09-18 → 09-25 and on 0 unexplained differences over 56. DL-237 verdict INSUFFICIENT until four clean sessions. Also merged `v0.117.01` (a unit test no longer downloads VIX). Filed work-queue 91 (DRIFT-079, the PM's stale held marks, 2.76 % low). Owed: re-run the fidelity check after `sched-2026-10-01`.
 

@@ -470,7 +470,7 @@ data hole inside an episode would read as an ending); keep the line-level rule a
 sessions (a counted fiction is still a fiction). Guards planted, each red then restored: judge by the
 next bar anywhere; drop the cache-end exception; swap the reasons.
 
-## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)
+## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix SPECCED as S238 (work-queue 89, amended 2026-09-28)
 
 **How it was found.** Listing what the replay cache must hold for E17.3 (DL-232) meant reading what
 the live scanner actually filters on.
@@ -520,6 +520,51 @@ it replays (DL-232, decision 5).
 is **not** deployed before `sched-2026-09-28`, which owes three proofs on the current images. The fix
 changes the scanner's eligible set from ~35 names to most of the 99 and makes the candidate cap bind,
 so trading behaviour changes; the deploy is the operator's call.
+
+**Amendment — planner, 2026-09-28: option (a) as written fails every run; the fix is specced as
+[S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md).** *[measured 2026-09-28 06:58
+AEST, Sunday 20:58 UTC, market closed]* On the provider's key, with the provider's own request shape
+(`/v2/stocks/bars`, `timeframe=1Day`, `end` sent as a bare date by `AlpacaDataSource._download_page`):
+
+| Request | Result |
+| --- | --- |
+| `feed=iex`, `end` = today's date (the fleet today) | 200 · LLY 206 bars, average 115,867 |
+| `feed=sip`, `end` = today's date (option (a) as written) | **403** `subscription does not permit querying recent SIP data` |
+| `feed=sip`, `end` = now, RFC 3339 | 403 |
+| `feed=sip`, `end` = tomorrow's date | 403 |
+| `feed=sip`, `end` = now − 16 min, RFC 3339 | 200 · LLY 206 bars, average 3,019,571 |
+| `feed=sip`, `end` omitted | 200 · the same bars |
+| `/v2/stocks/AAPL/trades/latest?feed=sip` (the credential test's endpoint) | 403 |
+
+Alpaca reads a bare-date `end` as the end of that day, so it always falls inside the last 15 minutes,
+whatever the hour. The *[ASSUMED]* line under (a) was wrong: the refusal is about the query's `end`,
+not about when the bars printed. **Flipping the feed alone would 403 every run's price fetch**, and the
+Key Vault seeder's `alpaca-data` probe with it (`probe_window()` ends today).
+
+*[measured 2026-09-28, `scripts/universe_sp100.txt`, 99 names, 203 sessions to 2026-09-25]* Below the
+500,000 floor: **65** names on IEX, **0** on SIP (thinnest BLK 735,313, then GD 1,277,979). IEX's share
+of SIP runs 1.55–6.49 %, median 4.21 % (the table above sampled six names). *[measured]* The live
+`provider` app (`s232`) sets no `PROVIDER_ALPACA_*` variable, so the code default is what runs.
+
+Decisions (planner, delegated):
+
+1. **The default changes in `ProviderFeedSettings`** (`"iex"` → `"sip"`), not through a
+   `PROVIDER_ALPACA_DATA_FEED` value in `trading_tunables.json`. That file is a DL-238 D7 decision
+   path: editing it marks every `s232` session non-clean and pushes back DL-237's first verdict.
+   `agents/provider/alpaca_data.py` and `settings_feeds.py` are not decision paths, and the replay
+   reads the exported live inputs, so sessions stay clean across the switch.
+2. **A SIP request's `end` is clamped** to `min(midnight UTC after window.end, now − 15 min)`, sent as
+   RFC 3339. IEX requests stay byte-identical. *Rejected:* omitting `end` (measured to work, but a
+   window ending yesterday requested in the first 15 minutes after UTC midnight still 403s);
+   retry-on-403 (two requests, and a vendor message string as control flow).
+3. **The 15 minutes is a named module constant**, not a settings field: it is Alpaca's entitlement,
+   not our policy, and a field adds an env key, which makes the deploy a full `up`.
+4. **The credential test stays on IEX** (`trading_credential_tests.json`, `alpaca-data`): it proves
+   the key, and SIP's latest trade is refused on this plan.
+5. **A refused SIP request fails loud; it never falls back to IEX.** A silent fallback would bring
+   back the one-venue volume this entry exists to remove.
+6. **Option (d) stays rejected.** On SIP the floor binds on 0 of 99 names today, but a wider universe
+   needs the guard; the value stays 500,000.
 
 ## DL-232 - P17 replays the pipeline's price-only half over the index as it stood, and names everything it cannot supply - status: DECIDED (planner, scope approved by the operator 2026-09-27; S235)
 

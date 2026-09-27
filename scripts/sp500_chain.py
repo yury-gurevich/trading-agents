@@ -97,6 +97,7 @@ def _scale(row: BarRow, factor: float) -> BarRow:
         row.high * factor,
         row.low * factor,
         row.close * factor,
+        row.volume,
     )
 
 

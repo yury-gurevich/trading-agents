@@ -10,6 +10,170 @@ and is marked CLOSED here.
 
 ---
 
+## DL-234 - the replay harness calls the fleet in small pure slices and writes only derived proof outside the repo - status: DECIDED (S235, 2026-09-27)
+
+**Question.** S235 has to drive one session of the deterministic pipeline from a replay cache without
+changing any agent, contract, kernel or orchestration code. How does it build the fleet's effective
+settings, carry an in-memory book, slice the cache without look-ahead, and order the replay broker's
+events?
+
+**Decision 1 - settings are field-mapped from the pack, never guessed.** The harness builds each
+settings object from code defaults, overlays the matching `orchestration/packs/trading_tunables.json`
+`apps` environment names by validating their prefix-stripped field names against the settings model,
+then overlays explicit `--set KEY=VALUE` values through the same map. Unknown keys fail before a run
+starts and name the key. **Rejected:** setting process environment variables around constructors
+because it makes tests order-dependent and hides which value came from the pack; defaults-only replay
+because DL-232 says the pack is part of the fleet being replayed.
+
+**Decision 2 - the replay book is a script-local ledger, not a new contract.** A held line carries
+line ticker, quantity, entry cents, latest close cents, PM stop percentage, resting stop cents, fill
+session, activation session and a deterministic `position_ref`. That is just enough to build the
+`PortfolioState` and held-stop inputs existing domain functions already accept. **Rejected:** adding
+fields to `contracts/portfolio_manager.py` or agent state to make replay easier; that would turn a
+script harness into an agent law cycle.
+
+**Decision 3 - cache access is indexed by line and date.** The loader materialises sessions,
+membership episodes, benchmark/VIX/sector context and a sorted per-line bar series once, then cuts
+each decision window with `bisect` over dates using `declared_lookback_days(...)` calendar days ending
+on the decision session. Bars after the session are never visible to the decision. **Rejected:**
+rescanning the gzipped CSV for every session; using the scanner's five-day setting as the window,
+which DL-233 measured is not what live graph-pull runs ship.
+
+**Decision 4 - modules split at ownership boundaries.** Cache context and sectors live beside the
+S&P 500 cache builder; settings, inputs, day orchestration, book/broker mechanics and output writing
+live in separate replay harness modules, each under the module-size gate. **Rejected:** growing
+`scripts/replay_universe.py`, already at the 200-line edge, or putting all harness code in one script.
+
+**Decision 5 - each session resolves yesterday's risk before today's decision.** For session `d`, the
+simulated broker first resolves active stops and day-limit orders whose target session is `d`, then
+handles adjustment-error rebases and data-end/member-end exits, marks the close, and only then runs
+the scanner -> analyst -> PM decision for orders targeting `d+1`. A newly filled buy's stop activates
+on the following session under one named rule, `STOP_ACTIVATES_SESSION_AFTER_FILL`. **Rejected:** open
+fills at the next open regardless of limit, same-session stop activation, and any local return metric;
+these are precisely the DL-70 guard shapes S235 plants.
+
+## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)
+
+**How it was found.** Listing what the replay cache must hold for E17.3 (DL-232) meant reading what
+the live scanner actually filters on.
+
+**Measured, 2026-09-27 (live spine, all 50 `ScanRun`s that store a `FilterTrace`, 2026-08-08 →
+2026-09-25).** **4,951** evaluations: `min_average_volume` dropped **3,128 (63.2 %)**,
+`min_relative_strength` 685, `missing_history` 41, `max_beta` 38, `earnings_window` 18. Every run lost
+**60–64 of its 99–100 names** to the volume floor, and produced **17–24** candidates against a cap of
+**25**, so the cap has never bound. On `sched-2026-09-25` the dropped names include LLY, JNJ, MA, COST,
+GE, ABBV, PG, LMT, UNP, UPS, IBM and ACN.
+
+| Name | `average_volume` in the `ScanRun` | Alpaca IEX, 203 sessions to 2026-09-25 | Alpaca SIP, same window | IEX / SIP |
+| --- | --- | --- | --- | --- |
+| LLY | 115,622 | 115,622 | 3,015,934 | 3.83 % |
+| LMT | 56,272 | 56,272 | 1,455,430 | 3.87 % |
+| TSLA | 844,997 | 844,997 | 54,483,717 | 1.55 % |
+| MSFT | 937,454 | 937,454 | 33,946,434 | 2.76 % |
+| JNJ | 280,687 | 280,687 | 8,031,304 | 3.50 % |
+| CSCO | 1,035,662 | 1,035,662 | 22,533,856 | 4.60 % |
+
+**Mechanism.** `ProviderFeedSettings.alpaca_data_feed` defaults to `"iex"`
+(`agents/provider/settings_feeds.py:93`) and `trading_tunables.json` does not override it.
+`ScannerSettings.min_average_volume` (500,000 shares) assumes consolidated volume. The provider law
+records the feed as a mode selector (DRIFT-050, closed); nobody measured what it does to the volume
+gate. Closes differ between the feeds by cents (LLY 1,183.99 vs 1,183.46), so only volume is badly
+wrong. 🪤 Also recorded, not judged here: in graph-pull runs the scanner computes its features over
+all ~203 bars the run ships (the dispatcher's declared history window), not over its own
+`lookback_days = 5`, which only the served path uses. `relative_strength` is a ~9.5-month return.
+
+**Consequence.** Since at least 2026-08-08 every candidate has come from the ~35 names that happen to
+trade heavily on IEX. Every P16 scoreboard figure measures that universe. P17 must say which pipeline
+it replays (DL-232, decision 5).
+
+**Options.**
+
+- **(a) The provider reads `sip`.** Recommended. Our key already reads SIP (the replay builder uses
+  it). The scheduled run fetches at 22:30 UTC, 2.5 hours after the close. *[ASSUMED, from Alpaca's
+  docs: the free plan refuses only SIP data from the last 15 minutes. An intraday manual run is the
+  case to measure.]*
+- **(b) Keep IEX and scale the floor.** Rejected: the IEX share runs 1.55–4.60 % by name, so any one
+  factor misranks names; the floor would measure IEX's market share, not liquidity.
+- **(c) Dollar volume on IEX.** Rejected for the same reason.
+- **(d) Drop the volume filter.** Rejected: on SIP it still matters for a few thin, high-priced names
+  (to be measured when fixing).
+
+**Status.** A live defect in what the pipeline trades: ranked first in the work queue (item 89). It
+is **not** deployed before `sched-2026-09-28`, which owes three proofs on the current images. The fix
+changes the scanner's eligible set from ~35 names to most of the 99 and makes the candidate cap bind,
+so trading behaviour changes; the deploy is the operator's call.
+
+## DL-232 - P17 replays the pipeline's price-only half over the index as it stood, and names everything it cannot supply - status: DECIDED (planner, scope approved by the operator 2026-09-27; S235)
+
+**Question.** E17.3 must drive the real scanner → analyst → PM over ten years. Which of the live
+inputs can a replay supply, and what does EXP-014's verdict then cover?
+
+**Measured, 2026-09-27.**
+
+- **The domain code runs without the bus or the graph** (the plan's *[assumed]* line holds). The
+  scanner, analyst and PM domain packages import only `contracts/`, their own settings and kernel
+  fault types. `apply_filters`, `rank_survivors`, `scoring_universe`, `score_candidates`,
+  `split_decisions`, `evaluate_recommendations`, `classify_regime`, `resolve_order_tolerance` and
+  `contracts.stop_rule` are pure. `agents/monitor/domain/positions.py` reads the graph and is not needed.
+- **Composite weights** (`agents/analyst/settings.py`): technical **0.50** (relative strength **0.20**
+  inside it), fundamental **0.30**, sentiment **0.20**, alpha158 **0.00**, *"renormalised over present
+  pillars"*. With bars alone the analyst scores entirely from price.
+- **The cache** holds OHLC for 732 episodes, 2016-01-04 → 2026-09-24, and VIX to 2026-09-21. It has
+  **no volume, no SPY bars, no sectors**, and no fundamentals, news or earnings dates.
+- **Fundamentals:** FMP on our plan caps `limit` at **5** (about five quarters) and refuses delisted
+  symbols (CELG: **402**). Finnhub's `financials-reported` has as-reported filings (AAPL **49** quarters
+  from 2010; CELG only **7**). Rebuilding `peTTM`, `roeTTM`, margins, `currentRatioQuarterly` and `pb`
+  from filings plus prices would be its own measured project.
+- **Sentiment:** headlines are collected nightly, only since the news feeds went live. No ten-year
+  history is sourceable.
+- **Earnings dates:** live, `earnings_window` dropped **18 of 4,951** evaluations (0.4 %).
+- **Sectors:** live they are Finnhub's `finnhubIndustry` (`/stock/profile2`); a delisted name returns
+  none (CELG).
+- **Universe:** the live one is `scripts/universe_sp100.txt`, **99** names, unchanged since 2026-06-24.
+- **Orders:** execution submits **day limit** orders after the close at the decided price ± an
+  ATR-scaled tolerance, then a GTC stop at `stop_price_cents(entry, decided stop_pct)`. A held name
+  exits on that stop or when its score falls under `exit_confidence_floor` (ADR-0017);
+  `base_max_holding_days` is rendered for the deliberator and exits nothing.
+
+**Decision.**
+
+1. **Pillars: technical and relative strength only.** Fundamentals and sentiment are absent and the
+   weights renormalise exactly as they do live when those feeds degrade. EXP-014's verdict covers the
+   **price-only pipeline**, and E17.5's drop-one ablation becomes technical-only vs relative-strength-only
+   vs both.
+2. **Universe: the point-in-time S&P 500** (E17.2's cache) for EXP-014, with a **fixed ticker list**
+   (the live 99) as a second mode for E17.4's fidelity window.
+3. **Supplied faithfully:** bars with SIP volume, SPY bars, VIX through `classify_regime`, the pack's
+   tunables, the issuer map, Finnhub sectors where one exists, and the live order mechanics.
+4. **Absent and named, each counted in every replay's summary:** fundamentals, sentiment, earnings
+   dates (the filter records `skipped`), the deliberator (every PM approval reaches the simulated
+   broker), sectors Finnhub cannot profile, and bars after a line leaves the index (a held line exits
+   at its last member close).
+5. **Volume is SIP**, the pipeline as DL-233's fix will make it. E17.4 compares against live runs that
+   used IEX volume and must account for that difference.
+6. **One metric:** the replay's daily equity points go through
+   `agents/reporter/domain/performance.calculate_performance`, the function the live Snapshot uses.
+
+**Ruled out.**
+
+- **Rebuild point-in-time fundamentals now** from Finnhub's filings. Rejected for S235: it is its own
+  measurement (field mapping, filing lags, restatements, removed names with 7 filings), and it would
+  hold the leg behind its least certain input. Revisit only if G-EDGE turns on the fundamental pillar.
+- **Buy FMP's history.** Rejected: an upgrade for coverage of removed names nobody has measured, against
+  the plan's spend rule.
+- **Today's fundamentals or sentiment for past days.** Rejected: look-ahead.
+- **Replay the live S&P 100 list for ten years.** Rejected: today's 99 largest names are survivors by
+  construction, which is what E17.1–E17.2 were built to remove.
+- **Reuse `run_walkforward`'s engine.** Rejected: it rebalances a top-k at the next close with turnover
+  slippage, while the pipeline holds a name until its stop or a thesis exit, under PM gates and sizing.
+  The harness reuses the domain functions and the reporter's metric instead.
+- **GICS sectors from Wikipedia for removed names.** Rejected: a different taxonomy from the one the
+  live gate counts.
+
+**Consequence for the plan.** E17.3 becomes cache completion plus the harness
+([S235](sprints/sprint-235-the-pipeline-replays-a-day-it-has-not-seen.md)); E17.5's ablation narrows to
+the two price pillars, and so does anything P18A.2 can conclude about dropping a pillar.
+
 ## DL-231 - the daily brief is one guarded step before the window's early return, and it reads the reporter's figures as stored - status: DECIDED (S234, 2026-09-26)
 
 **Question.** S234 (E19.1) left four decisions to the builder: which module composes and which

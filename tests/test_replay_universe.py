@@ -12,6 +12,7 @@ import gzip
 import io
 from datetime import date
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from tests.sp500_fixtures import universe_pages_fixture
@@ -20,7 +21,7 @@ from tests.sp500_fixtures import universe_pages_fixture
 def test_universe_build_leaves_existing_replay_cache_untouched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """S231-A11: build writes only sp500 files and legacy load() still works."""
+    """S235-A14: build adds sp500 context while legacy load() still works."""
     from scripts import replay_dataset
     from scripts.replay_universe import build_universe
 
@@ -46,7 +47,9 @@ def test_universe_build_leaves_existing_replay_cache_untouched(
         "sp500_sessions.csv.gz",
         "sp500_membership.csv.gz",
         "sp500_bars.csv.gz",
+        "sp500_benchmark.csv.gz",
         "sp500_coverage.json",
+        "sp500_vix.csv.gz",
     }
     assert (tmp_path / "vix.csv.gz").read_bytes() == before["vix.csv.gz"]
     assert (tmp_path / "bars.csv.gz").read_bytes() == before["bars.csv.gz"]
@@ -98,7 +101,7 @@ def test_from_snapshot_rebuilds_without_wikipedia_fetch(tmp_path: Path) -> None:
 def test_daily_bars_start_default_is_backward_compatible(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """S231-A14 / S233-A2: defaults stay unchanged; explicit asof/raw are sent."""
+    """S235-A12: defaults stay unchanged; with_volume adds only tuple volume."""
     from scripts import replay_dataset_sources as sources
 
     params: list[dict[str, object]] = []
@@ -108,24 +111,39 @@ def test_daily_bars_start_default_is_backward_compatible(
             return None
 
         def json(self) -> dict[str, object]:
-            return {"bars": {}, "next_page_token": None}
+            return {
+                "bars": {
+                    "AAA": [
+                        {
+                            "t": "2020-01-02T05:00:00Z",
+                            "o": 1,
+                            "h": 2,
+                            "l": 0.5,
+                            "c": 1.5,
+                            "v": 1234,
+                        }
+                    ]
+                },
+                "next_page_token": None,
+            }
 
-    def fake_get(*args: object, **kwargs: object) -> Response:
+    def fake_get(*args: object, **kwargs: Any) -> Response:
         del args
-        params.append(dict(kwargs["params"]))  # type: ignore[arg-type]
+        params.append(dict(cast("dict[str, object]", kwargs["params"])))
         return Response()
 
     monkeypatch.setenv("ALPACA_API_KEY", "key")
     monkeypatch.setenv("ALPACA_API_SECRET", "secret")
     monkeypatch.setattr("scripts.replay_dataset_sources.requests.get", fake_get)
 
-    sources.daily_bars(["AAA"], "2020-01-02")
-    sources.daily_bars(
+    default = sources.daily_bars(["AAA"], "2020-01-02")
+    with_volume = sources.daily_bars(
         ["AAA"],
         "2020-01-02",
         start="2020-01-01",
         asof="2020-01-02",
         adjustment="raw",
+        with_volume=True,
     )
 
     assert params[0]["start"] == sources.START
@@ -134,6 +152,8 @@ def test_daily_bars_start_default_is_backward_compatible(
     assert params[1]["start"] == "2020-01-01"
     assert params[1]["adjustment"] == "raw"
     assert params[1]["asof"] == "2020-01-02"
+    assert default["AAA"] == [("2020-01-02", 1, 2, 0.5, 1.5)]
+    assert with_volume["AAA"] == [("2020-01-02", 1, 2, 0.5, 1.5, 1234)]
 
 
 def _bars(

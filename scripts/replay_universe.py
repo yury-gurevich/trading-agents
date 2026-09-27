@@ -12,7 +12,7 @@ import sys
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -33,6 +33,11 @@ from scripts.sp500_bars import (  # noqa: E402
     windows_from_episodes,
 )
 from scripts.sp500_chain import chain_source_switches  # noqa: E402
+from scripts.sp500_context import (  # noqa: E402
+    build_context_files,
+    build_sector_file,
+    describe_cache,
+)
 from scripts.sp500_coverage import coverage_report, require_floor  # noqa: E402
 from scripts.sp500_guards import (  # noqa: E402
     known_move_counts,
@@ -44,7 +49,11 @@ from scripts.sp500_membership import (  # noqa: E402
     load_symbol_map,
     reconstruct_membership,
 )
-from scripts.sp500_replay_build import action_lookup, raw_close_fetcher  # noqa: E402
+from scripts.sp500_replay_build import (  # noqa: E402
+    SymbolMapLike,
+    action_lookup,
+    raw_close_fetcher,
+)
 from scripts.sp500_wiki import (  # noqa: E402
     CHANGES_URL,
     CONSTITUENTS_URL,
@@ -85,7 +94,7 @@ def build_universe(
         fetched.rows,
         raw_close_fetcher(bar_fetcher),
         spy_closes,
-        action_lookup(map_rows),
+        action_lookup(cast("tuple[SymbolMapLike, ...]", map_rows)),
     )
     require_switch_actions(chained.switches)
     known_moves = load_known_moves()
@@ -98,6 +107,7 @@ def build_universe(
         report, membership, fetched.refetched, chained.switches, reviewed_moves
     )
     write_universe_cache(cache_dir, sessions, membership, chained.rows, coverage)
+    build_context_files(cache_dir, sessions, bar_fetcher)
     return Universe(sessions, membership.episodes, chained.rows, coverage)
 
 
@@ -106,41 +116,28 @@ def load_universe(cache: Path | None = None) -> Universe:
 
 
 def describe(cache: Path | None = None) -> str:
+    base = describe_cache(cache or replay_dataset.CACHE)
     universe = load_universe(cache)
-    reconciliation = universe.coverage["reconciliation"]
-    coverage = universe.coverage["coverage"]
     switches = universe.coverage.get("switches", [])
     reviewed_moves = universe.coverage.get("reviewed_moves", [])
     known_counts = known_move_counts(load_known_moves())
-    lines = [
-        f"cache: {cache or replay_dataset.CACHE}",
-        (
-            "membership: "
-            f"{len(universe.episodes)} episodes, count "
-            f"{reconciliation['count_min']}..{reconciliation['count_max']}, "
-            f"unreconciled {len(reconciliation['unreconciled'])}"
-        ),
-        (
-            "coverage: "
-            f"{coverage['covered_sessions']}/{coverage['member_sessions']} "
-            f"({coverage['ratio']:.2%}), shortfalls {len(coverage['shortfalls'])}"
-        ),
-        (
-            "switches: "
-            f"{len(switches)} recorded, "
-            f"{sum(1 for row in switches if row.get('action'))} with action"
-        ),
-        f"known moves: {len(reviewed_moves)} reviewed, file {known_counts}",
-    ]
-    return "\n".join(lines)
+    return "\n".join(
+        [
+            base,
+            (
+                "switches: "
+                f"{len(switches)} recorded, "
+                f"{sum(1 for row in switches if row.get('action'))} with action"
+            ),
+            f"known moves: {len(reviewed_moves)} reviewed, file {known_counts}",
+        ]
+    )
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(
-        description="Build or describe S&P 500 replay universe."
-    )
+    parser = argparse.ArgumentParser(description="Build S&P 500 replay cache.")
     parser.add_argument(
-        "command", nargs="?", choices=("build",), help="build the universe cache"
+        "command", nargs="?", choices=("build", "sectors"), help="build cache/sectors"
     )
     parser.add_argument("--end", help="inclusive YYYY-MM-DD end date for bars")
     parser.add_argument(
@@ -154,7 +151,11 @@ def main(argv: list[str]) -> int:
         print(describe())
         return 0
     if arguments.command != "build":
-        parser.error("expected 'build' or --describe")
+        if arguments.command == "sectors":
+            build_sector_file(replay_dataset.CACHE)
+            print(describe())
+            return 0
+        parser.error("expected 'build', 'sectors', or --describe")
     build_universe(end=arguments.end, from_snapshot=arguments.from_snapshot)
     print(describe())
     return 0

@@ -34,6 +34,7 @@ class Universe:
     episodes: tuple[Episode, ...]
     bars: tuple[BarRow, ...]
     coverage: dict[str, Any]
+    has_volume: bool = True
 
 
 def write_pages(cache_dir: Path, pages: dict[str, dict[str, str]]) -> None:
@@ -67,9 +68,18 @@ def write_universe_cache(
     )
     _write_csv(
         cache_dir / "sp500_bars.csv.gz",
-        ["line", "symbol", "date", "open", "high", "low", "close"],
+        ["line", "symbol", "date", "open", "high", "low", "close", "volume"],
         [
-            [row.line, row.symbol, row.date, row.open, row.high, row.low, row.close]
+            [
+                row.line,
+                row.symbol,
+                row.date,
+                row.open,
+                row.high,
+                row.low,
+                row.close,
+                row.volume,
+            ]
             for row in bars
         ],
     )
@@ -93,6 +103,8 @@ def load_universe_cache(cache_dir: Path) -> Universe:
         )
         for row in _read_csv(cache_dir / "sp500_membership.csv.gz")
     )
+    bar_header, bar_rows = _read_csv_with_header(cache_dir / "sp500_bars.csv.gz")
+    has_volume = "volume" in bar_header
     bars = tuple(
         BarRow(
             row["line"],
@@ -102,13 +114,14 @@ def load_universe_cache(cache_dir: Path) -> Universe:
             float(row["high"]),
             float(row["low"]),
             float(row["close"]),
+            int(row["volume"]) if has_volume and row.get("volume") else 0,
         )
-        for row in _read_csv(cache_dir / "sp500_bars.csv.gz")
+        for row in bar_rows
     )
     coverage = json.loads(
         (cache_dir / "sp500_coverage.json").read_text(encoding="utf-8")
     )
-    return Universe(sessions, episodes, bars, coverage)
+    return Universe(sessions, episodes, bars, coverage, has_volume=has_volume)
 
 
 def coverage_payload(
@@ -140,5 +153,13 @@ def _write_csv(path: Path, header: list[str], rows: list[list[Any]]) -> None:
 
 
 def _read_csv(path: Path) -> tuple[dict[str, str], ...]:
+    _header, rows = _read_csv_with_header(path)
+    return rows
+
+
+def _read_csv_with_header(
+    path: Path,
+) -> tuple[tuple[str, ...], tuple[dict[str, str], ...]]:
     text = gzip.decompress(path.read_bytes()).decode("utf-8")
-    return tuple(csv.DictReader(io.StringIO(text)))
+    reader = csv.DictReader(io.StringIO(text))
+    return tuple(reader.fieldnames or ()), tuple(reader)

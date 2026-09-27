@@ -59,6 +59,7 @@ def daily_bars(
     start: str = START,
     asof: str | None = None,
     adjustment: str = "all",
+    with_volume: bool = False,
 ) -> dict[str, list[Any]]:
     """Return split- and dividend-adjusted SIP daily bars per ticker."""
     headers = {
@@ -87,9 +88,22 @@ def daily_bars(
         response.raise_for_status()
         body = response.json()
         for symbol, rows in (body.get("bars") or {}).items():
-            bars.setdefault(symbol, []).extend(
-                (row["t"][:10], row["o"], row["h"], row["l"], row["c"]) for row in rows
-            )
+            for row in rows:
+                if with_volume:
+                    bars.setdefault(symbol, []).append(
+                        (
+                            row["t"][:10],
+                            row["o"],
+                            row["h"],
+                            row["l"],
+                            row["c"],
+                            row["v"],
+                        )
+                    )
+                else:
+                    bars.setdefault(symbol, []).append(
+                        (row["t"][:10], row["o"], row["h"], row["l"], row["c"])
+                    )
         raw_token = body.get("next_page_token")
         token = str(raw_token) if raw_token else None
         if not token:

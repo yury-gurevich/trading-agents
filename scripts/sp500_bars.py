@@ -36,6 +36,7 @@ class BarRow:
     high: float
     low: float
     close: float
+    volume: int = 0
 
 
 @dataclass(frozen=True)
@@ -98,7 +99,9 @@ def fetch_bars_for_windows(
         for chunk in _chunks(group, batch_size):
             symbols = sorted({window.symbol for window in chunk})
             end = _first_end(chunk)
-            batch = daily_bars(symbols, end=end, start=_first_start(chunk), asof=end)
+            batch = daily_bars(
+                symbols, end=end, start=_first_start(chunk), asof=end, with_volume=True
+            )
             for window in chunk:
                 window_rows = _rows_for(batch, window)
                 if _is_short(window_rows, window, sessions):
@@ -109,6 +112,7 @@ def fetch_bars_for_windows(
                         end=asof,
                         start=window.first.isoformat(),
                         asof=asof,
+                        with_volume=True,
                     )
                     window_rows = _rows_for(single, window)
                 rows.extend(window_rows)
@@ -120,7 +124,8 @@ def fetch_bars_for_windows(
 def _rows_for(payload: dict[str, list[Any]], window: BarWindow) -> tuple[BarRow, ...]:
     rows: list[BarRow] = []
     for raw in payload.get(window.symbol, ()):
-        day, open_, high, low, close = raw
+        day, open_, high, low, close, *rest = raw
+        volume = int(rest[0]) if rest else 0
         parsed_day = date.fromisoformat(str(day)[:10])
         if window.first <= parsed_day <= window.last:
             rows.append(
@@ -132,6 +137,7 @@ def _rows_for(payload: dict[str, list[Any]], window: BarWindow) -> tuple[BarRow,
                     float(high),
                     float(low),
                     float(close),
+                    volume,
                 )
             )
     return tuple(rows)

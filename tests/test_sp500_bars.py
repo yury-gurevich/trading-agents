@@ -103,5 +103,25 @@ def test_batch_drop_is_refetched_before_missing() -> None:
     assert report.shortfalls[0].line == "EMPTY"
 
 
+def test_volume_is_requested_for_replay_windows() -> None:
+    """S235-A1: replay windows request OHLCV and preserve volume."""
+    sessions = [date(2020, 1, 1), date(2020, 1, 2)]
+    windows = (BarWindow("AAA", "AAA", sessions[0], sessions[-1]),)
+    calls: list[dict[str, object]] = []
+
+    def fake_bars(
+        symbols: list[str], *, end: str, start: str, **kwargs: object
+    ) -> dict[str, list[tuple[str, float, float, float, float, int]]]:
+        calls.append({"symbols": symbols, "end": end, "start": start, **kwargs})
+        return {
+            "AAA": [(*_bar(day), 1000 + index) for index, day in enumerate(sessions)]
+        }
+
+    result = fetch_bars_for_windows(windows, sessions, fake_bars)
+
+    assert calls[0]["with_volume"] is True
+    assert [row.volume for row in result.rows] == [1000, 1001]
+
+
 def _bar(day: date) -> tuple[str, float, float, float, float]:
     return (day.isoformat(), 1.0, 1.0, 1.0, 1.0)

@@ -142,7 +142,8 @@ the gate on its own branch:** Security Findings reads the default branch's open 
 open on `main` until the fix is there. So, as DL-138 did for S189, the two keys
 (`github-code-scanning:6cccca66625569d6d398`, `…:9b94511f0124e02ebf7c`, reproduced by running the gate
 locally) are baselined on the fix branch, and **pruned after `main`'s CodeQL marks both `fixed`**, never
-on assumption.
+on assumption. **Done the same day:** merged as `v0.115.01` (`db5aedb6`, `GATE PROVEN`); `main`'s CodeQL marked 256
+and 257 `fixed`; the local gate over a fresh collect read 0 serious with the two keys removed, and they were pruned.
 
 ---
 

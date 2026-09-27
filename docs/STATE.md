@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 12:50 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.115.00` · **🎯 S236 merged: the dashboard now measures G1 (70 %), G3 (4 of 14) and the unattended clock; S235 is with Codex; item 89 (IEX volume) waits for Tuesday 29 Sep's run, which still owes S234's first brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-27 13:25 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.115.01` · **🎯 S236 merged and its CodeQL finding fixed: the dashboard measures G1 (70 %), G3 (4 of 14) and the unattended clock; S235 is with Codex; item 89 (IEX volume) waits for Tuesday 29 Sep's run, which still owes S234's first brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **FIXED — CodeQL `py/stack-trace-exposure` 256/257 from S236's tile, `0.115.01`, tag `v0.115.01`, 2026-09-27.** `main`'s post-merge CodeQL flagged the tile's `reason`, which carried `str(exc)`, and Security Findings failed on `8fdf31f4`. Chore `chore-scorecard-reason-carries-no-exception-text`: the sentence is now picked from a fixed table by the record's kind (red first; planting `str(exc)` back turns it red). `make ci` exit 0 (**3,368 passed, 6 skipped, 100.00 %**). The fix could not pass Security Findings on its own branch, because the gate reads `main`'s alerts, so both keys were baselined as DL-138 did: **`GATE PROVEN` for `db5aedb6`**, fast-forwarded, `main`'s CodeQL marked **256 and 257 `fixed`**, every `main` run green, and the baseline was pruned back to its one Dependabot key once the local gate read 0 serious ([DL-235](design-log.md) amendment 2).
 
 🟩 **MERGED — [S236](sprints/sprint-236-the-dashboard-says-how-long-it-ran-without-a-human.md) (P19 E19.3), `0.115.00`, fast-forwarded to `c0cedfb9`, tagged `v0.115.00`, 2026-09-27; no deploy (no image ships `surfaces/`).** Built in a Claude cloud session (handback `b494959a`): the unattended tile, the `scorecard` MCP tool and the chat ask *Running unattended*; surfaces laws **v1.2** (`SRF-OUT-08`), DL-235, DRIFT-078. **The planner fixed two things at merge ([DL-235](design-log.md) amendment):** a brief's `UNPROVEN` (every trading night, because the brief precedes the next open) is re-judged until it settles, and the clocks read past a 30-day window that wholly holds. Red first; four plants red and restored. `uv lock` → `0.115.0`; `make ci` on Windows exit 0 (**3,362 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `c0cedfb9`** (CI, CodeQL, Security Findings, attempt 1). 🟩 **Live read:** G1 **14 / 20 (70 %)**, G3 **4 of 14** healthy sessions (12 of 14 counting deploys), unattended **1**, untouched **0**, tile red; an independent recomputation matches every row. First read 68.7 s (no session briefed yet), second 1.5 s. The operator's dashboard shows the tile after a restart.
 

@@ -433,17 +433,48 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-27 before the first code change, in the cloud checkout `/home/user/trading-agents` on
+branch `sprint-236-the-dashboard-says-how-long-it-ran-without-a-human`, cut from `main` @ `8d4eb09c`,
+no `.env`. Read whole: `surfaces/laws/laws.md` and `test-plan.md` (v1.1), `agents/operator/laws/laws.md`
+(v1.3), `docs/laws/conventions.md`, `docs/laws/drift-register.md`, `CLAUDE.md`; read for the clauses
+named: `orchestration/laws/dispatcher/laws.md` (v1.1).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| new `surfaces/queries/scorecard*.py` (window, verdicts, human actions, attribution, clocks, text) | surfaces book + test-plan; operator book; dispatcher book; conventions; drift register | `SRF-IDN-01`, `SRF-IDN-02` (read-only), `SRF-DEP-01`, new `SRF-OUT-08`; `OPR-OUT-06`, `OPR-OUT-07`, `OPR-TYP-02`, `OPR-IDN-02`; `DSP-IDM-03` | **Yes, twice.** (1) `OPR-OUT-06` writes a `CommandAudit` for every `explain` call, not only every `interpret`, and an explain writes no `Intent` (`outcome="explain"`, `agents/operator/agent.py:111-119`). Scope 4's "a `CommandAudit` … with no `Intent` at all" would count every *Explain this run* press as an intervention, which A3 forbids; an explain-capability audit is reading and is never counted. (2) `DSP-IDM-03` names the property and its words (`brief_verdict`: `accept_run`'s word, or `NOT_FINISHED`); A2 writes it through the dispatcher's own brief path, not by hand, so a renamed property fails the proof. |
+| new `surfaces/dashboard/projections_scorecard.py`; `surfaces/dashboard/app.py` (one GET route); `static/index.html` (148); new `static/scorecard.js`; `static/app.css` | surfaces book + test-plan | `SRF-OUT-01`, `SRF-OUT-05`, `SRF-OUT-06`, `SRF-OUT-07` (the pattern copied), `SRF-TRG-01`, `SRF-TYP-02`, `SRF-FAIL-01`, `SRF-NEV-02` | **Yes.** `SRF-OUT-01` scopes contextual panels to the selected run; the scorecard is a window, so it gets its own `GET /api/scorecard`, which takes no run parameter, and its script never listens for a run selection: the selected run *cannot* scope it, and `SRF-OUT-08` says so. It stays out of `/api/vitals` because its first read judges every unbriefed run (2.94 s each, row 3) and would hold every other vital behind it. `SRF-FAIL-01`'s shape (degrade, stay HTTP 200, say so) gives the unreadable case: unavailable, no number. |
+| `surfaces/mcp_tools.py` (150), `surfaces/mcp_server.py`, new `surfaces/scorecard_tool.py` | surfaces book + test-plan | `SRF-TRG-02`, `SRF-IN-04`, `SRF-NEV-03`, `SRF-TYP-01`, `SRF-FAIL-02`, `SRF-SEC-02` | Yes: `SRF-TRG-02` fixes the catalogue at six tools, so a seventh needs the amendment. DL-225's trap (`test_entry_imports.py`) forbids the tool importing anything under `surfaces.dashboard`, whose package init loads the chat and so `mcp_tools` half-built. |
+| `surfaces/dashboard/chat.py` (141) `_QUICK_TOOLS` | surfaces book + test-plan | `SRF-OUT-03`, `SRF-OUT-06`, `SRF-IN-03`, `SRF-TYP-01` | Yes, a silence (below): the quick ask calls the tool with no run argument and no model. |
+| new `surfaces/scorecard_settings.py`; `surfaces/dashboard/settings.py` (176) | `SRF-PARAM`; conventions; `scripts/param_law_sync_sources.py` (read only: S235 owns `scripts/`) | every `DashboardSettings` field has exactly one `PARAM` row, gate-enforced | **Yes.** The gate reads `DashboardSettings` alone and the MCP tool may not import `surfaces.dashboard`, so the four tunables live in a `ScorecardSettings` outside the dashboard package and `DashboardSettings` inherits from it: each `PARAM` row still meets its field, and the tile and the tool read one declaration. `dispatcher_fire_utc` moves into the same class for the same reason (the scorecard places a session at that tick); its row, its environment name and its readers do not change. |
+| `orchestration/packs/trading_acceptance.py` `accept_run` (read only) | `docs/laws/ledger.md` Layer 3; DL-59 | the one per-run verdict (`PASS`, `NO_TRADE`, `UNPROVEN`, `FAIL`); `.passed` is true for all but `FAIL` | No: "complete" is the word (`PASS`, `NO_TRADE`), never `.passed`. |
+| `orchestration/daily_brief.py` (read only) | dispatcher book v1.1 | `DSP-IDM-03`, `DSP-OUT-06`, `DSP-TRG-03` | **A finding, no change:** the brief goes once the Snapshot exists (~22:40 UTC), before the next open, so a run that submitted orders is briefed `UNPROVEN` and, one brief per run, keeps that word. By Scope 3 such a session never counts complete. The scorecard reads it as written; DL-235 and the return notes carry it. |
+| `orchestration/scheduled_dispatch.py` `ProviderTradingCalendar` (read only) | none governs it | none | **Yes, asked and decided by the operator:** every `RunRequest` writer stores `requested_at` as a bare date (`orchestration/start.py:87`, `as_of.isoformat()`), not the naive 22:30 timestamp the A6/A7 fixtures model. Read literally as UTC it is midnight, 22.5 h before the run. The operator chose (2026-09-27) that a bare date reads as the dispatcher's placing tick, 22:30 UTC, on that date: DL-235 decision 5. |
+| `contracts/operator.py` `IntentFamily` (read only) | operator book v1.3 | `OPR-TYP-02`, `OPR-NEV-01`, `OPR-OUT-06`, `OPR-OUT-07` | Yes: reading is `status` and `explain`; every other family acts, including one the contract may add later (the safe side for an autonomy claim), and a test pins the two reading words to the contract's literal. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes: a new
+guarantee, no `contracts/` change** (the spec's answer, confirmed by reading). The surfaces book goes to
+**v1.2**: `SRF-TRG-02` lists `scorecard`; new `SRF-OUT-08`; four `PARAM` rows (and the
+`dispatcher_fire_utc` row names its second reader); a Changelog line; test-plan rows for both clauses;
+the rollups in `docs/laws/ledger.md` and `docs/laws/INDEX.md`; **DRIFT-078** for the silence below.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none that stop the build. Two were resolved on
+the spec's own stated intent: (1) Scope 4's "a `CommandAudit` with no `Intent` counts" against
+`OPR-OUT-06` (explain calls write one too), read as "an interpret call that produced no `Intent`",
+because A3 and Scope 4's next sentence say reading never counts; (2) `SRF-TRG-02`'s six tools against
+Scope 9's seventh, resolved by the amendment the spec asks for.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** (1) `SRF-OUT-03` says dashboard chat answers are
+grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. The deterministic
+quick asks (`status`, `incidents`, `performance` since S228) already do neither, and `scorecard` joins
+them by design. S228 noted the silence without a register row; this sprint files **DRIFT-078** (forced
+decision: narrow `SRF-OUT-03` to operator-mediated answers, or audit the quick asks) and `SRF-OUT-08`
+states the scorecard's own behaviour. (2) No law says what instant a `RunRequest`'s `requested_at`
+holds; the operator decided how the scorecard reads a bare date (above).
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none of the clauses relied on is ⬜. `SRF-PERF-02` (⬜,
+projection reads bounded by timeout and cache settings) is neither relied on nor proven: the
+scorecard's read is bounded by `scorecard_window_days` and the per-process memo, not by a timeout. To
+be added and proven: `SRF-OUT-08`; `SRF-TRG-02` stays 🟩 with the scorecard tests in its row.
 
 ---
 

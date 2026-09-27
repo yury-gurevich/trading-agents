@@ -10,6 +10,99 @@ and is marked CLOSED here.
 
 ---
 
+## DL-235 - the scorecard counts sessions by the acceptance gate's word and places human actions between runs - status: DECIDED (S236, 2026-09-27; decision 5 by the operator)
+
+**Question.** E19.3 (work-queue 83, [S236](sprints/sprint-236-the-dashboard-says-how-long-it-ran-without-a-human.md))
+must say from graph facts alone whether the pack meets PRD G1 and G3 over a rolling window, and for how
+many sessions in a row it ran without a human. Where does each piece live, how is the verdict injected,
+and what does it say when it cannot answer? Recorded before implementation.
+
+**Decision 1 - the memo lives in the process, beside the verdict source.**
+`surfaces/queries/scorecard_verdicts.py` holds one `VerdictMemo` per process (`PROCESS_VERDICTS`): run
+id → `accept_run`'s word, behind a lock, so the dashboard tile, the chat's quick ask and the MCP tool
+share it and two concurrent refreshes still judge a run once. It holds for the life of the process.
+Only `accept_run`'s words enter it: a run carrying `brief_verdict` is read from its `RunRequest` on
+every read and never reaches the memo or `accept_run`. A judge that raises is not memoised, so the next
+read asks again. *Ruled out:* (a) no memo, 2.94 s per unbriefed run on every refresh (S236 row 3);
+(b) one memo per graph object, because the tile reads through the dashboard's `CachingGraphStore` and
+the chat through the raw store, so the same run would be judged twice in one process; (c) a TTL, which
+re-pays 2.94 s per run to re-learn a word that changes only when late evidence lands, and that the
+brief's stored word replaces from S234 on; (d) storing the word on the graph, which S236 forbids (no new
+property).
+
+**Decision 2 - module boundaries, each under 200 lines.** `surfaces/scorecard_settings.py`
+(`ScorecardSettings`: the four tunables and `dispatcher_fire_utc`, which `DashboardSettings` now
+inherits); `surfaces/queries/scorecard_verdicts.py` (one word per session and what "complete" means);
+`surfaces/queries/scorecard_actions.py` (the human-action records, each with its kind and instant, and
+the one timestamp reader); `surfaces/queries/scorecard.py` (the window, placements, attribution, G1, G3
+and the clocks, returned as a frozen `Scorecard`); `surfaces/queries/scorecard_text.py` (the tile line,
+tone, detail rows, the answer and the blind spots); `surfaces/dashboard/projections_scorecard.py` (the
+tile payload and its unavailable case); `surfaces/scorecard_tool.py` (the MCP tool, which the chat's
+quick ask also calls). The tile has its own `GET /api/scorecard` and is not part of `/api/vitals`: its
+first read judges every unbriefed run and would hold every other vital behind it, and a route that
+takes no run parameter makes "the selected run does not scope it" structural rather than promised.
+*Ruled out:* one module (past 200 lines); the tile inside `/api/vitals` (above); the settings under
+`surfaces/dashboard/`, because importing anything there from the MCP tool runs the dashboard package's
+`__init__`, which imports the chat, which imports `mcp_tools` half-built (DL-225's trap).
+
+**Decision 3 - the verdict function is injected through the memo.** `VerdictMemo(judge=accept_run)` is
+the one place a judge is named; `scorecard()` takes a memo (`verdicts=`) and falls back to
+`PROCESS_VERDICTS`, looked up when it is called. Tests build `VerdictMemo(judge=<counting fake>)` with
+no run chain at all. A2 proves production: `PROCESS_VERDICTS.judge is accept_run`, and the tile and the
+tool name no memo of their own. *Ruled out:* monkeypatching `accept_run` (proves nothing about the
+wiring production uses); a judge parameter beside the memo (the two could disagree).
+
+**Decision 4 - the unavailable case.** No counted session in the window: `unavailable`, no number. The
+graph or `accept_run` raises, or a human-action record carries no readable time: the tile reads
+unavailable with a plain reason and stays HTTP 200 (`SRF-FAIL-01`), never zero; the tool's error reaches
+the operator in plain words through `dispatch_tool` (`SRF-FAIL-02`). A record the scorecard cannot place
+is never skipped: skipping would lower G3 and lengthen the clocks, the optimistic direction for an
+autonomy claim.
+
+**Decision 5 (operator, 2026-09-27) - a date with no time is placed at 22:30 UTC.** Every `RunRequest`
+writer stores `requested_at` as a bare date (`orchestration/start.py:87`, `as_of.isoformat()`), not
+the naive 22:30 timestamp S236's A6/A7 model. A session is placed at its `requested_at` read as UTC; a
+value with no time reads as the dispatcher's placing tick (`dispatcher_fire_utc`, 22:30) on that date,
+the same instant as the no-`RunRequest` fallback. An action at a placement's instant belongs to that
+session, so a run requested on a session's date counts on that session. *Ruled out:* midnight UTC, the
+literal reading, which turns the windows into UTC days: an action taken before a session's run on its
+own UTC date would count against the next session. 🪤 **S236's row-9 baseline probably read midnight:**
+it puts 2026-09-24's escalations on 09-25, while under this decision any created before 22:30 UTC fall on
+09-24. The planner's live comparison has to use this reading.
+
+**Decision 6 - an explain call is reading.** `OPR-OUT-06` writes a `CommandAudit` for every `explain`
+as well as every `interpret`, and an explain writes no `Intent` (`outcome="explain"`). A `CommandAudit`
+counts when an `Intent` it resulted in acts, or when it has no `Intent` and is not an explain (a refused
+or unclear command: a human tried to act). The reading families are `status` and `explain`; any other
+family acts, including one the contract adds later. *Ruled out:* S236 Scope 4 read literally, which
+counts every *Explain this run* press as an intervention.
+
+**Decision 7 - one kind per record.** A `RunRequest` with `resume_from` is a `resume` at `resumed_at`,
+never also a `run`: its `requested_at` is copied from its source (`orchestration/resume.py:61`). A `run`
+is any other `RunRequest` whose id does not start with `sched-`, at its `requested_at`. `hold_answer`
+(`answered_at`), `escalation` (`created_at`, whatever its status) and `deploy` (`deployed_at`) are as the
+spec lists them.
+
+**Decision 8 - the window.** Sessions dated from `scorecard_window_days` before today through today,
+each counted once 23:50 UTC on its date has passed (`orchestration.daily_brief.LAST_FIRE`); on
+2026-09-27 that is 2026-08-28 → 2026-09-25, row 9's twenty. The first counted session's window opens at
+the placement of the session before it. The clocks count inside the window.
+
+**Decision 9 - what the operator reads.** Percentages are shown rounded down, so a percentage read at
+or above its target is at or above it. Tone is decided on the exact ratios: red when G1 is below its
+target, amber when G3 is at or above its target, green otherwise.
+
+**Known limits.** (a) The brief goes out before the next open, so a run that submitted orders is briefed
+`UNPROVEN` and keeps that word (`DSP-IDM-03`: one brief per run); by S236 Scope 3 it never counts
+complete. Changing that is a decision about the verdict's source, not the scorecard's. (b) An
+`accept_run` word memoised as `UNPROVEN` stays until the process restarts. (c) The graph does not record
+broker actions taken by hand, Azure changes other than a recorded deploy, or graph repairs by scripts:
+listed in every answer, never guessed. (d) *[measured over 2026–2027 with the provider calendar]* the
+31 dates of a 30-day window hold **18–23** sessions, and **28** of those days hold fewer than 20, so on
+those days the 20-session clock cannot reach its target even if every session qualifies.
+
+---
+
 ## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)
 
 **How it was found.** Listing what the replay cache must hold for E17.3 (DL-232) meant reading what

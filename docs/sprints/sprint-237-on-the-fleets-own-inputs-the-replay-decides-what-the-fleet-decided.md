@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.4** (fidelity)
 **Branch:** `sprint-237-the-replay-decides-what-the-fleet-decided`
-**Status:** BUILT
+**Status:** SPEC · returned 2026-09-27 (R1–R10, see *Planner review* at the bottom)
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-237](../design-log.md) (the fidelity bar, re-cut: **settled, do not reopen**) ·
@@ -549,3 +549,96 @@ GATE PROVEN for 091f514779587eea6459ee1052629b387f6ce96b:
 - Fidelity/export proofs are synthetic-fixture proof only. The exporter refuses output inside the repo and reads through the kernel graph store.
 - S235 smoke numbers predate the replay PM holding-market-value fix; replay PM now receives `PortfolioState.position_values` in the same shape live graph PM uses.
 - `.env` exists in this local worktree despite the brief's no-`.env` assumption; it was ignored, unread, and unused.
+
+---
+
+## Planner review — returned 2026-09-27
+
+**Handback `c67a62e4` is returned, not merged.** The gate is green (`GATE PROVEN for
+c67a62e4…`, CI, CodeQL and Security Findings, attempt 1; 0 open error-level alerts on the branch),
+and Part A holds: the runner split, the `sessions.csv` counts, stderr progress, and the
+`position_values` fix (quantity × latest visible close, the shape `graph_portfolio.py` uses live).
+**Parts B and C do not do what the spec asks, and on live data the tool certifies the harness without
+running it.**
+
+**Measured, planner, main checkout on this branch with `.env`, 2026-09-27.** The live export
+(read-only, 12 s) over `sched-2026-09-22` → `09-25` wrote four sessions of about 5 MB each, with
+the right deploys (s225, s225, s227, s228b), regime, full snapshots, 18 candidates, 26
+recommendations, and intents and rejections. Then `replay_fidelity.py run` on that export:
+
+```text
+"clean": {"agreement": 1.0, "denominator": 1008, "matches": 1008, "pooled": {"causes": {}}},
+"non_clean": [],
+"verdict": "PASS"
+```
+
+No stage was replayed. `layer1_rows` reads `session["replay"]`, which the exporter never writes, and
+falls back to the **live** block when it is absent, so it compared live with live. All four sessions
+counted as clean: the exporter writes the deploy as `git_sha`, `run_fidelity` reads `sha`, and an
+empty SHA counts as "no code changed". Those sessions ran s225–s228b, whose `contracts/` files differ
+from `HEAD` in files the analyst imports. Layer 3 read `filled 0` on all four sessions, but SCHW, CSCO
+(09-22) and BMY (09-23) filled at the broker.
+
+### Returned items — each needs a test that fails first
+
+- **R1 (blocker). Layer 1 runs the fleet's functions.** Rebuild each stage's inputs from the export as
+  contract objects and call them: *scanner*, `apply_filters` + `rank_survivors` on the snapshot's bars,
+  benchmark, earnings and `earnings_horizon_days`; *analyst*, `scoring_universe` over the **live**
+  `CandidateSet` and the held book, then `score_candidates` with the snapshot as `MarketData`
+  (fundamentals, news, sectors, earnings), the exported `RegimeContext` and the benchmark, then
+  `split_decisions`; *PM*, `evaluate_recommendations` over the **live** `RecommendationSet`, with the
+  `PortfolioState` built as `agents/portfolio_manager/graph_portfolio.py` builds it (cash = account
+  equity; positions, refs and `position_values` from the book), and settings from
+  `build_effective_settings`. Replay outputs are **computed, never read**: an export file carrying a
+  `replay` or `layer2` key is refused.
+- **R2 (blocker). Fail closed.** A stage with no replay output is `harness:not_replayed`, never the
+  live block. A session with no deploy, or a SHA `git` cannot resolve, is non-clean
+  (`code_changed:unknown_deploy`). Read `git_sha`, the `DeployRecord` field. The fixture's deploy
+  must have the live shape.
+- **R3. The tunables path.** `_DECISION_PATHS` holds `trading_tunables.json`, but the file lives at
+  `orchestration/packs/trading_tunables.json`, so a tunables change never marks a session non-clean.
+- **R4. Build Layer 2** as specced: `--cache` loads the S235 cache, and the cumulative swaps run in the
+  fixed order (SIP volume, then no fundamentals, no news, no earnings, then cache bars over
+  `declared_lookback_days`), each step through the same stage calls as R1, anchored on the live book.
+  Without `--cache`, Layer 2 is skipped, and `summary.json` and `fidelity.md` say so.
+- **R5. The verdict per stage, per [DL-237](../design-log.md) as amended today:**
+  - *scanner:* per session and ticker, candidate membership and rank;
+  - *analyst:* per ticker, `action`, `exit_trigger`, and `confidence` within 1e-9 (`technical_score`
+    and `suggested_stop_pct` are diagnostics);
+  - *PM:* per ticker **over judged recommendations only** (`buy` and `sell`): decision and reason,
+    plus quantity and stop pct for an approval. `hold_recommendation` passthroughs are counted
+    beside it, never pooled; on 09-25 they were 25 of the 26 PM rows.
+  - *floors:* analyst ≥ 100 tickers, PM ≥ 10 judged recommendations, scanner ≥ 4 sessions.
+  - *overall:* `FAIL` if any stage is under 90 % or any clean difference is `unexplained`, else
+    `INSUFFICIENT` if any floor is unmet, else `PASS`. `fidelity.md` states each stage's number and
+    denominator.
+- **R6. Layer 3 reads the live Fill shape.** A PM run's fills are the `Fill` nodes whose
+  `source_run_id` equals the `PMRun` key (180 carry it). The outcome is `broker_status`, because
+  `status` stays `pending` by design. Measured values: buy `filled` 49, buy `rejected` 102, sell
+  `filled` 10. `vetoed` counts overturn verdicts.
+- **R7. Held-stop inputs are what the analyst read, or `not_persisted`.** Live reads
+  `open_position_stop_thresholds(graph)` and `active_broker_stop_refs(graph)` from the graph as it
+  stood at run time (`agents/analyst/run.py:65-82`). The export currently attaches every
+  `BrokerStopOrder` ever placed for a held name (47 → 55 over four sessions). Reconstruct them as of
+  `ScanRun.created_at` if the stop nodes carry the times to do it; otherwise export nothing and name
+  `not_persisted:held_stops` and `not_persisted:active_broker_stop_refs`, so a held-name difference
+  is attributed to them.
+- **R8. The test plan, A1–A13 as written.** The table renumbered it into 8 rows and dropped A1, A2, A4,
+  A6, A7, A8, A9 and A12 without a reason. A1's live side must be produced by the fleet's own
+  functions, so that its `PASS` means something. Add regressions on the live shapes (`git_sha`,
+  `source_run_id`, `broker_status`), and plant, per DL-70: replay read from the file; the live
+  fallback; an empty SHA counted clean; the tunables path; the fill link. Each goes red, then is
+  restored.
+- **R9. Coverage the gate cannot see.** `[tool.coverage.run] source` excludes `scripts/`, so the
+  handback's 100.00 % covers none of this sprint's code. Paste `pytest --cov=scripts.replay_fidelity_compare
+  --cov=scripts.replay_fidelity_layers --cov=scripts.fidelity_exporter
+  --cov=scripts.fidelity_export_helpers --cov-branch --cov-report=term-missing` for the S237 tests, with
+  every verdict branch hit.
+- **R10. Say what is built.** DL-238 Decision 2 describes stage replays that did not exist at
+  `c67a62e4`, and the STATE line read "built". Correct DL-238 to what the returned build does, and
+  never write a `Result:` for work not done (LAW-02).
+
+**Planner corrections owned here, not by the builder.** The spec's *"4 clean sessions (09-22 → 09-25)"*
+was marked *[ASSUMED]* and does not hold under the rule it asked for: s225–s228b differ from `HEAD` in
+`contracts/` files the analyst imports. **The clean set starts at `sched-2026-09-28` (s232, 0 files).**
+DL-237's amendment records that, and the PM-denominator fix in R5.

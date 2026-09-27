@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 19:26 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 S237 is built and branch-gated at `091f514779587eea6459ee1052629b387f6ce96b`; fixture proof only, no live export.**
+**Last updated:** 2026-09-27 21:25 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 S237 returned (R1–R10): on the live export its fidelity tool read `PASS` 1,008/1,008 without replaying a stage; the rework goes to an Opus cloud session. Tuesday 29 Sep's run still owes S234's first brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,7 +37,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-📦 **BUILT — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), branch `sprint-237-the-replay-decides-what-the-fleet-decided`, `091f514779587eea6459ee1052629b387f6ce96b`.** Scripts/tests only: `replay_runner` split, `sessions.csv` counts and stderr progress, replay PM `position_values`, read-only graph fidelity export, and fixture-backed fidelity layer summaries/causes/verdicts. Law reading and DL-238 preceded code; no `contracts/`, `agents/` or law edits. Local redirected `make ci` exit 0 (**3406 passed, 4 skipped, 100.00 %**); remote CI, CodeQL and Security Findings green; **`GATE PROVEN`** for the branch SHA. Fixture proof only: live export/verdict remains planner-owned; `.env` existed locally but was unread and unused.
+🔴 **RETURNED 2026-09-27 — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), handback `c67a62e4` (Codex), gate green.** INTENT unchanged (the harness judged stage by stage on each live run's stored inputs). **PROVEN RESULT: not met.** The read-only live export works (`sched-2026-09-22` → `09-25`: four sessions, right deploys, full snapshots). But `replay_fidelity` replays no stage: it compares live with live, and read `PASS`, 1,008 of 1,008, with every session counted clean (it reads `sha`; the export writes `git_sha`). Layer 2 is not built; Layer 3 missed three real fills. Part A holds (runner split, counts, progress, the PM `position_values` fix). R1–R10 are in the spec. [DL-237](design-log.md) is amended: the clean set starts at `sched-2026-09-28`, and PM agreement counts judged recommendations only. The rework goes to an Opus cloud session; that session cannot run `make gate-ran`, so the planner does before merging.
 
 ⬜ **PRE-REGISTERED — [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) (work-queue 90).** Hypothesis, universe, target, three fixed models, purged folds, holdout and pass bar are written before any fit. Not run: the build follows S237.
 

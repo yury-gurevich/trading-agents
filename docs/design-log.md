@@ -97,6 +97,20 @@ code:* ~35 deploys and harness modules that did not exist then, answering a ques
 ask. *A P&L bar against the live account:* the two books diverge from the first different fill; the
 number is reported as context only.
 
+**Amendment — planner review of S237's first handback, 2026-09-27: the clean set and the PM denominator.**
+Two claims above did not survive the live export. (1) *"Four clean sessions give ~104"* assumed the
+11 `contracts/` diffs since s225 were decision-neutral; the rule this entry asks for (the deployed
+decision paths equal the replayed code's) marks s225, s227 and s228b non-clean, because the analyst
+imports those files. **The clean set starts at `sched-2026-09-28` (s232, 0 files).** Four sessions reach
+the analyst floor, so the first verdict is due after `sched-2026-10-01` at the earliest. Non-clean
+sessions are still replayed and reported: a non-clean session that matches is evidence, not the bar.
+(2) The PM's rows are mostly passthroughs: on `sched-2026-09-25`, 25 of 26 were `hold_recommendation`,
+which the PM rejects mechanically. Pooling them would measure the analyst's action field twice. **PM
+agreement is taken over judged recommendations (`buy`, `sell`) with its own floor of 10**; passthroughs
+are counted beside it. The per-stage rules and floors are in S237's returned item R5. *Rejected:* a
+hand-kept allow-list of decision-neutral `contracts/` files (a judgement the tool cannot check);
+lowering the analyst floor to keep the earlier date.
+
 ---
 
 ## DL-236 - a price-only ensemble is measured on the replay cache now, and built only if it wins - status: DECIDED (operator, 2026-09-27)

@@ -23,6 +23,7 @@ from surfaces.queries.fleet_check import (
     readiness_override,
 )
 from surfaces.queries.runs import recent_runs
+from surfaces.scorecard_tool import scorecard_tool
 
 if TYPE_CHECKING:
     from surfaces.context import SurfaceContext
@@ -40,6 +41,7 @@ def dispatch_tool(ctx: SurfaceContext, name: str, arguments: ToolResult) -> Tool
         "incidents": _cmd_incidents,
         "explain": _cmd_explain,
         "performance": performance_tool,
+        "scorecard": scorecard_tool,
     }
     handler = handlers.get(name)
     if handler is None:

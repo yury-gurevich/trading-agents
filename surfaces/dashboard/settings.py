@@ -10,10 +10,11 @@ from typing import Literal
 from pydantic import AliasChoices
 from pydantic_settings import SettingsConfigDict
 
-from kernel.config import AgentSettings, tunable
+from kernel.config import tunable
+from surfaces.scorecard_settings import ScorecardSettings
 
 
-class DashboardSettings(AgentSettings):
+class DashboardSettings(ScorecardSettings):
     """Configuration for the read-only operations dashboard."""
 
     model_config = SettingsConfigDict(
@@ -146,9 +147,6 @@ class DashboardSettings(AgentSettings):
     )
     window_end_utc: str = tunable(
         "00:30", why="Matches $ScaleEnd in infra/deploy-agents.ps1 (test-pinned)."
-    )
-    dispatcher_fire_utc: str = tunable(
-        "22:30", why="The dispatcher's first placing tick, _ACTION_START (test-pinned)."
     )
     operator_timezone: str = tunable(
         "Australia/Melbourne",

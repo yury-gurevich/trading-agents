@@ -1,7 +1,7 @@
 """Graph fixtures for the S236 scorecard tests.
 
 Agent: surfaces
-Role: seed sessions and the records human actions leave, shaped as their writers shape them.
+Role: seed sessions and the records human actions leave, as their writers shape them.
 External I/O: none; writes only to the supplied in-memory graph.
 
 Every property here mirrors a production writer: `RunRequest` (orchestration/start.py,
@@ -18,11 +18,14 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, cast
 
 from orchestration.packs.trading_acceptance import TradingAcceptanceResult
+from surfaces.queries.scorecard import scorecard
+from surfaces.queries.scorecard_verdicts import VerdictMemo
 from surfaces.scorecard_settings import ScorecardSettings
 
 if TYPE_CHECKING:
     from kernel import GraphStore
     from orchestration.packs.trading_acceptance import AcceptanceVerdict
+    from surfaces.queries.scorecard_model import Scorecard
 
 # The planner's measuring instant: Sunday 2026-09-27, after Friday's window closed.
 NOW = datetime(2026, 9, 27, 3, 0, tzinfo=UTC)
@@ -55,6 +58,16 @@ class CountingJudge:
         return TradingAcceptanceResult(verdict=word, breaches=())
 
 
+def score(graph: GraphStore, window_days: int, now: datetime = NOW) -> Scorecard:
+    """Score with a judge that must never be asked: every session is briefed."""
+    return scorecard(
+        graph,
+        now=now,
+        settings=settings(window_days=window_days),
+        verdicts=VerdictMemo(CountingJudge({})),
+    )
+
+
 def session(
     graph: GraphStore,
     day: date,
@@ -62,7 +75,7 @@ def session(
     verdict: str | None = None,
     requested_at: str | None = None,
 ) -> str:
-    """Place ``sched-<day>`` as the dispatcher does; brief it when ``verdict`` is set."""
+    """Place ``sched-<day>`` as the dispatcher does; brief it when given a verdict."""
     run_id = f"sched-{day.isoformat()}"
     props: dict[str, object] = {
         "run_id": run_id,
@@ -87,7 +100,7 @@ def command(
     family: str | None = None,
     outcome: str = "intent",
 ) -> None:
-    """Write one `CommandAudit` and, when ``family`` is set, the `Intent` it produced."""
+    """Write one `CommandAudit`, and the `Intent` it produced when given a family."""
     audit = graph.merge_node(
         "CommandAudit",
         f"audit:{key}",
@@ -120,15 +133,20 @@ def manual_run(graph: GraphStore, run_id: str, requested_at: str) -> None:
 
 
 def resume(graph: GraphStore, source: str, stage: str, resumed_at: datetime) -> None:
-    """Place a resume child as `orchestration.resume.resume_run` does."""
+    """Place a resume child as `orchestration.resume.resume_run` does.
+
+    Like production, the child copies its source's `requested_at`.
+    """
     child = f"{source}-resume-{stage}"
+    parent = graph.get_node("RunRequest", f"run-request:{source}")
+    assert parent is not None, f"place {source} before resuming it"
     graph.merge_node(
         "RunRequest",
         f"run-request:{child}",
         {
             "run_id": child,
             "tickers": ["AAPL"],
-            "requested_at": source.removeprefix("sched-"),
+            "requested_at": parent.props["requested_at"],
             "resume_from": stage,
             "source_run_id": source,
             "resumed_at": resumed_at.isoformat(),
@@ -152,7 +170,9 @@ def hold_answer(graph: GraphStore, run_id: str, answered_at: datetime) -> None:
     )
 
 
-def escalation(graph: GraphStore, created_at: datetime, *, agent: str = "operator") -> None:
+def escalation(
+    graph: GraphStore, created_at: datetime, *, agent: str = "operator"
+) -> None:
     """Record a credential escalation as the master does (open, whatever follows)."""
     graph.merge_node(
         "Escalation",

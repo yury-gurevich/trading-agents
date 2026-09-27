@@ -19,6 +19,7 @@ from surfaces.dashboard.chat import handle_chat
 from surfaces.dashboard.projections_fleet import fleet_projection
 from surfaces.dashboard.projections_infra import infra_projection
 from surfaces.dashboard.projections_performance import performance_vital
+from surfaces.dashboard.projections_scorecard import scorecard_vital
 from surfaces.dashboard.projections_verdict import verdict_projection
 from surfaces.dashboard.projections_vitals import vitals_projection
 from surfaces.dashboard.read_cache import CachingGraphStore
@@ -95,6 +96,9 @@ def build_app(
                     read_graph, azure, config, vital_run, now=now, github=github
                 ),
             )
+        if path == "/api/scorecard":  # a window of sessions: no run parameter at all
+            payload = scorecard_vital(read_graph, config, now=now)
+            return _json(start_response, 200, payload)
         if path == "/api/verdict":
             verdict_run = query.get("run", [""])[0] or selected_run(read_graph, query)
             if not verdict_run:

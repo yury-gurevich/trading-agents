@@ -34,8 +34,10 @@ property).
 (`ScorecardSettings`: the four tunables and `dispatcher_fire_utc`, which `DashboardSettings` now
 inherits); `surfaces/queries/scorecard_verdicts.py` (one word per session and what "complete" means);
 `surfaces/queries/scorecard_actions.py` (the human-action records, each with its kind and instant, and
-the one timestamp reader); `surfaces/queries/scorecard.py` (the window, placements, attribution, G1, G3
-and the clocks, returned as a frozen `Scorecard`); `surfaces/queries/scorecard_text.py` (the tile line,
+the one timestamp reader); `surfaces/queries/scorecard.py` (the window, placements and attribution);
+`surfaces/queries/scorecard_model.py` (the frozen `Scorecard` and its sessions, from which G1, G3 and
+the clocks are counted; split out during the build when the query formatted to 210 lines);
+`surfaces/queries/scorecard_text.py` (the tile line,
 tone, detail rows, the answer and the blind spots); `surfaces/dashboard/projections_scorecard.py` (the
 tile payload and its unavailable case); `surfaces/scorecard_tool.py` (the MCP tool, which the chat's
 quick ask also calls). The tile has its own `GET /api/scorecard` and is not part of `/api/vitals`: its
@@ -79,9 +81,15 @@ counts every *Explain this run* press as an intervention.
 
 **Decision 7 - one kind per record.** A `RunRequest` with `resume_from` is a `resume` at `resumed_at`,
 never also a `run`: its `requested_at` is copied from its source (`orchestration/resume.py:61`). A `run`
-is any other `RunRequest` whose id does not start with `sched-`, at its `requested_at`. `hold_answer`
-(`answered_at`), `escalation` (`created_at`, whatever its status) and `deploy` (`deployed_at`) are as the
-spec lists them.
+is any other `RunRequest` whose id does not start with `sched-`, at its `requested_at`. `escalation`
+(`created_at`, whatever its status) and `deploy` (`deployed_at`) are as the spec lists them.
+*Refined during the build:* a `hold_answer` belongs to the counted session whose run it names
+(`RunHoldAnswer.run_id`), else it is placed by `answered_at`. The run it releases is placed after the
+answer, on the next fire, but a bare-date placement reads 22:30 UTC, so by its time alone a 22:40 answer
+would count against the next session and the released run would read unattended, the optimistic error.
+The spec names no timestamp for `hold_answer`. *Ruled out:* the same for a resume, whose run it
+resumes (`source_run_id`): the spec names `resumed_at`, and the error it leaves is the conservative one
+(the resume counts against the next session; the resumed run is not complete anyway).
 
 **Decision 8 - the window.** Sessions dated from `scorecard_window_days` before today through today,
 each counted once 23:50 UTC on its date has passed (`orchestration.daily_brief.LAST_FIRE`); on
@@ -95,7 +103,10 @@ target, amber when G3 is at or above its target, green otherwise.
 **Known limits.** (a) The brief goes out before the next open, so a run that submitted orders is briefed
 `UNPROVEN` and keeps that word (`DSP-IDM-03`: one brief per run); by S236 Scope 3 it never counts
 complete. Changing that is a decision about the verdict's source, not the scorecard's. (b) An
-`accept_run` word memoised as `UNPROVEN` stays until the process restarts. (c) The graph does not record
+`accept_run` word memoised as `UNPROVEN` stays until the process restarts. (b2) A record made inside the
+dispatcher window, after 22:30 UTC, for that night's run (a command, an escalation at activation) counts
+against the next session: the stored placement is the tick, not the instant the run was placed; only a
+hold answer names its run. (c) The graph does not record
 broker actions taken by hand, Azure changes other than a recorded deploy, or graph repairs by scripts:
 listed in every answer, never guessed. (d) *[measured over 2026–2027 with the provider calendar]* the
 31 dates of a 30-day window hold **18–23** sessions, and **28** of those days hold fewer than 20, so on

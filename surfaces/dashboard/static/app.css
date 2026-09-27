@@ -52,7 +52,10 @@ select#run:focus-visible, button:focus-visible { outline:2px solid var(--accent)
   padding:3px 8px; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); }
 .vital b { font-weight:600; color:var(--ink); }
 .vital.crit { border-color:var(--crit); } .vital.crit b { color:var(--crit); }
-#vital-performance { position:relative; }
+#vital-performance, #vital-scorecard { position:relative; }
+.cardetail { min-width:340px; max-height:70vh; overflow:auto; }
+.cardetail h4 { margin:10px 0 2px; font:600 10.5px var(--mono); color:var(--ink); }
+.cardetail ul { margin:2px 0 0; padding-left:16px; font:400 11.5px/1.45 var(--sans); }
 .perfvital { cursor:pointer; } .perfvital:disabled { cursor:default; }
 .perfdetail { position:absolute; right:0; top:calc(100% + 6px); z-index:30; min-width:280px;
   padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card);

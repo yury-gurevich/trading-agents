@@ -10,6 +10,32 @@ and is marked CLOSED here.
 
 ---
 
+## DL-236 - a price-only ensemble is measured on the replay cache now, and built only if it wins - status: DECIDED (operator, 2026-09-27)
+
+**Question.** With ten years of the point-in-time index cached (S235), should shadow-prediction
+ensembles start now, or wait for P18A.3 after the G-EDGE decision, where the plan put new signals?
+
+**Decision (operator: "my recommendation = wise, I agree").** Pull it forward **as a measurement,
+not a build**: **EXP-015**, offline on the replay cache, $0 LLM. Does a small price-and-volume
+ensemble beat the analyst's current technical score out of sample: rank IC, decile spread and decay,
+purged walk-forward windows, a final holdout, and 25 bps costs? The hypothesis and the pass bar are
+written before any model is fitted. It runs alongside E17.4. Only a clear win enters the forecaster's
+existing shadow loop (`shadow=True`, never gates; promotion through the registry, ADR-0010). A loss
+costs one experiment and builds nothing.
+
+**Why now.** The harness that can say no exists (S235). The forecaster already owns shadow models,
+return labels and a return scorecard. The measurement touches no live path.
+
+**Bounds.** Price and volume only (DL-232: no point-in-time fundamentals or news). Sector labels are
+today's (a mild look-ahead; 13 % of symbols have none). The SIP bars stay out of the repo; models and
+scores may not embed them. Item 89 (the live scanner reads IEX volume) must be fixed before any
+shadow model is fed by the live pipeline, or it will see the wrong universe.
+
+**Ruled out.** *Build a shadow ensemble now:* many fitted variants over ~2,700 sessions will find
+something by chance; the experiment's pre-registered bar is the guard. *Wait for G-EDGE:* the
+measurement is free and informs the verdict. *Train on the live graph's history:* six weeks, one
+configuration, IEX volume.
+
 ## DL-235 - the scorecard counts sessions by the acceptance gate's word and places human actions between runs - status: DECIDED (S236, 2026-09-27; decision 5 by the operator)
 
 **Question.** E19.3 (work-queue 83, [S236](sprints/sprint-236-the-dashboard-says-how-long-it-ran-without-a-human.md))

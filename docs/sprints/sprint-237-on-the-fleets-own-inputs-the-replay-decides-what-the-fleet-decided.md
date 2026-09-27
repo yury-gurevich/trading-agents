@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.4** (fidelity)
 **Branch:** `sprint-237-the-replay-decides-what-the-fleet-decided`
-**Status:** SPEC · returned 2026-09-27 (R1–R10, see *Planner review* at the bottom)
+**Status:** BUILT · the return, 2026-09-27: R1–R10 addressed on synthetic fixtures; `make gate-ran` and the live export are owed to the planner (see *Closeout* and *Return notes*)
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-237](../design-log.md) (the fidelity bar, re-cut: **settled, do not reopen**) ·
@@ -444,111 +444,355 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Re-read in full for the return (R1–R10), 2026-09-27, before the first code change of the return:
+`agents/{scanner,analyst,portfolio_manager,reporter}/laws/laws.md` and `test-plan.md`,
+`docs/laws/conventions.md`, `docs/laws/drift-register.md`; and, for the clauses Layer 3 counts by,
+`DLIB-OUT-02`/`DLIB-OUT-04` and `EXEC-OUT-07`/`EXEC-STA-05`. Tree: the claude.ai cloud container,
+`/home/user/trading-agents`, branch `sprint-237-the-replay-decides-what-the-fleet-decided`; no `.env`
+exists in this tree.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| `scripts/replay_runner.py` split and `sessions.csv` counts | `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `RPT-IDN-01`, `RPT-OUT-07`, `RPT-NEV-01`, `RPT-NEV-02`, `RPT-IDM-03` | Yes. Counts stay derived from replay day results and returns stay through `calculate_performance`; the split must not create a second return formula or a reporter-owned graph fact. |
-| Scanner fidelity and export of scanner outputs | `agents/scanner/laws/laws.md`; `agents/scanner/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `SCAN-IDN-01`, `SCAN-OUT-01`, `SCAN-OUT-02`, `SCAN-OUT-06`, `SCAN-OUT-07`, `SCAN-NEV-02`, `SCAN-IDM-01`, `SCAN-OBS-01` | Yes. Layer 1 must call scanner domain functions and compare per ticker/rank/filter trace; missing benchmark or gate inputs are named `not_persisted`, not substituted. |
-| Analyst fidelity, held-stop inputs, and export of analyst outputs | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `ANLZ-IDN-01`, `ANLZ-OUT-01`, `ANLZ-OUT-02`, `ANLZ-OUT-07`, `ANLZ-NEV-01`, `ANLZ-IDM-01`, `ANLZ-OBS-01`, `ANLZ-OBS-06`; drift `DRIFT-074` | Yes. The analyst held-stop law is silent (`DRIFT-074`), so the exporter records reconstructed stop inputs when available and puts anything not stored in `not_persisted`; no analyst or contract change is allowed here. |
-| PM fidelity, replay book values, approvals and rejections | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-IDN-01`, `PM-OUT-01`, `PM-OUT-02`, `PM-OUT-03`, `PM-NEV-04`, `PM-NEV-06`, `PM-NEV-08`, `PM-NEV-09`, `PM-IDM-01`, `PM-ORD-01`, `PM-OBS-01`, `PM-OBS-03`, `PM-OBS-04`, `PM-OBS-05`; drifts `DRIFT-036`, `DRIFT-039`, `DRIFT-065` | Yes. The replay/fidelity PM book must pass holding market values as live does. PM run snapshots are not fully built (`DRIFT-039`), so export and replay use `BrokerPositionSnapshot` plus stored PM outputs and name gaps instead of inventing `portfolio_state_snapshot`. |
-| `scripts/fidelity_export.py` graph read path and output refusal | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; agent law/test-plan files above | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01`, `RPT-NEV-02`; drifts `DRIFT-039`, `DRIFT-040` | Yes. The exporter is a read-only projection through the kernel graph store; it refuses repo-local output and records non-persisted source/provenance gaps rather than using raw SQL or writing helper facts. |
+| Part A: `replay_runner.py` split, `sessions.csv` counts, stderr progress (accepted, kept) | reporter `laws.md` + `test-plan.md`; conventions; drift register | `RPT-OUT-07` (returns only through `calculate_performance`), `RPT-NEV-02` | No new approach. Reading scope item 1 against the output found that an absent reason wrote a blank, not `0`: fixed and guarded (A11). |
+| Scanner stage replay (Layer 1 and 2) | scanner `laws.md` + `test-plan.md` | `SCAN-IDM-01` (⬜: same `MarketData` → same `CandidateSet`), `SCAN-OUT-02`, `SCAN-OUT-06`/`07` (a skipped gate says so), `SCAN-NEV-02`, `SCAN-OBS-01` | Yes. The replay runs `scan_market_node` itself, so the universe and as-of come from the `MarketData` node as live read them. `SCAN-OUT-06` means an empty benchmark skips the beta gate rather than failing, so an empty stored benchmark is replayed as empty and named `not_persisted` only on evidence a benchmark was used (DL-238 D5). |
+| Analyst stage replay and its held inputs | analyst `laws.md` + `test-plan.md`; `DRIFT-074` | `ANLZ-IDM-01` (🟩), `ANLZ-OUT-01`, `ANLZ-OUT-03`, `ANLZ-NEV-03`, `ANLZ-OBS-01` (⬜), `ANLZ-OUT-07`/`ANLZ-OBS-06` (the target estimate) | Yes. No clause names the held-stop check (`DRIFT-074`, still OPEN), so the only authority on what live read is `agents/analyst/run.py`: thresholds and refs from the graph at run time. They cannot be rebuilt as of the run without a formula of our own, so they are `not_persisted` (R7, DL-238 D4). |
+| PM stage replay and the book | PM `laws.md` + `test-plan.md`; `DRIFT-036`, `DRIFT-039`, `DRIFT-065` | `PM-IDM-01`, `PM-IDN-01` ("the current portfolio state"), `PM-OUT-03`, `PM-NEV-04`, `PM-NEV-06`/`07`/`08`/`09` (deployed-capital denominators), `PM-OBS-01` (⬜, `DRIFT-039`) | Yes. Reading `PM-IDN-01` beside `graph_portfolio.py` showed the live PM values held names at adoption, not at the current mark; that is a finding (`DRIFT-079`, appended to the register), and the replay reproduces what live read rather than what the law intends (DL-238 D3). |
+| Layer 3 counts | deliberator `DLIB-OUT-02`/`04`; execution `EXEC-OUT-07`, `EXEC-STA-05` | `vetoed_tickers` holds only `overturn`; `dropped` is distinct from `rejected`; `Fill.status` never changes, `broker_status` carries the outcome | Yes. Outcomes are read from `broker_status` and `drop_reason`, and `vetoed` counts `overturn` verdicts (R6). |
+| Exporter read path and output refusal | conventions; drift register; the agent books above | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01` (reconstructable runs), `RPT-NEV-02` (read others' facts, write none) | No change: reads only through `GraphStore`, no `merge_node`/`add_edge` (A9 counts them), output refused inside the worktree (A10). |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. The sprint is confined to `scripts/`, `tests/`, package version files, and handback/design docs. It adds replay/export tooling and guards around existing agent guarantees; if an agent or contract change becomes necessary, the build stops and reports.
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. The return
+touches `scripts/`, `tests/`, this spec, `docs/design-log.md`, `docs/sprints/{README,INDEX}.md`,
+`docs/STATE.md` and one appended row in `docs/laws/drift-register.md`. No `contracts/`, `agents/` or
+`laws.md` file changes, and the tool adds no guarantee to any agent.
 
-**Contradictions found between a law and this spec:** None found. Existing drift rows constrain the implementation but do not contradict the spec.
+**Contradictions found between a law and this spec:** None. One tension is recorded rather than
+resolved: R1 reads "`position_values` from the book", while the live PM reads the book's `Position`
+facts, whose values are adoption-time marks. The replay follows what live read (R1's "as
+`graph_portfolio.py` builds it"); DL-238 D3 and `DRIFT-079` carry the reasoning.
 
-**Laws found silent where a decision was needed:** The analyst book has no held-stop clause (`DRIFT-074`); PM full portfolio-state snapshot reconstruction is unbuilt (`DRIFT-039`); provider provenance/source is incomplete for vendor source/transformation (`DRIFT-040`). S237 records those as `not_persisted` or export gaps and does not amend laws.
+**Laws found silent where a decision was needed:** (1) the analyst's held-stop check (`DRIFT-074`,
+OPEN, unchanged); (2) the PM's valuation of held names: no clause says whether "current portfolio
+state" means the current mark, and the code uses the adoption-time mark (`DRIFT-079`, appended OPEN);
+(3) `DRIFT-039` (no `portfolio_state_snapshot`), which is why the book is rebuilt from the
+`BrokerPositionSnapshot` and `Position` facts at all.
 
-**Clauses that were ⬜ and are now proven:** None yet. This sprint adds script-level guards that cite governing clauses where applicable, but it does not turn a locked agent law row green unless the final test plan explicitly says so.
+**Clauses that were ⬜ and are now proven:** None. The S237 tests cite `SCAN-IDM-01`, `ANLZ-IDM-01`
+and `PM-IDM-01` in their docstrings, but they live in `tests/`, not with the agent, and the test-plans
+are under `agents/`, which this sprint may not edit; no row moves.
 
 ---
 
 ## Test plan results — fill at handback
 
+*Rewritten for the return: A1–A13 as the plan writes them (R8). "Failed first" names the red that was
+seen before the code that turns it green existed; the full red output is in the Closeout.*
+
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | `test_sessions_csv_counts_pipeline_outputs_and_progress_is_stderr_only` | `tests/test_replay_runner_progress.py` | Passed | `RPT-OUT-07`, `SCAN-OBS-01`, `PM-OUT-03` |
-| A2 | `test_universe_file_limits_decision_lines` | `tests/test_replay_runner.py` | Existing guard passed | `S235-A10` |
-| A3 | `test_replay_day_passes_holding_market_values_to_pm` | `tests/test_replay_day_portfolio_values.py` | Passed; planted `{}` first and watched it fail | `PM-NEV-06`, `PM-NEV-08` |
-| B1 | `test_export_reads_only_sched_runs_and_follows_linked_stage` | `tests/test_fidelity_export.py` | Passed | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01` |
-| B2 | `test_export_refuses_out_inside_repo` | `tests/test_fidelity_export.py` | Passed | `RPT-NEV-02` |
-| C1 | `test_fidelity_reports_unexplained_clean_difference_as_fail` | `tests/test_replay_fidelity.py` | Passed | `SCAN-IDM-01`, `ANLZ-IDM-01`, `PM-IDM-01` |
-| C2 | `test_code_changed_sessions_are_non_clean_and_not_pooled` | `tests/test_replay_fidelity.py` | Passed | `SCAN-IDM-01`, `ANLZ-IDM-01`, `PM-IDM-01` |
-| C3 | `test_fidelity_refuses_out_inside_repo` | `tests/test_replay_fidelity.py` | Passed | `RPT-NEV-02` |
+| A1 | `test_a1_identical_inputs_agree` — five runs decided by the fleet's own graph-pull stages (`scan_market_node`, `analyze_scan_node`, `evaluate_analyst_node`, monitor adoption), exported by the exporter, replayed: 100 % at all three stages, zero causes, `PASS`, `replayed` 5/5/5; measured: scanner 105 units over 5 sessions, analyst 110 tickers, PM 88 judged (10 passthroughs, 10 agree) | `tests/test_replay_fidelity.py` | Passed; failed first (`run_fidelity` had no replay to run) | `SCAN-IDM-01`, `ANLZ-IDM-01`, `PM-IDM-01` |
+| A2 | `test_a2_a_changed_live_output_is_caught_and_located` — one live `hold` confidence +0.01: exactly one row differs (analyst, that ticker, `confidence`, `unexplained`); scanner and PM 100 %; `FAIL` | `tests/test_replay_fidelity.py` | Passed; the returned build read `PASS` on the same edit (Closeout, probe line 1) | `ANLZ-IDM-01`, `PM-IDM-01` |
+| A3 | `test_a3_the_books_market_values_reach_the_pm` — live `sector_concentration` rejections reproduced; with the book's values removed the same PM approves one of them (in-test counterfactual); Part A's `test_replay_day_passes_holding_market_values_to_pm` kept for the S235 path | `tests/test_replay_fidelity_book.py`; `tests/test_replay_day_portfolio_values.py` | Passed; `position_values={}` planted: red | `PM-NEV-06`, `PM-NEV-08` |
+| A4 | `test_a4_a_benchmark_live_used_but_never_stored_is_named` (replay: `T31` survives without SPY, every difference `not_persisted:benchmark`, other sessions untouched, nothing substituted) + `test_the_export_names_a_benchmark_live_used_but_never_stored` + `test_a_benchmark_is_named_only_on_evidence_live_used_one` | `tests/test_replay_fidelity.py`; `tests/test_fidelity_export_edges.py`; `tests/test_fidelity_export_book.py` | Passed | `SCAN-OUT-06`, `SCAN-OUT-07`, `SCAN-IDM-01` |
+| A5 | `test_a5_code_changed_needs_git_evidence` — a tiny git repo whose HEAD changes `agents/analyst/domain/analyze.py`: all five sessions non-clean, the difference `code_changed:agents/analyst/domain/analyze.py`, analyst units pooled 0, `INSUFFICIENT` | `tests/test_replay_fidelity_git.py` | Passed; failed first (no git evidence was taken) | `ANLZ-IDM-01` |
+| A6 | `test_a6_the_verdict_follows_dl237[89-percent, 90-percent, below-the-floor]` → `FAIL`, `PASS`, `INSUFFICIENT`; `test_a6_an_unexplained_clean_difference_fails_whatever_the_percentage` (99 % → `FAIL`) | `tests/test_replay_fidelity_verdict.py` | Passed; failed first (module did not exist) | `ANLZ-IDM-01` |
+| A7 | `test_a7_only_the_volume_swap_moves_the_decisions` — snapshot volume at half the cache's SIP volume, no fundamentals/news/earnings: step 1 changes candidates, steps 2–5 change nothing further, Jaccard equals the set arithmetic exactly, 0 unswapped bars | `tests/test_replay_fidelity_layer2.py` | Passed; failed first (Layer 2 passed fixture rows through) | `SCAN-IDM-01` |
+| A8 | `test_a8_layer3_counts_approvals_vetoes_drops_and_fills` — 4 approvals, 2 `overturn` (a `revise` in `vetoed_tickers` not counted), 1 dropped, 1 filled; plus `test_layer3_reads_the_live_fill_shape_end_to_end` on fills written by execution's own writers | `tests/test_replay_fidelity_layer3.py` | Passed; failed first (module did not exist; the returned build read `filled 0`) | `DLIB-OUT-02`, `DLIB-OUT-04`, `EXEC-OUT-07`, `EXEC-STA-05` |
+| A9 | `test_a9_one_json_per_scheduled_run_read_and_never_written` — 0 `merge_node`/`add_edge` during export; files for the two `sched-*` runs only (a `manual-*` run and the `*-resume-analyst` child excluded); the resumed session carries the original `ScanRun` through `linked_from_key` and the resume's `PMRun` | `tests/test_fidelity_export.py` | Passed | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01`, `RPT-NEV-02` |
+| A10 | `test_a10_fidelity_outputs_refuse_the_worktree` + `test_a10_the_export_refuses_the_worktree` — `ValueError` naming the path; nothing created | `tests/test_replay_fidelity.py`; `tests/test_fidelity_export.py` | Passed | `RPT-NEV-02` |
+| A11 | `test_a11_reason_columns_are_the_sorted_union_with_zero_where_absent` — five sessions with different reasons: header is the sorted union, `0` where absent; Part A's `test_sessions_csv_counts_pipeline_outputs_and_progress_is_stderr_only` kept | `tests/test_replay_runner_counts.py`; `tests/test_replay_runner_progress.py` | Passed; **failed first on the returned Part A** (a blank, not `0`), fixed here | `RPT-OUT-07`, `PM-OUT-03` |
+| A12 | `test_a12_progress_lands_at_the_interval_and_the_end_on_stderr_only` — every 2 of 5: lines at 2/5, 4/5 and 5/5 only, stdout empty, the four output files byte-identical | `tests/test_replay_runner_counts.py` | Passed | `RPT-OUT-07` |
+| A13 | S235's suite, untouched: `git diff origin/main -- tests/test_replay_{runner,day,episode_exits,no_lookahead,ledger,broker,outputs,series,settings,regime,env_names,universe}.py` is empty | `tests/test_replay_*.py` | Passed, except 2 in `test_replay_universe.py` that fetch VIX from `cdn.cboe.com` and fail in this container on `main` too (egress 403; see Not met) | per their own docstrings |
 
-**Tests added beyond the plan:** None beyond the planned fixture guards; oversized additions were split into focused files to satisfy the 200-line module limit.
+**Tests added beyond the plan (regressions on the live shapes and the fail-closed branches):**
+`test_the_export_carries_the_deploy_as_live_writes_it` (`git_sha`, no `sha`);
+`test_an_unknown_deploy_is_never_clean[no-deploy-key, no-deploy, blank-sha, unresolvable-sha]`;
+`test_a_tunables_change_marks_every_session_non_clean`; `test_a_change_outside_the_decision_paths_stays_clean`;
+`test_an_export_carrying_replay_outputs_is_refused[replay, layer2]`;
+`test_a_stage_with_no_replay_is_never_read_as_the_live_output`;
+`test_fills_are_the_pm_runs_by_source_run_id_with_broker_status`;
+`test_held_stops_are_named_not_persisted_and_never_attached`;
+`test_the_book_is_the_position_facts_the_live_stages_read`; `test_a_stale_book_names_the_held_positions`;
+`test_drift_079_the_pm_weighs_a_held_name_at_its_adoption_mark`;
+`test_a_held_stop_exit_is_attributed_to_the_unpersisted_held_stops`;
+`test_an_account_the_broker_did_not_answer_is_replayed_as_live_read_it`;
+`test_a_book_the_export_could_not_rebuild_names_held_positions`;
+`test_a_run_whose_regime_was_not_stored_replays_the_scanner_only`;
+`test_every_float_is_compared_within_the_one_tolerance`; `test_a_scan_without_a_stored_filter_trace_compares_membership_only`;
+`test_each_broker_outcome_is_one_bucket_and_resting_stops_are_not_orders`;
+`test_a_run_that_stored_nothing_is_exported_empty_and_compares_nothing`;
+`test_the_deploy_is_the_latest_readable_record_at_or_before_the_scan`;
+`test_a_lot_that_returns_after_it_was_superseded_is_named_not_guessed`;
+`test_projection_helpers_keep_json_safe_and_fail_closed`;
+`test_non_clean_sessions_and_passthroughs_are_never_pooled`; `test_an_unexplained_diagnostic_difference_also_fails`;
+`test_every_stage_has_its_floor[scanner-floor, pm-floor, both-floors-met]`;
+`test_a_stage_under_the_bar_fails_even_below_its_floor`;
+`test_layer2_is_skipped_and_said_so_without_a_cache`;
+`test_a_ticker_the_cache_lacks_keeps_its_volume_and_is_counted`; `test_a_session_without_a_snapshot_has_no_layer2_rows`;
+`test_a_held_line_is_worth_its_latest_visible_close_and_never_a_later_one` (Part A helper).
+Fixtures: `tests/fidelity_fleet.py`, `tests/fidelity_fleet_data.py`, `tests/fidelity_fleet_outcomes.py`,
+`tests/fidelity_harness.py` — synthetic data, the fleet's own writers and stages; no vendor data.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** BUILT (the return; the first handback's closeout is superseded, and its gate proof was
+for `c67a62e4`, not for this build)
 
-**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents` on branch `sprint-237-the-replay-decides-what-the-fleet-decided`. `Test-Path .env` returned `True` and `.gitignore:14` ignores it; no `.env` contents were read and no live/network data source was used.
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container,
+`/home/user/trading-agents`, branch `sprint-237-the-replay-decides-what-the-fleet-decided`, from
+`0923eb38`. No `.env` exists in this tree; no database, no OneDrive cache, no network data source.
+Every proof is on synthetic fixtures committed under `tests/`; no vendor or exported data is
+committed. Dependencies: `uv sync --frozen` from the existing lock. `pyproject.toml` and `uv.lock`
+are untouched (the version is already `0.117.00`).
 
-**Result:** Split `scripts/replay_runner.py` with no behavior change in the focused S235 tests, added S237 session counters and stderr progress, fixed replay PM `position_values`, added read-only graph fidelity export, added fixture-backed replay fidelity layer summaries/causes/verdicts, bumped version to `0.117.00`, and refreshed `uv.lock`.
+**Result:** Layer 1 replays each stage through the fleet's own composition (`scan_market_node`,
+`run_analysis`, `run_evaluation`) on the exported live inputs; an export carrying `replay` or
+`layer2` is refused; a stage without a replay is `harness:not_replayed`; the deploy is read as
+`git_sha` and only a resolvable SHA with no decision-path diff is clean; the tunables and issuer-map
+packs are decision paths at their full paths; the verdict is per stage and per ticker with its
+floors (R5); Layer 2 runs the fixed cumulative swaps from `--cache` or says it was skipped; Layer 3
+reads `Fill.source_run_id` and `broker_status` and counts `overturn` verdicts; held stops are named
+`not_persisted`, never attached; the held book is the `Position` facts the live stages read.
+Found and filed: `DRIFT-079` (the live PM weighs held names at their adoption-day mark).
 
-**Files changed:** `docs/STATE.md`, `docs/design-log.md`, this sprint spec, `pyproject.toml`, `uv.lock`, `scripts/replay_day.py`, `scripts/replay_pipeline.py`, `scripts/replay_runner.py`, `scripts/replay_counters.py`, `scripts/replay_session.py`, `scripts/replay_session_helpers.py`, `scripts/fidelity_export*.py`, `scripts/replay_fidelity*.py`, `tests/test_replay_runner*.py`, `tests/test_replay_day*.py`, `tests/test_fidelity_export.py`, `tests/test_replay_fidelity.py`.
+**Files changed:** `scripts/fidelity_exporter.py`, `scripts/fidelity_export_helpers.py` (rewritten);
+new `scripts/fidelity_export_book.py`, `scripts/fidelity_export_outcomes.py`;
+`scripts/replay_fidelity_compare.py`, `scripts/replay_fidelity_layers.py` (rewritten); new
+`scripts/replay_fidelity_{inputs,stages,session,causes,git,verdict,layer2,cache,layer3,report}.py`;
+Part A: `scripts/replay_counters.py` (`zero_absent_reasons`), `scripts/replay_session.py` (calls it);
+tests: `tests/fidelity_fleet.py`, `tests/fidelity_fleet_data.py`, `tests/fidelity_fleet_outcomes.py`,
+`tests/fidelity_harness.py`, `tests/test_fidelity_export{,_book,_edges}.py`,
+`tests/test_replay_fidelity{,_book,_edges,_git,_layer2,_layer3,_verdict}.py`,
+`tests/test_replay_runner_counts.py`, `tests/test_replay_session_helpers.py`; docs: this spec,
+`docs/design-log.md` (DL-238 rewritten), `docs/laws/drift-register.md` (`DRIFT-079` appended),
+`docs/sprints/README.md`, `docs/sprints/INDEX.md`, `docs/STATE.md`. No `contracts/`, `agents/` or
+`laws.md` file changed; `scripts/module_size_baseline.py` unchanged.
 
-**Design decisions:** recorded as [`DL-238`](../design-log.md) — scripts/tests-only law-cycle answer, read-only graph export, `not_persisted` for stored-input gaps, clean-session pooling by decision-path SHA diff, and split modules under the 200-line cap.
+**Design decisions:** [DL-238](../design-log.md), rewritten for the return (R10) with the first
+version's overstatement named at its top.
 
-**Proof — the red run first:**
+**Proof — the red run first** (the new tests on `0923eb38`'s code, before any fix):
 
 ```text
-uv run pytest tests\test_replay_runner.py tests\test_replay_day.py tests\test_fidelity_export.py tests\test_replay_fidelity.py --no-cov
-ERROR tests/test_fidelity_export.py - ModuleNotFoundError: No module named 'scripts.fidelity_exporter'
-ERROR tests/test_replay_fidelity.py - ModuleNotFoundError: No module named 'scripts.replay_fidelity_compare'
-Interrupted: 2 errors during collection
+$ uv run --frozen pytest tests/test_replay_fidelity.py tests/test_replay_fidelity_git.py \
+    tests/test_replay_fidelity_verdict.py tests/test_replay_fidelity_layer2.py \
+    tests/test_replay_fidelity_layer3.py tests/test_replay_fidelity_book.py \
+    tests/test_fidelity_export.py tests/test_replay_runner_counts.py --no-cov -q
+E   ModuleNotFoundError: No module named 'scripts.replay_fidelity_verdict'
+E   ModuleNotFoundError: No module named 'scripts.replay_fidelity_layer3'
+E   ModuleNotFoundError: No module named 'scripts.replay_fidelity_inputs'
+E   ModuleNotFoundError: No module named 'scripts.fidelity_export_outcomes'
+Interrupted: 4 errors during collection
+
+$ uv run --frozen pytest tests/test_replay_fidelity.py tests/test_replay_fidelity_git.py \
+    tests/test_replay_fidelity_layer2.py tests/test_replay_runner_counts.py --no-cov -q
+E   TypeError: run_fidelity() got an unexpected keyword argument 'repo'      (x15)
+E   AssertionError: assert [['', '2', ''... ['', '', '']] == [['0', '2', '...0', '0', '0']]
+FAILED tests/test_replay_fidelity.py::test_a1_identical_inputs_agree
+FAILED tests/test_replay_fidelity.py::test_a2_a_changed_live_output_is_caught_and_located
+FAILED tests/test_replay_fidelity.py::test_a4_a_benchmark_live_used_but_never_stored_is_named
+FAILED tests/test_replay_fidelity.py::test_an_export_carrying_replay_outputs_is_refused[replay]
+FAILED tests/test_replay_fidelity.py::test_an_export_carrying_replay_outputs_is_refused[layer2]
+FAILED tests/test_replay_fidelity.py::test_a_stage_with_no_replay_is_never_read_as_the_live_output
+FAILED tests/test_replay_fidelity.py::test_a10_fidelity_outputs_refuse_the_worktree
+FAILED tests/test_replay_fidelity_git.py::test_a5_code_changed_needs_git_evidence
+FAILED tests/test_replay_fidelity_git.py::test_a_tunables_change_marks_every_session_non_clean
+FAILED tests/test_replay_fidelity_git.py::test_a_change_outside_the_decision_paths_stays_clean
+FAILED tests/test_replay_fidelity_git.py::test_an_unknown_deploy_is_never_clean[no-deploy]
+FAILED tests/test_replay_fidelity_git.py::test_an_unknown_deploy_is_never_clean[blank-sha]
+FAILED tests/test_replay_fidelity_git.py::test_an_unknown_deploy_is_never_clean[unresolvable-sha]
+FAILED tests/test_replay_fidelity_layer2.py::test_a7_only_the_volume_swap_moves_the_decisions
+FAILED tests/test_replay_fidelity_layer2.py::test_layer2_is_skipped_and_said_so_without_a_cache
+FAILED tests/test_replay_runner_counts.py::test_a11_reason_columns_are_the_sorted_union_with_zero_where_absent
+16 failed, 2 passed in 6.20s
 ```
+
+The signature errors say little about behaviour, so the returned code was also probed directly on a
+fleet-produced export (five fleet runs, one filled buy, one `BrokerStopOrder` for held `T03`, one
+live `hold` confidence moved by 0.01, the deploy SHA `000…0` that no repo holds):
+
+```text
+1 verdict with a moved confidence, unresolvable SHA: PASS 987 {'causes': {}} non_clean: []
+2 deploy keys exported: ['actor', 'deployed_at', 'git_sha', 'tag'] -> replay reads deploy['sha'] = ''
+3 fills exported for a live filled buy: []
+4 held stop facts attached: ['T03']
+5 tunables change detected as decision code: ()
+6 export carrying a replay block accepted; verdict: FAIL
+7 market props exported: ['key', 'label', 'snapshot'] (no tickers/window_end)
+```
+
+Each line is one of the planner's findings reproduced on synthetic data: R1/R2 (1, 6), R2 (2), R6 (3),
+R7 (4), R3 (5), and the scanner's universe and as-of never exported (7).
 
 **Proof — the green run:**
 
 ```text
-uv run pytest tests\test_replay_runner.py tests\test_replay_runner_progress.py tests\test_replay_day.py tests\test_replay_day_portfolio_values.py tests\test_fidelity_export.py tests\test_replay_fidelity.py --no-cov
-collected 10 items
-tests\test_replay_runner.py ..                                           [ 20%]
-tests\test_replay_runner_progress.py .                                   [ 30%]
-tests\test_replay_day.py .                                               [ 40%]
-tests\test_replay_day_portfolio_values.py .                              [ 50%]
-tests\test_fidelity_export.py ..                                         [ 70%]
-tests\test_replay_fidelity.py ...                                        [100%]
-10 passed in 3.56s
+$ uv run --frozen pytest tests/test_replay_fidelity{,_book,_edges,_git,_layer2,_layer3,_verdict}.py \
+    tests/test_fidelity_export{,_book,_edges}.py tests/test_replay_runner_counts.py \
+    tests/test_replay_runner_progress.py tests/test_replay_day_portfolio_values.py \
+    tests/test_replay_session_helpers.py --no-cov -o addopts=""
+tests/test_replay_fidelity.py .......                                    [ 12%]
+tests/test_replay_fidelity_book.py ....                                  [ 19%]
+tests/test_replay_fidelity_edges.py .....                                [ 28%]
+tests/test_replay_fidelity_git.py ........                               [ 42%]
+tests/test_replay_fidelity_layer2.py ....                                [ 49%]
+tests/test_replay_fidelity_layer3.py ..                                  [ 52%]
+tests/test_replay_fidelity_verdict.py ..........                         [ 70%]
+tests/test_fidelity_export.py ....                                       [ 77%]
+tests/test_fidelity_export_book.py ...                                   [ 82%]
+tests/test_fidelity_export_edges.py .....                                [ 91%]
+tests/test_replay_runner_counts.py ..                                    [ 94%]
+tests/test_replay_runner_progress.py .                                   [ 96%]
+tests/test_replay_day_portfolio_values.py .                              [ 98%]
+tests/test_replay_session_helpers.py .                                   [100%]
+============================= 57 passed in 28.30s ==============================
 ```
 
-**Guards planted:** Missing fidelity modules went red first; `ReplayDayInputs.position_values={}` was planted for the PM replay path and made `test_replay_day_passes_holding_market_values_to_pm` fail before restoration; exporter output refusal and fidelity output refusal are covered; clean/non-clean fidelity cause assignment is covered.
-
-**Module line counts:** `scripts/replay_runner.py` 82, `scripts/replay_session.py` 188, `scripts/replay_session_helpers.py` 68, `scripts/replay_counters.py` 56, `scripts/replay_day.py` 180, `scripts/fidelity_exporter.py` 163, `scripts/fidelity_export_helpers.py` 97, `scripts/fidelity_export.py` 41, `scripts/replay_fidelity_compare.py` 151, `scripts/replay_fidelity_layers.py` 173, `scripts/replay_fidelity.py` 33, `tests/test_replay_runner.py` 128, `tests/test_replay_runner_progress.py` 155, `tests/test_replay_day.py` 196, `tests/test_replay_day_portfolio_values.py` 96.
-
-**`make ci`:** Passed redirected to `..\sprint-237-make-ci.log`, exit 0.
+**Guards planted (DL-70), each red, then restored and green** (a harness replaced one line, ran the
+named tests, restored the file, ran them again):
 
 ```text
-TOTAL                                                           18835      0   4088      0  100.00%
+RED  planted -> 2 failed in 3.67s | restored -> GREEN 2 passed in 2.22s :: R1 replay read from the file (refusal removed)
+RED  planted -> 1 failed in 2.76s | restored -> GREEN 1 passed in 2.80s :: R2 live fallback (no replay reads the live block)
+RED  planted -> 3 failed, 1 passed in 5.77s | restored -> GREEN 4 passed in 5.63s :: R2 empty SHA counted clean
+RED  planted -> 1 failed in 2.86s | restored -> GREEN 1 passed in 2.99s :: R3 tunables path as a bare name
+RED  planted -> 2 failed in 1.72s | restored -> GREEN 2 passed in 1.73s :: R6 fill link by order_ref/pm_run_id
+RED  planted -> 2 failed in 1.08s | restored -> GREEN 2 passed in 1.13s :: R6 outcome read from Fill.status
+RED  planted -> 1 failed in 0.64s | restored -> GREEN 1 passed in 0.53s :: R6 vetoed counted from vetoed_tickers
+RED  planted -> 1 failed in 1.25s | restored -> GREEN 1 passed in 1.16s :: R7 every BrokerStopOrder attached (re-run, see below)
+RED  planted -> 2 failed in 3.35s | restored -> GREEN 2 passed in 3.57s :: A3 Trap 1: position_values={} (re-planted on the final read-only book)
+RED  planted -> 1 failed in 1.34s | restored -> GREEN 1 passed in 1.20s :: DRIFT-079 the snapshot's current mark instead of the adoption mark
+RED  planted -> 1 failed in 3.04s | restored -> GREEN 1 passed in 2.79s :: Trap 2: PM fed the replay's analyst output
+RED  planted -> 1 failed in 0.35s | restored -> GREEN 1 passed in 0.35s :: R5 hold passthroughs pooled into the PM bar
+RED  planted -> 1 failed in 0.33s | restored -> GREEN 1 passed in 0.34s :: R5 unexplained counted on judged rows only
+RED  planted -> 1 failed in 0.33s | restored -> GREEN 1 passed in 0.36s :: R5 INSUFFICIENT decided before FAIL
+RED  planted -> 1 failed in 3.10s | restored -> GREEN 1 passed in 3.08s :: R4 volume swapped at step 2, not step 1
+RED  planted -> 1 failed in 0.51s | restored -> GREEN 1 passed in 0.49s :: A11 no zero where a reason is absent
+```
+
+(R7's first plant run went red but pytest spent minutes rendering a `not in` over a 1.5 MB JSON
+string; the assertion was changed to a count and the plant re-run: the line above.)
+
+**Module line counts:** scripts: `fidelity_export.py` 41, `fidelity_exporter.py` 152, `fidelity_export_helpers.py` 116, `fidelity_export_book.py` 126, `fidelity_export_outcomes.py` 89, `replay_fidelity.py` 33, `replay_fidelity_cache.py` 122, `replay_fidelity_causes.py` 91, `replay_fidelity_compare.py` 119, `replay_fidelity_git.py` 99, `replay_fidelity_inputs.py` 144, `replay_fidelity_layer2.py` 112, `replay_fidelity_layer3.py` 66, `replay_fidelity_layers.py` 162, `replay_fidelity_report.py` 141, `replay_fidelity_session.py` 82, `replay_fidelity_stages.py` 118, `replay_fidelity_verdict.py` 99, `replay_runner.py` 82, `replay_session.py` 190, `replay_session_helpers.py` 68, `replay_counters.py` 62, `replay_day.py` 180. Tests: `fidelity_fleet.py` 177, `fidelity_fleet_data.py` 194, `fidelity_fleet_outcomes.py` 104, `fidelity_harness.py` 176, `test_fidelity_export.py` 151, `test_fidelity_export_book.py` 89, `test_fidelity_export_edges.py` 155, `test_replay_fidelity.py` 182, `test_replay_fidelity_book.py` 135, `test_replay_fidelity_edges.py` 127, `test_replay_fidelity_git.py` 139, `test_replay_fidelity_layer2.py` 141, `test_replay_fidelity_layer3.py` 128, `test_replay_fidelity_verdict.py` 134, `test_replay_runner_counts.py` 146, `test_replay_session_helpers.py` 48. Every module is under 200 (the largest, `replay_session.py`, is Part A's at 190); `scripts/module_size_baseline.py` is unchanged.
+
+**R9 — coverage the gate cannot see** (`[tool.coverage.run] source` excludes `scripts/`; the
+project's `addopts` add their own `--cov` sources and a 100 % floor over them, so they are cleared
+with `-o addopts=""` to report only these modules):
+
+```text
+$ uv run --frozen pytest <the S237 tests, and S235's runner tests for the Part A modules> \
+    -o addopts="" --cov-branch --cov-report=term-missing \
+    --cov=scripts.replay_fidelity_compare --cov=scripts.replay_fidelity_layers \
+    --cov=scripts.fidelity_exporter --cov=scripts.fidelity_export_helpers \
+    --cov=scripts.fidelity_export_book --cov=scripts.fidelity_export_outcomes \
+    --cov=scripts.replay_fidelity_{inputs,stages,session,causes,git,verdict,layer2,cache,layer3,report} \
+    --cov=scripts.replay_{counters,session,session_helpers,runner}
+Name                                  Stmts   Miss Branch BrPart    Cover   Missing
+-----------------------------------------------------------------------------------
+scripts/fidelity_export_book.py          52      0     16      0  100.00%
+scripts/fidelity_export_helpers.py       62      0     24      0  100.00%
+scripts/fidelity_export_outcomes.py      33      0      4      0  100.00%
+scripts/fidelity_exporter.py             59      0      8      0  100.00%
+scripts/replay_counters.py               20      0      2      0  100.00%
+scripts/replay_fidelity_cache.py         44      0     10      0  100.00%
+scripts/replay_fidelity_causes.py        37      0     12      0  100.00%
+scripts/replay_fidelity_compare.py       56      0      8      0  100.00%
+scripts/replay_fidelity_git.py           40      0      4      0  100.00%
+scripts/replay_fidelity_inputs.py        61      0      4      0  100.00%
+scripts/replay_fidelity_layer2.py        37      0      4      0  100.00%
+scripts/replay_fidelity_layer3.py        24      0      8      0  100.00%
+scripts/replay_fidelity_layers.py        63      0     18      0  100.00%
+scripts/replay_fidelity_report.py        38      0      6      0  100.00%
+scripts/replay_fidelity_session.py       30      0      4      0  100.00%
+scripts/replay_fidelity_stages.py        37      0      6      0  100.00%
+scripts/replay_fidelity_verdict.py       42      0     14      0  100.00%
+scripts/replay_runner.py                 24      0      0      0  100.00%
+scripts/replay_session.py                63      0      6      0  100.00%
+scripts/replay_session_helpers.py        30      0     12      0  100.00%
+-----------------------------------------------------------------------------------
+TOTAL                                   852      0    170      0  100.00%
 Required test coverage of 100.0% reached. Total coverage: 100.00%
-================= 3406 passed, 4 skipped in 354.72s (0:05:54) =================
-No unaccepted vulnerabilities; 1 accepted advisory re-checked
-Detect secrets...........................................................Passed
-detect-secrets (untracked): scanning 13 new file(s)
+74 passed in 51.64s
 ```
 
-**`make gate-ran`:** Passed for the pushed branch SHA.
+Every verdict branch is hit: `replay_fidelity_verdict.py` 42 statements and 14 branches, none missed
+(FAIL on a stage under 90 %, FAIL on an unexplained difference judged or diagnostic, FAIL before
+INSUFFICIENT, INSUFFICIENT per floor, PASS).
 
-```text
-uv run python scripts/assert_gate_ran.py
-GATE PROVEN for 091f514779587eea6459ee1052629b387f6ce96b:
-  CI: success (attempt 1)
-  CodeQL: success (attempt 1)
-  Security Findings: success (attempt 1)
-```
+**`make ci`:** exit **2**, on the finished tree (`make ci > ci_final.txt 2>&1; echo $?`, file read, not piped).
+Steps 1–11 green: ruff; `ruff format` (1402 files already formatted); mypy (no issues in 1055 source
+files); import-linter (5 kept, 0 broken); module size (warnings only, S237's `replay_fidelity_layers.py`
+162 among them; no block); module header; law coverage; PARAM/settings sync; sprint status
+(`sprint-237…: BUILT`, `UNMAPPED=0`); markdown links; version scheme. Step 12, pytest:
+`2 failed, 3452 passed, 6 skipped`, coverage `TOTAL 18835 0 4088 0 100.00%`; the two failures are
+`test_replay_universe.py::test_universe_build_leaves_existing_replay_cache_untouched` and
+`::test_from_snapshot_rebuilds_without_wikipedia_fetch`, both `ProxyError … cdn.cboe.com … 403
+Forbidden` (below). `make` stops there, so steps 13–15 were run one by one on the same tree: dependency
+audit exit 0 (`No unaccepted vulnerabilities; 1 accepted advisory re-checked`), detect-secrets
+`Passed`, untracked secrets exit 0.
 
-**Not met / verified failing:** Live export proof is planner-owned and was not attempted. No live/provider network was used. Full fidelity against real fleet export is not claimed. S235 smoke numbers predate the PM `position_values` trap fix in this sprint.
+**`make gate-ran`: OWED.** This container has no `gh` CLI, so the target cannot run here (CLAUDE.md,
+DL-228). The branch is pushed; the planner runs `make gate-ran` from a worktree whose `HEAD` is the
+pushed SHA and checks the printed SHA against `git rev-parse HEAD`.
+
+**Not met / verified failing:**
+
+- `make ci` does not exit 0 in this container: two S235 tests in `tests/test_replay_universe.py`
+  (`test_universe_build_leaves_existing_replay_cache_untouched`,
+  `test_from_snapshot_rebuilds_without_wikipedia_fetch`) fetch VIX from `cdn.cboe.com`, which the
+  session's egress policy refuses (403). They fail identically on a clean `origin/main` worktree
+  (`e5b7d70`) here, and this sprint does not touch them (A13). Every other step and test is green.
+  The remote gate, which has network, is the proof for them.
+- `make gate-ran`: owed (above). Remote CI results read through the GitHub connector are an
+  observation, not `GATE PROVEN`.
+- The live export and the verdict are the planner's; nothing here ran against the spine.
+- `uv.lock` and the version: untouched, as instructed (`0.117.00`, refreshed in the first build).
 
 ---
 
 ## Return notes
 
-- Law-cycle answer: No. Scope stayed out of `contracts/`, `agents/`, and locked `laws.md`.
-- Fidelity/export proofs are synthetic-fixture proof only. The exporter refuses output inside the repo and reads through the kernel graph store.
-- S235 smoke numbers predate the replay PM holding-market-value fix; replay PM now receives `PortfolioState.position_values` in the same shape live graph PM uses.
-- `.env` exists in this local worktree despite the brief's no-`.env` assumption; it was ignored, unread, and unused.
+- **R1 (done).** Layer 1 calls the fleet: `scan_market_node` on the exported `MarketData` node (its
+  `tickers` and `window_end` are now exported), `run_analysis` on the live `CandidateSet`, and
+  `run_evaluation` on the live `RecommendationSet` with `PortfolioState` from
+  `portfolio_from_graph` and settings from `build_effective_settings`, plus the pack's issuer map.
+  These are R1's calls in the fleet's own composition (DL-238 D2 says why not re-composed here). An
+  export with `replay`/`layer2` is refused. A1's live side is produced by the fleet's graph-pull
+  stages and reads `PASS` at 100 %; A2 shows a 0.01 move is caught.
+- **R2 (done).** No replay is `harness:not_replayed`, never the live block. The deploy is read as
+  `git_sha`; a missing key, empty value, blank SHA or one git cannot resolve is non-clean,
+  `code_changed:unknown_deploy`. The fixture's deploy is written by `orchestration.deploy_record`.
+- **R3 (done).** Decision paths name `orchestration/packs/trading_tunables.json` in full, and add
+  `orchestration/packs/trading_issuer_map.json`, which the live PM reads (DL-238 D7).
+- **R4 (done).** Layer 2 loads the S235 cache and runs the cumulative swaps in the fixed order
+  through the same stage calls, anchored on the live book, regime and sectors; step 5 is the cache's
+  bars and SPY over `declared_lookback_days`. Without `--cache` it is skipped and both reports say so.
+- **R5 (done).** Per-stage units, fields and floors as written; `hold_recommendation` passthroughs
+  counted beside the PM bar; `fidelity.md` states each stage's number, denominator and floor. One
+  reading to check: DL-237's "zero unexplained differences" is applied to every clean difference,
+  judged or diagnostic.
+- **R6 (done).** Fills are the `Fill` nodes whose `source_run_id` is the `PMRun` key; the outcome is
+  `broker_status`; `vetoed` counts `overturn` verdicts. The spec's "expired" is counted as
+  `EXEC-OUT-07`'s `dropped` (live `Fill.broker_status` never holds `expired`).
+- **R7 (done, as not persisted).** The stored stop facts do not allow a rebuild as of the run
+  (DL-238 D4), so nothing is exported and both gaps are named whenever the book holds a name; a
+  live stop exit on a held name is attributed to `not_persisted:held_stops`.
+- **R8 (done).** A1–A13 as written, the live-shape regressions, and every listed plant (plus
+  Trap 1, Trap 2, R4, R5, R6 and A11 plants), each red then green.
+- **R9 (done).** 100.00 % line and branch over the 20 S237 modules, pasted above.
+- **R10 (done).** DL-238 rewritten to this build, its first version's overstatement named; the STATE
+  line reads BUILT only for what is built.
+- **For the planner, beyond the R-items.** (a) `DRIFT-079`: the live PM values a held name at its
+  adoption-day mark, and the replay reproduces that; a fix to the PM will move live decisions and
+  this baseline together. (b) Part A's `sessions.csv` wrote a blank for an absent reason; fixed.
+  (c) A holding that returns to a lot the monitor superseded earlier stays unheld in the graph
+  (DL-238, found on the way (c)); not filed, not measured live. (d) A resumed PM reads no
+  snapshot: resume clones none, and `portfolio_from_graph` selects by the child's run id. Measured on
+  the fleet's own code, the resumed PM sizes on `starting_cash` ($100,000). The replay reproduces
+  what `portfolio_from_graph` reads, and the export names `held_positions` for such a session. Not
+  measured live.
+- S235's smoke numbers predate the Part A `position_values` fix, as the first handback said.
 
 ---
 

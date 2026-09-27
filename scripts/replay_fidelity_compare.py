@@ -1,38 +1,33 @@
-"""Compare S237 exported live sessions with replayed stage outputs.
+"""Run S237's three layers over an export and compute the DL-237 verdict.
 
 Agent: tooling
-Role: write layer CSVs, named causes, and the DL-237 verdict summary.
-External I/O: reads export/cache dirs and writes reports outside the worktree.
+Role: load sessions, judge each deploy with git, replay Layer 1 stage-isolated, run
+      Layer 2 when a cache is given, count Layer 3, and write the report.
+External I/O: reads export/cache dirs, runs local git, writes reports outside the repo.
 """
 
 from __future__ import annotations
 
-import csv
 import json
-import shutil
-import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from scripts.replay_fidelity_layers import layer1_rows, layer2_rows, layer3_row
+from scripts.replay_fidelity_cache import load_cache
+from scripts.replay_fidelity_git import DeployCheck, check_deploy
+from scripts.replay_fidelity_inputs import effective_settings, load_sessions
+from scripts.replay_fidelity_layer2 import layer2_rows
+from scripts.replay_fidelity_layer3 import layer3_row
+from scripts.replay_fidelity_report import write_report
+from scripts.replay_fidelity_session import STAGES, replay_session
+from scripts.replay_fidelity_verdict import compute_verdict
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from scripts.replay_fidelity_inputs import SessionInputs
+    from scripts.replay_fidelity_session import SessionResult
 
 _ROOT = Path(__file__).resolve().parents[1]
-_PASS_FLOOR = 0.90  # DL-237 per-stage agreement floor.
-_MIN_ANALYST_DENOMINATOR = 100  # DL-237 minimum clean analyst decisions.
-_DECISION_PATHS = (
-    "agents/scanner/",
-    "agents/analyst/",
-    "agents/portfolio_manager/",
-    "agents/provider/domain/",
-    "agents/execution/order_tolerance.py",
-    "contracts/",
-    "trading_tunables.json",
-    "orchestration/history_window.py",
-)
+_NO_CACHE = "no --cache given: Layer 2 needs the S235 replay cache"
 
 
 def refuse_worktree_out(out: Path) -> Path:
@@ -46,106 +41,79 @@ def refuse_worktree_out(out: Path) -> Path:
 
 
 def run_fidelity(
-    *,
-    export: Path,
-    cache: Path | None,
-    out: Path,
-    git_diff: Callable[[str], tuple[str, ...]] | None = None,
+    *, export: Path, cache: Path | None, out: Path, repo: Path | None = None
 ) -> dict[str, Any]:
-    """Compare exported sessions and write layer outputs."""
-    del cache
+    """Replay every exported session and write the three layers and the verdict."""
     target = refuse_worktree_out(out)
-    target.mkdir(parents=True, exist_ok=True)
-    diff = git_diff or _git_diff
-    layer1: list[dict[str, Any]] = []
-    layer2: list[dict[str, Any]] = []
-    layer3: list[dict[str, Any]] = []
-    clean_rows: list[dict[str, Any]] = []
-    non_clean: list[dict[str, Any]] = []
-    for path in sorted(export.glob("sched-*.json")):
-        session = json.loads(path.read_text(encoding="utf-8"))
-        deploy = session.get("deploy", {})
-        sha = str(deploy.get("sha", "")) if isinstance(deploy, dict) else ""
-        changed = _decision_changes(tuple(diff(sha)))
-        rows = layer1_rows(session, changed)
-        layer1.extend(rows)
-        layer2.extend(layer2_rows(session))
-        layer3.append(layer3_row(session))
-        if changed:
-            non_clean.append(_non_clean_summary(session, rows))
-        else:
-            clean_rows.extend(rows)
-    summary = _summary(clean_rows, non_clean)
-    _write_csv(target / "layer1.csv", layer1)
-    _write_csv(target / "layer2.csv", layer2)
-    _write_csv(target / "layer3.csv", layer3)
-    (target / "summary.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    sessions = load_sessions(export)
+    settings = effective_settings()
+    checks: dict[str, DeployCheck] = {}
+    results: list[tuple[SessionInputs, DeployCheck, SessionResult]] = []
+    for inputs in sessions:
+        deploy = inputs.payload.get("deploy")
+        key = json.dumps(deploy, sort_keys=True)
+        if key not in checks:
+            checks[key] = check_deploy(deploy, repo if repo is not None else _ROOT)
+        results.append(
+            (inputs, checks[key], replay_session(inputs, settings, checks[key]))
+        )
+    layer1 = [row for _, _, result in results for row in result.rows]
+    summary = compute_verdict(
+        layer1,
+        scanner_sessions=sum(
+            1
+            for _, check, result in results
+            if check.clean and result.replayed["scanner"]
+        ),
     )
-    (target / "fidelity.md").write_text(_markdown(summary), encoding="utf-8")
+    summary["replayed"] = {
+        stage: sum(1 for *_, result in results if result.replayed[stage])
+        for stage in STAGES
+    }
+    summary["not_replayed"] = [
+        {"session": inputs.session, "stage": stage}
+        for inputs, _, result in results
+        for stage in STAGES
+        if result.compared[stage] and not result.replayed[stage]
+    ]
+    summary["sessions"] = _sessions(results)
+    layer2 = None
+    summary["layer2"] = {"skipped": True, "reason": _NO_CACHE}
+    if cache is not None:
+        context = load_cache(cache)
+        layer2 = [
+            row for inputs in sessions for row in layer2_rows(inputs, settings, context)
+        ]
+        summary["layer2"] = {
+            "skipped": False,
+            "sessions": len({row["session"] for row in layer2}),
+        }
+    layer3 = [layer3_row(inputs.payload) for inputs in sessions]
+    totals: Counter[str] = Counter()
+    for row in layer3:
+        totals.update({k: v for k, v in row.items() if k != "session"})
+    summary["layer3"] = dict(totals)
+    write_report(target, layer1, layer2, layer3, summary)
     return summary
 
 
-def _summary(
-    clean_rows: list[dict[str, Any]], non_clean: list[dict[str, Any]]
+def _sessions(
+    results: list[tuple[SessionInputs, DeployCheck, SessionResult]],
 ) -> dict[str, Any]:
-    denominator = len(clean_rows)
-    matches = sum(1 for row in clean_rows if row["match"])
-    causes = Counter(row["cause"] for row in clean_rows if row["cause"])
-    agreement = matches / denominator if denominator else 0.0
-    verdict = "INSUFFICIENT"
-    if causes.get("unexplained", 0):
-        verdict = "FAIL"
-    elif denominator >= _MIN_ANALYST_DENOMINATOR:
-        verdict = "PASS" if agreement >= _PASS_FLOOR else "FAIL"
-    return {
-        "verdict": verdict,
-        "clean": {
-            "denominator": denominator,
-            "matches": matches,
-            "agreement": agreement,
-            "pooled": {"causes": dict(sorted(causes.items()))},
-        },
-        "non_clean": non_clean,
-    }
-
-
-def _non_clean_summary(
-    session: dict[str, Any], rows: list[dict[str, Any]]
-) -> dict[str, Any]:
-    causes = Counter(row["cause"] for row in rows if row["cause"])
-    return {"session": session["session"], "causes": dict(sorted(causes.items()))}
-
-
-def _decision_changes(paths: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(path for path in paths if path.startswith(_DECISION_PATHS))
-
-
-def _git_diff(sha: str) -> tuple[str, ...]:
-    if not sha or sha == "HEAD":
-        return ()
-    git = shutil.which("git") or "git"
-    result = subprocess.run(  # noqa: S603 - fixed git subcommand over local metadata.
-        [git, "diff", "--name-only", sha, "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return tuple(line for line in result.stdout.splitlines() if line)
-
-
-def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    header = sorted({key for row in rows for key in row})
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=header, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _markdown(summary: dict[str, Any]) -> str:
-    return (
-        "# S237 Fidelity\n\n"
-        f"verdict: {summary['verdict']}\n\n"
-        f"clean denominator: {summary['clean']['denominator']}\n"
-    )
+    clean = [inputs.session for inputs, check, _ in results if check.clean]
+    non_clean = [
+        {
+            "session": inputs.session,
+            "git_sha": check.sha,
+            "tag": (inputs.payload.get("deploy") or {}).get("tag"),
+            "changed": list(check.changed),
+            "causes": dict(
+                sorted(
+                    Counter(row["cause"] for row in result.rows if row["cause"]).items()
+                )
+            ),
+        }
+        for inputs, check, result in results
+        if not check.clean
+    ]
+    return {"clean": clean, "non_clean": non_clean}

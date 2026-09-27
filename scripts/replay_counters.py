@@ -54,3 +54,9 @@ def replay_day_counts(members: tuple[str, ...], result: object) -> dict[str, int
         reason = str(getattr(item, "reason", "unknown")).strip() or "unknown"
         row[f"rejected_{reason}"] = row.get(f"rejected_{reason}", 0) + 1
     return row
+
+
+def zero_absent_reasons(rows: list[dict[str, Any]]) -> tuple[dict[str, Any], ...]:
+    """Give every session each rejection-reason column seen in the run, 0 if absent."""
+    reasons = {key for row in rows for key in row if key.startswith("rejected_")}
+    return tuple({**dict.fromkeys(sorted(reasons), 0), **row} for row in rows)

@@ -10,45 +10,166 @@ and is marked CLOSED here.
 
 ---
 
-## DL-238 - S237 rebuilds live decisions from persisted facts and names every missing input - status: DECIDED (builder, 2026-09-27; S237)
+## DL-238 - S237 replays each stage through the fleet's own composition on the exported live inputs, and names every input it cannot rebuild - status: DECIDED (builder, 2026-09-27; S237, rewritten at the return)
 
-**Question.** How should the S237 exporter and replay-fidelity harness rebuild each stage's live
-inputs without changing agents, contracts, or laws, while keeping every module under the size gate?
+**Correction first (R10).** The first version of this entry, written for the handback at `c67a62e4`,
+described stage replays that did not exist: `replay_fidelity_layers.py` compared the live outputs with
+a `replay` block that nothing produced and fell back to the live block when it was absent, so on the
+planner's live export the tool read `PASS 1008/1008` without calling one fleet function. It also read
+the deploy as `sha` while the export writes `git_sha`, so every session counted clean, and it matched
+fills by keys the live `Fill` does not carry. This version records what the returned build does. Each
+decision names the first build's choice among the rejected alternatives where it had one.
 
-**Decision 1 - exported sessions are plain JSON projections from graph facts.** The exporter follows
-the stored lineage from scheduled `RunRequest`s, serializes the `MarketData.snapshot`,
-`RegimeContext`, `BrokerPositionSnapshot`, stage outputs, deliberator results, execution counts and
-fills, and refuses an output directory inside the repository. It reads through the kernel graph store
-only. **Rejected:** raw SQL, helper write nodes, or committing a live export, because they would be
-untestable in synthetic fixtures or leak vendor data into the public repo.
+**Question.** How does S237 rebuild each stage's live inputs from graph facts and run the fleet on them,
+with no agent, contract or law change, so that every difference is located in one stage and named?
 
-**Decision 2 - stage inputs are rebuilt from contracts plus named gaps.** Scanner replay receives the
-stored bars, benchmark and earnings fields exactly as exported; analyst replay receives the live
-`CandidateSet`, stored market snapshot, regime and held book; PM replay receives the live
-`RecommendationSet` and a `PortfolioState` whose `position_values` come from broker-snapshot holding
-market values. If an input live code may have used is not persisted, the session names
-`not_persisted:<field>` and the comparison never guesses it. **Rejected:** defaulting missing
-benchmark from the cache, re-windowing snapshot bars, or fabricating PM portfolio snapshots; those
-would turn known gaps into silent harness behaviour.
+**Decision 1 - the export is a read-only projection of what each stage read.** One JSON per
+`sched-YYYY-MM-DD` `RunRequest` (not `manual-*`, not resume runs), read through the kernel
+`GraphStore` only, written outside the worktree. It carries: the `DeployRecord` whose `deployed_at` is
+the latest at or before `ScanRun.created_at` (all its props, so `git_sha`; nothing when the scan has
+no time); the `MarketData` node's `snapshot`, `tickers` and `window_end` (the scanner reads the
+universe and the as-of date from the node, not from the snapshot); the run's `RegimeContext`; the book
+(Decision 3); every stage output (`ScanRun.candidate_set` and `filter_trace`,
+`AnalystRun.recommendation_set`, the `PMRun`'s `OrderIntent` and `Rejection` nodes); the
+`DeliberationRun`'s verdicts and vetoed tickers; the `ExecutionRun`'s counts; and the `Fill` nodes
+whose `source_run_id` is the `PMRun` key, with their `broker_status`. A run the fleet finished
+through a resume is exported from its latest resume child (`RunRequest -RESUMES->`), each clone
+followed through `linked_from_key` to the output it copies, and reads `resumed: true`. Nothing is
+written to the output directory until every session has been read. **Rejected:** raw SQL (untestable
+on the in-memory store); matching fills by `order_ref`/`pm_run_id` (the first build: no live `Fill`
+carries either); `Fill.status` as the outcome (it stays `pending` by design, `EXEC-STA-05`).
 
-**Decision 3 - analyst held-stop inputs are evidence, not a new guarantee.** The export records held
-tickers and any stop facts reachable from the graph; absent stop-lineage evidence is listed in
-`not_persisted` because the analyst law book has no held-stop clause yet (`DRIFT-074`). **Rejected:**
-adding an analyst law/contract field or moving stop reconstruction into an agent, because the sprint
-is scripts/tests only.
+**Decision 2 - each stage is replayed through the fleet's own composition.** Replay outputs are
+computed, never read: an export file with a `replay` or `layer2` key is refused. The scanner runs as
+`agents/scanner/poll.scan_market_node` on a scratch in-memory store holding the exported `MarketData`
+node, which is `apply_filters` + `rank_survivors` on the node's tickers and `window_end` and the
+snapshot's bars, benchmark, earnings and `earnings_horizon_days`, capped by the settings. The analyst
+runs as `agents/analyst/run.run_analysis` on the **live** `CandidateSet`: `scoring_universe` with the
+held book, `score_candidates` with the snapshot as `MarketData` and `market.benchmark`, the exported
+`RegimeContext`, then `split_decisions`. The PM runs as `agents/portfolio_manager/run.run_evaluation`
+on the **live** `RecommendationSet`: `evaluate_recommendations` with `latest_close_prices`, the
+regime's default stop and target, the snapshot's sectors and bars, and the pack's issuer map. Their
+graph writes land in the scratch store and are discarded. A stage with live output and no replay
+output is `harness:not_replayed`. **Rejected:** calling the domain functions and composing the
+arguments here (it re-implements the two cores' plumbing and drops their live pre-gates, so a run the
+fleet refused on degraded data would read as a difference); reading a `replay` block from the export
+and falling back to live (the first build: it fails open).
 
-**Decision 4 - clean sessions are defined by git diff over decision paths.** A session is clean only
-when `git diff --name-only <deploy_sha> HEAD` has no path under scanner, analyst, PM, provider-domain
-decision helpers, execution tolerance, contracts, trading tunables, or history-window code. Non-clean
-sessions are reported beside the verdict and never pooled. **Rejected:** checkout-and-run historical
-code, because DL-237 asks whether today's harness reproduces the fleet on its inputs, not whether old
-deploys can be resurrected.
+**Decision 3 - the held book is the Position facts the live stages read.** The live analyst and PM read
+active `Position` nodes (`open_positions`, `portfolio_from_graph`), not the snapshot, and
+`portfolio_from_graph` values a held name at `Position.broker_market_value_cents`, which the monitor
+writes once, at adoption. *[measured on the fleet's own code, 2026-09-27]* two fresh syncs of one
+unchanged holding marked at $1,000 and then $1,500 leave the PM valuing it at $1,000 (filed as
+`DRIFT-079`, not fixed here). The book is therefore: the latest `BrokerPositionSnapshot` carrying the
+run's `run_id` created at or before `PMRun.created_at` (what `portfolio_from_graph` reads), plus, per
+holding, the `Position` whose ticker, quantity and `opened_price_cents` equal the holding and that no
+`broker_absent`/`broker_superseded` marker ended at or before that snapshot. After a fresh sync each
+held ticker has exactly one such node (`agents/monitor/reconcile.py`), and a marker names the snapshot
+that wrote it, whose `created_at` dates it. Only the props the readers consult are exported. The replay
+serves the snapshot and those nodes to `portfolio_from_graph` and `open_positions` through a read-only
+view (they only list nodes by label); nothing is merged, since execution owns the snapshot label
+(`EXEC-IDN-03`, whose ownership scan refused the first draft of this, which merged the book into a
+scratch store). A stale or missing snapshot, or a holding with no single match, is
+`not_persisted:held_positions`. The bound is `PMRun.created_at` (else `AnalystRun.created_at`), so a
+snapshot written after the stages read is never taken. **Rejected:** the snapshot's current market
+values (the first build,
+and the reading R1 suggests: it reproduces the snapshot, not what the PM read, and differs from live
+whenever a held name moved since adoption); rebuilding `PortfolioState` field by field here (a second
+copy of `graph_portfolio`'s rules).
 
-**Decision 5 - module boundaries follow tool layers.** `replay_runner.py` sheds session-loop and
-counting helpers first; fidelity export, export graph traversal, fidelity comparisons, attribution,
-verdicts and output writing stay in small script modules under 200 lines. **Rejected:** one large
-`replay_fidelity.py` or growing the S235 edge files, because scripts are now inside the module-size
-gate and S237 must not add a baseline entry.
+**Decision 4 - held stops are not persisted, and say so.** The live analyst reads
+`open_position_stop_thresholds(graph)` and `active_broker_stop_refs(graph)` at run time
+(`agents/analyst/run.py`). The first resolves each width through `decided_stop_pct`, which reads lineage
+`Fill`s whose `broker_status` and `broker_price_cents` are refreshed after the fact; the second depends
+on `cancelled_at`/`replaced_at` markers and sibling `Fill` statuses. The kernel `Node` records no write
+time, so the graph as the analyst saw it cannot be rebuilt without re-implementing three contracts
+modules over timestamps, which is a formula of our own. Nothing is exported; whenever the book holds a
+name, the session names `not_persisted:held_stops` and `not_persisted:active_broker_stop_refs`. The
+replay's analyst store holds no `Position` or stop facts, so both read empty. A held ticker whose live
+decision is a stop exit (`exit_trigger` `stop`) is attributed to `not_persisted:held_stops`; the refs
+are consulted only through a threshold, so they are never the sole cause. **Rejected:** every
+`BrokerStopOrder` ever placed for a held name (the first build: 47 -> 55 over four sessions); a
+reconstruction from `placed_at`, markers and `broker_status_refreshed_at` (a guess the store cannot
+check).
+
+**Decision 5 - the benchmark is replayed as stored (Trap 3).** Live read the snapshot's benchmark (the
+scanner and analyst cores pass `market.benchmark`; a run whose `RunRequest` named no benchmark ticker
+stored none and skipped the beta cap, `agents/provider/poll.py`). An empty benchmark is therefore
+replayed empty, never filled from the cache. It is `not_persisted:benchmark` only when the live stage's
+own record proves one was used while the export has none: a `beta` feature in the live filter trace or
+candidates, or a relative-strength metric in the live recommendations. **Rejected:** naming every empty
+benchmark `not_persisted` (the first build: it would explain away a difference the benchmark cannot
+cause).
+
+**Decision 6 - settings.** Every session runs with `build_effective_settings(())` (code defaults plus
+`orchestration/packs/trading_tunables.json`) and the pack's `trading_issuer_map.json`, which the live
+PM receives from that file at deploy. A non-clean session differs by construction and is attributed.
+
+**Decision 7 - clean sessions and causes.** Decision paths: `agents/scanner/`, `agents/analyst/`,
+`agents/portfolio_manager/`, `agents/provider/domain/`, `agents/execution/order_tolerance.py`,
+`contracts/`, `orchestration/packs/trading_tunables.json`, `orchestration/packs/trading_issuer_map.json`,
+`orchestration/history_window.py`. A session is clean only when its deploy `git_sha` resolves
+(`git rev-parse --verify <sha>^{commit}`) and `git diff --name-only <sha> HEAD` touches no decision
+path. A missing, blank or unresolvable SHA is non-clean, `code_changed:unknown_deploy`. Each difference
+gets exactly one cause, in this order: `harness:not_replayed`; `code_changed:<path>` on a non-clean
+session (a changed path under the stage's own agent, else the first changed decision path);
+`not_persisted:<gap>` when the export names a gap that can produce that difference; else
+`unexplained`. **Rejected:** `trading_tunables.json` as a bare name (the first build: it never matched
+`orchestration/packs/…`, so a tunables change never marked a session); an empty SHA counted clean (the
+first build); a hand-kept list of decision-neutral `contracts/` files (DL-237's amendment); omitting
+the issuer map (the PM reads it).
+
+**Decision 8 - the verdict per R5.** Units per clean session and ticker. Scanner: candidate membership
+and rank. Analyst: `action` (`rejected` for a rejection), `exit_trigger`, `confidence` within 1e-9;
+`technical_score`, `suggested_stop_pct` and the rejection reason are diagnostics. PM: over the live
+recommendations whose action is `buy` or `sell`, the decision and reason, plus quantity and stop pct for
+an approval; `hold_recommendation` passthroughs are counted beside it, never pooled. Every float is
+compared within the one tolerance (Trap 7). Floors: scanner 4 sessions, analyst 100 tickers, PM 10
+judged. `FAIL` if a stage with units is under 90 % or any clean difference, judged or diagnostic, is
+`unexplained`; else `INSUFFICIENT` if a floor is unmet; else `PASS`.
+
+**Decision 9 - Layer 2.** With `--cache`, per session and in this order, cumulatively: (0) the live
+snapshot; (1) each bar's volume replaced by the cache's for the same ticker and date (a ticker maps to
+the cache line whose membership episode names it on that date; a bar with no cache twin keeps its
+volume and is counted); (2) no fundamentals; (3) no news; (4) no earnings dates and no horizon (the
+S235 replay's `skipped`); (5) the cache's bars and SPY over `declared_lookback_days`, the S235 window.
+Each step runs scanner -> analyst -> PM chained through the same cores as Decision 2, on the live
+regime, sectors and book. Per step: candidates, buy/sell recommendations and approvals, Jaccard with
+step 0 (1.0 when both are empty), and the tickers that entered and left since the previous step.
+Without `--cache` Layer 2 is skipped and `summary.json` and `fidelity.md` say so. **Rejected:** the
+live benchmark at step 5 (then step 5 is not the S235 replay); swapping the regime (not a listed step).
+
+**Decision 10 - Layer 3, live only.** Per session: approvals by action; `vetoed` = `overturn` verdicts
+(`DLIB-OUT-02`), never the length of `vetoed_tickers` (which held `revise` before S214);
+`submitted`, `execution_rejected` and `execution_skipped` from the `ExecutionRun`; and per `Fill`
+whose `source_run_id` is the `PMRun` key (resting stops excluded by
+`contracts.broker_lifecycle.is_resting_stop_fill`), one outcome from `broker_status` (`Fill.status`
+stays `pending`, `EXEC-STA-05`): `filled`, `partial`, `broker_rejected`, `dropped` (`drop_reason`, or a
+resolved unfilled status: the spec's "expired" is `EXEC-OUT-07`'s dropped) or `pending`.
+
+**Decision 11 - module boundaries, each under 200 lines.** Export: `fidelity_export.py` (CLI),
+`fidelity_exporter.py` (sessions and lineage), `fidelity_export_helpers.py` (projection helpers),
+`fidelity_export_book.py` (book and positions), `fidelity_export_outcomes.py` (deliberation,
+execution, fills, the benchmark gap). Replay: `replay_fidelity.py` (CLI), `replay_fidelity_compare.py`
+(orchestration), `replay_fidelity_inputs.py` (session -> contract objects), `replay_fidelity_stages.py`
+(the three cores), `replay_fidelity_session.py` (one session, stage-isolated),
+`replay_fidelity_layers.py` (Layer 1 rows), `replay_fidelity_causes.py`,
+`replay_fidelity_git.py`, `replay_fidelity_verdict.py`, `replay_fidelity_layer2.py`,
+`replay_fidelity_cache.py`, `replay_fidelity_layer3.py`, `replay_fidelity_report.py`. **Rejected:** one
+module per layer (each would pass 200 lines).
+
+**Found on the way.** (a) `DRIFT-079` (Decision 3). (b) Part A wrote a blank, not `0`, where a session
+lacked a rejection reason other sessions had; the spec's scope item 1 asks for `0`. Found by A11 as
+written, which went red first, and fixed by `replay_counters.zero_absent_reasons`, called from
+`replay_session.py`. (c) Not filed, for the planner: when a holding returns to the exact quantity and
+average entry of a lot the monitor superseded earlier, `agents/monitor/reconcile.py` returns that
+ended node for the new holding (its `broker:` key is deterministic) and then supersedes the live one,
+so the fleet stops seeing the name as held (measured on the fleet's own code in
+`tests/test_fidelity_export_edges.py`; not measured live, and rare, since a sell does not move the
+broker's average entry back). The export names such a session `not_persisted:held_positions`.
+(d) Two S235 tests in `tests/test_replay_universe.py` fetch VIX from `cdn.cboe.com` although they
+inject the page and bar fetchers; the cloud session's egress policy refuses the host, so they fail
+there on `main` too. Not changed here (A13: S235's suite untouched).
 
 ---
 

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from scripts.replay_counters import replay_day_counts
+from scripts.replay_counters import replay_day_counts, zero_absent_reasons
 from scripts.replay_day import ReplayDayInputs
 from scripts.replay_ledger import (
     next_session,
@@ -171,7 +171,9 @@ def run_replay_sessions(
             started,
             progress_every,
         )
-    return ReplayLoopResult(absent, tuple(equity), tuple(fills), tuple(session_rows))
+    return ReplayLoopResult(
+        absent, tuple(equity), tuple(fills), zero_absent_reasons(session_rows)
+    )
 
 
 def _visible_bars(

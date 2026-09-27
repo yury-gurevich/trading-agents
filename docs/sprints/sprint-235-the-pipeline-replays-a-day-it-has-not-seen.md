@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.3** (the replay harness)
 **Branch:** `sprint-235-the-pipeline-replays-a-day-it-has-not-seen`
-**Status:** BUILT
+**Status:** MERGED · tag `v0.116.00` (script env fix `v0.116.01`) · 2026-09-27 · live rebuild and ten-year smoke replay 🟩
 **Version:** 0.116.00
 **Effort:** L
 **Decisions:** [DL-232](../design-log.md) (the replay's scope: **settled, do not reopen**) ·
@@ -598,3 +598,43 @@ Success: no issues found in 10 source files
 - Built on branch `sprint-235-the-pipeline-replays-a-day-it-has-not-seen` in its own worktree after merging `main`; `main` unchanged by this branch.
 - Took main's S236 spec, S236 README row and STATE, then updated only the S235 returned handback.
 - Proof is synthetic-fixture only. The planner still owns live cache rebuild, sector fetch, smoke replay, remote push/gate, merge and any live result claims.
+
+---
+
+## Planner review and merge — 2026-09-27
+
+**First handback (`5bceb3a3`) returned.** A7, A8 and A10 were not built, and without A8 a held line
+with no bar was valued at zero and never exited. Also returned: uncounted no-bar orders, a silent 5 %
+stop, incomplete counters, a full bar rescan per session, and a unit-only A1. Codex fixed all eight
+(R1–R8) in `be032b4d`.
+
+**Fixed at merge (`21e940af`, [DL-234](../design-log.md) amendment).** Ended-line exits looked at a
+line's last bar in the whole cache, so the 8 lines that leave the index and return years later (SNDK
+after 9.5 years) would have been carried at a frozen price, and every current member would have been
+sold on the final session. Exits now follow the membership episode, and the reason names are the plain
+ones (`membership_end`, `data_end`). Red first; three plants red and restored. `make ci` exit 0
+(**3,395 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `21e940af`** (CI, CodeQL, Security
+Findings, attempt 1); 0 open error-level alerts on the branch; fast-forwarded, tagged `v0.116.00`;
+`main`'s post-merge runs all green.
+
+**Found live, fixed as `v0.116.01` (`4cad2fa1`, `GATE PROVEN`).** The sector fetch read
+`FINNHUB_API_KEY` (the fleet's name is `PROVIDER_FINNHUB_API_KEY`), and `replay_universe.py` did not
+load `.env`. Red first.
+
+**Live checks (the functionality check), main checkout with `.env`:**
+
+| Check | Result |
+| --- | --- |
+| Rebuild `--end 2026-09-25 --from-snapshot` (11.7 min) | 732 episodes, 0 unreconciled, coverage 99.99 %; **0 OHLC differences** over the 1,359,653 rows shared with the pre-rebuild cache; the only new rows are 2026-09-25's 503; volume on every row; SPY and VIX on all 2,698 sessions; `bars.csv.gz` and `vix.csv.gz` SHA-256 unchanged; repo clean |
+| `sectors` (16.7 min) | 629 of 724 symbols carry a Finnhub industry (42 distinct); 74,099 member-sessions (5.4 %) have none |
+| Smoke, live 99 names, 2026-08-10 → 09-25 (35 s) | portfolio −0.81 %, SPY +0.03 %, exposure 22.6 %, 51 buys, 27 stop exits; not comparable to live yet (SIP volume, no deliberator): E17.4's job |
+| Ten years, point-in-time index, 10 bps (84 min) | portfolio **+217.9 %**, SPY +351.9 %, exposure-matched SPY **+232.2 %** (average exposure 78.5 %), excess **−14.3 pts**, max drawdown −26.6 %; 552 buys, 463 stop exits, 8 thesis exits, 11 `data_end` and 10 `membership_end` exits, 6 no-bar expiries, 0 adjustment rebases |
+
+🪤 **Not a verdict.** No purged windows, no confidence interval, no fidelity check: those are E17.4
+and E17.5. Recorded so E17.4 starts from them, not judged.
+
+**Named residue for E17.4.** (a) `sessions.csv` carries only expiry and gap columns; Scope item 12's
+per-session candidates, recommendations, approvals and rejections are missing, and the fidelity check
+needs them. (b) No progress output: an 84-minute run prints nothing until it ends. (c) The book drifts
+toward fully invested (99 % long at the end): exits are stops or thesis collapse only, and winners are
+never trimmed, so exposure grows with them. A property of the pipeline, recorded for EXP-014.

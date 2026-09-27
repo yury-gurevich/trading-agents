@@ -166,6 +166,12 @@ clause is **false in code**, not merely untested — the rest were demoted in ea
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-076 | `SUP-OBS-02` | *"`Flag` nodes are the alert queue for the human-review surface; `open_incidents` and `pending_human_flags` in `MasterReport` are derived from them."* | Read 2026-09-26 (S234): `agents/supervisor/domain/health.py::compute_health` derives `pending_human_flags` from unresolved critical `Flag`s, but `open_incidents` from live `Fault` incidents (`kernel.fault_incidents.live_fault_incidents`, DL-208), not from `Flag`s. The clause is ⬜, so no test was ever asked to hold it. S234's daily brief prints `compute_health`'s two numbers as they are. | stale-law | **OPEN (S234, 2026-09-26)** — forced decision for the supervisor book: amend `SUP-OBS-02` to name live `Fault` incidents as the source of `open_incidents` (the code and DL-208), or change the code. The supervisor book was read-only in S234. |
 
+## Surfaces (`SRF`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-078 | `SRF-OUT-03` | *"Dashboard chat answers are grounded in the selected run and record auditable `CommandAudit`, `LLMCall`, and `Intent` facts for priced/operator review."* Read plainly: every chat answer. | The chat's deterministic quick asks answer without the operator and write none of those facts: `status` and `incidents`, `performance` (S228, governed by `SRF-OUT-07`) and, from S236, `scorecard` (`SRF-OUT-08`). `status`, `incidents` and `scorecard` are not scoped by the selected run either. The clause's cited test proves only the operator-mediated path. S228 recorded the silence in its handback without a register row. | law gap (silence) | **OPEN (S236, 2026-09-27)** — forced decision at the next surfaces amendment: narrow `SRF-OUT-03` to operator-mediated (model) answers and name the quick asks as graph reads, or audit the quick asks too. No behaviour depends on the wording; S236's law cycle did not include `SRF-OUT-03`. |
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

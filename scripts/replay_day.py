@@ -61,6 +61,10 @@ def run_replay_day(
     inputs: ReplayDayInputs, settings: ReplaySettings
 ) -> ReplayDayResult:
     """Run one replay session by delegating each decision to the fleet domain."""
+    bars = tuple(bar for bar in inputs.bars if bar.bar_date <= inputs.session)
+    benchmark_bars = tuple(
+        bar for bar in inputs.benchmark_bars if bar.bar_date <= inputs.session
+    )
     regime_inputs = RegimeInputs(
         as_of=inputs.session,
         vix=inputs.vix,
@@ -82,8 +86,8 @@ def run_replay_day(
     )
     survivors, filter_trace = apply_filters(
         inputs.tickers,
-        inputs.bars,
-        inputs.benchmark_bars,
+        bars,
+        benchmark_bars,
         {},
         inputs.session,
         settings.scanner,
@@ -98,11 +102,9 @@ def run_replay_day(
     )
     candidates = scoring_universe(candidates, inputs.held)
     market = MarketData(
-        bars=inputs.bars,
-        benchmark=inputs.benchmark_bars,
-        quality=DataQualityTrace(
-            requested=len(inputs.tickers), returned=len(inputs.bars)
-        ),
+        bars=bars,
+        benchmark=benchmark_bars,
+        quality=DataQualityTrace(requested=len(inputs.tickers), returned=len(bars)),
         provenance=Provenance(run_id=inputs.run_id, source_agent="provider"),
         sectors=inputs.sectors,
     )
@@ -111,7 +113,7 @@ def run_replay_day(
         candidates,
         market,
         regime,
-        inputs.benchmark_bars,
+        benchmark_bars,
         settings.analyst,
         sink,
         held_tickers=tuple(position.ticker for position in inputs.held),
@@ -128,7 +130,7 @@ def run_replay_day(
     )
     approved, rejected = evaluate_recommendations(
         recommendation_set.recommendations,
-        _latest_prices(inputs.bars),
+        _latest_prices(bars),
         PortfolioState(
             cash=Money(amount=Decimal(inputs.equity_cents) / Decimal("100")),
             positions={position.ticker: position.quantity for position in inputs.held},
@@ -147,7 +149,7 @@ def run_replay_day(
         sectors=inputs.sectors,
         max_sector_pct=settings.portfolio.max_sector_pct,
         max_names_per_sector=settings.portfolio.max_names_per_sector,
-        correlation_bars=inputs.bars,
+        correlation_bars=bars,
         correlation_lookback_days=settings.portfolio.correlation_lookback_days,
         correlation_threshold=settings.portfolio.correlation_threshold,
         correlation_ceiling=settings.portfolio.correlation_ceiling,

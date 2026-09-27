@@ -34,7 +34,7 @@ class PendingOrder:
     quantity: int
     limit_cents: int
     target_session: date
-    stop_pct: float = 0.05
+    stop_pct: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -56,6 +56,7 @@ class ReplayPosition:
     opened: date
     stop_active_from: date
     position_ref: str = ""
+    price_scale: float = 1.0
 
 
 def simulate_limit_fill(
@@ -106,6 +107,8 @@ def apply_adjustment_rebase(
     position: ReplayPosition, *, ratio: float
 ) -> ReplayPosition:
     """Rescale a held line's entry and stop for an adjustment-error day."""
+    if ratio <= 0:
+        return position
     return ReplayPosition(
         position.line,
         position.quantity,
@@ -114,6 +117,7 @@ def apply_adjustment_rebase(
         position.opened,
         position.stop_active_from,
         position.position_ref,
+        position.price_scale / ratio,
     )
 
 

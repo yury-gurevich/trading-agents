@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.3** (the replay harness)
 **Branch:** `sprint-235-the-pipeline-replays-a-day-it-has-not-seen`
 **Status:** BUILT
-**Version:** *next available MINOR at merge*
+**Version:** 0.116.00
 **Effort:** L
 **Decisions:** [DL-232](../design-log.md) (the replay's scope: **settled, do not reopen**) ·
 [DL-233](../design-log.md) (IEX volume, a live defect fixed elsewhere, **not** here) ·
@@ -315,7 +315,7 @@ universe (for example 6 lines over 260 sessions, one line that leaves the index,
       the default `daily_bars` request and `bars.csv.gz`/`vix.csv.gz` are unchanged (A12–A15).
 - [x] Part B: one command replays a date range through the fleet's own functions (A2) with the fleet's
       settings (A3), without look-ahead (A1), with the broker's day-limit and stop mechanics (A4–A6).
-- [ ] Every absent input DL-232 names is counted in the summary (A18); untrusted days and ended lines
+- [x] Every absent input DL-232 names is counted in the summary (A18); untrusted days and ended lines
       are handled explicitly (A7, A8).
 - [x] The only return metric is the reporter's (A9); outputs stay outside the repo (A16) and are
       deterministic (A17).
@@ -510,16 +510,16 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | `test_window_bars_include_session_but_not_next_session` | `tests/test_replay_series.py` | PASS | S235-A6 |
+| A1 | `test_window_bars_include_session_but_not_next_session`; `test_replay_day_decision_ignores_bars_after_session` | `tests/test_replay_series.py`, `tests/test_replay_no_lookahead.py` | PASS | S235-A1/S235-A6 |
 | A2 | `test_regime_context_uses_provider_base_settings` | `tests/test_replay_regime.py` | PASS | S235-A2 |
 | A3 | `test_pack_settings_override_code_defaults`; `test_cli_set_uses_pack_env_names_and_reports_unknown_key` | `tests/test_replay_settings.py` | PASS | S235-A3 |
-| A4 | `test_buy_limit_waits_for_next_session_and_expires_on_gap` | `tests/test_replay_broker.py` | PASS | S235-A4 |
+| A4 | `test_buy_limit_waits_for_next_session_and_expires_on_gap`; `test_pending_order_without_target_bar_expires_as_no_bar`; `test_buy_intent_without_stop_is_refused_not_defaulted` | `tests/test_replay_broker.py`, `tests/test_replay_ledger.py` | PASS | S235-A4 |
 | A5 | `test_stop_arms_after_fill_session_and_rebases_without_jump_fill` | `tests/test_replay_broker.py` | PASS | S235-A5 |
 | A6 | `test_replay_day_calls_fleet_stages_in_order` | `tests/test_replay_day.py` | PASS | S235-A6 |
-| A7 | not implemented | — | not done | Listed adjustment-error rebases are not implemented in the runner. |
-| A8 | not implemented | — | not done | Data-end / membership-end forced exits are not implemented in the runner. |
+| A7 | `test_adjustment_error_rebases_and_skips_the_false_jump_stop` | `tests/test_replay_ledger.py` | PASS | S235-A7 |
+| A8 | `test_gap_day_marks_at_last_close_without_losing_position_value`; `test_ended_lines_exit_at_last_close_with_reason_and_leave_book` | `tests/test_replay_ledger.py` | PASS | S235-A8 |
 | A9 | `test_outputs_are_byte_identical_and_reporter_metric_is_called` | `tests/test_replay_outputs.py` | PASS | S235-A9/A17/A18 |
-| A10 | not implemented | — | not done | `--universe-file` fixed-list mode is not implemented. |
+| A10 | `test_universe_file_limits_decision_lines` | `tests/test_replay_runner.py` | PASS | S235-A10 |
 | A11 | `test_loader_reports_old_cache_without_volume`; `test_pipeline_refuses_cache_without_volume` | `tests/test_sp500_context.py` | PASS | S235-A11 |
 | A12 | `test_daily_bars_start_default_is_backward_compatible` | `tests/test_replay_universe.py` | PASS | S235-A12 |
 | A13 | `test_volume_is_requested_for_replay_windows` and existing chain tests | `tests/test_sp500_bars.py`, `scripts/sp500_chain.py` | PASS | S235-A1/S235-A13 |
@@ -527,10 +527,10 @@ An incomplete handback is returned, not repaired (DL-48).
 | A15 | `test_sectors_are_paced_and_parsed` | `tests/test_sp500_context.py` | PASS | S235-A15 |
 | A16 | `test_out_path_inside_worktree_is_refused` | `tests/test_replay_outputs.py` | PASS | S235-A16 |
 | A17 | `test_outputs_are_byte_identical_and_reporter_metric_is_called` | `tests/test_replay_outputs.py` | PASS | S235-A17 |
-| A18 | `test_replay_day_calls_fleet_stages_in_order`; `test_outputs_are_byte_identical_and_reporter_metric_is_called` | `tests/test_replay_day.py`, `tests/test_replay_outputs.py` | PASS | S235-A18 |
+| A18 | `test_replay_day_calls_fleet_stages_in_order`; `test_summary_counts_missing_context_inputs`; `test_outputs_are_byte_identical_and_reporter_metric_is_called` | `tests/test_replay_day.py`, `tests/test_replay_runner.py`, `tests/test_replay_outputs.py` | PASS | S235-A18 |
 | A19 | focused S231/S233 regression subset plus full `make ci` | `tests/test_replay_universe.py`, `tests/test_sp500_bars.py`, full gate | PASS | S235-A19 |
 
-**Tests added beyond the plan:** `tests/test_replay_series.py` isolates the no-lookahead guard; `tests/test_replay_regime.py` keeps the provider-base context proof below the module-size hard block.
+**Tests added beyond the plan:** `tests/test_replay_series.py` isolates the window helper; `tests/test_replay_no_lookahead.py` proves the full decision ignores future bars; `tests/test_replay_regime.py` keeps the provider-base context proof below the module-size hard block.
 
 ---
 
@@ -540,11 +540,11 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents-sprint-235-the-pipeline-replays-a-day-it-has-not-seen`, branch `sprint-235-the-pipeline-replays-a-day-it-has-not-seen`; no `.env` present/used; no network proof claimed.
 
-**Result:** Built a synthetic-fixture replay harness and cache context layer in `scripts/`: `daily_bars(..., with_volume=False)` remains backward-compatible and `with_volume=True` adds volume; universe cache writes/loads volume and refuses no-volume harness runs; build writes SPY benchmark and VIX context; `sectors` writes a paced Finnhub sector cache using the provider parser; `replay_pipeline.py run` delegates scanner/analyst/PM/provider/execution/reporter stages to existing fleet functions, writes deterministic outputs outside the worktree, and counts DL-232 absent inputs. Not done: adjustment-error rebases, forced data-end/membership-end exits, and `--universe-file` fixed-list mode.
+**Result:** Built a synthetic-fixture replay harness and cache context layer in `scripts/`: `daily_bars(..., with_volume=False)` remains backward-compatible and `with_volume=True` adds volume; universe cache writes/loads volume and refuses no-volume harness runs; build writes SPY benchmark and VIX context; `sectors` writes a paced Finnhub sector cache using the provider parser; `replay_pipeline.py run` delegates scanner/analyst/PM/provider/execution/reporter stages to existing fleet functions, writes deterministic outputs outside the worktree, exits held lines whose bars end, rebases listed adjustment-error days without false stop/return, supports `--universe-file`, indexes bars by date once, refuses buy intents without a stop, counts no-bar expirations, and records DL-232 absent inputs plus sector/VIX/gap/rebase/exit/order counters.
 
-**Files changed:** `scripts/replay_dataset_sources.py`, `scripts/sp500_bars.py`, `scripts/sp500_chain.py`, `scripts/replay_universe_cache.py`, `scripts/replay_universe.py`, plus new `scripts/sp500_context.py`, `scripts/replay_settings.py`, `scripts/replay_broker.py`, `scripts/replay_cache.py`, `scripts/replay_day.py`, `scripts/replay_ledger.py`, `scripts/replay_outputs.py`, `scripts/replay_pipeline.py`, `scripts/replay_runner.py`, `scripts/replay_series.py`; tests under `tests/test_replay_*`, `tests/test_sp500_*`; docs/state/version files; `pyproject.toml` / `uv.lock` bumped to `0.115.00`.
+**Files changed:** `scripts/replay_dataset_sources.py`, `scripts/sp500_bars.py`, `scripts/sp500_chain.py`, `scripts/replay_universe_cache.py`, `scripts/replay_universe.py`, plus new `scripts/sp500_context.py`, `scripts/replay_settings.py`, `scripts/replay_broker.py`, `scripts/replay_cache.py`, `scripts/replay_day.py`, `scripts/replay_ledger.py`, `scripts/replay_marks.py`, `scripts/replay_outputs.py`, `scripts/replay_pipeline.py`, `scripts/replay_runner.py`, `scripts/replay_series.py`; tests under `tests/test_replay_*`, `tests/test_sp500_*`; docs/state/version files; `pyproject.toml` / `uv.lock` bumped to `0.116.00`.
 
-**Design decisions:** DL-234 in `docs/design-log.md` records field-mapped fleet settings, a script-local replay ledger, indexed cache slicing without scanner-lookback misuse, module splits, and named stop timing; rejected alternatives are in the same DL row.
+**Design decisions:** DL-234 in `docs/design-log.md` records field-mapped fleet settings, a script-local replay ledger, indexed cache slicing without scanner-lookback misuse, module splits, named stop timing, and the returned R1-R8 repairs (gap marks, ended-line exits, adjustment-error rebases, no-bar expiry, no silent stop default, A18 counters, date-indexed bars, and decision no-lookahead); rejected alternatives are in the same DL row.
 
 **Proof — the red run first:**
 
@@ -557,40 +557,44 @@ ModuleNotFoundError: No module named 'scripts.replay_settings'
 ModuleNotFoundError: No module named 'scripts.replay_broker'
 ModuleNotFoundError: No module named 'scripts.replay_outputs'
 ModuleNotFoundError: No module named 'scripts.replay_day'
+
+uv run pytest tests/test_replay_ledger.py tests/test_replay_runner.py tests/test_replay_day.py --no-cov > $env:TEMP\s235-return-red.txt 2>&1; $LASTEXITCODE
+2
+ImportError: cannot import name 'apply_adjustment_rebases' from 'scripts.replay_ledger'
 ```
 
 **Proof — the green run:**
 
 ```text
-uv run pytest tests/test_replay_universe.py tests/test_sp500_bars.py tests/test_sp500_context.py tests/test_replay_settings.py tests/test_replay_broker.py tests/test_replay_outputs.py tests/test_replay_day.py tests/test_replay_series.py --no-cov > $env:TEMP\s235-focused-8.txt 2>&1; $LASTEXITCODE
+uv run pytest tests/test_replay_universe.py tests/test_sp500_bars.py tests/test_sp500_context.py tests/test_replay_settings.py tests/test_replay_broker.py tests/test_replay_outputs.py tests/test_replay_day.py tests/test_replay_no_lookahead.py tests/test_replay_series.py tests/test_replay_ledger.py tests/test_replay_runner.py --no-cov > $env:TEMP\s235-focused-return-final.txt 2>&1; $LASTEXITCODE
 0
-22 passed in 3.26s
+29 passed in 4.39s
 
-uv run ruff check ... > $env:TEMP\s235-ruff-check-6.txt 2>&1; $LASTEXITCODE
+uv run ruff check ...; $LASTEXITCODE
 0
 All checks passed!
 
-uv run mypy --explicit-package-bases ... > $env:TEMP\s235-mypy-focused-6.txt 2>&1; $LASTEXITCODE
+uv run mypy --explicit-package-bases ...; $LASTEXITCODE
 0
-Success: no issues found in 22 source files
+Success: no issues found in 10 source files
 ```
 
-**Guards planted:** d+1 window inclusion planted in `window_bars` → `tests/test_replay_series.py` failed, restored; inlined/no `rank_survivors` planted → `tests/test_replay_day.py` failed, restored; settings defaults-only planted → `tests/test_replay_settings.py` failed, restored; gapped buy fill planted → `tests/test_replay_broker.py::test_buy_limit_waits_for_next_session_and_expires_on_gap` failed, restored; stop armed on fill session planted → `tests/test_replay_broker.py::test_stop_arms_after_fill_session_and_rebases_without_jump_fill` failed, restored; local return formula planted → `tests/test_replay_outputs.py::test_outputs_are_byte_identical_and_reporter_metric_is_called` failed, restored.
+**Guards planted:** d+1 window inclusion planted in `window_bars` -> `tests/test_replay_series.py` failed, restored; inlined/no `rank_survivors` planted -> `tests/test_replay_day.py` failed, restored; settings defaults-only planted -> `tests/test_replay_settings.py` failed, restored; gapped buy fill planted -> `tests/test_replay_broker.py::test_buy_limit_waits_for_next_session_and_expires_on_gap` failed, restored; stop armed on fill session planted -> `tests/test_replay_broker.py::test_stop_arms_after_fill_session_and_rebases_without_jump_fill` failed, restored; local return formula planted -> `tests/test_replay_outputs.py::test_outputs_are_byte_identical_and_reporter_metric_is_called` failed, restored; R1 gap-mark plant restored the old `if line in bars` behavior -> `tests/test_replay_ledger.py::test_gap_day_marks_at_last_close_without_losing_position_value` failed (`$env:TEMP\s235-dl70-r1-gap.txt`, exit 1), restored; R4 no-bar order plant dropped the expiry -> `tests/test_replay_ledger.py::test_pending_order_without_target_bar_expires_as_no_bar` failed (`$env:TEMP\s235-dl70-r4-no-bar.txt`, exit 1), restored; R5 stop-default plant restored `intent.stop_pct or 0.05` -> `tests/test_replay_ledger.py::test_buy_intent_without_stop_is_refused_not_defaulted` failed (`$env:TEMP\s235-dl70-r5-buy-stop.txt`, exit 1), restored.
 
-**Module line counts:** `scripts/replay_universe.py` 195; `scripts/sp500_wiki.py` 197; `scripts/sp500_membership.py` 181; `scripts/replay_runner.py` 147; `scripts/replay_series.py` 108; `scripts/replay_ledger.py` 147; `scripts/sp500_context.py` 194; `scripts/replay_day.py` 175; `scripts/replay_settings.py` 145; `scripts/replay_cache.py` 83; `scripts/replay_outputs.py` 80; `scripts/replay_broker.py` 124; `scripts/replay_pipeline.py` 45; `tests/test_replay_day.py` 196; `tests/test_replay_regime.py` 35; `tests/test_replay_series.py` 28.
+**Module line counts:** `scripts/replay_universe.py` 195; `scripts/sp500_wiki.py` 197; `scripts/sp500_membership.py` 181; `scripts/replay_runner.py` 199; `scripts/replay_series.py` 133; `scripts/replay_ledger.py` 186; `scripts/replay_marks.py` 158; `scripts/sp500_context.py` 194; `scripts/replay_day.py` 177; `scripts/replay_settings.py` 145; `scripts/replay_cache.py` 83; `scripts/replay_outputs.py` 80; `scripts/replay_broker.py` 128; `scripts/replay_pipeline.py` 47; `tests/test_replay_day.py` 196; `tests/test_replay_no_lookahead.py` 143; `tests/test_replay_ledger.py` 164; `tests/test_replay_runner.py` 128.
 
-**Synthetic run wall time:** 500 lines × 300 sessions synthetic cache under `%TEMP%`: `elapsed_seconds=385.539` (`C:\Users\yury_\AppData\Local\Temp\s235-500x300-mdzgbnhz`), on this Windows worktree machine.
+**Synthetic run wall time:** 500 lines x 300 sessions synthetic cache under `%TEMP%`: `elapsed_seconds=324.877` (`C:\Users\yury_\AppData\Local\Temp\s235-500x300-return-xn1licht`), projected to 2,697 sessions as `2920.648 s` (~48.7 min) on this Windows worktree machine.
 
-**`make ci`:** `make ci > $env:TEMP\s235-make-ci-final.txt 2>&1; $LASTEXITCODE` -> exit `0`; `3324 passed, 6 skipped`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`; dependency audit accepted only existing `PYSEC-2026-2447` diskcache advisory; tracked detect-secrets passed; untracked secret scan passed over 19 new files.
+**`make ci`:** `make ci > $env:TEMP\s235-make-ci-return.txt 2>&1; $LASTEXITCODE` -> exit `0`; `3391 passed, 6 skipped`; `Required test coverage of 100.0% reached. Total coverage: 100.00%`; dependency audit accepted only existing `PYSEC-2026-2447` diskcache advisory; tracked detect-secrets passed; untracked secret scan passed with no untracked files.
 
 **`make gate-ran`:** not done; planner runs after push/remote gate.
 
-**Not met / verified failing:** A7 adjustment-error rebase not done; A8 data_end/membership_end forced exits not done; A10 `--universe-file` fixed-list mode not done; no live rebuild, sectors fetch or replay proof claimed.
+**Not met / verified failing:** no S235 implementation/test-plan item remains not done. Remote push/gate/merge and live rebuild, sectors fetch or replay proof are not done and remain planner-owned.
 
 ---
 
 ## Return notes
 
-- Built on branch `sprint-235-the-pipeline-replays-a-day-it-has-not-seen` in its own worktree; `main` unchanged.
+- Built on branch `sprint-235-the-pipeline-replays-a-day-it-has-not-seen` in its own worktree after merging `main`; `main` unchanged by this branch.
+- Took main's S236 spec, S236 README row and STATE, then updated only the S235 returned handback.
 - Proof is synthetic-fixture only. The planner still owns live cache rebuild, sector fetch, smoke replay, remote push/gate, merge and any live result claims.
-- The branch includes S236's spec and README row as SPEC because its untracked handover was copied into this worktree and the sprint-status gate requires it to be indexed.

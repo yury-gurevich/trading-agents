@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.3** (the G-scorecard)
 **Branch:** `sprint-236-the-dashboard-says-how-long-it-ran-without-a-human`
-**Status:** SPEC
+**Status:** MERGED · tag `v0.115.00` · 2026-09-27 · live read 🟩 (G1 70 %, G3 4 of 14), matched by an independent recomputation
 **Version:** *next available MINOR at merge*
 **Effort:** S (one query, one vital, one tool, one law cycle)
 **Decisions:** PRD §10 (G1, G3) · [next-leg plan](../next-leg-plan.md) § P19 · [DL-220](../design-log.md)
@@ -433,17 +433,50 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-27 before the first code change, in the cloud checkout `/home/user/trading-agents` on
+branch `sprint-236-the-dashboard-says-how-long-it-ran-without-a-human`, cut from `main` @ `8d4eb09c`,
+no `.env`. Read whole: `surfaces/laws/laws.md` and `test-plan.md` (v1.1), `agents/operator/laws/laws.md`
+(v1.3), `docs/laws/conventions.md`, `docs/laws/drift-register.md`, `CLAUDE.md`; read for the clauses
+named: `orchestration/laws/dispatcher/laws.md` (v1.1).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| new `surfaces/queries/scorecard*.py` (window, verdicts, human actions, attribution, clocks, text) | surfaces book + test-plan; operator book; dispatcher book; conventions; drift register | `SRF-IDN-01`, `SRF-IDN-02` (read-only), `SRF-DEP-01`, new `SRF-OUT-08`; `OPR-OUT-06`, `OPR-OUT-07`, `OPR-TYP-02`, `OPR-IDN-02`; `DSP-IDM-03` | **Yes, twice.** (1) `OPR-OUT-06` writes a `CommandAudit` for every `explain` call, not only every `interpret`, and an explain writes no `Intent` (`outcome="explain"`, `agents/operator/agent.py:111-119`). Scope 4's "a `CommandAudit` … with no `Intent` at all" would count every *Explain this run* press as an intervention, which A3 forbids; an explain-capability audit is reading and is never counted. (2) `DSP-IDM-03` names the property and its words (`brief_verdict`: `accept_run`'s word, or `NOT_FINISHED`); A2 writes it through the dispatcher's own brief path, not by hand, so a renamed property fails the proof. |
+| new `surfaces/dashboard/projections_scorecard.py`; `surfaces/dashboard/app.py` (one GET route); `static/index.html` (148); new `static/scorecard.js`; `static/app.css` | surfaces book + test-plan | `SRF-OUT-01`, `SRF-OUT-05`, `SRF-OUT-06`, `SRF-OUT-07` (the pattern copied), `SRF-TRG-01`, `SRF-TYP-02`, `SRF-FAIL-01`, `SRF-NEV-02` | **Yes.** `SRF-OUT-01` scopes contextual panels to the selected run; the scorecard is a window, so it gets its own `GET /api/scorecard`, which takes no run parameter, and its script never listens for a run selection: the selected run *cannot* scope it, and `SRF-OUT-08` says so. It stays out of `/api/vitals` because its first read judges every unbriefed run (2.94 s each, row 3) and would hold every other vital behind it. `SRF-FAIL-01`'s shape (degrade, stay HTTP 200, say so) gives the unreadable case: unavailable, no number. |
+| `surfaces/mcp_tools.py` (150), `surfaces/mcp_server.py`, new `surfaces/scorecard_tool.py` | surfaces book + test-plan | `SRF-TRG-02`, `SRF-IN-04`, `SRF-NEV-03`, `SRF-TYP-01`, `SRF-FAIL-02`, `SRF-SEC-02` | Yes: `SRF-TRG-02` fixes the catalogue at six tools, so a seventh needs the amendment. DL-225's trap (`test_entry_imports.py`) forbids the tool importing anything under `surfaces.dashboard`, whose package init loads the chat and so `mcp_tools` half-built. |
+| `surfaces/dashboard/chat.py` (141) `_QUICK_TOOLS` | surfaces book + test-plan | `SRF-OUT-03`, `SRF-OUT-06`, `SRF-IN-03`, `SRF-TYP-01` | Yes, a silence (below): the quick ask calls the tool with no run argument and no model. |
+| new `surfaces/scorecard_settings.py`; `surfaces/dashboard/settings.py` (176) | `SRF-PARAM`; conventions; `scripts/param_law_sync_sources.py` (read only: S235 owns `scripts/`) | every `DashboardSettings` field has exactly one `PARAM` row, gate-enforced | **Yes.** The gate reads `DashboardSettings` alone and the MCP tool may not import `surfaces.dashboard`, so the four tunables live in a `ScorecardSettings` outside the dashboard package and `DashboardSettings` inherits from it: each `PARAM` row still meets its field, and the tile and the tool read one declaration. `dispatcher_fire_utc` moves into the same class for the same reason (the scorecard places a session at that tick); its row, its environment name and its readers do not change. |
+| `orchestration/packs/trading_acceptance.py` `accept_run` (read only) | `docs/laws/ledger.md` Layer 3; DL-59 | the one per-run verdict (`PASS`, `NO_TRADE`, `UNPROVEN`, `FAIL`); `.passed` is true for all but `FAIL` | No: "complete" is the word (`PASS`, `NO_TRADE`), never `.passed`. |
+| `orchestration/daily_brief.py` (read only) | dispatcher book v1.1 | `DSP-IDM-03`, `DSP-OUT-06`, `DSP-TRG-03` | **A finding, no change:** the brief goes once the Snapshot exists (~22:40 UTC), before the next open, so a run that submitted orders is briefed `UNPROVEN` and, one brief per run, keeps that word. By Scope 3 such a session never counts complete. The scorecard reads it as written; DL-235 and the return notes carry it. |
+| `orchestration/scheduled_dispatch.py` `ProviderTradingCalendar` (read only) | none governs it | none | **Yes, asked and decided by the operator:** every `RunRequest` writer stores `requested_at` as a bare date (`orchestration/start.py:87`, `as_of.isoformat()`), not the naive 22:30 timestamp the A6/A7 fixtures model. Read literally as UTC it is midnight, 22.5 h before the run. The operator chose (2026-09-27) that a bare date reads as the dispatcher's placing tick, 22:30 UTC, on that date: DL-235 decision 5. |
+| `contracts/operator.py` `IntentFamily` (read only) | operator book v1.3 | `OPR-TYP-02`, `OPR-NEV-01`, `OPR-OUT-06`, `OPR-OUT-07` | Yes: reading is `status` and `explain`; every other family acts, including one the contract may add later (the safe side for an autonomy claim), and a test pins the two reading words to the contract's literal. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes: a new
+guarantee, no `contracts/` change** (the spec's answer, confirmed by reading). The surfaces book goes to
+**v1.2**: `SRF-TRG-02` lists `scorecard`; new `SRF-OUT-08`; four `PARAM` rows (and the
+`dispatcher_fire_utc` row names its second reader); a Changelog line; test-plan rows for both clauses;
+the rollups in `docs/laws/ledger.md` and `docs/laws/INDEX.md`; **DRIFT-078** for the silence below.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none that stop the build. Two were resolved on
+the spec's own stated intent: (1) Scope 4's "a `CommandAudit` with no `Intent` counts" against
+`OPR-OUT-06` (explain calls write one too), read as "an interpret call that produced no `Intent`",
+because A3 and Scope 4's next sentence say reading never counts; (2) `SRF-TRG-02`'s six tools against
+Scope 9's seventh, resolved by the amendment the spec asks for.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** (1) `SRF-OUT-03` says dashboard chat answers are
+grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. The deterministic
+quick asks (`status`, `incidents`, `performance` since S228) already do neither, and `scorecard` joins
+them by design. S228 noted the silence without a register row; this sprint files **DRIFT-078** (forced
+decision: narrow `SRF-OUT-03` to operator-mediated answers, or audit the quick asks) and `SRF-OUT-08`
+states the scorecard's own behaviour. (2) No law says what instant a `RunRequest`'s `requested_at`
+holds; the operator decided how the scorecard reads a bare date (above).
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** none of the clauses relied on is ⬜. `SRF-PERF-02` (⬜,
+projection reads bounded by timeout and cache settings) is neither relied on nor proven: the
+scorecard's read is bounded by `scorecard_window_days` and the per-process memo, not by a timeout. To
+be added and proven: `SRF-OUT-08`; `SRF-TRG-02` stays 🟩 with the scorecard tests in its row.
+*At handback:* done. `SRF-OUT-08` is 🟩 on 18 cited tests, `SRF-TRG-02` stays 🟩 with the A11 test
+added, and the gate derives 29 / 36.
 
 ---
 
@@ -451,49 +484,261 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder fills)* | | | |
+| A1 | `test_a1_g1_counts_only_complete_sessions` (six sessions: the table's five plus the handover's `NOT_FINISHED`, so G1 = 2 / 6) | `surfaces/tests/test_scorecard_g1_g3.py` | 🟩 red first on `main`; guard planted | `SRF-OUT-08` |
+| A2 | `test_a2_production_judges_with_accept_run_itself`; `test_a2_the_tile_and_the_tool_share_the_process_memo`; `test_a2_a_stored_brief_verdict_is_used_as_written` (the word written by the dispatcher's own brief path, S234's fixtures) | `surfaces/tests/test_scorecard_verdicts.py` | 🟩 | `SRF-OUT-08`, `DSP-IDM-03` |
+| A3 | `test_a3_reading_is_never_an_intervention` (a `status` intent, an `explain` intent and an explain call's Intent-less audit) | `surfaces/tests/test_scorecard_g1_g3.py` | 🟩 red first on `main`; guard planted | `SRF-OUT-08`, `OPR-OUT-06` |
+| A4 | `test_a4_every_acting_kind_counts` (approve, a refused command with no Intent, a `manual-` run, a resume, a hold answer at 22:40 UTC, an escalation) | `surfaces/tests/test_scorecard_g1_g3.py` | 🟩 guard planted (hold answer by its run) | `SRF-OUT-08` |
+| A5 | `test_a5_no_run_is_judged_twice` | `surfaces/tests/test_scorecard_verdicts.py` | 🟩 guard planted | `SRF-OUT-08` |
+| A6 | `test_a6_a_weekend_action_belongs_to_mondays_run` | `surfaces/tests/test_scorecard_attribution.py` | 🟩 red first on `main` | `SRF-OUT-08` |
+| A7 | `test_a7_naive_timestamps_read_as_utc` (naive `requested_at` beside `+10:00` command times) | `surfaces/tests/test_scorecard_attribution.py` | 🟩 guard planted | `SRF-OUT-08` |
+| A8 | `test_a8_a_deploy_stops_one_clock_and_an_escalation_both` | `surfaces/tests/test_scorecard_attribution.py` | 🟩 | `SRF-OUT-08` |
+| A9 | `test_a9_open_and_old_sessions_are_not_counted` | `surfaces/tests/test_scorecard_attribution.py` | 🟩 | `SRF-OUT-08` |
+| A10 | `test_a10_the_tile_is_red_amber_or_green_in_plain_words` (three cases); `test_a10_an_empty_window_reads_unavailable_and_shows_no_number` | `surfaces/tests/test_scorecard_tile.py` | 🟩 | `SRF-OUT-08`, `SRF-OUT-05` |
+| A11 | `test_a11_mcp_chat_and_tile_give_one_answer_with_no_model_call` (two different selected runs, one answer; the bus refuses every call) | `surfaces/tests/test_scorecard_chat.py` | 🟩 | `SRF-OUT-08`, `SRF-TRG-02` |
+| A12 | `test_a12_every_answer_names_what_the_graph_cannot_see` | `surfaces/tests/test_scorecard_tile.py` | 🟩 | `SRF-OUT-08` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** 31 more test cases in the same six new files. The ones that guard a
+decision: `test_every_intent_family_but_reading_acts` (ten cases, one per `IntentFamily` literal, so a
+family the contract adds later acts until decided otherwise); `test_the_operators_own_reading_records_are_never_actions`
+(the real `OperatorAgent` writes an explain call, a typed explain command and a pause: four audits,
+one counted; guard planted); `test_a6_a_bare_date_is_placed_at_the_placing_tick` (the operator's 22:30
+decision; guard planted); `test_the_default_window_is_row_nines_twenty_sessions` (from 2026-09-27 the
+window is 2026-08-28 → 2026-09-25, twenty sessions). The rest cover the edges: an empty stored word falls
+back to the gate; a judge that raises is asked again; actions at the window's opening or after its last
+placement count nowhere; a resume is one resume, never also a run; an unreadable time or placement stops
+the count (four cases); an empty window, an unreadable graph (no store text leaks) and a record with no
+readable time all read unavailable; no healthy session gives no hands-on share; sessions list newest
+first; the four goals are the PRD's and `DashboardSettings` inherits them; the tool's empty and
+unplaceable answers are plain words; the quick ask, the slot and a script that never listens for a run
+selection; the route ignores any run parameter and refuses POST; the tool's clock is aware UTC.
+Changed: `test_mcp_server.py::test_error_paths_and_tool_catalog` (the catalogue gains `scorecard`) and
+`test_dashboard_jargon.py::test_api_display_strings_contain_no_internal_identifiers` (adds
+`/api/scorecard`).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(BUILT at handback)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud checkout `/home/user/trading-agents`,
+branch `sprint-236-the-dashboard-says-how-long-it-ran-without-a-human` cut from `main` @ `8d4eb09c`.
+**No `.env`, no `gh`.** Dependencies from `uv sync --frozen` (the dev group, no extras). Every proof is
+an `InMemoryGraphStore` fixture; nothing was read on the live spine.
 
-**Result:** *(builder fills — what is now true, not the intent restated)*
+**Result:** on in-memory graphs, `GET /api/scorecard` (the tile), the MCP `scorecard` tool and the
+chat's *Running unattended* give one answer from graph facts: G1 (complete over counted sessions, the
+last 30 days of closed sessions), G3 and G3 counting deploys, and the *unattended* and *untouched*
+clocks, with each session's verdict the acceptance gate's (the stored `brief_verdict`, else
+`accept_run` judged once per process, else `MISSED`), reading never counted, the three blind spots
+listed, and no model call or agent request. The selected run cannot scope it (the route takes no run).
+An empty window, an unreadable graph or an unplaceable record shows no number. The surfaces book is
+LOCKED **v1.2** with `SRF-OUT-08` 🟩, and both rollups read **29 / 36** (derived by the gate).
 
-**Files changed:** *(builder fills)*
+**Files changed:** new `surfaces/queries/scorecard.py`, `scorecard_model.py`, `scorecard_actions.py`,
+`scorecard_verdicts.py`, `scorecard_text.py`, `surfaces/scorecard_settings.py`,
+`surfaces/scorecard_tool.py`, `surfaces/dashboard/projections_scorecard.py`,
+`surfaces/dashboard/static/scorecard.js`; changed `surfaces/dashboard/settings.py` (inherits
+`ScorecardSettings`; `dispatcher_fire_utc` moved into it), `app.py` (one GET route), `chat.py` (the
+quick ask), `surfaces/mcp_tools.py`, `surfaces/mcp_server.py`, `static/index.html`, `static/app.css`;
+tests: six new `surfaces/tests/test_scorecard_*.py`, new `scorecard_fixtures.py`, and
+`test_mcp_server.py`, `test_dashboard_jargon.py` (one line each); laws and docs:
+`surfaces/laws/laws.md`, `surfaces/laws/test-plan.md`, `docs/laws/ledger.md`, `docs/laws/INDEX.md`,
+`docs/laws/drift-register.md` (DRIFT-078), `docs/design-log.md` (DL-235), this spec,
+`docs/sprints/README.md`, `pyproject.toml` (`0.114.01` → `0.115.00`). `uv.lock` untouched.
 
-**Design decisions:** *(DL-235, one line + where the rejected alternatives are)*
+**Design decisions:** [DL-235](../design-log.md): the process memo; module boundaries and the tile's own
+route; the verdict injected through the memo; the unavailable case; **the operator's decision** that a
+bare-date `requested_at` is placed at 22:30 UTC; an explain call is reading; one kind per record and a
+hold answer on the run it names; the window; what the operator reads. Each decision carries its
+rejected alternatives; the known limits close the entry.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+$ uv run --frozen pytest --no-cov -q surfaces/tests/test_scorecard_g1_g3.py \
+      surfaces/tests/test_scorecard_attribution.py   # main @ 8d4eb09c plus only the new tests; exit 2
+ERROR collecting surfaces/tests/test_scorecard_g1_g3.py
+surfaces/tests/test_scorecard_g1_g3.py:16: in <module>
+    from surfaces.queries.scorecard import scorecard
+E   ModuleNotFoundError: No module named 'surfaces.queries.scorecard'
+ERROR collecting surfaces/tests/test_scorecard_attribution.py
+surfaces/tests/test_scorecard_attribution.py:13: in <module>
+    from surfaces.queries.scorecard import scorecard
+E   ModuleNotFoundError: No module named 'surfaces.queries.scorecard'
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+2 errors in 0.72s
 ```
+
+Committed red as `8e74d2c` before any implementation.
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+surfaces/tests/test_scorecard_g1_g3.py::test_a1_g1_counts_only_complete_sessions PASSED [ 33%]
+surfaces/tests/test_scorecard_g1_g3.py::test_a3_reading_is_never_an_intervention PASSED [ 66%]
+surfaces/tests/test_scorecard_attribution.py::test_a6_a_weekend_action_belongs_to_mondays_run PASSED [100%]
+============================== 3 passed in 0.53s ===============================
+$ uv run --frozen pytest --no-cov -q surfaces/tests/test_scorecard_*.py
+49 passed in 0.70s
 ```
 
-**Guards planted:** *(per guard: what was planted, that it failed, that it was restored)*
+**Guards planted:** each planted in production code, the guard run red, then `git checkout` and run
+green; the tree was clean after each.
 
-**Module line counts:** *(total lines, as the size gate counts them)*
+| # | Planted | Guard | Red, as it failed | Restored |
+| --- | --- | --- | --- | --- |
+| 1 | a `status` intent counts (`READING_FAMILIES` = `{"explain"}`) | A3 | `At index 1 diff: {'command': 1} != {}` | 1 passed |
+| 2 | `UNPROVEN` counts as complete (added to `COMPLETE`) | A1 | `('sched-2026-09-22', 'UNPROVEN', True) != ('sched-2026-09-22', 'UNPROVEN', False)` | 1 passed |
+| 3 | the memo dropped (`VerdictMemo.word` judges every read) | A5 | `Left contains 3 more items`: each unbriefed run judged twice | 1 passed |
+| 4 | a naive time compared raw (`instant` returns it unchanged) | A7 | `TypeError: can't compare offset-naive and offset-aware datetimes` | 1 passed |
+| 5 | a bare date read at midnight (decision 5's ruled-out reading) | `test_a6_a_bare_date_is_placed_at_the_placing_tick` | `At index 0 diff: {'run': 1} != {'command': 1, 'run': 1}` | passed |
+| 6 | every Intent-less audit counts (Scope 4 read literally) | `test_the_operators_own_reading_records_are_never_actions`; A3 | `['command', 'command', 'command'] != ['command']`; `{'command': 1} != {}` | passed |
+| 7 | a hold answer placed by its time alone | A4 | `('sched-2026-09-24', {}) != ('sched-2026-09-24', {'hold_answer': 1})` | 1 passed |
+| 8 | the `scorecard_clock_sessions` `PARAM` row removed | `check_param_law_sync.py` | `[FAIL] surfaces/dashboard/settings.py:1: surfaces.scorecard_clock_sessions settings field has no PARAM row` | exit 0 |
 
-**`make ci`:** *(redirected to `<path>`; exit code; passed/skipped; coverage; dependency audit;
-detect-secrets)*
+Plants 1–4 are the four the spec names. My first attempt at plant 7 was malformed (a comment swallowed
+the call: a `SyntaxError`, not a red); it was redone and failed as shown.
 
-**`make gate-ran`:** *(planner, after push)*
+**Module line counts** (total lines, as `check_module_size.py` counts them; `main` in brackets):
 
-**Not met / verified failing:** *(plainly, or "none")*
+| Module | Lines |
+| --- | --- |
+| `surfaces/queries/scorecard.py` | 108 (new) |
+| `surfaces/queries/scorecard_model.py` | 125 (new) |
+| `surfaces/queries/scorecard_actions.py` | 129 (new) |
+| `surfaces/queries/scorecard_verdicts.py` | 62 (new) |
+| `surfaces/queries/scorecard_text.py` | 141 (new) |
+| `surfaces/scorecard_settings.py` | 63 (new) |
+| `surfaces/scorecard_tool.py` | 68 (new) |
+| `surfaces/dashboard/projections_scorecard.py` | 63 (new) |
+| `surfaces/dashboard/settings.py` | 174 (176) |
+| `surfaces/mcp_tools.py` | 152 (150) |
+| `surfaces/mcp_server.py` | 160 (151) |
+| `surfaces/dashboard/chat.py` | 146 (141) |
+| `surfaces/dashboard/app.py` | 184 (180) |
+| `surfaces/dashboard/projections_vitals.py` | 133 (133, untouched) |
+| `surfaces/tests/scorecard_fixtures.py` | 198 (new) |
+| `surfaces/tests/test_scorecard_g1_g3.py` / `_verdicts` / `_attribution` / `_edges` / `_tile` / `_chat` | 176 / 160 / 130 / 93 / 198 / 184 (new) |
 
----
+**`make ci`:** `UV_FROZEN=1 make ci > <scratchpad>/make_ci_final.txt 2>&1` (the cloud container's scratchpad, not
+persisted), **exit 0**, all 15 steps: ruff clean; format 1,338 files; mypy no issues in 1,053 files;
+import-linter 5 kept, 0 broken; module size 0 `[FAIL]` (warnings only); module header; law coverage;
+PARAM/settings sync; sprint status; markdown links; version scheme; pytest **3,358 passed, 6 skipped,
+100.00 %** (18,802 statements, 4,078 branches, none missed); dependency audit *"No unaccepted
+vulnerabilities; 1 accepted advisory re-checked"*; detect-secrets passed; untracked secrets *"no
+untracked files to scan"*. `UV_FROZEN=1` because after the bump a plain `uv run` re-locks and fails on
+`download.pytorch.org`; frozen, every step runs against the committed lock, as CI's `uv sync --frozen`
+does. The first full run failed at detect-secrets on a fake connection string with a user and password
+in it, in a test I wrote; the next failed on this handback quoting it. Both were reworded, not
+allowlisted. The pinned
+markdownlint hook (not a `make ci` step) also passes on every changed document.
+
+**`make gate-ran`:** *(planner, after push)* — **owed.** The cloud container has no `gh`.
+
+**Not met / verified failing:**
+
+- **`make gate-ran`: not done**, owed to the planner (no `gh`).
+- **`uv lock`: not done.** It fails reaching `download.pytorch.org` (`tunnel error: unsuccessful`), so
+  `uv.lock` is **untouched**: `cmp` against the pre-bump copy is byte-identical, and its own version
+  line still reads `0.114.1`. Owed to the planner before merge.
+- **`make ci` on Windows: not done**, owed to the planner.
+- **The live check: not done** (no `.env`): the tile and the MCP `scorecard` on the live spine, the
+  second refresh judging nothing, and the `functionality-checks.md` row. Owed to the planner; the
+  comparison with row 9 must use this build's readings (return notes).
 
 ## Return notes
 
-- *(builder fills)*
+- **Placement of a bare date: the operator's decision, and a likely difference from row 9.** Every
+  `RunRequest` writer stores `requested_at` as a date (`orchestration/start.py:87`). Asked mid-build,
+  the operator chose 22:30 UTC on that date (DL-235 decision 5). Row 9's scratch script probably read
+  midnight: it puts 2026-09-24's escalations on 09-25, where this build puts any created before 22:30
+  UTC on 09-24. **The planner's live comparison has to recompute with the 22:30 reading**, and with
+  decisions 6 and 7 below, before calling a mismatch a defect.
+- **An explain call is reading (DL-235 decision 6).** `OPR-OUT-06` writes a `CommandAudit` for every
+  `explain`, with no `Intent`; a typed "explain" command writes an explain `Intent` *and then* that second
+  audit (`surfaces/operator_tools.py` sends a typed explain to the explain capability). Scope 4 read
+  literally counts every one of those audits as an intervention. Row 5/6's live graph holds 33 audits
+  and 23 intents, 6 of them explain; by that code path each explain intent left a second, Intent-less
+  audit, so the literal rule would charge at least those. *[inferred from the code; not measured live]*
+- **A hold answer counts on the run it names (DL-235 decision 7, refined during the build).** The run it
+  releases is placed after the answer, which a 22:30 bare-date placement cannot show; by time alone a
+  22:40 answer would land on the next session and leave the released run reading unattended. A resume
+  keeps the spec's `resumed_at` (its error is the conservative one).
+- **Finding, not changed: a briefed run that submitted orders reads `UNPROVEN` for good.** The brief is
+  sent once the Snapshot exists (~22:40 UTC), before the next open, and one brief per run
+  (`DSP-IDM-03`). By Scope 3 such a session never counts complete, so G1 will stay low on every night
+  the pack trades. That is a decision about the verdict's source, outside this sprint.
+- **Finding: the window bounds the clocks.** *[measured over 2026–2027 with the provider calendar]* a
+  30-day window's 31 dates hold 18–23 sessions and 28 days hold fewer than 20, when the 20-session clock
+  cannot reach its target.
+- **Record inside the dispatcher window.** A command or an activation escalation made after 22:30 UTC
+  for that night's run counts against the next session (DL-235 known limit b2).
+- **Where the tile lives.** Its own `GET /api/scorecard`; `/api/vitals` and `projections_vitals.py`
+  (listed in the blast radius) are untouched, so the one slow first read never holds the other vitals.
+  On a restart the first read judges only unbriefed runs, once; the second judges none.
+- **Settings.** `ScorecardSettings` (`surfaces/scorecard_settings.py`) holds the four tunables and
+  `dispatcher_fire_utc`, moved from `DashboardSettings`, which now inherits them: same environment names
+  (`DASHBOARD_…`), same `PARAM` rows, same readers. The PARAM gate was planted with a missing row and
+  failed by name, so it sees the inherited fields.
+- **Numbers to re-check at merge.** DL-235 (DL-234 is S235's: both insert at the top of
+  `design-log.md`, a trivial conflict for whichever merges second). DRIFT-078 (S235 may file one too).
+  Version `0.115.00`: if S235 lands first at `0.115.00`, this re-bumps to `0.116.00`.
+- **Read-only books cited.** The scorecard tests cite `OPR-OUT-06`, `OPR-OUT-07`, `OPR-TYP-02` and
+  `DSP-IDM-03` because they depend on them; the operator and dispatcher test-plans are unchanged.
+- **Left to the planner's pickup:** STATE.md, the work-queue row (83), `docs/sprints/INDEX.md` and the
+  next-leg plan still say specced; only this spec and its README row say BUILT.
+
+---
+
+## Planner review and merge — 2026-09-27
+
+**Review of the handback (`b494959a`).** Scope held: `surfaces/`, the surfaces law book, docs and
+`pyproject.toml`; nothing under `agents/`, `contracts/`, `kernel/` or `orchestration/`. The law cycle is
+complete (v1.2, `SRF-OUT-08`, `SRF-TRG-02`, four `PARAM` rows, rollups 29 / 36), DL-235 and DRIFT-078
+are recorded, and MINOR is right.
+
+**Two corrections before merge (`c0cedfb9`, [DL-235](../design-log.md) amendment).** The handback named
+both as known limits; left in place, the scorecard's two headline numbers would have been wrong by
+construction.
+
+1. **`UNPROVEN` is not a settled word.** The brief is sent before the next open, so every night the
+   pack trades is briefed `UNPROVEN`; kept as final, G1 would have measured how often the pack trades.
+   A stored or judged `UNPROVEN` now goes back to `accept_run` on each read, and the memo keeps settled
+   words only. `NOT_FINISHED` stays settled.
+2. **The clocks read past the window** when every session in it holds, back to
+   `scorecard_clock_sessions`; G1 and G3 stay inside it.
+
+Red first: on `b494959a`, 3 of the 4 new tests in `surfaces/tests/test_scorecard_settling.py` failed
+(the fourth guards that the look-back runs only when needed). `test_a5` pinned the old behaviour and was
+updated. Four plants, each red then restored: a stored `UNPROVEN` taken as final; the memo keeping
+`UNPROVEN`; no look-back; a look-back that always runs. `SRF-OUT-08` and its test-plan row were
+amended in the same commit.
+
+**Owed items closed.** `uv lock`: `0.114.1` → `0.115.0`. `make ci` on Windows, redirected to a file:
+exit 0, **3,362 passed, 6 skipped, 100.00 %**, dependency audit and detect-secrets clean.
+**`GATE PROVEN` for `c0cedfb9`** (full SHA checked against `git rev-parse HEAD`) (CI, CodeQL, Security Findings,
+attempt 1), run from the merge worktree at that `HEAD`; `main` fast-forwarded, tagged `v0.115.00`. S235
+had not merged, so `0.115.00` stands.
+
+**Live read (the functionality check), 2026-09-27 02:46 UTC**, from the main checkout with `.env`,
+through `surfaces.queries.scorecard` and the tile's projection:
+
+| Check | Result |
+| --- | --- |
+| G1 over 20 sessions (2026-08-28 → 2026-09-25) | **14 / 20 = 70.0 %** (6 `FAIL`: 08-28, 09-08 to 09-11, 09-15) |
+| G3 | **4 of 14** healthy sessions (09-04 and 09-16 verify runs; 09-23 three commands; 09-24 a manual run and 24 escalations); **12 of 14** counting deploys |
+| Clocks | unattended **1** (09-25: deploys only), untouched **0** |
+| Tile | red: `unattended 1, untouched 0 of 20 sessions · cycles 70 % · hands-on 4 of 14 days` |
+| Independent recomputation | a planner scratch script with its own attribution and verdict code: **every row identical**, same totals and clocks |
+| Memo | first read **68.7 s** (all 20 sessions judged: none carries `brief_verdict` yet), second **1.5 s**, same rows |
+
+🩹 The spec's row 9 read the bare-date `requested_at` as midnight; at 22:30 UTC (DL-235 decision 5) the
+24 escalations land on 09-24 and 09-23's commands on 09-23, as the builder predicted. G3 is unchanged
+at 4 of 14; with deploys it is 12, not 11.
+
+**Named residue.** (a) The first read in each dashboard process judges every session without a settled
+stored word, about 3 s each: ~69 s today. It shrinks as briefs accrue, but trading nights are briefed
+`UNPROVEN`, so it settles near 3 s per trading night in the window. (b) The operator's running dashboard
+shows the tile after a restart; no image ships `surfaces/`. (c) DRIFT-078 (the quick asks versus
+`SRF-OUT-03`) stays open.

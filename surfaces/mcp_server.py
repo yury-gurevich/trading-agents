@@ -93,6 +93,15 @@ TOOLS: list[types.Tool] = [
             },
         },
     ),
+    types.Tool(
+        name="scorecard",
+        description=(
+            "Say how long the pack has run without a human: the share of scheduled "
+            "sessions that completed, the share of healthy sessions a human acted on, "
+            "and how many sessions in a row ran without one, over the recent window."
+        ),
+        input_schema={"type": "object", "properties": {}},
+    ),
 ]
 
 server = Server("trading-agents")

@@ -29,6 +29,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--end", type=date.fromisoformat)
     parser.add_argument("--set", action="append", default=[])
     parser.add_argument("--slippage-bps", type=int, default=DEFAULT_SLIPPAGE_BPS)
+    parser.add_argument("--universe-file", type=Path)
     args = parser.parse_args(argv)
     run(
         cache_dir=args.cache,
@@ -37,6 +38,7 @@ def main(argv: list[str]) -> int:
         end=args.end,
         overrides=tuple(args.set),
         slippage_bps=args.slippage_bps,
+        universe_file=args.universe_file,
     )
     return 0
 

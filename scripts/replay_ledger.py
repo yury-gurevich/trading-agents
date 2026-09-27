@@ -8,15 +8,17 @@ External I/O: none.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from scripts.replay_broker import (
     PendingOrder,
     ReplayBar,
+    ReplayFill,
     ReplayPosition,
     simulate_limit_fill,
     simulate_stop_fill,
 )
+from scripts.replay_marks import mark_positions
 
 from agents.execution.order_tolerance import (
     OrderToleranceConfig,
@@ -34,17 +36,27 @@ if TYPE_CHECKING:
 _CENTS = Decimal("100")
 
 
+class PendingSettlement(NamedTuple):
+    expired: int
+    cash_delta_cents: int
+    no_bar: int
+
+
 def queue_orders(
     intents: tuple[Any, ...],
     sessions: tuple[date, ...],
     index: int,
     pending: list[PendingOrder],
     config: OrderToleranceConfig,
-) -> None:
+) -> int:
     if index + 1 >= len(sessions):
-        return
+        return 0
+    buy_without_stop = 0
     for intent in intents:
         side: Literal["buy", "sell"] = "buy" if intent.action == "buy" else "sell"
+        if side == "buy" and intent.stop_pct is None:
+            buy_without_stop += 1
+            continue
         evidence = resolve_order_tolerance(intent, side, config)
         pending.append(
             PendingOrder(
@@ -53,9 +65,10 @@ def queue_orders(
                 intent.quantity,
                 money_cents(evidence.applied_limit_price),
                 sessions[index + 1],
-                intent.stop_pct or 0.05,
+                intent.stop_pct if intent.stop_pct is not None else 0.0,
             )
         )
+    return buy_without_stop
 
 
 def settle_stops(
@@ -63,9 +76,12 @@ def settle_stops(
     positions: dict[str, ReplayPosition],
     fills: list[dict[str, Any]],
     slippage_bps: int,
+    skip_lines: frozenset[str] = frozenset(),
 ) -> int:
     cash = 0
     for line, position in tuple(positions.items()):
+        if line in skip_lines:
+            continue
         row = bars.get(line)
         fill = (
             None
@@ -76,8 +92,9 @@ def settle_stops(
         )
         if fill is None:
             continue
-        fills.append(fill.__dict__ | {"date": fill.date.isoformat()})
-        cash += fill.quantity * fill.price_cents
+        price_cents = _position_price_cents(position, fill.price_cents)
+        fills.append(_fill_row(fill, price_cents=price_cents))
+        cash += fill.quantity * price_cents
         positions.pop(line, None)
     return cash
 
@@ -90,19 +107,23 @@ def settle_pending(
     positions: dict[str, ReplayPosition],
     fills: list[dict[str, Any]],
     slippage_bps: int,
-) -> tuple[int, int]:
-    expired = cash = 0
+) -> PendingSettlement:
+    expired = no_bar = cash = 0
     for order in tuple(pending):
         row = bars.get(order.line)
-        if row is None or order.target_session != session:
+        if order.target_session != session:
+            continue
+        if row is None:
+            expired += 1
+            no_bar += 1
             continue
         fill = simulate_limit_fill(order, replay_bar(row), slippage_bps=slippage_bps)
         if fill is None:
             expired += 1
             continue
-        fills.append(fill.__dict__ | {"date": fill.date.isoformat()})
-        cash += (-1 if fill.side == "buy" else 1) * fill.quantity * fill.price_cents
         if fill.side == "buy":
+            fills.append(_fill_row(fill))
+            cash -= fill.quantity * fill.price_cents
             positions[fill.line] = ReplayPosition(
                 fill.line,
                 fill.quantity,
@@ -113,8 +134,16 @@ def settle_pending(
                 f"{fill.line}-{session.isoformat()}",
             )
         else:
+            position = positions.get(fill.line)
+            price_cents = (
+                fill.price_cents
+                if position is None
+                else _position_price_cents(position, fill.price_cents)
+            )
+            fills.append(_fill_row(fill, price_cents=price_cents))
+            cash += fill.quantity * price_cents
             positions.pop(fill.line, None)
-    return expired, cash
+    return PendingSettlement(expired, cash, no_bar)
 
 
 def replay_bar(row: BarRow) -> ReplayBar:
@@ -130,13 +159,12 @@ def replay_bar(row: BarRow) -> ReplayBar:
 
 
 def equity_cents(
-    cash_cents: int, positions: dict[str, ReplayPosition], bars: dict[str, BarRow]
+    cash_cents: int,
+    positions: dict[str, ReplayPosition],
+    line_bars: dict[str, tuple[BarRow, ...]],
+    session: date,
 ) -> int:
-    return cash_cents + sum(
-        pos.quantity * round(bars[line].close * 100)
-        for line, pos in positions.items()
-        if line in bars
-    )
+    return mark_positions(cash_cents, positions, line_bars, session).equity_cents
 
 
 def next_session(sessions: tuple[date, ...], index: int) -> date:
@@ -145,3 +173,14 @@ def next_session(sessions: tuple[date, ...], index: int) -> date:
 
 def money_cents(value: Money) -> int:
     return int((value.amount * _CENTS).quantize(Decimal("1")))
+
+
+def _fill_row(fill: ReplayFill, *, price_cents: int | None = None) -> dict[str, Any]:
+    row = fill.__dict__ | {"date": fill.date.isoformat()}
+    if price_cents is not None:
+        row["price_cents"] = price_cents
+    return row
+
+
+def _position_price_cents(position: ReplayPosition, price_cents: int) -> int:
+    return round(price_cents * position.price_scale)

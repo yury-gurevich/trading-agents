@@ -10,6 +10,143 @@ and is marked CLOSED here.
 
 ---
 
+## DL-235 - the scorecard counts sessions by the acceptance gate's word and places human actions between runs - status: DECIDED (S236, 2026-09-27; decision 5 by the operator)
+
+**Question.** E19.3 (work-queue 83, [S236](sprints/sprint-236-the-dashboard-says-how-long-it-ran-without-a-human.md))
+must say from graph facts alone whether the pack meets PRD G1 and G3 over a rolling window, and for how
+many sessions in a row it ran without a human. Where does each piece live, how is the verdict injected,
+and what does it say when it cannot answer? Recorded before implementation.
+
+**Decision 1 - the memo lives in the process, beside the verdict source.**
+`surfaces/queries/scorecard_verdicts.py` holds one `VerdictMemo` per process (`PROCESS_VERDICTS`): run
+id → `accept_run`'s word, behind a lock, so the dashboard tile, the chat's quick ask and the MCP tool
+share it and two concurrent refreshes still judge a run once. It holds for the life of the process.
+Only `accept_run`'s words enter it: a run carrying `brief_verdict` is read from its `RunRequest` on
+every read and never reaches the memo or `accept_run`. A judge that raises is not memoised, so the next
+read asks again. *Ruled out:* (a) no memo, 2.94 s per unbriefed run on every refresh (S236 row 3);
+(b) one memo per graph object, because the tile reads through the dashboard's `CachingGraphStore` and
+the chat through the raw store, so the same run would be judged twice in one process; (c) a TTL, which
+re-pays 2.94 s per run to re-learn a word that changes only when late evidence lands, and that the
+brief's stored word replaces from S234 on; (d) storing the word on the graph, which S236 forbids (no new
+property).
+
+**Decision 2 - module boundaries, each under 200 lines.** `surfaces/scorecard_settings.py`
+(`ScorecardSettings`: the four tunables and `dispatcher_fire_utc`, which `DashboardSettings` now
+inherits); `surfaces/queries/scorecard_verdicts.py` (one word per session and what "complete" means);
+`surfaces/queries/scorecard_actions.py` (the human-action records, each with its kind and instant, and
+the one timestamp reader); `surfaces/queries/scorecard.py` (the window, placements and attribution);
+`surfaces/queries/scorecard_model.py` (the frozen `Scorecard` and its sessions, from which G1, G3 and
+the clocks are counted; split out during the build when the query formatted to 210 lines);
+`surfaces/queries/scorecard_text.py` (the tile line,
+tone, detail rows, the answer and the blind spots); `surfaces/dashboard/projections_scorecard.py` (the
+tile payload and its unavailable case); `surfaces/scorecard_tool.py` (the MCP tool, which the chat's
+quick ask also calls). The tile has its own `GET /api/scorecard` and is not part of `/api/vitals`: its
+first read judges every unbriefed run and would hold every other vital behind it, and a route that
+takes no run parameter makes "the selected run does not scope it" structural rather than promised.
+*Ruled out:* one module (past 200 lines); the tile inside `/api/vitals` (above); the settings under
+`surfaces/dashboard/`, because importing anything there from the MCP tool runs the dashboard package's
+`__init__`, which imports the chat, which imports `mcp_tools` half-built (DL-225's trap).
+
+**Decision 3 - the verdict function is injected through the memo.** `VerdictMemo(judge=accept_run)` is
+the one place a judge is named; `scorecard()` takes a memo (`verdicts=`) and falls back to
+`PROCESS_VERDICTS`, looked up when it is called. Tests build `VerdictMemo(judge=<counting fake>)` with
+no run chain at all. A2 proves production: `PROCESS_VERDICTS.judge is accept_run`, and the tile and the
+tool name no memo of their own. *Ruled out:* monkeypatching `accept_run` (proves nothing about the
+wiring production uses); a judge parameter beside the memo (the two could disagree).
+
+**Decision 4 - the unavailable case.** No counted session in the window: `unavailable`, no number. The
+graph or `accept_run` raises, or a human-action record carries no readable time: the tile reads
+unavailable with a plain reason and stays HTTP 200 (`SRF-FAIL-01`), never zero; the tool's error reaches
+the operator in plain words through `dispatch_tool` (`SRF-FAIL-02`). A record the scorecard cannot place
+is never skipped: skipping would lower G3 and lengthen the clocks, the optimistic direction for an
+autonomy claim.
+
+**Decision 5 (operator, 2026-09-27) - a date with no time is placed at 22:30 UTC.** Every `RunRequest`
+writer stores `requested_at` as a bare date (`orchestration/start.py:87`, `as_of.isoformat()`), not
+the naive 22:30 timestamp S236's A6/A7 model. A session is placed at its `requested_at` read as UTC; a
+value with no time reads as the dispatcher's placing tick (`dispatcher_fire_utc`, 22:30) on that date,
+the same instant as the no-`RunRequest` fallback. An action at a placement's instant belongs to that
+session, so a run requested on a session's date counts on that session. *Ruled out:* midnight UTC, the
+literal reading, which turns the windows into UTC days: an action taken before a session's run on its
+own UTC date would count against the next session. 🪤 **S236's row-9 baseline probably read midnight:**
+it puts 2026-09-24's escalations on 09-25, while under this decision any created before 22:30 UTC fall on
+09-24. The planner's live comparison has to use this reading.
+
+**Decision 6 - an explain call is reading.** `OPR-OUT-06` writes a `CommandAudit` for every `explain`
+as well as every `interpret`, and an explain writes no `Intent` (`outcome="explain"`). A `CommandAudit`
+counts when an `Intent` it resulted in acts, or when it has no `Intent` and is not an explain (a refused
+or unclear command: a human tried to act). The reading families are `status` and `explain`; any other
+family acts, including one the contract adds later. *Ruled out:* S236 Scope 4 read literally, which
+counts every *Explain this run* press as an intervention.
+
+**Decision 7 - one kind per record.** A `RunRequest` with `resume_from` is a `resume` at `resumed_at`,
+never also a `run`: its `requested_at` is copied from its source (`orchestration/resume.py:61`). A `run`
+is any other `RunRequest` whose id does not start with `sched-`, at its `requested_at`. `escalation`
+(`created_at`, whatever its status) and `deploy` (`deployed_at`) are as the spec lists them.
+*Refined during the build:* a `hold_answer` belongs to the counted session whose run it names
+(`RunHoldAnswer.run_id`), else it is placed by `answered_at`. The run it releases is placed after the
+answer, on the next fire, but a bare-date placement reads 22:30 UTC, so by its time alone a 22:40 answer
+would count against the next session and the released run would read unattended, the optimistic error.
+The spec names no timestamp for `hold_answer`. *Ruled out:* the same for a resume, whose run it
+resumes (`source_run_id`): the spec names `resumed_at`, and the error it leaves is the conservative one
+(the resume counts against the next session; the resumed run is not complete anyway).
+
+**Decision 8 - the window.** Sessions dated from `scorecard_window_days` before today through today,
+each counted once 23:50 UTC on its date has passed (`orchestration.daily_brief.LAST_FIRE`); on
+2026-09-27 that is 2026-08-28 → 2026-09-25, row 9's twenty. The first counted session's window opens at
+the placement of the session before it. The clocks count inside the window.
+
+**Decision 9 - what the operator reads.** Percentages are shown rounded down, so a percentage read at
+or above its target is at or above it. Tone is decided on the exact ratios: red when G1 is below its
+target, amber when G3 is at or above its target, green otherwise.
+
+**Known limits.** (a) The brief goes out before the next open, so a run that submitted orders is briefed
+`UNPROVEN` and keeps that word (`DSP-IDM-03`: one brief per run); by S236 Scope 3 it never counts
+complete. Changing that is a decision about the verdict's source, not the scorecard's. (b) An
+`accept_run` word memoised as `UNPROVEN` stays until the process restarts. (b2) A record made inside the
+dispatcher window, after 22:30 UTC, for that night's run (a command, an escalation at activation) counts
+against the next session: the stored placement is the tick, not the instant the run was placed; only a
+hold answer names its run. (c) The graph does not record
+broker actions taken by hand, Azure changes other than a recorded deploy, or graph repairs by scripts:
+listed in every answer, never guessed. (d) *[measured over 2026–2027 with the provider calendar]* the
+31 dates of a 30-day window hold **18–23** sessions, and **28** of those days hold fewer than 20, so on
+those days the 20-session clock cannot reach its target even if every session qualifies.
+
+**Amendment — planner review at merge, 2026-09-27: limits (a), (b) and (d) are fixed, not carried.**
+The handback named them; left as they were, the scorecard's two headline numbers would have been wrong
+by construction. (a)+(b): **`UNPROVEN` is not a settled word.** It means the broker had not resolved
+the run's orders, and the brief is sent before the next open, so every night the pack trades would
+have read *not complete* forever, and G1 would have measured how often the pack trades, not how often
+its runs complete. A stored `brief_verdict` of `UNPROVEN` now goes back to `accept_run`, and the memo
+keeps only settled words (`PASS`, `NO_TRADE`, `FAIL`); an unsettled run is judged again on each read
+(~3 s, normally one run, and the tile fetches once per page load). `NOT_FINISHED` stays settled: it is
+the dispatcher's word for a cycle that did not finish in its window, and a later human resume is G3's
+business, not G1's. (d): **the clocks read past the window** when every session in it holds, back to
+`scorecard_clock_sessions`; G1 and G3 stay inside it. *Rejected:* count `UNPROVEN` as complete (an
+undecided run is not a completed one); a time-to-live on unsettled memo entries (a new tunable for a
+cost of one run per page load); widen the window to 30 sessions (changes the PRD's *"rolling 30
+days"*); change the brief's stored word (the dispatcher's `DSP-IDM-03`, and the brief was right when
+sent). Guards planted, each red then restored: a stored `UNPROVEN` taken as final; the memo keeping
+`UNPROVEN`; no look-back; a look-back that always runs.
+
+**Amendment 2 — CodeQL after merge, 2026-09-27.** `main`'s post-merge CodeQL raised two error-level
+`py/stack-trace-exposure` alerts (256, 257) at the dashboard's `_json` returns, both from one source: the
+tile put `str(exc)` of a `ScorecardDataError` in its `reason`. The branch gate could not see them (it
+reads the default branch's alerts, and `c0cedfb9`'s own gate ran before its CodeQL upload), and the next
+docs commit's Security Findings gate failed on them. The sentence the operator reads is unchanged; it is
+now chosen from a fixed table by comparing the record's kind (`PLACED_LABELS`), so no exception text
+reaches the page, and an unknown kind reads *a stored record carries no readable time*. *Rejected:*
+dismiss the alerts as false positives (the text was exception-derived, and `SRF-SEC-02` asks for
+sanitising); drop the kind from the reason (the operator loses which record to look at). 🪤 **The fix cannot pass
+the gate on its own branch:** Security Findings reads the default branch's open alerts, and 256/257 stay
+open on `main` until the fix is there. So, as DL-138 did for S189, the two keys
+(`github-code-scanning:6cccca66625569d6d398`, `…:9b94511f0124e02ebf7c`, reproduced by running the gate
+locally) are baselined on the fix branch, and **pruned after `main`'s CodeQL marks both `fixed`**, never
+on assumption. **Done the same day:** merged as `v0.115.01` (`db5aedb6`, `GATE PROVEN`); `main`'s CodeQL marked 256
+and 257 `fixed`; the local gate over a fresh collect read 0 serious with the two keys removed, and they were pruned.
+
+---
+
 ## DL-234 - the replay harness calls the fleet in small pure slices and writes only derived proof outside the repo - status: DECIDED (S235, 2026-09-27)
 
 **Question.** S235 has to drive one session of the deterministic pipeline from a replay cache without
@@ -51,6 +188,21 @@ the scanner -> analyst -> PM decision for orders targeting `d+1`. A newly filled
 on the following session under one named rule, `STOP_ACTIVATES_SESSION_AFTER_FILL`. **Rejected:** open
 fills at the next open regardless of limit, same-session stop activation, and any local return metric;
 these are precisely the DL-70 guard shapes S235 plants.
+
+**Amendment - returned S235 repairs, 2026-09-27.** A held line is valued from an indexed per-line
+series, not from only today's bar: a missing session carries forward the last close and increments
+`gap_marks`; after a line's last bar it is sold once at that last close as `data_end` when its
+episode ends there, or `membership_end` when membership continues. Pending orders whose target day has
+no bar expire with reason `no_bar`. Listed `adjustment-error` dates are applied before stop checks by
+rescaling entry and stop from the prior close to the false adjusted close, skipping that day's stop and
+counting the rebase. Buy intents without a PM stop are refused with `buy_without_stop`, because a silent
+5 % default is DL-222's failure class; sells still need no stop. The runner indexes bars by date once
+and filters fixed-list `--universe-file` lines through the same point-in-time windows. A no-lookahead
+guard compares the whole decision output for session `d` with and without every bar after `d`, not just
+the window helper. **Rejected:** treating a gap mark as an exit, defaulting stops in the replay broker,
+dropping no-bar orders silently, and preserving the per-session full-table scan.
+
+---
 
 ## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)
 

@@ -1,6 +1,6 @@
 # `Surfaces` — Laws
 
-**Prefix:** `SRF` · **status:** LOCKED v1.1 · **Owner:** Yury Gurevich
+**Prefix:** `SRF` · **status:** LOCKED v1.2 · **Owner:** Yury Gurevich
 
 > Project graph-backed operating evidence to the human and route only bounded, audited operator intents.
 
@@ -33,7 +33,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **SRF-TRG-01** — Dashboard GET routes and CLI read commands project evidence only on request.
   Dashboard POST routes are limited to chat and hold-answer handling.
 - **SRF-TRG-02** — MCP requests are limited to the registered tool catalogue: `command`, `status`,
-  `runs`, `incidents`, `explain`, and `performance`.
+  `runs`, `incidents`, `explain`, `performance`, and `scorecard`.
 
 ## Outputs (`OUT`)
 
@@ -56,6 +56,20 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the selected run, or the latest run when none is named. They round and colour it and compute no
   return of their own. A run without a usable scoreboard reads unavailable and shows no number, never
   zero. The answer is a graph read: no agent request and no model call.
+- **SRF-OUT-08** — The unattended vital and the `scorecard` answer report, over the configured window
+  of scheduled sessions, G1 (the share whose run completed: `PASS` or `NO_TRADE`), G3 (the share of
+  healthy sessions on which a human acted, deploys aside, with the share counting deploys beside it),
+  and two clocks counted back from the latest session: *unattended* (complete, no human action but
+  deploys) and *untouched* (complete, nothing human at all). When every session in the window holds, the
+  clocks read earlier sessions too, up to `scorecard_clock_sessions`; G1 and G3 never do. Every number
+  comes from graph facts. Each session's verdict is the acceptance gate's, never the surface's: the
+  stored `brief_verdict` unless it is `UNPROVEN` (orders the broker had not yet resolved), else
+  `accept_run`, whose settled words are judged at most once per process; an `UNPROVEN` word goes back to
+  the gate on every read until it settles; a session with no `RunRequest` is `MISSED`. A reading
+  intent (`status`, `explain`) or an explain call is never counted as an intervention, and the kinds the
+  graph cannot see are listed with every answer. The window is dates: the selected run does not scope
+  it, and `SRF-OUT-01` does not cover it. An empty window or an unreadable graph reads unavailable and
+  shows no number. They make no model call and no agent request.
 
 ## Prohibitions (`NEV`)
 
@@ -176,19 +190,31 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `master_window_start_utc` | `"20:25"` | `str` | YES | Matches `$MasterScaleStart` in `infra/deploy-agents.ps1` and is test-pinned. |
 | `agent_window_start_utc` | `"22:30"` | `str` | YES | Matches `$AgentScaleStart` in `infra/deploy-agents.ps1` and is test-pinned. |
 | `window_end_utc` | `"00:30"` | `str` | YES | Matches `$ScaleEnd` in `infra/deploy-agents.ps1`. |
-| `dispatcher_fire_utc` | `"22:30"` | `str` | YES | The dispatcher's first placing tick, `_ACTION_START`, and is test-pinned. |
+| `dispatcher_fire_utc` | `"22:30"` | `str` | YES | The dispatcher's first placing tick, `_ACTION_START`, and is test-pinned. The scorecard places a session whose `requested_at` is a bare date at this tick (DL-235). |
 | `operator_timezone` | `"Australia/Melbourne"` | `str` | YES | The operator reads their own local 24-hour time, never UTC. |
 | `readiness_failure_max_age_minutes` | `1440` | `int >= 10 <= 2880` | YES | Keep a failed fleet check visible until the next one replaces it. |
 | `performance_behind_threshold_pts` | `1.0` | `float >= 0.1 <= 10` | YES | The vs-market vital turns red this far behind exposure-matched SPY: an assumed display line until the replay gives it a basis. |
+| `scorecard_window_days` | `30` | `int >= 1 <= 90` | YES | PRD §10 measures G1 over a rolling 30 days. Each unbriefed run in the window is judged once per process, about 3 s, so 90 days caps the first read near three minutes. |
+| `scorecard_g1_target` | `0.95` | `float > 0 <= 1` | YES | PRD §10 G1: at least 95 % of scheduled cycles complete. The vital is red below it. |
+| `scorecard_g3_target` | `0.20` | `float > 0 <= 1` | YES | PRD §10 G3: intervention on fewer than 20 % of healthy trading days. The vital is amber at or above it. |
+| `scorecard_clock_sessions` | `20` | `int >= 1 <= 60` | YES | P19's exit: 20 consecutive sessions with no human command but reading. |
 
 ## Divergence register
 
 | ID | Law says | PRD / mission / code says | Decision needed |
 | --- | --- | --- | --- |
 | — | No new S229 surfaces divergence found. | DRIFT-022 is already corrected; S229 cites it as proof for selected-run scoping rather than reopening it. | Not applicable. |
+| DRIFT-078 | `SRF-OUT-03`: chat answers are grounded in the selected run and record `CommandAudit`, `LLMCall` and `Intent` facts. | The deterministic quick asks (`status`, `incidents`, `performance`, and from S236 `scorecard`) answer without the operator and write none of those facts; `status`, `incidents` and `scorecard` are not scoped by the selected run. | Open: narrow `SRF-OUT-03` to operator-mediated answers, or audit the quick asks. |
 
 ## Changelog
 
+- v1.2 — S236: `SRF-TRG-02` lists the `scorecard` tool; `SRF-OUT-08` added for the unattended vital
+  and the `scorecard` answer (G1, G3 and two clocks, from the acceptance gate's verdict and the records
+  human actions leave); `PARAM` gains `scorecard_window_days`, `scorecard_g1_target`,
+  `scorecard_g3_target` and `scorecard_clock_sessions`, and the `dispatcher_fire_utc` row names its
+  second reader (DL-235). DRIFT-078 records `SRF-OUT-03`'s silence on the quick asks. Planner review
+  at merge: an `UNPROVEN` word is re-judged until it settles, and the clocks may read past the window
+  (DL-235 amendment).
 - v1.1 — S228: `SRF-TRG-02` lists the `performance` tool; `SRF-OUT-07` added for the scoreboard vital
   and chat answer; `PARAM` gains `performance_behind_threshold_pts` (DL-220 decision 9).
 - v1 — S229 authored surfaces law book for dashboard, CLI, MCP, chat, and operator-intent write

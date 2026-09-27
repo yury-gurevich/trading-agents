@@ -14,6 +14,8 @@ from contracts.positions import OpenPosition, PositionStopThreshold
 from contracts.provider import OHLCVBar
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from scripts.replay_broker import ReplayPosition
     from scripts.replay_universe_cache import Universe
     from scripts.sp500_bars import BarRow
@@ -37,6 +39,29 @@ def bars_by_line(bars: tuple[BarRow, ...]) -> dict[str, tuple[BarRow, ...]]:
         line: tuple(sorted(rows, key=lambda item: item.date))
         for line, rows in out.items()
     }
+
+
+def bars_by_date(bars: tuple[BarRow, ...]) -> dict[date, dict[str, BarRow]]:
+    out: dict[date, dict[str, BarRow]] = {}
+    for row in bars:
+        out.setdefault(row.date, {})[row.line] = row
+    return out
+
+
+def read_universe_file(path: Path) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            {
+                line.strip()
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            }
+        )
+    )
+
+
+def has_line_bar(rows: tuple[BarRow, ...], line: str) -> bool:
+    return any(row.line == line for row in rows)
 
 
 def members_on(universe: Universe, session: date) -> tuple[str, ...]:

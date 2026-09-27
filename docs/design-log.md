@@ -15,7 +15,7 @@ and is marked CLOSED here.
 **Question.** With ten years of the point-in-time index cached (S235), should shadow-prediction
 ensembles start now, or wait for P18A.3 after the G-EDGE decision, where the plan put new signals?
 
-**Decision (operator: "my recommendation = wise, I agree").** Pull it forward **as a measurement,
+**Decision (operator: "I like your recommendations and would like to follow it").** Pull it forward **as a measurement,
 not a build**: **EXP-015**, offline on the replay cache, $0 LLM. Does a small price-and-volume
 ensemble beat the analyst's current technical score out of sample: rank IC, decile spread and decay,
 purged walk-forward windows, a final holdout, and 25 bps costs? The hypothesis and the pass bar are

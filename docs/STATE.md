@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 13:25 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.115.01` · **🎯 S236 merged and its CodeQL finding fixed: the dashboard measures G1 (70 %), G3 (4 of 14) and the unattended clock; S235 is with Codex; item 89 (IEX volume) waits for Tuesday 29 Sep's run, which still owes S234's first brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-27 13:34 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.115.01` · **🎯 S235's handback is returned to Codex (a held line whose bars end is valued at zero and never exits); S236 is merged; item 89 (IEX volume) waits for Tuesday 29 Sep's run, which still owes S234's first brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+↩️ **RETURNED — [S235](sprints/sprint-235-the-pipeline-replays-a-day-it-has-not-seen.md) handback `5bceb3a3` (Codex), 2026-09-27: not merged, not pushed.** The builder named A7 (adjustment-error rebases), A8 (forced exits when a held line's bars end) and A10 (the fixed-list universe) as not done. Planner review found A8's absence is a **correctness defect, not a gap**: `equity_cents` skips a held line with no bar that session, so every held name that is acquired or leaves the index (≈230 removed names over ten years) is valued at **zero** and never exits, a bias against the pipeline by construction. Also returned: a pending order with no bar is dropped uncounted; a buy without `stop_pct` silently gets 5 % (DL-222's class); A18 counts no sector, VIX or pillar gaps; every session rescans all 1.36 M bars (design decision 3); A1 proves only the window function, not the day's decision; and the branch carries stale copies of the S236 spec, its README row and STATE, so `main` must be merged in first (version then `0.116.00`). Kept: the cache layer, settings from the pack, the day's stages through the fleet's own functions, day-limit fills, stop timing, the reporter's metric; `make ci` exit 0 (3,324 passed) on the handback; synthetic 500 × 300 run **385.5 s**.
 
 🟩 **FIXED — CodeQL `py/stack-trace-exposure` 256/257 from S236's tile, `0.115.01`, tag `v0.115.01`, 2026-09-27.** `main`'s post-merge CodeQL flagged the tile's `reason`, which carried `str(exc)`, and Security Findings failed on `8fdf31f4`. Chore `chore-scorecard-reason-carries-no-exception-text`: the sentence is now picked from a fixed table by the record's kind (red first; planting `str(exc)` back turns it red). `make ci` exit 0 (**3,368 passed, 6 skipped, 100.00 %**). The fix could not pass Security Findings on its own branch, because the gate reads `main`'s alerts, so both keys were baselined as DL-138 did: **`GATE PROVEN` for `db5aedb6`**, fast-forwarded, `main`'s CodeQL marked **256 and 257 `fixed`**, every `main` run green, and the baseline was pruned back to its one Dependabot key once the local gate read 0 serious ([DL-235](design-log.md) amendment 2).
 

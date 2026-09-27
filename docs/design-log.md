@@ -137,7 +137,12 @@ docs commit's Security Findings gate failed on them. The sentence the operator r
 now chosen from a fixed table by comparing the record's kind (`PLACED_LABELS`), so no exception text
 reaches the page, and an unknown kind reads *a stored record carries no readable time*. *Rejected:*
 dismiss the alerts as false positives (the text was exception-derived, and `SRF-SEC-02` asks for
-sanitising); drop the kind from the reason (the operator loses which record to look at).
+sanitising); drop the kind from the reason (the operator loses which record to look at). 🪤 **The fix cannot pass
+the gate on its own branch:** Security Findings reads the default branch's open alerts, and 256/257 stay
+open on `main` until the fix is there. So, as DL-138 did for S189, the two keys
+(`github-code-scanning:6cccca66625569d6d398`, `…:9b94511f0124e02ebf7c`, reproduced by running the gate
+locally) are baselined on the fix branch, and **pruned after `main`'s CodeQL marks both `fixed`**, never
+on assumption.
 
 ---
 

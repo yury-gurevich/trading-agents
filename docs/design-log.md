@@ -10,6 +10,53 @@ and is marked CLOSED here.
 
 ---
 
+## DL-237 - E17.4's fidelity bar is re-cut: the harness is judged on the fleet's own inputs, and the data gap is measured, not barred - status: DECIDED (planner, 2026-09-27; S237)
+
+**Question.** The plan's E17.4 bar is *≥ 90 % approved-order membership, replay against live, every
+difference explained*. Can that bar tell whether the S235 harness reproduces the pipeline?
+
+**Measured, 2026-09-27 (live spine).** Every scheduled run since `sched-2026-07-07` (**56**) stores
+its full `MarketData` snapshot: bars with IEX volume, fundamentals, news, sectors, earnings dates,
+and SPY from `09-04`. Every stage stores its output (candidate set, recommendation set with pillar
+scores, intents, rejections with reasons, vetoes, fills), and every run stores its broker book. The
+fleet was redeployed about **35** times in the window. Only since `s225` (deployed 2026-09-22) is the
+scanner, analyst and PM code equal to `main`, apart from 11 `contracts/` files. The PM approves
+**0–4** names per session and rejects 21–27. Live PM passes each holding's market value to its caps;
+the replay passes none (`scripts/replay_day.py`).
+
+**Decision.** The bar applies to the harness, on the inputs the fleet actually saw. The data gap is
+measured and explained, but carries no bar.
+
+1. **Layer 1, harness fidelity (the bar).** Each stage (scanner, analyst, PM) is replayed on that
+   stage's **live** inputs and compared per ticker with the live output. The pre-registered bar,
+   pooled over **clean sessions** (the deployed decision code equals the replayed code):
+   - agreement **≥ 90 %** at each of the three stages (candidate membership and rank; recommendation
+     action and confidence within 1e-9; PM decision and reason);
+   - **zero `unexplained`** differences. Each difference names `code_changed:<file>`,
+     `not_persisted:<field>`, or a `harness:` defect that is fixed before the verdict;
+   - a denominator of at least **100** analyst ticker-decisions, else the verdict is `INSUFFICIENT`,
+     not `PASS`. Four clean sessions give ~104 *[measured]*, so the export runs after
+     `sched-2026-09-28` to add margin.
+
+   `FAIL` stops P17, as the plan says: the named causes become the work.
+2. **Layer 2, input attribution (measured, no bar).** The same code chained over the same session.
+   One input at a time, cumulatively, in a fixed order: SIP volume, then no fundamentals, no news, no
+   earnings dates, and cache bars. This quantifies what DL-232 (price-only) and DL-233 (IEX volume)
+   change about the decisions. EXP-014's verdict already speaks only for the price-only pipeline;
+   this says how far that pipeline is from the live one.
+3. **Layer 3, approval to fill (counted, no bar).** From the live record: approvals, deliberator
+   overturns, execution drops and rejections, fills and expiries. It accounts for the absent
+   deliberator without replaying it.
+
+**Ruled out.** *The plan's bar as written:* it would fail on two causes already decided (price-only,
+IEX volume) and could not tell a harness defect from either. *Chained comparison only:* one early
+difference cascades, and nothing says which stage diverged. *Replaying under each night's deployed
+code:* ~35 deploys and harness modules that did not exist then, answering a question P17 does not
+ask. *A P&L bar against the live account:* the two books diverge from the first different fill; the
+number is reported as context only.
+
+---
+
 ## DL-236 - a price-only ensemble is measured on the replay cache now, and built only if it wins - status: DECIDED (operator, 2026-09-27)
 
 **Question.** With ten years of the point-in-time index cached (S235), should shadow-prediction

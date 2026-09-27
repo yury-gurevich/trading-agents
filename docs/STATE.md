@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 17:15 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 S235 merged and live: the replay harness ran ten years (+217.9 % against exposure-matched SPY +232.2 %, not yet a verdict); next is E17.4; item 89 (IEX volume) waits for Tuesday 29 Sep's run, which still owes S234's first brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-27 17:55 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 E17.4 specced as S237 for Codex, with the fidelity bar re-cut (DL-237: the harness is judged stage by stage on each live run's stored inputs); EXP-015 pre-registered; Dependabot #85 on `main` (`d5fd965b`, GATE PROVEN). Tuesday 29 Sep's run still owes S234's first brief, S232's acceptance and item 87's close; item 89 waits for it.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,12 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+⬜ **SPEC — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), for Codex.** INTENT: one command exports what each scheduled run saw and decided; a second replays each stage on those inputs, and every difference gets a named cause. Success factors: the [DL-237](design-log.md) bar, computed over clean sessions: ≥ 90 % agreement per stage, zero unexplained differences, ≥ 100 analyst decisions. The input swaps measure the IEX-volume and price-only gap; approval to fill is counted from the live record. *[measured 2026-09-27]* 56 scheduled runs store their full `MarketData` snapshot and every stage output. Only 4 sessions (09-22 → 09-25) ran decision code equal to `main`. The replay's PM gets no `position_values` (live passes market values); named as Trap 1, fixed in S237. The planner runs the live export after merge, and after `sched-2026-09-28`.
+
+⬜ **PRE-REGISTERED — [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) (work-queue 90).** Hypothesis, universe, target, three fixed models, purged folds, holdout and pass bar are written before any fit. Not run: the build follows S237.
+
+🟩 **Dependabot #85 (6 action bumps) is on `main` as `d5fd965b`: `GATE PROVEN`, including the image build on the new docker actions.** Done by the parallel session; this session's duplicate branch was deleted unmerged. No version bump.
 
 🟩 **MERGED — [S235](sprints/sprint-235-the-pipeline-replays-a-day-it-has-not-seen.md) (P17 E17.3), `0.116.00`, fast-forwarded to `21e940af`, tagged `v0.116.00`, 2026-09-27; no deploy (`scripts/` ships in no image).** Codex's returned handback fixed R1–R8; **the planner fixed at merge** that ended-line exits followed the cache, not the membership episode (8 lines leave and return, SNDK after 9.5 years; [DL-234](design-log.md) amendment). `make ci` exit 0 (**3,395 passed**); **`GATE PROVEN` for `21e940af`**; `main` green. **Found live, fixed as `v0.116.01`:** the sector fetch read the wrong Finnhub key name, and the builder did not load `.env`. 🟩 **Live:** the rebuild shows 0 OHLC differences over 1,359,653 shared rows, with volume, SPY and VIX complete; sectors 629 / 724; a smoke run over the live 99 names takes 35 s; **ten years (84 min): +217.9 % against exposure-matched SPY +232.2 %, excess −14.3 pts, max drawdown −26.6 %, average exposure 78.5 %.** Not a verdict: no purged windows, CI or fidelity check yet (E17.4, E17.5). Residue for E17.4: per-session approvals are missing from `sessions.csv`, there is no progress output, and the book drifts to fully invested because winners are never trimmed.
 

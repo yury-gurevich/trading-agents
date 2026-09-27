@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P19, item **E19.3** (the G-scorecard)
 **Branch:** `sprint-236-the-dashboard-says-how-long-it-ran-without-a-human`
-**Status:** BUILT · 2026-09-27 · Claude cloud session, branch pushed; `make gate-ran`, `uv lock` and Windows `make ci` owed to the planner
+**Status:** MERGED · tag `v0.115.00` · 2026-09-27 · live read 🟩 (G1 70 %, G3 4 of 14), matched by an independent recomputation
 **Version:** *next available MINOR at merge*
 **Effort:** S (one query, one vital, one tool, one law cycle)
 **Decisions:** PRD §10 (G1, G3) · [next-leg plan](../next-leg-plan.md) § P19 · [DL-220](../design-log.md)
@@ -688,3 +688,57 @@ markdownlint hook (not a `make ci` step) also passes on every changed document.
   `DSP-IDM-03` because they depend on them; the operator and dispatcher test-plans are unchanged.
 - **Left to the planner's pickup:** STATE.md, the work-queue row (83), `docs/sprints/INDEX.md` and the
   next-leg plan still say specced; only this spec and its README row say BUILT.
+
+---
+
+## Planner review and merge — 2026-09-27
+
+**Review of the handback (`b494959a`).** Scope held: `surfaces/`, the surfaces law book, docs and
+`pyproject.toml`; nothing under `agents/`, `contracts/`, `kernel/` or `orchestration/`. The law cycle is
+complete (v1.2, `SRF-OUT-08`, `SRF-TRG-02`, four `PARAM` rows, rollups 29 / 36), DL-235 and DRIFT-078
+are recorded, and MINOR is right.
+
+**Two corrections before merge (`c0cedfb9`, [DL-235](../design-log.md) amendment).** The handback named
+both as known limits; left in place, the scorecard's two headline numbers would have been wrong by
+construction.
+
+1. **`UNPROVEN` is not a settled word.** The brief is sent before the next open, so every night the
+   pack trades is briefed `UNPROVEN`; kept as final, G1 would have measured how often the pack trades.
+   A stored or judged `UNPROVEN` now goes back to `accept_run` on each read, and the memo keeps settled
+   words only. `NOT_FINISHED` stays settled.
+2. **The clocks read past the window** when every session in it holds, back to
+   `scorecard_clock_sessions`; G1 and G3 stay inside it.
+
+Red first: on `b494959a`, 3 of the 4 new tests in `surfaces/tests/test_scorecard_settling.py` failed
+(the fourth guards that the look-back runs only when needed). `test_a5` pinned the old behaviour and was
+updated. Four plants, each red then restored: a stored `UNPROVEN` taken as final; the memo keeping
+`UNPROVEN`; no look-back; a look-back that always runs. `SRF-OUT-08` and its test-plan row were
+amended in the same commit.
+
+**Owed items closed.** `uv lock`: `0.114.1` → `0.115.0`. `make ci` on Windows, redirected to a file:
+exit 0, **3,362 passed, 6 skipped, 100.00 %**, dependency audit and detect-secrets clean.
+**`GATE PROVEN` for `c0cedfb9`** (full SHA checked against `git rev-parse HEAD`) (CI, CodeQL, Security Findings,
+attempt 1), run from the merge worktree at that `HEAD`; `main` fast-forwarded, tagged `v0.115.00`. S235
+had not merged, so `0.115.00` stands.
+
+**Live read (the functionality check), 2026-09-27 02:46 UTC**, from the main checkout with `.env`,
+through `surfaces.queries.scorecard` and the tile's projection:
+
+| Check | Result |
+| --- | --- |
+| G1 over 20 sessions (2026-08-28 → 2026-09-25) | **14 / 20 = 70.0 %** (6 `FAIL`: 08-28, 09-08 to 09-11, 09-15) |
+| G3 | **4 of 14** healthy sessions (09-04 and 09-16 verify runs; 09-23 three commands; 09-24 a manual run and 24 escalations); **12 of 14** counting deploys |
+| Clocks | unattended **1** (09-25: deploys only), untouched **0** |
+| Tile | red: `unattended 1, untouched 0 of 20 sessions · cycles 70 % · hands-on 4 of 14 days` |
+| Independent recomputation | a planner scratch script with its own attribution and verdict code: **every row identical**, same totals and clocks |
+| Memo | first read **68.7 s** (all 20 sessions judged: none carries `brief_verdict` yet), second **1.5 s**, same rows |
+
+🩹 The spec's row 9 read the bare-date `requested_at` as midnight; at 22:30 UTC (DL-235 decision 5) the
+24 escalations land on 09-24 and 09-23's commands on 09-23, as the builder predicted. G3 is unchanged
+at 4 of 14; with deploys it is 12, not 11.
+
+**Named residue.** (a) The first read in each dashboard process judges every session without a settled
+stored word, about 3 s each: ~69 s today. It shrinks as briefs accrue, but trading nights are briefed
+`UNPROVEN`, so it settles near 3 s per trading night in the window. (b) The operator's running dashboard
+shows the tile after a restart; no image ships `surfaces/`. (c) DRIFT-078 (the quick asks versus
+`SRF-OUT-03`) stays open.

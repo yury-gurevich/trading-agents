@@ -17,7 +17,11 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts import replay_dataset  # noqa: E402
-from scripts.replay_runner import DEFAULT_SLIPPAGE_BPS, run  # noqa: E402
+from scripts.replay_runner import (  # noqa: E402
+    DEFAULT_PROGRESS_EVERY,
+    DEFAULT_SLIPPAGE_BPS,
+    run,
+)
 
 
 def main(argv: list[str]) -> int:
@@ -30,6 +34,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--set", action="append", default=[])
     parser.add_argument("--slippage-bps", type=int, default=DEFAULT_SLIPPAGE_BPS)
     parser.add_argument("--universe-file", type=Path)
+    parser.add_argument("--progress-every", type=int, default=DEFAULT_PROGRESS_EVERY)
     args = parser.parse_args(argv)
     run(
         cache_dir=args.cache,
@@ -39,6 +44,7 @@ def main(argv: list[str]) -> int:
         overrides=tuple(args.set),
         slippage_bps=args.slippage_bps,
         universe_file=args.universe_file,
+        progress_every=args.progress_every,
     )
     return 0
 

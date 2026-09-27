@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.4** (fidelity)
 **Branch:** `sprint-237-the-replay-decides-what-the-fleet-decided`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available MINOR at merge*
 **Effort:** M
 **Decisions:** [DL-237](../design-log.md) (the fidelity bar, re-cut: **settled, do not reopen**) ·
@@ -446,15 +446,19 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `scripts/replay_runner.py` split and `sessions.csv` counts | `agents/reporter/laws/laws.md`; `agents/reporter/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `RPT-IDN-01`, `RPT-OUT-07`, `RPT-NEV-01`, `RPT-NEV-02`, `RPT-IDM-03` | Yes. Counts stay derived from replay day results and returns stay through `calculate_performance`; the split must not create a second return formula or a reporter-owned graph fact. |
+| Scanner fidelity and export of scanner outputs | `agents/scanner/laws/laws.md`; `agents/scanner/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `SCAN-IDN-01`, `SCAN-OUT-01`, `SCAN-OUT-02`, `SCAN-OUT-06`, `SCAN-OUT-07`, `SCAN-NEV-02`, `SCAN-IDM-01`, `SCAN-OBS-01` | Yes. Layer 1 must call scanner domain functions and compare per ticker/rank/filter trace; missing benchmark or gate inputs are named `not_persisted`, not substituted. |
+| Analyst fidelity, held-stop inputs, and export of analyst outputs | `agents/analyst/laws/laws.md`; `agents/analyst/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `ANLZ-IDN-01`, `ANLZ-OUT-01`, `ANLZ-OUT-02`, `ANLZ-OUT-07`, `ANLZ-NEV-01`, `ANLZ-IDM-01`, `ANLZ-OBS-01`, `ANLZ-OBS-06`; drift `DRIFT-074` | Yes. The analyst held-stop law is silent (`DRIFT-074`), so the exporter records reconstructed stop inputs when available and puts anything not stored in `not_persisted`; no analyst or contract change is allowed here. |
+| PM fidelity, replay book values, approvals and rejections | `agents/portfolio_manager/laws/laws.md`; `agents/portfolio_manager/laws/test-plan.md`; `docs/laws/conventions.md`; `docs/laws/drift-register.md` | `PM-IDN-01`, `PM-OUT-01`, `PM-OUT-02`, `PM-OUT-03`, `PM-NEV-04`, `PM-NEV-06`, `PM-NEV-08`, `PM-NEV-09`, `PM-IDM-01`, `PM-ORD-01`, `PM-OBS-01`, `PM-OBS-03`, `PM-OBS-04`, `PM-OBS-05`; drifts `DRIFT-036`, `DRIFT-039`, `DRIFT-065` | Yes. The replay/fidelity PM book must pass holding market values as live does. PM run snapshots are not fully built (`DRIFT-039`), so export and replay use `BrokerPositionSnapshot` plus stored PM outputs and name gaps instead of inventing `portfolio_state_snapshot`. |
+| `scripts/fidelity_export.py` graph read path and output refusal | `docs/laws/conventions.md`; `docs/laws/drift-register.md`; agent law/test-plan files above | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01`, `RPT-NEV-02`; drifts `DRIFT-039`, `DRIFT-040` | Yes. The exporter is a read-only projection through the kernel graph store; it refuses repo-local output and records non-persisted source/provenance gaps rather than using raw SQL or writing helper facts. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No. The sprint is confined to `scripts/`, `tests/`, package version files, and handback/design docs. It adds replay/export tooling and guards around existing agent guarantees; if an agent or contract change becomes necessary, the build stops and reports.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** None found. Existing drift rows constrain the implementation but do not contradict the spec.
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+**Laws found silent where a decision was needed:** The analyst book has no held-stop clause (`DRIFT-074`); PM full portfolio-state snapshot reconstruction is unbuilt (`DRIFT-039`); provider provenance/source is incomplete for vendor source/transformation (`DRIFT-040`). S237 records those as `not_persisted` or export gaps and does not amend laws.
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Clauses that were ⬜ and are now proven:** None yet. This sprint adds script-level guards that cite governing clauses where applicable, but it does not turn a locked agent law row green unless the final test plan explicitly says so.
 
 ---
 
@@ -462,48 +466,78 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| *(builder fills)* | | | | |
+| A1 | `test_sessions_csv_counts_pipeline_outputs_and_progress_is_stderr_only` | `tests/test_replay_runner_progress.py` | Passed | `RPT-OUT-07`, `SCAN-OBS-01`, `PM-OUT-03` |
+| A2 | `test_universe_file_limits_decision_lines` | `tests/test_replay_runner.py` | Existing guard passed | `S235-A10` |
+| A3 | `test_replay_day_passes_holding_market_values_to_pm` | `tests/test_replay_day_portfolio_values.py` | Passed; planted `{}` first and watched it fail | `PM-NEV-06`, `PM-NEV-08` |
+| B1 | `test_export_reads_only_sched_runs_and_follows_linked_stage` | `tests/test_fidelity_export.py` | Passed | `SCAN-OBS-01`, `ANLZ-OBS-01`, `PM-OBS-01` |
+| B2 | `test_export_refuses_out_inside_repo` | `tests/test_fidelity_export.py` | Passed | `RPT-NEV-02` |
+| C1 | `test_fidelity_reports_unexplained_clean_difference_as_fail` | `tests/test_replay_fidelity.py` | Passed | `SCAN-IDM-01`, `ANLZ-IDM-01`, `PM-IDM-01` |
+| C2 | `test_code_changed_sessions_are_non_clean_and_not_pooled` | `tests/test_replay_fidelity.py` | Passed | `SCAN-IDM-01`, `ANLZ-IDM-01`, `PM-IDM-01` |
+| C3 | `test_fidelity_refuses_out_inside_repo` | `tests/test_replay_fidelity.py` | Passed | `RPT-NEV-02` |
 
-**Tests added beyond the plan:** *(builder fills)*
+**Tests added beyond the plan:** None beyond the planned fixture guards; oversized additions were split into focused files to satisfy the 200-line module limit.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder fills)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder fills)*
+**Tree the proofs ran in (and `.env` present?):** `C:\Users\yury_\Downloads\project\trading-agents` on branch `sprint-237-the-replay-decides-what-the-fleet-decided`. `Test-Path .env` returned `True` and `.gitignore:14` ignores it; no `.env` contents were read and no live/network data source was used.
 
-**Result:** *(builder fills — only for work done)*
+**Result:** Split `scripts/replay_runner.py` with no behavior change in the focused S235 tests, added S237 session counters and stderr progress, fixed replay PM `position_values`, added read-only graph fidelity export, added fixture-backed replay fidelity layer summaries/causes/verdicts, bumped version to `0.117.00`, and refreshed `uv.lock`.
 
-**Files changed:** *(builder fills)*
+**Files changed:** `docs/STATE.md`, `docs/design-log.md`, this sprint spec, `pyproject.toml`, `uv.lock`, `scripts/replay_day.py`, `scripts/replay_pipeline.py`, `scripts/replay_runner.py`, `scripts/replay_counters.py`, `scripts/replay_session.py`, `scripts/replay_session_helpers.py`, `scripts/fidelity_export*.py`, `scripts/replay_fidelity*.py`, `tests/test_replay_runner*.py`, `tests/test_replay_day*.py`, `tests/test_fidelity_export.py`, `tests/test_replay_fidelity.py`.
 
-**Design decisions:** recorded as [`DL-238`](../design-log.md) — *(builder fills)*
+**Design decisions:** recorded as [`DL-238`](../design-log.md) — scripts/tests-only law-cycle answer, read-only graph export, `not_persisted` for stored-input gaps, clean-session pooling by decision-path SHA diff, and split modules under the 200-line cap.
 
 **Proof — the red run first:**
 
 ```text
-(builder pastes)
+uv run pytest tests\test_replay_runner.py tests\test_replay_day.py tests\test_fidelity_export.py tests\test_replay_fidelity.py --no-cov
+ERROR tests/test_fidelity_export.py - ModuleNotFoundError: No module named 'scripts.fidelity_exporter'
+ERROR tests/test_replay_fidelity.py - ModuleNotFoundError: No module named 'scripts.replay_fidelity_compare'
+Interrupted: 2 errors during collection
 ```
 
 **Proof — the green run:**
 
 ```text
-(builder pastes)
+uv run pytest tests\test_replay_runner.py tests\test_replay_runner_progress.py tests\test_replay_day.py tests\test_replay_day_portfolio_values.py tests\test_fidelity_export.py tests\test_replay_fidelity.py --no-cov
+collected 10 items
+tests\test_replay_runner.py ..                                           [ 20%]
+tests\test_replay_runner_progress.py .                                   [ 30%]
+tests\test_replay_day.py .                                               [ 40%]
+tests\test_replay_day_portfolio_values.py .                              [ 50%]
+tests\test_fidelity_export.py ..                                         [ 70%]
+tests\test_replay_fidelity.py ...                                        [100%]
+10 passed in 3.56s
 ```
 
-**Guards planted:** *(builder fills)*
+**Guards planted:** Missing fidelity modules went red first; `ReplayDayInputs.position_values={}` was planted for the PM replay path and made `test_replay_day_passes_holding_market_values_to_pm` fail before restoration; exporter output refusal and fidelity output refusal are covered; clean/non-clean fidelity cause assignment is covered.
 
-**Module line counts:** *(builder fills)*
+**Module line counts:** `scripts/replay_runner.py` 82, `scripts/replay_session.py` 188, `scripts/replay_session_helpers.py` 68, `scripts/replay_counters.py` 56, `scripts/replay_day.py` 180, `scripts/fidelity_exporter.py` 163, `scripts/fidelity_export_helpers.py` 97, `scripts/fidelity_export.py` 41, `scripts/replay_fidelity_compare.py` 151, `scripts/replay_fidelity_layers.py` 173, `scripts/replay_fidelity.py` 33, `tests/test_replay_runner.py` 128, `tests/test_replay_runner_progress.py` 155, `tests/test_replay_day.py` 196, `tests/test_replay_day_portfolio_values.py` 96.
 
-**`make ci`:** *(builder fills)*
+**`make ci`:** Passed redirected to `..\sprint-237-make-ci.log`, exit 0.
 
-**`make gate-ran`:** *(builder fills)*
+```text
+TOTAL                                                           18835      0   4088      0  100.00%
+Required test coverage of 100.0% reached. Total coverage: 100.00%
+================= 3406 passed, 4 skipped in 354.72s (0:05:54) =================
+No unaccepted vulnerabilities; 1 accepted advisory re-checked
+Detect secrets...........................................................Passed
+detect-secrets (untracked): scanning 13 new file(s)
+```
 
-**Not met / verified failing:** *(builder fills)*
+**`make gate-ran`:** Pending until the pushed branch SHA has terminal remote checks.
+
+**Not met / verified failing:** Live export proof is planner-owned and was not attempted. No live/provider network was used. Full fidelity against real fleet export is not claimed. S235 smoke numbers predate the PM `position_values` trap fix in this sprint.
 
 ---
 
 ## Return notes
 
-- *(builder fills)*
+- Law-cycle answer: No. Scope stayed out of `contracts/`, `agents/`, and locked `laws.md`.
+- Fidelity/export proofs are synthetic-fixture proof only. The exporter refuses output inside the repo and reads through the kernel graph store.
+- S235 smoke numbers predate the replay PM holding-market-value fix; replay PM now receives `PortfolioState.position_values` in the same shape live graph PM uses.
+- `.env` exists in this local worktree despite the brief's no-`.env` assumption; it was ignored, unread, and unused.

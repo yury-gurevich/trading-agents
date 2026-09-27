@@ -7,7 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -47,10 +47,12 @@ class ReplayDayInputs:
     held_stops: tuple[PositionStopThreshold, ...]
     active_broker_stop_refs: frozenset[str]
     sectors: dict[str, str]
+    position_values: dict[str, Money] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class ReplayDayResult:
+    candidates: CandidateSet
     recommendations: RecommendationSet
     approved: tuple[OrderIntent, ...]
     rejected: tuple[RejectedOrder, ...]
@@ -137,7 +139,7 @@ def run_replay_day(
             position_refs={
                 position.ticker: position.position_ref for position in inputs.held
             },
-            position_values={},
+            position_values=inputs.position_values,
         ),
         max_position_pct=settings.portfolio.max_position_pct,
         max_positions=settings.portfolio.max_positions,
@@ -157,6 +159,7 @@ def run_replay_day(
         min_correlation_bars=settings.portfolio.min_correlation_bars,
     )
     return ReplayDayResult(
+        candidates,
         recommendation_set,
         approved,
         rejected,

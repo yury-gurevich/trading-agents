@@ -10,6 +10,48 @@ and is marked CLOSED here.
 
 ---
 
+## DL-238 - S237 rebuilds live decisions from persisted facts and names every missing input - status: DECIDED (builder, 2026-09-27; S237)
+
+**Question.** How should the S237 exporter and replay-fidelity harness rebuild each stage's live
+inputs without changing agents, contracts, or laws, while keeping every module under the size gate?
+
+**Decision 1 - exported sessions are plain JSON projections from graph facts.** The exporter follows
+the stored lineage from scheduled `RunRequest`s, serializes the `MarketData.snapshot`,
+`RegimeContext`, `BrokerPositionSnapshot`, stage outputs, deliberator results, execution counts and
+fills, and refuses an output directory inside the repository. It reads through the kernel graph store
+only. **Rejected:** raw SQL, helper write nodes, or committing a live export, because they would be
+untestable in synthetic fixtures or leak vendor data into the public repo.
+
+**Decision 2 - stage inputs are rebuilt from contracts plus named gaps.** Scanner replay receives the
+stored bars, benchmark and earnings fields exactly as exported; analyst replay receives the live
+`CandidateSet`, stored market snapshot, regime and held book; PM replay receives the live
+`RecommendationSet` and a `PortfolioState` whose `position_values` come from broker-snapshot holding
+market values. If an input live code may have used is not persisted, the session names
+`not_persisted:<field>` and the comparison never guesses it. **Rejected:** defaulting missing
+benchmark from the cache, re-windowing snapshot bars, or fabricating PM portfolio snapshots; those
+would turn known gaps into silent harness behaviour.
+
+**Decision 3 - analyst held-stop inputs are evidence, not a new guarantee.** The export records held
+tickers and any stop facts reachable from the graph; absent stop-lineage evidence is listed in
+`not_persisted` because the analyst law book has no held-stop clause yet (`DRIFT-074`). **Rejected:**
+adding an analyst law/contract field or moving stop reconstruction into an agent, because the sprint
+is scripts/tests only.
+
+**Decision 4 - clean sessions are defined by git diff over decision paths.** A session is clean only
+when `git diff --name-only <deploy_sha> HEAD` has no path under scanner, analyst, PM, provider-domain
+decision helpers, execution tolerance, contracts, trading tunables, or history-window code. Non-clean
+sessions are reported beside the verdict and never pooled. **Rejected:** checkout-and-run historical
+code, because DL-237 asks whether today's harness reproduces the fleet on its inputs, not whether old
+deploys can be resurrected.
+
+**Decision 5 - module boundaries follow tool layers.** `replay_runner.py` sheds session-loop and
+counting helpers first; fidelity export, export graph traversal, fidelity comparisons, attribution,
+verdicts and output writing stay in small script modules under 200 lines. **Rejected:** one large
+`replay_fidelity.py` or growing the S235 edge files, because scripts are now inside the module-size
+gate and S237 must not add a baseline entry.
+
+---
+
 ## DL-237 - E17.4's fidelity bar is re-cut: the harness is judged on the fleet's own inputs, and the data gap is measured, not barred - status: DECIDED (planner, 2026-09-27; S237)
 
 **Question.** The plan's E17.4 bar is *≥ 90 % approved-order membership, replay against live, every

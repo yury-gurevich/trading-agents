@@ -7,6 +7,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -66,18 +67,27 @@ def exit_ended_positions(
     episodes: tuple[Episode, ...],
     fills: list[dict[str, Any]],
 ) -> ExitResult:
-    """Sell held lines at the last close once their bar series has ended."""
+    """Sell a held line at today's close when its episode has no later bar.
+
+    Decided per membership episode, never per line: a line that leaves the index and
+    returns years later is sold when its episode ends, not carried at a frozen price.
+    `membership_end`: the episode ends today. `data_end`: bars stop before it does (a
+    deal closes before the removal date). A member at the cache's end is not sold
+    (DL-234 amendment).
+    """
     cash_delta = data_end = membership_end = 0
+    cache_end = max((row.last for row in episodes), default=session)
+    spans = _episodes_by_line(episodes)
     for line, position in tuple(positions.items()):
         rows = line_bars.get(line, ())
-        if not rows or rows[-1].date > session:
+        reason = _ended_today(rows, session, spans.get(line, ()), cache_end)
+        if reason is None:
             continue
-        last = rows[-1]
-        price_cents = _position_price_cents(position, _close_cents(last))
-        reason = _end_reason(line, last.date, episodes)
+        today = rows[_index_of(rows, session) or 0]
+        price_cents = _position_price_cents(position, _close_cents(today))
         fills.append(
             {
-                "date": last.date.isoformat(),
+                "date": session.isoformat(),
                 "line": line,
                 "side": "sell",
                 "quantity": position.quantity,
@@ -90,6 +100,40 @@ def exit_ended_positions(
         membership_end += int(reason == "membership_end")
         positions.pop(line, None)
     return ExitResult(cash_delta, data_end, membership_end)
+
+
+def _ended_today(
+    rows: tuple[BarRow, ...],
+    session: date,
+    spans: tuple[Episode, ...],
+    cache_end: date,
+) -> str | None:
+    """The exit reason when today is the line's last bar in its episode, else None."""
+    index = _index_of(rows, session)
+    if index is None:
+        return None
+    episode = next((row for row in spans if row.first <= session <= row.last), None)
+    if episode is None:
+        return "membership_end"
+    if episode.last >= cache_end:
+        return None  # still a member when the cache ends: bars stop with the cache
+    following = rows[index + 1].date if index + 1 < len(rows) else None
+    if following is not None and following <= episode.last:
+        return None
+    return "membership_end" if session == episode.last else "data_end"
+
+
+def _episodes_by_line(episodes: tuple[Episode, ...]) -> dict[str, tuple[Episode, ...]]:
+    spans: dict[str, list[Episode]] = {}
+    for row in episodes:
+        spans.setdefault(row.line, []).append(row)
+    return {line: tuple(rows) for line, rows in spans.items()}
+
+
+def _index_of(rows: tuple[BarRow, ...], session: date) -> int | None:
+    dates = [row.date for row in rows]
+    index = bisect_left(dates, session)
+    return index if index < len(rows) and rows[index].date == session else None
 
 
 def apply_adjustment_rebases(
@@ -136,14 +180,6 @@ def _same_line_ratio(rows: tuple[BarRow, ...], session: date) -> float | None:
             return None
         prior = row
     return None
-
-
-def _end_reason(line: str, last_bar: date, episodes: tuple[Episode, ...]) -> str:
-    return (
-        "data_end"
-        if any(row.line == line and row.last == last_bar for row in episodes)
-        else "membership_end"
-    )
 
 
 def _close_cents(row: BarRow) -> int:

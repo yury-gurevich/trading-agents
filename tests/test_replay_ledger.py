@@ -54,7 +54,11 @@ def test_gap_day_marks_at_last_close_without_losing_position_value() -> None:
 
 
 def test_ended_lines_exit_at_last_close_with_reason_and_leave_book() -> None:
-    """S235-A8: ended bar series sell once as data_end or membership_end."""
+    """S235-A8: ended bar series sell once, each with its reason.
+
+    AAA's episode ends today (`membership_end`); BBB's bars stop before its episode
+    does (`data_end`). END keeps the cache open past both (DL-234 amendment).
+    """
     session = date(2020, 1, 3)
     line_bars = {
         "AAA": (BarRow("AAA", "AAA", session, 10, 10, 10, 10, 10),),
@@ -73,6 +77,7 @@ def test_ended_lines_exit_at_last_close_with_reason_and_leave_book() -> None:
         (
             Episode("AAA", "AAA", date(2020, 1, 1), session),
             Episode("BBB", "BBB", date(2020, 1, 1), date(2020, 1, 6)),
+            Episode("END", "END", date(2020, 1, 1), date(2020, 2, 3)),
         ),
         fills,
     )
@@ -80,7 +85,10 @@ def test_ended_lines_exit_at_last_close_with_reason_and_leave_book() -> None:
     assert result.cash_delta_cents == 3_000
     assert result.data_end_exits == 1
     assert result.membership_end_exits == 1
-    assert {row["reason"] for row in fills} == {"data_end", "membership_end"}
+    assert {row["line"]: row["reason"] for row in fills} == {
+        "AAA": "membership_end",
+        "BBB": "data_end",
+    }
     assert positions == {}
 
 

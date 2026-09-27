@@ -204,6 +204,20 @@ dropping no-bar orders silently, and preserving the per-session full-table scan.
 
 ---
 
+**Amendment — planner review at merge, 2026-09-27: ended-line exits follow the membership episode.**
+The returned handback decided an exit when a line's last bar *in the whole cache* had passed. Eleven
+lines hold more than one episode, and eight leave the index for 579 to 3,487 days (SNDK 2016-05-12 →
+2025-11-28, Q, FSLR, EQT, PCG, ILMN, DD, DOW): a holding would have been carried at a frozen price across
+the gap, and every current member would have been sold on the cache's final session. Now a held line
+is sold at today's close when today is its last bar **within its episode**: `membership_end` when the
+episode ends today, `data_end` when the bars stop before the episode does (a deal that closes before
+the removal date), and no exit for a member still in the index when the cache ends. 🩹 The spec's A8
+wording and the return's R1 named the two reasons the other way round; these are the plain meanings.
+*Rejected:* exit on the first session without a bar (it books the same price one session later, and a
+data hole inside an episode would read as an ending); keep the line-level rule and count the frozen
+sessions (a counted fiction is still a fiction). Guards planted, each red then restored: judge by the
+next bar anywhere; drop the cache-end exception; swap the reasons.
+
 ## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)
 
 **How it was found.** Listing what the replay cache must hold for E17.3 (DL-232) meant reading what

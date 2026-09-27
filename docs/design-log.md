@@ -129,6 +129,16 @@ days"*); change the brief's stored word (the dispatcher's `DSP-IDM-03`, and the 
 sent). Guards planted, each red then restored: a stored `UNPROVEN` taken as final; the memo keeping
 `UNPROVEN`; no look-back; a look-back that always runs.
 
+**Amendment 2 — CodeQL after merge, 2026-09-27.** `main`'s post-merge CodeQL raised two error-level
+`py/stack-trace-exposure` alerts (256, 257) at the dashboard's `_json` returns, both from one source: the
+tile put `str(exc)` of a `ScorecardDataError` in its `reason`. The branch gate could not see them (it
+reads the default branch's alerts, and `c0cedfb9`'s own gate ran before its CodeQL upload), and the next
+docs commit's Security Findings gate failed on them. The sentence the operator reads is unchanged; it is
+now chosen from a fixed table by comparing the record's kind (`PLACED_LABELS`), so no exception text
+reaches the page, and an unknown kind reads *a stored record carries no readable time*. *Rejected:*
+dismiss the alerts as false positives (the text was exception-derived, and `SRF-SEC-02` asks for
+sanitising); drop the kind from the reason (the operator loses which record to look at).
+
 ---
 
 ## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)

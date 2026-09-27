@@ -36,8 +36,23 @@ _STAMPED: tuple[tuple[str, ActionKind, str], ...] = (
 )
 
 
+# Every label whose records the scorecard places in time (the kinds a reason can name).
+PLACED_LABELS = (
+    "CommandAudit",
+    "RunRequest",
+    "RunHoldAnswer",
+    "Escalation",
+    "DeployRecord",
+)
+
+
 class ScorecardDataError(ValueError):
     """A record the scorecard must place in time carries no readable time."""
+
+    def __init__(self, label: str) -> None:
+        """Name the record's label; never its stored value."""
+        super().__init__(f"one {label} carries no readable time")
+        self.label = label
 
 
 @dataclass(frozen=True)
@@ -66,7 +81,7 @@ def instant(value: object, tick: time, *, label: str) -> datetime:
             return datetime.combine(date.fromisoformat(text), tick, UTC)
         parsed = datetime.fromisoformat(text)
     except ValueError:
-        raise ScorecardDataError(f"one {label} carries no readable time") from None
+        raise ScorecardDataError(label) from None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC)

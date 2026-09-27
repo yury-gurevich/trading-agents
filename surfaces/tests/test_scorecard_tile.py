@@ -108,7 +108,7 @@ def test_a10_an_empty_window_reads_unavailable_and_shows_no_number() -> None:
 
 class _UnreadableGraph(InMemoryGraphStore):
     def list_nodes(self, label: str) -> tuple[Node, ...]:
-        raise RuntimeError(f"postgres://operator:secret@spine/{label} refused")
+        raise RuntimeError(f"spine refused {label}: password authentication failed")
 
 
 def test_an_unreadable_graph_degrades_the_tile_and_leaks_nothing() -> None:
@@ -120,7 +120,7 @@ def test_an_unreadable_graph_degrades_the_tile_and_leaks_nothing() -> None:
     tile = scorecard_vital(_UnreadableGraph(), settings(), now=NOW)
 
     assert (tile["tone"], tile["reason"]) == ("idle", "the graph could not be read")
-    assert "secret" not in str(tile)
+    assert "password" not in str(tile)
 
 
 def test_a_record_with_no_readable_time_is_named_not_guessed() -> None:

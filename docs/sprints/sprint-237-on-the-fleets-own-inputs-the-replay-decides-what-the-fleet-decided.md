@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · next leg P17, item **E17.4** (fidelity)
 **Branch:** `sprint-237-the-replay-decides-what-the-fleet-decided`
-**Status:** BUILT · the return, 2026-09-27: R1–R10 addressed on synthetic fixtures; `make gate-ran` and the live export are owed to the planner (see *Closeout* and *Return notes*)
-**Version:** *next available MINOR at merge*
+**Status:** MERGED · `14e02002` · tag `v0.117.00` · 2026-09-27 · live check: harness equals live on the six latest sessions; DL-237 verdict INSUFFICIENT until four clean sessions (first due after `sched-2026-10-01`)
+**Version:** 0.117.00
 **Effort:** M
 **Decisions:** [DL-237](../design-log.md) (the fidelity bar, re-cut: **settled, do not reopen**) ·
 [DL-232](../design-log.md) (the replay is price-only) · [DL-233](../design-log.md) (live reads IEX
@@ -913,3 +913,48 @@ from `HEAD` in files the analyst imports. Layer 3 read `filled 0` on all four se
 was marked *[ASSUMED]* and does not hold under the rule it asked for: s225–s228b differ from `HEAD` in
 `contracts/` files the analyst imports. **The clean set starts at `sched-2026-09-28` (s232, 0 files).**
 DL-237's amendment records that, and the PM-denominator fix in R5.
+
+---
+
+## Planner review and merge — 2026-09-27
+
+**The return (`b39b9f5d`, `14e02002`, an Opus cloud session) is merged.** R1–R10 hold. Layer 1
+runs the fleet's own graph-pull composition (`scan_market_node`, `run_analysis`, `run_evaluation`)
+on a scratch store seeded from the export; an export carrying `replay` or `layer2` is refused; a
+missing replay is `harness:not_replayed`; the deploy is read as `git_sha`, and an unknown or
+unresolvable SHA is never clean. The held book is rebuilt as of the run: the holdings in the run's
+snapshot, each matched to the one Position that had not ended by then, with any gap named.
+`pyproject.toml`, `uv.lock`, `agents/`, `contracts/` and every `laws.md` are untouched since the
+first build. **`GATE PROVEN for 14e02002…`** (CI, CodeQL, Security Findings, attempt 1), run from a
+worktree whose `HEAD` was that SHA; 0 open error-level alerts on the branch (one note-level unused
+import, `replay_fidelity_inputs.py`, alert 263). Fast-forwarded, tagged `v0.117.00`. No deploy: the
+scripts ship in no image.
+
+**The live check (planner, worktree at `14e02002`, main's `.env`).** `fidelity_export.py export
+--start 2026-07-07 --end 2026-09-25` wrote **56** sessions in 2 min 14 s, read-only. `replay_fidelity.py
+run --cache <OneDrive cache>` took 3 min 20 s. Outputs are under OneDrive
+`trading-agents-data\fidelity\s237-live-2026-09-27\`, never in the repo.
+
+| What | Result |
+| --- | --- |
+| DL-237 verdict | **INSUFFICIENT**: 0 clean sessions (none ran code equal to `HEAD` before `sched-2026-09-28`), as designed |
+| Layer 1, the six latest sessions (09-18 → 09-25) | **Every row agrees**: scanner 116–117 / 117, analyst 156 / 156, PM 100–104 / 104. Four of these are the `contracts/`-only sessions, so in practice those diffs were decision-neutral |
+| Layer 1, all 56 sessions | scanner **96.7 %**, analyst **89.6 %**, PM **97.6 %**; **0 unexplained**. Every difference is `code_changed:…` or `code_changed:unknown_deploy` (early runs) |
+| Layer 2, from 2026-08-13 (31 sessions, 203-bar snapshots) | Swapping IEX volume for SIP takes approvals from a median of **2** a session to **13** (85 → 381 in all); the candidate set overlaps live by a median of 0.24. Removing fundamentals or earnings dates changes almost nothing; removing news trims approvals by about a fifth. The price-only cache replay (step 5) approves 12 a session |
+| Price-only vs full pipeline, both on SIP | Approvals overlap a median **0.57** (min 0.38), candidates 0.79. EXP-014's verdict speaks for a pipeline sharing about half its buys with the full one |
+| Layer 3, 56 sessions | 145 buys and 14 sells approved, 3 overturned, 110 submitted, 57 filled, 17 broker-rejected; 36 submitted buys (07-07 → 07-28) carry no outcome because those fills predate `source_run_id` |
+| DRIFT-079 on the live spine | Through `portfolio_from_graph` on `sched-2026-09-25`: the PM values the 25 held names at **$23,680** against the snapshot's **$24,333** (2.76 % low); INTC is 40 % low. Work-queue 91 |
+
+🪤 **A false lead, recorded so it is not repeated.** A first raw query on `Position.broker_market_value_cents`
+read the book at −68.9 %. That query picked historical Positions, because `created_at` is empty on
+those nodes; the PM's own reader measures the 2.76 % above. Audit through the fleet's functions, not
+raw props.
+
+**Named residue (not blocking).** (a) `code_changed:<path>` names the first changed file under a
+decision path, which can be a `Dockerfile`, `__init__.py` or `laws.md`, not the file that moved the
+decision. The rule is right to be conservative about what is clean; the label is coarse. (b) Layer 3
+cannot see fills before late July (36 buys). (c) The note-level unused import above: `GraphStore` is used in a quoted `cast("GraphStore", ...)`, the form ruff TC006 asks for, so the planner dismissed alert 263 as a false positive with that reason on the alert (reopenable). (d) The cloud
+session's `make ci` exited 2 on two S235 tests that downloaded VIX from `cdn.cboe.com`: a unit test
+reaching the network, fixed on `chore-replay-universe-vix-offline`, rebased by the planner onto `v0.117.00` as `0.117.01` with `uv.lock` refreshed, local `make ci` exit 0 (3,454 passed), `GATE PROVEN for 966e34e5`, merged and tagged `v0.117.01`. (e) The
+first verdict needs four clean sessions (analyst floor), so it is due after `sched-2026-10-01` at the
+earliest. Re-run both commands then; they take about five minutes.

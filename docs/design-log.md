@@ -232,6 +232,8 @@ are counted beside it. The per-stage rules and floors are in S237's returned ite
 hand-kept allow-list of decision-neutral `contracts/` files (a judgement the tool cannot check);
 lowering the analyst floor to keep the earlier date.
 
+**Status 2026-09-27 — S237 merged (`v0.117.00`), first live run.** Verdict **INSUFFICIENT** (0 clean sessions). On the six latest sessions the replay agrees with live on every row, four of them the `contracts/`-only sessions; over 56 sessions, 0 differences are unexplained. The verdict is re-run after `sched-2026-10-01`, when four clean sessions exist.
+
 ---
 
 ## DL-236 - a price-only ensemble is measured on the replay cache now, and built only if it wins - status: DECIDED (operator, 2026-09-27)

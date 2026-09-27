@@ -112,9 +112,10 @@ class _UnreadableGraph(InMemoryGraphStore):
 
 
 def test_an_unreadable_graph_degrades_the_tile_and_leaks_nothing() -> None:
-    """SRF-OUT-08 / SRF-FAIL-01 / SRF-SEC-02: unavailable in plain words, no raw error.
+    """SRF-OUT-08 / SRF-FAIL-01: unavailable in plain words, and no raw error.
 
-    The tile stays a normal payload, and the store's error text never reaches it.
+    The tile stays a normal payload, and the store's error text never reaches it:
+    this tile's share of the sanitising the surfaces book asks of every adapter.
     """
     tile = scorecard_vital(_UnreadableGraph(), settings(), now=NOW)
 

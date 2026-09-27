@@ -529,7 +529,15 @@ Detect secrets...........................................................Passed
 detect-secrets (untracked): scanning 13 new file(s)
 ```
 
-**`make gate-ran`:** Pending until the pushed branch SHA has terminal remote checks.
+**`make gate-ran`:** Passed for the pushed branch SHA.
+
+```text
+uv run python scripts/assert_gate_ran.py
+GATE PROVEN for 091f514779587eea6459ee1052629b387f6ce96b:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
 
 **Not met / verified failing:** Live export proof is planner-owned and was not attempted. No live/provider network was used. Full fidelity against real fleet export is not claimed. S235 smoke numbers predate the PM `position_values` trap fix in this sprint.
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-27 18:01 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 S237 is active on branch `sprint-237-the-replay-decides-what-the-fleet-decided`: law record and DL-238 are filled first; implementation is scripts/tests only, fixture proof only, no `.env`/live export.**
+**Last updated:** 2026-09-27 19:26 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.116.01` · **🎯 S237 is built and branch-gated at `091f514779587eea6459ee1052629b387f6ce96b`; fixture proof only, no live export.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,7 +37,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-⬜ **ACTIVE BUILD — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), branch `sprint-237-the-replay-decides-what-the-fleet-decided`.** INTENT: one command exports what each scheduled run saw and decided; a second replays each stage on those inputs, and every difference gets a named cause. Success factors: law reading and DL-238 precede code; no `contracts/`, `agents/` or law edits; S235 residue closed; Trap 1 fixed; synthetic red/green guards; redirected `make ci` 100.00 %; branch pushed for remote gate. The planner owns the live export/verdict after merge; this tree has no `.env` proof.
+📦 **BUILT — [S237](sprints/sprint-237-on-the-fleets-own-inputs-the-replay-decides-what-the-fleet-decided.md) (P17 E17.4), branch `sprint-237-the-replay-decides-what-the-fleet-decided`, `091f514779587eea6459ee1052629b387f6ce96b`.** Scripts/tests only: `replay_runner` split, `sessions.csv` counts and stderr progress, replay PM `position_values`, read-only graph fidelity export, and fixture-backed fidelity layer summaries/causes/verdicts. Law reading and DL-238 preceded code; no `contracts/`, `agents/` or law edits. Local redirected `make ci` exit 0 (**3406 passed, 4 skipped, 100.00 %**); remote CI, CodeQL and Security Findings green; **`GATE PROVEN`** for the branch SHA. Fixture proof only: live export/verdict remains planner-owned; `.env` existed locally but was unread and unused.
 
 ⬜ **PRE-REGISTERED — [EXP-015](research/experiments/EXP-015-price-only-ensemble-vs-technical-score.md) (work-queue 90).** Hypothesis, universe, target, three fixed models, purged folds, holdout and pass bar are written before any fit. Not run: the build follows S237.
 

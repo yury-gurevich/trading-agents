@@ -60,9 +60,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   of scheduled sessions, G1 (the share whose run completed: `PASS` or `NO_TRADE`), G3 (the share of
   healthy sessions on which a human acted, deploys aside, with the share counting deploys beside it),
   and two clocks counted back from the latest session: *unattended* (complete, no human action but
-  deploys) and *untouched* (complete, nothing human at all). Every number comes from graph facts. Each
-  session's verdict is the acceptance gate's, never the surface's: the stored `brief_verdict`, else
-  `accept_run`, judged at most once per process; a session with no `RunRequest` is `MISSED`. A reading
+  deploys) and *untouched* (complete, nothing human at all). When every session in the window holds, the
+  clocks read earlier sessions too, up to `scorecard_clock_sessions`; G1 and G3 never do. Every number
+  comes from graph facts. Each session's verdict is the acceptance gate's, never the surface's: the
+  stored `brief_verdict` unless it is `UNPROVEN` (orders the broker had not yet resolved), else
+  `accept_run`, whose settled words are judged at most once per process; an `UNPROVEN` word goes back to
+  the gate on every read until it settles; a session with no `RunRequest` is `MISSED`. A reading
   intent (`status`, `explain`) or an explain call is never counted as an intervention, and the kinds the
   graph cannot see are listed with every answer. The window is dates: the selected run does not scope
   it, and `SRF-OUT-01` does not cover it. An empty window or an unreadable graph reads unavailable and
@@ -209,7 +212,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   and the `scorecard` answer (G1, G3 and two clocks, from the acceptance gate's verdict and the records
   human actions leave); `PARAM` gains `scorecard_window_days`, `scorecard_g1_target`,
   `scorecard_g3_target` and `scorecard_clock_sessions`, and the `dispatcher_fire_utc` row names its
-  second reader (DL-235). DRIFT-078 records `SRF-OUT-03`'s silence on the quick asks.
+  second reader (DL-235). DRIFT-078 records `SRF-OUT-03`'s silence on the quick asks. Planner review
+  at merge: an `UNPROVEN` word is re-judged until it settles, and the clocks may read past the window
+  (DL-235 amendment).
 - v1.1 — S228: `SRF-TRG-02` lists the `performance` tool; `SRF-OUT-07` added for the scoreboard vital
   and chat answer; `PARAM` gains `performance_behind_threshold_pts` (DL-220 decision 9).
 - v1 — S229 authored surfaces law book for dashboard, CLI, MCP, chat, and operator-intent write

@@ -53,12 +53,18 @@ class SessionRow:
 
 @dataclass(frozen=True)
 class Scorecard:
-    """The window's sessions and the goals' numbers, or why there are none."""
+    """The window's sessions and the goals' numbers, or why there are none.
+
+    ``streak`` holds sessions before the window as well, read only when the whole
+    window holds and the clocks' target is longer than it (DL-235 amendment); G1 and
+    G3 never see it.
+    """
 
     status: ScorecardStatus
     settings: ScorecardSettings
     sessions: tuple[SessionRow, ...] = ()
     reason: str = ""
+    streak: tuple[SessionRow, ...] = ()
 
     @property
     def counted(self) -> int:
@@ -103,12 +109,16 @@ class Scorecard:
     @property
     def unattended(self) -> int:
         """Latest sessions in a row that completed with no human action but deploys."""
-        return _run_back(self.sessions, lambda row: row.complete and not row.acted)
+        return _run_back(self._clock_rows, lambda row: row.complete and not row.acted)
 
     @property
     def untouched(self) -> int:
         """Latest sessions in a row that completed with nothing human at all."""
-        return _run_back(self.sessions, lambda row: row.complete and not row.touched)
+        return _run_back(self._clock_rows, lambda row: row.complete and not row.touched)
+
+    @property
+    def _clock_rows(self) -> tuple[SessionRow, ...]:
+        return self.streak or self.sessions
 
 
 def _share(part: int, whole: int) -> float | None:

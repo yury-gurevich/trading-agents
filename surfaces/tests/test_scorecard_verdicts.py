@@ -92,7 +92,11 @@ def test_a2_a_stored_brief_verdict_is_used_as_written() -> None:
 
 
 def test_a5_no_run_is_judged_twice() -> None:
-    """SRF-OUT-08: two reads judge each unbriefed run once, and briefed runs never."""
+    """SRF-OUT-08: two reads judge each settled run once, and briefed runs never.
+
+    09-23's UNPROVEN is not settled (the broker has not resolved its orders), so the
+    second read asks the gate again (DL-235 amendment); 09-22 and 09-25 are asked once.
+    """
     graph = InMemoryGraphStore()
     words = ("PASS", None, None, "NO_TRADE", None)
     for day, word in zip(WEEK, words, strict=True):
@@ -109,7 +113,12 @@ def test_a5_no_run_is_judged_twice() -> None:
     first = scorecard(graph, now=NOW, settings=settings(), verdicts=memo)
     second = scorecard(graph, now=NOW, settings=settings(), verdicts=memo)
 
-    assert judge.calls == ["sched-2026-09-22", "sched-2026-09-23", "sched-2026-09-25"]
+    assert judge.calls == [
+        "sched-2026-09-22",
+        "sched-2026-09-23",
+        "sched-2026-09-25",
+        "sched-2026-09-23",
+    ]
     assert first.sessions == second.sessions
 
 

@@ -8,13 +8,16 @@ Each session's word is the acceptance gate's (`scorecard_verdicts`); nothing her
 a run. An action belongs to the first counted session placed at or after it, and after
 the previous session's placement, so a weekend action counts against Monday's run (S236
 Scope 5, DL-235 decision 5); a hold answer belongs to the session whose run it names.
-The window is dates, never the selected run (SRF-OUT-08).
+The window is dates, never the selected run (SRF-OUT-08). When every session in it holds
+and the clocks' target is longer than the window, the clocks read earlier sessions too
+(DL-235 amendment): a 30-day window holds 18-23 sessions, and 20 is the target.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_left
 from collections import Counter
+from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 
@@ -45,7 +48,21 @@ def scorecard(
     days = counted_days(now, settings.scorecard_window_days)
     if not days:
         return Scorecard("unavailable", settings, reason=_NOTHING_CLOSED)
+    memo = PROCESS_VERDICTS if verdicts is None else verdicts
     tick = time.fromisoformat(settings.dispatcher_fire_utc)
+    rows = _rows(graph, days, tick, memo)
+    card = Scorecard("measured", settings, rows)
+    short = settings.scorecard_clock_sessions - card.counted
+    if short > 0 and card.unattended == card.counted:
+        earlier = _rows(graph, _sessions_before(days[0], short), tick, memo)
+        card = replace(card, streak=earlier + rows)
+    return card
+
+
+def _rows(
+    graph: GraphStore, days: tuple[date, ...], tick: time, memo: VerdictMemo
+) -> tuple[SessionRow, ...]:
+    """One row per session: the gate's word and the actions placed on it."""
     before = _previous_session(days[0])
     requests = {day: _request(graph, day) for day in (before, *days)}
     placed = [_placement(requests[day], day, tick) for day in days]
@@ -56,8 +73,7 @@ def scorecard(
         day = named.get(action.run_id) or _placed_on(action.at, placed, opened, days)
         if day is not None:
             kinds[day][action.kind] += 1
-    memo = PROCESS_VERDICTS if verdicts is None else verdicts
-    rows = tuple(
+    return tuple(
         SessionRow(
             day,
             scheduled_run_id(day),
@@ -66,7 +82,6 @@ def scorecard(
         )
         for day in days
     )
-    return Scorecard("measured", settings, rows)
 
 
 def counted_days(now: datetime, window_days: int) -> tuple[date, ...]:
@@ -79,6 +94,15 @@ def counted_days(now: datetime, window_days: int) -> tuple[date, ...]:
         if _CALENDAR.is_trading_session(day)
         and now >= datetime.combine(day, LAST_FIRE, UTC)
     )
+
+
+def _sessions_before(day: date, count: int) -> tuple[date, ...]:
+    """The ``count`` sessions before ``day``, oldest first."""
+    found: list[date] = []
+    while len(found) < count:
+        day = _previous_session(day)
+        found.append(day)
+    return tuple(reversed(found))
 
 
 def _previous_session(day: date) -> date:

@@ -112,6 +112,23 @@ listed in every answer, never guessed. (d) *[measured over 2026–2027 with the 
 31 dates of a 30-day window hold **18–23** sessions, and **28** of those days hold fewer than 20, so on
 those days the 20-session clock cannot reach its target even if every session qualifies.
 
+**Amendment — planner review at merge, 2026-09-27: limits (a), (b) and (d) are fixed, not carried.**
+The handback named them; left as they were, the scorecard's two headline numbers would have been wrong
+by construction. (a)+(b): **`UNPROVEN` is not a settled word.** It means the broker had not resolved
+the run's orders, and the brief is sent before the next open, so every night the pack trades would
+have read *not complete* forever, and G1 would have measured how often the pack trades, not how often
+its runs complete. A stored `brief_verdict` of `UNPROVEN` now goes back to `accept_run`, and the memo
+keeps only settled words (`PASS`, `NO_TRADE`, `FAIL`); an unsettled run is judged again on each read
+(~3 s, normally one run, and the tile fetches once per page load). `NOT_FINISHED` stays settled: it is
+the dispatcher's word for a cycle that did not finish in its window, and a later human resume is G3's
+business, not G1's. (d): **the clocks read past the window** when every session in it holds, back to
+`scorecard_clock_sessions`; G1 and G3 stay inside it. *Rejected:* count `UNPROVEN` as complete (an
+undecided run is not a completed one); a time-to-live on unsettled memo entries (a new tunable for a
+cost of one run per page load); widen the window to 30 sessions (changes the PRD's *"rolling 30
+days"*); change the brief's stored word (the dispatcher's `DSP-IDM-03`, and the brief was right when
+sent). Guards planted, each red then restored: a stored `UNPROVEN` taken as final; the memo keeping
+`UNPROVEN`; no look-back; a look-back that always runs.
+
 ---
 
 ## DL-233 - the scanner's volume floor is measured on IEX volume, a 2–5 % slice of the tape, and drops 63 % of the universe - status: MEASURED, fix queued (work-queue 89, 2026-09-27)

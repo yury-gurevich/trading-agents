@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 14:33 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.04` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 14:45 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.04` · **🎯 Two cloud builds are specced: S239 (item 92's probability claims) and S240 (item 91, the PM's held book at today's marks). Tuesday 29 Sep's run owes S238's F4, S234's first brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+📦 **SPECCED — [S240](sprints/sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks.md) (work-queue 91, DRIFT-079), 2026-09-28, for a Claude cloud session.** The PM values each held name at the run's own snapshot mark, once per ticker (today the adoption-day mark wins: $23,680 against $24,333 on `sched-2026-09-25`), and a resumed run follows `source_run_id` to its source's snapshot instead of sizing on $100,000. PM-only: the monitor and `orchestration/` do not change. PATCH; PM laws v1.10; DRIFT-079 closes; PM image retag. The builder takes DL-242 (DL-241 is S239's). 🪤 A decision path: run DL-237's first verdict from a worktree at the last `main` commit before S239 or S240 merges. Planner owes F1 (live book = snapshot marks) and F2 (the decisions it moves).
 
 📦 **SPECCED — [S239](sprints/sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md) (work-queue 92, sprint A of the ledger), 2026-09-28, for a Claude cloud session.** For each buy recommendation the forecaster fits EXP-018's GARCH(1,1)-t on its own 760-session history and records P(stop first / target first / neither) as an advisory `BarrierForecast` claim; nothing else reads it. MINOR; forecaster laws v1.4; contracts change (run DL-237's first verdict from a pre-merge worktree); full `up`. Planner owes F1 (parity with EXP-018 on the test bed), F2, F3, the image size.
 

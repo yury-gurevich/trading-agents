@@ -47,7 +47,9 @@ trigger is the store nearing its plan limit or a second pack. (2) **retention fo
 (`Fault` 9.3 MB, `AgentMessage` 8.9 MB, `CapabilityGrant`, `AgentInstance`, `BrokerOrderStatus`),
 per-label, because acceptance, scorecards and the fidelity check read some history. (3) ~~archive old
 `MarketData`~~ — ruled out: it is lineage evidence that re-reports, the fidelity check and S241's
-settlement read.
+settlement read. (4) ~~`VACUUM FULL`~~ — ruled out, measured: it reclaims dead tuples only, and
+`nodes` holds 188 dead against 40,471 live (650 deletes ever; 11,880 updates, 89 % HOT), 70 MB of its
+80 MB live rows; autovacuum last ran 2026-09-22. Shrinking means storing less (option 1), not reclaiming.
 
 ---
 

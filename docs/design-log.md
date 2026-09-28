@@ -10,6 +10,61 @@ and is marked CLOSED here.
 
 ---
 
+## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
+
+**Context.** [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) flips the provider's
+Alpaca feed to SIP (DL-233, amended 2026-09-28). A SIP request whose `end` is inside the last 15
+minutes is refused, and `_download_page` sends a bare date that Alpaca reads as the end of that day.
+The spec leaves three decisions to the builder.
+
+**Decision 1 — where the end rule lives: `agents/provider/alpaca_request.py`, one function
+`bars_page_query(tickers, window, feed, page_token, now) -> dict[str, str]`.** It returns the whole
+query a page sends, in today's key order (`symbols`, `timeframe`, `start`, `end`, `feed`, `limit`, then
+`page_token` when set), so an IEX query urlencodes byte-for-byte as `main`'s did. It never reads the
+clock: `now` is an argument. `AlpacaDataSource` gains a keyword `clock` (default `datetime.now(UTC)`),
+read **once per fetch** so every page of one paginated fetch asks the same `end` (a page token is
+issued against one query; letting `end` drift between pages is an untested risk with no upside).
+`_download_page(query)` now takes the finished dict and only encodes and sends it. `_download`'s page
+loop calls the builder, loses its `pragma: no cover` and is covered by tests that stub
+`_download_page`, so `_download_page` is the adapter's only uncovered code, as the spec states it.
+The 15 minutes is `SIP_RECENT_DATA_DELAY`, a module constant beside the rule, citing Alpaca's refusal.
+
+- *Rejected: the rule as a private helper in `alpaca_data.py`.* The file is 181 lines; the rule, its
+  constant and docstrings push it past 200.
+- *Rejected: only the `end` in a helper, the rest still assembled in `_download_page`.* The spec's point
+  is that no rule hides in uncovered code; a half-built dict in `_download_page` keeps the key order and
+  the `page_token` branch untested, which is exactly what A3 must hold byte-identical.
+- *Rejected: the builder reads the clock itself.* Untestable without patching `datetime`, and it makes
+  the query depend on hidden state (`PROV-DEP-04` names the clock as a dependency; it is injected).
+- *Rejected: `end` sent at whole-second precision with an extra safety margin (e.g. 16 min).* The spec
+  fixes 15 minutes and A1's `22:15:00Z`. The value is truncated to the second (never rounded up), so the
+  sent `end` is never later than `now − 15 min`; the residual risk (container clock ahead of Alpaca's)
+  is recorded in S238's return notes for F1 to settle.
+
+**Decision 2 — how the probe reads the provider's default:
+`ProviderFeedSettings.model_fields["alpaca_data_feed"].default`.** The settings field is the one place
+the provider's `PARAM` row declares; the probe reads that declaration directly, so the literal `"sip"`
+exists once. `PROVIDER_ALPACA_DATA_FEED` in the probe's env mapping still wins.
+
+- *Rejected: instantiate `ProviderFeedSettings()` in the probe.* It reads the *process* environment and
+  `.env`, while the probe is handed an explicit env mapping; two sources of truth for one probe.
+- *Rejected: a shared module constant (`DEFAULT_FEED = "sip"`) imported by both settings and probe.*
+  Works, but moves the declared default out of the settings field the `PARAM` sync check and every
+  other provider default read; the field is already the single source.
+
+**Decision 3 — `PROV-OUT-07` wording.** *"An OHLCV bar's volume is the consolidated tape's volume
+across every venue, never one venue's share. A request asks its source only for what the source's
+entitlement serves; a refused request fails loud per `PROV-FAIL-01`, never as an empty success and
+never as a silent switch to a one-venue feed."* The refusal half stays **in** the clause, with
+`PROV-FAIL-01` cross-referenced for *how* it is contained: `FAIL-01` alone permits "degraded" as an
+outcome, and a quiet IEX fallback would satisfy "degraded" while reintroducing the defect. Only the
+new clause forbids that.
+
+- *Rejected: leave the refusal half to `PROV-FAIL-01` alone.* As above: `FAIL-01` does not forbid a
+  silent feed switch.
+- *Rejected: name SIP in the clause.* The clause states the guarantee (consolidated volume); which Alpaca
+  feed delivers it is the `PARAM` row's job, so a future vendor change does not need a law amendment.
+
 ## DL-238 - S237 replays each stage through the fleet's own composition on the exported live inputs, and names every input it cannot rebuild - status: DECIDED (builder, 2026-09-27; S237, rewritten at the return)
 
 **Correction first (R10).** The first version of this entry, written for the handback at `c67a62e4`,

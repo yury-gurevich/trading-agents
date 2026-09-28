@@ -15,6 +15,7 @@ from agents.master.vault_seed import ProbeResult
 from agents.provider.alpaca_data import AlpacaDataSource
 from agents.provider.fmp import FMPDataSource
 from agents.provider.fundamentals import FinnhubDataSource
+from agents.provider.settings_feeds import ProviderFeedSettings
 from agents.provider.tiingo import TiingoDataSource
 from orchestration.packs.trading_vault_llm_requests import (
     anthropic_spend_request,
@@ -155,9 +156,14 @@ def _alpaca_data_source(env: Mapping[str, str]) -> AlpacaDataSource:
         base_url=env.get(
             "PROVIDER_ALPACA_DATA_BASE_URL", "https://data.alpaca.markets"
         ),
-        feed=env.get("PROVIDER_ALPACA_DATA_FEED", "iex"),
+        feed=env.get("PROVIDER_ALPACA_DATA_FEED", _provider_default_feed()),
         timeout=int(env.get("PROVIDER_ALPACA_DATA_TIMEOUT", "15")),
     )
+
+
+def _provider_default_feed() -> str:
+    """Read the feed the provider itself defaults to (DL-239): one declaration."""
+    return str(ProviderFeedSettings.model_fields["alpaca_data_feed"].default)
 
 
 def _alpaca_account_request(env: Mapping[str, str]) -> urllib.request.Request:

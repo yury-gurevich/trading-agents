@@ -12,14 +12,21 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 
+from agents.provider.alpaca_request import bars_page_query
 from agents.provider.sources import RegimeInputs
 from contracts.provider import OHLCVBar
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from contracts.common import Window
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class AlpacaDataSource:
@@ -33,13 +40,15 @@ class AlpacaDataSource:
         base_url: str,
         feed: str,
         timeout: int,
+        clock: Callable[[], datetime] = _utc_now,
     ) -> None:
-        """Create an Alpaca OHLCV source from injected settings."""
+        """Create an Alpaca OHLCV source from injected settings and a UTC clock."""
         self._api_key = api_key
         self._api_secret = api_secret
         self._base_url = base_url
         self._feed = feed
         self._timeout = timeout
+        self._clock = clock
 
     def fetch_ohlcv(
         self, tickers: tuple[str, ...], window: Window
@@ -91,14 +100,13 @@ class AlpacaDataSource:
         """Return no earnings; Alpaca serves OHLCV only here."""
         return {}
 
-    def _download(  # pragma: no cover - network I/O, paginated.
-        self, tickers: tuple[str, ...], window: Window
-    ) -> str:
+    def _download(self, tickers: tuple[str, ...], window: Window) -> str:
         merged: dict[str, list[object]] = {}
         page_token: str | None = None
+        now = self._clock()  # once per fetch: every page asks the same end.
         while True:
-            payload = self._download_page(tickers, window, page_token)
-            page = json.loads(payload)
+            query = bars_page_query(tickers, window, self._feed, page_token, now)
+            page = json.loads(self._download_page(query))
             for symbol, rows in (page.get("bars") or {}).items():
                 merged.setdefault(symbol, []).extend(rows)
             page_token = page.get("next_page_token")
@@ -107,21 +115,10 @@ class AlpacaDataSource:
         return json.dumps({"bars": merged})
 
     def _download_page(  # pragma: no cover - network I/O.
-        self, tickers: tuple[str, ...], window: Window, page_token: str | None
+        self, query: dict[str, str]
     ) -> str:
-        params = {
-            "symbols": ",".join(tickers),
-            "timeframe": "1Day",
-            "start": window.start.isoformat(),
-            "end": window.end.isoformat(),
-            "feed": self._feed,
-            "limit": "10000",
-        }
-        if page_token:
-            params["page_token"] = page_token
-        query = urllib.parse.urlencode(params)
         request = urllib.request.Request(  # noqa: S310 - hardcoded HTTPS Alpaca endpoint.
-            f"{self._base_url}/v2/stocks/bars?{query}",
+            f"{self._base_url}/v2/stocks/bars?{urllib.parse.urlencode(query)}",
             headers={
                 "APCA-API-KEY-ID": self._api_key,
                 "APCA-API-SECRET-KEY": self._api_secret,

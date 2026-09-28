@@ -414,17 +414,43 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-28, before the first code change, in a claude.ai cloud session (no `.env`).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| `agents/provider/alpaca_data.py` + the new sibling `alpaca_request.py` | `agents/provider/laws/laws.md` (v1.3, whole), `test-plan.md` (whole), `docs/laws/conventions.md`, `docs/laws/drift-register.md` | `PROV-IDN-01` (purpose: facts consumers never second-guess), `PROV-OUT-01` 🟩 (validated facts, honest quality record), `PROV-OUT-03` 🟩 split rows (SUCCESS/DEGRADED/FAULT), `PROV-OUT-04` ⬜ (provenance names the source — DRIFT-040), `PROV-FAIL-01` 🟩 (a failure is contained at the boundary as a typed fault, never bad-as-good), `PROV-FAIL-05` ⬜, `PROV-NEV-01` 🟩, `PROV-DEP-04` 🧱 (clock) | **Yes, twice.** (1) `PROV-FAIL-01` says a failure is *contained at the boundary*; A6 says `fetch_ohlcv` *raises*. Read together they agree only because the containment lives one layer up: `ProviderAgent._get_market_data` wraps the source call in `fault_boundary(reraise=False)` and records `source_unavailable` (the green `PROV-OUT-03c`/`PROV-FAIL-01` test). So the source must raise, and A6 cites `PROV-FAIL-01` for the source half only. (2) `PROV-DEP-04` names the clock as a dependency: the injected clock is that dependency made explicit, so the builder takes `now` as an argument and never reads the time itself. |
+| `agents/provider/settings_feeds.py` | provider `laws.md` § `PARAM` | `alpaca_data_feed` `NO (mode selector)` | No: the row changes value and rationale, stays a mode selector, not a `tunable()`. |
+| `orchestration/packs/trading_vault_probes.py` | provider `PROV-SEC-01/02` (sole key holder, never logged), DL-36 | the probe builds the provider's own `AlpacaDataSource` with the provider's key names | Yes: the probe reads the provider's *settings field* default (`ProviderFeedSettings.model_fields`), so the probe tests exactly what `ProviderFeedSettings()` would read, and the one literal lives in the one place `PARAM` declares. |
+| `agents/scanner/settings.py` (read only) | `agents/scanner/laws/laws.md` § `PARAM` row `min_average_volume` | `500000.0`, `float ≥ 0 (shares/day)`, *"Require enough daily liquidity for later sizing and execution"* | No. The row says *shares/day*, not *IEX shares/day*: it presupposes the whole tape, which is what `PROV-OUT-07` now guarantees. Nothing under `agents/scanner/` is touched. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes — a new
+guarantee, no contract change.** Before this sprint the provider book never says *which* volume an
+OHLCV bar carries, nor that a request must stay inside the source's entitlement. `PROV-OUT-07` is the
+next free `OUT` ID (v1.3 declares `OUT-01..06`; checked). Owed and done in this unit of work: v1.3 → v1.4
++ Changelog, `PARAM` row `"sip"`, a `test-plan.md` row, clause IDs in test docstrings, both rollups,
+`DRIFT-080`.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** None that stops the sprint. One tension resolved
+by reading, not by amendment: A6's "`fetch_ohlcv` raises" against `PROV-FAIL-01`'s "contained … never a
+crash" — consistent because the provider's boundary is the agent's `fault_boundary`, not the adapter
+(see row 1). `PROV-OUT-07` therefore cross-references `PROV-FAIL-01` for *how* a refusal is contained and
+states only what is new: no silent empty success and no silent switch to a one-venue feed.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:**
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+- **Which volume a bar carries** — silent in v1.3. This is the sprint's `DRIFT-080` (law gap), closed by
+  `PROV-OUT-07`.
+- **Which feed served a stored bar** — `PROV-OUT-04` (⬜) already requires provenance to name the
+  *source*, and `DRIFT-040` (OPEN) records that `MarketSnapshot` does not. The feed is a finer grain of
+  the same gap: after this sprint, a `MarketSnapshot` written on IEX volume and one written on SIP volume
+  are indistinguishable in the graph. Not silent (the law asks for it), so no new row; noted against
+  `DRIFT-040` in the return notes. Fixing it touches `agents/provider/domain/` or `contracts/`, both
+  decision paths — out of scope here.
+- **`PROV-FAIL-05`** (⬜, `_tbd_`) speaks of `DEP-FEED` *red*. An entitlement refusal (403) is not a feed
+  outage, so A6 does not cite `FAIL-05`; it stays ⬜.
+
+**Clauses that were ⬜ and are now proven:** None were ⬜ before — `PROV-OUT-07` is new and lands 🟩
+(A1, A2, A4, A5, A6 cite it). Provider rollup 17 / 62 → 18 / 63.
 
 ---
 

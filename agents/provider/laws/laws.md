@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -70,6 +70,10 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-OUT-06` — On degradation, **in addition to** the quality record on the response (pull), the
   provider **emits a `market_data_degraded` event** (push) for observers/supervisor. The two are
   always consistent. *(DRIFT-005 — adopted.)*
+- `PROV-OUT-07` — An OHLCV bar's **volume is the consolidated tape's** volume across every venue,
+  never one venue's share. A request asks its source **only for what the source's entitlement
+  serves**; a refused request **fails loud** per `PROV-FAIL-01` — never as an empty success, and never
+  as a silent switch to a one-venue feed. *(DRIFT-080 — S238, DL-233, DL-239.)*
 
 ## Prohibitions (`NEV`)
 
@@ -288,7 +292,7 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
 | `ingest_ohlcv_only` | `False` | `bool` | NO (mode selector) | DL-29 fast path; selects the OHLCV-only workflow and skips enrichment rather than tuning a value inside one workflow. |
-| `alpaca_data_feed` | `"iex"` | `str` | NO (mode selector) | Selects the Alpaca market-data feed route/entitlement; not a value inside a validation or scoring formula. |
+| `alpaca_data_feed` | `"sip"` | `str` | NO (mode selector) | Selects the Alpaca market-data feed route/entitlement; not a value inside a validation or scoring formula. `"sip"` is the consolidated tape, so a bar's volume is every venue's (`PROV-OUT-07`); `"iex"` carried one venue's 1.55–6.49 % share (DL-233). |
 
 **Network timeouts:**
 
@@ -331,6 +335,8 @@ status:
   is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
   `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
   `PROV-OUT-06`), DRIFT-067 (FMP `^VIX` regime freshness → `PROV-OUT-02`/`PROV-OUT-03`).
+- **CORRECTED (S238)** — DRIFT-080 (which volume a bar carries → new `PROV-OUT-07`; the
+  `alpaca_data_feed` default moves `"iex"` → `"sip"`).
 - **CORRECTED (S69)** — DRIFT-006 (`PROV-OUT-01`: benchmark added as `DataRequest.benchmark_ticker` +
   `MarketData.benchmark`; `taint=False` for clean candidate quality; analyst uses `market.benchmark`
   directly), DRIFT-007 (`PROV-SEC-07`: `caller_authorized` gate in all three buses; provider
@@ -371,3 +377,9 @@ status:
   table as `NO (secret)`, by name only, following the execution law's precedent. `fred_api_key` and
   `tiingo_api_key` are declared although no runtime provider path reads either; their rows say so
   rather than inventing a use. No clause moves.
+- **v1.4 — S238 consolidated-tape volume (2026-09-28).** Adds `PROV-OUT-07`: a bar's volume is the
+  consolidated tape's, a request stays inside its source's entitlement, and a refusal fails loud per
+  `PROV-FAIL-01` with no empty success and no silent one-venue fallback. The book had been silent on
+  which volume a bar carries while the fleet served IEX's 1.55–6.49 % share against a scanner floor
+  written for the whole tape (DL-233, DRIFT-080). `PARAM`: `alpaca_data_feed` reads `"sip"`. One
+  clause added and proven: 17 / 62 → 18 / 63.

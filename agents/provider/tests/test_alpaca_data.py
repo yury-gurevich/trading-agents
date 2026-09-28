@@ -11,11 +11,16 @@ from __future__ import annotations
 
 from datetime import date
 from types import MethodType
+from typing import TYPE_CHECKING
 
 from agents.provider.alpaca_data import AlpacaDataSource
 from agents.provider.composite import CompositeDataSource, market_source_from_settings
 from agents.provider.settings import ProviderSettings
+from agents.provider.settings_feeds import ProviderFeedSettings
 from contracts.common import Window
+
+if TYPE_CHECKING:
+    import pytest
 
 _WINDOW = Window(start=date(2026, 1, 1), end=date(2026, 1, 31))
 
@@ -100,3 +105,16 @@ def test_market_source_from_settings_routes_ohlcv_to_alpaca() -> None:
     composite = market_source_from_settings(ProviderSettings())
     assert isinstance(composite, CompositeDataSource)
     assert isinstance(composite._price_source, AlpacaDataSource)
+
+
+def test_provider_default_feed_is_the_consolidated_tape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PROV-OUT-07: with no override the provider asks Alpaca for SIP bars."""
+    monkeypatch.delenv("PROVIDER_ALPACA_DATA_FEED", raising=False)
+    assert ProviderFeedSettings(_env_file=None).alpaca_data_feed == "sip"
+    composite = market_source_from_settings(ProviderSettings(_env_file=None))
+    assert isinstance(composite._price_source, AlpacaDataSource)
+    assert composite._price_source._feed == "sip"
+    monkeypatch.setenv("PROVIDER_ALPACA_DATA_FEED", "iex")
+    assert ProviderFeedSettings(_env_file=None).alpaca_data_feed == "iex"

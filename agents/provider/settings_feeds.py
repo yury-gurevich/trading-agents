@@ -90,7 +90,8 @@ class ProviderFeedSettings(AgentSettings):
     alpaca_data_base_url: str = Field(default="https://data.alpaca.markets")
     alpaca_api_key: str = Field(default="", repr=False)
     alpaca_api_secret: str = Field(default="", repr=False)
-    alpaca_data_feed: str = Field(default="iex")
+    # SIP: the consolidated tape, so a bar's volume is every venue's (PROV-OUT-07).
+    alpaca_data_feed: str = Field(default="sip")
     alpaca_data_timeout: int = tunable(
         15,
         why="Bound the Alpaca bars HTTPS call so a slow feed cannot hang the run.",

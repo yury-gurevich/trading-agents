@@ -37,6 +37,18 @@ id differs from its source's); a permanent memory raise (moves the cliff, does n
 **Unmeasured:** the scanner's poll pulls ~142 MB from Neon each minute of its window; Neon egress
 against the plan's transfer allowance has not been checked.
 
+**Compaction considered and ruled out as the fix (operator asked, 2026-09-29).** Measured on Neon:
+the database is **98 MB** (`nodes` 80 MB / 40,471 rows, `edges` 11 MB); `MarketData` is 34.8 MB
+stored (TOAST-compressed) for the 142 MB of JSON that loads as 785 MB. The store is not under
+pressure; the readers are. Options recorded for later: (1) **bars stored once** — consecutive
+`MarketData` share 202 of 203 sessions, so ~99 % is duplicate and a shared bar store would shrink it
+~50×, but a bar table is pack vocabulary (ADR-0012), so it is a design sprint, not a chore; the
+trigger is the store nearing its plan limit or a second pack. (2) **retention for log-like labels**
+(`Fault` 9.3 MB, `AgentMessage` 8.9 MB, `CapabilityGrant`, `AgentInstance`, `BrokerOrderStatus`),
+per-label, because acceptance, scorecards and the fidelity check read some history. (3) ~~archive old
+`MarketData`~~ — ruled out: it is lineage evidence that re-reports, the fidelity check and S241's
+settlement read.
+
 ---
 
 ## DL-242 - the PM weighs a held name at its run's snapshot mark, once per ticker, and a resumed run at the snapshot of the run it resumes - status: DECIDED (builder, 2026-09-28; S240)

@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 92 (the book as a distribution), sprint A of the ledger
 **Branch:** `sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target`
-**Status:** BUILT 2026-09-28 (Claude cloud session; branch pushed, unmerged; owed items in the Closeout)
+**Status:** MERGED `0.118.00` (`3eb68b0d`, tag `v0.118.00`) and DEPLOYED `s239` (full `up`), 2026-09-28; owed: F4 on `sched-2026-09-28`. Built by a Claude cloud session (D1–D10); the planner fixed D11 at merge.
 **Version:** `0.118.00` (MINOR)
 **Effort:** M
 **Decisions:** [DL-240](../design-log.md) (the direction, and its EXP-018 entry: the ledger is built on GARCH at ~3 years) · [EXP-018](../research/experiments/EXP-018-garch-history-depth.md) (the model and the evidence) · [EXP-017](../research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md) · ADR-0010 (shadow models are promoted only through the registry) · the builder's design decisions go to the **next free DL** (`DL-241` at spec time)
@@ -511,7 +511,7 @@ was updated for the new contract version `0.6.0` and `owns_graph`.
 
 ## Closeout — evidence
 
-**Status:** BUILT 2026-09-28. Branch pushed; not merged (the planner merges).
+**Status:** BUILT 2026-09-28 by the cloud session; MERGED `0.118.00` (`3eb68b0d`, tag `v0.118.00`) and DEPLOYED `s239` (full `up`), 2026-09-28; owed: F4 on `sched-2026-09-28`.
 
 **Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, Linux, Python 3.13, a clone of
 `yury-gurevich/trading-agents` on branch `sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target`
@@ -622,7 +622,7 @@ blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its d
 patsy 1.0.3, formulaic 1.2.2, interface-meta 2.0.1 and wrapt 2.5.0, and moved `trading-agents` to `0.118.0`
 (+250 / -6 lines); the dependency audit in the planner's `make ci` reads the new lock.
 
-**`make gate-ran`:** *(planner: local worktree, full SHA, output)* — **not run here** (no `gh`); owed.
+**`make gate-ran`:** *[planner, 2026-09-28]* Windows `make ci` in `../wt-s239` after D11 and the re-lock: exit 0, **3,556 passed, 7 skipped, 100.00 %**, dependency audit clean on the lock with `arch`. **`GATE PROVEN` for `3eb68b0d`** from that worktree (printed SHA = `HEAD`): CI, CodeQL, Security Findings, success on attempt 1. CodeQL on touched files: two new **note-level** alerts, 264 (`py/ineffectual-statement`, the `GarchFitter` Protocol's `...`) and 265 (`py/import-and-import-from`, the entrypoint test), both classes `main` already carries dozens of (33 and 8 open); no error-level alert. **Deploy:** full `up -Tag s239` 2026-09-28 10:52–11:17 UTC, exit 0: env preserved on all 17 targets, `alembic upgrade head` a no-op, 0 topics and 0 subscriptions created; 16 / 16 apps `s239`, `Succeeded`, `Running`; scale blocks, env and secret names, ingress and identity identical to the pre-`up` snapshot; `dispatcher-cron` `s239`, cron unchanged; the injected vocabulary decodes to the repo's `dc3157e4`; 0 Faults since; `DeployRecord deploy:2026-09-28T11:18:41…:s239:3eb68b0d…`.
 
 **Planner live checks (F1–F3, image size):** *[measured 2026-09-28, planner, local worktree `../wt-s239` at `567c04ce` with `arch==8.0.0`; F2/F3 with `main`'s `.env`, read-only]*
 

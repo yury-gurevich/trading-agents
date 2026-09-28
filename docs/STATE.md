@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 19:42 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.05` · **🎯 S240 merged (`v0.117.05`): the PM weighs its held book at today's marks, decision-neutral over 14 sessions; S239 waits for its provider route. Tuesday 29 Sep's run owes S238's F4, S234's first brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 20:02 AEST · **Version:** **0.117.05 deployed** (`s240`, image-only retag); `main` = `0.117.05` · **🎯 S240 deployed (operator: "deploy"): the PM weighs its held book at the run's own marks from tonight's run; S239 waits for its backlog guard.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🚀 **DEPLOYED `s240` 2026-09-28 20:00 AEST, image-only retag (operator: *"deploy"*).** Built from `v0.117.05` (`dc90a352`), run 36406152696, **15 / 15** images. No injected pack moved since `s238` (vocabulary `63d3a5eb` both sides; credential tests and issuer map unchanged); the runtime change is the PM (held book at the run's snapshot marks) and the dispatcher image's copy of its new module. Verified on Azure: **16 / 16** apps `s240` and `Succeeded`, every app min 0 / max 1 / 1 KEDA rule, scale blocks JSON-identical to the pre-retag snapshot, `dispatcher-cron` on `s240` with its cron `*/10 22-23 * * 1-5`; `DeployRecord deploy:2026-09-28T10:00:32…:s240:dc90a352…`. Rollback: `s238`. **Owed on `sched-2026-09-28` (08:30 AEST Tue): S240's F3** (the `PMRun`'s held values equal its snapshot) beside S238's F4, S234's first brief, S232's acceptance and item 87's close. The fidelity clean-session count restarts from this deploy.
 
 🟩 **MERGED — [S240](sprints/sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks.md) (work-queue 91, DRIFT-079), `dc90a352`, tag `v0.117.05`, 2026-09-28; not deployed.** Built in a cloud session; the PM values each held name at its run's snapshot mark once per ticker, and a resumed run follows `source_run_id` (≤ 8 hops) to its source's snapshot; PM laws v1.10 (`PM-IN-05`), DL-242. PROVEN: Windows `make ci` exit 0 (**3,495 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `dc90a352`**; 0 CodeQL alerts in touched files. **F1 live:** `sched-2026-09-25`'s book reads $24,333.44 = the snapshot, name for name (`main`'s rule $23,680.49). **F2:** 14 sessions (09-08 → 09-25) replayed under both codes: held value 1.7–3.1 % higher, **0 PM decisions change**, so the retag is decision-neutral today. Owed: the operator's PM retag, then F3. Filed by the builder: the fidelity export picks a resumed session's book by the child id (tooling; pinned by a test). 🪤 **DL-237's first verdict runs from a worktree at `8a059386`** (the last `main` before this merge).
 

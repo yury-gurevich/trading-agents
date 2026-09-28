@@ -171,6 +171,23 @@ broker's average entry back). The export names such a session `not_persisted:hel
 inject the page and bar fetchers; the cloud session's egress policy refuses the host, so they fail
 there on `main` too. Not changed here (A13: S235's suite untouched).
 
+**Amendment — chore `chore-replay-view-is-a-graphstore`, 2026-09-28: the book view is a whole, read-only
+`GraphStore`, and CodeQL alert 263 is fixed rather than dismissed.** At S237's merge the planner dismissed
+alert 263 (`py/unused-import`, note: `GraphStore` in `scripts/replay_fidelity_inputs.py`) as a false
+positive, because the name was used only inside `cast("GraphStore", ExportedFacts(...))`. The operator
+questioned it and chose *reopen and fix* (2026-09-28). The cast was the real fault: `ExportedFacts` had one
+of the port's six methods, and the cast told the type checker otherwise. It now lives in
+`scripts/replay_fidelity_facts.py` and has all six: `list_nodes` and `get_node` serve the exported facts;
+`merge_node` and `add_edge` raise `PermissionError` (the book's labels belong to execution and the
+monitor); `ancestors` and `descendants` raise too, because the export carries no edges and an empty walk
+would read as a fact. No cast and no `GraphStore` import remain. 🪤 `make ci`'s mypy covers the packages,
+not `scripts/`, so a test compares each port method's signature with the view's. Planted: dropping
+`descendants` fails that test (and mypy, run by hand, at both reader calls); a `get_node` that answers
+`None`, and an `ancestors` answered empty, each fail their test. *Rejected:* keeping the dismissal (the
+operator's call); an unquoted `cast(GraphStore, …)` (ruff TC006 requires the quoted form, and the cast
+stays a lie); filling an in-memory store by merging the facts (the view would write labels it does not
+own); returning empty walks (silent, where the export simply does not know).
+
 ---
 
 ## DL-237 - E17.4's fidelity bar is re-cut: the harness is judged on the fleet's own inputs, and the data gap is measured, not barred - status: DECIDED (planner, 2026-09-27; S237)

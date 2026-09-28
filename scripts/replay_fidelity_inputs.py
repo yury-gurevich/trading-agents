@@ -12,8 +12,9 @@ import json
 from dataclasses import dataclass
 from datetime import date
 from functools import cache
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
+from scripts.replay_fidelity_facts import ExportedFacts
 from scripts.replay_settings import build_effective_settings
 
 from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
@@ -30,7 +31,6 @@ if TYPE_CHECKING:
 
     from agents.portfolio_manager.portfolio import PortfolioState
     from contracts.positions import OpenPosition
-    from kernel.graph import GraphStore
 
 # Replay outputs are computed, never read (R1): an export carrying one is refused.
 REFUSED_KEYS = ("replay", "layer2")
@@ -99,22 +99,6 @@ def load_session(path: Path) -> SessionInputs:
     )
 
 
-class ExportedFacts:
-    """A read-only view over the export's book facts, for the fleet's own readers.
-
-    `open_positions` and `portfolio_from_graph` only list nodes by label, so the book
-    is served, never merged: its labels belong to execution and the monitor.
-    """
-
-    def __init__(self, nodes: tuple[Node, ...]) -> None:
-        """Hold the exported snapshot and Position facts."""
-        self._nodes = nodes
-
-    def list_nodes(self, label: str) -> tuple[Node, ...]:
-        """Return the exported facts carrying ``label``."""
-        return tuple(node for node in self._nodes if node.label == label)
-
-
 def _book(
     payload: dict[str, Any], run_id: str
 ) -> tuple[PortfolioState, tuple[OpenPosition, ...]]:
@@ -126,7 +110,7 @@ def _book(
     ]
     if book:
         facts.append(Node("BrokerPositionSnapshot", str(book["key"]), book["props"]))
-    view = cast("GraphStore", ExportedFacts(tuple(facts)))
+    view = ExportedFacts(tuple(facts))
     starting_cash = effective_settings().portfolio.starting_cash
     return portfolio_from_graph(view, starting_cash, run_id=run_id), open_positions(
         view

@@ -13,7 +13,7 @@ from agents.execution.paper_broker import PaperBroker
 from agents.forecaster import poll as forecaster_poll
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
-from kernel import InMemoryGraphStore, InProcessBus
+from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import place_run_request
 from orchestration.tests.helpers import node_count, source
@@ -69,3 +69,34 @@ def test_forecaster_stage_is_idempotent() -> None:
     cascade_once(graph, provider_agent=_provider(graph), broker=PaperBroker())
 
     assert len(graph.list_nodes("ShadowPrediction")) == before
+
+
+class _RecordingBus(InProcessBus):
+    """The provider's bus, keeping the capability of every forecaster request."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.forecaster_capabilities: list[str] = []
+
+    def request(self, message: AgentMessage) -> AgentMessage:
+        if message.recipient == "forecaster":
+            self.forecaster_capabilities.append(message.capability)
+        return super().request(message)
+
+
+def test_the_local_pipeline_still_fires_all_four_legs() -> None:
+    """FORE-TRG-01: the in-process cascade fires forecast, forecast_return,
+    forecast_factor and forecast_barrier; only the deployed loop narrows to one."""
+    graph = InMemoryGraphStore()
+    bus = _RecordingBus()
+    provider = ProviderAgent(
+        bus,
+        graph=graph,
+        source=source(),
+        settings=ProviderSettings(max_staleness_days=7),
+    )
+    place_run_request(graph, run_id="fc4", tickers=("AAPL", "MSFT"))
+
+    cascade_once(graph, provider_agent=provider, broker=PaperBroker())
+
+    assert set(bus.forecaster_capabilities) == set(forecaster_poll.LOCAL_CAPABILITIES)

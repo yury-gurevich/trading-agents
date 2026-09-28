@@ -110,6 +110,45 @@ start the fake sentiment and return legs writing to the live graph; a caller in 
 choreography change (`flow.md`). Both are outside "nothing else changes" and are the planner's to decide
 before F4. Built as specced; handed back as a named blocker for F4.
 
+**D9 - the trigger (the planner's decision, 2026-09-28; built as the S239 follow-up).** The forecaster's
+entrypoint runs the peers' graph-pull loop (`work_loop(find_pending → forecast_analyst_node)`, as the
+execution, reporter and deliberator-manager entrypoints do), polling for an `AnalystRun` with no
+`ForecasterRun`. `forecast_analyst_node` takes the set of legs as a required parameter:
+`orchestration/local_pipeline.py` passes `LOCAL_CAPABILITIES` (all four, unchanged behaviour) and the
+entrypoint passes `DEPLOYED_CAPABILITIES` (`forecast_barrier` only). **Why only the barrier leg in the
+fleet:** `forecast`, `forecast_return` and `forecast_factor` have never run in the fleet (nothing
+requested them, above), so their cost there (FinBERT and LightGBM per recommendation, every run) is
+unmeasured, and turning them on is a decision of its own. A leg name outside `LOCAL_CAPABILITIES` is
+refused before any request. The loop's faults go to a `GraphFaultSink` flushed by the loop, as the
+execution and deliberator loops do; the served forecaster used an in-memory sink, so its faults never
+reached the graph. `FORE-TRG-01` / `FORE-TRG-02` amended (laws v1.5): an unconsumed `AnalystRun` is an
+artifact another stage wrote, so finding one is a trigger, not a self-trigger.
+
+- *Rejected: another agent calls the forecaster* (the analyst or the PM sending `forecast_barrier`). A
+  choreography change (`flow.md`), and it puts an advisory side branch on a decision-path agent's clock.
+- *Rejected: leave it unwired.* F4 can never pass: nothing in the fleet would ever request a claim.
+- *Rejected: keep `serve_loop` and add the pull loop beside it.* One process runs one loop; both need a
+  thread or an interleaved kernel loop, a kernel change for a request topic nothing sends to (the
+  finding above: the poll is the forecaster's only requester). Consequence, recorded: `forecaster.requests`
+  is still declared in `orchestration/packs/trading_served_agents.json` and prepared by
+  `infra/deploy-agents.ps1`, but the container no longer consumes it. Neither file is changed here.
+
+**Found while building D9 - the deployed forecaster cannot reach the provider, so F4 is still blocked.**
+*[read from the code and measured by a unit test, 2026-09-28]* `forecast_barrier` gets its 760 bars by
+sending `get_market_data` to the provider over its bus (`provider_client.request_prices`). In the
+container that bus is an `InProcessBus` with only the forecaster bound, the provider container is
+graph-pull only (it serves no request topic), and the forecaster image ships no `agents/provider`
+(import-linter forbids the import anyway). The run's `MarketData` holds ~400 calendar days, about 275
+bars, under the 700-bar floor. So each buy in a deployed run writes **no claim and two graph faults**
+(`RuntimeError: No handler registered for provider.get_market_data`, then `BarrierClaimRefusedError: 0
+bars < 700`), pinned by `test_forecaster_entrypoint.py::test_a_deployed_forecaster_cannot_reach_the_provider_yet`.
+Deploying D9 alone therefore adds about 2 faults per buy per scheduled run and no ledger rows. Candidate
+routes, for the planner (none built here): (a) the provider serves `get_market_data` on a request topic
+(a provider law cycle, a served-agents pack entry, and infra); (b) the provider writes the long history
+to the graph and the forecaster reads it (a new provider-written artifact or the `price_cache`); (c) the
+run's own `MarketData` window grows to ≥ 760 sessions (every stage reads a bigger payload). The operator
+chose to build D9 now and carry this as the named F4 blocker.
+
 ---
 
 ## DL-240 - the book is managed as a distribution: short holding periods on stocks we buy, and exits that take profit - status: DIRECTION (operator, 2026-09-28); design open, work-queue 92

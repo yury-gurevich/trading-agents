@@ -60,10 +60,10 @@ def cascade_once(
 ) -> tuple[StageResult, ...]:
     """Run one graph-pull pass over every stage in dependency order.
 
-    The forecaster is an RPC agent (FORE-TRG-01), not a pure graph-pull stage: it is
-    bound to the provider's bus so its advisory `forecast` reaches `get_market_data`,
-    and the forecaster stage triggers it per recommendation. Its shadow predictions are
-    a side branch — they never enter the conservation/PM path.
+    The forecaster is bound to the provider's bus so its legs reach `get_market_data`,
+    and its stage fires all four legs per recommendation (`LOCAL_CAPABILITIES`,
+    FORE-TRG-01; the deployed loop fires the barrier leg only). Its outputs are a
+    side branch — they never enter the conservation/PM path.
 
     When ``deliberation_llm`` is given, an **opt-in** challenger-veto stage runs between
     the PM and execution (DL-31 Part B): it debates each approved order and records the
@@ -126,7 +126,12 @@ def cascade_once(
         (
             "forecaster",
             partial(forecaster_poll.find_pending, graph),
-            partial(forecaster_poll.forecast_analyst_node, graph=graph, bus=bus),
+            partial(
+                forecaster_poll.forecast_analyst_node,
+                graph=graph,
+                bus=bus,
+                capabilities=forecaster_poll.LOCAL_CAPABILITIES,
+            ),
         ),
         (
             "portfolio_manager",

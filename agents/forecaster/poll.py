@@ -1,10 +1,11 @@
 """Forecaster graph-poll work source — advisory shadow predictions per AnalystRun.
 
 Agent: forecaster
-Role: find AnalystRun nodes not yet forecast and, for each recommendation, request an
-      advisory shadow sentiment + return prediction from the forecaster over the bus,
-      and a barrier claim for each buy carrying a stop and a target (FORE-TRG-01:
-      RPC-triggered, never self-triggers; FORE-NEV: shadow, never gates).
+Role: find AnalystRun nodes not yet forecast and, for each recommendation, request
+      the chosen advisory legs from the forecaster over the bus: shadow sentiment,
+      return and factor predictions, and a barrier claim for each buy carrying a stop
+      and a target (FORE-TRG-01/02: an unconsumed AnalystRun is the trigger, never a
+      timer; FORE-NEV: shadow, never gates). The caller names the legs (DL-241 D9).
       The predictions are a side branch off AnalystRun — they never touch the
       PM/execution path, so a missing or slow forecaster cannot block a trade.
 External I/O: none directly (the bus carries the forecast RPCs; provider owns the I/O).
@@ -26,9 +27,14 @@ ANALYST_RUN_LABEL = "AnalystRun"
 FORECASTER_RUN_LABEL = "ForecasterRun"
 FORECAST_EDGE = "FORECAST_BY"
 #: Advisory legs: FinBERT sentiment, LightGBM return, and optional factor shadow.
-_CAPABILITIES = ("forecast", "forecast_return", "forecast_factor")
+ADVISORY_CAPABILITIES = ("forecast", "forecast_return", "forecast_factor")
 #: The barrier claim (S239): only for a buy that carries a stop and a target.
 BARRIER_CAPABILITY = "forecast_barrier"
+#: The in-process pipeline (`orchestration/local_pipeline.py`) fires every leg.
+LOCAL_CAPABILITIES = (*ADVISORY_CAPABILITIES, BARRIER_CAPABILITY)
+#: The deployed loop fires the barrier claim only (FORE-TRG-01, DL-241 D9): the three
+#: advisory legs have never run in the fleet and their cost there is unmeasured.
+DEPLOYED_CAPABILITIES = (BARRIER_CAPABILITY,)
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
@@ -41,21 +47,33 @@ def find_pending(graph: GraphStore) -> list[Node]:
     return pending
 
 
-def forecast_analyst_node(node: Node, *, graph: GraphStore, bus: MessageBus) -> None:
-    """Request advisory shadow predictions for each recommendation, then mark the run.
+def forecast_analyst_node(
+    node: Node,
+    *,
+    graph: GraphStore,
+    bus: MessageBus,
+    capabilities: tuple[str, ...],
+) -> None:
+    """Request the named advisory legs for each recommendation, then mark the run.
 
-    The forecaster's handlers persist each ``ShadowPrediction`` themselves; this stage
-    only triggers them (RPC) and writes a ``ForecasterRun`` marker linked back to the
+    ``capabilities`` is the set of legs this caller fires: ``LOCAL_CAPABILITIES`` or
+    ``DEPLOYED_CAPABILITIES``; a name outside ``LOCAL_CAPABILITIES`` is refused before
+    any request. The forecaster's handlers persist their own outputs; this stage only
+    triggers them (RPC) and writes a ``ForecasterRun`` marker linked back to the
     AnalystRun so a second pass is idempotent. Nothing here gates the PM.
     """
+    unknown = sorted(set(capabilities) - set(LOCAL_CAPABILITIES))
+    if unknown:
+        raise ValueError(f"unknown forecaster capabilities: {unknown}")
     recommendation_set = RecommendationSet.model_validate(
         node.props["recommendation_set"]
     )
+    advisory = [name for name in ADVISORY_CAPABILITIES if name in capabilities]
     for recommendation in recommendation_set.recommendations:
-        for capability in _CAPABILITIES:
+        for capability in advisory:
             _request_forecast(bus, capability, recommendation.ticker)
         barriers = _barrier_features(recommendation)
-        if barriers is not None:
+        if barriers is not None and BARRIER_CAPABILITY in capabilities:
             _request_forecast(
                 bus, BARRIER_CAPABILITY, recommendation.ticker, features=barriers
             )

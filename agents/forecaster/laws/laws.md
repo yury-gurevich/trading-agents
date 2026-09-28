@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -42,8 +42,16 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Triggers (`TRG`)
 
-- **FORE-TRG-01** — All capabilities triggered by RPC request only. No event subscription.
-- **FORE-TRG-02** — The forecaster never self-triggers.
+- **FORE-TRG-01** — Every capability runs on a request, never on an event subscription. A request
+  comes from an RPC caller or from the forecaster's graph-pull loop: for each `AnalystRun` that has no
+  `ForecasterRun` yet, the loop requests the legs its caller names and then records one
+  `ForecasterRun` for it, so an `AnalystRun` is forecast once. The **deployed** loop names
+  `forecast_barrier` only, fired once per buy that carries both a stop and a target; `forecast`,
+  `forecast_return` and `forecast_factor` are fired by the in-process pipeline or an RPC caller, never
+  by the deployed loop. A leg name the loop does not know is refused before any request.
+- **FORE-TRG-02** — The forecaster never self-triggers: no timer, schedule or idle loop starts work.
+  An unconsumed `AnalystRun` is an artifact another stage wrote, and finding one is a trigger, not a
+  self-trigger; a poll that finds none requests nothing.
 
 ## Outputs (`OUT`)
 
@@ -254,3 +262,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   whose probabilities clear the pre-registered bar; a ledger of its claims is what tests them live.
   `IN-07` and `IDM-04` go beyond the two clauses the spec named: determinism is an `IDM` guarantee,
   and `FORE-IDM-02` concerns the return model only. Silences found are `DRIFT-081`.
+- v1.5 — S239 follow-up / DL-241 D9 (2026-09-28, the planner's decision): the trigger. `FORE-TRG-01`
+  and `FORE-TRG-02` amended. DL-241 found no deployed process fired the poll, so no `BarrierForecast`
+  could ever be written in the fleet (F4 blocked); the forecaster's entrypoint now runs the peers'
+  graph-pull loop. The clauses said *"RPC request only"* and *"never self-triggers"*; they now name the
+  unconsumed `AnalystRun` as the trigger (an artifact, not a timer) and which legs the deployed loop
+  fires: `forecast_barrier` only, because the three advisory legs have never run in the fleet and
+  their cost there is unmeasured. No clause is weakened: event subscription and self-triggering stay
+  forbidden. Cited tests: `test_forecaster_entrypoint.py::test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only`,
+  `test_barrier_poll.py::test_an_unknown_leg_is_refused_before_any_request`, and
+  `orchestration/tests/test_forecaster_stage.py::test_the_local_pipeline_still_fires_all_four_legs`.

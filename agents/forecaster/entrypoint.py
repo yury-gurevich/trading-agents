@@ -1,7 +1,9 @@
-"""Forecaster agent entrypoint -- PRE_FLIGHT bootstrap and request serving.
+"""Forecaster agent entrypoint — graph-pull work loop (DL-08 / DL-241 D9).
 
 Agent: forecaster
-Role: EHLO to master, verify ACTIVATE, then serve request-triggered capabilities.
+Role: EHLO to master, verify the signed ACTIVATE, then poll the graph for AnalystRun
+      nodes not yet forecast and fire the deployed legs (the barrier claim only) at
+      the forecaster's own capabilities, bound on a local bus.
 External I/O: master HTTP endpoint (POST /ehlo); graph store selected from env.
 """
 
@@ -10,34 +12,50 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from agents.forecaster.agent import ForecasterAgent
-from kernel import InProcessBus
+from agents.forecaster.poll import (
+    DEPLOYED_CAPABILITIES,
+    find_pending,
+    forecast_analyst_node,
+)
+from kernel import CollectingFaultSink, InProcessBus
 from kernel.bootstrap import activate_agent, master_public_key_from_env
-from kernel.serve_loop import serve_loop
-from kernel.serve_transport import consumer_from_env
+from kernel.fault_graph import GraphFaultSink
+from kernel.graph_env import build_graph_from_env
+from kernel.work_loop import work_loop
+from kernel.work_loop_policy import poll_interval_from_env
 
 if TYPE_CHECKING:
-    from kernel import GraphStore, MessageBus
+    from kernel import FaultSink, GraphStore, MessageBus
 
 
-def build_served_bus(graph: GraphStore) -> MessageBus:
-    """Bind forecaster RPC capabilities onto a local served bus."""
+def build_served_bus(graph: GraphStore, sink: FaultSink | None = None) -> MessageBus:
+    """Bind the forecaster's capabilities onto a local bus."""
     bus = InProcessBus()
-    ForecasterAgent(bus, graph=graph).bind()
+    ForecasterAgent(bus, graph=graph, sink=sink).bind()
     return bus
 
 
-def main() -> None:  # pragma: no cover
-    """Activate with master, then serve request-triggered forecaster RPCs."""
+def main() -> None:
+    """EHLO → ACTIVATE → poll the graph for AnalystRun → forecast → repeat."""
     import os
-
-    from kernel.graph_env import build_graph_from_env
 
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
     pubkey = master_public_key_from_env()
     activate_agent(master_url, "forecaster", public_key_pem=pubkey)
+
     graph = build_graph_from_env()
-    bus = build_served_bus(graph)
-    serve_loop(consumer_from_env("forecaster", graph), bus)
+    fault_sink = GraphFaultSink(graph, CollectingFaultSink())
+    bus = build_served_bus(graph, fault_sink)
+    work_loop(
+        lambda: find_pending(graph),
+        lambda node: forecast_analyst_node(
+            node, graph=graph, bus=bus, capabilities=DEPLOYED_CAPABILITIES
+        ),
+        poll_interval=poll_interval_from_env("FORECASTER_POLL_INTERVAL"),
+        graph=graph,
+        agent="forecaster",
+        flush_faults=fault_sink.flush,
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

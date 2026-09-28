@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from agents.forecaster.poll import forecast_analyst_node
+import pytest
+
+from agents.forecaster.poll import LOCAL_CAPABILITIES, forecast_analyst_node
 from agents.forecaster.tests.barrier_helpers import (
     RecordingBus,
     barrier_bars,
@@ -75,7 +77,12 @@ def test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers() -> None:
     graph = InMemoryGraphStore()
     bus = RecordingBus()
 
-    forecast_analyst_node(_analyst_run(graph, *_MIXED), graph=graph, bus=bus)
+    forecast_analyst_node(
+        _analyst_run(graph, *_MIXED),
+        graph=graph,
+        bus=bus,
+        capabilities=LOCAL_CAPABILITIES,
+    )
 
     barrier = [m for m in bus.requests if m.capability == "forecast_barrier"]
     assert len(barrier) == 1
@@ -103,7 +110,7 @@ def test_a_full_pass_never_reaches_the_decision_path() -> None:
         *_MIXED[1:],
     )
 
-    forecast_analyst_node(run, graph=graph, bus=bus)
+    forecast_analyst_node(run, graph=graph, bus=bus, capabilities=LOCAL_CAPABILITIES)
 
     claims = graph.list_nodes("BarrierForecast")
     assert sorted(node.props["ticker"] for node in claims) == ["AAPL", "GOOG"]
@@ -117,3 +124,19 @@ def test_a_full_pass_never_reaches_the_decision_path() -> None:
         label: graph.list_nodes(label) for label in decision_labels
     } == dict.fromkeys(decision_labels, ())
     assert {m.recipient for m in bus.requests} <= {"forecaster", "provider"}
+
+
+def test_an_unknown_leg_is_refused_before_any_request() -> None:
+    """FORE-TRG-01: a caller naming a leg the forecaster has no poll for fires
+    nothing and marks nothing, rather than silently skipping it."""
+    graph = InMemoryGraphStore()
+    bus = RecordingBus()
+    run = _analyst_run(graph, *_MIXED)
+
+    with pytest.raises(ValueError, match="forecast_barier"):
+        forecast_analyst_node(
+            run, graph=graph, bus=bus, capabilities=("forecast_barier",)
+        )
+
+    assert bus.requests == []
+    assert graph.list_nodes("ForecasterRun") == ()

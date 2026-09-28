@@ -11,8 +11,8 @@
 | FORE-IN-05 | ⬜ | — |
 | FORE-IN-06 | ⬜ | — |
 | FORE-IN-07 | 🟩 | `test_malformed_barriers_record_no_claim`, `test_the_history_is_one_long_ohlcv_request_to_the_provider`, `test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers` |
-| FORE-TRG-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
-| FORE-TRG-02 | 🟩 | `test_served_forecast_is_request_triggered_shadow_only` |
+| FORE-TRG-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction`, `test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only`, `test_an_unknown_leg_is_refused_before_any_request`, `test_the_local_pipeline_still_fires_all_four_legs` |
+| FORE-TRG-02 | 🟩 | `test_served_forecast_is_request_triggered_shadow_only`, `test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only`, `test_no_agent_entrypoint_references_retired_loop` |
 | FORE-OUT-01 | 🟩 | `test_forecast_persists_and_returns_a_shadow_prediction` |
 | FORE-OUT-02 | 🟩 | `test_every_forecast_is_a_shadow_signal`, `test_served_forecast_is_request_triggered_shadow_only` |
 | FORE-OUT-03 | 🟩 | `test_scorecard_reports_samples_and_never_promotes`, `test_generic_scorecard_covers_factor_predictions_and_never_promotes` |

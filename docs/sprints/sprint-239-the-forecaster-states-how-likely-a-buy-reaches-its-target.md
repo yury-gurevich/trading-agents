@@ -625,12 +625,11 @@ blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its d
 
 **Not met / verified failing:**
 
-- **F4 cannot pass as built — not done, and not doable within this spec.** In the deployed fleet nothing calls
-  `poll.forecast_analyst_node`: only `orchestration/local_pipeline.py` runs it, the forecaster's entrypoint only
-  serves requests, and nothing else sends it one (DL-80's forecaster half, still true; DL-241 "Found while
-  building"). After a full `up`, the first scheduled run will write **no** `BarrierForecast`. Wiring a trigger
-  means breaching `FORE-TRG-01/02` (a forecaster pull loop) or changing another agent's choreography: the
-  planner's decision.
+- ~~**F4 cannot pass as built:** nothing in the fleet calls `poll.forecast_analyst_node`.~~ **Trigger built in
+  the follow-up (DL-241 D9, below).** **F4 is still blocked, verified failing by a unit test:** the deployed
+  forecaster cannot reach the provider for its 760 bars, so every buy writes two faults and no claim
+  (`test_forecaster_entrypoint.py::test_a_deployed_forecaster_cannot_reach_the_provider_yet`). The route is the
+  planner's decision (DL-241 D9, three candidates).
 - **Owed to the planner:** `uv lock` (and its audit of `arch`), Windows `make ci`, `make gate-ran` for the pushed
   SHA, F1–F3, the forecaster image size with `arch`.
 
@@ -662,4 +661,76 @@ blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its d
     what measures whether either matters.
   - `confidence` on the response is history coverage (`history_bars ÷ 760`), not calibration; the scorecard is
     what measures calibration.
-  - Nothing will be recorded in the fleet until someone decides what fires the poll (*Not met*).
+  - Nothing will be recorded in the fleet until the forecaster can reach 760 bars of history (*Not met*; the
+    trigger now exists, DL-241 D9).
+
+---
+
+## Follow-up — the trigger (DL-241 D9), 2026-09-28
+
+*The planner's decision, built on the same branch in a second cloud session (the S240 session), on top of
+`ed04936`.*
+
+**What was built.** `agents/forecaster/entrypoint.py` runs the peers' graph-pull loop
+(`work_loop(find_pending → forecast_analyst_node)`, `FORECASTER_POLL_INTERVAL`, faults to a `GraphFaultSink`
+flushed by the loop). `forecast_analyst_node` takes the legs as a required `capabilities` parameter:
+`orchestration/local_pipeline.py` passes `LOCAL_CAPABILITIES` (all four), the entrypoint passes
+`DEPLOYED_CAPABILITIES` (`forecast_barrier` only; the other three have never run in the fleet and their cost
+is unmeasured); an unknown leg is refused before any request. Forecaster laws **v1.5**: `FORE-TRG-01` /
+`FORE-TRG-02` amended (an unconsumed `AnalystRun` is the trigger, an artifact, not a self-trigger; the
+deployed loop fires `forecast_barrier` only). Count unchanged, 22 / 49, in both rollups. Rejected options
+in DL-241 D9: another agent calling the forecaster (a choreography change); leaving it unwired (F4 can never
+pass); serving and pulling in one process (a kernel change for a topic nothing sends to).
+
+**Tests** (all PASS; clause IDs in docstrings):
+
+| Test | File | Clauses |
+| --- | --- | --- |
+| `test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only` (the entrypoint wires the loop, as execution's entrypoint test does; fires `forecast_barrier` for AAPL and GOOG, none of the other three, and the run is consumed once) | `agents/forecaster/tests/test_forecaster_entrypoint.py` | `FORE-TRG-01`, `FORE-TRG-02` |
+| `test_a_deployed_forecaster_cannot_reach_the_provider_yet` (**a witness of the F4 blocker**, not a guarantee) | same | `FORE-FAIL-04` |
+| `test_an_unknown_leg_is_refused_before_any_request` | `agents/forecaster/tests/test_barrier_poll.py` | `FORE-TRG-01` |
+| `test_the_local_pipeline_still_fires_all_four_legs` | `orchestration/tests/test_forecaster_stage.py` | `FORE-TRG-01` |
+
+Existing callers updated: `test_barrier_poll.py`'s two calls pass `LOCAL_CAPABILITIES`;
+`test_served_forecast_is_request_triggered_shadow_only` is kept (the bus it builds is the one the loop uses).
+
+**DL-70 plant — the entrypoint passes all four capabilities** (`capabilities=LOCAL_CAPABILITIES`): **red**,
+
+```text
+E   AssertionError: assert [('forecast',... 'GOOG'), ...] == [('forecast_b...ier', 'GOOG')]
+E     At index 0 diff: ('forecast', 'AAPL') != ('forecast_barrier', 'AAPL')
+E     Left contains 9 more items, first extra item: ('forecast_factor', 'AAPL')
+FAILED agents/forecaster/tests/test_forecaster_entrypoint.py::test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only
+1 failed, 2 passed in 0.67s
+```
+
+restored from a copy, `cmp` byte-identical.
+
+**The forecaster app's scale rule — report only, nothing in `infra/` changed.** `infra/deploy-agents.ps1` gives
+every app in `$AGENTS` (the forecaster included) the same rule: `Get-CronScaleArgs "daily-agent-window"
+$AgentScaleStart …`, a cron scaler with `start='30 22 * * *'`, `end='30 00 * * *'`, timezone `UTC`,
+`min-replicas 0`, `max-replicas 1`, `desiredReplicas 1` (`Get-AppMaxReplicas` / `Get-AppDesiredReplicas`
+return 1 for everything but the two deliberator peers). **So yes: its window covers the 22:30 UTC run exactly
+as the analyst's and the portfolio manager's do**, and the dispatcher's 22:30 placement leaves the forecaster
+behind the analyst anyway. Two things this does not settle: the window closes at **00:30 UTC**, and how long a
+GARCH fit plus 1,000 × 10 paths takes per buy in the container is unmeasured (at ~13 approvals a session after
+S238); and the scale rule starts a replica, not work, so until the provider route exists that replica writes
+faults, not claims.
+
+**Consequences, recorded:** `forecaster.requests` stays in `orchestration/packs/trading_served_agents.json` and
+is still prepared by `deploy-agents.ps1`, but the container no longer consumes it (nothing in the code sends
+to it). Neither file changed. Deploying this follow-up **before** a provider route exists adds about two
+`Fault`s per buy per scheduled run.
+
+**Module line counts:** `entrypoint.py` 62, `poll.py` 120 (was 102), `test_forecaster_entrypoint.py` **152**
+(warn, < 200), `test_barrier_poll.py` 142, `orchestration/local_pipeline.py` **180** (was 175, already on the
+warn list), `orchestration/tests/test_forecaster_stage.py` 102.
+
+**`make ci`:** `UV_FROZEN=1 make ci > <session scratchpad>/ci-s239.txt 2>&1; echo $?` → **exit 0** (the
+S239 builder's method: the bumped `pyproject.toml` cannot be re-locked here). mypy `Success: no issues found in
+1071 source files`, import-linter `Contracts: 5 kept, 0 broken.`, pytest **3526 passed, 7 skipped**, coverage
+**100.00 %**, dependency audit `No unaccepted vulnerabilities; 1 accepted advisory re-checked`, detect-secrets
+**Passed**, untracked secrets: none to scan. **`uv.lock` untouched and owed** (as before).
+
+**Owed to the planner (unchanged plus one):** `uv lock`, Windows `make ci`, `make gate-ran` for the new pushed
+SHA, F1–F3, image size, and now **the provider route** (DL-241 D9) before F4 can pass.

@@ -25,6 +25,7 @@ from agents.monitor import poll as monitor_poll
 from agents.monitor import position_sync as monitor_position_sync
 from agents.portfolio_manager import poll as pm_poll
 from agents.portfolio_manager.settings import PortfolioManagerSettings
+from agents.provider import barrier_history as provider_barrier_history
 from agents.provider import poll as provider_poll
 from agents.reporter import poll as reporter_poll
 from agents.scanner import poll as scanner_poll
@@ -60,10 +61,12 @@ def cascade_once(
 ) -> tuple[StageResult, ...]:
     """Run one graph-pull pass over every stage in dependency order.
 
-    The forecaster is bound to the provider's bus so its legs reach `get_market_data`,
-    and its stage fires all four legs per recommendation (`LOCAL_CAPABILITIES`,
-    FORE-TRG-01; the deployed loop fires the barrier leg only). Its outputs are a
-    side branch — they never enter the conservation/PM path.
+    The forecaster is bound to the provider's bus so its advisory legs reach
+    `get_market_data`, and its stage fires all four legs per recommendation
+    (`LOCAL_CAPABILITIES`, FORE-TRG-01; the deployed loop fires the barrier leg only).
+    The barrier leg reads the `BarrierHistory` the provider's second work kind wrote
+    for the run (DL-241 D10), as in the fleet. Its outputs are a side branch — they
+    never enter the conservation/PM path.
 
     When ``deliberation_llm`` is given, an **opt-in** challenger-veto stage runs between
     the PM and execution (DL-31 Part B): it debates each approved order and records the
@@ -121,6 +124,13 @@ def cascade_once(
             partial(analyst_poll.find_pending, graph),
             partial(
                 analyst_poll.analyze_scan_node, graph=graph, settings=analyst_settings
+            ),
+        ),
+        (
+            "provider_barrier_history",
+            partial(provider_barrier_history.find_pending_barrier_history, graph),
+            partial(
+                provider_barrier_history.write_barrier_history, agent=provider_agent
             ),
         ),
         (

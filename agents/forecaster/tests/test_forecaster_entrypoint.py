@@ -1,9 +1,9 @@
 """Forecaster entrypoint tests: the deployed graph-pull loop (DL-241 D9).
 
 Agent: forecaster
-Role: verify the entrypoint runs a graph-pull loop that fires the barrier claim only,
-      that the served bus still answers a request with a shadow-only output, and that
-      a deployed forecaster's provider request fails loud (the F4 blocker).
+Role: verify the entrypoint runs a graph-pull loop that fires the barrier claim only
+      and that the served bus still answers a request with a shadow-only output (the
+      deployed route from the provider's history is in test_barrier_route.py).
 External I/O: none.
 """
 
@@ -13,13 +13,15 @@ from typing import TYPE_CHECKING
 
 import agents.forecaster.entrypoint as ep
 from agents.forecaster.entrypoint import build_served_bus
-from agents.forecaster.poll import DEPLOYED_CAPABILITIES, forecast_analyst_node
-from agents.forecaster.tests.barrier_helpers import RecordingBus
+from agents.forecaster.tests.barrier_helpers import (
+    RecordingBus,
+    barrier_bars,
+    deployed_analyst_run,
+    seed_history,
+)
 from agents.forecaster.tests.helpers import forecast_message
-from contracts.analyst import Recommendation, RecommendationSet
-from contracts.common import Explanation, Provenance
 from contracts.forecaster import ShadowPrediction
-from kernel import CollectingFaultSink, InMemoryGraphStore
+from kernel import InMemoryGraphStore
 from kernel.serve_loop import LocalRequestConsumer, serve_once
 
 if TYPE_CHECKING:
@@ -30,35 +32,6 @@ if TYPE_CHECKING:
     from kernel.graph import Node
 
 
-def _analyst_run(graph: InMemoryGraphStore) -> Node:
-    recs = tuple(
-        Recommendation.model_validate(
-            {
-                "ticker": ticker,
-                "action": action,
-                "confidence": 0.8,
-                "technical_score": 0.7,
-                "suggested_stop_pct": 0.05,
-                "suggested_target_pct": 0.07,
-                "rationale": Explanation(summary=f"{ticker} fixture"),
-            }
-        )
-        for ticker, action in (("AAPL", "buy"), ("GOOG", "buy"), ("NVDA", "sell"))
-    )
-    recommendation_set = RecommendationSet(
-        run_id="analyst-run-deployed",
-        recommendations=recs,
-        rejections=(),
-        explanation=Explanation(summary="fixture run"),
-        provenance=Provenance(run_id="analyst-run-deployed", source_agent="analyst"),
-    )
-    return graph.merge_node(
-        "AnalystRun",
-        "analyst-run-deployed",
-        {"recommendation_set": recommendation_set.model_dump(mode="json")},
-    )
-
-
 def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -66,7 +39,12 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
     and fires forecast_barrier for each buy with both barriers, and none of the
     three advisory legs."""
     graph = InMemoryGraphStore()
-    _analyst_run(graph)
+    deployed_analyst_run(graph)
+    seed_history(
+        graph,
+        barrier_bars("AAPL", 760) + barrier_bars("GOOG", 760),
+        run_key="analyst-run-deployed",
+    )
     bus = RecordingBus()
     seen: dict[str, object] = {}
 
@@ -106,32 +84,6 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
     assert callable(seen["flush"])
     fired = [(m.capability, m.payload["subject_ref"]) for m in bus.requests]
     assert fired == [("forecast_barrier", "AAPL"), ("forecast_barrier", "GOOG")]
-
-
-def test_a_deployed_forecaster_cannot_reach_the_provider_yet() -> None:
-    """FORE-FAIL-04 / DL-241 D9: a witness of the F4 blocker, not a guarantee.
-
-    The container binds only the forecaster, and the provider serves no request,
-    so the barrier leg's history request is refused: no claim, and two faults per
-    buy (the refused request, then the short-history refusal) a graph sink can
-    see. When a provider route exists this test must change.
-    """
-    graph = InMemoryGraphStore()
-    sink = CollectingFaultSink()
-    bus = build_served_bus(graph, sink)
-
-    forecast_analyst_node(
-        _analyst_run(graph), graph=graph, bus=bus, capabilities=DEPLOYED_CAPABILITIES
-    )
-
-    assert graph.list_nodes("BarrierForecast") == ()
-    assert len(graph.list_nodes("ForecasterRun")) == 1
-    assert [(f.error_type, f.message.split(":")[0]) for f in sink.faults] == [
-        ("RuntimeError", "No handler registered for provider.get_market_data"),
-        ("BarrierClaimRefusedError", "AAPL"),
-        ("RuntimeError", "No handler registered for provider.get_market_data"),
-        ("BarrierClaimRefusedError", "GOOG"),
-    ]
 
 
 def test_served_forecast_is_request_triggered_shadow_only() -> None:

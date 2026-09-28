@@ -129,17 +129,6 @@ class ForecasterSettings(AgentSettings):
     )
 
     # ── Barrier claim: GARCH(1,1)-t filtered historical simulation (S239) ────
-    barrier_history_sessions: int = tunable(
-        760,
-        why=(
-            "EXP-018: GARCH on 756 bars (~3 years) beat climatology by +2.67 % "
-            "[+1.88, +3.48]; 203 bars fell short (+1.57 %) and full history did "
-            "worse (+2.35 %). 760 adds a small margin (DL-241 D3)."
-        ),
-        ge=252,
-        le=2520,
-        unit="sessions",
-    )
     barrier_min_history_sessions: int = tunable(
         700,
         why=(

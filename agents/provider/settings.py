@@ -60,6 +60,16 @@ class ProviderSettings(ProviderFeedSettings):
         le=30,
         unit="sessions",
     )
+    barrier_history_sessions: int = tunable(
+        760,
+        why=(
+            "Daily bars kept per ticker in an AnalystRun's BarrierHistory: EXP-018's "
+            "GARCH clears its bar at 756 bars (~3 years), not at 203 (DL-241 D3/D10)."
+        ),
+        ge=252,
+        le=2520,
+        unit="sessions",
+    )
     vix_risk_on_threshold: float = tunable(
         15.0,
         why="Low-volatility VIX level where risk-on defaults may apply.",

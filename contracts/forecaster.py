@@ -19,6 +19,8 @@ class ForecastRequest(_Frozen):
     subject_kind: Literal["recommendation", "position"]
     subject_ref: str
     features: dict[str, float]
+    history_ref: str | None = None
+    """forecast_barrier only: the provider's BarrierHistory key to read bars from."""
 
 
 class ScorecardRequest(_Frozen):

@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -33,19 +33,22 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   }`. Same offline-injection contract.
 - **FORE-IN-06** — Malformed input → degraded response or empty scorecard; fault recorded; never
   raises to bus.
-- **FORE-IN-07** — `forecast_barrier` accepts `ForecastRequest`: `subject_ref` is the ticker and
+- **FORE-IN-07** — `forecast_barrier` accepts `ForecastRequest`: `subject_ref` is the ticker,
   `features` carries a buy's `stop_pct` and `target_pct`, each a fraction of the entry close in
-  (0, 1]. A request missing either, or with either outside that range, is refused before any
-  provider request: no claim, a fault, and the `FORE-OUT-06` neutral reading, never a raise to the
-  bus. The stock's history is one OHLCV request to the provider over a calendar window holding at
-  least `barrier_history_sessions` sessions.
+  (0, 1], and `history_ref` names the `BarrierHistory` the provider wrote for the run. A request
+  missing either barrier, or with either outside that range, is refused before the history is read:
+  no claim, a fault, and the `FORE-OUT-06` neutral reading, never a raise to the bus. The stock's
+  daily bars are read **only** from that provider-written node, never requested over the bus; no
+  named node, a node that does not hold the ticker, a ticker the provider dropped, or a failed node
+  is a refusal (`FORE-FAIL-04`).
 
 ## Triggers (`TRG`)
 
 - **FORE-TRG-01** — Every capability runs on a request, never on an event subscription. A request
   comes from an RPC caller or from the forecaster's graph-pull loop: for each `AnalystRun` that has no
-  `ForecasterRun` yet, the loop requests the legs its caller names and then records one
-  `ForecasterRun` for it, so an `AnalystRun` is forecast once. The **deployed** loop names
+  `ForecasterRun` yet (and, when it holds a buy with both a stop and a target, whose `BarrierHistory`
+  the provider has written; a run with no such buy never waits), the loop requests the legs its
+  caller names and then records one `ForecasterRun` for it, so an `AnalystRun` is forecast once. The **deployed** loop names
   `forecast_barrier` only, fired once per buy that carries both a stop and a target; `forecast`,
   `forecast_return` and `forecast_factor` are fired by the in-process pipeline or an RPC caller, never
   by the deployed loop. A leg name the loop does not know is refused before any request.
@@ -71,17 +74,17 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   over the next 10 sessions the price reaches the stop first (`p_stop_first`), the target first
   (`p_target_first`) or neither (`p_neither`). Within a session the low is checked before the high,
   so a session touching both counts as the stop; the three sum to 1. The model is EXP-018's:
-  GARCH(1,1) with Student-t innovations fitted on the stock's own last `barrier_history_sessions`
-  daily bars, persistence above 0.999 scaled in proportion to 0.999 (`capped`), and
-  `barrier_paths` filtered-historical-simulation paths. On success it writes exactly one
-  `BarrierForecast` node, the claim, carrying `ticker`, `as_of` (the last bar's date),
-  `entry_close` (that bar's close), `horizon_sessions`, `stop_pct`, `target_pct`, the three
-  probabilities, `model_id`, `model_version`, `history_bars`, `n_paths`, `seed`, `fit_status`
-  (`accepted` | `capped`), the fitted `garch_mu` / `garch_omega` / `garch_alpha` / `garch_beta`,
-  `created_at` and `shadow: true`, and returns a `ShadowPrediction` whose `value` is
-  `p_target_first` and whose `confidence` is `history_bars ÷ barrier_history_sessions` (at most
-  1). It writes no `ShadowPrediction` node. The claim is advisory evidence only
-  (`FORE-NEV-01/02`).
+  GARCH(1,1) with Student-t innovations fitted on the stock's own daily bars as the provider's
+  `BarrierHistory` holds them (at most its `sessions_requested`), persistence above 0.999 scaled in
+  proportion to 0.999 (`capped`), and `barrier_paths` filtered-historical-simulation paths. On
+  success it writes exactly one `BarrierForecast` node, the claim, carrying `ticker`, `as_of` (the
+  last bar's date), `entry_close` (that bar's close), `horizon_sessions`, `stop_pct`, `target_pct`,
+  the three probabilities, `model_id`, `model_version`, `history_bars`, `history_ref` (the
+  `BarrierHistory` the bars were read from), `n_paths`, `seed`, `fit_status` (`accepted` |
+  `capped`), the fitted `garch_mu` / `garch_omega` / `garch_alpha` / `garch_beta`, `created_at` and
+  `shadow: true`, and returns a `ShadowPrediction` whose `value` is `p_target_first` and whose
+  `confidence` is `history_bars ÷` the history's `sessions_requested` (at most 1). It writes no
+  `ShadowPrediction` node. The claim is advisory evidence only (`FORE-NEV-01/02`).
 
 ## Prohibitions (`NEV`)
 
@@ -92,8 +95,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   CloseDecision.
 - **FORE-NEV-03** — Never self-promotes a model. `promotion_eligible=False` is structurally
   set on all Scorecard outputs; promotion is exclusively the curator's domain.
-- **FORE-NEV-04** — Never calls a data source directly; market data and news are requested from
-  the provider via the bus.
+- **FORE-NEV-04** — Never calls a data source directly; market data and news come only from the
+  provider: requested over the bus, or read from a node the provider wrote (the barrier history,
+  `FORE-IN-07`).
 
 ## State & effects (`STA`)
 
@@ -114,9 +118,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **FORE-IDM-04** — A barrier claim is deterministic given the same bars and barriers: the
   simulation's seed is a stable hash of `(ticker, as_of)` (the first four bytes of sha-256 over
   `ticker:as_of`), never a per-process salted hash. The claim is keyed by model, ticker and last bar
-  date, so a second call on the same last bar merges into the same node; a second call that would
-  state a different claim under that key is refused with a fault and the `FORE-OUT-06` neutral
-  reading, and the first claim stands.
+  date, so a second call on the same last bar merges into the same node, keeping the first call's
+  `created_at` and `history_ref`; a second call that would state a different claim under that key
+  is refused with a fault and the `FORE-OUT-06` neutral reading, and the first claim stands.
 
 ## Ordering & concurrency (`ORD`)
 
@@ -135,8 +139,10 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **FORE-FAIL-04** — `forecast_barrier` records a claim only from a successful fit on enough
   history. A fit outside EXP-018's acceptance rule (not converged, ω ≤ 0, α < 0, β < 0, or
   α + β > 1 beyond 1e-9), an optimiser exception, an absent `arch`, fewer than
-  `barrier_min_history_sessions` bars, or a provider error writes no `BarrierForecast`, records a
-  fault, and returns the `FORE-OUT-06` neutral reading. A claim is never fabricated: no default,
+  `barrier_min_history_sessions` bars, no named `BarrierHistory`, or a ticker the provider dropped
+  or a history it wrote as failed (the fault says `provider dropped: <the provider's reason>`,
+  distinct from short history) writes no `BarrierForecast`, records a fault, and returns the
+  `FORE-OUT-06` neutral reading. A claim is never fabricated: no default,
   fake, cached or earlier run's parameters stand in for a failed fit.
 
 ## Type alignment (`TYP`)
@@ -233,8 +239,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `factor_name` | `""` | `str` | YES | Approved catalogue factor to shadow; empty keeps approved-factor shadowing disabled |
 | `factor_params` | `""` | `str` | YES | Operator-approved catalogue params for that factor, e.g. `lookback=60` |
 | `factor_model_id` | `""` | `str` | YES | Optional explicit factor scorecard key; empty derives it from the selection |
-| `barrier_history_sessions` | `760` | `int ≥ 252 ≤ 2520` | YES | Sessions of the stock's own daily history the barrier model fits and simulates on; EXP-018 measured its skill at 756 bars (+2.67 %), short of the bar at 203 and weaker on full history (DL-241 D3) |
-| `barrier_min_history_sessions` | `700` | `int ≥ 252 ≤ 2520` | YES | Fewer fetched bars than this and no claim is stated (`FORE-FAIL-04`) |
+| `barrier_min_history_sessions` | `700` | `int ≥ 252 ≤ 2520` | YES | Fewer bars in the provider's history than this and no claim is stated (`FORE-FAIL-04`); the depth itself is the provider's `barrier_history_sessions` (DL-241 D10) |
 | `barrier_paths` | `1000` | `int ≥ 100 ≤ 10000` | YES | Simulated paths per barrier claim, as EXP-018; probabilities move in steps of 1 ÷ paths |
 
 ## Divergence register
@@ -272,3 +277,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   forbidden. Cited tests: `test_forecaster_entrypoint.py::test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only`,
   `test_barrier_poll.py::test_an_unknown_leg_is_refused_before_any_request`, and
   `orchestration/tests/test_forecaster_stage.py::test_the_local_pipeline_still_fires_all_four_legs`.
+- v1.6 — S239 second follow-up / DL-241 D10 (2026-09-28, the planner's decision): the route. D9 left
+  the deployed barrier leg unable to reach the provider for its bars (F4 blocked). The provider now
+  writes a `BarrierHistory` per `AnalystRun` with qualifying buys, and the forecaster reads it:
+  `FORE-IN-07` (the bars come only from that node, named by `ForecastRequest.history_ref`, never over
+  the bus), `FORE-TRG-01` (the loop waits for the node when the run has a qualifying buy),
+  `FORE-OUT-07` (the claim records `history_ref`; `confidence` is over the history's
+  `sessions_requested`), `FORE-IDM-04` (a rerun keeps the first `history_ref`), `FORE-FAIL-04` (a
+  dropped ticker or a failed history refuses as `provider dropped: <reason>`), `FORE-NEV-04` (market
+  data comes only from the provider: over the bus, or from a node the provider wrote; read literally,
+  the old wording forbade the route). `PARAM`: `barrier_history_sessions` moves to the provider, which
+  owns the fetch depth. No clause added; 22 / 49 unchanged.

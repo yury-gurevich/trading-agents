@@ -16,6 +16,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from contracts.analyst import RecommendationSet
+from contracts.barrier_history import (
+    BARRIER_HISTORY_LABEL,
+    barrier_buys,
+    barrier_history_key,
+)
 from contracts.forecaster import ForecastRequest
 from kernel import AgentMessage
 
@@ -38,13 +43,28 @@ DEPLOYED_CAPABILITIES = (BARRIER_CAPABILITY,)
 
 
 def find_pending(graph: GraphStore) -> list[Node]:
-    """Return AnalystRun nodes with no downstream ForecasterRun (unprocessed work)."""
+    """Return AnalystRun nodes with no ForecasterRun that are ready to forecast.
+
+    A run holding a buy with both barriers waits until the provider has written its
+    BarrierHistory (DL-241 D10); a run with no such buy never waits.
+    """
     pending: list[Node] = []
     for node in graph.list_nodes(ANALYST_RUN_LABEL):
         done = list(graph.descendants(node, max_depth=1, edge_types={FORECAST_EDGE}))
-        if not done:
+        if not done and _history_ready(graph, node):
             pending.append(node)
     return pending
+
+
+def _history_ready(graph: GraphStore, node: Node) -> bool:
+    raw = node.props.get("recommendation_set")
+    if raw is None:  # no recommendations to wait for; processing reports the gap
+        return True
+    if not barrier_buys(RecommendationSet.model_validate(raw)):
+        return True
+    return (
+        graph.get_node(BARRIER_HISTORY_LABEL, barrier_history_key(node.key)) is not None
+    )
 
 
 def forecast_analyst_node(
@@ -69,13 +89,17 @@ def forecast_analyst_node(
         node.props["recommendation_set"]
     )
     advisory = [name for name in ADVISORY_CAPABILITIES if name in capabilities]
+    barrier = {id(rec) for rec in barrier_buys(recommendation_set)}
     for recommendation in recommendation_set.recommendations:
         for capability in advisory:
             _request_forecast(bus, capability, recommendation.ticker)
-        barriers = _barrier_features(recommendation)
-        if barriers is not None and BARRIER_CAPABILITY in capabilities:
+        if id(recommendation) in barrier and BARRIER_CAPABILITY in capabilities:
             _request_forecast(
-                bus, BARRIER_CAPABILITY, recommendation.ticker, features=barriers
+                bus,
+                BARRIER_CAPABILITY,
+                recommendation.ticker,
+                features=_barrier_features(recommendation),
+                history_ref=barrier_history_key(node.key),
             )
     forecaster_run = graph.merge_node(
         FORECASTER_RUN_LABEL,
@@ -88,13 +112,12 @@ def forecast_analyst_node(
     graph.add_edge(node, forecaster_run, FORECAST_EDGE)
 
 
-def _barrier_features(recommendation: Recommendation) -> dict[str, float] | None:
-    """A buy's stop and target as request features, or None when it lacks one."""
-    stop = recommendation.suggested_stop_pct
-    target = recommendation.suggested_target_pct
-    if recommendation.action != "buy" or stop is None or target is None:
-        return None
-    return {"stop_pct": stop, "target_pct": target}
+def _barrier_features(recommendation: Recommendation) -> dict[str, float]:
+    """A qualifying buy's stop and target as request features."""
+    return {
+        "stop_pct": float(recommendation.suggested_stop_pct or 0.0),
+        "target_pct": float(recommendation.suggested_target_pct or 0.0),
+    }
 
 
 def _request_forecast(
@@ -103,6 +126,7 @@ def _request_forecast(
     ticker: str,
     *,
     features: dict[str, float] | None = None,
+    history_ref: str | None = None,
 ) -> None:
     """Fire one advisory forecast RPC; the forecaster persists the shadow output."""
     bus.request(
@@ -115,6 +139,7 @@ def _request_forecast(
                 subject_kind="recommendation",
                 subject_ref=ticker,
                 features=features or {},
+                history_ref=history_ref,
             ).model_dump(mode="json"),
         )
     )

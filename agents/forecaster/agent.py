@@ -134,7 +134,6 @@ class ForecasterAgent(AgentBase):
     def _forecast_barrier(self, request: BaseModel) -> ShadowPrediction:
         return forecast_barrier(
             self._graph,
-            self.bus,
             self.sink,
             self._settings,
             self._barrier_fitter,

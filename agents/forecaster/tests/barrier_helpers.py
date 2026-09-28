@@ -1,24 +1,29 @@
 """Barrier-claim test helpers.
 
 Agent: forecaster
-Role: wire a provider + forecaster pair for forecast_barrier with a fake GARCH
-      fitter, build multi-year bar fixtures and request messages, and record every
-      bus request so a test can see exactly what was asked of whom.
+Role: wire the forecaster alone (as deployed) with a fake GARCH fitter, seed the
+      provider-written BarrierHistory it reads (DL-241 D10), build multi-year bar
+      fixtures and request messages, and record every bus request.
 External I/O: none.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from agents.forecaster import ForecasterAgent
 from agents.forecaster.barrier_fit import FakeGarchFitter
 from agents.forecaster.domain.barrier_garch import RawGarchFit
 from agents.forecaster.tests.barrier_fixture import ohlc_series
-from agents.provider import ProviderAgent
-from agents.provider.settings import ProviderSettings
-from agents.provider.sources import FakeDataSource
+from contracts.analyst import Recommendation, RecommendationSet
+from contracts.barrier_history import (
+    BARRIER_HISTORY_LABEL,
+    BarrierHistory,
+    TickerHistory,
+    barrier_history_key,
+)
+from contracts.common import Explanation, Provenance
 from contracts.forecaster import ForecastRequest
 from contracts.provider import OHLCVBar
 from kernel import AgentMessage, CollectingFaultSink, InMemoryGraphStore, InProcessBus
@@ -28,8 +33,11 @@ if TYPE_CHECKING:
 
     from agents.forecaster.barrier_fit import GarchFitter
     from agents.forecaster.settings import ForecasterSettings
-    from kernel import GraphStore
+    from kernel import GraphStore, Node
 
+#: The AnalystRun every seeded history belongs to, and that history's key.
+RUN_KEY = "analyst-run-s239"
+HISTORY_KEY = barrier_history_key(RUN_KEY)
 #: A fit EXP-018's rule accepts as it stands (alpha + beta = 0.95).
 ACCEPTED = RawGarchFit(mu=0.02, omega=0.05, alpha=0.05, beta=0.90, converged=True)
 
@@ -68,26 +76,57 @@ def barrier_bars(
     )
 
 
+def seed_history(
+    graph: GraphStore,
+    bars: tuple[OHLCVBar, ...],
+    *,
+    run_key: str = RUN_KEY,
+    sessions: int = 760,
+    dropped: dict[str, str] | None = None,
+    status: Literal["ok", "failed"] = "ok",
+    reason: str | None = None,
+) -> str:
+    """Write a BarrierHistory as the provider's contract shapes it; return its key."""
+    histories: dict[str, TickerHistory] = {}
+    for ticker in dict.fromkeys(bar.ticker for bar in bars):
+        kept = [bar for bar in bars if bar.ticker == ticker][-sessions:]
+        rows = tuple(
+            (b.bar_date.isoformat(), b.open, b.high, b.low, b.close) for b in kept
+        )
+        histories[ticker] = TickerHistory(bars=rows, bar_count=len(rows))
+    today = datetime.now(tz=UTC).date()
+    history = BarrierHistory(
+        analyst_run_key=run_key,
+        status=status,
+        reason=reason,
+        window_start=today - timedelta(days=1125),
+        window_end=today,
+        sessions_requested=sessions,
+        requested=(*histories, *(dropped or {})),
+        histories=histories,
+        dropped=dropped or {},
+        created_at=datetime.now(tz=UTC),
+    )
+    key = barrier_history_key(run_key)
+    graph.merge_node(BARRIER_HISTORY_LABEL, key, history.model_dump(mode="json"))
+    return key
+
+
 def wire_barrier(
     *,
     bars: tuple[OHLCVBar, ...] = (),
     fitter: GarchFitter | None = None,
     settings: ForecasterSettings | None = None,
     graph: GraphStore | None = None,
-    fail_ohlcv: bool = False,
-    register_provider: bool = True,
+    dropped: dict[str, str] | None = None,
+    status: Literal["ok", "failed"] = "ok",
+    reason: str | None = None,
 ) -> tuple[RecordingBus, GraphStore, CollectingFaultSink]:
-    """Bind a fake-source provider and a forecaster onto one recording bus."""
+    """Bind the forecaster alone (as deployed) and seed the run's BarrierHistory."""
     bus = RecordingBus()
     store: GraphStore = graph if graph is not None else InMemoryGraphStore()
     sink = CollectingFaultSink()
-    if register_provider:
-        ProviderAgent(
-            bus,
-            graph=store,
-            source=FakeDataSource(bars=bars, fail_ohlcv=fail_ohlcv),
-            settings=ProviderSettings(max_staleness_days=7),
-        ).bind()
+    seed_history(store, bars, dropped=dropped, status=status, reason=reason)
     ForecasterAgent(
         bus,
         graph=store,
@@ -104,8 +143,9 @@ def barrier_message(
     stop_pct: float = 0.05,
     target_pct: float = 0.06,
     features: dict[str, float] | None = None,
+    history_ref: str | None = HISTORY_KEY,
 ) -> AgentMessage:
-    """A forecast_barrier request carrying a buy's stop and target."""
+    """A forecast_barrier request carrying a buy's stop, target and history ref."""
     return AgentMessage(
         sender="tester",
         recipient="forecaster",
@@ -119,5 +159,36 @@ def barrier_message(
                 if features is not None
                 else {"stop_pct": stop_pct, "target_pct": target_pct}
             ),
+            history_ref=history_ref,
         ).model_dump(mode="json"),
+    )
+
+
+def deployed_analyst_run(graph: GraphStore) -> Node:
+    """An AnalystRun with two buys carrying both barriers (AAPL, GOOG) and a sell."""
+    recs = tuple(
+        Recommendation.model_validate(
+            {
+                "ticker": ticker,
+                "action": action,
+                "confidence": 0.8,
+                "technical_score": 0.7,
+                "suggested_stop_pct": 0.05,
+                "suggested_target_pct": 0.07,
+                "rationale": Explanation(summary=f"{ticker} fixture"),
+            }
+        )
+        for ticker, action in (("AAPL", "buy"), ("GOOG", "buy"), ("NVDA", "sell"))
+    )
+    recommendation_set = RecommendationSet(
+        run_id="analyst-run-deployed",
+        recommendations=recs,
+        rejections=(),
+        explanation=Explanation(summary="fixture run"),
+        provenance=Provenance(run_id="analyst-run-deployed", source_agent="analyst"),
+    )
+    return graph.merge_node(
+        "AnalystRun",
+        "analyst-run-deployed",
+        {"recommendation_set": recommendation_set.model_dump(mode="json")},
     )

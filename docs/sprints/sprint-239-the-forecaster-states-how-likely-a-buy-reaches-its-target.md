@@ -492,9 +492,9 @@ All in `agents/forecaster/tests/`; every row PASS in the final `make ci` run (se
 | A2 | `test_the_simulation_equals_exp018` ×3 (+ `test_the_oracle_is_the_experiments_code`, `test_daily_moves_are_the_experiments`) | `test_barrier_garch_oracle.py` | PASS | `FORE-OUT-07` |
 | A3 | `test_a_fit_is_accepted_or_capped_as_exp018_did` ×3, `test_the_boundary_tolerance_is_exp018s`, `test_every_other_fit_fails` ×6 | `test_barrier_garch.py` | PASS | `FORE-FAIL-04`, `FORE-OUT-07` |
 | A4 | `test_a_successful_call_writes_one_complete_claim`, `test_the_claim_passes_the_packs_vocabulary_guard` | `test_barrier_claim.py` | PASS | `FORE-OUT-07`, `FORE-IDN-02` |
-| A5 | `test_a_failed_fit_records_no_claim`, `test_a_fitter_exception_records_no_claim`, `test_short_history_records_no_claim_and_never_fits` (650 bars), `test_a_degraded_provider_records_no_claim`, `test_a_provider_error_records_no_claim`, `test_without_arch_the_default_fitter_records_no_claim` | `test_barrier_refusals.py` | PASS | `FORE-FAIL-04` (+ `FORE-NEV-04`, `FORE-FAIL-02` where the provider is the cause) |
+| A5 | `test_a_failed_fit_records_no_claim`, `test_a_fitter_exception_records_no_claim`, `test_short_history_records_no_claim_and_never_fits` (650 bars), `test_without_arch_the_default_fitter_records_no_claim`; **since D10** the provider cases are `test_a_ticker_the_provider_dropped_records_no_claim`, `test_a_failed_history_records_no_claim`, `test_no_named_history_records_no_claim` ×2 (they replace `test_a_degraded_provider_records_no_claim` / `test_a_provider_error_records_no_claim`, which tested the bus fetch D10 removed) | `test_barrier_refusals.py` | PASS | `FORE-FAIL-04`, `FORE-IN-07` |
 | A6 | `test_the_same_bars_give_the_same_claim_merged_into_one_node`, `test_a_different_claim_for_the_same_last_bar_is_refused`, `test_the_seed_is_stable_across_processes` (a child interpreter with `PYTHONHASHSEED=random`, plus the pinned value `3333665949` for `AAPL:2026-09-25`) | `test_barrier_claim.py` | PASS | `FORE-IDM-04` — **not** `FORE-IDM-02`, which is about the return model (Law reading record) |
-| A7 | `test_the_history_is_one_long_ohlcv_request_to_the_provider` | `test_barrier_refusals.py` | PASS | `FORE-NEV-04`, `FORE-IN-07` |
+| A7 | **Superseded by D10**: the barrier leg no longer asks the provider over the bus. The long-history request is now the provider's, proven by `test_only_buys_with_both_barriers_get_a_history_from_one_fetch` (one OHLCV request, exactly the qualifying tickers, 1,125 days ending today, ≤ 760 bars kept); "no bus fetch" is asserted in every refusal test and in `test_a_successful_call_writes_one_complete_claim` (`test_the_history_is_one_long_ohlcv_request_to_the_provider` was removed) | `agents/provider/tests/test_barrier_history.py`; `test_barrier_refusals.py` | PASS | `PROV-OUT-08`, `PROV-TRG-04`; `FORE-NEV-04`, `FORE-IN-07` |
 | A8 | `test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers` | `test_barrier_poll.py` | PASS | `FORE-IN-07`, `FORE-TRG-01` |
 | A9 | `test_a_full_pass_never_reaches_the_decision_path` | `test_barrier_poll.py` | PASS | `FORE-NEV-02`, `FORE-OUT-07` |
 
@@ -626,10 +626,11 @@ blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its d
 **Not met / verified failing:**
 
 - ~~**F4 cannot pass as built:** nothing in the fleet calls `poll.forecast_analyst_node`.~~ **Trigger built in
-  the follow-up (DL-241 D9, below).** **F4 is still blocked, verified failing by a unit test:** the deployed
-  forecaster cannot reach the provider for its 760 bars, so every buy writes two faults and no claim
-  (`test_forecaster_entrypoint.py::test_a_deployed_forecaster_cannot_reach_the_provider_yet`). The route is the
-  planner's decision (DL-241 D9, three candidates).
+  the follow-up (DL-241 D9, below).** ~~**F4 is still blocked:** the deployed forecaster cannot reach the provider
+  for its 760 bars.~~ **Route built in the second follow-up (DL-241 D10, below):** the provider writes a
+  `BarrierHistory` per `AnalystRun`; the witness test flipped into
+  `test_barrier_route.py::test_a_deployed_forecaster_claims_from_the_provider_written_history` (one claim per
+  qualifying buy, no fault). **F4 itself is owed** (a live run after a full `up`); nothing here proves it.
 - **Owed to the planner:** `uv lock` (and its audit of `arch`), Windows `make ci`, `make gate-ran` for the pushed
   SHA, F1–F3, the forecaster image size with `arch`.
 
@@ -659,10 +660,12 @@ blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its d
     the ticker (DL-241).
   - The fit is per call, not per month as in EXP-018, and 760 bars are 759 moves where EXP-018 fitted 756: F1 is
     what measures whether either matters.
-  - `confidence` on the response is history coverage (`history_bars ÷ 760`), not calibration; the scorecard is
-    what measures calibration.
-  - Nothing will be recorded in the fleet until the forecaster can reach 760 bars of history (*Not met*; the
-    trigger now exists, DL-241 D9).
+  - `confidence` on the response is history coverage (`history_bars ÷` the history's `sessions_requested`, 760),
+    not calibration; the scorecard is what measures calibration.
+  - **Since D10** every claim names its `history_ref`: the `BarrierHistory` whose bars it was fitted on, so a
+    settlement or replay can re-derive the claim exactly from the graph. The 8σ guard now runs pooled over the
+    run's qualifying tickers in one batch (not one ticker at a time), and a ticker it excludes is a named
+    `provider dropped: extreme_move_guard…` fault, never a silent gap.
 
 ---
 
@@ -734,3 +737,147 @@ S239 builder's method: the bumped `pyproject.toml` cannot be re-locked here). my
 
 **Owed to the planner (unchanged plus one):** `uv lock`, Windows `make ci`, `make gate-ran` for the new pushed
 SHA, F1–F3, image size, and now **the provider route** (DL-241 D9) before F4 can pass.
+
+---
+
+## Second follow-up — the route: the provider writes the claim's history (DL-241 D10), 2026-09-28
+
+*The planner's decision, built on the same branch by the original S239 cloud session, on top of `bd2ee71`.*
+
+**`main` merged first.** `origin/main` `587ba26` (S240 as `v0.117.05`, then its docs) was **merged** into the
+branch (`0b874d5`), not rebased: the branch was already pushed, and a merge keeps its history valid without a
+force-push. Conflicts in `pyproject.toml` (kept **`0.118.00`**, S239's MINOR, on top of `0.117.05`),
+`docs/laws/ledger.md` (the forecaster row from the branch, the PM row from `main`), `docs/design-log.md`
+(DL-242 above DL-241), `docs/STATE.md` (`main`'s header) and the sprint `README` / `INDEX` rows (S239's from
+the branch, S240's from `main`).
+
+**What was built.**
+
+- **Provider — a second work kind** (the execution / monitor `find_pending_work` pattern):
+  `agents/provider/poll.py` returns `ProviderWorkItem("ingest" | "barrier_history")`, ingests first;
+  `process_work_item` dispatches; the entrypoint's `work_loop` uses both. The new code is in
+  `agents/provider/barrier_history.py` (outside `domain/`): `find_pending_barrier_history` (an `AnalystRun`
+  with ≥ 1 buy carrying both barriers and no `BarrierHistory`) and `write_barrier_history` — **one**
+  `DataRequest(tickers=<exactly those>, fields=("ohlcv",))` through `ProviderAgent._get_market_data` (the
+  source's SIP feed and its 16-minute end rule, `validate_bars` and the **unchanged** 8σ guard), window
+  ⌈760 × 365.25 ÷ 250⌉ + 14 = **1,125** days ending today, then **one** node
+  `BarrierHistory:barrier-history:{analyst_run_key}` and the edge `AnalystRun -BARRIER_HISTORY_BY->
+  BarrierHistory`. Per ticker the last ≤ 760 bars as `[date, open, high, low, close]` and `bar_count`;
+  `dropped` names every requested ticker without bars (`extreme_move_guard: …` or
+  `no_bars_returned: stale_or_missing`); `stale` lists served tickers past the staleness limit; a failed fetch
+  (the source's `source_unavailable`, or any exception in the path) writes `status: failed`, the reason, and
+  every ticker dropped with it.
+- **The shared vocabulary** is `contracts/barrier_history.py`: the label, the edge, the key, the payload model
+  and `barrier_buys` (the one qualifying rule both agents use). `contracts/provider.py` owns `BarrierHistory`
+  (contract `0.7.0`); `ForecastRequest` gains optional `history_ref` (`contracts/forecaster.py`).
+- **Forecaster.** `find_pending` waits for the run's `BarrierHistory` when the run holds a qualifying buy (and
+  never when it has none; a run with no recommendation set is not a qualifying run, so a malformed node cannot
+  stall the loop). `forecast_analyst_node` names the history in each barrier request (`history_ref`).
+  `forecast_barrier` reads the bars **only** from that node (one path, fleet and local pipeline); the bus
+  request, `_window` and the forecaster's `barrier_history_sessions` tunable are gone (the depth is now the
+  provider's tunable). Refusals: `provider dropped: <the provider's reason>` for a dropped ticker or a failed
+  node, distinct from `N bars < barrier_min_history_sessions`; no named / unknown node; a ticker the node
+  never requested. The claim records `history_ref` (kept from the first write on a rerun, like `created_at`).
+- **Local pipeline:** a `provider_barrier_history` stage between the analyst and the forecaster.
+- **Vocabulary pack:** label `BarrierHistory`, its 11 properties, edge type `BARRIER_HISTORY_BY` and the
+  signature `[AnalystRun, BARRIER_HISTORY_BY, BarrierHistory]`; `history_ref` joins `BarrierForecast`'s
+  properties. The node's props are written as a literal dict so the property scan can check them.
+
+**Law cycle.** Provider **v1.4 → v1.5**: new `PROV-TRG-04` (the `AnalystRun` trigger) and `PROV-OUT-08` (one
+request, one node, dropped tickers named, a failed fetch still written), `PROV-IDN-03` and `CAP` own
+`BarrierHistory`, `PROV-TRG-02` reconciled with graph-pull (it said "no polling" while the provider has pulled
+`RunRequest`s since DL-08), `PARAM` `barrier_history_sessions`; **18 / 63 → 20 / 65** in both rollups.
+Forecaster **v1.5 → v1.6**: `FORE-IN-07` (bars only from the provider-written node, named by `history_ref`),
+`FORE-TRG-01` (the wait), `FORE-OUT-07` (`history_ref`; confidence over `sessions_requested`), `FORE-IDM-04`,
+`FORE-FAIL-04` (`provider dropped`), `FORE-NEV-04`, the `PARAM` row moved; **22 / 49** unchanged.
+`DRIFT-082` (OPEN): `PROV-TRG-01` still says "only a request event"; it is 🟩 on a pub/sub test, left for the
+planner. **One disagreement, stated:** the brief says `FORE-NEV-04` "still holds". Its text was *"market data
+and news are requested from the provider via the bus"*, which read literally forbids reading bars from the
+graph, so v1.6 widens it to "come only from the provider: over the bus, or from a node the provider wrote".
+The prohibition (never a data source directly) is unchanged.
+
+**Tests** (all PASS; clause IDs in docstrings):
+
+| Test | File | Clauses |
+| --- | --- | --- |
+| `test_only_buys_with_both_barriers_get_a_history_from_one_fetch` (AAPL + GOOG only, from a buy, a buy missing its target, a sell, a hold and a second buy; one fetch; 1,125 days; 760 bars; linked) | `agents/provider/tests/test_barrier_history.py` | `PROV-TRG-04`, `PROV-OUT-08` |
+| `test_a_run_without_a_qualifying_buy_gets_no_history` | same | `PROV-TRG-04` |
+| `test_the_history_passes_the_packs_vocabulary_guard` | same | `PROV-IDN-03`, `PROV-OUT-08` |
+| `test_the_provider_loop_carries_both_work_kinds` | same | `PROV-TRG-04` |
+| `test_a_failed_fetch_still_writes_a_failed_node`, `test_an_exception_in_the_fetch_path_still_writes_a_failed_node` | `agents/provider/tests/test_barrier_history_failures.py` | `PROV-OUT-08`, `PROV-FAIL-01` |
+| `test_a_dropped_ticker_carries_its_named_reason` (the 8σ guard's exclusion, a ticker served nothing, a stale ticker kept) | same | `PROV-OUT-08`, `PROV-FAIL-02` |
+| `test_the_forecaster_waits_for_the_runs_barrier_history`, `test_a_run_with_no_qualifying_buy_never_waits` | `agents/forecaster/tests/test_barrier_poll.py` | `FORE-IN-07`, `FORE-TRG-01` |
+| `test_a_ticker_the_provider_dropped_records_no_claim`, `test_a_failed_history_records_no_claim`, `test_no_named_history_records_no_claim` ×2, `test_a_ticker_the_history_never_requested_records_no_claim` | `agents/forecaster/tests/test_barrier_refusals.py` | `FORE-FAIL-04`, `FORE-IN-07` |
+| **`test_a_deployed_forecaster_claims_from_the_provider_written_history`** — the flipped `test_a_deployed_forecaster_cannot_reach_the_provider_yet` (renamed: the old name would now be false). Two loops sharing only the graph: the forecaster waits, the provider writes, then one claim each for AAPL and GOOG, 760 bars, **no fault**, no provider request on the forecaster's bus | `agents/forecaster/tests/test_barrier_route.py` | `FORE-IN-07`, `FORE-OUT-07`, `FORE-NEV-04`, `PROV-OUT-08` |
+| `test_a_failed_fetch_never_leaves_the_forecaster_waiting` (bounded: three passes of both loops against a failing source; the run is consumed with a failed node, a `ForecasterRun`, no claim, one `provider dropped` fault per buy) | same | `FORE-FAIL-04`, `FORE-TRG-01`, `PROV-OUT-08` |
+| `test_the_local_pipeline_claims_from_the_provider_written_history` (end to end, fake fitter: one `BarrierForecast` per qualifying buy, each naming the run's history) | `orchestration/tests/test_forecaster_stage.py` | `FORE-IN-07`, `FORE-OUT-07`, `PROV-OUT-08` |
+
+Updated for the route: the claim / refusal helpers seed a `BarrierHistory` (the forecaster is bound alone, as
+deployed); `test_graph_pull_e2e` and `test_drop_sweep_cascade` count the new `provider_barrier_history` stage;
+`test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only` seeds the history it now waits for.
+
+**DL-70 plants** (each planted on the final tree, run, restored from a copy, `cmp` byte-identical):
+
+1. **The provider writes a node for a sell** (`_qualifying_tickers` takes any recommendation with both
+   barriers) → **red**:
+
+   ```text
+   E   AssertionError: assert ('AAPL', 'NVD...AMZN', 'GOOG') == ('AAPL', 'GOOG')
+   E   AssertionError: assert [Node(label='...ma_version=1)] == []
+   FAILED agents/provider/tests/test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch
+   FAILED agents/provider/tests/test_barrier_history.py::test_a_run_without_a_qualifying_buy_gets_no_history
+   2 failed, 2 passed in 0.79s
+   ```
+
+2. **The forecaster proceeds without the node** (`_history_ready` returns `True`) → **red**:
+
+   ```text
+   E   AssertionError: assert [Node(label='...ma_version=1)] == []
+   E   AssertionError: assert [Node(label='...ma_version=1)] == []
+   FAILED agents/forecaster/tests/test_barrier_poll.py::test_the_forecaster_waits_for_the_runs_barrier_history
+   FAILED agents/forecaster/tests/test_barrier_route.py::test_a_deployed_forecaster_claims_from_the_provider_written_history
+   2 failed, 5 passed in 0.90s
+   ```
+
+3. **The failed node not written** (`write_barrier_history` returns when the history failed) → **red**,
+   including the bounded wait (no `ForecasterRun` after three passes: the forecaster would wait forever):
+
+   ```text
+   E   AssertionError
+   E   AssertionError
+   E   AssertionError: assert 0 == 1
+   FAILED agents/provider/tests/test_barrier_history_failures.py::test_a_failed_fetch_still_writes_a_failed_node
+   FAILED agents/provider/tests/test_barrier_history_failures.py::test_an_exception_in_the_fetch_path_still_writes_a_failed_node
+   FAILED agents/forecaster/tests/test_barrier_route.py::test_a_failed_fetch_never_leaves_the_forecaster_waiting
+   3 failed, 2 passed in 1.07s
+   ```
+
+**Measured — the JSON size of one `BarrierHistory` for 13 tickers × 760 bars** *(this container, through the
+real `write_barrier_history` with a fake source; `json.dumps` of the node's props)*: **461,710 bytes (≈ 451
+KiB)** with 2-decimal prices, which is what the provider stores (Alpaca raw bars, no `adjustment` parameter;
+412,226 bytes compact, ~42 bytes a bar). The worst case, full float precision (adjusted prices), is **929,238
+bytes (≈ 907 KiB)**, ~89 bytes a bar. One node per scheduled run; nothing but the forecaster reads it.
+
+**Module line counts** (all < 200): new `agents/provider/barrier_history.py` 178, `contracts/barrier_history.py`
+65, `agents/provider/tests/barrier_history_helpers.py` 124, `test_barrier_history.py` 129,
+`test_barrier_history_failures.py` 110, `agents/forecaster/tests/test_barrier_route.py` 114; changed
+`agents/provider/poll.py` 138, `entrypoint.py` 63, `settings.py` 96; `contracts/provider.py` 174,
+`contracts/forecaster.py` 133; `agents/forecaster/barrier_forecast.py` 180, `barrier_store.py` 92, `poll.py`
+145, `agent.py` 164, `settings.py` 171; `orchestration/local_pipeline.py` 190; tests `barrier_helpers.py` 194,
+`test_barrier_refusals.py` 194, `test_barrier_claim.py` 192, `test_barrier_poll.py` 169,
+`test_forecaster_entrypoint.py` 104, `orchestration/tests/test_forecaster_stage.py` 171,
+`test_graph_pull_e2e.py` 157, `test_drop_sweep_cascade.py` 121.
+
+**`make ci`:** `UV_FROZEN=1 make ci > <session scratchpad>/ci-d10-final.txt 2>&1; echo $?` → **exit 0** on the
+final tree (see the commit): mypy `no issues found in 1081 source files`, import-linter clean, module size,
+headers, law coverage, PARAM sync, sprint status, markdown links, version scheme; pytest **3,552 passed, 7
+skipped**, coverage **100.00 %**; dependency audit `No unaccepted vulnerabilities; 1 accepted advisory
+re-checked`; detect-secrets `Passed`. **`uv.lock` untouched and owed** (no dependency change in D10; the
+`arch` re-lock and `0.118.0` are still the planner's).
+
+**Owed to the planner:** `uv lock` (with its audit of `arch`), Windows `make ci`, `make gate-ran` for the new
+pushed SHA, F1–F3, the forecaster image size, and **F4 on the route**: after the full `up` (the vocabulary moved
+again: `BarrierHistory` and its edge), the first scheduled run writes one `BarrierHistory` per `AnalystRun` with
+qualifying buys and one `BarrierForecast` per qualifying buy, or a named fault, with no other agent's behaviour
+changed. Worth measuring on that run: the provider's fetch time for ~13 tickers × 1,125 days, and the GARCH
+time per buy inside the 22:30–00:30 UTC window.

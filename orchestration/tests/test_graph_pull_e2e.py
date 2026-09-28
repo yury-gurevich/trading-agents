@@ -74,6 +74,7 @@ def test_trigger_then_cascade_builds_full_chain() -> None:
         "provider": 1,
         "scanner": 1,
         "analyst": 1,
+        "provider_barrier_history": 1,
         "forecaster": 1,
         "portfolio_manager": 1,
         "execution": 1,

@@ -222,6 +222,57 @@ to the graph and the forecaster reads it (a new provider-written artifact or the
 run's own `MarketData` window grows to ≥ 760 sessions (every stage reads a bigger payload). The operator
 chose to build D9 now and carry this as the named F4 blocker.
 
+**D10 - the route: the provider writes the claim's history into the graph (the planner's decision, 2026-09-28;
+built as the S239 second follow-up).** The provider gains a second work kind in its graph-pull loop (the
+execution / monitor `find_pending_work` pattern): an `AnalystRun` holding at least one buy with both
+`suggested_stop_pct` and `suggested_target_pct` and no `BarrierHistory` yet → **one** batched OHLCV request
+through the provider's existing fetch path (`ProviderAgent._get_market_data`: the source's SIP feed and its
+end rule, then `validate_bars` and the unchanged 8σ guard), over 1,125 calendar days, for exactly those
+tickers → **one** `BarrierHistory` node per `AnalystRun` (key `barrier-history:{analyst_run_key}`), linked
+`AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds the last ≤ 760 daily bars as
+`[date, open, high, low, close]` rows and the bar count; a ticker the fetch returned nothing for, or the 8σ
+guard excluded, is listed under `dropped` with its named reason; a failed fetch still writes the node with
+`status: failed` and the reason, so the forecaster never waits forever. The forecaster's `find_pending` waits
+for that node when the run has a qualifying buy (never when it has none), and `forecast_barrier` reads its
+bars from the node named in the request, never from the bus: one path, in the fleet and the local pipeline.
+
+- *Rejected: (a) the provider serves `get_market_data` on a request topic.* One process runs one loop, so it
+  needs a 17th app or a kernel change, and a second app holding the data keys.
+- *Rejected: (c) the run's `MarketData` window grows to ≥ 760 sessions.* `orchestration/history_window.py`
+  is a decision path, and every stage would read a payload about three times larger.
+- *Why (b):* graph-pull is the house pattern; no new app and no infra change (every app shares the 22:30
+  UTC scale window); the provider stays the only data accessor (`FORE-NEV-04`); and the bars a claim was
+  fitted on are kept in the graph, so sprint B and any later replay can re-derive every claim exactly.
+
+Builder's choices inside D10 (rejected alternatives in each line):
+
+- **The shared vocabulary lives in `contracts/barrier_history.py`**: the label, the edge, the key, the
+  qualifying-buy rule and the node's payload model. Two agents read the same rule, and agents never import
+  each other. *Rejected:* each agent carrying its own copy of the rule (the provider and the forecaster
+  could disagree about which buys qualify, and the forecaster would wait for a node that never comes);
+  growing `contracts/provider.py` past 200 lines.
+- **The provider owns the depth.** `barrier_history_sessions` (760) moves from the forecaster's settings to
+  the provider's, with D3's window formula (⌈760 × 365.25 ÷ 250⌉ + 14 = 1,125 days); the node records
+  `sessions_requested`, and the forecaster's `confidence` is `bar_count ÷ sessions_requested`. The
+  forecaster keeps `barrier_min_history_sessions` (700): the floor is its refusal rule. *Rejected:* the
+  same tunable in both agents (two knobs for one number drift apart; raising the forecaster's alone would
+  do nothing).
+- **The request names the node.** `ForecastRequest` gains an optional `history_ref` (the `BarrierHistory`
+  key); only `forecast_barrier` reads it, and a missing or unknown ref is a refusal. *Rejected:* a new
+  request type for one capability (the spec declared `ForecastRequest`; a second type would also change the
+  capability's shape); the handler searching for "the latest history holding this ticker" (two runs on one
+  day would make that ambiguous).
+- **Faults name the provider.** A dropped ticker or a failed node refuses with
+  `provider dropped: <reason>`, distinct from `N bars < barrier_min_history_sessions` (a ticker served, but
+  with too little history).
+- **The provider's bus request is gone from the barrier leg.** `request_prices` stays for the return and
+  factor legs, which still use it in the local pipeline.
+- **The D9 witness flips.** `test_a_deployed_forecaster_cannot_reach_the_provider_yet` becomes
+  `test_barrier_route.py::test_a_deployed_forecaster_claims_from_the_provider_written_history` (renamed: the old
+  name would now be false): two loops sharing only the graph, one claim per qualifying buy, no fault.
+- **Measured (the brief's step 5):** one `BarrierHistory` for 13 tickers × 760 bars is **461,710 bytes**
+  (`json.dumps` of its props, 2-decimal prices as the raw SIP bars carry), **929,238** at full float precision.
+
 ---
 
 ## DL-240 - the book is managed as a distribution: short holding periods on stocks we buy, and exits that take profit - status: DIRECTION (operator, 2026-09-28); design open, work-queue 92

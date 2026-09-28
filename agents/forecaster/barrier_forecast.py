@@ -1,21 +1,20 @@
 """forecast_barrier: state how likely a buy's target comes before its stop.
 
 Agent: forecaster
-Role: for one ticker and its stop and target, fetch ~3 years of its own daily
-      bars from the provider over the bus, fit GARCH(1,1)-t, simulate EXP-018's
-      10-session paths and record the three probabilities as an append-only,
-      advisory BarrierForecast claim. Any refusal (malformed barriers, a provider
-      error, short history, a failed fit, a conflicting rerun) records a fault and
-      returns the neutral reading; a claim is never fabricated (FORE-FAIL-04).
-External I/O: none directly (the provider answers over the bus; the fitter and
-              the graph are injected).
+Role: for one ticker and its stop and target, read ~3 years of its own daily bars
+      from the BarrierHistory the provider wrote for the run (DL-241 D10), fit
+      GARCH(1,1)-t, simulate EXP-018's 10-session paths and record the three
+      probabilities as an append-only, advisory BarrierForecast claim. Any refusal
+      (malformed barriers, no or a failed history, a ticker the provider dropped,
+      short history, a failed fit, a conflicting rerun) records a fault and returns
+      the neutral reading; a claim is never fabricated (FORE-FAIL-04).
+External I/O: none (the bars are read from the graph; the fitter is injected).
 """
 
 from __future__ import annotations
 
-import math
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import date
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -30,8 +29,8 @@ from agents.forecaster.domain.barrier_garch import (
 )
 from agents.forecaster.domain.features import confidence_from_history
 from agents.forecaster.domain.sentiment import NEUTRAL
-from agents.forecaster.provider_client import request_prices
-from contracts.common import Provenance, Window
+from contracts.barrier_history import BARRIER_HISTORY_LABEL, BarrierHistory
+from contracts.common import Provenance
 from contracts.forecaster import ForecastRequest, ShadowPrediction
 from kernel.errors import fault_boundary
 
@@ -40,14 +39,8 @@ if TYPE_CHECKING:
 
     from agents.forecaster.barrier_fit import GarchFitter
     from agents.forecaster.settings import ForecasterSettings
-    from contracts.provider import OHLCVBar
-    from kernel import FaultSink, GraphStore, MessageBus
-
-#: Calendar days asked per session: 250 a year is below the exchange's 251-253,
-#: so the window always over-asks (EXP-018: 752 sessions in 1,097 days).
-_DAYS_PER_SESSION = 365.25 / 250
-#: Slack for a holiday cluster, a non-session end day, a session not yet served.
-_WINDOW_MARGIN_DAYS = 14
+    from contracts.barrier_history import BarRow
+    from kernel import FaultSink, GraphStore
 
 
 class BarrierClaimRefusedError(RuntimeError):
@@ -56,7 +49,6 @@ class BarrierClaimRefusedError(RuntimeError):
 
 def forecast_barrier(
     graph: GraphStore,
-    bus: MessageBus,
     sink: FaultSink,
     settings: ForecasterSettings,
     fitter: GarchFitter,
@@ -73,7 +65,7 @@ def forecast_barrier(
         capability="forecast_barrier",
         reraise=False,
     ) as capture:
-        claim = _state_claim(bus, sink, settings, fitter, forecast)
+        claim = _state_claim(graph, settings, fitter, forecast)
         write_claim(graph, claim)
     if capture.fault is not None or claim is None:
         return ShadowPrediction(
@@ -88,7 +80,7 @@ def forecast_barrier(
         subject_ref=forecast.subject_ref,
         value=claim.probabilities[1],
         confidence=confidence_from_history(
-            claim.history_bars, full_confidence_bars=settings.barrier_history_sessions
+            claim.history_bars, full_confidence_bars=claim.sessions_requested
         ),
         provenance=Provenance(
             run_id=run_id,
@@ -99,29 +91,26 @@ def forecast_barrier(
 
 
 def _state_claim(
-    bus: MessageBus,
-    sink: FaultSink,
+    graph: GraphStore,
     settings: ForecasterSettings,
     fitter: GarchFitter,
     forecast: ForecastRequest,
 ) -> BarrierClaim:
-    """Fetch, fit and simulate; raise BarrierClaimRefusedError on any refusal."""
+    """Read, fit and simulate; raise BarrierClaimRefusedError on any refusal."""
     stop, target = _barriers(forecast.features)
     ticker = forecast.subject_ref
-    fetched = request_prices(
-        bus, sink, ticker, _window(settings), capability="forecast_barrier"
-    )
-    bars = fetched[-settings.barrier_history_sessions :]
-    if len(bars) < settings.barrier_min_history_sessions:
+    history = _history(graph, forecast.history_ref, ticker)
+    rows = history.histories[ticker].bars
+    if len(rows) < settings.barrier_min_history_sessions:
         raise BarrierClaimRefusedError(
-            f"{ticker}: {len(bars)} bars < barrier_min_history_sessions "
+            f"{ticker}: {len(rows)} bars < barrier_min_history_sessions "
             f"{settings.barrier_min_history_sessions}; no claim"
         )
-    r, lh_pct, ll_pct = _moves(bars)
+    r, lh_pct, ll_pct = _moves(rows)
     params = accept_fit(fitter.fit(r))
     if params is None:
         raise BarrierClaimRefusedError(f"{ticker}: GARCH fit failed; no claim")
-    as_of = bars[-1].bar_date
+    as_of = date.fromisoformat(rows[-1][0])
     seed = barrier_seed(ticker, as_of)
     probabilities = garch_path_probs(
         np.random.default_rng(seed),
@@ -138,15 +127,36 @@ def _state_claim(
     return BarrierClaim(
         ticker=ticker,
         as_of=as_of,
-        entry_close=bars[-1].close,
+        entry_close=rows[-1][4],
         stop_pct=stop,
         target_pct=target,
         probabilities=probabilities,
         params=params,
-        history_bars=len(bars),
+        history_bars=len(rows),
         n_paths=settings.barrier_paths,
         seed=seed,
+        history_ref=str(forecast.history_ref),
+        sessions_requested=history.sessions_requested,
     )
+
+
+def _history(graph: GraphStore, ref: str | None, ticker: str) -> BarrierHistory:
+    """The provider's BarrierHistory for this request, holding this ticker's bars."""
+    node = graph.get_node(BARRIER_HISTORY_LABEL, ref) if ref else None
+    if node is None:
+        raise BarrierClaimRefusedError(
+            f"{ticker}: no BarrierHistory {ref!r} in the graph; no claim"
+        )
+    history = BarrierHistory.model_validate(dict(node.props))
+    if ticker in history.dropped:
+        raise BarrierClaimRefusedError(
+            f"{ticker}: provider dropped: {history.dropped[ticker]}; no claim"
+        )
+    if ticker not in history.histories:
+        raise BarrierClaimRefusedError(
+            f"{ticker}: not requested in BarrierHistory {ref!r}; no claim"
+        )
+    return history
 
 
 def _barriers(features: dict[str, float]) -> tuple[float, float]:
@@ -161,16 +171,10 @@ def _barriers(features: dict[str, float]) -> tuple[float, float]:
     return stop, target
 
 
-def _moves(bars: tuple[OHLCVBar, ...]) -> tuple[np.ndarray, ...]:
+def _moves(rows: tuple[BarRow, ...]) -> tuple[np.ndarray, ...]:
+    """(date, open, high, low, close) rows -> EXP-018's percent moves."""
     return daily_moves(
-        np.array([bar.high for bar in bars]),
-        np.array([bar.low for bar in bars]),
-        np.array([bar.close for bar in bars]),
+        np.array([row[2] for row in rows]),
+        np.array([row[3] for row in rows]),
+        np.array([row[4] for row in rows]),
     )
-
-
-def _window(settings: ForecasterSettings) -> Window:
-    """A calendar window holding at least ``barrier_history_sessions`` sessions."""
-    end = datetime.now(tz=UTC).date()
-    days = math.ceil(settings.barrier_history_sessions * _DAYS_PER_SESSION)
-    return Window(start=end - timedelta(days=days + _WINDOW_MARGIN_DAYS), end=end)

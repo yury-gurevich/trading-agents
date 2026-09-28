@@ -15,10 +15,16 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from agents.forecaster.poll import LOCAL_CAPABILITIES, forecast_analyst_node
+from agents.forecaster.poll import (
+    LOCAL_CAPABILITIES,
+    find_pending,
+    forecast_analyst_node,
+)
 from agents.forecaster.tests.barrier_helpers import (
+    HISTORY_KEY,
     RecordingBus,
     barrier_bars,
+    seed_history,
     wire_barrier,
 )
 from contracts import execution, monitor, portfolio_manager
@@ -72,8 +78,8 @@ _MIXED = (
 
 def test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers() -> None:
     """FORE-IN-07 / FORE-TRG-01: one forecast_barrier request, for the buy with a
-    stop and a target, carrying both; the three existing legs still fire per
-    recommendation."""
+    stop and a target, carrying both and naming the run's BarrierHistory; the three
+    existing legs still fire per recommendation."""
     graph = InMemoryGraphStore()
     bus = RecordingBus()
 
@@ -90,6 +96,7 @@ def test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers() -> None:
     assert request.subject_ref == "AAPL"
     assert request.subject_kind == "recommendation"
     assert request.features == {"stop_pct": 0.05, "target_pct": 0.07}
+    assert request.history_ref == HISTORY_KEY
     others = [m.capability for m in bus.requests if m.capability != "forecast_barrier"]
     assert sorted(others) == sorted(
         ("forecast", "forecast_return", "forecast_factor") * len(_MIXED)
@@ -140,3 +147,23 @@ def test_an_unknown_leg_is_refused_before_any_request() -> None:
 
     assert bus.requests == []
     assert graph.list_nodes("ForecasterRun") == ()
+
+
+def test_the_forecaster_waits_for_the_runs_barrier_history() -> None:
+    """FORE-IN-07 / FORE-TRG-01: a run holding a buy with both barriers is not
+    pending until the provider has written its BarrierHistory; then it is."""
+    graph = InMemoryGraphStore()
+    _analyst_run(graph, *_MIXED)
+
+    assert find_pending(graph) == []
+    seed_history(graph, barrier_bars("AAPL", 760))
+    assert [node.key for node in find_pending(graph)] == ["analyst-run-s239"]
+
+
+def test_a_run_with_no_qualifying_buy_never_waits() -> None:
+    """FORE-IN-07 / FORE-TRG-01: sells, holds and a buy missing its target need no
+    history, so the run is pending at once."""
+    graph = InMemoryGraphStore()
+    _analyst_run(graph, *_MIXED[1:])
+
+    assert [node.key for node in find_pending(graph)] == ["analyst-run-s239"]

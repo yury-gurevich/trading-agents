@@ -9,14 +9,26 @@ External I/O: none.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
 from agents.execution.paper_broker import PaperBroker
+from agents.forecaster import ForecasterAgent
 from agents.forecaster import poll as forecaster_poll
+from agents.forecaster.barrier_fit import FakeGarchFitter
+from agents.forecaster.tests.barrier_helpers import ACCEPTED, barrier_bars
 from agents.provider import ProviderAgent
 from agents.provider.settings import ProviderSettings
+from contracts.analyst import RecommendationSet
+from contracts.barrier_history import barrier_buys
 from kernel import AgentMessage, InMemoryGraphStore, InProcessBus
 from orchestration.local_pipeline import cascade_once
 from orchestration.start import place_run_request
-from orchestration.tests.helpers import node_count, source
+from orchestration.tests.helpers import ReboundingDataSource, node_count, source
+
+if TYPE_CHECKING:
+    from contracts.common import Window
+    from contracts.provider import OHLCVBar
 
 
 def _provider(graph: InMemoryGraphStore) -> ProviderAgent:
@@ -100,3 +112,60 @@ def test_the_local_pipeline_still_fires_all_four_legs() -> None:
     cascade_once(graph, provider_agent=provider, broker=PaperBroker())
 
     assert set(bus.forecaster_capabilities) == set(forecaster_poll.LOCAL_CAPABILITIES)
+
+
+@dataclass
+class _LongHistorySource(ReboundingDataSource):
+    """The run's fixture source, plus ~3 years of bars for the barrier window only.
+
+    A window longer than 1,000 days is the provider's BarrierHistory request; it is
+    served from `long` and does not advance the fixture's rebound phase.
+    """
+
+    long: tuple[OHLCVBar, ...] = ()
+
+    def fetch_ohlcv(
+        self, tickers: tuple[str, ...], window: Window
+    ) -> tuple[OHLCVBar, ...]:
+        if (window.end - window.start).days < 1000:
+            return super().fetch_ohlcv(tickers, window)
+        return tuple(bar for bar in self.long if bar.ticker in set(tickers))
+
+
+def test_the_local_pipeline_claims_from_the_provider_written_history() -> None:
+    """FORE-IN-07 / FORE-OUT-07 / PROV-OUT-08 (DL-241 D10): end to end, the cascade's
+    provider stage writes the run's BarrierHistory and the forecaster stage states
+    one BarrierForecast per qualifying buy from it, with a fake fitter."""
+    graph = InMemoryGraphStore()
+    bus = InProcessBus()
+    long = barrier_bars("AAPL", 800) + barrier_bars("MSFT", 800)
+    base = source()
+    provider = ProviderAgent(
+        bus,
+        graph=graph,
+        source=_LongHistorySource(entry=base.entry, rebound=base.rebound, long=long),
+        settings=ProviderSettings(max_staleness_days=7),
+    )
+    forecaster = ForecasterAgent(
+        bus, graph=graph, barrier_fitter=FakeGarchFitter(ACCEPTED)
+    )
+    place_run_request(graph, run_id="fc-claims", tickers=("AAPL", "MSFT"))
+
+    cascade_once(
+        graph,
+        provider_agent=provider,
+        broker=PaperBroker(),
+        forecaster_agent=forecaster,
+    )
+
+    [analyst_run] = graph.list_nodes("AnalystRun")
+    recommendation_set = RecommendationSet.model_validate(
+        analyst_run.props["recommendation_set"]
+    )
+    qualifying = sorted(rec.ticker for rec in barrier_buys(recommendation_set))
+    [history] = graph.list_nodes("BarrierHistory")
+    claims = graph.list_nodes("BarrierForecast")
+    assert qualifying
+    assert sorted(history.props["histories"]) == qualifying
+    assert sorted(node.props["ticker"] for node in claims) == qualifying
+    assert {node.props["history_ref"] for node in claims} == {history.key}

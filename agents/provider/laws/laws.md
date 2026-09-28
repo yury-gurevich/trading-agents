@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -18,7 +18,8 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   agents consume facts, not feeds.
 - `PROV-IDN-02` — It is the **single data boundary**: no other agent may touch a market-data API.
 - `PROV-IDN-03` — It **exclusively owns** the market-fact and regime graph artifacts it appends
-  (single writer for those labels), **including the durable historical price/fact store** (`PROV-STA-01`).
+  (single writer for those labels), **including the durable historical price/fact store** (`PROV-STA-01`)
+  and the **`BarrierHistory`** it writes per `AnalystRun` (`PROV-OUT-08`).
 
 ## Inputs (`IN`)
 
@@ -43,10 +44,16 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 
 - `PROV-TRG-01` — **Event-driven**: it acts only on a **data-request event** consumed from its
   subscribed topic (pub/sub, ADR-0005) — never a point-to-point call, never self-initiated.
-- `PROV-TRG-02` — It **never self-triggers** — no polling, no scheduled fetches, no speculative
-  prefetch absent a request.
+- `PROV-TRG-02` — It **never self-triggers** — no timer, no scheduled fetch, no speculative
+  prefetch absent a request. A data need another stage recorded in the graph (a `RunRequest`, DL-08;
+  an `AnalystRun`'s qualifying buys, `PROV-TRG-04`) is a request: finding it unconsumed is a
+  trigger, not a self-trigger, and a poll that finds none fetches nothing.
 - `PROV-TRG-03` — Precondition to fetch is a **valid** request; otherwise it rejects and does not
   fetch.
+- `PROV-TRG-04` — An `AnalystRun` holding at least one **buy with both a suggested stop and a
+  suggested target** (the contract's `barrier_buys` rule) and no `BarrierHistory` yet is a trigger
+  for the barrier history (`PROV-OUT-08`). A run with no such buy triggers nothing: sells, holds and a
+  buy missing either barrier ask for no history.
 
 ## Outputs (`OUT`)
 
@@ -74,6 +81,17 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   never one venue's share. A request asks its source **only for what the source's entitlement
   serves**; a refused request **fails loud** per `PROV-FAIL-01` — never as an empty success, and never
   as a silent switch to a one-venue feed. *(DRIFT-080 — S238, DL-233, DL-239.)*
+- `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
+  through its own fetch path (the source's feed and end rule, then validation and the extreme-move
+  guard, all unchanged) for **exactly** those buys' tickers, over a calendar window holding at least
+  `barrier_history_sessions` sessions, and writes **one** `BarrierHistory` node keyed from the
+  `AnalystRun`'s key, linked `AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds
+  the last ≤ `barrier_history_sessions` daily bars as (date, open, high, low, close) and the bar
+  count; a requested ticker with no bars is listed under `dropped` with its **named reason** (the
+  extreme-move guard, or nothing served), never silently absent; a served ticker whose last bar is
+  stale is listed as `stale`. A **failed fetch still writes the node**, `status: failed` with the
+  reason and every ticker dropped with it, so no reader waits forever — never an empty success, never
+  no node. *(DL-241 D10.)*
 
 ## Prohibitions (`NEV`)
 
@@ -213,7 +231,7 @@ startup is derived from it. See `docs/decisions/0007-container-per-agent-master-
   },
   "graph_store": {
     "operations": ["read", "append"],
-    "owns_labels": ["MarketSnapshot", "Regime", "Ticker"],
+    "owns_labels": ["MarketSnapshot", "Regime", "Ticker", "BarrierHistory"],
     "access": "exclusive_write_own_labels"
   },
   "external_http": {
@@ -285,6 +303,7 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 | `finnhub_degraded_note_ticker_cap` | `5` | `int [1, 50]` | YES | Bound attributed feed-degradation notes while naming representative tickers. |
 | `finnhub_earnings_lookahead_days` | `30` | `int days [1, 180]` | YES | Forward window scanned for each ticker's next earnings date. |
 | `ingest_chunk_size` | `0` | `int tickers [0, 500]` | YES | Universe sub-batch size for paced ingest; `0` disables chunking (one single-shot batch). |
+| `barrier_history_sessions` | `760` | `int sessions [252, 2520]` | YES | Daily bars kept per ticker in an `AnalystRun`'s `BarrierHistory` (`PROV-OUT-08`); the window is ⌈sessions × 365.25 ÷ 250⌉ + 14 calendar days (1,125 for 760). EXP-018's GARCH clears its bar at 756 bars, not at 203 (DL-241 D3/D10). |
 | `ingest_chunk_delay_seconds` | `60.0` | `float seconds [0.0, 600.0]` | YES | Pause between ingest chunks so the aggregate per-minute call rate stays under the free-tier ceiling (Finnhub ~60/min, 4 calls/ticker). |
 
 **Provider mode selectors (non-tunable — choose which provider workflow or feed runs):**
@@ -335,6 +354,10 @@ status:
   is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
   `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
   `PROV-OUT-06`), DRIFT-067 (FMP `^VIX` regime freshness → `PROV-OUT-02`/`PROV-OUT-03`).
+- **OPEN (S239)** — DRIFT-082 (`PROV-TRG-01` still says the provider acts *only* on a request event
+  from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and now
+  `AnalystRun`s (`PROV-TRG-04`) from the graph; `TRG-02` was reconciled in v1.5, `TRG-01` is 🟩 on a
+  pub/sub test and is left for the planner).
 - **CORRECTED (S238)** — DRIFT-080 (which volume a bar carries → new `PROV-OUT-07`; the
   `alpaca_data_feed` default moves `"iex"` → `"sip"`).
 - **CORRECTED (S69)** — DRIFT-006 (`PROV-OUT-01`: benchmark added as `DataRequest.benchmark_ticker` +
@@ -383,3 +406,12 @@ status:
   which volume a bar carries while the fleet served IEX's 1.55–6.49 % share against a scanner floor
   written for the whole tape (DL-233, DRIFT-080). `PARAM`: `alpaca_data_feed` reads `"sip"`. One
   clause added and proven: 17 / 62 → 18 / 63.
+- **v1.5 — S239 second follow-up / DL-241 D10 (2026-09-28, the planner's decision).** The provider
+  writes the long daily history a barrier claim is fitted on: new `PROV-TRG-04` (an `AnalystRun` with a
+  buy carrying both barriers and no `BarrierHistory` is a trigger) and `PROV-OUT-08` (one batched
+  request through the unchanged fetch path, one `BarrierHistory` per run, dropped tickers named, a
+  failed fetch still written as failed); `PROV-IDN-03` and `CAP` own `BarrierHistory`
+  (`contracts/provider.py` `owns_graph`, contract `0.7.0`); `PROV-TRG-02` reconciled with graph-pull
+  (it said "no polling" while the provider has pulled `RunRequest`s since DL-08; a recorded data need
+  is a request, a timer is not). `PARAM`: `barrier_history_sessions`. Two clauses added and proven:
+  18 / 63 → 20 / 65. `PROV-TRG-01`'s "only a request event" is DRIFT-082.

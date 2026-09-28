@@ -10,6 +10,7 @@
     "Artifact",
     "Bar",
     "BarrierForecast",
+    "BarrierHistory",
     "BrokerOrderStatus",
     "BrokerPositionSnapshot",
     "BrokerStopOrder",
@@ -87,6 +88,7 @@
     "ANNOTATED",
     "APPROVES",
     "ATTEMPTED_BY",
+    "BARRIER_HISTORY_BY",
     "CHECKS",
     "CLOSES",
     "CONTAINS",
@@ -127,6 +129,11 @@
     "TRAINED_ON"
   ],
   "edge_signatures": [
+    [
+      "AnalystRun",
+      "BARRIER_HISTORY_BY",
+      "BarrierHistory"
+    ],
     [
       "AnalystRun",
       "EVALUATED_BY",
@@ -543,6 +550,7 @@
       "garch_mu",
       "garch_omega",
       "history_bars",
+      "history_ref",
       "horizon_sessions",
       "model_id",
       "model_version",
@@ -555,6 +563,19 @@
       "stop_pct",
       "target_pct",
       "ticker"
+    ],
+    "BarrierHistory": [
+      "analyst_run_key",
+      "created_at",
+      "dropped",
+      "histories",
+      "reason",
+      "requested",
+      "sessions_requested",
+      "stale",
+      "status",
+      "window_end",
+      "window_start"
     ]
   },
   "_owners_note": "Empty deliberately. The 8 agents that declare labels_owned mix write-sets with read-sets (reporter) and a wildcard (supervisor 'all'), so the declarations are not yet accurate enough to enforce. Reconciling them is the named next step - the mechanism (Vocabulary.check_node writer=) is built and tested."

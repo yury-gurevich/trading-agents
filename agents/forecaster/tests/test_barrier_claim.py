@@ -23,6 +23,7 @@ from agents.forecaster.barrier_fit import FakeGarchFitter
 from agents.forecaster.domain.barrier_garch import barrier_seed, daily_moves
 from agents.forecaster.tests.barrier_helpers import (
     ACCEPTED,
+    HISTORY_KEY,
     barrier_bars,
     barrier_message,
     wire_barrier,
@@ -49,6 +50,7 @@ _CLAIM_FIELDS = {
     "history_bars",
     "n_paths",
     "seed",
+    "history_ref",
     "fit_status",
     "garch_mu",
     "garch_omega",
@@ -60,9 +62,11 @@ _CLAIM_FIELDS = {
 
 
 def test_a_successful_call_writes_one_complete_claim() -> None:
-    """FORE-OUT-07 / FORE-IDN-02: one BarrierForecast with every settlement field,
-    shadow true, from the last 760 of 780 served bars; the response is a shadow
-    prediction whose value is P(target first); no ShadowPrediction node."""
+    """FORE-OUT-07 / FORE-IDN-02 / FORE-IN-07 / FORE-NEV-04: one BarrierForecast
+    with every settlement field, shadow true, fitted on exactly the 760 bars the
+    provider's BarrierHistory holds (named in the request, never fetched over the
+    bus); the response is a shadow prediction of P(target first); no
+    ShadowPrediction node."""
     bars = barrier_bars("AAPL", 780)
     fitter = FakeGarchFitter(ACCEPTED)
     bus, graph, sink = wire_barrier(bars=bars, fitter=fitter)
@@ -89,6 +93,7 @@ def test_a_successful_call_writes_one_complete_claim() -> None:
     )
     assert (props["model_id"], props["model_version"]) == ("barrier-garch-v1", "1.0.0")
     assert props["seed"] == barrier_seed("AAPL", last.bar_date)
+    assert props["history_ref"] == HISTORY_KEY
     assert props["fit_status"] == "accepted"
     assert (
         props["garch_mu"],
@@ -116,6 +121,7 @@ def test_a_successful_call_writes_one_complete_claim() -> None:
     assert response.provenance.graph_node_id == f"BarrierForecast:{claim.key}"
     assert graph.list_nodes("ShadowPrediction") == ()
     assert sink.faults == []
+    assert [m.capability for m in bus.requests] == ["forecast_barrier"]
 
 
 def test_the_claim_passes_the_packs_vocabulary_guard() -> None:

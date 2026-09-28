@@ -117,7 +117,7 @@ class RegimeContext(_Frozen):
 
 CONTRACT = AgentContract(
     name="provider",
-    version="0.6.0",
+    version="0.7.0",
     mission=(
         "Be the single boundary to the outside market world. Turn raw external "
         "feeds into clean, validated, cached market facts and the current regime, "
@@ -148,7 +148,13 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("market_data_degraded",),
-    owns_graph=("MarketSnapshot", "Regime", "Ticker", "MarketDataEvent"),
+    owns_graph=(
+        "MarketSnapshot",
+        "Regime",
+        "Ticker",
+        "MarketDataEvent",
+        "BarrierHistory",
+    ),
     external_io=(
         "stooq",
         "finnhub",

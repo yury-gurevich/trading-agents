@@ -41,6 +41,9 @@ class BarrierClaim:
     history_bars: int
     n_paths: int
     seed: int
+    history_ref: str
+    """The provider's BarrierHistory key the bars were read from (DL-241 D10)."""
+    sessions_requested: int
 
     @property
     def key(self) -> str:
@@ -49,7 +52,7 @@ class BarrierClaim:
 
 
 def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
-    """Merge the claim; a rerun keeps the first ``created_at``.
+    """Merge the claim; a rerun keeps the first ``created_at`` and ``history_ref``.
 
     The graph refuses to overwrite a property, so a rerun stating the same claim
     merges into the same node, and one stating a different claim raises: the
@@ -71,6 +74,7 @@ def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
         "history_bars": claim.history_bars,
         "n_paths": claim.n_paths,
         "seed": claim.seed,
+        "history_ref": claim.history_ref,
         "fit_status": claim.params.status,
         "garch_mu": claim.params.mu,
         "garch_omega": claim.params.omega,
@@ -81,5 +85,8 @@ def write_claim(graph: GraphStore, claim: BarrierClaim) -> Node:
     }
     existing = graph.get_node(BARRIER_LABEL, claim.key)
     if existing is not None:
+        # A rerun on the same last bar (a resumed run) keeps where and when the claim
+        # was first stated; every other field must agree, or the merge refuses it.
         props["created_at"] = existing.props.get("created_at")
+        props["history_ref"] = existing.props.get("history_ref")
     return graph.merge_node(BARRIER_LABEL, claim.key, props)

@@ -4,15 +4,21 @@ Agent: provider
 Role: find RunRequest nodes the dispatcher has placed that the provider has not
       ingested yet, and ingest their universe straight from the graph — so the
       provider is graph-pull like every other agent and the dispatcher's RunRequest
-      is the single trigger that starts a run.
+      is the single trigger that starts a run. A second work kind writes the barrier
+      history an AnalystRun's qualifying buys need (DL-241 D10).
 External I/O: delegates to ProviderAgent which calls the injected DataSource.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
+from agents.provider.barrier_history import (
+    find_pending_barrier_history,
+    write_barrier_history,
+)
 from agents.provider.domain.market_calendar import trading_sessions_between
 from agents.provider.ingest import ingest_once
 from contracts.positions import open_position_tickers
@@ -29,6 +35,37 @@ if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
 INGESTED_EDGE = "INGESTED_BY"
+
+
+@dataclass(frozen=True)
+class ProviderWorkItem:
+    """One provider poll item: a RunRequest, or an AnalystRun needing history.
+
+    ``barrier_history`` items are AnalystRuns whose qualifying buys need their
+    BarrierHistory written (DL-241 D10).
+    """
+
+    kind: Literal["ingest", "barrier_history"]
+    node: Node
+
+
+def find_pending_work(graph: GraphStore) -> list[ProviderWorkItem]:
+    """Return run ingests before barrier histories, as one work list."""
+    return [
+        *(ProviderWorkItem("ingest", node) for node in find_pending(graph)),
+        *(
+            ProviderWorkItem("barrier_history", node)
+            for node in find_pending_barrier_history(graph)
+        ),
+    ]
+
+
+def process_work_item(item: ProviderWorkItem, *, agent: ProviderAgent) -> None:
+    """Dispatch one provider work item without widening the work_loop."""
+    if item.kind == "ingest":
+        ingest_run_node(item.node, agent=agent)
+    else:
+        write_barrier_history(item.node, agent=agent)
 
 
 def find_pending(graph: GraphStore) -> list[Node]:

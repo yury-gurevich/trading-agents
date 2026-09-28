@@ -3,7 +3,8 @@
 Agent: provider
 Role: EHLO to master, verify the signed ACTIVATE (creds injected into env),
       build the composite data source and graph store, then poll the graph for
-      unprocessed RunRequest nodes and ingest their universe.
+      unprocessed RunRequest nodes (ingest their universe) and AnalystRun nodes
+      whose qualifying buys need a BarrierHistory (DL-241 D10).
 External I/O: master HTTP endpoint (POST /ehlo).
 """
 
@@ -36,10 +37,10 @@ def build_agent(settings: ProviderSettings, graph: GraphStore) -> ProviderAgent:
 
 
 def main() -> None:  # pragma: no cover
-    """EHLO → ACTIVATE → poll the graph for RunRequest → ingest → repeat."""
+    """EHLO → ACTIVATE → poll the graph for provider work → process → repeat."""
     import os
 
-    from agents.provider.poll import find_pending, ingest_run_node
+    from agents.provider.poll import find_pending_work, process_work_item
     from kernel.work_loop import work_loop
 
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
@@ -50,8 +51,8 @@ def main() -> None:  # pragma: no cover
     settings = ProviderSettings()
     agent = build_agent(settings, graph)
     work_loop(
-        lambda: find_pending(graph),
-        lambda node: ingest_run_node(node, agent=agent),
+        lambda: find_pending_work(graph),
+        lambda item: process_work_item(item, agent=agent),
         poll_interval=poll_interval_from_env("PROVIDER_POLL_INTERVAL"),
         graph=graph,
         agent="provider",

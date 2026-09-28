@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 07:15 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.01` · **🎯 S238 specced for item 89: flipping the feed to SIP alone would have failed every run (measured 403: Alpaca reads the fleet's bare-date `end` as inside the free plan's 15-minute window), so the fix clamps the request's end; on SIP 0 of 99 names fall below the volume floor, against 65 on IEX. Tuesday 29 Sep's run still owes S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 11:01 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.02` · **🎯 S238 specced for item 89: flipping the feed to SIP alone would have failed every run (measured 403: Alpaca reads the fleet's bare-date `end` as inside the free plan's 15-minute window), so the fix clamps the request's end; on SIP 0 of 99 names fall below the volume floor, against 65 on IEX. Tuesday 29 Sep's run still owes S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **FIXED — CodeQL alert 263 reopened and fixed, `0.117.02`, tag `v0.117.02`, 2026-09-28 (operator: *"reopen and fix"*).** The planner had dismissed it at S237's merge as a false positive. The real fault was the `cast("GraphStore", …)` hiding a view with one of the port's six methods. `ExportedFacts` is now a whole, read-only `GraphStore` in `scripts/replay_fidelity_facts.py` (writes and edge walks refused), so no cast or import remains ([DL-238](design-log.md) amendment). Three plants each failed their test. PROVEN: `make ci` exit 0 (**3,458 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `557f25e6`**; the branch's open alerts were `main`'s minus 263; fast-forwarded; `main`'s CI, CodeQL, Security Findings and image build green; alert 263 reads **`fixed`**. No deploy (`scripts/` ships in no image).
 
 📦 **SPECCED — [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) (work-queue 89, live defect), 2026-09-28, for Codex or a cloud session.** INTENT: the provider reads SIP by default and a SIP request never ends inside the plan's 15-minute window; provider laws v1.4 (`PROV-OUT-07`), DRIFT-080; PATCH. 🎯 **Measured first, and the planned fix failed:** `feed=sip` with the fleet's bare-date `end` returns **403** (`subscription does not permit querying recent SIP data`), even on a Sunday, so the one-line flip would have failed every run's price fetch; `end` = now − 16 min returns 200 (LLY average 3.02 M against IEX 115.9 k). On SIP **0 of 99** names fall below the 500,000 floor (65 on IEX). The default moves in `ProviderFeedSettings`, not `trading_tunables.json`, because that file is a fidelity decision path and would reset DL-237's clean set ([DL-233](design-log.md) amendment, six decisions). Deploy: image retag, the operator's call, after `sched-2026-09-28`. The planner owes F1–F3 (live, `.env`) before merging.
 

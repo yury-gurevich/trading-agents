@@ -126,6 +126,14 @@ Order: the test-bed chore, sprint A (the forecaster states barrier probabilities
 append-only record, full `up`), sprint B (settlement ten sessions later and a scorecard). No trading behaviour
 changes until an exit experiment on these probabilities passes; sizing on them stays the operator's.
 
+**Done 2026-09-28 — the test bed is repo code** (chore-barrier-testbed, `v0.117.04`): `scripts/barrier_testbed.py`
+(`--reproduce` gives EXP-011's 47,485 decisions exactly), `barrier_testbed_models.py`, `barrier_testbed_score.py`;
+numpy joins the dev group. *Decided (planner):* **GARCH is not in the test bed.** It becomes forecaster code in
+[S239](sprints/sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md), and the test bed takes any
+model function, so one implementation serves production and the parity check (S239's F1). *Rejected:* a second
+GARCH in `scripts/`, which would let the experiment and production drift apart. **Specced 2026-09-28: S239**
+(sprint A, for a Claude cloud session).
+
 **Work-queue 71 folds into 92** (planner, on the operator's pointer; reversible): its three measured steps
 (the ledger, the sticky regime label, barrier simulation only where a decision needs it) become this
 track's evidence base. Revised sequence: item 91 → measure the book → **the ledger** (starting with the

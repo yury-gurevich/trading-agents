@@ -130,7 +130,8 @@ live. Sizing or exits on them come later, each with its own experiment and the o
 1. **Chore first: the barrier test bed into `scripts/`** (`scripts/barrier_testbed.py`, as EXP-016 §8 and
    EXP-017 §8 recommend): the decision builder, outcome rule, climatology and the date-resampled scorer, with
    GARCH-FHS as a reusable function. Unit tests on a synthetic fixture; the EXP-011 reproduction as the
-   planner's live check; full `make ci` and gate; PATCH; no deploy.
+   planner's live check; full `make ci` and gate; PATCH; no deploy. *Done 2026-09-28 (`v0.117.04`), with one
+   change: GARCH lives in the forecaster (S239), not the test bed, which takes any model function.*
 2. **Sprint A — the forecaster states barrier probabilities (shadow, advisory).** For a cloud session, with a
    law cycle:
    - The forecaster requests its **own** history for this model: **760 sessions** by default (a new

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 14:06 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 14:33 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.04` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,10 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+📦 **SPECCED — [S239](sprints/sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md) (work-queue 92, sprint A of the ledger), 2026-09-28, for a Claude cloud session.** For each buy recommendation the forecaster fits EXP-018's GARCH(1,1)-t on its own 760-session history and records P(stop first / target first / neither) as an advisory `BarrierForecast` claim; nothing else reads it. MINOR; forecaster laws v1.4; contracts change (run DL-237's first verdict from a pre-merge worktree); full `up`. Planner owes F1 (parity with EXP-018 on the test bed), F2, F3, the image size.
+
+🟩 **MERGED — chore-barrier-testbed (`v0.117.04`), 2026-09-28.** The barrier test bed is repo code; `--reproduce` gives EXP-011's 47,485 decisions exactly; numpy joins the dev group. PROVEN: 13 tests with three planted breaks caught; `make ci` exit 0 (**3,482 passed, 6 skipped, 100.00 %**); `GATE PROVEN` for `73dc18bb`. No deploy.
 
 🧪 **MEASURED — [EXP-016](research/experiments/EXP-016-jev-barrier-probabilities.md) and [EXP-017](research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md), 2026-09-28 (item 92's probability model).** Jev is not a forecaster of stop / target probabilities (Brier 0.84–0.85 against climatology 0.616; $0.39). GARCH is the only model with skill on the fleet's 203 bars (+1.47 %; +2.26 % on full history), formally INSUFFICIENT on boundary fits. **[EXP-018](research/experiments/EXP-018-garch-history-depth.md): GARCH on ~3 years of history clears the bar (+2.67 % [+1.88, +3.48]); 203 bars does not (+1.57 %).** The live ledger is built on it: test-bed chore → sprint A → sprint B (DL-240). Both records follow the operator's new eight-section experiment format ([template](research/experiments/_TEMPLATE.md)).
 

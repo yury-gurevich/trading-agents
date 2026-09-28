@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 91 ([DRIFT-079](../laws/drift-register.md)), the step before item 92's exits
 **Branch:** `sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks`
-**Status:** BUILT — builder handback 2026-09-28 (cloud session, branch `claude/confident-goodall-qgxx4f`); planner owes `uv lock`, `make gate-ran`, Windows `make ci`, F1–F2
+**Status:** MERGED `0.117.05`, fast-forwarded to `dc90a352`, tag `v0.117.05`, 2026-09-28; not deployed (PM image retag, the operator's call). Built by a cloud session on `claude/confident-goodall-qgxx4f` (`fd1adbea`); the planner re-branched it under this name.
 **Version:** `0.117.05` (PATCH, set by the planner at merge)
 **Effort:** S
 **Decisions:** [DL-240](../design-log.md) (item 91 comes before trims, adds and take-profit, which need current marks) · [DL-238](../design-log.md) D3 (the fidelity replay reproduces what the live PM read) · [DL-237](../design-log.md) (the clean-session check) · the builder's design decisions go to the **next free DL** (`DL-242` at spec time: `DL-241` is reserved by [S239](sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md), which may merge first)
@@ -528,7 +528,7 @@ cache my scoped mypy run had left; `rm -rf .mypy_cache` and the clean run passed
 `0.117.04` because the spec says "do not pin a version: PATCH, next available at merge" (S239 may merge
 first). The planner bumps PATCH and re-locks.
 
-**`make gate-ran`:** *(planner: local worktree, full SHA, output)*
+**`make gate-ran`:** *[planner, 2026-09-28]* Windows `make ci` in the local worktree `../wt-s240`: exit 0, **3,495 passed, 6 skipped, 100.00 %**. **`GATE PROVEN` for `dc90a352`** from that worktree (printed SHA = `HEAD`): CI, CodeQL, Security Findings, each success on attempt 1. CodeQL: **0** open alerts in any file this sprint touches; the branch ref lists 50 more than `main`, all in untouched files and all open on every earlier sprint ref too (alert 135 reads `fixed` on `main`, `open` on S237/S238's refs), a per-ref artifact.
 
 **Planner live checks (F1–F2):** *[measured 2026-09-28, planner, this branch's worktree with `main`'s `.env`, read-only]*
 

@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 12:14 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 12:21 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -37,7 +37,7 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
 
-🧭 **DIRECTION — the book is managed as a distribution ([DL-240](design-log.md), work-queue 92), 2026-09-28.** Operator: short holding periods on stocks we buy (not short selling), sell at a profit, drop / trim / add by evidence. Today the only exit that fires is the stop. Sequence: item 91 → measure the book → a pre-registered exit experiment on the replay cache → build in increments. Open: whether item 71's probability ledger folds in.
+🧭 **DIRECTION — the book is managed as a distribution ([DL-240](design-log.md), work-queue 92), 2026-09-28.** Operator: short holding periods on stocks we buy (not short selling), sell at a profit, drop / trim / add by evidence. Today the only exit that fires is the stop. Sequence: item 91 → measure the book → a pre-registered exit experiment on the replay cache → build in increments. The operator named the meaning: [moonshot #1](moonshots.md), a distribution per position instead of a score; item 71 folds in and its ledger is the first build.
 
 🚀 **DEPLOYED `s238` 2026-09-28 12:04 AEST, image-only retag (operator: *"deploy, of course"*).** Built from `v0.117.03` (`a5c43112`), run 36367788368, 15 / 15 images. The three injected packs are unchanged since `s232`; the only runtime change in the images is the provider (the dashboard ships in none). Verified on Azure: **16 / 16** apps `s238` and `Succeeded`, every app min 0 / max 1 / 1 KEDA rule, `dispatcher-cron` on `s238` with its cron `*/10 22-23 * * 1-5`, the provider sets no feed variable; `DeployRecord` recorded. Deployed before `sched-2026-09-28` on purpose: the brief (dispatcher), acceptance (master) and stop (execution/monitor) code the run owes proof of is byte-identical to `s232`. **Owed on that run (08:30 AEST Tue): F4** — `ScanRun` LLY `average_volume` in the millions, 0 volume drops, 25 candidates, no provider fault.
 

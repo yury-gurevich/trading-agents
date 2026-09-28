@@ -75,6 +75,37 @@ that is theirs to lift.
 
 **Stays the operator's:** the mix of holding profiles and any cap on it is capital-risk policy.
 
+**Amendment — the operator, 2026-09-28: the meaning is moonshot #1.** Answering "the portfolio as a
+distribution", the operator pointed to [moonshot #1](moonshots.md): the analyst stops shipping one score per
+candidate and emits a distribution (`P(profit > 0)`, `E[drawdown]`, `tail_loss_p99`, `time_to_target`), and
+the PM optimises the book over distributions (Kelly fractions, a CVaR budget). Readings 1 and 2 above are
+that moonshot; reading 3, the holding profiles, is its time axis. The same object, re-read each day for a
+held name, is what decides drop, trim, add and take-profit.
+
+What this repo's evidence changes about the moonshot (planner):
+
+- **Daily return paths, not microstructure.** The moonshot proposed ABIDES (order flow, queue position).
+  Nothing of it exists here (checked 2026-09-28), and the fleet decides once a day and fills at the next
+  open, so a position's outcome over 1–10 sessions is a question of daily paths. The model runs over daily
+  bars: EXP-011's barrier simulation, then a block bootstrap or GARCH, which keep volatility clustering.
+- **Calibrated before anything sizes on it.** EXP-011's first model added only ~1 % Brier skill over base
+  rates and over-dispersed `P(stop first)`. A miscalibrated probability fed to Kelly over-bets. So the first
+  build is the **ledger**: every declared probability recorded at decision time and checked against what
+  happened, and every model is a challenger to the base rate.
+- **Deterministic**, as the moonshots' own cross-cutting preference asks: simulation and statistics, no
+  LLM in the path.
+- **Homes.** The forecaster produces the distribution (advisory until its scorecard promotes it, as
+  EXP-011 placed it); the PM consumes it; the daily re-read of held names feeds the exits.
+- **Kelly / CVaR sizing is capital-risk policy**: the operator's, and the last step.
+
+**Work-queue 71 folds into 92** (planner, on the operator's pointer; reversible): its three measured steps
+(the ledger, the sticky regime label, barrier simulation only where a decision needs it) become this
+track's evidence base. Revised sequence: item 91 → measure the book → **the ledger** (starting with the
+claim the system already makes: the median target within 10 sessions, 50.2 % historically) → a
+distribution model on the replay cache, pre-registered and calibrated out of sample against the base rate
+→ exits and holding profiles chosen by that distribution in replay → build in increments → PM sizing over
+distributions last.
+
 ## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
 
 **Context.** [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) flips the provider's

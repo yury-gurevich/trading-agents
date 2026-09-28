@@ -13,6 +13,7 @@ Several moonshots have already partly landed in v2 or shaped its architecture:
 
 | Moonshot | v2 status |
 | --- | --- |
+| #1 A distribution, not a number | **The direction for managing the book, 2026-09-28** ([DL-240](design-log.md), work-queue 92): over daily paths rather than microstructure, calibrated through a declared-vs-realised ledger before the PM sizes on it; EXP-011 measured the starting point. |
 | #2 Multi-agent deliberation | The container-per-agent architecture (ADR-0007) and master bootstrap are the substrate for this. P14. |
 | #3 Self-evolving signal loop | Forecaster agent + P10 predictor-registry gate + `sentiment_scorecard` harness are the first scaffolding. |
 | #5 System narrates itself | Operator LLM narration is the v2 equivalent. The corpus begins accumulating now. |

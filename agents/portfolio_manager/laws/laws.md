@@ -1,6 +1,6 @@
 # `Portfolio Manager` — Laws
 
-**Prefix:** `PM` · **status:** LOCKED v1.9 · **Owner:** Yury Gurevich
+**Prefix:** `PM` · **status:** LOCKED v1.10 · **Owner:** Yury Gurevich
 
 > Size and risk-check analyst recommendations into concrete order intents — or reject them
 > with a documented reason. Never touch the broker.
@@ -36,6 +36,18 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   with reason `"no_recommendations"`. No provider calls are made; no graph nodes are written.
 - **PM-IN-04** — `explain_decision` accepts a `RecommendationSet`; returns an `Explanation`
   of the sizing and risk logic. No provider call, no graph write.
+- **PM-IN-05** — A run weighs its held book at the marks of its own `BrokerPositionSnapshot` (the
+  latest one carrying the run's id): each held ticker has **one** value, the snapshot's
+  `market_value_cents` when the snapshot lists it, however many active `Position` nodes hold that
+  ticker. A held ticker the snapshot does not list is valued at its nodes' adoption marks
+  (`broker_market_value_cents`), and a node without one at quantity × `opened_price_cents`. A run with
+  no snapshot of its own reads the snapshot of the run it resumes, following
+  `RunRequest.source_run_id` (a resume of a resume chains) for a bounded number of hops; only when no
+  run in that lineage has a snapshot does the PM seed from `starting_cash`, and a lineage that loops
+  ends at the bound, seeded, never raising. A run never reads another lineage's snapshot. An
+  evaluation with no run id weighs at the latest snapshot's marks by the same per-ticker rule. These
+  held values feed buy headroom and both deployed-capital concentration caps (`PM-NEV-06`,
+  `PM-NEV-08`); money is exact, `Decimal` from integer cents.
 
 ---
 
@@ -411,3 +423,17 @@ classes of one issuer to one key; absence means single-class, which is the commo
   the table for a note beneath it. It is pack data loaded outside the settings model (ADR-0012), and
   a `PARAM` row names a settings field — the row was one of the 57 divergences DRIFT-052 held as
   warnings. What the map means and who owns it are unchanged; no clause moves.
+- v1.10 — amendment (DL-242 / S240, 2026-09-28). Added `PM-IN-05`: where a held name's value comes
+  from and which snapshot a run reads. `PM-IDN-01` already required checks against the **current**
+  portfolio, but the book never said where a held value came from, and the code read the adoption-day
+  `broker_market_value_cents` before the run's own snapshot mark and summed it per `Position` node
+  (DRIFT-079: `sched-2026-09-25` weighed 25 names at $23,680 against its snapshot's $24,333). A run
+  placed by a resume found no snapshot under its own id and sized on `starting_cash`. No existing
+  clause is weakened and no gate, denominator or tunable moves: only the held values fed into them.
+  Cited tests: `test_held_book_marks.py::test_a_held_name_is_weighed_at_the_runs_snapshot_mark`,
+  `::test_a_ticker_held_by_two_nodes_is_weighed_once`,
+  `::test_the_fallbacks_are_the_adoption_mark_then_the_cost_basis`,
+  `::test_a_stale_snapshot_still_lends_the_marks_it_read`,
+  `::test_the_sector_cap_decides_on_the_snapshot_mark`, `test_resumed_book.py` (six tests),
+  `tests/test_pm_resumed_book.py::test_a_child_placed_by_resume_run_reads_its_sources_snapshot`, and
+  `tests/test_replay_fidelity_book.py::test_drift_079_the_pm_reads_a_held_name_at_the_runs_snapshot_mark`.

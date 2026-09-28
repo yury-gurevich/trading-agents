@@ -20,6 +20,7 @@ from tests.fidelity_fleet_data import HELD_ONLY, SESSIONS
 from tests.fidelity_harness import differences, export, replay, rows, tiny_repo
 
 from agents.portfolio_manager.graph_portfolio import portfolio_from_graph
+from contracts.positions import active_position_nodes
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,10 +65,13 @@ def test_a3_the_books_market_values_reach_the_pm(tmp_path: Path) -> None:
     assert {intent.ticker for intent in without.approved} & set(capped)
 
 
-def test_drift_079_the_pm_weighs_a_held_name_at_its_adoption_mark(
+def test_drift_079_the_pm_reads_a_held_name_at_the_runs_snapshot_mark(
     tmp_path: Path,
 ) -> None:
-    """PM-IDN-01 / PM-NEV-06: live reads the adoption-day mark; so does the replay."""
+    """PM-IN-05 / PM-IDN-01 / PM-NEV-06: live reads the run's marks; so does the replay.
+
+    DRIFT-079's witness. Until S240 it asserted the defect: the adoption-day mark.
+    """
     _repo, sha = tiny_repo(tmp_path / "repo")
     later = f"sched-{SESSIONS[3].isoformat()}"
     graph = fleet_graph((FleetDay(SESSIONS[0]), FleetDay(SESSIONS[3])), git_sha=sha)
@@ -77,10 +81,17 @@ def test_drift_079_the_pm_weighs_a_held_name_at_its_adoption_mark(
         item["ticker"]: Decimal(item["market_value_cents"]) / 100
         for item in _payload(export_dir, later)["book"]["props"]["holdings"]
     }
+    adoption_marks = {
+        str(node.props["ticker"]): Decimal(node.props["broker_market_value_cents"])
+        / 100
+        for node in active_position_nodes(graph)
+    }
 
     inputs = load_session(export_dir / f"{later}.json")
 
-    assert {k: v.amount for k, v in live.position_values.items()} != snapshot_marks
+    assert adoption_marks.keys() == snapshot_marks.keys()
+    assert adoption_marks != snapshot_marks
+    assert {k: v.amount for k, v in live.position_values.items()} == snapshot_marks
     assert inputs.portfolio.position_values == live.position_values
     assert inputs.portfolio.cash == live.cash
     assert {position.ticker for position in inputs.held} == set(snapshot_marks)

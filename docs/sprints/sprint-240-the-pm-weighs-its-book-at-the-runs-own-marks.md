@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 91 ([DRIFT-079](../laws/drift-register.md)), the step before item 92's exits
 **Branch:** `sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks`
-**Status:** SPEC
+**Status:** BUILT — builder handback 2026-09-28 (cloud session, branch `claude/confident-goodall-qgxx4f`); planner owes `uv lock`, `make gate-ran`, Windows `make ci`, F1–F2
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-240](../design-log.md) (item 91 comes before trims, adds and take-profit, which need current marks) · [DL-238](../design-log.md) D3 (the fidelity replay reproduces what the live PM read) · [DL-237](../design-log.md) (the clean-session check) · the builder's design decisions go to the **next free DL** (`DL-242` at spec time: `DL-241` is reserved by [S239](sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md), which may merge first)
@@ -357,17 +357,34 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-28 before the first code change; DL-242 was written next, then the red tests.*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| `agents/portfolio_manager/graph_portfolio.py`, new `run_snapshot.py` | `agents/portfolio_manager/laws/laws.md` v1.9 (whole), `test-plan.md` (whole), `docs/laws/conventions.md`, `docs/laws/drift-register.md` (whole) | `PM-IDN-01` (current portfolio state), `PM-IN-01..04` (next free `IN` is 05), `PM-NEV-04`, `PM-NEV-06` / `PM-NEV-08` + v1.6 deployed-capital denominator (built from these held values), `PM-NEV-09`, `PM-STA-01/03`, `PM-IDM-01`, `PM-FAIL-01`, `PM-OUT-06`, `PARAM starting_cash` | **Yes, twice.** (1) conventions §5 (independence): the clause names only labels the PM reads (`BrokerPositionSnapshot`, `RunRequest`, `Position`) and says "the run it resumes", never another agent or `resume_run`. (2) §7a: my tests prove only the *current portfolio state* conjunct of `PM-IDN-01`, so it stays ⬜ with the covered and uncovered halves named in its row, not flipped green. Reading `agents/execution/reconciliation.py` for the stale question also decided DL-242 D1: a stale snapshot's listed holdings are this run's reads. |
+| `tests/test_replay_fidelity_book.py` | DL-238 D3; DRIFT-079 | `PM-IDN-01`, `PM-NEV-06`, new `PM-IN-05` | Rewrote the witness to assert the fix. Reading `scripts/fidelity_exporter.py` found that the export's book for a **resumed** session is chosen by the clone's run id, so replay and live now disagree there (recorded, not fixed: out of scope). |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** No `contracts/`
+change. **Yes, a guarantee:** `PM-IN-05` (free; `PM-IN-01..04` exist), PM book v1.9 → v1.10 with a
+Changelog line, a new 🟩 test-plan row, rollups 31 / 50 → 32 / 51 in both `ledger.md` and `INDEX.md`
+(`make ci`'s law-coverage step derived the number), DRIFT-079 closed.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** none that blocks. One tension noted: `PARAM
+starting_cash`'s rationale still says *"all position limits are derived as fractions of this"*, stale
+since S161 (DRIFT-036, DECIDED, not yet applied). `PM-IN-05` keeps `starting_cash` as the no-snapshot
+seed only, which agrees with DRIFT-036's decision; the PARAM rationale was not edited (not this
+sprint's amendment).
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** (1) where a held value comes from and which snapshot
+a run reads: DRIFT-079 itself, closed by `PM-IN-05`. (2) The RPC path's snapshot choice (latest of all
+runs): the book never stated it. `PM-IN-05` now *states* it as today's behaviour (the spec keeps the
+selection out of scope); whether an unscoped evaluation should read the latest snapshot at all is an
+open question for whoever next touches `evaluate_orders` over RPC. No new drift row: it is declared now,
+not silent.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** `PM-IN-05` (new, 🟩). `PM-IDN-01` **stays ⬜** (partial,
+named in its row). `PM-STA-01` stays ⬜: the tests show the book is rebuilt from the graph, not that it
+is never persisted across restarts.
 
 ---
 
@@ -375,54 +392,178 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| B1 | *(builder)* | | | |
+| B1 | `test_a_held_name_is_weighed_at_the_runs_snapshot_mark` | `agents/portfolio_manager/tests/test_held_book_marks.py` | PASS | `PM-IN-05`, `PM-IDN-01` |
+| B2 | `test_a_ticker_held_by_two_nodes_is_weighed_once` | same | PASS | `PM-IN-05` |
+| B3 | `test_the_fallbacks_are_the_adoption_mark_then_the_cost_basis` | same | PASS | `PM-IN-05`, `PM-STA-01` |
+| B4 | `test_a_child_placed_by_resume_run_reads_its_sources_snapshot` (real `orchestration.resume.resume_run`) · `test_a_resumed_pm_reads_the_snapshot_of_the_run_it_resumes` (hand-built) | `tests/test_pm_resumed_book.py` · `agents/portfolio_manager/tests/test_resumed_book.py` | PASS · PASS | `PM-IN-05`, `PM-IDN-01` |
+| B5 | `test_a_resume_of_a_resume_reads_the_first_ancestor_with_a_snapshot` · `test_a_broken_lineage_seeds_from_starting_cash` · `test_a_looping_lineage_stops_at_the_bound_without_raising` | `agents/portfolio_manager/tests/test_resumed_book.py` | PASS ×3 | `PM-IN-05` (+ `PM-STA-01` on the broken lineage) |
+| B6 | `test_the_sector_cap_decides_on_the_snapshot_mark` | `agents/portfolio_manager/tests/test_held_book_marks.py` | PASS | `PM-NEV-06`, `PM-IN-05` |
+| B7 | `test_drift_079_the_pm_reads_a_held_name_at_the_runs_snapshot_mark` (renamed from `…_at_its_adoption_mark`; not deleted) | `tests/test_replay_fidelity_book.py` | PASS | `PM-IN-05`, `PM-IDN-01`, `PM-NEV-06` |
 
-**Tests added beyond the plan:** *(builder)*
+🪤 B7's name was first `…the_pm_weighs_a_held_name…`: `ghs_` followed by 36 word characters is the
+GitHub-token pattern and detect-secrets refused it. Renamed rather than allowlisted.
+
+**Tests added beyond the plan:** `test_a_stale_snapshot_still_lends_the_marks_it_read` (DL-242 D1;
+`PM-IN-05`, `PM-NEV-04`), `test_a_resumed_run_with_its_own_snapshot_reads_its_own` (own snapshot wins
+over the lineage), `test_an_unscoped_evaluation_weighs_at_the_latest_snapshot` (the RPC conjunct of the
+clause), and `tests/test_pm_resumed_book.py::test_the_export_does_not_follow_a_resumed_sessions_lineage_yet`,
+a **witness of a known gap**, not a guarantee (see Return notes). `book_helpers.py` holds the fixtures,
+including a `CountingGraph` that fails loud past a read limit so an unbounded walk goes red instead of
+hanging.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** claude.ai cloud session, Linux, repo at
+`/home/user/trading-agents`, branch **`claude/confident-goodall-qgxx4f`** (the session's forced branch;
+the spec's name `sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks` was not created), cut from
+`main` at `8a05938`. **No `.env`, no `gh`, no Azure.** Every proof is a unit test.
 
-**Result:** *(builder)*
+**Result:** every held ticker is valued once at its run's snapshot mark, with the adoption mark and then
+cost as fallbacks (B1–B3); a resumed PM reads its lineage's snapshot and only a lineage with none seeds
+from `starting_cash` (B4, B5); the sector cap decides on the corrected value (B6); live equals the
+snapshot marks and the replay equals live on the S237 fleet fixtures (B7). `make ci` exit 0 in the cloud
+session. **Live behaviour not observed** (F1–F2 are the planner's).
 
-**Files changed:** *(builder)*
+**Files changed:** `agents/portfolio_manager/graph_portfolio.py`, `agents/portfolio_manager/run_snapshot.py`
+(new), `agents/portfolio_manager/tests/{book_helpers,test_held_book_marks,test_resumed_book}.py` (new),
+`tests/test_pm_resumed_book.py` (new), `tests/test_replay_fidelity_book.py`, `orchestration/Dockerfile`
+(one `COPY` line, see Return notes), `agents/portfolio_manager/laws/{laws,test-plan}.md`,
+`docs/laws/{ledger,INDEX,drift-register}.md`, `docs/design-log.md`, `docs/sprints/README.md`, this file.
 
-**Design decisions:** *(builder: DL number, one line, where the rejected alternatives are)*
+**Design decisions:** [DL-242](../design-log.md) (DL-241 is S239's; neither was on `main` at build time):
+D1 stale snapshots' listed marks are used and a stale own snapshot stops the walk; D2 walk by
+`RunRequest.source_run_id`, `MAX_RESUME_HOPS = 8`, no visited set; D3 `run_snapshot.py` beside
+`graph_portfolio.py`; D4 the `PM-IN-05` wording. Rejected alternatives are listed under each decision.
 
-**Proof — the red run first:**
+**Proof — the red run first:** (tests written, production code untouched; `pytest … --no-cov -rA
+--continue-on-collection-errors`, exit 1)
 
 ```text
-(builder)
+E   ModuleNotFoundError: No module named 'agents.portfolio_manager.run_snapshot'
+E   AssertionError: assert {'INTC': Decimal('1000')} == {'INTC': Decimal('1500')}
+E   AssertionError: assert {'AAPL': Decimal('1000')} == {'AAPL': Decimal('1500')}
+E   AssertionError: assert {'XOM': Decim...ecimal('150')} == {'XOM': Decim...ecimal('150')}
+E   AssertionError: assert {'INTC': Deci...ecimal('160')} == {'INTC': Deci...ecimal('160')}
+E   AssertionError: assert (OrderIntent(...uer=true'))),) == ()
+E   AssertionError: assert Decimal('100000.00') == (Decimal('100000000') / 100)
+E   AssertionError: assert Money(amount=Decimal('100000.00'), currency='USD') != Money(amount=Decimal('100000.00'), currency='USD')
+E   AssertionError: assert {'T03': Decim...l('113923.9')} == {'T03': Decim...l('113107.2')}
+ERROR agents/portfolio_manager/tests/test_resumed_book.py
+FAILED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_held_name_is_weighed_at_the_runs_snapshot_mark
+FAILED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_ticker_held_by_two_nodes_is_weighed_once
+FAILED agents/portfolio_manager/tests/test_held_book_marks.py::test_the_fallbacks_are_the_adoption_mark_then_the_cost_basis
+FAILED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_stale_snapshot_still_lends_the_marks_it_read
+FAILED agents/portfolio_manager/tests/test_held_book_marks.py::test_the_sector_cap_decides_on_the_snapshot_mark
+FAILED tests/test_pm_resumed_book.py::test_a_child_placed_by_resume_run_reads_its_sources_snapshot
+FAILED tests/test_pm_resumed_book.py::test_the_export_does_not_follow_a_resumed_sessions_lineage_yet
+FAILED tests/test_replay_fidelity_book.py::test_drift_079_[first name elided: it trips detect-secrets, see B7]
+8 failed, 3 passed, 1 error in 3.84s
 ```
+
+(B6's red line is `(OrderIntent(...WFC...),) == ()`: before the fix the buy was **approved**. The
+`test_resumed_book.py` file failed at collection because `run_snapshot` did not exist; its individual
+red is shown by plant 3 below. The three passes are S237's unrelated book tests.)
 
 **Proof — the green run:**
 
 ```text
-(builder)
+PASSED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_held_name_is_weighed_at_the_runs_snapshot_mark
+PASSED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_stale_snapshot_still_lends_the_marks_it_read
+PASSED agents/portfolio_manager/tests/test_held_book_marks.py::test_a_ticker_held_by_two_nodes_is_weighed_once
+PASSED agents/portfolio_manager/tests/test_held_book_marks.py::test_the_fallbacks_are_the_adoption_mark_then_the_cost_basis
+PASSED agents/portfolio_manager/tests/test_held_book_marks.py::test_the_sector_cap_decides_on_the_snapshot_mark
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_a_broken_lineage_seeds_from_starting_cash
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_a_looping_lineage_stops_at_the_bound_without_raising
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_a_resume_of_a_resume_reads_the_first_ancestor_with_a_snapshot
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_a_resumed_pm_reads_the_snapshot_of_the_run_it_resumes
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_a_resumed_run_with_its_own_snapshot_reads_its_own
+PASSED agents/portfolio_manager/tests/test_resumed_book.py::test_an_unscoped_evaluation_weighs_at_the_latest_snapshot
+PASSED tests/test_pm_resumed_book.py::test_a_child_placed_by_resume_run_reads_its_sources_snapshot
+PASSED tests/test_pm_resumed_book.py::test_the_export_does_not_follow_a_resumed_sessions_lineage_yet
+PASSED tests/test_replay_fidelity_book.py::test_a3_the_books_market_values_reach_the_pm
+PASSED tests/test_replay_fidelity_book.py::test_a_held_stop_exit_is_attributed_to_the_unpersisted_held_stops
+PASSED tests/test_replay_fidelity_book.py::test_an_account_the_broker_did_not_answer_is_replayed_as_live_read_it
+PASSED tests/test_replay_fidelity_book.py::test_drift_079_the_pm_reads_a_held_name_at_the_runs_snapshot_mark
+17 passed in 3.70s
 ```
 
-**Guards planted:** *(builder, per plant)*
+**Guards planted:** each planted in the production module, the four test files run, then the module
+restored from a byte copy (`cmp` identical after all four):
 
-**Module line counts:** *(builder)*
+1. **Node prop preferred over the snapshot again** (`if ticker in marks and "broker_market_value_cents"
+   not in position.props:`): **red**, 10 failed / 6 passed, led by B1
+   `assert {'INTC': Decimal('1000')} == {'INTC': Decimal('1500')}` and B6
+   `assert (OrderIntent(...),) == ()`. Restored.
+2. **Snapshot mark added once per node** (`values[ticker] = values.get(ticker, _ZERO) + …marks…`):
+   **red**, 1 failed, B2 `assert {'AAPL': Decimal('3000')} == {'AAPL': Decimal('1500')}`. Restored.
+3. **Lineage walk removed** (`current = None` in place of `_source_run_id(...)`): **red**, 4 failed,
+   B4 `assert Decimal('100000') == Decimal('50000')`, the real-`resume_run` B4
+   `assert Decimal('100000.00') == (Decimal('100000000') / 100)`, and B5's resume-of-a-resume. Restored.
+4. **Hop bound removed on a looping lineage** (`while True:` in place of the bounded `for`): **red**, 1
+   failed, B5 `AssertionError: unbounded walk: 91 keyed reads` (the `CountingGraph` limit, so the
+   plant fails loud instead of hanging the suite). Restored.
 
-**`make ci`:** *(builder: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**Module line counts:** `graph_portfolio.py` **125** (was 132), `run_snapshot.py` **61**,
+`tests/book_helpers.py` 97, `tests/test_held_book_marks.py` 127, `tests/test_resumed_book.py` 117,
+`tests/test_pm_resumed_book.py` 102, `tests/test_replay_fidelity_book.py` 146 (was 135),
+`orchestration/Dockerfile` 113 (not in the size gate's scope). All < 150; none on the size gate's warn
+list.
 
-**`uv.lock`:** *(builder: untouched and owed, or re-resolved)*
+**`make ci`:** `make ci > ci.txt 2>&1; echo $?` in the cloud session's scratchpad → **exit 0**. All 15
+steps ran: ruff, format (1417 files), mypy (`Success: no issues found in 1063 source files`),
+import-linter (`Contracts: 5 kept, 0 broken.`), module size (warnings only, none in touched files),
+module header, law coverage, PARAM/settings sync, sprint status, markdown links, version scheme, pytest
+**3495 passed, 6 skipped** (the six need `.env`, Celery, Postgres or network flags), **coverage
+100.00 %**, dependency audit (`No unaccepted vulnerabilities; 1 accepted advisory re-checked`,
+PYSEC-2026-2447 under DL-184), detect-secrets **Passed**, untracked secrets **Passed** (5 new files
+scanned). Two earlier runs were red and are not the proof: the dispatcher-image test (fixed by the
+`COPY` line) and detect-secrets on B7's first name (renamed). One mypy `INTERNAL ERROR` came from a
+cache my scoped mypy run had left; `rm -rf .mypy_cache` and the clean run passed.
+
+**`uv.lock`:** **untouched and owed.** `pyproject.toml` is untouched as well: the version stays
+`0.117.04` because the spec says "do not pin a version: PATCH, next available at merge" (S239 may merge
+first). The planner bumps PATCH and re-locks.
 
 **`make gate-ran`:** *(planner: local worktree, full SHA, output)*
 
 **Planner live checks (F1–F2):** *(planner, before merge)*
 
-**Not met / verified failing:** *(builder)*
+**Not met / verified failing:** nothing in the builder's list. **Not done, owed to the planner:**
+PATCH bump + `uv lock`, `make gate-ran`, Windows `make ci`, F1–F2 (and F3 after the retag). Not done by
+scope: the fidelity export's resumed-session book (Return notes).
 
 ---
 
 ## Return notes
 
-- *(builder: scope held, or where it moved and why)*
-- *(builder: what you disagreed with in the spec after reading the laws)*
-- *(builder: what item 92's exits should know about held values)*
+- **Scope held, with one move.** PM-only as specified, plus **one line in `orchestration/Dockerfile`**
+  (`COPY agents/portfolio_manager/run_snapshot.py …`). The dispatcher image transitively imports the PM
+  package, and `tests/test_dispatch_scheduled_run.py::test_dispatcher_image_copies_everything_its_entrypoint_imports`
+  failed `make ci` without it. It is the image's file list, not `resume.py`, `resume_plan.py` or the
+  vocabulary. Deploy consequence: the dispatcher image's **next build** must carry the new module or it
+  fails at import; retagging only the PM image is still enough for the behaviour change.
+- **What I disagreed with after reading the laws.** (1) The spec expects `PM-IDN-01` may move to 🟩.
+  It should not: conventions §7a forbids narrowing a clause to fit a test, and these tests prove one
+  conjunct (the current portfolio state) of a clause that also binds sizing within the regime envelope
+  and three negative authorities. The row names both halves and stays ⬜. (2) The spec says the fidelity
+  tooling "calls the live function and follows it". For a **resumed** session it does not: the export
+  picks the book by the clone's run id (`scripts/fidelity_exporter.py`), finds none, and the replay
+  seeds from `starting_cash` while live now reads the source's snapshot. Before S240 both read the seed
+  and agreed on the wrong value; after it they disagree, attributed to `held_positions` not persisted.
+  Pinned by `tests/test_pm_resumed_book.py::test_the_export_does_not_follow_a_resumed_sessions_lineage_yet`;
+  the fix (the export's `_snapshot` following the same lineage, ideally by calling `run_snapshot`) is a
+  small tooling sprint the spec forbade here. DL-237's clean-session count is unaffected for sessions
+  that were never resumed.
+- **What item 92's exits should know about held values.** `PortfolioState.position_values` is now the
+  run's broker mark per ticker, one number per ticker however many `Position` nodes hold it, so a
+  trim/add/take-profit rule can read it directly as the current value. It is a **run-start** mark
+  (execution's snapshot at the head of the run, 22:30 UTC, after the close), not an intraday price. A
+  ticker the snapshot did not list (a stale positions read, or a broker/graph divergence) silently falls
+  back to its adoption mark, then cost: an exit rule that needs a *current* price should treat a
+  fallback value as absent. Today nothing marks which source a value came from; if item 92 needs that,
+  it is one more field on `PortfolioState`, not a new read. `Position.broker_market_value_cents` is still
+  the adoption-day figure and should not be read as current by anything.

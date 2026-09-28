@@ -52,8 +52,9 @@ def _record(source: AlpacaDataSource, pages: list[str]) -> list[dict[str, str]]:
     return sent
 
 
-def test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago() -> None:
-    """PROV-OUT-07: a SIP request never asks for the last 15 minutes, and the
+def test_sip_request_for_a_window_ending_today_ends_clear_of_the_wall() -> None:
+    """PROV-OUT-07: a SIP request never asks for the last 15 minutes (it keeps a
+    one-minute clock margin: Alpaca refuses 899 s and serves 900 s, measured), and the
     session's own bar (stamped 04:00Z) still falls inside what it asks for."""
     now = datetime(2026, 9, 28, 22, 30, tzinfo=UTC)
     source = _source("sip", now)
@@ -63,7 +64,7 @@ def test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago() -> Non
     bars = source.fetch_ohlcv(("LLY",), _TODAY)
     assert len(sent) == 1
     assert sent[0]["feed"] == "sip"
-    assert sent[0]["end"] == "2026-09-28T22:15:00Z"
+    assert sent[0]["end"] == "2026-09-28T22:14:00Z"
     end = datetime.fromisoformat(sent[0]["end"].replace("Z", "+00:00"))
     assert datetime(2026, 9, 28, 4, tzinfo=UTC) < end
     assert date(2026, 9, 28) in {bar.bar_date for bar in bars}

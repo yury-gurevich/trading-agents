@@ -427,7 +427,7 @@ An incomplete handback is returned, not repaired (DL-48).
 guarantee, no contract change.** Before this sprint the provider book never says *which* volume an
 OHLCV bar carries, nor that a request must stay inside the source's entitlement. `PROV-OUT-07` is the
 next free `OUT` ID (v1.3 declares `OUT-01..06`; checked). Owed and done in this unit of work: v1.3 → v1.4
-+ Changelog, `PARAM` row `"sip"`, a `test-plan.md` row, clause IDs in test docstrings, both rollups,
+with a Changelog line, `PARAM` row `"sip"`, a `test-plan.md` row, clause IDs in test docstrings, both rollups,
 `DRIFT-080`.
 
 **Contradictions found between a law and this spec:** None that stops the sprint. One tension resolved
@@ -458,7 +458,7 @@ states only what is new: no silent empty success and no silent switch to a one-v
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | `test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago` | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07` |
+| A1 | `test_sip_request_for_a_window_ending_today_ends_clear_of_the_wall` (renamed at merge from `…_ends_fifteen_minutes_ago`; the planner added a one-minute clock margin, DL-239 amendment) | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07` |
 | A2 | `test_sip_past_window_ends_at_the_midnight_after_it` (3 cases: `2026-10-02T12:00Z` → `2026-09-29T00:00:00Z`; `2026-09-29T00:05Z` → `2026-09-28T23:50:00Z`; `2026-09-29T00:15Z` → `2026-09-29T00:00:00Z`, the boundary) | `agents/provider/tests/test_alpaca_request.py` | PASS | `PROV-OUT-07` |
 | A3 | `test_iex_request_is_the_query_the_source_always_sent` (2 clocks a day apart; page 1 without and page 2 with `page_token`, through the real page loop; key order and the urlencoded bytes) | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07` |
 | A4 | `test_provider_default_feed_is_the_consolidated_tape` (`ProviderFeedSettings(_env_file=None)` reads `"sip"`; `market_source_from_settings` builds `AlpacaDataSource` with `_feed == "sip"`; `PROVIDER_ALPACA_DATA_FEED=iex` still overrides) | `agents/provider/tests/test_alpaca_data.py` | PASS | `PROV-OUT-07` |
@@ -598,8 +598,32 @@ here (DL-228); remote CI runs `uv sync --frozen` too.
 `git diff --stat uv.lock` is empty. `uv.lock` still records `trading-agents` `0.117.2`; the planner re-locks
 before merging.
 
+**`uv.lock` — planner, 2026-09-28:** re-resolved on Windows; the only change is `trading-agents` `0.117.2` →
+`0.117.3`, and `uv lock --check` reads `Resolved 173 packages`.
+
 **Planner live check (F1–F3):** *(planner, before merge)* — **not done: owed.** No `.env` and no route to
 Alpaca from this session.
+
+**Planner live check (F1–F3) — run 2026-09-28 01:30 UTC from the branch's local worktree (with the margin
+below), `uv run --env-file <main>/.env`, no `PROVIDER_ALPACA_DATA_FEED` set:**
+
+```text
+F1 now=2026-09-28T01:30:27Z feed(default)='sip'
+F1 pages=3 feed=sip end=2026-09-28T01:14:27Z (window.end=2026-09-28); ends equal across pages: True
+F1 names=99/99 bars=20500 latest=2026-09-25 LLY 203-avg=3,015,934
+F2 probe source feed='sip' -> ProbeResult(ok=True, message='alpaca-data probe passed')
+F3 floor=500,000 dropped_by_filter={'min_relative_strength': 40, 'max_beta': 3} survivors=56 candidates=25 cap=25
+F3 top candidates: ['TGT', 'TXN', 'MRK', 'DE', 'COP', 'CAT', 'XOM', 'CSCO', 'CVX', 'JNJ', 'BMY', 'C', 'MET',
+  'KO', 'NVDA', 'PM', 'AMGN', 'GILD', 'EMR', 'USB', 'AAPL', 'QCOM', 'UNP', 'ABBV', 'LMT']
+```
+
+F1: the fleet's own composition (`market_source_from_settings(ProviderSettings())`) over a 300-day window
+ending today, 99 names plus SPY; every page 200, every page the same `end`, 16 minutes back. LLY's average
+equals DL-233's SIP figure to the share. F2: the seeder's probe builds on `sip` and passes. F3: the
+scanner's own `apply_filters` + `rank_survivors` with the pack's effective settings drop **0** names on
+volume (against 60–64 a run on IEX) and the candidate cap binds for the first time. F3 passes no earnings
+dates (a Finnhub call per name), so `earnings_window` is skipped here; live, it drops 0–1 a run. F4 is owed
+on the first scheduled run after the operator's deploy.
 
 **Not met / verified failing:**
 
@@ -613,6 +637,11 @@ Alpaca from this session.
 
 ## Return notes
 
+- **Planner at merge, 2026-09-28: a one-minute clock margin** ([DL-239](../design-log.md) amendment). The
+  builder's point (b) below was measured before merging: an end 900 s back is served 3 of 3, 899 s is
+  refused 3 of 3, so exactly 15 minutes left only the clocks' agreement as headroom. `SIP_CLOCK_MARGIN`
+  (1 minute) joins the 15-minute constant; A1 now expects `22:14:00Z` and was renamed
+  `…_ends_clear_of_the_wall`; A2's cases moved with it. Red first; a zero-margin plant fails three tests.
 - **Scope held.** No decision-path file, no tunable, no env value, no `trading_credential_tests.json` change,
   no fallback, no retry. Two small moves inside scope: (1) `_download`'s page loop lost its
   `pragma: no cover` and is now covered through a stubbed `_download_page`, so `_download_page` really is the

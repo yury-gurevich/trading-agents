@@ -65,6 +65,20 @@ new clause forbids that.
 - *Rejected: name SIP in the clause.* The clause states the guarantee (consolidated volume); which Alpaca
   feed delivers it is the `PARAM` row's job, so a future vendor change does not need a law amendment.
 
+**Amendment — planner at merge, 2026-09-28: a one-minute clock margin.** The handback flagged that the
+end sits exactly 15 minutes back and a host clock running ahead of Alpaca's could draw a 403. Measured
+before merging *[2026-09-28, provider key, `AAPL` SIP bars, three requests per offset]*: an end **900 s**
+back is served 3 of 3; **899 s** is refused 3 of 3 (so are 898, 895, 890, 870 and 840 s). The wall is
+exact to the second, and sending exactly 900 s leaves only the clocks' agreement as headroom: one
+second of drift would fail every SIP fetch of a run. `SIP_CLOCK_MARGIN = timedelta(minutes=1)` joins
+`SIP_RECENT_DATA_DELAY` (still Alpaca's 15 minutes, still a named constant, not a tunable), so a SIP
+request ends 16 minutes back. Cost: an intraday manual run's partial bar is one minute older; the
+scheduled run, 2.5 hours after the close, loses nothing. A1 now expects `22:14:00Z` (renamed
+`…_ends_clear_of_the_wall`), A2's clamp case `23:49:00Z`, and its midnight-wins case moves from
+00:15 to 00:16. Red first (`22:15:00Z` sent, `22:14:00Z` required); planted: a zero margin fails three
+tests, restored. *Rejected:* a retry on 403 (DL-233 amendment, decision 2); waiting for a live 403 to
+size the margin (the boundary is already measured, and the failure costs a run's prices).
+
 ## DL-238 - S237 replays each stage through the fleet's own composition on the exported live inputs, and names every input it cannot rebuild - status: DECIDED (builder, 2026-09-27; S237, rewritten at the return)
 
 **Correction first (R10).** The first version of this entry, written for the handback at `c67a62e4`,

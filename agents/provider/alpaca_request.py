@@ -21,6 +21,10 @@ SIP_FEED = "sip"
 # recent SIP data", DL-233 amendment). The entitlement is Alpaca's, not a policy
 # of ours, so this is a named constant and never a tunable or settings field.
 SIP_RECENT_DATA_DELAY = timedelta(minutes=15)
+# The wall is exact: an end 900 s back is served and 899 s is refused (measured
+# 2026-09-28, three of three each). Sending exactly 900 s leaves only the clocks'
+# agreement as headroom, so a host a second ahead would lose every SIP fetch.
+SIP_CLOCK_MARGIN = timedelta(minutes=1)
 _TIMEFRAME = "1Day"
 _PAGE_LIMIT = "10000"  # Alpaca's maximum bars per page.
 
@@ -51,7 +55,7 @@ def bars_page_query(
 
 
 def _end(window: Window, feed: str, now: datetime) -> str:
-    """End a SIP request at the midnight after the window, or at the wall.
+    """End a SIP request at the midnight after the window, or clear of the wall.
 
     Midnight *after* ``window.end``, never ``window.end`` at 00:00: daily bars are
     stamped 04:00Z or 05:00Z, so an end at the window day's midnight drops that
@@ -60,5 +64,6 @@ def _end(window: Window, feed: str, now: datetime) -> str:
     if feed != SIP_FEED:
         return window.end.isoformat()
     after_window = datetime.combine(window.end + timedelta(days=1), time(), UTC)
-    end = min(after_window, now.astimezone(UTC) - SIP_RECENT_DATA_DELAY)
+    wall = now.astimezone(UTC) - SIP_RECENT_DATA_DELAY - SIP_CLOCK_MARGIN
+    end = min(after_window, wall)
     return end.strftime("%Y-%m-%dT%H:%M:%SZ")

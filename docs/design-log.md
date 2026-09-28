@@ -116,6 +116,16 @@ INSUFFICIENT (6.2 % fits fell back against a 2 % limit, almost all on the α + �
 the 2 % bar on production's history. Next: EXP-018, boundary fits accepted, at 203 / 756 / full bars, plus the cost
 of a 756-bar SIP request (possible since S238). The build waits on it.
 
+**Measured 2026-09-28 — [EXP-018](research/experiments/EXP-018-garch-history-depth.md): the model is GARCH(1,1)
+on ~3 years of history.** With boundary fits accepted (persistence capped at 0.999), its skill over climatology
+is **+2.67 %** [+1.88, +3.48] at 756 bars, with 0.39 % failed fits: the first model to clear the pre-registered
+bar. At 203 bars +1.57 % (short); full history +2.35 % (three years beats ten). A live 756-bar SIP fetch costs 8
+pages and 19 s. **Decided (planner, delegated): the live ledger is built on it**, as a forecaster shadow model
+with its own 760-session history request, leaving the scanner / analyst window (a decision path) untouched.
+Order: the test-bed chore, sprint A (the forecaster states barrier probabilities for approved buys, a new
+append-only record, full `up`), sprint B (settlement ten sessions later and a scorecard). No trading behaviour
+changes until an exit experiment on these probabilities passes; sizing on them stays the operator's.
+
 **Work-queue 71 folds into 92** (planner, on the operator's pointer; reversible): its three measured steps
 (the ledger, the sticky regime label, barrier simulation only where a decision needs it) become this
 track's evidence base. Revised sequence: item 91 → measure the book → **the ledger** (starting with the

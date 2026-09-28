@@ -50,4 +50,10 @@ tokens. 🟠 **Not yet wired:** no vault-seed entry, no secret-map grant, no mas
 belong to the sprint that builds the shadow path, so master can test the key before any agent gets it
 (DL-36).
 
+**Measured 2026-09-28 — [EXP-016](research/experiments/EXP-016-jev-barrier-probabilities.md):** asked to
+forecast stop-first / target-first / neither from numeric features, Jev scored far worse than climatology
+(Brier 0.855 against 0.616) with inverted calibration, and with a model's estimate in hand it copied the
+likeliest outcome at ~0.96. That rules it out as a numeric forecaster; it does not test the typed-text
+decisions this entry proposes.
+
 **Status:** uncommitted — the operator wants it built; not yet specced or ranked.

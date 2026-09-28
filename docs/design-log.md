@@ -102,6 +102,12 @@ What this repo's evidence changes about the moonshot (planner):
   EXP-011 placed it); the PM consumes it; the daily re-read of held names feeds the exits.
 - **Kelly / CVaR sizing is capital-risk policy**: the operator's, and the last step.
 
+**Measured 2026-09-28 — [EXP-016](research/experiments/EXP-016-jev-barrier-probabilities.md): Jev is not a
+forecaster here** (operator: *"I want to try JEV AI on it"*). On 5,862 of EXP-011's decisions its Brier is
+0.84–0.85 against climatology 0.616 and the bootstrap 0.606; alone its probabilities point the wrong way, and
+given the bootstrap's estimate it copies the likeliest outcome at ~0.96. The ledger's challengers are
+simulation models. Jev's typed-text use (ideas.md) is untouched by this.
+
 **Work-queue 71 folds into 92** (planner, on the operator's pointer; reversible): its three measured steps
 (the ledger, the sticky regime label, barrier simulation only where a decision needs it) become this
 track's evidence base. Revised sequence: item 91 → measure the book → **the ledger** (starting with the

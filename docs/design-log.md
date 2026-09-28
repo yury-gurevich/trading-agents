@@ -72,6 +72,10 @@ that is theirs to lift.
   separate capability with its own capital-risk policy.
 - **Intraday strategies.** The fleet decides once a day after the close and trades at the next open;
   weekend and two-week holds fit that cadence, intraday does not.
+- **Installing ABIDES** (operator, 2026-09-28: *"install ABIDES if we need it"*; planner: not needed). It
+  simulates an exchange's order book tick by tick (order flow, queue position, intraday impact). The
+  outcomes here are daily paths over 1–10 sessions, which daily-bar models answer; ABIDES would earn a
+  place only for intraday execution or market-impact questions, which this book's size does not raise.
 
 **Stays the operator's:** the mix of holding profiles and any cap on it is capital-risk policy.
 

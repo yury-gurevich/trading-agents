@@ -10,7 +10,134 @@ edge over climatology. Cost **$0.39**. Pre-registered 2026-09-28 (`4745c2e3`) be
 (2026-09-23/24) · test bed from [EXP-011](EXP-011-regime-markov-and-barrier-calibration.md).
 **Cost:** Jev bills input only, $0.042 per million tokens; the run is capped at 10 M input tokens ($0.42).
 
-## Purpose
+## 1. Why we needed this experiment
+
+The operator set the direction on 2026-09-28 ([DL-240](../../design-log.md), work-queue 92): manage the book
+as a distribution. Every candidate and every held stock carries the probability of reaching its target
+first, its stop first, or neither, and drop / trim / add / take-profit decisions follow from those
+probabilities. Nothing may size a position on a probability until a ledger shows the probability comes
+true. [EXP-011](EXP-011-regime-markov-and-barrier-calibration.md) had already found the best cheap model (a
+bootstrap over each stock's own past days) beats simply quoting past outcome shares by only ~1 %. The
+operator asked to try **TypeSafe's Jev** (*"I want to try JEV AI on it"*): a model that returns a calibrated
+probability for each option of a typed question in one call, for fractions of a cent. Its vendor measures
+calibration against frontier models' agreement, not against real outcomes, so the question was open.
+
+## 2. Hypothesis
+
+- **H1 (primary):** Jev given the features **and** the bootstrap's estimate (arm J2) scores a lower 3-outcome
+  Brier than the bootstrap alone; the 95 % interval of the difference lies below zero.
+- **H2 (secondary):** Jev given the features only (arm J1) scores a lower Brier than climatology (the
+  outcome shares of all earlier years); interval below zero.
+- **H0:** neither. Jev then earns no place as a forecaster in the ledger.
+
+The Brier score measures how far a stated probability is from what happened (0 is perfect; lower is better).
+The interval comes from resampling whole decision dates, because stocks on one date move together.
+
+## 3. Data
+
+- **Daily bars:** the replay cache built by `scripts/replay_dataset.py` (OneDrive `trading-agents-data/`, never
+  the repo: the data is licensed and the repo is public). `bars.csv.gz` (sha-256 prefix `12374e3e5493`):
+  **263,005** Alpaca daily bars, **SIP** (consolidated tape), split- and dividend-adjusted, for **98** names
+  (the live universe on 2026-09-16), 2016-01-04 → 2026-09-16 (LIN from 2018-10).
+- **VIX:** `vix.csv.gz` (prefix `e5d4fe621031`), Cboe's public daily history, 9,277 sessions, 1990-01-02 →
+  2026-09-21, labelled with the provider's live regime thresholds.
+- **Decisions:** EXP-011's test bed, rebuilt from those files: a decision at the close of every 5th session
+  from 2017-01-03, per name: **47,485** cases (486 dates × 98 names). Stop = clamp(2 × ATR14 ÷ close, 2.5 %,
+  8 %); target = median best 10-session close-to-high rise over the 120 prior settled windows. Outcome over
+  the next 10 sessions, the low checked before the high: stop first, target first, or neither. Reproduced
+  exactly (realised 0.285 / 0.480 / 0.235) before each run.
+- **Known defect:** DOW has flat placeholder bars for 2018 (it listed in 2019): a handful of degenerate
+  cases (0 % target), kept and scored alike by every model.
+- **Test sample:** 60 decision dates drawn at random from 2018–2026 (seed `20260928`), every stock on each:
+  **5,862** cases. **Pilot:** 30 cases from 2017, never scored.
+- **Sent to Jev:** only features computed in code, rounded to 2 decimals, with **no ticker, date or sector**:
+  stop and target distance, their ratio, ATR %, 20-session volatility against its 1-year median, returns
+  over 5 / 20 / 60 / 250 sessions, distance from the 50- and 200-session averages and from the 250-session
+  high, VIX and its regime label. J2 also received the bootstrap's three probabilities.
+- Derived files (`exp016_sample.pkl`, prefix `1056bd7b2b29`; answers `exp016_jev_test.jsonl`, prefix
+  `79cb0522035b`) are in OneDrive `trading-agents-data/exp016/`.
+
+## 4. Tools and setup
+
+- **Machine:** Intel Core i7-7660U (2 cores / 4 threads, 2.5 GHz), 15.9 GB RAM, Windows 10 Pro 19045.
+- **Python** 3.13.2 run through **uv** 0.8.14; **numpy** 2.4.6.
+- **Jev:** TypeSafe System One API, `POST https://api.typesafe.ai/v1/systemone`, model alias `jev-latest`,
+  served by **`jev-1.13.0`** on every call; one `choice` question with three options per case. Key from
+  `.env` (`TYPESAFE_API_KEY`), never in the repo.
+- **Concurrency:** 6 parallel requests (4 for the pilot), 3 attempts per request, a hard stop at 10 M input
+  tokens.
+- **Seeds:** sample `20260928`; the bootstrap's paths `20260917` (1,000 paths per case); interval resampling
+  `20260928` (1,000 resamples).
+- **Repo:** pre-registered at `4745c2e3`; run and recorded from `main` the same day.
+- **Cost:** **$0.39** (9.3 M input tokens at $0.042 per million; output is free), pilots $0.004. Median
+  latency 0.28 s, 0 errors in 11,724 requests.
+
+## 5. How it was conducted
+
+1. Pre-registered the question, arms, sample, scoring and bar, and committed before any scored call.
+2. Rebuilt EXP-011's 47,485 decisions from the cache and checked the reproduction.
+3. Computed each test case's features, its climatology and its bootstrap estimate.
+4. Ran the **pilot** (30 cases × 2 arms). Version 1 showed J2 collapsing onto the bootstrap's likeliest
+   outcome (mean top probability 0.98). One rewording was allowed: ask for "the probability it would have
+   across many such positions, not a verdict on the likeliest one". J2 moved only to 0.93, and the prompt
+   was frozen there rather than tuned further.
+5. Sent all 5,862 test cases through both arms (11,724 calls).
+6. Scored the four models on the same cases: Brier, the two pre-registered differences with date-resampled
+   intervals, calibration buckets, Brier by year, and Jev's confidence against its accuracy.
+
+Two build defects were found and fixed before any call (neither changes the design): a rolling window that
+read before a stock's first bar, and DOW's undefined volatility ratio, sent as `null`. Details in Appendix R.
+
+## 6. Results
+
+| Model | 3-outcome Brier (lower is better) |
+| --- | --- |
+| Bootstrap (`all_history`) | **0.6056** |
+| Climatology | 0.6157 |
+| Jev J2 (features + bootstrap estimate) | 0.8435 |
+| Jev J1 (features only) | 0.8546 |
+
+- **H1: fails.** J2 − bootstrap = **+0.238**, interval [+0.188, +0.289] (positive means worse).
+- **H2: fails.** J1 − climatology = **+0.239**, interval [+0.172, +0.309].
+- **J1's calibration runs backwards:** when it said stop-first 0.84 the stop came first 15 % of the time;
+  when it said target-first 0.07 the target came first 62 %. At its highest confidence its top choice was
+  right 12 % of the time.
+- **J2 copies the likeliest outcome at ~0.96** (4,807 of 5,862 answers at confidence ≥ 0.8), right 55 % of the
+  time there.
+- The bootstrap beats climatology by −0.0101 [−0.0197, +0.0001]: EXP-011's small edge again.
+- No period where Jev does well (best J1 year 0.743; worst climatology year 0.674), so recall of history does
+  not explain it.
+
+## 7. Conclusions
+
+- **Jev is not a forecaster of these probabilities.** On numbers alone it applies a "risky-looking, so the
+  stop comes first" intuition, where this repo has twice measured the opposite (EXP-012, EXP-013: volatile
+  and stressed names returned more). Given a model's estimate it does not blend; it picks.
+- A `choice` answer's probabilities are Jev's belief about which option is the answer, not a frequency; the
+  wording could not change that. That fits its own documentation ("keep the arithmetic in code").
+- **What it does not say:** nothing about Jev on typed judgements over text, which is what it is built for
+  (the deliberator-verdict and sentiment shadow path in [ideas.md](../../ideas.md)).
+- The ledger's challengers are **simulation models**, which led to
+  [EXP-017](EXP-017-block-bootstrap-and-garch-barrier-probabilities.md).
+
+## 8. Recommended code changes, and how to implement them
+
+1. **No change to the fleet's code.** Do not add Jev as a probability source in the forecaster or the PM.
+2. **Move the barrier test bed into the repo** (`scripts/barrier_testbed.py`): the decision builder,
+   outcome rule, climatology and the date-resampled scorer that EXP-011, EXP-016 and EXP-017 each carried as
+   appendix code. *How:* a chore on its own branch (`chore-barrier-testbed`), the logic extracted from
+   Appendix S unchanged; unit tests on a synthetic three-stock fixture (low-before-high, a 0 % target,
+   neither); the reproduction (47,485 cases, 0.285 / 0.480 / 0.235) as the planner's live check from the
+   main checkout; module size under 200; full `make ci` and gate; PATCH bump. No deploy (scripts ship in no
+   image). The planner decides; it is tooling.
+3. **Jev's typed-text shadow path stays a separate, unranked idea** ([ideas.md](../../ideas.md)); this result
+   neither blocks nor supports it.
+
+## Appendix P — Pre-registration (frozen)
+
+Verbatim as committed at `4745c2e3`, before any scored call.
+
+### Purpose
 
 **Question.** For the fleet's own stop and target on a trade, does TypeSafe's **Jev** (`jev-latest`) give
 probabilities for *stop first / target first / neither within 10 sessions* that come true, better than the
@@ -36,7 +163,7 @@ calibration against frontier models' agreement, not against outcomes; this measu
 Two arms are tested, and each hypothesis names its own arm and baseline; neither is re-labelled after the
 fact.
 
-## Process
+### Process
 
 Everything below is fixed now.
 
@@ -96,7 +223,7 @@ historical resampling estimate. Nothing else differs.
 test cases are missing, the verdict is INSUFFICIENT. Otherwise the missing cases are dropped from all four
 models alike.
 
-## Delivery
+## Appendix R — Run record
 
 **Run 2026-09-28**, planner, from the main checkout with `.env` (`TYPESAFE_API_KEY`), data in OneDrive
 `trading-agents-data/exp016/` (never the repo). Served by **`jev-1.13.0`** throughout.
@@ -178,37 +305,7 @@ requests 11724, errors 0, input tokens 9,299,767 ($0.3906), latency median 0.28s
 degenerate DOW cases (0 % target) kept in all four models: 14
 ```
 
-## Interpretation
-
-1. **H1 fails and H2 fails, by a wide margin.** J2 − `all_history` = **+0.238** [+0.188, +0.289];
-   J1 − climatology = **+0.239** [+0.172, +0.309]. Positive means worse. Jev's 3-outcome Brier (0.84–0.85)
-   is further from the outcomes than simply quoting earlier years' shares (0.616).
-2. **Alone, Jev's probabilities point the wrong way.** J1 declares stop-first 0.53 on average against a
-   realised 0.21, and its buckets run backwards: said 0.28 → got 0.19, said 0.84 → got 0.15; said
-   target-first 0.07 → got 0.62. Its confidence is inverted too (confidence 0.8–1.0: top choice right
-   12 %). The reading that fits: Jev applies a "risky-looking, so the stop comes first" intuition, where this
-   repo has measured the opposite gradient twice (EXP-012, EXP-013: volatile and stressed names returned
-   more). **Flipping J1's answers is not a finding**: it was not pre-registered and would be fitted on this
-   sample.
-3. **Given the bootstrap's estimate, Jev does not blend; it picks.** J2 copies the estimate's likeliest outcome
-   at ~0.96 (4,807 of 5,862 answers at confidence ≥ 0.8) and is right 55 % of the time there. That is a
-   classifier's behaviour: a `choice` answer's probabilities are Jev's belief about which option is the
-   answer, not a frequency, and the frequency wording in v2 did not change that.
-4. **The bootstrap holds up.** `all_history` − climatology = **−0.0101** [−0.0197, +0.0001] on this sample,
-   the same small edge EXP-011 measured (−0.0060), and its target-first calibration is near the diagonal
-   (said 0.54 → got 0.60). The ledger's first challengers are simulation models (DL-240): block bootstrap or
-   GARCH next, not a language model.
-5. **What this does not say.** It does not test Jev on what it is built for: typed judgements over text (the
-   [ideas.md](../../ideas.md) shadow path for deliberator verdicts and sentiment labels). There its
-   calibration is compared against frontier models, which is a different question. Here it was asked to
-   forecast from numbers, which its own documentation calls a jagged edge ("keep the arithmetic in code").
-6. **Recall does not explain it.** Tickers and dates were withheld, and the by-year Brier shows no period
-   where Jev does well (best J1 year 0.743; worst climatology year 0.674).
-
-**Feeds:** DL-240 (the ledger's challengers are simulation models) · work-queue 92 · the Jev idea
-(unchanged for typed text decisions).
-
-## Reproducing
+### Reproducing
 
 Data: the replay cache (`scripts/replay_dataset.py --describe`: 263,005 bars, 98 names). From the repo root:
 `PYTHONPATH=. uv run python exp016_build.py <dir>` (writes `exp016_sample.pkl`), then
@@ -216,7 +313,9 @@ Data: the replay cache (`scripts/replay_dataset.py --describe`: 263,005 bars, 98
 tokens), then `uv run python exp016_score.py <dir>`. Seeds are fixed; Jev's answers are its own and may
 drift across model versions.
 
-## Appendix A - `exp016_build.py`
+## Appendix S — Scripts
+
+### `exp016_build.py`
 
 ```python
 """EXP-016 step 1 - rebuild EXP-011's decisions from the replay cache; features, baselines, sample.
@@ -356,7 +455,7 @@ flat = [s for s in sample.values() if s["role"] == "test" and s["features"]["tar
 print("test cases with a 0 % target (degenerate):", len(flat), sorted({s["sym"] for s in flat}))
 ```
 
-## Appendix B - `exp016_jev.py` (the frozen v2 prompt)
+### `exp016_jev.py` (the frozen v2 prompt)
 
 ```python
 """EXP-016 step 2 - ask Jev, one choice question per case and arm; resumable JSONL.
@@ -494,7 +593,7 @@ def main():
 main()
 ```
 
-## Appendix C - `exp016_score.py`
+### `exp016_score.py`
 
 ```python
 """EXP-016 step 3 - score the test sample exactly as pre-registered.

@@ -108,6 +108,14 @@ forecaster here** (operator: *"I want to try JEV AI on it"*). On 5,862 of EXP-01
 given the bootstrap's estimate it copies the likeliest outcome at ~0.96. The ledger's challengers are
 simulation models. Jev's typed-text use (ideas.md) is untouched by this.
 
+**Measured 2026-09-28 — [EXP-017](research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md):
+GARCH is the model, not yet the ledger.** On 42,456 decisions GARCH(1,1) filtered historical simulation is the only
+model with skill on the fleet's 203 bars (+1.47 % over climatology; +2.26 % on full history); the plain bootstrap
+has none on 203 bars (−0.49 %), and the block bootstrap is worse than the plain one. The formal GARCH verdict is
+INSUFFICIENT (6.2 % fits fell back against a 2 % limit, almost all on the α + β = 1 boundary), and nothing clears
+the 2 % bar on production's history. Next: EXP-018, boundary fits accepted, at 203 / 756 / full bars, plus the cost
+of a 756-bar SIP request (possible since S238). The build waits on it.
+
 **Work-queue 71 folds into 92** (planner, on the operator's pointer; reversible): its three measured steps
 (the ledger, the sticky regime label, barrier simulation only where a decision needs it) become this
 track's evidence base. Revised sequence: item 91 → measure the book → **the ledger** (starting with the

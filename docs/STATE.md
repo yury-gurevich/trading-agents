@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 12:21 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 13:45 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🧪 **MEASURED — [EXP-016](research/experiments/EXP-016-jev-barrier-probabilities.md) and [EXP-017](research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md), 2026-09-28 (item 92's probability model).** Jev is not a forecaster of stop / target probabilities (Brier 0.84–0.85 against climatology 0.616; $0.39). GARCH is the only model with skill on the fleet's 203 bars (+1.47 %; +2.26 % on full history), formally INSUFFICIENT on boundary fits; next EXP-018. Both records follow the operator's new eight-section experiment format ([template](research/experiments/_TEMPLATE.md)).
 
 🧭 **DIRECTION — the book is managed as a distribution ([DL-240](design-log.md), work-queue 92), 2026-09-28.** Operator: short holding periods on stocks we buy (not short selling), sell at a profit, drop / trim / add by evidence. Today the only exit that fires is the stop. Sequence: item 91 → measure the book → a pre-registered exit experiment on the replay cache → build in increments. The operator named the meaning: [moonshot #1](moonshots.md), a distribution per position instead of a score; item 71 folds in and its ledger is the first build.
 

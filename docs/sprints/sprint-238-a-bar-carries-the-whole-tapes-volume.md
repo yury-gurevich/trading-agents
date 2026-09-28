@@ -126,11 +126,13 @@ below). That is why this is a sprint and not an env edit.
 
 1. **The failing tests first** (A1–A6 below), asserted on the request the provider sends and the source
    it builds, not on a proxy.
-2. **The request end rule.** A pure, fully covered function computes the `end` a request sends from
-   `(window, feed, now)`: for `sip`, `min(midnight UTC after window.end, now − 15 min)` as RFC 3339 with
-   `Z`; for any other feed, `window.end.isoformat()` exactly as today. `AlpacaDataSource` takes an
-   injectable clock (default: the real UTC time). `_download_page` stays the only `pragma: no cover`
-   code, and the rule does not hide inside it.
+2. **The request end rule, and the whole query with it.** One pure, fully covered function builds the
+   complete query a page request sends (`symbols`, `timeframe`, `start`, `end`, `feed`, `limit`,
+   `page_token`) from `(tickers, window, feed, page_token, now)`. Its `end`: for `sip`,
+   `min(midnight UTC after window.end, now − 15 min)` as RFC 3339 with `Z`; for any other feed,
+   `window.end.isoformat()` exactly as today. `AlpacaDataSource` takes an injectable clock (default:
+   the real UTC time). `_download_page` only encodes and sends what that function returns: it stays
+   the only `pragma: no cover` code, and no rule hides inside it.
 3. **The default flips.** `ProviderFeedSettings.alpaca_data_feed` defaults to `"sip"`.
    `PROVIDER_ALPACA_DATA_FEED` still overrides it.
 4. **One source for the default.** The seeder's probe (`trading_vault_probes._alpaca_data_source`) falls
@@ -211,7 +213,7 @@ may land another DL on `main` before you merge.
    to `"iex"` (A4 red); the probe's fallback hard-coded to `"iex"` (A5 red); a 403 swallowed into an
    empty result (A6 red).
 7. **Confirm the decision paths are untouched:**
-   `git diff --name-only main...HEAD | grep -E '^(agents/(scanner|analyst|portfolio_manager|provider/domain)/|contracts/|agents/execution/order_tolerance\.py|orchestration/packs/trading_(tunables|issuer_map)\.json|orchestration/history_window\.py)'`
+   `git fetch origin main && git diff --name-only origin/main...HEAD | grep -E '^(agents/(scanner|analyst|portfolio_manager|provider/domain)/|contracts/|agents/execution/order_tolerance\.py|orchestration/packs/trading_(tunables|issuer_map)\.json|orchestration/history_window\.py)'`
    must print nothing. Paste the command and its (empty) output.
 8. **`make ci` green**: every step of the `ci:` target, **redirected to a file, never piped**.
 9. **Fill the handback sections** at the bottom of this file.
@@ -224,7 +226,7 @@ may land another DL on `main` before you merge.
 | --- | --- | --- | --- |
 | A1 | 🎯 A SIP request for a window ending today never ends inside the last 15 minutes (`PROV-OUT-07`) | clock `2026-09-28T22:30:00Z`; window ending `2026-09-28` | the request's `end` is `2026-09-28T22:15:00Z`, and that session's 04:00Z bar would be inside it |
 | A2 | A SIP request for a past window ends at the midnight after it | clock `2026-10-02T12:00:00Z`, window ending `2026-09-28`; and clock `2026-09-29T00:05:00Z`, same window | `2026-09-29T00:00:00Z`; then `2026-09-28T23:50:00Z` (the clamp wins in the first 15 minutes after midnight) |
-| A3 | An IEX request is byte-identical to today's | any clock; `feed="iex"` | `end` is `window.end.isoformat()` and every other parameter is unchanged |
+| A3 | An IEX request is byte-identical to today's | two clocks a day apart; `feed="iex"`; with and without a `page_token` | the whole query equals the dict `main`'s `_download_page` builds today, parameter for parameter, and does not depend on the clock |
 | A4 | The provider's default feed is SIP (`PROV-OUT-07`) | `ProviderFeedSettings()` with no env; `market_source_from_settings` | the setting reads `"sip"` and the composed `AlpacaDataSource` is built with `feed="sip"` |
 | A5 | The seeder probe tests the fleet's feed | env without `PROVIDER_ALPACA_DATA_FEED`; then with it set to `iex` | the probe's source reads `"sip"`, then `"iex"`: the default comes from the provider, and the override still works |
 | A6 | 🪤 A refused request fails loud (`PROV-OUT-07` / `PROV-FAIL-01`) | the page download raises `HTTPError` 403 | `fetch_ohlcv` raises: no `()` success, and no second request on another feed |
@@ -287,19 +289,20 @@ untested logic that reads as covered.
 - Faults, not silent failure: `kernel.fault_boundary`.
 - `make ci` **every step** green, **100.00 % coverage floor**. **Never measure the gate through a
   pipe**: `make ci | tail` reports *`tail`'s* exit code. Redirect to a file and read the file.
-- Version bump: PATCH, `uv.lock` staged with it. 🪤 `uv lock` needs the network; if your sandbox has
-  none, say so in the handback and the planner re-locks.
-- Secrets never through the worktree. A worktree has **no `.env`**, so no live proof is possible there:
-  **state which tree you ran in**, and leave F1–F3 to the planner.
+- Version bump: PATCH in `pyproject.toml`. 🪤 A cloud session cannot re-resolve `uv lock`
+  (`download.pytorch.org` is blocked, DL-228): if it fails, leave `uv.lock` untouched and say exactly
+  that; the planner re-locks before merging.
+- Secrets never through the tree. The cloud session has **no `.env`, no `gh` and no Azure**, so no live
+  proof is possible there: **state which environment you ran in**, and leave F1–F3 to the planner.
 
 ---
 
 ## Sequencing after merge
 
-1. `make ci` green locally, branch pushed, **`make gate-ran` exits 0**.
-   🪤 **Run it from the worktree whose `HEAD` is the commit you are proving**; check the printed SHA
-   against `git rev-parse HEAD`.
-2. Planner runs F1–F3 on the branch before merging. Check the branch ref's open CodeQL alerts too: the
+1. The cloud session: `make ci` green in its environment, the branch pushed, then it stops.
+2. The planner, locally: re-lock if owed, `make ci` on Windows, **`make gate-ran` exits 0** from a
+   worktree whose `HEAD` is the pushed commit (🪤 check the printed SHA against `git rev-parse HEAD`),
+   then F1–F3 on that worktree with `main`'s `.env`. Check the branch ref's open CodeQL alerts too: the
    Security Findings gate reads `main`'s.
 3. Merge to `main` locally and push. 🪤 Check you are not on the branch already.
 4. **Post-merge CodeQL** on `main`.
@@ -310,45 +313,54 @@ untested logic that reads as covered.
 
 ---
 
-## Handover — paste this to Codex
+## Handover — paste this to the Claude cloud session
 
 ```text
 Sprint 238 — a bar carries the whole tape's volume, and fetching it never trips the plan's
-15-minute wall.
-Spec: docs/sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md (read all of it).
+15-minute wall. Spec: docs/sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md on main
+(read ALL of it, then CLAUDE.md). Repo: yury-gurevich/trading-agents.
 
-Branch: sprint-238-a-bar-carries-the-whole-tapes-volume, in its own worktree. Never main.
+Branch: sprint-238-a-bar-carries-the-whole-tapes-volume, cut from main. Never main. If your session
+forces another branch name, use it and name it in the handback.
+You have NO .env, NO gh, NO Azure and no route to download.pytorch.org. Every proof is a unit test.
+You cannot run `make gate-ran`: it is owed to the planner. If `uv lock` cannot re-resolve after the
+version bump, leave uv.lock untouched and say exactly that. A run result read through the GitHub
+connector is an observation, never GATE PROVEN. Take DL-239 (re-check it is still free on main).
 
-The defect (measured, DL-233 + its 2026-09-28 amendment): the provider fetches Alpaca bars with
-feed=iex (ProviderFeedSettings.alpaca_data_feed default), so volume is IEX's 1.55-6.49 % share of
-the tape. The scanner's 500,000 floor drops 65 of 99 names on IEX and 0 on SIP. Flipping the default
-alone FAILS: Alpaca reads the bare-date end (_download_page sends window.end.isoformat()) as the end
-of that day, and on this plan any SIP request whose end is within the last 15 minutes is refused
-(measured 403 "subscription does not permit querying recent SIP data"). end = now - 16 min: 200.
+The defect (measured, DL-233 and its 2026-09-28 amendment): the provider fetches Alpaca daily bars
+with feed=iex (ProviderFeedSettings.alpaca_data_feed default), so volume is IEX's 1.55-6.49 % share
+of the tape. The scanner's 500,000 floor drops 65 of 99 names on IEX and 0 on SIP. Flipping the
+default alone FAILS: _download_page sends end=window.end.isoformat(), Alpaca reads a bare date as
+the end of that day, and on this plan a SIP request whose end is within the last 15 minutes is
+refused (measured 403 "subscription does not permit querying recent SIP data"), at any hour, even on
+a Sunday. end = now - 16 min: 200.
 
-MUST RULE before any code: read agents/provider/laws/{laws.md,test-plan.md} whole (PROV-IDN,
+MUST RULE before any code: read agents/provider/laws/laws.md and test-plan.md whole (PROV-IDN,
 PROV-OUT-01/03/04, PROV-FAIL-01/05, PARAM alpaca_data_feed), the scanner book's PARAM row for
 min_average_volume, docs/laws/conventions.md, docs/laws/drift-register.md. Fill the Law reading
-record first.
+record in the spec first, before any code.
 
 Law-cycle answer: YES (a new guarantee; no contracts/ change). PROV-OUT-07: a bar's volume is the
 consolidated tape's; a request never asks for what the entitlement refuses; a refusal fails loud.
-Provider book v1.3 -> v1.4 + Changelog, PARAM row "sip", test-plan rows, docstring citations,
-docs/laws/ledger.md + docs/laws/INDEX.md rollups, DRIFT-080 (law gap, CORRECTED S238).
+Provider book v1.3 -> v1.4 + Changelog, PARAM row "sip", test-plan rows, clause ID in each test
+docstring, rollups in docs/laws/ledger.md AND docs/laws/INDEX.md (make ci recomputes them),
+DRIFT-080 (law gap, CORRECTED S238).
 
 Build:
-1. A pure, covered end rule: (window, feed, now) -> end string. sip: min(midnight UTC after
-   window.end, now - 15 min), RFC 3339 with Z. Any other feed: window.end.isoformat(), unchanged.
-   15 minutes is a named constant, not a tunable/settings field. AlpacaDataSource takes an
-   injectable clock (default real UTC now). alpaca_data.py is 181 lines: put the rule in a sibling.
+1. One pure, covered function builds the WHOLE page query (symbols, timeframe, start, end, feed,
+   limit, page_token) from (tickers, window, feed, page_token, now). end for sip: min(midnight UTC
+   after window.end, now - 15 min), RFC 3339 with Z. Any other feed: window.end.isoformat(),
+   exactly today's query. 15 minutes is a named constant, not a tunable or settings field.
+   AlpacaDataSource takes an injectable clock (default real UTC now). _download_page only encodes
+   and sends that dict. alpaca_data.py is 181 lines: put the builder in a sibling module.
 2. ProviderFeedSettings.alpaca_data_feed default "sip". PROVIDER_ALPACA_DATA_FEED still overrides.
 3. orchestration/packs/trading_vault_probes.py _alpaca_data_source: fall back to the provider's own
    default, not a second "iex" literal. That file is 181 lines too.
 
-Order: DL (next free, DL-239 at spec time) -> red tests A1-A6 (paste) -> implement -> law cycle ->
-DL-70 plants (no clamp; clamp on iex; default back to iex; probe hard-coded iex; 403 swallowed to
-(): each must go red; restore) -> step 7's decision-path grep prints nothing -> make ci redirected
-to a file, exit 0, 100.00 %.
+Order: DL-239 -> red tests A1-A6 (paste the red output) -> implement -> law cycle -> DL-70 plants
+(no clamp; clamp on iex; default back to iex; probe hard-coded iex; 403 swallowed to (): each must
+go red, paste each, restore) -> the step 7 decision-path grep prints nothing -> make ci redirected to
+a file, exit 0, 100.00 %.
 
 DO NOT:
 - touch any file on scripts/replay_fidelity_git.py DECISION_PATHS: agents/scanner/,
@@ -362,15 +374,26 @@ DO NOT:
 - send end as window.end at T00:00Z: it drops the day's bar (stamped 04:00Z/05:00Z).
 - put logic inside _download_page (pragma: no cover).
 - change min_average_volume or any other tunable.
-- claim a live Alpaca proof: the worktree has no .env and the sandbox no network. F1-F3 are the
-  planner's.
-- pin a version: PATCH, next available at merge, uv.lock staged with it (say so if uv lock needed
-  network you did not have).
+- let any test reach the network (the session's egress refuses hosts; stub every HTTP call).
+- claim a live Alpaca proof or GATE PROVEN: F1-F3 and the gate are the planner's after you push.
+- pin a version: PATCH, next available at merge; uv.lock as above.
 
-Handback: Law reading record, Test plan results, Closeout (red then green, DL-70 plants, the
-decision-path grep, line counts, make ci file + exit code, make gate-ran from the worktree at the
-full SHA if you can run it), Return notes. Status: BUILT, and this sprint's README.md row leads with
-BUILT in the same commit. Anything not met: "not done".
+Handback — the planner returns it if ANY of these is missing:
+[ ] Law reading record filled, including the law-cycle answer and contradictions/silences found.
+[ ] Test plan results: A1-A6, each with its final test name, file, PASS, and clause IDs cited.
+[ ] Closeout: the red run pasted before the fix; the green run pasted after.
+[ ] Each of the five DL-70 plants: what was planted, its red output, restored.
+[ ] The step 7 decision-path grep: the command and its empty output.
+[ ] Module line counts for every file touched (all < 200).
+[ ] make ci: the file it went to, exit code, passed/skipped, coverage 100.00 %, dependency audit,
+    detect-secrets.
+[ ] Exactly how uv.lock was touched (re-resolved, or untouched and owed).
+[ ] Return notes: scope held or moved; what you disagreed with after reading the laws; what the
+    next sprint should know.
+[ ] Status: BUILT on the spec, and this sprint's README.md row leads with BUILT, in the same commit.
+[ ] Owed items named: make gate-ran, Windows make ci, uv lock if not re-resolved, F1-F3.
+Commit on the branch and PUSH it, then stop: no merge. Anything not met: "not done", never a
+Result: for work not done.
 ```
 
 ---
@@ -447,7 +470,9 @@ An incomplete handback is returned, not repaired (DL-48).
 
 **`make ci`:** *(builder: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
 
-**`make gate-ran`:** *(builder or planner: worktree, full SHA, output)*
+**`make gate-ran`:** *(planner: local worktree, full SHA, output)*
+
+**`uv.lock`:** *(builder: re-resolved, or untouched and owed)*
 
 **Planner live check (F1–F3):** *(planner, before merge)*
 

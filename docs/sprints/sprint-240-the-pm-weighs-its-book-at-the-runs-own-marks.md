@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 91 ([DRIFT-079](../laws/drift-register.md)), the step before item 92's exits
 **Branch:** `sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks`
 **Status:** BUILT — builder handback 2026-09-28 (cloud session, branch `claude/confident-goodall-qgxx4f`); planner owes `uv lock`, `make gate-ran`, Windows `make ci`, F1–F2
-**Version:** *next available PATCH at merge*
+**Version:** `0.117.05` (PATCH, set by the planner at merge)
 **Effort:** S
 **Decisions:** [DL-240](../design-log.md) (item 91 comes before trims, adds and take-profit, which need current marks) · [DL-238](../design-log.md) D3 (the fidelity replay reproduces what the live PM read) · [DL-237](../design-log.md) (the clean-session check) · the builder's design decisions go to the **next free DL** (`DL-242` at spec time: `DL-241` is reserved by [S239](sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md), which may merge first)
 
@@ -530,7 +530,11 @@ first). The planner bumps PATCH and re-locks.
 
 **`make gate-ran`:** *(planner: local worktree, full SHA, output)*
 
-**Planner live checks (F1–F2):** *(planner, before merge)*
+**Planner live checks (F1–F2):** *[measured 2026-09-28, planner, this branch's worktree with `main`'s `.env`, read-only]*
+
+- **F1 🟩 the live book equals the snapshot.** `sched-2026-09-25`: the branch's `portfolio_from_graph` reads **$24,333.44** over 25 names, equal to the run's fresh snapshot name for name (0 names differ); `main`'s rule reads $23,680.49 (INTC $966.68 against a $1,354.87 mark, AAPL $914.94 against $1,023.45).
+- **F2 🟩 the decisions it moves: none yet.** 14 scheduled sessions (2026-09-08 → 09-25) exported with `scripts/fidelity_export.py` and replayed through `replay_pm` under `main` and under this branch: the held book reads 1.7–3.1 % higher every session, and **0 decisions change** (28 approvals, every quantity and every rejection reason identical). At ~20 % invested no cap binds on held value; the fix moves decisions only as exposure grows.
+- **uv.lock / version:** `0.117.05` set and `uv lock` re-resolved by the planner (the only lock change is the package's own version).
 
 **Not met / verified failing:** nothing in the builder's list. **Not done, owed to the planner:**
 PATCH bump + `uv lock`, `make gate-ran`, Windows `make ci`, F1–F2 (and F3 after the retag). Not done by

@@ -10,6 +10,29 @@ and is marked CLOSED here.
 
 ---
 
+## DL-245 - the barrier history reuses a one-day integrity guard on three years, and a named "no claim" pages the operator - status: OPEN (planner, 2026-09-29; work-queue 94)
+
+**What happened (measured 2026-09-29).** `sched-2026-09-28`'s brief read *Needs you: 2 open incidents*:
+two forecaster `Fault`s, severity `error`, *"TXN / COP: provider dropped: extreme_move_guard … no claim"*.
+The provider's `BarrierHistory` (S239) runs `domain/integrity.py`'s pooled guard, built for one day's
+batch, over **760 sessions**: pooled open-to-close sigma over the 14 buys is 1.42 %, so 8 sigma is
+11.34 %, and both names trip on **2025-04-09**, the tariff-pause rally (TXN +16.76 %, COP +12.82 %,
+SIP raw, reproduced from here). A real market-wide day, not a bad print.
+
+**Two defects.** (1) The guard drops a name for one genuine extreme day anywhere in three years, so TXN
+and COP get no claim until that day leaves the window (~2028-04), and the ledger is biased toward calm
+names that EXP-018's test bed did not exclude. (2) A designed, named "no claim" is raised at `error`,
+so it counts as an open incident and the brief asks for the operator every time: the cry-wolf class
+the etalon bar names.
+
+**Direction (not decided).** The barrier fetch should not reuse the one-day pooled guard; candidates:
+the guard on the latest session only (its original scope), or per-ticker on the name's own history with
+market-wide days (most names moving together) exempt. The "no claim" fault becomes `warning`, which
+the incident count does not read. Both touch provider and forecaster laws (S239's D-decisions).
+**Ruled out:** acking the two faults as the fix (they recur on every run where TXN or COP is a buy).
+
+---
+
 ## DL-244 - no agent loads every MarketData: the reporter and scanner were OOM-killed on `sched-2026-09-28` - status: OPEN (planner, 2026-09-29; work-queue 93)
 
 **What happened (measured 2026-09-29).** `sched-2026-09-28` stopped at 7/8: the reporter was

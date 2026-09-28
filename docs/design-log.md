@@ -74,6 +74,26 @@ settlement read. (4) ~~`VACUUM FULL`~~ — ruled out, measured: it reclaims dead
 `nodes` holds 188 dead against 40,471 live (650 deletes ever; 11,880 updates, 89 % HOT), 70 MB of its
 80 MB live rows; autovacuum last ran 2026-09-22. Shrinking means storing less (option 1), not reclaiming.
 
+**Neon data transfer is the same defect, measured (2026-09-29).** Neon billed **$35.68** for
+2026-09-01 → 09-21, **$33.74 of it data transfer (837.39 GB)**; compute $1.92, storage $0.02. Azure
+`RxBytes` per app, 09-01 → 09-28: **scanner 513 GB, provider 490 GB**, analyst 46, PM 30,
+deliberator-manager 26, the rest < 10 each (1,121 GB). A full list is sent as uncompressed JSON:
+`MarketData` 128.9 MB, `AgentMessage` 13.4, `Fault` 9.6, `AnalystRun` 4.4. The scanner lists every
+`MarketData` per poll; the provider lists every `RunRequest` and walks `INGESTED_BY` to its
+`MarketData`, and `TRAVERSE_DESCENDANTS_SQL` returns `n.props`, so **an edge-existence check downloads
+every payload**. Analyst, PM and deliberator repeat the pattern on smaller labels. The fix is therefore
+one kernel primitive — find pending work by key and edge, no props — used by every graph-pull
+`find_pending`, then `get_node` for the one pending item; the reporter's `_benchmark` reads by lineage.
+
+**Option kept (operator, 2026-09-29): move the store into Azure, same region.** Azure Database for
+PostgreSQL Flexible Server in australiaeast beside the fleet makes agent traffic intra-region.
+**Not now:** the traffic is the readers', and fixing them should cut it from ~40 GB a day to megabytes,
+*[assumed: within Neon's included transfer, not checked]*, where Neon compute is $1.92 a month; a Flexible Server is a standing monthly
+charge *[unverified: price not checked]* and reopens [ADR-0014](decisions/INDEX.md). **Postgres, not
+MS SQL:** the store is Postgres-specific (JSONB props, recursive-CTE traversal, psycopg, alembic), so
+MS SQL is a port rewrite for no gain. **Trigger to reopen:** Neon transfer still material after the fix
+ships, or its latency / cold starts measured as a cost to the run window.
+
 ---
 
 ## DL-242 - the PM weighs a held name at its run's snapshot mark, once per ticker, and a resumed run at the snapshot of the run it resumes - status: DECIDED (builder, 2026-09-28; S240)

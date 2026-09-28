@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 11:43 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.03` · **🎯 S238 merged (`v0.117.03`): the provider reads SIP, and on live Alpaca the volume floor drops 0 of 99 names (65 on IEX) and the candidate cap binds at 25. The deploy is the operator's call once Tuesday 29 Sep's run has delivered S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 12:04 AEST · **Version:** **0.117.03 deployed** (`s238`, image-only retag); `main` = `0.117.03` · **🎯 S238 deployed (operator: "deploy, of course"): the provider reads SIP, so the volume floor stops dropping 60–64 names a run and the candidate cap binds. Tuesday 29 Sep's run is now F4 as well as S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🚀 **DEPLOYED `s238` 2026-09-28 12:04 AEST, image-only retag (operator: *"deploy, of course"*).** Built from `v0.117.03` (`a5c43112`), run 36367788368, 15 / 15 images. The three injected packs are unchanged since `s232`; the only runtime change in the images is the provider (the dashboard ships in none). Verified on Azure: **16 / 16** apps `s238` and `Succeeded`, every app min 0 / max 1 / 1 KEDA rule, `dispatcher-cron` on `s238` with its cron `*/10 22-23 * * 1-5`, the provider sets no feed variable; `DeployRecord` recorded. Deployed before `sched-2026-09-28` on purpose: the brief (dispatcher), acceptance (master) and stop (execution/monitor) code the run owes proof of is byte-identical to `s232`. **Owed on that run (08:30 AEST Tue): F4** — `ScanRun` LLY `average_volume` in the millions, 0 volume drops, 25 candidates, no provider fault.
 
 🟩 **MERGED — [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) (work-queue 89), `a5c43112`, tag `v0.117.03`, 2026-09-28; not deployed.** Built in a claude.ai cloud session (handback `912c2c93`, complete against the eleven-item checklist). **The planner changed one thing at merge** ([DL-239](design-log.md) amendment): Alpaca's wall is exact (an end 900 s back served, 899 s refused, 3 of 3 each), so the request now ends 16 minutes back, not exactly 15; red first, a zero-margin plant fails three tests. PROVEN: `uv.lock` re-resolved; Windows `make ci` exit 0 (**3,469 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `a5c43112`**; no new CodeQL alert; **F1–F3 live**: the fleet's composition with no override reads SIP, every page 200, LLY 3,015,934, the seeder probe passes, the scanner's own filters drop **0** names on volume and the cap binds at **25** ([check](laws/functionality-checks.md)). Owed: the operator's deploy decision (image retag; approvals were measured to rise from a median 2 to 13 a session), then F4 on the next scheduled run.
 

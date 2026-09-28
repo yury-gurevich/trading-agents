@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked first (work-queue 89)
 **Branch:** `sprint-238-a-bar-carries-the-whole-tapes-volume`
-**Status:** MERGED `a5c43112` · tag `v0.117.03` · 2026-09-28 · built in a claude.ai cloud session (`claude/festive-shannon-7fibne`), merged from `sprint-238-a-bar-carries-the-whole-tapes-volume` with the planner's one-minute clock margin; F1–F3 🟩 live; **not deployed** (the operator's call, after `sched-2026-09-28`); F4 owed on the first scheduled run after the deploy
+**Status:** MERGED `a5c43112` · tag `v0.117.03` · 2026-09-28 · built in a claude.ai cloud session (`claude/festive-shannon-7fibne`), merged from `sprint-238-a-bar-carries-the-whole-tapes-volume` with the planner's one-minute clock margin; F1–F3 🟩 live; **deployed `s238` 2026-09-28 12:04 AEST** (image-only retag, operator-approved, `DeployRecord` recorded); F4 owed on `sched-2026-09-28`
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-233](../design-log.md) (the measurement, and its 2026-09-28 amendment: six planner decisions this spec builds on) · work-queue item **89** · [DL-237](../design-log.md) / DL-238 D7 (the clean-session rule this sprint must not reset) · **DRIFT-080** (the provider law never says which volume a bar carries) · the builder's design decisions go to the **next free DL** (`DL-239` at spec time)

@@ -10,6 +10,71 @@ and is marked CLOSED here.
 
 ---
 
+## DL-240 - the book is managed as a distribution: short holding periods on stocks we buy, and exits that take profit - status: DIRECTION (operator, 2026-09-28); design open, work-queue 92
+
+**The operator, 2026-09-28:** *"we need to think about how we manage stocks. We need to be able to
+determine if a ticker needs to be dropped/upped/lowered in volume … accommodate short term investment
+strategies, like two week, like over the weekend … We need to sell at profit."* Asked whether "short"
+meant short selling: **no — short holding periods on stocks we buy.** Then: *"we need to treat the
+portfolio as a distribution."*
+
+**Why now.** S238 (deployed `s238` the same day) ends the scanner's starvation: approvals were measured
+to rise from a median 2 to 13 a session and the book (~24 % invested) to fill within days. Once it is
+full, what the book sells decides what it can buy.
+
+**What the fleet does today** *[read from the code, 2026-09-28]*:
+
+- The only exit that fires is the **protective stop** (the broker's resting GTC stop, 3.9–7.3 % below
+  entry; the analyst also sells a held name on `stop_breached`).
+- The **thesis exit** never fires: `recommend.py` sells a held name only when confidence falls below
+  `exit_confidence_floor`, which is 0 (ADR-0027 Correction 2).
+- **Targets are computed, never acted on:** every buy carries `target_pct`; the monitor has
+  `default_target_pct` 0.10 and `default_horizon_days` 14, but `exit_rules.evaluate_position` observes
+  only the stop, and nothing places a take-profit order or a time exit.
+- **A sell is always a full exit** (`portfolio_manager/domain/exits.py`); nothing trims or adds.
+
+So losses are realised automatically and gains never are.
+
+**"The portfolio as a distribution" — the planner's reading, to be confirmed:**
+
+1. **Each position is a distribution** over its outcome by its horizon: the chance it reaches its target
+   first, its stop first, or neither, and the return in each case.
+2. **The book is the aggregate** of those distributions: an expected return and a left tail at the
+   horizon. Drop, trim, add and take-profit are chosen by how they move that aggregate, not name by name.
+3. **The book is a mix of holding profiles** (for example a Friday-to-Monday hold, a ~10-session swing,
+   a longer hold), each position carrying its own exit plan from entry, so capital recycles as the short
+   slots close.
+
+**Link to work-queue 71 (parked regime-probability track).** Reading 1 is exactly EXP-011's barrier
+probability, and EXP-011 already measured where to begin: a ledger of declared against realised
+probabilities, starting with S211's own claim that the median target is reached within 10 sessions about
+half the time (**50.2 %** historically). *Proposed, not decided:* item 71's step (1) becomes a step of
+this track rather than staying parked. The operator parked 71 "until the debt settles and we are ready";
+that is theirs to lift.
+
+**Sequence (planner, delegated):**
+
+1. **Item 91 first.** Trim, add and take-profit decisions need each holding's current value; the PM still
+   values held names at their adoption-day mark (DRIFT-079).
+2. **Measure the book as it stands** (read-only, $0): how positions have closed, and how many sit above
+   their target now.
+3. **Pre-register an exit experiment on the replay cache** (as EXP-015 was; $0 LLM): stops only (today,
+   the champion) against take-profit at the PM's target, a time exit at ~10 sessions, a trailing stop, and a
+   Friday-to-Monday hold. The first ten-year smoke (stops only) read +217.9 % against exposure-matched SPY
+   +232.2 %.
+4. **Build the winner in increments.** The likely first: the target becomes a resting sell beside the
+   stop (a bracket / one-cancels-other). Then holding profiles recorded on the `OrderIntent`. Trimming and
+   adding last, with their own law cycle.
+
+**Ruled out:**
+
+- **Short selling.** The operator: short holding periods on stocks we buy. Short selling would be a
+  separate capability with its own capital-risk policy.
+- **Intraday strategies.** The fleet decides once a day after the close and trades at the next open;
+  weekend and two-week holds fit that cadence, intraday does not.
+
+**Stays the operator's:** the mix of holding profiles and any cap on it is capital-risk policy.
+
 ## DL-239 - the whole Alpaca bars query is one pure function of its inputs and a clock; the probe reads the provider's own default - status: DECIDED (builder, 2026-09-28; S238)
 
 **Context.** [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) flips the provider's

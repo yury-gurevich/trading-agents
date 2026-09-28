@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 11:01 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.02` · **🎯 S238 specced for item 89: flipping the feed to SIP alone would have failed every run (measured 403: Alpaca reads the fleet's bare-date `end` as inside the free plan's 15-minute window), so the fix clamps the request's end; on SIP 0 of 99 names fall below the volume floor, against 65 on IEX. Tuesday 29 Sep's run still owes S234's brief, S232's acceptance and item 87's close.**
+**Last updated:** 2026-09-28 11:43 AEST · **Version:** **0.114.01 deployed** (`s232`, full `up`); `main` = `0.117.03` · **🎯 S238 merged (`v0.117.03`): the provider reads SIP, and on live Alpaca the volume floor drops 0 of 99 names (65 on IEX) and the candidate cap binds at 25. The deploy is the operator's call once Tuesday 29 Sep's run has delivered S234's brief, S232's acceptance and item 87's close.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🟩 **MERGED — [S238](sprints/sprint-238-a-bar-carries-the-whole-tapes-volume.md) (work-queue 89), `a5c43112`, tag `v0.117.03`, 2026-09-28; not deployed.** Built in a claude.ai cloud session (handback `912c2c93`, complete against the eleven-item checklist). **The planner changed one thing at merge** ([DL-239](design-log.md) amendment): Alpaca's wall is exact (an end 900 s back served, 899 s refused, 3 of 3 each), so the request now ends 16 minutes back, not exactly 15; red first, a zero-margin plant fails three tests. PROVEN: `uv.lock` re-resolved; Windows `make ci` exit 0 (**3,469 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `a5c43112`**; no new CodeQL alert; **F1–F3 live**: the fleet's composition with no override reads SIP, every page 200, LLY 3,015,934, the seeder probe passes, the scanner's own filters drop **0** names on volume and the cap binds at **25** ([check](laws/functionality-checks.md)). Owed: the operator's deploy decision (image retag; approvals were measured to rise from a median 2 to 13 a session), then F4 on the next scheduled run.
 
 🟩 **FIXED — CodeQL alert 263 reopened and fixed, `0.117.02`, tag `v0.117.02`, 2026-09-28 (operator: *"reopen and fix"*).** The planner had dismissed it at S237's merge as a false positive. The real fault was the `cast("GraphStore", …)` hiding a view with one of the port's six methods. `ExportedFacts` is now a whole, read-only `GraphStore` in `scripts/replay_fidelity_facts.py` (writes and edge walks refused), so no cast or import remains ([DL-238](design-log.md) amendment). Three plants each failed their test. PROVEN: `make ci` exit 0 (**3,458 passed, 6 skipped, 100.00 %**); **`GATE PROVEN` for `557f25e6`**; the branch's open alerts were `main`'s minus 263; fast-forwarded; `main`'s CI, CodeQL, Security Findings and image build green; alert 263 reads **`fixed`**. No deploy (`scripts/` ships in no image).
 

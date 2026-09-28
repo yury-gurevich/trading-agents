@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked first (work-queue 89)
 **Branch:** `sprint-238-a-bar-carries-the-whole-tapes-volume`
-**Status:** BUILT — 2026-09-28, claude.ai cloud session, branch `claude/festive-shannon-7fibne` (the session forced this name; not `sprint-238-…`). Owed to the planner: `uv lock`, Windows `make ci`, `make gate-ran`, F1–F3.
+**Status:** MERGED `a5c43112` · tag `v0.117.03` · 2026-09-28 · built in a claude.ai cloud session (`claude/festive-shannon-7fibne`), merged from `sprint-238-a-bar-carries-the-whole-tapes-volume` with the planner's one-minute clock margin; F1–F3 🟩 live; **not deployed** (the operator's call, after `sched-2026-09-28`); F4 owed on the first scheduled run after the deploy
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-233](../design-log.md) (the measurement, and its 2026-09-28 amendment: six planner decisions this spec builds on) · work-queue item **89** · [DL-237](../design-log.md) / DL-238 D7 (the clean-session rule this sprint must not reset) · **DRIFT-080** (the provider law never says which volume a bar carries) · the builder's design decisions go to the **next free DL** (`DL-239` at spec time)
@@ -474,7 +474,7 @@ states only what is new: no silent empty success and no silent switch to a one-v
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED
 
 **Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, Linux, clone of
 `yury-gurevich/trading-agents` on branch `claude/festive-shannon-7fibne` cut from `main` `2fa1325`.
@@ -592,6 +592,17 @@ pytest **3469 passed, 6 skipped**, coverage **100.00 %** (`TOTAL 18873 0 4096 0 
 here (DL-228); remote CI runs `uv sync --frozen` too.
 
 **`make gate-ran`:** *(planner: local worktree, full SHA, output)* — **not done: owed.** This session has no `gh`.
+
+**`make gate-ran` — planner, 2026-09-28**, from the local worktree `trading-agents-sprint-238-a-bar-carries-the-whole-tapes-volume`, `HEAD` = the printed SHA:
+
+```text
+GATE PROVEN for a5c43112b07f73bd0d6c61d7d7923b7081240e38:
+  CI: success (attempt 1)
+  CodeQL: success (attempt 1)
+  Security Findings: success (attempt 1)
+```
+
+The branch's open CodeQL alerts equal `main`'s (123 / 123, none new). Windows `make ci` on the same tree: exit 0, **3,469 passed, 6 skipped, 100.00 %**, dependency audit clean, detect-secrets passed. Fast-forwarded `main` to `a5c43112`, tagged `v0.117.03`.
 
 **`uv.lock`:** **untouched and owed.** `uv lock` after the bump failed:
 `error: Failed to fetch: https://download.pytorch.org/whl/cpu/torch/ … tunnel error: unsuccessful` (exit 2);

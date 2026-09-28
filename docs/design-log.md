@@ -10,6 +10,35 @@ and is marked CLOSED here.
 
 ---
 
+## DL-244 - no agent loads every MarketData: the reporter and scanner were OOM-killed on `sched-2026-09-28` - status: OPEN (planner, 2026-09-29; work-queue 93)
+
+**What happened (measured 2026-09-29).** `sched-2026-09-28` stopped at 7/8: the reporter was
+`OOMKilled` (exit 137, 8 restarts, `CrashLoopBackOff`) from 23:00 UTC, and the scanner, after its
+stage, the same (12 restarts). Both run at 0.5 CPU / 1 GiB. Two readers load **every** `MarketData`
+node, full props: the reporter's `_benchmark` (`agents/reporter/performance_inputs.py:119`, to pick the
+latest SPY series) and the scanner's `find_pending` (`agents/scanner/poll.py:33`, on every 60 s poll).
+78 nodes are 142 MB of JSON and peak at **785 MB** of Python objects when listed (tracemalloc, from
+here); each run adds ~3 MB JSON / ~16 MB loaded, so this crept up and `sched-2026-09-28`'s node
+crossed the limit. Not caused by S238–S240: the newest node is 2,963 KB against 2,947 KB on 09-15.
+
+**Mitigation, operator-approved (*"yes, bump both now"*), 23:25 UTC.** Reporter and scanner raised to
+1 CPU / 2 GiB (`reporter--0000169`, `scanner--0000175`); image, scale, env names, secret names and
+identity identical to the pre-change snapshot; ephemeral storage 2 → 4 GiB follows the CPU. The
+reporter wrote the Snapshot at 23:27 and the run read **8/8**. Headroom ≈ 70 runs. Revert to 0.5 / 1
+GiB after the fix deploys.
+
+**Fix direction (not built).** (a) The reporter reads its own run's `MarketData` through lineage
+(`PMRun` → `AnalystRun` → `ScanRun` → `MarketData`, as the PM's poll does), one node by key. (b) The
+scanner finds unscanned work without loading payloads: a key-only `list_keys(label)` on the kernel
+`GraphStore` port (memory, Postgres, guarded), then `get_node` only for the pending key.
+**Ruled out:** listing `RunRequest`s and `get_node` per `market-data:{run_id}` (still pulls every
+payload, one at a time, every poll); guessing the key from the run id in the reporter (a resumed run's
+id differs from its source's); a permanent memory raise (moves the cliff, does not remove it).
+**Unmeasured:** the scanner's poll pulls ~142 MB from Neon each minute of its window; Neon egress
+against the plan's transfer allowance has not been checked.
+
+---
+
 ## DL-242 - the PM weighs a held name at its run's snapshot mark, once per ticker, and a resumed run at the snapshot of the run it resumes - status: DECIDED (builder, 2026-09-28; S240)
 
 **Context.** [S240](sprints/sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks.md) closes

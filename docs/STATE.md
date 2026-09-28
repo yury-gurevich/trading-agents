@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-28 21:19 AEST · **Version:** **0.118.00 deployed** (`s239`, full `up`); `main` = `0.118.00` · **🎯 S239 and S240 are both live: tonight's run is the first to record barrier claims and to weigh the held book at its own marks, beside S238's F4, the first brief, S232's acceptance and item 87.**
+**Last updated:** 2026-09-29 09:32 AEST · **Version:** **0.118.00 deployed** (`s239`, full `up`); `main` = `0.118.00` · **🔴→🟩 `sched-2026-09-28` stalled at 7/8 on a reporter OOM (DL-244), mitigated by 2 GiB and read 8/8; every owed check passed; the fix is work-queue 93.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -36,6 +36,8 @@ migration (DL-43), deliberation quality (DL-41/42). Layer-3 acceptance 🟩 at t
 Layer-2 choreography 🟩 on a distributed run (S102).
 
 ## Now
+
+🔴→🟩 **CHECKED — `sched-2026-09-28`, 2026-09-29 08:56–09:30 AEST, the first run on `s239`/`s240`.** Trace **8/8** at 23:27 UTC, acceptance **UNPROVEN** (12 buys queued for the open, 0 filled); deliberation reviewed 12, revised 12, vetoed 0; execution submitted 12; monitor held 25; 0 Escalations, Flags or Faults. 🔴 **The reporter was `OOMKilled` from 23:00 UTC (8 restarts), and the scanner after its stage (12): both load every `MarketData` node, 785 MB peak on 78 nodes against 1 GiB ([DL-244](design-log.md), work-queue **93**).** Mitigated with the operator's approval: both at 1 CPU / 2 GiB (`reporter--0000169`, `scanner--0000175`), scale, env, secrets and identity identical to the pre-change snapshot; the reporter wrote the Snapshot within a minute. **Owed checks, all 🟩:** S239 **F4** one `BarrierHistory` and **12** `BarrierForecast`s for 14 analyst buys, TXN and COP dropped by name (`extreme_move_guard`), no backlog run claimed; S240 **F3** the PM's `deployed_portfolio_usd` $24,144.51 = the snapshot's 25 marks to the cent (Semiconductors $2,193.58 = INTC + NVDA); S238 **F4** 25 candidates, 0 volume drops; S234 **first brief** sent 23:30:14 UTC, `brief_verdict=UNPROVEN`, message id 4; item **87** closes: Alpaca reads all 9 old stops `replaced`, this run replaced 0. S232's acceptance PASS waits for the fills. ☁️ **S241 handed to a claude.ai cloud session** (operator, 09:2x AEST).
 
 📦 **SPECCED — [S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md) (work-queue 92, sprint B of the ledger), 2026-09-28, for a Claude cloud session.** Ten sessions after each `BarrierForecast`, the forecaster settles it from a later run's `MarketData` by EXP-018's outcome rule (measured: the run 11 sessions later covers **90 of 90** recent buys, 0 entry-close drift), or `void` with a named reason: the bars are **raw**, so a one-day close ratio outside 0.6–1.67 is a suspected corporate action, never a stop. `barrier_scorecard` reports Brier skill over EXP-018's fixed climatology with its date bootstrap. MINOR; forecaster laws v1.7; full `up`. The builder takes DL-243. First settlements about 2026-10-12.
 

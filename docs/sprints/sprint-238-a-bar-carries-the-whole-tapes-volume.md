@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · live defect, ranked first (work-queue 89)
 **Branch:** `sprint-238-a-bar-carries-the-whole-tapes-volume`
-**Status:** SPEC
+**Status:** BUILT — 2026-09-28, claude.ai cloud session, branch `claude/festive-shannon-7fibne` (the session forced this name; not `sprint-238-…`). Owed to the planner: `uv lock`, Windows `make ci`, `make gate-ran`, F1–F3.
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-233](../design-log.md) (the measurement, and its 2026-09-28 amendment: six planner decisions this spec builds on) · work-queue item **89** · [DL-237](../design-log.md) / DL-238 D7 (the clean-session rule this sprint must not reset) · **DRIFT-080** (the provider law never says which volume a bar carries) · the builder's design decisions go to the **next free DL** (`DL-239` at spec time)
@@ -458,56 +458,182 @@ states only what is new: no silent empty success and no silent switch to a one-v
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder)* | | | |
+| A1 | `test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago` | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07` |
+| A2 | `test_sip_past_window_ends_at_the_midnight_after_it` (3 cases: `2026-10-02T12:00Z` → `2026-09-29T00:00:00Z`; `2026-09-29T00:05Z` → `2026-09-28T23:50:00Z`; `2026-09-29T00:15Z` → `2026-09-29T00:00:00Z`, the boundary) | `agents/provider/tests/test_alpaca_request.py` | PASS | `PROV-OUT-07` |
+| A3 | `test_iex_request_is_the_query_the_source_always_sent` (2 clocks a day apart; page 1 without and page 2 with `page_token`, through the real page loop; key order and the urlencoded bytes) | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07` |
+| A4 | `test_provider_default_feed_is_the_consolidated_tape` (`ProviderFeedSettings(_env_file=None)` reads `"sip"`; `market_source_from_settings` builds `AlpacaDataSource` with `_feed == "sip"`; `PROVIDER_ALPACA_DATA_FEED=iex` still overrides) | `agents/provider/tests/test_alpaca_data.py` | PASS | `PROV-OUT-07` |
+| A5 | `test_alpaca_data_probe_tests_the_fleets_feed` (no env var → `"sip"`; env `iex` → `"iex"`; the settings field's default monkeypatched → the probe follows it, so a second literal of *any* value fails) | `orchestration/tests/test_trading_vault_probe_feed.py` | PASS | `PROV-OUT-07` |
+| A6 | `test_refused_sip_request_raises_and_never_asks_another_feed` (stubbed page download raises `HTTPError` 403; `fetch_ohlcv` raises; exactly one request, on `sip`) | `agents/provider/tests/test_alpaca_sip.py` | PASS | `PROV-OUT-07`, `PROV-FAIL-01` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:**
 
----
+- `test_alpaca_request.py::test_sip_end_is_whole_seconds_and_never_later_than_the_wall` (`PROV-OUT-07`):
+  `now` with 999,999 µs still sends `22:15:00Z`, never rounded up past the wall; pins the constant at 15 min.
+- `test_alpaca_sip.py::test_default_clock_is_aware_utc` (`PROV-OUT-07`): the default clock is aware UTC
+  (covers the default; a naive clock would break the `min` against an aware midnight).
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, Linux, clone of
+`yury-gurevich/trading-agents` on branch `claude/festive-shannon-7fibne` cut from `main` `2fa1325`.
+**No `.env`**, no `gh`, no Azure, no route to `download.pytorch.org`. No test reached the network: every
+Alpaca call is stubbed at `_download_page`. Every `uv run` ran with `UV_FROZEN=1` / `--frozen` because the
+bumped `pyproject.toml` cannot be re-locked here.
 
-**Result:** *(builder)*
+**Result:** With no override the provider's `AlpacaDataSource` is built on `feed="sip"`; a SIP page query's
+`end` is `min(midnight UTC after window.end, now − 15 min)` as RFC 3339 `Z`, and an IEX query is key-for-key and
+byte-for-byte `main`'s (A1–A4, unit tests). The seeder's probe falls back to the provider's settings default
+(A5). A refused request raises from the adapter, one request, no second feed (A6). **Not proven here:** that
+Alpaca answers the clamped SIP request with 200 and whole-tape volume: that is F1, the planner's.
 
-**Files changed:** *(builder)*
+**Files changed:** `agents/provider/alpaca_request.py` (new), `agents/provider/alpaca_data.py`,
+`agents/provider/settings_feeds.py`, `orchestration/packs/trading_vault_probes.py`; tests
+`agents/provider/tests/test_alpaca_sip.py` (new), `agents/provider/tests/test_alpaca_request.py` (new),
+`agents/provider/tests/test_alpaca_data.py`, `orchestration/tests/test_trading_vault_probe_feed.py` (new; the
+existing probe test file is 180 lines); laws `agents/provider/laws/laws.md` (v1.4), `test-plan.md`,
+`docs/laws/ledger.md`, `docs/laws/INDEX.md`, `docs/laws/drift-register.md` (DRIFT-080); `docs/design-log.md`
+(DL-239); this spec, `docs/sprints/README.md`, `docs/sprints/INDEX.md`; `pyproject.toml` 0.117.02 → 0.117.03.
 
-**Design decisions:** *(builder: DL number, one line, where the rejected alternatives are)*
+**Design decisions:** [DL-239](../design-log.md) (free on `main` at `2fa1325`; re-check at merge): the whole
+query is one pure builder in a sibling module, clock injected and read once per fetch; the probe reads
+`ProviderFeedSettings.model_fields["alpaca_data_feed"].default`; `PROV-OUT-07` keeps the refusal half and
+cross-references `PROV-FAIL-01`. Rejected alternatives are listed under each decision there.
 
-**Proof — the red run first:**
+**Proof — the red run first:** the new tests against `main`'s code (`pytest … --continue-on-collection-errors`):
 
 ```text
-(builder)
+E   ModuleNotFoundError: No module named 'agents.provider.alpaca_request'
+E   TypeError: AlpacaDataSource.__init__() got an unexpected keyword argument 'clock'   (x4)
+E   AttributeError: 'AlpacaDataSource' object has no attribute '_clock'
+E   AssertionError: assert 'iex' == 'sip'   (x2)
+FAILED agents/provider/tests/test_alpaca_sip.py::test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago
+FAILED agents/provider/tests/test_alpaca_sip.py::test_iex_request_is_the_query_the_source_always_sent[now0]
+FAILED agents/provider/tests/test_alpaca_sip.py::test_iex_request_is_the_query_the_source_always_sent[now1]
+FAILED agents/provider/tests/test_alpaca_sip.py::test_refused_sip_request_raises_and_never_asks_another_feed
+FAILED agents/provider/tests/test_alpaca_sip.py::test_default_clock_is_aware_utc
+FAILED agents/provider/tests/test_alpaca_data.py::test_provider_default_feed_is_the_consolidated_tape
+FAILED orchestration/tests/test_trading_vault_probe_feed.py::test_alpaca_data_probe_tests_the_fleets_feed
+ERROR agents/provider/tests/test_alpaca_request.py
+7 failed, 7 passed, 1 error in 0.30s
 ```
+
+🪤 Honest reading of the red: A1, A3 and A6 go red on `main` because the source has no `clock` and
+`_download_page` has the old signature, not because of their assertions. A6's *assertion* (a 403 raises) was
+already true on `main`; its guard value is proven by plant 5 below, and A3's by plant 2.
 
 **Proof — the green run:**
 
 ```text
-(builder)
+agents/provider/tests/test_alpaca_sip.py::test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago PASSED
+agents/provider/tests/test_alpaca_sip.py::test_iex_request_is_the_query_the_source_always_sent[now0] PASSED
+agents/provider/tests/test_alpaca_sip.py::test_iex_request_is_the_query_the_source_always_sent[now1] PASSED
+agents/provider/tests/test_alpaca_sip.py::test_refused_sip_request_raises_and_never_asks_another_feed PASSED
+agents/provider/tests/test_alpaca_sip.py::test_default_clock_is_aware_utc PASSED
+agents/provider/tests/test_alpaca_request.py::test_sip_past_window_ends_at_the_midnight_after_it[now0-2026-09-29T00:00:00Z] PASSED
+agents/provider/tests/test_alpaca_request.py::test_sip_past_window_ends_at_the_midnight_after_it[now1-2026-09-28T23:50:00Z] PASSED
+agents/provider/tests/test_alpaca_request.py::test_sip_past_window_ends_at_the_midnight_after_it[now2-2026-09-29T00:00:00Z] PASSED
+agents/provider/tests/test_alpaca_request.py::test_sip_end_is_whole_seconds_and_never_later_than_the_wall PASSED
+agents/provider/tests/test_alpaca_data.py::test_provider_default_feed_is_the_consolidated_tape PASSED
+orchestration/tests/test_trading_vault_probe_feed.py::test_alpaca_data_probe_tests_the_fleets_feed PASSED
+(+ the 7 pre-existing test_alpaca_data.py tests and all 13 test_trading_vault_probes.py tests PASSED)
+============================== 31 passed in 0.38s ==============================
 ```
 
-**Guards planted:** *(builder, per plant)*
+**Guards planted:** each planted alone, run over the four S238 test files, restored, and the restore checked
+with `cmp` against a backup (identical). Plants 3 and 4 were re-run with `PYTHONDONTWRITEBYTECODE=1` and
+`__pycache__` removed: the first pass of plant 4 was contaminated by a stale `.pyc` from plant 3 (`"sip"` and
+`"iex"` are the same length, so the source's size and whole-second mtime can match); the clean outputs are below.
 
-**Decision-path check (step 7):** *(builder: the command and its empty output)*
+1. **No clamp** — `alpaca_request._end` returns `window.end.isoformat()` for every feed. Red:
+   `FAILED test_alpaca_sip.py::test_sip_request_for_a_window_ending_today_ends_fifteen_minutes_ago`, all three
+   `test_sip_past_window_ends_at_the_midnight_after_it` cases, `test_sip_end_is_whole_seconds_and_never_later_than_the_wall`
+   — `5 failed, 13 passed`. Restored.
+2. **Clamp applied to `iex`** — the `if feed != SIP_FEED` early return removed. Red:
+   `FAILED test_iex_request_is_the_query_the_source_always_sent[now0]`, `[now1]` — `2 failed, 16 passed`. Restored.
+3. **Default reverted to `"iex"`** in `settings_feeds.py`. Red: `AssertionError: assert 'iex' == 'sip'` ×2;
+   `FAILED test_alpaca_data.py::test_provider_default_feed_is_the_consolidated_tape`,
+   `FAILED test_trading_vault_probe_feed.py::test_alpaca_data_probe_tests_the_fleets_feed` — `2 failed, 16 passed`. Restored.
+4. **Probe fallback hard-coded to `"iex"`** (`env.get("PROVIDER_ALPACA_DATA_FEED", "iex")`). Red:
+   `AssertionError: assert 'iex' == 'sip'`; `FAILED test_trading_vault_probe_feed.py::test_alpaca_data_probe_tests_the_fleets_feed`
+   — `1 failed, 17 passed`. Restored.
+5. **403 swallowed into `()`** — `fetch_ohlcv` wrapped in `try … except urllib.error.HTTPError: return ()`. Red:
+   `FAILED test_alpaca_sip.py::test_refused_sip_request_raises_and_never_asks_another_feed` — `1 failed, 17 passed`. Restored.
 
-**Module line counts:** *(builder)*
+After restoring: `18 passed`.
 
-**`make ci`:** *(builder: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**Decision-path check (step 7):** run on `HEAD` `a2a60cf` (the build commit), after `git fetch origin main`:
 
-**`make gate-ran`:** *(planner: local worktree, full SHA, output)*
+```text
+$ git diff --name-only origin/main...HEAD | grep -E '^(agents/(scanner|analyst|portfolio_manager|provider/domain)/|contracts/|agents/execution/order_tolerance\.py|orchestration/packs/trading_(tunables|issuer_map)\.json|orchestration/history_window\.py)'
+$ echo $?
+1
+```
 
-**`uv.lock`:** *(builder: re-resolved, or untouched and owed)*
+Empty output (grep exit 1: no match). The handback commit adds only `docs/sprints/` files.
 
-**Planner live check (F1–F3):** *(planner, before merge)*
+**Module line counts:** `agents/provider/alpaca_data.py` **178** (was 181), `agents/provider/alpaca_request.py`
+**64** (new), `agents/provider/settings_feeds.py` **131**, `orchestration/packs/trading_vault_probes.py` **187**
+(was 181; ⚠️ above the 150 warning, as it already was), `agents/provider/tests/test_alpaca_data.py` **120**,
+`agents/provider/tests/test_alpaca_sip.py` **140** (new), `agents/provider/tests/test_alpaca_request.py` **48**
+(new), `orchestration/tests/test_trading_vault_probe_feed.py` **32** (new). All < 200.
 
-**Not met / verified failing:** *(builder)*
+**`make ci`:** `UV_FROZEN=1 make ci > <session scratchpad>/ci-final.txt 2>&1; echo $?` → **exit 0**, run on this
+tree with the handback filled (only this `make ci` figure paragraph was written after it; `check_sprint_status`
+and `check_markdown_links` were re-run on it). All 15 steps ran in order: ruff check (clean), ruff format
+(clean), mypy `Success: no issues found in 1059 source files`, import-linter `Contracts: 5 kept, 0 broken`,
+module size (warnings only, none of this sprint's files over 200), module header, law coverage (provider
+18 / 63 agrees in ledger and INDEX), PARAM/settings sync (two pre-existing `portfolio_manager` envelope
+`[WARN]`s only), sprint status (this spec reads `BUILT`), markdown links, version scheme (`0.117.03`),
+pytest **3469 passed, 6 skipped**, coverage **100.00 %** (`TOTAL 18873 0 4096 0 100.00%`), dependency audit
+`No unaccepted vulnerabilities; 1 accepted advisory re-checked` (PYSEC-2026-2447, DL-184), detect-secrets
+`Passed`, untracked secrets `no untracked files to scan`. `UV_FROZEN=1` because the lock cannot re-resolve
+here (DL-228); remote CI runs `uv sync --frozen` too.
+
+**`make gate-ran`:** *(planner: local worktree, full SHA, output)* — **not done: owed.** This session has no `gh`.
+
+**`uv.lock`:** **untouched and owed.** `uv lock` after the bump failed:
+`error: Failed to fetch: https://download.pytorch.org/whl/cpu/torch/ … tunnel error: unsuccessful` (exit 2);
+`git diff --stat uv.lock` is empty. `uv.lock` still records `trading-agents` `0.117.2`; the planner re-locks
+before merging.
+
+**Planner live check (F1–F3):** *(planner, before merge)* — **not done: owed.** No `.env` and no route to
+Alpaca from this session.
+
+**Not met / verified failing:**
+
+- **Not done (owed to the planner):** `uv lock`, Windows `make ci`, `make gate-ran` for the pushed SHA, F1–F3;
+  F4 after the operator's deploy.
+- **Not done (by instruction):** the branch is `claude/festive-shannon-7fibne`, not
+  `sprint-238-a-bar-carries-the-whole-tapes-volume`: the session is bound to that name.
+- Nothing in scope is verified failing.
 
 ---
 
 ## Return notes
 
-- *(builder: scope held, or where it moved and why)*
-- *(builder: what you disagreed with in the spec after reading the laws)*
-- *(builder: what the next sprint should know that is not obvious from the diff)*
+- **Scope held.** No decision-path file, no tunable, no env value, no `trading_credential_tests.json` change,
+  no fallback, no retry. Two small moves inside scope: (1) `_download`'s page loop lost its
+  `pragma: no cover` and is now covered through a stubbed `_download_page`, so `_download_page` really is the
+  adapter's only uncovered code, as the spec states; (2) the clock is read **once per fetch**, not per page, so
+  every page of one paginated fetch asks the same `end` (a page token is issued against one query).
+- **What I disagreed with after reading the laws.** Nothing that stops the sprint. (a) A6's "`fetch_ohlcv`
+  raises" reads against `PROV-FAIL-01`'s "contained … never a crash"; it holds because containment is the
+  agent's `fault_boundary`, one layer up, so `PROV-OUT-07` cross-references `FAIL-01` rather than restating it.
+  (b) The spec's `min(…, now − 15 min)` sits exactly on the wall. `end` is truncated to whole seconds and the
+  request reaches Alpaca some milliseconds later, so it is never inside the wall **if the container clock is
+  not ahead of Alpaca's**. A clock running ahead by more than the request latency would 403 intermittently.
+  F1 measures the happy path only; if a live 403 ever appears with a clamped `end`, the fix is a larger
+  constant margin, not a retry. I kept 15 minutes as specified.
+- **What the next sprint should know.**
+  - `MarketSnapshot` still does not record **which feed** served its bars (`PROV-OUT-04` ⬜, DRIFT-040). After
+    the deploy, stored IEX-volume snapshots and SIP-volume snapshots are indistinguishable in the graph; the
+    replay harness and any before/after comparison must split on the deploy time, not on the record.
+  - A window whose `start` is today, requested in the first 15 minutes after UTC midnight, gets an `end`
+    before its `start`; Alpaca will refuse it and the provider records a fault. No live caller asks for such a
+    window (the dispatcher's history window is ~300 days); noted, not built.
+  - `trading_vault_probes._alpaca_data_source` still carries its own literals for the base URL and timeout;
+    only the feed now reads the provider's settings default. Same pattern if they ever diverge.
+  - `docs/STATE.md` and `docs/laws/functionality-checks.md` are not touched: no live check ran here, and
+    STATE is the planner's live tracker.

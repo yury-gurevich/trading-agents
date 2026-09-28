@@ -1,7 +1,8 @@
 """Graph-derived PortfolioState for PM risk gates.
 
 Agent: portfolio_manager
-Role: rebuild held-position awareness from open Position nodes before sizing.
+Role: rebuild held-position awareness from open Position nodes before sizing, each
+      held ticker weighed at its run's snapshot mark (PM-IN-05, DL-242).
 External I/O: none.
 """
 
@@ -12,13 +13,13 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from agents.portfolio_manager.portfolio import PortfolioState
+from agents.portfolio_manager.run_snapshot import run_snapshot
 from contracts.common import Money
 from contracts.positions import active_position_nodes, open_positions
 
 if TYPE_CHECKING:
     from kernel import GraphStore, Node
 
-_SNAPSHOT_LABEL = "BrokerPositionSnapshot"
 _CENTS = Decimal("100")
 _ZERO = Decimal("0")
 
@@ -30,7 +31,7 @@ def portfolio_from_graph(
     holdings = open_positions(graph)
     positions = {position.ticker: position.quantity for position in holdings}
     position_refs = {position.ticker: position.position_ref for position in holdings}
-    snapshot = _latest_snapshot(graph, run_id)
+    snapshot = run_snapshot(graph, run_id)
     position_values = _position_values(graph, snapshot)
     if snapshot is None:
         return PortfolioState(
@@ -60,17 +61,6 @@ def portfolio_from_graph(
     )
 
 
-def _latest_snapshot(graph: GraphStore, run_id: str | None) -> Node | None:
-    snapshots = [
-        node
-        for node in graph.list_nodes(_SNAPSHOT_LABEL)
-        if run_id is None or node.props.get("run_id") == run_id
-    ]
-    if not snapshots:
-        return None
-    return max(snapshots, key=lambda node: str(node.props.get("created_at", "")))
-
-
 def _fresh_account(snapshot: Node) -> dict[str, int] | None:
     props = snapshot.props
     if props.get("account_status") != "fresh":
@@ -95,14 +85,19 @@ def _account_stale_reason(snapshot: Node) -> str:
 
 
 def _position_values(graph: GraphStore, snapshot: Node | None) -> dict[str, Money]:
-    snapshot_values = _snapshot_values(snapshot)
+    """One value per held ticker: the snapshot's mark, else its nodes' fallbacks."""
+    marks = _snapshot_values(snapshot)
     values: dict[str, Decimal] = {}
     for position in active_position_nodes(graph):
-        cents = _node_market_value_cents(position, snapshot_values)
-        if cents > 0:
-            ticker = str(position.props["ticker"])
-            values[ticker] = values.get(ticker, _ZERO) + _cents_to_decimal(cents)
-    return {ticker: Money(amount=amount) for ticker, amount in values.items()}
+        ticker = str(position.props["ticker"])
+        if ticker in marks:
+            values[ticker] = _cents_to_decimal(marks[ticker])
+        else:
+            fallback = _cents_to_decimal(_fallback_cents(position))
+            values[ticker] = values.get(ticker, _ZERO) + fallback
+    return {
+        ticker: Money(amount=amount) for ticker, amount in values.items() if amount > 0
+    }
 
 
 def _snapshot_values(snapshot: Node | None) -> dict[str, int]:
@@ -118,13 +113,11 @@ def _snapshot_values(snapshot: Node | None) -> dict[str, int]:
     return values
 
 
-def _node_market_value_cents(position: Node, snapshot_values: dict[str, int]) -> int:
+def _fallback_cents(position: Node) -> int:
+    """A node the snapshot does not mark: its adoption mark, else its cost basis."""
     props = position.props
     if "broker_market_value_cents" in props:
         return int(props["broker_market_value_cents"])
-    ticker = str(props["ticker"])
-    if ticker in snapshot_values:
-        return snapshot_values[ticker]
     return int(props.get("quantity", 0)) * int(props.get("opened_price_cents", 0))
 
 

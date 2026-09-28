@@ -42,6 +42,7 @@ COPY agents/portfolio_manager/provider_client.py agents/portfolio_manager/provid
 COPY agents/portfolio_manager/pubsub.py agents/portfolio_manager/pubsub.py
 COPY agents/portfolio_manager/result.py agents/portfolio_manager/result.py
 COPY agents/portfolio_manager/run.py agents/portfolio_manager/run.py
+COPY agents/portfolio_manager/run_snapshot.py agents/portfolio_manager/run_snapshot.py
 COPY agents/portfolio_manager/settings.py agents/portfolio_manager/settings.py
 COPY agents/portfolio_manager/store.py agents/portfolio_manager/store.py
 COPY agents/provider/__init__.py agents/provider/__init__.py

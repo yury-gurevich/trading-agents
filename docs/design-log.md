@@ -10,6 +10,79 @@ and is marked CLOSED here.
 
 ---
 
+## DL-242 - the PM weighs a held name at its run's snapshot mark, once per ticker, and a resumed run at the snapshot of the run it resumes - status: DECIDED (builder, 2026-09-28; S240)
+
+**Context.** [S240](sprints/sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks.md) closes
+[DRIFT-079](laws/drift-register.md): `graph_portfolio.py::_node_market_value_cents` read
+`Position.broker_market_value_cents` (written once, at adoption) **before** the run's own
+`BrokerPositionSnapshot` mark, and summed per `Position` node; a run placed by `resume_run` found no
+snapshot under the child's id and sized on `starting_cash`. The spec fixes the order of preference and
+leaves four decisions to the builder.
+
+**Decision 1 — a stale snapshot's holdings are used; a stale snapshot is still the run's snapshot.**
+Execution writes `status: "stale"` on two paths *[read from `agents/execution/reconciliation.py`]*:
+the positions read failed (then `holdings` is empty) or the positions read succeeded and the account
+read failed (then `holdings` is this run's broker read). So any ticker a stale snapshot *lists* carries
+a mark read this run, and one it cannot list falls to the per-ticker fallback on its own. The account
+branch is unchanged: a stale snapshot still means `account_unavailable` and zero buy cash. A stale
+snapshot of the run's own **stops** the lineage walk.
+
+- *Rejected: skip a stale snapshot's holdings to the adoption mark.* Throws away a fresh positions read
+  because a different call (the account) failed, and weighs the book at an older mark than one in hand.
+- *Rejected: walk past a stale own snapshot to the source run's fresh one.* That weighs a different
+  day's book under this run's id, which is the defect this sprint removes; and the replay could not tell
+  which snapshot was read.
+
+**Decision 2 — the lineage is walked by the `RunRequest.source_run_id` prop, at most
+`MAX_RESUME_HOPS = 8` hops, with no visited set.** From the run's id: if no snapshot carries it, read
+`RunRequest(run-request:{id}).source_run_id` and try again; a missing `RunRequest`, a missing or empty
+`source_run_id`, or eight hops without a snapshot all end at `None`, which is today's `starting_cash`
+branch unchanged. The prop is written in the same `merge_node` as the child (`orchestration/resume.py`),
+is a key lookup rather than an edge walk, and the child's key is derivable from the id the PM already
+holds. Eight: each hop is an operator's resume of a stalled run; there are eight resumable stages, and a
+session resumed eight times over is past any recovery the fleet has needed. The bound's only job is to
+end a loop the graph should never hold, so a looping lineage ends at the bound and the PM seeds from
+`starting_cash`, never raises. All snapshots are listed **once** and grouped by `run_id`; each hop is one
+`get_node`.
+
+- *Rejected: follow the `RESUMES` edge.* Same information, but `graph.descendants`/`ancestors` over an
+  edge whose direction a reader has to remember, where the prop is one keyed read. The prop and the edge
+  are written together, so neither is more authoritative.
+- *Rejected: a visited set as well as the bound.* It ends a loop earlier but adds a second stop
+  condition, and it would hide the bound from its DL-70 plant (a looping lineage could not go red with
+  the bound removed). The bound alone is sufficient and observable.
+- *Rejected: the latest snapshot of all runs for a resumed run* (the RPC path's choice): a resume placed
+  days later would weigh another day's book, and a replay could not reproduce which one was read.
+- *Rejected: clone the snapshot in `resume_run`.* Out of scope by the spec: it widens the fix into
+  orchestration and the vocabulary's resume edge signatures for a lookup the PM can make itself.
+
+**Decision 3 — the code lives in two modules.** `agents/portfolio_manager/run_snapshot.py` (new) picks
+the snapshot a run weighs its book at, including the lineage walk; `graph_portfolio.py` keeps the
+portfolio assembly and the per-ticker valuation and stays under 150 lines. The valuation: for each held
+ticker (a ticker with an active `Position` node), the snapshot's `market_value_cents` if the snapshot
+lists it, assigned **once**; otherwise the sum over that ticker's nodes of `broker_market_value_cents`,
+else `quantity × opened_price_cents`. A ticker the snapshot lists but no active `Position` holds is not
+added (the held book stays the graph's `Position`s; a broker-only holding is execution's divergence
+`Flag` and the monitor's adoption, not the PM's).
+
+- *Rejected: keep the per-node loop and move the snapshot check first.* That counts a two-node ticker's
+  snapshot mark twice (the spec's B2 trap).
+
+**Decision 4 — the clause is `PM-IN-05`** (next free `IN` number; `PM-IN-01..04` exist). Wording in
+`agents/portfolio_manager/laws/laws.md` v1.10. It names the unscoped (RPC) path's choice, the latest
+snapshot, because the same valuation rule reaches it; that choice is stated, not changed.
+
+**A consequence the spec's scope keeps out (recorded, not fixed).** The fidelity export picks a
+session's book by the `MarketData`'s `run_id` (`scripts/fidelity_exporter.py`), which for a resumed
+session is the child's; no snapshot carries it, so the export's `book` is empty and flags
+`held_positions` as not persisted. The replay then seeds from `starting_cash` while the live PM, after
+this sprint, reads the source run's snapshot. Before this sprint both read `starting_cash`, so they
+agreed on the wrong value; now they disagree on a resumed session, attributed to a named gap rather than
+silently. The spec forbids editing `scripts/fidelity_export*` and `scripts/replay_fidelity*`; the fix
+(the export following the same lineage) is owed to a later sprint and named in S240's return notes.
+
+---
+
 ## DL-241 - the forecaster's barrier claim: where it lives, how it is keyed, how much history it asks for, and what it says on a rerun - status: DECIDED (builder, 2026-09-28; S239)
 
 **Context.** [S239](sprints/sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md) makes the

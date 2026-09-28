@@ -62,7 +62,7 @@ class Scorecard(_Frozen):
 
 CONTRACT = AgentContract(
     name="forecaster",
-    version="0.5.0",
+    version="0.6.0",
     mission=(
         "Provide advisory ML forecasts (exit timing, news impact, ...) as clearly "
         "labelled shadow signals that never gate a decision until scorecards prove "
@@ -103,6 +103,14 @@ CONTRACT = AgentContract(
             response=ShadowPrediction,
         ),
         Capability(
+            "forecast_barrier",
+            "State P(stop first), P(target first), P(neither) within 10 sessions "
+            "for a buy's stop and target (features stop_pct, target_pct) and record "
+            "them as an advisory BarrierForecast claim; value = P(target first).",
+            request=ForecastRequest,
+            response=ShadowPrediction,
+        ),
+        Capability(
             "return_scorecard",
             "Compare the LightGBM return model's shadow predictions against injected "
             "forward returns; advisory, never promotion-eligible.",
@@ -111,7 +119,7 @@ CONTRACT = AgentContract(
         ),
     ),
     emits=("scorecard_refreshed",),
-    owns_graph=("ShadowPrediction", "Model", "ForecasterRun"),
+    owns_graph=("ShadowPrediction", "Model", "ForecasterRun", "BarrierForecast"),
     external_io=(),
     depends_on=("provider",),
     mcp_tools=("forecast", "scorecard"),

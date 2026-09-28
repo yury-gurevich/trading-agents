@@ -10,6 +10,108 @@ and is marked CLOSED here.
 
 ---
 
+## DL-241 - the forecaster's barrier claim: where it lives, how it is keyed, how much history it asks for, and what it says on a rerun - status: DECIDED (builder, 2026-09-28; S239)
+
+**Context.** [S239](sprints/sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target.md) makes the
+forecaster state P(stop first) / P(target first) / P(neither) within 10 sessions for each buy, from
+[EXP-018](research/experiments/EXP-018-garch-history-depth.md)'s GARCH(1,1)-t filtered historical simulation, and
+record it as an append-only `BarrierForecast` claim. The spec leaves four decisions to the builder; building it
+surfaced three more. Recorded before implementing (LAW-06).
+
+**D1 - where the code lives, given `agent.py` is at 199 lines.** The three scorecard handlers (`scorecard`,
+`sentiment_scorecard`, `return_scorecard`) and `_scorecard_metrics` move, logic unchanged, to a new
+`agents/forecaster/scorecards.py`, bound in `agent.py` with `functools.partial` over the graph. They are the
+cleanest seam: read-only over the graph, no agent state beyond it. The barrier leg is its own modules, as the
+factor leg is: `domain/barrier_garch.py` (the pure simulation and the fit-acceptance rule), `barrier_fit.py`
+(the fit port, the fake, the `arch` adapter), `barrier_forecast.py` (the handler) and `barrier_store.py` (the
+claim write). **Rejected:** compressing lines (the spec forbids it); moving the sentiment path
+(`_read_sentiment` / `_score` / `_window`), which shares the injected sentiment model and is the capability the
+agent was built around; one large barrier module (it would pass 150 lines on day one).
+
+**D2 - the key, and no edge.** Key `{model_id}:{ticker}:{as_of}` (for example
+`barrier-garch-v1:AAPL:2026-09-25`): per ticker and last bar as the spec asks, with the model id in front so a
+later challenger's claim on the same day never collides with this model's. **No edge.** The claim carries every
+field sprint B settles from (ticker, as_of, entry close, barriers, horizon), so it needs no join.
+**Rejected:** an edge to the `AnalystRun` (the RPC carries only `ForecastRequest`, whose `features` are floats:
+naming the run would widen the contract for a join nothing needs); an edge to the `ForecasterRun` (the poll
+writes it *after* the RPCs, and one claim can serve two runs on the same last bar); `Model -PREDICTED->
+BarrierForecast` (lineage is already on the node as `model_id` + `model_version`; a new vocabulary signature
+for no reader); `ADVISES` to the `Recommendation` (the existing helper looks it up by ticker, which does not
+match how recommendations are keyed).
+
+**D3 - the request window.** Calendar days = ⌈sessions × 365.25 ÷ 250⌉ + 14; for 760 sessions that is **1,125
+days**, about 771 sessions at EXP-018's measured density (752 bars in 1,097 days), and the handler keeps the
+**last 760**. 250 sessions a year is below the exchange's 251–253, so the ratio always over-asks; 14 days absorb a
+holiday cluster, a window ending on a non-session day (EXP-018's 752-not-756), and a last session not yet
+served. The same formula at EXP-018's 752 bars gives 1,113 days, more than the 1,097 that fell short.
+**Rejected:** the provider's market calendar (agents never import agents; the forecaster image does not ship
+`agents/provider`); a tunable margin (a derived safety constant, not a policy knob: one knob,
+`barrier_history_sessions`, is enough); asking the provider for "N sessions" (`DataRequest` carries a `Window`
+only: a contract change for a margin). **One named difference from EXP-018:** 760 bars are 759 daily moves,
+where the experiment's 756-bar depth fitted 756 moves. The spec sets 760; F1 measures the result.
+
+**D4 - `ShadowPrediction.confidence`, and the clause wording.** `confidence` = the fraction of the declared
+history the claim stands on, `min(1, history_bars ÷ barrier_history_sessions)`, through the existing
+`confidence_from_history` (the return model's rule): 1.0 on a full 760-bar fit, 0.92 at the 700-bar floor, 0.0 on
+every failure (`FORE-OUT-06`). `value` = P(target first). **Rejected:** a flat 1.0 (hides a short-history fit);
+the largest of the three probabilities (a forecast's sharpness is not confidence in it, and sprint B's scorecard
+is what measures that). **Wording:** `FORE-IDN-02` amended; new `FORE-IN-07` (input), `FORE-OUT-07` (the claim),
+`FORE-IDM-04` (determinism and rerun), `FORE-FAIL-04` (no fabricated claim). `IN-07` and `IDM-04` are beyond
+the two clauses the spec names: determinism does not fit honestly in an `OUT` clause, and the spec's A6 cited
+`FORE-IDM-02`, which is about the return model (§7a forbids narrowing it to fit a barrier test).
+
+**D5 - a rerun on the same last bar.** The graph is append-only in code (`_append_props` refuses to overwrite a
+property), so a rerun merging a new `created_at` would fail. The rerun reuses the stored claim's `created_at`:
+the same bars give the same seed and the same probabilities, so the merge is a no-op on the same node. A rerun that
+would state a **different** claim under the same key (a provider revision, different barriers) is refused by the
+graph; the handler records a fault and returns the neutral reading, and **the first claim stands**.
+**Rejected:** barriers in the key (two claims per ticker and day make sprint B choose between them);
+overwriting (it would rewrite a claim after it was made, which is what a ledger exists to forbid); skipping
+silently (a second, different answer for the same day is a finding, not noise).
+
+**D6 - the fit port and the acceptance rule.** EXP-018's `garch_fit` is split at its natural seam: the
+**adapter** (`ArchGarchFitter`) does only the lazy `arch` import and `arch_model(r, mean="Constant", vol="GARCH",
+p=1, q=1, dist="t").fit(disp="off")`, returning the raw `mu, omega, alpha[1], beta[1]` and the convergence flag,
+and is the only `pragma: no cover` code; the **acceptance rule** is pure domain code copied from the experiment,
+tolerance included (`alpha + beta > 1 + 1e-9` fails; above 0.999 both scale in proportion to 0.999, `capped`), so
+the unit gate proves it with a fake fitter. An exception inside the adapter is a failed fit. The production
+default is the real adapter: the fake is never a default, so a missing `arch` is a fault and no claim, never a
+fabricated one. **Rejected:** a fake default like the sentiment and return models' (a fake fitter in production
+would write fake claims into the ledger); fitting without `arch` (the spec's road not taken).
+
+**D7 - the simulation without scipy.** EXP-018's `garch_path_probs` filters the variance with
+`scipy.signal.lfilter`, which the unit gate does not have. The forecaster computes the same first-order
+recursion, `s2[n+1] = omega + alpha·(seg[n] − mu)² + beta·s2[n]`, in a loop with the same operation order.
+*Measured 2026-09-28 in a scratch environment (numpy 2.4.6, scipy 1.18.1):* **bit-identical** to `lfilter` on
+2,000 random series of 5–900 moves (0 mismatches). Everything else is the experiment's code line for line, with
+`N_PATHS` a parameter (`barrier_paths`) and `H` the named constant `HORIZON_SESSIONS`. A2 runs the experiment's
+function as the oracle. **Rejected:** importing scipy lazily inside the simulation (the unit gate could not run
+the model at all); a scipy fallback only when absent (two code paths are two models).
+
+**D8 - the seed.** `int.from_bytes(sha256(f"{ticker}:{as_of}").digest()[:4], "big")`: stable across processes and
+machines, and below 2³² so it survives any JSON reader. **Rejected:** Python's `hash()` (salted per process:
+breaks `FORE-IDM-04` across runs); EXP-018's per-stock `[20260928, stock_index]` (the index is a position in the
+experiment's universe, which production does not have).
+
+**Found while reading, for sprint B and the planner:** a single-ticker 760-bar request passes through the
+provider's pooled extreme-move guard (`max_daily_move_sigma` 8, open-to-close, over the whole window): one
+qualifying day in three years excludes the whole ticker, and the claim then fails closed (a short-history fault).
+F3/F4 should count how often that happens before sprint B reads a missing claim as a model failure.
+
+**Found while building - no deployed process fires the poll, so F4 cannot pass as specced.** *[read from the code,
+2026-09-28, `main` `e753543`]* `poll.forecast_analyst_node` is run only by `orchestration/local_pipeline.py`
+(the in-process cascade: tests and `scripts/run_local.py`), which no image ships. The forecaster's entrypoint
+serves Service Bus requests only (`serve_loop`, no `find_pending` loop), and the only sender of a forecaster
+request anywhere in the code is that poll: DL-80's finding about the forecaster ("an advisory input nothing
+requests"), still true. So in the fleet this sprint's handler is reachable, and nothing reaches it; the first
+scheduled run after a full `up` writes **no** `BarrierForecast`. **Not changed here:** a pull loop inside the
+forecaster would breach `FORE-TRG-01` / `FORE-TRG-02` (*"never self-triggers"*), a law change, and would also
+start the fake sentiment and return legs writing to the live graph; a caller in another agent is a cross-agent
+choreography change (`flow.md`). Both are outside "nothing else changes" and are the planner's to decide
+before F4. Built as specced; handed back as a named blocker for F4.
+
+---
+
 ## DL-240 - the book is managed as a distribution: short holding periods on stocks we buy, and exits that take profit - status: DIRECTION (operator, 2026-09-28); design open, work-queue 92
 
 **The operator, 2026-09-28:** *"we need to think about how we manage stocks. We need to be able to

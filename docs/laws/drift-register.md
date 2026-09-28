@@ -174,6 +174,12 @@ clause is **false in code**, not merely untested — the rest were demoted in ea
 | --- | --- | --- | --- | --- | --- |
 | DRIFT-078 | `SRF-OUT-03` | *"Dashboard chat answers are grounded in the selected run and record auditable `CommandAudit`, `LLMCall`, and `Intent` facts for priced/operator review."* Read plainly: every chat answer. | The chat's deterministic quick asks answer without the operator and write none of those facts: `status` and `incidents`, `performance` (S228, governed by `SRF-OUT-07`) and, from S236, `scorecard` (`SRF-OUT-08`). `status`, `incidents` and `scorecard` are not scoped by the selected run either. The clause's cited test proves only the operator-mediated path. S228 recorded the silence in its handback without a register row. | law gap (silence) | **OPEN (S236, 2026-09-27)** — forced decision at the next surfaces amendment: narrow `SRF-OUT-03` to operator-mediated (model) answers and name the quick asks as graph reads, or audit the quick asks too. No behaviour depends on the wording; S236's law cycle did not include `SRF-OUT-03`. |
 
+## Forecaster (`FORE`)
+
+| ID | Law | Intent says | Reality says | Kind | Status / decision |
+| --- | --- | --- | --- | --- | --- |
+| DRIFT-081 | `FORE-IDN-01` / `FORE-OBS-01` / `FORE-IDN-02` | `IDN-01`: the job is to *"run the sentiment model (FinBERT-class) and the return model (LightGBM)"*. `OBS-01`: *"A `ShadowPrediction` node is written per prediction."* `IDN-02` lists every label the forecaster writes. | Read 2026-09-28 (S239 law reading, [DL-241](../design-log.md)): the factor leg (Q5, `forecast_factor`) and now the barrier model (`forecast_barrier`) are models `IDN-01` does not name; the barrier prediction is recorded as a `BarrierForecast` claim and writes **no** `ShadowPrediction` node (`FORE-OUT-07` says so explicitly); `poll.py` writes `ForecasterRun`, which the contract's `owns_graph` declares and `IDN-02` never listed. All three clauses are ⬜, so no test was asked to hold them. S239's amendment was scoped to `IDN-02` + `BarrierForecast`, so the wording is left for the planner. | stale-law | **OPEN (S239, 2026-09-28)** — at the next forecaster amendment: widen `IDN-01` to the four legs, read `OBS-01` as "a recorded node per prediction (`ShadowPrediction`, or `BarrierForecast` for a barrier claim)", add `ForecasterRun` to `IDN-02` |
+
 ## Other agents
 
 *Populated as each agent is authored and reconciled.*

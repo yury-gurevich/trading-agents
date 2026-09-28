@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.3 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.4 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -17,7 +17,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   return `ShadowPrediction` objects whose `shadow=True` flag is always set. It produces evidence;
   it never decides.
 - **FORE-IDN-02** — The forecaster exclusively writes these graph labels (single-writer rule):
-  `ShadowPrediction`, `Model`.
+  `ShadowPrediction`, `Model`, `BarrierForecast`.
 
 ## Inputs (`IN`)
 
@@ -33,6 +33,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   }`. Same offline-injection contract.
 - **FORE-IN-06** — Malformed input → degraded response or empty scorecard; fault recorded; never
   raises to bus.
+- **FORE-IN-07** — `forecast_barrier` accepts `ForecastRequest`: `subject_ref` is the ticker and
+  `features` carries a buy's `stop_pct` and `target_pct`, each a fraction of the entry close in
+  (0, 1]. A request missing either, or with either outside that range, is refused before any
+  provider request: no claim, a fault, and the `FORE-OUT-06` neutral reading, never a raise to the
+  bus. The stock's history is one OHLCV request to the provider over a calendar window holding at
+  least `barrier_history_sessions` sessions.
 
 ## Triggers (`TRG`)
 
@@ -53,6 +59,21 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   call. A `Model` node is upserted per model_id.
 - **FORE-OUT-06** — On scoring failure, `value=NEUTRAL (0.5)`, `confidence=0.0` is returned with
   provenance; a fault is recorded.
+- **FORE-OUT-07** — For a buy's stop and target, `forecast_barrier` states the probability that
+  over the next 10 sessions the price reaches the stop first (`p_stop_first`), the target first
+  (`p_target_first`) or neither (`p_neither`). Within a session the low is checked before the high,
+  so a session touching both counts as the stop; the three sum to 1. The model is EXP-018's:
+  GARCH(1,1) with Student-t innovations fitted on the stock's own last `barrier_history_sessions`
+  daily bars, persistence above 0.999 scaled in proportion to 0.999 (`capped`), and
+  `barrier_paths` filtered-historical-simulation paths. On success it writes exactly one
+  `BarrierForecast` node, the claim, carrying `ticker`, `as_of` (the last bar's date),
+  `entry_close` (that bar's close), `horizon_sessions`, `stop_pct`, `target_pct`, the three
+  probabilities, `model_id`, `model_version`, `history_bars`, `n_paths`, `seed`, `fit_status`
+  (`accepted` | `capped`), the fitted `garch_mu` / `garch_omega` / `garch_alpha` / `garch_beta`,
+  `created_at` and `shadow: true`, and returns a `ShadowPrediction` whose `value` is
+  `p_target_first` and whose `confidence` is `history_bars ÷ barrier_history_sessions` (at most
+  1). It writes no `ShadowPrediction` node. The claim is advisory evidence only
+  (`FORE-NEV-01/02`).
 
 ## Prohibitions (`NEV`)
 
@@ -82,6 +103,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   randomness is bounded by the provider fetch, stamped in the node's `fresh_as_of`.
 - **FORE-IDM-03** — Scorecard methods are read-only over `ShadowPrediction` nodes; calling twice
   returns the same metrics (same graph state).
+- **FORE-IDM-04** — A barrier claim is deterministic given the same bars and barriers: the
+  simulation's seed is a stable hash of `(ticker, as_of)` (the first four bytes of sha-256 over
+  `ticker:as_of`), never a per-process salted hash. The claim is keyed by model, ticker and last bar
+  date, so a second call on the same last bar merges into the same node; a second call that would
+  state a different claim under that key is refused with a fault and the `FORE-OUT-06` neutral
+  reading, and the first claim stands.
 
 ## Ordering & concurrency (`ORD`)
 
@@ -97,6 +124,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   recorded; model node not written (no data, no provenance).
 - **FORE-FAIL-03** — LightGBM model file not found: `fault_boundary` captures; neutral
   `ShadowPrediction` returned; no crash.
+- **FORE-FAIL-04** — `forecast_barrier` records a claim only from a successful fit on enough
+  history. A fit outside EXP-018's acceptance rule (not converged, ω ≤ 0, α < 0, β < 0, or
+  α + β > 1 beyond 1e-9), an optimiser exception, an absent `arch`, fewer than
+  `barrier_min_history_sessions` bars, or a provider error writes no `BarrierForecast`, records a
+  fault, and returns the `FORE-OUT-06` neutral reading. A claim is never fabricated: no default,
+  fake, cached or earlier run's parameters stand in for a failed fit.
 
 ## Type alignment (`TYP`)
 
@@ -155,7 +188,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   },
   "graph": {
     "operations": ["append_write", "read"],
-    "labels_owned": ["ShadowPrediction", "Model"],
+    "labels_owned": ["ShadowPrediction", "Model", "BarrierForecast"],
     "labels_read": ["SentimentReading"]
   },
   "filesystem": {
@@ -192,12 +225,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | `factor_name` | `""` | `str` | YES | Approved catalogue factor to shadow; empty keeps approved-factor shadowing disabled |
 | `factor_params` | `""` | `str` | YES | Operator-approved catalogue params for that factor, e.g. `lookback=60` |
 | `factor_model_id` | `""` | `str` | YES | Optional explicit factor scorecard key; empty derives it from the selection |
+| `barrier_history_sessions` | `760` | `int ≥ 252 ≤ 2520` | YES | Sessions of the stock's own daily history the barrier model fits and simulates on; EXP-018 measured its skill at 756 bars (+2.67 %), short of the bar at 203 and weaker on full history (DL-241 D3) |
+| `barrier_min_history_sessions` | `700` | `int ≥ 252 ≤ 2520` | YES | Fewer fetched bars than this and no claim is stated (`FORE-FAIL-04`) |
+| `barrier_paths` | `1000` | `int ≥ 100 ≤ 10000` | YES | Simulated paths per barrier claim, as EXP-018; probabilities move in steps of 1 ÷ paths |
 
 ## Divergence register
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| — | — | — | no known drift |
+| DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | OPEN: planner, at the next forecaster amendment |
 
 ## Changelog
 
@@ -209,3 +245,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - v1.3 — DL-203 / work-queue item 33 (2026-09-23): `PARAM` only. Declares the four IC-decay
   retrain knobs and the three approved-factor shadowing fields, all already `tunable()` in
   `settings.py`. No clause moves.
+- v1.4 — S239 / DL-241 (2026-09-28): the barrier claim. `FORE-IDN-02` amended (the forecaster also
+  writes `BarrierForecast`); new `FORE-IN-07` (the `forecast_barrier` input), `FORE-OUT-07` (the
+  three probabilities and the append-only, advisory claim that records them), `FORE-IDM-04` (a
+  stable seed; a rerun merges, a conflicting rerun is refused) and `FORE-FAIL-04` (no claim without
+  a successful fit on enough history; never fabricated). `CAP` owns `BarrierForecast`; three
+  `PARAM` rows. Why: DL-240 manages the book as a distribution, and EXP-018 found the first model
+  whose probabilities clear the pre-registered bar; a ledger of its claims is what tests them live.
+  `IN-07` and `IDM-04` go beyond the two clauses the spec named: determinism is an `IDM` guarantee,
+  and `FORE-IDM-02` concerns the return model only. Silences found are `DRIFT-081`.

@@ -3,8 +3,8 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 92 (the book as a distribution), sprint A of the ledger
 **Branch:** `sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Status:** BUILT 2026-09-28 (Claude cloud session; branch pushed, unmerged; owed items in the Closeout)
+**Version:** *next available MINOR at merge* (`0.118.00` on the branch)
 **Effort:** M
 **Decisions:** [DL-240](../design-log.md) (the direction, and its EXP-018 entry: the ledger is built on GARCH at ~3 years) · [EXP-018](../research/experiments/EXP-018-garch-history-depth.md) (the model and the evidence) · [EXP-017](../research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md) · ADR-0010 (shadow models are promoted only through the registry) · the builder's design decisions go to the **next free DL** (`DL-241` at spec time)
 
@@ -431,72 +431,235 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-28 by the builder (Claude cloud session) before the first code change. Read whole, first
+time: `agents/forecaster/laws/laws.md` (v1.3, 211 lines), `agents/forecaster/laws/test-plan.md` (17 / 45),
+`docs/laws/conventions.md`, `docs/laws/drift-register.md` (last ID `DRIFT-080`), ADR-0010, EXP-018 §5–§8 and
+Appendix S, and the code the clauses govern (`agent.py`, `poll.py`, `provider_client.py`, `store.py`,
+`settings.py`, `lightgbm_model.py`, `contracts/forecaster.py`, `kernel/graph_support.py`,
+`kernel/graph_vocabulary.py`, the vocabulary pack).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| `agents/forecaster/*` new modules (model, fit port, handler) | forecaster `laws.md` + `test-plan.md`; `conventions.md` | `FORE-IDN-01/02`, `FORE-OUT-01/02/05/06`, `FORE-NEV-01/02/04`, `FORE-STA-01/02`, `FORE-IDM-02`, `FORE-FAIL-01/02/03`, `FORE-TYP-02` | **Yes, three ways.** (1) `FORE-STA-02` (⬜) says writes are append-only, and the kernel enforces it: `kernel/graph_support._append_props` raises `property … cannot be overwritten`. A rerun that merges a fresh `created_at` would be refused, so a rerun reuses the first claim's `created_at`, and a rerun that would state a *different* claim is refused with a fault: the first claim stands. (2) `FORE-IDM-02` is about the **return model** only; citing it for the barrier model would narrow a clause to fit a test (§7a). Determinism gets its own clause (`FORE-IDM-04`) and A6 cites that, not `IDM-02`. (3) `FORE-FAIL-01` says a scoring failure still writes a neutral prediction node; the new failure clause writes **no** node, so it is scoped to `forecast_barrier` by name so the two cannot be read against each other. |
+| `agents/forecaster/agent.py`, `poll.py`, `settings.py` | same | `FORE-TRG-01/02` (🟩), `FORE-NEV-02` (🟩), `FORE-PARAM` | `FORE-TRG-02`: the poll fires the RPC, the handler never self-triggers. The PARAM table is checked against `settings.py` by `check_param_law_sync.py`, so the horizon (10), the persistence cap (0.999) and the model id stay **named constants** in the model module, not settings. |
+| `agents/forecaster/provider_client.py` (reused) | same | `FORE-NEV-04` (🟩), `FORE-FAIL-02` (🟩), `FORE-DEP-01` (⬜) | The bars come only through `request_prices` over the bus. Its fault boundary already records a provider error; the handler adds its own fault only for the cases that helper cannot see (short history, failed fit). |
+| `contracts/forecaster.py` | same, ADR-0010 | `FORE-CAP`, `FORE-TYP-01` (🟩), `FORE-NEV-03` | The capability joins `consumes`, `BarrierForecast` joins `owns_graph`; `ShadowPrediction`'s fields are untouched, so `FORE-TYP-01`'s required-field test keeps holding. Contract version `0.5.0` → `0.6.0` (a capability added; DRIFT-060). ADR-0010 concerns LLM prompts; it binds only in that nothing here is promoted. |
+| `orchestration/packs/trading_graph_vocabulary.json` | DL-85; `tests/test_graph_vocabulary_*.py` | the fail-closed write guard | The label **and its property names** are declared, so the guard also refuses a misspelt claim field; a test runs the handler through `GuardedGraphStore` built from the pack (the spec's trap: an in-memory graph alone would not see it). No edge is added (DL-241 D2). |
+| `pyproject.toml` | this spec's Guardrails | — | `arch` joins the `forecaster` extra only; `uv.lock` is left untouched (cannot re-resolve here). |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, both.**
+`contracts/forecaster.py` gains `forecast_barrier` and `BarrierForecast`, and the forecaster makes a new
+guarantee. Owed and done in this unit of work: `FORE-IDN-02` amended; new `FORE-IN-07` (the capability's
+input: the first capability to read `features`), `FORE-OUT-07` (the claim), `FORE-IDM-04` (determinism and
+rerun merge), `FORE-FAIL-04` (no fabricated claim); `CAP`; three `PARAM` rows; v1.3 → v1.4 + Changelog;
+test-plan rows; both rollups; `DRIFT-081`. `IN-07` and `IDM-04` go beyond the two clauses the spec names:
+the spec lets the builder own the wording, and neither guarantee fits honestly inside `OUT-07` (conventions
+§1 files determinism under `IDM` and inputs under `IN`).
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** none that forces a stop. One citation in the spec's
+test plan is not honest under §7a: **A6 names `FORE-IDM-02`**, whose text is *"Return model output is
+deterministic given the same OHLCV bars"*. A barrier test proves nothing about the return model, so A6 cites
+the new `FORE-IDM-04` and `FORE-IDM-02` stays ⬜.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed** (recorded as `DRIFT-081`, OPEN, for the planner):
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+- **`FORE-IDN-01`** names the forecaster's job as running *"the sentiment model … and the return model"*. The
+  factor leg (Q5) was added without amending it, and the barrier model is a third unnamed model. The spec
+  names only `IDN-02` for amendment, so `IDN-01` is left as it is and the gap is registered.
+- **`FORE-OBS-01`** says *"A `ShadowPrediction` node is written per prediction"*. The barrier model's
+  prediction is recorded as a `BarrierForecast` and writes no `ShadowPrediction` node (the spec's design).
+  `FORE-OUT-07` states this explicitly; the literal `OBS-01` reading is registered.
+- **`FORE-IDN-02`** never listed `ForecasterRun`, which the poll writes and the contract's `owns_graph`
+  declares. Not this sprint's to fix; registered with the other two.
+- **No input clause governed `features`** until now (`FORE-IN-02` says the return model ignores them).
+  `FORE-IN-07` covers the new capability; malformed barriers fail closed.
+
+**Clauses that were ⬜ and are now proven** *(result, at handback)*: `FORE-IDN-02` (amended; cited by
+`test_a_successful_call_writes_one_complete_claim` and `test_the_claim_passes_the_packs_vocabulary_guard`,
+both passing). The new `FORE-IN-07`, `FORE-OUT-07`, `FORE-IDM-04`, `FORE-FAIL-04` are 🟩 on their citing
+tests; `check_law_coverage.py` derives the forecaster at **22 / 49** (was 17 / 45). `FORE-STA-02`, `FORE-IDM-02`, `FORE-OBS-01`, `FORE-IN-06` stay ⬜: the new tests touch only the
+barrier leg of each, which §7a says leaves a general clause gray.
 
 ---
 
 ## Test plan results — fill at handback
 
+All in `agents/forecaster/tests/`; every row PASS in the final `make ci` run (see Closeout).
+
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| A1 | *(builder)* | | | |
+| A1 | `test_a_rising_history_reaches_the_target_first`, `test_a_falling_history_reaches_the_stop_first`, `test_a_flat_history_with_wide_barriers_reaches_neither`, `test_a_session_touching_both_barriers_counts_as_the_stop` (+ `test_the_earlier_session_wins_whichever_barrier_it_is`, `test_the_simulation_reads_only_the_segment_it_is_given`) | `test_barrier_garch.py` | PASS | `FORE-OUT-07` |
+| A2 | `test_the_simulation_equals_exp018` ×3 (+ `test_the_oracle_is_the_experiments_code`, `test_daily_moves_are_the_experiments`) | `test_barrier_garch_oracle.py` | PASS | `FORE-OUT-07` |
+| A3 | `test_a_fit_is_accepted_or_capped_as_exp018_did` ×3, `test_the_boundary_tolerance_is_exp018s`, `test_every_other_fit_fails` ×6 | `test_barrier_garch.py` | PASS | `FORE-FAIL-04`, `FORE-OUT-07` |
+| A4 | `test_a_successful_call_writes_one_complete_claim`, `test_the_claim_passes_the_packs_vocabulary_guard` | `test_barrier_claim.py` | PASS | `FORE-OUT-07`, `FORE-IDN-02` |
+| A5 | `test_a_failed_fit_records_no_claim`, `test_a_fitter_exception_records_no_claim`, `test_short_history_records_no_claim_and_never_fits` (650 bars), `test_a_degraded_provider_records_no_claim`, `test_a_provider_error_records_no_claim`, `test_without_arch_the_default_fitter_records_no_claim` | `test_barrier_refusals.py` | PASS | `FORE-FAIL-04` (+ `FORE-NEV-04`, `FORE-FAIL-02` where the provider is the cause) |
+| A6 | `test_the_same_bars_give_the_same_claim_merged_into_one_node`, `test_a_different_claim_for_the_same_last_bar_is_refused`, `test_the_seed_is_stable_across_processes` (a child interpreter with `PYTHONHASHSEED=random`, plus the pinned value `3333665949` for `AAPL:2026-09-25`) | `test_barrier_claim.py` | PASS | `FORE-IDM-04` — **not** `FORE-IDM-02`, which is about the return model (Law reading record) |
+| A7 | `test_the_history_is_one_long_ohlcv_request_to_the_provider` | `test_barrier_refusals.py` | PASS | `FORE-NEV-04`, `FORE-IN-07` |
+| A8 | `test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers` | `test_barrier_poll.py` | PASS | `FORE-IN-07`, `FORE-TRG-01` |
+| A9 | `test_a_full_pass_never_reaches_the_decision_path` | `test_barrier_poll.py` | PASS | `FORE-NEV-02`, `FORE-OUT-07` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** `test_malformed_barriers_record_no_claim` ×5 (`FORE-IN-07`: a missing, zero,
+negative or >1 barrier is refused before any provider request); `test_a_different_claim_for_the_same_last_bar_is_refused`
+(`FORE-IDM-04`: the append-only graph refuses a changed rerun, the first claim stands);
+`test_a_degraded_provider_records_no_claim` (the provider absorbs a source failure and answers with no bars, so
+the forecaster sees short history, not a bus error: measured while writing A5);
+`test_the_reference_lfilter_is_scipys_where_scipy_exists` (**SKIPPED in the gate**, no scipy; run with
+`uv run --with scipy==1.18.1` it passes, below). `test_forecaster_boundary.py::test_contract_declares_never_clauses_and_no_external_io`
+was updated for the new contract version `0.6.0` and `owns_graph`.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT 2026-09-28. Branch pushed; not merged (the planner merges).
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, Linux, Python 3.13, a clone of
+`yury-gurevich/trading-agents` on branch `sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target`
+cut from `main` `e753543` and rebased, before the first push, onto `8a05938` (S240's docs-only spec; conflicts in `STATE.md` and the sprint `README` / `INDEX` rows only). **No `.env`**, no `gh`, no Azure, no route to `download.pytorch.org`. Every `uv run`
+ran with `UV_FROZEN=1` (the bumped `pyproject.toml` cannot be re-locked here). No test reaches the network: the
+provider is `FakeDataSource`, the fitter `FakeGarchFitter`, and the one child process runs `barrier_seed` only.
 
-**Result:** *(builder)*
+**Result:** For a `buy` with both barriers, `forecast_barrier` asks the provider for one 1,125-day OHLCV window,
+keeps the last 760 bars, fits GARCH(1,1)-t through the fitter port, applies EXP-018's acceptance rule, simulates
+1,000 × 10 filtered-historical-simulation paths and writes one `BarrierForecast` (21 fields, key
+`barrier-garch-v1:{ticker}:{as_of}`), returning a shadow prediction of P(target first). A failed fit, <700 bars,
+a provider error, malformed barriers or an absent `arch` write no claim, record a named fault and return the
+neutral reading; a changed rerun is refused and the first claim stands. The poll fires it only for buys with both
+barriers. All of this is proven by unit tests with a fake fitter; **nothing here proves the skill on real data**
+(F1) or a live fetch (F3).
 
-**Files changed:** *(builder)*
+**Files changed:** new `agents/forecaster/domain/barrier_garch.py` (the model, copied from EXP-018),
+`barrier_fit.py` (port, fake, lazy `arch` adapter), `barrier_forecast.py` (the handler), `barrier_store.py` (the
+claim), `scorecards.py` (moved out of `agent.py`); `agent.py`, `poll.py`, `settings.py`; `contracts/forecaster.py`
+(capability, `owns_graph`, version `0.6.0`); `orchestration/packs/trading_graph_vocabulary.json` (label + 21
+properties, no edge); `pyproject.toml` (`arch>=8.0.0` in the `forecaster` extra, `0.118.00`); tests: six new files
+(`barrier_fixture.py`, `barrier_helpers.py`, `test_barrier_{garch,garch_oracle,claim,refusals,poll}.py`) and
+`test_forecaster_boundary.py`; laws: forecaster `laws.md` (v1.4) and `test-plan.md`, `docs/laws/{ledger,INDEX,drift-register}.md`;
+`docs/design-log.md` (DL-241), `docs/STATE.md`, `docs/sprints/{README,INDEX}.md`, this file.
 
-**Design decisions:** *(builder: DL number, one line, where the rejected alternatives are)*
+**Design decisions:** [DL-241](../design-log.md), D1–D8 with their rejected alternatives, plus two findings
+(the provider's pooled 8σ guard over a 3-year window; no deployed process fires the poll).
 
-**Proof — the red run first:**
+**Proof — the red run first** (the five new test files before any implementation, `pytest --no-cov`):
 
 ```text
-(builder)
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_garch'
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_garch'
+E   ModuleNotFoundError: No module named 'agents.forecaster.barrier_fit'
+E   ImportError: cannot import name 'barrier_fit' from 'agents.forecaster' (/home/user/trading-agents/agents/forecaster/__init__.py)
+E   ModuleNotFoundError: No module named 'agents.forecaster.barrier_fit'
+ERROR agents/forecaster/tests/test_barrier_garch.py
+ERROR agents/forecaster/tests/test_barrier_garch_oracle.py
+ERROR agents/forecaster/tests/test_barrier_claim.py
+ERROR agents/forecaster/tests/test_barrier_refusals.py
+ERROR agents/forecaster/tests/test_barrier_poll.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+5 errors in 0.80s
 ```
 
-**Proof — the green run:**
+**Proof — the green run** (the same five files on the final tree):
 
 ```text
-(builder)
+.....................s...................                                [100%]
+=========================== short test summary info ============================
+SKIPPED [1] agents/forecaster/tests/test_barrier_garch_oracle.py:179: could not import 'scipy.signal': No module named 'scipy'
+40 passed, 1 skipped in 1.29s
 ```
 
-**Guards planted:** *(builder, per plant)*
+With real scipy layered on (`UV_FROZEN=1 uv run --with scipy==1.18.1 pytest … test_barrier_garch_oracle.py`, lock
+untouched): `6 passed in 2.86s` — the oracle ran the experiment's own `lfilter`, and the reference recurrence the
+gate uses matched it bit for bit. *Local observations, not gate proofs* (scratch environment, `arch` 8.0.0 as in
+EXP-018): EXP-018's `garch_fit`, extracted from Appendix S, and `ArchGarchFitter` + `accept_fit` gave identical
+parameters and status on **18 / 18** synthetic series; the loop variance filter equals `scipy.signal.lfilter` on
+**2,000 / 2,000** random series (0 mismatches). The A2 golden values were produced by the experiment's function
+with real scipy.
 
-**Module line counts:** *(builder)*
+**Guards planted** (DL-70; each planted on the final tree, run, and restored from a copy, `cmp` byte-identical):
 
-**`make ci`:** *(builder: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+1. **Stop checked after the target** (`barrier_probs`: `fs < ft` / `ft <= fs`) → **A1 red**:
+   `FAILED test_a_session_touching_both_barriers_counts_as_the_stop` — `assert (0.0, 1.0, 0.0) == (1.0, 0.0, 0.0)`;
+   1 failed, 20 passed. A2 stayed green: its fixtures never touch both barriers in one session, so only A1's
+   crafted case can see the tie rule. Restored.
+2. **Persistence cap removed** (the `alpha + beta > 0.999` branch deleted) → **A3 red**: 3 failed
+   (`test_a_fit_is_accepted_or_capped_as_exp018_did[raw1/raw2]`: `GarchParams(…status='accepted') ==
+   GarchParams(…status='capped')`; `test_the_boundary_tolerance_is_exp018s`: `'accepted' == 'capped'`). Restored.
+3. **A claim written on a failed fit** (`params = accept_fit(raw) or GarchParams(raw…, "accepted")`) → **A5 red**:
+   `FAILED test_a_failed_fit_records_no_claim` — `assert (Node(label='BarrierForecast', …),) == ()`. Restored.
+   🪤 **The first attempt at this plant stayed green** (11 passed): it referenced `GarchParams` without importing
+   it, the resulting `NameError` was caught by the handler's fault boundary, and "no claim, some fault" still
+   held. A5 could not tell a refusal from a crash. Every refusal test now names its fault's type and message
+   (`BarrierClaimRefusedError` "fit failed", "650 bars <", `ConfigurationError` "arch is not installed", …);
+   the plant above is the re-run on that stricter test, with the import.
+4. **Seed from Python's `hash()`** (`hash((ticker, as_of)) & 0xFFFFFFFF`) → **A6 red**:
+   `FAILED test_the_seed_is_stable_across_processes` — `assert 3681878691 == 3373718167` (the child
+   interpreter's salt against this one's). The in-process rerun test stays green, as it must: one process, one
+   salt. Restored.
+5. **`forecast_barrier` fired for a sell** (the `action != "buy"` condition removed) → **A8 red**:
+   `FAILED test_the_poll_asks_for_a_claim_only_for_buys_with_both_barriers` — `assert 3 == 1` (AAPL, the NVDA
+   sell and the AMZN hold). Restored.
 
-**`uv.lock`:** *(builder: untouched and owed, or re-resolved)*
+**Module line counts** (all < 200): `agent.py` **165** (was 199), `poll.py` 102, `settings.py` 182,
+`barrier_fit.py` 78, `barrier_forecast.py` 176, `barrier_store.py` 85, `domain/barrier_garch.py` 172,
+`scorecards.py` 83, `contracts/forecaster.py` 131; tests: `barrier_fixture.py` 39, `barrier_helpers.py` 123,
+`test_barrier_claim.py` 186, `test_barrier_garch.py` 182, `test_barrier_garch_oracle.py` 184,
+`test_barrier_poll.py` 119, `test_barrier_refusals.py` 169, `test_forecaster_boundary.py` 51. Code moved out of
+`agent.py`: the three scorecard handlers and `_scorecard_metrics` → `scorecards.py`, bound with
+`functools.partial` (DL-241 D1).
 
-**`make gate-ran`:** *(planner: local worktree, full SHA, output)*
+**`make ci`:** `UV_FROZEN=1 make ci > <session scratchpad>/ci-final.txt 2>&1; echo $?` → **exit 0**, run on the
+final, rebased tree in this container: every step of the `ci:` target; ruff and format clean, mypy `no issues found in
+1071 source files`, import-linter clean, module size, headers, law coverage, PARAM sync, sprint status, markdown
+links, version scheme; pytest **3,522 passed, 7 skipped**, coverage **100.00 %**; dependency audit `No unaccepted
+vulnerabilities; 1 accepted advisory re-checked`; detect-secrets `Passed` over all files; untracked scan `no untracked files to scan` (the new files are committed; the pre-commit run scanned the same 12 while they were untracked: `Passed`).
+🪤 The audit reads `uv.lock`, which does not yet contain `arch` or its dependencies: it has **not** checked them.
+The planner's re-lock and its own audit run do.
 
-**Planner live checks (F1–F3, image size):** *(planner, before merge)*
+**`uv.lock`:** **untouched and owed.** `pyproject.toml` gains `arch>=8.0.0` in the `forecaster` extra and the
+`0.118.00` bump; `git diff --stat uv.lock` is empty. A re-lock cannot run here (`download.pytorch.org` is
+blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its dependencies (`statsmodels`,
+`pandas`, `patsy`; `scipy` and `numpy` are already in the lock) and move `trading-agents` to `0.118.0`.
 
-**Not met / verified failing:** *(builder)*
+**`make gate-ran`:** *(planner: local worktree, full SHA, output)* — **not run here** (no `gh`); owed.
+
+**Planner live checks (F1–F3, image size):** *(planner, before merge)* — **not done here**; owed.
+
+**Not met / verified failing:**
+
+- **F4 cannot pass as built — not done, and not doable within this spec.** In the deployed fleet nothing calls
+  `poll.forecast_analyst_node`: only `orchestration/local_pipeline.py` runs it, the forecaster's entrypoint only
+  serves requests, and nothing else sends it one (DL-80's forecaster half, still true; DL-241 "Found while
+  building"). After a full `up`, the first scheduled run will write **no** `BarrierForecast`. Wiring a trigger
+  means breaching `FORE-TRG-01/02` (a forecaster pull loop) or changing another agent's choreography: the
+  planner's decision.
+- **Owed to the planner:** `uv lock` (and its audit of `arch`), Windows `make ci`, `make gate-ran` for the pushed
+  SHA, F1–F3, the forecaster image size with `arch`.
 
 ---
 
 ## Return notes
 
-- *(builder: scope held, or where it moved and why)*
-- *(builder: what you disagreed with in the spec after reading the laws)*
-- *(builder: what sprint B should know that is not obvious from the diff)*
+- **Scope held**, with three additions inside it: `FORE-IN-07` and `FORE-IDM-04` (clauses beyond the two the spec
+  named, because the input and determinism guarantees had no honest home in `OUT-07`), the refusal on a changed
+  rerun (the graph's append-only rule forced a decision: DL-241 D5), and `DRIFT-081` for three silences. No reader
+  of `BarrierForecast` exists outside the forecaster; no decision path is touched except `contracts/forecaster.py`.
+- **Disagreed with, after reading the laws:** A6 cited `FORE-IDM-02`, which is about the return model; citing it
+  would have narrowed a clause to fit a test (§7a), so A6 cites `FORE-IDM-04` and `IDM-02` stays ⬜. The spec's
+  "a fault" on a provider error splits in two: the provider absorbs a *source* failure and answers with no bars
+  (the forecaster sees short history, one fault), while a *bus* error adds the provider client's own fault (two).
+  And the spec's measured trigger ("graph-pull on each `AnalystRun`") is true of the code in `poll.py`, but no fleet
+  process runs that poll: see *Not met*.
+- **For sprint B (settlement + scorecard):**
+  - Settle from the node alone: `as_of` is the last bar's **date** and `entry_close` its close; the barriers are
+    fractions of `entry_close`; the horizon is the 10 sessions **after** `as_of`; the outcome rule is EXP-018's
+    (low first within a session). `p_neither` is `1 − p_stop − p_target` computed in floating point, so it can
+    differ from a decimal literal in the last digit.
+  - One claim per `barrier-garch-v1:{ticker}:{as_of}`; a rerun on the same bar reuses it. A missing claim for a buy
+    is a named fault (short history, failed fit, provider, malformed barriers, a changed rerun), never a silent gap.
+    Count faults by type before reading a missing claim as the model failing: a single-ticker 760-bar request
+    passes through the provider's pooled 8σ open-to-close guard, and one qualifying day in three years excludes
+    the ticker (DL-241).
+  - The fit is per call, not per month as in EXP-018, and 760 bars are 759 moves where EXP-018 fitted 756: F1 is
+    what measures whether either matters.
+  - `confidence` on the response is history coverage (`history_bars ÷ 760`), not calibration; the scorecard is
+    what measures calibration.
+  - Nothing will be recorded in the fleet until someone decides what fires the poll (*Not met*).

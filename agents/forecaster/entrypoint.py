@@ -9,6 +9,7 @@ External I/O: master HTTP endpoint (POST /ehlo); graph store selected from env.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from agents.forecaster.agent import ForecasterAgent
@@ -47,7 +48,7 @@ def main() -> None:
     fault_sink = GraphFaultSink(graph, CollectingFaultSink())
     bus = build_served_bus(graph, fault_sink)
     work_loop(
-        lambda: find_pending(graph),
+        lambda: find_pending(graph, now=datetime.now(tz=UTC)),
         lambda node: forecast_analyst_node(
             node, graph=graph, bus=bus, capabilities=DEPLOYED_CAPABILITIES
         ),

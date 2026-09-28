@@ -10,12 +10,14 @@ External I/O: none.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
 from contracts.common import _Frozen
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from contracts.analyst import Recommendation, RecommendationSet
 
 BARRIER_HISTORY_LABEL = "BarrierHistory"
@@ -63,3 +65,25 @@ def barrier_buys(recommendation_set: RecommendationSet) -> tuple[Recommendation,
         and recommendation.suggested_stop_pct is not None
         and recommendation.suggested_target_pct is not None
     )
+
+
+#: A claim is stated as of its run's own bars, so the fleet claims only a run this
+#: recent. The run window is 22:30-00:30 UTC, so 24 h holds any same-day retry, and
+#: the backlog of never-forecast runs (71 of 77 at S239's merge) is never claimed on
+#: later bars (DL-241 D11).
+CLAIM_RUN_MAX_AGE = timedelta(hours=24)
+
+
+def is_current_run(props: Mapping[str, object], now: datetime) -> bool:
+    """Whether an AnalystRun was created within ``CLAIM_RUN_MAX_AGE`` of ``now``.
+
+    A missing, unparseable or zone-less ``created_at`` is not current (fail closed).
+    """
+    raw = props.get("created_at")
+    if not isinstance(raw, str):
+        return False
+    try:
+        created = datetime.fromisoformat(raw)
+    except ValueError:
+        return False
+    return created.tzinfo is not None and created >= now - CLAIM_RUN_MAX_AGE

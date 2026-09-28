@@ -273,6 +273,33 @@ Builder's choices inside D10 (rejected alternatives in each line):
 - **Measured (the brief's step 5):** one `BarrierHistory` for 13 tickers × 760 bars is **461,710 bytes**
   (`json.dumps` of its props, 2-decimal prices as the raw SIP bars carry), **929,238** at full float precision.
 
+**D11 - the deployed loops claim only a current run (the planner, 2026-09-28, at merge).** *[measured on the live
+graph, planner]* 77 `AnalystRun`s, **none** with a `ForecasterRun` (the forecaster never ran in the fleet); 71 hold
+a qualifying buy, 367 buys in all (July 18 runs, August 31, September 22). Neither D10 finder had a recency
+guard, so the first full `up` would have fetched 71 histories and stated 367 claims on the **day's** bars for
+recommendations weeks old: misdated claims, "rerun refused" faults on repeated tickers, and a polluted ledger
+before sprint B settles one. Found in review; the planner's spec miss, not the builder's. The rule, one for both
+agents, is `contracts/barrier_history.is_current_run`: a run counts only when its `created_at` (stamped by
+`agents/analyst/store.py:44`, kept by the poll's merge) is within `CLAIM_RUN_MAX_AGE` = 24 h of now; a missing,
+unparseable or zone-less stamp is not current (fail closed). Both finders take an optional `now`; the **deployed**
+loops pass the wall clock (`agents/provider/poll.find_current_work`, the forecaster entrypoint), the in-process
+pipeline and the existing tests pass none, as D9 split the legs. `PROV-TRG-04` and `FORE-TRG-01` say so. Old runs
+are skipped silently: a fault per old run per poll would repeat every few seconds forever. Four plants (either
+finder's guard, either loop's clock) each turned a test red, restored byte-identical.
+
+- *Consequence, named:* an operator resume more than 24 h after its source run gets no claim, because resume
+  clones copy the source's `created_at` (`orchestration/resume.py` `_linked_props`).
+- *Rejected: backfill the old runs* with each history window ending on the run's own date. A real instant ledger
+  of 367 settled claims, but a design of its own (the provider's end rule, the claim's `as_of`); noted for sprint B.
+- *Rejected: a fixed start date.* It goes stale, and a test clock breaks it.
+- *Rejected: guard every caller, fixtures included.* Dozens of hand-built test runs carry no `created_at`; the
+  local pipeline's runs are always fresh; the backlog exists only in the fleet.
+
+**Also fixed at merge:** `test_barrier_claim.py::test_the_seed_is_stable_across_processes` gave its child
+interpreter an empty environment, which a Windows Python cannot start in (no `SYSTEMROOT`); it passed on the
+builder's Linux and failed on the planner's Windows `make ci`. The child now inherits the environment with the two
+variables overridden.
+
 ---
 
 ## DL-240 - the book is managed as a distribution: short holding periods on stocks we buy, and exits that take profit - status: DIRECTION (operator, 2026-09-28); design open, work-queue 92

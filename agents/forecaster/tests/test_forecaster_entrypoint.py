@@ -9,6 +9,7 @@ External I/O: none.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import agents.forecaster.entrypoint as ep
@@ -35,15 +36,24 @@ if TYPE_CHECKING:
 def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """FORE-TRG-01 / FORE-TRG-02: the container polls for an unconsumed AnalystRun
-    and fires forecast_barrier for each buy with both barriers, and none of the
-    three advisory legs."""
+    """FORE-TRG-01 / FORE-TRG-02: the container polls for an unconsumed, current
+    AnalystRun (DL-241 D11: an old run is never claimed) and fires forecast_barrier
+    for each buy with both barriers, and none of the three advisory legs."""
     graph = InMemoryGraphStore()
-    deployed_analyst_run(graph)
+    run = deployed_analyst_run(graph)
     seed_history(
         graph,
         barrier_bars("AAPL", 760) + barrier_bars("GOOG", 760),
         run_key="analyst-run-deployed",
+    )
+    # The backlog (DL-241 D11): an old run with the same buys and a ready history.
+    old = dict(run.props)
+    old["created_at"] = (datetime.now(tz=UTC) - timedelta(days=2)).isoformat()
+    graph.merge_node("AnalystRun", "analyst-run-old", old)
+    seed_history(
+        graph,
+        barrier_bars("AAPL", 760) + barrier_bars("GOOG", 760),
+        run_key="analyst-run-old",
     )
     bus = RecordingBus()
     seen: dict[str, object] = {}

@@ -53,7 +53,9 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
 - `PROV-TRG-04` — An `AnalystRun` holding at least one **buy with both a suggested stop and a
   suggested target** (the contract's `barrier_buys` rule) and no `BarrierHistory` yet is a trigger
   for the barrier history (`PROV-OUT-08`). A run with no such buy triggers nothing: sells, holds and a
-  buy missing either barrier ask for no history.
+  buy missing either barrier ask for no history. The **deployed** loop counts only a *current* run,
+  one created within 24 h (`contracts/barrier_history.is_current_run`, DL-241 D11): an older run is
+  never fetched, so the backlog of runs no forecaster ever read is not claimed on later bars.
 
 ## Outputs (`OUT`)
 
@@ -410,7 +412,7 @@ status:
   writes the long daily history a barrier claim is fitted on: new `PROV-TRG-04` (an `AnalystRun` with a
   buy carrying both barriers and no `BarrierHistory` is a trigger) and `PROV-OUT-08` (one batched
   request through the unchanged fetch path, one `BarrierHistory` per run, dropped tickers named, a
-  failed fetch still written as failed); `PROV-IDN-03` and `CAP` own `BarrierHistory`
+  failed fetch still written as failed; D11: the deployed loop counts only a run created within 24 h); `PROV-IDN-03` and `CAP` own `BarrierHistory`
   (`contracts/provider.py` `owns_graph`, contract `0.7.0`); `PROV-TRG-02` reconciled with graph-pull
   (it said "no polling" while the provider has pulled `RunRequest`s since DL-08; a recorded data need
   is a request, a timer is not). `PARAM`: `barrier_history_sessions`. Two clauses added and proven:

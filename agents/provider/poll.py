@@ -49,15 +49,25 @@ class ProviderWorkItem:
     node: Node
 
 
-def find_pending_work(graph: GraphStore) -> list[ProviderWorkItem]:
-    """Return run ingests before barrier histories, as one work list."""
+def find_pending_work(
+    graph: GraphStore, *, now: datetime | None = None
+) -> list[ProviderWorkItem]:
+    """Return run ingests before barrier histories, as one work list.
+
+    ``now`` limits barrier histories to current runs (the deployed loop, D11).
+    """
     return [
         *(ProviderWorkItem("ingest", node) for node in find_pending(graph)),
         *(
             ProviderWorkItem("barrier_history", node)
-            for node in find_pending_barrier_history(graph)
+            for node in find_pending_barrier_history(graph, now=now)
         ),
     ]
+
+
+def find_current_work(graph: GraphStore) -> list[ProviderWorkItem]:
+    """The deployed loop's work list: barrier histories for current runs only (D11)."""
+    return find_pending_work(graph, now=datetime.now(tz=UTC))
 
 
 def process_work_item(item: ProviderWorkItem, *, agent: ProviderAgent) -> None:

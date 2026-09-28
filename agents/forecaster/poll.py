@@ -20,11 +20,14 @@ from contracts.barrier_history import (
     BARRIER_HISTORY_LABEL,
     barrier_buys,
     barrier_history_key,
+    is_current_run,
 )
 from contracts.forecaster import ForecastRequest
 from kernel import AgentMessage
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from contracts.analyst import Recommendation
     from kernel import GraphStore, MessageBus, Node
 
@@ -42,14 +45,17 @@ LOCAL_CAPABILITIES = (*ADVISORY_CAPABILITIES, BARRIER_CAPABILITY)
 DEPLOYED_CAPABILITIES = (BARRIER_CAPABILITY,)
 
 
-def find_pending(graph: GraphStore) -> list[Node]:
+def find_pending(graph: GraphStore, *, now: datetime | None = None) -> list[Node]:
     """Return AnalystRun nodes with no ForecasterRun that are ready to forecast.
 
     A run holding a buy with both barriers waits until the provider has written its
-    BarrierHistory (DL-241 D10); a run with no such buy never waits.
+    BarrierHistory (DL-241 D10); a run with no such buy never waits. With ``now``
+    (the deployed loop), only a current run counts (DL-241 D11).
     """
     pending: list[Node] = []
     for node in graph.list_nodes(ANALYST_RUN_LABEL):
+        if now is not None and not is_current_run(node.props, now):
+            continue
         done = list(graph.descendants(node, max_depth=1, edge_types={FORECAST_EDGE}))
         if not done and _history_ready(graph, node):
             pending.append(node)

@@ -4,7 +4,7 @@
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 92 (the book as a distribution), sprint A of the ledger
 **Branch:** `sprint-239-the-forecaster-states-how-likely-a-buy-reaches-its-target`
 **Status:** BUILT 2026-09-28 (Claude cloud session; branch pushed, unmerged; owed items in the Closeout)
-**Version:** *next available MINOR at merge* (`0.118.00` on the branch)
+**Version:** `0.118.00` (MINOR)
 **Effort:** M
 **Decisions:** [DL-240](../design-log.md) (the direction, and its EXP-018 entry: the ledger is built on GARCH at ~3 years) · [EXP-018](../research/experiments/EXP-018-garch-history-depth.md) (the model and the evidence) · [EXP-017](../research/experiments/EXP-017-block-bootstrap-and-garch-barrier-probabilities.md) · ADR-0010 (shadow models are promoted only through the registry) · the builder's design decisions go to the **next free DL** (`DL-241` at spec time)
 
@@ -618,10 +618,41 @@ The planner's re-lock and its own audit run do.
 `0.118.00` bump; `git diff --stat uv.lock` is empty. A re-lock cannot run here (`download.pytorch.org` is
 blocked, DL-228), so the planner re-locks: it should add `arch` 8.0.0 with its dependencies (`statsmodels`,
 `pandas`, `patsy`; `scipy` and `numpy` are already in the lock) and move `trading-agents` to `0.118.0`.
+**Re-locked by the planner, 2026-09-28:** `uv lock` added `arch` 8.0.0, statsmodels 0.15.0, pandas 3.0.6,
+patsy 1.0.3, formulaic 1.2.2, interface-meta 2.0.1 and wrapt 2.5.0, and moved `trading-agents` to `0.118.0`
+(+250 / -6 lines); the dependency audit in the planner's `make ci` reads the new lock.
 
 **`make gate-ran`:** *(planner: local worktree, full SHA, output)* — **not run here** (no `gh`); owed.
 
-**Planner live checks (F1–F3, image size):** *(planner, before merge)* — **not done here**; owed.
+**Planner live checks (F1–F3, image size):** *[measured 2026-09-28, planner, local worktree `../wt-s239` at `567c04ce` with `arch==8.0.0`; F2/F3 with `main`'s `.env`, read-only]*
+
+- **F1 🟩 parity with EXP-018.** The branch's own code (`ArchGarchFitter` + `accept_fit`, `daily_moves` +
+  `garch_path_probs`, `barrier_seed`, 1,000 × 10) on the production window (the last 760 bars up to the decision
+  day) over EXP-018's 47,485 decisions, scored by EXP-018's own scorer (climatology, date bootstrap seed
+  20260929). Subsample pre-stated before any score: names at sorted index % 4 == 0. Simulation 469 s on 4 workers.
+  - Monthly refit (EXP-018's schedule), all names: **+2.67 % [+1.92, +3.45]**, 37,490 decisions; EXP-018's own
+    G_756 on the same decisions +2.63 % [+1.90, +3.37]. Fits 8,565 accepted / 381 capped / 36 fallback
+    (EXP-018: 8,552 / 395 / 35).
+  - **Per-decision refit (production), subsample: +2.30 % [+1.33, +3.25]**, 9,592 decisions, against monthly
+    +2.21 % [+1.21, +3.14] on the same set: the per-run refit costs nothing. Failed fits **0.08 %** (8 of 9,600),
+    each of which writes no claim in production.
+  - Residue: numpy `overflow encountered in exp` / `invalid value in multiply` inside `garch_path_probs`
+    (EXP-018's code, line for line) on rare exploding-variance paths; probabilities stay finite (shares of
+    booleans). Sprint B should count claims whose paths went non-finite.
+- **F2 🟩 live barriers = the test bed's.** The last 8 `AnalystRun`s: **20 of 20** buys' `suggested_stop_pct` /
+  `suggested_target_pct` equal `scripts/barrier_testbed.barriers()` on the run's own `MarketData` bars (max gap
+  6.9e-17).
+- **F3 🟩 one live call, in-memory graph.** `analyst-run-1b59459d…` (2026-09-25, GOOGL): the provider's SIP fetch
+  1.3 s, 760 bars ending 2026-09-25, 0 dropped, node 36,895 bytes; the real `arch` fit `accepted`; P(stop first)
+  0.277, P(target first) 0.451, P(neither) 0.272, sum 1.000000; 22 fields; 0 faults; 10.3 s including the first
+  `arch` import.
+- **Image size:** the lock adds `arch` 8.0.0, statsmodels 0.15.0, pandas 3.0.6, patsy 1.0.3, formulaic 1.2.2,
+  interface-meta 2.0.1, wrapt 2.5.0 (scipy was already locked): **+85.6 MB unpacked** from the Linux cp313 wheels
+  (pandas 39.0, statsmodels 41.8, arch 2.6). The `s238` image's own size was not measured here (no Docker daemon).
+- **Found in review — blocker, fixed by the planner at merge as DL-241 D11** (the operator asked to deploy; the
+  guard is a current-run rule both deployed loops share, four plants red): on the live graph 77 `AnalystRun`s, none with a
+  `ForecasterRun`; 71 hold 367 qualifying buys (Jul 18, Aug 31, Sep 22 runs). With no recency guard the first
+  full `up` would fetch 71 histories and state 367 claims on today's bars for weeks-old recommendations.
 
 **Not met / verified failing:**
 

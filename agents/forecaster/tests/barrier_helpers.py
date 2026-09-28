@@ -190,5 +190,10 @@ def deployed_analyst_run(graph: GraphStore) -> Node:
     return graph.merge_node(
         "AnalystRun",
         "analyst-run-deployed",
-        {"recommendation_set": recommendation_set.model_dump(mode="json")},
+        {
+            "recommendation_set": recommendation_set.model_dump(mode="json"),
+            # As agents/analyst/store.py stamps it: the deployed loops claim only a
+            # current run (DL-241 D11).
+            "created_at": datetime.now(tz=UTC).isoformat(),
+        },
     )

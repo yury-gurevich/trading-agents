@@ -51,7 +51,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   caller names and then records one `ForecasterRun` for it, so an `AnalystRun` is forecast once. The **deployed** loop names
   `forecast_barrier` only, fired once per buy that carries both a stop and a target; `forecast`,
   `forecast_return` and `forecast_factor` are fired by the in-process pipeline or an RPC caller, never
-  by the deployed loop. A leg name the loop does not know is refused before any request.
+  by the deployed loop. A leg name the loop does not know is refused before any request. The deployed
+  loop also counts only a *current* `AnalystRun`, one created within 24 h (the shared
+  `contracts/barrier_history.is_current_run`, DL-241 D11): an older run is never claimed.
 - **FORE-TRG-02** — The forecaster never self-triggers: no timer, schedule or idle loop starts work.
   An unconsumed `AnalystRun` is an artifact another stage wrote, and finding one is a trigger, not a
   self-trigger; a poll that finds none requests nothing.
@@ -281,7 +283,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the deployed barrier leg unable to reach the provider for its bars (F4 blocked). The provider now
   writes a `BarrierHistory` per `AnalystRun` with qualifying buys, and the forecaster reads it:
   `FORE-IN-07` (the bars come only from that node, named by `ForecastRequest.history_ref`, never over
-  the bus), `FORE-TRG-01` (the loop waits for the node when the run has a qualifying buy),
+  the bus), `FORE-TRG-01` (the loop waits for the node when the run has a qualifying buy; D11: the deployed loop
+  counts only a run created within 24 h),
   `FORE-OUT-07` (the claim records `history_ref`; `confidence` is over the history's
   `sessions_requested`), `FORE-IDM-04` (a rerun keeps the first `history_ref`), `FORE-FAIL-04` (a
   dropped ticker or a failed history refuses as `provider dropped: <reason>`), `FORE-NEV-04` (market

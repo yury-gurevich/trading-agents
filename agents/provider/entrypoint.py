@@ -40,7 +40,7 @@ def main() -> None:  # pragma: no cover
     """EHLO → ACTIVATE → poll the graph for provider work → process → repeat."""
     import os
 
-    from agents.provider.poll import find_pending_work, process_work_item
+    from agents.provider.poll import find_current_work, process_work_item
     from kernel.work_loop import work_loop
 
     master_url = os.environ.get("MASTER_URL", "http://master:8000")
@@ -51,7 +51,7 @@ def main() -> None:  # pragma: no cover
     settings = ProviderSettings()
     agent = build_agent(settings, graph)
     work_loop(
-        lambda: find_pending_work(graph),
+        lambda: find_current_work(graph),
         lambda item: process_work_item(item, agent=agent),
         poll_interval=poll_interval_from_env("PROVIDER_POLL_INTERVAL"),
         graph=graph,

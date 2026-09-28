@@ -24,6 +24,7 @@ from contracts.barrier_history import (
     TickerHistory,
     barrier_buys,
     barrier_history_key,
+    is_current_run,
 )
 from contracts.common import Window
 from contracts.provider import DataRequest
@@ -45,10 +46,17 @@ _WINDOW_MARGIN_DAYS = 14
 _SOURCE_FAILED_NOTE = "source_unavailable"
 
 
-def find_pending_barrier_history(graph: GraphStore) -> list[Node]:
-    """AnalystRun nodes with a qualifying buy and no BarrierHistory yet."""
+def find_pending_barrier_history(
+    graph: GraphStore, *, now: datetime | None = None
+) -> list[Node]:
+    """AnalystRun nodes with a qualifying buy and no BarrierHistory yet.
+
+    With ``now`` (the deployed loop), only a current run counts (DL-241 D11).
+    """
     pending: list[Node] = []
     for node in graph.list_nodes(ANALYST_RUN_LABEL):
+        if now is not None and not is_current_run(node.props, now):
+            continue
         done = graph.descendants(node, max_depth=1, edge_types={BARRIER_HISTORY_EDGE})
         if not list(done) and _qualifying_tickers(node):
             pending.append(node)

@@ -11,6 +11,7 @@ External I/O: runs one child Python process (no network) for the seed check.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import date, datetime
@@ -185,7 +186,9 @@ def test_the_seed_is_stable_across_processes() -> None:
         capture_output=True,
         check=True,
         cwd=_ROOT,
-        env={"PYTHONPATH": str(_ROOT), "PYTHONHASHSEED": "random"},
+        # The parent's environment, not an empty one: a Windows interpreter cannot
+        # start without SYSTEMROOT (passed on Linux, failed on Windows make ci).
+        env={**os.environ, "PYTHONPATH": str(_ROOT), "PYTHONHASHSEED": "random"},
         text=True,
     )
     assert int(child.stdout.strip()) == barrier_seed("AAPL", as_of)

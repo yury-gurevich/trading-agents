@@ -20,6 +20,7 @@ from agents.analyst.settings import AnalystSettings
 from agents.execution import poll as execution_poll
 from agents.execution.settings import ExecutionSettings
 from agents.forecaster import poll as forecaster_poll
+from agents.forecaster import settlement_pass as forecaster_settlement
 from agents.forecaster.agent import ForecasterAgent
 from agents.monitor import poll as monitor_poll
 from agents.monitor import position_sync as monitor_position_sync
@@ -65,8 +66,9 @@ def cascade_once(
     `get_market_data`, and its stage fires all four legs per recommendation
     (`LOCAL_CAPABILITIES`, FORE-TRG-01; the deployed loop fires the barrier leg only).
     The barrier leg reads the `BarrierHistory` the provider's second work kind wrote
-    for the run (DL-241 D10), as in the fleet. Its outputs are a side branch — they
-    never enter the conservation/PM path.
+    for the run (DL-241 D10), and the settlement pass runs once per run (DL-243),
+    both as in the fleet. Their outputs are a side branch — they never enter the
+    conservation/PM path.
 
     When ``deliberation_llm`` is given, an **opt-in** challenger-veto stage runs between
     the PM and execution (DL-31 Part B): it debates each approved order and records the
@@ -82,6 +84,7 @@ def cascade_once(
     provider_agent.bind()  # so the forecaster's advisory RPC can reach the provider
     forecaster_agent = forecaster_agent or ForecasterAgent(bus, graph=graph)
     forecaster_agent.bind()
+    sink = forecaster_agent.sink
     if deliberation_llm is None:
         # No deliberator in this cascade, so there is no veto to wait for. Making
         # it explicit beats letting execution time out against an absent stage
@@ -142,6 +145,11 @@ def cascade_once(
                 bus=bus,
                 capabilities=forecaster_poll.LOCAL_CAPABILITIES,
             ),
+        ),
+        (
+            "forecaster_settlement",
+            partial(forecaster_settlement.find_pending_settlement, graph),
+            partial(forecaster_settlement.settle_analyst_node, graph=graph, sink=sink),
         ),
         (
             "portfolio_manager",

@@ -11,6 +11,8 @@
     "Bar",
     "BarrierForecast",
     "BarrierHistory",
+    "BarrierSettlement",
+    "BarrierSettlementPass",
     "BrokerOrderStatus",
     "BrokerPositionSnapshot",
     "BrokerStopOrder",
@@ -89,6 +91,7 @@
     "APPROVES",
     "ATTEMPTED_BY",
     "BARRIER_HISTORY_BY",
+    "BARRIER_SETTLEMENT_BY",
     "CHECKS",
     "CLOSES",
     "CONTAINS",
@@ -123,6 +126,7 @@
     "RESULTED_IN",
     "RESUMES",
     "SCANNED_BY",
+    "SETTLED_BY",
     "STOPS_WITH",
     "SUMMARISES",
     "SURVIVED",
@@ -133,6 +137,11 @@
       "AnalystRun",
       "BARRIER_HISTORY_BY",
       "BarrierHistory"
+    ],
+    [
+      "AnalystRun",
+      "BARRIER_SETTLEMENT_BY",
+      "BarrierSettlementPass"
     ],
     [
       "AnalystRun",
@@ -153,6 +162,11 @@
       "AnalystRun",
       "PRODUCED",
       "SentimentReading"
+    ],
+    [
+      "BarrierForecast",
+      "SETTLED_BY",
+      "BarrierSettlement"
     ],
     [
       "BrokerOrderStatus",
@@ -576,6 +590,29 @@
       "status",
       "window_end",
       "window_start"
+    ],
+    "BarrierSettlement": [
+      "as_of",
+      "brier",
+      "claim_key",
+      "created_at",
+      "entry_close_settling",
+      "entry_ratio",
+      "model_id",
+      "outcome",
+      "settled_on",
+      "settling_ref",
+      "ticker",
+      "void_reason"
+    ],
+    "BarrierSettlementPass": [
+      "analyst_run_key",
+      "created_at",
+      "open",
+      "pass_date",
+      "settled",
+      "settling_ref",
+      "voided"
     ]
   },
   "_owners_note": "Empty deliberately. The 8 agents that declare labels_owned mix write-sets with read-sets (reporter) and a wildcard (supervisor 'all'), so the declarations are not yet accurate enough to enforce. Reconciling them is the named next step - the mechanism (Vocabulary.check_node writer=) is built and tested."

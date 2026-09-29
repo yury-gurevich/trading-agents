@@ -43,6 +43,11 @@ class ReturnScorecardRequest(_Frozen):
     """Realized forward returns keyed by subject_ref (ticker); injected offline."""
 
 
+class BarrierScorecardRequest(_Frozen):
+    model_id: str
+    """The barrier model whose settled claims to score (e.g. ``barrier-garch-v1``)."""
+
+
 # ── Outbound payloads ───────────────────────────────────────────────────────
 class ShadowPrediction(_Frozen):
     model_id: str
@@ -64,7 +69,7 @@ class Scorecard(_Frozen):
 
 CONTRACT = AgentContract(
     name="forecaster",
-    version="0.6.0",
+    version="0.7.0",
     mission=(
         "Provide advisory ML forecasts (exit timing, news impact, ...) as clearly "
         "labelled shadow signals that never gate a decision until scorecards prove "
@@ -119,9 +124,24 @@ CONTRACT = AgentContract(
             request=ReturnScorecardRequest,
             response=Scorecard,
         ),
+        Capability(
+            "barrier_scorecard",
+            "Report whether one barrier model's claims come true: settled, void and "
+            "open counts, Brier and skill over EXP-018's fixed climatology with a "
+            "date-bootstrap interval; advisory, never promotion-eligible.",
+            request=BarrierScorecardRequest,
+            response=Scorecard,
+        ),
     ),
     emits=("scorecard_refreshed",),
-    owns_graph=("ShadowPrediction", "Model", "ForecasterRun", "BarrierForecast"),
+    owns_graph=(
+        "ShadowPrediction",
+        "Model",
+        "ForecasterRun",
+        "BarrierForecast",
+        "BarrierSettlement",
+        "BarrierSettlementPass",
+    ),
     external_io=(),
     depends_on=("provider",),
     mcp_tools=("forecast", "scorecard"),

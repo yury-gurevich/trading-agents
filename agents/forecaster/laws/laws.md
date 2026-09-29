@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -17,7 +17,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   return `ShadowPrediction` objects whose `shadow=True` flag is always set. It produces evidence;
   it never decides.
 - **FORE-IDN-02** — The forecaster exclusively writes these graph labels (single-writer rule):
-  `ShadowPrediction`, `Model`, `BarrierForecast`.
+  `ShadowPrediction`, `Model`, `ForecasterRun`, `BarrierForecast`, `BarrierSettlement`,
+  `BarrierSettlementPass`.
 
 ## Inputs (`IN`)
 
@@ -53,7 +54,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `forecast_return` and `forecast_factor` are fired by the in-process pipeline or an RPC caller, never
   by the deployed loop. A leg name the loop does not know is refused before any request. The deployed
   loop also counts only a *current* `AnalystRun`, one created within 24 h (the shared
-  `contracts/barrier_history.is_current_run`, DL-241 D11): an older run is never claimed.
+  `contracts/barrier_history.is_current_run`, DL-241 D11): an older run is never claimed. The loop's
+  second work is one **settlement pass** per `AnalystRun` with no `BarrierSettlementPass` yet (the
+  deployed loop: per current run only, by the same rule): it reads that run's `MarketData` through the
+  run's lineage (`AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→ MarketData`: one node, never a
+  listing of them), settles or voids each open claim (`FORE-OUT-08`, `FORE-FAIL-05`) and records the
+  pass (`FORE-IDM-05`). The pass is the loop's own work, fired by the run it reads, not a capability;
+  it sends nothing on the bus, and the in-process pipeline runs the same pass.
 - **FORE-TRG-02** — The forecaster never self-triggers: no timer, schedule or idle loop starts work.
   An unconsumed `AnalystRun` is an artifact another stage wrote, and finding one is a trigger, not a
   self-trigger; a poll that finds none requests nothing.
@@ -64,8 +71,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   subject_ref, value: float [0,1], confidence: float [0,1], shadow: True, provenance }`.
 - **FORE-OUT-02** — `shadow` is structurally `True` on every `ShadowPrediction`; no code path
   produces `shadow=False`.
-- **FORE-OUT-03** — `scorecard` / `sentiment_scorecard` / `return_scorecard` return `Scorecard {
-  model_id, metrics, sample_size, fresh_as_of, promotion_eligible: False }`.
+- **FORE-OUT-03** — `scorecard` / `sentiment_scorecard` / `return_scorecard` / `barrier_scorecard`
+  return `Scorecard { model_id, metrics, sample_size, fresh_as_of, promotion_eligible: False }`.
 - **FORE-OUT-04** — `promotion_eligible` is structurally `False` on every `Scorecard`; no code
   path produces `True`.
 - **FORE-OUT-05** — A `ShadowPrediction` graph node is written per `forecast` / `forecast_return`
@@ -87,6 +94,26 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `shadow: true`, and returns a `ShadowPrediction` whose `value` is `p_target_first` and whose
   `confidence` is `history_bars ÷` the history's `sessions_requested` (at most 1). It writes no
   `ShadowPrediction` node. The claim is advisory evidence only (`FORE-NEV-01/02`).
+- **FORE-OUT-08** — Each `BarrierForecast` claim is settled against what the market did, by
+  EXP-018's outcome rule on the daily bars of a later run's `MarketData` (a node the provider wrote,
+  read as `FORE-TRG-01` says): over the 10 sessions after the claim's `as_of` bar (matched by date), a
+  low at or below `entry × (1 − stop_pct)` is the stop, checked first in each session, a high at or
+  above `entry × (1 + target_pct)` the target, else neither, where `entry` is that series' own close
+  on `as_of`, never the claim's `entry_close`. The claim's probabilities never decide the outcome.
+  The first run whose bars decide it settles it, once, as an append-only `BarrierSettlement` (key
+  `settlement:{claim key}`, linked `BarrierForecast -SETTLED_BY-> BarrierSettlement`) carrying
+  `claim_key`, `model_id`, `ticker`, `as_of`, `outcome` (`stop` | `target` | `neither` | `void`),
+  `void_reason`, `settled_on` (the tenth session's date, or for a void the date of the pass that
+  voided it), `settling_ref` (that run's `MarketData` key), `entry_close_settling`, `entry_ratio`
+  (settling ÷ claimed close), the claim's three-class `brier` (absent for `void`) and `created_at`; the
+  claim itself is never written to. `barrier_scorecard` (`BarrierScorecardRequest { model_id }`)
+  reports one model's ledger: the `settled`, `void` and `open` counts; the realised share and the mean
+  declared probability of each outcome; `brier_model`; `brier_climatology` from EXP-018's fixed shares
+  (stop 0.287, target 0.477, neither 0.236), never re-estimated from the ledger; `skill` = 1 −
+  `brier_model` ÷ `brier_climatology`; and EXP-018's date-bootstrap 95 % interval `skill_lo` /
+  `skill_hi` (1,000 resamples of whole `as_of` dates, a fixed seed). A score it cannot compute is
+  absent, never zero: with no settled claim only the counts are reported, and with fewer than two
+  settled dates there is no interval. The scorecard reports; it decides nothing (`FORE-NEV-01/02`).
 
 ## Prohibitions (`NEV`)
 
@@ -123,6 +150,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   date, so a second call on the same last bar merges into the same node, keeping the first call's
   `created_at` and `history_ref`; a second call that would state a different claim under that key
   is refused with a fault and the `FORE-OUT-06` neutral reading, and the first claim stands.
+- **FORE-IDM-05** — Settlement is idempotent. A claim that has a `BarrierSettlement` is never
+  settled again, and each `AnalystRun` gets one settlement pass, recorded last as one
+  `BarrierSettlementPass` (key `settlement-pass:{run key}`, linked
+  `AnalystRun -BARRIER_SETTLEMENT_BY-> BarrierSettlementPass`) with its pass date, `settling_ref` and
+  counts: a second pass over the same run, or a later run whose bars also cover the claim, writes
+  nothing, so the first covering run stays the claim's `settling_ref`. `barrier_scorecard` is
+  read-only and returns the same metrics, its interval included, for the same ledger (the bootstrap's
+  seed is fixed).
 
 ## Ordering & concurrency (`ORD`)
 
@@ -146,6 +181,15 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   distinct from short history) writes no `BarrierForecast`, records a fault, and returns the
   `FORE-OUT-06` neutral reading. A claim is never fabricated: no default,
   fake, cached or earlier run's parameters stand in for a failed fit.
+- **FORE-FAIL-05** — A claim that cannot be settled honestly is never scored as a stop, a target or
+  neither: it is settled `void` with a named `void_reason` and no `brier`. `suspected_corporate_action`
+  when any session-over-session raw close ratio across its 10 sessions (from the `as_of` close to the
+  tenth session's) is below 0.6 or above 1.67 (the bars are raw, so a split reads as a crash);
+  `no_settling_bars` when it is still open on the pass of a run created 45 or more calendar days after
+  its `as_of`. Before then, a claim whose settling series lacks the `as_of` bar or holds fewer than 10
+  sessions after it stays open, and nothing is written. A claim the pass cannot read records a fault
+  and stays open; a `MarketData` it cannot read records a fault and gives no bars (the 45-day rule
+  still applies); either way the pass completes. The thresholds are constants, not settings.
 
 ## Type alignment (`TYP`)
 
@@ -204,8 +248,21 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   },
   "graph": {
     "operations": ["append_write", "read"],
-    "labels_owned": ["ShadowPrediction", "Model", "BarrierForecast"],
-    "labels_read": ["SentimentReading"]
+    "labels_owned": [
+      "ShadowPrediction",
+      "Model",
+      "ForecasterRun",
+      "BarrierForecast",
+      "BarrierSettlement",
+      "BarrierSettlementPass"
+    ],
+    "labels_read": [
+      "SentimentReading",
+      "AnalystRun",
+      "BarrierHistory",
+      "ScanRun",
+      "MarketData"
+    ]
   },
   "filesystem": {
     "operations": ["read"],
@@ -248,7 +305,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
-| DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | OPEN: planner, at the next forecaster amendment |
+| DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | `IDN-02` CORRECTED in v1.7 (it lists `ForecasterRun`); `IDN-01` and `OBS-01` still OPEN: planner |
+| DRIFT-083 | `FORE-IDM-03`: *"Scorecard methods are read-only over `ShadowPrediction` nodes"* | From v1.7 `barrier_scorecard` reads `BarrierForecast` and `BarrierSettlement` nodes, not `ShadowPrediction` ones; `FORE-IDM-05` governs it | OPEN: planner — narrow `IDM-03`'s subject to the three shadow scorecards, or widen it to name both ledgers |
 
 ## Changelog
 
@@ -291,3 +349,20 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   data comes only from the provider: over the bus, or from a node the provider wrote; read literally,
   the old wording forbade the route). `PARAM`: `barrier_history_sessions` moves to the provider, which
   owns the fetch depth. No clause added; 22 / 49 unchanged.
+- v1.7 — S241 / DL-243 (2026-09-28): the settlement and the scorecard. Why: DL-240, nothing sizes or
+  exits on a probability until a ledger shows it comes true; S239 states the claims and this sprint
+  settles and scores them. `FORE-IDN-02` amended (the forecaster also writes `BarrierSettlement` and the
+  per-run `BarrierSettlementPass`, and `ForecasterRun`, which the loop always wrote: the third of
+  `DRIFT-081`, prescribed for this amendment); `FORE-TRG-01` amended (the loop's second work, one
+  settlement pass per run; the deployed loop's per current run); `FORE-OUT-03` names
+  `barrier_scorecard` (it returns the same `Scorecard`). New `FORE-OUT-08` (each claim settled once, by
+  EXP-018's rule, from a provider-written `MarketData`, measured from the settling series' own close;
+  the scorecard over EXP-018's fixed climatology with its date bootstrap), `FORE-IDM-05` (settled once,
+  one pass per run, a repeatable scorecard) and `FORE-FAIL-05` (void with a named reason, never a false
+  outcome). `IDM-05` is beyond the spec's list: the spec's C6 cites "`FORE-IDM`", and no existing `IDM`
+  clause covers settlement (§7a forbids narrowing one to fit). `CAP` now lists every label the
+  forecaster writes and reads (`ForecasterRun`, `AnalystRun` and `BarrierHistory` had gone undeclared).
+  `PARAM`: no new setting; the thresholds (0.6, 1.67, 45 days), the horizon, the baseline shares and
+  the bootstrap (1,000 draws, seed 20260929) are constants citing the spec and EXP-018. Silences found:
+  `DRIFT-083` (`IDM-03`'s subject), `DRIFT-084` (the price adjustment of the bars, unstated where they
+  are written).

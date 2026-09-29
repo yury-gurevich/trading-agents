@@ -10,6 +10,95 @@ and is marked CLOSED here.
 
 ---
 
+## DL-243 - each barrier claim is settled once, on the first later run whose own bars cover it, by one pass per run; a claim that cannot be settled honestly is void - status: DECIDED (builder, 2026-09-28; S241)
+
+**Context.** [S241](sprints/sprint-241-each-barrier-claim-is-settled-and-scored.md) is sprint B of the ledger (DL-240):
+ten sessions after each `BarrierForecast` (S239, DL-241), the forecaster settles it by EXP-018's outcome rule from a later
+run's `MarketData`, or voids it with a named reason, and
+`barrier_scorecard` scores the ledger. The spec leaves four decisions to the builder; building surfaced six more.
+Recorded before implementing (LAW-06).
+
+**Decision 1 — the pass is marked by its own node, and it joins the loop as a second work kind; nothing moves out of
+`poll.py`.** One settlement pass per `AnalystRun`: the forecaster reads that run's `MarketData` through its lineage
+(`AnalystRun ←ANALYZED_BY— ScanRun —DERIVED_FROM→ MarketData`, as the PM does), settles or voids every open claim, and
+**last** writes one `BarrierSettlementPass` (key `settlement-pass:{analyst_run_key}`, linked
+`AnalystRun -BARRIER_SETTLEMENT_BY-> BarrierSettlementPass`, the edge named after the provider's `BARRIER_HISTORY_BY`)
+recording the pass date, `settling_ref` and its counts (`settled`, `voided`, `open`). A run is pending while it has no such
+node. Written last, so a pass that dies half way leaves the run pending and the retry resumes: claims it already settled
+are no longer open. The deployed loop's work list gains a second kind, exactly the provider's `find_pending_work`
+pattern: new `agents/forecaster/work.py` holds `ForecasterWorkItem` (`forecast` | `settle`), `find_pending_work` and
+`process_work_item`; `entrypoint.py` runs it; `orchestration/local_pipeline.py` gets its own stage,
+`forecaster_settlement`, after `forecaster`. The settlement itself is new code in its own modules
+(`domain/barrier_settlement.py`, `settlement_store.py`, `settlement_pass.py`). **What moved: nothing.** `poll.py` is not
+touched (151 lines before and after).
+
+- *Rejected: a property appended to the run's `ForecasterRun`.* It saves a label but couples the settlement to the forecast
+  finishing (a quarantined forecast would never settle anything for that run) and puts two facts from two work kinds,
+  written at different times, on one node.
+- *Rejected: no marker, re-running the pass on every current run each poll.* The run would never stop being pending; the
+  work loop reads that as "no progress" and quarantines the run after five attempts.
+- *Rejected: settling inside `forecast_analyst_node`.* It grows `poll.py` past 150 on day one, and a failed settlement
+  would re-fire every forecast RPC for the run.
+- *Rejected: a second loop or process.* One process runs one loop (DL-241 D9).
+- *Consequence, named:* the deployed work list lists `AnalystRun` twice per find (once per kind), as the provider's lists
+  `RunRequest` and `AnalystRun`. Listing once would need a per-node predicate in `poll.py`; not measured here (no live
+  graph), left as a later optimisation for both agents.
+
+**Decision 2 — the first later run whose own bars hold ten sessions after `as_of` settles the claim, and
+`settling_ref` names its `MarketData`.** Passes run in run order, one per run, so a claim is settled on the first pass
+whose bars cover it; every later pass finds it settled and skips it. Why the first: it is the earliest moment the outcome is
+knowable, later fetches of the same raw window are identical (the planner measured 0 entry-close drift on 90 of 90), and it
+keeps the ledger current. Each settlement names the run's `MarketData` key in `settling_ref`, and each pass records it too.
+
+- *Rejected: the latest covering run.* Re-settling is overwriting, which the append-only graph and the ledger forbid.
+- *Rejected: agreement across several runs.* More large reads for no gain on raw bars.
+- *Rejected: a dedicated settlement fetch.* A provider change, out of scope (the bars are already in the graph).
+
+**Decision 3 — the 45-day void fires on every pass, dated by the run, never by a timer.** After a pass tries to settle a
+claim from its bars, a claim still open whose `as_of` is **45 or more** calendar days before the pass date is settled `void`,
+`no_settling_bars`. The pass date is the date of the `AnalystRun`'s own `created_at` (UTC): a fact of the run, so the rule is
+deterministic and replayable, and present on every run the deployed loop counts (D11 reads the same stamp). A run with no
+readable `created_at` (hand-built fixtures only) uses the wall-clock UTC date, recorded on the pass node.
+
+- *Rejected: a timer or scheduled sweep.* `FORE-TRG-02` forbids self-triggering; a run is the trigger.
+- *Rejected: the wall clock at pass time.* Non-deterministic in any replay of a pass.
+- *Rejected: voiding only when a run's bars lack the ticker.* A run whose bars hold the ticker but not the `as_of` bar
+  would then never void.
+
+**Decision 4 — the clause wording** (forecaster laws v1.7): `FORE-IDN-02` lists `BarrierSettlement`,
+`BarrierSettlementPass` and `ForecasterRun` (`DRIFT-081`'s third, prescribed for "the next forecaster amendment");
+`FORE-TRG-01` gains the settlement pass; `FORE-OUT-03` names `barrier_scorecard`; new **`FORE-OUT-08`** (the rule, the record,
+the scorecard), **`FORE-IDM-05`** (settled once, one pass per run, a deterministic scorecard) and **`FORE-FAIL-05`** (void
+with a named reason, never a false outcome). `IDM-05` is beyond the spec's list: C6 cites "`FORE-IDM`", and no existing
+`IDM` clause covers settlement (§7a forbids narrowing one to fit). The full text is in `agents/forecaster/laws/laws.md`.
+
+**Builder's choices inside these** (rejected alternatives in each line):
+
+- **The pure rule is EXP-018's loop, copied.** `outcome_index` is `scripts/barrier_testbed.outcome()` line for line (the low
+  first, `cl[t] * (1 - stop)` evaluated per session, the same operations); the settlement finds `t` as the index of the
+  `as_of` **date** in the settling series (dates, never timestamps). *Rejected:* a vectorised rewrite (a second
+  implementation to keep equal to the oracle).
+- **The corporate-action window is the ten ratios from the `as_of` close to the tenth session's close.** A split on
+  `as_of` itself sits in the claim's own history, not in what is settled. *Rejected:* ratios over the whole series (would
+  void a claim for a split months before it).
+- **The record adds `model_id`** beside the spec's fields, because the scorecard is per model. Absent values are written
+  as null (`void_reason` on a settled claim; `brier`, and for `no_settling_bars` also `entry_close_settling` /
+  `entry_ratio`, on a void), so every settlement has the same keys. A corporate-action void keeps its settling close and
+  ratio: the `as_of` bar was there. `settled_on` is the tenth session's date for an outcome and the pass date for a void.
+- **Any model's open claims are settled**; the outcome rule does not depend on the model. The scorecard filters by
+  `model_id`.
+- **The scorecard joins claims and settlements on `claim_key`** (two listings of the forecaster's own labels, never a
+  `MarketData`), sorts the settled cases by `(as_of, claim_key)`, and runs EXP-018's `run()` arithmetic on them: the
+  per-case Brier, `rng = default_rng(20260929)`, 1,000 draws of whole dates, the 2.5 / 97.5 percentiles. The sort makes the
+  interval reproducible and lets the test compare with the record's own `run()` on the same order. Undefined metrics are
+  **absent**, never zero: with no settled claim only the three counts are reported, and with fewer than two settled dates
+  there is no interval. *Rejected:* sorting by settlement time (two passes on one day would reorder the cases).
+- **A claim the pass cannot read records a fault and stays open; the pass still completes.** A poison claim must not block
+  every later run's settlement. A `MarketData` the pass cannot parse records a fault, and that pass runs the age rule only.
+  A run with no `MarketData` lineage records `settling_ref: null` on its pass and no fault (the claims simply stay open).
+
+---
+
 ## DL-242 - the PM weighs a held name at its run's snapshot mark, once per ticker, and a resumed run at the snapshot of the run it resumes - status: DECIDED (builder, 2026-09-28; S240)
 
 **Context.** [S240](sprints/sprint-240-the-pm-weighs-its-book-at-the-runs-own-marks.md) closes

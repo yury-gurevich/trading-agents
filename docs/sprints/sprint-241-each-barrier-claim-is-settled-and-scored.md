@@ -2,9 +2,9 @@
 # Sprint 241 — ten sessions after each barrier claim, the forecaster settles it, and a scorecard says whether the claims come true
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 92 (the book as a distribution), sprint B of the ledger
-**Branch:** `sprint-241-each-barrier-claim-is-settled-and-scored`
-**Status:** SPEC
-**Version:** *next available MINOR at merge*
+**Branch:** `sprint-241-each-barrier-claim-is-settled-and-scored` (built on `claude/loving-meitner-qeoxgm`, the name the cloud session forced)
+**Status:** BUILT 2026-09-29 by the cloud session on `claude/loving-meitner-qeoxgm` (cut from `main` `60400a5`), not merged: C1–C9 green, `make ci` exit 0 in the container (3,592 passed, 100.00 %); owed to the planner: `uv lock`, `make gate-ran`, Windows `make ci`, F1–F3, then a full `up` and F4
+**Version:** *next available MINOR at merge* (`0.119.00` on the branch)
 **Effort:** M
 **Decisions:** [DL-240](../design-log.md) (nothing sizes or exits on a probability until a ledger shows it comes true) · [DL-241](../design-log.md) (the claim: D1–D11) · [EXP-018](../research/experiments/EXP-018-garch-history-depth.md) (the outcome rule and the baseline) · the builder's design decisions go to the **next free DL** (`DL-243` at spec time)
 
@@ -401,72 +401,285 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-28 by the builder (Claude cloud session) before the first code change. Read whole, first time:
+`agents/forecaster/laws/laws.md` (v1.6, 293 lines, 49 clause IDs), `agents/forecaster/laws/test-plan.md` (22 / 49),
+`docs/laws/conventions.md`, `docs/laws/drift-register.md` (last ID `DRIFT-082`). Also read for the design: EXP-018 §3–§8 and
+Appendix S (`exp018_score.py`'s `run()`), `scripts/barrier_testbed.py` (`outcome()`), DL-240 and DL-241 (D1–D11), and the
+code the clauses govern (`poll.py`, `entrypoint.py`, `agent.py`, `barrier_store.py`, `barrier_forecast.py`,
+`contracts/forecaster.py`, `contracts/barrier_history.py`, `agents/portfolio_manager/poll.py`'s lineage walk,
+`agents/provider/domain/integrity.py`, `kernel/work_loop*.py`, `kernel/graph_vocabulary.py`, the vocabulary scans in
+`scripts/vocabulary_*.py`, `scripts/check_law_coverage.py`).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| New settlement modules (the pure rule, the record, the pass) | forecaster `laws.md` + `test-plan.md`; `conventions.md` | `FORE-IDN-02` (🟩), `FORE-OUT-07` (🟩, the claim's fields), `FORE-NEV-01/02/04` (🟩), `FORE-STA-02` (⬜), `FORE-IDM-04` (🟩), `FORE-FAIL-04` (🟩); new `OUT`/`IDM`/`FAIL` clauses | **Yes, three ways.** (1) `FORE-NEV-04` (v1.6) allows market data "read from a node the provider wrote": the run's `MarketData` is such a node, so the pass reads it through the run's lineage and sends nothing over the bus. (2) The graph refuses to overwrite a property (DL-241 D5), so "settled once" cannot be a re-merge: it is an open-claim filter before any write plus a per-run pass marker written last. (3) The spec's C6 cites "`FORE-IDM`", but no existing `IDM` clause governs settlement (`IDM-01`/`02` are the sentiment and return models, `IDM-03` the shadow scorecards over `ShadowPrediction`, `IDM-04` the claim); citing one would narrow it to fit a test (§7a), so idempotency gets a new **`FORE-IDM-05`**, as S239 added `IDM-04`. |
+| The settlement trigger: new `work.py`, `entrypoint.py`, `orchestration/local_pipeline.py` | same | `FORE-TRG-01` (🟩), `FORE-TRG-02` (🟩) | **Yes.** `TRG-02` forbids a timer, so the 45-day void cannot be a scheduled sweep: it is evaluated on every pass a run triggers, dated by the run (design decision 3). `TRG-01` names "an `AnalystRun` with no `ForecasterRun`" as the loop's only work; it is amended for the settlement pass, and the deployed pass keeps D11's current-run rule. |
+| `barrier_scorecard` (handler, pure scoring), `agent.py` | same | `FORE-OUT-03/04` (🟩), `FORE-NEV-03` (🟩), `FORE-IDM-03` (⬜) | **Yes.** `OUT-03` names exactly three capabilities; C7 cites it, which is honest only if `OUT-03` names `barrier_scorecard` too, so `OUT-03` is widened by that one name (its three existing tests still hold). `IDM-03` says scorecard methods read `ShadowPrediction` nodes; the barrier scorecard reads claims and settlements. Left as worded (not in this amendment) and registered as `DRIFT-083`. |
+| `contracts/forecaster.py` | same | `FORE-CAP` (⬜), `FORE-TYP-01` (🟩) | The capability, `BarrierScorecardRequest`, and the owned labels join the contract; version `0.6.0` → `0.7.0`; `ShadowPrediction` / `Scorecard` fields untouched, so `TYP-01` holds. The `CAP` block never listed `ForecasterRun` (written since before S239) or the `AnalystRun` / `BarrierHistory` reads S239 added; its amendment now lists every label written and read. |
+| `orchestration/packs/trading_graph_vocabulary.json` | DL-85; `tests/test_graph_vocabulary_*.py`; `scripts/vocabulary_properties.py` | the fail-closed write guard | Both new labels with their property names, both edge types and both signatures are declared; props are written from dict literals so the static property scan can read every write site (a blind site fails `make ci`); a test runs the pass through `GuardedGraphStore` built from the pack. |
+| `scripts/barrier_ledger.py` (new, read-only) | `CLAUDE.md` (read-only tooling) | `FORE-NEV-01/02` | It composes with the forecaster's own scorecard and settlement reads, writes nothing, and is proven with a graph that refuses every write. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, both** (the spec's answer
+holds). Owed in this unit of work: `FORE-IDN-02` amended; new **`FORE-OUT-08`** (settlement + scorecard; next free `OUT`,
+checked: `OUT-01..07` exist), **`FORE-FAIL-05`** (void with a named reason; next free `FAIL`, checked), and **`FORE-IDM-05`**
+(settled once, one pass per run, a deterministic scorecard; beyond the spec's list, reason above); `FORE-TRG-01` amended;
+`FORE-OUT-03` widened by one name; `CAP`; **`PARAM`: no new setting** (the void thresholds, the horizon, the baseline and
+the bootstrap are named constants citing this spec and EXP-018, and `check_param_law_sync.py` fails a `PARAM` row that
+names no settings field); v1.6 → v1.7 + Changelog; test-plan rows; both rollups; drift rows.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** none that forces a stop. Three places where the spec's wording is
+narrower than the law needs, resolved without weakening anything: (1) C6's "`FORE-IDM`" names no clause that covers it →
+new `FORE-IDM-05`. (2) C7's `FORE-OUT-03` does not name `barrier_scorecard` → `OUT-03` widened by that name (a widening,
+changelogged). (3) The spec amends `FORE-IDN-02` for `BarrierSettlement` only; the per-run pass marker (design decision 1)
+is a second label the forecaster writes, and `DRIFT-081` prescribes adding `ForecasterRun` "at the next forecaster
+amendment", which this is: `IDN-02` lists all six labels, and `DRIFT-081` is corrected for that third only.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:**
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+- **The provider's book does not say which price adjustment its bars carry.** The settlement's corporate-action void
+  exists because the bars are raw (measured from the code by the planner: no `adjustment` anywhere). Registered as
+  `DRIFT-084` for the provider book; the settlement is correct either way (it measures one series end to end, and
+  `entry_ratio` shows any adjustment between the two fetches).
+- **`FORE-IDM-03`** reads as if every scorecard method reads `ShadowPrediction` nodes (`DRIFT-083`).
+- **No clause said when a claim stops waiting for bars**, or which later fetch settles it (design decisions 2 and 3).
+- **Nothing defines a "session" when the series has a gap** (a halt): EXP-018's rule counts the series' rows, and the
+  settlement does the same (Return notes).
+
+**Clauses that were ⬜ and are now proven** *(result, at handback)*: **none of the 27 pre-existing ⬜ clauses
+moved.** The three new clauses, `FORE-OUT-08`, `FORE-IDM-05` and `FORE-FAIL-05`, are 🟩 on their citing tests, and the
+amended `FORE-IDN-02`, `FORE-TRG-01` and `FORE-OUT-03` stay 🟩 with new citing tests; `check_law_coverage.py` derives the
+forecaster at **25 / 52** (was 22 / 49), matching both rollups. `FORE-STA-02`, `FORE-IDM-03`, `FORE-OBS-01` and
+`FORE-IN-06` stay ⬜: the new tests touch only the barrier ledger's part of each, which §7a says leaves a general clause
+gray.
 
 ---
 
 ## Test plan results — fill at handback
 
+Every row PASS in the final `make ci` run (Closeout). Agent-local files are in `agents/forecaster/tests/`.
+
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| C1 | *(builder)* | | | |
+| C1 | `test_the_outcome_is_exp018s` ×4 (stop first, target first, neither, one session touching both → stop), each equal to `scripts/barrier_testbed.outcome()` on the same bars (imported as the oracle); `test_the_settlement_equals_the_test_beds_outcome_on_random_paths` (400 random paths and barriers, outcome for outcome: 178 stop, 192 target, 30 neither) | `test_barrier_settlement.py` | PASS | `FORE-OUT-08` |
+| C2 | `test_the_entry_is_the_settling_series_own_close` (settling close 103 against a claimed 100: stop from the settling close, target had the claim's been used; `entry_ratio` 1.03) | `test_barrier_settlement.py` | PASS | `FORE-OUT-08` |
+| C3 | `test_a_split_is_void_never_a_stop` ×3 (close ratios 0.5, 0.1, 3.0: the raw rule says stop, stop, target; the settlement says `void`, `suspected_corporate_action`), `test_the_corporate_action_bounds_are_the_specs` ×4 (0.6 and 1.67 settle, 0.599 and 1.671 void); `test_a_split_settles_void_with_no_brier` (the record: `brier` null) | `test_barrier_settlement.py`; `test_barrier_settlement_record.py` | PASS | `FORE-FAIL-05`, `FORE-OUT-08` |
+| C4 | `test_too_few_bars_is_not_a_settlement` (no `as_of` bar; 9 sessions after it: open), `test_an_unsettled_claim_is_void_45_days_after_as_of` (open on the pass 44 days after, `void` / `no_settling_bars` on the pass 45 days after, dated that pass) | `test_barrier_settlement.py` | PASS | `FORE-FAIL-05` |
+| C5 | `test_a_settlement_records_every_field_the_ledger_needs` (every Scope 5 field plus `model_id`, the key, the `SETTLED_BY` edge, `brier` = 0.3² + 0.5² + 0.2² = 0.38 by hand, the pass marker's counts), `test_the_settlement_passes_the_packs_vocabulary_guard` (the whole pass through `GuardedGraphStore` built from the pack) | `test_barrier_settlement_record.py` | PASS | `FORE-OUT-08`, `FORE-IDN-02`, `FORE-NEV-04` |
+| C6 | `test_a_claim_is_settled_once` (two `run_once` passes over the same run, a direct second call, then a later run whose bars would say stop: one settlement, `settling_ref` = the first run's `MarketData`, one pass node per run, no run left pending, no fault) | `test_barrier_settlement_record.py` | PASS | `FORE-IDM-05` |
+| C7 | `test_the_scorecard_reports_the_ledger_as_exp018_scores_it` (10 settled on 4 dates, 1 void, 1 open, another model's settled claim; counts and shares by hand; `brier_model`, `brier_climatology`, `skill`, `skill_lo`, `skill_hi` **exactly equal** to EXP-018's `run()` read from the record and run on the same cases, order and seed; `promotion_eligible` False), `test_the_oracle_is_the_records_run`; `test_fewer_than_two_settled_dates_give_no_interval`, `test_an_empty_ledger_reports_counts_and_no_scores`, `test_another_models_ledger_is_its_own`, `test_the_scorecard_is_read_only_and_repeatable` | `test_barrier_scorecard_oracle.py`; `test_barrier_scorecard.py` | PASS | `FORE-OUT-08`, `FORE-OUT-03`, `FORE-OUT-04`, `FORE-NEV-03`, `FORE-IDM-05` |
+| C8 | `test_the_deployed_loop_settles_on_a_current_run_only` (the deployed work list: the current run's forecast and settlement pass, which settles the older claim from that run's bars; an old run whose bars also cover it gets no work); `test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only` (updated: the container's loop runs both kinds for the current run, none for the old one); the local pipeline: `orchestration/tests/test_forecaster_settlement_stage.py::test_the_local_pipeline_settles_an_older_claim` | `test_barrier_settlement_loop.py`; `test_forecaster_entrypoint.py`; `orchestration/tests/test_forecaster_settlement_stage.py` | PASS | `FORE-TRG-01` (and `FORE-TRG-02` on the entrypoint test), `FORE-OUT-08` |
+| C9 | `test_a_full_deployed_pass_never_reaches_the_decision_path` (forecast + settlement on a fake graph: no PM, execution or monitor label; no message to any agent but the forecaster), `test_nothing_outside_the_forecaster_reads_the_ledger` (no shipped module outside the forecaster and its read-only script names `BarrierSettlement`, `SETTLED_BY` or `barrier_scorecard`) | `test_barrier_settlement_loop.py` | PASS | `FORE-NEV-01`, `FORE-NEV-02` |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** `test_the_pass_reads_only_its_own_runs_market_data` (`FORE-TRG-01` / `FORE-NEV-04`: a
+graph that refuses to list `MarketData`; a run without lineage settles nothing and records `settling_ref: null`);
+`test_barrier_settlement_faults.py`: `test_a_claim_the_pass_cannot_read_faults_and_stays_open`,
+`test_an_unreadable_market_data_faults_and_the_age_rule_still_runs` (`FORE-FAIL-05`), and
+`test_a_run_without_a_readable_stamp_is_dated_today` (DL-243 D3, no clause); `tests/test_barrier_ledger.py` ×3 (the
+script prints the counts, the scores and one line per settlement from a graph that refuses every write; an empty ledger
+prints `settled 0  void 0  open 0` and exits 0; no `POSTGRES_DSN` exits 1). **Updated:**
+`test_forecaster_boundary.py::test_contract_declares_never_clauses_and_no_external_io` (contract `0.7.0`, the capability,
+the two labels), `orchestration/tests/test_graph_pull_e2e.py::test_trigger_then_cascade_builds_full_chain` and
+`orchestration/tests/test_drop_sweep_cascade.py::test_poisoned_drop_sweep_still_reaches_reporter` (the stage list gains
+`forecaster_settlement: 1`).
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *(builder: BUILT)*
+**Status:** BUILT 2026-09-29 by the cloud session; not merged, not deployed.
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** a claude.ai cloud container, Linux, Python 3.13.12 through uv 0.8.17,
+a clone of `yury-gurevich/trading-agents` on branch **`claude/loving-meitner-qeoxgm`** (the session forced this name; the
+spec's is `sprint-241-each-barrier-claim-is-settled-and-scored`), cut from `main` `60400a5` (this spec's commit). **No
+`.env`**, no `gh`, no Azure, no route to `download.pytorch.org`. Every `uv run` ran with `UV_FROZEN=1` (the bumped
+`pyproject.toml` cannot be re-locked here). No test reaches the network: the graph is in memory, the fitter a fake, the
+provider a fixture source, the script's live graph replaced in-process.
 
-**Result:** *(builder)*
+**Result:** proven by unit tests only. For each open `BarrierForecast`, one settlement pass per `AnalystRun` reads that
+run's `MarketData` through its lineage (one node; a graph that refuses to list `MarketData` stays green) and settles the
+claim by EXP-018's rule measured from the settling series' own `as_of` close, equal to `scripts/barrier_testbed.outcome()`
+on 4 crafted and 400 random paths; a raw close ratio outside 0.6–1.67 in the window is `void` /
+`suspected_corporate_action` (0.5, 0.1 and 3.0 tested), a claim with no `as_of` bar or fewer than 10 later sessions stays
+open and is `void` / `no_settling_bars` on the pass 45 days after `as_of`. Each settlement is written once, as a
+`BarrierSettlement` linked from its claim with every Scope 5 field (plus `model_id`), through the pack's fail-closed
+vocabulary guard; each run is passed once (a `BarrierSettlementPass`, written last). The deployed loop runs the pass as
+its second work kind, on current runs only; the local pipeline runs it as its own stage. `barrier_scorecard` reports
+counts, shares, mean declared probabilities, Brier, skill over EXP-018's fixed climatology and the date-bootstrap
+interval, exactly equal to EXP-018's own `run()` on the same cases, order and seed; never promotion-eligible; nothing
+reaches the decision path. `scripts/barrier_ledger.py` prints the ledger and writes nothing. **Nothing here is proven on
+live data** (F1–F3 are the planner's; F4 needs a deploy and ten sessions).
 
-**Files changed:** *(builder)*
+**Files changed:** new `agents/forecaster/domain/barrier_settlement.py` (the pure rule and void, `outcome_index` copied
+from the test bed), `domain/barrier_skill.py` (EXP-018's scoring and date bootstrap), `settlement_store.py` (the record and
+the ledger read), `settling_bars.py` (the run's `MarketData` by lineage and its bars), `settlement_pass.py` (the pass and
+its marker), `barrier_scorecard.py` (the handler), `work.py` (the deployed work list: forecast + settle);
+`agent.py` (binds `barrier_scorecard`), `entrypoint.py` (runs `work.py`'s list); `contracts/forecaster.py`
+(`BarrierScorecardRequest`, the capability, `BarrierSettlement` and `BarrierSettlementPass` in `owns_graph`, version
+`0.7.0`); `orchestration/packs/trading_graph_vocabulary.json` (2 labels with their properties, 2 edge types, 2
+signatures; additions only); `orchestration/local_pipeline.py` (the `forecaster_settlement` stage); new
+`scripts/barrier_ledger.py`; `pyproject.toml` (`0.119.00`); tests: new `settlement_paths.py`, `settlement_helpers.py`,
+`ledger_fixture.py`, `test_barrier_settlement{,_record,_faults,_loop}.py`, `test_barrier_scorecard{,_oracle}.py`,
+`orchestration/tests/test_forecaster_settlement_stage.py`, `tests/test_barrier_ledger.py`; updated
+`test_forecaster_boundary.py`, `test_forecaster_entrypoint.py`, `orchestration/tests/test_graph_pull_e2e.py`,
+`orchestration/tests/test_drop_sweep_cascade.py`; laws: forecaster `laws.md` (v1.7) and `test-plan.md`,
+`docs/laws/{ledger,INDEX,drift-register}.md`; `docs/design-log.md` (DL-243), `docs/STATE.md`,
+`docs/sprints/{README,INDEX}.md`, this file. **Not touched:** `agents/forecaster/poll.py` (151), the provider,
+`orchestration/history_window.py`, `uv.lock`.
 
-**Design decisions:** *(builder: DL number, one line, where the rejected alternatives are)*
+**Design decisions:** [DL-243](../design-log.md): D1 the pass is marked by its own `BarrierSettlementPass` node, written
+last, and joins the deployed loop as a second work kind in a new `work.py` (nothing moved out of `poll.py`); D2 the first
+later run whose bars cover the claim settles it, named in `settling_ref`; D3 the 45-day void is evaluated on every pass,
+dated by the run's `created_at`, never by a timer; D4 the clause wording; plus six builder's choices. The rejected
+alternatives are listed under each in DL-243.
 
-**Proof — the red run first:**
+**Proof — the red run first** (the new test files and the edited existing tests, before any implementation, `pytest
+--no-cov`; the collection errors stop that session, so the four edited existing tests were run on their own too):
 
 ```text
-(builder)
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_settlement'
+E   ModuleNotFoundError: No module named 'agents.forecaster.settlement_pass'
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_settlement'
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_settlement'
+E   ModuleNotFoundError: No module named 'agents.forecaster.domain.barrier_settlement'
+E   ModuleNotFoundError: No module named 'scripts.barrier_ledger'
+ERROR agents/forecaster/tests/test_barrier_settlement.py
+ERROR agents/forecaster/tests/test_barrier_settlement_record.py
+ERROR agents/forecaster/tests/test_barrier_scorecard.py
+ERROR agents/forecaster/tests/test_barrier_settlement_loop.py
+ERROR orchestration/tests/test_forecaster_settlement_stage.py
+ERROR tests/test_barrier_ledger.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!!
+6 errors in 2.13s
+
+E     Right contains 1 more item:
+E     {'forecaster_settlement': 1}
+E     Right contains 1 more item:
+E     {'forecaster_settlement': 1}
+E   AttributeError: 'Node' object has no attribute 'kind'
+E   AssertionError: assert '0.6.0' == '0.7.0'
+FAILED orchestration/tests/test_graph_pull_e2e.py::test_trigger_then_cascade_builds_full_chain
+FAILED orchestration/tests/test_drop_sweep_cascade.py::test_poisoned_drop_sweep_still_reaches_reporter
+FAILED agents/forecaster/tests/test_forecaster_entrypoint.py::test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only
+FAILED agents/forecaster/tests/test_forecaster_boundary.py::test_contract_declares_never_clauses_and_no_external_io
+4 failed, 8 passed in 0.94s
 ```
 
-**Proof — the green run:**
+**Proof — the green run** (the same files plus the two split out or added later,
+`test_barrier_scorecard_oracle.py` and `test_barrier_settlement_faults.py`, on the final tree):
 
 ```text
-(builder)
+................................................                         [100%]
+48 passed in 1.25s
 ```
 
-**Guards planted:** *(builder, per plant)*
+**Guards planted** (DL-70; each planted on the final tree with a backup in the session scratchpad, run, and restored
+from the backup, `cmp` byte-identical):
 
-**Module line counts:** *(builder)*
+1. **Target checked before stop** (`outcome_index`: the `hi >= …` test moved above the `lo <= …` test) → **C1 red**:
+   `FAILED test_the_outcome_is_exp018s[both-in-one-session]` — `assert 'target' == 'stop'`, and
+   `FAILED test_the_settlement_equals_the_test_beds_outcome_on_random_paths` — `assert 'target' == 'stop'` (a random
+   path touching both in one session); 2 failed, 13 passed. Restored.
+2. **Entry from the claim's `entry_close`** (the `as_of` close replaced by `entry_close` in the series passed to
+   `outcome_index`) → **C2 red**: `FAILED test_the_entry_is_the_settling_series_own_close` — `assert 'target' ==
+   'stop'`; 1 failed, 14 passed (every other fixture's two closes agree, so only C2 can see it). Restored.
+3. **Corporate-action void removed** (the `_corporate_action` check deleted from `settle`) → **C3 red**: 6 failed —
+   `test_a_split_is_void_never_a_stop[2:1]`, `[10:1]` (`outcome: 'stop' != 'void'`), `[1:3]` (`outcome: 'target' !=
+   'void'`), `test_the_corporate_action_bounds_are_the_specs[below-0.6]`, `[above-1.67]`, and
+   `test_a_split_settles_void_with_no_brier`. Restored.
+4. **The pass not marked** (the `BarrierSettlementPass` merge and its edge deleted) → **C6 red**: `FAILED
+   test_a_claim_is_settled_once` — `assert [Node(label='AnalystRun', key='run-a', …)] == []`: the run is still pending
+   after its pass, so every poll would pass over it again (the work loop reads that as "no progress" and quarantines it
+   after five attempts). Restored. 🪤 **What this plant did not show, stated plainly:** with only the marker gone, the
+   claim was **not** settled twice, because the pass settles open claims only (the spec's wording assumed one guard).
+   So a sixth plant, **4b, the open-claim filter removed** (marker kept) → **C6 red**: `assert [AgentFault(…
+   ValueError: property 'outcome' cannot be overwritten)] == []`: the later run's pass tried to settle the claim
+   again, and the append-only graph refused it. C6 was strengthened to assert "no fault" for this (before, the graph's
+   refusal was invisible to it). Restored.
+5. **Climatology re-estimated from the ledger** (`CLIMATOLOGY` replaced by the ledger's own realised shares in
+   `ledger_scores`) → **C7 red**: `FAILED test_the_scorecard_reports_the_ledger_as_exp018_scores_it` — `assert
+   0.6200000000000001 == np.float64(0.621994)`; 1 failed, 5 passed. Restored.
 
-**`make ci`:** *(builder: file, exit code, passed/skipped, coverage, dependency audit, detect-secrets)*
+**Module line counts** (all < 200; `wc -l` on the final tree): `agent.py` **166** (was 164), `poll.py` **151** (not
+touched), `entrypoint.py` 65, `work.py` 67, `settlement_pass.py` 139, `settling_bars.py` 59, `settlement_store.py` 93,
+`barrier_scorecard.py` 66, `domain/barrier_settlement.py` 138, `domain/barrier_skill.py` 87, `contracts/forecaster.py` 153
+(was 133), `orchestration/local_pipeline.py` **198** (was 190; the stage binds the forecaster's sink once so it fits),
+`scripts/barrier_ledger.py` 125; tests: `settlement_paths.py` 85, `settlement_helpers.py` 121, `ledger_fixture.py` 82,
+`test_barrier_settlement.py` 175, `test_barrier_settlement_record.py` 193, `test_barrier_settlement_faults.py` 93,
+`test_barrier_settlement_loop.py` 139, `test_barrier_scorecard.py` 62, `test_barrier_scorecard_oracle.py` 122,
+`test_forecaster_boundary.py` 54, `test_forecaster_entrypoint.py` 123,
+`orchestration/tests/test_forecaster_settlement_stage.py` 57, `orchestration/tests/test_graph_pull_e2e.py` 158,
+`orchestration/tests/test_drop_sweep_cascade.py` 122, `tests/test_barrier_ledger.py` 131. Split while building to stay
+under the block: the pass's read side into `settling_bars.py`, the scorecard tests into two files and a fixture, the
+test helpers into paths and graph seeding.
 
-**`uv.lock`:** *(builder: untouched and owed, or re-resolved)*
+**`make ci`:** `UV_FROZEN=1 make ci > <session scratchpad>/ci-2.txt 2>&1; echo $?` → **exit 0**, on the final code tree in
+this container (00:01–00:05 UTC 2026-09-29), every step of the `ci:` target: ruff check clean; `ruff format --check` 1,455
+files formatted; mypy `no issues found in 1098 source files`; import-linter `5 kept, 0 broken`; module size (warnings
+only); module header; law coverage; PARAM/settings sync; sprint status; markdown links; version scheme; pytest **3,592
+passed, 7 skipped**, coverage **100.00 %**; dependency audit `No unaccepted vulnerabilities; 1 accepted advisory
+re-checked`; detect-secrets `Passed` over all files; untracked scan `scanning 19 new file(s)` `Passed`. 🪤 **The first run
+(`ci-1.txt`) exited 2 and is not hidden:** it straddled 00:00 UTC. `agents/provider/tests/test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch`
+failed (`TODAY` in `barrier_history_helpers.py` is fixed at import, 2026-09-28, the window was built after midnight,
+2026-09-29), and coverage read 99.99 % (`agents/scanner/domain/beta.py:35` missed: `test_scanner_beta.py`'s module-level
+`_ONE_X` bars carry the 09-28 dates and its in-test flat benchmark the 09-29 ones, so they no longer align and the
+zero-variance line is never reached). Neither file is touched here; both are date-at-import fixtures, and the re-run
+entirely after midnight is the one above. **Final run, after every doc of this handback was written**
+(`ci-3.txt`, 00:08–00:12 UTC): exit **0**, the same counts (3,592 passed, 7 skipped, 100.00 %), sprint status reading this
+spec as `BUILT` and the README row agreeing. Only this paragraph changed after it; `check_sprint_status.py`,
+`check_markdown_links.py` and `check_law_coverage.py` were re-run on it before the commit, each exit 0.
+
+**`uv.lock`:** **untouched and owed** (`git diff --stat uv.lock` is empty). No dependency changed; only `pyproject.toml`'s
+version moved to `0.119.00`, so the lock's `trading-agents` entry still reads `0.118.0`. A re-lock cannot run here
+(`download.pytorch.org` is blocked, DL-228); the planner re-locks.
 
 **`make gate-ran`:** *(planner: local worktree, full SHA, output)*
 
 **Planner live checks (F1–F3):** *(planner, before merge)*
 
-**Not met / verified failing:** *(builder)*
+**Not met / verified failing:** nothing in the builder's scope is unmet or verified failing. **Owed, not done here (by
+design, none can run in this container):** `uv lock` (the version only), Windows `make ci`, `make gate-ran` from a
+worktree whose `HEAD` is the pushed commit (check the printed SHA), F1–F3 before merge, the operator's full `up` (the
+vocabulary moved), and F4 from about 2026-10-12. A run result read through the GitHub connector would be an observation,
+never `GATE PROVEN`; none is claimed.
 
 ---
 
 ## Return notes
 
-- *(builder: scope held, or where it moved and why)*
-- *(builder: what you disagreed with in the spec after reading the laws)*
-- *(builder: what the exit experiment should know about the ledger)*
+- **Scope held, with these moves inside it, each recorded in DL-243 or the Law reading record:** a second new label,
+  `BarrierSettlementPass` (and its edge), because "mark the pass done per run" needs a marker (D1); `FORE-IDM-05` beyond
+  the spec's list (C6's "`FORE-IDM`" had no clause); `FORE-OUT-03` widened by one name (C7 cites it); `FORE-IDN-02` now
+  also lists `ForecasterRun` (`DRIFT-081` prescribed that for this amendment); `CAP` lists every label written and read;
+  `model_id` on the settlement (the scorecard is per model); a per-claim fault boundary so one unreadable claim cannot
+  block every later run's settlement. Not built: any reader outside the forecaster, a verdict, anything on held
+  positions, any provider change, a backfill. `poll.py` and `orchestration/history_window.py` are untouched.
+- **What I disagreed with after reading the laws:** (1) C6 cited "`FORE-IDM`" and C7 cited `FORE-OUT-03` for behaviour
+  those clauses did not name; citing them as written would have narrowed a clause to fit a test (§7a), hence `IDM-05` and
+  the one-name widening. (2) The DL-70 plant "pass not marked, **so a claim settles twice**" assumes the marker is the
+  only guard. It is not: the open-claim filter and the append-only graph each stop a second settlement. The plant still
+  turns C6 red (the run stays pending); plant 4b removes the filter and shows the graph refusing. (3) The spec calls the
+  thresholds "constants, not tunables" and also lists `PARAM` in the law cycle: there is no new setting, so no `PARAM` row
+  (`check_param_law_sync.py` fails a row that names no settings field); the Changelog says so.
+- **What the exit experiment should know about the ledger:**
+  1. **The live outcomes are on raw bars, EXP-018's on split- and dividend-adjusted ones.** Splits are voided, but
+     dividends are not: an ex-dividend date inside the ten sessions is a raw price drop of the dividend's size, which can
+     tip a stop at the margin. Expect realised stop-first shares a little above EXP-018's definition for the same prices;
+     compare with the 0.287 / 0.477 / 0.236 climatology knowing the outcome is defined on a slightly different series.
+  2. **The climatology is fixed and historical** (EXP-018's primary set, 2019–2026). A market regime that moves the
+     realised shares moves `skill` without the model changing; read `realised_*` beside `skill`.
+  3. **Voids are outside the Brier.** The scorecard reports `void` beside `settled`; a verdict should read the void rate
+     (a corporate action, or a ticker that left the universe) as well as the skill of what settled.
+  4. **The interval needs dates.** It resamples whole `as_of` dates, as EXP-018 did on 385 of them; with about 5–15
+     claims per session the first intervals will be wide, and with fewer than two dates there is none.
+  5. **A session is a row of the settling series**, as in EXP-018's rule: a halt with no bars stretches the window.
+  6. **F2 on the replay cache:** the bars there are adjusted, so every non-void settlement should equal `outcome()`
+     exactly; a `suspected_corporate_action` void there is a genuine one-day move of 40 % or more and should be counted
+     apart, not as a mismatch.
+  7. **Not built, from S239's F1 residue:** a count of claims whose simulated paths went non-finite (numpy overflow on
+     rare paths). The claim records no such flag, so the ledger cannot count them yet.
+- **Found while building, not in scope (for the planner):** two tests fix a date at import and build another in the test
+  body, so a `make ci` that straddles 00:00 UTC fails
+  `agents/provider/tests/test_barrier_history.py::test_only_buys_with_both_barriers_get_a_history_from_one_fetch` and
+  loses coverage of `agents/scanner/domain/beta.py:35` (`test_scanner_beta.py`'s module-level `_ONE_X`). Measured here
+  (`ci-1`, exit 2); not changed. The deployed forecaster now lists `AnalystRun` twice per poll (one listing per work
+  kind, as the provider's loop already does); a single listing would need a per-node predicate in `poll.py` (DL-243 D1).

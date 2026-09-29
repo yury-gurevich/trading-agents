@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
     import pytest
 
-    from kernel.graph import Node
+    from agents.forecaster.work import ForecasterWorkItem
 
 
 def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
@@ -38,7 +38,9 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
 ) -> None:
     """FORE-TRG-01 / FORE-TRG-02: the container polls for an unconsumed, current
     AnalystRun (DL-241 D11: an old run is never claimed) and fires forecast_barrier
-    for each buy with both barriers, and none of the three advisory legs."""
+    for each buy with both barriers, and none of the three advisory legs; the same
+    current run's settlement pass is the loop's second kind of work (S241), and the
+    old run gets none."""
     graph = InMemoryGraphStore()
     run = deployed_analyst_run(graph)
     seed_history(
@@ -64,8 +66,8 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
     monkeypatch.setattr(ep, "build_served_bus", lambda graph_arg, sink: bus)
 
     def fake_work_loop(
-        find_pending: Callable[[], list[Node]],
-        process_one: Callable[[Node], None],
+        find_pending: Callable[[], list[ForecasterWorkItem]],
+        process_one: Callable[[ForecasterWorkItem], None],
         *,
         poll_interval: float,
         graph: object,
@@ -73,10 +75,11 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
         flush_faults: Callable[[], None],
     ) -> None:
         pending = find_pending()
-        seen.update(pending=len(pending), poll=poll_interval, agent=agent)
+        seen.update(pending=[(item.kind, item.node.key) for item in pending])
+        seen.update(poll=poll_interval, agent=agent)
         seen.update(loop_graph=graph, flush=flush_faults)
-        for node in pending:
-            process_one(node)
+        for item in pending:
+            process_one(item)
         seen["after"] = len(find_pending())
 
     monkeypatch.setattr(ep, "work_loop", fake_work_loop)
@@ -84,8 +87,14 @@ def test_main_runs_the_graph_pull_loop_with_the_barrier_leg_only(
 
     ep.main()
 
-    assert seen["pending"] == 1
+    assert seen["pending"] == [
+        ("forecast", "analyst-run-deployed"),
+        ("settle", "analyst-run-deployed"),
+    ]
     assert seen["after"] == 0
+    assert [node.key for node in graph.list_nodes("BarrierSettlementPass")] == [
+        "settlement-pass:analyst-run-deployed"
+    ]
     assert (seen["poll"], seen["agent"], seen["loop_graph"]) == (
         11,
         "forecaster",

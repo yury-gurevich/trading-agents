@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from agents.forecaster.barrier_fit import ArchGarchFitter
 from agents.forecaster.barrier_forecast import forecast_barrier
+from agents.forecaster.barrier_scorecard import barrier_scorecard
 from agents.forecaster.domain.sentiment import NEUTRAL, ModelReading, aggregate
 from agents.forecaster.factor_prediction import forecast_factor
 from agents.forecaster.model import FakeSentimentModel
@@ -79,6 +80,7 @@ class ForecasterAgent(AgentBase):
             "scorecard": partial(scorecard, graph),
             "sentiment_scorecard": partial(sentiment_scorecard, graph),
             "return_scorecard": partial(return_scorecard, graph),
+            "barrier_scorecard": partial(barrier_scorecard, graph),
         }
 
     def _forecast(self, request: BaseModel) -> ShadowPrediction:

@@ -37,10 +37,11 @@ def test_scorecard_is_never_promotion_eligible() -> None:
 def test_contract_declares_never_clauses_and_no_external_io() -> None:
     """FORE-NEV-01 / FORE-NEV-02 / FORE-NEV-03: three never-clauses; no external I/O."""
     assert len(CONTRACT.never) == 3
-    assert CONTRACT.version == "0.6.0"
+    assert CONTRACT.version == "0.7.0"
     assert {capability.name for capability in CONTRACT.consumes} >= {
         "forecast_factor",
         "forecast_barrier",
+        "barrier_scorecard",
     }
     assert CONTRACT.external_io == ()
     assert CONTRACT.owns_graph == (
@@ -48,4 +49,6 @@ def test_contract_declares_never_clauses_and_no_external_io() -> None:
         "Model",
         "ForecasterRun",
         "BarrierForecast",
+        "BarrierSettlement",
+        "BarrierSettlementPass",
     )

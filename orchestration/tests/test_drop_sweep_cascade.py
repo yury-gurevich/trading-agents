@@ -76,6 +76,7 @@ def test_poisoned_drop_sweep_still_reaches_reporter(
         "analyst": 1,
         "provider_barrier_history": 1,
         "forecaster": 1,
+        "forecaster_settlement": 1,
         "portfolio_manager": 1,
         "deliberation": 1,
         "execution": 1,

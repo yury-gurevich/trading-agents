@@ -84,6 +84,11 @@ deliberator-manager 26, the rest < 10 each (1,121 GB). A full list is sent as un
 every payload**. Analyst, PM and deliberator repeat the pattern on smaller labels. The fix is therefore
 one kernel primitive — find pending work by key and edge, no props — used by every graph-pull
 `find_pending`, then `get_node` for the one pending item; the reporter's `_benchmark` reads by lineage.
+**Local clients ruled out (operator asked, 2026-09-29).** Over Neon's own billing window (09-01 → 09-21)
+the fleet's `RxBytes` sum to **813.2 GB of the 837.39 GB** billed (97 %, vendor traffic included), so the
+dashboard, `infra/status.ps1` and planner scripts are ≤ 24 GB together. `status.ps1` makes `az` calls only
+and never opens the store; the dashboard has no auto-refresh and reads per run by key (the scorecard's
+~20-session `accept_run` memo is the largest, tens of MB per fresh load).
 
 **Option kept (operator, 2026-09-29): move the store into Azure, same region.** Azure Database for
 PostgreSQL Flexible Server in australiaeast beside the fleet makes agent traffic intra-region.

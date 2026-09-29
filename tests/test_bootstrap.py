@@ -20,7 +20,7 @@ from kernel.crypto import generate_keypair, sign_pss
 def _make_sender(instance_id: str, signature: str = "") -> object:
     captured: list[tuple] = []
 
-    def send(url: str, data: dict) -> dict:
+    def send(url: str, data: dict, timeout: float = 30.0) -> dict:
         captured.append((url, data))
         return {
             "instance_id": instance_id,
@@ -149,7 +149,7 @@ def test_activate_agent_applies_config_to_env(monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.delenv("TA_TEST_INJECTED", raising=False)
 
-    def send(url: str, data: dict) -> dict:
+    def send(url: str, data: dict, timeout: float = 30.0) -> dict:
         return {
             "instance_id": "x",
             "agent_type": data["agent_type"],
@@ -167,7 +167,7 @@ def test_activate_agent_applies_config_to_env(monkeypatch: pytest.MonkeyPatch) -
 def test_activate_agent_tolerates_missing_config() -> None:
     """A payload with no config key is fine (nothing applied)."""
 
-    def send(url: str, data: dict) -> dict:
+    def send(url: str, data: dict, timeout: float = 30.0) -> dict:
         return {  # no "config" key at all
             "instance_id": "scanner:ts:0",
             "agent_type": data["agent_type"],

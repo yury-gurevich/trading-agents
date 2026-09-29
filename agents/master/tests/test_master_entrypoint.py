@@ -39,10 +39,10 @@ def test_build_app_starts_master_session() -> None:
 def test_build_app_accepts_custom_settings() -> None:
     """build_app passes settings through to MasterAgent."""
     private, _ = generate_keypair()
-    settings = MasterSettings(handshake_max_retries=3)
+    settings = MasterSettings(handshake_timeout_2_seconds=120.0)
     graph = InMemoryGraphStore()
     agent, _ = build_app(graph, private, settings=settings)
-    assert agent._settings.handshake_max_retries == 3
+    assert agent._settings.handshake_timeout_2_seconds == 120.0
 
 
 def test_fleet_preflight_interval_is_a_bounded_setting() -> None:

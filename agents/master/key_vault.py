@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime, timedelta
+from threading import Lock
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
@@ -63,7 +64,8 @@ class CachingSecretStore:
     A Key Vault round-trip on every repeated reference is wasteful — the master
     fetches the same secrets for many agents. Cache each fetched value for
     ``ttl_minutes`` (0 = never expires). Only non-empty fetches are cached, so a
-    missing secret is re-fetched and a newly-seeded one is picked up.
+    missing secret is re-fetched and a newly-seeded one is picked up. Shared by
+    concurrent activations: the lock guards the map, never the fetch (DL-249 D4).
     """
 
     def __init__(
@@ -79,22 +81,26 @@ class CachingSecretStore:
         self._never = ttl_minutes == 0
         self._clock = clock or (lambda: datetime.now(UTC))
         self._cache: dict[str, tuple[str, datetime]] = {}
+        self._lock = Lock()
 
     def get_secret(self, name: str) -> str:
         """Return the cached value if fresh, else fetch from the inner store."""
-        hit = self._cache.get(name)
+        with self._lock:
+            hit = self._cache.get(name)
         if hit is not None:
             value, fetched_at = hit
             if self._never or (self._clock() - fetched_at) < self._ttl:
                 return value
         value = self._inner.get_secret(name)
         if value:
-            self._cache[name] = (value, self._clock())
+            with self._lock:
+                self._cache[name] = (value, self._clock())
         return value
 
     def invalidate(self) -> None:
         """Clear cached secrets so the next lookup re-fetches from the inner store."""
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
 
 
 class AzureKeyVaultSecretStore:  # pragma: no cover

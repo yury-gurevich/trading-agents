@@ -89,7 +89,7 @@ def test_activate_writes_capability_grant_nodes(master: MasterAgent) -> None:
 def test_activate_second_instance_of_same_type_gets_unique_id(
     master: MasterAgent,
 ) -> None:
-    """MST-IDM-01: two EHLO from the same agent_type produce distinct instance_ids."""
+    """MST-IDM-01: two EHLO of one agent_type, two boot ids -> distinct instance_ids."""
     master.start()
     ehlo1 = EHLOMessage(
         ephemeral_boot_id="boot:1", agent_type="reporter", capability_declaration={}

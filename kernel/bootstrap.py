@@ -1,8 +1,9 @@
 """Agent PRE_FLIGHT → ACTIVATE bootstrap over HTTP.
 
 Agent: kernel
-Role: send EHLO to the master agent, optionally verify the RSA-PSS signature on
-      ACTIVATE, and return the grants payload; shared by all agent entrypoints.
+Role: send EHLO to the master agent (resent within a bounded budget with one boot
+      id, kernel.ehlo_retry), optionally verify the RSA-PSS signature on ACTIVATE,
+      and return the grants payload; shared by all agent entrypoints.
 External I/O: master HTTP endpoint (POST /ehlo).
 """
 
@@ -14,6 +15,9 @@ import os
 import urllib.request
 import uuid
 from typing import TYPE_CHECKING
+
+from kernel.ehlo_retry import RetryHooks, send_with_retry
+from kernel.ehlo_settings import EhloSettings
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -49,21 +53,28 @@ def activate_agent(
     agent_type: str,
     capability_declaration: dict[str, object] | None = None,
     public_key_pem: str | None = None,
-    _send: Callable[[str, dict[str, object]], dict[str, object]] | None = None,
+    _send: Callable[[str, dict[str, object], float], dict[str, object]] | None = None,
+    _hooks: RetryHooks | None = None,
+    _settings: EhloSettings | None = None,
 ) -> dict[str, object]:
     """Send EHLO, verify ACTIVATE signature if public_key_pem given, return payload.
 
-    *_send* is injectable for tests; defaults to a real HTTP POST.
+    One boot id for every attempt: a transport failure is resent inside the
+    ``EhloSettings`` budget and master replays the resend (MST-TRG-01, MST-IDM-03);
+    a 4xx or a bad signature is final. *_send* (url, body, timeout), *_hooks* and
+    *_settings* are injectable for tests; the default sender is a real HTTP POST.
     """
-    send = _send or _http_post
-    boot_id = uuid.uuid4().hex
-    payload = send(
+    body: dict[str, object] = {
+        "ephemeral_boot_id": uuid.uuid4().hex,
+        "agent_type": agent_type,
+        "capability_declaration": capability_declaration or {},
+    }
+    payload = send_with_retry(
+        _send or _http_post,
         f"{master_url.rstrip('/')}/ehlo",
-        {
-            "ephemeral_boot_id": boot_id,
-            "agent_type": agent_type,
-            "capability_declaration": capability_declaration or {},
-        },
+        body,
+        _settings or EhloSettings(),
+        _hooks or RetryHooks(),
     )
     if public_key_pem:
         _verify_signature(payload, public_key_pem)
@@ -99,14 +110,16 @@ def _verify_signature(payload: dict[str, object], public_key_pem: str) -> None:
     verify_pss(public_key_pem, instance_id, signature)
 
 
-def _http_post(url: str, data: dict[str, object]) -> dict[str, object]:
+def _http_post(
+    url: str, data: dict[str, object], timeout: float = 30.0
+) -> dict[str, object]:
     """POST JSON to url, return parsed response. Validates http/https scheme."""
     if not url.startswith(("http://", "https://")):
         raise ValueError(f"master_url must be http or https: {url!r}")
-    body = json.dumps(data).encode()  # pragma: no cover
-    req = urllib.request.Request(  # noqa: S310  # pragma: no cover
+    body = json.dumps(data).encode()
+    req = urllib.request.Request(  # noqa: S310 - scheme checked above.
         url, data=body, headers={"Content-Type": "application/json"}, method="POST"
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310  # pragma: no cover
-        result: dict[str, object] = json.loads(resp.read())  # pragma: no cover
-        return result  # pragma: no cover
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310
+        result: dict[str, object] = json.loads(resp.read())
+        return result

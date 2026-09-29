@@ -1,15 +1,16 @@
 # `Master` — Law Test-Plan
 
-**Prefix:** `MST` · **status:** LOCKED v1.6 · **aligned with:** laws.md LOCKED v1.6
+**Prefix:** `MST` · **status:** LOCKED v1.7 · **aligned with:** laws.md LOCKED v1.7
 
 | Clause | Description | Test | Status |
 | --- | --- | --- | --- |
 | MST-IDN-01 | `start()` writes Session node | `test_start_writes_session_node` | 🟩 |
 | MST-STA-01 | `session_id` None before start, non-None after | `test_start_exposes_session_id` | 🟩 |
 | MST-OUT-01 | EHLO → ACTIVATE with matching fields | `test_activate_returns_activate_message` | 🟩 |
-| MST-STA-02 | `activate()` writes `AgentInstance` with state=active | `test_activate_writes_agent_instance_node` | 🟩 |
+| MST-STA-02 | Master writes one `AgentInstance` (`agent_type`, `boot_id`, state=active, `started_at`) per activated boot id; a resent EHLO answered by replay writes none | `test_activate_writes_agent_instance_node`; `test_activation_replay.py::test_a_repeated_boot_id_is_one_activation` | 🟩 |
 | MST-STA-03 | `activate()` writes one `CapabilityGrant` per capability | `test_activate_writes_capability_grant_nodes` | 🟩 |
-| MST-IDM-01 | Two EHLO of same type → distinct instance IDs | `test_activate_second_instance_of_same_type_gets_unique_id` | 🟩 |
+| MST-IDM-01 | Two EHLO of the same type with different boot ids → distinct instance IDs; multiple instances of one type supported | `test_activate_second_instance_of_same_type_gets_unique_id` | 🟩 |
+| MST-IDM-03 | Same boot id + same type within the replay lifetime → the same signed ACTIVATE (instance_id, grants, config), no write, no credential test; concurrent duplicates → one activation; lifetime = `handshake_timeout_2_seconds` capped by the non-zero pass/secret TTLs, ≥ the kernel budget by default; past it a fresh activation; same boot id + other type → 422, only the refusal returned, nothing written; a refused/failed activation never replayed | `test_activation_replay.py::test_a_repeated_boot_id_is_one_activation`; `test_a_boot_id_cannot_fetch_another_types_credentials`; `test_the_replay_window_expires`; `test_concurrent_resends_of_one_boot_id_are_one_activation`; `test_ehlo_budgets.py::test_the_kernel_budget_fits_inside_the_replay_window`; `test_the_replay_never_outlives_a_credential_pass_or_a_cached_secret`; `test_activation_replay_store.py::test_a_refusal_is_never_remembered`; `test_a_waiter_on_a_failed_first_attempt_mints_its_own`; `test_another_type_is_refused_while_the_first_is_in_flight` | 🟩 |
 | MST-NEV-01 | Unknown agent_type rejected; no graph write | `test_activate_unknown_agent_type_raises` | 🟩 |
 | MST-NEV-06 | Master never hands over a pack-declared credential until its applicable credential test has either passed live or has a fresh costly-pass cache entry; a failed required credential test refuses activation and writes no `AgentInstance` | `test_required_http_status_401_refuses_activation`; `test_credential_probe_body.py::test_a_drained_key_refuses_activation` (the 400 a credit-exhausted account returns, DRIFT-058) | 🟩 |
 | MST-OUT-02 | `drain()` returns `DRAINMessage` | `test_drain_returns_drain_message` | 🟩 |
@@ -30,15 +31,17 @@
 | MST-DEP-02 | Key Vault credential resolution | deferred S74 | ⬜ |
 | MST-IN-01 | activate accepts EHLOMessage fields, rejects unknown agent_type with ValueError | _tbd_ | ⬜ |
 | MST-IN-02 | drain accepts DRAINMessage, requires known AgentInstance, and raises KeyError for unknown IDs | _tbd_ | ⬜ |
-| MST-TRG-01 | activate is triggered by EHLO on the handshake queue | _tbd_ | ⬜ |
+| MST-TRG-01 | activate is triggered by `POST /ehlo` over HTTP; an agent resends a transport failure (timeout; refused/reset/dropped connection; 502/503/504) with the same boot id within the kernel's budget (attempt cap, per-attempt timeout, total time, exponential backoff with full jitter); a 4xx or a bad signature is final, never resent | `test_ehlo_server.py::test_an_activation_wave_is_served_in_parallel` (a real `POST /ehlo`); `tests/test_ehlo_retry.py::test_a_timed_out_ehlo_is_resent_with_one_boot_id`; `tests/test_ehlo_retry.py::test_each_transient_failure_is_resent`; `tests/test_ehlo_retry.py::test_a_final_answer_is_never_resent`; `tests/test_ehlo_retry.py::test_a_bad_signature_is_never_resent`; `tests/test_ehlo_budget.py::test_a_spent_attempt_budget_ends_loud`; `tests/test_ehlo_budget.py::test_the_budget_stops_resends_before_the_attempt_cap` | 🟩 |
 | MST-TRG-02 | drain is triggered by operator/supervisor or master's crash-recovery path | _tbd_ | ⬜ |
 | MST-OUT-03 | start() writes a Session node with started_at for crash recovery | _tbd_ | ⬜ |
 | MST-OUT-04 | `run_fleet_preflight` tests every pack-declared probe for every grant-policy agent type, writes one FleetPreflight node per check, passes only for passed/fresh-cached probes, and fails for credential or transport failures | `test_fleet_preflight.py::test_all_passing_probes_write_a_passing_fleet_preflight`; `test_transport_failure_fails_the_fleet_preflight`; `test_credential_failure_fails_the_fleet_preflight`; `test_fresh_costly_cache_counts_as_a_preflight_pass`; `test_a_probe_is_checked_once_per_agent_type` | 🟩 |
 | MST-IDM-02 | restart reads existing Session nodes before writing a new Session | _tbd_ | ⬜ |
 | MST-ORD-01 | start() must precede activate(); activate without a live session cannot link to session_id | _tbd_ | ⬜ |
-| MST-ORD-02 | master startup and live handshake queue precede trading-agent EHLO | _tbd_ | ⬜ |
+| MST-ORD-02 | Master may be asleep, starting or busy when an agent boots; nothing assumes it is up first; the agent proceeds only after ACTIVATE, achieved by its resend, never by start-up order | `tests/test_ehlo_retry.py::test_a_timed_out_ehlo_is_resent_with_one_boot_id` (asleep, then busy); `tests/test_ehlo_retry.py::test_each_transient_failure_is_resent` (refused while starting, 503 while busy) | 🟩 |
+| MST-ORD-03 | Master serves EHLOs concurrently so one slow activation holds no other, and its listen backlog (`ehlo_listen_backlog`) holds at least one whole wave (every grant-policy agent type at once) | `test_ehlo_server.py::test_an_activation_wave_is_served_in_parallel`; `test_the_listen_backlog_is_the_tunable`; `test_ehlo_server_routes.py::test_serve_builds_its_server_from_master_settings`; `test_ehlo_budgets.py::test_the_listen_backlog_holds_one_wave`; `test_activation_replay.py::test_concurrent_resends_of_one_boot_id_are_one_activation` | 🟩 |
 | MST-FAIL-01 | graph unavailable on activate is faulted and re-raised without acknowledging EHLO | _tbd_ | ⬜ |
 | MST-FAIL-02 | graph unavailable on drain is faulted and re-raised while the agent continues running | _tbd_ | ⬜ |
+| MST-FAIL-06 | An agent whose EHLO budget is spent (attempt cap or total time) exits non-zero with one line naming attempts, elapsed time and last cause; every failed attempt before it writes one stderr line; nothing swallowed | `tests/test_ehlo_budget.py::test_a_spent_attempt_budget_ends_loud`; `tests/test_ehlo_budget.py::test_the_budget_stops_resends_before_the_attempt_cap`; `tests/test_ehlo_budget.py::test_a_spent_budget_exits_the_process_non_zero` | 🟩 |
 | MST-FAIL-03 | single-point-of-failure mitigation is a risk charter: thin master, state in Postgres, and platform restart are architectural claims, not an agent-local observation | Charter: no single functional observation can prove the RISK-1 mitigation envelope; failures are covered by the narrower FAIL rows. | 📜 |
 | MST-TYP-01 | EHLOMessage, ACTIVATEMessage, DRAINMessage, and AgentState carry the required fields and type assertions | `tests/test_contract_required_fields.py::test_master_payload_fields_required_by_law`; `tests/test_substrate_handshake_wire.py::test_the_frozen_base_and_evidence_types_are_the_same_objects` | 🟩 |
 | MST-TYP-02 | ACTIVATE capability_grants is a JSON-safe map and never contains product names | _tbd_ | ⬜ |

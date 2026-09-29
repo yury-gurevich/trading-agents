@@ -1,6 +1,6 @@
 # `Master` — Laws
 
-**Prefix:** `MST` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
+**Prefix:** `MST` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
 
 > Receive EHLO from freshly-started agent containers, verify declared capabilities,
 > distribute minimum-privilege credentials via ACTIVATE, and maintain the
@@ -32,8 +32,12 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Triggers (`TRG`)
 
-- **MST-TRG-01** — `activate` is triggered by an agent container sending EHLO on the permanent
-  handshake queue (in-process for now; moves to a durable queue in S74).
+- **MST-TRG-01** — `activate` is triggered by an agent container sending EHLO as `POST /ehlo` over
+  HTTP. Master may be asleep, starting or busy, so an agent resends an EHLO that met a transport
+  failure (a timeout; a refused, reset or dropped connection; HTTP 502, 503 or 504) with the **same**
+  `ephemeral_boot_id`, within the kernel's bounded EHLO budget (an attempt cap, a per-attempt
+  timeout, a total time, and exponential backoff with full jitter between attempts). A 4xx answer or
+  an ACTIVATE whose signature fails verification is final and is never resent.
 - **MST-TRG-02** — `drain` is triggered by the operator (via supervisor) or by master's own
   crash-recovery logic on startup.
 
@@ -70,8 +74,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 - **MST-STA-01** — `start()` writes one `Session` node with `started_at`. On next boot, if the
   latest `Session` has no `ended_at`, master infers a crash and enters recovery mode.
-- **MST-STA-02** — `activate()` writes one `AgentInstance` node per EHLO:
-  `{ agent_type, boot_id, state="active", started_at }`.
+- **MST-STA-02** — Master writes one `AgentInstance` node per activated boot id:
+  `{ agent_type, boot_id, state="active", started_at }`. A resent EHLO answered by replay
+  (`MST-IDM-03`) writes none.
 - **MST-STA-03** — `activate()` writes one `CapabilityGrant` node per granted capability,
   keyed `grant:<instance_id>:<capability>`.
 - **MST-STA-04** — `drain()` merges `{ drain_reason, drain_at }` into the `AgentInstance` node.
@@ -79,17 +84,31 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 ## Idempotency (`IDM`)
 
-- **MST-IDM-01** — Two EHLO messages from the same `agent_type` produce two distinct `instance_id`
-  values (counter suffix). Multiple instances of the same type are supported.
+- **MST-IDM-01** — Two EHLO messages from the same `agent_type` with different
+  `ephemeral_boot_id`s produce two distinct `instance_id` values (counter suffix). Multiple instances
+  of the same type are supported. (A repeated boot id is `MST-IDM-03`.)
 - **MST-IDM-02** — If master restarts, it reads the existing `Session` nodes to determine recovery
   context before writing a new `Session`.
+- **MST-IDM-03** — A repeated EHLO with the same `ephemeral_boot_id` **and** the same `agent_type`
+  within the replay lifetime returns the same ACTIVATE (same `instance_id`, grants and config, validly
+  signed), writes nothing and runs no credential test; concurrent duplicates produce one activation.
+  The replay lifetime is `handshake_timeout_2_seconds`, capped by `credential_pass_cache_ttl_minutes`
+  and `secret_cache_ttl_minutes` when they are non-zero, so a replay never re-delivers a credential
+  for longer than its pass or its fetched value is trusted; with the defaults it is at least the
+  kernel's EHLO budget. Past it the boot id activates afresh. The same boot id with a **different**
+  `agent_type` is refused (422): nothing is returned but the refusal and nothing is written
+  (`MST-NEV-02`). A refused or failed activation is never replayed.
 
 ## Ordering (`ORD`)
 
 - **MST-ORD-01** — `start()` must be called before `activate()`. `activate()` without a live
   session writes the instance but cannot link it to a session (session_id may be None).
-- **MST-ORD-02** — Master starts before any trading agent container. The handshake queue must be
-  live before agents send EHLO.
+- **MST-ORD-02** — Master may be asleep (scaled to zero), starting, or busy with an activation wave
+  when an agent boots; nothing assumes master is up first. That the agent proceeds only after
+  master's ACTIVATE is achieved by the agent's resend (`MST-TRG-01`), never by start-up order.
+- **MST-ORD-03** — Master serves EHLOs concurrently, so one slow activation does not hold the others
+  behind it, and its listen backlog (`ehlo_listen_backlog`) holds at least one whole activation wave
+  (every agent type in the grant policy waking at once).
 
 ## Failure modes (`FAIL`)
 
@@ -106,6 +125,9 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 - **MST-FAIL-05** — A probe status listed in the probe's `credential_failure_statuses` is recorded
   as `unrecoverable`. Any other 4xx is recorded as `unexpected`. A 5xx, timeout, or network error
   is recorded as `transient`. All three fail the fleet check.
+- **MST-FAIL-06** — An agent whose EHLO budget is spent (the attempt cap or the total time) exits
+  non-zero with one line naming the attempts, the elapsed time and the last cause; every failed
+  attempt before it writes one line to stderr. Nothing is swallowed.
 
 ## Type contracts (`TYP`)
 
@@ -187,9 +209,8 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
-| `handshake_timeout_1_seconds` | `10.0` | `float ≥ 1.0 ≤ 60.0` | YES | Seconds before master retries unacknowledged ACTIVATE |
-| `handshake_max_retries` | `5` | `int ≥ 1 ≤ 20` | YES | Max EHLO resends before agent transitions to INERT |
-| `handshake_timeout_2_seconds` | `300.0` | `float ≥ 30.0 ≤ 600.0` | YES | Total wait before unactivated agent goes INERT |
+| `handshake_timeout_2_seconds` | `300.0` | `float ≥ 30.0 ≤ 600.0` | YES | Master's replay window (`MST-IDM-03`): seconds a resent EHLO with the same boot id and type gets the first ACTIVATE back; must be ≥ the kernel's EHLO budget (`ehlo_budget_seconds`, 300) so every resend is replayed |
+| `ehlo_listen_backlog` | `64` | `int ≥ 16 ≤ 1024` | YES | Listen backlog of master's EHLO server (`MST-ORD-03`); one wave is the 15 agent types waking together, and 64 holds four waves of resends |
 | `credential_tests_path` | `""` | `str` | YES | Filesystem path fallback for the master credential-test declaration pack |
 | `credential_tests_b64` | `""` | `str` | YES | Base64 environment delivery for the master credential-test declaration pack |
 | `credential_pass_cache_ttl_minutes` | `5` | `int ≥ 0 ≤ 60` | YES | Minutes a costly credential-test pass remains fresh during an activation wave |
@@ -233,3 +254,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   `MST-TYP-01` renames its cited path to `kernel/handshake.py` (the master handshake contract moved
   out of `contracts/`, into the kernel, alongside `Provenance`/`Explanation`/the frozen base). New
   `MST-DEP-05`: master imports only the substrate, never a pack module.
+- v1.7 — S244 / DL-248 / DL-249 / DRIFT-091 (2026-09-29): the fleet crashed where the book promised a
+  resend budget no code read. `MST-TRG-01` names the real trigger (`POST /ehlo`) and the agent's
+  bounded resend with one boot id (4xx and a bad signature final); `MST-ORD-02` drops the assumption
+  that master is up first; `MST-STA-02` is one `AgentInstance` per boot id, not per message;
+  `MST-IDM-01` is scoped to different boot ids so it does not contradict the new `MST-IDM-03`
+  (a repeated boot id replays, another type is refused). New `MST-ORD-03` (concurrent EHLO service,
+  a backlog for a wave) and `MST-FAIL-06` (a spent budget exits loud). `PARAM`:
+  `handshake_timeout_1_seconds` and `handshake_max_retries` leave the table (the agent's side; the
+  kernel's `EhloSettings` owns the envelope now), `handshake_timeout_2_seconds` is master's replay
+  window, `ehlo_listen_backlog` is new.

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from threading import Lock
 from typing import TYPE_CHECKING, Literal
 
 from agents.master.credential_report import (
@@ -58,7 +59,11 @@ class CredentialTest:
 
 
 class PassCache:
-    """Remembers costly passes so a live call is skipped within the TTL (0 = never)."""
+    """Remembers costly passes so a live call is skipped within the TTL (0 = never).
+
+    Shared by concurrent activations and the preflight thread: the lock guards the
+    map only, never a live probe, so a race costs a duplicate probe (DL-249 D4).
+    """
 
     def __init__(
         self, ttl_minutes: int = 0, *, clock: Callable[[], datetime] | None = None
@@ -68,17 +73,20 @@ class PassCache:
         self._never = ttl_minutes == 0
         self._clock = clock or (lambda: datetime.now(UTC))
         self._passes: dict[str, datetime] = {}
+        self._lock = Lock()
 
     def fresh(self, name: str) -> bool:
         """Return True if *name* passed recently enough to skip a live re-test."""
-        at = self._passes.get(name)
+        with self._lock:
+            at = self._passes.get(name)
         if at is None:
             return False
         return self._never or (self._clock() - at) < self._ttl
 
     def record(self, name: str) -> None:
         """Remember that *name* passed now."""
-        self._passes[name] = self._clock()
+        with self._lock:
+            self._passes[name] = self._clock()
 
 
 def resolve_and_test(

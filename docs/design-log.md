@@ -10,6 +10,97 @@ and is marked CLOSED here.
 
 ---
 
+## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)
+
+**Why.** DL-248 measured the defect (one EHLO attempt against a single-threaded master: 54 `TimeoutError`
++ 5 `HTTP 503` boot crashes in four weeks) and set the direction: resend with backoff and one boot id,
+replay a repeated boot id, serve concurrently. These are the builder's five decisions inside it.
+
+**D1 — the envelope (`kernel/ehlo_settings.py`, `EhloSettings`, no env prefix, no key set).**
+`ehlo_attempt_timeout_seconds` **30** (5–120; today's value, so no attempt is ever shorter than now);
+`ehlo_max_attempts` **6** (1–20); `ehlo_budget_seconds` **300** (30–600; = master's replay window);
+`ehlo_backoff_base_seconds` **1** (0.1–10), doubling per failed attempt, capped at
+`ehlo_backoff_cap_seconds` **30** (1–120); **full jitter** (`delay = U(0, min(cap, base·2^(n-1)))`).
+Worst case with the defaults, every attempt a full timeout: 6 × 30 s + at most 1+2+4+8+16 s = 211 s, inside
+300. Each attempt's timeout is `min(attempt timeout, what is left of the budget)` (floored at 1 s so a
+clock that overshoots a sleep never yields a zero timeout), and an attempt is not started if the next
+backoff would end past the budget, so the agent's last send lands inside master's replay window
+(D3). *Rejected:* (a) **equal or decorrelated jitter** — full jitter spreads a wave of 15 simultaneous
+failures the widest, and the AWS Architecture Blog's comparison (Brooker, 2015) found it did the least total
+work under contention; a floor on the delay buys nothing when the cause is a queue. (b) **a budget but no attempt cap** — a refused
+connection fails in microseconds, so an uncapped loop spins on a sleeping master for 300 s of tiny
+backoffs; the cap bounds master's load. (c) **keeping the numbers on `MasterSettings`** — the agent
+side cannot import master (`agents-are-islands`), which is exactly why DL-248 found them unread.
+(d) **the planner's 10 s first timeout (`handshake_timeout_1_seconds`)** — shorter than today's 30 s and
+shorter than a measured 21 s cold start + a 2–6 s activation: every first attempt against a sleeping
+master would time out and add work to the queue it waits behind.
+
+**D2 — what is transient (`kernel/ehlo_retry.py` `is_transient`, one pure function).** Classified by
+**HTTP status first** (`HTTPError` *is* a `URLError`): 502/503/504 are transient, every other status
+(400, 404, 422, 500) is final. Then a `URLError` is transient iff its `reason` is one of the transport
+classes below. Then the exception itself: `TimeoutError` (= `socket.timeout`), `ConnectionRefusedError`,
+`ConnectionResetError`, `ConnectionAbortedError`, `http.client.RemoteDisconnected` (a
+`ConnectionResetError` subclass, named for the reader). Everything else is final, including
+`InvalidSignature`, `ValueError` (no signature, bad scheme) and a JSON error on a 200. The loop wraps
+**only the send**: signature verification runs once, on the final answer, outside it. *Rejected:*
+(a) **all `OSError`/`ConnectionError`** — sweeps in DNS failure (`gaierror`), `BrokenPipeError` and
+permission errors the spec did not name; a mis-set `MASTER_URL` should crash on attempt one, not after
+five minutes. (b) **retrying a 500** — master answers 500 only on a bug; a resend repeats it (a graph
+outage surfaces as a dropped connection, which *is* resent, `MST-FAIL-01`). (c) **retrying a 422** —
+a credential refusal or an unknown type is master's decision (`MST-NEV-01/06`); resending asks again
+for what was refused.
+
+**D3 — the replay store (`agents/master/activation_replay.py`, `ActivationReplay`).** Keyed on
+`ephemeral_boot_id`; each entry holds the `agent_type` it was minted for, and a lookup whose type
+differs raises `ReplayConflict` (a `ValueError`, so the server answers **422**) and returns nothing
+— key "boot id **and** type" as a conflict check rather than a composite key, because a composite key
+would silently *mint* a second activation for the other type instead of refusing it. It stores the
+**signed ACTIVATE body** (the exact bytes' dict the first caller was sent), because the signature is
+added in the HTTP layer; so the replay wraps `handle_ehlo`'s activation step, and `MasterAgent`
+(182 lines) is untouched. **In-flight guard:** the first caller inserts an in-flight entry with a
+`threading.Event` under the store's lock and activates outside it; a concurrent duplicate waits on the
+event (bounded by the lifetime) and then reads the stored answer. A failed activation (422, a graph
+error) removes the entry and wakes the waiters, which then try themselves: **a refusal is never
+cached**. **Expiry:** `lifetime = min(handshake_timeout_2_seconds, credential_pass_cache_ttl, secret_cache_ttl)`
+over the TTLs that are non-zero — with the defaults, 300 s = 300 s = 300 s. The window is the protocol
+bound (≥ the kernel budget, D1); the two TTLs are the credential bound, so a replay never re-delivers a
+credential for longer than master would have trusted that pass or that fetched value (`MST-NEV-06`).
+Expired entries are purged on every lookup (≤ one per boot in a window, so the store stays tiny).
+*Rejected:* (a) **replay from the graph** (`AgentInstance` by `boot_id`) — needs a find-by-property on
+the kernel port and cannot hold the signed config; the spec's recorded alternative. (b) **a plain dict
+without an in-flight guard** — two concurrent resends (a timed-out first attempt still running on master
+plus its resend) would both miss and mint two instances, which is the orphan this sprint exists to stop.
+(c) **caching refusals** — a credential fixed by the operator mid-window would stay refused. (d) **the
+window alone as the expiry** — an operator who shortens the secret TTL to pick up a rotation sooner
+would find a replay handing out the old value for longer. The cost of the cap: an operator TTL under the
+kernel budget means a very late resend mints a second instance — an orphan, named, never a leak.
+
+**D4 — thread safety, per shared object.** `socketserver.ThreadingTCPServer` subclass, daemon threads,
+listen backlog from the new `ehlo_listen_backlog` (default **64**, 16–1024: one wave is the 15 agent
+types in the grant policy, and 64 holds four waves of resends). *Locked:* `ActivationReplay` (lock +
+per-entry event); `PassCache` and `CachingSecretStore` (a lock around the dictionaries only — a
+duplicate live probe or fetch under a race is waste, not a bug; holding the lock across a probe would
+serialise every activation behind the slowest probe and undo the concurrency); `PostgresGraphStore._run`'s
+reconnect (a lock plus an identity check: only the thread whose failed connection is still
+`self._conn` replaces it, the rest reuse the replacement); the instance counter (already locked).
+*Accepted:* the shared psycopg 3 connection (psycopg serialises concurrent use of one connection; the
+spec rules out a pool — C8 measures the wave on it); `CollectingFaultSink` (`list.append` is atomic, and
+the preflight daemon already shares it); `InMemoryGraphStore` (the `MASTER_GRAPH=memory` dev mode only);
+the Azure `SecretClient` (the SDK's clients are documented thread-safe); the credential-probe transports
+(a fresh `urllib` request per call, no shared state). *Rejected:* a process pool (the replay and the
+caches would stop being shared), `asyncio` (a rewrite of every blocking probe for the same effect).
+
+**D5 — where the code goes.** Kernel: `kernel/ehlo_settings.py` (the five tunables) and
+`kernel/ehlo_retry.py` (`is_transient`, `backoff_delay`, `send_with_retry`, `RetryHooks` for the injected
+clock/sleep/jitter/log, `EhloBudgetExhaustedError`); `kernel/bootstrap.py` only calls it. Master:
+`agents/master/activation_replay.py` (the store and `replay_lifetime_seconds`); `http_server.py` gains
+`build_server` (construction, bound and listening, testable on port 0) split from `serve` (the one
+`serve_forever` line stays `# pragma: no cover`). `agent.py` (182) is untouched and `entrypoint.py` (195)
+changes one argument. *Rejected:* the replay inside `MasterAgent.activate` (it cannot hold the signature
+and would take `agent.py` past 200).
+
+---
+
 ## DL-248 - an agent's EHLO has one attempt against a single-threaded master, so the tail of every activation wave crashes - status: OPEN (planner, 2026-09-29; work-queue 95, S244)
 
 **What happened (measured 2026-09-29).** On the `s243` retag, provider and both deliberator peers

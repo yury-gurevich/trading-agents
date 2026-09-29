@@ -188,7 +188,7 @@ def main() -> None:  # pragma: no cover
         interval_minutes=settings.fleet_preflight_interval_minutes,
     )
     log.info("[master] session=%s — serving on :8000", agent.session_id)
-    serve(8000, agent, key_pem)
+    serve(8000, agent, key_pem, settings)
 
 
 if __name__ == "__main__":  # pragma: no cover

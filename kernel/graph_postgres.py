@@ -9,6 +9,7 @@ External I/O: PostgreSQL database.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping  # noqa: TC003 - runtime.
+from threading import Lock
 from typing import Any, cast
 
 import psycopg
@@ -43,6 +44,7 @@ class PostgresGraphStore(PostgresGraphReads, GraphStore):
         self.sink = sink if sink is not None else CollectingFaultSink()
         self._owns_conn = connection is None
         self._conn: Any = connection if connection is not None else self._connect()
+        self._reconnect_lock = Lock()
 
     def close(self) -> None:
         """Close the underlying PostgreSQL connection."""
@@ -133,15 +135,21 @@ class PostgresGraphStore(PostgresGraphReads, GraphStore):
     ) -> Any:  # noqa: ANN401 - returns whatever the collect callback yields.
         # Single autocommit statements, so one retry on a server-dropped
         # connection (Neon idles out long-lived surfaces) is safe; injected
-        # test connections are never replaced.
+        # test connections are never replaced. Threads share the connection
+        # (psycopg serialises it); only the thread whose dropped connection is
+        # still current replaces it, the others reuse the replacement.
+        conn = self._conn
         try:
-            with self._conn.cursor() as cursor:
+            with conn.cursor() as cursor:
                 cursor.execute(query, params)
                 return collect(cursor)
         except psycopg.OperationalError:
             if not self._owns_conn:
                 raise
-            self._conn = self._connect()
-            with self._conn.cursor() as cursor:
+            with self._reconnect_lock:
+                if self._conn is conn:
+                    self._conn = self._connect()
+                conn = self._conn
+            with conn.cursor() as cursor:
                 cursor.execute(query, params)
                 return collect(cursor)

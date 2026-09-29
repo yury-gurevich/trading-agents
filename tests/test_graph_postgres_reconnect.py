@@ -93,3 +93,38 @@ def test_injected_connection_is_never_replaced(
         store.get_node("Artifact", "kept")
 
     assert store.get_node("Artifact", "kept") is not None
+
+
+def test_two_threads_on_a_dropped_connection_make_one_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """C11 (S244, DL-249 D4): concurrent callers share one replacement connection.
+
+    Both threads' statements fail on the same dropped connection before either
+    reconnects; only the first to take the lock replaces it, the other reuses it.
+    """
+    import threading
+
+    store, connections = _owned_store(monkeypatch)
+    both_failed = threading.Barrier(2)
+
+    class SharedDrop(DroppableConnection):
+        def cursor(self) -> object:
+            both_failed.wait(timeout=5)
+            raise psycopg.OperationalError("the connection is closed")
+
+    dropped = SharedDrop()
+    store._conn = dropped
+    results: list[object] = []
+    threads = [
+        threading.Thread(target=lambda: results.append(store.get_node("A", "k")))
+        for _ in range(2)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert results == [None, None]
+    assert len(connections) == 2  # the original plus exactly one replacement
+    assert store._conn is connections[1]

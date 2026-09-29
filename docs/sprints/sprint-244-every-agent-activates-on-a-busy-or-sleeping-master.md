@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 95 (live defect)
 **Branch:** `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master`
-**Status:** SPEC
+**Status:** BUILT 2026-09-29 by a cloud session on `claude/loving-gates-f8vfsd` (the session's forced branch; cut from `main` `8cef3ac`), not merged — C1–C11 green, six DL-70 plants red and restored, `make ci` exit 0 in the container (3,687 passed, 100.00 %); owed to the planner: `uv lock`, Windows `make ci`, `make gate-ran`, retag, F1, F2
 **Version:** *next available PATCH at merge*
 **Effort:** M
 **Decisions:** [DL-248](../design-log.md) (the defect, measured, and the direction) · R004
@@ -420,15 +420,39 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder)* | | | |
+| `kernel/bootstrap.py` + new `kernel/ehlo_retry.py`, `kernel/ehlo_settings.py` | `agents/master/laws/laws.md` (whole, v1.6) + `test-plan.md` (whole); `docs/laws/conventions.md` (whole) | `MST-TRG-01` (⬜, names a "handshake queue" that does not exist), `MST-ORD-02` (⬜, assumes master is up first), `MST-SEC-01` (⬜; the signature is verified on the final answer only), `MST-IN-01`; the `PARAM` rows `handshake_timeout_1_seconds` / `handshake_max_retries` describe the agent's side and are read by no code | **Yes.** The retry loop only wraps the *send*: signature verification stays outside it, so a bad signature can never be resent (`MST-SEC-01`). The budget's per-attempt timeout is clipped to what is left of the budget, so an agent never overruns master's replay window. |
+| `agents/master/http_server.py` + new `agents/master/activation_replay.py` | same + `MST-IN-03`, `MST-NEV-02`, `MST-NEV-06`, `MST-STA-02`, `MST-IDM-01` | a malformed EHLO is still 400 with no write (`MST-IN-03`); a replay is the HTTP layer's (it holds the *signed* ACTIVATE), so `MasterAgent.activate()` keeps its v1.6 behaviour and every existing activation test | **Yes.** `MST-NEV-06` makes the replay a credential cache: its lifetime is capped by the credential-pass and secret-cache TTLs as well as the window (DL-249 D3), not the window alone. |
+| `agents/master/agent.py` (182) | same | `MST-STA-02`, `MST-IDM-01`, `MST-OBS-01` | **Yes** — untouched. The replay lives outside it, so `agent.py` stays at 182. |
+| `agents/master/settings.py`, `entrypoint.py` | same, `PARAM` table | `PARAM` rows; the new backlog tunable | No. `entrypoint.py` passes `settings` to `serve()` (the same line count). |
+| `agents/master/credential_test.py` `PassCache`, `key_vault.py` `CachingSecretStore` | same | `MST-NEV-06` (a fresh costly-pass entry is a pass), `MST-FAIL-04` (a transport failure caches nothing) | **Yes** — the lock guards the dictionaries only, never the live probe/fetch: holding it across a probe would serialise every activation behind the slowest one (a duplicate probe is waste, not a violation of `NEV-06`). |
+| `kernel/graph_postgres.py` `_run` | `docs/laws/conventions.md`; ADR-0014 | none of master's; the store is kernel | No. |
+| — | `docs/laws/drift-register.md` (header, the whole Master and System-level sections, the Provider/Scanner/Forecaster rows up to DRIFT-090; the other agents' sections skimmed for master references: none) | DRIFT-059 (master laws silent on remediation; untouched here), DRIFT-030/086 (retry cadence is a neighbouring kernel gap) | Next free is **DRIFT-091**. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **YES** (the
+spec's answer, confirmed). No `contracts/` or `kernel/handshake.py` change; new guarantees: a
+repeated boot id is one activation (`MST-IDM-03`), EHLOs are served concurrently (`MST-ORD-03`), an
+agent resends within a budget and fails loud when it runs out (`MST-FAIL-06`). Amended: `MST-TRG-01`,
+`MST-ORD-02`, `MST-STA-02`, and `MST-IDM-01` (see below). Master v1.7.
 
-**Contradictions found between a law and this spec:** *(builder)*
+**Contradictions found between a law and this spec:** one, inside the book rather than against the
+spec. **`MST-IDM-01`** reads *"Two EHLO messages from the same `agent_type` produce two distinct
+`instance_id` values"* — read literally, the new `MST-IDM-03` (same boot id → same `instance_id`)
+breaks it. The spec's amendment list omits `IDM-01`. Resolved by the smallest amendment that keeps
+its intent (multiple instances of one type): *"…with different `ephemeral_boot_id`s…"*, recorded in
+the v1.7 changelog. Not a STOP: the spec's own `MST-IDM-03` requires it, and the existing
+`IDM-01` test already uses two boot ids.
 
-**Laws found silent where a decision was needed:** *(builder)*
+**Laws found silent where a decision was needed:** (1) no clause says how long a credential that
+passed may be *re-delivered* without a re-test; `MST-NEV-06` speaks of a "fresh costly-pass cache
+entry" only. Decided in DL-249 D3 (replay lifetime ≤ pass TTL and secret TTL) and written into
+`MST-IDM-03`. (2) `MST-FAIL-01` says a graph failure leaves *"the EHLO … not acknowledged"* but not
+what the agent does next; `MST-TRG-01` v1.7 now says (a dropped connection is a transport failure
+and is resent). (3) The `CAP` block still names `channel: handshake_queue`; the spec does not list
+it and `CAP` is not a clause, so it is recorded in DRIFT-091 rather than edited.
 
-**Clauses that were ⬜ and are now proven:** *(builder)*
+**Clauses that were ⬜ and are now proven:** `MST-TRG-01`, `MST-ORD-02` (both amended, then proven);
+new `MST-IDM-03`, `MST-ORD-03`, `MST-FAIL-06` added proven. `MST-STA-02` and `MST-IDM-01` were 🟩
+and are re-proven on their amended text.
 
 ---
 
@@ -436,48 +460,205 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| C1 | *(builder)* | | | |
+| C1 | `test_a_timed_out_ehlo_is_resent_with_one_boot_id` | `tests/test_ehlo_retry.py` | PASS | `MST-TRG-01`, `MST-ORD-02` |
+| C2 | `test_each_transient_failure_is_resent` (10 cases: `TimeoutError`, refused, reset, aborted, `RemoteDisconnected`, `URLError`(refused), `URLError`(timeout), 502, 503, 504) | `tests/test_ehlo_retry.py` | PASS | `MST-TRG-01`, `MST-ORD-02` |
+| C3 | `test_a_final_answer_is_never_resent` (400, 404, 422, 500, DNS `URLError`, `ValueError`, `BrokenPipeError`); `test_a_bad_signature_is_never_resent` | `tests/test_ehlo_retry.py` | PASS | `MST-TRG-01`, `MST-SEC-01` (cited; row stays ⬜, see Return notes) |
+| C4 | `test_a_spent_attempt_budget_ends_loud`; `test_the_budget_stops_resends_before_the_attempt_cap` | `tests/test_ehlo_budget.py` | PASS | `MST-FAIL-06`, `MST-TRG-01` |
+| C5 | `test_a_repeated_boot_id_is_one_activation` | `agents/master/tests/test_activation_replay.py` | PASS | `MST-IDM-03`, `MST-STA-02` |
+| C6 | `test_a_boot_id_cannot_fetch_another_types_credentials` | `agents/master/tests/test_activation_replay.py` | PASS | `MST-IDM-03`, `MST-NEV-02`, `MST-NEV-06` |
+| C7 | `test_the_replay_window_expires` | `agents/master/tests/test_activation_replay.py` | PASS | `MST-IDM-03` |
+| C8 | `test_an_activation_wave_is_served_in_parallel` (real `ThreadingTCPServer` on 127.0.0.1:0, real kernel client, signatures verified) | `agents/master/tests/test_ehlo_server.py` | PASS | `MST-ORD-03`, `MST-TRG-01` |
+| C9 | `test_concurrent_resends_of_one_boot_id_are_one_activation` | `agents/master/tests/test_activation_replay.py` | PASS | `MST-IDM-03`, `MST-ORD-03` |
+| C10 | `test_the_kernel_budget_fits_inside_the_replay_window`; `test_the_listen_backlog_holds_one_wave` | `agents/master/tests/test_ehlo_budgets.py` | PASS | `MST-IDM-03`, `MST-TRG-01`, `MST-ORD-03` |
+| C11 | `test_two_threads_on_a_dropped_connection_make_one_replacement` | `tests/test_graph_postgres_reconnect.py` | PASS | none (kernel store; cites `C11 (S244, DL-249 D4)`) |
 
-**Tests added beyond the plan:** *(builder)*
+**Tests added beyond the plan:** `tests/test_ehlo_budget.py::test_a_spent_budget_exits_the_process_non_zero`
+(`MST-FAIL-06`: a real interpreter, fake sender, exits non-zero and its last stderr line is the named
+error); `agents/master/tests/test_activation_replay_store.py` — `test_a_refusal_is_never_remembered`,
+`test_a_waiter_on_a_failed_first_attempt_mints_its_own`, `test_another_type_is_refused_while_the_first_is_in_flight`,
+`test_a_replayed_answer_is_a_copy` (`MST-IDM-03`); `test_ehlo_budgets.py::test_the_replay_never_outlives_a_credential_pass_or_a_cached_secret`
+(`MST-IDM-03`/`MST-NEV-06`); `test_ehlo_server.py::test_the_listen_backlog_is_the_tunable`,
+`test_a_server_that_cannot_bind_releases_its_socket`; `test_ehlo_server_routes.py::test_the_server_answers_health_and_refuses_the_rest`,
+`test_serve_builds_its_server_from_master_settings` (`MST-ORD-03`/`MST-IDM-03`; `serve()` is no longer
+`# pragma: no cover`). Changed: `tests/test_bootstrap.py` senders take the new `timeout` argument;
+`test_master_entrypoint.py::test_build_app_accepts_custom_settings` sets `handshake_timeout_2_seconds`
+(the field it used left `MasterSettings`); the `MST-IDM-01` docstring names the two boot ids.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** SPEC
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *(builder)*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container's clone, branch `claude/loving-gates-f8vfsd`
+(the session forced this name; the spec's `sprint-244-…` branch was not created), cut from `main`
+`8cef3ac`; **no `.env`**, no `gh`, no Azure, no route to `download.pytorch.org`. Python 3.13.12, Linux.
 
-**Result:** *(builder — only for work done)*
+**Result:** an agent resends a transient EHLO failure with one boot id inside a 6-attempt / 300 s
+budget and exits loud when it is spent; master replays a repeated boot id (same signed ACTIVATE, no
+write, no test), refuses it to another type with a 422, and serves EHLOs on a threading server with a
+64-deep backlog — a 15-agent wave with 0.5 s activations took **1.37–1.46 s** on loopback (serial:
+8.34–8.48 s). Master laws v1.7 (24 / 50), DRIFT-091, DL-249. Unit- and loopback-proven only: no live proof.
 
-**Files changed:** *(builder)*
+**Files changed:** kernel — `bootstrap.py`, `graph_postgres.py`, new `ehlo_retry.py`, `ehlo_settings.py`;
+master — `http_server.py`, `settings.py`, `entrypoint.py` (one argument), `credential_test.py`,
+`key_vault.py`, new `activation_replay.py`; tests — new `tests/test_ehlo_retry.py`,
+`tests/test_ehlo_budget.py`, `tests/ehlo_fakes.py`, `agents/master/tests/test_activation_replay.py`,
+`test_activation_replay_store.py`, `test_ehlo_budgets.py`, `test_ehlo_server.py`,
+`test_ehlo_server_routes.py`, `ehlo_server_support.py`; edited `tests/test_bootstrap.py`,
+`tests/test_graph_postgres_reconnect.py`, `agents/master/tests/test_master_entrypoint.py`,
+`test_master_agent.py` (docstring); laws — master `laws.md` + `test-plan.md` v1.7,
+`docs/laws/ledger.md`, `docs/laws/INDEX.md`, `docs/laws/drift-register.md` (DRIFT-091); docs —
+`docs/design-log.md` (DL-249), this spec, `docs/sprints/README.md`. `agents/master/agent.py` untouched.
+`uv.lock` and `pyproject.toml` untouched (no version bump: PATCH at merge).
 
-**Design decisions:** *(builder — DL number, one line, where the rejected alternatives are)*
+**Design decisions:** [DL-249](../design-log.md) — D1 envelope (30 s / 6 / 300 s / 1 s ×2 cap 30 s, full
+jitter; the planner's starting point kept), D2 transient classification (status first), D3 replay
+store (boot id with a type check, signed answer, in-flight guard, lifetime capped by the credential
+TTLs), D4 thread safety, D5 module placement; each with its rejected alternatives in DL-249.
 
-**Proof — the red run first:**
+**Proof — the red run first** (the four planted tests against `main` `8cef3ac` before any
+implementation; they cannot import because nothing they test exists — the behavioural reds of the
+same guarantees are plants 1, 3, 4, 5 and 6 below, each of which restores the pre-S244 behaviour):
 
 ```text
-(builder)
+$ uv run --frozen pytest tests/test_ehlo_retry.py agents/master/tests/test_activation_replay.py agents/master/tests/test_ehlo_server.py -q --no-cov
+tests/test_ehlo_retry.py:21: in <module>
+    from kernel.ehlo_retry import EhloBudgetExhaustedError, RetryHooks
+E   ModuleNotFoundError: No module named 'kernel.ehlo_retry'
+agents/master/tests/test_activation_replay.py:16: in <module>
+    from agents.master.activation_replay import ActivationReplay
+E   ModuleNotFoundError: No module named 'agents.master.activation_replay'
+agents/master/tests/test_ehlo_server.py:20: in <module>
+    from agents.master.activation_replay import ActivationReplay
+E   ModuleNotFoundError: No module named 'agents.master.activation_replay'
+ERROR tests/test_ehlo_retry.py
+ERROR agents/master/tests/test_activation_replay.py
+ERROR agents/master/tests/test_ehlo_server.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+3 errors in 0.44s
 ```
+
+(C1 then lived in `tests/test_ehlo_retry.py`; C4 moved to `tests/test_ehlo_budget.py` when the file
+crossed 200 lines.)
 
 **Proof — the green run:**
 
 ```text
-(builder)
+$ uv run --frozen pytest <the S244 files> -v -s --no-cov
+tests/test_ehlo_retry.py::test_a_timed_out_ehlo_is_resent_with_one_boot_id PASSED
+tests/test_ehlo_retry.py::test_each_transient_failure_is_resent[...] PASSED   (10 cases)
+tests/test_ehlo_retry.py::test_a_final_answer_is_never_resent[...] PASSED     (7 cases)
+tests/test_ehlo_retry.py::test_a_bad_signature_is_never_resent PASSED
+tests/test_ehlo_budget.py::test_a_spent_attempt_budget_ends_loud PASSED
+tests/test_ehlo_budget.py::test_the_budget_stops_resends_before_the_attempt_cap PASSED
+tests/test_ehlo_budget.py::test_a_spent_budget_exits_the_process_non_zero PASSED
+agents/master/tests/test_activation_replay.py::test_a_repeated_boot_id_is_one_activation PASSED
+agents/master/tests/test_activation_replay.py::test_a_boot_id_cannot_fetch_another_types_credentials PASSED
+agents/master/tests/test_activation_replay.py::test_the_replay_window_expires PASSED
+agents/master/tests/test_activation_replay.py::test_concurrent_resends_of_one_boot_id_are_one_activation PASSED
+agents/master/tests/test_activation_replay_store.py::test_a_refusal_is_never_remembered PASSED
+agents/master/tests/test_activation_replay_store.py::test_a_waiter_on_a_failed_first_attempt_mints_its_own PASSED
+agents/master/tests/test_activation_replay_store.py::test_another_type_is_refused_while_the_first_is_in_flight PASSED
+agents/master/tests/test_activation_replay_store.py::test_a_replayed_answer_is_a_copy PASSED
+agents/master/tests/test_ehlo_budgets.py::test_the_kernel_budget_fits_inside_the_replay_window PASSED
+agents/master/tests/test_ehlo_budgets.py::test_the_listen_backlog_holds_one_wave PASSED
+agents/master/tests/test_ehlo_budgets.py::test_the_replay_never_outlives_a_credential_pass_or_a_cached_secret PASSED
+agents/master/tests/test_ehlo_server.py::test_an_activation_wave_is_served_in_parallel C8 wave: 15 activations in 1.43s
+PASSED
+agents/master/tests/test_ehlo_server.py::test_the_listen_backlog_is_the_tunable PASSED
+agents/master/tests/test_ehlo_server.py::test_a_server_that_cannot_bind_releases_its_socket PASSED
+agents/master/tests/test_ehlo_server_routes.py::test_the_server_answers_health_and_refuses_the_rest PASSED
+agents/master/tests/test_ehlo_server_routes.py::test_serve_builds_its_server_from_master_settings PASSED
+tests/test_graph_postgres_reconnect.py::test_two_threads_on_a_dropped_connection_make_one_replacement PASSED
+============================== 39 passed in 3.56s ==============================
 ```
 
-**Guards planted:** *(builder)*
+**Guards planted** (DL-70; each plant applied to the working tree, its test run with
+`PYTHONDONTWRITEBYTECODE=1`, the file restored from a copy and its SHA-256 compared: all six
+`restored: yes`):
 
-**Module line counts:** *(builder)*
+1. **max attempts 1** (`kernel/ehlo_settings.py` default 6 → 1) → C1 red:
+   `E   kernel.ehlo_retry.EhloBudgetExhaustedError: EHLO to http://master:8000/ehlo failed after 1 attempt(s) in 30.0s; last cause: TimeoutError: timed out` — `1 failed`.
+2. **422 treated as transient** (`_TRANSIENT_STATUSES` gains 422) → C3 red:
+   `E   Failed: DID NOT RAISE HTTPError` — `FAILED …test_a_final_answer_is_never_resent[<HTTPError 422: 'status'>]`, `1 failed, 2 passed`.
+3. **a new boot id per attempt** (`bootstrap.py` wraps the sender to mint `uuid4()` per send) → C1 red:
+   `E   AssertionError: assert 3 == 1` / `where 3 = len({'46c0e1f4…', 'c2788443…', 'c8c8938f…'})` — `1 failed`.
+4. **replay removed** (`handle_ehlo`: `if replay is None:` → `if True:`) → C5 red:
+   `E   AssertionError: assert {'instance_id…} == {'instance_id…}` / `Differing items: {'signature': …}, {'instance_id': 'scanner:…:1'} != …:0` — `1 failed`.
+5. **replay keyed on boot id alone** (the type check → `if False:`) → C6 red: `E   assert 200 == 422` — `1 failed`.
+6. **`TCPServer` restored** (`EhloServer` base → `socketserver.TCPServer`) → C8 red:
+   `C8 wave: 15 activations in 8.48s` / `E   AssertionError: assert 8.480150721999962 < ((15 * 0.5) / 2)` — `1 failed in 9.49s`.
 
-**`make ci`:** *(builder)*
+🪤 **A first pass of plants 2 and 3 went red for the wrong reason** and was discarded: plant 1's
+same-size edit (`6` → `1`) was restored inside the same second, so Python's mtime/size `.pyc` check
+kept serving the planted bytecode (`failed after 1 attempt(s)` in plants 2 and 3). All `__pycache__`
+directories were deleted and the six re-run with bytecode writing off; the reds above are that run.
+
+**Module line counts** (every file touched; all < 200): `kernel/bootstrap.py` 125, `kernel/ehlo_retry.py`
+140, `kernel/ehlo_settings.py` 60, `kernel/graph_postgres.py` **155** (warn; was 147),
+`agents/master/http_server.py` 143, `activation_replay.py` 114, `settings.py` 139, `entrypoint.py` 195
+(unchanged), `agent.py` 182 (untouched), `credential_test.py` **157** (warn; was 149), `key_vault.py` 144;
+tests: `tests/test_ehlo_retry.py` 123, `tests/test_ehlo_budget.py` 108, `tests/ehlo_fakes.py` 71,
+`tests/test_bootstrap.py` 179, `tests/test_graph_postgres_reconnect.py` 130,
+`agents/master/tests/test_activation_replay.py` 182, `test_activation_replay_store.py` 94,
+`test_ehlo_budgets.py` 54, `test_ehlo_server.py` 115, `test_ehlo_server_routes.py` 62,
+`ehlo_server_support.py` 70, `test_master_entrypoint.py` 146, `test_master_agent.py` 197 (unchanged).
+
+**`make ci`:** `UV_FROZEN=1 make ci > ci.txt 2>&1; echo exit=$?` (the session's scratchpad
+`ci.txt`, not committed) → **exit 0**, all 15 steps: ruff, format (1,485 files), mypy (1,118 files, no
+issues), import-linter (5 kept, 0 broken), module size (warnings only), module header, law coverage,
+PARAM sync (two pre-existing PM envelope warnings), sprint status, markdown links, version scheme,
+pytest **3,687 passed, 8 skipped**, coverage **100.00 %** (19,755 statements, 4,208 branches, 0 missed),
+dependency audit (no unaccepted vulnerabilities; 1 accepted advisory re-checked, PYSEC-2026-2447),
+detect-secrets Passed, untracked secrets Passed (12 new files scanned). Linux only; Windows `make ci`
+owed.
 
 **`make gate-ran`:** owed to the planner.
 
-**Not met / verified failing:** *(builder)*
+**Not met / verified failing:** nothing in the spec's build list is unmet. **Not done (owed, by
+design):** `uv lock` with the PATCH bump (`uv.lock` untouched, `UV_FROZEN=1` throughout), Windows
+`make ci`, `make gate-ran`, the retag, F1, F2. No live proof of any kind was run.
 
 ---
 
 ## Return notes
 
-- *(builder)*
+- **Scope held.** Everything in Scope 1–4 was built; nothing out of scope was touched (no KEDA,
+  `minReplicas`, credential-test pack, remediation, grants, contract, label, property, env key or
+  pool). One addition beyond the spec's list: `MST-IDM-01` was amended (law reading record: read
+  literally, it contradicted the new `MST-IDM-03`).
+- **Branch.** The session forced `claude/loving-gates-f8vfsd`; the spec's
+  `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master` was not created. Rename on merge if
+  the convention needs it.
+- **Disagreed with, after reading the laws.** (1) The planner's replay expiry = the window alone
+  would let a replay re-deliver a credential longer than its pass or its cached secret is trusted if
+  an operator shortens either TTL; the lifetime is `min(window, pass TTL, secret TTL)` over non-zero
+  TTLs (DL-249 D3). All three default to 300 s, so nothing changes at the defaults. (2) The spec's
+  `handshake_timeout_1_seconds` 10 s was not reused as the per-attempt timeout (DL-249 D1 (d)).
+  (3) `MST-SEC-01` is cited by the bad-signature test but its row stays ⬜: its text still describes the
+  S73 stub and the S74 wiring, and the test proves only the agent-side "verify before accepting" half.
+  (4) The `CAP` block's `channel: handshake_queue` is stale (DRIFT-091, left for the next amendment).
+- **C8's measured wall time for the 15-agent wave:** **1.37–1.46 s** over five runs (0.5 s per
+  activation; the rest is RSA-PSS sign/verify, ~45–70 ms per activation measured alone). With
+  `TCPServer` restored: **8.34–8.48 s**. The shared psycopg connection was not in the loop (C8 uses
+  the in-memory graph), so the wave on Neon is F2's to measure; nothing here asks for a pool.
+- **Thread safety, per shared object** (DL-249 D4): `ActivationReplay` — locked + a per-entry event
+  (in-flight guard); `PassCache` — locked (map only; a raced duplicate costly probe accepted as waste);
+  `CachingSecretStore` — locked (map only; a raced duplicate Key Vault fetch accepted); graph
+  `_run` reconnect — locked + identity check (C11: one replacement); instance counter — already locked;
+  psycopg connection — accepted, psycopg 3 serialises a connection; `CollectingFaultSink` — accepted,
+  `list.append` is atomic and the preflight thread already shares it; `InMemoryGraphStore` — accepted,
+  `MASTER_GRAPH=memory` dev mode only; Azure `SecretClient` — accepted, the SDK documents clients as
+  thread-safe; credential-probe transports — accepted, a fresh `urllib` request per call.
+- **Env and deploy.** Every new tunable is defaulted and no env key must be set; the kernel's
+  `EhloSettings` has no prefix (`EHLO_MAX_ATTEMPTS`, …) should the operator ever want one. Removing
+  `handshake_timeout_1_seconds` / `handshake_max_retries` from `MasterSettings` is harmless if a stray
+  `MASTER_HANDSHAKE_*` is set (`extra="ignore"`); none is in `infra/`. Image-only retag, as specced.
+- **A master restart inside a boot's budget** still mints one extra `AgentInstance` for that boot
+  (the replay is in memory), as the spec's road-not-taken already names.
+- **`docs/STATE.md` was not edited** — the planner owns the live tracker and it moved on `main` during
+  this session (`3e97e61`).
+- **Owed to the planner:** `uv lock` (PATCH bump), `make gate-ran` from the branch's HEAD, Windows
+  `make ci`, retag, F1 (retag against a cold master: 0 EHLO tracebacks, retry lines, one
+  `AgentInstance` per container start), F2 (the next 22:30 wave inside ~60 s).

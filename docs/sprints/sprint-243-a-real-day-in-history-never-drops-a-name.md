@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 94 (live defect)
 **Branch:** `sprint-243-a-real-day-in-history-never-drops-a-name`
-**Status:** BUILT
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; not deployed (image-only retag and F2 owed)
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-245](../design-log.md) (the defect, measured, and the direction) · DRIFT-014 / DRIFT-012 (why the guard exists) · the builder's decisions go to the **next free DL** (`DL-247` at spec time)
@@ -379,7 +379,7 @@ prefix table says `FCST` for the forecaster while its book uses `FORE`.
 
 ## Closeout — evidence
 
-**Status:** BUILT
+**Status:** MERGED 2026-09-29 — `7e157697` on `main`, 0.119.02, tag `v0.119.02`; GATE PROVEN for `9391b12b`; F1 passed on Neon; not deployed (image-only retag and F2 owed)
 
 **Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container, `/home/user/trading-agents` on branch `claude/zealous-bell-91iycb` (the session forced this name instead of `sprint-243-a-real-day-in-history-never-drops-a-name`), cut from `main` `0bb2292a`. **No `.env`**; `uv run --frozen` against the existing `uv.lock`; no network in any test.
 
@@ -466,3 +466,37 @@ PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_miss
 - **What I disagreed with after reading the laws, and the one thing the spec missed.** The PARAM row was the guard's *only* statement, so the scope needed a clause (`PROV-OUT-09`), not a PARAM edit. And the spec's premise that both paths inherit a working guard is half true: a population z over *n* moves can't exceed √(n−1), so at 8σ the guard fires only on a session of **66 or more** names. The ingest (~99) is fine; **the barrier fetch (~14 buys) has a guard that can never fire**. It is still covered upstream (same newest session as the ingest, and a name the ingest drops never becomes a buy), but that is an argument, not a clause. DRIFT-090 carries the forced decision (accept and say so in `PROV-OUT-08`; a leave-one-out σ; or reuse the run's `MarketData` verdict). I also classed a **failed history** as designed (`warning`), which the handover's list didn't name explicitly: the provider always records its own `error` for the failed fetch, so the outage is still one open incident, not zero and not two. If the planner prefers the forecaster's echo to stay loud, it's one `severity=` argument in `barrier_refusal.read_history`. Noted, not filed: conventions §1's prefix table says `FCST`, the forecaster book says `FORE`. DRIFT-084 (bar adjustment, "at the next provider amendment") was not in this amendment's list and stays OPEN.
 - **Newest-session false-positive risk, as I see it.** (1) A *real* single-name shock on the newest session is still dropped for that one run: CHTR's −22.7 % among ~98 names moving ±1 % is z ≈ 9.6, so on 2026-04-24's own run it would still have been excluded; the next run it is history and returns. That is the intended trade (a same-day bad print and a same-day real crash look identical), but the operator sees it only in `anomalous_tickers`. (2) As the spec's trap says, one session's σ is smaller than three years' on a quiet day, so a moderate single-name move clears 8σ more easily than before; conversely a market-wide day (2025-04-09) widens σ and protects everyone. With ~99 names the ceiling is ≈ 9.9σ, so 8σ sits close to the most extreme z the pool can produce; F1 (every live `MarketData`'s newest session re-judged) is the measurement that should set whether 8 is right. (3) On the barrier path, false positives are impossible and so are true positives (DRIFT-090).
 - **Owed to the planner:** `uv lock` (with the PATCH bump at merge), Windows `make ci`, `make gate-ran` from the worktree at this branch's `HEAD` (check the printed SHA), **F1** on Neon, merge, the image-only **retag** (rollback `s242`), **F2** on the next scheduled run (CHTR scanned; no barrier drop for a history day; the brief's incident count unchanged by a designed refusal), and **ack today's two TXN/COP Faults**.
+
+---
+
+## Planner verification (2026-09-29)
+
+**Tree:** worktree `trading-agents-s243` on `sprint-243-a-real-day-in-history-never-drops-a-name`, cut from
+the cloud branch's `5d609810`; F1 ran with the main checkout's `.env`.
+
+- **Review.** Diff read in full. The one flagged call (a failed history is a `warning`) was checked
+  against the code: the only path to a failed `BarrierHistory` is `fault_boundary` in
+  `agents/provider/agent.py` `_get_market_data` or in `barrier_history.py`, each of which records the
+  provider's own `error` Fault, so the forecaster's `error` counted one outage twice. **Accepted.**
+- **DRIFT-090 decided before merge** ([DL-247](../design-log.md) D4): accepted. The barrier fetch
+  leans on the daily ingest's guard (same session, same feed, ~99 names; a name the ingest drops never
+  becomes a buy); `PROV-OUT-08` says so. Commit `9391b12b`.
+- **PATCH bump** `e735aad6`: 0.119.01 → 0.119.02; `uv lock` changed the package version line only.
+- **Windows `make ci`** exit 0 on `e735aad6` and again on `9391b12b`: **3,648 passed, 8 skipped,
+  100.00 %**, audit and detect-secrets passed.
+- **`make gate-ran`** from the worktree: `GATE PROVEN for 9391b12b…`
+  (CI, CodeQL, Security Findings, attempt 1); the printed SHA equals `HEAD`. The branch's open
+  code-scanning alerts equal `main`'s (127 = 127, none branch-only, none at `error`).
+- **F1 on Neon (read-only).** All **78** `MarketData` nodes, each newest session re-judged by the new
+  `_anomalous_tickers`: every newest session held **98–101** names (above the 66 the guard needs);
+  **0** names dropped among the stored survivors; the largest newest-session move was CRM +8.85 %
+  (z 5.54, 2026-08-27). The 41 runs that had excluded CHTR (its bars are not stored) were re-judged
+  with CHTR's own SIP raw bar for each run's newest session added back (32 sessions, 32 bars found):
+  **CHTR dropped on 0 of 41**, its largest z 5.13 (2026-09-09). So on live data 8σ on one session
+  drops nothing, and CHTR returns.
+- **Merge.** Not a fast-forward (the cloud branch was cut before `61a93e86`, a one-line `STATE.md`
+  commit, green on `main`); merge commit `7e157697` differs from the gated tree by that line only.
+
+**Owed:** image-only retag (operator's call; rollback `s242`), then **F2** on the next scheduled run
+(CHTR scanned; no barrier drop for a history day; the brief's incident count unchanged by a designed
+refusal) and ack the two TXN / COP Faults from `sched-2026-09-28`.

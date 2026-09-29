@@ -1,6 +1,6 @@
 # Project State
 
-**Last updated:** 2026-09-29 18:25 AEST · **Version:** **0.119.03 deployed** (`s244`, image-only retag); `main` = `0.119.03` · **🚀 S244 deployed: every agent activated on the retag against a sleeping master, 0 crashes, 0 orphans; F2 is tonight's 22:30 UTC wave.**
+**Last updated:** 2026-09-30 08:40 AEST · **Version:** **0.119.03 deployed** (`s244`, image-only retag); `main` = `0.119.03` · **🚀 S244 deployed: every agent activated on the retag against a sleeping master, 0 crashes, 0 orphans; F2 is tonight's 22:30 UTC wave.**
 
 **How to read.** *Now* = active · *Next* = queued · *Recent* = last few shipped (older detail lives in
 each `docs/sprints/sprint-NN-*.md` + [`state-archive/`](state-archive/INDEX.md) `STATE-01…16.md` + git). **LAW-02:** an item is "shipped" only when
@@ -118,6 +118,8 @@ Layer-2 choreography 🟩 on a distributed run (S102).
 ## Next
 
 **Ranked queue of record: [work-queue.md](work-queue.md)** — this section is the narrative around it, not a second ranking.
+
+🚨 **2026-09-30 08:40 AEST — the referee carries a false fact about our code, and "DSPy" has never run ([DL-250](design-log.md); work-queue **96**, **97**).** The challenger and judge prompts say the staleness gate counts *calendar days*; it has counted trading sessions since S87. Item **96** is the fix (PATCH). Item **97** is the foundation the operator asked for: unambiguous names, a glossary generated from code and given to all three roles, typed citations checked after every live call, then GEPA offline. It sits before item **75**.
 
 🎯 **2026-09-23 16:40 AEST — the next leg is ACCEPTED ([next-leg-plan.md](next-leg-plan.md), [DL-209](design-log.md)); ranked as work-queue rows 81–84.** **[S226](sprints/sprint-226-a-run-says-whether-the-book-beat-the-index.md) is merged and deployed (E16.1); item 85 shipped as S227.** Next is work-queue **item 86** ([S229](sprints/sprint-229-every-component-that-decides-answers-to-a-law-book.md), law books for the dispatcher and the surfaces — operator, 2026-09-25), then E16.2 ([S228](sprints/sprint-228-the-operator-sees-whether-the-book-beats-the-index.md); its Telegram line moved to E19.1, [DL-220](design-log.md)), then P17's E17.1 measurement spike. Item **71** stays parked and item **75** queued, both by operator direction. The narrative below is the 2026-09-15 review, kept as written.
 

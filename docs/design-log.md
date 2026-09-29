@@ -10,6 +10,128 @@ and is marked CLOSED here.
 
 ---
 
+## DL-250 - the referee reads ~60 quants with no definitions, and one of its six hard-coded facts has been false since before it was compiled - status: MEASURED; direction PROPOSED (planner, 2026-09-30; work-queue 96, 97)
+
+**The operator's question.** How does quant data reach the first deliberator call and what does the model
+start out knowing? How do we make the debate use our parameters and read them the way *this* system
+means them? And does DSPy (3.3.1 installed; the operator's "2.x" was a typo) give us that foundation?
+DL-186 answered the first half on 2026-09-20. This entry re-measures it on a real packet, reads DSPy's
+source for the mechanism, and proposes the build.
+
+**(a) What the first call receives, rendered from the spine** (`pm-run-d622b85f…`, 2026-09-29, first
+approved order, via `orchestration/replay_corpus.py`'s own path, read-only). The defender's round-1 call
+gets `DEFENDER_SYSTEM` (**434 chars**: role, "define each parameter first", "max ~5 sentences") and one user
+message: `DECISION UNDER TEST: buy TXN (qty 3)` plus **9,587 bytes** of `name=value` lines. **What it
+knows about this system: its pretraining, plus whatever the names suggest.** Around 60 metrics arrive
+stamped `source-owned-units-scope-unknown{…}`. Four traps sit in that one packet, each checked in code:
+
+| In the packet | What it looks like | What our code computes |
+| --- | --- | --- |
+| `pe=30`, `pb=20`, `current_ratio=70`, `debt_equity=65` | the P/E is 30 | 0–100 banded **sub-scores** (`fundamental_rules.py`). P/E 41.92 misses both bands and gets the default 30 |
+| scanner `relative_strength=0.5247` vs analyst `relative_strength=8.091` | one metric | two metrics: the scanner's is the ticker's **raw total return** as a fraction, not relative to anything (`scanner/domain/filters.py:112`); the analyst's is **ticker minus benchmark**, in percentage points (`relative_strength.py:36`) |
+| `atr_pct=2.935`, `favorable_excursion_pct=0.06321`, `atr_pct=2.93%` | one `_pct` convention | three scales: percent points, fraction, pre-formatted percent |
+| `stochastic_k=95.66 → stochastic_k_score=20`, `rsi2=100 → rsi2_score=20` | overbought = strong | the bands are **contrarian** by design: overbought scores bearish (`technical_rules_range.py:40`, `technical_rules_event.py:41`); nothing in the packet says so |
+
+The `reward_risk` gate also renders `threshold=0 -> PASSED` with `comparison=DISCLOSURE_ONLY`: a gate
+that cannot fail, reported as passing.
+
+🚨 **A false fact is live in the referee.** `CHALLENGER_SYSTEM` and `JUDGE_SYSTEM`
+(`kernel/deliberation_prompts.py`) state that *"our staleness gate counts CALENDAR days, not trading
+sessions"*. The challenger is also told to argue that exact flaw ("that is the decision flaw under
+test"). **The code has counted trading sessions since S87** (`d00739e0`, DL-10;
+`agents/provider/settings.py:53`). The Class-1 case library predates that fix. S119's compile of
+2026-07-08 copied the case into both prompts, and nothing connects a prompt sentence to the code it
+describes. A second example is **stale by omission**: *"four semis each pass the sector cap, so add a
+fifth"* now meets `correlated_cluster_pct` (S210 / ADR-0030), which the same TXN packet shows running.
+The other four distinctions still hold today (pooled sigma, fixed-fraction `size_quantity`,
+`alpha158_pillar_weight=0.00`, LightGBM only in the forecaster). They are still one refactor away from
+the same rot.
+
+**What "DSPy" does today: nothing at run time or at compile time.**
+`DSPyPromptOptimizer.compile_prompt` (`kernel/dspy_optimizer.py:33`) imports `dspy` only to prove it is
+installed. It then joins the instruction and examples with `"\n".join`. No `Signature`, adapter or
+optimizer has ever run. That is why S119's report shows **understanding 17 % for champion and
+compiled prompts alike**: a string concatenation cannot move it.
+
+**DSPy 3.3.1, read in its source and confirmed by rendering a probe signature through `ChatAdapter` and
+`JSONAdapter`.** These mechanics decide the design:
+
+1. **An input field's `desc` goes into the system message** ("Your input fields are: 1. `x` (type): desc"). Pydantic bounds `ge`/`le` render as a `Constraints:` line. The signature docstring becomes
+   the `objective`.
+2. 🪤 **A Pydantic model used as an *input* type loses its field descriptions.**
+   `translate_field_type` returns an empty note for input fields, so the model sees only
+   `dict[str, Metric]` and a JSON dump of the values. A glossary written as `Field(description=…)`
+   inside the input model **never reaches the LLM**. Meaning has to travel in a top-level `desc`, in a
+   dedicated glossary field, or inside the value itself.
+3. **An *output* Pydantic model renders its full JSON schema, descriptions included.** `Literal`
+   outputs render as *"must exactly match one of"*. The output side is where a grounding contract can be
+   enforced.
+4. **`prefix`, `format` and `parser` are deprecated no-ops.** `dspy.Assert`/`Suggest` are gone;
+   `dspy.Refine` and `BestOfN` take a reward function. `dspy.History` carries multi-turn transcripts.
+5. **GEPA rewrites only each predictor's instructions** (`signature.with_instructions`). It never
+   changes field descriptions. Its metric may return `(score, feedback)` per predictor
+   (`GEPAFeedbackMetric`), so the answer key can explain *why* a reading was wrong in words.
+   MIPROv2 searches instructions plus demos.
+6. **`program.save()` / `dump_state()` serialise instructions and demos as JSON.** Loading them needs
+   `dspy`, and no Dockerfile installs it (DL-184, the diskcache advisory).
+
+**The resolution of DL-186's open trade-off (better definitions are also hints).** Separate
+**definitions** from **findings**:
+
+- A **definition** says what our code computes. It is true of every order, generated from code, and
+  given **identically to all three roles**. Example: *"`sizing` = portfolio_value × max_position_pct ÷
+  price; stop distance and volatility do not enter it."*
+- A **finding** says what is wrong with *this* order. It must be argued from the packet and must never
+  appear in a prompt.
+
+The circularity DL-186 found (the AMZN veto repeating a sentence we wrote) came from putting findings
+in the challenger's prompt alone, phrased as things to attack. Symmetric definitions give the defender
+the same knowledge, so they point neither side at a verdict. **Test for any sentence in a prompt: if it
+is not true of every order, or cannot be regenerated from code, it does not belong there.**
+
+**Proposed build, in order** (fix first, per the standing rule):
+
+1. **Fix (work-queue 96, PATCH).** Remove the false staleness distinction and its example from the
+   challenger and judge prompts. Re-state or remove the stale correlation example. Pin each surviving
+   fact to the code it describes with a test that reads the code's own value (e.g. `unit="sessions"`
+   on `max_staleness_days`), so the next rot fails `make ci`.
+2. **Names that cannot be misread (work-queue 97a).** Rename at the render boundary:
+   `pe` → `pe_subscore_0_100`, scanner `relative_strength` → `trailing_return_frac`, and one `_pct`
+   convention. Deterministic, costs nothing, and removes the traps above before any glossary exists.
+3. **A generated glossary, the same for all roles (97b).** Thresholds come from `tunable(why=, unit=,
+   ge=, le=)`, which already exists. Metrics come from a new pack-side registry owned by the rule tables
+   that compute them (the band table *is* the definition). Render only the keys present in the packet.
+   Place it in the system message, where it is stable across orders and cacheable. Add its source to
+   `PROMPT_MODULES` so the recipe hash tracks it.
+4. **A grounding contract on the output (97c).** Model each turn and the ruling as DSPy signatures with
+   typed outputs: `citations: list[Citation(metric, value, meaning_in_this_system, bears_on)]`, then
+   `argument`, and for the judge `ruling: Literal[...]` plus `decisive_citation`. A deterministic check
+   runs after every live call: the metric exists in the packet, the value matches, and the stated
+   meaning passes `score_understanding` (`kernel/deliberation_understanding.py`, which already exists
+   but only runs in eval). A misread is recorded on the `DeliberationRun`, not discovered months later.
+5. **Real optimisation, offline (97d).** GEPA over each role, with feedback text taken from the answer
+   key (*"you read `pe=30` as a P/E of 30; here it is a 0–100 sub-score and the P/E is 41.92"*). Train
+   on a **balanced** set drawn from the replay corpus (upholds, revises and overturns; item 75), not
+   the flaw-only Class-1 library. Export the adapter's rendered system and demo messages as the
+   `PromptArtifact`. A parity test pins the runtime renderer to `ChatAdapter.format` on a fixture.
+   **State a call and dollar budget before running**: S173 Part B stopped at $58.05 for one round.
+
+**Rejected.** (a) **Install DSPy in the deliberator image and call `dspy.Predict` live.** It re-imports
+the advisory DL-184 kept out of every image, and adds litellm to the hot path to render text we can
+render ourselves. (b) **Descriptions on a nested input Pydantic model**, the shape of the operator's
+snippet applied to inputs: measured above, they never reach the model. (c) **A meaning string inline on
+every value.** It reaches the model, but it repeats ~60 definitions per turn per round, where a glossary
+states each once in a cacheable prefix. (d) **Keep hand-written "distinctions".** One of six was false
+at the moment it was compiled, and nothing could have caught it. (e) **Persona.** Still rejected;
+DL-186's reasons stand.
+
+🪰 **Denominator.** One packet, the first approved order of one run. The traps are properties of the
+renderer and the rule tables, so they recur on every packet carrying those keys. How often the model
+actually *misreads* them is not measured here: that is what 97c's contract measures on every live
+debate.
+
+---
+
 ## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)
 
 **Why.** DL-248 measured the defect (one EHLO attempt against a single-threaded master: 54 `TimeoutError` plus

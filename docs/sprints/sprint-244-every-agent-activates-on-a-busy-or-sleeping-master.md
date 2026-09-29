@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 95 (live defect)
 **Branch:** `sprint-244-every-agent-activates-on-a-busy-or-sleeping-master`
-**Status:** BUILT 2026-09-29 by a cloud session on `claude/loving-gates-f8vfsd` (the session's forced branch; cut from `main` `8cef3ac`), not merged — C1–C11 green, six DL-70 plants red and restored, `make ci` exit 0 in the container (3,687 passed, 100.00 %); owed to the planner: `uv lock`, Windows `make ci`, `make gate-ran`, retag, F1, F2
+**Status:** MERGED 2026-09-29 — `0.119.03`, fast-forwarded to `a6fbae1e`, tag `v0.119.03`, GATE PROVEN `a6fbae1e`, Windows `make ci` 3,687 passed / 100.00 %; built by a cloud session on `claude/loving-gates-f8vfsd`; not deployed — retag `s244`, F1, F2 owed
 **Version:** `0.119.03` (PATCH)
 **Effort:** M
 **Decisions:** [DL-248](../design-log.md) (the defect, measured, and the direction) · R004

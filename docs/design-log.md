@@ -10,6 +10,88 @@ and is marked CLOSED here.
 
 ---
 
+## DL-251 - the referee's champion prompts are rebuilt from pack-side sources, and every fact they state about our code has a named pin - status: DECIDED (builder, 2026-09-30; S245)
+
+**Why.** DL-250 measured the defect: `CHALLENGER_SYSTEM` and `JUDGE_SYSTEM` tell the model the staleness
+gate counts calendar days (false since S87), carry a stale name-correlation case, and the compile
+pipeline starts from those promoted constants, so a re-run doubles them (13,023 vs 6,764 chars).
+[S245](sprints/sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code.md) removes both cases
+and pins the rest (`DLIB-NEV-09`). These are the builder's decisions inside it; the planner's
+recommendations were taken for D1–D3.
+
+**D1 — the bases and the calibration live in `scripts/deliberation_prompt_sources.py` (`Agent: tooling`).**
+It holds the challenger and judge bases (the champion text before *" Compiled calibration from the
+existing Class-1 library"*, which matches the hand-written prompts `kernel/deliberation.py` held before
+the S121 promotion, `14aa9278^`), the judge's pipeline sentence (*" If the Challenger catches …"*), the
+Class-1 calibration and the challenger calibration. `_ROLE_INSTRUCTIONS` starts from them. The kernel
+keeps only the promoted literals the runtime reads, and the runtime never imports `scripts/` or `dspy`.
+The defender's base stays `kernel.DEFENDER_SYSTEM`: it has never been promoted (DL-186), so its
+champion *is* its base. *Rejected:* (a) **kernel constants.** ADR-0012's S232 correction already lists
+`kernel/deliberation_prompts.py` as trading residue in the substrate, and the module is in
+`PROMPT_MODULES`: compile-only text there would move `PROMPT_RECIPE_HASH` on edits no role ever reads,
+so `DLIB-OBS-07` would report a new renderer for an unchanged prompt. (b) **Inside
+`compile_deliberation_prompts.py`.** It is 185 lines, so the bases would push it past 200, and the facts
+tests would import a CLI to read prompt text. (c) **Cutting each base out of the kernel constant at
+import.** A `scripts/` module reading `CHALLENGER_SYSTEM` is the doubling trap again, and A2 would be
+true by construction. (d) **A second copy of the defender base in the sources module.** That is two
+copies of one hand-written text, one of them the runtime's, with no rebuild check between them. The
+doubling guard in D5 covers a future defender promotion instead.
+
+**D2 — the pin registry is two dictionaries in `tests/test_deliberation_prompt_facts.py`.**
+`DISTINCTION_PINS` maps each distinction sentence, verbatim, to its pin test; `CASE_PINS` maps each
+Class-1 case name to its pin test. The values are the test functions themselves, so an entry cannot
+name a check pytest never runs (A7 asserts each is a `test_*` function of that module). A7 parses the
+distinctions from the champion constants, not from the sources, because the constant is what the model
+reads. It compares sets for **equality**, both ways, so a pin left behind for a removed fact fails too
+and the registry cannot turn into a list of facts no longer told. The parse runs from *"Preserve these
+distinctions:"* to the first sentence-ending period (a `.` followed by whitespace). The spec's *"first
+`.`"* would stop inside *"Alpha158 weight 0.00"*. *Rejected:* (a) **the registry in `scripts/`** beside
+the sources. The checks are tests and belong where pytest runs them; `scripts/` importing `tests/`
+inverts the tree. (b) **Pins discovered by a docstring tag or a decorator.** That is implicit: a
+mistyped tag unpins a fact without a sound. (c) **String-match pins** (the spec's road not taken). A pin
+must fail when the code changes. (d) **Parsing the distinctions from the sources.** That proves the
+sources are pinned, not what ships. A2 ties the two, but the check belongs on the shipped text.
+
+**D3 — the golden is edited and the edit recorded; it is not re-frozen.** Both names leave `passing`
+and `fractions`, and a `corrected` key says what was removed, when and why. The four surviving
+fractions are the 2026-07-08 freeze's, untouched; `deliberation_gate.py` reads only `passing`,
+`fractions`, `model`, `judge` and `date`. *Rejected:* (a) **Re-freeze.** It is paid, and the golden's
+models (`gpt-5.5` debaters, `claude-opus-4-8` judge) are not production's (`claude-opus-5`): item 97.
+(b) **Leave it.** `check_robust` computes `regressed = golden_passing − candidate`, so
+`calendar-staleness` would read as regressed on every future check; A8 pins that the golden names only
+live cases. (c) **Drop `fractions`.** That loses the only recorded evidence for the four live cases.
+
+**D4 — regeneration runs through the injected fake `dspy_module`.** `DSPyPromptOptimizer.compile_prompt`
+imports `dspy` only to prove it is installed and then joins strings (`kernel/dspy_optimizer.py:33`), so
+the fake gives the bytes the real module would. `dspy` is in the `optimizer` extra, which this container
+does not install, and the CLI has no switch for the fake, so the regeneration calls
+`compile_artifacts(..., dspy_module=types.SimpleNamespace())` from Python with `claude-opus-5` for both
+model stamps and version `2026-09-30-s245-v6` (S121's promotion was `v5`). Only `CHALLENGER_SYSTEM` and
+`JUDGE_SYSTEM` are re-promoted, in the same 80-character literal chunks as before.
+
+**D5 — the reach of `DLIB-NEV-09`, and what A2 guards.** (a) Every role prompt, the defender's
+included, names three example *"system parameter[s]"* (`max_daily_move_sigma`, `base_min_confidence`,
+`max_sector_pct`). Those are existence claims about this system, so each is pinned to its live settings
+field; no prompt text changes. (b) A2 compares all three rebuilt artifacts with the committed ones
+(system prompt and examples), and the challenger and judge with the kernel constants. It also requires
+*"Compiled calibration"* and *"Examples:"* exactly once in every rebuilt prompt, which is the doubling
+guard for a future defender promotion. (c) A static check: no module in `scripts/` imports
+`CHALLENGER_SYSTEM` or `JUDGE_SYSTEM`. `compare_deliberation_prompts.py` and `deliberation_gate.py`
+still read `DEFAULT_DELIBERATION_PROMPTS`, to *evaluate* the champion, never to build an instruction;
+that stays. (d) A4 is pinned twice: on `size_quantity` (20; the floor; exactly three parameters) and
+at PM level through `evaluate_recommendations`, since an existing helper builds a buy in a few lines
+(beta 0.5 vs 2.5, `atr_pct` 1.0 vs 6.0, the same price: the same quantity). *Rejected:* widening A7 to
+the defender's artifact (never promoted, never read by the fleet) or to the Class-2 examples
+(hypotheticals, item 75).
+
+**Measured while pinning (A3).** The pooled-sigma example says *"one 9% name does not trip it"*. On a
+99-name session at ±1.5 % the +9 % mover is **5.11σ** and passes; on a calm ±0.5 % session the same
+move is **8.66σ** and is excluded. The distinction (*"pooled cross-sectional sigma is not per-name
+volatility"*) holds either way; the example sentence holds only on an ordinary day. Rewording a case is
+a new eval case with an unmeasured effect (item 75/97), so the text is unchanged and this is reported.
+
+---
+
 ## DL-250 - the referee reads ~60 quants with no definitions, and one of its six hard-coded facts has been false since before it was compiled - status: MEASURED; direction PROPOSED (planner, 2026-09-30; work-queue 96, 97)
 
 **The operator's question.** How does quant data reach the first deliberator call and what does the model

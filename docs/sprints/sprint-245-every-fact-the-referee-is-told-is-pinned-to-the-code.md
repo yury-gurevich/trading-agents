@@ -436,17 +436,53 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+Filled 2026-09-30 09:50 AEST, before the first code change, in the claude.ai cloud container (branch
+`claude/sprint-245-referee-facts-5co3h4`, cut from `main` `02f3e7da`). Every file below was read whole.
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *(builder fills)* | | | |
+| `kernel/deliberation_prompts.py` (champion challenger + judge) | `agents/deliberator/laws/laws.md` (v1.9) + `test-plan.md` | `DLIB-NEV-09` (new); `DLIB-OBS-06` (frozen prompt offered to the cache); `DLIB-OBS-07` (recipe digest); `DLIB-IDM-02` (both prompt halves hashed); `DLIB-IDN-03` (one image, three identities); `DLIB-NEV-08` (the precedent) | **Yes.** `kernel.deliberation_prompts` is in `PROMPT_MODULES`, so *any* text in that module moves `PROMPT_RECIPE_HASH`, including text no model reads. That settles where the bases go (D1 in DL-251): compile-only text in the kernel would make `DLIB-OBS-07` report a new renderer for an edit no role ever sees. The champions stay frozen literals, so `OBS-06`'s cache-marked block and `IDM-02`'s hashing are untouched; both digests move by design |
+| `scripts/compile_deliberation_prompts.py`, `scripts/deliberation_eval.py`, new `scripts/deliberation_prompt_sources.py`, the three `scripts/deliberation_*_prompt.json`, `scripts/deliberation_golden.json`, `scripts/compare_deliberation_prompts.py` | deliberator book; `docs/decisions/0010-llm-interaction-quality-gate.md`; `docs/decisions/0012-platform-domain-separation.md` (with its S232 correction) | `DLIB-NEV-09`; ADR-0010 D1 (the frozen set gates a prompt change); ADR-0012 (no trading content added to the substrate) | **Yes.** `check_robust` reports every golden-passing name missing from a candidate run as *regressed*, so a golden still naming `calendar-staleness` would trip the firewall on every future check: the golden edit is load-bearing and A8 pins it. ADR-0012's S232 correction already lists `kernel/deliberation_prompts.py` as deferred residue; this sprint adds no trading text to `kernel/` (the module shrinks) |
+| A3 pin (reads `agents/provider/domain/integrity.py`) | `agents/provider/laws/laws.md` (v1.6), **read-only** | `PROV-OUT-09` (newest bar, open-to-close, that session's pooled population mean and σ, fewer than two moves abstains, √(n−1) ceiling); `PROV-FAIL-02`; PARAM `max_daily_move_sigma` = 8.0 | **Yes.** The ceiling means a pool of 66 moves or fewer cannot exclude anything at 8σ, so the pin must use one session of more than 66 names (99) or it proves nothing; the bars are open-to-close on one session, as the clause says |
+| A4 pin (reads PM sizing) | `agents/portfolio_manager/laws/laws.md` (v1.10), **read-only** | `PM-IDN-01` (sizes to whole shares from the estimated entry price); `PM-NEV-05` (whole shares, truncated); `PM-NEV-06` / `PM-NEV-08` (label cap vs correlation penalty) | **Yes, on the removal.** `PM-NEV-06` says in its own words that the sector cap *"is not the correlation penalty"*, so the distinction sentence being removed is literally true of the cap. What is false is the case built on it (*"GICS-SECTOR cap with NO name-correlation … penalty"*: the labels are not GICS, DRIFT-041, and `PM-NEV-08` is a measured correlation penalty). The sentence exists only to serve that case, so it goes with it, as the spec says (Return notes) |
+| A5 pin (reads analyst settings, the tunables pack) | `agents/analyst/laws/laws.md` (v1.6), **read-only** | `ANLZ-IDN-01` (*"optional Alpha158 pillar (off by default, weight = 0.00)"*); PARAM `alpha158_pillar_weight` | No |
+| A6 pin (scans five agents for the forecaster contract) | `agents/forecaster/laws/laws.md` (v1.8), **read-only** | `FORE-NEV-01` / `FORE-NEV-02` (never a binding signal; never gates a recommendation, sizing or exit) | No |
+| The law cycle (`laws.md` v1.10, `test-plan.md`, rollups, `DRIFT-092`) | `docs/laws/conventions.md`, `docs/laws/drift-register.md`, `docs/laws/ledger.md`, `docs/laws/INDEX.md` | §2 (next free ID: `DLIB-NEV-09`), §3 (green = a passing functional test citing the ID), §4 (amendment: version + changelog), §5 (the clause names no other agent), §7 (law before test), §7a (the summary mirrors the clause), §9 (one drift row) | **Yes.** §7 wants the law before the test, and the spec plants tests citing `DLIB-NEV-09` before its law cycle. The clause text is fixed by the spec's law-cycle answer before any test exists, and the clause lands in the same commit as the tests that cite it |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *(builder fills)*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** Yes, a new
+guarantee; no `contracts/` change. Deliberator v1.9 → **v1.10** adds `DLIB-NEV-09`: *never tells a
+debate role how this system's code behaves unless a test pins that statement to the code it
+describes.* It names no other agent (§5). Rollup: 23 / 56 → 24 / 57 at spec-time counts; `make ci`
+gives the final number.
 
-**Contradictions found between a law and this spec:** *(builder fills)*
+**Contradictions found between a law and this spec:** none between a law book and the spec. Three
+tensions, recorded and not stopping the build:
 
-**Laws found silent where a decision was needed:** *(builder fills)*
+1. **Conventions §7 vs the spec's order.** §7 says a needed test with no law gets its law first.
+   The spec's step 3 plants tests citing `DLIB-NEV-09` before step 7's law cycle. The clause is
+   decided (its text is in the spec) before any test is written, and the tests that cite it are not
+   committed before the clause is.
+2. **ADR-0010 D1 (an ADR, not a law book).** *"Every change to … prompt … must pass the frozen set
+   before promotion."* This sprint promotes new challenger and judge prompts without a firewall run:
+   the spec forbids real LLM calls and the container has no `.env`. The golden's models are not
+   production's (item 97). Named for the planner in Return notes; the 20-call replay is a different
+   check.
+3. **The spec's A7 parse rule.** *"Up to the first `.`"* stops inside *"Alpha158 weight 0.00"*.
+   The parse runs to the first sentence-ending period (a `.` followed by whitespace).
 
-**Clauses that were ⬜ and are now proven:** *(builder fills)*
+**Laws found silent where a decision was needed:**
+
+1. **The deliberator book never governed whether what a role prompt says about this system is true.**
+   That silence is how the calendar-day sentence was promoted on 2026-07-08 and never re-checked.
+   `DLIB-NEV-09` fills it; `DRIFT-092` records what shipped under it.
+2. **`DLIB-NEV-09`'s reach over existence claims.** Every role prompt, the defender's included, names
+   three *"system parameter[s]"* as examples (`max_daily_move_sigma`, `base_min_confidence`,
+   `max_sector_pct`). That is a claim about this system (the parameters exist), not about behaviour.
+   Decided in DL-251: read the clause as covering it, and pin each name to the live settings field.
+   No prompt text changes; the defender stays untouched.
+
+**Clauses that were ⬜ and are now proven:** none. `DLIB-NEV-09` is new, added and proven in the same
+unit of work. No existing deliberator clause changes status.
 
 ---
 

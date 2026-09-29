@@ -18,46 +18,31 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.deliberation_eval import _CLASS1, _CLASS2  # noqa: E402
+from scripts.deliberation_prompt_sources import (  # noqa: E402
+    CHALLENGER_BASE,
+    CHALLENGER_CALIBRATION,
+    CLASS1_CALIBRATION,
+    JUDGE_BASE,
+    JUDGE_GROUNDED_FLAW_RULE,
+)
 
 from kernel import (  # noqa: E402
-    CHALLENGER_SYSTEM,
     DEFENDER_SYSTEM,
     DELIBERATION_ROLE_FILENAMES,
     DELIBERATION_ROLE_TASKS,
     DELIBERATION_ROLES,
-    JUDGE_SYSTEM,
     PromptArtifact,
     PromptExample,
 )
 from kernel.dspy_optimizer import DSPyPromptOptimizer  # noqa: E402
 
-_CLASS1_CALIBRATION = (
-    " Compiled calibration from the existing Class-1 library: when grounding names "
-    "an implementation-specific flaw, address that exact flaw before generic "
-    "finance caution. Preserve these distinctions: pooled cross-sectional sigma is "
-    "not per-name volatility; calendar-day staleness is not trading-session "
-    "freshness; the sector cap is not a name-correlation penalty; fixed-fraction "
-    "sizing is not volatility-adjusted; Alpha158 weight 0.00 contributes nothing; "
-    "LightGBM shadow output does not feed the live decision."
-)
-_CHALLENGER_CALIBRATION = (
-    " For each attack, explicitly state why the exact flaw should force REVISE or "
-    "OVERTURN rather than being dismissed as a policy preference. For the calendar "
-    "staleness pattern, say that calendar-day counting can falsely pass a signal "
-    "that is stale in trading-session terms after a long weekend; that is the "
-    "decision flaw under test. Do not frame calendar staleness as merely using "
-    "the wrong clock; say that rule-compliant calendar freshness still needs a "
-    "post-holiday recheck because the context warns about multi-session staleness."
-)
-
+# Built from the hand-written bases, never from the promoted champions: those
+# already carry the calibration and the examples, so starting from them nests
+# both a second time (S245, DL-251). The defender's champion is its base.
 _ROLE_INSTRUCTIONS = {
-    "defender": DEFENDER_SYSTEM + _CLASS1_CALIBRATION,
-    "challenger": CHALLENGER_SYSTEM + _CLASS1_CALIBRATION + _CHALLENGER_CALIBRATION,
-    "judge": (
-        JUDGE_SYSTEM
-        + " If the Challenger catches a grounded implementation-specific flaw from "
-        "the evidence, do not uphold the decision." + _CLASS1_CALIBRATION
-    ),
+    "defender": DEFENDER_SYSTEM + CLASS1_CALIBRATION,
+    "challenger": CHALLENGER_BASE + CLASS1_CALIBRATION + CHALLENGER_CALIBRATION,
+    "judge": JUDGE_BASE + JUDGE_GROUNDED_FLAW_RULE + CLASS1_CALIBRATION,
 }
 
 

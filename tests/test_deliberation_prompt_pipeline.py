@@ -8,6 +8,7 @@ External I/O: temporary prompt artifact and golden files.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from scripts.compare_deliberation_prompts import (
     _FakeReportLLM,
@@ -17,7 +18,42 @@ from scripts.compare_deliberation_prompts import (
 from scripts.compile_deliberation_prompts import compile_artifacts
 from scripts.deliberation_eval import _CLASS1
 
-from kernel import load_deliberation_prompt_artifacts
+from kernel import (
+    CHALLENGER_SYSTEM,
+    DELIBERATION_ROLES,
+    JUDGE_SYSTEM,
+    load_deliberation_prompt_artifacts,
+)
+
+_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+
+
+def _shape(prompt: str) -> tuple[int, int, int]:
+    return len(prompt), prompt.count("Compiled calibration"), prompt.count("Examples:")
+
+
+def test_the_champion_is_its_sources_rebuilt(tmp_path) -> None:
+    """DLIB-NEV-09 (A2): re-running the pipeline reproduces the promoted challenger
+    and judge champions and all three committed artifacts byte for byte, with the
+    calibration and the examples once each. Before S245 it started from the
+    promoted constants and doubled them (13,023 vs 6,764 chars)."""
+    compile_artifacts(
+        debate_model="any-model",
+        judge_model="any-model",
+        version="rebuild",
+        output_dir=tmp_path,
+        dspy_module=object(),
+    )
+    rebuilt = load_deliberation_prompt_artifacts(tmp_path)
+    committed = load_deliberation_prompt_artifacts(_SCRIPTS)
+
+    for role, champion in (("challenger", CHALLENGER_SYSTEM), ("judge", JUDGE_SYSTEM)):
+        assert _shape(rebuilt[role].system_prompt) == _shape(champion), role
+        assert rebuilt[role].system_prompt == champion, role
+    for role in DELIBERATION_ROLES:
+        assert _shape(rebuilt[role].system_prompt)[1:] == (1, 1), role
+        assert rebuilt[role].system_prompt == committed[role].system_prompt, role
+        assert rebuilt[role].examples == committed[role].examples, role
 
 
 def test_compile_deliberation_prompts_writes_role_artifacts(tmp_path) -> None:

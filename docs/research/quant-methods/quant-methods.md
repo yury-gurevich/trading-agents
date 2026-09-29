@@ -51,7 +51,7 @@ The point of this doc is that **no number in a trade rationale should be a black
 | --- | --- | --- | --- | --- |
 | **ATR** (14) | average true daily range (size of the daily candle) | the *natural noise* of the name — how wide a stop must be to not get shaken out | high ATR = needs a wider stop / smaller size | `atr_period=14` |
 | **Beta** (scanner) | cov/var of the name's returns vs the benchmark | systematic (market) risk — a beta-2 name moves twice the market | >1 = amplifies market moves; gate at `max_beta` | `max_beta=2.5`, `beta_min_observations` |
-| **Daily-move σ anomaly** (provider) | is any bar's intraday return an outlier vs the pooled distribution? | a data-integrity *and* event flag — a >Nσ move means earnings/news/bad-print | tripped = the batch is "degraded" until reviewed | `max_daily_move_sigma` |
+| **Daily-move σ anomaly** (provider) | is a ticker's **newest** bar's intraday return an outlier vs that session's pooled cross-section? (older bars are never re-judged, DL-247) | a data-integrity *and* event flag — a >Nσ move means earnings/news/bad-print | tripped = that ticker is excluded and named in `anomalous_tickers` (DRIFT-014); needs a session of > N² + 1 names to be reachable (DRIFT-090) | `max_daily_move_sigma` |
 | **VIX regime** (provider) | the market's implied-volatility "fear gauge" | sets the *backdrop* — the same setup is worse in a risk-off tape | risk_on<15 · risk_off≥20 · high≥25 · extreme≥35 | `vix_*_threshold` |
 
 ### D. Trend *quality* / regime — *is the trend real, or just noise?*

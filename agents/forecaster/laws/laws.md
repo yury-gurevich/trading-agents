@@ -1,6 +1,6 @@
 # `Forecaster` — Laws
 
-**Prefix:** `FORE` · **status:** LOCKED v1.7 · **Owner:** Yury Gurevich
+**Prefix:** `FORE` · **status:** LOCKED v1.8 · **Owner:** Yury Gurevich
 
 > Produce clearly-labelled shadow ML forecasts (sentiment + price/return) and measure
 > them via scorecards — every output is advisory and never gates a decision until
@@ -180,7 +180,14 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   or a history it wrote as failed (the fault says `provider dropped: <the provider's reason>`,
   distinct from short history) writes no `BarrierForecast`, records a fault, and returns the
   `FORE-OUT-06` neutral reading. A claim is never fabricated: no default,
-  fake, cached or earlier run's parameters stand in for a failed fit.
+  fake, cached or earlier run's parameters stand in for a failed fit. The fault's **severity says
+  whose the refusal is**. A **designed** "no claim", the system working as intended, is a
+  `warning`, never an open incident: a ticker the provider dropped or a history it wrote as failed
+  (the provider records its own fault for the failed fetch), fewer than
+  `barrier_min_history_sessions` bars, or a fit outside EXP-018's acceptance rule. A **missing or
+  broken input** is an `error`: no named `BarrierHistory`, one that does not hold the ticker,
+  malformed barriers (`FORE-IN-07`), an optimiser exception or an absent `arch`. *(DL-247 D3,
+  DRIFT-089.)*
 - **FORE-FAIL-05** — A claim that cannot be settled honestly is never scored as a stop, a target or
   neither: it is settled `void` with a named `void_reason` and no `brier`. `suspected_corporate_action`
   when any session-over-session raw close ratio across its 10 sessions (from the `as_of` close to the
@@ -306,6 +313,7 @@ green only when a functional test cites its ID (conventions §3). Tests + status
 | ID | Law says | Code / contract says | Decision |
 | --- | --- | --- | --- |
 | DRIFT-081 | `FORE-IDN-01` names the sentiment and return models as the job; `FORE-OBS-01` writes a `ShadowPrediction` node per prediction; `FORE-IDN-02` lists the labels written | The factor leg (Q5) and the barrier model (S239) are unnamed in `IDN-01`; the barrier prediction is recorded as a `BarrierForecast`, not a `ShadowPrediction` node; the poll writes `ForecasterRun`, which `IDN-02` never listed | `IDN-02` CORRECTED in v1.7 (it lists `ForecasterRun`); `IDN-01` and `OBS-01` still OPEN: planner |
+| DRIFT-089 | `FORE-FAIL-04`: every refusal *"records a fault"* | Every refusal was recorded at `error`, which `kernel/fault_incidents.py` counts as an open incident, so a designed "no claim" (TXN/COP, the provider's guard, `sched-2026-09-28`) read "Needs you: 2 open incidents" | CORRECTED in v1.8: a designed refusal is a `warning`, a missing or broken input an `error` |
 | DRIFT-083 | `FORE-IDM-03`: *"Scorecard methods are read-only over `ShadowPrediction` nodes"* | From v1.7 `barrier_scorecard` reads `BarrierForecast` and `BarrierSettlement` nodes, not `ShadowPrediction` ones; `FORE-IDM-05` governs it | OPEN: planner — narrow `IDM-03`'s subject to the three shadow scorecards, or widen it to name both ledgers |
 
 ## Changelog
@@ -366,3 +374,13 @@ green only when a functional test cites its ID (conventions §3). Tests + status
   the bootstrap (1,000 draws, seed 20260929) are constants citing the spec and EXP-018. Silences found:
   `DRIFT-083` (`IDM-03`'s subject), `DRIFT-084` (the price adjustment of the bars, unstated where they
   are written).
+- v1.8 — S243 / DL-247 (2026-09-29): a refusal's severity. `FORE-FAIL-04` amended: a designed "no
+  claim" (the provider dropped the ticker or wrote a failed history, too little history, a fit outside
+  EXP-018's rule) records its fault at `warning`; a missing or broken input (no named history, one
+  that does not hold the ticker, malformed barriers, an optimiser exception, an absent `arch`) at
+  `error`. Why: the clause said only "records a fault", every refusal was an `error`, and
+  `kernel/fault_incidents.py` counts `error` as an open incident, so the operator's brief asked for
+  them on `sched-2026-09-28` for two designed refusals (TXN, COP; DL-245). A failed history is
+  designed because the provider records the failed fetch's own `error`; the forecaster's echo counted
+  one outage twice. The fault's `error_type` (`BarrierClaimRefusedError`) does not change. No clause
+  added; 25 / 52 unchanged. `DRIFT-089` corrected.

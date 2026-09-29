@@ -3,7 +3,7 @@
 
 **Phase:** Etalon-first continuous improvement (DL-19) · work-queue 94 (live defect)
 **Branch:** `sprint-243-a-real-day-in-history-never-drops-a-name`
-**Status:** SPEC
+**Status:** BUILT
 **Version:** *next available PATCH at merge*
 **Effort:** S
 **Decisions:** [DL-245](../design-log.md) (the defect, measured, and the direction) · DRIFT-014 / DRIFT-012 (why the guard exists) · the builder's decisions go to the **next free DL** (`DL-247` at spec time)
@@ -309,17 +309,50 @@ An incomplete handback is returned, not repaired (DL-48).
 
 ## Law reading record — fill BEFORE writing code
 
+*Filled 2026-09-29, before the first code change. Read whole: `agents/provider/laws/laws.md` (v1.5) +
+`test-plan.md`, `agents/forecaster/laws/laws.md` (v1.7) + `test-plan.md`, `docs/laws/conventions.md`,
+`docs/laws/drift-register.md` (DRIFT-012, DRIFT-014 and the rest), DL-245; and every reader of a
+`Fault`'s severity (`kernel/fault_incidents.py`, `kernel/fault_query.py`, `kernel/fault_graph.py`,
+`kernel/metrics_prometheus.py`, `surfaces/queries/faults.py`, `surfaces/dashboard/chat.py`,
+`surfaces/mcp_tools.py`, `surfaces/render_extras.py`, `agents/supervisor/domain/health.py`).*
+
 | Element | Law file(s) read | Clauses that bind it | Did reading change your approach? |
 | --- | --- | --- | --- |
-| *to fill* | | | |
+| `agents/provider/domain/integrity.py` | provider `laws.md` + `test-plan.md`; DRIFT-012, DRIFT-014 | `PROV-OUT-08` ("the extreme-move guard, unchanged"), `PROV-OUT-03` / `PROV-FAIL-02` (an excluded ticker is a per-item partial degradation, flagged), `PROV-NEV-01` (never unvalidated data), `PROV-STA-04` (staleness is its own flag), PARAM `max_daily_move_sigma` | **Yes, twice.** (1) No clause states *which bars* the guard judges: its only statement is the PARAM row ("relative to the requested window"), so the new scope needs a clause of its own (`PROV-OUT-09`), not only a PARAM edit. (2) Working the pooled z-score on one session: a population z over *n* moves can never exceed √(n−1) (Samuelson), and the guard needs *more* than 8, so it can fire only on a session holding **≥ 66** moves. The daily ingest (~99 names) can; the barrier fetch (~14 buys) **cannot, ever**. Test B2 therefore uses a 99-name batch, and the bound goes into the PARAM rationale and a drift row rather than being discovered later. `PROV-OUT-03b`'s cited test used a lone ticker whose own history made it the outlier: under the new scope a one-name session abstains, so that test is rewritten to a two-name session (said in the Return notes). |
+| `agents/provider/barrier_history.py` | same | `PROV-OUT-08`, `PROV-TRG-04` | No code change needed: it inherits the guard through `validate_bars`; its drop reason (`extreme_move_guard: an open-to-close move beyond max_daily_move_sigma`) stays true. Only the clause text moves. |
+| `agents/forecaster/barrier_forecast.py` | forecaster `laws.md` + `test-plan.md`; `kernel/errors.py` `Severity` | `FORE-FAIL-04` (every refusal "records a fault"), `FORE-IN-07` (the refusals' inputs), `FORE-OUT-06` (neutral reading), `FORE-OBS-02` (degraded paths emit faults, never buried) | **Yes.** `fault_boundary` records every exception at `error` and takes no severity, so a `warning` refusal must be submitted by the handler itself; I keep one exception type (`BarrierClaimRefusedError`, so a Fault's `error_type` and signature do not move) carrying its own severity. `FORE-OBS-02` binds: a `warning` still reaches the sink and the graph, it is only not an *incident*. A failed history is classed **designed** because every failed `BarrierHistory` already has the provider's own `error` Fault behind it (`agents/provider/agent.py` `fault_boundary`, or `barrier_history.py`'s own), so the forecaster's echo at `error` counted one outage twice. `barrier_forecast.py` is at 180: the refusal classification moves to a new `barrier_refusal.py` so the module shrinks rather than grows. |
 
-**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** *to fill*
+**Law-cycle question — does this sprint change `contracts/` or add a new guarantee?** **Yes, for two
+books; no `contracts/` change.** Provider v1.5 → v1.6: new `PROV-OUT-09` (the guard's scope: each
+ticker's newest session against that session's pooled cross-section; an older session is never
+re-judged; fewer than two moves or no spread abstains; both paths), `PROV-OUT-08`'s "unchanged" →
+"the shared guard of `PROV-OUT-09`", the `max_daily_move_sigma` PARAM row reconciled (`4.0` → `8.0`,
+the rationale re-worded and the √(n−1) bound stated). Forecaster v1.7 → v1.8: `FORE-FAIL-04` amended
+(a designed refusal records a `warning`; a missing or broken input an `error`). No contract, label,
+property, edge, tunable or env key moves.
 
-**Contradictions found between a law and this spec:** *to fill*
+**Contradictions found between a law and this spec:** None that stops the build. Three worth
+naming. (a) The PARAM row's default cell read `4.0` while `settings.py` holds `8.0` since DRIFT-012
+(0.35.02): the law was stale, `8.0` is right, reconciled here. (b) `PROV-OUT-08` promised the guard
+"unchanged" and the PARAM text said "relative to the requested window": both are the guarantee this
+sprint changes, so both are amended rather than contradicted. (c) **The spec's premise that both
+paths inherit a working guard is only half true**: by √(n−1), a newest-session pool of the barrier
+fetch's ~14 names can never reach 8σ, so on that path the guard is present but cannot fire. The
+invariant "a genuinely bad newest bar is still excluded, by name" holds on the daily ingest (≥ 66
+names) and on the barrier path only upstream of it (a name the ingest drops never becomes a buy).
+Built as specified; recorded as DRIFT-090 (OPEN) and in the Return notes.
 
-**Laws found silent where a decision was needed:** *to fill*
+**Laws found silent where a decision was needed:** (1) the provider book never said which bars the
+extreme-move guard judges (a PARAM row was its only statement) → `PROV-OUT-09`, DRIFT-088. (2) The
+forecaster book never said at what severity a refusal records its fault, while `kernel/fault_incidents.py`
+(DL-208) makes severity decide whether it is an incident → `FORE-FAIL-04` amended, DRIFT-089. (3) No book
+says what a newest bar that is *not* on the batch's newest session is judged against (a lagging
+ticker) → decided in DL-247 D1 and written into `PROV-OUT-09`. (4) No clause bounds a pooled guard's
+sensitivity by the pool's size → DRIFT-090 (OPEN). Not filed, noted: `docs/laws/conventions.md` §1's
+prefix table says `FCST` for the forecaster while its book uses `FORE`.
 
-**Clauses that were ⬜ and are now proven:** *to fill*
+**Clauses that were ⬜ and are now proven:** none were ⬜; `PROV-OUT-09` is new and proven (20 / 65 →
+21 / 66). `PROV-OUT-08` and `FORE-FAIL-04` are amended and re-proven (forecaster 25 / 52 unchanged).
 
 ---
 
@@ -327,48 +360,109 @@ An incomplete handback is returned, not repaired (DL-48).
 
 | Plan # | Final test name | File | Status | Clause(s) cited |
 | --- | --- | --- | --- | --- |
-| B1–B6 | *to fill* | | | |
+| B1 | `test_a_real_old_extreme_day_keeps_the_name` (99 names × 760 sessions, +17 % on session 100) | `agents/provider/tests/test_newest_session_guard.py` | PASS (red before the fix) | `PROV-OUT-09` |
+| B2 | `test_a_bad_newest_bar_is_still_dropped_by_name` (the same +17 % on the newest session: excluded, named, `used_fallback` False) | same | PASS (**green before the fix too**: the old whole-window guard also drops a newest-bar outlier, so B2 cannot be red first; it is the preservation test, and plant 2 turns it red) | `PROV-OUT-09`, `PROV-FAIL-02` |
+| B3 | `test_the_daily_ingest_keeps_a_name_with_a_real_crash_mid_window` (99 names × 203 sessions through `ingest_once`, CHTR −22.7 % at session 101; the written `MarketData` carries all 203 CHTR bars, `anomalous_tickers` empty) | same | PASS (red before the fix) | `PROV-OUT-09`, `PROV-OUT-01` |
+| B4 | `test_a_ticker_the_provider_dropped_is_a_warning_not_an_incident` (fault `warning`, written through `GraphFaultSink`, `live_fault_incidents` = 0) | `agents/forecaster/tests/test_barrier_refusal_severity.py` | PASS (red before the fix) | `FORE-FAIL-04` |
+| B5 | `test_no_barrier_history_is_an_error_and_an_incident` (fault `error`, `live_fault_incidents` = 1) | same | PASS (green before the fix: missing input was always `error`; plant 4 turns it red) | `FORE-FAIL-04`, `FORE-IN-07` |
+| B6 | `test_a_lagging_ticker_is_judged_on_its_own_newest_session` (LAG two sessions behind with +17 % on its newest bar → dropped by name, not stale; CUR with +17 % on an older bar → kept) | `agents/provider/tests/test_newest_session_guard.py` | PASS (red before the fix) | `PROV-OUT-09` |
 
-**Tests added beyond the plan:** *to fill*
+**Tests added beyond the plan:**
+
+- `test_a_real_history_day_never_drops_a_buy_from_its_barrier_history` — the measured defect on the barrier path: 14 buys × 760 sessions, TXN +16.76 % / COP +12.82 % on session 100 → both keep 760 bars, `dropped` empty (`PROV-OUT-08`, `PROV-OUT-09`; red before the fix).
+- `test_a_session_of_one_move_abstains` (`PROV-OUT-09`).
+- `test_a_session_of_65_names_or_fewer_cannot_pass_8_sigma` — the √(n−1) ceiling: +500 % passes among 65 names, dropped among 66 (`PROV-OUT-09`, DRIFT-090; red before the fix).
+- `test_every_designed_refusal_is_a_warning` ×3 (failed history, short history, fit outside EXP-018) and `test_every_missing_or_broken_input_is_an_error` ×4 (no ref, ticker not requested, malformed barriers, optimiser raised), each also asserting the incident count (`FORE-FAIL-04`, `FORE-IN-07`).
+- **Three existing tests rewritten, for the right reason** (each asserted the whole-window pool): `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing` (a lone ticker made anomalous by its *own* history; now two names on one session at 0.5σ, both excluded, `used_fallback` True — same point); `test_barrier_history_failures.py::test_a_dropped_ticker_carries_its_named_reason` (TSLA's +60 % was on history day 400; now on its newest bar with four names on that session and the guard at 1.5σ, since four names cap z at √3); `orchestration/tests/test_trading_observatory.py::test_anomalous_ticker_is_excluded_and_shown_not_degraded` (three identical moves on the newest session instead of three AAPL days). The scanner's `missing_history` count trap did not trigger: no scanner test depended on the guard.
 
 ---
 
 ## Closeout — evidence
 
-**Status:** *to fill (BUILT)*
+**Status:** BUILT
 
-**Tree the proofs ran in (and `.env` present?):** *to fill*
+**Tree the proofs ran in (and `.env` present?):** the claude.ai cloud container, `/home/user/trading-agents` on branch `claude/zealous-bell-91iycb` (the session forced this name instead of `sprint-243-a-real-day-in-history-never-drops-a-name`), cut from `main` `0bb2292a`. **No `.env`**; `uv run --frozen` against the existing `uv.lock`; no network in any test.
 
-**Result:** *to fill*
+**Result:** the extreme-move guard judges each ticker's newest bar only, against that session's pooled cross-section, on both the daily ingest and the barrier fetch (one change in `validate_bars`); a real extreme day earlier in the window no longer drops a name (B1, B3, the TXN/COP barrier case). An extreme newest bar is still excluded by name (B2). `forecast_barrier` records a designed refusal at `warning` (not an incident) and a missing or broken input at `error` (B4, B5). Unit-proven only; F1/F2 are the planner's.
 
-**Files changed:** *to fill*
+**Files changed:** `agents/provider/domain/integrity.py`; `agents/forecaster/barrier_forecast.py`; new `agents/forecaster/barrier_refusal.py`; new tests `agents/provider/tests/test_newest_session_guard.py`, `agents/provider/tests/guard_fixture.py`, `agents/forecaster/tests/test_barrier_refusal_severity.py`; rewritten tests `agents/provider/tests/test_provider_agent.py`, `agents/provider/tests/test_barrier_history_failures.py`, `orchestration/tests/test_trading_observatory.py`; laws `agents/provider/laws/laws.md` + `test-plan.md` (v1.6), `agents/forecaster/laws/laws.md` + `test-plan.md` (v1.8), `docs/laws/ledger.md`, `docs/laws/INDEX.md`, `docs/laws/drift-register.md` (DRIFT-088, -089, -090); `docs/design-log.md` (DL-247); `docs/research/quant-methods/quant-methods.md` (the guard's row); this spec, `docs/sprints/README.md`, `docs/sprints/INDEX.md`. **Not touched:** `agents/provider/barrier_history.py`, `contracts/`, `kernel/`, settings, S241's settlement void rule, `pyproject.toml`, `uv.lock`.
 
-**Design decisions:** *to fill*
+**Design decisions:** [DL-247](../design-log.md). D1 — each ticker's own last valid bar, judged against every ticker's bar on that same session (a lagging ticker is judged on its own session; staleness stays its own flag); rejected: judging only the batch's last date (a lagging ticker's newest bar goes unjudged), and pooling every ticker's last bar whatever its date (mixes sessions). D2 — the same population mean/σ on the narrower pool, <2 moves or zero spread abstains; rejected: a leave-one-out σ (lifts the √(n−1) ceiling but changes DRIFT-014's formula and sharpens the quiet-day trap with nothing measured), and a per-ticker vol model (the spec's out-of-scope alternative). D3 — designed (`warning`): provider dropped, **including a failed history** (the provider records its own `error` Fault for every failed fetch), short history, a fit outside EXP-018's rule; missing/broken (`error`): no named history, ticker not held, malformed barriers, optimiser exception, absent `arch`, conflicting rerun. One exception type carries its severity so `error_type` does not move; rejected: a `severity` argument on `kernel.errors.fault_boundary` (a kernel change for one caller), a second exception class (renames `error_type`), `info` (S213's `RegimeVixShortfall` precedent is `warning`). Severity readers checked: only `kernel/fault_incidents.py` decides by severity, and the brief, supervisor health, `surfaces/queries/faults.py`, the dashboard's incidents answer and MCP all read it; `kernel/fault_graph.py` still writes the `warning` as a `Fault` node and Prometheus still counts it.
 
 **Proof — the red run first:**
 
 ```text
-to fill
+# provider, before the integrity.py change (the ceiling test then read 64/65 and was named
+# ..._fewer_than_65_names_cannot_reach_8_sigma; corrected to 65/66 after the fix showed a
+# strict ">" needs n > 65 — plant 1 below is its red run under the corrected name)
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_bad_newest_bar_is_still_dropped_by_name
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_session_of_one_move_abstains
+FAILED agents/provider/tests/test_newest_session_guard.py::test_a_real_old_extreme_day_keeps_the_name
+FAILED agents/provider/tests/test_newest_session_guard.py::test_the_daily_ingest_keeps_a_name_with_a_real_crash_mid_window
+FAILED agents/provider/tests/test_newest_session_guard.py::test_a_real_history_day_never_drops_a_buy_from_its_barrier_history
+FAILED agents/provider/tests/test_newest_session_guard.py::test_a_lagging_ticker_is_judged_on_its_own_newest_session
+FAILED agents/provider/tests/test_newest_session_guard.py::test_a_session_of_fewer_than_65_names_cannot_reach_8_sigma
+5 failed, 2 passed in 2.90s
+#   B1: assert 'TXN' in {'N000', 'N001', ...}
+#   B3: assert ('CHTR',) == ()
+#   TXN/COP: assert {'TXN': 'extr...y_move_sigma'} == {}   (COP and TXN both dropped)
+
+# forecaster, before the barrier_refusal.py change
+FAILED ...::test_a_ticker_the_provider_dropped_is_a_warning_not_an_incident   assert ('error', 1) == ('warning', 0)
+FAILED ...::test_every_designed_refusal_is_a_warning[failed-history]
+FAILED ...::test_every_designed_refusal_is_a_warning[short-history]
+FAILED ...::test_every_designed_refusal_is_a_warning[fit-outside-exp018]
+4 failed, 5 passed in 0.77s
 ```
 
 **Proof — the green run:**
 
 ```text
-to fill
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_real_old_extreme_day_keeps_the_name
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_bad_newest_bar_is_still_dropped_by_name
+PASSED agents/provider/tests/test_newest_session_guard.py::test_the_daily_ingest_keeps_a_name_with_a_real_crash_mid_window
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_real_history_day_never_drops_a_buy_from_its_barrier_history
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_lagging_ticker_is_judged_on_its_own_newest_session
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_session_of_one_move_abstains
+PASSED agents/provider/tests/test_newest_session_guard.py::test_a_session_of_65_names_or_fewer_cannot_pass_8_sigma
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_a_ticker_the_provider_dropped_is_a_warning_not_an_incident
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_no_barrier_history_is_an_error_and_an_incident
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_designed_refusal_is_a_warning[failed-history]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_designed_refusal_is_a_warning[short-history]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_designed_refusal_is_a_warning[fit-outside-exp018]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_missing_or_broken_input_is_an_error[no-ref]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_missing_or_broken_input_is_an_error[ticker-not-requested]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_missing_or_broken_input_is_an_error[malformed-barriers]
+PASSED agents/forecaster/tests/test_barrier_refusal_severity.py::test_every_missing_or_broken_input_is_an_error[optimiser-raised]
+16 passed in 2.58s
 ```
 
-**Guards planted:** *to fill*
+**Guards planted:** each planted, run, restored (`cmp` against a pre-plant copy: identical).
 
-**Module line counts:** *to fill*
+1. *Whole-window guard again* (`_anomalous_tickers` pools every session and judges every bar) → **5 failed, 5 passed**: `test_a_real_old_extreme_day_keeps_the_name`, `test_the_daily_ingest_keeps_a_name_with_a_real_crash_mid_window`, `test_a_real_history_day_never_drops_a_buy_from_its_barrier_history`, `test_a_lagging_ticker_is_judged_on_its_own_newest_session`, `test_a_session_of_65_names_or_fewer_cannot_pass_8_sigma`. Restored.
+2. *Guard removed* (`anomalous = set()` in `validate_bars`) → **6 failed, 15 passed**: `test_a_bad_newest_bar_is_still_dropped_by_name`, `test_a_lagging_ticker_is_judged_on_its_own_newest_session`, `test_a_session_of_65_names_or_fewer_cannot_pass_8_sigma`, `test_barrier_history_failures.py::test_a_dropped_ticker_carries_its_named_reason`, `test_provider_agent.py::test_integrity_anomaly_is_reported_without_crashing`, `test_domain.py::test_integrity_excludes_anomalous_ticker_keeps_clean_remainder`. Restored.
+3. *Designed refusal back at `error`* (`DESIGNED = "error"`) → **4 failed, 5 passed**: B4 and the three `test_every_designed_refusal_is_a_warning` cases, each `assert ('error', 1) == ('warning', 0)`. Restored.
+4. *Missing input at `warning`* (no-history refusal raised with `severity=DESIGNED`) → **2 failed, 7 passed**: B5 and `test_every_missing_or_broken_input_is_an_error[no-ref]`, each `assert ('warning', 0) == ('error', 1)`. Restored.
 
-**`make ci`:** *to fill*
+**Module line counts:** `agents/provider/domain/integrity.py` 138 (was 124); `agents/forecaster/barrier_forecast.py` 160 (was 180; the refusal classification moved out); `agents/forecaster/barrier_refusal.py` 83 (new); `agents/provider/barrier_history.py` 191 (untouched); tests: `test_newest_session_guard.py` 157, `guard_fixture.py` 67, `test_barrier_refusal_severity.py` 125, `test_barrier_history_failures.py` 118, `test_provider_agent.py` 180, `orchestration/tests/test_trading_observatory.py` 159. All < 200; the four at 150+ are warnings, as the gate prints for many existing files.
+
+**`make ci`:** `make ci > scratchpad/ci.txt 2>&1` in the container → **exit 0**, all 15 steps. pytest **3,648 passed, 8 skipped**; coverage **100.00 %** (19,557 statements, 4,182 branches, 0 missed); dependency audit "No unaccepted vulnerabilities; 1 accepted advisory re-checked"; detect-secrets **Passed** (tracked) and **Passed** (4 untracked new files). The two earlier runs failed on my own code (a ruff E501, then two mypy errors in the new tests), fixed before the green run. Windows `make ci` not run (owed).
+
+**`uv.lock`:** untouched, and `pyproject.toml`'s version too (the PATCH is pinned at merge). Owed: `uv lock` with the bump.
 
 **`make gate-ran`:** owed to the planner.
 
-**Not met / verified failing:** *to fill*
+**Not met / verified failing:**
+
+- **B2 and B5 were not red before the fix**; they cannot be (the old code already did what they assert). Each is shown red by a plant instead (2 and 4).
+- **DRIFT-090 is not fixed:** on the barrier fetch (~14 names) the guard cannot fire at 8σ. Built as specified; decision owed.
+- Not done by design (the planner's): `uv lock`, Windows `make ci`, `make gate-ran`, F1, the retag, F2, acking the two Faults.
 
 ---
 
 ## Return notes
 
-- *to fill*
+- **Scope held.** No tunable, label, property, edge, env key or contract; the guard not removed and `max_daily_move_sigma` not raised; S241's void rule untouched; `barrier_history.py` untouched (its drop reason stays true). Two small moves beyond the file list, both docs: `docs/research/quant-methods/quant-methods.md`'s guard row (it still said "tripped = the batch is degraded", stale since DRIFT-014) and `docs/sprints/INDEX.md`'s row. The branch is `claude/zealous-bell-91iycb`, forced by the session.
+- **What I disagreed with after reading the laws, and the one thing the spec missed.** The PARAM row was the guard's *only* statement, so the scope needed a clause (`PROV-OUT-09`), not a PARAM edit. And the spec's premise that both paths inherit a working guard is half true: a population z over *n* moves can't exceed √(n−1), so at 8σ the guard fires only on a session of **66 or more** names. The ingest (~99) is fine; **the barrier fetch (~14 buys) has a guard that can never fire**. It is still covered upstream (same newest session as the ingest, and a name the ingest drops never becomes a buy), but that is an argument, not a clause. DRIFT-090 carries the forced decision (accept and say so in `PROV-OUT-08`; a leave-one-out σ; or reuse the run's `MarketData` verdict). I also classed a **failed history** as designed (`warning`), which the handover's list didn't name explicitly: the provider always records its own `error` for the failed fetch, so the outage is still one open incident, not zero and not two. If the planner prefers the forecaster's echo to stay loud, it's one `severity=` argument in `barrier_refusal.read_history`. Noted, not filed: conventions §1's prefix table says `FCST`, the forecaster book says `FORE`. DRIFT-084 (bar adjustment, "at the next provider amendment") was not in this amendment's list and stays OPEN.
+- **Newest-session false-positive risk, as I see it.** (1) A *real* single-name shock on the newest session is still dropped for that one run: CHTR's −22.7 % among ~98 names moving ±1 % is z ≈ 9.6, so on 2026-04-24's own run it would still have been excluded; the next run it is history and returns. That is the intended trade (a same-day bad print and a same-day real crash look identical), but the operator sees it only in `anomalous_tickers`. (2) As the spec's trap says, one session's σ is smaller than three years' on a quiet day, so a moderate single-name move clears 8σ more easily than before; conversely a market-wide day (2025-04-09) widens σ and protects everyone. With ~99 names the ceiling is ≈ 9.9σ, so 8σ sits close to the most extreme z the pool can produce; F1 (every live `MarketData`'s newest session re-judged) is the measurement that should set whether 8 is right. (3) On the barrier path, false positives are impossible and so are true positives (DRIFT-090).
+- **Owed to the planner:** `uv lock` (with the PATCH bump at merge), Windows `make ci`, `make gate-ran` from the worktree at this branch's `HEAD` (check the printed SHA), **F1** on Neon, merge, the image-only **retag** (rollback `s242`), **F2** on the next scheduled run (CHTR scanned; no barrier drop for a history day; the brief's incident count unchanged by a designed refusal), and **ack today's two TXN/COP Faults**.

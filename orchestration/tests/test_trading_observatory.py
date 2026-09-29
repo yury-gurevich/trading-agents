@@ -125,16 +125,22 @@ def test_anomalous_ticker_is_excluded_and_shown_not_degraded() -> None:
         close=130.0,  # +30% intraday vs AAPL's ~+1% -> pooled outlier
         volume=1_000_000,
     )
-    # Three near-identical AAPL bars give the pooled outlier a z of sqrt(3) > 1.5.
+    # The guard judges the newest session (DL-247): three identical +1 % moves on
+    # it give the pooled outlier a z of sqrt(3) > 1.5.
     bars = (
         bar("AAPL", 4, 100.0),
         bar("AAPL", 2, 100.0),
         bar("AAPL", 0, 116.0),
+        bar("NVDA", 0, 50.0),
+        bar("AMD", 0, 80.0),
         outlier,
     )
     settings = ProviderSettings(max_staleness_days=7, max_daily_move_sigma=1.5)
     graph = _cascade(
-        FakeDataSource(bars=bars, vix=12.0), ("AAPL", "MSFT"), "obs-anom", settings
+        FakeDataSource(bars=bars, vix=12.0),
+        ("AAPL", "NVDA", "AMD", "MSFT"),
+        "obs-anom",
+        settings,
     )
     out = inspect(graph, "obs-anom")
     assert "anomalous MSFT" in out  # the exclusion is on screen, never silent

@@ -2,7 +2,7 @@
 
 # Provider — Laws
 
-**Prefix:** `PROV` · **status:** LOCKED v1.5 · **Owner:** Yury Gurevich
+**Prefix:** `PROV` · **status:** LOCKED v1.6 · **Owner:** Yury Gurevich
 
 > The provider is the system's **single sealed boundary to the outside market**: it turns raw external
 > feeds into clean, validated, provenance-stamped facts so that every other agent can reason on data
@@ -85,15 +85,26 @@ IDs are append-only (conventions §2). A clause is green only when a functional 
   as a silent switch to a one-venue feed. *(DRIFT-080 — S238, DL-233, DL-239.)*
 - `PROV-OUT-08` — For an `AnalystRun` that triggers `PROV-TRG-04` it makes **one** OHLCV request
   through its own fetch path (the source's feed and end rule, then validation and the extreme-move
-  guard, all unchanged) for **exactly** those buys' tickers, over a calendar window holding at least
-  `barrier_history_sessions` sessions, and writes **one** `BarrierHistory` node keyed from the
-  `AnalystRun`'s key, linked `AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds
+  guard of `PROV-OUT-09`, all shared with the daily request) for **exactly** those buys' tickers,
+  over a calendar window holding at least `barrier_history_sessions` sessions, and writes **one**
+  `BarrierHistory` node keyed from the `AnalystRun`'s key, linked
+  `AnalystRun -BARRIER_HISTORY_BY-> BarrierHistory`. Per ticker it holds
   the last ≤ `barrier_history_sessions` daily bars as (date, open, high, low, close) and the bar
   count; a requested ticker with no bars is listed under `dropped` with its **named reason** (the
   extreme-move guard, or nothing served), never silently absent; a served ticker whose last bar is
   stale is listed as `stale`. A **failed fetch still writes the node**, `status: failed` with the
   reason and every ticker dropped with it, so no reader waits forever — never an empty success, never
   no node. *(DL-241 D10.)*
+- `PROV-OUT-09` — The **extreme-move guard** judges each served ticker's **newest bar only**: its
+  open-to-close move against the pooled (population mean and σ) open-to-close moves of every
+  ticker's bar on **that same session**. A move beyond `max_daily_move_sigma` σ excludes the ticker,
+  named in `anomalous_tickers`: a per-ticker partial degradation (`PROV-FAIL-02`), never a
+  whole-batch taint. A session of fewer than two moves, or with no spread, is not judged. A bar older
+  than its ticker's newest is **never re-judged**, so a real extreme day in a ticker's history never
+  drops it. Every path that validates bars shares the one guard (the daily request and the barrier
+  history, `PROV-OUT-08`). A pool of *n* moves cannot put one beyond √(n−1) σ, so the guard can
+  exclude only on a session of more than `max_daily_move_sigma`² + 1 moves (66 at 8 σ).
+  *(DRIFT-014, DRIFT-088, DRIFT-090, DL-247.)*
 
 ## Prohibitions (`NEV`)
 
@@ -283,7 +294,7 @@ semantic contract. **Non-tunable** = structural; changing the value changes what
 
 | Name | Value | Type | Tunable | Rationale |
 | --- | --- | --- | --- | --- |
-| `max_daily_move_sigma` | `4.0` | `float sigma [0.1, 20.0]` | YES | Flag daily returns that are extreme relative to the requested window. |
+| `max_daily_move_sigma` | `8.0` | `float sigma [0.1, 20.0]` | YES | Exclude a ticker whose **newest** session's open-to-close move is extreme against that session's pooled cross-section (`PROV-OUT-09`); an older session is never re-judged. 8, not 4, since DRIFT-012 (legitimate movers). Reachable only on a session of more than 65 names (√(n−1), DRIFT-090). |
 | `max_staleness_days` | `3` | `int days [0, 30]` | YES | Market data older than three sessions flagged as stale. |
 
 **VIX regime thresholds:**
@@ -356,6 +367,13 @@ status:
   is downstream → `PROV-NEV-08`; `mission.md` corrected), DRIFT-003 (FRED/EDGAR in-law deferred →
   `PROV-IN-06`), DRIFT-004 (regime policy inputs → `PROV-OUT-02`), DRIFT-005 (degraded event →
   `PROV-OUT-06`), DRIFT-067 (FMP `^VIX` regime freshness → `PROV-OUT-02`/`PROV-OUT-03`).
+- **CORRECTED (S243)** — DRIFT-088 (no clause said which bars the extreme-move guard judges; the
+  PARAM row said "the requested window", so a real extreme day anywhere in it dropped a name → new
+  `PROV-OUT-09`, newest session only; `PROV-OUT-08`'s "unchanged" → "shared"; the PARAM default cell
+  read `4.0` while `settings.py` has held `8.0` since DRIFT-012).
+- **OPEN (S243)** — DRIFT-090 (a pooled z-score over *n* moves cannot exceed √(n−1), so at 8 σ the
+  guard cannot fire on a session of 65 names or fewer, which is every barrier-history fetch; stated in
+  `PROV-OUT-09` and the PARAM row, not fixed).
 - **OPEN (S239)** — DRIFT-082 (`PROV-TRG-01` still says the provider acts *only* on a request event
   from its subscribed topic, while the fleet's provider pulls `RunRequest`s (DL-08) and now
   `AnalystRun`s (`PROV-TRG-04`) from the graph; `TRG-02` was reconciled in v1.5, `TRG-01` is 🟩 on a
@@ -417,3 +435,15 @@ status:
   (it said "no polling" while the provider has pulled `RunRequest`s since DL-08; a recorded data need
   is a request, a timer is not). `PARAM`: `barrier_history_sessions`. Two clauses added and proven:
   18 / 63 → 20 / 65. `PROV-TRG-01`'s "only a request event" is DRIFT-082.
+- **v1.6 — S243 / DL-247 (2026-09-29).** The extreme-move guard judges each ticker's **newest
+  session** only. Why: pooled over the whole window it dropped a name for one real extreme day
+  anywhere in it (DL-245, measured: CHTR out of the scan universe on 41 of 78 runs for 2026-04-24,
+  TXN and COP out of every barrier history for 2025-04-09), while a bad print only matters where it
+  can reach a decision, on the newest bar. New `PROV-OUT-09` states the guard's scope (newest bar,
+  that session's cross-section, a lagging ticker judged on its own newest session, fewer than two
+  moves abstains, one guard for both paths) and its √(n−1) ceiling; `PROV-OUT-08` names that guard
+  instead of calling it "unchanged". `PARAM`: `max_daily_move_sigma`'s default cell reconciled
+  `4.0` → `8.0` (the code's value since DRIFT-012) and its rationale re-worded from "the requested
+  window". No tunable, contract or vocabulary change. One clause added and proven: 20 / 65 → 21 / 66.
+  DRIFT-088 corrected; DRIFT-090 (the ceiling) left OPEN for the planner. DRIFT-084 (the bars'
+  price adjustment) was not in this sprint's amendment list and stays OPEN.

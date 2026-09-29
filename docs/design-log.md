@@ -130,6 +130,71 @@ renderer and the rule tables, so they recur on every packet carrying those keys.
 actually *misreads* them is not measured here: that is what 97c's contract measures on every live
 debate.
 
+🚨 **AMENDMENT, same day — the operator's direction: record the *guided* reasoning; and what the model
+already does unseen.**
+
+**Correction.** The rendered packet above is from **`sched-2026-09-28`** (the PM run was created
+2026-09-28 22:40 UTC), not "2026-09-29".
+
+**The direction (operator, 2026-09-30).** *"Record thoughts to be able to assess them for completeness
+of quant data and truth"*, and then: *"not the LLM thought notes. This is also gold, but the GUIDED
+thought process of the DSPy when it is processing chain of thought."* The recorded artifact is the
+reasoning the model writes, **before its answer, into a structure we define**:
+`dspy.ChainOfThought(signature, rationale_field_type=<typed model>)`. Measured in 3.3.1 by rendering
+and parsing a probe, with no LLM call:
+
+- The output order is `['reasoning', 'ruling']`: the guided reasoning is produced first.
+- Each step's description reaches the model through the JSON schema (*"step 1: read every quant you
+  rely on; define before using"*).
+- `ChatAdapter.parse` returns a typed object ready to store, for example
+  `readings[0] = {metric: "pe", value: 30.0, meaning_here: "0-100 banded sub-score…"}`.
+
+The assessment runs on that record, in code rather than with an LLM judge:
+
+- **Completeness:** the readings cover the packet's *material* quants (failed and near-threshold
+  gates, warnings, the stop basis), which is a set computed deterministically from the packet.
+- **Truth:** every `value` equals the packet, and every `meaning_here` passes the answer key
+  (`score_understanding`).
+
+The failures, stated in words, become GEPA's feedback.
+
+**What this changes in work-queue 97's order.** Guided reasoning and its recording come **first**, on
+today's packet, so the baseline misread rate is measured before anything changes the packet. Then
+names, then the glossary, then GEPA, each measured against that recorded baseline.
+
+**The model's own thinking ("also gold").** Measured, not assumed:
+
+- All three roles run **`claude-opus-5`** (`LLMCall.model` since 2026-09-20).
+- On Opus 5, omitting `thinking` means adaptive thinking **is on**, and the thinking text comes back
+  empty by default. `kernel/llm_anthropic_responses.py:49-53` keeps only `text` blocks anyway.
+- `sched-2026-09-28`: 60 calls, **73,635** output tokens billed. The visible turns average ≈ 305
+  words, about 20,000 tokens in total (estimated at 1.3 tokens per word). **≈ 73 % of billed output
+  is reasoning we never see.**
+- `thinking: {"type": "adaptive", "display": "summarized"}` returns a summary at the same token cost.
+  The raw chain of thought is not returned by any model, and nothing here should try to obtain it.
+- A summary can show a misread but cannot prove an omission, because it may leave out a quant the
+  model used. So the guided reasoning is the primary record and the summary a secondary one.
+
+**Runtime placement: open, decided when 97 is packaged.** No image installs `dspy`, and DL-184's
+accepted diskcache advisory rests on "installed by 0 of 15 Dockerfiles". The two options:
+
+- **(a)** The deliberator image installs `dspy` and uses its adapter to format and parse. The call
+  still goes through our `LLMClient`, so the ledger, stop reasons and outage handling stay. This
+  changes an accepted advisory's premise.
+- **(b)** DSPy renders offline, and a runtime parser is pinned to `ChatAdapter` by a parity test.
+  This keeps a second parser in sync.
+
+**Also measured today, and handed to [S245](sprints/sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code.md).**
+
+- **The false fact is used, not just carried.** 180 of 936 recorded turns mention calendar-day
+  staleness; **150 assert it, 0 state session counting**; challenger 169, defender 11; 18 of 38 runs,
+  2026-08-07 → 2026-09-29. The challenger quotes the planted sentence nearly verbatim.
+- **The compile pipeline is not idempotent.** It starts from the *promoted* constants, so a re-run
+  doubles the prompt (challenger **13,023** vs **6,764** chars).
+- **The golden firewall no longer tests production's models.** It was frozen on `gpt-5.5` debaters and
+  a `claude-opus-4-8` judge, while production runs `claude-opus-5` for every role. Re-freezing it is
+  paid, and belongs to 97.
+
 ---
 
 ## DL-249 - the EHLO resend envelope, what is transient, master's replay store, thread safety and where the code lives - status: DECIDED (builder, 2026-09-29; S244)

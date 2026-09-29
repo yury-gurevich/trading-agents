@@ -158,6 +158,7 @@ the overall progress bar, see [../build-plan.md](../build-plan.md).
 | [sprint-242](sprint-242-a-poll-downloads-only-the-work-it-takes.md) | 🔴 **A graph-pull poll that finds no work downloads no payloads** — work-queue 93 ([DL-244](../design-log.md)) | **BUILT 2026-09-29** (cloud session), not merged; image-only retag owed after the planner's gate |
 | [sprint-243](sprint-243-a-real-day-in-history-never-drops-a-name.md) | 🔴 **A real day in a name's history never drops it, and a designed "no claim" does not page the operator** — work-queue 94 ([DL-245](../design-log.md)) | **MERGED 2026-09-29** `7e157697`, 0.119.02, GATE PROVEN `9391b12b`, F1 passed; deployed `s243`; F2 owed |
 | [sprint-244](sprint-244-every-agent-activates-on-a-busy-or-sleeping-master.md) | 🔴 **Every agent activates, whether master is busy or asleep, and a retried EHLO is one activation** — work-queue 95 ([DL-248](../design-log.md)) | **SPEC 2026-09-29** for a cloud session; image-only retag |
+| [sprint-245](sprint-245-every-fact-the-referee-is-told-is-pinned-to-the-code.md) | 🔴 **Every fact the referee is told about our code is pinned to the code** — work-queue 96 ([DL-250](../design-log.md)) | **SPEC 2026-09-30** for a cloud session; image-only retag |
 
 ---
 

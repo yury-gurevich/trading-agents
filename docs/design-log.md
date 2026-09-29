@@ -107,6 +107,14 @@ market-wide days (most names moving together) exempt. The "no claim" fault becom
 the incident count does not read. Both touch provider and forecaster laws (S239's D-decisions).
 **Ruled out:** acking the two faults as the fix (they recur on every run where TXN or COP is a buy).
 
+**Wider than the barrier history (measured 2026-09-29).** The guard lives in `validate_bars`, which the
+daily ingest runs over its whole 203-session window too: **CHTR is excluded from the scan universe on
+41 of 78 `MarketData` runs, every run since 2026-08-13**, for a real earnings day (2026-04-24, −22.7 %
+open-to-close, SIP raw), silently (no fault; the scanner reports `missing_history: 1`), until that day
+leaves the window (~2027-02). **Direction:** the guard judges only the newest session, where a bad print
+would reach a decision; a history day is not re-judged. One change in `integrity.py` fixes both paths.
+It changes the scan universe (CHTR returns), so DL-237's fidelity clean-session count restarts.
+
 ---
 
 ## DL-244 - no agent loads every MarketData: the reporter and scanner were OOM-killed on `sched-2026-09-28` - status: OPEN (planner, 2026-09-29; work-queue 93)
